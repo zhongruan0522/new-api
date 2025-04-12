@@ -492,7 +492,7 @@
   "请输入默认 API 版本，例如：2023-03-15-preview，该配置可以被实际的请求查询参数所覆盖": "Please enter the default API version, for example: 2023-03-15-preview, this configuration can be overridden by the actual request query parameters",
   "默认": "default",
   "图片演示": "Image demo",
-  "参数替换为你的部署名称（模型名称中的点会被剔除）": "Replace the parameter with your deployment name (dots in the model name will be removed)",
+  "注意，系统请求的时模型名称中的点会被剔除，例如：gpt-4.5-preview会请求为gpt-45-preview，所以部署的模型名称需要去掉点": "Note that the dot in the model name requested by the system will be removed, for example: gpt-4.5-preview will be requested as gpt-45-preview, so the deployed model name needs to remove the dot",
   "模型映射必须是合法的 JSON 格式！": "Model mapping must be in valid JSON format!",
   "取消无限额度": "Cancel unlimited quota",
   "取消": "Cancel",

@@ -473,7 +473,7 @@ const EditChannel = (props) => {
               <div style={{ marginTop: 10 }}>
                 <Banner
                   type={'warning'}
-                  description={t('注意，模型部署名称必须和模型名称保持一致')}
+                  description={t('注意，系统请求的时模型名称中的点会被剔除，例如：gpt-4.5-preview会请求为gpt-45-preview，所以部署的模型名称需要去掉点')}
                 ></Banner>
               </div>
               <div style={{ marginTop: 10 }}>
