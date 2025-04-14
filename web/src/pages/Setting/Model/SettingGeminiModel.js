@@ -26,6 +26,7 @@ export default function SettingGeminiModel(props) {
   const [inputs, setInputs] = useState({
     'gemini.safety_settings': '',
     'gemini.version_settings': '',
+    'gemini.supported_imagine_models': [],
   });
   const refForm = useRef();
   const [inputsRow, setInputsRow] = useState(inputs);
@@ -122,6 +123,16 @@ export default function SettingGeminiModel(props) {
                     }
                   ]}
                   onChange={(value) => setInputs({ ...inputs, 'gemini.version_settings': value })}
+                />
+              </Col>
+            </Row>
+            <Row>
+              <Col xs={24} sm={12} md={8} lg={8} xl={8}>
+                <Form.TextArea
+                  field={'gemini.supported_imagine_models'}
+                  label={t('支持的图像模型')}
+                  placeholder={t('例如：') + '\n' + JSON.stringify(['gemini-2.0-flash-exp-image-generation'], null, 2)}
+                  onChange={(value) => setInputs({ ...inputs, 'gemini.supported_imagine_models': value })}
                 />
               </Col>
             </Row>

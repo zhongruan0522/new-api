@@ -90,7 +90,7 @@ type RelayInfo struct {
 	RelayFormat          string
 	SendResponseCount    int
 	ThinkingContentInfo
-	ClaudeConvertInfo
+	*ClaudeConvertInfo
 	*RerankerInfo
 }
 
@@ -120,7 +120,7 @@ func GenRelayInfoClaude(c *gin.Context) *RelayInfo {
 	info := GenRelayInfo(c)
 	info.RelayFormat = RelayFormatClaude
 	info.ShouldIncludeUsage = false
-	info.ClaudeConvertInfo = ClaudeConvertInfo{
+	info.ClaudeConvertInfo = &ClaudeConvertInfo{
 		LastMessagesType: LastMessageTypeNone,
 	}
 	return info
