@@ -793,23 +793,7 @@ const PersonalSetting = () => {
               </div>
             </Card>
             <Card style={{ marginTop: 10 }}>
-              <Tabs type="line" defaultActiveKey="price">
-                <TabPane tab={t('价格设置')} itemKey="price">
-                  <div style={{ marginTop: 20 }}>
-                    <Typography.Text strong>{t('接受未设置价格模型')}</Typography.Text>
-                    <div style={{ marginTop: 10 }}>
-                      <Checkbox
-                        checked={notificationSettings.acceptUnsetModelRatioModel}
-                        onChange={e => handleNotificationSettingChange('acceptUnsetModelRatioModel', e.target.checked)}
-                      >
-                        {t('接受未设置价格模型')}
-                      </Checkbox>
-                      <Typography.Text type="secondary" style={{ marginTop: 8, display: 'block' }}>
-                        {t('当模型没有设置价格时仍接受调用，仅当您信任该网站时使用，可能会产生高额费用')}
-                      </Typography.Text>
-                    </div>
-                  </div>
-                </TabPane>
+              <Tabs type="line" defaultActiveKey="notification">
                 <TabPane tab={t('通知设置')} itemKey="notification">
                   <div style={{ marginTop: 20 }}>
                     <Typography.Text strong>{t('通知方式')}</Typography.Text>
@@ -923,6 +907,23 @@ const PersonalSetting = () => {
                     </Typography.Text>
                   </div>
                 </TabPane>
+                <TabPane tab={t('价格设置')} itemKey="price">
+                  <div style={{ marginTop: 20 }}>
+                    <Typography.Text strong>{t('接受未设置价格模型')}</Typography.Text>
+                    <div style={{ marginTop: 10 }}>
+                      <Checkbox
+                        checked={notificationSettings.acceptUnsetModelRatioModel}
+                        onChange={e => handleNotificationSettingChange('acceptUnsetModelRatioModel', e.target.checked)}
+                      >
+                        {t('接受未设置价格模型')}
+                      </Checkbox>
+                      <Typography.Text type="secondary" style={{ marginTop: 8, display: 'block' }}>
+                        {t('当模型没有设置价格时仍接受调用，仅当您信任该网站时使用，可能会产生高额费用')}
+                      </Typography.Text>
+                    </div>
+                  </div>
+                </TabPane>
+                
               </Tabs>
               <div style={{ marginTop: 20 }}>
                 <Button type="primary" onClick={saveNotificationSettings}>

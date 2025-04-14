@@ -18,6 +18,8 @@ const ModelSetting = () => {
     'claude.default_max_tokens': '',
     'claude.thinking_adapter_budget_tokens_percentage': 0.8,
     'global.pass_through_request_enabled': false,
+    'general_setting.ping_interval_enabled': false,
+    'general_setting.ping_interval_seconds': 60,
   });
 
   let [loading, setLoading] = useState(false);
