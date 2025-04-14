@@ -24,6 +24,8 @@ func stopReasonClaude2OpenAI(reason string) string {
 		return "stop"
 	case "max_tokens":
 		return "max_tokens"
+	case "tool_use":
+		return "tool_calls"
 	default:
 		return reason
 	}
@@ -317,8 +319,9 @@ func StreamResponseClaude2OpenAI(reqMode int, claudeResponse *dto.ClaudeResponse
 				//choice.Delta.SetContentString(claudeResponse.ContentBlock.Text)
 				if claudeResponse.ContentBlock.Type == "tool_use" {
 					tools = append(tools, dto.ToolCallResponse{
-						ID:   claudeResponse.ContentBlock.Id,
-						Type: "function",
+						Index: common.GetPointer(0),
+						ID:    claudeResponse.ContentBlock.Id,
+						Type:  "function",
 						Function: dto.FunctionResponse{
 							Name:      claudeResponse.ContentBlock.Name,
 							Arguments: "",
@@ -330,11 +333,12 @@ func StreamResponseClaude2OpenAI(reqMode int, claudeResponse *dto.ClaudeResponse
 			}
 		} else if claudeResponse.Type == "content_block_delta" {
 			if claudeResponse.Delta != nil {
-				choice.Index = *claudeResponse.Index
 				choice.Delta.Content = claudeResponse.Delta.Text
 				switch claudeResponse.Delta.Type {
 				case "input_json_delta":
 					tools = append(tools, dto.ToolCallResponse{
+						Type:  "function",
+						Index: common.GetPointer(0),
 						Function: dto.FunctionResponse{
 							Arguments: *claudeResponse.Delta.PartialJson,
 						},
