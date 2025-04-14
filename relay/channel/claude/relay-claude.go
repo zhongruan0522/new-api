@@ -300,6 +300,13 @@ func StreamResponseClaude2OpenAI(reqMode int, claudeResponse *dto.ClaudeResponse
 	response.Model = claudeResponse.Model
 	response.Choices = make([]dto.ChatCompletionsStreamResponseChoice, 0)
 	tools := make([]dto.ToolCallResponse, 0)
+	fcIdx := 0
+	if claudeResponse.Index != nil {
+		fcIdx = *claudeResponse.Index - 1
+		if fcIdx < 0 {
+			fcIdx = 0
+		}
+	}
 	var choice dto.ChatCompletionsStreamResponseChoice
 	if reqMode == RequestModeCompletion {
 		choice.Delta.SetContentString(claudeResponse.Completion)
@@ -319,7 +326,7 @@ func StreamResponseClaude2OpenAI(reqMode int, claudeResponse *dto.ClaudeResponse
 				//choice.Delta.SetContentString(claudeResponse.ContentBlock.Text)
 				if claudeResponse.ContentBlock.Type == "tool_use" {
 					tools = append(tools, dto.ToolCallResponse{
-						Index: common.GetPointer(0),
+						Index: common.GetPointer(fcIdx),
 						ID:    claudeResponse.ContentBlock.Id,
 						Type:  "function",
 						Function: dto.FunctionResponse{
@@ -338,7 +345,7 @@ func StreamResponseClaude2OpenAI(reqMode int, claudeResponse *dto.ClaudeResponse
 				case "input_json_delta":
 					tools = append(tools, dto.ToolCallResponse{
 						Type:  "function",
-						Index: common.GetPointer(0),
+						Index: common.GetPointer(fcIdx),
 						Function: dto.FunctionResponse{
 							Arguments: *claudeResponse.Delta.PartialJson,
 						},
