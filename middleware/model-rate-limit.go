@@ -91,9 +91,9 @@ func redisRateLimitHandler(duration int64, totalMaxCount, successMaxCount int) g
 			abortWithOpenAiMessage(c, http.StatusTooManyRequests, fmt.Sprintf("您已达到请求数限制：%d分钟内最多请求%d次", setting.ModelRequestRateLimitDurationMinutes, successMaxCount))
 			return
 		}
-		//检查总请求数限制并记录总请求（当totalMaxCount为0时会自动跳过，使用令牌桶限流器
+
+		//2.检查总请求数限制并记录总请求（当totalMaxCount为0时会自动跳过，使用令牌桶限流器
 		totalKey := fmt.Sprintf("rateLimit:%s", userId)
-		//allowed, err = checkRedisRateLimit(ctx, rdb, totalKey, totalMaxCount, duration)
 		// 初始化
 		tb := limiter.New(ctx, rdb)
 		allowed, err = tb.Allow(

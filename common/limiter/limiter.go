@@ -5,6 +5,7 @@ import (
 	_ "embed"
 	"fmt"
 	"github.com/go-redis/redis/v8"
+	"one-api/common"
 	"sync"
 )
 
@@ -23,19 +24,13 @@ var (
 
 func New(ctx context.Context, r *redis.Client) *RedisLimiter {
 	once.Do(func() {
-		client := r
-		_, err := client.Ping(ctx).Result()
-		if err != nil {
-			panic(err) // 或者处理连接错误
-		}
 		// 预加载脚本
-		limitSHA, err := client.ScriptLoad(ctx, rateLimitScript).Result()
+		limitSHA, err := r.ScriptLoad(ctx, rateLimitScript).Result()
 		if err != nil {
-			fmt.Println(err)
+			common.SysLog(fmt.Sprintf("Failed to load rate limit script: %v", err))
 		}
-
 		instance = &RedisLimiter{
-			client:         client,
+			client:         r,
 			limitScriptSHA: limitSHA,
 		}
 	})
