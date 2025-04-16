@@ -81,6 +81,7 @@ const SystemSetting = () => {
   const [showPasswordLoginConfirmModal, setShowPasswordLoginConfirmModal] =
     useState(false);
   const [linuxDOOAuthEnabled, setLinuxDOOAuthEnabled] = useState(false);
+  const [emailToAdd, setEmailToAdd] = useState('');
 
   const getOptions = async () => {
     setLoading(true);
@@ -289,6 +290,29 @@ const SystemSetting = () => {
       ]);
     } else {
       showError('邮箱域名白名单格式不正确');
+    }
+  };
+
+  const handleAddEmail = () => {
+    if (emailToAdd && emailToAdd.trim() !== '') {
+      const domain = emailToAdd.trim();
+
+      // 验证域名格式
+      const domainRegex = /^([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$/;
+      if (!domainRegex.test(domain)) {
+        showError('邮箱域名格式不正确，请输入有效的域名，如 gmail.com');
+        return;
+      }
+
+      // 检查是否已存在
+      if (emailDomainWhitelist.includes(domain)) {
+        showError('该域名已存在于白名单中');
+        return;
+      }
+
+      setEmailDomainWhitelist([...emailDomainWhitelist, domain]);
+      setEmailToAdd('');
+      showSuccess('已添加到白名单');
     }
   };
 
@@ -764,6 +788,16 @@ const SystemSetting = () => {
                     onChange={setEmailDomainWhitelist}
                     placeholder='输入域名后回车'
                     style={{ width: '100%', marginTop: 16 }}
+                  />
+                  <Form.Input
+                    placeholder='输入要添加的邮箱域名'
+                    value={emailToAdd}
+                    onChange={(value) => setEmailToAdd(value)}
+                    style={{ marginTop: 16 }}
+                    suffix={
+                      <Button theme="solid" type="primary" onClick={handleAddEmail}>添加</Button>
+                    }
+                    onEnterPress={handleAddEmail}
                   />
                   <Button
                     onClick={submitEmailDomainWhitelist}
