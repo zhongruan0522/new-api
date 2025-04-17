@@ -28,6 +28,7 @@ type GeneralOpenAIRequest struct {
 	MaxTokens           uint              `json:"max_tokens,omitempty"`
 	MaxCompletionTokens uint              `json:"max_completion_tokens,omitempty"`
 	ReasoningEffort     string            `json:"reasoning_effort,omitempty"`
+	Reasoning           json.RawMessage   `json:"reasoning,omitempty"`
 	Temperature         *float64          `json:"temperature,omitempty"`
 	TopP                float64           `json:"top_p,omitempty"`
 	TopK                int               `json:"top_k,omitempty"`
