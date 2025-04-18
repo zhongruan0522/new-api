@@ -203,10 +203,13 @@ const SystemSetting = () => {
 
   const submitWorker = async () => {
     let WorkerUrl = removeTrailingSlash(inputs.WorkerUrl);
-    await updateOptions([
+    const options = [
       { key: 'WorkerUrl', value: WorkerUrl },
-      { key: 'WorkerValidKey', value: inputs.WorkerValidKey },
-    ]);
+    ]
+    if (inputs.WorkerValidKey !== '' || WorkerUrl === '') {
+      options.push({ key: 'WorkerValidKey', value: inputs.WorkerValidKey });
+    }
+    await updateOptions(options);
   };
 
   const submitPayAddress = async () => {
