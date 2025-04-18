@@ -28,9 +28,6 @@ func CovertGemini2OpenAI(textRequest dto.GeneralOpenAIRequest, info *relaycommon
 			TopP:            textRequest.TopP,
 			MaxOutputTokens: textRequest.MaxTokens,
 			Seed:            int64(textRequest.Seed),
-			ThinkingConfig: &GeminiThinkingConfig{
-				IncludeThoughts: true,
-			},
 		},
 	}
 
@@ -47,9 +44,14 @@ func CovertGemini2OpenAI(textRequest dto.GeneralOpenAIRequest, info *relaycommon
 			if budgetTokens == 0 || budgetTokens > 24576 {
 				budgetTokens = 24576
 			}
-			geminiRequest.GenerationConfig.ThinkingConfig.SetThinkingBudget(int(budgetTokens))
+			geminiRequest.GenerationConfig.ThinkingConfig = &GeminiThinkingConfig{
+				ThinkingBudget:  common.GetPointer(int(budgetTokens)),
+				IncludeThoughts: true,
+			}
 		} else if strings.HasSuffix(info.OriginModelName, "-nothinking") {
-			geminiRequest.GenerationConfig.ThinkingConfig.SetThinkingBudget(0)
+			geminiRequest.GenerationConfig.ThinkingConfig = &GeminiThinkingConfig{
+				ThinkingBudget: common.GetPointer(0),
+			}
 		}
 	}
 
