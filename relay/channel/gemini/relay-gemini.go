@@ -300,6 +300,12 @@ func cleanFunctionParameters(params interface{}) interface{} {
 		cleanedMap[k] = v
 	}
 
+	// Remove unsupported root-level fields
+	delete(cleanedMap, "$schema")
+	delete(cleanedMap, "additionalProperties")
+	delete(cleanedMap, "default")
+	delete(cleanedMap, "exclusiveMaximum")
+
 	// Clean properties
 	if props, ok := cleanedMap["properties"].(map[string]interface{}); ok && props != nil {
 		cleanedProps := make(map[string]interface{})
@@ -319,7 +325,8 @@ func cleanFunctionParameters(params interface{}) interface{} {
 			// Remove unsupported fields
 			delete(cleanedPropMap, "default")
 			delete(cleanedPropMap, "exclusiveMaximum")
-			delete(cleanedPropMap, "exclusiveMinimum")
+			delete(cleanedPropMap, "$schema")
+			delete(cleanedPropMap, "additionalProperties")
 
 			// Check and clean 'format' for string types
 			if propType, typeExists := cleanedPropMap["type"].(string); typeExists && propType == "string" {
