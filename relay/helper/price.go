@@ -15,14 +15,15 @@ type PriceData struct {
 	ModelRatio             float64
 	CompletionRatio        float64
 	CacheRatio             float64
+	CacheCreationRatio     float64
+	ImageRatio             float64
 	GroupRatio             float64
 	UsePrice               bool
-	CacheCreationRatio     float64
 	ShouldPreConsumedQuota int
 }
 
 func (p PriceData) ToSetting() string {
-	return fmt.Sprintf("ModelPrice: %f, ModelRatio: %f, CompletionRatio: %f, CacheRatio: %f, GroupRatio: %f, UsePrice: %t, CacheCreationRatio: %f, ShouldPreConsumedQuota: %d", p.ModelPrice, p.ModelRatio, p.CompletionRatio, p.CacheRatio, p.GroupRatio, p.UsePrice, p.CacheCreationRatio, p.ShouldPreConsumedQuota)
+	return fmt.Sprintf("ModelPrice: %f, ModelRatio: %f, CompletionRatio: %f, CacheRatio: %f, GroupRatio: %f, UsePrice: %t, CacheCreationRatio: %f, ShouldPreConsumedQuota: %d, ImageRatio: %d", p.ModelPrice, p.ModelRatio, p.CompletionRatio, p.CacheRatio, p.GroupRatio, p.UsePrice, p.CacheCreationRatio, p.ShouldPreConsumedQuota, p.ImageRatio)
 }
 
 func ModelPriceHelper(c *gin.Context, info *relaycommon.RelayInfo, promptTokens int, maxTokens int) (PriceData, error) {
@@ -32,6 +33,7 @@ func ModelPriceHelper(c *gin.Context, info *relaycommon.RelayInfo, promptTokens 
 	var modelRatio float64
 	var completionRatio float64
 	var cacheRatio float64
+	var imageRatio float64
 	var cacheCreationRatio float64
 	if !usePrice {
 		preConsumedTokens := common.PreConsumedQuota
@@ -55,6 +57,7 @@ func ModelPriceHelper(c *gin.Context, info *relaycommon.RelayInfo, promptTokens 
 		completionRatio = operation_setting.GetCompletionRatio(info.OriginModelName)
 		cacheRatio, _ = operation_setting.GetCacheRatio(info.OriginModelName)
 		cacheCreationRatio, _ = operation_setting.GetCreateCacheRatio(info.OriginModelName)
+		imageRatio, _ = operation_setting.GetImageRatio(info.OriginModelName)
 		ratio := modelRatio * groupRatio
 		preConsumedQuota = int(float64(preConsumedTokens) * ratio)
 	} else {
@@ -68,6 +71,7 @@ func ModelPriceHelper(c *gin.Context, info *relaycommon.RelayInfo, promptTokens 
 		GroupRatio:             groupRatio,
 		UsePrice:               usePrice,
 		CacheRatio:             cacheRatio,
+		ImageRatio:             imageRatio,
 		CacheCreationRatio:     cacheCreationRatio,
 		ShouldPreConsumedQuota: preConsumedQuota,
 	}

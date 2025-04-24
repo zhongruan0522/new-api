@@ -236,11 +236,64 @@ func (a *Adaptor) ConvertAudioRequest(c *gin.Context, info *relaycommon.RelayInf
 }
 
 func (a *Adaptor) ConvertImageRequest(c *gin.Context, info *relaycommon.RelayInfo, request dto.ImageRequest) (any, error) {
-	return request, nil
+	switch info.RelayMode {
+	case constant.RelayModeImagesEdits:
+		body, err := common.GetRequestBody(c)
+		if err != nil {
+			return nil, errors.New("get request body fail")
+		}
+		return bytes.NewReader(body), nil
+
+		/*var requestBody bytes.Buffer
+		writer := multipart.NewWriter(&requestBody)
+
+		writer.WriteField("model", request.Model)
+		// 获取所有表单字段
+		formData := c.Request.PostForm
+		// 遍历表单字段并打印输出
+		for key, values := range formData {
+			if key == "model" {
+				continue
+			}
+			for _, value := range values {
+				writer.WriteField(key, value)
+			}
+		}
+
+		// 添加文件字段
+		imageFiles := c.Request.MultipartForm.File["image[]"]
+		for _, file := range imageFiles {
+			part, err := writer.CreateFormFile("image[]", file.Filename)
+			if err != nil {
+				return nil, errors.New("create form file failed")
+			}
+			// 打开文件
+			src, err := file.Open()
+			if err != nil {
+				return nil, errors.New("open file failed")
+			}
+			// 将文件数据写入 form part
+			_, err = io.Copy(part, src)
+			if err != nil {
+				return nil, errors.New("copy file failed")
+			}
+			src.Close()
+		}
+
+		// 关闭 multipart 编写器以设置分界线
+		writer.Close()
+		c.Request.Header.Set("Content-Type", writer.FormDataContentType())
+		return bytes.NewReader(requestBody.Bytes()), nil*/
+
+	default:
+		return request, nil
+	}
 }
 
 func (a *Adaptor) DoRequest(c *gin.Context, info *relaycommon.RelayInfo, requestBody io.Reader) (any, error) {
-	if info.RelayMode == constant.RelayModeAudioTranscription || info.RelayMode == constant.RelayModeAudioTranslation {
+	if info.RelayMode == constant.RelayModeAudioTranscription ||
+		info.RelayMode == constant.RelayModeAudioTranslation ||
+		info.RelayMode == constant.RelayModeImagesEdits {
 		return channel.DoFormRequest(a, c, info, requestBody)
 	} else if info.RelayMode == constant.RelayModeRealtime {
 		return channel.DoWssRequest(a, c, info, requestBody)
@@ -259,8 +312,8 @@ func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, info *relaycom
 		fallthrough
 	case constant.RelayModeAudioTranscription:
 		err, usage = OpenaiSTTHandler(c, resp, info, a.ResponseFormat)
-	case constant.RelayModeImagesGenerations:
-		err, usage = OpenaiTTSHandler(c, resp, info)
+	case constant.RelayModeImagesGenerations, constant.RelayModeImagesEdits:
+		err, usage = OpenaiHandlerWithUsage(c, resp, info)
 	case constant.RelayModeRerank:
 		err, usage = common_handler.RerankHandler(c, info, resp)
 	default:
