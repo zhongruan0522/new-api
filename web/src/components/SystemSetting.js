@@ -374,7 +374,7 @@ const SystemSetting = () => {
   };
 
   const submitOIDCSettings = async () => {
-    if (inputs['oidc.well_known'] !== '') {
+    if (inputs['oidc.well_known'] && inputs['oidc.well_known'] !== '') {
       if (
         !inputs['oidc.well_known'].startsWith('http://') &&
         !inputs['oidc.well_known'].startsWith('https://')
