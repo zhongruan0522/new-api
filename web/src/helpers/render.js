@@ -314,6 +314,9 @@ export function renderModelPrice(
   groupRatio,
   cacheTokens = 0,
   cacheRatio = 1.0,
+  image = false,
+  imageRatio = 1.0,
+  imageOutputTokens = 0,
 ) {
   if (modelPrice !== -1) {
     return i18next.t(
@@ -331,10 +334,15 @@ export function renderModelPrice(
     let inputRatioPrice = modelRatio * 2.0;
     let completionRatioPrice = modelRatio * 2.0 * completionRatio;
     let cacheRatioPrice = modelRatio * 2.0 * cacheRatio;
+    let imageRatioPrice = modelRatio * 2.0 * imageRatio;
 
     // Calculate effective input tokens (non-cached + cached with ratio applied)
-    const effectiveInputTokens =
+    let effectiveInputTokens =
       inputTokens - cacheTokens + cacheTokens * cacheRatio;
+// Handle image tokens if present
+    if (image && imageOutputTokens > 0) {
+      effectiveInputTokens = inputTokens - imageOutputTokens + imageOutputTokens * imageRatio;
+    }
 
     let price =
       (effectiveInputTokens / 1000000) * inputRatioPrice * groupRatio +
@@ -344,13 +352,13 @@ export function renderModelPrice(
       <>
         <article>
           <p>
-            {i18next.t('提示价格：${{price}} / 1M tokens', {
+            {i18next.t('输入价格：${{price}} / 1M tokens', {
               price: inputRatioPrice,
             })}
           </p>
           <p>
             {i18next.t(
-              '补全价格：${{price}} * {{completionRatio}} = ${{total}} / 1M tokens (补全倍率: {{completionRatio}})',
+              '输出价格：${{price}} * {{completionRatio}} = ${{total}} / 1M tokens (补全倍率: {{completionRatio}})',
               {
                 price: inputRatioPrice,
                 total: completionRatioPrice,
@@ -370,11 +378,24 @@ export function renderModelPrice(
               )}
             </p>
           )}
+          {image && imageOutputTokens > 0 && (
+            <p>
+              {i18next.t(
+                '图片输入价格：${{price}} * {{ratio}} = ${{total}} / 1M tokens (图片倍率: {{imageRatio}})',
+                {
+                  price: imageRatioPrice,
+                  ratio: groupRatio,
+                  total: imageRatioPrice * groupRatio,
+                  imageRatio: imageRatio,
+                },
+              )}
+            </p>
+          )}
           <p></p>
           <p>
-            {cacheTokens > 0
+            {cacheTokens > 0 && !image
               ? i18next.t(
-                  '提示 {{nonCacheInput}} tokens / 1M tokens * ${{price}} + 缓存 {{cacheInput}} tokens / 1M tokens * ${{cachePrice}} + 补全 {{completion}} tokens / 1M tokens * ${{compPrice}} * 分组 {{ratio}} = ${{total}}',
+                  '输入 {{nonCacheInput}} tokens / 1M tokens * ${{price}} + 缓存 {{cacheInput}} tokens / 1M tokens * ${{cachePrice}} + 输出 {{completion}} tokens / 1M tokens * ${{compPrice}} * 分组 {{ratio}} = ${{total}}',
                   {
                     nonCacheInput: inputTokens - cacheTokens,
                     cacheInput: cacheTokens,
@@ -386,8 +407,22 @@ export function renderModelPrice(
                     total: price.toFixed(6),
                   },
                 )
+              : image && imageOutputTokens > 0
+              ? i18next.t(
+                  '输入 {{nonImageInput}} tokens + 图片输入 {{imageInput}} tokens * {{imageRatio}} / 1M tokens * ${{price}} + 输出 {{completion}} tokens / 1M tokens * ${{compPrice}} * 分组 {{ratio}} = ${{total}}',
+                  {
+                    nonImageInput: inputTokens - imageOutputTokens,
+                    imageInput: imageOutputTokens,
+                    imageRatio: imageRatio,
+                    price: inputRatioPrice,
+                    completion: completionTokens,
+                    compPrice: completionRatioPrice,
+                    ratio: groupRatio,
+                    total: price.toFixed(6),
+                  },
+                )
               : i18next.t(
-                  '提示 {{input}} tokens / 1M tokens * ${{price}} + 补全 {{completion}} tokens / 1M tokens * ${{compPrice}} * 分组 {{ratio}} = ${{total}}',
+                  '输入 {{input}} tokens / 1M tokens * ${{price}} + 输出 {{completion}} tokens / 1M tokens * ${{compPrice}} * 分组 {{ratio}} = ${{total}}',
                   {
                     input: inputTokens,
                     price: inputRatioPrice,
@@ -405,12 +440,53 @@ export function renderModelPrice(
   }
 }
 
+export function renderLogContent(
+  modelRatio,
+  completionRatio,
+  modelPrice = -1,
+  groupRatio,
+  user_group_ratio,
+  image = false,
+  imageRatio = 1.0,
+) {
+  const useUserGroupRatio = isValidGroupRatio(user_group_ratio);
+  const ratioLabel = useUserGroupRatio ? i18next.t('专属倍率') : i18next.t('分组倍率');
+  const ratio = useUserGroupRatio ? user_group_ratio : groupRatio;
+
+  if (modelPrice !== -1) {
+    return i18next.t('模型价格 ${{price}}，{{ratioType}} {{ratio}}', {
+      price: modelPrice,
+      ratioType: ratioLabel,
+      ratio
+    });
+  } else {
+    if (image) {
+      return i18next.t('模型倍率 {{modelRatio}}，输出倍率 {{completionRatio}}，图片输入倍率 {{imageRatio}}，{{ratioType}} {{ratio}}', {
+        modelRatio: modelRatio,
+        completionRatio: completionRatio,
+        imageRatio: imageRatio,
+        ratioType: ratioLabel,
+        ratio
+      });
+    } else {
+      return i18next.t('模型倍率 {{modelRatio}}，输出倍率 {{completionRatio}}，{{ratioType}} {{ratio}}', {
+        modelRatio: modelRatio,
+        completionRatio: completionRatio,
+        ratioType: ratioLabel,
+        ratio
+      });
+    }
+  }
+}
+
 export function renderModelPriceSimple(
   modelRatio,
   modelPrice = -1,
   groupRatio,
   cacheTokens = 0,
   cacheRatio = 1.0,
+  image = false,
+  imageRatio = 1.0,
 ) {
   if (modelPrice !== -1) {
     return i18next.t('价格：${{price}} * 分组：{{ratio}}', {
@@ -418,7 +494,28 @@ export function renderModelPriceSimple(
       ratio: groupRatio,
     });
   } else {
-    if (cacheTokens !== 0) {
+    if (image && cacheTokens !== 0) {
+      return i18next.t(
+        '模型: {{ratio}} * {{ratioType}}: {{groupRatio}} * 缓存倍率: {{cacheRatio}} * 图片输入倍率: {{imageRatio}}',
+        {
+          ratio: modelRatio,
+          ratioType: ratioLabel,
+          groupRatio: groupRatio,
+          cacheRatio: cacheRatio,
+          imageRatio: imageRatio,
+        },
+      );
+    } else if (image) {
+      return i18next.t(
+        '模型: {{ratio}} * {{ratioType}}: {{groupRatio}} * 图片输入倍率: {{imageRatio}}',
+        {
+          ratio: modelRatio,
+          ratioType: ratioLabel,
+          groupRatio: groupRatio,
+          imageRatio: imageRatio,
+        },
+      );
+    } else if (cacheTokens !== 0) {
       return i18next.t(
         '模型: {{ratio}} * 分组: {{groupRatio}} * 缓存: {{cacheRatio}}',
         {
@@ -882,7 +979,7 @@ export function renderClaudeLogContent(
     });
   } else {
     return i18next.t(
-      '模型倍率 {{modelRatio}}，补全倍率 {{completionRatio}}，缓存倍率 {{cacheRatio}}，缓存创建倍率 {{cacheCreationRatio}}，{{ratioType}} {{ratio}}',
+      '模型倍率 {{modelRatio}}，输出倍率 {{completionRatio}}，缓存倍率 {{cacheRatio}}，缓存创建倍率 {{cacheCreationRatio}}，{{ratioType}} {{ratio}}',
       {
         modelRatio: modelRatio,
         completionRatio: completionRatio,
@@ -931,32 +1028,5 @@ export function renderClaudeModelPriceSimple(
         groupRatio: groupRatio,
       });
     }
-  }
-}
-
-export function renderLogContent(
-  modelRatio,
-  completionRatio,
-  modelPrice = -1,
-  groupRatio,
-) {
-  const ratioLabel = false ? i18next.t('专属倍率') : i18next.t('分组倍率');
-
-  if (modelPrice !== -1) {
-    return i18next.t('模型价格 ${{price}}，{{ratioType}} {{ratio}}', {
-      price: modelPrice,
-      ratioType: ratioLabel,
-      ratio: groupRatio,
-    });
-  } else {
-    return i18next.t(
-      '模型倍率 {{modelRatio}}，补全倍率 {{completionRatio}}，{{ratioType}} {{ratio}}',
-      {
-        modelRatio: modelRatio,
-        completionRatio: completionRatio,
-        ratioType: ratioLabel,
-        ratio: groupRatio,
-      },
-    );
   }
 }
