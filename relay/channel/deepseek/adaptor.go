@@ -11,6 +11,7 @@ import (
 	"one-api/relay/channel/openai"
 	relaycommon "one-api/relay/common"
 	"one-api/relay/constant"
+	"strings"
 )
 
 type Adaptor struct {
@@ -36,9 +37,13 @@ func (a *Adaptor) Init(info *relaycommon.RelayInfo) {
 }
 
 func (a *Adaptor) GetRequestURL(info *relaycommon.RelayInfo) (string, error) {
+	fimBaseUrl := info.BaseUrl
+	if !strings.HasSuffix(info.BaseUrl, "/beta") {
+		fimBaseUrl += "/beta"
+	}
 	switch info.RelayMode {
 	case constant.RelayModeCompletions:
-		return fmt.Sprintf("%s/beta/completions", info.BaseUrl), nil
+		return fmt.Sprintf("%s/completions", fimBaseUrl), nil
 	default:
 		return fmt.Sprintf("%s/v1/chat/completions", info.BaseUrl), nil
 	}
