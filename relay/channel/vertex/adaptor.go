@@ -38,6 +38,16 @@ type Adaptor struct {
 	AccountCredentials Credentials
 }
 
+func (a *Adaptor) ConvertClaudeRequest(c *gin.Context, info *relaycommon.RelayInfo, request *dto.ClaudeRequest) (any, error) {
+	if v, ok := claudeModelMap[info.UpstreamModelName]; ok {
+		c.Set("request_model", v)
+	} else {
+		c.Set("request_model", request.Model)
+	}
+	vertexClaudeReq := copyRequest(request, anthropicVersion)
+	return vertexClaudeReq, nil
+}
+
 func (a *Adaptor) ConvertAudioRequest(c *gin.Context, info *relaycommon.RelayInfo, request dto.AudioRequest) (io.Reader, error) {
 	//TODO implement me
 	return nil, errors.New("not implemented")
@@ -119,7 +129,7 @@ func (a *Adaptor) SetupRequestHeader(c *gin.Context, req *http.Header, info *rel
 	return nil
 }
 
-func (a *Adaptor) ConvertRequest(c *gin.Context, info *relaycommon.RelayInfo, request *dto.GeneralOpenAIRequest) (any, error) {
+func (a *Adaptor) ConvertOpenAIRequest(c *gin.Context, info *relaycommon.RelayInfo, request *dto.GeneralOpenAIRequest) (any, error) {
 	if request == nil {
 		return nil, errors.New("request is nil")
 	}
@@ -133,7 +143,7 @@ func (a *Adaptor) ConvertRequest(c *gin.Context, info *relaycommon.RelayInfo, re
 		info.UpstreamModelName = claudeReq.Model
 		return vertexClaudeReq, nil
 	} else if a.RequestMode == RequestModeGemini {
-		geminiRequest, err := gemini.CovertGemini2OpenAI(*request)
+		geminiRequest, err := gemini.CovertGemini2OpenAI(*request, info)
 		if err != nil {
 			return nil, err
 		}
@@ -175,7 +185,7 @@ func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, info *relaycom
 		case RequestModeGemini:
 			err, usage = gemini.GeminiChatHandler(c, resp, info)
 		case RequestModeLlama:
-			err, usage = openai.OpenaiHandler(c, resp, info.PromptTokens, info.OriginModelName)
+			err, usage = openai.OpenaiHandler(c, resp, info)
 		}
 	}
 	return

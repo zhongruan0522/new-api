@@ -18,39 +18,40 @@ type FormatJsonSchema struct {
 }
 
 type GeneralOpenAIRequest struct {
-	Model               string            `json:"model,omitempty"`
-	Messages            []Message         `json:"messages,omitempty"`
-	Prompt              any               `json:"prompt,omitempty"`
-	Prefix              any               `json:"prefix,omitempty"`
-	Suffix              any               `json:"suffix,omitempty"`
-	Stream              bool              `json:"stream,omitempty"`
-	StreamOptions       *StreamOptions    `json:"stream_options,omitempty"`
-	MaxTokens           uint              `json:"max_tokens,omitempty"`
-	MaxCompletionTokens uint              `json:"max_completion_tokens,omitempty"`
-	ReasoningEffort     string            `json:"reasoning_effort,omitempty"`
-	Temperature         *float64          `json:"temperature,omitempty"`
-	TopP                float64           `json:"top_p,omitempty"`
-	TopK                int               `json:"top_k,omitempty"`
-	Stop                any               `json:"stop,omitempty"`
-	N                   int               `json:"n,omitempty"`
-	Input               any               `json:"input,omitempty"`
-	Instruction         string            `json:"instruction,omitempty"`
-	Size                string            `json:"size,omitempty"`
-	Functions           any               `json:"functions,omitempty"`
-	FrequencyPenalty    float64           `json:"frequency_penalty,omitempty"`
-	PresencePenalty     float64           `json:"presence_penalty,omitempty"`
-	ResponseFormat      *ResponseFormat   `json:"response_format,omitempty"`
-	EncodingFormat      any               `json:"encoding_format,omitempty"`
-	Seed                float64           `json:"seed,omitempty"`
-	Tools               []ToolCallRequest `json:"tools,omitempty"`
-	ToolChoice          any               `json:"tool_choice,omitempty"`
-	User                string            `json:"user,omitempty"`
-	LogProbs            bool              `json:"logprobs,omitempty"`
-	TopLogProbs         int               `json:"top_logprobs,omitempty"`
-	Dimensions          int               `json:"dimensions,omitempty"`
-	Modalities          any               `json:"modalities,omitempty"`
-	Audio               any               `json:"audio,omitempty"`
-	ExtraBody           any               `json:"extra_body,omitempty"`
+	Model               string         `json:"model,omitempty"`
+	Messages            []Message      `json:"messages,omitempty"`
+	Prompt              any            `json:"prompt,omitempty"`
+	Prefix              any            `json:"prefix,omitempty"`
+	Suffix              any            `json:"suffix,omitempty"`
+	Stream              bool           `json:"stream,omitempty"`
+	StreamOptions       *StreamOptions `json:"stream_options,omitempty"`
+	MaxTokens           uint           `json:"max_tokens,omitempty"`
+	MaxCompletionTokens uint           `json:"max_completion_tokens,omitempty"`
+	ReasoningEffort     string         `json:"reasoning_effort,omitempty"`
+	//Reasoning           json.RawMessage   `json:"reasoning,omitempty"`
+	Temperature      *float64          `json:"temperature,omitempty"`
+	TopP             float64           `json:"top_p,omitempty"`
+	TopK             int               `json:"top_k,omitempty"`
+	Stop             any               `json:"stop,omitempty"`
+	N                int               `json:"n,omitempty"`
+	Input            any               `json:"input,omitempty"`
+	Instruction      string            `json:"instruction,omitempty"`
+	Size             string            `json:"size,omitempty"`
+	Functions        any               `json:"functions,omitempty"`
+	FrequencyPenalty float64           `json:"frequency_penalty,omitempty"`
+	PresencePenalty  float64           `json:"presence_penalty,omitempty"`
+	ResponseFormat   *ResponseFormat   `json:"response_format,omitempty"`
+	EncodingFormat   any               `json:"encoding_format,omitempty"`
+	Seed             float64           `json:"seed,omitempty"`
+	Tools            []ToolCallRequest `json:"tools,omitempty"`
+	ToolChoice       any               `json:"tool_choice,omitempty"`
+	User             string            `json:"user,omitempty"`
+	LogProbs         bool              `json:"logprobs,omitempty"`
+	TopLogProbs      int               `json:"top_logprobs,omitempty"`
+	Dimensions       int               `json:"dimensions,omitempty"`
+	Modalities       any               `json:"modalities,omitempty"`
+	Audio            any               `json:"audio,omitempty"`
+	ExtraBody        any               `json:"extra_body,omitempty"`
 }
 
 type ToolCallRequest struct {
@@ -111,11 +112,38 @@ type MediaContent struct {
 	Text       string `json:"text,omitempty"`
 	ImageUrl   any    `json:"image_url,omitempty"`
 	InputAudio any    `json:"input_audio,omitempty"`
+	File       any    `json:"file,omitempty"`
+}
+
+func (m *MediaContent) GetImageMedia() *MessageImageUrl {
+	if m.ImageUrl != nil {
+		return m.ImageUrl.(*MessageImageUrl)
+	}
+	return nil
+}
+
+func (m *MediaContent) GetInputAudio() *MessageInputAudio {
+	if m.InputAudio != nil {
+		return m.InputAudio.(*MessageInputAudio)
+	}
+	return nil
+}
+
+func (m *MediaContent) GetFile() *MessageFile {
+	if m.File != nil {
+		return m.File.(*MessageFile)
+	}
+	return nil
 }
 
 type MessageImageUrl struct {
-	Url    string `json:"url"`
-	Detail string `json:"detail"`
+	Url      string `json:"url"`
+	Detail   string `json:"detail"`
+	MimeType string
+}
+
+func (m *MessageImageUrl) IsRemoteImage() bool {
+	return strings.HasPrefix(m.Url, "http")
 }
 
 type MessageInputAudio struct {
@@ -123,10 +151,17 @@ type MessageInputAudio struct {
 	Format string `json:"format"`
 }
 
+type MessageFile struct {
+	FileName string `json:"filename,omitempty"`
+	FileData string `json:"file_data,omitempty"`
+	FileId   string `json:"file_id,omitempty"`
+}
+
 const (
 	ContentTypeText       = "text"
 	ContentTypeImageURL   = "image_url"
 	ContentTypeInputAudio = "input_audio"
+	ContentTypeFile       = "file"
 )
 
 func (m *Message) GetPrefix() bool {
@@ -178,6 +213,12 @@ func (m *Message) StringContent() string {
 	m.parsedStringContent = &stringContent
 
 	return stringContent
+}
+
+func (m *Message) SetNullContent() {
+	m.Content = nil
+	m.parsedStringContent = nil
+	m.parsedContent = nil
 }
 
 func (m *Message) SetStringContent(content string) {
@@ -244,44 +285,64 @@ func (m *Message) ParseContent() []MediaContent {
 
 			case ContentTypeImageURL:
 				imageUrl := contentItem["image_url"]
+				temp := &MessageImageUrl{
+					Detail: "high",
+				}
 				switch v := imageUrl.(type) {
 				case string:
-					contentList = append(contentList, MediaContent{
-						Type: ContentTypeImageURL,
-						ImageUrl: MessageImageUrl{
-							Url:    v,
-							Detail: "high",
-						},
-					})
+					temp.Url = v
 				case map[string]interface{}:
 					url, ok1 := v["url"].(string)
 					detail, ok2 := v["detail"].(string)
-					if !ok2 {
-						detail = "high"
+					if ok2 {
+						temp.Detail = detail
 					}
 					if ok1 {
-						contentList = append(contentList, MediaContent{
-							Type: ContentTypeImageURL,
-							ImageUrl: MessageImageUrl{
-								Url:    url,
-								Detail: detail,
-							},
-						})
+						temp.Url = url
 					}
 				}
+				contentList = append(contentList, MediaContent{
+					Type:     ContentTypeImageURL,
+					ImageUrl: temp,
+				})
 
 			case ContentTypeInputAudio:
 				if audioData, ok := contentItem["input_audio"].(map[string]interface{}); ok {
 					data, ok1 := audioData["data"].(string)
 					format, ok2 := audioData["format"].(string)
 					if ok1 && ok2 {
+						temp := &MessageInputAudio{
+							Data:   data,
+							Format: format,
+						}
 						contentList = append(contentList, MediaContent{
-							Type: ContentTypeInputAudio,
-							InputAudio: MessageInputAudio{
-								Data:   data,
-								Format: format,
+							Type:       ContentTypeInputAudio,
+							InputAudio: temp,
+						})
+					}
+				}
+			case ContentTypeFile:
+				if fileData, ok := contentItem["file"].(map[string]interface{}); ok {
+					fileId, ok3 := fileData["file_id"].(string)
+					if ok3 {
+						contentList = append(contentList, MediaContent{
+							Type: ContentTypeFile,
+							File: &MessageFile{
+								FileId: fileId,
 							},
 						})
+					} else {
+						fileName, ok1 := fileData["filename"].(string)
+						fileDataStr, ok2 := fileData["file_data"].(string)
+						if ok1 && ok2 {
+							contentList = append(contentList, MediaContent{
+								Type: ContentTypeFile,
+								File: &MessageFile{
+									FileName: fileName,
+									FileData: fileDataStr,
+								},
+							})
+						}
 					}
 				}
 			}

@@ -46,12 +46,17 @@ export default defineConfig({
             'react-toastify',
             'react-turnstile',
           ],
-          'i18n': ['i18next', 'react-i18next', 'i18next-browser-languagedetector'],
+          i18n: [
+            'i18next',
+            'react-i18next',
+            'i18next-browser-languagedetector',
+          ],
         },
       },
     },
   },
   server: {
+    host: '0.0.0.0',
     proxy: {
       '/api': {
         target: 'http://localhost:3000',

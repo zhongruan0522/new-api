@@ -44,7 +44,8 @@ export default function SettingsDrawing(props) {
         if (requestQueue.length === 1) {
           if (res.includes(undefined)) return;
         } else if (requestQueue.length > 1) {
-          if (res.includes(undefined)) return showError(t('部分保存失败，请重试'));
+          if (res.includes(undefined))
+            return showError(t('部分保存失败，请重试'));
         }
         showSuccess(t('保存成功'));
         props.refresh();
@@ -80,7 +81,7 @@ export default function SettingsDrawing(props) {
         >
           <Form.Section text={t('绘图设置')}>
             <Row gutter={16}>
-              <Col span={8}>
+              <Col xs={24} sm={12} md={8} lg={8} xl={8}>
                 <Form.Switch
                   field={'DrawingEnabled'}
                   label={t('启用绘图功能')}
@@ -95,7 +96,7 @@ export default function SettingsDrawing(props) {
                   }}
                 />
               </Col>
-              <Col span={8}>
+              <Col xs={24} sm={12} md={8} lg={8} xl={8}>
                 <Form.Switch
                   field={'MjNotifyEnabled'}
                   label={t('允许回调（会泄露服务器 IP 地址）')}
@@ -110,7 +111,7 @@ export default function SettingsDrawing(props) {
                   }
                 />
               </Col>
-              <Col span={8}>
+              <Col xs={24} sm={12} md={8} lg={8} xl={8}>
                 <Form.Switch
                   field={'MjAccountFilterEnabled'}
                   label={t('允许 AccountFilter 参数')}
@@ -125,7 +126,7 @@ export default function SettingsDrawing(props) {
                   }
                 />
               </Col>
-              <Col span={8}>
+              <Col xs={24} sm={12} md={8} lg={8} xl={8}>
                 <Form.Switch
                   field={'MjForwardUrlEnabled'}
                   label={t('开启之后将上游地址替换为服务器地址')}
@@ -140,13 +141,14 @@ export default function SettingsDrawing(props) {
                   }
                 />
               </Col>
-              <Col span={8}>
+              <Col xs={24} sm={12} md={8} lg={8} xl={8}>
                 <Form.Switch
                   field={'MjModeClearEnabled'}
                   label={
                     <>
                       {t('开启之后会清除用户提示词中的')} <Tag>--fast</Tag> 、
-                      <Tag>--relax</Tag> {t('以及')} <Tag>--turbo</Tag> {t('参数')}
+                      <Tag>--relax</Tag> {t('以及')} <Tag>--turbo</Tag>{' '}
+                      {t('参数')}
                     </>
                   }
                   size='default'
@@ -160,7 +162,7 @@ export default function SettingsDrawing(props) {
                   }
                 />
               </Col>
-              <Col span={8}>
+              <Col xs={24} sm={12} md={8} lg={8} xl={8}>
                 <Form.Switch
                   field={'MjActionCheckSuccessEnabled'}
                   label={t('检测必须等待绘图成功才能进行放大等操作')}

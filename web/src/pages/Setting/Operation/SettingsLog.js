@@ -45,7 +45,8 @@ export default function SettingsLog(props) {
         if (requestQueue.length === 1) {
           if (res.includes(undefined)) return;
         } else if (requestQueue.length > 1) {
-          if (res.includes(undefined)) return showError(t('部分保存失败，请重试'));
+          if (res.includes(undefined))
+            return showError(t('部分保存失败，请重试'));
         }
         showSuccess(t('保存成功'));
         props.refresh();
@@ -100,7 +101,7 @@ export default function SettingsLog(props) {
         >
           <Form.Section text={t('日志设置')}>
             <Row gutter={16}>
-              <Col span={8}>
+              <Col xs={24} sm={12} md={8} lg={8} xl={8}>
                 <Form.Switch
                   field={'LogConsumeEnabled'}
                   label={t('启用额度消费日志记录')}
@@ -115,7 +116,7 @@ export default function SettingsLog(props) {
                   }}
                 />
               </Col>
-              <Col span={8}>
+              <Col xs={24} sm={12} md={8} lg={8} xl={8}>
                 <Spin spinning={loadingCleanHistoryLog}>
                   <Form.DatePicker
                     label={t('日志记录时间')}

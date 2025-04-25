@@ -1,5 +1,14 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Banner, Button, Col, Form, Row, Spin, Collapse, Modal } from '@douyinfe/semi-ui';
+import {
+  Banner,
+  Button,
+  Col,
+  Form,
+  Row,
+  Spin,
+  Collapse,
+  Modal,
+} from '@douyinfe/semi-ui';
 import {
   compareObjects,
   API,
@@ -27,9 +36,10 @@ export default function GeneralSettings(props) {
   const refForm = useRef();
   const [inputsRow, setInputsRow] = useState(inputs);
 
-  function onChange(value, e) {
-    const name = e.target.id;
-    setInputs((inputs) => ({ ...inputs, [name]: value }));
+  function handleFieldChange(fieldName) {
+    return (value) => {
+      setInputs((inputs) => ({ ...inputs, [fieldName]: value }));
+    };
   }
 
   function onSubmit() {
@@ -53,7 +63,8 @@ export default function GeneralSettings(props) {
         if (requestQueue.length === 1) {
           if (res.includes(undefined)) return;
         } else if (requestQueue.length > 1) {
-          if (res.includes(undefined)) return showError(t('部分保存失败，请重试'));
+          if (res.includes(undefined))
+            return showError(t('部分保存失败，请重试'));
         }
         showSuccess(t('保存成功'));
         props.refresh();
@@ -92,112 +103,92 @@ export default function GeneralSettings(props) {
         >
           <Form.Section text={t('通用设置')}>
             <Row gutter={16}>
-              <Col span={8}>
+              <Col xs={24} sm={12} md={8} lg={8} xl={8}>
                 <Form.Input
                   field={'TopUpLink'}
                   label={t('充值链接')}
                   initValue={''}
                   placeholder={t('例如发卡网站的购买链接')}
-                  onChange={onChange}
+                  onChange={handleFieldChange('TopUpLink')}
                   showClear
                 />
               </Col>
-              <Col span={8}>
+              <Col xs={24} sm={12} md={8} lg={8} xl={8}>
                 <Form.Input
                   field={'general_setting.docs_link'}
                   label={t('文档地址')}
                   initValue={''}
                   placeholder={t('例如 https://docs.newapi.pro')}
-                  onChange={onChange}
+                  onChange={handleFieldChange('general_setting.docs_link')}
                   showClear
                 />
               </Col>
-              <Col span={8}>
+              <Col xs={24} sm={12} md={8} lg={8} xl={8}>
                 <Form.Input
                   field={'QuotaPerUnit'}
                   label={t('单位美元额度')}
                   initValue={''}
                   placeholder={t('一单位货币能兑换的额度')}
-                  onChange={onChange}
+                  onChange={handleFieldChange('QuotaPerUnit')}
                   showClear
                   onClick={() => setShowQuotaWarning(true)}
                 />
               </Col>
-              <Col span={8}>
+              <Col xs={24} sm={12} md={8} lg={8} xl={8}>
                 <Form.Input
                   field={'RetryTimes'}
                   label={t('失败重试次数')}
                   initValue={''}
                   placeholder={t('失败重试次数')}
-                  onChange={onChange}
+                  onChange={handleFieldChange('RetryTimes')}
                   showClear
                 />
               </Col>
             </Row>
             <Row gutter={16}>
-              <Col span={8}>
+              <Col xs={24} sm={12} md={8} lg={8} xl={8}>
                 <Form.Switch
                   field={'DisplayInCurrencyEnabled'}
                   label={t('以货币形式显示额度')}
                   size='default'
                   checkedText='｜'
                   uncheckedText='〇'
-                  onChange={(value) => {
-                    setInputs({
-                      ...inputs,
-                      DisplayInCurrencyEnabled: value,
-                    });
-                  }}
+                  onChange={handleFieldChange('DisplayInCurrencyEnabled')}
                 />
               </Col>
-              <Col span={8}>
+              <Col xs={24} sm={12} md={8} lg={8} xl={8}>
                 <Form.Switch
                   field={'DisplayTokenStatEnabled'}
                   label={t('额度查询接口返回令牌额度而非用户额度')}
                   size='default'
                   checkedText='｜'
                   uncheckedText='〇'
-                  onChange={(value) =>
-                    setInputs({
-                      ...inputs,
-                      DisplayTokenStatEnabled: value,
-                    })
-                  }
+                  onChange={handleFieldChange('DisplayTokenStatEnabled')}
                 />
               </Col>
-              <Col span={8}>
+              <Col xs={24} sm={12} md={8} lg={8} xl={8}>
                 <Form.Switch
                   field={'DefaultCollapseSidebar'}
                   label={t('默认折叠侧边栏')}
                   size='default'
                   checkedText='｜'
                   uncheckedText='〇'
-                  onChange={(value) =>
-                    setInputs({
-                      ...inputs,
-                      DefaultCollapseSidebar: value,
-                    })
-                  }
+                  onChange={handleFieldChange('DefaultCollapseSidebar')}
                 />
               </Col>
             </Row>
             <Row>
-              <Col span={8}>
+              <Col xs={24} sm={12} md={8} lg={8} xl={8}>
                 <Form.Switch
                   field={'DemoSiteEnabled'}
                   label={t('演示站点模式')}
                   size='default'
                   checkedText='｜'
                   uncheckedText='〇'
-                  onChange={(value) =>
-                    setInputs({
-                      ...inputs,
-                      DemoSiteEnabled: value
-                    })
-                  }
+                  onChange={handleFieldChange('DemoSiteEnabled')}
                 />
               </Col>
-              <Col span={8}>
+              <Col xs={24} sm={12} md={8} lg={8} xl={8}>
                 <Form.Switch
                   field={'SelfUseModeEnabled'}
                   label={t('自用模式')}
@@ -205,12 +196,7 @@ export default function GeneralSettings(props) {
                   size='default'
                   checkedText='｜'
                   uncheckedText='〇'
-                  onChange={(value) =>
-                    setInputs({
-                      ...inputs,
-                      SelfUseModeEnabled: value
-                    })
-                  }
+                  onChange={handleFieldChange('SelfUseModeEnabled')}
                 />
               </Col>
             </Row>
@@ -222,7 +208,7 @@ export default function GeneralSettings(props) {
           </Form.Section>
         </Form>
       </Spin>
-      
+
       <Modal
         title={t('警告')}
         visible={showQuotaWarning}
@@ -233,7 +219,9 @@ export default function GeneralSettings(props) {
       >
         <Banner
           type='warning'
-          description={t('此设置用于系统内部计算，默认值500000是为了精确到6位小数点设计，不推荐修改。')}
+          description={t(
+            '此设置用于系统内部计算，默认值500000是为了精确到6位小数点设计，不推荐修改。',
+          )}
           bordered
           fullMode={false}
           closeIcon={null}

@@ -103,11 +103,19 @@ func testChannel(channel *model.Channel, testModel string) (err error, openAIErr
 	}
 
 	request := buildTestRequest(testModel)
-	common.SysLog(fmt.Sprintf("testing channel %d with model %s , info %v ", channel.Id, testModel, info))
+	// 创建一个用于日志的 info 副本，移除 ApiKey
+	logInfo := *info
+	logInfo.ApiKey = ""
+	common.SysLog(fmt.Sprintf("testing channel %d with model %s , info %+v ", channel.Id, testModel, logInfo))
+
+	priceData, err := helper.ModelPriceHelper(c, info, 0, int(request.MaxTokens))
+	if err != nil {
+		return err, nil
+	}
 
 	adaptor.Init(info)
 
-	convertedRequest, err := adaptor.ConvertRequest(c, info, request)
+	convertedRequest, err := adaptor.ConvertOpenAIRequest(c, info, request)
 	if err != nil {
 		return err, nil
 	}
@@ -125,7 +133,7 @@ func testChannel(channel *model.Channel, testModel string) (err error, openAIErr
 	if resp != nil {
 		httpResp = resp.(*http.Response)
 		if httpResp.StatusCode != http.StatusOK {
-			err := service.RelayErrorHandler(httpResp)
+			err := service.RelayErrorHandler(httpResp, true)
 			return fmt.Errorf("status code %d: %s", httpResp.StatusCode, err.Error.Message), err
 		}
 	}
@@ -143,10 +151,7 @@ func testChannel(channel *model.Channel, testModel string) (err error, openAIErr
 		return err, nil
 	}
 	info.PromptTokens = usage.PromptTokens
-	priceData, err := helper.ModelPriceHelper(c, info, usage.PromptTokens, int(request.MaxTokens))
-	if err != nil {
-		return err, nil
-	}
+
 	quota := 0
 	if !priceData.UsePrice {
 		quota = usage.PromptTokens + int(math.Round(float64(usage.CompletionTokens)*priceData.CompletionRatio))
@@ -184,10 +189,14 @@ func buildTestRequest(model string) *dto.GeneralOpenAIRequest {
 		return testRequest
 	}
 	// 并非Embedding 模型
-	if strings.HasPrefix(model, "o1") || strings.HasPrefix(model, "o3") {
+	if strings.HasPrefix(model, "o") {
 		testRequest.MaxCompletionTokens = 10
 	} else if strings.Contains(model, "thinking") {
-		testRequest.MaxTokens = 50
+		if !strings.Contains(model, "claude") {
+			testRequest.MaxTokens = 50
+		}
+	} else if strings.Contains(model, "gemini") {
+		testRequest.MaxTokens = 300
 	} else {
 		testRequest.MaxTokens = 10
 	}

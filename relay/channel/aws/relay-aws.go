@@ -1,21 +1,16 @@
 package aws
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/pkg/errors"
-	"io"
 	"net/http"
 	"one-api/common"
-	relaymodel "one-api/dto"
+	"one-api/dto"
 	"one-api/relay/channel/claude"
 	relaycommon "one-api/relay/common"
-	"one-api/relay/helper"
-	"one-api/service"
 	"strings"
-	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/credentials"
@@ -39,13 +34,35 @@ func newAwsClient(c *gin.Context, info *relaycommon.RelayInfo) (*bedrockruntime.
 	return client, nil
 }
 
-func wrapErr(err error) *relaymodel.OpenAIErrorWithStatusCode {
-	return &relaymodel.OpenAIErrorWithStatusCode{
+func wrapErr(err error) *dto.OpenAIErrorWithStatusCode {
+	return &dto.OpenAIErrorWithStatusCode{
 		StatusCode: http.StatusInternalServerError,
-		Error: relaymodel.OpenAIError{
+		Error: dto.OpenAIError{
 			Message: fmt.Sprintf("%s", err.Error()),
 		},
 	}
+}
+
+func awsRegionPrefix(awsRegionId string) string {
+	parts := strings.Split(awsRegionId, "-")
+	regionPrefix := ""
+	if len(parts) > 0 {
+		regionPrefix = parts[0]
+	}
+	return regionPrefix
+}
+
+func awsModelCanCrossRegion(awsModelId, awsRegionPrefix string) bool {
+	regionSet, exists := awsModelCanCrossRegionMap[awsModelId]
+	return exists && regionSet[awsRegionPrefix]
+}
+
+func awsModelCrossRegion(awsModelId, awsRegionPrefix string) string {
+	modelPrefix, find := awsRegionCrossModelPrefixMap[awsRegionPrefix]
+	if !find {
+		return awsModelId
+	}
+	return modelPrefix + "." + awsModelId
 }
 
 func awsModelID(requestModel string) (string, error) {
@@ -56,7 +73,7 @@ func awsModelID(requestModel string) (string, error) {
 	return requestModel, nil
 }
 
-func awsHandler(c *gin.Context, info *relaycommon.RelayInfo, requestMode int) (*relaymodel.OpenAIErrorWithStatusCode, *relaymodel.Usage) {
+func awsHandler(c *gin.Context, info *relaycommon.RelayInfo, requestMode int) (*dto.OpenAIErrorWithStatusCode, *dto.Usage) {
 	awsCli, err := newAwsClient(c, info)
 	if err != nil {
 		return wrapErr(errors.Wrap(err, "newAwsClient")), nil
@@ -65,6 +82,12 @@ func awsHandler(c *gin.Context, info *relaycommon.RelayInfo, requestMode int) (*
 	awsModelId, err := awsModelID(c.GetString("request_model"))
 	if err != nil {
 		return wrapErr(errors.Wrap(err, "awsModelID")), nil
+	}
+
+	awsRegionPrefix := awsRegionPrefix(awsCli.Options().Region)
+	canCrossRegion := awsModelCanCrossRegion(awsModelId, awsRegionPrefix)
+	if canCrossRegion {
+		awsModelId = awsModelCrossRegion(awsModelId, awsRegionPrefix)
 	}
 
 	awsReq := &bedrockruntime.InvokeModelInput{
@@ -77,7 +100,7 @@ func awsHandler(c *gin.Context, info *relaycommon.RelayInfo, requestMode int) (*
 	if !ok {
 		return wrapErr(errors.New("request not found")), nil
 	}
-	claudeReq := claudeReq_.(*claude.ClaudeRequest)
+	claudeReq := claudeReq_.(*dto.ClaudeRequest)
 	awsClaudeReq := copyRequest(claudeReq)
 	awsReq.Body, err = json.Marshal(awsClaudeReq)
 	if err != nil {
@@ -89,25 +112,19 @@ func awsHandler(c *gin.Context, info *relaycommon.RelayInfo, requestMode int) (*
 		return wrapErr(errors.Wrap(err, "InvokeModel")), nil
 	}
 
-	claudeResponse := new(claude.ClaudeResponse)
-	err = json.Unmarshal(awsResp.Body, claudeResponse)
-	if err != nil {
-		return wrapErr(errors.Wrap(err, "unmarshal response")), nil
+	claudeInfo := &claude.ClaudeResponseInfo{
+		ResponseId:   fmt.Sprintf("chatcmpl-%s", common.GetUUID()),
+		Created:      common.GetTimestamp(),
+		Model:        info.UpstreamModelName,
+		ResponseText: strings.Builder{},
+		Usage:        &dto.Usage{},
 	}
 
-	openaiResp := claude.ResponseClaude2OpenAI(requestMode, claudeResponse)
-	usage := relaymodel.Usage{
-		PromptTokens:     claudeResponse.Usage.InputTokens,
-		CompletionTokens: claudeResponse.Usage.OutputTokens,
-		TotalTokens:      claudeResponse.Usage.InputTokens + claudeResponse.Usage.OutputTokens,
-	}
-	openaiResp.Usage = usage
-
-	c.JSON(http.StatusOK, openaiResp)
-	return nil, &usage
+	claude.HandleClaudeResponseData(c, info, claudeInfo, awsResp.Body, RequestModeMessage)
+	return nil, claudeInfo.Usage
 }
 
-func awsStreamHandler(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo, requestMode int) (*relaymodel.OpenAIErrorWithStatusCode, *relaymodel.Usage) {
+func awsStreamHandler(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo, requestMode int) (*dto.OpenAIErrorWithStatusCode, *dto.Usage) {
 	awsCli, err := newAwsClient(c, info)
 	if err != nil {
 		return wrapErr(errors.Wrap(err, "newAwsClient")), nil
@@ -116,6 +133,12 @@ func awsStreamHandler(c *gin.Context, resp *http.Response, info *relaycommon.Rel
 	awsModelId, err := awsModelID(c.GetString("request_model"))
 	if err != nil {
 		return wrapErr(errors.Wrap(err, "awsModelID")), nil
+	}
+
+	awsRegionPrefix := awsRegionPrefix(awsCli.Options().Region)
+	canCrossRegion := awsModelCanCrossRegion(awsModelId, awsRegionPrefix)
+	if canCrossRegion {
+		awsModelId = awsModelCrossRegion(awsModelId, awsRegionPrefix)
 	}
 
 	awsReq := &bedrockruntime.InvokeModelWithResponseStreamInput{
@@ -128,7 +151,7 @@ func awsStreamHandler(c *gin.Context, resp *http.Response, info *relaycommon.Rel
 	if !ok {
 		return wrapErr(errors.New("request not found")), nil
 	}
-	claudeReq := claudeReq_.(*claude.ClaudeRequest)
+	claudeReq := claudeReq_.(*dto.ClaudeRequest)
 
 	awsClaudeReq := copyRequest(claudeReq)
 	awsReq.Body, err = json.Marshal(awsClaudeReq)
@@ -143,79 +166,31 @@ func awsStreamHandler(c *gin.Context, resp *http.Response, info *relaycommon.Rel
 	stream := awsResp.GetStream()
 	defer stream.Close()
 
-	c.Writer.Header().Set("Content-Type", "text/event-stream")
-	var usage relaymodel.Usage
-	var id string
-	var model string
-	isFirst := true
-	createdTime := common.GetTimestamp()
-	c.Stream(func(w io.Writer) bool {
-		event, ok := <-stream.Events()
-		if !ok {
-			return false
-		}
+	claudeInfo := &claude.ClaudeResponseInfo{
+		ResponseId:   fmt.Sprintf("chatcmpl-%s", common.GetUUID()),
+		Created:      common.GetTimestamp(),
+		Model:        info.UpstreamModelName,
+		ResponseText: strings.Builder{},
+		Usage:        &dto.Usage{},
+	}
 
+	for event := range stream.Events() {
 		switch v := event.(type) {
 		case *types.ResponseStreamMemberChunk:
-			if isFirst {
-				isFirst = false
-				info.FirstResponseTime = time.Now()
+			info.SetFirstResponseTime()
+			respErr := claude.HandleStreamResponseData(c, info, claudeInfo, string(v.Value.Bytes), RequestModeMessage)
+			if respErr != nil {
+				return respErr, nil
 			}
-			claudeResp := new(claude.ClaudeResponse)
-			err := json.NewDecoder(bytes.NewReader(v.Value.Bytes)).Decode(claudeResp)
-			if err != nil {
-				common.SysError("error unmarshalling stream response: " + err.Error())
-				return false
-			}
-
-			response, claudeUsage := claude.StreamResponseClaude2OpenAI(requestMode, claudeResp)
-			if claudeUsage != nil {
-				usage.PromptTokens += claudeUsage.InputTokens
-				usage.CompletionTokens += claudeUsage.OutputTokens
-			}
-
-			if response == nil {
-				return true
-			}
-
-			if response.Id != "" {
-				id = response.Id
-			}
-			if response.Model != "" {
-				model = response.Model
-			}
-			response.Created = createdTime
-			response.Id = id
-			response.Model = model
-
-			jsonStr, err := json.Marshal(response)
-			if err != nil {
-				common.SysError("error marshalling stream response: " + err.Error())
-				return true
-			}
-			c.Render(-1, common.CustomEvent{Data: "data: " + string(jsonStr)})
-			return true
 		case *types.UnknownUnionMember:
 			fmt.Println("unknown tag:", v.Tag)
-			return false
+			return wrapErr(errors.New("unknown response type")), nil
 		default:
 			fmt.Println("union is nil or unknown type")
-			return false
-		}
-	})
-	if info.ShouldIncludeUsage {
-		response := helper.GenerateFinalUsageResponse(id, createdTime, info.UpstreamModelName, usage)
-		err := helper.ObjectData(c, response)
-		if err != nil {
-			common.SysError("send final response failed: " + err.Error())
+			return wrapErr(errors.New("nil or unknown response type")), nil
 		}
 	}
-	helper.Done(c)
-	if resp != nil {
-		err = resp.Body.Close()
-		if err != nil {
-			return service.OpenAIErrorWrapperLocal(err, "close_response_body_failed", http.StatusInternalServerError), nil
-		}
-	}
-	return nil, &usage
+
+	claude.HandleStreamFinalResponse(c, info, claudeInfo, RequestModeMessage)
+	return nil, claudeInfo.Usage
 }

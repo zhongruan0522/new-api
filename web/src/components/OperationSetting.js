@@ -7,11 +7,9 @@ import SettingsLog from '../pages/Setting/Operation/SettingsLog.js';
 import SettingsDataDashboard from '../pages/Setting/Operation/SettingsDataDashboard.js';
 import SettingsMonitoring from '../pages/Setting/Operation/SettingsMonitoring.js';
 import SettingsCreditLimit from '../pages/Setting/Operation/SettingsCreditLimit.js';
-import SettingsMagnification from '../pages/Setting/Operation/SettingsMagnification.js';
 import ModelSettingsVisualEditor from '../pages/Setting/Operation/ModelSettingsVisualEditor.js';
 import GroupRatioSettings from '../pages/Setting/Operation/GroupRatioSettings.js';
 import ModelRatioSettings from '../pages/Setting/Operation/ModelRatioSettings.js';
-
 
 import { API, showError, showSuccess } from '../helpers';
 import SettingsChats from '../pages/Setting/Operation/SettingsChats.js';
@@ -59,7 +57,7 @@ const OperationSetting = () => {
     DataExportInterval: 5,
     DefaultCollapseSidebar: false, // 默认折叠侧边栏
     RetryTimes: 0,
-    Chats: "[]",
+    Chats: '[]',
     DemoSiteEnabled: false,
     SelfUseModeEnabled: false,
     AutomaticDisableKeywords: '',
@@ -155,14 +153,14 @@ const OperationSetting = () => {
         </Card>
         {/* 合并模型倍率设置和可视化倍率设置 */}
         <Card style={{ marginTop: '10px' }}>
-          <Tabs type="line">
-            <Tabs.TabPane tab={t('模型倍率设置')} itemKey="model">
+          <Tabs type='line'>
+            <Tabs.TabPane tab={t('模型倍率设置')} itemKey='model'>
               <ModelRatioSettings options={inputs} refresh={onRefresh} />
             </Tabs.TabPane>
-            <Tabs.TabPane tab={t('可视化倍率设置')} itemKey="visual">
+            <Tabs.TabPane tab={t('可视化倍率设置')} itemKey='visual'>
               <ModelSettingsVisualEditor options={inputs} refresh={onRefresh} />
             </Tabs.TabPane>
-            <Tabs.TabPane tab={t('未设置倍率模型')} itemKey="unset_models">
+            <Tabs.TabPane tab={t('未设置倍率模型')} itemKey='unset_models'>
               <ModelRatioNotSetEditor options={inputs} refresh={onRefresh} />
             </Tabs.TabPane>
           </Tabs>

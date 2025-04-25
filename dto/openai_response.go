@@ -1,20 +1,8 @@
 package dto
 
-type TextResponseWithError struct {
-	Id      string                        `json:"id"`
-	Object  string                        `json:"object"`
-	Created int64                         `json:"created"`
-	Choices []OpenAITextResponseChoice    `json:"choices"`
-	Data    []OpenAIEmbeddingResponseItem `json:"data"`
-	Model   string                        `json:"model"`
-	Usage   `json:"usage"`
-	Error   OpenAIError `json:"error"`
-}
-
 type SimpleResponse struct {
-	Usage   `json:"usage"`
-	Error   OpenAIError                `json:"error"`
-	Choices []OpenAITextResponseChoice `json:"choices"`
+	Usage `json:"usage"`
+	Error *OpenAIError `json:"error"`
 }
 
 type TextResponse struct {
@@ -38,6 +26,7 @@ type OpenAITextResponse struct {
 	Object  string                     `json:"object"`
 	Created int64                      `json:"created"`
 	Choices []OpenAITextResponseChoice `json:"choices"`
+	Error   *OpenAIError               `json:"error,omitempty"`
 	Usage   `json:"usage"`
 }
 
@@ -125,6 +114,20 @@ type ChatCompletionsStreamResponse struct {
 	Usage             *Usage                                `json:"usage"`
 }
 
+func (c *ChatCompletionsStreamResponse) IsToolCall() bool {
+	if len(c.Choices) == 0 {
+		return false
+	}
+	return len(c.Choices[0].Delta.ToolCalls) > 0
+}
+
+func (c *ChatCompletionsStreamResponse) GetFirstToolCall() *ToolCallResponse {
+	if c.IsToolCall() {
+		return &c.Choices[0].Delta.ToolCalls[0]
+	}
+	return nil
+}
+
 func (c *ChatCompletionsStreamResponse) Copy() *ChatCompletionsStreamResponse {
 	choices := make([]ChatCompletionsStreamResponseChoice, len(c.Choices))
 	copy(choices, c.Choices)
@@ -169,4 +172,18 @@ type Usage struct {
 	PromptCacheHitTokens   int                `json:"prompt_cache_hit_tokens,omitempty"`
 	PromptTokensDetails    InputTokenDetails  `json:"prompt_tokens_details"`
 	CompletionTokenDetails OutputTokenDetails `json:"completion_tokens_details"`
+}
+
+type InputTokenDetails struct {
+	CachedTokens         int `json:"cached_tokens"`
+	CachedCreationTokens int `json:"-"`
+	TextTokens           int `json:"text_tokens"`
+	AudioTokens          int `json:"audio_tokens"`
+	ImageTokens          int `json:"image_tokens"`
+}
+
+type OutputTokenDetails struct {
+	TextTokens      int `json:"text_tokens"`
+	AudioTokens     int `json:"audio_tokens"`
+	ReasoningTokens int `json:"reasoning_tokens"`
 }

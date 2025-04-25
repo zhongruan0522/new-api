@@ -17,7 +17,7 @@ export default function RequestRateLimit(props) {
     ModelRequestRateLimitEnabled: false,
     ModelRequestRateLimitCount: -1,
     ModelRequestRateLimitSuccessCount: 1000,
-    ModelRequestRateLimitDurationMinutes: 1
+    ModelRequestRateLimitDurationMinutes: 1,
   });
   const refForm = useRef();
   const [inputsRow, setInputsRow] = useState(inputs);
@@ -43,7 +43,8 @@ export default function RequestRateLimit(props) {
         if (requestQueue.length === 1) {
           if (res.includes(undefined)) return;
         } else if (requestQueue.length > 1) {
-          if (res.includes(undefined)) return showError(t('部分保存失败，请重试'));
+          if (res.includes(undefined))
+            return showError(t('部分保存失败，请重试'));
         }
         showSuccess(t('保存成功'));
         props.refresh();
@@ -78,7 +79,7 @@ export default function RequestRateLimit(props) {
         >
           <Form.Section text={t('模型请求速率限制')}>
             <Row gutter={16}>
-              <Col span={8}>
+              <Col xs={24} sm={12} md={8} lg={8} xl={8}>
                 <Form.Switch
                   field={'ModelRequestRateLimitEnabled'}
                   label={t('启用用户模型请求速率限制（可能会影响高并发性能）')}
@@ -95,7 +96,7 @@ export default function RequestRateLimit(props) {
               </Col>
             </Row>
             <Row>
-              <Col span={8}>
+              <Col xs={24} sm={12} md={8} lg={8} xl={8}>
                 <Form.InputNumber
                   label={t('限制周期')}
                   step={1}
@@ -113,7 +114,7 @@ export default function RequestRateLimit(props) {
               </Col>
             </Row>
             <Row>
-              <Col span={8}>
+              <Col xs={24} sm={12} md={8} lg={8} xl={8}>
                 <Form.InputNumber
                   label={t('用户每周期最多请求次数')}
                   step={1}
@@ -129,7 +130,7 @@ export default function RequestRateLimit(props) {
                   }
                 />
               </Col>
-              <Col span={8}>
+              <Col xs={24} sm={12} md={8} lg={8} xl={8}>
                 <Form.InputNumber
                   label={t('用户每周期最多请求完成次数')}
                   step={1}
