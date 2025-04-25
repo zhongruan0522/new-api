@@ -103,7 +103,10 @@ func testChannel(channel *model.Channel, testModel string) (err error, openAIErr
 	}
 
 	request := buildTestRequest(testModel)
-	common.SysLog(fmt.Sprintf("testing channel %d with model %s , info %v ", channel.Id, testModel, info))
+	// 创建一个用于日志的 info 副本，移除 ApiKey
+	logInfo := *info
+	logInfo.ApiKey = ""
+	common.SysLog(fmt.Sprintf("testing channel %d with model %s , info %+v ", channel.Id, testModel, logInfo))
 
 	priceData, err := helper.ModelPriceHelper(c, info, 0, int(request.MaxTokens))
 	if err != nil {
