@@ -74,7 +74,7 @@ func main() {
 	}
 
 	// Initialize model settings
-	operation_setting.InitModelSettings()
+	operation_setting.InitRatioSettings()
 	// Initialize constants
 	constant.InitEnv()
 	// Initialize options

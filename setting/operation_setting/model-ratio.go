@@ -259,8 +259,8 @@ var defaultCompletionRatio = map[string]float64{
 	"gpt-image-1":    8,
 }
 
-// InitModelSettings initializes all model related settings maps
-func InitModelSettings() {
+// InitRatioSettings initializes all model related settings maps
+func InitRatioSettings() {
 	// Initialize modelPriceMap
 	modelPriceMapMutex.Lock()
 	modelPriceMap = defaultModelPrice
