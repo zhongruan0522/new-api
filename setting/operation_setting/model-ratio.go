@@ -277,6 +277,11 @@ func InitModelSettings() {
 	CompletionRatioMutex.Unlock()
 
 	// Initialize cacheRatioMap
+	cacheRatioMapMutex.Lock()
+	cacheRatioMap = defaultCreateCacheRatio
+	cacheRatioMapMutex.Unlock()
+
+	// initialize imageRatioMap
 	imageRatioMapMutex.Lock()
 	imageRatioMap = defaultImageRatio
 	imageRatioMapMutex.Unlock()
