@@ -278,7 +278,7 @@ func InitModelSettings() {
 
 	// Initialize cacheRatioMap
 	cacheRatioMapMutex.Lock()
-	cacheRatioMap = defaultCreateCacheRatio
+	cacheRatioMap = defaultCacheRatio
 	cacheRatioMapMutex.Unlock()
 
 	// initialize imageRatioMap
