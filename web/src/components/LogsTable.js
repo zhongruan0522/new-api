@@ -920,7 +920,6 @@ const LogsTable = () => {
                 other.completion_ratio,
                 other.model_price,
                 other.group_ratio,
-                other.user_group_ratio,
                 other.cache_ratio || 1.0,
                 other.cache_creation_ratio || 1.0,
               )
@@ -929,7 +928,7 @@ const LogsTable = () => {
                 other.completion_ratio,
                 other.model_price,
                 other.group_ratio,
-                other.user_group_ratio,
+                other?.user_group_ratio,
               ),
         });
       }
