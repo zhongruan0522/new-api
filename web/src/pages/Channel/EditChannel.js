@@ -24,9 +24,10 @@ import {
   TextArea,
   Checkbox,
   Banner,
-  Modal,
+  Modal, ImagePreview
 } from '@douyinfe/semi-ui';
 import { getChannelModels, loadChannelModels } from '../../components/utils.js';
+import { IconHelpCircle } from '@douyinfe/semi-icons';
 
 const MODEL_MAPPING_EXAMPLE = {
   'gpt-3.5-turbo': 'gpt-3.5-turbo-0125',
@@ -96,6 +97,8 @@ const EditChannel = (props) => {
   const [basicModels, setBasicModels] = useState([]);
   const [fullModels, setFullModels] = useState([]);
   const [customModel, setCustomModel] = useState('');
+  const [modalImageUrl, setModalImageUrl] = useState('');
+  const [isModalOpenurl, setIsModalOpenurl] = useState(false);
   const handleInputChange = (name, value) => {
     if (name === 'base_url' && value.endsWith('/v1')) {
       Modal.confirm({
@@ -472,7 +475,28 @@ const EditChannel = (props) => {
               <div style={{ marginTop: 10 }}>
                 <Banner
                   type={'warning'}
-                  description={t('注意，系统请求的时模型名称中的点会被剔除，例如：gpt-4.5-preview会请求为gpt-45-preview，所以部署的模型名称需要去掉点')}
+                  description={
+                    <>
+                      {t('注意，系统请求的时模型名称中的点会被剔除，例如：gpt-4.1会请求为gpt-41，所以在Azure部署的时候，部署模型名称需要手动改为gpt-41')}
+                      <br />
+                      <Typography.Text
+                        style={{
+                          color: 'rgba(var(--semi-blue-5), 1)',
+                          userSelect: 'none',
+                          cursor: 'pointer',
+                        }}
+                        onClick={() => {
+                          setModalImageUrl(
+                            '/azure_model_name.png',
+                          );
+                          setIsModalOpenurl(true)
+
+                        }}
+                      >
+                        {t('查看示例')}
+                      </Typography.Text>
+                    </>
+                  }
                 ></Banner>
               </div>
               <div style={{ marginTop: 10 }}>
@@ -1109,6 +1133,11 @@ const EditChannel = (props) => {
             {t('填入模板')}
           </Typography.Text>
         </Spin>
+        <ImagePreview
+          src={modalImageUrl}
+          visible={isModalOpenurl}
+          onVisibleChange={(visible) => setIsModalOpenurl(visible)}
+        />
       </SideSheet>
     </>
   );
