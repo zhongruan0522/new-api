@@ -1276,7 +1276,7 @@ const ChannelsTable = () => {
             <Form.Input
               field='search_keyword'
               label={t('搜索渠道关键词')}
-              placeholder={t('搜索渠道的 ID，名称和密钥 ...')}
+              placeholder={t('搜索渠道的 ID，名称，密钥和API地址 ...')}
               value={searchKeyword}
               loading={searching}
               onChange={(v) => {

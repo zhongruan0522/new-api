@@ -124,7 +124,7 @@
   "已成功开始测试所有已启用通道，请刷新页面查看结果。": "Successfully started testing all enabled channels. Please refresh page to view results.",
   "通道 ${name} 余额更新成功！": "Channel ${name} quota updated successfully!",
   "已更新完毕所有已启用通道余额！": "Updated quota for all enabled channels!",
-  "搜索渠道的 ID，名称和密钥 ...": "Search channel ID, name and key...",
+  "搜索渠道的 ID，名称，密钥和API地址 ...": "Search channel ID, name, key and Base URL...",
   "名称": "Name",
   "分组": "Group",
   "类型": "Type",
