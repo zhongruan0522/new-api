@@ -517,18 +517,18 @@ func getHardcodedCompletionModelRatio(name string) (float64, bool) {
 
 func GetAudioRatio(name string) float64 {
 	if strings.Contains(name, "-realtime") {
-		if strings.HasSuffix(name, "gpt-4o-realtime-preview-2024-12-17") {
+		if strings.HasSuffix(name, "gpt-4o-realtime-preview") {
 			return 8
-		} else if strings.Contains(name, "mini") {
+		} else if strings.Contains(name, "gpt-4o-mini-realtime-preview") {
 			return 10 / 0.6
 		} else {
 			return 20
 		}
 	}
 	if strings.Contains(name, "-audio") {
-		if strings.HasSuffix(name, "gpt-4o-audio-preview-2024-12-17") {
-			return 16
-		} else if strings.Contains(name, "mini") {
+		if strings.HasPrefix(name, "gpt-4o-audio-preview") {
+			return 40 / 2.5
+		} else if strings.HasPrefix(name, "gpt-4o-mini-audio-preview") {
 			return 10 / 0.15
 		} else {
 			return 40
