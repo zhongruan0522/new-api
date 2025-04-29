@@ -670,6 +670,7 @@ func GeminiChatStreamHandler(c *gin.Context, resp *http.Response, info *relaycom
 			usage.PromptTokens = geminiResponse.UsageMetadata.PromptTokenCount
 			usage.CompletionTokens = geminiResponse.UsageMetadata.CandidatesTokenCount
 			usage.CompletionTokenDetails.ReasoningTokens = geminiResponse.UsageMetadata.ThoughtsTokenCount
+			usage.TotalTokens = geminiResponse.UsageMetadata.TotalTokenCount
 		}
 		err = helper.ObjectData(c, response)
 		if err != nil {
@@ -690,9 +691,8 @@ func GeminiChatStreamHandler(c *gin.Context, resp *http.Response, info *relaycom
 		}
 	}
 
-	usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
 	usage.PromptTokensDetails.TextTokens = usage.PromptTokens
-	//usage.CompletionTokenDetails.TextTokens = usage.CompletionTokens
+	usage.CompletionTokens = usage.TotalTokens - usage.PromptTokens
 
 	if info.ShouldIncludeUsage {
 		response = helper.GenerateFinalUsageResponse(id, createAt, info.UpstreamModelName, *usage)
@@ -740,6 +740,7 @@ func GeminiChatHandler(c *gin.Context, resp *http.Response, info *relaycommon.Re
 	}
 
 	usage.CompletionTokenDetails.ReasoningTokens = geminiResponse.UsageMetadata.ThoughtsTokenCount
+	usage.CompletionTokens = usage.TotalTokens - usage.PromptTokens
 
 	fullTextResponse.Usage = usage
 	jsonResponse, err := json.Marshal(fullTextResponse)

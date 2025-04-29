@@ -51,6 +51,7 @@ type GeneralOpenAIRequest struct {
 	Dimensions       int               `json:"dimensions,omitempty"`
 	Modalities       any               `json:"modalities,omitempty"`
 	Audio            any               `json:"audio,omitempty"`
+	EnableThinking   any               `json:"enable_thinking,omitempty"` // ali
 	ExtraBody        any               `json:"extra_body,omitempty"`
 }
 
