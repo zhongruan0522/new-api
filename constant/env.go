@@ -16,6 +16,7 @@ var GeminiVisionMaxImageNum int
 var NotifyLimitCount int
 var NotificationLimitDurationMinute int
 var GenerateDefaultToken bool
+var ErrorLogEnabled bool
 
 //var GeminiModelMap = map[string]string{
 //	"gemini-1.0-pro": "v1",
@@ -36,6 +37,8 @@ func InitEnv() {
 	NotificationLimitDurationMinute = common.GetEnvOrDefault("NOTIFICATION_LIMIT_DURATION_MINUTE", 10)
 	// GenerateDefaultToken 是否生成初始令牌，默认关闭。
 	GenerateDefaultToken = common.GetEnvOrDefaultBool("GENERATE_DEFAULT_TOKEN", false)
+	// 是否启用错误日志
+	ErrorLogEnabled = common.GetEnvOrDefaultBool("ERROR_LOG_ENABLED", false)
 
 	//modelVersionMapStr := strings.TrimSpace(os.Getenv("GEMINI_MODEL_MAP"))
 	//if modelVersionMapStr == "" {

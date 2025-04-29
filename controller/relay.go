@@ -10,6 +10,7 @@ import (
 	"log"
 	"net/http"
 	"one-api/common"
+	constant2 "one-api/constant"
 	"one-api/dto"
 	"one-api/middleware"
 	"one-api/model"
@@ -40,7 +41,7 @@ func relayHandler(c *gin.Context, relayMode int) *dto.OpenAIErrorWithStatusCode 
 		err = relay.TextHelper(c)
 	}
 
-	if err != nil {
+	if constant2.ErrorLogEnabled && err != nil {
 		// 保存错误日志到mysql中
 		userId := c.GetInt("id")
 		tokenName := c.GetString("token_name")
