@@ -644,3 +644,53 @@ func OpenaiHandlerWithUsage(c *gin.Context, resp *http.Response, info *relaycomm
 	}
 	return nil, &usageResp.Usage
 }
+
+func OpenaiResponsesHandler(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (*dto.OpenAIErrorWithStatusCode, *dto.Usage) {
+	// read response body
+	var responsesResponse dto.OpenAIResponsesResponse
+	responseBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return service.OpenAIErrorWrapper(err, "read_response_body_failed", http.StatusInternalServerError), nil
+	}
+	err = resp.Body.Close()
+	if err != nil {
+		return service.OpenAIErrorWrapper(err, "close_response_body_failed", http.StatusInternalServerError), nil
+	}
+	err = common.DecodeJson(responseBody, &responsesResponse)
+	if err != nil {
+		return service.OpenAIErrorWrapper(err, "unmarshal_response_body_failed", http.StatusInternalServerError), nil
+	}
+	if responsesResponse.Error != nil {
+		return &dto.OpenAIErrorWithStatusCode{
+			Error: dto.OpenAIError{
+				Message: responsesResponse.Error.Message,
+				Type:    "openai_error",
+				Code:    responsesResponse.Error.Code,
+			},
+			StatusCode: resp.StatusCode,
+		}, nil
+	}
+
+	// reset response body
+	resp.Body = io.NopCloser(bytes.NewBuffer(responseBody))
+	// We shouldn't set the header before we parse the response body, because the parse part may fail.
+	// And then we will have to send an error response, but in this case, the header has already been set.
+	// So the httpClient will be confused by the response.
+	// For example, Postman will report error, and we cannot check the response at all.
+	for k, v := range resp.Header {
+		c.Writer.Header().Set(k, v[0])
+	}
+	c.Writer.WriteHeader(resp.StatusCode)
+	// copy response body
+	_, err = io.Copy(c.Writer, resp.Body)
+	if err != nil {
+		common.SysError("error copying response body: " + err.Error())
+	}
+	resp.Body.Close()
+	// compute usage
+	usage := dto.Usage{}
+	usage.PromptTokens = responsesResponse.Usage.InputTokens
+	usage.CompletionTokens = responsesResponse.Usage.OutputTokens
+	usage.TotalTokens = responsesResponse.Usage.TotalTokens
+	return nil, &usage
+}

@@ -40,6 +40,8 @@ const (
 
 	RelayModeRerank
 
+	RelayModeResponses
+
 	RelayModeRealtime
 )
 
@@ -61,6 +63,8 @@ func Path2RelayMode(path string) int {
 		relayMode = RelayModeImagesEdits
 	} else if strings.HasPrefix(path, "/v1/edits") {
 		relayMode = RelayModeEdits
+	} else if strings.HasPrefix(path, "/v1/responses") {
+		relayMode = RelayModeResponses
 	} else if strings.HasPrefix(path, "/v1/audio/speech") {
 		relayMode = RelayModeAudioSpeech
 	} else if strings.HasPrefix(path, "/v1/audio/transcriptions") {
