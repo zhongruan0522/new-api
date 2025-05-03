@@ -80,6 +80,8 @@ func main() {
 	// Initialize options
 	model.InitOptionMap()
 
+	service.InitTokenEncoders()
+
 	if common.RedisEnabled {
 		// for compatibility with old versions
 		common.MemoryCacheEnabled = true
@@ -132,8 +134,6 @@ func main() {
 		go common.Monitor()
 		common.SysLog("pprof enabled")
 	}
-
-	service.InitTokenEncoders()
 
 	// Initialize HTTP server
 	server := gin.New()

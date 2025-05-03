@@ -400,6 +400,8 @@ func CountTokenMessages(info *relaycommon.RelayInfo, messages []dto.Message, mod
 					tokenNum += 100
 				} else if m.Type == dto.ContentTypeFile {
 					tokenNum += 5000
+				} else if m.Type == dto.ContentTypeVideoUrl {
+					tokenNum += 5000
 				} else {
 					tokenNum += getTokenNum(tokenEncoder, m.Text)
 				}

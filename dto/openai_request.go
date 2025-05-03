@@ -114,6 +114,7 @@ type MediaContent struct {
 	ImageUrl   any    `json:"image_url,omitempty"`
 	InputAudio any    `json:"input_audio,omitempty"`
 	File       any    `json:"file,omitempty"`
+	VideoUrl   any    `json:"video_url,omitempty"`
 }
 
 func (m *MediaContent) GetImageMedia() *MessageImageUrl {
@@ -158,11 +159,16 @@ type MessageFile struct {
 	FileId   string `json:"file_id,omitempty"`
 }
 
+type MessageVideoUrl struct {
+	Url string `json:"url"`
+}
+
 const (
 	ContentTypeText       = "text"
 	ContentTypeImageURL   = "image_url"
 	ContentTypeInputAudio = "input_audio"
 	ContentTypeFile       = "file"
+	ContentTypeVideoUrl   = "video_url" // 阿里百炼视频识别
 )
 
 func (m *Message) GetPrefix() bool {
@@ -345,6 +351,15 @@ func (m *Message) ParseContent() []MediaContent {
 							})
 						}
 					}
+				}
+			case ContentTypeVideoUrl:
+				if videoUrl, ok := contentItem["video_url"].(string); ok {
+					contentList = append(contentList, MediaContent{
+						Type: ContentTypeVideoUrl,
+						VideoUrl: &MessageVideoUrl{
+							Url: videoUrl,
+						},
+					})
 				}
 			}
 		}
