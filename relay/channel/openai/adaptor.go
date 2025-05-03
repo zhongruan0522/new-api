@@ -427,7 +427,7 @@ func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, info *relaycom
 		err, usage = common_handler.RerankHandler(c, info, resp)
 	case constant.RelayModeResponses:
 		if info.IsStream {
-			err, usage = OaiStreamHandler(c, resp, info)
+			err, usage = OaiResponsesStreamHandler(c, resp, info)
 		} else {
 			err, usage = OpenaiResponsesHandler(c, resp, info)
 		}

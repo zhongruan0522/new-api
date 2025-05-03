@@ -214,7 +214,7 @@ type OpenAIResponsesResponse struct {
 	Tools              []interface{}      `json:"tools"`
 	TopP               float64            `json:"top_p"`
 	Truncation         string             `json:"truncation"`
-	Usage              Usage              `json:"usage"`
+	Usage              *Usage             `json:"usage"`
 	User               json.RawMessage    `json:"user"`
 	Metadata           json.RawMessage    `json:"metadata"`
 }
@@ -235,4 +235,10 @@ type ResponsesOutputContent struct {
 	Type        string        `json:"type"`
 	Text        string        `json:"text"`
 	Annotations []interface{} `json:"annotations"`
+}
+
+// ResponsesStreamResponse 用于处理 /v1/responses 流式响应
+type ResponsesStreamResponse struct {
+	Type     string                   `json:"type"`
+	Response *OpenAIResponsesResponse `json:"response"`
 }
