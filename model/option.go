@@ -1,6 +1,8 @@
 package model
 
 import (
+	"encoding/json"
+	"fmt"
 	"one-api/common"
 	"one-api/setting"
 	"one-api/setting/config"
@@ -96,6 +98,7 @@ func InitOptionMap() {
 	common.OptionMap["ModelPrice"] = operation_setting.ModelPrice2JSONString()
 	common.OptionMap["CacheRatio"] = operation_setting.CacheRatio2JSONString()
 	common.OptionMap["GroupRatio"] = setting.GroupRatio2JSONString()
+	common.OptionMap[setting.ModelRequestRateLimitGroupKey] = "{}" // 添加用户组速率限制默认值
 	common.OptionMap["UserUsableGroups"] = setting.UserUsableGroups2JSONString()
 	common.OptionMap["CompletionRatio"] = operation_setting.CompletionRatio2JSONString()
 	common.OptionMap["TopUpLink"] = common.TopUpLink
@@ -150,7 +153,32 @@ func SyncOptions(frequency int) {
 }
 
 func UpdateOption(key string, value string) error {
-	// Save to database first
+	originalValue := value // 保存原始值以备后用
+
+	// Validate and format specific keys before saving
+	if key == setting.ModelRequestRateLimitGroupKey {
+		var cfg map[string][2]int
+		// Validate the JSON structure first using the original value
+		err := json.Unmarshal([]byte(originalValue), &cfg)
+		if err != nil {
+			// 提供更具体的错误信息
+			return fmt.Errorf("无效的 JSON 格式 for %s: %w", key, err)
+		}
+		// TODO: 可以添加更细致的结构验证，例如检查数组长度是否为2，值是否为非负数等。
+		// if !isValidModelRequestRateLimitGroupConfig(cfg) {
+		//     return fmt.Errorf("无效的配置值 for %s", key)
+		// }
+
+		// If valid, format the JSON before saving
+		formattedValueBytes, marshalErr := json.MarshalIndent(cfg, "", "  ")
+		if marshalErr != nil {
+			// This should ideally not happen if validation passed, but handle defensively
+			return fmt.Errorf("failed to marshal validated %s config: %w", key, marshalErr)
+		}
+		value = string(formattedValueBytes) // Use formatted JSON for saving and memory update
+	}
+
+	// Save to database
 	option := Option{
 		Key: key,
 	}
@@ -160,8 +188,12 @@ func UpdateOption(key string, value string) error {
 	// Save is a combination function.
 	// If save value does not contain primary key, it will execute Create,
 	// otherwise it will execute Update (with all fields).
-	DB.Save(&option)
-	// Update OptionMap
+	if err := DB.Save(&option).Error; err != nil {
+		return fmt.Errorf("保存选项 %s 到数据库失败: %w", key, err) // 添加错误上下文
+	}
+
+	// Update OptionMap in memory using the potentially formatted value
+	// updateOptionMap 会处理内存中 setting.ModelRequestRateLimitGroupConfig 的更新
 	return updateOptionMap(key, value)
 }
 
@@ -372,6 +404,15 @@ func updateOptionMap(key string, value string) (err error) {
 		operation_setting.AutomaticDisableKeywordsFromString(value)
 	case "StreamCacheQueueLength":
 		setting.StreamCacheQueueLength, _ = strconv.Atoi(value)
+	case setting.ModelRequestRateLimitGroupKey:
+		// Use the (potentially formatted) value passed from UpdateOption
+		// to update the actual configuration in memory.
+		// This is the single point where the memory state for this specific setting is updated.
+		err = setting.UpdateModelRequestRateLimitGroupConfig(value)
+		if err != nil {
+			// 添加错误上下文
+			err = fmt.Errorf("更新内存中的 %s 配置失败: %w", key, err)
+		}
 	}
 	return err
 }

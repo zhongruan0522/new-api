@@ -18,6 +18,7 @@ export default function RequestRateLimit(props) {
     ModelRequestRateLimitCount: -1,
     ModelRequestRateLimitSuccessCount: 1000,
     ModelRequestRateLimitDurationMinutes: 1,
+    ModelRequestRateLimitGroup: '{}', // 添加新字段并设置默认值
   });
   const refForm = useRef();
   const [inputsRow, setInputsRow] = useState(inputs);
@@ -32,25 +33,49 @@ export default function RequestRateLimit(props) {
       } else {
         value = inputs[item.key];
       }
+      // 校验 ModelRequestRateLimitGroup 是否为有效的 JSON 对象字符串
+      if (item.key === 'ModelRequestRateLimitGroup') {
+        try {
+          JSON.parse(value);
+        } catch (e) {
+          showError(t('用户组速率限制配置不是有效的 JSON 格式！'));
+          // 阻止请求发送
+          return Promise.reject('Invalid JSON format');
+        }
+      }
       return API.put('/api/option/', {
         key: item.key,
         value,
       });
     });
+
+    // 过滤掉无效的请求（例如，无效的 JSON）
+    const validRequests = requestQueue.filter(req => req !== null && req !== undefined && typeof req.then === 'function');
+
+    if (validRequests.length === 0 && requestQueue.length > 0) {
+      // 如果所有请求都被过滤掉了（因为 JSON 无效），则不继续执行
+      return;
+    }
+
     setLoading(true);
-    Promise.all(requestQueue)
+    Promise.all(validRequests)
       .then((res) => {
-        if (requestQueue.length === 1) {
+        if (validRequests.length === 1) {
           if (res.includes(undefined)) return;
-        } else if (requestQueue.length > 1) {
+        } else if (validRequests.length > 1) {
           if (res.includes(undefined))
             return showError(t('部分保存失败，请重试'));
         }
         showSuccess(t('保存成功'));
         props.refresh();
+        // 更新 inputsRow 以反映保存后的状态
+        setInputsRow(structuredClone(inputs));
       })
-      .catch(() => {
-        showError(t('保存失败，请重试'));
+      .catch((error) => {
+        // 检查是否是由于无效 JSON 导致的错误
+        if (error !== 'Invalid JSON format') {
+          showError(t('保存失败，请重试'));
+        }
       })
       .finally(() => {
         setLoading(false);
@@ -66,8 +91,11 @@ export default function RequestRateLimit(props) {
     }
     setInputs(currentInputs);
     setInputsRow(structuredClone(currentInputs));
-    refForm.current.setValues(currentInputs);
-  }, [props.options]);
+    // 检查 refForm.current 是否存在
+    if (refForm.current) {
+      refForm.current.setValues(currentInputs);
+    }
+  }, [props.options]); // 依赖项保持不变，因为 inputs 状态的结构已固定
 
   return (
     <>
@@ -147,7 +175,41 @@ export default function RequestRateLimit(props) {
                 />
               </Col>
             </Row>
+            {/* 用户组速率限制配置项 */}
             <Row>
+              <Col span={24}>
+                <Form.TextArea
+                  label={t('用户组速率限制 (JSON)')}
+                  field={'ModelRequestRateLimitGroup'}
+                  placeholder={t( // 更新 placeholder
+                    '请输入 JSON 格式的用户组限制，例如：\n{\n  "default": [200, 100],\n  "vip": [1000, 500]\n}',
+                  )}
+                  extraText={ // 更新 extraText
+                    <div>
+                      <p>{t('说明:')}</p>
+                      <ul>
+                        <li>{t('使用 JSON 对象格式，键为用户组名 (字符串)，值为包含两个整数的数组 [总次数限制, 成功次数限制]。')}</li>
+                        <li>{t('总次数限制: 周期内允许的总请求次数 (含失败)，0 代表不限制。')}</li>
+                        <li>{t('成功次数限制: 周期内允许的成功请求次数 (HTTP < 400)，必须大于 0。')}</li>
+                        <li>{t('此配置将优先于上方的全局限制设置。')}</li>
+                        <li>{t('未在此处配置的用户组将使用全局限制。')}</li>
+                        <li>{t('限制周期统一使用上方配置的“限制周期”值。')}</li>
+                        <li>{t('输入无效的 JSON 将无法保存。')}</li>
+                      </ul>
+                    </div>
+                  }
+                  autosize={{ minRows: 5, maxRows: 15 }}
+                  style={{ fontFamily: 'monospace' }}
+                  onChange={(value) => {
+                    setInputs({
+                      ...inputs,
+                      ModelRequestRateLimitGroup: value, // 直接更新字符串值
+                    });
+                  }}
+                />
+              </Col>
+            </Row>
+            <Row style={{ marginTop: 15 }}>
               <Button size='default' onClick={onSubmit}>
                 {t('保存模型速率限制')}
               </Button>

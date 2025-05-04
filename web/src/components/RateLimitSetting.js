@@ -13,6 +13,7 @@ const RateLimitSetting = () => {
     ModelRequestRateLimitCount: 0,
     ModelRequestRateLimitSuccessCount: 1000,
     ModelRequestRateLimitDurationMinutes: 1,
+    ModelRequestRateLimitGroup: {},
   });
 
   let [loading, setLoading] = useState(false);

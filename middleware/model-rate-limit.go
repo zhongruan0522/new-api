@@ -168,16 +168,39 @@ func ModelRequestRateLimit() func(c *gin.Context) {
 			return
 		}
 
-		// 计算限流参数
+		// 计算通用限流参数
 		duration := int64(setting.ModelRequestRateLimitDurationMinutes * 60)
-		totalMaxCount := setting.ModelRequestRateLimitCount
-		successMaxCount := setting.ModelRequestRateLimitSuccessCount
 
-		// 根据存储类型选择并执行限流处理器
-		if common.RedisEnabled {
-			redisRateLimitHandler(duration, totalMaxCount, successMaxCount)(c)
+		// 获取用户组
+		group := c.GetString("token_group")
+		if group == "" {
+			group = c.GetString("group")
+		}
+		if group == "" {
+			group = "default" // 默认组
+		}
+
+		// 尝试获取用户组特定的限制
+		groupTotalCount, groupSuccessCount, found := setting.GetGroupRateLimit(group)
+
+		// 确定最终的限制值
+		finalTotalCount := setting.ModelRequestRateLimitCount       // 默认使用全局总次数限制
+		finalSuccessCount := setting.ModelRequestRateLimitSuccessCount // 默认使用全局成功次数限制
+
+		if found {
+			// 如果找到用户组特定限制，则使用它们
+			finalTotalCount = groupTotalCount
+			finalSuccessCount = groupSuccessCount
+			common.LogWarn(c.Request.Context(), fmt.Sprintf("Using rate limit for group '%s': total=%d, success=%d", group, finalTotalCount, finalSuccessCount))
 		} else {
-			memoryRateLimitHandler(duration, totalMaxCount, successMaxCount)(c)
+			common.LogInfo(c.Request.Context(), fmt.Sprintf("No specific rate limit found for group '%s', using global limits: total=%d, success=%d", group, finalTotalCount, finalSuccessCount))
+		}
+
+		// 根据存储类型选择并执行限流处理器，传入最终确定的限制值
+		if common.RedisEnabled {
+			redisRateLimitHandler(duration, finalTotalCount, finalSuccessCount)(c)
+		} else {
+			memoryRateLimitHandler(duration, finalTotalCount, finalSuccessCount)(c)
 		}
 	}
 }
