@@ -25,8 +25,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/gin-gonic/gin"
 	"net/textproto"
+
+	"github.com/gin-gonic/gin"
 )
 
 type Adaptor struct {
@@ -66,6 +67,9 @@ func (a *Adaptor) Init(info *relaycommon.RelayInfo) {
 func (a *Adaptor) GetRequestURL(info *relaycommon.RelayInfo) (string, error) {
 	if info.RelayFormat == relaycommon.RelayFormatClaude {
 		return fmt.Sprintf("%s/v1/chat/completions", info.BaseUrl), nil
+	}
+	if info.RelayMode == constant.RelayModeResponses {
+		return fmt.Sprintf("%s/v1/responses", info.BaseUrl), nil
 	}
 	if info.RelayMode == constant.RelayModeRealtime {
 		if strings.HasPrefix(info.BaseUrl, "https://") {
@@ -380,6 +384,21 @@ func detectImageMimeType(filename string) string {
 	}
 }
 
+func (a *Adaptor) ConvertOpenAIResponsesRequest(c *gin.Context, info *relaycommon.RelayInfo, request dto.OpenAIResponsesRequest) (any, error) {
+	// 模型后缀转换 reasoning effort
+	if strings.HasSuffix(request.Model, "-high") {
+		request.Reasoning.Effort = "high"
+		request.Model = strings.TrimSuffix(request.Model, "-high")
+	} else if strings.HasSuffix(request.Model, "-low") {
+		request.Reasoning.Effort = "low"
+		request.Model = strings.TrimSuffix(request.Model, "-low")
+	} else if strings.HasSuffix(request.Model, "-medium") {
+		request.Reasoning.Effort = "medium"
+		request.Model = strings.TrimSuffix(request.Model, "-medium")
+	}
+	return request, nil
+}
+
 func (a *Adaptor) DoRequest(c *gin.Context, info *relaycommon.RelayInfo, requestBody io.Reader) (any, error) {
 	if info.RelayMode == constant.RelayModeAudioTranscription ||
 		info.RelayMode == constant.RelayModeAudioTranslation ||
@@ -406,6 +425,12 @@ func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, info *relaycom
 		err, usage = OpenaiHandlerWithUsage(c, resp, info)
 	case constant.RelayModeRerank:
 		err, usage = common_handler.RerankHandler(c, info, resp)
+	case constant.RelayModeResponses:
+		if info.IsStream {
+			err, usage = OaiResponsesStreamHandler(c, resp, info)
+		} else {
+			err, usage = OpenaiResponsesHandler(c, resp, info)
+		}
 	default:
 		if info.IsStream {
 			err, usage = OaiStreamHandler(c, resp, info)
