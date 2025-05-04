@@ -724,8 +724,6 @@ func OaiResponsesStreamHandler(c *gin.Context, resp *http.Response, info *relayc
 		return true
 	})
 
-	helper.Done(c)
-
 	if usage.CompletionTokens == 0 {
 		// 计算输出文本的 token 数量
 		tempStr := responseTextBuilder.String()
