@@ -702,57 +702,46 @@ func OaiResponsesStreamHandler(c *gin.Context, resp *http.Response, info *relayc
 	}
 
 	var usage = &dto.Usage{}
-	var streamItems []string // 存储流式数据项
-	// var responseTextBuilder strings.Builder
-	// var toolCount int
-	var forceFormat bool
-
-	if forceFmt, ok := info.ChannelSetting[constant.ForceFormat].(bool); ok {
-		forceFormat = forceFmt
-	}
-
-	var lastStreamData string
+	var responseTextBuilder strings.Builder
 
 	helper.StreamScannerHandler(c, resp, info, func(data string) bool {
-		if lastStreamData != "" {
-			// 处理上一条数据
-			sendResponsesStreamData(c, lastStreamData, forceFormat)
-		}
-		lastStreamData = data
-		streamItems = append(streamItems, data)
 
 		// 检查当前数据是否包含 completed 状态和 usage 信息
 		var streamResponse dto.ResponsesStreamResponse
 		if err := common.DecodeJsonStr(data, &streamResponse); err == nil {
-			if streamResponse.Type == "response.completed" {
-				// 处理 completed 状态
+			sendResponsesStreamData(c, streamResponse, data)
+			switch streamResponse.Type {
+			case "response.completed":
 				usage.PromptTokens = streamResponse.Response.Usage.InputTokens
 				usage.CompletionTokens = streamResponse.Response.Usage.OutputTokens
 				usage.TotalTokens = streamResponse.Response.Usage.TotalTokens
+			case "response.output_text.delta":
+				// 处理输出文本
+				responseTextBuilder.WriteString(streamResponse.Delta)
+
 			}
 		}
 		return true
 	})
 
-	// 处理最后一条数据
-	sendResponsesStreamData(c, lastStreamData, forceFormat)
+	helper.Done(c)
 
-	// 处理token计算
-	// if err := processTokens(info.RelayMode, streamItems, &responseTextBuilder, &toolCount); err != nil {
-	// 	common.SysError("error processing tokens: " + err.Error())
-	// }
+	if usage.CompletionTokens == 0 {
+		// 计算输出文本的 token 数量
+		tempStr := responseTextBuilder.String()
+		if len(tempStr) > 0 {
+			// 非正常结束，使用输出文本的 token 数量
+			completionTokens, _ := service.CountTextToken(tempStr, info.UpstreamModelName)
+			usage.CompletionTokens = completionTokens
+		}
+	}
 
 	return nil, usage
 }
 
-func sendResponsesStreamData(c *gin.Context, data string, forceFormat bool) error {
+func sendResponsesStreamData(c *gin.Context, streamResponse dto.ResponsesStreamResponse, data string) {
 	if data == "" {
-		return nil
+		return
 	}
-
-	if forceFormat {
-		return helper.ObjectData(c, data)
-	} else {
-		return helper.StringData(c, data)
-	}
+	helper.ResponseChunkData(c, streamResponse, data)
 }
