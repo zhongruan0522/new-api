@@ -238,8 +238,12 @@ type ResponsesOutputContent struct {
 }
 
 const (
-	BuildInTools_WebSearch  = "web_search_preview"
-	BuildInTools_FileSearch = "file_search"
+	BuildInToolWebSearchPreview = "web_search_preview"
+	BuildInToolFileSearch       = "file_search"
+)
+
+const (
+	BuildInCallWebSearchCall = "web_search_call"
 )
 
 const (
@@ -250,6 +254,7 @@ const (
 // ResponsesStreamResponse 用于处理 /v1/responses 流式响应
 type ResponsesStreamResponse struct {
 	Type     string                   `json:"type"`
-	Response *OpenAIResponsesResponse `json:"response"`
+	Response *OpenAIResponsesResponse `json:"response,omitempty"`
 	Delta    string                   `json:"delta,omitempty"`
+	Item     *ResponsesOutput         `json:"item,omitempty"`
 }
