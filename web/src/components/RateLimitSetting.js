@@ -34,7 +34,7 @@ const RateLimitSetting = () => {
         newInputs[item.key] = item.value;
         }
       });
-    
+
       setInputs(newInputs);
     } else {
       showError(message);
@@ -44,28 +44,28 @@ const RateLimitSetting = () => {
     try {
       setLoading(true);
       await getOptions();
-    // showSuccess('刷新成功');
+      // showSuccess('刷新成功');
     } catch (error) {
       showError('刷新失败');
     } finally {
       setLoading(false);
     }
   }
- 
+
   useEffect(() => {
     onRefresh();
   }, []);
- 
+
   return (
     <>
       <Spin spinning={loading} size='large'>
-       {/* AI请求速率限制 */}
+        {/* AI请求速率限制 */}
         <Card style={{ marginTop: '10px' }}>
           <RequestRateLimit options={inputs} refresh={onRefresh} />
         </Card>
       </Spin>
     </>
   );
- };
- 
- export default RateLimitSetting;
+};
+
+export default RateLimitSetting;

@@ -23,7 +23,7 @@ export default function RequestRateLimit(props) {
   });
   const refForm = useRef();
   const [inputsRow, setInputsRow] = useState(inputs);
- 
+
   function onSubmit() {
     const updateArray = compareObjects(inputs, inputsRow);
     if (!updateArray.length) return showWarning(t('你似乎并没有修改什么'));
@@ -65,7 +65,7 @@ export default function RequestRateLimit(props) {
         setLoading(false);
       });
   }
- 
+
   useEffect(() => {
     const currentInputs = {};
     for (let key in props.options) {
@@ -75,9 +75,9 @@ export default function RequestRateLimit(props) {
     }
     setInputs(currentInputs);
     setInputsRow(structuredClone(currentInputs));
-      refForm.current.setValues(currentInputs);
+    refForm.current.setValues(currentInputs);
   }, [props.options]);
- 
+
   return (
     <>
       <Spin spinning={loading}>
@@ -201,4 +201,4 @@ export default function RequestRateLimit(props) {
       </Spin>
     </>
   );
- }
+}
