@@ -20,6 +20,26 @@ export default defineConfig({
       },
     },
     react(),
+    {
+      name: 'semi-css-layer',
+      transformIndexHtml(html) {
+        // Add layer to Semi CSS by prepending style tag
+        return html.replace(
+          /<\/head>/,
+          `<style>@layer tailwind-base,semi,tailwind-components,tailwind-utils;</style></head>`
+        );
+      },
+      transform(code, id) {
+        if (id.includes('@douyinfe/semi-ui') && id.endsWith('.css')) {
+          // Wrap Semi CSS in a layer
+          return {
+            code: `@layer semi { ${code} }`,
+            map: null
+          };
+        }
+        return null;
+      }
+    }
   ],
   optimizeDeps: {
     force: true,
