@@ -24,7 +24,6 @@ const RateLimitSetting = () => {
   	if (success) {
   		let newInputs = {};
   		data.forEach((item) => {
-  			// 检查 key 是否在初始 inputs 中定义
   			if (Object.prototype.hasOwnProperty.call(inputs, item.key)) {
   				if (item.key.endsWith('Enabled')) {
   					newInputs[item.key] = item.value === 'true';
@@ -33,6 +32,7 @@ const RateLimitSetting = () => {
   				}
   			}
   		});
+		
   		setInputs(newInputs);
   	} else {
   		showError(message);
@@ -42,6 +42,7 @@ const RateLimitSetting = () => {
   	try {
   		setLoading(true);
   		await getOptions();
+		// showSuccess('刷新成功');
   	} catch (error) {
   		showError('刷新失败');
   	} finally {
@@ -56,6 +57,7 @@ const RateLimitSetting = () => {
   return (
   	<>
   		<Spin spinning={loading} size='large'>
+			 {/* AI请求速率限制 */}
   			<Card style={{ marginTop: '10px' }}>
   				<RequestRateLimit options={inputs} refresh={onRefresh} />
   			</Card>

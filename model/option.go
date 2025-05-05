@@ -1,8 +1,6 @@
 package model
 
 import (
-	"encoding/json"
-	"fmt"
 	"one-api/common"
 	"one-api/setting"
 	"one-api/setting/config"
@@ -94,8 +92,7 @@ func InitOptionMap() {
 	common.OptionMap["ModelRequestRateLimitCount"] = strconv.Itoa(setting.ModelRequestRateLimitCount)
 	common.OptionMap["ModelRequestRateLimitDurationMinutes"] = strconv.Itoa(setting.ModelRequestRateLimitDurationMinutes)
 	common.OptionMap["ModelRequestRateLimitSuccessCount"] = strconv.Itoa(setting.ModelRequestRateLimitSuccessCount)
-	jsonBytes, _ := json.Marshal(map[string][2]int{})
-	common.OptionMap["ModelRequestRateLimitGroup"] = string(jsonBytes)
+	common.OptionMap["ModelRequestRateLimitGroup"] = setting.ModelRequestRateLimitGroup2JSONString()
 	common.OptionMap["ModelRatio"] = operation_setting.ModelRatio2JSONString()
 	common.OptionMap["ModelPrice"] = operation_setting.ModelPrice2JSONString()
 	common.OptionMap["CacheRatio"] = operation_setting.CacheRatio2JSONString()
@@ -154,31 +151,18 @@ func SyncOptions(frequency int) {
 }
 
 func UpdateOption(key string, value string) error {
-	originalValue := value
-
-	if key == "ModelRequestRateLimitGroup" {
-		var cfg map[string][2]int
-		err := json.Unmarshal([]byte(originalValue), &cfg)
-		if err != nil {
-			return fmt.Errorf("无效的 JSON 格式 for %s: %w", key, err)
-		}
-
-		formattedValueBytes, marshalErr := json.MarshalIndent(cfg, "", "  ")
-		if marshalErr != nil {
-			return fmt.Errorf("failed to marshal validated %s config: %w", key, marshalErr)
-		}
-		value = string(formattedValueBytes)
-	}
-
+	// Save to database first
 	option := Option{
 		Key: key,
 	}
+	// https://gorm.io/docs/update.html#Save-All-Fields
 	DB.FirstOrCreate(&option, Option{Key: key})
 	option.Value = value
-	if err := DB.Save(&option).Error; err != nil {
-		return fmt.Errorf("保存选项 %s 到数据库失败: %w", key, err)
-	}
-
+	// Save is a combination function.
+	// If save value does not contain primary key, it will execute Create,
+	// otherwise it will execute Update (with all fields).
+	DB.Save(&option)
+	// Update OptionMap
 	return updateOptionMap(key, value)
 }
 
@@ -356,7 +340,7 @@ func updateOptionMap(key string, value string) (err error) {
 	case "ModelRequestRateLimitSuccessCount":
 		setting.ModelRequestRateLimitSuccessCount, _ = strconv.Atoi(value)
 	case "ModelRequestRateLimitGroup":
-		err = setting.UpdateModelRequestRateLimitGroup(value)
+		err = setting.UpdateModelRequestRateLimitGroupByJSONString(value)
 	case "RetryTimes":
 		common.RetryTimes, _ = strconv.Atoi(value)
 	case "DataExportInterval":

@@ -2,7 +2,6 @@ package setting
 
 import (
 	"encoding/json"
-	"fmt"
 	"one-api/common"
 	"sync"
 )
@@ -11,33 +10,31 @@ var ModelRequestRateLimitEnabled = false
 var ModelRequestRateLimitDurationMinutes = 1
 var ModelRequestRateLimitCount = 0
 var ModelRequestRateLimitSuccessCount = 1000
-var ModelRequestRateLimitGroup map[string][2]int
+var ModelRequestRateLimitGroup = map[string][2]int{}
+var ModelRequestRateLimitMutex sync.RWMutex
 
-var ModelRequestRateLimitGroupMutex sync.RWMutex
+func ModelRequestRateLimitGroup2JSONString() string {
+	ModelRequestRateLimitMutex.RLock()
+	defer ModelRequestRateLimitMutex.RUnlock()
 
-func UpdateModelRequestRateLimitGroup(jsonStr string) error {
-	ModelRequestRateLimitGroupMutex.Lock()
-	defer ModelRequestRateLimitGroupMutex.Unlock()
-
-	var newConfig map[string][2]int
-	if jsonStr == "" || jsonStr == "{}" {
-		ModelRequestRateLimitGroup = make(map[string][2]int)
-		common.SysLog("Model request rate limit group config cleared")
-		return nil
-	}
-
-	err := json.Unmarshal([]byte(jsonStr), &newConfig)
+	jsonBytes, err := json.Marshal(ModelRequestRateLimitGroup)
 	if err != nil {
-		return fmt.Errorf("failed to unmarshal ModelRequestRateLimitGroup config: %w", err)
+		common.SysError("error marshalling model ratio: " + err.Error())
 	}
+	return string(jsonBytes)
+}
 
-	ModelRequestRateLimitGroup = newConfig
-	return nil
+func UpdateModelRequestRateLimitGroupByJSONString(jsonStr string) error {
+	ModelRequestRateLimitMutex.RLock()
+	defer ModelRequestRateLimitMutex.RUnlock()
+
+	ModelRequestRateLimitGroup = make(map[string][2]int)
+	return json.Unmarshal([]byte(jsonStr), &ModelRequestRateLimitGroup)
 }
 
 func GetGroupRateLimit(group string) (totalCount, successCount int, found bool) {
-	ModelRequestRateLimitGroupMutex.RLock()
-	defer ModelRequestRateLimitGroupMutex.RUnlock()
+	ModelRequestRateLimitMutex.RLock()
+	defer ModelRequestRateLimitMutex.RUnlock()
 
 	if ModelRequestRateLimitGroup == nil {
 		return 0, 0, false
