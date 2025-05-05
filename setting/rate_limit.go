@@ -2,6 +2,7 @@ package setting
 
 import (
 	"encoding/json"
+	"fmt"
 	"one-api/common"
 	"sync"
 )
@@ -45,4 +46,19 @@ func GetGroupRateLimit(group string) (totalCount, successCount int, found bool) 
 		return 0, 0, false
 	}
 	return limits[0], limits[1], true
+}
+
+func CheckModelRequestRateLimitGroup(jsonStr string) error {
+	checkModelRequestRateLimitGroup := make(map[string][2]int)
+	err := json.Unmarshal([]byte(jsonStr), &checkModelRequestRateLimitGroup)
+	if err != nil {
+		return err
+	}
+	for group, limits := range checkModelRequestRateLimitGroup {
+		if limits[0] < 0 || limits[1] < 0 {
+			return fmt.Errorf("group %s has negative rate limit values: [%d, %d]", group, limits[0], limits[1])
+		}
+	}
+
+	return nil
 }
