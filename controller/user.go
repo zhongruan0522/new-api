@@ -616,9 +616,6 @@ func UpdateSelf(c *gin.Context) {
 }
 
 func checkUpdatePassword(originalPassword string, newPassword string, userId int) (updatePassword bool, err error) {
-	if newPassword == "" {
-		return
-	}
 	var currentUser *model.User
 	currentUser, err = model.GetUserById(userId, true)
 	if err != nil {
@@ -626,6 +623,9 @@ func checkUpdatePassword(originalPassword string, newPassword string, userId int
 	}
 	if !common.ValidatePasswordAndHash(originalPassword, currentUser.Password) {
 		err = fmt.Errorf("原密码错误")
+		return
+	}
+	if newPassword == "" {
 		return
 	}
 	updatePassword = true
