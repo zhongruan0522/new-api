@@ -361,11 +361,12 @@ func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo,
 
 	// openai web search 工具计费
 	var dWebSearchQuota decimal.Decimal
+	var webSearchPrice float64
 	if relayInfo.ResponsesUsageInfo != nil {
 		if webSearchTool, exists := relayInfo.ResponsesUsageInfo.BuiltInTools[dto.BuildInToolWebSearchPreview]; exists && webSearchTool.CallCount > 0 {
-			priceWebSearchPerThousandCalls := operation_setting.GetWebSearchPricePerThousand(modelName, webSearchTool.SearchContextSize)
 			// 计算 web search 调用的配额 (配额 = 价格 * 调用次数 / 1000)
-			dWebSearchQuota = decimal.NewFromFloat(priceWebSearchPerThousandCalls).
+			webSearchPrice = operation_setting.GetWebSearchPricePerThousand(modelName, webSearchTool.SearchContextSize)
+			dWebSearchQuota = decimal.NewFromFloat(webSearchPrice).
 				Mul(decimal.NewFromInt(int64(webSearchTool.CallCount))).
 				Div(decimal.NewFromInt(1000))
 			extraContent += fmt.Sprintf("Web Search 调用 %d 次，上下文大小 %s，调用花费 $%s",
@@ -374,9 +375,11 @@ func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo,
 	}
 	// file search tool 计费
 	var dFileSearchQuota decimal.Decimal
+	var fileSearchPrice float64
 	if relayInfo.ResponsesUsageInfo != nil {
 		if fileSearchTool, exists := relayInfo.ResponsesUsageInfo.BuiltInTools[dto.BuildInToolFileSearch]; exists && fileSearchTool.CallCount > 0 {
-			dFileSearchQuota = decimal.NewFromFloat(operation_setting.GetFileSearchPricePerThousand()).
+			fileSearchPrice = operation_setting.GetFileSearchPricePerThousand()
+			dFileSearchQuota = decimal.NewFromFloat(fileSearchPrice).
 				Mul(decimal.NewFromInt(int64(fileSearchTool.CallCount))).
 				Div(decimal.NewFromInt(1000))
 			extraContent += fmt.Sprintf("File Search 调用 %d 次，调用花费 $%s",
@@ -463,13 +466,14 @@ func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo,
 		if webSearchTool, exists := relayInfo.ResponsesUsageInfo.BuiltInTools[dto.BuildInToolWebSearchPreview]; exists {
 			other["web_search"] = true
 			other["web_search_call_count"] = webSearchTool.CallCount
-			other["web_search_context_size"] = webSearchTool.SearchContextSize
+			other["web_search_price"] = webSearchPrice
 		}
 	}
 	if !dFileSearchQuota.IsZero() && relayInfo.ResponsesUsageInfo != nil {
 		if fileSearchTool, exists := relayInfo.ResponsesUsageInfo.BuiltInTools[dto.BuildInToolFileSearch]; exists {
 			other["file_search"] = true
 			other["file_search_call_count"] = fileSearchTool.CallCount
+			other["file_search_price"] = fileSearchPrice
 		}
 	}
 	model.RecordConsumeLog(ctx, relayInfo.UserId, relayInfo.ChannelId, promptTokens, completionTokens, logModel,
