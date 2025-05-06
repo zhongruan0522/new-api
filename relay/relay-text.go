@@ -376,9 +376,7 @@ func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo,
 	var dFileSearchQuota decimal.Decimal
 	if relayInfo.ResponsesUsageInfo != nil {
 		if fileSearchTool, exists := relayInfo.ResponsesUsageInfo.BuiltInTools[dto.BuildInToolFileSearch]; exists && fileSearchTool.CallCount > 0 {
-			// file search tool 调用价格 $2.50/1k calls
-			// 计算 file search tool 调用的配额 (配额 = 价格 * 调用次数 / 1000)
-			dFileSearchQuota = decimal.NewFromFloat(2.5).
+			dFileSearchQuota = decimal.NewFromFloat(operation_setting.GetFileSearchPricePerThousand()).
 				Mul(decimal.NewFromInt(int64(fileSearchTool.CallCount))).
 				Div(decimal.NewFromInt(1000))
 			extraContent += fmt.Sprintf("File Search 调用 %d 次，调用花费 $%s",

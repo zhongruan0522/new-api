@@ -3,12 +3,15 @@ package operation_setting
 import "strings"
 
 const (
+	// Web search
 	WebSearchHighTierModelPriceLow    = 30.00
 	WebSearchHighTierModelPriceMedium = 35.00
 	WebSearchHighTierModelPriceHigh   = 50.00
 	WebSearchPriceLow                 = 25.00
 	WebSearchPriceMedium              = 27.50
 	WebSearchPriceHigh                = 30.00
+	// File search
+	FileSearchPrice = 2.5
 )
 
 func GetWebSearchPricePerThousand(modelName string, contextSize string) float64 {
@@ -47,4 +50,8 @@ func GetWebSearchPricePerThousand(modelName string, contextSize string) float64 
 		}
 	}
 	return priceWebSearchPerThousandCalls
+}
+
+func GetFileSearchPricePerThousand() float64 {
+	return FileSearchPrice
 }
