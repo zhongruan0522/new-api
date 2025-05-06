@@ -18,6 +18,7 @@ import (
 	"one-api/service"
 	"one-api/setting"
 	"one-api/setting/model_setting"
+	"one-api/setting/operation_setting"
 	"strings"
 	"time"
 
@@ -362,41 +363,7 @@ func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo,
 	var dWebSearchQuota decimal.Decimal
 	if relayInfo.ResponsesUsageInfo != nil {
 		if webSearchTool, exists := relayInfo.ResponsesUsageInfo.BuiltInTools[dto.BuildInToolWebSearchPreview]; exists && webSearchTool.CallCount > 0 {
-			// 确定模型类型
-			// https://platform.openai.com/docs/pricing Web search 价格按模型类型和 search context size 收费
-			// gpt-4.1, gpt-4o, or gpt-4o-search-preview 更贵，gpt-4.1-mini, gpt-4o-mini, gpt-4o-mini-search-preview 更便宜
-			isHighTierModel := (strings.HasPrefix(modelName, "gpt-4.1") || strings.HasPrefix(modelName, "gpt-4o")) &&
-				!strings.Contains(modelName, "mini")
-
-			// 确定 search context size 对应的价格
-			var priceWebSearchPerThousandCalls float64
-			switch webSearchTool.SearchContextSize {
-			case "low":
-				if isHighTierModel {
-					priceWebSearchPerThousandCalls = 30.0
-				} else {
-					priceWebSearchPerThousandCalls = 25.0
-				}
-			case "medium":
-				if isHighTierModel {
-					priceWebSearchPerThousandCalls = 35.0
-				} else {
-					priceWebSearchPerThousandCalls = 27.5
-				}
-			case "high":
-				if isHighTierModel {
-					priceWebSearchPerThousandCalls = 50.0
-				} else {
-					priceWebSearchPerThousandCalls = 30.0
-				}
-			default:
-				// search context size 默认为 medium
-				if isHighTierModel {
-					priceWebSearchPerThousandCalls = 35.0
-				} else {
-					priceWebSearchPerThousandCalls = 27.5
-				}
-			}
+			priceWebSearchPerThousandCalls := operation_setting.GetWebSearchPricePerThousand(modelName, webSearchTool.SearchContextSize)
 			// 计算 web search 调用的配额 (配额 = 价格 * 调用次数 / 1000)
 			dWebSearchQuota = decimal.NewFromFloat(priceWebSearchPerThousandCalls).
 				Mul(decimal.NewFromInt(int64(webSearchTool.CallCount))).
