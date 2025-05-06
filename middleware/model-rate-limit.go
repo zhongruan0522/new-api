@@ -93,25 +93,27 @@ func redisRateLimitHandler(duration int64, totalMaxCount, successMaxCount int) g
 		}
 
 		//2.检查总请求数限制并记录总请求（当totalMaxCount为0时会自动跳过，使用令牌桶限流器
-		totalKey := fmt.Sprintf("rateLimit:%s", userId)
-		// 初始化
-		tb := limiter.New(ctx, rdb)
-		allowed, err = tb.Allow(
-			ctx,
-			totalKey,
-			limiter.WithCapacity(int64(totalMaxCount)*duration),
-			limiter.WithRate(int64(totalMaxCount)),
-			limiter.WithRequested(duration),
-		)
+		if totalMaxCount > 0 {
+			totalKey := fmt.Sprintf("rateLimit:%s", userId)
+			// 初始化
+			tb := limiter.New(ctx, rdb)
+			allowed, err = tb.Allow(
+				ctx,
+				totalKey,
+				limiter.WithCapacity(int64(totalMaxCount)*duration),
+				limiter.WithRate(int64(totalMaxCount)),
+				limiter.WithRequested(duration),
+			)
 
-		if err != nil {
-			fmt.Println("检查总请求数限制失败:", err.Error())
-			abortWithOpenAiMessage(c, http.StatusInternalServerError, "rate_limit_check_failed")
-			return
-		}
+			if err != nil {
+				fmt.Println("检查总请求数限制失败:", err.Error())
+				abortWithOpenAiMessage(c, http.StatusInternalServerError, "rate_limit_check_failed")
+				return
+			}
 
-		if !allowed {
-			abortWithOpenAiMessage(c, http.StatusTooManyRequests, fmt.Sprintf("您已达到总请求数限制：%d分钟内最多请求%d次，包括失败次数，请检查您的请求是否正确", setting.ModelRequestRateLimitDurationMinutes, totalMaxCount))
+			if !allowed {
+				abortWithOpenAiMessage(c, http.StatusTooManyRequests, fmt.Sprintf("您已达到总请求数限制：%d分钟内最多请求%d次，包括失败次数，请检查您的请求是否正确", setting.ModelRequestRateLimitDurationMinutes, totalMaxCount))
+			}
 		}
 
 		// 4. 处理请求
