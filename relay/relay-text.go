@@ -358,6 +358,67 @@ func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo,
 
 	ratio := dModelRatio.Mul(dGroupRatio)
 
+	// openai web search 工具计费
+	var dWebSearchQuota decimal.Decimal
+	if relayInfo.ResponsesUsageInfo != nil {
+		if webSearchTool, exists := relayInfo.ResponsesUsageInfo.BuiltInTools[dto.BuildInToolWebSearchPreview]; exists && webSearchTool.CallCount > 0 {
+			// 确定模型类型
+			// https://platform.openai.com/docs/pricing Web search 价格按模型类型和 search context size 收费
+			// gpt-4.1, gpt-4o, or gpt-4o-search-preview 更贵，gpt-4.1-mini, gpt-4o-mini, gpt-4o-mini-search-preview 更便宜
+			isHighTierModel := (strings.HasPrefix(modelName, "gpt-4.1") || strings.HasPrefix(modelName, "gpt-4o")) &&
+				!strings.Contains(modelName, "mini")
+
+			// 确定 search context size 对应的价格
+			var priceWebSearchPerThousandCalls float64
+			switch webSearchTool.SearchContextSize {
+			case "low":
+				if isHighTierModel {
+					priceWebSearchPerThousandCalls = 30.0
+				} else {
+					priceWebSearchPerThousandCalls = 25.0
+				}
+			case "medium":
+				if isHighTierModel {
+					priceWebSearchPerThousandCalls = 35.0
+				} else {
+					priceWebSearchPerThousandCalls = 27.5
+				}
+			case "high":
+				if isHighTierModel {
+					priceWebSearchPerThousandCalls = 50.0
+				} else {
+					priceWebSearchPerThousandCalls = 30.0
+				}
+			default:
+				// search context size 默认为 medium
+				if isHighTierModel {
+					priceWebSearchPerThousandCalls = 35.0
+				} else {
+					priceWebSearchPerThousandCalls = 27.5
+				}
+			}
+			// 计算 web search 调用的配额 (配额 = 价格 * 调用次数 / 1000)
+			dWebSearchQuota = decimal.NewFromFloat(priceWebSearchPerThousandCalls).
+				Mul(decimal.NewFromInt(int64(webSearchTool.CallCount))).
+				Div(decimal.NewFromInt(1000))
+			extraContent += fmt.Sprintf("Web Search 调用 %d 次，上下文大小 %s，调用花费 $%s",
+				webSearchTool.CallCount, webSearchTool.SearchContextSize, dWebSearchQuota.String())
+		}
+	}
+	// file search tool 计费
+	var dFileSearchQuota decimal.Decimal
+	if relayInfo.ResponsesUsageInfo != nil {
+		if fileSearchTool, exists := relayInfo.ResponsesUsageInfo.BuiltInTools[dto.BuildInToolFileSearch]; exists && fileSearchTool.CallCount > 0 {
+			// file search tool 调用价格 $2.50/1k calls
+			// 计算 file search tool 调用的配额 (配额 = 价格 * 调用次数 / 1000)
+			dFileSearchQuota = decimal.NewFromFloat(2.5).
+				Mul(decimal.NewFromInt(int64(fileSearchTool.CallCount))).
+				Div(decimal.NewFromInt(1000))
+			extraContent += fmt.Sprintf("File Search 调用 %d 次，调用花费 $%s",
+				fileSearchTool.CallCount, dFileSearchQuota.String())
+		}
+	}
+
 	var quotaCalculateDecimal decimal.Decimal
 	if !priceData.UsePrice {
 		nonCachedTokens := dPromptTokens.Sub(dCacheTokens)
@@ -380,6 +441,9 @@ func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo,
 	} else {
 		quotaCalculateDecimal = dModelPrice.Mul(dQuotaPerUnit).Mul(dGroupRatio)
 	}
+	// 添加 responses tools call 调用的配额
+	quotaCalculateDecimal = quotaCalculateDecimal.Add(dWebSearchQuota)
+	quotaCalculateDecimal = quotaCalculateDecimal.Add(dFileSearchQuota)
 
 	quota := int(quotaCalculateDecimal.Round(0).IntPart())
 	totalTokens := promptTokens + completionTokens
@@ -429,6 +493,19 @@ func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo,
 		other["image"] = true
 		other["image_ratio"] = imageRatio
 		other["image_output"] = imageTokens
+	}
+	if !dWebSearchQuota.IsZero() && relayInfo.ResponsesUsageInfo != nil {
+		if webSearchTool, exists := relayInfo.ResponsesUsageInfo.BuiltInTools[dto.BuildInToolWebSearchPreview]; exists {
+			other["web_search"] = true
+			other["web_search_call_count"] = webSearchTool.CallCount
+			other["web_search_context_size"] = webSearchTool.SearchContextSize
+		}
+	}
+	if !dFileSearchQuota.IsZero() && relayInfo.ResponsesUsageInfo != nil {
+		if fileSearchTool, exists := relayInfo.ResponsesUsageInfo.BuiltInTools[dto.BuildInToolFileSearch]; exists {
+			other["file_search"] = true
+			other["file_search_call_count"] = fileSearchTool.CallCount
+		}
 	}
 	model.RecordConsumeLog(ctx, relayInfo.UserId, relayInfo.ChannelId, promptTokens, completionTokens, logModel,
 		tokenName, quota, logContent, relayInfo.TokenId, userQuota, int(useTimeSeconds), relayInfo.IsStream, relayInfo.Group, other)

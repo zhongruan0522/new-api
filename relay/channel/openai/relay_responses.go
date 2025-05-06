@@ -3,7 +3,6 @@ package openai
 import (
 	"bytes"
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"io"
 	"net/http"
 	"one-api/common"
@@ -12,6 +11,8 @@ import (
 	"one-api/relay/helper"
 	"one-api/service"
 	"strings"
+
+	"github.com/gin-gonic/gin"
 )
 
 func OaiResponsesHandler(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (*dto.OpenAIErrorWithStatusCode, *dto.Usage) {
@@ -61,6 +62,10 @@ func OaiResponsesHandler(c *gin.Context, resp *http.Response, info *relaycommon.
 	usage.PromptTokens = responsesResponse.Usage.InputTokens
 	usage.CompletionTokens = responsesResponse.Usage.OutputTokens
 	usage.TotalTokens = responsesResponse.Usage.TotalTokens
+	// 解析 Tools 用量
+	for _, tool := range responsesResponse.Tools {
+		info.ResponsesUsageInfo.BuiltInTools[tool.Type].CallCount++
+	}
 	return nil, &usage
 }
 
