@@ -57,6 +57,7 @@ const PersonalSetting = () => {
     email_verification_code: '',
     email: '',
     self_account_deletion_confirmation: '',
+    original_password: '',
     set_new_password: '',
     set_new_password_confirmation: '',
   });
@@ -239,11 +240,20 @@ const PersonalSetting = () => {
   };
 
   const changePassword = async () => {
+    if (inputs.original_password === '') {
+      showError(t('请输入原密码！'));
+      return;
+    }
+    if (inputs.original_password === inputs.set_new_password) {
+      showError(t('新密码需要和原密码不一致！'));
+      return;
+    }
     if (inputs.set_new_password !== inputs.set_new_password_confirmation) {
       showError(t('两次输入的密码不一致！'));
       return;
     }
     const res = await API.put(`/api/user/self`, {
+      original_password: inputs.original_password,
       password: inputs.set_new_password,
     });
     const { success, message } = res.data;
@@ -1118,6 +1128,16 @@ const PersonalSetting = () => {
             >
               <div style={{ marginTop: 20 }}>
                 <Input
+                  name='original_password'
+                  placeholder={t('原密码')}
+                  type='password'
+                  value={inputs.original_password}
+                  onChange={(value) =>
+                    handleInputChange('original_password', value)
+                  }
+                />
+                <Input
+                  style={{ marginTop: 20 }}
                   name='set_new_password'
                   placeholder={t('新密码')}
                   value={inputs.set_new_password}
