@@ -116,6 +116,7 @@ var streamSupportedChannels = map[int]bool{
 	common.ChannelTypeOllama:     true,
 	common.ChannelTypeXai:        true,
 	common.ChannelTypeDeepSeek:   true,
+	common.ChannelTypeBaiduV2:    true,
 }
 
 func GenRelayInfoWs(c *gin.Context, ws *websocket.Conn) *RelayInfo {
