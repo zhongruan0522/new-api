@@ -28,8 +28,13 @@ func (a *Adaptor) ConvertAudioRequest(c *gin.Context, info *relaycommon.RelayInf
 }
 
 func (a *Adaptor) ConvertImageRequest(c *gin.Context, info *relaycommon.RelayInfo, request dto.ImageRequest) (any, error) {
-	request.Size = ""
-	return request, nil
+	xaiRequest := ImageRequest{
+		Model:          request.Model,
+		Prompt:         request.Prompt,
+		N:              request.N,
+		ResponseFormat: request.ResponseFormat,
+	}
+	return xaiRequest, nil
 }
 
 func (a *Adaptor) Init(info *relaycommon.RelayInfo) {
