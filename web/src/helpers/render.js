@@ -354,8 +354,8 @@ export function renderModelPrice(
     let price =
       (effectiveInputTokens / 1000000) * inputRatioPrice * groupRatio +
       (completionTokens / 1000000) * completionRatioPrice * groupRatio +
-      (webSearchCallCount / 1000) * webSearchPrice +
-      (fileSearchCallCount / 1000) * fileSearchPrice;
+      (webSearchCallCount / 1000) * webSearchPrice * groupRatio +
+      (fileSearchCallCount / 1000) * fileSearchPrice * groupRatio;
 
     return (
       <>
@@ -446,7 +446,7 @@ export function renderModelPrice(
                   )
                 : webSearch && webSearchCallCount > 0 && !image && !fileSearch
                   ? i18next.t(
-                      '输入 {{input}} tokens / 1M tokens * ${{price}} + 输出 {{completion}} tokens / 1M tokens * ${{compPrice}} * 分组 {{ratio}} + Web搜索 {{webSearchCallCount}}次 / 1K 次 * ${{webSearchPrice}} = ${{total}}',
+                      '输入 {{input}} tokens / 1M tokens * ${{price}} + 输出 {{completion}} tokens / 1M tokens * ${{compPrice}} * 分组 {{ratio}} + Web搜索 {{webSearchCallCount}}次 / 1K 次 * ${{webSearchPrice}} * {{ratio}} = ${{total}}',
                       {
                         input: inputTokens,
                         price: inputRatioPrice,
@@ -458,9 +458,12 @@ export function renderModelPrice(
                         total: price.toFixed(6),
                       },
                     )
-                  : fileSearch && fileSearchCallCount > 0 && !image && !webSearch
+                  : fileSearch &&
+                      fileSearchCallCount > 0 &&
+                      !image &&
+                      !webSearch
                     ? i18next.t(
-                        '输入 {{input}} tokens / 1M tokens * ${{price}} + 输出 {{completion}} tokens / 1M tokens * ${{compPrice}} * 分组 {{ratio}} + 文件搜索 {{fileSearchCallCount}}次 / 1K 次 * ${{fileSearchPrice}} = ${{total}}',
+                        '输入 {{input}} tokens / 1M tokens * ${{price}} + 输出 {{completion}} tokens / 1M tokens * ${{compPrice}} * 分组 {{ratio}} + 文件搜索 {{fileSearchCallCount}}次 / 1K 次 * ${{fileSearchPrice}} * {{ratio}}= ${{total}}',
                         {
                           input: inputTokens,
                           price: inputRatioPrice,
@@ -472,9 +475,13 @@ export function renderModelPrice(
                           total: price.toFixed(6),
                         },
                       )
-                    : webSearch && webSearchCallCount > 0 && fileSearch && fileSearchCallCount > 0 && !image
+                    : webSearch &&
+                        webSearchCallCount > 0 &&
+                        fileSearch &&
+                        fileSearchCallCount > 0 &&
+                        !image
                       ? i18next.t(
-                          '输入 {{input}} tokens / 1M tokens * ${{price}} + 输出 {{completion}} tokens / 1M tokens * ${{compPrice}} * 分组 {{ratio}} + Web搜索 {{webSearchCallCount}}次 / 1K 次 * ${{webSearchPrice}} + 文件搜索 {{fileSearchCallCount}}次 / 1K 次 * ${{fileSearchPrice}} = ${{total}}',
+                          '输入 {{input}} tokens / 1M tokens * ${{price}} + 输出 {{completion}} tokens / 1M tokens * ${{compPrice}} * 分组 {{ratio}} + Web搜索 {{webSearchCallCount}}次 / 1K 次 * ${{webSearchPrice}} * {{ratio}}+ 文件搜索 {{fileSearchCallCount}}次 / 1K 次 * ${{fileSearchPrice}} * {{ratio}}= ${{total}}',
                           {
                             input: inputTokens,
                             price: inputRatioPrice,
