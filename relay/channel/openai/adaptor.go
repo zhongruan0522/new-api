@@ -429,7 +429,7 @@ func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, info *relaycom
 		if info.IsStream {
 			err, usage = OaiResponsesStreamHandler(c, resp, info)
 		} else {
-			err, usage = OpenaiResponsesHandler(c, resp, info)
+			err, usage = OaiResponsesHandler(c, resp, info)
 		}
 	default:
 		if info.IsStream {

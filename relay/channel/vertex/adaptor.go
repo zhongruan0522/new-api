@@ -11,8 +11,8 @@ import (
 	"one-api/relay/channel/claude"
 	"one-api/relay/channel/gemini"
 	"one-api/relay/channel/openai"
-	"one-api/setting/model_setting"
 	relaycommon "one-api/relay/common"
+	"one-api/setting/model_setting"
 	"strings"
 
 	"github.com/gin-gonic/gin"
