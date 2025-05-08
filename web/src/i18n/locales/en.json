@@ -493,6 +493,7 @@
   "默认": "default",
   "图片演示": "Image demo",
   "注意，系统请求的时模型名称中的点会被剔除，例如：gpt-4.1会请求为gpt-41，所以在Azure部署的时候，部署模型名称需要手动改为gpt-41": "Note that the dot in the model name requested by the system will be removed, for example: gpt-4.1 will be requested as gpt-41, so when deploying on Azure, the deployment model name needs to be manually changed to gpt-41",
+  "2025年5月10日后添加的渠道，不需要再在部署的时候移除模型名称中的\".\"": "After May 10, 2025, channels added do not need to remove the dot in the model name during deployment",
   "模型映射必须是合法的 JSON 格式！": "Model mapping must be in valid JSON format!",
   "取消无限额度": "Cancel unlimited quota",
   "取消": "Cancel",

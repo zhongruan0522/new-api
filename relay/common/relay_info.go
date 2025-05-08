@@ -98,6 +98,7 @@ type RelayInfo struct {
 	UserQuota            int
 	RelayFormat          string
 	SendResponseCount    int
+	ChannelCreateTime    int64
 	ThinkingContentInfo
 	*ClaudeConvertInfo
 	*RerankerInfo
@@ -209,14 +210,15 @@ func GenRelayInfo(c *gin.Context) *RelayInfo {
 		OriginModelName:   c.GetString("original_model"),
 		UpstreamModelName: c.GetString("original_model"),
 		//RecodeModelName:   c.GetString("original_model"),
-		IsModelMapped:  false,
-		ApiType:        apiType,
-		ApiVersion:     c.GetString("api_version"),
-		ApiKey:         strings.TrimPrefix(c.Request.Header.Get("Authorization"), "Bearer "),
-		Organization:   c.GetString("channel_organization"),
-		ChannelSetting: channelSetting,
-		ParamOverride:  paramOverride,
-		RelayFormat:    RelayFormatOpenAI,
+		IsModelMapped:     false,
+		ApiType:           apiType,
+		ApiVersion:        c.GetString("api_version"),
+		ApiKey:            strings.TrimPrefix(c.Request.Header.Get("Authorization"), "Bearer "),
+		Organization:      c.GetString("channel_organization"),
+		ChannelSetting:    channelSetting,
+		ChannelCreateTime: c.GetInt64("channel_create_time"),
+		ParamOverride:     paramOverride,
+		RelayFormat:       RelayFormatOpenAI,
 		ThinkingContentInfo: ThinkingContentInfo{
 			IsFirstThinkingContent:  true,
 			SendLastThinkingContent: false,

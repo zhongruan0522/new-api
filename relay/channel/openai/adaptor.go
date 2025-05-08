@@ -8,6 +8,7 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http"
+	"net/textproto"
 	"one-api/common"
 	constant2 "one-api/constant"
 	"one-api/dto"
@@ -24,8 +25,6 @@ import (
 	"one-api/service"
 	"path/filepath"
 	"strings"
-
-	"net/textproto"
 
 	"github.com/gin-gonic/gin"
 )
@@ -93,7 +92,10 @@ func (a *Adaptor) GetRequestURL(info *relaycommon.RelayInfo) (string, error) {
 		requestURL = fmt.Sprintf("%s?api-version=%s", requestURL, apiVersion)
 		task := strings.TrimPrefix(requestURL, "/v1/")
 		model_ := info.UpstreamModelName
-		model_ = strings.Replace(model_, ".", "", -1)
+		// 2025年5月10日后创建的渠道不移除.
+		if info.ChannelCreateTime < constant2.AzureNoRemoveDotTime {
+			model_ = strings.Replace(model_, ".", "", -1)
+		}
 		// https://github.com/songquanpeng/one-api/issues/67
 		requestURL = fmt.Sprintf("/openai/deployments/%s/%s", model_, task)
 		if info.RelayMode == constant.RelayModeRealtime {
