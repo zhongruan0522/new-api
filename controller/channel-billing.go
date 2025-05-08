@@ -108,7 +108,7 @@ type DeepSeekUsageResponse struct {
 	} `json:"balance_infos"`
 }
 
-type OpenRouterResponse struct {
+type OpenRouterCreditResponse struct {
 	Data struct {
 		TotalCredits float64 `json:"total_credits"`
 		TotalUsage   float64 `json:"total_usage"`
@@ -294,7 +294,7 @@ func updateChannelOpenRouterBalance(channel *model.Channel) (float64, error) {
 	if err != nil {
 		return 0, err
 	}
-	response := OpenRouterResponse{}
+	response := OpenRouterCreditResponse{}
 	err = json.Unmarshal(body, &response)
 	if err != nil {
 		return 0, err
