@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"one-api/common"
 	"one-api/common/limiter"
+	"one-api/constant"
 	"one-api/setting"
 	"strconv"
 	"time"
@@ -174,6 +175,19 @@ func ModelRequestRateLimit() func(c *gin.Context) {
 		duration := int64(setting.ModelRequestRateLimitDurationMinutes * 60)
 		totalMaxCount := setting.ModelRequestRateLimitCount
 		successMaxCount := setting.ModelRequestRateLimitSuccessCount
+
+		// 获取分组
+		group := c.GetString("token_group")
+		if group == "" {
+			group = c.GetString(constant.ContextKeyUserGroup)
+		}
+
+		//获取分组的限流配置
+		groupTotalCount, groupSuccessCount, found := setting.GetGroupRateLimit(group)
+		if found {
+			totalMaxCount = groupTotalCount
+			successMaxCount = groupSuccessCount
+		}
 
 		// 根据存储类型选择并执行限流处理器
 		if common.RedisEnabled {
