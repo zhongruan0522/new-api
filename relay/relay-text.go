@@ -193,15 +193,7 @@ func TextHelper(c *gin.Context) (openaiErr *dto.OpenAIErrorWithStatusCode) {
 	}
 
 	var httpResp *http.Response
-	var resp any
-
-	if relayInfo.IsStream {
-		// Streaming requests can use SSE ping to keep alive and avoid connection timeout
-		// The judgment of whether ping is enabled will be made within the function
-		resp, err = helper.DoStreamRequestWithPinger(adaptor.DoRequest, c, relayInfo, requestBody)
-	} else {
-		resp, err = adaptor.DoRequest(c, relayInfo, requestBody)
-	}
+	resp, err := adaptor.DoRequest(c, relayInfo, requestBody)
 
 	if err != nil {
 		return service.OpenAIErrorWrapper(err, "do_request_failed", http.StatusInternalServerError)
