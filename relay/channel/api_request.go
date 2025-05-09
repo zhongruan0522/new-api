@@ -62,6 +62,9 @@ func DoFormRequest(a Adaptor, c *gin.Context, info *common.RelayInfo, requestBod
 	if err != nil {
 		return nil, fmt.Errorf("get request url failed: %w", err)
 	}
+	if common2.DebugEnabled {
+		println("fullRequestURL:", fullRequestURL)
+	}
 	req, err := http.NewRequest(c.Request.Method, fullRequestURL, requestBody)
 	if err != nil {
 		return nil, fmt.Errorf("new request failed: %w", err)
