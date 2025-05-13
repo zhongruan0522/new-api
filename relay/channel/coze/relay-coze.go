@@ -30,7 +30,7 @@ func convertCozeChatRequest(c *gin.Context, request dto.GeneralOpenAIRequest) *C
 	}
 	cozeRequest := &CozeChatRequest{
 		// TODO: model to botid
-		BotId:              "1",
+		BotId:              c.GetString("bot_id"),
 		UserId:             c.GetString("id"),
 		AdditionalMessages: messages,
 		Stream:             request.Stream,
