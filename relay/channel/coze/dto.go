@@ -49,3 +49,30 @@ type CozeChatUsage struct {
 	OutputCount int `json:"output_count"`
 	InputCount  int `json:"input_count"`
 }
+
+type CozeChatDetailResponse struct {
+	Data   []CozeChatV3MessageDetail `json:"data"`
+	Code   int                       `json:"code"`
+	Msg    string                    `json:"msg"`
+	Detail CozeResponseDetail        `json:"detail"`
+}
+
+type CozeChatV3MessageDetail struct {
+	Id               string          `json:"id"`
+	Role             string          `json:"role"`
+	Type             string          `json:"type"`
+	BotId            string          `json:"bot_id"`
+	ChatId           string          `json:"chat_id"`
+	Content          json.RawMessage `json:"content"`
+	MetaData         json.RawMessage `json:"meta_data"`
+	CreatedAt        int64           `json:"created_at"`
+	SectionId        string          `json:"section_id"`
+	UpdatedAt        int64           `json:"updated_at"`
+	ContentType      string          `json:"content_type"`
+	ConversationId   string          `json:"conversation_id"`
+	ReasoningContent string          `json:"reasoning_content"`
+}
+
+type CozeResponseDetail struct {
+	Logid string `json:"logid"`
+}
