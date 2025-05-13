@@ -42,7 +42,7 @@ func (a *Adaptor) ConvertOpenAIRequest(c *gin.Context, info *common.RelayInfo, r
 	if request == nil {
 		return nil, errors.New("request is nil")
 	}
-	return convertCozeChatRequest(*request), nil
+	return convertCozeChatRequest(c, *request), nil
 }
 
 // ConvertOpenAIResponsesRequest implements channel.Adaptor.
@@ -88,7 +88,7 @@ func (a *Adaptor) DoRequest(c *gin.Context, info *common.RelayInfo, requestBody 
 		time.Sleep(time.Second * 1)
 	}
 	// 发送获取消息请求
-	return channel.DoApiRequest(a, c, info, requestBody)
+	return getChatDetail(a, c, info)
 }
 
 // DoResponse implements channel.Adaptor.
@@ -109,7 +109,7 @@ func (a *Adaptor) GetModelList() []string {
 
 // GetRequestURL implements channel.Adaptor.
 func (a *Adaptor) GetRequestURL(info *common.RelayInfo) (string, error) {
-	return fmt.Sprintf("%s/v3/chat/message/list", info.BaseUrl), nil
+	return fmt.Sprintf("%s/v3/chat", info.BaseUrl), nil
 }
 
 // Init implements channel.Adaptor.

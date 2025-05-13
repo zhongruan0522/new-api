@@ -2,39 +2,9 @@ package coze
 
 import "encoding/json"
 
-// type CozeResponse struct {
-// 	Code    int                  `json:"code"`
-// 	Message string               `json:"message"`
-// 	Data    CozeConversationData `json:"data"`
-// 	Detail  CozeConversationData `json:"detail"`
-// }
-
-// type CozeConversationData struct {
-// 	Id            string          `json:"id"`
-// 	CreatedAt     int64           `json:"created_at"`
-// 	MetaData      json.RawMessage `json:"meta_data"`
-// 	LastSectionId string          `json:"last_section_id"`
-// }
-
-// type CozeResponseDetail struct {
-// 	Logid string `json:"logid"`
-// }
-
 type CozeError struct {
 	Code    int    `json:"code"`
 	Message string `json:"message"`
-}
-
-// type CozeErrorWithStatusCode struct {
-// 	Error      CozeError `json:"error"`
-// 	StatusCode int
-// 	LocalError bool
-// }
-
-type CozeRequest struct {
-	BotId    string             `json:"bot_id,omitempty"`
-	MetaData json.RawMessage    `json:"meta_data,omitempty"`
-	Messages []CozeEnterMessage `json:"messages,omitempty"`
 }
 
 type CozeEnterMessage struct {

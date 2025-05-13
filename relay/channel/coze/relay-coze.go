@@ -13,7 +13,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func convertCozeChatRequest(request dto.GeneralOpenAIRequest) *CozeRequest {
+func convertCozeChatRequest(c *gin.Context, request dto.GeneralOpenAIRequest) *CozeChatRequest {
 	var messages []CozeEnterMessage
 	// 将 request的messages的role为user的content转换为CozeMessage
 	for _, message := range request.Messages {
@@ -26,10 +26,12 @@ func convertCozeChatRequest(request dto.GeneralOpenAIRequest) *CozeRequest {
 			})
 		}
 	}
-	cozeRequest := &CozeRequest{
+	cozeRequest := &CozeChatRequest{
 		// TODO: model to botid
-		BotId:    "1",
-		Messages: messages,
+		BotId:              "1",
+		UserId:             c.GetString("id"),
+		AdditionalMessages: messages,
+		Stream:             request.Stream,
 	}
 	return cozeRequest
 }
@@ -99,6 +101,25 @@ func checkIfChatComplete(a *Adaptor, c *gin.Context, info *relaycommon.RelayInfo
 	} else {
 		return nil, false
 	}
+}
+
+func getChatDetail(a *Adaptor, c *gin.Context, info *relaycommon.RelayInfo) (*http.Response, error) {
+	requestURL := fmt.Sprintf("%s/v3/chat/message/list", info.BaseUrl)
+
+	requestURL = requestURL + "?conversation_id=" + c.GetString("coze_conversation_id") + "&chat_id=" + c.GetString("coze_chat_id")
+	req, err := http.NewRequest("GET", requestURL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("new request failed: %w", err)
+	}
+	err = a.SetupRequestHeader(c, &req.Header, info)
+	if err != nil {
+		return nil, fmt.Errorf("setup request header failed: %w", err)
+	}
+	resp, err := doRequest(req, info)
+	if err != nil {
+		return nil, fmt.Errorf("do request failed: %w", err)
+	}
+	return resp, nil
 }
 
 func doRequest(req *http.Request, info *common.RelayInfo) (*http.Response, error) {
