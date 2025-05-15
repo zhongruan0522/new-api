@@ -28,10 +28,13 @@ func convertCozeChatRequest(c *gin.Context, request dto.GeneralOpenAIRequest) *C
 			})
 		}
 	}
+	user := request.User
+	if user == "" {
+		user = helper.GetResponseID(c)
+	}
 	cozeRequest := &CozeChatRequest{
-		// TODO: model to botid
 		BotId:              c.GetString("bot_id"),
-		UserId:             c.GetString("id"),
+		UserId:             user,
 		AdditionalMessages: messages,
 		Stream:             request.Stream,
 	}
@@ -172,6 +175,6 @@ func doRequest(req *http.Request, info *common.RelayInfo) (*http.Response, error
 	if err != nil { // 增加对 client.Do(req) 返回错误的检查
 		return nil, fmt.Errorf("client.Do failed: %w", err)
 	}
-	_ = resp.Body.Close()
+	// _ = resp.Body.Close()
 	return resp, nil
 }
