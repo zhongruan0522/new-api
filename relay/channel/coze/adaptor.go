@@ -57,6 +57,9 @@ func (a *Adaptor) ConvertRerankRequest(c *gin.Context, relayMode int, request dt
 
 // DoRequest implements channel.Adaptor.
 func (a *Adaptor) DoRequest(c *gin.Context, info *common.RelayInfo, requestBody io.Reader) (any, error) {
+	if info.IsStream {
+		return channel.DoApiRequest(a, c, info, requestBody)
+	}
 	// 首先发送创建消息请求，成功后再发送获取消息请求
 	// 发送创建消息请求
 	resp, err := channel.DoApiRequest(a, c, info, requestBody)
@@ -93,7 +96,11 @@ func (a *Adaptor) DoRequest(c *gin.Context, info *common.RelayInfo, requestBody 
 
 // DoResponse implements channel.Adaptor.
 func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, info *common.RelayInfo) (usage any, err *dto.OpenAIErrorWithStatusCode) {
-	err, usage = cozeChatHandler(c, resp, info)
+	if info.IsStream {
+		err, usage = cozeChatStreamHandler(c, resp, info)
+	} else {
+		err, usage = cozeChatHandler(c, resp, info)
+	}
 	return
 }
 
