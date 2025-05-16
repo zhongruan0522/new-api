@@ -240,5 +240,7 @@ func SetupContextForSelectedChannel(c *gin.Context, channel *model.Channel, mode
 		c.Set("api_version", channel.Other)
 	case common.ChannelTypeMokaAI:
 		c.Set("api_version", channel.Other)
+	case common.ChannelTypeCoze:
+		c.Set("bot_id", channel.Other)
 	}
 }
