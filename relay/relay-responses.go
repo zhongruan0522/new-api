@@ -19,7 +19,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func getAndValidateResponsesRequest(c *gin.Context, relayInfo *relaycommon.RelayInfo) (*dto.OpenAIResponsesRequest, error) {
+func getAndValidateResponsesRequest(c *gin.Context) (*dto.OpenAIResponsesRequest, error) {
 	request := &dto.OpenAIResponsesRequest{}
 	err := common.UnmarshalBodyReusable(c, request)
 	if err != nil {
@@ -31,13 +31,11 @@ func getAndValidateResponsesRequest(c *gin.Context, relayInfo *relaycommon.Relay
 	if len(request.Input) == 0 {
 		return nil, errors.New("input is required")
 	}
-	relayInfo.IsStream = request.Stream
 	return request, nil
 
 }
 
 func checkInputSensitive(textRequest *dto.OpenAIResponsesRequest, info *relaycommon.RelayInfo) ([]string, error) {
-
 	sensitiveWords, err := service.CheckSensitiveInput(textRequest.Input)
 	return sensitiveWords, err
 }
@@ -49,12 +47,14 @@ func getInputTokens(req *dto.OpenAIResponsesRequest, info *relaycommon.RelayInfo
 }
 
 func ResponsesHelper(c *gin.Context) (openaiErr *dto.OpenAIErrorWithStatusCode) {
-	relayInfo := relaycommon.GenRelayInfo(c)
-	req, err := getAndValidateResponsesRequest(c, relayInfo)
+	req, err := getAndValidateResponsesRequest(c)
 	if err != nil {
 		common.LogError(c, fmt.Sprintf("getAndValidateResponsesRequest error: %s", err.Error()))
 		return service.OpenAIErrorWrapperLocal(err, "invalid_responses_request", http.StatusBadRequest)
 	}
+
+	relayInfo := relaycommon.GenRelayInfoResponses(c, req)
+
 	if setting.ShouldCheckPromptSensitive() {
 		sensitiveWords, err := checkInputSensitive(req, relayInfo)
 		if err != nil {

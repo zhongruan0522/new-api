@@ -8,6 +8,7 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http"
+	"net/textproto"
 	"one-api/common"
 	constant2 "one-api/constant"
 	"one-api/dto"
@@ -24,8 +25,6 @@ import (
 	"one-api/service"
 	"path/filepath"
 	"strings"
-
-	"net/textproto"
 
 	"github.com/gin-gonic/gin"
 )
@@ -68,9 +67,6 @@ func (a *Adaptor) GetRequestURL(info *relaycommon.RelayInfo) (string, error) {
 	if info.RelayFormat == relaycommon.RelayFormatClaude {
 		return fmt.Sprintf("%s/v1/chat/completions", info.BaseUrl), nil
 	}
-	if info.RelayMode == constant.RelayModeResponses {
-		return fmt.Sprintf("%s/v1/responses", info.BaseUrl), nil
-	}
 	if info.RelayMode == constant.RelayModeRealtime {
 		if strings.HasPrefix(info.BaseUrl, "https://") {
 			baseUrl := strings.TrimPrefix(info.BaseUrl, "https://")
@@ -93,7 +89,10 @@ func (a *Adaptor) GetRequestURL(info *relaycommon.RelayInfo) (string, error) {
 		requestURL = fmt.Sprintf("%s?api-version=%s", requestURL, apiVersion)
 		task := strings.TrimPrefix(requestURL, "/v1/")
 		model_ := info.UpstreamModelName
-		model_ = strings.Replace(model_, ".", "", -1)
+		// 2025年5月10日后创建的渠道不移除.
+		if info.ChannelCreateTime < constant2.AzureNoRemoveDotTime {
+			model_ = strings.Replace(model_, ".", "", -1)
+		}
 		// https://github.com/songquanpeng/one-api/issues/67
 		requestURL = fmt.Sprintf("/openai/deployments/%s/%s", model_, task)
 		if info.RelayMode == constant.RelayModeRealtime {
@@ -173,7 +172,7 @@ func (a *Adaptor) ConvertOpenAIRequest(c *gin.Context, info *relaycommon.RelayIn
 		info.UpstreamModelName = request.Model
 
 		// o系列模型developer适配（o1-mini除外）
-		if !strings.HasPrefix(request.Model, "o1-mini") {
+		if !strings.HasPrefix(request.Model, "o1-mini") && !strings.HasPrefix(request.Model, "o1-preview") {
 			//修改第一个Message的内容，将system改为developer
 			if len(request.Messages) > 0 && request.Messages[0].Role == "system" {
 				request.Messages[0].Role = "developer"
@@ -429,7 +428,7 @@ func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, info *relaycom
 		if info.IsStream {
 			err, usage = OaiResponsesStreamHandler(c, resp, info)
 		} else {
-			err, usage = OpenaiResponsesHandler(c, resp, info)
+			err, usage = OaiResponsesHandler(c, resp, info)
 		}
 	default:
 		if info.IsStream {

@@ -391,6 +391,7 @@ func removeAdditionalPropertiesWithDepth(schema interface{}, depth int) interfac
 	}
 	// 删除所有的title字段
 	delete(v, "title")
+	delete(v, "$schema")
 	// 如果type不为object和array，则直接返回
 	if typeVal, exists := v["type"]; !exists || (typeVal != "object" && typeVal != "array") {
 		return schema

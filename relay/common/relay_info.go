@@ -36,11 +36,22 @@ type ClaudeConvertInfo struct {
 const (
 	RelayFormatOpenAI = "openai"
 	RelayFormatClaude = "claude"
+	RelayFormatGemini = "gemini"
 )
 
 type RerankerInfo struct {
 	Documents       []any
 	ReturnDocuments bool
+}
+
+type BuildInToolInfo struct {
+	ToolName          string
+	CallCount         int
+	SearchContextSize string
+}
+
+type ResponsesUsageInfo struct {
+	BuiltInTools map[string]*BuildInToolInfo
 }
 
 type RelayInfo struct {
@@ -87,9 +98,11 @@ type RelayInfo struct {
 	UserQuota            int
 	RelayFormat          string
 	SendResponseCount    int
+	ChannelCreateTime    int64
 	ThinkingContentInfo
 	*ClaudeConvertInfo
 	*RerankerInfo
+	*ResponsesUsageInfo
 }
 
 // 定义支持流式选项的通道类型
@@ -103,6 +116,8 @@ var streamSupportedChannels = map[int]bool{
 	common.ChannelTypeVolcEngine: true,
 	common.ChannelTypeOllama:     true,
 	common.ChannelTypeXai:        true,
+	common.ChannelTypeDeepSeek:   true,
+	common.ChannelTypeBaiduV2:    true,
 }
 
 func GenRelayInfoWs(c *gin.Context, ws *websocket.Conn) *RelayInfo {
@@ -131,6 +146,31 @@ func GenRelayInfoRerank(c *gin.Context, req *dto.RerankRequest) *RelayInfo {
 		Documents:       req.Documents,
 		ReturnDocuments: req.GetReturnDocuments(),
 	}
+	return info
+}
+
+func GenRelayInfoResponses(c *gin.Context, req *dto.OpenAIResponsesRequest) *RelayInfo {
+	info := GenRelayInfo(c)
+	info.RelayMode = relayconstant.RelayModeResponses
+	info.ResponsesUsageInfo = &ResponsesUsageInfo{
+		BuiltInTools: make(map[string]*BuildInToolInfo),
+	}
+	if len(req.Tools) > 0 {
+		for _, tool := range req.Tools {
+			info.ResponsesUsageInfo.BuiltInTools[tool.Type] = &BuildInToolInfo{
+				ToolName:  tool.Type,
+				CallCount: 0,
+			}
+			switch tool.Type {
+			case dto.BuildInToolWebSearchPreview:
+				if tool.SearchContextSize == "" {
+					tool.SearchContextSize = "medium"
+				}
+				info.ResponsesUsageInfo.BuiltInTools[tool.Type].SearchContextSize = tool.SearchContextSize
+			}
+		}
+	}
+	info.IsStream = req.Stream
 	return info
 }
 
@@ -170,14 +210,15 @@ func GenRelayInfo(c *gin.Context) *RelayInfo {
 		OriginModelName:   c.GetString("original_model"),
 		UpstreamModelName: c.GetString("original_model"),
 		//RecodeModelName:   c.GetString("original_model"),
-		IsModelMapped:  false,
-		ApiType:        apiType,
-		ApiVersion:     c.GetString("api_version"),
-		ApiKey:         strings.TrimPrefix(c.Request.Header.Get("Authorization"), "Bearer "),
-		Organization:   c.GetString("channel_organization"),
-		ChannelSetting: channelSetting,
-		ParamOverride:  paramOverride,
-		RelayFormat:    RelayFormatOpenAI,
+		IsModelMapped:     false,
+		ApiType:           apiType,
+		ApiVersion:        c.GetString("api_version"),
+		ApiKey:            strings.TrimPrefix(c.Request.Header.Get("Authorization"), "Bearer "),
+		Organization:      c.GetString("channel_organization"),
+		ChannelSetting:    channelSetting,
+		ChannelCreateTime: c.GetInt64("channel_create_time"),
+		ParamOverride:     paramOverride,
+		RelayFormat:       RelayFormatOpenAI,
 		ThinkingContentInfo: ThinkingContentInfo{
 			IsFirstThinkingContent:  true,
 			SendLastThinkingContent: false,
