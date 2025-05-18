@@ -3,166 +3,82 @@ import { Link, useNavigate } from 'react-router-dom';
 import { UserContext } from '../context/User';
 import { useSetTheme, useTheme } from '../context/Theme';
 import { useTranslation } from 'react-i18next';
-
-import { API, getLogo, getSystemName, isMobile, showSuccess } from '../helpers';
-import '../index.css';
-
+import { API, getLogo, getSystemName, showSuccess } from '../helpers';
 import fireworks from 'react-fireworks';
+import { CN, GB } from 'country-flag-icons/react/3x2';
 
 import {
   IconClose,
-  IconHelpCircle,
-  IconHome,
-  IconHomeStroked,
-  IconIndentLeft,
-  IconComment,
-  IconKey,
   IconMenu,
-  IconNoteMoneyStroked,
-  IconPriceTag,
-  IconUser,
   IconLanguage,
-  IconInfoCircle,
-  IconCreditCard,
-  IconTerminal,
+  IconChevronDown,
+  IconSun,
+  IconMoon,
 } from '@douyinfe/semi-icons';
 import {
   Avatar,
   Button,
   Dropdown,
-  Layout,
-  Nav,
-  Switch,
   Tag,
+  Typography,
+  Skeleton,
 } from '@douyinfe/semi-ui';
 import { stringToColor } from '../helpers/render';
-import Text from '@douyinfe/semi-ui/lib/es/typography/text';
-import { StyleContext } from '../context/Style/index.js';
 import { StatusContext } from '../context/Status/index.js';
-
-// 自定义顶部栏样式
-const headerStyle = {
-  boxShadow: '0 2px 10px rgba(0, 0, 0, 0.1)',
-  borderBottom: '1px solid var(--semi-color-border)',
-  background: 'var(--semi-color-bg-0)',
-  transition: 'all 0.3s ease',
-  width: '100%',
-};
-
-// 自定义顶部栏按钮样式
-const headerItemStyle = {
-  borderRadius: '4px',
-  margin: '0 4px',
-  transition: 'all 0.3s ease',
-};
-
-// 自定义顶部栏按钮悬停样式
-const headerItemHoverStyle = {
-  backgroundColor: 'var(--semi-color-primary-light-default)',
-  color: 'var(--semi-color-primary)',
-};
-
-// 自定义顶部栏Logo样式
-const logoStyle = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: '10px',
-  padding: '0 10px',
-  height: '100%',
-};
-
-// 自定义顶部栏系统名称样式
-const systemNameStyle = {
-  fontWeight: 'bold',
-  fontSize: '18px',
-  background:
-    'linear-gradient(45deg, var(--semi-color-primary), var(--semi-color-secondary))',
-  WebkitBackgroundClip: 'text',
-  WebkitTextFillColor: 'transparent',
-  padding: '0 5px',
-};
-
-// 自定义顶部栏按钮图标样式
-const headerIconStyle = {
-  fontSize: '18px',
-  transition: 'all 0.3s ease',
-};
-
-// 自定义头像样式
-const avatarStyle = {
-  margin: '4px',
-  cursor: 'pointer',
-  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
-  transition: 'all 0.3s ease',
-};
-
-// 自定义下拉菜单样式
-const dropdownStyle = {
-  borderRadius: '8px',
-  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-  overflow: 'hidden',
-};
-
-// 自定义主题切换开关样式
-const switchStyle = {
-  margin: '0 8px',
-};
+import { StyleContext } from '../context/Style/index.js';
 
 const HeaderBar = () => {
   const { t, i18n } = useTranslation();
   const [userState, userDispatch] = useContext(UserContext);
-  const [styleState, styleDispatch] = useContext(StyleContext);
   const [statusState, statusDispatch] = useContext(StatusContext);
+  const [styleState, styleDispatch] = useContext(StyleContext);
+  const [isLoading, setIsLoading] = useState(true);
   let navigate = useNavigate();
   const [currentLang, setCurrentLang] = useState(i18n.language);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const systemName = getSystemName();
   const logo = getLogo();
   const currentDate = new Date();
-  // enable fireworks on new year(1.1 and 2.9-2.24)
   const isNewYear = currentDate.getMonth() === 0 && currentDate.getDate() === 1;
 
-  // Check if self-use mode is enabled
   const isSelfUseMode = statusState?.status?.self_use_mode_enabled || false;
   const docsLink = statusState?.status?.docs_link || '';
   const isDemoSiteMode = statusState?.status?.demo_site_enabled || false;
 
-  let buttons = [
+  const theme = useTheme();
+  const setTheme = useSetTheme();
+
+  const mainNavLinks = [
     {
       text: t('首页'),
       itemKey: 'home',
       to: '/',
-      icon: <IconHome style={headerIconStyle} />,
     },
     {
       text: t('控制台'),
       itemKey: 'detail',
-      to: '/',
-      icon: <IconTerminal style={headerIconStyle} />,
+      to: '/detail',
     },
     {
       text: t('定价'),
       itemKey: 'pricing',
       to: '/pricing',
-      icon: <IconPriceTag style={headerIconStyle} />,
     },
-    // Only include the docs button if docsLink exists
     ...(docsLink
       ? [
-          {
-            text: t('文档'),
-            itemKey: 'docs',
-            isExternal: true,
-            externalLink: docsLink,
-            icon: <IconHelpCircle style={headerIconStyle} />,
-          },
-        ]
+        {
+          text: t('文档'),
+          itemKey: 'docs',
+          isExternal: true,
+          externalLink: docsLink,
+        },
+      ]
       : []),
     {
       text: t('关于'),
       itemKey: 'about',
       to: '/about',
-      icon: <IconInfoCircle style={headerIconStyle} />,
     },
   ];
 
@@ -172,6 +88,7 @@ const HeaderBar = () => {
     userDispatch({ type: 'logout' });
     localStorage.removeItem('user');
     navigate('/login');
+    setMobileMenuOpen(false);
   }
 
   const handleNewYearClick = () => {
@@ -179,31 +96,24 @@ const HeaderBar = () => {
     fireworks.start();
     setTimeout(() => {
       fireworks.stop();
-      setTimeout(() => {
-        window.location.reload();
-      }, 10000);
     }, 3000);
   };
-
-  const theme = useTheme();
-  const setTheme = useSetTheme();
 
   useEffect(() => {
     if (theme === 'dark') {
       document.body.setAttribute('theme-mode', 'dark');
+      document.documentElement.classList.add('dark');
     } else {
       document.body.removeAttribute('theme-mode');
+      document.documentElement.classList.remove('dark');
     }
-    // 发送当前主题模式给子页面
+
     const iframe = document.querySelector('iframe');
     if (iframe) {
       iframe.contentWindow.postMessage({ themeMode: theme }, '*');
     }
 
-    if (isNewYear) {
-      console.log('Happy New Year!');
-    }
-  }, [theme]);
+  }, [theme, isNewYear]);
 
   useEffect(() => {
     const handleLanguageChanged = (lng) => {
@@ -215,279 +125,309 @@ const HeaderBar = () => {
     };
 
     i18n.on('languageChanged', handleLanguageChanged);
-
     return () => {
       i18n.off('languageChanged', handleLanguageChanged);
     };
   }, [i18n]);
 
+  useEffect(() => {
+    // 模拟加载用户状态的过程
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, []);
+
   const handleLanguageChange = (lang) => {
     i18n.changeLanguage(lang);
+    setMobileMenuOpen(false);
+  };
+
+  const handleNavLinkClick = (itemKey) => {
+    if (itemKey === 'home') {
+      styleDispatch({ type: 'SET_INNER_PADDING', payload: false });
+      styleDispatch({ type: 'SET_SIDER', payload: false });
+    } else {
+      styleDispatch({ type: 'SET_INNER_PADDING', payload: true });
+      if (!styleState.isMobile) {
+        styleDispatch({ type: 'SET_SIDER', payload: true });
+      }
+    }
+    setMobileMenuOpen(false);
+  };
+
+  const renderNavLinks = (isMobileView = false) =>
+    mainNavLinks.map((link) => {
+      const commonLinkClasses = isMobileView
+        ? 'flex items-center gap-1 p-3 w-full text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors font-semibold'
+        : 'flex items-center gap-1 p-2 text-sm text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors rounded-md font-semibold';
+
+      const linkContent = (
+        <span>{link.text}</span>
+      );
+
+      if (link.isExternal) {
+        return (
+          <a
+            key={link.itemKey}
+            href={link.externalLink}
+            target='_blank'
+            rel='noopener noreferrer'
+            className={commonLinkClasses}
+            onClick={() => handleNavLinkClick(link.itemKey)}
+          >
+            {linkContent}
+          </a>
+        );
+      }
+      return (
+        <Link
+          key={link.itemKey}
+          to={link.to}
+          className={commonLinkClasses}
+          onClick={() => handleNavLinkClick(link.itemKey)}
+        >
+          {linkContent}
+        </Link>
+      );
+    });
+
+  const renderUserArea = () => {
+    if (isLoading) {
+      return (
+        <div className="flex items-center p-1 rounded-full bg-semi-color-fill-0 dark:bg-semi-color-fill-1">
+          <Skeleton.Avatar size="extra-small" className="shadow-sm" />
+          <div className="ml-1.5 mr-1">
+            <Skeleton.Title style={{ width: styleState.isMobile ? 15 : 50, height: 12 }} />
+          </div>
+        </div>
+      );
+    }
+
+    if (userState.user) {
+      return (
+        <Dropdown
+          position="bottomRight"
+          render={
+            <Dropdown.Menu className="!bg-semi-color-bg-overlay !border-semi-color-border !shadow-lg !rounded-lg dark:!bg-gray-700 dark:!border-gray-600">
+              <Dropdown.Item onClick={logout} className="!px-3 !py-1.5 !text-sm !text-semi-color-text-0 hover:!bg-semi-color-fill-1 dark:!text-gray-200 dark:hover:!bg-red-500 dark:hover:!text-white">
+                {t('退出')}
+              </Dropdown.Item>
+            </Dropdown.Menu>
+          }
+        >
+          <Button
+            theme="borderless"
+            type="tertiary"
+            className="flex items-center gap-1.5 !p-1 !rounded-full hover:!bg-semi-color-fill-1 dark:hover:!bg-gray-700 !bg-semi-color-fill-0 dark:!bg-semi-color-fill-1 dark:hover:!bg-semi-color-fill-2"
+          >
+            <Avatar
+              size="extra-small"
+              color={stringToColor(userState.user.username)}
+              className="shadow-sm mr-1"
+            >
+              {userState.user.username[0].toUpperCase()}
+            </Avatar>
+            <span className="hidden md:inline">
+              <Typography.Text className="!text-xs !font-medium !text-semi-color-text-1 dark:!text-gray-300 mr-1">
+                {userState.user.username}
+              </Typography.Text>
+            </span>
+            <IconChevronDown className="text-xs text-semi-color-text-2 dark:text-gray-400" />
+          </Button>
+        </Dropdown>
+      );
+    } else {
+      const showRegisterButton = !isSelfUseMode;
+
+      const commonSizingAndLayoutClass = "flex items-center justify-center !py-[10px] !px-1.5";
+
+      const loginButtonSpecificStyling = "!bg-semi-color-fill-0 dark:!bg-semi-color-fill-1 hover:!bg-semi-color-fill-1 dark:hover:!bg-gray-700 transition-colors";
+      let loginButtonClasses = `${commonSizingAndLayoutClass} ${loginButtonSpecificStyling}`;
+
+      let registerButtonClasses = `${commonSizingAndLayoutClass}`;
+
+      const loginButtonTextSpanClass = "!text-xs !text-semi-color-text-1 dark:!text-gray-300 !p-1.5";
+      const registerButtonTextSpanClass = "!text-xs !text-white !p-1.5";
+
+      if (showRegisterButton) {
+        if (styleState.isMobile) {
+          loginButtonClasses += " !rounded-full";
+        } else {
+          loginButtonClasses += " !rounded-l-full !rounded-r-none";
+        }
+        registerButtonClasses += " !rounded-r-full !rounded-l-none";
+      } else {
+        loginButtonClasses += " !rounded-full";
+      }
+
+      return (
+        <div className="flex items-center">
+          <Link to="/login" onClick={() => handleNavLinkClick('login')} className="flex">
+            <Button
+              theme="borderless"
+              type="tertiary"
+              className={loginButtonClasses}
+            >
+              <span className={loginButtonTextSpanClass}>
+                {t('登录')}
+              </span>
+            </Button>
+          </Link>
+          {showRegisterButton && (
+            <div className="hidden md:block">
+              <Link to="/register" onClick={() => handleNavLinkClick('register')} className="flex -ml-px">
+                <Button
+                  theme="solid"
+                  type="primary"
+                  className={registerButtonClasses}
+                >
+                  <span className={registerButtonTextSpanClass}>
+                    {t('注册')}
+                  </span>
+                </Button>
+              </Link>
+            </div>
+          )}
+        </div>
+      );
+    }
   };
 
   return (
-    <>
-      <Layout>
-        <div style={{ width: '100%' }}>
-          <Nav
-            className={'topnav'}
-            mode={'horizontal'}
-            style={headerStyle}
-            itemStyle={headerItemStyle}
-            hoverStyle={headerItemHoverStyle}
-            renderWrapper={({ itemElement, isSubNav, isInSubNav, props }) => {
-              const routerMap = {
-                about: '/about',
-                login: '/login',
-                register: '/register',
-                pricing: '/pricing',
-                detail: '/detail',
-                home: '/',
-                chat: '/chat',
-              };
-              return (
-                <div
-                  onClick={(e) => {
-                    if (props.itemKey === 'home') {
-                      styleDispatch({
-                        type: 'SET_INNER_PADDING',
-                        payload: false,
-                      });
-                      styleDispatch({ type: 'SET_SIDER', payload: false });
-                    } else {
-                      styleDispatch({
-                        type: 'SET_INNER_PADDING',
-                        payload: true,
-                      });
-                      if (!styleState.isMobile) {
-                        styleDispatch({ type: 'SET_SIDER', payload: true });
-                      }
-                    }
-                  }}
-                >
-                  {props.isExternal ? (
-                    <a
-                      className='header-bar-text'
-                      style={{ textDecoration: 'none' }}
-                      href={props.externalLink}
-                      target='_blank'
-                      rel='noopener noreferrer'
+    <header className="bg-semi-color-bg-0 text-semi-color-text-0 shadow-sm sticky top-0 z-50 transition-colors duration-300">
+      <div className="w-full px-4">
+        <div className="flex items-center justify-between h-16">
+          <div className="flex items-center">
+            <div className="md:hidden">
+              <Button
+                icon={mobileMenuOpen ? <IconClose className="text-lg" /> : <IconMenu className="text-lg" />}
+                aria-label={mobileMenuOpen ? t('关闭菜单') : t('打开菜单')}
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                theme="borderless"
+                type="tertiary"
+                className="!p-2 !text-current focus:!bg-semi-color-fill-1 dark:focus:!bg-gray-700"
+              />
+            </div>
+            <Link to="/" onClick={() => handleNavLinkClick('home')} className="flex items-center gap-2 group ml-2">
+              <img src={logo} alt="logo" className="h-7 md:h-8 transition-transform duration-300 ease-in-out group-hover:scale-105" />
+              <div className="hidden md:flex items-center gap-2">
+                <div className="flex items-center gap-2">
+                  <Typography.Title heading={4} className="!text-lg !font-semibold !mb-0 
+                                                          bg-gradient-to-r from-blue-500 to-purple-500 dark:from-blue-400 dark:to-purple-400
+                                                          bg-clip-text text-transparent">
+                    {systemName}
+                  </Typography.Title>
+                  {(isSelfUseMode || isDemoSiteMode) && (
+                    <Tag
+                      color={isSelfUseMode ? 'purple' : 'blue'}
+                      className="text-xs px-1.5 py-0.5 rounded whitespace-nowrap shadow-sm"
+                      size="small"
                     >
-                      {itemElement}
-                    </a>
-                  ) : (
-                    <Link
-                      className='header-bar-text'
-                      style={{ textDecoration: 'none' }}
-                      to={routerMap[props.itemKey]}
-                    >
-                      {itemElement}
-                    </Link>
+                      {isSelfUseMode ? t('自用模式') : t('演示站点')}
+                    </Tag>
                   )}
                 </div>
-              );
-            }}
-            selectedKeys={[]}
-            // items={headerButtons}
-            onSelect={(key) => {}}
-            header={
-              styleState.isMobile
-                ? {
-                    logo: (
-                      <div
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          position: 'relative',
-                        }}
-                      >
-                        {!styleState.showSider ? (
-                          <Button
-                            icon={<IconMenu />}
-                            theme='light'
-                            aria-label={t('展开侧边栏')}
-                            onClick={() =>
-                              styleDispatch({
-                                type: 'SET_SIDER',
-                                payload: true,
-                              })
-                            }
-                          />
-                        ) : (
-                          <Button
-                            icon={<IconIndentLeft />}
-                            theme='light'
-                            aria-label={t('闭侧边栏')}
-                            onClick={() =>
-                              styleDispatch({
-                                type: 'SET_SIDER',
-                                payload: false,
-                              })
-                            }
-                          />
-                        )}
-                        {(isSelfUseMode || isDemoSiteMode) && (
-                          <Tag
-                            color={isSelfUseMode ? 'purple' : 'blue'}
-                            style={{
-                              position: 'absolute',
-                              top: '-8px',
-                              right: '-15px',
-                              fontSize: '0.7rem',
-                              padding: '0 4px',
-                              height: 'auto',
-                              lineHeight: '1.2',
-                              zIndex: 1,
-                              pointerEvents: 'none',
-                            }}
-                          >
-                            {isSelfUseMode ? t('自用模式') : t('演示站点')}
-                          </Tag>
-                        )}
-                      </div>
-                    ),
-                  }
-                : {
-                    logo: (
-                      <div style={logoStyle}>
-                        <img src={logo} alt='logo' style={{ height: '28px' }} />
-                      </div>
-                    ),
-                    text: (
-                      <div
-                        style={{
-                          position: 'relative',
-                          display: 'inline-block',
-                        }}
-                      >
-                        <span style={systemNameStyle}>{systemName}</span>
-                        {(isSelfUseMode || isDemoSiteMode) && (
-                          <Tag
-                            color={isSelfUseMode ? 'purple' : 'blue'}
-                            style={{
-                              position: 'absolute',
-                              top: '-10px',
-                              right: '-25px',
-                              fontSize: '0.7rem',
-                              padding: '0 4px',
-                              whiteSpace: 'nowrap',
-                              zIndex: 1,
-                              boxShadow: '0 0 3px rgba(255, 255, 255, 0.7)',
-                            }}
-                          >
-                            {isSelfUseMode ? t('自用模式') : t('演示站点')}
-                          </Tag>
-                        )}
-                      </div>
-                    ),
-                  }
-            }
-            items={buttons}
-            footer={
-              <>
-                {isNewYear && (
-                  // happy new year
-                  <Dropdown
-                    position='bottomRight'
-                    render={
-                      <Dropdown.Menu style={dropdownStyle}>
-                        <Dropdown.Item onClick={handleNewYearClick}>
-                          Happy New Year!!!
-                        </Dropdown.Item>
-                      </Dropdown.Menu>
-                    }
-                  >
-                    <Nav.Item itemKey={'new-year'} text={'🎉'} />
-                  </Dropdown>
-                )}
-                {/* <Nav.Item itemKey={'about'} icon={<IconHelpCircle />} /> */}
-                <>
-                  <Switch
-                    checkedText='🌞'
-                    size={styleState.isMobile ? 'default' : 'large'}
-                    checked={theme === 'dark'}
-                    uncheckedText='🌙'
-                    style={switchStyle}
-                    onChange={(checked) => {
-                      setTheme(checked);
-                    }}
-                  />
-                </>
-                <Dropdown
-                  position='bottomRight'
-                  render={
-                    <Dropdown.Menu style={dropdownStyle}>
-                      <Dropdown.Item
-                        onClick={() => handleLanguageChange('zh')}
-                        type={currentLang === 'zh' ? 'primary' : 'tertiary'}
-                      >
-                        中文
-                      </Dropdown.Item>
-                      <Dropdown.Item
-                        onClick={() => handleLanguageChange('en')}
-                        type={currentLang === 'en' ? 'primary' : 'tertiary'}
-                      >
-                        English
-                      </Dropdown.Item>
-                    </Dropdown.Menu>
-                  }
+              </div>
+            </Link>
+            {(isSelfUseMode || isDemoSiteMode) && (
+              <div className="md:hidden">
+                <Tag
+                  color={isSelfUseMode ? 'purple' : 'blue'}
+                  className="ml-2 text-xs px-1 py-0.5 rounded whitespace-nowrap shadow-sm"
+                  size="small"
                 >
-                  <Nav.Item
-                    itemKey={'language'}
-                    icon={<IconLanguage style={headerIconStyle} />}
-                  />
-                </Dropdown>
-                {userState.user ? (
-                  <>
-                    <Dropdown
-                      position='bottomRight'
-                      render={
-                        <Dropdown.Menu style={dropdownStyle}>
-                          <Dropdown.Item onClick={logout}>
-                            {t('退出')}
-                          </Dropdown.Item>
-                        </Dropdown.Menu>
-                      }
-                    >
-                      <Avatar
-                        size='small'
-                        color={stringToColor(userState.user.username)}
-                        style={avatarStyle}
-                      >
-                        {userState.user.username[0]}
-                      </Avatar>
-                      {styleState.isMobile ? null : (
-                        <Text style={{ marginLeft: '4px', fontWeight: '500' }}>
-                          {userState.user.username}
-                        </Text>
-                      )}
-                    </Dropdown>
-                  </>
-                ) : (
-                  <>
-                    <Nav.Item
-                      itemKey={'login'}
-                      text={!styleState.isMobile ? t('登录') : null}
-                      icon={<IconUser style={headerIconStyle} />}
-                    />
-                    {
-                      // Hide register option in self-use mode
-                      !styleState.isMobile && !isSelfUseMode && (
-                        <Nav.Item
-                          itemKey={'register'}
-                          text={t('注册')}
-                          icon={<IconKey style={headerIconStyle} />}
-                        />
-                      )
-                    }
-                  </>
-                )}
-              </>
-            }
-          ></Nav>
+                  {isSelfUseMode ? t('自用模式') : t('演示站点')}
+                </Tag>
+              </div>
+            )}
+
+            <nav className="hidden md:flex items-center gap-1 lg:gap-2 ml-6">
+              {renderNavLinks()}
+            </nav>
+          </div>
+
+          <div className="flex items-center gap-2 md:gap-3">
+            {isNewYear && (
+              <Dropdown
+                position="bottomRight"
+                render={
+                  <Dropdown.Menu className="!bg-semi-color-bg-overlay !border-semi-color-border !shadow-lg !rounded-lg dark:!bg-gray-700 dark:!border-gray-600">
+                    <Dropdown.Item onClick={handleNewYearClick} className="!text-semi-color-text-0 hover:!bg-semi-color-fill-1 dark:!text-gray-200 dark:hover:!bg-gray-600">
+                      Happy New Year!!! 🎉
+                    </Dropdown.Item>
+                  </Dropdown.Menu>
+                }
+              >
+                <Button
+                  theme="borderless"
+                  type="tertiary"
+                  icon={<span className="text-xl">🎉</span>}
+                  aria-label="New Year"
+                  className="!p-1.5 !text-current focus:!bg-semi-color-fill-1 dark:focus:!bg-gray-700 rounded-full"
+                />
+              </Dropdown>
+            )}
+
+            <Button
+              icon={theme === 'dark' ? <IconSun size="large" className="text-yellow-500" /> : <IconMoon size="large" className="text-gray-300" />}
+              aria-label={t('切换主题')}
+              onClick={() => setTheme(theme === 'dark' ? false : true)}
+              theme="borderless"
+              type="tertiary"
+              className="!p-1.5 !text-current focus:!bg-semi-color-fill-1 dark:focus:!bg-gray-700 !rounded-full bg-semi-color-fill-0 dark:bg-semi-color-fill-1 hover:bg-semi-color-fill-1 dark:hover:bg-semi-color-fill-2"
+            />
+
+            <Dropdown
+              position="bottomRight"
+              render={
+                <Dropdown.Menu className="!bg-semi-color-bg-overlay !border-semi-color-border !shadow-lg !rounded-lg dark:!bg-gray-700 dark:!border-gray-600">
+                  <Dropdown.Item
+                    onClick={() => handleLanguageChange('zh')}
+                    className={`!flex !items-center !gap-2 !px-3 !py-1.5 !text-sm !text-semi-color-text-0 dark:!text-gray-200 ${currentLang === 'zh' ? '!bg-semi-color-primary-light-default dark:!bg-blue-600 !font-semibold' : 'hover:!bg-semi-color-fill-1 dark:hover:!bg-gray-600'}`}
+                  >
+                    <CN title="中文" className="!w-5 !h-auto" />
+                    <span>中文</span>
+                  </Dropdown.Item>
+                  <Dropdown.Item
+                    onClick={() => handleLanguageChange('en')}
+                    className={`!flex !items-center !gap-2 !px-3 !py-1.5 !text-sm !text-semi-color-text-0 dark:!text-gray-200 ${currentLang === 'en' ? '!bg-semi-color-primary-light-default dark:!bg-blue-600 !font-semibold' : 'hover:!bg-semi-color-fill-1 dark:hover:!bg-gray-600'}`}
+                  >
+                    <GB title="English" className="!w-5 !h-auto" />
+                    <span>English</span>
+                  </Dropdown.Item>
+                </Dropdown.Menu>
+              }
+            >
+              <Button
+                icon={<IconLanguage className="text-lg" />}
+                aria-label={t('切换语言')}
+                theme="borderless"
+                type="tertiary"
+                className="!p-1.5 !text-current focus:!bg-semi-color-fill-1 dark:focus:!bg-gray-700 !rounded-full bg-semi-color-fill-0 dark:bg-semi-color-fill-1 hover:bg-semi-color-fill-1 dark:hover:bg-semi-color-fill-2"
+              />
+            </Dropdown>
+
+            {renderUserArea()}
+          </div>
         </div>
-      </Layout>
-    </>
+      </div>
+
+      <div className="md:hidden">
+        <div
+          className={`
+            absolute top-16 left-0 right-0 bg-semi-color-bg-0 
+            shadow-lg p-3
+            transform transition-all duration-300 ease-in-out
+            ${mobileMenuOpen ? 'translate-y-0 opacity-100 visible' : '-translate-y-4 opacity-0 invisible'}
+          `}
+        >
+          <nav className="flex flex-col gap-1">
+            {renderNavLinks(true)}
+          </nav>
+        </div>
+      </div>
+    </header>
   );
 };
 
