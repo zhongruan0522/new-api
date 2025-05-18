@@ -224,7 +224,7 @@ const HeaderBar = () => {
             <Avatar
               size="extra-small"
               color={stringToColor(userState.user.username)}
-              className="shadow-sm mr-1"
+              className="mr-1"
             >
               {userState.user.username[0].toUpperCase()}
             </Avatar>
@@ -295,7 +295,7 @@ const HeaderBar = () => {
   };
 
   return (
-    <header className="bg-semi-color-bg-0 text-semi-color-text-0 shadow-sm sticky top-0 z-50 transition-colors duration-300">
+    <header className="bg-semi-color-bg-0 text-semi-color-text-0 sticky top-0 z-50 transition-colors duration-300">
       <div className="w-full px-4">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center">

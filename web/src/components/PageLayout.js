@@ -88,7 +88,7 @@ const PageLayout = () => {
           width: '100%',
           top: 0,
           zIndex: 100,
-          boxShadow: '0 1px 6px rgba(0, 0, 0, 0.08)',
+          borderBottom: '1px solid var(--semi-color-border)',
         }}
       >
         <HeaderBar />
