@@ -353,15 +353,23 @@ const HeaderBar = () => {
               />
             </div>
             <Link to="/" onClick={() => handleNavLinkClick('home')} className="flex items-center gap-2 group ml-2">
-              <img src={logo} alt="logo" className="h-7 md:h-8 transition-transform duration-300 ease-in-out group-hover:scale-105" />
+              {isLoading ? (
+                <Skeleton.Image className="h-7 md:h-8 !rounded-full" style={{ width: 32, height: 32 }} />
+              ) : (
+                <img src={logo} alt="logo" className="h-7 md:h-8 transition-transform duration-300 ease-in-out group-hover:scale-105" />
+              )}
               <div className="hidden md:flex items-center gap-2">
                 <div className="flex items-center gap-2">
-                  <Typography.Title heading={4} className="!text-lg !font-semibold !mb-0 
+                  {isLoading ? (
+                    <Skeleton.Title style={{ width: 120, height: 24 }} />
+                  ) : (
+                    <Typography.Title heading={4} className="!text-lg !font-semibold !mb-0 
                                                           bg-gradient-to-r from-blue-500 to-purple-500 dark:from-blue-400 dark:to-purple-400
                                                           bg-clip-text text-transparent">
-                    {systemName}
-                  </Typography.Title>
-                  {(isSelfUseMode || isDemoSiteMode) && (
+                      {systemName}
+                    </Typography.Title>
+                  )}
+                  {(isSelfUseMode || isDemoSiteMode) && !isLoading && (
                     <Tag
                       color={isSelfUseMode ? 'purple' : 'blue'}
                       className="text-xs px-1.5 py-0.5 rounded whitespace-nowrap shadow-sm"
@@ -373,7 +381,7 @@ const HeaderBar = () => {
                 </div>
               </div>
             </Link>
-            {(isSelfUseMode || isDemoSiteMode) && (
+            {(isSelfUseMode || isDemoSiteMode) && !isLoading && (
               <div className="md:hidden">
                 <Tag
                   color={isSelfUseMode ? 'purple' : 'blue'}
