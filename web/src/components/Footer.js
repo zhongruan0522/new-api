@@ -1,15 +1,10 @@
-import React, { useEffect, useState, useContext } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { getFooterHTML, getSystemName } from '../helpers';
-import { Layout, Tooltip } from '@douyinfe/semi-ui';
-import { StyleContext } from '../context/Style/index.js';
+import { getFooterHTML } from '../helpers';
 
 const FooterBar = () => {
   const { t } = useTranslation();
-  const systemName = getSystemName();
   const [footer, setFooter] = useState(getFooterHTML());
-  const [styleState] = useContext(StyleContext);
-  let remainCheckTimes = 5;
 
   const loadFooter = () => {
     let footer_html = localStorage.getItem('footer_html');
@@ -18,7 +13,7 @@ const FooterBar = () => {
     }
   };
 
-  const defaultFooter = (
+  const defaultFooter = useMemo(() => (
     <div className='custom-footer'>
       <a
         href='https://github.com/Calcium-Ion/new-api'
@@ -40,18 +35,10 @@ const FooterBar = () => {
         One API
       </a>
     </div>
-  );
+  ), [t]);
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      if (remainCheckTimes <= 0) {
-        clearInterval(timer);
-        return;
-      }
-      remainCheckTimes--;
-      loadFooter();
-    }, 200);
-    return () => clearTimeout(timer);
+    loadFooter();
   }, []);
 
   return (
