@@ -515,9 +515,6 @@ const SiderBar = () => {
         ))}
 
         <Nav.Footer
-          style={{
-            paddingBottom: styleState?.isMobile ? '112px' : '',
-          }}
           collapseButton={true}
           collapseText={(collapsed) => {
             if (collapsed) {
