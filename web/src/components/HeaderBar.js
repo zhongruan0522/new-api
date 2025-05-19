@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { UserContext } from '../context/User';
 import { useSetTheme, useTheme } from '../context/Theme';
 import { useTranslation } from 'react-i18next';
@@ -40,6 +40,7 @@ const HeaderBar = () => {
   let navigate = useNavigate();
   const [currentLang, setCurrentLang] = useState(i18n.language);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const location = useLocation();
 
   const systemName = getSystemName();
   const logo = getLogo();
@@ -337,6 +338,9 @@ const HeaderBar = () => {
     }
   };
 
+  // 检查当前路由是否以/console开头
+  const isConsoleRoute = location.pathname.startsWith('/console');
+
   return (
     <header className="text-semi-color-text-0 sticky top-0 z-50 transition-colors duration-300 bg-white/75 dark:bg-zinc-900/75 backdrop-blur-lg">
       <div className="w-full px-4">
@@ -344,9 +348,25 @@ const HeaderBar = () => {
           <div className="flex items-center">
             <div className="md:hidden">
               <Button
-                icon={mobileMenuOpen ? <IconClose className="text-lg" /> : <IconMenu className="text-lg" />}
-                aria-label={mobileMenuOpen ? t('关闭菜单') : t('打开菜单')}
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                icon={
+                  isConsoleRoute 
+                    ? (styleState.showSider ? <IconClose className="text-lg" /> : <IconMenu className="text-lg" />)
+                    : (mobileMenuOpen ? <IconClose className="text-lg" /> : <IconMenu className="text-lg" />)
+                }
+                aria-label={
+                  isConsoleRoute
+                    ? (styleState.showSider ? t('关闭侧边栏') : t('打开侧边栏'))
+                    : (mobileMenuOpen ? t('关闭菜单') : t('打开菜单'))
+                }
+                onClick={() => {
+                  if (isConsoleRoute && styleState.isMobile) {
+                    // 控制侧边栏的显示/隐藏
+                    styleDispatch({ type: 'TOGGLE_SIDER' });
+                  } else {
+                    // 控制HeaderBar自己的移动菜单
+                    setMobileMenuOpen(!mobileMenuOpen);
+                  }
+                }}
                 theme="borderless"
                 type="tertiary"
                 className="!p-2 !text-current focus:!bg-semi-color-fill-1 dark:focus:!bg-gray-700"
@@ -472,7 +492,7 @@ const HeaderBar = () => {
             absolute top-16 left-0 right-0 bg-semi-color-bg-0 
             shadow-lg p-3
             transform transition-all duration-300 ease-in-out
-            ${mobileMenuOpen ? 'translate-y-0 opacity-100 visible' : '-translate-y-4 opacity-0 invisible'}
+            ${(!isConsoleRoute && mobileMenuOpen) ? 'translate-y-0 opacity-100 visible' : '-translate-y-4 opacity-0 invisible'}
           `}
         >
           <nav className="flex flex-col gap-1">
