@@ -192,10 +192,16 @@ const HeaderBar = () => {
           </a>
         );
       }
+
+      let targetPath = link.to;
+      if (link.itemKey === 'console' && !userState.user) {
+        targetPath = '/login';
+      }
+
       return (
         <Link
           key={link.itemKey}
-          to={link.to}
+          to={targetPath}
           className={commonLinkClasses}
           onClick={() => handleNavLinkClick(link.itemKey)}
         >
