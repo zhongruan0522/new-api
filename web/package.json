@@ -27,6 +27,7 @@
     "react-turnstile": "^1.0.5",
     "semantic-ui-offline": "^2.5.0",
     "semantic-ui-react": "^2.1.3",
+    "country-flag-icons": "^1.5.19",
     "sse": "https://github.com/mpetazzoni/sse.js"
   },
   "scripts": {
