@@ -1,21 +1,34 @@
 // contexts/User/index.jsx
 
-import React, { useState, useEffect } from 'react';
-import { isMobile } from '../../helpers/index.js';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useLocation } from 'react-router-dom';
+import { isMobile as getIsMobile } from '../../helpers/index.js';
 
 export const StyleContext = React.createContext({
   dispatch: () => null,
 });
 
 export const StyleProvider = ({ children }) => {
+  const location = useLocation();
+  const initialIsMobile = getIsMobile();
+
+  const initialPathname = location.pathname;
+  let initialShowSiderValue = false;
+  let initialInnerPaddingValue = false;
+
+  if (initialPathname.includes('/console')) {
+    initialShowSiderValue = !initialIsMobile;
+    initialInnerPaddingValue = true;
+  }
+
   const [state, setState] = useState({
-    isMobile: isMobile(),
-    showSider: false,
+    isMobile: initialIsMobile,
+    showSider: initialShowSiderValue,
     siderCollapsed: false,
-    shouldInnerPadding: false,
+    shouldInnerPadding: initialInnerPaddingValue,
   });
 
-  const dispatch = (action) => {
+  const dispatch = useCallback((action) => {
     if ('type' in action) {
       switch (action.type) {
         case 'TOGGLE_SIDER':
@@ -39,64 +52,40 @@ export const StyleProvider = ({ children }) => {
     } else {
       setState((prev) => ({ ...prev, ...action }));
     }
-  };
+  }, []);
 
   useEffect(() => {
-    const updateIsMobile = () => {
-      const mobileDetected = isMobile();
-      dispatch({ type: 'SET_MOBILE', payload: mobileDetected });
-
-      // If on mobile, we might want to auto-hide the sidebar
-      if (mobileDetected && state.showSider) {
-        dispatch({ type: 'SET_SIDER', payload: false });
-      }
+    const updateMobileStatus = () => {
+      dispatch({ type: 'SET_MOBILE', payload: getIsMobile() });
     };
+    window.addEventListener('resize', updateMobileStatus);
+    return () => window.removeEventListener('resize', updateMobileStatus);
+  }, [dispatch]);
 
-    updateIsMobile();
+  useEffect(() => {
+    if (state.isMobile && state.showSider) {
+      dispatch({ type: 'SET_SIDER', payload: false });
+    }
+  }, [state.isMobile, state.showSider, dispatch]);
 
-    const updateShowSider = () => {
-      // check pathname
-      const pathname = window.location.pathname;
-      if (
-        pathname === '' ||
-        pathname === '/' ||
-        pathname.includes('/home') ||
-        pathname.includes('/chat')
-      ) {
-        dispatch({ type: 'SET_SIDER', payload: false });
-        dispatch({ type: 'SET_INNER_PADDING', payload: false });
-      } else if (pathname === '/setup') {
-        dispatch({ type: 'SET_SIDER', payload: false });
-        dispatch({ type: 'SET_INNER_PADDING', payload: false });
-      } else {
-        // Only show sidebar on non-mobile devices by default
-        dispatch({ type: 'SET_SIDER', payload: !isMobile() });
-        dispatch({ type: 'SET_INNER_PADDING', payload: true });
-      }
-    };
+  useEffect(() => {
+    const currentPathname = location.pathname;
+    const currentlyMobile = getIsMobile();
 
-    updateShowSider();
+    if (currentPathname === '/console' || currentPathname.startsWith('/console/')) {
+      dispatch({ type: 'SET_SIDER', payload: !currentlyMobile });
+      dispatch({ type: 'SET_INNER_PADDING', payload: true });
+    } else {
+      dispatch({ type: 'SET_SIDER', payload: false });
+      dispatch({ type: 'SET_INNER_PADDING', payload: false });
+    }
+  }, [location.pathname, dispatch]);
 
-    const updateSiderCollapsed = () => {
-      const isCollapsed =
-        localStorage.getItem('default_collapse_sidebar') === 'true';
-      dispatch({ type: 'SET_SIDER_COLLAPSED', payload: isCollapsed });
-    };
-
-    updateSiderCollapsed();
-
-    // Add event listeners to handle window resize
-    const handleResize = () => {
-      updateIsMobile();
-    };
-
-    window.addEventListener('resize', handleResize);
-
-    // Cleanup event listener on component unmount
-    return () => {
-      window.removeEventListener('resize', handleResize);
-    };
-  }, []);
+  useEffect(() => {
+    const isCollapsed =
+      localStorage.getItem('default_collapse_sidebar') === 'true';
+    dispatch({ type: 'SET_SIDER_COLLAPSED', payload: isCollapsed });
+  }, [dispatch]);
 
   return (
     <StyleContext.Provider value={[state, dispatch]}>

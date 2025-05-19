@@ -136,7 +136,6 @@ const HeaderBar = () => {
   }, [i18n]);
 
   useEffect(() => {
-    // 模拟加载用户状态的过程
     const timer = setTimeout(() => {
       setIsLoading(false);
     }, 500);
@@ -152,17 +151,25 @@ const HeaderBar = () => {
     if (itemKey === 'home') {
       styleDispatch({ type: 'SET_INNER_PADDING', payload: false });
       styleDispatch({ type: 'SET_SIDER', payload: false });
-    } else {
-      styleDispatch({ type: 'SET_INNER_PADDING', payload: true });
-      if (!styleState.isMobile) {
-        styleDispatch({ type: 'SET_SIDER', payload: true });
-      }
     }
     setMobileMenuOpen(false);
   };
 
-  const renderNavLinks = (isMobileView = false) =>
-    mainNavLinks.map((link) => {
+  const renderNavLinks = (isMobileView = false, isLoading = false) => {
+    if (isLoading) {
+      const skeletonLinkClasses = isMobileView
+        ? 'flex items-center gap-1 p-3 w-full rounded-md'
+        : 'flex items-center gap-1 p-2 rounded-md';
+      return Array(4)
+        .fill(null)
+        .map((_, index) => (
+          <div key={index} className={skeletonLinkClasses}>
+            <Skeleton.Title style={{ width: isMobileView ? 100 : 60, height: 16 }} />
+          </div>
+        ));
+    }
+
+    return mainNavLinks.map((link) => {
       const commonLinkClasses = isMobileView
         ? 'flex items-center gap-1 p-3 w-full text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors font-semibold'
         : 'flex items-center gap-1 p-2 text-sm text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors rounded-md font-semibold';
@@ -196,6 +203,7 @@ const HeaderBar = () => {
         </Link>
       );
     });
+  };
 
   const renderUserArea = () => {
     if (isLoading) {
@@ -349,7 +357,7 @@ const HeaderBar = () => {
             <div className="md:hidden">
               <Button
                 icon={
-                  isConsoleRoute 
+                  isConsoleRoute
                     ? (styleState.showSider ? <IconClose className="text-lg" /> : <IconMenu className="text-lg" />)
                     : (mobileMenuOpen ? <IconClose className="text-lg" /> : <IconMenu className="text-lg" />)
                 }
@@ -416,7 +424,7 @@ const HeaderBar = () => {
             )}
 
             <nav className="hidden md:flex items-center gap-1 lg:gap-2 ml-6">
-              {renderNavLinks()}
+              {renderNavLinks(false, isLoading)}
             </nav>
           </div>
 
@@ -496,7 +504,7 @@ const HeaderBar = () => {
           `}
         >
           <nav className="flex flex-col gap-1">
-            {renderNavLinks(true)}
+            {renderNavLinks(true, isLoading)}
           </nav>
         </div>
       </div>
