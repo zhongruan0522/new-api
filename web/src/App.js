@@ -55,7 +55,7 @@ function App() {
           }
         />
         <Route
-          path='/channel'
+          path='/console/channel'
           element={
             <PrivateRoute>
               <Channel />
@@ -63,7 +63,7 @@ function App() {
           }
         />
         <Route
-          path='/channel/edit/:id'
+          path='/console/channel/edit/:id'
           element={
             <Suspense fallback={<Loading></Loading>} key={location.pathname}>
               <EditChannel />
@@ -71,7 +71,7 @@ function App() {
           }
         />
         <Route
-          path='/channel/add'
+          path='/console/channel/add'
           element={
             <Suspense fallback={<Loading></Loading>} key={location.pathname}>
               <EditChannel />
@@ -79,7 +79,7 @@ function App() {
           }
         />
         <Route
-          path='/token'
+          path='/console/token'
           element={
             <PrivateRoute>
               <Token />
@@ -87,7 +87,7 @@ function App() {
           }
         />
         <Route
-          path='/playground'
+          path='/console/playground'
           element={
             <PrivateRoute>
               <Playground />
@@ -95,7 +95,7 @@ function App() {
           }
         />
         <Route
-          path='/redemption'
+          path='/console/redemption'
           element={
             <PrivateRoute>
               <Redemption />
@@ -103,7 +103,7 @@ function App() {
           }
         />
         <Route
-          path='/user'
+          path='/console/user'
           element={
             <PrivateRoute>
               <User />
@@ -111,7 +111,7 @@ function App() {
           }
         />
         <Route
-          path='/user/edit/:id'
+          path='/console/user/edit/:id'
           element={
             <Suspense fallback={<Loading></Loading>} key={location.pathname}>
               <EditUser />
@@ -119,7 +119,7 @@ function App() {
           }
         />
         <Route
-          path='/user/edit'
+          path='/console/user/edit'
           element={
             <Suspense fallback={<Loading></Loading>} key={location.pathname}>
               <EditUser />
@@ -183,7 +183,7 @@ function App() {
           }
         />
         <Route
-          path='/setting'
+          path='/console/setting'
           element={
             <PrivateRoute>
               <Suspense fallback={<Loading></Loading>} key={location.pathname}>
@@ -193,7 +193,7 @@ function App() {
           }
         />
         <Route
-          path='/personal'
+          path='/console/personal'
           element={
             <PrivateRoute>
               <Suspense fallback={<Loading></Loading>} key={location.pathname}>
@@ -203,7 +203,7 @@ function App() {
           }
         />
         <Route
-          path='/topup'
+          path='/console/topup'
           element={
             <PrivateRoute>
               <Suspense fallback={<Loading></Loading>} key={location.pathname}>
@@ -213,7 +213,7 @@ function App() {
           }
         />
         <Route
-          path='/log'
+          path='/console/log'
           element={
             <PrivateRoute>
               <Log />
@@ -221,7 +221,7 @@ function App() {
           }
         />
         <Route
-          path='/detail'
+          path='/console'
           element={
             <PrivateRoute>
               <Suspense fallback={<Loading></Loading>} key={location.pathname}>
@@ -231,7 +231,7 @@ function App() {
           }
         />
         <Route
-          path='/midjourney'
+          path='/console/midjourney'
           element={
             <PrivateRoute>
               <Suspense fallback={<Loading></Loading>} key={location.pathname}>
@@ -241,7 +241,7 @@ function App() {
           }
         />
         <Route
-          path='/task'
+          path='/console/task'
           element={
             <PrivateRoute>
               <Suspense fallback={<Loading></Loading>} key={location.pathname}>

@@ -61,8 +61,8 @@ const HeaderBar = () => {
     },
     {
       text: t('控制台'),
-      itemKey: 'detail',
-      to: '/detail',
+      itemKey: 'console',
+      to: '/console',
     },
     {
       text: t('定价'),
@@ -216,7 +216,7 @@ const HeaderBar = () => {
             <Dropdown.Menu className="!bg-semi-color-bg-overlay !border-semi-color-border !shadow-lg !rounded-lg dark:!bg-gray-700 dark:!border-gray-600">
               <Dropdown.Item
                 onClick={() => {
-                  navigate('/personal');
+                  navigate('/console/personal');
                   setMobileMenuOpen(false);
                 }}
                 className="!px-3 !py-1.5 !text-sm !text-semi-color-text-0 hover:!bg-semi-color-fill-1 dark:!text-gray-200 dark:hover:!bg-blue-500 dark:hover:!text-white"
@@ -228,7 +228,7 @@ const HeaderBar = () => {
               </Dropdown.Item>
               <Dropdown.Item
                 onClick={() => {
-                  navigate('/token');
+                  navigate('/console/token');
                   setMobileMenuOpen(false);
                 }}
                 className="!px-3 !py-1.5 !text-sm !text-semi-color-text-0 hover:!bg-semi-color-fill-1 dark:!text-gray-200 dark:hover:!bg-blue-500 dark:hover:!text-white"
@@ -240,7 +240,7 @@ const HeaderBar = () => {
               </Dropdown.Item>
               <Dropdown.Item
                 onClick={() => {
-                  navigate('/topup');
+                  navigate('/console/topup');
                   setMobileMenuOpen(false);
                 }}
                 className="!px-3 !py-1.5 !text-sm !text-semi-color-text-0 hover:!bg-semi-color-fill-1 dark:!text-gray-200 dark:hover:!bg-blue-500 dark:hover:!text-white"

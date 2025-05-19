@@ -77,20 +77,20 @@ const iconStyle = (itemKey, selectedKeys) => {
 // Define routerMap as a constant outside the component
 const routerMap = {
   home: '/',
-  channel: '/channel',
-  token: '/token',
-  redemption: '/redemption',
-  topup: '/topup',
-  user: '/user',
-  log: '/log',
-  midjourney: '/midjourney',
-  setting: '/setting',
+  channel: '/console/channel',
+  token: '/console/token',
+  redemption: '/console/redemption',
+  topup: '/console/topup',
+  user: '/console/user',
+  log: '/console/log',
+  midjourney: '/console/midjourney',
+  setting: '/console/setting',
   about: '/about',
-  detail: '/detail',
+  detail: '/console',
   pricing: '/pricing',
-  task: '/task',
-  playground: '/playground',
-  personal: '/personal',
+  task: '/console/task',
+  playground: '/console/playground',
+  personal: '/console/personal',
 };
 
 const SiderBar = () => {
