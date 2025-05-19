@@ -1373,5 +1373,19 @@
   "不需要设置模型价格，系统将弱化用量计算，您可专注于使用模型。": "No need to set the model price, the system will weaken the usage calculation, you can focus on using the model.",
   "适用于展示系统功能的场景。": "Suitable for scenarios where the system functions are displayed.",
   "可在初始化后修改": "Can be modified after initialization",
-  "初始化系统": "Initialize system"
+  "初始化系统": "Initialize system",
+  "支持众多的大模型供应商": "Supporting various LLM providers",
+  "新一代大模型网关与AI资产管理系统，一键接入主流大模型，轻松管理您的AI资产": "Next-generation LLM gateway and AI asset management system, one-click integration with mainstream models, easily manage your AI assets",
+  "开始使用": "Get Started",
+  "关于我们": "About Us",
+  "关于项目": "About Project",
+  "联系我们": "Contact Us",
+  "功能特性": "Features",
+  "快速开始": "Quick Start",
+  "安装指南": "Installation Guide",
+  "API 文档": "API Documentation",
+  "相关项目": "Related Projects",
+  "基于New API的项目": "Projects Based on New API",
+  "版权所有": "All rights reserved",
+  "设计与开发由": "Designed & Developed with love by"
 }

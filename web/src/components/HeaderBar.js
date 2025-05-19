@@ -356,7 +356,7 @@ const HeaderBar = () => {
               {isLoading ? (
                 <Skeleton.Image className="h-7 md:h-8 !rounded-full" style={{ width: 32, height: 32 }} />
               ) : (
-                <img src={logo} alt="logo" className="h-7 md:h-8 transition-transform duration-300 ease-in-out group-hover:scale-105" />
+                <img src={logo} alt="logo" className="h-7 md:h-8 transition-transform duration-300 ease-in-out group-hover:scale-105 rounded-full" />
               )}
               <div className="hidden md:flex items-center gap-2">
                 <div className="flex items-center gap-2">
@@ -374,6 +374,7 @@ const HeaderBar = () => {
                       color={isSelfUseMode ? 'purple' : 'blue'}
                       className="text-xs px-1.5 py-0.5 rounded whitespace-nowrap shadow-sm"
                       size="small"
+                      shape='circle'
                     >
                       {isSelfUseMode ? t('自用模式') : t('演示站点')}
                     </Tag>
@@ -387,6 +388,7 @@ const HeaderBar = () => {
                   color={isSelfUseMode ? 'purple' : 'blue'}
                   className="ml-2 text-xs px-1 py-0.5 rounded whitespace-nowrap shadow-sm"
                   size="small"
+                  shape='circle'
                 >
                   {isSelfUseMode ? t('自用模式') : t('演示站点')}
                 </Tag>
