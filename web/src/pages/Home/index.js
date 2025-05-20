@@ -94,7 +94,7 @@ const Home = () => {
 
                 {/* 操作按钮 */}
                 <div className="mt-6 md:mt-10 flex flex-wrap gap-4 justify-center md:justify-start">
-                  <Link to="/login">
+                  <Link to="/console">
                     <Button theme="solid" type="primary" size="large">
                       {t('开始使用')}
                     </Button>

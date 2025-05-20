@@ -27,6 +27,7 @@ import OAuth2Callback from './components/OAuth2Callback.js';
 import PersonalSetting from './components/PersonalSetting.js';
 import Setup from './pages/Setup/index.js';
 import SetupCheck from './components/SetupCheck';
+import AuthRedirect from './components/AuthRedirect';
 
 const Home = lazy(() => import('./pages/Home'));
 const Detail = lazy(() => import('./pages/Detail'));
@@ -138,7 +139,9 @@ function App() {
           path='/login'
           element={
             <Suspense fallback={<Loading></Loading>} key={location.pathname}>
-              <LoginForm />
+              <AuthRedirect>
+                <LoginForm />
+              </AuthRedirect>
             </Suspense>
           }
         />
@@ -146,7 +149,9 @@ function App() {
           path='/register'
           element={
             <Suspense fallback={<Loading></Loading>} key={location.pathname}>
-              <RegisterForm />
+              <AuthRedirect>
+                <RegisterForm />
+              </AuthRedirect>
             </Suspense>
           }
         />
