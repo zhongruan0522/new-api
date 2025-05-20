@@ -1406,5 +1406,9 @@
   "New API项目仓库地址：": "New API project repository address: ",
   "NewAPI © {{currentYear}} QuantumNous | 基于 One API v0.5.4 © 2023 JustSong。": "NewAPI © {{currentYear}} QuantumNous | Based on One API v0.5.4 © 2023 JustSong.",
   "本项目根据MIT许可证授权，需在遵守Apache-2.0协议的前提下使用。": "This project is licensed under the MIT License and must be used in compliance with the Apache-2.0 License.",
-  "管理员暂时未设置任何关于内容": "The administrator has not set any custom About content yet"
+  "管理员暂时未设置任何关于内容": "The administrator has not set any custom About content yet",
+  "早上好": "Good morning",
+  "中午好": "Good afternoon",
+  "下午好": "Good afternoon",
+  "晚上好": "Good evening"
 }
