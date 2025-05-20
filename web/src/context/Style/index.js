@@ -26,16 +26,25 @@ export const StyleProvider = ({ children }) => {
     showSider: initialShowSiderValue,
     siderCollapsed: false,
     shouldInnerPadding: initialInnerPaddingValue,
+    manualSiderControl: false,
   });
 
   const dispatch = useCallback((action) => {
     if ('type' in action) {
       switch (action.type) {
         case 'TOGGLE_SIDER':
-          setState((prev) => ({ ...prev, showSider: !prev.showSider }));
+          setState((prev) => ({
+            ...prev,
+            showSider: !prev.showSider,
+            manualSiderControl: true
+          }));
           break;
         case 'SET_SIDER':
-          setState((prev) => ({ ...prev, showSider: action.payload }));
+          setState((prev) => ({
+            ...prev,
+            showSider: action.payload,
+            manualSiderControl: action.manual || false
+          }));
           break;
         case 'SET_MOBILE':
           setState((prev) => ({ ...prev, isMobile: action.payload }));
@@ -56,27 +65,40 @@ export const StyleProvider = ({ children }) => {
 
   useEffect(() => {
     const updateMobileStatus = () => {
-      dispatch({ type: 'SET_MOBILE', payload: getIsMobile() });
+      const currentIsMobile = getIsMobile();
+      if (!currentIsMobile &&
+        (location.pathname === '/console' || location.pathname.startsWith('/console/'))) {
+        dispatch({ type: 'SET_SIDER', payload: true, manual: false });
+      }
+      dispatch({ type: 'SET_MOBILE', payload: currentIsMobile });
     };
     window.addEventListener('resize', updateMobileStatus);
     return () => window.removeEventListener('resize', updateMobileStatus);
-  }, [dispatch]);
+  }, [dispatch, location.pathname]);
 
   useEffect(() => {
-    if (state.isMobile && state.showSider) {
+    if (state.isMobile && state.showSider && !state.manualSiderControl) {
       dispatch({ type: 'SET_SIDER', payload: false });
     }
-  }, [state.isMobile, state.showSider, dispatch]);
+  }, [state.isMobile, state.showSider, state.manualSiderControl, dispatch]);
 
   useEffect(() => {
     const currentPathname = location.pathname;
     const currentlyMobile = getIsMobile();
 
     if (currentPathname === '/console' || currentPathname.startsWith('/console/')) {
-      dispatch({ type: 'SET_SIDER', payload: !currentlyMobile });
+      dispatch({
+        type: 'SET_SIDER',
+        payload: !currentlyMobile,
+        manual: false
+      });
       dispatch({ type: 'SET_INNER_PADDING', payload: true });
     } else {
-      dispatch({ type: 'SET_SIDER', payload: false });
+      dispatch({
+        type: 'SET_SIDER',
+        payload: false,
+        manual: false
+      });
       dispatch({ type: 'SET_INNER_PADDING', payload: false });
     }
   }, [location.pathname, dispatch]);

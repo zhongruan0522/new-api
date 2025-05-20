@@ -373,8 +373,8 @@ const HeaderBar = () => {
                     : (mobileMenuOpen ? t('关闭菜单') : t('打开菜单'))
                 }
                 onClick={() => {
-                  if (isConsoleRoute && styleState.isMobile) {
-                    // 控制侧边栏的显示/隐藏
+                  if (isConsoleRoute) {
+                    // 控制侧边栏的显示/隐藏，无论是否移动设备
                     styleDispatch({ type: 'TOGGLE_SIDER' });
                   } else {
                     // 控制HeaderBar自己的移动菜单
