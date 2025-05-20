@@ -187,7 +187,7 @@ const Home = () => {
               </div>
 
               {/* 右侧图片区域 - 在小屏幕上隐藏或调整位置 */}
-              <div className="flex-shrink-0 relative md:mr-[-200px] lg:mr-[-400px] hidden md:block">
+              <div className="flex-shrink-0 relative md:mr-[-200px] lg:mr-[-400px] hidden md:block lg:min-w-[1100px]">
                 <div className="absolute w-[320px] md:w-[500px] lg:w-[640px] h-[320px] md:h-[500px] lg:h-[640px] left-[-25px] md:left-[-40px] lg:left-[-50px] top-[-10px] md:top-[-15px] lg:top-[-20px] opacity-60"
                   style={{ filter: 'blur(120px)' }}>
                   <div className="absolute w-[320px] md:w-[400px] lg:w-[474px] h-[320px] md:h-[400px] lg:h-[474px] top-[80px] md:top-[100px] lg:top-[132px] bg-semi-color-primary rounded-full opacity-30"></div>
