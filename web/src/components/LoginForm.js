@@ -28,7 +28,7 @@ import Title from '@douyinfe/semi-ui/lib/es/typography/title';
 import Text from '@douyinfe/semi-ui/lib/es/typography/text';
 import TelegramLoginButton from 'react-telegram-login';
 
-import { IconGithubLogo, IconMail } from '@douyinfe/semi-icons';
+import { IconGithubLogo, IconMail, IconLock } from '@douyinfe/semi-icons';
 import OIDCIcon from './OIDCIcon.js';
 import WeChatIcon from './WeChatIcon';
 import { setUserData } from '../helpers/data.js';
@@ -53,7 +53,6 @@ const LoginForm = () => {
   const [status, setStatus] = useState({});
   const [showWeChatLoginModal, setShowWeChatLoginModal] = useState(false);
   const [showEmailLogin, setShowEmailLogin] = useState(false);
-  const [showOtherOptions, setShowOtherOptions] = useState(false);
   const { t } = useTranslation();
 
   const logo = getLogo();
@@ -318,6 +317,7 @@ const LoginForm = () => {
                   size="large"
                   className="!rounded-md"
                   onChange={(value) => handleChange('username', value)}
+                  prefix={<IconMail />}
                 />
 
                 <Form.Input
@@ -325,10 +325,11 @@ const LoginForm = () => {
                   label={t('密码')}
                   placeholder={t('请输入您的密码')}
                   name="password"
-                  type="password"
+                  mode="password"
                   size="large"
                   className="!rounded-md"
                   onChange={(value) => handleChange('password', value)}
+                  prefix={<IconLock />}
                 />
 
                 <div className="space-y-2 pt-2">

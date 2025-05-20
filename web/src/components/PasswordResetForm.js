@@ -1,9 +1,16 @@
 import React, { useEffect, useState } from 'react';
-import { Button, Form, Grid, Header, Image, Segment } from 'semantic-ui-react';
-import { API, showError, showInfo, showSuccess } from '../helpers';
+import { API, getLogo, showError, showInfo, showSuccess, getSystemName } from '../helpers';
 import Turnstile from 'react-turnstile';
+import { Button, Card, Form, Typography } from '@douyinfe/semi-ui';
+import { IconMail } from '@douyinfe/semi-icons';
+import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import Background from '../images/example.png';
+
+const { Text, Title } = Typography;
 
 const PasswordResetForm = () => {
+  const { t } = useTranslation();
   const [inputs, setInputs] = useState({
     email: '',
   });
@@ -15,6 +22,20 @@ const PasswordResetForm = () => {
   const [turnstileToken, setTurnstileToken] = useState('');
   const [disableButton, setDisableButton] = useState(false);
   const [countdown, setCountdown] = useState(30);
+
+  const logo = getLogo();
+  const systemName = getSystemName();
+
+  useEffect(() => {
+    let status = localStorage.getItem('status');
+    if (status) {
+      status = JSON.parse(status);
+      if (status.turnstile_check) {
+        setTurnstileEnabled(true);
+        setTurnstileSiteKey(status.turnstile_site_key);
+      }
+    }
+  }, []);
 
   useEffect(() => {
     let countdownInterval = null;
@@ -29,25 +50,24 @@ const PasswordResetForm = () => {
     return () => clearInterval(countdownInterval);
   }, [disableButton, countdown]);
 
-  function handleChange(e) {
-    const { name, value } = e.target;
-    setInputs((inputs) => ({ ...inputs, [name]: value }));
+  function handleChange(value) {
+    setInputs((inputs) => ({ ...inputs, email: value }));
   }
 
   async function handleSubmit(e) {
-    setDisableButton(true);
     if (!email) return;
     if (turnstileEnabled && turnstileToken === '') {
-      showInfo('请稍后几秒重试，Turnstile 正在检查用户环境！');
+      showInfo(t('请稍后几秒重试，Turnstile 正在检查用户环境！'));
       return;
     }
+    setDisableButton(true);
     setLoading(true);
     const res = await API.get(
       `/api/reset_password?email=${email}&turnstile=${turnstileToken}`,
     );
     const { success, message } = res.data;
     if (success) {
-      showSuccess('重置邮件发送成功，请检查邮箱！');
+      showSuccess(t('重置邮件发送成功，请检查邮箱！'));
       setInputs({ ...inputs, email: '' });
     } else {
       showError(message);
@@ -56,46 +76,80 @@ const PasswordResetForm = () => {
   }
 
   return (
-    <Grid textAlign='center' style={{ marginTop: '48px' }}>
-      <Grid.Column style={{ maxWidth: 450 }}>
-        <Header as='h2' color='' textAlign='center'>
-          <Image src='/logo.png' /> 密码重置
-        </Header>
-        <Form size='large'>
-          <Segment>
-            <Form.Input
-              fluid
-              icon='mail'
-              iconPosition='left'
-              placeholder='邮箱地址'
-              name='email'
-              value={email}
-              onChange={handleChange}
-            />
-            {turnstileEnabled ? (
-              <Turnstile
-                sitekey={turnstileSiteKey}
-                onVerify={(token) => {
-                  setTurnstileToken(token);
-                }}
-              />
-            ) : (
-              <></>
+    <div className="min-h-screen relative flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 overflow-hidden">
+      {/* 背景图片容器 - 放大并保持居中 */}
+      <div
+        className="absolute inset-0 z-0 bg-cover bg-center scale-125 opacity-100"
+        style={{
+          backgroundImage: `url(${Background})`
+        }}
+      ></div>
+
+      {/* 半透明遮罩层 */}
+      <div className="absolute inset-0 bg-gradient-to-br from-teal-500/30 via-blue-500/30 to-purple-500/30 backdrop-blur-sm z-0"></div>
+
+      <div className="w-full max-w-md relative z-10">
+        <div className="flex flex-col items-center">
+          <div className="w-full max-w-md">
+            <div className="flex items-center justify-center mb-6 gap-2">
+              <img src={logo} alt="Logo" className="h-10 rounded-full" />
+              <Title heading={3} className='!text-white'>{systemName}</Title>
+            </div>
+
+            <Card className="shadow-xl border-0 !rounded-2xl overflow-hidden">
+              <div className="flex justify-center pt-6 pb-2">
+                <Title heading={3} className="text-gray-800 dark:text-gray-200">{t('密码重置')}</Title>
+              </div>
+              <div className="px-2 py-8">
+                <Form className="space-y-3">
+                  <Form.Input
+                    field="email"
+                    label={t('邮箱')}
+                    placeholder={t('请输入您的邮箱地址')}
+                    name="email"
+                    size="large"
+                    className="!rounded-md"
+                    value={email}
+                    onChange={handleChange}
+                    prefix={<IconMail />}
+                  />
+
+                  <div className="space-y-2 pt-2">
+                    <Button
+                      theme="solid"
+                      className="w-full !rounded-full"
+                      type="primary"
+                      htmlType="submit"
+                      size="large"
+                      onClick={handleSubmit}
+                      loading={loading}
+                      disabled={disableButton}
+                    >
+                      {disableButton ? `${t('重试')} (${countdown})` : t('提交')}
+                    </Button>
+                  </div>
+                </Form>
+
+                <div className="mt-6 text-center text-sm">
+                  <Text>{t('想起来了？')} <Link to="/login" className="text-blue-600 hover:text-blue-800 font-medium">{t('登录')}</Link></Text>
+                </div>
+              </div>
+            </Card>
+
+            {turnstileEnabled && (
+              <div className="flex justify-center mt-6">
+                <Turnstile
+                  sitekey={turnstileSiteKey}
+                  onVerify={(token) => {
+                    setTurnstileToken(token);
+                  }}
+                />
+              </div>
             )}
-            <Button
-              color='green'
-              fluid
-              size='large'
-              onClick={handleSubmit}
-              loading={loading}
-              disabled={disableButton}
-            >
-              {disableButton ? `重试 (${countdown})` : '提交'}
-            </Button>
-          </Segment>
-        </Form>
-      </Grid.Column>
-    </Grid>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };
 

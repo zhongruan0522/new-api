@@ -21,7 +21,7 @@ import {
 } from '@douyinfe/semi-ui';
 import Title from '@douyinfe/semi-ui/lib/es/typography/title';
 import Text from '@douyinfe/semi-ui/lib/es/typography/text';
-import { IconGithubLogo, IconMail } from '@douyinfe/semi-icons';
+import { IconGithubLogo, IconMail, IconUser, IconLock, IconKey } from '@douyinfe/semi-icons';
 import {
   onGitHubOAuthClicked,
   onLinuxDOOAuthClicked,
@@ -334,6 +334,7 @@ const RegisterForm = () => {
                   size="large"
                   className="!rounded-md"
                   onChange={(value) => handleChange('username', value)}
+                  prefix={<IconUser />}
                 />
 
                 <Form.Input
@@ -341,10 +342,11 @@ const RegisterForm = () => {
                   label={t('密码')}
                   placeholder={t('输入密码，最短 8 位，最长 20 位')}
                   name="password"
-                  type="password"
+                  mode="password"
                   size="large"
                   className="!rounded-md"
                   onChange={(value) => handleChange('password', value)}
+                  prefix={<IconLock />}
                 />
 
                 <Form.Input
@@ -352,10 +354,11 @@ const RegisterForm = () => {
                   label={t('确认密码')}
                   placeholder={t('确认密码')}
                   name="password2"
-                  type="password"
+                  mode="password"
                   size="large"
                   className="!rounded-md"
                   onChange={(value) => handleChange('password2', value)}
+                  prefix={<IconLock />}
                 />
 
                 {showEmailVerification && (
@@ -369,6 +372,7 @@ const RegisterForm = () => {
                       size="large"
                       className="!rounded-md"
                       onChange={(value) => handleChange('email', value)}
+                      prefix={<IconMail />}
                       suffix={
                         <Button
                           onClick={sendVerificationCode}
@@ -388,6 +392,7 @@ const RegisterForm = () => {
                       size="large"
                       className="!rounded-md"
                       onChange={(value) => handleChange('verification_code', value)}
+                      prefix={<IconKey />}
                     />
                   </>
                 )}

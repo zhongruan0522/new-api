@@ -1,9 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { Button, Form, Grid, Header, Image, Segment } from 'semantic-ui-react';
-import { API, copy, showError, showNotice } from '../helpers';
-import { useSearchParams } from 'react-router-dom';
+import { API, copy, showError, showNotice, getLogo, getSystemName } from '../helpers';
+import { useSearchParams, Link } from 'react-router-dom';
+import { Button, Card, Form, Typography } from '@douyinfe/semi-ui';
+import { IconMail, IconLock } from '@douyinfe/semi-icons';
+import { useTranslation } from 'react-i18next';
+import Background from '../images/example.png';
+
+const { Text, Title } = Typography;
 
 const PasswordResetConfirm = () => {
+  const { t } = useTranslation();
   const [inputs, setInputs] = useState({
     email: '',
     token: '',
@@ -11,13 +17,15 @@ const PasswordResetConfirm = () => {
   const { email, token } = inputs;
 
   const [loading, setLoading] = useState(false);
-
   const [disableButton, setDisableButton] = useState(false);
   const [countdown, setCountdown] = useState(30);
-
   const [newPassword, setNewPassword] = useState('');
 
   const [searchParams, setSearchParams] = useSearchParams();
+
+  const logo = getLogo();
+  const systemName = getSystemName();
+
   useEffect(() => {
     let token = searchParams.get('token');
     let email = searchParams.get('email');
@@ -41,8 +49,8 @@ const PasswordResetConfirm = () => {
   }, [disableButton, countdown]);
 
   async function handleSubmit(e) {
+    if (!email || !token) return;
     setDisableButton(true);
-    if (!email) return;
     setLoading(true);
     const res = await API.post(`/api/user/reset`, {
       email,
@@ -53,7 +61,7 @@ const PasswordResetConfirm = () => {
       let password = res.data.data;
       setNewPassword(password);
       await copy(password);
-      showNotice(`新密码已复制到剪贴板：${password}`);
+      showNotice(`${t('密码已重置并已复制到剪贴板')}: ${password}`);
     } else {
       showError(message);
     }
@@ -61,52 +69,86 @@ const PasswordResetConfirm = () => {
   }
 
   return (
-    <Grid textAlign='center' style={{ marginTop: '48px' }}>
-      <Grid.Column style={{ maxWidth: 450 }}>
-        <Header as='h2' color='' textAlign='center'>
-          <Image src='/logo.png' /> 密码重置确认
-        </Header>
-        <Form size='large'>
-          <Segment>
-            <Form.Input
-              fluid
-              icon='mail'
-              iconPosition='left'
-              placeholder='邮箱地址'
-              name='email'
-              value={email}
-              readOnly
-            />
-            {newPassword && (
-              <Form.Input
-                fluid
-                icon='lock'
-                iconPosition='left'
-                placeholder='新密码'
-                name='newPassword'
-                value={newPassword}
-                readOnly
-                onClick={(e) => {
-                  e.target.select();
-                  navigator.clipboard.writeText(newPassword);
-                  showNotice(`密码已复制到剪贴板：${newPassword}`);
-                }}
-              />
-            )}
-            <Button
-              color='green'
-              fluid
-              size='large'
-              onClick={handleSubmit}
-              loading={loading}
-              disabled={disableButton}
-            >
-              {disableButton ? `密码重置完成` : '提交'}
-            </Button>
-          </Segment>
-        </Form>
-      </Grid.Column>
-    </Grid>
+    <div className="min-h-screen relative flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 overflow-hidden">
+      {/* 背景图片容器 - 放大并保持居中 */}
+      <div
+        className="absolute inset-0 z-0 bg-cover bg-center scale-125 opacity-100"
+        style={{
+          backgroundImage: `url(${Background})`
+        }}
+      ></div>
+
+      {/* 半透明遮罩层 */}
+      <div className="absolute inset-0 bg-gradient-to-br from-teal-500/30 via-blue-500/30 to-purple-500/30 backdrop-blur-sm z-0"></div>
+
+      <div className="w-full max-w-md relative z-10">
+        <div className="flex flex-col items-center">
+          <div className="w-full max-w-md">
+            <div className="flex items-center justify-center mb-6 gap-2">
+              <img src={logo} alt="Logo" className="h-10 rounded-full" />
+              <Title heading={3} className='!text-white'>{systemName}</Title>
+            </div>
+
+            <Card className="shadow-xl border-0 !rounded-2xl overflow-hidden">
+              <div className="flex justify-center pt-6 pb-2">
+                <Title heading={3} className="text-gray-800 dark:text-gray-200">{t('密码重置确认')}</Title>
+              </div>
+              <div className="px-2 py-8">
+                <Form className="space-y-3">
+                  <Form.Input
+                    field="email"
+                    label={t('邮箱')}
+                    name="email"
+                    size="large"
+                    className="!rounded-md"
+                    value={email}
+                    readOnly
+                    prefix={<IconMail />}
+                  />
+
+                  {newPassword && (
+                    <Form.Input
+                      field="newPassword"
+                      label={t('新密码')}
+                      name="newPassword"
+                      size="large"
+                      className="!rounded-md"
+                      value={newPassword}
+                      readOnly
+                      prefix={<IconLock />}
+                      onClick={(e) => {
+                        e.target.select();
+                        navigator.clipboard.writeText(newPassword);
+                        showNotice(`${t('密码已复制到剪贴板')}: ${newPassword}`);
+                      }}
+                    />
+                  )}
+
+                  <div className="space-y-2 pt-2">
+                    <Button
+                      theme="solid"
+                      className="w-full !rounded-full"
+                      type="primary"
+                      htmlType="submit"
+                      size="large"
+                      onClick={handleSubmit}
+                      loading={loading}
+                      disabled={disableButton || newPassword}
+                    >
+                      {newPassword ? t('密码重置完成') : t('提交')}
+                    </Button>
+                  </div>
+                </Form>
+
+                <div className="mt-6 text-center text-sm">
+                  <Text><Link to="/login" className="text-blue-600 hover:text-blue-800 font-medium">{t('返回登录')}</Link></Text>
+                </div>
+              </div>
+            </Card>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };
 
