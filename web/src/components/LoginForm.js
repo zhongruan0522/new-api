@@ -135,7 +135,7 @@ const LoginForm = () => {
             centered: true,
           });
         }
-        navigate('/console/token');
+        navigate('/console');
       } else {
         showError(message);
       }

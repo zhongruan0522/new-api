@@ -436,7 +436,7 @@
   "系统设置": "System Settings",
   "其他设置": "Other Settings",
   "项目仓库地址": "Project Repository Address",
-  "可在设置页面设置关于内容，支持 HTML & Markdown": "You can set the content about in the settings page, support HTML & Markdown",
+  "可在设置页面设置关于内容，支持 HTML & Markdown": "The About content can be set on the settings page, supporting HTML & Markdown",
   "由": "developed by",
   "开发，基于": "based on",
   "MIT 协议": "MIT License",
@@ -866,7 +866,6 @@
   "查看全部": "View all",
   "高延迟": "high latency",
   "异常": "abnormal",
-  "API地址": "API address",
   "的未命名令牌": "unnamed token",
   "令牌更新成功！": "Token updated successfully!",
   "(origin) Discord原链接": "(origin) Discord original link",
@@ -1403,5 +1402,9 @@
   "版权所有": "All rights reserved",
   "设计与开发由": "Designed & Developed with love by",
   "演示站点": "Demo Site",
-  "页面未找到，请检查您的浏览器地址是否正确": "Page not found, please check if your browser address is correct"
+  "页面未找到，请检查您的浏览器地址是否正确": "Page not found, please check if your browser address is correct",
+  "New API项目仓库地址：": "New API project repository address: ",
+  "NewAPI © {{currentYear}} QuantumNous | 基于 One API v0.5.4 © 2023 JustSong。": "NewAPI © {{currentYear}} QuantumNous | Based on One API v0.5.4 © 2023 JustSong.",
+  "本项目根据MIT许可证授权，需在遵守Apache-2.0协议的前提下使用。": "This project is licensed under the MIT License and must be used in compliance with the Apache-2.0 License.",
+  "管理员暂时未设置任何关于内容": "The administrator has not set any custom About content yet"
 }

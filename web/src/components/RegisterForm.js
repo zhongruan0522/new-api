@@ -16,7 +16,6 @@ import {
   Divider,
   Form,
   Icon,
-  Layout,
   Modal,
 } from '@douyinfe/semi-ui';
 import Title from '@douyinfe/semi-ui/lib/es/typography/title';
