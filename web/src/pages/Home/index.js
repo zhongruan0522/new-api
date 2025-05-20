@@ -95,14 +95,14 @@ const Home = () => {
                 {/* 操作按钮 */}
                 <div className="mt-6 md:mt-10 flex flex-wrap gap-4 justify-center md:justify-start">
                   <Link to="/console">
-                    <Button theme="solid" type="primary" size="large">
+                    <Button theme="solid" type="primary" size="large" className="!rounded-3xl">
                       {t('开始使用')}
                     </Button>
                   </Link>
                   {isDemoSiteMode && (
                     <Button
                       size="large"
-                      className="flex items-center"
+                      className="flex items-center !rounded-3xl"
                       icon={<IconGithubLogo />}
                       onClick={() => window.open('https://github.com/QuantumNous/new-api', '_blank')}
                     >

@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useState } from 'react';
-import { Dimmer, Loader, Segment } from 'semantic-ui-react';
+import { Spin, Typography, Space } from '@douyinfe/semi-ui';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { API, showError, showSuccess, updateAPI } from '../helpers';
 import { UserContext } from '../context/User';
@@ -52,11 +52,15 @@ const OAuth2Callback = (props) => {
   }, []);
 
   return (
-    <Segment style={{ minHeight: '300px' }}>
-      <Dimmer active inverted>
-        <Loader size='large'>{prompt}</Loader>
-      </Dimmer>
-    </Segment>
+    <div className="flex items-center justify-center min-h-[300px] w-full bg-white rounded-lg shadow p-6">
+      <Space vertical align="center">
+        <Spin size="large" spinning={processing}>
+          <div className="min-h-[200px] min-w-[200px] flex items-center justify-center">
+            <Typography.Text type="secondary">{prompt}</Typography.Text>
+          </div>
+        </Spin>
+      </Space>
+    </div>
   );
 };
 
