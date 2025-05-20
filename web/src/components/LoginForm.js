@@ -223,7 +223,7 @@ const LoginForm = () => {
                     theme='outline'
                     className="w-full h-12 flex items-center justify-center !rounded-full border border-gray-200 hover:bg-gray-50 transition-colors"
                     type="tertiary"
-                    icon={<OIDCIcon style={{ color: '#1877F2', width: '20px', height: '20px' }} />}
+                    icon={<OIDCIcon style={{ color: '#1877F2' }} />}
                     size="large"
                     onClick={() =>
                       onOIDCClicked(
@@ -358,7 +358,7 @@ const LoginForm = () => {
               <Divider margin='12px' align='center'>
                 {t('或')}
               </Divider>
-              
+
               <div className="mt-4 text-center">
                 <Button
                   theme="outline"
