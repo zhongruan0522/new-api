@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
 import {
   API,
   copy,
@@ -11,9 +11,8 @@ import { ITEMS_PER_PAGE } from '../constants';
 import { renderGroup, renderQuota } from '../helpers/render';
 import {
   Button,
-  Divider,
+  Card,
   Dropdown,
-  Form,
   Modal,
   Popconfirm,
   Popover,
@@ -21,11 +20,28 @@ import {
   SplitButtonGroup,
   Table,
   Tag,
+  Typography,
+  Input,
+  Divider,
 } from '@douyinfe/semi-ui';
 
-import { IconTreeTriangleDown } from '@douyinfe/semi-icons';
+import {
+  IconPlus,
+  IconCopy,
+  IconSearch,
+  IconTreeTriangleDown,
+  IconEyeOpened,
+  IconEdit,
+  IconDelete,
+  IconStop,
+  IconPlay,
+  IconMore,
+} from '@douyinfe/semi-icons';
 import EditToken from '../pages/Token/EditToken';
 import { useTranslation } from 'react-i18next';
+import { UserContext } from '../context/User';
+
+const { Text } = Typography;
 
 function renderTimestamp(timestamp) {
   return <>{timestamp2string(timestamp)}</>;
@@ -33,44 +49,45 @@ function renderTimestamp(timestamp) {
 
 const TokensTable = () => {
   const { t } = useTranslation();
+  const [userState, userDispatch] = useContext(UserContext);
 
   const renderStatus = (status, model_limits_enabled = false) => {
     switch (status) {
       case 1:
         if (model_limits_enabled) {
           return (
-            <Tag color='green' size='large'>
+            <Tag color='green' size='large' shape='circle'>
               {t('已启用：限制模型')}
             </Tag>
           );
         } else {
           return (
-            <Tag color='green' size='large'>
+            <Tag color='green' size='large' shape='circle'>
               {t('已启用')}
             </Tag>
           );
         }
       case 2:
         return (
-          <Tag color='red' size='large'>
+          <Tag color='red' size='large' shape='circle'>
             {t('已禁用')}
           </Tag>
         );
       case 3:
         return (
-          <Tag color='yellow' size='large'>
+          <Tag color='yellow' size='large' shape='circle'>
             {t('已过期')}
           </Tag>
         );
       case 4:
         return (
-          <Tag color='grey' size='large'>
+          <Tag color='grey' size='large' shape='circle'>
             {t('已耗尽')}
           </Tag>
         );
       default:
         return (
-          <Tag color='black' size='large'>
+          <Tag color='black' size='large' shape='circle'>
             {t('未知状态')}
           </Tag>
         );
@@ -111,11 +128,11 @@ const TokensTable = () => {
         return (
           <div>
             {record.unlimited_quota ? (
-              <Tag size={'large'} color={'white'}>
+              <Tag size={'large'} color={'white'} shape='circle'>
                 {t('无限制')}
               </Tag>
             ) : (
-              <Tag size={'large'} color={'light-blue'}>
+              <Tag size={'large'} color={'light-blue'} shape='circle'>
                 {renderQuota(parseInt(text))}
               </Tag>
             )}
@@ -151,16 +168,11 @@ const TokensTable = () => {
 
         if (shouldUseCustom) {
           try {
-            // console.log(chats);
             chats = JSON.parse(chats);
-            // check chats is array
             if (Array.isArray(chats)) {
               for (let i = 0; i < chats.length; i++) {
                 let chat = {};
                 chat.node = 'item';
-                // c is a map
-                // chat.key = chats[i].name;
-                // console.log(chats[i])
                 for (let key in chats[i]) {
                   if (chats[i].hasOwnProperty(key)) {
                     chat.key = i;
@@ -178,33 +190,72 @@ const TokensTable = () => {
             showError(t('聊天链接配置错误，请联系管理员'));
           }
         }
+        
+        // 创建更多操作的下拉菜单项
+        const moreMenuItems = [
+          {
+            node: 'item',
+            name: t('查看'),
+            icon: <IconEyeOpened />,
+            onClick: () => {
+              Modal.info({
+                title: t('令牌详情'),
+                content: 'sk-' + record.key,
+                size: 'large',
+              });
+            },
+          },
+          {
+            node: 'item',
+            name: t('删除'),
+            icon: <IconDelete />,
+            type: 'danger',
+            onClick: () => {
+              Modal.confirm({
+                title: t('确定是否要删除此令牌？'),
+                content: t('此修改将不可逆'),
+                onOk: () => {
+                  manageToken(record.id, 'delete', record).then(() => {
+                    removeRecord(record.key);
+                  });
+                },
+              });
+            },
+          }
+        ];
+        
+        // 动态添加启用/禁用按钮
+        if (record.status === 1) {
+          moreMenuItems.push({
+            node: 'item',
+            name: t('禁用'),
+            icon: <IconStop />,
+            type: 'warning',
+            onClick: () => {
+              manageToken(record.id, 'disable', record);
+            },
+          });
+        } else {
+          moreMenuItems.push({
+            node: 'item',
+            name: t('启用'),
+            icon: <IconPlay />,
+            type: 'secondary',
+            onClick: () => {
+              manageToken(record.id, 'enable', record);
+            },
+          });
+        }
+        
         return (
-          <div>
-            <Popover
-              content={'sk-' + record.key}
-              style={{ padding: 20 }}
-              position='top'
-            >
-              <Button theme='light' type='tertiary' style={{ marginRight: 1 }}>
-                {t('查看')}
-              </Button>
-            </Popover>
-            <Button
-              theme='light'
-              type='secondary'
-              style={{ marginRight: 1 }}
-              onClick={async (text) => {
-                await copyText('sk-' + record.key);
-              }}
-            >
-              {t('复制')}
-            </Button>
+          <Space wrap>
             <SplitButtonGroup
-              style={{ marginRight: 1 }}
+              className="!rounded-full overflow-hidden"
               aria-label={t('项目操作按钮组')}
             >
               <Button
                 theme='light'
+                size="small"
                 style={{ color: 'rgba(var(--semi-teal-7), 1)' }}
                 onClick={() => {
                   if (chatsArray.length === 0) {
@@ -227,56 +278,35 @@ const TokensTable = () => {
               >
                 <Button
                   style={{
-                    padding: '8px 4px',
+                    padding: '4px 4px',
                     color: 'rgba(var(--semi-teal-7), 1)',
                   }}
                   type='primary'
                   icon={<IconTreeTriangleDown />}
+                  size="small"
                 ></Button>
               </Dropdown>
             </SplitButtonGroup>
-            <Popconfirm
-              title={t('确定是否要删除此令牌？')}
-              content={t('此修改将不可逆')}
-              okType={'danger'}
-              position={'left'}
-              onConfirm={() => {
-                manageToken(record.id, 'delete', record).then(() => {
-                  removeRecord(record.key);
-                });
+            
+            <Button
+              icon={<IconCopy />}
+              theme='light'
+              type='secondary'
+              size="small"
+              className="!rounded-full"
+              onClick={async (text) => {
+                await copyText('sk-' + record.key);
               }}
             >
-              <Button theme='light' type='danger' style={{ marginRight: 1 }}>
-                {t('删除')}
-              </Button>
-            </Popconfirm>
-            {record.status === 1 ? (
-              <Button
-                theme='light'
-                type='warning'
-                style={{ marginRight: 1 }}
-                onClick={async () => {
-                  manageToken(record.id, 'disable', record);
-                }}
-              >
-                {t('禁用')}
-              </Button>
-            ) : (
-              <Button
-                theme='light'
-                type='secondary'
-                style={{ marginRight: 1 }}
-                onClick={async () => {
-                  manageToken(record.id, 'enable', record);
-                }}
-              >
-                {t('启用')}
-              </Button>
-            )}
+              {t('复制')}
+            </Button>
+            
             <Button
+              icon={<IconEdit />}
               theme='light'
               type='tertiary'
-              style={{ marginRight: 1 }}
+              size="small"
+              className="!rounded-full"
               onClick={() => {
                 setEditingToken(record);
                 setShowEdit(true);
@@ -284,7 +314,21 @@ const TokensTable = () => {
             >
               {t('编辑')}
             </Button>
-          </div>
+            
+            <Dropdown
+              trigger='click'
+              position='bottomRight'
+              menu={moreMenuItems}
+            >
+              <Button
+                icon={<IconMore />}
+                theme='light'
+                type='tertiary'
+                size="small"
+                className="!rounded-full"
+              />
+            </Dropdown>
+          </Space>
         );
       },
     },
@@ -362,7 +406,6 @@ const TokensTable = () => {
   };
 
   const onOpenLink = async (type, url, record) => {
-    // console.log(type, url, key);
     let status = localStorage.getItem('status');
     let serverAddress = '';
     if (status) {
@@ -379,7 +422,26 @@ const TokensTable = () => {
     window.open(url, '_blank');
   };
 
+  // 获取用户数据
+  const getUserData = async () => {
+    try {
+      const res = await API.get(`/api/user/self`);
+      const { success, message, data } = res.data;
+      if (success) {
+        userDispatch({ type: 'login', payload: data });
+      } else {
+        showError(message);
+      }
+    } catch (error) {
+      console.error('获取用户数据失败:', error);
+      showError(t('获取用户数据失败'));
+    }
+  };
+
   useEffect(() => {
+    // 获取用户数据以确保显示正确的余额和使用量
+    getUserData();
+
     loadTokens(0)
       .then()
       .catch((reason) => {
@@ -421,11 +483,9 @@ const TokensTable = () => {
       showSuccess('操作成功完成！');
       let token = res.data.data;
       let newTokens = [...tokens];
-      // let realIdx = (activePage - 1) * ITEMS_PER_PAGE + idx;
       if (action === 'delete') {
       } else {
         record.status = token.status;
-        // newTokens[realIdx].status = token.status;
       }
       setTokensFormat(newTokens);
     } else {
@@ -436,7 +496,6 @@ const TokensTable = () => {
 
   const searchTokens = async () => {
     if (searchKeyword === '' && searchToken === '') {
-      // if keyword is blank, load files instead.
       await loadTokens(0);
       setActivePage(1);
       return;
@@ -480,14 +539,13 @@ const TokensTable = () => {
   const handlePageChange = (page) => {
     setActivePage(page);
     if (page === Math.ceil(tokens.length / pageSize) + 1) {
-      // In this case we have to load more data and then append them.
-      loadTokens(page - 1).then((r) => {});
+      loadTokens(page - 1).then((r) => { });
     }
   };
 
   const rowSelection = {
-    onSelect: (record, selected) => {},
-    onSelectAll: (selected, selectedRows) => {},
+    onSelect: (record, selected) => { },
+    onSelectAll: (selected, selectedRows) => { },
     onChange: (selectedRowKeys, selectedRows) => {
       setSelectedKeys(selectedRows);
     },
@@ -505,6 +563,117 @@ const TokensTable = () => {
     }
   };
 
+  const renderHeader = () => (
+    <div className="flex flex-col w-full">
+      <div className="mb-2">
+        <div className="flex flex-col md:flex-row justify-between items-center">
+          <div className="flex items-center text-orange-500">
+            <IconEyeOpened className="mr-2" />
+            <Text>{t('令牌无法精确控制使用额度，只允许自用，请勿直接将令牌分发给他人。')}</Text>
+          </div>
+
+          <div className="flex flex-wrap gap-4 mt-2 md:mt-0">
+            <div className="flex items-center">
+              <span className="text-xl mr-2">💰</span>
+              <div>
+                <Text type="tertiary" size="small">{t('当前余额')}</Text>
+                <div className="font-medium">{renderQuota(userState?.user?.quota)}</div>
+              </div>
+            </div>
+
+            <div className="flex items-center">
+              <span className="text-xl mr-2">📊</span>
+              <div>
+                <Text type="tertiary" size="small">{t('累计消费')}</Text>
+                <div className="font-medium">{renderQuota(userState?.user?.used_quota)}</div>
+              </div>
+            </div>
+
+            <div className="flex items-center">
+              <span className="text-xl mr-2">🔄</span>
+              <div>
+                <Text type="tertiary" size="small">{t('请求次数')}</Text>
+                <div className="font-medium">{userState?.user?.request_count || 0}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <Divider margin="12px" />
+
+      <div className="flex flex-col md:flex-row justify-between items-center gap-4 w-full">
+        <div className="flex gap-2 w-full md:w-auto order-2 md:order-1">
+          <Button
+            theme="light"
+            type="primary"
+            icon={<IconPlus />}
+            className="!rounded-full w-full md:w-auto"
+            onClick={() => {
+              setEditingToken({
+                id: undefined,
+              });
+              setShowEdit(true);
+            }}
+          >
+            {t('添加令牌')}
+          </Button>
+          <Button
+            theme="light"
+            type="warning"
+            icon={<IconCopy />}
+            className="!rounded-full w-full md:w-auto"
+            onClick={async () => {
+              if (selectedKeys.length === 0) {
+                showError(t('请至少选择一个令牌！'));
+                return;
+              }
+              let keys = '';
+              for (let i = 0; i < selectedKeys.length; i++) {
+                keys +=
+                  selectedKeys[i].name + '    sk-' + selectedKeys[i].key + '\n';
+              }
+              await copyText(keys);
+            }}
+          >
+            {t('复制所选')}
+          </Button>
+        </div>
+
+        <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto order-1 md:order-2">
+          <div className="relative w-full md:w-56">
+            <Input
+              prefix={<IconSearch />}
+              placeholder={t('搜索关键字')}
+              value={searchKeyword}
+              onChange={handleKeywordChange}
+              className="!rounded-full"
+              showClear
+            />
+          </div>
+          <div className="relative w-full md:w-56">
+            <Input
+              prefix={<IconSearch />}
+              placeholder={t('密钥')}
+              value={searchToken}
+              onChange={handleSearchTokenChange}
+              className="!rounded-full"
+              showClear
+            />
+          </div>
+          <Button
+            type="primary"
+            onClick={searchTokens}
+            loading={searching}
+            className="!rounded-full w-full md:w-auto"
+          >
+            {t('查询')}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <>
       <EditToken
@@ -513,99 +682,40 @@ const TokensTable = () => {
         visiable={showEdit}
         handleClose={closeEdit}
       ></EditToken>
-      <Form
-        layout='horizontal'
-        style={{ marginTop: 10 }}
-        labelPosition={'left'}
-      >
-        <Form.Input
-          field='keyword'
-          label={t('搜索关键字')}
-          placeholder={t('令牌名称')}
-          value={searchKeyword}
-          loading={searching}
-          onChange={handleKeywordChange}
-        />
-        <Form.Input
-          field='token'
-          label={t('密钥')}
-          placeholder={t('密钥')}
-          value={searchToken}
-          loading={searching}
-          onChange={handleSearchTokenChange}
-        />
-        <Button
-          label={t('查询')}
-          type='primary'
-          htmlType='submit'
-          className='btn-margin-right'
-          onClick={searchTokens}
-          style={{ marginRight: 8 }}
-        >
-          {t('查询')}
-        </Button>
-      </Form>
-      <Divider style={{ margin: '15px 0' }} />
-      <div>
-        <Button
-          theme='light'
-          type='primary'
-          style={{ marginRight: 8 }}
-          onClick={() => {
-            setEditingToken({
-              id: undefined,
-            });
-            setShowEdit(true);
-          }}
-        >
-          {t('添加令牌')}
-        </Button>
-        <Button
-          label={t('复制所选令牌')}
-          type='warning'
-          onClick={async () => {
-            if (selectedKeys.length === 0) {
-              showError(t('请至少选择一个令牌！'));
-              return;
-            }
-            let keys = '';
-            for (let i = 0; i < selectedKeys.length; i++) {
-              keys +=
-                selectedKeys[i].name + '    sk-' + selectedKeys[i].key + '\n';
-            }
-            await copyText(keys);
-          }}
-        >
-          {t('复制所选令牌到剪贴板')}
-        </Button>
-      </div>
 
-      <Table
-        style={{ marginTop: 20 }}
-        columns={columns}
-        dataSource={pageData}
-        pagination={{
-          currentPage: activePage,
-          pageSize: pageSize,
-          total: tokenCount,
-          showSizeChanger: true,
-          pageSizeOptions: [10, 20, 50, 100],
-          formatPageText: (page) =>
-            t('第 {{start}} - {{end}} 条，共 {{total}} 条', {
-              start: page.currentStart,
-              end: page.currentEnd,
-              total: tokens.length,
-            }),
-          onPageSizeChange: (size) => {
-            setPageSize(size);
-            setActivePage(1);
-          },
-          onPageChange: handlePageChange,
-        }}
-        loading={loading}
-        rowSelection={rowSelection}
-        onRow={handleRow}
-      ></Table>
+      <Card
+        className="!rounded-2xl overflow-hidden"
+        title={renderHeader()}
+        shadows='hover'
+      >
+        <Table
+          columns={columns}
+          dataSource={pageData}
+          pagination={{
+            currentPage: activePage,
+            pageSize: pageSize,
+            total: tokenCount,
+            showSizeChanger: true,
+            pageSizeOptions: [10, 20, 50, 100],
+            formatPageText: (page) =>
+              t('第 {{start}} - {{end}} 条，共 {{total}} 条', {
+                start: page.currentStart,
+                end: page.currentEnd,
+                total: tokens.length,
+              }),
+            onPageSizeChange: (size) => {
+              setPageSize(size);
+              setActivePage(1);
+            },
+            onPageChange: handlePageChange,
+          }}
+          loading={loading}
+          rowSelection={rowSelection}
+          onRow={handleRow}
+          className="rounded-xl overflow-hidden"
+          size="middle"
+        ></Table>
+      </Card>
     </>
   );
 };

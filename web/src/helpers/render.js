@@ -17,7 +17,7 @@ export function renderText(text, limit) {
 export function renderGroup(group) {
   if (group === '') {
     return (
-      <Tag size='large' key='default' color='orange'>
+      <Tag size='large' key='default' color='orange' shape='circle'>
         {i18next.t('用户分组')}
       </Tag>
     );
@@ -39,6 +39,7 @@ export function renderGroup(group) {
           size='large'
           color={tagColors[group] || stringToColor(group)}
           key={group}
+          shape='circle'
           onClick={async (event) => {
             event.stopPropagation();
             if (await copy(group)) {
