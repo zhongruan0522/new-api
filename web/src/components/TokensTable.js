@@ -636,7 +636,7 @@ const TokensTable = () => {
               await copyText(keys);
             }}
           >
-            {t('复制所选')}
+            {t('复制所选兑换码到剪贴板')}
           </Button>
         </div>
 
