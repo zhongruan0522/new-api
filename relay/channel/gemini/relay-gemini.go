@@ -539,6 +539,8 @@ func responseGeminiChat2OpenAI(response *GeminiChatResponse) *dto.OpenAITextResp
 					if call := getResponseToolCall(&part); call != nil {
 						toolCalls = append(toolCalls, *call)
 					}
+				} else if part.Thought {
+					choice.Message.ReasoningContent = part.Text
 				} else {
 					if part.ExecutableCode != nil {
 						texts = append(texts, "```"+part.ExecutableCode.Language+"\n"+part.ExecutableCode.Code+"\n```")
@@ -556,7 +558,6 @@ func responseGeminiChat2OpenAI(response *GeminiChatResponse) *dto.OpenAITextResp
 				choice.Message.SetToolCalls(toolCalls)
 				isToolCall = true
 			}
-
 			choice.Message.SetStringContent(strings.Join(texts, "\n"))
 
 		}
@@ -724,8 +725,11 @@ func GeminiChatHandler(c *gin.Context, resp *http.Response, info *relaycommon.Re
 	if err != nil {
 		return service.OpenAIErrorWrapper(err, "close_response_body_failed", http.StatusInternalServerError), nil
 	}
+	if common.DebugEnabled {
+		println(string(responseBody))
+	}
 	var geminiResponse GeminiChatResponse
-	err = json.Unmarshal(responseBody, &geminiResponse)
+	err = common.DecodeJson(responseBody, &geminiResponse)
 	if err != nil {
 		return service.OpenAIErrorWrapper(err, "unmarshal_response_body_failed", http.StatusInternalServerError), nil
 	}
