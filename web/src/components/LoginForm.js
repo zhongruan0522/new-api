@@ -53,6 +53,15 @@ const LoginForm = () => {
   const [status, setStatus] = useState({});
   const [showWeChatLoginModal, setShowWeChatLoginModal] = useState(false);
   const [showEmailLogin, setShowEmailLogin] = useState(false);
+  const [wechatLoading, setWechatLoading] = useState(false);
+  const [githubLoading, setGithubLoading] = useState(false);
+  const [oidcLoading, setOidcLoading] = useState(false);
+  const [linuxdoLoading, setLinuxdoLoading] = useState(false);
+  const [emailLoginLoading, setEmailLoginLoading] = useState(false);
+  const [loginLoading, setLoginLoading] = useState(false);
+  const [resetPasswordLoading, setResetPasswordLoading] = useState(false);
+  const [otherLoginOptionsLoading, setOtherLoginOptionsLoading] = useState(false);
+  const [wechatCodeSubmitLoading, setWechatCodeSubmitLoading] = useState(false);
   const { t } = useTranslation();
 
   const logo = getLogo();
@@ -79,7 +88,9 @@ const LoginForm = () => {
   }, []);
 
   const onWeChatLoginClicked = () => {
+    setWechatLoading(true);
     setShowWeChatLoginModal(true);
+    setWechatLoading(false);
   };
 
   const onSubmitWeChatVerificationCode = async () => {
@@ -87,20 +98,27 @@ const LoginForm = () => {
       showInfo('请稍后几秒重试，Turnstile 正在检查用户环境！');
       return;
     }
-    const res = await API.get(
-      `/api/oauth/wechat?code=${inputs.wechat_verification_code}`,
-    );
-    const { success, message, data } = res.data;
-    if (success) {
-      userDispatch({ type: 'login', payload: data });
-      localStorage.setItem('user', JSON.stringify(data));
-      setUserData(data);
-      updateAPI();
-      navigate('/');
-      showSuccess('登录成功！');
-      setShowWeChatLoginModal(false);
-    } else {
-      showError(message);
+    setWechatCodeSubmitLoading(true);
+    try {
+      const res = await API.get(
+        `/api/oauth/wechat?code=${inputs.wechat_verification_code}`,
+      );
+      const { success, message, data } = res.data;
+      if (success) {
+        userDispatch({ type: 'login', payload: data });
+        localStorage.setItem('user', JSON.stringify(data));
+        setUserData(data);
+        updateAPI();
+        navigate('/');
+        showSuccess('登录成功！');
+        setShowWeChatLoginModal(false);
+      } else {
+        showError(message);
+      }
+    } catch (error) {
+      showError('登录失败，请重试');
+    } finally {
+      setWechatCodeSubmitLoading(false);
     }
   };
 
@@ -114,33 +132,40 @@ const LoginForm = () => {
       return;
     }
     setSubmitted(true);
-    if (username && password) {
-      const res = await API.post(
-        `/api/user/login?turnstile=${turnstileToken}`,
-        {
-          username,
-          password,
-        },
-      );
-      const { success, message, data } = res.data;
-      if (success) {
-        userDispatch({ type: 'login', payload: data });
-        setUserData(data);
-        updateAPI();
-        showSuccess('登录成功！');
-        if (username === 'root' && password === '123456') {
-          Modal.error({
-            title: '您正在使用默认密码！',
-            content: '请立刻修改默认密码！',
-            centered: true,
-          });
+    setLoginLoading(true);
+    try {
+      if (username && password) {
+        const res = await API.post(
+          `/api/user/login?turnstile=${turnstileToken}`,
+          {
+            username,
+            password,
+          },
+        );
+        const { success, message, data } = res.data;
+        if (success) {
+          userDispatch({ type: 'login', payload: data });
+          setUserData(data);
+          updateAPI();
+          showSuccess('登录成功！');
+          if (username === 'root' && password === '123456') {
+            Modal.error({
+              title: '您正在使用默认密码！',
+              content: '请立刻修改默认密码！',
+              centered: true,
+            });
+          }
+          navigate('/console');
+        } else {
+          showError(message);
         }
-        navigate('/console');
       } else {
-        showError(message);
+        showError('请输入用户名和密码！');
       }
-    } else {
-      showError('请输入用户名和密码！');
+    } catch (error) {
+      showError('登录失败，请重试');
+    } finally {
+      setLoginLoading(false);
     }
   }
 
@@ -162,18 +187,79 @@ const LoginForm = () => {
         params[field] = response[field];
       }
     });
-    const res = await API.get(`/api/oauth/telegram/login`, { params });
-    const { success, message, data } = res.data;
-    if (success) {
-      userDispatch({ type: 'login', payload: data });
-      localStorage.setItem('user', JSON.stringify(data));
-      showSuccess('登录成功！');
-      setUserData(data);
-      updateAPI();
-      navigate('/');
-    } else {
-      showError(message);
+    try {
+      const res = await API.get(`/api/oauth/telegram/login`, { params });
+      const { success, message, data } = res.data;
+      if (success) {
+        userDispatch({ type: 'login', payload: data });
+        localStorage.setItem('user', JSON.stringify(data));
+        showSuccess('登录成功！');
+        setUserData(data);
+        updateAPI();
+        navigate('/');
+      } else {
+        showError(message);
+      }
+    } catch (error) {
+      showError('登录失败，请重试');
     }
+  };
+
+  // 包装的GitHub登录点击处理
+  const handleGitHubClick = () => {
+    setGithubLoading(true);
+    try {
+      onGitHubOAuthClicked(status.github_client_id);
+    } finally {
+      // 由于重定向，这里不会执行到，但为了完整性添加
+      setTimeout(() => setGithubLoading(false), 3000);
+    }
+  };
+
+  // 包装的OIDC登录点击处理
+  const handleOIDCClick = () => {
+    setOidcLoading(true);
+    try {
+      onOIDCClicked(
+        status.oidc_authorization_endpoint,
+        status.oidc_client_id
+      );
+    } finally {
+      // 由于重定向，这里不会执行到，但为了完整性添加
+      setTimeout(() => setOidcLoading(false), 3000);
+    }
+  };
+
+  // 包装的LinuxDO登录点击处理
+  const handleLinuxDOClick = () => {
+    setLinuxdoLoading(true);
+    try {
+      onLinuxDOOAuthClicked(status.linuxdo_client_id);
+    } finally {
+      // 由于重定向，这里不会执行到，但为了完整性添加
+      setTimeout(() => setLinuxdoLoading(false), 3000);
+    }
+  };
+
+  // 包装的邮箱登录选项点击处理
+  const handleEmailLoginClick = () => {
+    setEmailLoginLoading(true);
+    setShowEmailLogin(true);
+    setEmailLoginLoading(false);
+  };
+
+  // 包装的重置密码点击处理
+  const handleResetPasswordClick = () => {
+    setResetPasswordLoading(true);
+    navigate('/reset');
+    setResetPasswordLoading(false);
+  };
+
+  // 包装的其他登录选项点击处理
+  const handleOtherLoginOptionsClick = () => {
+    setOtherLoginOptionsLoading(true);
+    setShowEmailLogin(false);
+    setOtherLoginOptionsLoading(false);
   };
 
   const renderOAuthOptions = () => {
@@ -199,6 +285,7 @@ const LoginForm = () => {
                     icon={<Icon svg={<WeChatIcon />} style={{ color: '#07C160' }} />}
                     size="large"
                     onClick={onWeChatLoginClicked}
+                    loading={wechatLoading}
                   >
                     <span className="ml-3">{t('使用 微信 继续')}</span>
                   </Button>
@@ -211,7 +298,8 @@ const LoginForm = () => {
                     type="tertiary"
                     icon={<IconGithubLogo size="large" style={{ color: '#24292e' }} />}
                     size="large"
-                    onClick={() => onGitHubOAuthClicked(status.github_client_id)}
+                    onClick={handleGitHubClick}
+                    loading={githubLoading}
                   >
                     <span className="ml-3">{t('使用 GitHub 继续')}</span>
                   </Button>
@@ -224,12 +312,8 @@ const LoginForm = () => {
                     type="tertiary"
                     icon={<OIDCIcon style={{ color: '#1877F2' }} />}
                     size="large"
-                    onClick={() =>
-                      onOIDCClicked(
-                        status.oidc_authorization_endpoint,
-                        status.oidc_client_id
-                      )
-                    }
+                    onClick={handleOIDCClick}
+                    loading={oidcLoading}
                   >
                     <span className="ml-3">{t('使用 OIDC 继续')}</span>
                   </Button>
@@ -242,7 +326,8 @@ const LoginForm = () => {
                     type="tertiary"
                     icon={<LinuxDoIcon style={{ color: '#E95420', width: '20px', height: '20px' }} />}
                     size="large"
-                    onClick={() => onLinuxDOOAuthClicked(status.linuxdo_client_id)}
+                    onClick={handleLinuxDOClick}
+                    loading={linuxdoLoading}
                   >
                     <span className="ml-3">{t('使用 LinuxDO 继续')}</span>
                   </Button>
@@ -267,7 +352,8 @@ const LoginForm = () => {
                   className="w-full h-12 flex items-center justify-center bg-black text-white !rounded-full hover:bg-gray-800 transition-colors"
                   icon={<IconMail size="large" />}
                   size="large"
-                  onClick={() => setShowEmailLogin(true)}
+                  onClick={handleEmailLoginClick}
+                  loading={emailLoginLoading}
                 >
                   <span className="ml-3">{t('使用 邮箱 登录')}</span>
                 </Button>
@@ -340,6 +426,7 @@ const LoginForm = () => {
                     htmlType="submit"
                     size="large"
                     onClick={handleSubmit}
+                    loading={loginLoading}
                   >
                     {t('继续')}
                   </Button>
@@ -349,7 +436,8 @@ const LoginForm = () => {
                     type='tertiary'
                     className="w-full !rounded-full"
                     size="large"
-                    onClick={() => navigate('/reset')}
+                    onClick={handleResetPasswordClick}
+                    loading={resetPasswordLoading}
                   >
                     {t('忘记密码？')}
                   </Button>
@@ -366,7 +454,8 @@ const LoginForm = () => {
                   type="tertiary"
                   className="w-full !rounded-full"
                   size="large"
-                  onClick={() => setShowEmailLogin(false)}
+                  onClick={handleOtherLoginOptionsClick}
+                  loading={otherLoginOptionsLoading}
                 >
                   {t('其他登录选项')}
                 </Button>
@@ -390,6 +479,9 @@ const LoginForm = () => {
         okText={t('登录')}
         size="small"
         centered={true}
+        okButtonProps={{
+          loading: wechatCodeSubmitLoading,
+        }}
       >
         <div className="flex flex-col items-center">
           <img src={status.wechat_qrcode} alt="微信二维码" className="mb-4" />
