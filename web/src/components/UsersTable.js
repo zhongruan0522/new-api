@@ -2,18 +2,36 @@ import React, { useEffect, useState } from 'react';
 import { API, showError, showSuccess } from '../helpers';
 import {
   Button,
-  Form,
-  Popconfirm,
+  Card,
+  Divider,
+  Dropdown,
+  Input,
+  Modal,
+  Select,
   Space,
   Table,
   Tag,
-  Tooltip,
+  Typography,
 } from '@douyinfe/semi-ui';
+import {
+  IconPlus,
+  IconSearch,
+  IconEdit,
+  IconDelete,
+  IconStop,
+  IconPlay,
+  IconMore,
+  IconUserAdd,
+  IconArrowUp,
+  IconArrowDown,
+} from '@douyinfe/semi-icons';
 import { ITEMS_PER_PAGE } from '../constants';
 import { renderGroup, renderNumber, renderQuota } from '../helpers/render';
 import AddUser from '../pages/User/AddUser';
 import EditUser from '../pages/User/EditUser';
 import { useTranslation } from 'react-i18next';
+
+const { Text } = Typography;
 
 const UsersTable = () => {
   const { t } = useTranslation();
@@ -21,27 +39,51 @@ const UsersTable = () => {
   function renderRole(role) {
     switch (role) {
       case 1:
-        return <Tag size='large'>{t('普通用户')}</Tag>;
+        return (
+          <Tag size='large' color='blue' shape='circle'>
+            {t('普通用户')}
+          </Tag>
+        );
       case 10:
         return (
-          <Tag color='yellow' size='large'>
+          <Tag color='yellow' size='large' shape='circle'>
             {t('管理员')}
           </Tag>
         );
       case 100:
         return (
-          <Tag color='orange' size='large'>
+          <Tag color='orange' size='large' shape='circle'>
             {t('超级管理员')}
           </Tag>
         );
       default:
         return (
-          <Tag color='red' size='large'>
+          <Tag color='red' size='large' shape='circle'>
             {t('未知身份')}
           </Tag>
         );
     }
   }
+
+  const renderStatus = (status) => {
+    switch (status) {
+      case 1:
+        return <Tag size='large' color='green' shape='circle'>{t('已激活')}</Tag>;
+      case 2:
+        return (
+          <Tag size='large' color='red' shape='circle'>
+            {t('已封禁')}
+          </Tag>
+        );
+      default:
+        return (
+          <Tag size='large' color='grey' shape='circle'>
+            {t('未知状态')}
+          </Tag>
+        );
+    }
+  };
+
   const columns = [
     {
       title: 'ID',
@@ -65,21 +107,15 @@ const UsersTable = () => {
         return (
           <div>
             <Space spacing={1}>
-              <Tooltip content={t('剩余额度')}>
-                <Tag color='white' size='large'>
-                  {renderQuota(record.quota)}
-                </Tag>
-              </Tooltip>
-              <Tooltip content={t('已用额度')}>
-                <Tag color='white' size='large'>
-                  {renderQuota(record.used_quota)}
-                </Tag>
-              </Tooltip>
-              <Tooltip content={t('调用次数')}>
-                <Tag color='white' size='large'>
-                  {renderNumber(record.request_count)}
-                </Tag>
-              </Tooltip>
+              <Tag color='white' size='large' shape='circle' className="!text-xs">
+                {t('剩余')}: {renderQuota(record.quota)}
+              </Tag>
+              <Tag color='white' size='large' shape='circle' className="!text-xs">
+                {t('已用')}: {renderQuota(record.used_quota)}
+              </Tag>
+              <Tag color='white' size='large' shape='circle' className="!text-xs">
+                {t('调用')}: {renderNumber(record.request_count)}
+              </Tag>
             </Space>
           </div>
         );
@@ -92,27 +128,15 @@ const UsersTable = () => {
         return (
           <div>
             <Space spacing={1}>
-              <Tooltip content={t('邀请人数')}>
-                <Tag color='white' size='large'>
-                  {renderNumber(record.aff_count)}
-                </Tag>
-              </Tooltip>
-              <Tooltip content={t('邀请总收益')}>
-                <Tag color='white' size='large'>
-                  {renderQuota(record.aff_history_quota)}
-                </Tag>
-              </Tooltip>
-              <Tooltip content={t('邀请人ID')}>
-                {record.inviter_id === 0 ? (
-                  <Tag color='white' size='large'>
-                    {t('无')}
-                  </Tag>
-                ) : (
-                  <Tag color='white' size='large'>
-                    {record.inviter_id}
-                  </Tag>
-                )}
-              </Tooltip>
+              <Tag color='white' size='large' shape='circle' className="!text-xs">
+                {t('邀请')}: {renderNumber(record.aff_count)}
+              </Tag>
+              <Tag color='white' size='large' shape='circle' className="!text-xs">
+                {t('收益')}: {renderQuota(record.aff_history_quota)}
+              </Tag>
+              <Tag color='white' size='large' shape='circle' className="!text-xs">
+                {record.inviter_id === 0 ? t('无邀请人') : `邀请人: ${record.inviter_id}`}
+              </Tag>
             </Space>
           </div>
         );
@@ -132,7 +156,7 @@ const UsersTable = () => {
         return (
           <div>
             {record.DeletedAt !== null ? (
-              <Tag color='red'>{t('已注销')}</Tag>
+              <Tag color='red' shape='circle'>{t('已注销')}</Tag>
             ) : (
               renderStatus(text)
             )}
@@ -143,92 +167,117 @@ const UsersTable = () => {
     {
       title: '',
       dataIndex: 'operate',
-      render: (text, record, index) => (
-        <div>
-          {record.DeletedAt !== null ? (
-            <></>
-          ) : (
-            <>
-              <Popconfirm
-                title={t('确定？')}
-                okType={'warning'}
-                onConfirm={() => {
+      render: (text, record, index) => {
+        if (record.DeletedAt !== null) {
+          return <></>;
+        }
+
+        // 创建更多操作的下拉菜单项
+        const moreMenuItems = [
+          {
+            node: 'item',
+            name: t('提升'),
+            icon: <IconArrowUp />,
+            type: 'warning',
+            onClick: () => {
+              Modal.confirm({
+                title: t('确定要提升此用户吗？'),
+                content: t('此操作将提升用户的权限级别'),
+                onOk: () => {
                   manageUser(record.id, 'promote', record);
-                }}
-              >
-                <Button theme='light' type='warning' style={{ marginRight: 1 }}>
-                  {t('提升')}
-                </Button>
-              </Popconfirm>
-              <Popconfirm
-                title={t('确定？')}
-                okType={'warning'}
-                onConfirm={() => {
+                },
+              });
+            },
+          },
+          {
+            node: 'item',
+            name: t('降级'),
+            icon: <IconArrowDown />,
+            type: 'secondary',
+            onClick: () => {
+              Modal.confirm({
+                title: t('确定要降级此用户吗？'),
+                content: t('此操作将降低用户的权限级别'),
+                onOk: () => {
                   manageUser(record.id, 'demote', record);
-                }}
-              >
-                <Button
-                  theme='light'
-                  type='secondary'
-                  style={{ marginRight: 1 }}
-                >
-                  {t('降级')}
-                </Button>
-              </Popconfirm>
-              {record.status === 1 ? (
-                <Button
-                  theme='light'
-                  type='warning'
-                  style={{ marginRight: 1 }}
-                  onClick={async () => {
-                    manageUser(record.id, 'disable', record);
-                  }}
-                >
-                  {t('禁用')}
-                </Button>
-              ) : (
-                <Button
-                  theme='light'
-                  type='secondary'
-                  style={{ marginRight: 1 }}
-                  onClick={async () => {
-                    manageUser(record.id, 'enable', record);
-                  }}
-                  disabled={record.status === 3}
-                >
-                  {t('启用')}
-                </Button>
-              )}
-              <Button
-                theme='light'
-                type='tertiary'
-                style={{ marginRight: 1 }}
-                onClick={() => {
-                  setEditingUser(record);
-                  setShowEditUser(true);
-                }}
-              >
-                {t('编辑')}
-              </Button>
-              <Popconfirm
-                title={t('确定是否要注销此用户？')}
-                content={t('相当于删除用户，此修改将不可逆')}
-                okType={'danger'}
-                position={'left'}
-                onConfirm={() => {
+                },
+              });
+            },
+          },
+          {
+            node: 'item',
+            name: t('注销'),
+            icon: <IconDelete />,
+            type: 'danger',
+            onClick: () => {
+              Modal.confirm({
+                title: t('确定是否要注销此用户？'),
+                content: t('相当于删除用户，此修改将不可逆'),
+                onOk: () => {
                   manageUser(record.id, 'delete', record).then(() => {
                     removeRecord(record.id);
                   });
-                }}
-              >
-                <Button theme='light' type='danger' style={{ marginRight: 1 }}>
-                  {t('注销')}
-                </Button>
-              </Popconfirm>
-            </>
-          )}
-        </div>
-      ),
+                },
+              });
+            },
+          }
+        ];
+
+        // 动态添加启用/禁用按钮
+        if (record.status === 1) {
+          moreMenuItems.splice(-1, 0, {
+            node: 'item',
+            name: t('禁用'),
+            icon: <IconStop />,
+            type: 'warning',
+            onClick: () => {
+              manageUser(record.id, 'disable', record);
+            },
+          });
+        } else {
+          moreMenuItems.splice(-1, 0, {
+            node: 'item',
+            name: t('启用'),
+            icon: <IconPlay />,
+            type: 'secondary',
+            onClick: () => {
+              manageUser(record.id, 'enable', record);
+            },
+            disabled: record.status === 3,
+          });
+        }
+
+        return (
+          <Space>
+            <Button
+              icon={<IconEdit />}
+              theme='light'
+              type='tertiary'
+              size="small"
+              className="!rounded-full"
+              onClick={() => {
+                setEditingUser(record);
+                setShowEditUser(true);
+              }}
+            >
+              {t('编辑')}
+            </Button>
+            <Dropdown
+              trigger='click'
+              position='bottomRight'
+              menu={moreMenuItems}
+            >
+              <Button
+                icon={<IconMore />}
+                theme='light'
+                type='tertiary'
+                size="small"
+                className="!rounded-full"
+              />
+            </Dropdown>
+          </Space>
+        );
+      },
     },
   ];
 
@@ -308,25 +357,6 @@ const UsersTable = () => {
       setUsers(newUsers);
     } else {
       showError(message);
-    }
-  };
-
-  const renderStatus = (status) => {
-    switch (status) {
-      case 1:
-        return <Tag size='large'>{t('已激活')}</Tag>;
-      case 2:
-        return (
-          <Tag size='large' color='red'>
-            {t('已封禁')}
-          </Tag>
-        );
-      default:
-        return (
-          <Tag size='large' color='grey'>
-            {t('未知状态')}
-          </Tag>
-        );
     }
   };
 
@@ -420,6 +450,83 @@ const UsersTable = () => {
       });
   };
 
+  const handleRow = (record, index) => {
+    if (record.DeletedAt !== null || record.status !== 1) {
+      return {
+        style: {
+          background: 'var(--semi-color-disabled-border)',
+        },
+      };
+    } else {
+      return {};
+    }
+  };
+
+  const renderHeader = () => (
+    <div className="flex flex-col w-full">
+      <div className="mb-2">
+        <div className="flex items-center text-blue-500">
+          <IconUserAdd className="mr-2" />
+          <Text>{t('用户管理页面，可以查看和管理所有注册用户的信息、权限和状态。')}</Text>
+        </div>
+      </div>
+
+      <Divider margin="12px" />
+
+      <div className="flex flex-col md:flex-row justify-between items-center gap-4 w-full">
+        <div className="flex gap-2 w-full md:w-auto order-2 md:order-1">
+          <Button
+            theme='light'
+            type='primary'
+            icon={<IconPlus />}
+            className="!rounded-full w-full md:w-auto"
+            onClick={() => {
+              setShowAddUser(true);
+            }}
+          >
+            {t('添加用户')}
+          </Button>
+        </div>
+
+        <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto order-1 md:order-2">
+          <div className="relative w-full md:w-64">
+            <Input
+              prefix={<IconSearch />}
+              placeholder={t('支持搜索用户的 ID、用户名、显示名称和邮箱地址')}
+              value={searchKeyword}
+              onChange={handleKeywordChange}
+              className="!rounded-full"
+              showClear
+            />
+          </div>
+          <div className="w-full md:w-48">
+            <Select
+              placeholder={t('选择分组')}
+              optionList={groupOptions}
+              value={searchGroup}
+              onChange={(value) => {
+                setSearchGroup(value);
+                searchUsers(activePage, pageSize, searchKeyword, value);
+              }}
+              className="!rounded-full w-full"
+              showClear
+            />
+          </div>
+          <Button
+            type="primary"
+            onClick={() => {
+              searchUsers(activePage, pageSize, searchKeyword, searchGroup);
+            }}
+            loading={searching}
+            className="!rounded-full w-full md:w-auto"
+          >
+            {t('查询')}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <>
       <AddUser
@@ -433,81 +540,38 @@ const UsersTable = () => {
         handleClose={closeEditUser}
         editingUser={editingUser}
       ></EditUser>
-      <Form
-        onSubmit={() => {
-          searchUsers(activePage, pageSize, searchKeyword, searchGroup);
-        }}
-        labelPosition='left'
+
+      <Card
+        className="!rounded-2xl overflow-hidden"
+        title={renderHeader()}
+        shadows='hover'
       >
-        <div style={{ display: 'flex' }}>
-          <Space>
-            <Tooltip
-              content={t('支持搜索用户的 ID、用户名、显示名称和邮箱地址')}
-            >
-              <Form.Input
-                label={t('搜索关键字')}
-                icon='search'
-                field='keyword'
-                iconPosition='left'
-                placeholder={t('搜索关键字')}
-                value={searchKeyword}
-                loading={searching}
-                onChange={(value) => handleKeywordChange(value)}
-              />
-            </Tooltip>
-
-            <Form.Select
-              field='group'
-              label={t('分组')}
-              optionList={groupOptions}
-              onChange={(value) => {
-                setSearchGroup(value);
-                searchUsers(activePage, pageSize, searchKeyword, value);
-              }}
-            />
-            <Button
-              label={t('查询')}
-              type='primary'
-              htmlType='submit'
-              className='btn-margin-right'
-            >
-              {t('查询')}
-            </Button>
-            <Button
-              theme='light'
-              type='primary'
-              onClick={() => {
-                setShowAddUser(true);
-              }}
-            >
-              {t('添加用户')}
-            </Button>
-          </Space>
-        </div>
-      </Form>
-
-      <Table
-        columns={columns}
-        dataSource={users}
-        pagination={{
-          formatPageText: (page) =>
-            t('第 {{start}} - {{end}} 条，共 {{total}} 条', {
-              start: page.currentStart,
-              end: page.currentEnd,
-              total: users.length,
-            }),
-          currentPage: activePage,
-          pageSize: pageSize,
-          total: userCount,
-          pageSizeOpts: [10, 20, 50, 100],
-          showSizeChanger: true,
-          onPageSizeChange: (size) => {
-            handlePageSizeChange(size);
-          },
-          onPageChange: handlePageChange,
-        }}
-        loading={loading}
-      />
+        <Table
+          columns={columns}
+          dataSource={users}
+          pagination={{
+            formatPageText: (page) =>
+              t('第 {{start}} - {{end}} 条，共 {{total}} 条', {
+                start: page.currentStart,
+                end: page.currentEnd,
+                total: userCount,
+              }),
+            currentPage: activePage,
+            pageSize: pageSize,
+            total: userCount,
+            pageSizeOpts: [10, 20, 50, 100],
+            showSizeChanger: true,
+            onPageSizeChange: (size) => {
+              handlePageSizeChange(size);
+            },
+            onPageChange: handlePageChange,
+          }}
+          loading={loading}
+          onRow={handleRow}
+          className="rounded-xl overflow-hidden"
+          size="middle"
+        />
+      </Card>
     </>
   );
 };

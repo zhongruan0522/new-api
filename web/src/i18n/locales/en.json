@@ -1433,5 +1433,13 @@
   "100个": "100 items",
   "Midjourney 任务记录": "Midjourney Task Records",
   "任务记录": "Task Records",
-  "兑换码可以批量生成和分发，适合用于推广活动或批量充值。": "Redemption codes can be batch generated and distributed, suitable for promotion activities or bulk recharge."
+  "兑换码可以批量生成和分发，适合用于推广活动或批量充值。": "Redemption codes can be batch generated and distributed, suitable for promotion activities or bulk recharge.",
+  "剩余": "Remaining",
+  "已用": "Used",
+  "调用": "Calls",
+  "邀请": "Invitations",
+  "收益": "Earnings",
+  "无邀请人": "No Inviter",
+  "邀请人": "Inviter",
+  "用户管理页面，可以查看和管理所有注册用户的信息、权限和状态。": "User management page, you can view and manage all registered user information, permissions, and status."
 }
