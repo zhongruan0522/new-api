@@ -512,6 +512,7 @@
   "模型映射必须是合法的 JSON 格式！": "Model mapping must be in valid JSON format!",
   "取消无限额度": "Cancel unlimited quota",
   "取消": "Cancel",
+  "重置": "Reset",
   "请输入新的剩余额度": "Please enter the new remaining quota",
   "请输入单个兑换码中包含的额度": "Please enter the quota included in a single redemption code",
   "请输入用户名": "Please enter username",
@@ -1430,5 +1431,6 @@
   "20个": "20 items",
   "30个": "30 items",
   "100个": "100 items",
-  "Midjourney 任务记录": "Midjourney Task Records"
+  "Midjourney 任务记录": "Midjourney Task Records",
+  "任务记录": "Task Records"
 }
