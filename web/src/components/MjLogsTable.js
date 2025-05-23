@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   API,
   copy,
@@ -9,19 +10,29 @@ import {
 } from '../helpers';
 
 import {
-  Banner,
   Button,
-  Form,
+  Card,
+  Checkbox,
+  DatePicker,
+  Divider,
   ImagePreview,
+  Input,
   Layout,
   Modal,
   Progress,
+  Skeleton,
   Table,
   Tag,
   Typography,
 } from '@douyinfe/semi-ui';
 import { ITEMS_PER_PAGE } from '../constants';
-import { useTranslation } from 'react-i18next';
+import {
+  IconEyeOpened,
+  IconSearch,
+  IconSetting,
+} from '@douyinfe/semi-icons';
+
+const { Text } = Typography;
 
 const colors = [
   'amber',
@@ -41,111 +52,205 @@ const colors = [
   'yellow',
 ];
 
+// 定义列键值常量
+const COLUMN_KEYS = {
+  SUBMIT_TIME: 'submit_time',
+  DURATION: 'duration',
+  CHANNEL: 'channel',
+  TYPE: 'type',
+  TASK_ID: 'task_id',
+  SUBMIT_RESULT: 'submit_result',
+  TASK_STATUS: 'task_status',
+  PROGRESS: 'progress',
+  IMAGE: 'image',
+  PROMPT: 'prompt',
+  PROMPT_EN: 'prompt_en',
+  FAIL_REASON: 'fail_reason',
+};
+
 const LogsTable = () => {
   const { t } = useTranslation();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalContent, setModalContent] = useState('');
+
+  // 列可见性状态
+  const [visibleColumns, setVisibleColumns] = useState({});
+  const [showColumnSelector, setShowColumnSelector] = useState(false);
+  const isAdminUser = isAdmin();
+
+  // 加载保存的列偏好设置
+  useEffect(() => {
+    const savedColumns = localStorage.getItem('mj-logs-table-columns');
+    if (savedColumns) {
+      try {
+        const parsed = JSON.parse(savedColumns);
+        const defaults = getDefaultColumnVisibility();
+        const merged = { ...defaults, ...parsed };
+        setVisibleColumns(merged);
+      } catch (e) {
+        console.error('Failed to parse saved column preferences', e);
+        initDefaultColumns();
+      }
+    } else {
+      initDefaultColumns();
+    }
+  }, []);
+
+  // 获取默认列可见性
+  const getDefaultColumnVisibility = () => {
+    return {
+      [COLUMN_KEYS.SUBMIT_TIME]: true,
+      [COLUMN_KEYS.DURATION]: true,
+      [COLUMN_KEYS.CHANNEL]: isAdminUser,
+      [COLUMN_KEYS.TYPE]: true,
+      [COLUMN_KEYS.TASK_ID]: true,
+      [COLUMN_KEYS.SUBMIT_RESULT]: isAdminUser,
+      [COLUMN_KEYS.TASK_STATUS]: true,
+      [COLUMN_KEYS.PROGRESS]: true,
+      [COLUMN_KEYS.IMAGE]: true,
+      [COLUMN_KEYS.PROMPT]: true,
+      [COLUMN_KEYS.PROMPT_EN]: true,
+      [COLUMN_KEYS.FAIL_REASON]: true,
+    };
+  };
+
+  // 初始化默认列可见性
+  const initDefaultColumns = () => {
+    const defaults = getDefaultColumnVisibility();
+    setVisibleColumns(defaults);
+    localStorage.setItem('mj-logs-table-columns', JSON.stringify(defaults));
+  };
+
+  // 处理列可见性变化
+  const handleColumnVisibilityChange = (columnKey, checked) => {
+    const updatedColumns = { ...visibleColumns, [columnKey]: checked };
+    setVisibleColumns(updatedColumns);
+  };
+
+  // 处理全选
+  const handleSelectAll = (checked) => {
+    const allKeys = Object.keys(COLUMN_KEYS).map((key) => COLUMN_KEYS[key]);
+    const updatedColumns = {};
+
+    allKeys.forEach((key) => {
+      if ((key === COLUMN_KEYS.CHANNEL || key === COLUMN_KEYS.SUBMIT_RESULT) && !isAdminUser) {
+        updatedColumns[key] = false;
+      } else {
+        updatedColumns[key] = checked;
+      }
+    });
+
+    setVisibleColumns(updatedColumns);
+  };
+
+  // 更新表格时保存列可见性
+  useEffect(() => {
+    if (Object.keys(visibleColumns).length > 0) {
+      localStorage.setItem('mj-logs-table-columns', JSON.stringify(visibleColumns));
+    }
+  }, [visibleColumns]);
+
   function renderType(type) {
     switch (type) {
       case 'IMAGINE':
         return (
-          <Tag color='blue' size='large'>
+          <Tag color='blue' size='large' shape='circle'>
             {t('绘图')}
           </Tag>
         );
       case 'UPSCALE':
         return (
-          <Tag color='orange' size='large'>
+          <Tag color='orange' size='large' shape='circle'>
             {t('放大')}
           </Tag>
         );
       case 'VARIATION':
         return (
-          <Tag color='purple' size='large'>
+          <Tag color='purple' size='large' shape='circle'>
             {t('变换')}
           </Tag>
         );
       case 'HIGH_VARIATION':
         return (
-          <Tag color='purple' size='large'>
+          <Tag color='purple' size='large' shape='circle'>
             {t('强变换')}
           </Tag>
         );
       case 'LOW_VARIATION':
         return (
-          <Tag color='purple' size='large'>
+          <Tag color='purple' size='large' shape='circle'>
             {t('弱变换')}
           </Tag>
         );
       case 'PAN':
         return (
-          <Tag color='cyan' size='large'>
+          <Tag color='cyan' size='large' shape='circle'>
             {t('平移')}
           </Tag>
         );
       case 'DESCRIBE':
         return (
-          <Tag color='yellow' size='large'>
+          <Tag color='yellow' size='large' shape='circle'>
             {t('图生文')}
           </Tag>
         );
       case 'BLEND':
         return (
-          <Tag color='lime' size='large'>
+          <Tag color='lime' size='large' shape='circle'>
             {t('图混合')}
           </Tag>
         );
       case 'UPLOAD':
         return (
-          <Tag color='blue' size='large'>
+          <Tag color='blue' size='large' shape='circle'>
             上传文件
           </Tag>
         );
       case 'SHORTEN':
         return (
-          <Tag color='pink' size='large'>
+          <Tag color='pink' size='large' shape='circle'>
             {t('缩词')}
           </Tag>
         );
       case 'REROLL':
         return (
-          <Tag color='indigo' size='large'>
+          <Tag color='indigo' size='large' shape='circle'>
             {t('重绘')}
           </Tag>
         );
       case 'INPAINT':
         return (
-          <Tag color='violet' size='large'>
+          <Tag color='violet' size='large' shape='circle'>
             {t('局部重绘-提交')}
           </Tag>
         );
       case 'ZOOM':
         return (
-          <Tag color='teal' size='large'>
+          <Tag color='teal' size='large' shape='circle'>
             {t('变焦')}
           </Tag>
         );
       case 'CUSTOM_ZOOM':
         return (
-          <Tag color='teal' size='large'>
+          <Tag color='teal' size='large' shape='circle'>
             {t('自定义变焦-提交')}
           </Tag>
         );
       case 'MODAL':
         return (
-          <Tag color='green' size='large'>
+          <Tag color='green' size='large' shape='circle'>
             {t('窗口处理')}
           </Tag>
         );
       case 'SWAP_FACE':
         return (
-          <Tag color='light-green' size='large'>
+          <Tag color='light-green' size='large' shape='circle'>
             {t('换脸')}
           </Tag>
         );
       default:
         return (
-          <Tag color='white' size='large'>
+          <Tag color='white' size='large' shape='circle'>
             {t('未知')}
           </Tag>
         );
@@ -156,31 +261,31 @@ const LogsTable = () => {
     switch (code) {
       case 1:
         return (
-          <Tag color='green' size='large'>
+          <Tag color='green' size='large' shape='circle'>
             {t('已提交')}
           </Tag>
         );
       case 21:
         return (
-          <Tag color='lime' size='large'>
+          <Tag color='lime' size='large' shape='circle'>
             {t('等待中')}
           </Tag>
         );
       case 22:
         return (
-          <Tag color='orange' size='large'>
+          <Tag color='orange' size='large' shape='circle'>
             {t('重复提交')}
           </Tag>
         );
       case 0:
         return (
-          <Tag color='yellow' size='large'>
+          <Tag color='yellow' size='large' shape='circle'>
             {t('未提交')}
           </Tag>
         );
       default:
         return (
-          <Tag color='white' size='large'>
+          <Tag color='white' size='large' shape='circle'>
             {t('未知')}
           </Tag>
         );
@@ -191,43 +296,43 @@ const LogsTable = () => {
     switch (type) {
       case 'SUCCESS':
         return (
-          <Tag color='green' size='large'>
+          <Tag color='green' size='large' shape='circle'>
             {t('成功')}
           </Tag>
         );
       case 'NOT_START':
         return (
-          <Tag color='grey' size='large'>
+          <Tag color='grey' size='large' shape='circle'>
             {t('未启动')}
           </Tag>
         );
       case 'SUBMITTED':
         return (
-          <Tag color='yellow' size='large'>
+          <Tag color='yellow' size='large' shape='circle'>
             {t('队列中')}
           </Tag>
         );
       case 'IN_PROGRESS':
         return (
-          <Tag color='blue' size='large'>
+          <Tag color='blue' size='large' shape='circle'>
             {t('执行中')}
           </Tag>
         );
       case 'FAILURE':
         return (
-          <Tag color='red' size='large'>
+          <Tag color='red' size='large' shape='circle'>
             {t('失败')}
           </Tag>
         );
       case 'MODAL':
         return (
-          <Tag color='yellow' size='large'>
+          <Tag color='yellow' size='large' shape='circle'>
             {t('窗口等待')}
           </Tag>
         );
       default:
         return (
-          <Tag color='white' size='large'>
+          <Tag color='white' size='large' shape='circle'>
             {t('未知')}
           </Tag>
         );
@@ -257,13 +362,16 @@ const LogsTable = () => {
     const color = durationSec > 60 ? 'red' : 'green';
 
     return (
-      <Tag color={color} size='large'>
+      <Tag color={color} size='large' shape='circle'>
         {durationSec} {t('秒')}
       </Tag>
     );
   }
-  const columns = [
+
+  // 定义所有列
+  const allColumns = [
     {
+      key: COLUMN_KEYS.SUBMIT_TIME,
       title: t('提交时间'),
       dataIndex: 'submit_time',
       render: (text, record, index) => {
@@ -271,24 +379,26 @@ const LogsTable = () => {
       },
     },
     {
+      key: COLUMN_KEYS.DURATION,
       title: t('花费时间'),
       dataIndex: 'finish_time', // 以finish_time作为dataIndex
-      key: 'finish_time',
       render: (finish, record) => {
         // 假设record.start_time是存在的，并且finish是完成时间的时间戳
         return renderDuration(record.submit_time, finish);
       },
     },
     {
+      key: COLUMN_KEYS.CHANNEL,
       title: t('渠道'),
       dataIndex: 'channel_id',
       className: isAdmin() ? 'tableShow' : 'tableHiddle',
       render: (text, record, index) => {
-        return (
+        return isAdminUser ? (
           <div>
             <Tag
               color={colors[parseInt(text) % colors.length]}
               size='large'
+              shape='circle'
               onClick={() => {
                 copyText(text); // 假设copyText是用于文本复制的函数
               }}
@@ -297,10 +407,13 @@ const LogsTable = () => {
               {text}{' '}
             </Tag>
           </div>
+        ) : (
+          <></>
         );
       },
     },
     {
+      key: COLUMN_KEYS.TYPE,
       title: t('类型'),
       dataIndex: 'action',
       render: (text, record, index) => {
@@ -308,6 +421,7 @@ const LogsTable = () => {
       },
     },
     {
+      key: COLUMN_KEYS.TASK_ID,
       title: t('任务ID'),
       dataIndex: 'mj_id',
       render: (text, record, index) => {
@@ -315,14 +429,16 @@ const LogsTable = () => {
       },
     },
     {
+      key: COLUMN_KEYS.SUBMIT_RESULT,
       title: t('提交结果'),
       dataIndex: 'code',
       className: isAdmin() ? 'tableShow' : 'tableHiddle',
       render: (text, record, index) => {
-        return <div>{renderCode(text)}</div>;
+        return isAdminUser ? <div>{renderCode(text)}</div> : <></>;
       },
     },
     {
+      key: COLUMN_KEYS.TASK_STATUS,
       title: t('任务状态'),
       dataIndex: 'status',
       className: isAdmin() ? 'tableShow' : 'tableHiddle',
@@ -331,6 +447,7 @@ const LogsTable = () => {
       },
     },
     {
+      key: COLUMN_KEYS.PROGRESS,
       title: t('进度'),
       dataIndex: 'progress',
       render: (text, record, index) => {
@@ -354,6 +471,7 @@ const LogsTable = () => {
       },
     },
     {
+      key: COLUMN_KEYS.IMAGE,
       title: t('结果图片'),
       dataIndex: 'image_url',
       render: (text, record, index) => {
@@ -373,6 +491,7 @@ const LogsTable = () => {
       },
     },
     {
+      key: COLUMN_KEYS.PROMPT,
       title: 'Prompt',
       dataIndex: 'prompt',
       render: (text, record, index) => {
@@ -396,6 +515,7 @@ const LogsTable = () => {
       },
     },
     {
+      key: COLUMN_KEYS.PROMPT_EN,
       title: 'PromptEn',
       dataIndex: 'prompt_en',
       render: (text, record, index) => {
@@ -419,6 +539,7 @@ const LogsTable = () => {
       },
     },
     {
+      key: COLUMN_KEYS.FAIL_REASON,
       title: t('失败原因'),
       dataIndex: 'fail_reason',
       render: (text, record, index) => {
@@ -443,12 +564,17 @@ const LogsTable = () => {
     },
   ];
 
+  // 根据可见性设置过滤列
+  const getVisibleColumns = () => {
+    return allColumns.filter((column) => visibleColumns[column.key]);
+  };
+
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activePage, setActivePage] = useState(1);
   const [logCount, setLogCount] = useState(ITEMS_PER_PAGE);
   const [logType, setLogType] = useState(0);
-  const isAdminUser = isAdmin();
+  const [pageSize, setPageSize] = useState(ITEMS_PER_PAGE);
   const [isModalOpenurl, setIsModalOpenurl] = useState(false);
   const [showBanner, setShowBanner] = useState(false);
 
@@ -480,20 +606,20 @@ const LogsTable = () => {
     }
     // data.key = '' + data.id
     setLogs(logs);
-    setLogCount(logs.length + ITEMS_PER_PAGE);
+    setLogCount(logs.length + pageSize);
     // console.log(logCount);
   };
 
-  const loadLogs = async (startIdx) => {
+  const loadLogs = async (startIdx, pageSize = ITEMS_PER_PAGE) => {
     setLoading(true);
 
     let url = '';
     let localStartTimestamp = Date.parse(start_timestamp);
     let localEndTimestamp = Date.parse(end_timestamp);
     if (isAdminUser) {
-      url = `/api/mj/?p=${startIdx}&channel_id=${channel_id}&mj_id=${mj_id}&start_timestamp=${localStartTimestamp}&end_timestamp=${localEndTimestamp}`;
+      url = `/api/mj/?p=${startIdx}&page_size=${pageSize}&channel_id=${channel_id}&mj_id=${mj_id}&start_timestamp=${localStartTimestamp}&end_timestamp=${localEndTimestamp}`;
     } else {
-      url = `/api/mj/self/?p=${startIdx}&mj_id=${mj_id}&start_timestamp=${localStartTimestamp}&end_timestamp=${localEndTimestamp}`;
+      url = `/api/mj/self/?p=${startIdx}&page_size=${pageSize}&mj_id=${mj_id}&start_timestamp=${localStartTimestamp}&end_timestamp=${localEndTimestamp}`;
     }
     const res = await API.get(url);
     const { success, message, data } = res.data;
@@ -502,7 +628,7 @@ const LogsTable = () => {
         setLogsFormat(data);
       } else {
         let newLogs = [...logs];
-        newLogs.splice(startIdx * ITEMS_PER_PAGE, data.length, ...data);
+        newLogs.splice(startIdx * pageSize, data.length, ...data);
         setLogsFormat(newLogs);
       }
     } else {
@@ -512,35 +638,44 @@ const LogsTable = () => {
   };
 
   const pageData = logs.slice(
-    (activePage - 1) * ITEMS_PER_PAGE,
-    activePage * ITEMS_PER_PAGE,
+    (activePage - 1) * pageSize,
+    activePage * pageSize,
   );
 
   const handlePageChange = (page) => {
     setActivePage(page);
-    if (page === Math.ceil(logs.length / ITEMS_PER_PAGE) + 1) {
+    if (page === Math.ceil(logs.length / pageSize) + 1) {
       // In this case we have to load more data and then append them.
-      loadLogs(page - 1).then((r) => {});
+      loadLogs(page - 1, pageSize).then((r) => { });
     }
+  };
+
+  const handlePageSizeChange = async (size) => {
+    localStorage.setItem('mj-page-size', size + '');
+    setPageSize(size);
+    setActivePage(1);
+    await loadLogs(0, size);
   };
 
   const refresh = async () => {
     // setLoading(true);
     setActivePage(1);
-    await loadLogs(0);
+    await loadLogs(0, pageSize);
   };
 
   const copyText = async (text) => {
     if (await copy(text)) {
-      showSuccess('已复制：' + text);
+      showSuccess(t('已复制：') + text);
     } else {
       // setSearchKeyword(text);
-      Modal.error({ title: '无法复制到剪贴板，请手动复制', content: text });
+      Modal.error({ title: t('无法复制到剪贴板，请手动复制'), content: text });
     }
   };
 
   useEffect(() => {
-    refresh().then();
+    const localPageSize = parseInt(localStorage.getItem('mj-page-size')) || ITEMS_PER_PAGE;
+    setPageSize(localPageSize);
+    loadLogs(0, localPageSize).then();
   }, [logType]);
 
   useEffect(() => {
@@ -550,93 +685,207 @@ const LogsTable = () => {
     }
   }, []);
 
+  // 列选择器模态框
+  const renderColumnSelector = () => {
+    return (
+      <Modal
+        title={t('列设置')}
+        visible={showColumnSelector}
+        onCancel={() => setShowColumnSelector(false)}
+        footer={
+          <div className="flex justify-end">
+            <Button
+              theme="light"
+              onClick={() => initDefaultColumns()}
+              className="!rounded-full"
+            >
+              {t('重置')}
+            </Button>
+            <Button
+              theme="light"
+              onClick={() => setShowColumnSelector(false)}
+              className="!rounded-full"
+            >
+              {t('取消')}
+            </Button>
+            <Button
+              type='primary'
+              onClick={() => setShowColumnSelector(false)}
+              className="!rounded-full"
+            >
+              {t('确定')}
+            </Button>
+          </div>
+        }
+      >
+        <div style={{ marginBottom: 20 }}>
+          <Checkbox
+            checked={Object.values(visibleColumns).every((v) => v === true)}
+            indeterminate={
+              Object.values(visibleColumns).some((v) => v === true) &&
+              !Object.values(visibleColumns).every((v) => v === true)
+            }
+            onChange={(e) => handleSelectAll(e.target.checked)}
+          >
+            {t('全选')}
+          </Checkbox>
+        </div>
+        <div className="flex flex-wrap max-h-96 overflow-y-auto rounded-lg p-4">
+          {allColumns.map((column) => {
+            // 为非管理员用户跳过管理员专用列
+            if (
+              !isAdminUser &&
+              (column.key === COLUMN_KEYS.CHANNEL ||
+                column.key === COLUMN_KEYS.SUBMIT_RESULT)
+            ) {
+              return null;
+            }
+
+            return (
+              <div key={column.key} className="w-1/2 mb-4 pr-2">
+                <Checkbox
+                  checked={!!visibleColumns[column.key]}
+                  onChange={(e) =>
+                    handleColumnVisibilityChange(column.key, e.target.checked)
+                  }
+                >
+                  {column.title}
+                </Checkbox>
+              </div>
+            );
+          })}
+        </div>
+      </Modal>
+    );
+  };
+
   return (
     <>
+      {renderColumnSelector()}
       <Layout>
-        {isAdminUser && showBanner ? (
-          <Banner
-            type='info'
-            description={t(
-              '当前未开启Midjourney回调，部分项目可能无法获得绘图结果，可在运营设置中开启。',
-            )}
-          />
-        ) : (
-          <></>
-        )}
-        <Form layout='horizontal' style={{ marginTop: 10 }}>
-          <>
-            <Form.Input
-              field='channel_id'
-              label={t('渠道 ID')}
-              style={{ width: 176 }}
-              value={channel_id}
-              placeholder={t('可选值')}
-              name='channel_id'
-              onChange={(value) => handleInputChange(value, 'channel_id')}
-            />
-            <Form.Input
-              field='mj_id'
-              label={t('任务 ID')}
-              style={{ width: 176 }}
-              value={mj_id}
-              placeholder={t('可选值')}
-              name='mj_id'
-              onChange={(value) => handleInputChange(value, 'mj_id')}
-            />
-            <Form.DatePicker
-              field='start_timestamp'
-              label={t('起始时间')}
-              style={{ width: 272 }}
-              initValue={start_timestamp}
-              value={start_timestamp}
-              type='dateTime'
-              name='start_timestamp'
-              onChange={(value) => handleInputChange(value, 'start_timestamp')}
-            />
-            <Form.DatePicker
-              field='end_timestamp'
-              fluid
-              label={t('结束时间')}
-              style={{ width: 272 }}
-              initValue={end_timestamp}
-              value={end_timestamp}
-              type='dateTime'
-              name='end_timestamp'
-              onChange={(value) => handleInputChange(value, 'end_timestamp')}
-            />
+        <Card
+          className="!rounded-2xl overflow-hidden mb-4"
+          title={
+            <div className="flex flex-col w-full">
+              <div className="flex flex-col md:flex-row justify-between items-center">
+                <div className="flex items-center text-orange-500 mb-2 md:mb-0">
+                  <IconEyeOpened className="mr-2" />
+                  {loading ? (
+                    <Skeleton.Title
+                      style={{
+                        width: 300,
+                        marginBottom: 0,
+                        marginTop: 0
+                      }}
+                    />
+                  ) : (
+                    <Text>
+                      {isAdminUser && showBanner
+                        ? t('当前未开启Midjourney回调，部分项目可能无法获得绘图结果，可在运营设置中开启。')
+                        : t('Midjourney 任务记录')}
+                    </Text>
+                  )}
+                </div>
+              </div>
 
-            <Form.Section>
-              <Button
-                label={t('查询')}
-                type='primary'
-                htmlType='submit'
-                className='btn-margin-right'
-                onClick={refresh}
-              >
-                {t('查询')}
-              </Button>
-            </Form.Section>
-          </>
-        </Form>
-        <Table
-          style={{ marginTop: 5 }}
-          columns={columns}
-          dataSource={pageData}
-          pagination={{
-            currentPage: activePage,
-            pageSize: ITEMS_PER_PAGE,
-            total: logCount,
-            pageSizeOpts: [10, 20, 50, 100],
-            onPageChange: handlePageChange,
-            formatPageText: (page) =>
-              t('第 {{start}} - {{end}} 条，共 {{total}} 条', {
-                start: page.currentStart,
-                end: page.currentEnd,
-                total: logCount,
-              }),
-          }}
-          loading={loading}
-        />
+              <Divider margin="12px" />
+
+              {/* 搜索表单区域 */}
+              <div className="flex flex-col gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {/* 时间选择器 */}
+                  <div className="col-span-1 lg:col-span-2">
+                    <DatePicker
+                      className="w-full"
+                      value={[start_timestamp, end_timestamp]}
+                      type='dateTimeRange'
+                      onChange={(value) => {
+                        if (Array.isArray(value) && value.length === 2) {
+                          handleInputChange(value[0], 'start_timestamp');
+                          handleInputChange(value[1], 'end_timestamp');
+                        }
+                      }}
+                    />
+                  </div>
+
+                  {/* 任务 ID */}
+                  <Input
+                    prefix={<IconSearch />}
+                    placeholder={t('任务 ID')}
+                    value={mj_id}
+                    onChange={(value) => handleInputChange(value, 'mj_id')}
+                    className="!rounded-full"
+                    showClear
+                  />
+
+                  {/* 渠道 ID - 仅管理员可见 */}
+                  {isAdminUser && (
+                    <Input
+                      prefix={<IconSearch />}
+                      placeholder={t('渠道 ID')}
+                      value={channel_id}
+                      onChange={(value) => handleInputChange(value, 'channel_id')}
+                      className="!rounded-full"
+                      showClear
+                    />
+                  )}
+                </div>
+
+                {/* 操作按钮区域 */}
+                <div className="flex justify-between items-center pt-2">
+                  <div></div>
+                  <div className="flex gap-2">
+                    <Button
+                      type='primary'
+                      onClick={refresh}
+                      loading={loading}
+                      className="!rounded-full"
+                    >
+                      {t('查询')}
+                    </Button>
+                    <Button
+                      theme='light'
+                      type='tertiary'
+                      icon={<IconSetting />}
+                      onClick={() => setShowColumnSelector(true)}
+                      className="!rounded-full"
+                    >
+                      {t('列设置')}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          }
+          shadows='hover'
+        >
+          <Table
+            columns={getVisibleColumns()}
+            dataSource={pageData}
+            rowKey='key'
+            loading={loading}
+            className="rounded-xl overflow-hidden"
+            size="middle"
+            pagination={{
+              formatPageText: (page) =>
+                t('第 {{start}} - {{end}} 条，共 {{total}} 条', {
+                  start: page.currentStart,
+                  end: page.currentEnd,
+                  total: logCount,
+                }),
+              currentPage: activePage,
+              pageSize: pageSize,
+              total: logCount,
+              pageSizeOptions: [10, 20, 50, 100],
+              showSizeChanger: true,
+              onPageSizeChange: (size) => {
+                handlePageSizeChange(size);
+              },
+              onPageChange: handlePageChange,
+            }}
+          />
+        </Card>
+
         <Modal
           visible={isModalOpen}
           onOk={() => setIsModalOpen(false)}
