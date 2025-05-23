@@ -4,6 +4,7 @@ import {
   API,
   copy,
   isRoot,
+  isAdmin,
   showError,
   showInfo,
   showSuccess,
@@ -20,7 +21,6 @@ import {
   Banner,
   Button,
   Card,
-  Descriptions,
   Image,
   Input,
   InputNumber,
@@ -30,7 +30,6 @@ import {
   Tag,
   Typography,
   Collapsible,
-  Select,
   Radio,
   RadioGroup,
   AutoComplete,
@@ -38,6 +37,23 @@ import {
   Tabs,
   TabPane,
 } from '@douyinfe/semi-ui';
+import {
+  IconMail,
+  IconLock,
+  IconShield,
+  IconUser,
+  IconSetting,
+  IconBell,
+  IconGithubLogo,
+  IconKey,
+  IconCreditCard,
+  IconLink,
+  IconDelete,
+  IconChevronDown,
+  IconChevronUp,
+} from '@douyinfe/semi-icons';
+import { SiTelegram, SiWechat, SiLinux } from 'react-icons/si';
+import { Bell, Shield, Webhook, Globe, Settings, UserPlus, ShieldCheck } from 'lucide-react';
 import {
   getQuotaPerUnit,
   renderQuota,
@@ -82,7 +98,7 @@ const PersonalSetting = () => {
     const savedState = localStorage.getItem('modelsExpanded');
     return savedState ? JSON.parse(savedState) : false;
   });
-  const MODELS_DISPLAY_COUNT = 10; // 默认显示的模型数量
+  const MODELS_DISPLAY_COUNT = 25; // 默认显示的模型数量
   const [notificationSettings, setNotificationSettings] = useState({
     warningType: 'email',
     warningThreshold: 100000,
@@ -91,7 +107,7 @@ const PersonalSetting = () => {
     notificationEmail: '',
     acceptUnsetModelRatioModel: false,
   });
-  const [showWebhookDocs, setShowWebhookDocs] = useState(false);
+  const [showWebhookDocs, setShowWebhookDocs] = useState(true);
 
   useEffect(() => {
     let status = localStorage.getItem('status');
@@ -295,7 +311,7 @@ const PersonalSetting = () => {
     }
     setDisableButton(true);
     if (turnstileEnabled && turnstileToken === '') {
-      showInfo('请稍后几秒重试，Turnstile 正在检查用户环境！');
+      showInfo(t('请稍后几秒重试，Turnstile 正在检查用户环境！'));
       return;
     }
     setLoading(true);
@@ -337,6 +353,15 @@ const PersonalSetting = () => {
     } else {
       return 'null';
     }
+  };
+
+  const getAvatarText = () => {
+    const username = getUsername();
+    if (username && username.length > 0) {
+      // 获取前两个字符，支持中文和英文
+      return username.slice(0, 2).toUpperCase();
+    }
+    return 'NA';
   };
 
   const handleCancel = () => {
@@ -385,11 +410,17 @@ const PersonalSetting = () => {
   };
 
   return (
-    <div>
+    <div className="min-h-screen bg-gray-50">
       <Layout>
         <Layout.Content>
+          {/* 划转模态框 */}
           <Modal
-            title={t('请输入要划转的数量')}
+            title={
+              <div className="flex items-center">
+                <IconCreditCard className="mr-2" />
+                {t('请输入要划转的数量')}
+              </div>
+            }
             visible={openTransfer}
             onOk={transfer}
             onCancel={handleCancel}
@@ -397,795 +428,1174 @@ const PersonalSetting = () => {
             size={'small'}
             centered={true}
           >
-            <div style={{ marginTop: 20 }}>
-              <Typography.Text>
-                {t('可用额度')}
-                {renderQuotaWithPrompt(userState?.user?.aff_quota)}
-              </Typography.Text>
-              <Input
-                style={{ marginTop: 5 }}
-                value={userState?.user?.aff_quota}
-                disabled={true}
-              ></Input>
-            </div>
-            <div style={{ marginTop: 20 }}>
-              <Typography.Text>
-                {t('划转额度')}
-                {renderQuotaWithPrompt(transferAmount)}{' '}
-                {t('最低') + renderQuota(getQuotaPerUnit())}
-              </Typography.Text>
+            <div className="space-y-4 py-4">
               <div>
+                <Typography.Text strong className="block mb-2">
+                  {t('可用额度')} {renderQuotaWithPrompt(userState?.user?.aff_quota)}
+                </Typography.Text>
+                <Input
+                  value={userState?.user?.aff_quota}
+                  disabled={true}
+                  size="large"
+                  className="!rounded-lg"
+                />
+              </div>
+              <div>
+                <Typography.Text strong className="block mb-2">
+                  {t('划转额度')} {renderQuotaWithPrompt(transferAmount)}{' '}
+                  {t('最低') + renderQuota(getQuotaPerUnit())}
+                </Typography.Text>
                 <InputNumber
                   min={0}
-                  style={{ marginTop: 5 }}
                   value={transferAmount}
                   onChange={(value) => setTransferAmount(value)}
                   disabled={false}
-                ></InputNumber>
+                  size="large"
+                  className="!rounded-lg w-full"
+                />
               </div>
             </div>
           </Modal>
-          <div>
-            <Card
-              title={
-                <Card.Meta
-                  avatar={
-                    <Avatar
-                      size='default'
-                      color={stringToColor(getUsername())}
-                      style={{ marginRight: 4 }}
-                    >
-                      {typeof getUsername() === 'string' &&
-                        getUsername().slice(0, 1)}
-                    </Avatar>
-                  }
-                  title={<Typography.Text>{getUsername()}</Typography.Text>}
-                  description={
-                    isRoot() ? (
-                      <Tag color='red'>{t('管理员')}</Tag>
-                    ) : (
-                      <Tag color='blue'>{t('普通用户')}</Tag>
-                    )
-                  }
-                ></Card.Meta>
-              }
-              headerExtraContent={
-                <>
-                  <Space vertical align='start'>
-                    <Tag color='green'>{'ID: ' + userState?.user?.id}</Tag>
-                    <Tag color='blue'>{userState?.user?.group}</Tag>
-                  </Space>
-                </>
-              }
-              footer={
-                <>
-                  <div
-                    style={{ display: 'flex', alignItems: 'center', gap: 8 }}
-                  >
-                    <Typography.Title heading={6}>
-                      {t('可用模型')}
-                    </Typography.Title>
-                  </div>
-                  <div style={{ marginTop: 10 }}>
-                    {models.length <= MODELS_DISPLAY_COUNT ? (
-                      <Space wrap>
-                        {models.map((model) => (
-                          <Tag
-                            key={model}
-                            color='cyan'
-                            onClick={() => {
-                              copyText(model);
-                            }}
-                          >
-                            {model}
-                          </Tag>
-                        ))}
-                      </Space>
-                    ) : (
-                      <>
-                        <Collapsible isOpen={isModelsExpanded}>
-                          <Space wrap>
-                            {models.map((model) => (
-                              <Tag
-                                key={model}
-                                color='cyan'
-                                onClick={() => {
-                                  copyText(model);
-                                }}
-                              >
-                                {model}
-                              </Tag>
-                            ))}
-                            <Tag
-                              color='blue'
-                              type='light'
-                              style={{ cursor: 'pointer' }}
-                              onClick={() => setIsModelsExpanded(false)}
-                            >
-                              {t('收起')}
-                            </Tag>
-                          </Space>
-                        </Collapsible>
-                        {!isModelsExpanded && (
-                          <Space wrap>
-                            {models
-                              .slice(0, MODELS_DISPLAY_COUNT)
-                              .map((model) => (
-                                <Tag
-                                  key={model}
-                                  color='cyan'
-                                  onClick={() => {
-                                    copyText(model);
-                                  }}
-                                >
-                                  {model}
-                                </Tag>
-                              ))}
-                            <Tag
-                              color='blue'
-                              type='light'
-                              style={{ cursor: 'pointer' }}
-                              onClick={() => setIsModelsExpanded(true)}
-                            >
-                              {t('更多')} {models.length - MODELS_DISPLAY_COUNT}{' '}
-                              {t('个模型')}
-                            </Tag>
-                          </Space>
-                        )}
-                      </>
-                    )}
-                  </div>
-                </>
-              }
-            >
-              <Descriptions row>
-                <Descriptions.Item itemKey={t('当前余额')}>
-                  {renderQuota(userState?.user?.quota)}
-                </Descriptions.Item>
-                <Descriptions.Item itemKey={t('历史消耗')}>
-                  {renderQuota(userState?.user?.used_quota)}
-                </Descriptions.Item>
-                <Descriptions.Item itemKey={t('请求次数')}>
-                  {userState.user?.request_count}
-                </Descriptions.Item>
-              </Descriptions>
-            </Card>
-            <Card
-              style={{ marginTop: 10 }}
-              footer={
-                <div>
-                  <Typography.Text>{t('邀请链接')}</Typography.Text>
-                  <Input
-                    style={{ marginTop: 10 }}
-                    value={affLink}
-                    onClick={handleAffLinkClick}
-                    readOnly
-                  />
-                </div>
-              }
-            >
-              <Typography.Title heading={6}>{t('邀请信息')}</Typography.Title>
-              <div style={{ marginTop: 10 }}>
-                <Descriptions row>
-                  <Descriptions.Item itemKey={t('待使用收益')}>
-                    <span style={{ color: 'rgba(var(--semi-red-5), 1)' }}>
-                      {renderQuota(userState?.user?.aff_quota)}
-                    </span>
-                    <Button
-                      type={'secondary'}
-                      onClick={() => setOpenTransfer(true)}
-                      size={'small'}
-                      style={{ marginLeft: 10 }}
-                    >
-                      {t('划转')}
-                    </Button>
-                  </Descriptions.Item>
-                  <Descriptions.Item itemKey={t('总收益')}>
-                    {renderQuota(userState?.user?.aff_history_quota)}
-                  </Descriptions.Item>
-                  <Descriptions.Item itemKey={t('邀请人数')}>
-                    {userState?.user?.aff_count}
-                  </Descriptions.Item>
-                </Descriptions>
-              </div>
-            </Card>
-            <Card style={{ marginTop: 10 }}>
-              <Typography.Title heading={6}>{t('个人信息')}</Typography.Title>
-              <div style={{ marginTop: 20 }}>
-                <Typography.Text strong>{t('邮箱')}</Typography.Text>
-                <div
-                  style={{ display: 'flex', justifyContent: 'space-between' }}
-                >
-                  <div>
-                    <Input
-                      value={
-                        userState.user && userState.user.email !== ''
-                          ? userState.user.email
-                          : t('未绑定')
-                      }
-                      readonly={true}
-                    ></Input>
-                  </div>
-                  <div>
-                    <Button
-                      onClick={() => {
-                        setShowEmailBindModal(true);
-                      }}
-                    >
-                      {userState.user && userState.user.email !== ''
-                        ? t('修改绑定')
-                        : t('绑定邮箱')}
-                    </Button>
-                  </div>
-                </div>
-              </div>
-              <div style={{ marginTop: 10 }}>
-                <Typography.Text strong>{t('微信')}</Typography.Text>
-                <div
-                  style={{ display: 'flex', justifyContent: 'space-between' }}
-                >
-                  <div>
-                    <Input
-                      value={
-                        userState.user && userState.user.wechat_id !== ''
-                          ? t('已绑定')
-                          : t('未绑定')
-                      }
-                      readonly={true}
-                    ></Input>
-                  </div>
-                  <div>
-                    <Button
-                      disabled={!status.wechat_login}
-                      onClick={() => {
-                        setShowWeChatBindModal(true);
-                      }}
-                    >
-                      {userState.user && userState.user.wechat_id !== ''
-                        ? t('修改绑定')
-                        : status.wechat_login
-                          ? t('绑定')
-                          : t('未启用')}
-                    </Button>
-                  </div>
-                </div>
-              </div>
-              <div style={{ marginTop: 10 }}>
-                <Typography.Text strong>{t('GitHub')}</Typography.Text>
-                <div
-                  style={{ display: 'flex', justifyContent: 'space-between' }}
-                >
-                  <div>
-                    <Input
-                      value={
-                        userState.user && userState.user.github_id !== ''
-                          ? userState.user.github_id
-                          : t('未绑定')
-                      }
-                      readonly={true}
-                    ></Input>
-                  </div>
-                  <div>
-                    <Button
-                      onClick={() => {
-                        onGitHubOAuthClicked(status.github_client_id);
-                      }}
-                      disabled={
-                        (userState.user && userState.user.github_id !== '') ||
-                        !status.github_oauth
-                      }
-                    >
-                      {status.github_oauth ? t('绑定') : t('未启用')}
-                    </Button>
-                  </div>
-                </div>
-              </div>
-              <div style={{ marginTop: 10 }}>
-                <Typography.Text strong>{t('OIDC')}</Typography.Text>
-                <div
-                  style={{ display: 'flex', justifyContent: 'space-between' }}
-                >
-                  <div>
-                    <Input
-                      value={
-                        userState.user && userState.user.oidc_id !== ''
-                          ? userState.user.oidc_id
-                          : t('未绑定')
-                      }
-                      readonly={true}
-                    ></Input>
-                  </div>
-                  <div>
-                    <Button
-                      onClick={() => {
-                        onOIDCClicked(
-                          status.oidc_authorization_endpoint,
-                          status.oidc_client_id,
-                        );
-                      }}
-                      disabled={
-                        (userState.user && userState.user.oidc_id !== '') ||
-                        !status.oidc_enabled
-                      }
-                    >
-                      {status.oidc_enabled ? t('绑定') : t('未启用')}
-                    </Button>
-                  </div>
-                </div>
-              </div>
-              <div style={{ marginTop: 10 }}>
-                <Typography.Text strong>{t('Telegram')}</Typography.Text>
-                <div
-                  style={{ display: 'flex', justifyContent: 'space-between' }}
-                >
-                  <div>
-                    <Input
-                      value={
-                        userState.user && userState.user.telegram_id !== ''
-                          ? userState.user.telegram_id
-                          : t('未绑定')
-                      }
-                      readonly={true}
-                    ></Input>
-                  </div>
-                  <div>
-                    {status.telegram_oauth ? (
-                      userState.user.telegram_id !== '' ? (
-                        <Button disabled={true}>{t('已绑定')}</Button>
-                      ) : (
-                        <TelegramLoginButton
-                          dataAuthUrl='/api/oauth/telegram/bind'
-                          botName={status.telegram_bot_name}
-                        />
-                      )
-                    ) : (
-                      <Button disabled={true}>{t('未启用')}</Button>
-                    )}
-                  </div>
-                </div>
-              </div>
-              <div style={{ marginTop: 10 }}>
-                <Typography.Text strong>{t('LinuxDO')}</Typography.Text>
-                <div
-                  style={{ display: 'flex', justifyContent: 'space-between' }}
-                >
-                  <div>
-                    <Input
-                      value={
-                        userState.user && userState.user.linux_do_id !== ''
-                          ? userState.user.linux_do_id
-                          : t('未绑定')
-                      }
-                      readonly={true}
-                    ></Input>
-                  </div>
-                  <div>
-                    <Button
-                      onClick={() => {
-                        onLinuxDOOAuthClicked(status.linuxdo_client_id);
-                      }}
-                      disabled={
-                        (userState.user && userState.user.linux_do_id !== '') ||
-                        !status.linuxdo_oauth
-                      }
-                    >
-                      {status.linuxdo_oauth ? t('绑定') : t('未启用')}
-                    </Button>
-                  </div>
-                </div>
-              </div>
-              <div style={{ marginTop: 10 }}>
-                <Space>
-                  <Button onClick={generateAccessToken}>
-                    {t('生成系统访问令牌')}
-                  </Button>
-                  <Button
-                    onClick={() => {
-                      setShowChangePasswordModal(true);
-                    }}
-                  >
-                    {t('修改密码')}
-                  </Button>
-                  <Button
-                    type={'danger'}
-                    onClick={() => {
-                      setShowAccountDeleteModal(true);
-                    }}
-                  >
-                    {t('删除个人账户')}
-                  </Button>
-                </Space>
 
-                {systemToken && (
-                  <Input
-                    readOnly
-                    value={systemToken}
-                    onClick={handleSystemTokenClick}
-                    style={{ marginTop: '10px' }}
-                  />
-                )}
-                <Modal
-                  onCancel={() => setShowWeChatBindModal(false)}
-                  visible={showWeChatBindModal}
-                  size={'small'}
+          <div className="flex justify-center">
+            <div className="w-full max-w-6xl">
+              {/* 主卡片容器 */}
+              <Card className="!rounded-2xl shadow-lg border-0">
+                {/* 顶部用户信息区域 */}
+                <Card
+                  className="!rounded-2xl !border-0 !shadow-2xl overflow-hidden"
+                  style={{
+                    background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 25%, #a855f7 50%, #c084fc 75%, #d8b4fe 100%)',
+                    position: 'relative'
+                  }}
+                  bodyStyle={{ padding: 0 }}
                 >
-                  <Image src={status.wechat_qrcode} />
-                  <div style={{ textAlign: 'center' }}>
-                    <p>
-                      微信扫码关注公众号，输入「验证码」获取验证码（三分钟内有效）
-                    </p>
+                  {/* 装饰性背景元素 */}
+                  <div className="absolute inset-0 overflow-hidden">
+                    <div className="absolute -top-10 -right-10 w-40 h-40 bg-white opacity-5 rounded-full"></div>
+                    <div className="absolute -bottom-16 -left-16 w-48 h-48 bg-white opacity-3 rounded-full"></div>
+                    <div className="absolute top-1/2 right-1/4 w-24 h-24 bg-yellow-400 opacity-10 rounded-full"></div>
                   </div>
-                  <Input
-                    placeholder='验证码'
-                    name='wechat_verification_code'
-                    value={inputs.wechat_verification_code}
-                    onChange={(v) =>
-                      handleInputChange('wechat_verification_code', v)
-                    }
-                  />
-                  <Button color='' fluid size='large' onClick={bindWeChat}>
-                    {t('绑定')}
-                  </Button>
-                </Modal>
-              </div>
-            </Card>
-            <Card style={{ marginTop: 10 }}>
-              <Tabs type='line' defaultActiveKey='notification'>
-                <TabPane tab={t('通知设置')} itemKey='notification'>
-                  <div style={{ marginTop: 20 }}>
-                    <Typography.Text strong>{t('通知方式')}</Typography.Text>
-                    <div style={{ marginTop: 10 }}>
-                      <RadioGroup
-                        value={notificationSettings.warningType}
-                        onChange={(value) =>
-                          handleNotificationSettingChange('warningType', value)
-                        }
-                      >
-                        <Radio value='email'>{t('邮件通知')}</Radio>
-                        <Radio value='webhook'>{t('Webhook通知')}</Radio>
-                      </RadioGroup>
-                    </div>
-                  </div>
-                  {notificationSettings.warningType === 'webhook' && (
-                    <>
-                      <div style={{ marginTop: 20 }}>
-                        <Typography.Text strong>
-                          {t('Webhook地址')}
-                        </Typography.Text>
-                        <div style={{ marginTop: 10 }}>
-                          <Input
-                            value={notificationSettings.webhookUrl}
-                            onChange={(val) =>
-                              handleNotificationSettingChange('webhookUrl', val)
-                            }
-                            placeholder={t(
-                              '请输入Webhook地址，例如: https://example.com/webhook',
-                            )}
-                          />
-                          <Typography.Text
-                            type='secondary'
-                            style={{ marginTop: 8, display: 'block' }}
-                          >
-                            {t(
-                              '只支持https，系统将以 POST 方式发送通知，请确保地址可以接收 POST 请求',
-                            )}
-                          </Typography.Text>
-                          <Typography.Text
-                            type='secondary'
-                            style={{ marginTop: 8, display: 'block' }}
-                          >
-                            <div
-                              style={{ cursor: 'pointer' }}
-                              onClick={() =>
-                                setShowWebhookDocs(!showWebhookDocs)
-                              }
-                            >
-                              {t('Webhook请求结构')}{' '}
-                              {showWebhookDocs ? '▼' : '▶'}
-                            </div>
-                            <Collapsible isOpen={showWebhookDocs}>
-                              <pre
+
+                  <div className="relative p-4 sm:p-6 md:p-8" style={{ color: 'white' }}>
+                    <div className="flex justify-between items-start mb-4 sm:mb-6">
+                      <div className="flex items-center flex-1 min-w-0">
+                        <Avatar
+                          size='large'
+                          color={stringToColor(getUsername())}
+                          border={{ motion: true }}
+                          contentMotion={true}
+                          className="mr-3 sm:mr-4 shadow-lg flex-shrink-0"
+                        >
+                          {getAvatarText()}
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-base sm:text-lg font-semibold truncate" style={{ color: 'white' }}>
+                            {getUsername()}
+                          </div>
+                          <div className="mt-1 flex flex-wrap gap-1 sm:gap-2">
+                            {isRoot() ? (
+                              <Tag
+                                color='red'
+                                size='small'
                                 style={{
-                                  marginTop: 4,
-                                  background: 'var(--semi-color-fill-0)',
-                                  padding: 8,
-                                  borderRadius: 4,
+                                  backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                                  color: '#dc2626',
+                                  fontWeight: '600'
                                 }}
+                                className="!rounded-full"
                               >
-                                {`{
-    "type": "quota_exceed",      // 通知类型
-    "title": "标题",             // 通知标题
-    "content": "通知内容",       // 通知内容，支持 {{value}} 变量占位符
-    "values": ["值1", "值2"],    // 按顺序替换content中的 {{value}} 占位符
-    "timestamp": 1739950503      // 时间戳
+                                {t('超级管理员')}
+                              </Tag>
+                            ) : isAdmin() ? (
+                              <Tag
+                                color='orange'
+                                size='small'
+                                style={{
+                                  backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                                  color: '#ea580c',
+                                  fontWeight: '600'
+                                }}
+                                className="!rounded-full"
+                              >
+                                {t('管理员')}
+                              </Tag>
+                            ) : (
+                              <Tag
+                                color='blue'
+                                size='small'
+                                style={{
+                                  backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                                  color: '#2563eb',
+                                  fontWeight: '600'
+                                }}
+                                className="!rounded-full"
+                              >
+                                {t('普通用户')}
+                              </Tag>
+                            )}
+                            <Tag
+                              color='green'
+                              size='small'
+                              className="!rounded-full"
+                              style={{
+                                backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                                color: '#16a34a',
+                                fontWeight: '600'
+                              }}
+                            >
+                              ID: {userState?.user?.id}
+                            </Tag>
+                          </div>
+                        </div>
+                      </div>
+                      <div
+                        className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center shadow-lg flex-shrink-0 ml-2"
+                        style={{
+                          background: `linear-gradient(135deg, ${stringToColor(getUsername())} 0%, #f59e0b 100%)`
+                        }}
+                      >
+                        <IconUser size="default" style={{ color: 'white' }} />
+                      </div>
+                    </div>
+
+                    <div className="mb-4 sm:mb-6">
+                      <div className="text-xs sm:text-sm mb-1 sm:mb-2" style={{ color: 'rgba(255, 255, 255, 0.7)' }}>
+                        {t('当前余额')}
+                      </div>
+                      <div className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-wide" style={{ color: 'white' }}>
+                        {renderQuota(userState?.user?.quota)}
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end">
+                      <div className="grid grid-cols-3 gap-2 sm:flex sm:space-x-6 lg:space-x-8 mb-3 sm:mb-0">
+                        <div className="text-center sm:text-left">
+                          <div className="text-xs" style={{ color: 'rgba(255, 255, 255, 0.6)' }}>
+                            {t('历史消耗')}
+                          </div>
+                          <div className="text-xs sm:text-sm font-medium truncate" style={{ color: 'white' }}>
+                            {renderQuota(userState?.user?.used_quota)}
+                          </div>
+                        </div>
+                        <div className="text-center sm:text-left">
+                          <div className="text-xs" style={{ color: 'rgba(255, 255, 255, 0.6)' }}>
+                            {t('请求次数')}
+                          </div>
+                          <div className="text-xs sm:text-sm font-medium truncate" style={{ color: 'white' }}>
+                            {userState.user?.request_count || 0}
+                          </div>
+                        </div>
+                        <div className="text-center sm:text-left">
+                          <div className="text-xs" style={{ color: 'rgba(255, 255, 255, 0.6)' }}>
+                            {t('用户分组')}
+                          </div>
+                          <div className="text-xs sm:text-sm font-medium truncate" style={{ color: 'white' }}>
+                            {userState?.user?.group || t('默认')}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-yellow-400 via-orange-400 to-red-400" style={{ opacity: 0.6 }}></div>
+                  </div>
+                </Card>
+
+                {/* 主内容区域 - 使用Tabs组织不同功能模块 */}
+                <div className="p-4">
+                  <Tabs type='line' defaultActiveKey='models' className="modern-tabs">
+                    {/* 模型与邀请Tab */}
+                    <TabPane
+                      tab={
+                        <div className="flex items-center">
+                          <Settings size={16} className="mr-2" />
+                          {t('模型与邀请')}
+                        </div>
+                      }
+                      itemKey='models'
+                    >
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 py-4">
+                        {/* 可用模型部分 */}
+                        <div className="bg-gray-50 rounded-xl">
+                          <div className="flex items-center mb-4">
+                            <div className="w-10 h-10 rounded-full bg-purple-50 flex items-center justify-center mr-3">
+                              <Settings size={20} className="text-purple-500" />
+                            </div>
+                            <div>
+                              <Typography.Title heading={6} className="mb-0">{t('可用模型')}</Typography.Title>
+                              <div className="text-gray-500 text-sm">{t('点击模型名称可复制')}</div>
+                            </div>
+                          </div>
+
+                          <div className="bg-white rounded-lg p-3">
+                            {models.length <= MODELS_DISPLAY_COUNT ? (
+                              <Space wrap>
+                                {models.map((model) => (
+                                  <Tag
+                                    key={model}
+                                    color={stringToColor(model)}
+                                    onClick={() => copyText(model)}
+                                    className="cursor-pointer hover:opacity-80 transition-opacity !rounded-lg"
+                                  >
+                                    {model}
+                                  </Tag>
+                                ))}
+                              </Space>
+                            ) : (
+                              <>
+                                <Collapsible isOpen={isModelsExpanded}>
+                                  <Space wrap>
+                                    {models.map((model) => (
+                                      <Tag
+                                        key={model}
+                                        color={stringToColor(model)}
+                                        onClick={() => copyText(model)}
+                                        className="cursor-pointer hover:opacity-80 transition-opacity !rounded-lg"
+                                      >
+                                        {model}
+                                      </Tag>
+                                    ))}
+                                    <Tag
+                                      color='grey'
+                                      type='light'
+                                      className="cursor-pointer !rounded-lg"
+                                      onClick={() => setIsModelsExpanded(false)}
+                                      icon={<IconChevronUp />}
+                                    >
+                                      {t('收起')}
+                                    </Tag>
+                                  </Space>
+                                </Collapsible>
+                                {!isModelsExpanded && (
+                                  <Space wrap>
+                                    {models
+                                      .slice(0, MODELS_DISPLAY_COUNT)
+                                      .map((model) => (
+                                        <Tag
+                                          key={model}
+                                          color={stringToColor(model)}
+                                          onClick={() => copyText(model)}
+                                          className="cursor-pointer hover:opacity-80 transition-opacity !rounded-lg"
+                                        >
+                                          {model}
+                                        </Tag>
+                                      ))}
+                                    <Tag
+                                      color='grey'
+                                      type='light'
+                                      className="cursor-pointer !rounded-lg"
+                                      onClick={() => setIsModelsExpanded(true)}
+                                      icon={<IconChevronDown />}
+                                    >
+                                      {t('更多')} {models.length - MODELS_DISPLAY_COUNT} {t('个模型')}
+                                    </Tag>
+                                  </Space>
+                                )}
+                              </>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* 邀请信息部分 */}
+                        <div className="bg-gray-50 rounded-xl">
+                          <div className="flex items-center mb-4">
+                            <div className="w-10 h-10 rounded-full bg-orange-50 flex items-center justify-center mr-3">
+                              <IconLink size={20} className="text-orange-500" />
+                            </div>
+                            <div>
+                              <Typography.Title heading={6} className="mb-0">{t('邀请信息')}</Typography.Title>
+                              <div className="text-gray-500 text-sm">{t('管理您的邀请链接和收益')}</div>
+                            </div>
+                          </div>
+
+                          <div className="space-y-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                              <Card
+                                className="!rounded-2xl text-center"
+                                bodyStyle={{ padding: '16px' }}
+                                shadows='hover'
+                              >
+                                <div className="text-gray-600 text-xs font-medium">{t('待使用收益')}</div>
+                                <div className="text-gray-900 text-lg font-bold mt-1">
+                                  {renderQuota(userState?.user?.aff_quota)}
+                                </div>
+                                <Button
+                                  type="primary"
+                                  theme="solid"
+                                  onClick={() => setOpenTransfer(true)}
+                                  size="small"
+                                  className="!rounded-lg !bg-blue-500 hover:!bg-blue-600 mt-2 w-full"
+                                  icon={<IconCreditCard />}
+                                >
+                                  {t('划转')}
+                                </Button>
+                              </Card>
+                              <Card
+                                className="!rounded-2xl text-center"
+                                bodyStyle={{ padding: '16px' }}
+                                shadows='hover'
+                              >
+                                <div className="text-gray-600 text-xs font-medium">{t('总收益')}</div>
+                                <div className="text-gray-900 text-lg font-bold mt-1">
+                                  {renderQuota(userState?.user?.aff_history_quota)}
+                                </div>
+                              </Card>
+                              <Card
+                                className="!rounded-2xl text-center"
+                                bodyStyle={{ padding: '16px' }}
+                                shadows='hover'
+                              >
+                                <div className="text-gray-600 text-xs font-medium">{t('邀请人数')}</div>
+                                <div className="text-gray-900 text-lg font-bold mt-1">
+                                  {userState?.user?.aff_count || 0}
+                                </div>
+                              </Card>
+                            </div>
+
+                            <div className="bg-white rounded-lg p-3">
+                              <Typography.Text strong className="block mb-2 text-sm">{t('邀请链接')}</Typography.Text>
+                              <Input
+                                value={affLink}
+                                onClick={handleAffLinkClick}
+                                readOnly
+                                size="large"
+                                className="!rounded-lg"
+                                prefix={<IconLink />}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </TabPane>
+
+                    {/* 账户绑定Tab */}
+                    <TabPane
+                      tab={
+                        <div className="flex items-center">
+                          <UserPlus size={16} className="mr-2" />
+                          {t('账户绑定')}
+                        </div>
+                      }
+                      itemKey='account'
+                    >
+                      <div className="py-4">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                          {/* 邮箱绑定 */}
+                          <Card
+                            className="!rounded-xl transition-shadow"
+                            bodyStyle={{ padding: '16px' }}
+                            shadows='hover'
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center flex-1">
+                                <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center mr-3">
+                                  <IconMail size="default" className="text-red-500" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="font-medium text-gray-900">{t('邮箱')}</div>
+                                  <div className="text-sm text-gray-500 truncate">
+                                    {userState.user && userState.user.email !== ''
+                                      ? userState.user.email
+                                      : t('未绑定')}
+                                  </div>
+                                </div>
+                              </div>
+                              <Button
+                                type="primary"
+                                theme="outline"
+                                size="small"
+                                onClick={() => setShowEmailBindModal(true)}
+                                className="!rounded-lg"
+                              >
+                                {userState.user && userState.user.email !== ''
+                                  ? t('修改绑定')
+                                  : t('绑定邮箱')}
+                              </Button>
+                            </div>
+                          </Card>
+
+                          {/* 微信绑定 */}
+                          <Card
+                            className="!rounded-xl transition-shadow"
+                            bodyStyle={{ padding: '16px' }}
+                            shadows='hover'
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center flex-1">
+                                <div className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center mr-3">
+                                  <SiWechat size={20} className="text-green-500" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="font-medium text-gray-900">{t('微信')}</div>
+                                  <div className="text-sm text-gray-500 truncate">
+                                    {userState.user && userState.user.wechat_id !== ''
+                                      ? t('已绑定')
+                                      : t('未绑定')}
+                                  </div>
+                                </div>
+                              </div>
+                              <Button
+                                type="primary"
+                                theme="outline"
+                                size="small"
+                                disabled={!status.wechat_login}
+                                onClick={() => setShowWeChatBindModal(true)}
+                                className="!rounded-lg"
+                              >
+                                {userState.user && userState.user.wechat_id !== ''
+                                  ? t('修改绑定')
+                                  : status.wechat_login
+                                    ? t('绑定')
+                                    : t('未启用')}
+                              </Button>
+                            </div>
+                          </Card>
+
+                          {/* GitHub绑定 */}
+                          <Card
+                            className="!rounded-xl transition-shadow"
+                            bodyStyle={{ padding: '16px' }}
+                            shadows='hover'
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center flex-1">
+                                <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center mr-3">
+                                  <IconGithubLogo size="default" className="text-gray-700" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="font-medium text-gray-900">{t('GitHub')}</div>
+                                  <div className="text-sm text-gray-500 truncate">
+                                    {userState.user && userState.user.github_id !== ''
+                                      ? userState.user.github_id
+                                      : t('未绑定')}
+                                  </div>
+                                </div>
+                              </div>
+                              <Button
+                                type="primary"
+                                theme="outline"
+                                size="small"
+                                onClick={() => onGitHubOAuthClicked(status.github_client_id)}
+                                disabled={
+                                  (userState.user && userState.user.github_id !== '') ||
+                                  !status.github_oauth
+                                }
+                                className="!rounded-lg"
+                              >
+                                {status.github_oauth ? t('绑定') : t('未启用')}
+                              </Button>
+                            </div>
+                          </Card>
+
+                          {/* OIDC绑定 */}
+                          <Card
+                            className="!rounded-xl transition-shadow"
+                            bodyStyle={{ padding: '16px' }}
+                            shadows='hover'
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center flex-1">
+                                <div className="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center mr-3">
+                                  <IconShield size="default" className="text-indigo-500" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="font-medium text-gray-900">{t('OIDC')}</div>
+                                  <div className="text-sm text-gray-500 truncate">
+                                    {userState.user && userState.user.oidc_id !== ''
+                                      ? userState.user.oidc_id
+                                      : t('未绑定')}
+                                  </div>
+                                </div>
+                              </div>
+                              <Button
+                                type="primary"
+                                theme="outline"
+                                size="small"
+                                onClick={() => onOIDCClicked(
+                                  status.oidc_authorization_endpoint,
+                                  status.oidc_client_id,
+                                )}
+                                disabled={
+                                  (userState.user && userState.user.oidc_id !== '') ||
+                                  !status.oidc_enabled
+                                }
+                                className="!rounded-lg"
+                              >
+                                {status.oidc_enabled ? t('绑定') : t('未启用')}
+                              </Button>
+                            </div>
+                          </Card>
+
+                          {/* Telegram绑定 */}
+                          <Card
+                            className="!rounded-xl transition-shadow"
+                            bodyStyle={{ padding: '16px' }}
+                            shadows='hover'
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center flex-1">
+                                <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center mr-3">
+                                  <SiTelegram size={20} className="text-blue-500" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="font-medium text-gray-900">{t('Telegram')}</div>
+                                  <div className="text-sm text-gray-500 truncate">
+                                    {userState.user && userState.user.telegram_id !== ''
+                                      ? userState.user.telegram_id
+                                      : t('未绑定')}
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="flex-shrink-0">
+                                {status.telegram_oauth ? (
+                                  userState.user.telegram_id !== '' ? (
+                                    <Button disabled={true} size="small" className="!rounded-lg">
+                                      {t('已绑定')}
+                                    </Button>
+                                  ) : (
+                                    <div className="scale-75">
+                                      <TelegramLoginButton
+                                        dataAuthUrl='/api/oauth/telegram/bind'
+                                        botName={status.telegram_bot_name}
+                                      />
+                                    </div>
+                                  )
+                                ) : (
+                                  <Button disabled={true} size="small" className="!rounded-lg">
+                                    {t('未启用')}
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+                          </Card>
+
+                          {/* LinuxDO绑定 */}
+                          <Card
+                            className="!rounded-xl transition-shadow"
+                            bodyStyle={{ padding: '16px' }}
+                            shadows='hover'
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center flex-1">
+                                <div className="w-10 h-10 rounded-full bg-orange-50 flex items-center justify-center mr-3">
+                                  <SiLinux size={20} className="text-orange-500" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="font-medium text-gray-900">{t('LinuxDO')}</div>
+                                  <div className="text-sm text-gray-500 truncate">
+                                    {userState.user && userState.user.linux_do_id !== ''
+                                      ? userState.user.linux_do_id
+                                      : t('未绑定')}
+                                  </div>
+                                </div>
+                              </div>
+                              <Button
+                                type="primary"
+                                theme="outline"
+                                size="small"
+                                onClick={() => onLinuxDOOAuthClicked(status.linuxdo_client_id)}
+                                disabled={
+                                  (userState.user && userState.user.linux_do_id !== '') ||
+                                  !status.linuxdo_oauth
+                                }
+                                className="!rounded-lg"
+                              >
+                                {status.linuxdo_oauth ? t('绑定') : t('未启用')}
+                              </Button>
+                            </div>
+                          </Card>
+                        </div>
+                      </div>
+                    </TabPane>
+
+                    {/* 安全设置Tab */}
+                    <TabPane
+                      tab={
+                        <div className="flex items-center">
+                          <ShieldCheck size={16} className="mr-2" />
+                          {t('安全设置')}
+                        </div>
+                      }
+                      itemKey='security'
+                    >
+                      <div className="py-4">
+                        <div className="space-y-6">
+                          <Space vertical className='w-full'>
+                            {/* 系统访问令牌 */}
+                            <Card
+                              className="!rounded-xl w-full"
+                              bodyStyle={{ padding: '20px' }}
+                              shadows='hover'
+                            >
+                              <div className="flex flex-col sm:flex-row items-start sm:justify-between gap-4">
+                                <div className="flex items-start w-full sm:w-auto">
+                                  <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center mr-4 flex-shrink-0">
+                                    <IconKey size="large" className="text-blue-500" />
+                                  </div>
+                                  <div className="flex-1">
+                                    <Typography.Title heading={6} className="mb-1">
+                                      {t('系统访问令牌')}
+                                    </Typography.Title>
+                                    <Typography.Text type="tertiary" className="text-sm">
+                                      {t('用于API调用的身份验证令牌，请妥善保管')}
+                                    </Typography.Text>
+                                    {systemToken && (
+                                      <div className="mt-3">
+                                        <Input
+                                          readOnly
+                                          value={systemToken}
+                                          onClick={handleSystemTokenClick}
+                                          size="large"
+                                          className="!rounded-lg"
+                                          prefix={<IconKey />}
+                                        />
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                                <Button
+                                  type="primary"
+                                  theme="solid"
+                                  onClick={generateAccessToken}
+                                  className="!rounded-lg !bg-blue-500 hover:!bg-blue-600 w-full sm:w-auto"
+                                  icon={<IconKey />}
+                                >
+                                  {systemToken ? t('重新生成') : t('生成令牌')}
+                                </Button>
+                              </div>
+                            </Card>
+
+                            {/* 密码管理 */}
+                            <Card
+                              className="!rounded-xl w-full"
+                              bodyStyle={{ padding: '20px' }}
+                              shadows='hover'
+                            >
+                              <div className="flex flex-col sm:flex-row items-start sm:justify-between gap-4">
+                                <div className="flex items-start w-full sm:w-auto">
+                                  <div className="w-12 h-12 rounded-full bg-orange-50 flex items-center justify-center mr-4 flex-shrink-0">
+                                    <IconLock size="large" className="text-orange-500" />
+                                  </div>
+                                  <div>
+                                    <Typography.Title heading={6} className="mb-1">
+                                      {t('密码管理')}
+                                    </Typography.Title>
+                                    <Typography.Text type="tertiary" className="text-sm">
+                                      {t('定期更改密码可以提高账户安全性')}
+                                    </Typography.Text>
+                                  </div>
+                                </div>
+                                <Button
+                                  type="primary"
+                                  theme="solid"
+                                  onClick={() => setShowChangePasswordModal(true)}
+                                  className="!rounded-lg !bg-orange-500 hover:!bg-orange-600 w-full sm:w-auto"
+                                  icon={<IconLock />}
+                                >
+                                  {t('修改密码')}
+                                </Button>
+                              </div>
+                            </Card>
+
+                            {/* 危险区域 */}
+                            <Card
+                              className="!rounded-xl border-red-200 w-full"
+                              bodyStyle={{ padding: '20px' }}
+                              shadows='hover'
+                            >
+                              <div className="flex flex-col sm:flex-row items-start sm:justify-between gap-4">
+                                <div className="flex items-start w-full sm:w-auto">
+                                  <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center mr-4 flex-shrink-0">
+                                    <IconDelete size="large" className="text-red-500" />
+                                  </div>
+                                  <div>
+                                    <Typography.Title heading={6} className="mb-1 text-red-600">
+                                      {t('删除账户')}
+                                    </Typography.Title>
+                                    <Typography.Text type="tertiary" className="text-sm">
+                                      {t('此操作不可逆，所有数据将被永久删除')}
+                                    </Typography.Text>
+                                  </div>
+                                </div>
+                                <Button
+                                  type="danger"
+                                  theme="solid"
+                                  onClick={() => setShowAccountDeleteModal(true)}
+                                  className="!rounded-lg w-full sm:w-auto"
+                                  icon={<IconDelete />}
+                                >
+                                  {t('删除账户')}
+                                </Button>
+                              </div>
+                            </Card>
+                          </Space>
+                        </div>
+                      </div>
+                    </TabPane>
+
+                    {/* 通知设置Tab */}
+                    <TabPane
+                      tab={
+                        <div className="flex items-center">
+                          <Bell size={16} className="mr-2" />
+                          {t('通知设置')}
+                        </div>
+                      }
+                      itemKey='notification'
+                    >
+                      <div className="py-4">
+                        <Tabs type='card' defaultActiveKey='notify' className="!rounded-lg">
+                          <TabPane
+                            tab={t('通知设置')}
+                            itemKey='notify'
+                          >
+                            <div className="space-y-6">
+                              {/* 通知方式选择 */}
+                              <div className="bg-gray-50 rounded-xl">
+                                <Typography.Text strong className="block mb-4 pt-4">{t('通知方式')}</Typography.Text>
+                                <RadioGroup
+                                  value={notificationSettings.warningType}
+                                  onChange={(value) =>
+                                    handleNotificationSettingChange('warningType', value)
+                                  }
+                                  type="pureCard"
+                                >
+                                  <Radio value='email' className="!p-4 !rounded-lg">
+                                    <div className="flex items-center">
+                                      <IconMail className="mr-2 text-blue-500" />
+                                      <div>
+                                        <div className="font-medium">{t('邮件通知')}</div>
+                                        <div className="text-sm text-gray-500">{t('通过邮件接收通知')}</div>
+                                      </div>
+                                    </div>
+                                  </Radio>
+                                  <Radio value='webhook' className="!p-4 !rounded-lg">
+                                    <div className="flex items-center">
+                                      <Webhook size={16} className="mr-2 text-green-500" />
+                                      <div>
+                                        <div className="font-medium">{t('Webhook通知')}</div>
+                                        <div className="text-sm text-gray-500">{t('通过HTTP请求接收通知')}</div>
+                                      </div>
+                                    </div>
+                                  </Radio>
+                                </RadioGroup>
+                              </div>
+
+                              {/* Webhook设置 */}
+                              {notificationSettings.warningType === 'webhook' && (
+                                <div className="space-y-4">
+                                  <div className="bg-white rounded-xl">
+                                    <Typography.Text strong className="block mb-3">{t('Webhook地址')}</Typography.Text>
+                                    <Input
+                                      value={notificationSettings.webhookUrl}
+                                      onChange={(val) =>
+                                        handleNotificationSettingChange('webhookUrl', val)
+                                      }
+                                      placeholder={t('请输入Webhook地址，例如: https://example.com/webhook')}
+                                      size="large"
+                                      className="!rounded-lg"
+                                      prefix={<Webhook size={16} className="m-2" />}
+                                    />
+                                    <div className="text-gray-500 text-sm mt-2">
+                                      {t('只支持https，系统将以 POST 方式发送通知，请确保地址可以接收 POST 请求')}
+                                    </div>
+                                  </div>
+
+                                  <div className="bg-white rounded-xl">
+                                    <Typography.Text strong className="block mb-3">{t('接口凭证（可选）')}</Typography.Text>
+                                    <Input
+                                      value={notificationSettings.webhookSecret}
+                                      onChange={(val) =>
+                                        handleNotificationSettingChange('webhookSecret', val)
+                                      }
+                                      placeholder={t('请输入密钥')}
+                                      size="large"
+                                      className="!rounded-lg"
+                                      prefix={<IconKey />}
+                                    />
+                                    <div className="text-gray-500 text-sm mt-2">
+                                      {t('密钥将以 Bearer 方式添加到请求头中，用于验证webhook请求的合法性')}
+                                    </div>
+                                  </div>
+
+                                  <div className="bg-yellow-50 rounded-xl">
+                                    <div className="flex items-center justify-between cursor-pointer" onClick={() => setShowWebhookDocs(!showWebhookDocs)}>
+                                      <div className="flex items-center">
+                                        <Globe size={16} className="mr-2 text-yellow-600" />
+                                        <Typography.Text strong className="text-yellow-800">
+                                          {t('Webhook请求结构')}
+                                        </Typography.Text>
+                                      </div>
+                                      {showWebhookDocs ? <IconChevronUp /> : <IconChevronDown />}
+                                    </div>
+                                    <Collapsible isOpen={showWebhookDocs}>
+                                      <pre className="mt-4 bg-gray-800 text-gray-100 rounded-lg text-sm overflow-x-auto">
+                                        {`{
+  "type": "quota_exceed",      // 通知类型
+  "title": "标题",             // 通知标题
+  "content": "通知内容",       // 通知内容，支持 {{value}} 变量占位符
+  "values": ["值1", "值2"],    // 按顺序替换content中的 {{value}} 占位符
+  "timestamp": 1739950503      // 时间戳
 }
 
 示例：
 {
-    "type": "quota_exceed",
-    "title": "额度预警通知",
-    "content": "您的额度即将用尽，当前剩余额度为 {{value}}",
-    "values": ["$0.99"],
-    "timestamp": 1739950503
+  "type": "quota_exceed",
+  "title": "额度预警通知",
+  "content": "您的额度即将用尽，当前剩余额度为 {{value}}",
+  "values": ["$0.99"],
+  "timestamp": 1739950503
 }`}
-                              </pre>
-                            </Collapsible>
-                          </Typography.Text>
+                                      </pre>
+                                    </Collapsible>
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* 邮件设置 */}
+                              {notificationSettings.warningType === 'email' && (
+                                <div className="bg-white rounded-xl">
+                                  <Typography.Text strong className="block mb-3">{t('通知邮箱')}</Typography.Text>
+                                  <Input
+                                    value={notificationSettings.notificationEmail}
+                                    onChange={(val) =>
+                                      handleNotificationSettingChange('notificationEmail', val)
+                                    }
+                                    placeholder={t('留空则使用账号绑定的邮箱')}
+                                    size="large"
+                                    className="!rounded-lg"
+                                    prefix={<IconMail />}
+                                  />
+                                  <div className="text-gray-500 text-sm mt-2">
+                                    {t('设置用于接收额度预警的邮箱地址，不填则使用账号绑定的邮箱')}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* 预警阈值 */}
+                              <div className="bg-white rounded-xl">
+                                <Typography.Text strong className="block mb-3">
+                                  {t('额度预警阈值')} {renderQuotaWithPrompt(notificationSettings.warningThreshold)}
+                                </Typography.Text>
+                                <AutoComplete
+                                  value={notificationSettings.warningThreshold}
+                                  onChange={(val) =>
+                                    handleNotificationSettingChange('warningThreshold', val)
+                                  }
+                                  size="large"
+                                  className="!rounded-lg w-full max-w-xs"
+                                  placeholder={t('请输入预警额度')}
+                                  data={[
+                                    { value: 100000, label: '0.2$' },
+                                    { value: 500000, label: '1$' },
+                                    { value: 1000000, label: '5$' },
+                                    { value: 5000000, label: '10$' },
+                                  ]}
+                                  prefix={<IconBell />}
+                                />
+                                <div className="text-gray-500 text-sm mt-2">
+                                  {t('当剩余额度低于此数值时，系统将通过选择的方式发送通知')}
+                                </div>
+                              </div>
+                            </div>
+                          </TabPane>
+
+                          <TabPane
+                            tab={t('价格设置')}
+                            itemKey='price'
+                          >
+                            <div className="py-4">
+                              <div className="bg-white rounded-xl">
+                                <div className="flex items-start">
+                                  <div className="w-10 h-10 rounded-full bg-orange-50 flex items-center justify-center mt-1">
+                                    <Shield size={20} className="text-orange-500" />
+                                  </div>
+                                  <div className="flex-1">
+                                    <div className="flex items-center justify-between">
+                                      <div>
+                                        <Typography.Text strong className="block mb-2">
+                                          {t('接受未设置价格模型')}
+                                        </Typography.Text>
+                                        <div className="text-gray-500 text-sm">
+                                          {t('当模型没有设置价格时仍接受调用，仅当您信任该网站时使用，可能会产生高额费用')}
+                                        </div>
+                                      </div>
+                                      <Checkbox
+                                        checked={notificationSettings.acceptUnsetModelRatioModel}
+                                        onChange={(e) =>
+                                          handleNotificationSettingChange(
+                                            'acceptUnsetModelRatioModel',
+                                            e.target.checked,
+                                          )
+                                        }
+                                        className="ml-4"
+                                      />
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </TabPane>
+                        </Tabs>
+
+                        <div className="mt-6 flex justify-end">
+                          <Button
+                            type='primary'
+                            onClick={saveNotificationSettings}
+                            size="large"
+                            className="!rounded-lg !bg-purple-500 hover:!bg-purple-600"
+                            icon={<IconSetting />}
+                          >
+                            {t('保存设置')}
+                          </Button>
                         </div>
                       </div>
-                      <div style={{ marginTop: 20 }}>
-                        <Typography.Text strong>
-                          {t('接口凭证（可选）')}
-                        </Typography.Text>
-                        <div style={{ marginTop: 10 }}>
-                          <Input
-                            value={notificationSettings.webhookSecret}
-                            onChange={(val) =>
-                              handleNotificationSettingChange(
-                                'webhookSecret',
-                                val,
-                              )
-                            }
-                            placeholder={t('请输入密钥')}
-                          />
-                          <Typography.Text
-                            type='secondary'
-                            style={{ marginTop: 8, display: 'block' }}
-                          >
-                            {t(
-                              '密钥将以 Bearer 方式添加到请求头中，用于验证webhook请求的合法性',
-                            )}
-                          </Typography.Text>
-                          <Typography.Text
-                            type='secondary'
-                            style={{ marginTop: 4, display: 'block' }}
-                          >
-                            {t('Authorization: Bearer your-secret-key')}
-                          </Typography.Text>
-                        </div>
-                      </div>
-                    </>
-                  )}
-                  {notificationSettings.warningType === 'email' && (
-                    <div style={{ marginTop: 20 }}>
-                      <Typography.Text strong>{t('通知邮箱')}</Typography.Text>
-                      <div style={{ marginTop: 10 }}>
-                        <Input
-                          value={notificationSettings.notificationEmail}
-                          onChange={(val) =>
-                            handleNotificationSettingChange(
-                              'notificationEmail',
-                              val,
-                            )
-                          }
-                          placeholder={t('留空则使用账号绑定的邮箱')}
-                        />
-                        <Typography.Text
-                          type='secondary'
-                          style={{ marginTop: 8, display: 'block' }}
-                        >
-                          {t(
-                            '设置用于接收额度预警的邮箱地址，不填则使用账号绑定的邮箱',
-                          )}
-                        </Typography.Text>
-                      </div>
-                    </div>
-                  )}
-                  <div style={{ marginTop: 20 }}>
-                    <Typography.Text strong>
-                      {t('额度预警阈值')}{' '}
-                      {renderQuotaWithPrompt(
-                        notificationSettings.warningThreshold,
-                      )}
-                    </Typography.Text>
-                    <div style={{ marginTop: 10 }}>
-                      <AutoComplete
-                        value={notificationSettings.warningThreshold}
-                        onChange={(val) =>
-                          handleNotificationSettingChange(
-                            'warningThreshold',
-                            val,
-                          )
-                        }
-                        style={{ width: 200 }}
-                        placeholder={t('请输入预警额度')}
-                        data={[
-                          { value: 100000, label: '0.2$' },
-                          { value: 500000, label: '1$' },
-                          { value: 1000000, label: '5$' },
-                          { value: 5000000, label: '10$' },
-                        ]}
-                      />
-                    </div>
-                    <Typography.Text
-                      type='secondary'
-                      style={{ marginTop: 10, display: 'block' }}
-                    >
-                      {t(
-                        '当剩余额度低于此数值时，系统将通过选择的方式发送通知',
-                      )}
-                    </Typography.Text>
-                  </div>
-                </TabPane>
-                <TabPane tab={t('价格设置')} itemKey='price'>
-                  <div style={{ marginTop: 20 }}>
-                    <Typography.Text strong>
-                      {t('接受未设置价格模型')}
-                    </Typography.Text>
-                    <div style={{ marginTop: 10 }}>
-                      <Checkbox
-                        checked={
-                          notificationSettings.acceptUnsetModelRatioModel
-                        }
-                        onChange={(e) =>
-                          handleNotificationSettingChange(
-                            'acceptUnsetModelRatioModel',
-                            e.target.checked,
-                          )
-                        }
-                      >
-                        {t('接受未设置价格模型')}
-                      </Checkbox>
-                      <Typography.Text
-                        type='secondary'
-                        style={{ marginTop: 8, display: 'block' }}
-                      >
-                        {t(
-                          '当模型没有设置价格时仍接受调用，仅当您信任该网站时使用，可能会产生高额费用',
-                        )}
-                      </Typography.Text>
-                    </div>
-                  </div>
-                </TabPane>
-              </Tabs>
-              <div style={{ marginTop: 20 }}>
-                <Button type='primary' onClick={saveNotificationSettings}>
-                  {t('保存设置')}
-                </Button>
-              </div>
-            </Card>
-            <Modal
-              onCancel={() => setShowEmailBindModal(false)}
-              onOk={bindEmail}
-              visible={showEmailBindModal}
-              size={'small'}
-              centered={true}
-              maskClosable={false}
-            >
-              <Typography.Title heading={6}>
-                {t('绑定邮箱地址')}
-              </Typography.Title>
-              <div
-                style={{
-                  marginTop: 20,
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                }}
-              >
-                <Input
-                  fluid
-                  placeholder='输入邮箱地址'
-                  onChange={(value) => handleInputChange('email', value)}
-                  name='email'
-                  type='email'
-                />
-                <Button
-                  onClick={sendVerificationCode}
-                  disabled={disableButton || loading}
-                >
-                  {disableButton ? `重新发送 (${countdown})` : '获取验证码'}
-                </Button>
-              </div>
-              <div style={{ marginTop: 10 }}>
-                <Input
-                  fluid
-                  placeholder='验证码'
-                  name='email_verification_code'
-                  value={inputs.email_verification_code}
-                  onChange={(value) =>
-                    handleInputChange('email_verification_code', value)
-                  }
-                />
-              </div>
-              {turnstileEnabled ? (
-                <Turnstile
-                  sitekey={turnstileSiteKey}
-                  onVerify={(token) => {
-                    setTurnstileToken(token);
-                  }}
-                />
-              ) : (
-                <></>
-              )}
-            </Modal>
-            <Modal
-              onCancel={() => setShowAccountDeleteModal(false)}
-              visible={showAccountDeleteModal}
-              size={'small'}
-              centered={true}
-              onOk={deleteAccount}
-            >
-              <div style={{ marginTop: 20 }}>
-                <Banner
-                  type='danger'
-                  description='您正在删除自己的帐户，将清空所有数据且不可恢复'
-                  closeIcon={null}
-                />
-              </div>
-              <div style={{ marginTop: 20 }}>
-                <Input
-                  placeholder={`输入你的账户名 ${userState?.user?.username} 以确认删除`}
-                  name='self_account_deletion_confirmation'
-                  value={inputs.self_account_deletion_confirmation}
-                  onChange={(value) =>
-                    handleInputChange(
-                      'self_account_deletion_confirmation',
-                      value,
-                    )
-                  }
-                />
-                {turnstileEnabled ? (
-                  <Turnstile
-                    sitekey={turnstileSiteKey}
-                    onVerify={(token) => {
-                      setTurnstileToken(token);
-                    }}
-                  />
-                ) : (
-                  <></>
-                )}
-              </div>
-            </Modal>
-            <Modal
-              onCancel={() => setShowChangePasswordModal(false)}
-              visible={showChangePasswordModal}
-              size={'small'}
-              centered={true}
-              onOk={changePassword}
-            >
-              <div style={{ marginTop: 20 }}>
-                <Input
-                  name='original_password'
-                  placeholder={t('原密码')}
-                  type='password'
-                  value={inputs.original_password}
-                  onChange={(value) =>
-                    handleInputChange('original_password', value)
-                  }
-                />
-                <Input
-                  style={{ marginTop: 20 }}
-                  name='set_new_password'
-                  placeholder={t('新密码')}
-                  value={inputs.set_new_password}
-                  onChange={(value) =>
-                    handleInputChange('set_new_password', value)
-                  }
-                />
-                <Input
-                  style={{ marginTop: 20 }}
-                  name='set_new_password_confirmation'
-                  placeholder={t('确认新密码')}
-                  value={inputs.set_new_password_confirmation}
-                  onChange={(value) =>
-                    handleInputChange('set_new_password_confirmation', value)
-                  }
-                />
-                {turnstileEnabled ? (
-                  <Turnstile
-                    sitekey={turnstileSiteKey}
-                    onVerify={(token) => {
-                      setTurnstileToken(token);
-                    }}
-                  />
-                ) : (
-                  <></>
-                )}
-              </div>
-            </Modal>
+                    </TabPane>
+                  </Tabs>
+                </div>
+              </Card>
+            </div>
           </div>
         </Layout.Content>
       </Layout>
+
+      {/* 邮箱绑定模态框 */}
+      <Modal
+        title={
+          <div className="flex items-center">
+            <IconMail className="mr-2 text-blue-500" />
+            {t('绑定邮箱地址')}
+          </div>
+        }
+        visible={showEmailBindModal}
+        onCancel={() => setShowEmailBindModal(false)}
+        onOk={bindEmail}
+        size={'small'}
+        centered={true}
+        maskClosable={false}
+        className="modern-modal"
+      >
+        <div className="space-y-4 py-4">
+          <div className="flex gap-3">
+            <Input
+              placeholder={t('输入邮箱地址')}
+              onChange={(value) => handleInputChange('email', value)}
+              name='email'
+              type='email'
+              size="large"
+              className="!rounded-lg flex-1"
+              prefix={<IconMail />}
+            />
+            <Button
+              onClick={sendVerificationCode}
+              disabled={disableButton || loading}
+              className="!rounded-lg"
+              type="primary"
+              theme="outline"
+              size='large'
+            >
+              {disableButton ? `${t('重新发送')} (${countdown})` : t('获取验证码')}
+            </Button>
+          </div>
+
+          <Input
+            placeholder={t('验证码')}
+            name='email_verification_code'
+            value={inputs.email_verification_code}
+            onChange={(value) =>
+              handleInputChange('email_verification_code', value)
+            }
+            size="large"
+            className="!rounded-lg"
+            prefix={<IconKey />}
+          />
+
+          {turnstileEnabled && (
+            <div className="flex justify-center">
+              <Turnstile
+                sitekey={turnstileSiteKey}
+                onVerify={(token) => {
+                  setTurnstileToken(token);
+                }}
+              />
+            </div>
+          )}
+        </div>
+      </Modal>
+
+      {/* 微信绑定模态框 */}
+      <Modal
+        title={
+          <div className="flex items-center">
+            <SiWechat className="mr-2 text-green-500" size={20} />
+            {t('绑定微信账户')}
+          </div>
+        }
+        visible={showWeChatBindModal}
+        onCancel={() => setShowWeChatBindModal(false)}
+        footer={null}
+        size={'small'}
+        centered={true}
+        className="modern-modal"
+      >
+        <div className="space-y-4 py-4 text-center">
+          <Image src={status.wechat_qrcode} className="mx-auto" />
+          <div className="text-gray-600">
+            <p>{t('微信扫码关注公众号，输入「验证码」获取验证码（三分钟内有效）')}</p>
+          </div>
+          <Input
+            placeholder={t('验证码')}
+            name='wechat_verification_code'
+            value={inputs.wechat_verification_code}
+            onChange={(v) =>
+              handleInputChange('wechat_verification_code', v)
+            }
+            size="large"
+            className="!rounded-lg"
+            prefix={<IconKey />}
+          />
+          <Button
+            type="primary"
+            theme="solid"
+            size='large'
+            onClick={bindWeChat}
+            className="!rounded-lg w-full !bg-green-500 hover:!bg-green-600"
+            icon={<SiWechat size={16} />}
+          >
+            {t('绑定')}
+          </Button>
+        </div>
+      </Modal>
+
+      {/* 账户删除模态框 */}
+      <Modal
+        title={
+          <div className="flex items-center">
+            <IconDelete className="mr-2 text-red-500" />
+            {t('删除账户确认')}
+          </div>
+        }
+        visible={showAccountDeleteModal}
+        onCancel={() => setShowAccountDeleteModal(false)}
+        onOk={deleteAccount}
+        size={'small'}
+        centered={true}
+        className="modern-modal"
+      >
+        <div className="space-y-4 py-4">
+          <Banner
+            type='danger'
+            description={t('您正在删除自己的帐户，将清空所有数据且不可恢复')}
+            closeIcon={null}
+            className="!rounded-lg"
+          />
+
+          <div>
+            <Typography.Text strong className="block mb-2 text-red-600">
+              {t('请输入您的用户名以确认删除')}
+            </Typography.Text>
+            <Input
+              placeholder={t('输入你的账户名{{username}}以确认删除', { username: ` ${userState?.user?.username} ` })}
+              name='self_account_deletion_confirmation'
+              value={inputs.self_account_deletion_confirmation}
+              onChange={(value) =>
+                handleInputChange('self_account_deletion_confirmation', value)
+              }
+              size="large"
+              className="!rounded-lg"
+              prefix={<IconUser />}
+            />
+          </div>
+
+          {turnstileEnabled && (
+            <div className="flex justify-center">
+              <Turnstile
+                sitekey={turnstileSiteKey}
+                onVerify={(token) => {
+                  setTurnstileToken(token);
+                }}
+              />
+            </div>
+          )}
+        </div>
+      </Modal>
+
+      {/* 修改密码模态框 */}
+      <Modal
+        title={
+          <div className="flex items-center">
+            <IconLock className="mr-2 text-orange-500" />
+            {t('修改密码')}
+          </div>
+        }
+        visible={showChangePasswordModal}
+        onCancel={() => setShowChangePasswordModal(false)}
+        onOk={changePassword}
+        size={'small'}
+        centered={true}
+        className="modern-modal"
+      >
+        <div className="space-y-4 py-4">
+          <div>
+            <Typography.Text strong className="block mb-2">{t('原密码')}</Typography.Text>
+            <Input
+              name='original_password'
+              placeholder={t('请输入原密码')}
+              type='password'
+              value={inputs.original_password}
+              onChange={(value) =>
+                handleInputChange('original_password', value)
+              }
+              size="large"
+              className="!rounded-lg"
+              prefix={<IconLock />}
+            />
+          </div>
+
+          <div>
+            <Typography.Text strong className="block mb-2">{t('新密码')}</Typography.Text>
+            <Input
+              name='set_new_password'
+              placeholder={t('请输入新密码')}
+              type='password'
+              value={inputs.set_new_password}
+              onChange={(value) =>
+                handleInputChange('set_new_password', value)
+              }
+              size="large"
+              className="!rounded-lg"
+              prefix={<IconLock />}
+            />
+          </div>
+
+          <div>
+            <Typography.Text strong className="block mb-2">{t('确认新密码')}</Typography.Text>
+            <Input
+              name='set_new_password_confirmation'
+              placeholder={t('请再次输入新密码')}
+              type='password'
+              value={inputs.set_new_password_confirmation}
+              onChange={(value) =>
+                handleInputChange('set_new_password_confirmation', value)
+              }
+              size="large"
+              className="!rounded-lg"
+              prefix={<IconLock />}
+            />
+          </div>
+
+          {turnstileEnabled && (
+            <div className="flex justify-center">
+              <Turnstile
+                sitekey={turnstileSiteKey}
+                onVerify={(token) => {
+                  setTurnstileToken(token);
+                }}
+              />
+            </div>
+          )}
+        </div>
+      </Modal>
     </div>
   );
 };
