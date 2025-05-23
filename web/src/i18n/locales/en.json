@@ -1178,7 +1178,7 @@
   "请输入新的密码，最短 8 位": "Please enter a new password, at least 8 characterss",
   "添加额度": "Add quota",
   "以下信息不可修改": "The following information cannot be modified",
-  "确定要充值吗": "Check to confirm recharge",
+  "充值确认": "Recharge confirmation",
   "充值数量": "Recharge quantity",
   "实付金额": "Actual payment amount",
   "是否确认充值？": "Confirm recharge?",
@@ -1449,5 +1449,11 @@
   "用户分组和额度管理": "User Group and Quota Management",
   "绑定信息": "Binding Information",
   "第三方账户绑定状态（只读）": "Third-party account binding status (read-only)",
-  "已绑定的 OIDC 账户": "Bound OIDC accounts"
+  "已绑定的 OIDC 账户": "Bound OIDC accounts",
+  "使用兑换码充值余额": "Recharge balance with redemption code",
+  "支持多种支付方式": "Support multiple payment methods",
+  "尊敬的": "Dear",
+  "请输入兑换码": "Please enter the redemption code",
+  "在线充值功能未开启": "Online recharge function is not enabled",
+  "管理员未开启在线充值功能，请联系管理员开启或使用兑换码充值。": "The administrator has not enabled the online recharge function, please contact the administrator to enable it or recharge with a redemption code."
 }

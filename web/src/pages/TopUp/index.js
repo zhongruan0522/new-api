@@ -1,34 +1,41 @@
-import React, { useEffect, useState } from 'react';
-import { API, isMobile, showError, showInfo, showSuccess } from '../../helpers';
+import React, { useEffect, useState, useContext } from 'react';
+import { API, showError, showInfo, showSuccess } from '../../helpers';
 import {
-  renderNumber,
   renderQuota,
   renderQuotaWithAmount,
+  stringToColor,
 } from '../../helpers/render';
 import {
-  Col,
   Layout,
-  Row,
   Typography,
   Card,
   Button,
-  Form,
-  Divider,
-  Space,
   Modal,
   Toast,
+  Input,
+  InputNumber,
+  Banner,
+  Skeleton,
 } from '@douyinfe/semi-ui';
-import Title from '@douyinfe/semi-ui/lib/es/typography/title';
-import Text from '@douyinfe/semi-ui/lib/es/typography/text';
-import { Link } from 'react-router-dom';
+import {
+  IconCreditCard,
+  IconGift,
+  IconPlus,
+  IconLink,
+} from '@douyinfe/semi-icons';
+import { SiAlipay, SiWechat } from 'react-icons/si';
 import { useTranslation } from 'react-i18next';
+import { UserContext } from '../../context/User';
+
+const { Text } = Typography;
 
 const TopUp = () => {
   const { t } = useTranslation();
+  const [userState, userDispatch] = useContext(UserContext);
+
   const [redemptionCode, setRedemptionCode] = useState('');
   const [topUpCode, setTopUpCode] = useState('');
   const [topUpCount, setTopUpCount] = useState(0);
-  const [minTopupCount, setMinTopUpCount] = useState(1);
   const [amount, setAmount] = useState(0.0);
   const [minTopUp, setMinTopUp] = useState(1);
   const [topUpLink, setTopUpLink] = useState('');
@@ -37,6 +44,30 @@ const TopUp = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [open, setOpen] = useState(false);
   const [payWay, setPayWay] = useState('');
+  const [userDataLoading, setUserDataLoading] = useState(true);
+  const [amountLoading, setAmountLoading] = useState(false);
+
+  const getUsername = () => {
+    if (userState.user) {
+      return userState.user.username;
+    } else {
+      return 'null';
+    }
+  };
+
+  const getUserRole = () => {
+    if (!userState.user) return t('普通用户');
+
+    switch (userState.user.role) {
+      case 100:
+        return t('超级管理员');
+      case 10:
+        return t('管理员');
+      case 0:
+      default:
+        return t('普通用户');
+    }
+  };
 
   const topUp = async () => {
     if (redemptionCode === '') {
@@ -59,6 +90,13 @@ const TopUp = () => {
         setUserQuota((quota) => {
           return quota + data;
         });
+        if (userState.user) {
+          const updatedUser = {
+            ...userState.user,
+            quota: userState.user.quota + data
+          };
+          userDispatch({ type: 'login', payload: updatedUser });
+        }
         setRedemptionCode('');
       } else {
         showError(message);
@@ -109,14 +147,12 @@ const TopUp = () => {
       });
       if (res !== undefined) {
         const { message, data } = res.data;
-        // showInfo(message);
         if (message === 'success') {
           let params = data;
           let url = res.data.url;
           let form = document.createElement('form');
           form.action = url;
           form.method = 'POST';
-          // 判断是否为safari浏览器
           let isSafari =
             navigator.userAgent.indexOf('Safari') > -1 &&
             navigator.userAgent.indexOf('Chrome') < 1;
@@ -135,26 +171,26 @@ const TopUp = () => {
           document.body.removeChild(form);
         } else {
           showError(data);
-          // setTopUpCount(parseInt(res.data.count));
-          // setAmount(parseInt(data));
         }
       } else {
         showError(res);
       }
     } catch (err) {
       console.log(err);
-    } finally {
     }
   };
 
   const getUserQuota = async () => {
+    setUserDataLoading(true);
     let res = await API.get(`/api/user/self`);
     const { success, message, data } = res.data;
     if (success) {
       setUserQuota(data.quota);
+      userDispatch({ type: 'login', payload: data });
     } else {
       showError(message);
     }
+    setUserDataLoading(false);
   };
 
   useEffect(() => {
@@ -171,11 +207,16 @@ const TopUp = () => {
         setEnableOnlineTopUp(status.enable_online_topup);
       }
     }
-    getUserQuota().then();
+
+    if (userState?.user?.id) {
+      setUserDataLoading(false);
+      setUserQuota(userState.user.quota);
+    } else {
+      getUserQuota().then();
+    }
   }, []);
 
   const renderAmount = () => {
-    // console.log(amount);
     return amount + ' ' + t('元');
   };
 
@@ -183,6 +224,7 @@ const TopUp = () => {
     if (value === undefined) {
       value = topUpCount;
     }
+    setAmountLoading(true);
     try {
       const res = await API.post('/api/user/amount', {
         amount: parseFloat(value),
@@ -190,22 +232,19 @@ const TopUp = () => {
       });
       if (res !== undefined) {
         const { message, data } = res.data;
-        // showInfo(message);
         if (message === 'success') {
           setAmount(parseFloat(data));
         } else {
           setAmount(0);
           Toast.error({ content: '错误：' + data, id: 'getAmount' });
-          // setTopUpCount(parseInt(res.data.count));
-          // setAmount(parseInt(data));
         }
       } else {
         showError(res);
       }
     } catch (err) {
       console.log(err);
-    } finally {
     }
+    setAmountLoading(false);
   };
 
   const handleCancel = () => {
@@ -213,14 +252,16 @@ const TopUp = () => {
   };
 
   return (
-    <div>
+    <div className="min-h-screen bg-gray-50">
       <Layout>
-        <Layout.Header>
-          <h3>{t('我的钱包')}</h3>
-        </Layout.Header>
         <Layout.Content>
           <Modal
-            title={t('确定要充值吗')}
+            title={
+              <div className="flex items-center">
+                <IconGift className="mr-2" />
+                {t('充值确认')}
+              </div>
+            }
             visible={open}
             onOk={onlineTopUp}
             onCancel={handleCancel}
@@ -228,111 +269,295 @@ const TopUp = () => {
             size={'small'}
             centered={true}
           >
-            <p>
-              {t('充值数量')}：{topUpCount}
-            </p>
-            <p>
-              {t('实付金额')}：{renderAmount()}
-            </p>
-            <p>{t('是否确认充值？')}</p>
+            <div className="space-y-3 py-4">
+              <div className="flex justify-between">
+                <Text strong>{t('充值数量')}：</Text>
+                <Text>{topUpCount}</Text>
+              </div>
+              <div className="flex justify-between">
+                <Text strong>{t('实付金额')}：</Text>
+                {amountLoading ? (
+                  <Skeleton.Title style={{ width: '60px', height: '16px' }} />
+                ) : (
+                  <Text type="danger">{renderAmount()}</Text>
+                )}
+              </div>
+            </div>
           </Modal>
-          <div
-            style={{ marginTop: 20, display: 'flex', justifyContent: 'center' }}
-          >
-            <Card style={{ width: '500px', padding: '20px' }}>
-              <Title level={3} style={{ textAlign: 'center' }}>
-                {t('余额')} {renderQuota(userQuota)}
-              </Title>
-              <div style={{ marginTop: 20 }}>
-                <Divider>{t('兑换余额')}</Divider>
-                <Form>
-                  <Form.Input
-                    field={'redemptionCode'}
-                    label={t('兑换码')}
-                    placeholder={t('兑换码')}
-                    name='redemptionCode'
-                    value={redemptionCode}
-                    onChange={(value) => {
-                      setRedemptionCode(value);
-                    }}
-                  />
-                  <Space>
-                    {topUpLink ? (
-                      <Button
-                        type={'primary'}
-                        theme={'solid'}
-                        onClick={openTopUpLink}
+
+          <div className="flex justify-center">
+            <div className="w-full max-w-4xl">
+              <Card className="!rounded-2xl shadow-lg border-0">
+                <Card
+                  className="!rounded-2xl !border-0 !shadow-2xl overflow-hidden"
+                  style={{
+                    background: 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 25%, #2563eb 50%, #3b82f6 75%, #60a5fa 100%)',
+                    position: 'relative'
+                  }}
+                  bodyStyle={{ padding: 0 }}
+                >
+                  <div className="absolute inset-0 overflow-hidden">
+                    <div className="absolute -top-10 -right-10 w-40 h-40 bg-white opacity-5 rounded-full"></div>
+                    <div className="absolute -bottom-16 -left-16 w-48 h-48 bg-white opacity-3 rounded-full"></div>
+                    <div className="absolute top-1/2 right-1/4 w-24 h-24 bg-yellow-400 opacity-10 rounded-full"></div>
+                  </div>
+
+                  <div className="relative p-4 sm:p-6 md:p-8" style={{ color: 'white' }}>
+                    <div className="flex justify-between items-start mb-4 sm:mb-6">
+                      <div className="flex-1 min-w-0">
+                        {userDataLoading ? (
+                          <Skeleton.Title style={{ width: '200px', height: '20px' }} />
+                        ) : (
+                          <div className="text-base sm:text-lg font-semibold truncate" style={{ color: 'white' }}>
+                            {t('尊敬的')} {getUsername()}
+                          </div>
+                        )}
+                      </div>
+                      <div
+                        className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center shadow-lg flex-shrink-0 ml-2"
+                        style={{
+                          background: `linear-gradient(135deg, ${stringToColor(getUsername())} 0%, #f59e0b 100%)`
+                        }}
                       >
-                        {t('获取兑换码')}
-                      </Button>
-                    ) : null}
-                    <Button
-                      type={'warning'}
-                      theme={'solid'}
-                      onClick={topUp}
-                      disabled={isSubmitting}
-                    >
-                      {isSubmitting ? t('兑换中...') : t('兑换')}
-                    </Button>
-                  </Space>
-                </Form>
-              </div>
-              <div style={{ marginTop: 20 }}>
-                <Divider>{t('在线充值')}</Divider>
-                <Form>
-                  <Form.Input
-                    disabled={!enableOnlineTopUp}
-                    field={'redemptionCount'}
-                    label={t('实付金额：') + ' ' + renderAmount()}
-                    placeholder={
-                      t('充值数量，最低 ') + renderQuotaWithAmount(minTopUp)
-                    }
-                    name='redemptionCount'
-                    type={'number'}
-                    value={topUpCount}
-                    onChange={async (value) => {
-                      if (value < 1) {
-                        value = 1;
-                      }
-                      setTopUpCount(value);
-                      await getAmount(value);
-                    }}
-                  />
-                  <Space>
-                    <Button
-                      type={'primary'}
-                      theme={'solid'}
-                      onClick={async () => {
-                        preTopUp('zfb');
-                      }}
-                    >
-                      {t('支付宝')}
-                    </Button>
-                    <Button
-                      style={{
-                        backgroundColor: 'rgba(var(--semi-green-5), 1)',
-                      }}
-                      type={'primary'}
-                      theme={'solid'}
-                      onClick={async () => {
-                        preTopUp('wx');
-                      }}
-                    >
-                      {t('微信')}
-                    </Button>
-                  </Space>
-                </Form>
-              </div>
-              {/*<div style={{ display: 'flex', justifyContent: 'right' }}>*/}
-              {/*    <Text>*/}
-              {/*        <Link onClick={*/}
-              {/*            async () => {*/}
-              {/*                window.location.href = '/topup/history'*/}
-              {/*            }*/}
-              {/*        }>充值记录</Link>*/}
-              {/*    </Text>*/}
-              {/*</div>*/}
-            </Card>
+                        <IconCreditCard size="default" style={{ color: 'white' }} />
+                      </div>
+                    </div>
+
+                    <div className="mb-4 sm:mb-6">
+                      <div className="text-xs sm:text-sm mb-1 sm:mb-2" style={{ color: 'rgba(255, 255, 255, 0.7)' }}>
+                        {t('当前余额')}
+                      </div>
+                      {userDataLoading ? (
+                        <Skeleton.Title style={{ width: '180px', height: '32px' }} />
+                      ) : (
+                        <div className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-wide" style={{ color: 'white' }}>
+                          {renderQuota(userState?.user?.quota || userQuota)}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end">
+                      <div className="grid grid-cols-3 gap-2 sm:flex sm:space-x-6 lg:space-x-8 mb-3 sm:mb-0">
+                        <div className="text-center sm:text-left">
+                          <div className="text-xs" style={{ color: 'rgba(255, 255, 255, 0.6)' }}>
+                            {t('历史消耗')}
+                          </div>
+                          {userDataLoading ? (
+                            <Skeleton.Title style={{ width: '60px', height: '14px' }} />
+                          ) : (
+                            <div className="text-xs sm:text-sm font-medium truncate" style={{ color: 'white' }}>
+                              {renderQuota(userState?.user?.used_quota || 0)}
+                            </div>
+                          )}
+                        </div>
+                        <div className="text-center sm:text-left">
+                          <div className="text-xs" style={{ color: 'rgba(255, 255, 255, 0.6)' }}>
+                            {t('用户分组')}
+                          </div>
+                          {userDataLoading ? (
+                            <Skeleton.Title style={{ width: '50px', height: '14px' }} />
+                          ) : (
+                            <div className="text-xs sm:text-sm font-medium truncate" style={{ color: 'white' }}>
+                              {userState?.user?.group || t('默认')}
+                            </div>
+                          )}
+                        </div>
+                        <div className="text-center sm:text-left">
+                          <div className="text-xs" style={{ color: 'rgba(255, 255, 255, 0.6)' }}>
+                            {t('用户角色')}
+                          </div>
+                          {userDataLoading ? (
+                            <Skeleton.Title style={{ width: '60px', height: '14px' }} />
+                          ) : (
+                            <div className="text-xs sm:text-sm font-medium truncate" style={{ color: 'white' }}>
+                              {getUserRole()}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="self-end sm:self-auto">
+                        {userDataLoading ? (
+                          <Skeleton.Title style={{ width: '50px', height: '24px' }} />
+                        ) : (
+                          <div
+                            className="px-2 py-1 sm:px-3 rounded-md text-xs sm:text-sm font-medium inline-block"
+                            style={{
+                              backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                              color: 'white',
+                              backdropFilter: 'blur(10px)'
+                            }}
+                          >
+                            ID: {userState?.user?.id || '---'}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-yellow-400 via-orange-400 to-red-400" style={{ opacity: 0.6 }}></div>
+                  </div>
+                </Card>
+
+                <div className="p-6">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div>
+                      <div className="flex items-center mb-6">
+                        <div className="w-12 h-12 rounded-full bg-green-50 flex items-center justify-center mr-4">
+                          <IconGift size="large" className="text-green-500" />
+                        </div>
+                        <div>
+                          <Text className="text-xl font-semibold">{t('兑换余额')}</Text>
+                          <div className="text-gray-500 text-sm">{t('使用兑换码充值余额')}</div>
+                        </div>
+                      </div>
+
+                      <div className="space-y-4">
+                        <div>
+                          <Text strong className="block mb-2">{t('兑换码')}</Text>
+                          <Input
+                            placeholder={t('请输入兑换码')}
+                            value={redemptionCode}
+                            onChange={(value) => setRedemptionCode(value)}
+                            size="large"
+                            className="!rounded-lg"
+                            prefix={<IconGift />}
+                          />
+                        </div>
+
+                        <div className="flex flex-col sm:flex-row gap-3">
+                          {topUpLink && (
+                            <Button
+                              type="primary"
+                              theme="solid"
+                              onClick={openTopUpLink}
+                              size="large"
+                              className="!rounded-lg flex-1"
+                              icon={<IconLink />}
+                            >
+                              {t('获取兑换码')}
+                            </Button>
+                          )}
+                          <Button
+                            type="warning"
+                            theme="solid"
+                            onClick={topUp}
+                            disabled={isSubmitting}
+                            loading={isSubmitting}
+                            size="large"
+                            className="!rounded-lg flex-1"
+                          >
+                            {isSubmitting ? t('兑换中...') : t('兑换')}
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="flex items-center mb-6">
+                        <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center mr-4">
+                          <IconPlus size="large" className="text-blue-500" />
+                        </div>
+                        <div>
+                          <Text className="text-xl font-semibold">{t('在线充值')}</Text>
+                          <div className="text-gray-500 text-sm">{t('支持多种支付方式')}</div>
+                        </div>
+                      </div>
+
+                      <div className="space-y-4">
+                        <div>
+                          <div className="flex justify-between mb-2">
+                            <Text strong>{t('充值数量')}</Text>
+                            {amountLoading ? (
+                              <Skeleton.Title style={{ width: '80px', height: '14px' }} />
+                            ) : (
+                              <Text type="tertiary">{t('实付金额：') + ' ' + renderAmount()}</Text>
+                            )}
+                          </div>
+                          <InputNumber
+                            disabled={!enableOnlineTopUp}
+                            placeholder={
+                              t('充值数量，最低 ') + renderQuotaWithAmount(minTopUp)
+                            }
+                            value={topUpCount}
+                            min={1}
+                            max={999999999}
+                            step={1}
+                            precision={0}
+                            onChange={async (value) => {
+                              if (value && value >= 1) {
+                                setTopUpCount(value);
+                                await getAmount(value);
+                              }
+                            }}
+                            onBlur={(e) => {
+                              const value = parseInt(e.target.value);
+                              if (!value || value < 1) {
+                                setTopUpCount(1);
+                                getAmount(1);
+                              }
+                            }}
+                            size="large"
+                            className="!rounded-lg w-full"
+                            prefix={<IconCreditCard />}
+                            formatter={(value) => value ? `${value}` : ''}
+                            parser={(value) => value ? parseInt(value.replace(/[^\d]/g, '')) : 0}
+                          />
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <Button
+                            type="primary"
+                            theme="solid"
+                            onClick={async () => {
+                              preTopUp('zfb');
+                            }}
+                            size="large"
+                            className="!rounded-lg !bg-blue-500 hover:!bg-blue-600 h-14"
+                            disabled={!enableOnlineTopUp}
+                            icon={<SiAlipay size={20} />}
+                          >
+                            <span className="ml-2">{t('支付宝')}</span>
+                          </Button>
+                          <Button
+                            type="primary"
+                            theme="solid"
+                            onClick={async () => {
+                              preTopUp('wx');
+                            }}
+                            size="large"
+                            className="!rounded-lg !bg-green-500 hover:!bg-green-600 h-14"
+                            disabled={!enableOnlineTopUp}
+                            icon={<SiWechat size={20} />}
+                          >
+                            <span className="ml-2">{t('微信')}</span>
+                          </Button>
+                        </div>
+
+                        {!enableOnlineTopUp && (
+                          <Banner
+                            fullMode={false}
+                            type="warning"
+                            icon={null}
+                            closeIcon={null}
+                            className="!rounded-lg"
+                            title={
+                              <div style={{ fontWeight: 600, fontSize: '14px', lineHeight: '20px' }}>
+                                {t('在线充值功能未开启')}
+                              </div>
+                            }
+                            description={
+                              <div>
+                                {t('管理员未开启在线充值功能，请联系管理员开启或使用兑换码充值。')}
+                              </div>
+                            }
+                          />
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            </div>
           </div>
         </Layout.Content>
       </Layout>
