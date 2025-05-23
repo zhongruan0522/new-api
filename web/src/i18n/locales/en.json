@@ -1171,8 +1171,7 @@
   "当前查看的分组为：{{group}}，倍率为：{{ratio}}": "Current group: {{group}}, ratio: {{ratio}}",
   "添加用户": "Add user",
   "角色": "Role",
-  "已绑定的GitHub账户": "已绑定的GitHub账户",
-  "已绑定的Telegram账户": "已绑定的Telegram账户",
+  "已绑定的 Telegram 账户": "Bound Telegram account",
   "新额度": "New quota",
   "需要添加的额度（支持负数）": "Need to add quota (supports negative numbers)",
   "此项只读，需要用户通过个人设置页面的相关绑定按钮进行绑定，不可直接修改": "Read-only, user's personal settings, and cannot be modified directly",
@@ -1441,5 +1440,14 @@
   "收益": "Earnings",
   "无邀请人": "No Inviter",
   "邀请人": "Inviter",
-  "用户管理页面，可以查看和管理所有注册用户的信息、权限和状态。": "User management page, you can view and manage all registered user information, permissions, and status."
+  "用户管理页面，可以查看和管理所有注册用户的信息、权限和状态。": "User management page, you can view and manage all registered user information, permissions, and status.",
+  "设置兑换码的基本信息": "Set redemption code basic information",
+  "设置兑换码的额度和数量": "Set redemption code quota and quantity",
+  "编辑用户": "Edit User",
+  "权限设置": "Permission Settings",
+  "用户的基本账户信息": "User basic account information",
+  "用户分组和额度管理": "User Group and Quota Management",
+  "绑定信息": "Binding Information",
+  "第三方账户绑定状态（只读）": "Third-party account binding status (read-only)",
+  "已绑定的 OIDC 账户": "Bound OIDC accounts"
 }
