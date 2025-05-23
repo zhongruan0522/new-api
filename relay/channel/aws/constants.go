@@ -43,6 +43,16 @@ var awsModelCanCrossRegionMap = map[string]map[string]bool{
 	},
 	"anthropic.claude-3-7-sonnet-20250219-v1:0": {
 		"us": true,
+		"ap": true,
+		"eu": true,
+	},
+	"apac.anthropic.claude-sonnet-4-20250514-v1:0": {
+		"us": true,
+		"ap": true,
+		"eu": true,
+	},
+	"anthropic.claude-opus-4-20250514-v1:0": {
+		"us": true,
 	},
 }
 
