@@ -46,6 +46,8 @@ const TopUp = () => {
   const [payWay, setPayWay] = useState('');
   const [userDataLoading, setUserDataLoading] = useState(true);
   const [amountLoading, setAmountLoading] = useState(false);
+  const [paymentLoading, setPaymentLoading] = useState(false);
+  const [confirmLoading, setConfirmLoading] = useState(false);
 
   const getUsername = () => {
     if (userState.user) {
@@ -121,13 +123,20 @@ const TopUp = () => {
       showError(t('管理员未开启在线充值！'));
       return;
     }
-    await getAmount();
-    if (topUpCount < minTopUp) {
-      showError(t('充值数量不能小于') + minTopUp);
-      return;
+    setPaymentLoading(true);
+    try {
+      await getAmount();
+      if (topUpCount < minTopUp) {
+        showError(t('充值数量不能小于') + minTopUp);
+        return;
+      }
+      setPayWay(payment);
+      setOpen(true);
+    } catch (error) {
+      showError(t('获取金额失败'));
+    } finally {
+      setPaymentLoading(false);
     }
-    setPayWay(payment);
-    setOpen(true);
   };
 
   const onlineTopUp = async () => {
@@ -138,6 +147,7 @@ const TopUp = () => {
       showError('充值数量不能小于' + minTopUp);
       return;
     }
+    setConfirmLoading(true);
     setOpen(false);
     try {
       const res = await API.post('/api/user/pay', {
@@ -177,6 +187,9 @@ const TopUp = () => {
       }
     } catch (err) {
       console.log(err);
+      showError(t('支付请求失败'));
+    } finally {
+      setConfirmLoading(false);
     }
   };
 
@@ -268,6 +281,7 @@ const TopUp = () => {
             maskClosable={false}
             size={'small'}
             centered={true}
+            confirmLoading={confirmLoading}
           >
             <div className="space-y-3 py-4">
               <div className="flex justify-between">
@@ -514,6 +528,7 @@ const TopUp = () => {
                             size="large"
                             className="!rounded-lg !bg-blue-500 hover:!bg-blue-600 h-14"
                             disabled={!enableOnlineTopUp}
+                            loading={paymentLoading}
                             icon={<SiAlipay size={20} />}
                           >
                             <span className="ml-2">{t('支付宝')}</span>
@@ -527,6 +542,7 @@ const TopUp = () => {
                             size="large"
                             className="!rounded-lg !bg-green-500 hover:!bg-green-600 h-14"
                             disabled={!enableOnlineTopUp}
+                            loading={paymentLoading}
                             icon={<SiWechat size={20} />}
                           >
                             <span className="ml-2">{t('微信')}</span>
