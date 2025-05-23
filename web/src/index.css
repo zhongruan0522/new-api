@@ -329,3 +329,7 @@ code {
 /*  -moz-box-shadow: 0 1px 6px rgba(0, 0, 0, 0.08) !important;*/
 /*  min-height: 100%;*/
 /*}*/
+
+.semi-datepicker-range-input {
+  border-radius: 9999px;
+}

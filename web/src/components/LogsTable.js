@@ -14,8 +14,6 @@ import {
   Avatar,
   Button,
   Descriptions,
-  Form,
-  Layout,
   Modal,
   Popover,
   Select,
@@ -25,6 +23,11 @@ import {
   Tag,
   Tooltip,
   Checkbox,
+  Card,
+  Typography,
+  Divider,
+  Input,
+  DatePicker,
 } from '@douyinfe/semi-ui';
 import { ITEMS_PER_PAGE } from '../constants';
 import {
@@ -43,9 +46,14 @@ import {
 import Paragraph from '@douyinfe/semi-ui/lib/es/typography/paragraph';
 import { getLogOther } from '../helpers/other.js';
 import { StyleContext } from '../context/Style/index.js';
-import { IconInherit, IconRefresh, IconSetting } from '@douyinfe/semi-icons';
+import {
+  IconRefresh,
+  IconSetting,
+  IconEyeOpened,
+  IconSearch,
+} from '@douyinfe/semi-icons';
 
-const { Header } = Layout;
+const { Text } = Typography;
 
 function renderTimestamp(timestamp) {
   return <>{timestamp2string(timestamp)}</>;
@@ -81,37 +89,37 @@ const LogsTable = () => {
     switch (type) {
       case 1:
         return (
-          <Tag color='cyan' size='large'>
+          <Tag color='cyan' size='large' shape='circle'>
             {t('充值')}
           </Tag>
         );
       case 2:
         return (
-          <Tag color='lime' size='large'>
+          <Tag color='lime' size='large' shape='circle'>
             {t('消费')}
           </Tag>
         );
       case 3:
         return (
-          <Tag color='orange' size='large'>
+          <Tag color='orange' size='large' shape='circle'>
             {t('管理')}
           </Tag>
         );
       case 4:
         return (
-          <Tag color='purple' size='large'>
+          <Tag color='purple' size='large' shape='circle'>
             {t('系统')}
           </Tag>
         );
       case 5:
         return (
-          <Tag color='red' size='large'>
+          <Tag color='red' size='large' shape='circle'>
             {t('错误')}
           </Tag>
         );
       default:
         return (
-          <Tag color='grey' size='large'>
+          <Tag color='grey' size='large' shape='circle'>
             {t('未知')}
           </Tag>
         );
@@ -121,13 +129,13 @@ const LogsTable = () => {
   function renderIsStream(bool) {
     if (bool) {
       return (
-        <Tag color='blue' size='large'>
+        <Tag color='blue' size='large' shape='circle'>
           {t('流')}
         </Tag>
       );
     } else {
       return (
-        <Tag color='purple' size='large'>
+        <Tag color='purple' size='large' shape='circle'>
           {t('非流')}
         </Tag>
       );
@@ -138,21 +146,21 @@ const LogsTable = () => {
     const time = parseInt(type);
     if (time < 101) {
       return (
-        <Tag color='green' size='large'>
+        <Tag color='green' size='large' shape='circle'>
           {' '}
           {time} s{' '}
         </Tag>
       );
     } else if (time < 300) {
       return (
-        <Tag color='orange' size='large'>
+        <Tag color='orange' size='large' shape='circle'>
           {' '}
           {time} s{' '}
         </Tag>
       );
     } else {
       return (
-        <Tag color='red' size='large'>
+        <Tag color='red' size='large' shape='circle'>
           {' '}
           {time} s{' '}
         </Tag>
@@ -165,21 +173,21 @@ const LogsTable = () => {
     time = time.toFixed(1);
     if (time < 3) {
       return (
-        <Tag color='green' size='large'>
+        <Tag color='green' size='large' shape='circle'>
           {' '}
           {time} s{' '}
         </Tag>
       );
     } else if (time < 10) {
       return (
-        <Tag color='orange' size='large'>
+        <Tag color='orange' size='large' shape='circle'>
           {' '}
           {time} s{' '}
         </Tag>
       );
     } else {
       return (
-        <Tag color='red' size='large'>
+        <Tag color='red' size='large' shape='circle'>
           {' '}
           {time} s{' '}
         </Tag>
@@ -198,8 +206,9 @@ const LogsTable = () => {
         <Tag
           color={stringToColor(record.model_name)}
           size='large'
+          shape='circle'
           onClick={(event) => {
-            copyText(event, record.model_name).then((r) => {});
+            copyText(event, record.model_name).then((r) => { });
           }}
         >
           {' '}
@@ -217,8 +226,9 @@ const LogsTable = () => {
                     <Tag
                       color={stringToColor(record.model_name)}
                       size='large'
+                      shape='circle'
                       onClick={(event) => {
-                        copyText(event, record.model_name).then((r) => {});
+                        copyText(event, record.model_name).then((r) => { });
                       }}
                     >
                       {t('请求并计费模型')} {record.model_name}{' '}
@@ -226,9 +236,10 @@ const LogsTable = () => {
                     <Tag
                       color={stringToColor(other.upstream_model_name)}
                       size='large'
+                      shape='circle'
                       onClick={(event) => {
                         copyText(event, other.upstream_model_name).then(
-                          (r) => {},
+                          (r) => { },
                         );
                       }}
                     >
@@ -241,8 +252,9 @@ const LogsTable = () => {
               <Tag
                 color={stringToColor(record.model_name)}
                 size='large'
+                shape='circle'
                 onClick={(event) => {
-                  copyText(event, record.model_name).then((r) => {});
+                  copyText(event, record.model_name).then((r) => { });
                 }}
                 suffixIcon={
                   <IconRefresh
@@ -254,17 +266,6 @@ const LogsTable = () => {
                 {record.model_name}{' '}
               </Tag>
             </Popover>
-            {/*<Tooltip content={t('实际模型')}>*/}
-            {/*  <Tag*/}
-            {/*    color={stringToColor(other.upstream_model_name)}*/}
-            {/*    size='large'*/}
-            {/*    onClick={(event) => {*/}
-            {/*      copyText(event, other.upstream_model_name).then(r => {});*/}
-            {/*    }}*/}
-            {/*  >*/}
-            {/*    {' '}{other.upstream_model_name}{' '}*/}
-            {/*  </Tag>*/}
-            {/*</Tooltip>*/}
           </Space>
         </>
       );
@@ -386,6 +387,7 @@ const LogsTable = () => {
                   <Tag
                     color={colors[parseInt(text) % colors.length]}
                     size='large'
+                    shape='circle'
                   >
                     {' '}
                     {text}{' '}
@@ -437,6 +439,7 @@ const LogsTable = () => {
             <Tag
               color='grey'
               size='large'
+              shape='circle'
               onClick={(event) => {
                 //cancel the row click event
                 copyText(event, text);
@@ -620,21 +623,21 @@ const LogsTable = () => {
         }
         let content = other?.claude
           ? renderClaudeModelPriceSimple(
-              other.model_ratio,
-              other.model_price,
-              other.group_ratio,
-              other.cache_tokens || 0,
-              other.cache_ratio || 1.0,
-              other.cache_creation_tokens || 0,
-              other.cache_creation_ratio || 1.0,
-            )
+            other.model_ratio,
+            other.model_price,
+            other.group_ratio,
+            other.cache_tokens || 0,
+            other.cache_ratio || 1.0,
+            other.cache_creation_tokens || 0,
+            other.cache_creation_ratio || 1.0,
+          )
           : renderModelPriceSimple(
-              other.model_ratio,
-              other.model_price,
-              other.group_ratio,
-              other.cache_tokens || 0,
-              other.cache_ratio || 1.0,
-            );
+            other.model_ratio,
+            other.model_price,
+            other.group_ratio,
+            other.cache_tokens || 0,
+            other.cache_ratio || 1.0,
+          );
         return (
           <Paragraph
             ellipsis={{
@@ -673,15 +676,29 @@ const LogsTable = () => {
         visible={showColumnSelector}
         onCancel={() => setShowColumnSelector(false)}
         footer={
-          <>
-            <Button onClick={() => initDefaultColumns()}>{t('重置')}</Button>
-            <Button onClick={() => setShowColumnSelector(false)}>
+          <div className="flex justify-end">
+            <Button
+              theme="light"
+              onClick={() => initDefaultColumns()}
+              className="!rounded-full"
+            >
+              {t('重置')}
+            </Button>
+            <Button
+              theme="light"
+              onClick={() => setShowColumnSelector(false)}
+              className="!rounded-full"
+            >
               {t('取消')}
             </Button>
-            <Button type='primary' onClick={() => setShowColumnSelector(false)}>
+            <Button
+              type='primary'
+              onClick={() => setShowColumnSelector(false)}
+              className="!rounded-full"
+            >
               {t('确定')}
             </Button>
-          </>
+          </div>
         }
       >
         <div style={{ marginBottom: 20 }}>
@@ -697,15 +714,7 @@ const LogsTable = () => {
           </Checkbox>
         </div>
         <div
-          style={{
-            display: 'flex',
-            flexWrap: 'wrap',
-            maxHeight: '400px',
-            overflowY: 'auto',
-            border: '1px solid var(--semi-color-border)',
-            borderRadius: '6px',
-            padding: '16px',
-          }}
+          className="flex flex-wrap max-h-96 overflow-y-auto rounded-lg p-4"
         >
           {allColumns.map((column) => {
             // Skip admin-only columns for non-admin users
@@ -721,7 +730,7 @@ const LogsTable = () => {
             return (
               <div
                 key={column.key}
-                style={{ width: '50%', marginBottom: 16, paddingRight: 8 }}
+                className="w-1/2 mb-4 pr-2"
               >
                 <Checkbox
                   checked={!!visibleColumns[column.key]}
@@ -921,27 +930,27 @@ const LogsTable = () => {
           key: t('日志详情'),
           value: other?.claude
             ? renderClaudeLogContent(
-                other?.model_ratio,
-                other.completion_ratio,
-                other.model_price,
-                other.group_ratio,
-                other.cache_ratio || 1.0,
-                other.cache_creation_ratio || 1.0,
-              )
+              other?.model_ratio,
+              other.completion_ratio,
+              other.model_price,
+              other.group_ratio,
+              other.cache_ratio || 1.0,
+              other.cache_creation_ratio || 1.0,
+            )
             : renderLogContent(
-                other?.model_ratio,
-                other.completion_ratio,
-                other.model_price,
-                other.group_ratio,
-                other?.user_group_ratio,
-                false,
-                1.0,
-                undefined,
-                other.web_search || false,
-                other.web_search_call_count || 0,
-                other.file_search || false,
-                other.file_search_call_count || 0,
-              ),
+              other?.model_ratio,
+              other.completion_ratio,
+              other.model_price,
+              other.group_ratio,
+              other?.user_group_ratio,
+              false,
+              1.0,
+              undefined,
+              other.web_search || false,
+              other.web_search_call_count || 0,
+              other.file_search || false,
+              other.file_search_call_count || 0,
+            ),
         });
       }
       if (logs[i].type === 2) {
@@ -1056,7 +1065,7 @@ const LogsTable = () => {
 
   const handlePageChange = (page) => {
     setActivePage(page);
-    loadLogs(page, pageSize, logType).then((r) => {});
+    loadLogs(page, pageSize, logType).then((r) => { });
   };
 
   const handlePageSizeChange = async (size) => {
@@ -1104,86 +1113,56 @@ const LogsTable = () => {
   return (
     <>
       {renderColumnSelector()}
-      <Layout>
-        <Header>
-          <Spin spinning={loadingStat}>
-            <Space>
-              <Tag
-                color='blue'
-                size='large'
-                style={{
-                  padding: 15,
-                  borderRadius: '8px',
-                  fontWeight: 500,
-                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
-                }}
-              >
-                {t('消耗额度')}: {renderQuota(stat.quota)}
-              </Tag>
-              <Tag
-                color='pink'
-                size='large'
-                style={{
-                  padding: 15,
-                  borderRadius: '8px',
-                  fontWeight: 500,
-                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
-                }}
-              >
-                RPM: {stat.rpm}
-              </Tag>
-              <Tag
-                color='white'
-                size='large'
-                style={{
-                  padding: 15,
-                  border: 'none',
-                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
-                  borderRadius: '8px',
-                  fontWeight: 500,
-                }}
-              >
-                TPM: {stat.tpm}
-              </Tag>
-            </Space>
-          </Spin>
-        </Header>
-        <Form layout='horizontal' style={{ marginTop: 10 }}>
-          <>
-            <Form.Section>
-              <div style={{ marginBottom: 10 }}>
-                {styleState.isMobile ? (
-                  <div>
-                    <Form.DatePicker
-                      field='start_timestamp'
-                      label={t('起始时间')}
-                      style={{ width: 272 }}
-                      initValue={start_timestamp}
-                      type='dateTime'
-                      onChange={(value) => {
-                        console.log(value);
-                        handleInputChange(value, 'start_timestamp');
-                      }}
-                    />
-                    <Form.DatePicker
-                      field='end_timestamp'
-                      fluid
-                      label={t('结束时间')}
-                      style={{ width: 272 }}
-                      initValue={end_timestamp}
-                      type='dateTime'
-                      onChange={(value) =>
-                        handleInputChange(value, 'end_timestamp')
-                      }
-                    />
+      <Card
+        className="!rounded-2xl overflow-hidden mb-4"
+        title={
+          <div className="flex flex-col w-full">
+            <div className="flex flex-col md:flex-row justify-between items-center">
+              <div className="flex items-center text-orange-500 mb-2 md:mb-0">
+                <IconEyeOpened className="mr-2" />
+                <Text>{t('日志记录帮助您了解使用情况和排查问题')}</Text>
+              </div>
+
+              <Spin spinning={loadingStat}>
+                <div className="flex flex-wrap gap-4">
+                  <div className="flex items-center">
+                    <span className="text-xl mr-2">💰</span>
+                    <div>
+                      <Text type="tertiary" size="small">{t('消耗额度')}</Text>
+                      <div className="font-medium">{renderQuota(stat.quota)}</div>
+                    </div>
                   </div>
-                ) : (
-                  <Form.DatePicker
-                    field='range_timestamp'
-                    label={t('时间范围')}
-                    initValue={[start_timestamp, end_timestamp]}
+
+                  <div className="flex items-center">
+                    <span className="text-xl mr-2">📊</span>
+                    <div>
+                      <Text type="tertiary" size="small">RPM</Text>
+                      <div className="font-medium">{stat.rpm || 0}</div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center">
+                    <span className="text-xl mr-2">⚡</span>
+                    <div>
+                      <Text type="tertiary" size="small">TPM</Text>
+                      <div className="font-medium">{stat.tpm || 0}</div>
+                    </div>
+                  </div>
+                </div>
+              </Spin>
+            </div>
+
+            <Divider margin="12px" />
+
+            {/* 搜索表单区域 */}
+            <div className="flex flex-col gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* 时间选择器 */}
+                <div className="col-span-1 lg:col-span-2">
+                  <DatePicker
+                    className="w-full"
+                    value={[start_timestamp, end_timestamp]}
                     type='dateTimeRange'
-                    name='range_timestamp'
                     onChange={(value) => {
                       if (Array.isArray(value) && value.length === 2) {
                         handleInputChange(value[0], 'start_timestamp');
@@ -1191,100 +1170,113 @@ const LogsTable = () => {
                       }
                     }}
                   />
+                </div>
+
+                {/* 日志类型选择器 */}
+                <Select
+                  value={logType.toString()}
+                  placeholder={t('日志类型')}
+                  className="!rounded-full"
+                  onChange={(value) => {
+                    setLogType(parseInt(value));
+                    loadLogs(0, pageSize, parseInt(value));
+                  }}
+                >
+                  <Select.Option value='0'>{t('全部')}</Select.Option>
+                  <Select.Option value='1'>{t('充值')}</Select.Option>
+                  <Select.Option value='2'>{t('消费')}</Select.Option>
+                  <Select.Option value='3'>{t('管理')}</Select.Option>
+                  <Select.Option value='4'>{t('系统')}</Select.Option>
+                  <Select.Option value='5'>{t('错误')}</Select.Option>
+                </Select>
+
+                {/* 其他搜索字段 */}
+                <Input
+                  prefix={<IconSearch />}
+                  placeholder={t('令牌名称')}
+                  value={token_name}
+                  onChange={(value) => handleInputChange(value, 'token_name')}
+                  className="!rounded-full"
+                  showClear
+                />
+
+                <Input
+                  prefix={<IconSearch />}
+                  placeholder={t('模型名称')}
+                  value={model_name}
+                  onChange={(value) => handleInputChange(value, 'model_name')}
+                  className="!rounded-full"
+                  showClear
+                />
+
+                <Input
+                  prefix={<IconSearch />}
+                  placeholder={t('分组')}
+                  value={group}
+                  onChange={(value) => handleInputChange(value, 'group')}
+                  className="!rounded-full"
+                  showClear
+                />
+
+                {isAdminUser && (
+                  <>
+                    <Input
+                      prefix={<IconSearch />}
+                      placeholder={t('渠道 ID')}
+                      value={channel}
+                      onChange={(value) => handleInputChange(value, 'channel')}
+                      className="!rounded-full"
+                      showClear
+                    />
+                    <Input
+                      prefix={<IconSearch />}
+                      placeholder={t('用户名称')}
+                      value={username}
+                      onChange={(value) => handleInputChange(value, 'username')}
+                      className="!rounded-full"
+                      showClear
+                    />
+                  </>
                 )}
               </div>
-            </Form.Section>
-            <Form.Input
-              field='token_name'
-              label={t('令牌名称')}
-              value={token_name}
-              placeholder={t('可选值')}
-              name='token_name'
-              onChange={(value) => handleInputChange(value, 'token_name')}
-            />
-            <Form.Input
-              field='model_name'
-              label={t('模型名称')}
-              value={model_name}
-              placeholder={t('可选值')}
-              name='model_name'
-              onChange={(value) => handleInputChange(value, 'model_name')}
-            />
-            <Form.Input
-              field='group'
-              label={t('分组')}
-              value={group}
-              placeholder={t('可选值')}
-              name='group'
-              onChange={(value) => handleInputChange(value, 'group')}
-            />
-            {isAdminUser && (
-              <>
-                <Form.Input
-                  field='channel'
-                  label={t('渠道 ID')}
-                  value={channel}
-                  placeholder={t('可选值')}
-                  name='channel'
-                  onChange={(value) => handleInputChange(value, 'channel')}
-                />
-                <Form.Input
-                  field='username'
-                  label={t('用户名称')}
-                  value={username}
-                  placeholder={t('可选值')}
-                  name='username'
-                  onChange={(value) => handleInputChange(value, 'username')}
-                />
-              </>
-            )}
-            <Button
-              label={t('查询')}
-              type='primary'
-              htmlType='submit'
-              className='btn-margin-right'
-              onClick={refresh}
-              loading={loading}
-              style={{ marginTop: 24 }}
-            >
-              {t('查询')}
-            </Button>
-            <Form.Section></Form.Section>
-          </>
-        </Form>
-        <div style={{ marginTop: 10 }}>
-          <Select
-            defaultValue='0'
-            style={{ width: 120 }}
-            onChange={(value) => {
-              setLogType(parseInt(value));
-              loadLogs(0, pageSize, parseInt(value));
-            }}
-          >
-            <Select.Option value='0'>{t('全部')}</Select.Option>
-            <Select.Option value='1'>{t('充值')}</Select.Option>
-            <Select.Option value='2'>{t('消费')}</Select.Option>
-            <Select.Option value='3'>{t('管理')}</Select.Option>
-            <Select.Option value='4'>{t('系统')}</Select.Option>
-            <Select.Option value='5'>{t('错误')}</Select.Option>
-          </Select>
-          <Button
-            theme='light'
-            type='tertiary'
-            icon={<IconSetting />}
-            onClick={() => setShowColumnSelector(true)}
-            style={{ marginLeft: 8 }}
-          >
-            {t('列设置')}
-          </Button>
-        </div>
+
+              {/* 操作按钮区域 */}
+              <div className="flex justify-between items-center pt-2">
+                <div></div>
+                <div className="flex gap-2">
+                  <Button
+                    type='primary'
+                    onClick={refresh}
+                    loading={loading}
+                    className="!rounded-full"
+                  >
+                    {t('查询')}
+                  </Button>
+                  <Button
+                    theme='light'
+                    type='tertiary'
+                    icon={<IconSetting />}
+                    onClick={() => setShowColumnSelector(true)}
+                    className="!rounded-full"
+                  >
+                    {t('列设置')}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        }
+        shadows='hover'
+      >
         <Table
-          style={{ marginTop: 5 }}
           columns={getVisibleColumns()}
           expandedRowRender={expandRowRender}
           expandRowByClick={true}
           dataSource={logs}
           rowKey='key'
+          loading={loading}
+          className="rounded-xl overflow-hidden"
+          size="middle"
           pagination={{
             formatPageText: (page) =>
               t('第 {{start}} - {{end}} 条，共 {{total}} 条', {
@@ -1295,7 +1287,7 @@ const LogsTable = () => {
             currentPage: activePage,
             pageSize: pageSize,
             total: logCount,
-            pageSizeOpts: [10, 20, 50, 100],
+            pageSizeOptions: [10, 20, 50, 100],
             showSizeChanger: true,
             onPageSizeChange: (size) => {
               handlePageSizeChange(size);
@@ -1303,7 +1295,7 @@ const LogsTable = () => {
             onPageChange: handlePageChange,
           }}
         />
-      </Layout>
+      </Card>
     </>
   );
 };
