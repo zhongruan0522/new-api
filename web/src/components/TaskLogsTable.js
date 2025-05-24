@@ -573,7 +573,7 @@ const LogsTable = () => {
             {t('全选')}
           </Checkbox>
         </div>
-        <div className="flex flex-wrap max-h-96 overflow-y-auto rounded-lg p-4">
+        <div className="flex flex-wrap max-h-96 overflow-y-auto rounded-lg p-4" style={{ border: '1px solid var(--semi-color-border)' }}>
           {allColumns.map((column) => {
             // 为非管理员用户跳过管理员专用列
             if (!isAdminUser && column.key === COLUMN_KEYS.CHANNEL) {

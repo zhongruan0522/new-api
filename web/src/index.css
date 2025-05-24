@@ -1,10 +1,13 @@
-@layer tailwind-base,semi,tailwind-components,tailwind-utils;
-@layer tailwind-base{
+@layer tailwind-base, semi, tailwind-components, tailwind-utils;
+
+@layer tailwind-base {
   @tailwind base;
 }
-@layer tailwind-components{
+
+@layer tailwind-components {
   @tailwind components;
 }
+
 @layer tailwind-utils {
   @tailwind utilities;
 }
@@ -29,20 +32,7 @@ body {
   overflow: hidden;
 }
 
-#root
-  > section
-  > header
-  > section
-  > div
-  > div
-  > div
-  > div.semi-navigation-header-list-outer
-  > div.semi-navigation-list-wrapper
-  > ul
-  > div
-  > a
-  > li
-  > span {
+#root>section>header>section>div>div>div>div.semi-navigation-header-list-outer>div.semi-navigation-list-wrapper>ul>div>a>li>span {
   font-weight: 600 !important;
 }
 
@@ -51,6 +41,7 @@ body {
 }
 
 @media only screen and (max-width: 767px) {
+
   /*.semi-navigation-sub-wrap .semi-navigation-sub-title, .semi-navigation-item {*/
   /*  padding: 0 0;*/
   /*}*/
@@ -68,64 +59,24 @@ body {
     overflow-x: auto;
     scrollbar-width: none;
   }
-  #root
-    > section
-    > header
-    > section
-    > div
-    > div
-    > div
-    > div.semi-navigation-footer
-    > div
-    > a
-    > li {
+
+  #root>section>header>section>div>div>div>div.semi-navigation-footer>div>a>li {
     padding: 0 0;
   }
-  #root
-    > section
-    > header
-    > section
-    > div
-    > div
-    > div
-    > div.semi-navigation-header-list-outer
-    > div.semi-navigation-list-wrapper
-    > ul
-    > div
-    > a
-    > li {
+
+  #root>section>header>section>div>div>div>div.semi-navigation-header-list-outer>div.semi-navigation-list-wrapper>ul>div>a>li {
     padding: 0 5px;
   }
-  #root
-    > section
-    > header
-    > section
-    > div
-    > div
-    > div
-    > div.semi-navigation-footer
-    > div:nth-child(1)
-    > a
-    > li {
+
+  #root>section>header>section>div>div>div>div.semi-navigation-footer>div:nth-child(1)>a>li {
     padding: 0 5px;
   }
+
   .semi-navigation-footer {
     padding-left: 0;
     padding-right: 0;
   }
-  .semi-table-tbody,
-  .semi-table-row,
-  .semi-table-row-cell {
-    display: block !important;
-    width: auto !important;
-    padding: 2px !important;
-  }
-  .semi-table-row-cell {
-    border-bottom: 0 !important;
-  }
-  .semi-table-tbody > .semi-table-row {
-    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-  }
+
   .semi-space {
     /*display: block!important;*/
     display: flex;
@@ -162,16 +113,6 @@ body {
   /* 隐藏在移动设备上 */
   .hide-on-mobile {
     display: none !important;
-  }
-}
-
-.semi-table-tbody > .semi-table-row > .semi-table-row-cell {
-  padding: 16px 14px;
-}
-
-.channel-table {
-  .semi-table-tbody > .semi-table-row > .semi-table-row-cell {
-    padding: 16px 8px;
   }
 }
 
@@ -238,6 +179,7 @@ code {
   from {
     transform: translateY(-100%);
   }
+
   to {
     transform: translateY(0);
   }

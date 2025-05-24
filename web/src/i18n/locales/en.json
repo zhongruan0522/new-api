@@ -1480,5 +1480,17 @@
   "删除账户确认": "Delete Account Confirmation",
   "请输入您的用户名以确认删除": "Please enter your username to confirm deletion",
   "接受未设置价格模型": "Accept models without price settings",
-  "当模型没有设置价格时仍接受调用，仅当您信任该网站时使用，可能会产生高额费用": "Accept calls even if the model has no price settings, use only when you trust the website, which may incur high costs"
+  "当模型没有设置价格时仍接受调用，仅当您信任该网站时使用，可能会产生高额费用": "Accept calls even if the model has no price settings, use only when you trust the website, which may incur high costs",
+  "批量操作": "Batch Operations",
+  "未开始": "Not Started",
+  "测试中": "Testing",
+  "请求时长: ${time}s": "Request time: ${time}s",
+  "搜索模型...": "Search models...",
+  "批量测试${count}个模型": "Batch test ${count} models",
+  "测试中...": "Testing...",
+  "渠道的模型测试": "Channel Model Test",
+  "共": "Total",
+  "确定要测试所有通道吗？": "Are you sure you want to test all channels?",
+  "确定要更新所有已启用通道余额吗？": "Are you sure you want to update the balance of all enabled channels?",
+  "已选择 ${count} 个渠道": "Selected ${count} channels"
 }
