@@ -1135,70 +1135,45 @@ const LogsTable = () => {
         title={
           <div className="flex flex-col w-full">
             <Spin spinning={loadingStat}>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Card
-                  shadows='hover'
-                  className="bg-yellow-50 border-0 !rounded-2xl w-full"
-                  headerLine={false}
+              <Space>
+                <Tag
+                  color='blue'
+                  size='large'
+                  style={{
+                    padding: 15,
+                    borderRadius: '8px',
+                    fontWeight: 500,
+                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+                  }}
                 >
-                  <div className="flex items-center">
-                    <Avatar
-                      className="mr-3"
-                      size="medium"
-                      color="blue"
-                    >
-                      <IconCoinMoneyStroked />
-                    </Avatar>
-                    <div>
-                      <div className="text-sm text-gray-500">{t('消耗额度')}</div>
-                      <div className="text-xl font-semibold">{renderQuota(stat.quota)}</div>
-                    </div>
-                  </div>
-                </Card>
-
-                <Card
-                  shadows='hover'
-                  className="bg-cyan-50 border-0 !rounded-2xl w-full"
-                  headerLine={false}
+                  {t('消耗额度')}: {renderQuota(stat.quota)}
+                </Tag>
+                <Tag
+                  color='pink'
+                  size='large'
+                  style={{
+                    padding: 15,
+                    borderRadius: '8px',
+                    fontWeight: 500,
+                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+                  }}
                 >
-                  <div className="flex items-center">
-                    <Avatar
-                      className="mr-3"
-                      size="medium"
-                      color="pink"
-                    >
-                      <IconPulse />
-                    </Avatar>
-                    <div>
-                      <div className="text-sm text-gray-500">RPM</div>
-                      <div className="text-xl font-semibold">{stat.rpm || 0}</div>
-                    </div>
-                  </div>
-                </Card>
-
-                <Card
-                  shadows='hover'
-                  className="bg-violet-50 border-0 !rounded-2xl w-full"
-                  headerLine={false}
+                  RPM: {stat.rpm}
+                </Tag>
+                <Tag
+                  color='white'
+                  size='large'
+                  style={{
+                    padding: 15,
+                    border: 'none',
+                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+                    borderRadius: '8px',
+                    fontWeight: 500,
+                  }}
                 >
-                  <div className="flex items-center">
-                    <Avatar
-                      className="mr-3 shadow-md"
-                      size="medium"
-                      color="white"
-                      style={{
-                        boxShadow: 'var(--semi-shadow-elevated)'
-                      }}
-                    >
-                      <IconTypograph />
-                    </Avatar>
-                    <div>
-                      <div className="text-sm text-gray-500">TPM</div>
-                      <div className="text-xl font-semibold">{stat.tpm || 0}</div>
-                    </div>
-                  </div>
-                </Card>
-              </div>
+                  TPM: {stat.tpm}
+                </Tag>
+              </Space>
             </Spin>
 
             <Divider margin="12px" />
