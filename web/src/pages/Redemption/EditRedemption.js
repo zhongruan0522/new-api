@@ -191,13 +191,20 @@ const EditRedemption = (props) => {
         <Spin spinning={loading}>
           <div className="p-6">
             <Card className="!rounded-2xl shadow-sm border-0 mb-6">
-              <div className="flex items-center mb-4">
-                <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center mr-4">
-                  <IconGift size="large" className="text-blue-500" />
+              <div className="flex items-center mb-4 p-6 rounded-xl" style={{
+                background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 50%, #3b82f6 100%)',
+                position: 'relative'
+              }}>
+                <div className="absolute inset-0 overflow-hidden">
+                  <div className="absolute -top-10 -right-10 w-40 h-40 bg-white opacity-5 rounded-full"></div>
+                  <div className="absolute -bottom-8 -left-8 w-24 h-24 bg-white opacity-10 rounded-full"></div>
                 </div>
-                <div>
-                  <Text className="text-lg font-medium">{t('基本信息')}</Text>
-                  <div className="text-gray-500 text-sm">{t('设置兑换码的基本信息')}</div>
+                <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center mr-4 relative">
+                  <IconGift size="large" style={{ color: '#ffffff' }} />
+                </div>
+                <div className="relative">
+                  <Text style={{ color: '#ffffff' }} className="text-lg font-medium">{t('基本信息')}</Text>
+                  <div style={{ color: '#ffffff' }} className="text-sm opacity-80">{t('设置兑换码的基本信息')}</div>
                 </div>
               </div>
 
@@ -219,13 +226,20 @@ const EditRedemption = (props) => {
             </Card>
 
             <Card className="!rounded-2xl shadow-sm border-0">
-              <div className="flex items-center mb-4">
-                <div className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center mr-4">
-                  <IconCreditCard size="large" className="text-green-500" />
+              <div className="flex items-center mb-4 p-6 rounded-xl" style={{
+                background: 'linear-gradient(135deg, #065f46 0%, #059669 50%, #10b981 100%)',
+                position: 'relative'
+              }}>
+                <div className="absolute inset-0 overflow-hidden">
+                  <div className="absolute -top-10 -right-10 w-40 h-40 bg-white opacity-5 rounded-full"></div>
+                  <div className="absolute -bottom-8 -left-8 w-24 h-24 bg-white opacity-10 rounded-full"></div>
                 </div>
-                <div>
-                  <Text className="text-lg font-medium">{t('额度设置')}</Text>
-                  <div className="text-gray-500 text-sm">{t('设置兑换码的额度和数量')}</div>
+                <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center mr-4 relative">
+                  <IconCreditCard size="large" style={{ color: '#ffffff' }} />
+                </div>
+                <div className="relative">
+                  <Text style={{ color: '#ffffff' }} className="text-lg font-medium">{t('额度设置')}</Text>
+                  <div style={{ color: '#ffffff' }} className="text-sm opacity-80">{t('设置兑换码的额度和数量')}</div>
                 </div>
               </div>
 

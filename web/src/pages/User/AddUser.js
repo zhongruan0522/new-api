@@ -114,13 +114,20 @@ const AddUser = (props) => {
         <Spin spinning={loading}>
           <div className="p-6">
             <Card className="!rounded-2xl shadow-sm border-0">
-              <div className="flex items-center mb-4">
-                <div className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center mr-4">
-                  <IconUserAdd size="large" className="text-green-500" />
+              <div className="flex items-center mb-4 p-6 rounded-xl" style={{
+                background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 50%, #3b82f6 100%)',
+                position: 'relative'
+              }}>
+                <div className="absolute inset-0 overflow-hidden">
+                  <div className="absolute -top-10 -right-10 w-40 h-40 bg-white opacity-5 rounded-full"></div>
+                  <div className="absolute -bottom-8 -left-8 w-24 h-24 bg-white opacity-10 rounded-full"></div>
                 </div>
-                <div>
-                  <Text className="text-lg font-medium">{t('用户信息')}</Text>
-                  <div className="text-gray-500 text-sm">{t('创建新用户账户')}</div>
+                <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center mr-4 relative">
+                  <IconUserAdd size="large" style={{ color: '#ffffff' }} />
+                </div>
+                <div className="relative">
+                  <Text style={{ color: '#ffffff' }} className="text-lg font-medium">{t('用户信息')}</Text>
+                  <div style={{ color: '#ffffff' }} className="text-sm opacity-80">{t('创建新用户账户')}</div>
                 </div>
               </div>
 
