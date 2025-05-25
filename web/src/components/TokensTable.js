@@ -14,15 +14,13 @@ import {
   Card,
   Dropdown,
   Modal,
-  Popconfirm,
-  Popover,
   Space,
   SplitButtonGroup,
   Table,
   Tag,
-  Typography,
   Input,
   Divider,
+  Avatar,
 } from '@douyinfe/semi-ui';
 
 import {
@@ -36,12 +34,13 @@ import {
   IconStop,
   IconPlay,
   IconMore,
+  IconMoneyExchangeStroked,
+  IconHistogram,
+  IconRotate,
 } from '@douyinfe/semi-icons';
 import EditToken from '../pages/Token/EditToken';
 import { useTranslation } from 'react-i18next';
 import { UserContext } from '../context/User';
-
-const { Text } = Typography;
 
 function renderTimestamp(timestamp) {
   return <>{timestamp2string(timestamp)}</>;
@@ -197,7 +196,7 @@ const TokensTable = () => {
             showError(t('聊天链接配置错误，请联系管理员'));
           }
         }
-        
+
         // 创建更多操作的下拉菜单项
         const moreMenuItems = [
           {
@@ -230,7 +229,7 @@ const TokensTable = () => {
             },
           }
         ];
-        
+
         // 动态添加启用/禁用按钮
         if (record.status === 1) {
           moreMenuItems.push({
@@ -253,7 +252,7 @@ const TokensTable = () => {
             },
           });
         }
-        
+
         return (
           <Space wrap>
             <SplitButtonGroup
@@ -294,7 +293,7 @@ const TokensTable = () => {
                 ></Button>
               </Dropdown>
             </SplitButtonGroup>
-            
+
             <Button
               icon={<IconCopy />}
               theme='light'
@@ -307,7 +306,7 @@ const TokensTable = () => {
             >
               {t('复制')}
             </Button>
-            
+
             <Button
               icon={<IconEdit />}
               theme='light'
@@ -321,7 +320,7 @@ const TokensTable = () => {
             >
               {t('编辑')}
             </Button>
-            
+
             <Dropdown
               trigger='click'
               position='bottomRight'
@@ -572,39 +571,66 @@ const TokensTable = () => {
 
   const renderHeader = () => (
     <div className="flex flex-col w-full">
-      <div className="mb-2">
-        <div className="flex flex-col md:flex-row justify-between items-center">
-          <div className="flex items-center text-orange-500">
-            <IconEyeOpened className="mr-2" />
-            <Text>{t('令牌无法精确控制使用额度，只允许自用，请勿直接将令牌分发给他人。')}</Text>
-          </div>
-
-          <div className="flex flex-wrap gap-4 mt-2 md:mt-0">
-            <div className="flex items-center">
-              <span className="text-xl mr-2">💰</span>
-              <div>
-                <Text type="tertiary" size="small">{t('当前余额')}</Text>
-                <div className="font-medium">{renderQuota(userState?.user?.quota)}</div>
-              </div>
-            </div>
-
-            <div className="flex items-center">
-              <span className="text-xl mr-2">📊</span>
-              <div>
-                <Text type="tertiary" size="small">{t('累计消费')}</Text>
-                <div className="font-medium">{renderQuota(userState?.user?.used_quota)}</div>
-              </div>
-            </div>
-
-            <div className="flex items-center">
-              <span className="text-xl mr-2">🔄</span>
-              <div>
-                <Text type="tertiary" size="small">{t('请求次数')}</Text>
-                <div className="font-medium">{userState?.user?.request_count || 0}</div>
-              </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card
+          shadows='hover'
+          className="bg-blue-50 border-0 !rounded-2xl w-full"
+          headerLine={false}
+        >
+          <div className="flex items-center">
+            <Avatar
+              className="mr-3"
+              size="medium"
+              color="blue"
+            >
+              <IconMoneyExchangeStroked />
+            </Avatar>
+            <div>
+              <div className="text-sm text-gray-500">{t('当前余额')}</div>
+              <div className="text-xl font-semibold">{renderQuota(userState?.user?.quota)}</div>
             </div>
           </div>
-        </div>
+        </Card>
+
+        <Card
+          shadows='hover'
+          className="bg-purple-50 border-0 !rounded-2xl w-full"
+          headerLine={false}
+        >
+          <div className="flex items-center">
+            <Avatar
+              className="mr-3"
+              size="medium"
+              color="purple"
+            >
+              <IconHistogram />
+            </Avatar>
+            <div>
+              <div className="text-sm text-gray-500">{t('累计消费')}</div>
+              <div className="text-xl font-semibold">{renderQuota(userState?.user?.used_quota)}</div>
+            </div>
+          </div>
+        </Card>
+
+        <Card
+          shadows='hover'
+          className="bg-green-50 border-0 !rounded-2xl w-full"
+          headerLine={false}
+        >
+          <div className="flex items-center">
+            <Avatar
+              className="mr-3"
+              size="medium"
+              color="green"
+            >
+              <IconRotate />
+            </Avatar>
+            <div>
+              <div className="text-sm text-gray-500">{t('请求次数')}</div>
+              <div className="text-xl font-semibold">{userState?.user?.request_count || 0}</div>
+            </div>
+          </div>
+        </Card>
       </div>
 
       <Divider margin="12px" />

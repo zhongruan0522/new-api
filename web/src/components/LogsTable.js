@@ -51,6 +51,9 @@ import {
   IconSetting,
   IconEyeOpened,
   IconSearch,
+  IconCoinMoneyStroked,
+  IconPulse,
+  IconTypograph,
 } from '@douyinfe/semi-icons';
 
 const { Text } = Typography;
@@ -1131,40 +1134,72 @@ const LogsTable = () => {
         className="!rounded-2xl overflow-hidden mb-4"
         title={
           <div className="flex flex-col w-full">
-            <div className="flex flex-col md:flex-row justify-between items-center">
-              <div className="flex items-center text-orange-500 mb-2 md:mb-0">
-                <IconEyeOpened className="mr-2" />
-                <Text>{t('日志记录帮助您了解使用情况和排查问题')}</Text>
+            <Spin spinning={loadingStat}>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Card
+                  shadows='hover'
+                  className="bg-yellow-50 border-0 !rounded-2xl w-full"
+                  headerLine={false}
+                >
+                  <div className="flex items-center">
+                    <Avatar
+                      className="mr-3"
+                      size="medium"
+                      color="blue"
+                    >
+                      <IconCoinMoneyStroked />
+                    </Avatar>
+                    <div>
+                      <div className="text-sm text-gray-500">{t('消耗额度')}</div>
+                      <div className="text-xl font-semibold">{renderQuota(stat.quota)}</div>
+                    </div>
+                  </div>
+                </Card>
+
+                <Card
+                  shadows='hover'
+                  className="bg-cyan-50 border-0 !rounded-2xl w-full"
+                  headerLine={false}
+                >
+                  <div className="flex items-center">
+                    <Avatar
+                      className="mr-3"
+                      size="medium"
+                      color="pink"
+                    >
+                      <IconPulse />
+                    </Avatar>
+                    <div>
+                      <div className="text-sm text-gray-500">RPM</div>
+                      <div className="text-xl font-semibold">{stat.rpm || 0}</div>
+                    </div>
+                  </div>
+                </Card>
+
+                <Card
+                  shadows='hover'
+                  className="bg-violet-50 border-0 !rounded-2xl w-full"
+                  headerLine={false}
+                >
+                  <div className="flex items-center">
+                    <Avatar
+                      className="mr-3 shadow-md"
+                      size="medium"
+                      color="white"
+                      style={{
+                        boxShadow: 'var(--semi-shadow-elevated)'
+                      }}
+                    >
+                      <IconTypograph />
+                    </Avatar>
+                    <div>
+                      <div className="text-sm text-gray-500">TPM</div>
+                      <div className="text-xl font-semibold">{stat.tpm || 0}</div>
+                    </div>
+                  </div>
+                </Card>
               </div>
-
-              <Spin spinning={loadingStat}>
-                <div className="flex flex-wrap gap-4">
-                  <div className="flex items-center">
-                    <span className="text-xl mr-2">💰</span>
-                    <div>
-                      <Text type="tertiary" size="small">{t('消耗额度')}</Text>
-                      <div className="font-medium">{renderQuota(stat.quota)}</div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center">
-                    <span className="text-xl mr-2">📊</span>
-                    <div>
-                      <Text type="tertiary" size="small">RPM</Text>
-                      <div className="font-medium">{stat.rpm || 0}</div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center">
-                    <span className="text-xl mr-2">⚡</span>
-                    <div>
-                      <Text type="tertiary" size="small">TPM</Text>
-                      <div className="font-medium">{stat.tpm || 0}</div>
-                    </div>
-                  </div>
-                </div>
-              </Spin>
-            </div>
+            </Spin>
 
             <Divider margin="12px" />
 
