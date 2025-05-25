@@ -69,7 +69,7 @@ const FooterBar = () => {
               <p className="!text-[#d9dbe1] font-semibold mb-5">{t('基于New API的项目')}</p>
               <div className="flex flex-col gap-4">
                 <a href="https://github.com/Calcium-Ion/new-api-horizon" target="_blank" rel="noopener noreferrer" className="!text-[#d9dbe1]">new-api-horizon</a>
-                <a href="https://github.com/VoAPI/VoAPI" target="_blank" rel="noopener noreferrer" className="!text-[#d9dbe1]">VoAPI</a>
+                {/* <a href="https://github.com/VoAPI/VoAPI" target="_blank" rel="noopener noreferrer" className="!text-[#d9dbe1]">VoAPI</a> */}
               </div>
             </div>
           </div>
