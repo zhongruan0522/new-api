@@ -272,6 +272,7 @@ code {
 /*  min-height: 100%;*/
 /*}*/
 
+.semi-tag-closable,
 .semi-datepicker-range-input {
   border-radius: 9999px;
 }
