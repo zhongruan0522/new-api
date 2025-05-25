@@ -3,7 +3,6 @@ import { API, copy, showError, showInfo, showSuccess } from '../helpers';
 import { useTranslation } from 'react-i18next';
 
 import {
-  Banner,
   Input,
   Layout,
   Modal,
@@ -14,15 +13,21 @@ import {
   Popover,
   ImagePreview,
   Button,
+  Card,
+  Tabs,
+  TabPane,
+  Dropdown,
 } from '@douyinfe/semi-ui';
 import {
-  IconMore,
   IconVerify,
-  IconUploadError,
   IconHelpCircle,
+  IconSearch,
+  IconCopy,
+  IconInfoCircle,
 } from '@douyinfe/semi-icons';
 import { UserContext } from '../context/User/index.js';
-import Text from '@douyinfe/semi-ui/lib/es/typography/text';
+import { Settings, AlertCircle } from 'lucide-react';
+import { MODEL_CATEGORIES } from '../constants';
 
 const ModelPricing = () => {
   const { t } = useTranslation();
@@ -32,6 +37,8 @@ const ModelPricing = () => {
   const [modalImageUrl, setModalImageUrl] = useState('');
   const [isModalOpenurl, setIsModalOpenurl] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState('default');
+  const [activeKey, setActiveKey] = useState('all');
+  const [pageSize, setPageSize] = useState(10);
 
   const rowSelection = useMemo(
     () => ({
@@ -49,6 +56,7 @@ const ModelPricing = () => {
     const newFilteredValue = value ? [value] : [];
     setFilteredValue(newFilteredValue);
   };
+
   const handleCompositionStart = () => {
     compositionRef.current.isComposition = true;
   };
@@ -61,17 +69,16 @@ const ModelPricing = () => {
   };
 
   function renderQuotaType(type) {
-    // Ensure all cases are string literals by adding quotes.
     switch (type) {
       case 1:
         return (
-          <Tag color='teal' size='large'>
+          <Tag color='teal' size='large' shape='circle'>
             {t('按次计费')}
           </Tag>
         );
       case 0:
         return (
-          <Tag color='violet' size='large'>
+          <Tag color='violet' size='large' shape='circle'>
             {t('按量计费')}
           </Tag>
         );
@@ -88,15 +95,9 @@ const ModelPricing = () => {
         }
         position='top'
         key={available}
-        style={{
-          backgroundColor: 'rgba(var(--semi-blue-4),1)',
-          borderColor: 'rgba(var(--semi-blue-4),1)',
-          color: 'var(--semi-color-white)',
-          borderWidth: 1,
-          borderStyle: 'solid',
-        }}
+        className="bg-green-50"
       >
-        <IconVerify style={{ color: 'green' }} size='large' />
+        <IconVerify style={{ color: 'rgb(22 163 74)' }} size='large' />
       </Popover>
     ) : null;
   }
@@ -106,7 +107,6 @@ const ModelPricing = () => {
       title: t('可用性'),
       dataIndex: 'available',
       render: (text, record, index) => {
-        // if record.enable_groups contains selectedGroup, then available is true
         return renderAvailable(record.enable_groups.includes(selectedGroup));
       },
       sorter: (a, b) => {
@@ -115,28 +115,29 @@ const ModelPricing = () => {
         return Number(aAvailable) - Number(bAvailable);
       },
       defaultSortOrder: 'descend',
+      width: 100,
     },
     {
       title: t('模型名称'),
       dataIndex: 'model_name',
       render: (text, record, index) => {
         return (
-          <>
-            <Tag
-              color='green'
-              size='large'
-              onClick={() => {
-                copyText(text);
-              }}
-            >
-              {text}
-            </Tag>
-          </>
+          <Tag
+            color='green'
+            size='large'
+            shape='circle'
+            onClick={() => {
+              copyText(text);
+            }}
+          >
+            {text}
+          </Tag>
         );
       },
       onFilter: (value, record) =>
         record.model_name.toLowerCase().includes(value.toLowerCase()),
       filteredValue,
+      width: 200,
     },
     {
       title: t('计费类型'),
@@ -145,19 +146,19 @@ const ModelPricing = () => {
         return renderQuotaType(parseInt(text));
       },
       sorter: (a, b) => a.quota_type - b.quota_type,
+      width: 120,
     },
     {
       title: t('可用分组'),
       dataIndex: 'enable_groups',
       render: (text, record, index) => {
-        // enable_groups is a string array
         return (
-          <Space>
+          <Space wrap>
             {text.map((group) => {
               if (usableGroup[group]) {
                 if (group === selectedGroup) {
                   return (
-                    <Tag color='blue' size='large' prefixIcon={<IconVerify />}>
+                    <Tag color='blue' size='large' shape='circle' prefixIcon={<IconVerify />}>
                       {group}
                     </Tag>
                   );
@@ -175,6 +176,7 @@ const ModelPricing = () => {
                           }),
                         );
                       }}
+                      className="cursor-pointer hover:opacity-80 transition-opacity !rounded-full"
                     >
                       {group}
                     </Tag>
@@ -188,56 +190,40 @@ const ModelPricing = () => {
     },
     {
       title: () => (
-        <span style={{ display: 'flex', alignItems: 'center' }}>
-          {t('倍率')}
-          <Popover
-            content={
-              <div style={{ padding: 8 }}>
-                {t('倍率是为了方便换算不同价格的模型')}
-                <br />
-                {t('点击查看倍率说明')}
-              </div>
-            }
-            position='top'
-            style={{
-              backgroundColor: 'rgba(var(--semi-blue-4),1)',
-              borderColor: 'rgba(var(--semi-blue-4),1)',
-              color: 'var(--semi-color-white)',
-              borderWidth: 1,
-              borderStyle: 'solid',
-            }}
-          >
+        <div className="flex items-center space-x-1">
+          <span>{t('倍率')}</span>
+          <Tooltip content={t('倍率是为了方便换算不同价格的模型')}>
             <IconHelpCircle
+              className="text-blue-500 cursor-pointer"
               onClick={() => {
                 setModalImageUrl('/ratio.png');
                 setIsModalOpenurl(true);
               }}
             />
-          </Popover>
-        </span>
+          </Tooltip>
+        </div>
       ),
       dataIndex: 'model_ratio',
       render: (text, record, index) => {
         let content = text;
         let completionRatio = parseFloat(record.completion_ratio.toFixed(3));
         content = (
-          <>
-            <Text>
+          <div className="space-y-1">
+            <div className="text-gray-700">
               {t('模型倍率')}：{record.quota_type === 0 ? text : t('无')}
-            </Text>
-            <br />
-            <Text>
+            </div>
+            <div className="text-gray-700">
               {t('补全倍率')}：
               {record.quota_type === 0 ? completionRatio : t('无')}
-            </Text>
-            <br />
-            <Text>
+            </div>
+            <div className="text-gray-700">
               {t('分组倍率')}：{groupRatio[selectedGroup]}
-            </Text>
-          </>
+            </div>
+          </div>
         );
-        return <div>{content}</div>;
+        return content;
       },
+      width: 200,
     },
     {
       title: t('模型价格'),
@@ -245,7 +231,6 @@ const ModelPricing = () => {
       render: (text, record, index) => {
         let content = text;
         if (record.quota_type === 0) {
-          // 这里的 *2 是因为 1倍率=0.002刀，请勿删除
           let inputRatioPrice =
             record.model_ratio * 2 * groupRatio[selectedGroup];
           let completionRatioPrice =
@@ -254,26 +239,26 @@ const ModelPricing = () => {
             2 *
             groupRatio[selectedGroup];
           content = (
-            <>
-              <Text>
-                {t('提示')} ${inputRatioPrice} / 1M tokens
-              </Text>
-              <br />
-              <Text>
-                {t('补全')} ${completionRatioPrice} / 1M tokens
-              </Text>
-            </>
+            <div className="space-y-1">
+              <div className="text-gray-700">
+                {t('提示')} ${inputRatioPrice.toFixed(3)} / 1M tokens
+              </div>
+              <div className="text-gray-700">
+                {t('补全')} ${completionRatioPrice.toFixed(3)} / 1M tokens
+              </div>
+            </div>
           );
         } else {
           let price = parseFloat(text) * groupRatio[selectedGroup];
           content = (
-            <>
-              ${t('模型价格')}：${price}
-            </>
+            <div className="text-gray-700">
+              ${t('模型价格')}：${price.toFixed(3)}
+            </div>
           );
         }
-        return <div>{content}</div>;
+        return content;
       },
+      width: 250,
     },
   ];
 
@@ -288,12 +273,10 @@ const ModelPricing = () => {
       models[i].key = models[i].model_name;
       models[i].group_ratio = groupRatio[models[i].model_name];
     }
-    // sort by quota_type
     models.sort((a, b) => {
       return a.quota_type - b.quota_type;
     });
 
-    // sort by model_name, start with gpt is max, other use localeCompare
     models.sort((a, b) => {
       if (a.model_name.startsWith('gpt') && !b.model_name.startsWith('gpt')) {
         return -1;
@@ -312,9 +295,7 @@ const ModelPricing = () => {
 
   const loadPricing = async () => {
     setLoading(true);
-
-    let url = '';
-    url = `/api/pricing`;
+    let url = '/api/pricing';
     const res = await API.get(url);
     const { success, message, data, group_ratio, usable_group } = res.data;
     if (success) {
@@ -334,10 +315,9 @@ const ModelPricing = () => {
 
   const copyText = async (text) => {
     if (await copy(text)) {
-      showSuccess('已复制：' + text);
+      showSuccess(t('已复制：') + text);
     } else {
-      // setSearchKeyword(text);
-      Modal.error({ title: '无法复制到剪贴板，请手动复制', content: text });
+      Modal.error({ title: t('无法复制到剪贴板，请手动复制'), content: text });
     }
   };
 
@@ -345,88 +325,284 @@ const ModelPricing = () => {
     refresh().then();
   }, []);
 
-  return (
-    <>
-      <Layout>
-        {userState.user ? (
-          <Banner
-            type='success'
-            fullMode={false}
-            closeIcon='null'
-            description={t('您的默认分组为：{{group}}，分组倍率为：{{ratio}}', {
-              group: userState.user.group,
-              ratio: groupRatio[userState.user.group],
-            })}
-          />
-        ) : (
-          <Banner
-            type='warning'
-            fullMode={false}
-            closeIcon='null'
-            description={t('您还未登陆，显示的价格为默认分组倍率: {{ratio}}', {
-              ratio: groupRatio['default'],
-            })}
-          />
-        )}
-        <br />
-        <Banner
-          type='info'
-          fullMode={false}
-          description={
-            <div>
-              {t(
-                '按量计费费用 = 分组倍率 × 模型倍率 × （提示token数 + 补全token数 × 补全倍率）/ 500000 （单位：美元）',
-              )}
-            </div>
-          }
-          closeIcon='null'
-        />
-        <br />
-        <Space style={{ marginBottom: 16 }}>
+  const modelCategories = MODEL_CATEGORIES(t);
+
+  const renderArrow = (items, pos, handleArrowClick) => {
+    const style = {
+      width: 32,
+      height: 32,
+      margin: '0 12px',
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      borderRadius: '100%',
+      background: 'rgba(var(--semi-grey-1), 1)',
+      color: 'var(--semi-color-text)',
+      cursor: 'pointer',
+    };
+    return (
+      <Dropdown
+        render={
+          <Dropdown.Menu>
+            {items.map(item => (
+              <Dropdown.Item
+                key={item.itemKey}
+                onClick={() => setActiveKey(item.itemKey)}
+                icon={modelCategories[item.itemKey]?.icon}
+              >
+                {modelCategories[item.itemKey]?.label || item.itemKey}
+              </Dropdown.Item>
+            ))}
+          </Dropdown.Menu>
+        }
+      >
+        <div style={style} onClick={handleArrowClick}>
+          {pos === 'start' ? '←' : '→'}
+        </div>
+      </Dropdown>
+    );
+  };
+
+  // 检查分类是否有对应的模型
+  const availableCategories = useMemo(() => {
+    if (!models.length) return ['all'];
+
+    return Object.entries(modelCategories).filter(([key, category]) => {
+      if (key === 'all') return true;
+      return models.some(model => category.filter(model));
+    }).map(([key]) => key);
+  }, [models]);
+
+  // 渲染标签页
+  const renderTabs = () => {
+    return (
+      <Tabs
+        renderArrow={renderArrow}
+        activeKey={activeKey}
+        type="card"
+        collapsible
+        onChange={key => setActiveKey(key)}
+      >
+        {Object.entries(modelCategories)
+          .filter(([key]) => availableCategories.includes(key))
+          .map(([key, category]) => (
+            <TabPane
+              tab={
+                <span className="flex items-center gap-2">
+                  {category.icon && <span className="w-4 h-4">{category.icon}</span>}
+                  {category.label}
+                </span>
+              }
+              itemKey={key}
+              key={key}
+            />
+          ))}
+      </Tabs>
+    );
+  };
+
+  // 优化过滤逻辑
+  const filteredModels = useMemo(() => {
+    let result = models;
+
+    // 先按分类过滤
+    if (activeKey !== 'all') {
+      result = result.filter(model => modelCategories[activeKey].filter(model));
+    }
+
+    // 再按搜索词过滤
+    if (filteredValue.length > 0) {
+      const searchTerm = filteredValue[0].toLowerCase();
+      result = result.filter(model =>
+        model.model_name.toLowerCase().includes(searchTerm)
+      );
+    }
+
+    return result;
+  }, [activeKey, models, filteredValue]);
+
+  // 搜索和操作区组件
+  const SearchAndActions = useMemo(() => (
+    <Card className="!rounded-xl mb-6" shadows='hover'>
+      <div className="flex flex-wrap items-center gap-4">
+        <div className="flex-1 min-w-[200px]">
           <Input
+            prefix={<IconSearch />}
             placeholder={t('模糊搜索模型名称')}
-            style={{ width: 200 }}
+            className="!rounded-lg"
             onCompositionStart={handleCompositionStart}
             onCompositionEnd={handleCompositionEnd}
             onChange={handleChange}
             showClear
+            size="large"
           />
-          <Button
-            theme='light'
-            type='tertiary'
-            style={{ width: 150 }}
-            onClick={() => {
-              copyText(selectedRowKeys);
-            }}
-            disabled={selectedRowKeys == ''}
-          >
-            {t('复制选中模型')}
-          </Button>
-        </Space>
-        <Table
-          style={{ marginTop: 5 }}
-          columns={columns}
-          dataSource={models}
-          loading={loading}
-          pagination={{
-            formatPageText: (page) =>
-              t('第 {{start}} - {{end}} 条，共 {{total}} 条', {
-                start: page.currentStart,
-                end: page.currentEnd,
-                total: models.length,
-              }),
-            pageSize: models.length,
-            showSizeChanger: false,
-          }}
-          rowSelection={rowSelection}
-        />
-        <ImagePreview
-          src={modalImageUrl}
-          visible={isModalOpenurl}
-          onVisibleChange={(visible) => setIsModalOpenurl(visible)}
-        />
+        </div>
+        <Button
+          theme='light'
+          type='primary'
+          icon={<IconCopy />}
+          onClick={() => copyText(selectedRowKeys)}
+          disabled={selectedRowKeys.length === 0}
+          className="!rounded-lg !bg-blue-500 hover:!bg-blue-600 text-white"
+          size="large"
+        >
+          {t('复制选中模型')}
+        </Button>
+      </div>
+    </Card>
+  ), [selectedRowKeys, t]);
+
+  // 表格组件
+  const ModelTable = useMemo(() => (
+    <Card className="!rounded-xl overflow-hidden" shadows='hover'>
+      <Table
+        columns={columns}
+        dataSource={filteredModels}
+        loading={loading}
+        rowSelection={rowSelection}
+        className="custom-table"
+        pagination={{
+          defaultPageSize: 10,
+          pageSize: pageSize,
+          showSizeChanger: true,
+          pageSizeOptions: [10, 20, 50, 100],
+          formatPageText: (page) =>
+            t('第 {{start}} - {{end}} 条，共 {{total}} 条', {
+              start: page.currentStart,
+              end: page.currentEnd,
+              total: filteredModels.length,
+            }),
+          onPageSizeChange: (size) => setPageSize(size),
+        }}
+      />
+    </Card>
+  ), [filteredModels, loading, columns, rowSelection, pageSize, t]);
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <Layout>
+        <Layout.Content>
+          <div className="flex justify-center p-4 sm:p-6 md:p-8">
+            <div className="w-full">
+              {/* 主卡片容器 */}
+              <Card className="!rounded-2xl shadow-lg border-0">
+                {/* 顶部状态卡片 */}
+                <Card
+                  className="!rounded-2xl !border-0 !shadow-2xl overflow-hidden mb-6"
+                  style={{
+                    background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 25%, #a855f7 50%, #c084fc 75%, #d8b4fe 100%)',
+                    position: 'relative'
+                  }}
+                  bodyStyle={{ padding: 0 }}
+                >
+                  {/* 装饰性背景元素 */}
+                  <div className="absolute inset-0 overflow-hidden">
+                    <div className="absolute -top-10 -right-10 w-40 h-40 bg-white opacity-5 rounded-full"></div>
+                    <div className="absolute -bottom-16 -left-16 w-48 h-48 bg-white opacity-3 rounded-full"></div>
+                    <div className="absolute top-1/2 right-1/4 w-24 h-24 bg-yellow-400 opacity-10 rounded-full"></div>
+                  </div>
+
+                  <div className="relative p-6 sm:p-8" style={{ color: 'white' }}>
+                    <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 lg:gap-6">
+                      <div className="flex items-start">
+                        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-white/10 flex items-center justify-center mr-3 sm:mr-4">
+                          <Settings size={20} className="text-white" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-base sm:text-lg font-semibold mb-1 sm:mb-2">
+                            {t('模型定价')}
+                          </div>
+                          <div className="text-sm text-white/80">
+                            {userState.user ? (
+                              <div className="flex items-center">
+                                <IconVerify className="mr-1.5 flex-shrink-0" size="small" />
+                                <span className="truncate">
+                                  {t('当前分组')}: {userState.user.group}，{t('倍率')}: {groupRatio[userState.user.group]}
+                                </span>
+                              </div>
+                            ) : (
+                              <div className="flex items-center">
+                                <AlertCircle size={14} className="mr-1.5 flex-shrink-0" />
+                                <span className="truncate">
+                                  {t('未登录，使用默认分组倍率')}: {groupRatio['default']}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-2 sm:gap-3 mt-2 lg:mt-0">
+                        <div
+                          className="text-center px-2 py-2 sm:px-3 sm:py-2.5 bg-white/10 rounded-lg backdrop-blur-sm hover:bg-white/20 transition-colors duration-200"
+                          style={{ backdropFilter: 'blur(10px)' }}
+                        >
+                          <div className="text-xs text-white/70 mb-0.5">{t('分组倍率')}</div>
+                          <div className="text-sm sm:text-base font-semibold">{groupRatio[selectedGroup] || '1.0'}x</div>
+                        </div>
+                        <div
+                          className="text-center px-2 py-2 sm:px-3 sm:py-2.5 bg-white/10 rounded-lg backdrop-blur-sm hover:bg-white/20 transition-colors duration-200"
+                          style={{ backdropFilter: 'blur(10px)' }}
+                        >
+                          <div className="text-xs text-white/70 mb-0.5">{t('可用模型')}</div>
+                          <div className="text-sm sm:text-base font-semibold">
+                            {models.filter(m => m.enable_groups.includes(selectedGroup)).length}
+                          </div>
+                        </div>
+                        <div
+                          className="text-center px-2 py-2 sm:px-3 sm:py-2.5 bg-white/10 rounded-lg backdrop-blur-sm hover:bg-white/20 transition-colors duration-200"
+                          style={{ backdropFilter: 'blur(10px)' }}
+                        >
+                          <div className="text-xs text-white/70 mb-0.5">{t('计费类型')}</div>
+                          <div className="text-sm sm:text-base font-semibold">2</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 计费说明 */}
+                    <div className="mt-4 sm:mt-5">
+                      <div className="flex items-start">
+                        <div
+                          className="w-full flex items-start space-x-2 px-3 py-2 sm:px-4 sm:py-2.5 rounded-lg text-xs sm:text-sm"
+                          style={{
+                            backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                            color: 'white',
+                            backdropFilter: 'blur(10px)'
+                          }}
+                        >
+                          <IconInfoCircle className="flex-shrink-0 mt-0.5" size="small" />
+                          <span>
+                            {t('按量计费费用 = 分组倍率 × 模型倍率 × （提示token数 + 补全token数 × 补全倍率）/ 500000 （单位：美元）')}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-yellow-400 via-orange-400 to-red-400" style={{ opacity: 0.6 }}></div>
+                  </div>
+                </Card>
+
+                {/* 模型分类 Tabs */}
+                <div className="mb-6">
+                  {renderTabs()}
+
+                  {/* 搜索和表格区域 */}
+                  {SearchAndActions}
+                  {ModelTable}
+                </div>
+
+                {/* 倍率说明图预览 */}
+                <ImagePreview
+                  src={modalImageUrl}
+                  visible={isModalOpenurl}
+                  onVisibleChange={(visible) => setIsModalOpenurl(visible)}
+                />
+              </Card>
+            </div>
+          </div>
+        </Layout.Content>
       </Layout>
-    </>
+    </div>
   );
 };
 

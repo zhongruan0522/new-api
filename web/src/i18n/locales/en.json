@@ -1515,5 +1515,16 @@
   "用户分组配置": "User group configuration",
   "请选择可以使用该渠道的分组，留空则不更改": "Please select the groups that can use this channel, leaving blank will not change",
   "启用全部": "Enable all",
-  "禁用全部": "Disable all"
+  "禁用全部": "Disable all",
+  "模型定价": "Model Pricing",
+  "当前分组": "Current group",
+  "全部模型": "All Models",
+  "智谱": "Zhipu AI",
+  "通义千问": "Qwen",
+  "文心一言": "ERNIE Bot",
+  "讯飞星火": "Spark Desk",
+  "腾讯混元": "Hunyuan",
+  "360智脑": "360 AI Brain",
+  "零一万物": "Yi",
+  "豆包": "Doubao"
 }

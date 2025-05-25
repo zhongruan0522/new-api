@@ -276,3 +276,7 @@ code {
 .semi-datepicker-range-input {
   border-radius: 9999px;
 }
+
+.semi-tabs-content {
+  padding: 0 !important;
+}
