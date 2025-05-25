@@ -1,6 +1,6 @@
 import React, { useContext, useEffect, useState } from 'react';
-import { Button, Typography, Tag } from '@douyinfe/semi-ui';
-import { API, showError, showNotice } from '../../helpers';
+import { Button, Typography, Tag, Modal } from '@douyinfe/semi-ui';
+import { API, showError, isMobile } from '../../helpers';
 import { StatusContext } from '../../context/Status';
 import { marked } from 'marked';
 import { useTranslation } from 'react-i18next';
@@ -16,18 +16,34 @@ const Home = () => {
   const [statusState] = useContext(StatusContext);
   const [homePageContentLoaded, setHomePageContentLoaded] = useState(false);
   const [homePageContent, setHomePageContent] = useState('');
+  const [noticeVisible, setNoticeVisible] = useState(false);
+  const [noticeContent, setNoticeContent] = useState('');
 
   const isDemoSiteMode = statusState?.status?.demo_site_enabled || false;
+
+  const handleCloseNotice = () => {
+    setNoticeVisible(false);
+  };
+
+  const handleCloseTodayNotice = () => {
+    const today = new Date().toDateString();
+    localStorage.setItem('notice_close_date', today);
+    setNoticeVisible(false);
+  };
 
   const displayNotice = async () => {
     const res = await API.get('/api/notice');
     const { success, message, data } = res.data;
     if (success) {
-      let oldNotice = localStorage.getItem('notice');
-      if (data !== oldNotice && data !== '') {
-        const htmlNotice = marked(data);
-        showNotice(htmlNotice, true);
-        localStorage.setItem('notice', data);
+      if (data !== '') {
+        const htmlNotice = marked.parse(data);
+        setNoticeContent(htmlNotice);
+        const lastCloseDate = localStorage.getItem('notice_close_date');
+        const today = new Date().toDateString();
+
+        if (lastCloseDate !== today) {
+          setNoticeVisible(true);
+        }
       }
     } else {
       showError(message);
@@ -71,6 +87,27 @@ const Home = () => {
 
   return (
     <div className="w-full overflow-x-hidden">
+      <Modal
+        title={t('系统公告')}
+        visible={noticeVisible}
+        onCancel={handleCloseNotice}
+        footer={(
+          <div className="flex justify-end">
+            <Button type='secondary' className='!rounded-full' onClick={handleCloseTodayNotice}>{t('今日关闭')}</Button>
+            <Button type="primary" className='!rounded-full' onClick={handleCloseNotice}>{t('关闭公告')}</Button>
+          </div>
+        )}
+        size={isMobile() ? 'full-width' : 'large'}
+      >
+        <div
+          dangerouslySetInnerHTML={{ __html: noticeContent }}
+          className="max-h-[60vh] overflow-y-auto pr-2"
+          style={{
+            scrollbarWidth: 'thin',
+            scrollbarColor: 'var(--semi-color-tertiary) transparent'
+          }}
+        ></div>
+      </Modal>
       {homePageContentLoaded && homePageContent === '' ? (
         <div className="w-full overflow-x-hidden">
           {/* Banner 部分 */}
