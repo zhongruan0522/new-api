@@ -78,15 +78,18 @@ const RedemptionsTable = () => {
     {
       title: t('ID'),
       dataIndex: 'id',
+      width: 50,
     },
     {
       title: t('名称'),
       dataIndex: 'name',
+      width: 120,
     },
     {
       title: t('状态'),
       dataIndex: 'status',
       key: 'status',
+      width: 100,
       render: (text, record, index) => {
         return <div>{renderStatus(text)}</div>;
       },
@@ -94,6 +97,7 @@ const RedemptionsTable = () => {
     {
       title: t('额度'),
       dataIndex: 'quota',
+      width: 100,
       render: (text, record, index) => {
         return <div>{renderQuota(parseInt(text))}</div>;
       },
@@ -101,6 +105,7 @@ const RedemptionsTable = () => {
     {
       title: t('创建时间'),
       dataIndex: 'created_time',
+      width: 180,
       render: (text, record, index) => {
         return <div>{renderTimestamp(text)}</div>;
       },
@@ -108,6 +113,7 @@ const RedemptionsTable = () => {
     {
       title: t('兑换人ID'),
       dataIndex: 'used_user_id',
+      width: 100,
       render: (text, record, index) => {
         return <div>{text === 0 ? t('无') : text}</div>;
       },
@@ -115,6 +121,7 @@ const RedemptionsTable = () => {
     {
       title: '',
       dataIndex: 'operate',
+      width: 300,
       render: (text, record, index) => {
         // 创建更多操作的下拉菜单项
         const moreMenuItems = [

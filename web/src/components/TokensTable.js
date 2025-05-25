@@ -98,11 +98,13 @@ const TokensTable = () => {
     {
       title: t('名称'),
       dataIndex: 'name',
+      width: 180,
     },
     {
       title: t('状态'),
       dataIndex: 'status',
       key: 'status',
+      width: 200,
       render: (text, record, index) => {
         return (
           <div>
@@ -117,6 +119,7 @@ const TokensTable = () => {
     {
       title: t('已用额度'),
       dataIndex: 'used_quota',
+      width: 120,
       render: (text, record, index) => {
         return <div>{renderQuota(parseInt(text))}</div>;
       },
@@ -124,6 +127,7 @@ const TokensTable = () => {
     {
       title: t('剩余额度'),
       dataIndex: 'remain_quota',
+      width: 120,
       render: (text, record, index) => {
         return (
           <div>
@@ -143,6 +147,7 @@ const TokensTable = () => {
     {
       title: t('创建时间'),
       dataIndex: 'created_time',
+      width: 180,
       render: (text, record, index) => {
         return <div>{renderTimestamp(text)}</div>;
       },
@@ -150,6 +155,7 @@ const TokensTable = () => {
     {
       title: t('过期时间'),
       dataIndex: 'expired_time',
+      width: 180,
       render: (text, record, index) => {
         return (
           <div>
@@ -161,6 +167,7 @@ const TokensTable = () => {
     {
       title: '',
       dataIndex: 'operate',
+      width: 320,
       render: (text, record, index) => {
         let chats = localStorage.getItem('chats');
         let chatsArray = [];

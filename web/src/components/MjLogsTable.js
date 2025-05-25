@@ -374,6 +374,7 @@ const LogsTable = () => {
       key: COLUMN_KEYS.SUBMIT_TIME,
       title: t('提交时间'),
       dataIndex: 'submit_time',
+      width: 180,
       render: (text, record, index) => {
         return <div>{renderTimestamp(text / 1000)}</div>;
       },
@@ -381,9 +382,9 @@ const LogsTable = () => {
     {
       key: COLUMN_KEYS.DURATION,
       title: t('花费时间'),
-      dataIndex: 'finish_time', // 以finish_time作为dataIndex
+      dataIndex: 'finish_time',
+      width: 120,
       render: (finish, record) => {
-        // 假设record.start_time是存在的，并且finish是完成时间的时间戳
         return renderDuration(record.submit_time, finish);
       },
     },
@@ -391,6 +392,7 @@ const LogsTable = () => {
       key: COLUMN_KEYS.CHANNEL,
       title: t('渠道'),
       dataIndex: 'channel_id',
+      width: 100,
       className: isAdmin() ? 'tableShow' : 'tableHiddle',
       render: (text, record, index) => {
         return isAdminUser ? (
@@ -400,7 +402,7 @@ const LogsTable = () => {
               size='large'
               shape='circle'
               onClick={() => {
-                copyText(text); // 假设copyText是用于文本复制的函数
+                copyText(text);
               }}
             >
               {' '}
@@ -416,6 +418,7 @@ const LogsTable = () => {
       key: COLUMN_KEYS.TYPE,
       title: t('类型'),
       dataIndex: 'action',
+      width: 120,
       render: (text, record, index) => {
         return <div>{renderType(text)}</div>;
       },
@@ -424,6 +427,7 @@ const LogsTable = () => {
       key: COLUMN_KEYS.TASK_ID,
       title: t('任务ID'),
       dataIndex: 'mj_id',
+      width: 200,
       render: (text, record, index) => {
         return <div>{text}</div>;
       },
@@ -432,6 +436,7 @@ const LogsTable = () => {
       key: COLUMN_KEYS.SUBMIT_RESULT,
       title: t('提交结果'),
       dataIndex: 'code',
+      width: 120,
       className: isAdmin() ? 'tableShow' : 'tableHiddle',
       render: (text, record, index) => {
         return isAdminUser ? <div>{renderCode(text)}</div> : <></>;
@@ -441,6 +446,7 @@ const LogsTable = () => {
       key: COLUMN_KEYS.TASK_STATUS,
       title: t('任务状态'),
       dataIndex: 'status',
+      width: 120,
       className: isAdmin() ? 'tableShow' : 'tableHiddle',
       render: (text, record, index) => {
         return <div>{renderStatus(text)}</div>;
@@ -450,11 +456,11 @@ const LogsTable = () => {
       key: COLUMN_KEYS.PROGRESS,
       title: t('进度'),
       dataIndex: 'progress',
+      width: 160,
       render: (text, record, index) => {
         return (
           <div>
             {
-              // 转换例如100%为数字100，如果text未定义，返回0
               <Progress
                 stroke={
                   record.status === 'FAILURE'
@@ -474,6 +480,7 @@ const LogsTable = () => {
       key: COLUMN_KEYS.IMAGE,
       title: t('结果图片'),
       dataIndex: 'image_url',
+      width: 120,
       render: (text, record, index) => {
         if (!text) {
           return t('无');
@@ -481,8 +488,8 @@ const LogsTable = () => {
         return (
           <Button
             onClick={() => {
-              setModalImageUrl(text); // 更新图片URL状态
-              setIsModalOpenurl(true); // 打开模态框
+              setModalImageUrl(text);
+              setIsModalOpenurl(true);
             }}
           >
             {t('查看图片')}
@@ -494,8 +501,8 @@ const LogsTable = () => {
       key: COLUMN_KEYS.PROMPT,
       title: 'Prompt',
       dataIndex: 'prompt',
+      width: 200,
       render: (text, record, index) => {
-        // 如果text未定义，返回替代文本，例如空字符串''或其他
         if (!text) {
           return t('无');
         }
@@ -518,8 +525,8 @@ const LogsTable = () => {
       key: COLUMN_KEYS.PROMPT_EN,
       title: 'PromptEn',
       dataIndex: 'prompt_en',
+      width: 200,
       render: (text, record, index) => {
-        // 如果text未定义，返回替代文本，例如空字符串''或其他
         if (!text) {
           return t('无');
         }
@@ -542,8 +549,8 @@ const LogsTable = () => {
       key: COLUMN_KEYS.FAIL_REASON,
       title: t('失败原因'),
       dataIndex: 'fail_reason',
+      width: 160,
       render: (text, record, index) => {
-        // 如果text未定义，返回替代文本，例如空字符串''或其他
         if (!text) {
           return t('无');
         }

@@ -88,14 +88,17 @@ const UsersTable = () => {
     {
       title: 'ID',
       dataIndex: 'id',
+      width: 50,
     },
     {
       title: t('用户名'),
       dataIndex: 'username',
+      width: 100,
     },
     {
       title: t('分组'),
       dataIndex: 'group',
+      width: 100,
       render: (text, record, index) => {
         return <div>{renderGroup(text)}</div>;
       },
@@ -103,6 +106,7 @@ const UsersTable = () => {
     {
       title: t('统计信息'),
       dataIndex: 'info',
+      width: 280,
       render: (text, record, index) => {
         return (
           <div>
@@ -124,6 +128,7 @@ const UsersTable = () => {
     {
       title: t('邀请信息'),
       dataIndex: 'invite',
+      width: 250,
       render: (text, record, index) => {
         return (
           <div>
@@ -145,6 +150,7 @@ const UsersTable = () => {
     {
       title: t('角色'),
       dataIndex: 'role',
+      width: 120,
       render: (text, record, index) => {
         return <div>{renderRole(text)}</div>;
       },
@@ -152,6 +158,7 @@ const UsersTable = () => {
     {
       title: t('状态'),
       dataIndex: 'status',
+      width: 100,
       render: (text, record, index) => {
         return (
           <div>
@@ -167,6 +174,7 @@ const UsersTable = () => {
     {
       title: '',
       dataIndex: 'operate',
+      width: 150,
       render: (text, record, index) => {
         if (record.DeletedAt !== null) {
           return <></>;
