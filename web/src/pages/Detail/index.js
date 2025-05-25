@@ -8,8 +8,20 @@ import {
   Typography,
   IconButton,
   Modal,
+  Avatar,
 } from '@douyinfe/semi-ui';
-import { IconRefresh, IconSearch } from '@douyinfe/semi-icons';
+import {
+  IconRefresh,
+  IconSearch,
+  IconMoneyExchangeStroked,
+  IconHistogram,
+  IconRotate,
+  IconCoinMoneyStroked,
+  IconTextStroked,
+  IconPulse,
+  IconStopwatchStroked,
+  IconTypograph,
+} from '@douyinfe/semi-icons';
 import { VChart } from '@visactor/react-vchart';
 import {
   API,
@@ -436,38 +448,44 @@ const Detail = (props) => {
     {
       title: t('当前余额'),
       value: renderQuota(userState?.user?.quota),
-      icon: '💰',
+      icon: <IconMoneyExchangeStroked />,
       color: 'bg-blue-50',
+      avatarColor: 'blue',
     },
     {
       title: t('历史消耗'),
       value: renderQuota(userState?.user?.used_quota),
-      icon: '📊',
+      icon: <IconHistogram />,
       color: 'bg-purple-50',
+      avatarColor: 'purple',
     },
     {
       title: t('请求次数'),
       value: userState.user?.request_count,
-      icon: '🔄',
+      icon: <IconRotate />,
       color: 'bg-green-50',
+      avatarColor: 'green',
     },
     {
       title: t('统计额度'),
       value: renderQuota(consumeQuota),
-      icon: '💲',
+      icon: <IconCoinMoneyStroked />,
       color: 'bg-yellow-50',
+      avatarColor: 'yellow',
     },
     {
       title: t('统计Tokens'),
       value: isNaN(consumeTokens) ? 0 : consumeTokens,
-      icon: '🔤',
+      icon: <IconTextStroked />,
       color: 'bg-pink-50',
+      avatarColor: 'pink',
     },
     {
       title: t('统计次数'),
       value: times,
-      icon: '📈',
+      icon: <IconPulse />,
       color: 'bg-teal-50',
+      avatarColor: 'cyan',
     },
     {
       title: t('平均RPM'),
@@ -475,8 +493,9 @@ const Detail = (props) => {
         times /
         ((Date.parse(end_timestamp) - Date.parse(start_timestamp)) / 60000)
       ).toFixed(3),
-      icon: '⏱️',
+      icon: <IconStopwatchStroked />,
       color: 'bg-indigo-50',
+      avatarColor: 'indigo',
     },
     {
       title: t('平均TPM'),
@@ -485,8 +504,9 @@ const Detail = (props) => {
           ((Date.parse(end_timestamp) - Date.parse(start_timestamp)) / 60000);
         return isNaN(tpm) ? '0' : tpm.toFixed(3);
       })(),
-      icon: '📝',
+      icon: <IconTypograph />,
       color: 'bg-orange-50',
+      avatarColor: 'orange',
     },
   ];
 
@@ -494,7 +514,7 @@ const Detail = (props) => {
   const getGreeting = () => {
     const hours = new Date().getHours();
     let greeting = '';
-    
+
     if (hours >= 5 && hours < 12) {
       greeting = t('早上好');
     } else if (hours >= 12 && hours < 14) {
@@ -504,14 +524,14 @@ const Detail = (props) => {
     } else {
       greeting = t('晚上好');
     }
-    
+
     const username = userState?.user?.username || '';
     return `👋${greeting}，${username}`;
   };
 
   return (
     <div className="bg-gray-50 min-h-screen">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-4">
         <h2 className="text-2xl font-semibold text-gray-800">{getGreeting()}</h2>
         <div className="flex gap-3">
           <IconButton
@@ -600,7 +620,13 @@ const Detail = (props) => {
                 headerLine={false}
               >
                 <div className="flex items-center">
-                  <div className="text-2xl mr-3">{stat.icon}</div>
+                  <Avatar
+                    className="mr-3"
+                    size="medium"
+                    color={stat.avatarColor}
+                  >
+                    {stat.icon}
+                  </Avatar>
                   <div>
                     <div className="text-sm text-gray-500">{stat.title}</div>
                     <div className="text-xl font-semibold">{stat.value}</div>
