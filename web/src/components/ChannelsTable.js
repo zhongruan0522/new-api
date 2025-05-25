@@ -1077,6 +1077,13 @@ const ChannelsTable = () => {
           ch.response_time = time * 1000;
           ch.test_time = Date.now() / 1000;
         });
+        if (!model) {
+          showInfo(
+            t('通道 ${name} 测试成功，耗时 ${time.toFixed(2)} 秒。')
+              .replace('${name}', channel.name)
+              .replace('${time.toFixed(2)}', time.toFixed(2)),
+          );
+        }
       } else {
         showError(message);
       }
