@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useState } from 'react';
-import { Button, Typography, Tag, Modal } from '@douyinfe/semi-ui';
+import { Button, Typography, Tag } from '@douyinfe/semi-ui';
 import { API, showError, isMobile } from '../../helpers';
 import { StatusContext } from '../../context/Status';
 import { marked } from 'marked';
@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { IconGithubLogo } from '@douyinfe/semi-icons';
 import exampleImage from '../../images/example.png';
 import { Link } from 'react-router-dom';
+import NoticeModal from '../../components/NoticeModal';
 import { Moonshot, OpenAI, XAI, Zhipu, Volcengine, Cohere, Claude, Gemini, Suno, Minimax, Wenxin, Spark, Qingyan, DeepSeek, Qwen, Midjourney, Grok, AzureAI, Hunyuan, Xinference } from '@lobehub/icons';
 
 const { Text } = Typography;
@@ -17,38 +18,16 @@ const Home = () => {
   const [homePageContentLoaded, setHomePageContentLoaded] = useState(false);
   const [homePageContent, setHomePageContent] = useState('');
   const [noticeVisible, setNoticeVisible] = useState(false);
-  const [noticeContent, setNoticeContent] = useState('');
 
   const isDemoSiteMode = statusState?.status?.demo_site_enabled || false;
 
-  const handleCloseNotice = () => {
-    setNoticeVisible(false);
-  };
-
-  const handleCloseTodayNotice = () => {
+  useEffect(() => {
+    const lastCloseDate = localStorage.getItem('notice_close_date');
     const today = new Date().toDateString();
-    localStorage.setItem('notice_close_date', today);
-    setNoticeVisible(false);
-  };
-
-  const displayNotice = async () => {
-    const res = await API.get('/api/notice');
-    const { success, message, data } = res.data;
-    if (success) {
-      if (data !== '') {
-        const htmlNotice = marked.parse(data);
-        setNoticeContent(htmlNotice);
-        const lastCloseDate = localStorage.getItem('notice_close_date');
-        const today = new Date().toDateString();
-
-        if (lastCloseDate !== today) {
-          setNoticeVisible(true);
-        }
-      }
-    } else {
-      showError(message);
+    if (lastCloseDate !== today) {
+      setNoticeVisible(true);
     }
-  };
+  }, []);
 
   const displayHomePageContent = async () => {
     setHomePageContent(localStorage.getItem('home_page_content') || '');
@@ -81,33 +60,16 @@ const Home = () => {
   };
 
   useEffect(() => {
-    displayNotice().then();
     displayHomePageContent().then();
   }, []);
 
   return (
     <div className="w-full overflow-x-hidden">
-      <Modal
-        title={t('系统公告')}
+      <NoticeModal
         visible={noticeVisible}
-        onCancel={handleCloseNotice}
-        footer={(
-          <div className="flex justify-end">
-            <Button type='secondary' className='!rounded-full' onClick={handleCloseTodayNotice}>{t('今日关闭')}</Button>
-            <Button type="primary" className='!rounded-full' onClick={handleCloseNotice}>{t('关闭公告')}</Button>
-          </div>
-        )}
-        size={isMobile() ? 'full-width' : 'large'}
-      >
-        <div
-          dangerouslySetInnerHTML={{ __html: noticeContent }}
-          className="max-h-[60vh] overflow-y-auto pr-2"
-          style={{
-            scrollbarWidth: 'thin',
-            scrollbarColor: 'var(--semi-color-tertiary) transparent'
-          }}
-        ></div>
-      </Modal>
+        onClose={() => setNoticeVisible(false)}
+        isMobile={isMobile()}
+      />
       {homePageContentLoaded && homePageContent === '' ? (
         <div className="w-full overflow-x-hidden">
           {/* Banner 部分 */}

@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { API, getLogo, getSystemName, showSuccess } from '../helpers';
 import fireworks from 'react-fireworks';
 import { CN, GB } from 'country-flag-icons/react/3x2';
+import NoticeModal from './NoticeModal';
 
 import {
   IconClose,
@@ -18,6 +19,7 @@ import {
   IconUserSetting,
   IconCreditCard,
   IconKey,
+  IconBell,
 } from '@douyinfe/semi-icons';
 import {
   Avatar,
@@ -41,6 +43,7 @@ const HeaderBar = () => {
   const [currentLang, setCurrentLang] = useState(i18n.language);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
+  const [noticeVisible, setNoticeVisible] = useState(false);
 
   const systemName = getSystemName();
   const logo = getLogo();
@@ -357,6 +360,11 @@ const HeaderBar = () => {
 
   return (
     <header className="text-semi-color-text-0 sticky top-0 z-50 transition-colors duration-300 bg-white/75 dark:bg-zinc-900/75 backdrop-blur-lg">
+      <NoticeModal
+        visible={noticeVisible}
+        onClose={() => setNoticeVisible(false)}
+        isMobile={styleState.isMobile}
+      />
       <div className="w-full px-4">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center">
@@ -455,6 +463,15 @@ const HeaderBar = () => {
                 />
               </Dropdown>
             )}
+
+            <Button
+              icon={<IconBell className="text-lg" />}
+              aria-label={t('系统公告')}
+              onClick={() => setNoticeVisible(true)}
+              theme="borderless"
+              type="tertiary"
+              className="!p-1.5 !text-current focus:!bg-semi-color-fill-1 dark:focus:!bg-gray-700 !rounded-full bg-semi-color-fill-0 dark:bg-semi-color-fill-1 hover:bg-semi-color-fill-1 dark:hover:bg-semi-color-fill-2"
+            />
 
             <Button
               icon={theme === 'dark' ? <IconSun size="large" className="text-yellow-500" /> : <IconMoon size="large" className="text-gray-300" />}
