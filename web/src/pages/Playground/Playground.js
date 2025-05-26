@@ -239,12 +239,10 @@ const Playground = () => {
 
     source.addEventListener('readystatechange', (e) => {
       if (e.readyState >= 2) {
-        if (source.status === undefined || source.status !== 200) {
+        if (source.status !== undefined && source.status !== 200) {
           source.close();
           streamMessageUpdate(t('连接已断开'), 'content');
           completeMessage('error');
-        } else if (source.status === 200) {
-          // 正常状态，不需要特殊处理
         }
       }
     });
