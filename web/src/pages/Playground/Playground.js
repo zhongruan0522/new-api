@@ -1,4 +1,4 @@
-import React, { useCallback, useContext, useEffect, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useState, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { UserContext } from '../../context/User/index.js';
 import {
@@ -100,6 +100,7 @@ const Playground = () => {
   const [groups, setGroups] = useState([]);
   const [showSettings, setShowSettings] = useState(true);
   const [styleState, styleDispatch] = useContext(StyleContext);
+  const sseSourceRef = useRef(null);
 
   const handleInputChange = (name, value) => {
     setInputs((inputs) => ({ ...inputs, [name]: value }));
@@ -210,9 +211,13 @@ const Playground = () => {
       payload: JSON.stringify(payload),
     });
 
+    // 保存 source 引用以便后续停止生成
+    sseSourceRef.current = source;
+
     source.addEventListener('message', (e) => {
       if (e.data === '[DONE]') {
         source.close();
+        sseSourceRef.current = null;
         completeMessage();
         return;
       }
@@ -240,6 +245,7 @@ const Playground = () => {
       const errorMessage = e.data || t('请求发生错误');
       streamMessageUpdate(errorMessage, 'content');
       completeMessage('error');
+      sseSourceRef.current = null;
       source.close();
     });
 
@@ -350,6 +356,51 @@ const Playground = () => {
       }
       return [...prevMessage.slice(0, -1), newMessage];
     });
+  }, [setMessage]);
+
+  const onStopGenerator = useCallback(() => {
+    if (sseSourceRef.current) {
+      sseSourceRef.current.close();
+      sseSourceRef.current = null;
+      setMessage((prevMessage) => {
+        const lastMessage = prevMessage[prevMessage.length - 1];
+        if (lastMessage.status === 'loading' || lastMessage.status === 'incomplete') {
+          let content = lastMessage.content || '';
+          let reasoningContent = lastMessage.reasoningContent || '';
+
+          // 处理 <think> 标签格式的思维链
+          if (content.includes('<think>')) {
+            const thinkTagRegex = /<think>([\s\S]*?)(?:<\/think>|$)/g;
+            let thoughts = [];
+            let replyParts = [];
+            let lastIndex = 0;
+            let match;
+
+            while ((match = thinkTagRegex.exec(content)) !== null) {
+              replyParts.push(content.substring(lastIndex, match.index));
+              thoughts.push(match[1]);
+              lastIndex = match.index + match[0].length;
+            }
+            replyParts.push(content.substring(lastIndex));
+
+            // 更新内容和思维链
+            content = replyParts.join('').trim();
+            if (thoughts.length > 0) {
+              reasoningContent = thoughts.join('\n\n---\n\n');
+            }
+          }
+
+          return [...prevMessage.slice(0, -1), {
+            ...lastMessage,
+            status: 'complete',
+            reasoningContent: reasoningContent,
+            content: content,
+            isReasoningExpanded: false  // 停止时折叠思维链面板
+          }];
+        }
+        return prevMessage;
+      });
+    }
   }, [setMessage]);
 
   const SettingsToggle = () => {
@@ -664,6 +715,8 @@ const Playground = () => {
             chats={message}
             onMessageSend={onMessageSend}
             showClearContext
+            showStopGenerate
+            onStopGenerator={onStopGenerator}
             onClear={() => {
               setMessage([]);
             }}
