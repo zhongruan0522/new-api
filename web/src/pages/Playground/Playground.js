@@ -203,6 +203,7 @@ const Playground = () => {
       method: 'POST',
       payload: JSON.stringify(payload),
     });
+
     source.addEventListener('message', (e) => {
       if (e.data === '[DONE]') {
         source.close();
@@ -210,32 +211,51 @@ const Playground = () => {
         return;
       }
 
-      let payload = JSON.parse(e.data);
-      const delta = payload.choices?.[0]?.delta;
-      if (delta) {
-        if (delta.reasoning_content) {
-          streamMessageUpdate(delta.reasoning_content, 'reasoning');
+      try {
+        let payload = JSON.parse(e.data);
+        const delta = payload.choices?.[0]?.delta;
+        if (delta) {
+          if (delta.reasoning_content) {
+            streamMessageUpdate(delta.reasoning_content, 'reasoning');
+          }
+          if (delta.content) {
+            streamMessageUpdate(delta.content, 'content');
+          }
         }
-        if (delta.content) {
-          streamMessageUpdate(delta.content, 'content');
-        }
+      } catch (error) {
+        console.error('Failed to parse SSE message:', error);
+        streamMessageUpdate(t('解析响应数据时发生错误'), 'content');
+        completeMessage('error');
       }
     });
 
     source.addEventListener('error', (e) => {
-      streamMessageUpdate(e.data, 'content');
+      console.error('SSE Error:', e);
+      const errorMessage = e.data || t('请求发生错误');
+      streamMessageUpdate(errorMessage, 'content');
       completeMessage('error');
+      source.close();
     });
 
     source.addEventListener('readystatechange', (e) => {
       if (e.readyState >= 2) {
-        if (source.status === undefined) {
+        if (source.status === undefined || source.status !== 200) {
           source.close();
-          completeMessage();
+          streamMessageUpdate(t('连接已断开'), 'content');
+          completeMessage('error');
+        } else if (source.status === 200) {
+          // 正常状态，不需要特殊处理
         }
       }
     });
-    source.stream();
+
+    try {
+      source.stream();
+    } catch (error) {
+      console.error('Failed to start SSE stream:', error);
+      streamMessageUpdate(t('建立连接时发生错误'), 'content');
+      completeMessage('error');
+    }
   };
 
   const onMessageSend = useCallback(
@@ -303,10 +323,13 @@ const Playground = () => {
     setMessage((prevMessage) => {
       const lastMessage = prevMessage[prevMessage.length - 1];
       let newMessage = { ...lastMessage };
-      if (
-        lastMessage.status === 'loading' ||
-        lastMessage.status === 'incomplete'
-      ) {
+
+      // 如果消息已经是错误状态，保持错误状态
+      if (lastMessage.status === 'error') {
+        return prevMessage;
+      }
+
+      if (lastMessage.status === 'loading' || lastMessage.status === 'incomplete') {
         if (type === 'reasoning') {
           newMessage = {
             ...newMessage,
@@ -379,6 +402,19 @@ const Playground = () => {
 
   const renderCustomChatContent = useCallback(
     ({ message, className }) => {
+      if (message.status === 'error') {
+        return (
+          <div className={className} style={{
+            display: 'flex',
+            alignItems: 'center',
+            padding: '12px',
+            color: 'var(--semi-color-danger)'
+          }}>
+            <Typography.Text type="danger">{message.content || t('请求发生错误')}</Typography.Text>
+          </div>
+        );
+      }
+
       const toggleReasoningExpansion = (messageId) => {
         setMessage(prevMessages =>
           prevMessages.map(msg =>
