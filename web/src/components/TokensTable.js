@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useContext } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   API,
   copy,
@@ -48,6 +49,7 @@ function renderTimestamp(timestamp) {
 
 const TokensTable = () => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [userState, userDispatch] = useContext(UserContext);
 
   const renderStatus = (status, model_limits_enabled = false) => {
@@ -576,6 +578,7 @@ const TokensTable = () => {
           shadows='hover'
           className="bg-blue-50 border-0 !rounded-2xl w-full"
           headerLine={false}
+          onClick={() => navigate('/console/topup')}
         >
           <div className="flex items-center">
             <Avatar

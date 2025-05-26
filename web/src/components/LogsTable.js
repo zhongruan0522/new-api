@@ -1141,7 +1141,7 @@ const LogsTable = () => {
                   size='large'
                   style={{
                     padding: 15,
-                    borderRadius: '8px',
+                    borderRadius: '9999px',
                     fontWeight: 500,
                     boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
                   }}
@@ -1153,7 +1153,7 @@ const LogsTable = () => {
                   size='large'
                   style={{
                     padding: 15,
-                    borderRadius: '8px',
+                    borderRadius: '9999px',
                     fontWeight: 500,
                     boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
                   }}
@@ -1167,7 +1167,7 @@ const LogsTable = () => {
                     padding: 15,
                     border: 'none',
                     boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
-                    borderRadius: '8px',
+                    borderRadius: '9999px',
                     fontWeight: 500,
                   }}
                 >

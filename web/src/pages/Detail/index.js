@@ -1,5 +1,6 @@
 import React, { useContext, useEffect, useRef, useState } from 'react';
 import { initVChartSemiTheme } from '@visactor/vchart-semi-theme';
+import { useNavigate } from 'react-router-dom';
 
 import {
   Card,
@@ -44,6 +45,7 @@ import { useTranslation } from 'react-i18next';
 
 const Detail = (props) => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const { Text } = Typography;
   const formRef = useRef();
   let now = new Date();
@@ -452,6 +454,7 @@ const Detail = (props) => {
       icon: <IconMoneyExchangeStroked size="large" />,
       color: 'bg-blue-50',
       avatarColor: 'blue',
+      onClick: () => navigate('/console/topup'),
     },
     {
       title: t('历史消耗'),
@@ -621,6 +624,7 @@ const Detail = (props) => {
                 shadows='hover'
                 className={`${stat.color} border-0 !rounded-2xl w-full`}
                 headerLine={false}
+                onClick={stat.onClick}
               >
                 <div className="flex items-center">
                   <Avatar
