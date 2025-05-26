@@ -382,6 +382,7 @@ const ModelPricing = () => {
         type="card"
         collapsible
         onChange={key => setActiveKey(key)}
+        className="mt-2"
       >
         {Object.entries(modelCategories)
           .filter(([key]) => availableCategories.includes(key))
@@ -488,7 +489,7 @@ const ModelPricing = () => {
               <Card className="!rounded-2xl shadow-lg border-0">
                 {/* 顶部状态卡片 */}
                 <Card
-                  className="!rounded-2xl !border-0 !shadow-2xl overflow-hidden mb-6"
+                  className="!rounded-2xl !border-0 !shadow-md overflow-hidden mb-6"
                   style={{
                     background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 25%, #a855f7 50%, #c084fc 75%, #d8b4fe 100%)',
                     position: 'relative'
