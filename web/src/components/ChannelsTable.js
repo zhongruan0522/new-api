@@ -921,9 +921,13 @@ const ChannelsTable = () => {
     const localIdSort = localStorage.getItem('id-sort') === 'true';
     const localPageSize =
       parseInt(localStorage.getItem('page-size')) || ITEMS_PER_PAGE;
+    const localEnableTagMode = localStorage.getItem('enable-tag-mode') === 'true';
+    const localEnableBatchDelete = localStorage.getItem('enable-batch-delete') === 'true';
     setIdSort(localIdSort);
     setPageSize(localPageSize);
-    loadChannels(0, localPageSize, localIdSort, enableTagMode)
+    setEnableTagMode(localEnableTagMode);
+    setEnableBatchDelete(localEnableBatchDelete);
+    loadChannels(0, localPageSize, localIdSort, localEnableTagMode)
       .then()
       .catch((reason) => {
         showError(reason);
@@ -1492,7 +1496,9 @@ const ChannelsTable = () => {
               {t('开启批量操作')}
             </Typography.Text>
             <Switch
+              checked={enableBatchDelete}
               onChange={(v) => {
+                localStorage.setItem('enable-batch-delete', v + '');
                 setEnableBatchDelete(v);
               }}
             />
@@ -1505,6 +1511,7 @@ const ChannelsTable = () => {
             <Switch
               checked={enableTagMode}
               onChange={(v) => {
+                localStorage.setItem('enable-tag-mode', v + '');
                 setEnableTagMode(v);
                 loadChannels(0, pageSize, idSort, v);
               }}

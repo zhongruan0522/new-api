@@ -83,8 +83,9 @@ const Playground = () => {
     },
   ];
 
+  const defaultModel = 'deepseek-r1';
   const [inputs, setInputs] = useState({
-    model: 'deepseek-r1',
+    model: defaultModel,
     group: '',
     max_tokens: 0,
     temperature: 0,
@@ -126,6 +127,11 @@ const Playground = () => {
         value: model,
       }));
       setModels(localModelOptions);
+      // if default model is not in the list, set the first one as default
+      const hasDefault = localModelOptions.some(option => option.value === defaultModel);
+      if (!hasDefault && localModelOptions.length > 0) {
+        setInputs((inputs) => ({ ...inputs, model: localModelOptions[0].value }));
+      }
     } else {
       showError(t(message));
     }
