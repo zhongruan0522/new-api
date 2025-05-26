@@ -18,7 +18,7 @@ import {
   IconCalendarClock,
   IconChecklistStroked,
   IconComment,
-  IconCommentStroked,
+  IconTerminal,
   IconCreditCard,
   IconGift,
   IconHelpCircle,
@@ -252,7 +252,7 @@ const SiderBar = () => {
         text: 'Playground',
         itemKey: 'playground',
         to: '/playground',
-        icon: <IconCommentStroked />,
+        icon: <IconTerminal />,
       },
       {
         text: t('聊天'),
