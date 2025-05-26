@@ -1,10 +1,11 @@
 import React, { useCallback, useContext, useEffect, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { UserContext } from '../../context/User/index.js';
 import {
   API,
   getUserIdFromLocalStorage,
   showError,
+  getLogo,
 } from '../../helpers/index.js';
 import {
   Card,
@@ -16,38 +17,54 @@ import {
   TextArea,
   Typography,
   Button,
-  Highlight,
+  MarkdownRender,
+  Tag,
 } from '@douyinfe/semi-ui';
 import { SSE } from 'sse';
-import { IconSetting } from '@douyinfe/semi-icons';
+import { IconSetting, IconSpin, IconChevronRight, IconChevronUp } from '@douyinfe/semi-icons';
 import { StyleContext } from '../../context/Style/index.js';
 import { useTranslation } from 'react-i18next';
-import { renderGroupOption, truncateText } from '../../helpers/render.js';
-
-const roleInfo = {
-  user: {
-    name: 'User',
-    avatar:
-      'https://lf3-static.bytednsdoc.com/obj/eden-cn/ptlz_zlp/ljhwZthlaukjlkulzlp/docs-icon.png',
-  },
-  assistant: {
-    name: 'Assistant',
-    avatar: 'logo.png',
-  },
-  system: {
-    name: 'System',
-    avatar:
-      'https://lf3-static.bytednsdoc.com/obj/eden-cn/ptlz_zlp/ljhwZthlaukjlkulzlp/other/logo.png',
-  },
-};
+import { renderGroupOption, truncateText, stringToColor } from '../../helpers/render.js';
 
 let id = 4;
 function getId() {
   return `${id++}`;
 }
 
+const generateAvatarDataUrl = (username) => {
+  if (!username) {
+    return 'https://lf3-static.bytednsdoc.com/obj/eden-cn/ptlz_zlp/ljhwZthlaukjlkulzlp/docs-icon.png';
+  }
+  const firstLetter = username[0].toUpperCase();
+  const bgColor = stringToColor(username);
+  const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+      <circle cx="16" cy="16" r="16" fill="${bgColor}" />
+      <text x="50%" y="50%" dominant-baseline="central" text-anchor="middle" font-size="16" fill="#ffffff" font-family="sans-serif">${firstLetter}</text>
+    </svg>
+  `;
+  return `data:image/svg+xml;base64,${btoa(svg)}`;
+};
+
 const Playground = () => {
   const { t } = useTranslation();
+  const [userState, userDispatch] = useContext(UserContext);
+
+  const roleInfo = {
+    user: {
+      name: userState?.user?.username || 'User',
+      avatar: generateAvatarDataUrl(userState?.user?.username),
+    },
+    assistant: {
+      name: 'Assistant',
+      avatar: getLogo(),
+    },
+    system: {
+      name: 'System',
+      avatar:
+        'https://lf3-static.bytednsdoc.com/obj/eden-cn/ptlz_zlp/ljhwZthlaukjlkulzlp/other/logo.png',
+    },
+  };
 
   const defaultMessage = [
     {
@@ -61,17 +78,18 @@ const Playground = () => {
       id: '3',
       createAt: 1715676751919,
       content: t('你好，请问有什么可以帮助您的吗？'),
+      reasoningContent: '',
+      isReasoningExpanded: false,
     },
   ];
 
   const [inputs, setInputs] = useState({
-    model: 'gpt-4o-mini',
+    model: 'deepseek-r1',
     group: '',
     max_tokens: 0,
     temperature: 0,
   });
   const [searchParams, setSearchParams] = useSearchParams();
-  const [userState, userDispatch] = useContext(UserContext);
   const [status, setStatus] = useState({});
   const [systemPrompt, setSystemPrompt] = useState(
     'You are a helpful assistant. You can help me by answering my questions. You can also ask me questions.',
@@ -97,7 +115,7 @@ const Playground = () => {
     }
     loadModels();
     loadGroups();
-  }, []);
+  }, [searchParams, t]);
 
   const loadModels = async () => {
     let res = await API.get(`/api/user/models`);
@@ -121,7 +139,7 @@ const Playground = () => {
         label: truncateText(info.desc, '50%'),
         value: group,
         ratio: info.ratio,
-        fullLabel: info.desc, // 保存完整文本用于tooltip
+        fullLabel: info.desc,
       }));
 
       if (localGroupOptions.length === 0) {
@@ -186,7 +204,6 @@ const Playground = () => {
       payload: JSON.stringify(payload),
     });
     source.addEventListener('message', (e) => {
-      // 只有收到 [DONE] 时才结束
       if (e.data === '[DONE]') {
         source.close();
         completeMessage();
@@ -194,14 +211,19 @@ const Playground = () => {
       }
 
       let payload = JSON.parse(e.data);
-      // 检查是否有 delta content
-      if (payload.choices?.[0]?.delta?.content) {
-        generateMockResponse(payload.choices[0].delta.content);
+      const delta = payload.choices?.[0]?.delta;
+      if (delta) {
+        if (delta.reasoning_content) {
+          streamMessageUpdate(delta.reasoning_content, 'reasoning');
+        }
+        if (delta.content) {
+          streamMessageUpdate(delta.content, 'content');
+        }
       }
     });
 
     source.addEventListener('error', (e) => {
-      generateMockResponse(e.data);
+      streamMessageUpdate(e.data, 'content');
       completeMessage('error');
     });
 
@@ -230,7 +252,6 @@ const Playground = () => {
           },
         ];
 
-        // 将 getPayload 移到这里
         const getPayload = () => {
           let systemMessage = getSystemMessage();
           let messages = newMessage.map((item) => {
@@ -252,11 +273,12 @@ const Playground = () => {
           };
         };
 
-        // 使用更新后的消息状态调用 handleSSE
         handleSSE(getPayload());
         newMessage.push({
           role: 'assistant',
           content: '',
+          reasoningContent: '',
+          isReasoningExpanded: true,
           createAt: Date.now(),
           id: getId(),
           status: 'loading',
@@ -264,39 +286,44 @@ const Playground = () => {
         return newMessage;
       });
     },
-    [getSystemMessage],
+    [getSystemMessage, inputs, setMessage],
   );
 
   const completeMessage = useCallback((status = 'complete') => {
-    // console.log("Complete Message: ", status)
     setMessage((prevMessage) => {
       const lastMessage = prevMessage[prevMessage.length - 1];
-      // only change the status if the last message is not complete and not error
       if (lastMessage.status === 'complete' || lastMessage.status === 'error') {
         return prevMessage;
       }
-      return [...prevMessage.slice(0, -1), { ...lastMessage, status: status }];
+      return [...prevMessage.slice(0, -1), { ...lastMessage, status: status, isReasoningExpanded: false }];
     });
-  }, []);
+  }, [setMessage]);
 
-  const generateMockResponse = useCallback((content) => {
-    // console.log("Generate Mock Response: ", content);
-    setMessage((message) => {
-      const lastMessage = message[message.length - 1];
+  const streamMessageUpdate = useCallback((textChunk, type) => {
+    setMessage((prevMessage) => {
+      const lastMessage = prevMessage[prevMessage.length - 1];
       let newMessage = { ...lastMessage };
       if (
         lastMessage.status === 'loading' ||
         lastMessage.status === 'incomplete'
       ) {
-        newMessage = {
-          ...newMessage,
-          content: (lastMessage.content || '') + content,
-          status: 'incomplete',
-        };
+        if (type === 'reasoning') {
+          newMessage = {
+            ...newMessage,
+            reasoningContent: (lastMessage.reasoningContent || '') + textChunk,
+            status: 'incomplete',
+          };
+        } else if (type === 'content') {
+          newMessage = {
+            ...newMessage,
+            content: (lastMessage.content || '') + textChunk,
+            status: 'incomplete',
+          };
+        }
       }
-      return [...message.slice(0, -1), newMessage];
+      return [...prevMessage.slice(0, -1), newMessage];
     });
-  }, []);
+  }, [setMessage]);
 
   const SettingsToggle = () => {
     if (!styleState.isMobile) return null;
@@ -340,7 +367,6 @@ const Playground = () => {
         }}
         onClick={onClick}
       >
-        {/*{uploadNode}*/}
         {inputNode}
         {sendNode}
       </div>
@@ -350,6 +376,152 @@ const Playground = () => {
   const renderInputArea = useCallback((props) => {
     return <CustomInputRender {...props} />;
   }, []);
+
+  const renderCustomChatContent = useCallback(
+    ({ message, className }) => {
+      const toggleReasoningExpansion = (messageId) => {
+        setMessage(prevMessages =>
+          prevMessages.map(msg =>
+            msg.id === messageId && msg.role === 'assistant'
+              ? { ...msg, isReasoningExpanded: !msg.isReasoningExpanded }
+              : msg
+          )
+        );
+      };
+
+      const isThinkingStatus = message.status === 'loading' || message.status === 'incomplete';
+      let currentExtractedThinkingContent = null;
+      let currentDisplayableFinalContent = message.content || "";
+      let thinkingSource = null;
+
+      if (message.role === 'assistant') {
+        if (message.reasoningContent) {
+          currentExtractedThinkingContent = message.reasoningContent;
+          thinkingSource = 'reasoningContent';
+        } else if (message.content && message.content.includes('<think')) {
+          const fullContent = message.content;
+          let thoughts = [];
+          let replyParts = [];
+          let lastIndex = 0;
+          const thinkTagRegex = /<think>([\s\S]*?)<\/think>/g;
+          let match;
+
+          thinkTagRegex.lastIndex = 0;
+          while ((match = thinkTagRegex.exec(fullContent)) !== null) {
+            replyParts.push(fullContent.substring(lastIndex, match.index));
+            thoughts.push(match[1]);
+            lastIndex = match.index + match[0].length;
+          }
+          replyParts.push(fullContent.substring(lastIndex));
+
+          currentDisplayableFinalContent = replyParts.join('').trim();
+
+          if (thoughts.length > 0) {
+            currentExtractedThinkingContent = thoughts.join('\n\n---\n\n');
+            thinkingSource = '<think> tags';
+          }
+
+          if (isThinkingStatus && currentDisplayableFinalContent.includes('<think')) {
+            const lastOpenThinkIndex = currentDisplayableFinalContent.lastIndexOf('<think>');
+            if (lastOpenThinkIndex !== -1) {
+              const fragmentAfterLastOpen = currentDisplayableFinalContent.substring(lastOpenThinkIndex);
+              if (!fragmentAfterLastOpen.substring("<think>".length).includes('</think>')) {
+                const unclosedThought = fragmentAfterLastOpen.substring("<think>".length);
+                if (currentExtractedThinkingContent) {
+                  currentExtractedThinkingContent += (currentExtractedThinkingContent ? '\n\n---\n\n' : '') + unclosedThought;
+                } else {
+                  currentExtractedThinkingContent = unclosedThought;
+                }
+                if (!thinkingSource && unclosedThought) thinkingSource = '<think> tags (streaming)';
+                currentDisplayableFinalContent = currentDisplayableFinalContent.substring(0, lastOpenThinkIndex).trim();
+              }
+            }
+          }
+        }
+
+        if (typeof currentDisplayableFinalContent === 'string' && currentDisplayableFinalContent.trim().startsWith("<think>")) {
+          const startsWithCompleteThinkTagRegex = /^<think>[\s\S]*?<\/think>/;
+          if (!startsWithCompleteThinkTagRegex.test(currentDisplayableFinalContent.trim())) {
+            currentDisplayableFinalContent = "";
+          }
+        }
+      }
+
+      const headerText = isThinkingStatus ? t('思考中...') : t('思考过程');
+      const finalExtractedThinkingContent = currentExtractedThinkingContent;
+      const finalDisplayableFinalContent = currentDisplayableFinalContent;
+
+      if (message.role === 'assistant' &&
+        isThinkingStatus &&
+        !finalExtractedThinkingContent &&
+        (!finalDisplayableFinalContent || finalDisplayableFinalContent.trim() === '')) {
+        return (
+          <div className={className} style={{ display: 'flex', alignItems: 'center', padding: '12px' }}>
+            <IconSpin spin />
+            <Typography.Text type="secondary" style={{ marginLeft: '8px' }}>{t('正在思考...')}</Typography.Text>
+          </div>
+        );
+      }
+
+      return (
+        <div className={className}>
+          {message.role === 'assistant' && finalExtractedThinkingContent && (
+            <div style={{
+              background: 'var(--semi-color-tertiary-light-hover)',
+              borderRadius: '16px',
+              marginBottom: '8px',
+              overflow: 'hidden',
+            }}>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '8px 12px',
+                  cursor: 'pointer',
+                  height: 'auto',
+                }}
+                onClick={() => toggleReasoningExpansion(message.id)}
+              >
+                <div style={{ display: 'flex', alignItems: 'center' }}>
+                  <Typography.Text strong={message.isReasoningExpanded} style={{ fontSize: '13px', color: 'var(--semi-color-text-1)' }}>{headerText}</Typography.Text>
+                  {thinkingSource && (
+                    <Tag size="small" color='green' shape="circle" style={{ marginLeft: '8px' }}>
+                      {thinkingSource}
+                    </Tag>
+                  )}
+                </div>
+                <div>
+                  {isThinkingStatus && <IconSpin spin />}
+                  {!isThinkingStatus && (message.isReasoningExpanded ? <IconChevronUp size="small" /> : <IconChevronRight size="small" />)}
+                </div>
+              </div>
+              <div
+                style={{
+                  maxHeight: message.isReasoningExpanded ? '160px' : '0px',
+                  overflowY: message.isReasoningExpanded ? 'auto' : 'hidden',
+                  overflowX: 'hidden',
+                  transition: 'max-height 0.3s ease-in-out, padding 0.3s ease-in-out',
+                  padding: message.isReasoningExpanded ? '0px 12px 12px 12px' : '0px 12px',
+                  boxSizing: 'border-box',
+                }}
+              >
+                <MarkdownRender raw={finalExtractedThinkingContent} />
+              </div>
+            </div>
+          )}
+
+          {(finalDisplayableFinalContent && finalDisplayableFinalContent.trim() !== '') && (
+            <MarkdownRender raw={finalDisplayableFinalContent} />
+          )}
+          {!(finalExtractedThinkingContent) && !(finalDisplayableFinalContent && finalDisplayableFinalContent.trim() !== '') && message.role === 'assistant' && (
+            <div></div>
+          )}
+        </div>
+      );
+    },
+    [t, setMessage],
+  );
 
   return (
     <Layout style={{ height: '100%' }}>
@@ -429,7 +601,6 @@ const Playground = () => {
               autoComplete='new-password'
               autosize
               defaultValue={systemPrompt}
-              // value={systemPrompt}
               onChange={(value) => {
                 setSystemPrompt(value);
               }}
@@ -442,6 +613,7 @@ const Playground = () => {
           <SettingsToggle />
           <Chat
             chatBoxRenderConfig={{
+              renderChatBoxContent: renderCustomChatContent,
               renderChatBoxAction: () => {
                 return <div></div>;
               },
