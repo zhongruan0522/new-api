@@ -357,7 +357,7 @@ const SiderBar = () => {
         style={{
           width: isCollapsed ? '60px' : '200px',
           borderRight: '1px solid var(--semi-color-border)',
-          background: 'var(--semi-color-bg-1)',
+          background: 'var(--semi-color-bg-0)',
           borderRadius: styleState.isMobile ? '0' : '0 8px 8px 0',
           position: 'relative',
           zIndex: 95,
