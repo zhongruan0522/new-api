@@ -84,7 +84,7 @@ const PageLayout = () => {
           padding: 0,
           height: 'auto',
           lineHeight: 'normal',
-          position: styleState.isMobile ? 'sticky' : 'fixed',
+          position: 'fixed',
           width: '100%',
           top: 0,
           zIndex: 100,
@@ -95,8 +95,8 @@ const PageLayout = () => {
       </Header>
       <Layout
         style={{
-          marginTop: styleState.isMobile ? '0' : '56px',
-          height: styleState.isMobile ? 'auto' : 'calc(100vh - 56px)',
+          marginTop: '56px',
+          height: 'calc(100vh - 56px)',
           overflow: styleState.isMobile ? 'visible' : 'auto',
           display: 'flex',
           flexDirection: 'column',
