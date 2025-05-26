@@ -449,42 +449,42 @@ const Detail = (props) => {
     {
       title: t('当前余额'),
       value: renderQuota(userState?.user?.quota),
-      icon: <IconMoneyExchangeStroked />,
+      icon: <IconMoneyExchangeStroked size="large" />,
       color: 'bg-blue-50',
       avatarColor: 'blue',
     },
     {
       title: t('历史消耗'),
       value: renderQuota(userState?.user?.used_quota),
-      icon: <IconHistogram />,
+      icon: <IconHistogram size="large" />,
       color: 'bg-purple-50',
       avatarColor: 'purple',
     },
     {
       title: t('请求次数'),
       value: userState.user?.request_count,
-      icon: <IconRotate />,
+      icon: <IconRotate size="large" />,
       color: 'bg-green-50',
       avatarColor: 'green',
     },
     {
       title: t('统计额度'),
       value: renderQuota(consumeQuota),
-      icon: <IconCoinMoneyStroked />,
+      icon: <IconCoinMoneyStroked size="large" />,
       color: 'bg-yellow-50',
       avatarColor: 'yellow',
     },
     {
       title: t('统计Tokens'),
       value: isNaN(consumeTokens) ? 0 : consumeTokens,
-      icon: <IconTextStroked />,
+      icon: <IconTextStroked size="large" />,
       color: 'bg-pink-50',
       avatarColor: 'pink',
     },
     {
       title: t('统计次数'),
       value: times,
-      icon: <IconPulse />,
+      icon: <IconPulse size="large" />,
       color: 'bg-teal-50',
       avatarColor: 'cyan',
     },
@@ -494,7 +494,7 @@ const Detail = (props) => {
         times /
         ((Date.parse(end_timestamp) - Date.parse(start_timestamp)) / 60000)
       ).toFixed(3),
-      icon: <IconStopwatchStroked />,
+      icon: <IconStopwatchStroked size="large" />,
       color: 'bg-indigo-50',
       avatarColor: 'indigo',
     },
@@ -505,7 +505,7 @@ const Detail = (props) => {
           ((Date.parse(end_timestamp) - Date.parse(start_timestamp)) / 60000);
         return isNaN(tpm) ? '0' : tpm.toFixed(3);
       })(),
-      icon: <IconTypograph />,
+      icon: <IconTypograph size="large" />,
       color: 'bg-orange-50',
       avatarColor: 'orange',
     },
@@ -613,7 +613,7 @@ const Detail = (props) => {
       </Modal>
 
       <Spin spinning={loading}>
-        <div className="mb-6">
+        <div className="mb-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {statsData.map((stat, idx) => (
               <Card

@@ -583,7 +583,7 @@ const TokensTable = () => {
               size="medium"
               color="blue"
             >
-              <IconMoneyExchangeStroked />
+              <IconMoneyExchangeStroked size="large" />
             </Avatar>
             <div>
               <div className="text-sm text-gray-500">{t('当前余额')}</div>
@@ -603,7 +603,7 @@ const TokensTable = () => {
               size="medium"
               color="purple"
             >
-              <IconHistogram />
+              <IconHistogram size="large" />
             </Avatar>
             <div>
               <div className="text-sm text-gray-500">{t('累计消费')}</div>
@@ -623,7 +623,7 @@ const TokensTable = () => {
               size="medium"
               color="green"
             >
-              <IconRotate />
+              <IconRotate size="large" />
             </Avatar>
             <div>
               <div className="text-sm text-gray-500">{t('请求次数')}</div>
