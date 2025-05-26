@@ -26,6 +26,7 @@ import { VChart } from '@visactor/react-vchart';
 import {
   API,
   isAdmin,
+  isMobile,
   showError,
   timestamp2string,
   timestamp2string1,
@@ -538,14 +539,12 @@ const Detail = (props) => {
             icon={<IconSearch />}
             onClick={showSearchModal}
             className="bg-green-500 text-white hover:bg-green-600 !rounded-full"
-            size="large"
           />
           <IconButton
             icon={<IconRefresh />}
             onClick={refresh}
             loading={loading}
             className="bg-blue-500 text-white hover:bg-blue-600 !rounded-full"
-            size="large"
           />
         </div>
       </div>
@@ -557,37 +556,40 @@ const Detail = (props) => {
         onOk={handleSearchConfirm}
         onCancel={handleCloseModal}
         closeOnEsc={true}
-        width={700}
+        size={isMobile() ? 'full-width' : 'small'}
         centered
       >
         <Form ref={formRef} layout='vertical' className="w-full">
           <Form.DatePicker
             field='start_timestamp'
             label={t('起始时间')}
-            className="w-full mb-4"
+            className="w-full mb-2 !rounded-lg"
             initValue={start_timestamp}
             value={start_timestamp}
             type='dateTime'
             name='start_timestamp'
+            size='large'
             onChange={(value) => handleInputChange(value, 'start_timestamp')}
           />
           <Form.DatePicker
             field='end_timestamp'
             label={t('结束时间')}
-            className="w-full mb-4"
+            className="w-full mb-2 !rounded-lg"
             initValue={end_timestamp}
             value={end_timestamp}
             type='dateTime'
             name='end_timestamp'
+            size='large'
             onChange={(value) => handleInputChange(value, 'end_timestamp')}
           />
           <Form.Select
             field='data_export_default_time'
             label={t('时间粒度')}
-            className="w-full mb-4"
+            className="w-full mb-2 !rounded-lg"
             initValue={dataExportDefaultTime}
             placeholder={t('时间粒度')}
             name='data_export_default_time'
+            size='large'
             optionList={[
               { label: t('小时'), value: 'hour' },
               { label: t('天'), value: 'day' },
@@ -599,10 +601,11 @@ const Detail = (props) => {
             <Form.Input
               field='username'
               label={t('用户名称')}
-              className="w-full mb-4"
+              className="w-full mb-2 !rounded-lg"
               value={username}
               placeholder={t('可选值')}
               name='username'
+              size='large'
               onChange={(value) => handleInputChange(value, 'username')}
             />
           )}

@@ -109,7 +109,6 @@ const PageLayout = () => {
               left: 0,
               top: '56px',
               zIndex: 99,
-              background: 'var(--semi-color-bg-1)',
               border: 'none',
               paddingRight: '0',
               height: 'calc(100vh - 56px)',
