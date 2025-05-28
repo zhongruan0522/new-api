@@ -84,17 +84,6 @@ body {
   display: revert;
 }
 
-.semi-chat {
-  padding-top: 0 !important;
-  padding-bottom: 0 !important;
-  height: 100%;
-}
-
-.semi-chat-chatBox-content {
-  min-width: auto;
-  word-break: break-word;
-}
-
 .tableHiddle {
   display: none !important;
 }
@@ -144,4 +133,114 @@ code {
 
 .semi-tabs-content {
   padding: 0 !important;
+}
+
+/* 聊天 */
+.semi-chat {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  height: 100%;
+  max-width: 100% !important;
+  width: 100% !important;
+  overflow: hidden !important;
+}
+
+.semi-chat-chatBox {
+  max-width: 100% !important;
+  overflow: hidden !important;
+}
+
+.semi-chat-chatBox-wrap {
+  max-width: 100% !important;
+  overflow: hidden !important;
+}
+
+.semi-chat-chatBox-content {
+  min-width: auto;
+  word-break: break-word;
+  max-width: 100% !important;
+  overflow-wrap: break-word !important;
+}
+
+.semi-chat-content {
+  max-width: 100% !important;
+  overflow: hidden !important;
+}
+
+.semi-chat-list {
+  max-width: 100% !important;
+  overflow-x: hidden !important;
+}
+
+.semi-chat-container {
+  overflow-x: hidden !important;
+}
+
+.semi-chat-container::-webkit-scrollbar {
+  width: 4px;
+}
+
+.semi-chat-container::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 2px;
+}
+
+.semi-chat-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.15);
+}
+
+.semi-chat-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* 隐藏模型设置区域的滚动条 */
+.model-settings-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.model-settings-scroll {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* 调试面板代码样式 */
+.debug-code {
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+/* 调试面板标签样式 */
+.semi-tabs-content {
+  height: calc(100% - 40px) !important;
+  flex: 1 !important;
+}
+
+.semi-tabs-content .semi-tabs-pane {
+  height: 100% !important;
+  overflow: hidden !important;
+}
+
+.semi-tabs-content .semi-tabs-pane>div {
+  height: 100% !important;
+}
+
+/* 调试面板特定样式 */
+.debug-panel .semi-tabs {
+  height: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.debug-panel .semi-tabs-bar {
+  flex-shrink: 0 !important;
+}
+
+.debug-panel .semi-tabs-content {
+  flex: 1 !important;
+  overflow: hidden !important;
+}
+
+.semi-chat-chatBox-action {
+  column-gap: 0 !important;
 }
