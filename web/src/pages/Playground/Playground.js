@@ -190,7 +190,6 @@ const Playground = () => {
         value: model,
       }));
       setModels(localModelOptions);
-      // if default model is not in the list, set the first one as default
       const hasDefault = localModelOptions.some(option => option.value === defaultModel);
       if (!hasDefault && localModelOptions.length > 0) {
         setInputs((inputs) => ({ ...inputs, model: localModelOptions[0].value }));
@@ -258,7 +257,6 @@ const Playground = () => {
   };
 
   let handleNonStreamRequest = async (payload) => {
-    // 记录请求数据并自动切换到请求体标签
     setDebugData(prev => ({
       ...prev,
       request: payload,
@@ -278,7 +276,6 @@ const Playground = () => {
       });
 
       if (!response.ok) {
-        // 尝试读取错误响应体
         let errorBody = '';
         try {
           errorBody = await response.text();
@@ -294,7 +291,6 @@ const Playground = () => {
           timestamp: new Date().toISOString()
         };
 
-        // 记录HTTP错误到调试数据
         setDebugData(prev => ({
           ...prev,
           response: JSON.stringify(errorInfo, null, 2)
@@ -306,20 +302,17 @@ const Playground = () => {
 
       const data = await response.json();
 
-      // 记录响应数据并自动切换到响应标签
       setDebugData(prev => ({
         ...prev,
         response: JSON.stringify(data, null, 2)
       }));
       setActiveDebugTab('response');
 
-      // 处理响应数据
       if (data.choices && data.choices[0]) {
         const choice = data.choices[0];
         let content = choice.message?.content || '';
         let reasoningContent = choice.message?.reasoning_content || '';
 
-        // 处理 <think> 标签格式的思维链
         if (content.includes('<think>')) {
           const thinkTagRegex = /<think>([\s\S]*?)<\/think>/g;
           let thoughts = [];
@@ -327,6 +320,7 @@ const Playground = () => {
           let lastIndex = 0;
           let match;
 
+          thinkTagRegex.lastIndex = 0;
           while ((match = thinkTagRegex.exec(content)) !== null) {
             replyParts.push(content.substring(lastIndex, match.index));
             thoughts.push(match[1]);
@@ -334,13 +328,18 @@ const Playground = () => {
           }
           replyParts.push(content.substring(lastIndex));
 
-          content = replyParts.join('').trim();
+          content = replyParts.join('');
           if (thoughts.length > 0) {
-            reasoningContent = thoughts.join('\n\n---\n\n');
+            if (reasoningContent) {
+              reasoningContent += '\n\n---\n\n' + thoughts.join('\n\n---\n\n');
+            } else {
+              reasoningContent = thoughts.join('\n\n---\n\n');
+            }
           }
         }
 
-        // 更新消息
+        content = content.replace(/<\/?think>/g, '').trim();
+
         setMessage((prevMessage) => {
           const newMessages = [...prevMessage];
           const lastMessage = newMessages[newMessages.length - 1];
@@ -359,7 +358,6 @@ const Playground = () => {
     } catch (error) {
       console.error('Non-stream request error:', error);
 
-      // 构建详细的错误信息
       const errorInfo = {
         error: '非流式请求错误',
         message: error.message,
@@ -367,21 +365,18 @@ const Playground = () => {
         stack: error.stack
       };
 
-      // 如果是 fetch 错误，尝试获取更多信息
       if (error.message.includes('HTTP error')) {
         errorInfo.details = '服务器返回了错误状态码';
       } else if (error.message.includes('Failed to fetch')) {
         errorInfo.details = '网络连接失败或服务器无响应';
       }
 
-      // 记录详细的错误响应并切换到响应标签
       setDebugData(prev => ({
         ...prev,
         response: JSON.stringify(errorInfo, null, 2)
       }));
       setActiveDebugTab('response');
 
-      // 更新消息为错误状态
       setMessage((prevMessage) => {
         const newMessages = [...prevMessage];
         const lastMessage = newMessages[newMessages.length - 1];
@@ -399,7 +394,6 @@ const Playground = () => {
   };
 
   let handleSSE = (payload) => {
-    // 记录请求数据并自动切换到请求体标签
     setDebugData(prev => ({
       ...prev,
       request: payload,
@@ -417,7 +411,6 @@ const Playground = () => {
       payload: JSON.stringify(payload),
     });
 
-    // 保存 source 引用以便后续停止生成
     sseSourceRef.current = source;
 
     let responseData = '';
@@ -427,7 +420,6 @@ const Playground = () => {
       if (e.data === '[DONE]') {
         source.close();
         sseSourceRef.current = null;
-        // 记录完整响应
         setDebugData(prev => ({
           ...prev,
           response: responseData
@@ -440,7 +432,6 @@ const Playground = () => {
         let payload = JSON.parse(e.data);
         responseData += e.data + '\n';
 
-        // 收到第一个响应时自动切换到响应标签
         if (!hasReceivedFirstResponse) {
           setActiveDebugTab('response');
           hasReceivedFirstResponse = true;
@@ -459,7 +450,6 @@ const Playground = () => {
         console.error('Failed to parse SSE message:', error);
         const errorInfo = `解析错误: ${error.message}`;
 
-        // 记录错误到调试数据
         setDebugData(prev => ({
           ...prev,
           response: responseData + `\n\nError: ${errorInfo}`
@@ -475,7 +465,6 @@ const Playground = () => {
       console.error('SSE Error:', e);
       const errorMessage = e.data || t('请求发生错误');
 
-      // 记录错误信息到调试数据
       const errorInfo = {
         error: 'SSE连接错误',
         message: errorMessage,
@@ -506,7 +495,6 @@ const Playground = () => {
             timestamp: new Date().toISOString()
           };
 
-          // 记录状态错误到调试数据
           setDebugData(prev => ({
             ...prev,
             response: responseData + '\n\nHTTP Error:\n' + JSON.stringify(errorInfo, null, 2)
@@ -530,7 +518,6 @@ const Playground = () => {
         timestamp: new Date().toISOString()
       };
 
-      // 记录启动错误到调试数据
       setDebugData(prev => ({
         ...prev,
         response: 'Stream启动失败:\n' + JSON.stringify(errorInfo, null, 2)
@@ -574,7 +561,6 @@ const Playground = () => {
             group: inputs.group,
           };
 
-          // 只添加启用的参数
           if (parameterEnabled.max_tokens && inputs.max_tokens > 0) {
             payload.max_tokens = parseInt(inputs.max_tokens);
           }
@@ -635,7 +621,6 @@ const Playground = () => {
       const lastMessage = prevMessage[prevMessage.length - 1];
       let newMessage = { ...lastMessage };
 
-      // 如果消息已经是错误状态，保持错误状态
       if (lastMessage.status === 'error') {
         return prevMessage;
       }
@@ -648,15 +633,12 @@ const Playground = () => {
             status: 'incomplete',
           };
         } else if (type === 'content') {
-          // 当开始接收 content 时，说明思考部分已经完成，应该折叠思考面板
           const shouldCollapseReasoning = !lastMessage.content && lastMessage.reasoningContent && lastMessage.isReasoningExpanded;
 
           const newContent = (lastMessage.content || '') + textChunk;
 
-          // 检测 </think> 标签的完成
           let shouldCollapseFromThinkTag = false;
           if (lastMessage.isReasoningExpanded && newContent.includes('</think>')) {
-            // 检查是否有完整的 <think>...</think> 对
             const thinkMatches = newContent.match(/<think>/g);
             const thinkCloseMatches = newContent.match(/<\/think>/g);
             if (thinkMatches && thinkCloseMatches && thinkCloseMatches.length >= thinkMatches.length) {
@@ -676,11 +658,9 @@ const Playground = () => {
     });
   }, [setMessage]);
 
-  // 处理消息复制
   const handleMessageCopy = useCallback((message) => {
     if (!message.content) return;
 
-    // 现代浏览器的 Clipboard API
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(message.content).then(() => {
         Toast.success({
@@ -689,28 +669,22 @@ const Playground = () => {
         });
       }).catch(err => {
         console.error('Clipboard API 复制失败:', err);
-        // 如果 Clipboard API 失败，尝试回退方案
         fallbackCopyToClipboard(message.content);
       });
     } else {
-      // 回退方案：使用传统的 document.execCommand
       fallbackCopyToClipboard(message.content);
     }
   }, [t]);
 
-  // 回退复制方案
   const fallbackCopyToClipboard = useCallback((text) => {
     try {
-      // 检查是否支持 execCommand
       if (!document.execCommand) {
         throw new Error('execCommand not supported');
       }
 
-      // 创建一个临时的 textarea 元素
       const textArea = document.createElement('textarea');
       textArea.value = text;
 
-      // 设置样式使其不可见但可选中
       textArea.style.position = 'fixed';
       textArea.style.top = '-9999px';
       textArea.style.left = '-9999px';
@@ -721,7 +695,6 @@ const Playground = () => {
 
       document.body.appendChild(textArea);
 
-      // 选中文本
       if (textArea.select) {
         textArea.select();
       }
@@ -729,7 +702,6 @@ const Playground = () => {
         textArea.setSelectionRange(0, text.length);
       }
 
-      // 使用 execCommand 复制
       const successful = document.execCommand('copy');
       document.body.removeChild(textArea);
 
@@ -744,7 +716,6 @@ const Playground = () => {
     } catch (err) {
       console.error('回退复制方案也失败:', err);
 
-      // 提供更详细的错误信息
       let errorMessage = t('复制失败，请手动选择文本复制');
 
       if (window.location.protocol === 'http:' && window.location.hostname !== 'localhost') {
@@ -760,33 +731,25 @@ const Playground = () => {
     }
   }, [t]);
 
-  // 处理消息重试
   const handleMessageReset = useCallback((targetMessage) => {
     setMessage(prevMessages => {
-      // 找到要重试的消息的索引
       const messageIndex = prevMessages.findIndex(msg => msg.id === targetMessage.id);
       if (messageIndex === -1) return prevMessages;
 
-      // 如果是用户消息，重新发送
       if (targetMessage.role === 'user') {
-        // 删除该消息及其后面的所有消息
         const newMessages = prevMessages.slice(0, messageIndex);
-        // 重新发送消息
         setTimeout(() => {
           onMessageSend(targetMessage.content);
         }, 100);
         return newMessages;
       } else if (targetMessage.role === 'assistant') {
-        // 如果是助手消息，找到它前面最近的用户消息并重试
         let userMessageIndex = messageIndex - 1;
         while (userMessageIndex >= 0 && prevMessages[userMessageIndex].role !== 'user') {
           userMessageIndex--;
         }
         if (userMessageIndex >= 0) {
           const userMessage = prevMessages[userMessageIndex];
-          // 删除用户消息之后的所有消息
           const newMessages = prevMessages.slice(0, userMessageIndex);
-          // 重新发送用户消息
           setTimeout(() => {
             onMessageSend(userMessage.content);
           }, 100);
@@ -797,7 +760,6 @@ const Playground = () => {
     });
   }, [onMessageSend]);
 
-  // 处理消息删除
   const handleMessageDelete = useCallback((targetMessage) => {
     Modal.confirm({
       title: t('确认删除'),
@@ -809,15 +771,12 @@ const Playground = () => {
       },
       onOk: () => {
         setMessage(prevMessages => {
-          // 找到要删除的消息索引
           const messageIndex = prevMessages.findIndex(msg => msg.id === targetMessage.id);
           if (messageIndex === -1) return prevMessages;
 
-          // 如果是用户消息，同时删除后面紧跟的助手回复
           if (targetMessage.role === 'user' && messageIndex < prevMessages.length - 1) {
             const nextMessage = prevMessages[messageIndex + 1];
             if (nextMessage.role === 'assistant') {
-              // 删除用户消息和助手回复
               Toast.success({
                 content: t('已删除消息及其回复'),
                 duration: 2,
@@ -826,7 +785,6 @@ const Playground = () => {
             }
           }
 
-          // 否则只删除当前消息
           Toast.success({
             content: t('消息已删除'),
             duration: 2,
@@ -844,37 +802,61 @@ const Playground = () => {
       setMessage((prevMessage) => {
         const lastMessage = prevMessage[prevMessage.length - 1];
         if (lastMessage.status === 'loading' || lastMessage.status === 'incomplete') {
-          let content = lastMessage.content || '';
-          let reasoningContent = lastMessage.reasoningContent || '';
+          let currentContent = lastMessage.content || '';
+          let currentReasoningContent = lastMessage.reasoningContent || '';
 
-          // 处理 <think> 标签格式的思维链
-          if (content.includes('<think>')) {
-            const thinkTagRegex = /<think>([\s\S]*?)(?:<\/think>|$)/g;
-            let thoughts = [];
-            let replyParts = [];
-            let lastIndex = 0;
-            let match;
+          let finalDisplayableContent = currentContent;
+          let extractedThinking = currentReasoningContent;
 
-            while ((match = thinkTagRegex.exec(content)) !== null) {
-              replyParts.push(content.substring(lastIndex, match.index));
-              thoughts.push(match[1]);
-              lastIndex = match.index + match[0].length;
-            }
-            replyParts.push(content.substring(lastIndex));
+          const thinkTagRegex = /<think>([\s\S]*?)<\/think>/g;
+          let match;
+          let thoughtsFromPairedTags = [];
+          let contentParts = [];
+          let lastIndex = 0;
 
-            // 更新内容和思维链
-            content = replyParts.join('').trim();
-            if (thoughts.length > 0) {
-              reasoningContent = thoughts.join('\n\n---\n\n');
+          thinkTagRegex.lastIndex = 0;
+          let tempContentForPairExtraction = finalDisplayableContent;
+          while ((match = thinkTagRegex.exec(tempContentForPairExtraction)) !== null) {
+            contentParts.push(tempContentForPairExtraction.substring(lastIndex, match.index));
+            thoughtsFromPairedTags.push(match[1]);
+            lastIndex = match.index + match[0].length;
+          }
+          contentParts.push(tempContentForPairExtraction.substring(lastIndex));
+
+          if (thoughtsFromPairedTags.length > 0) {
+            const pairedThoughtsStr = thoughtsFromPairedTags.join('\n\n---\n\n');
+            if (extractedThinking) {
+              extractedThinking += '\n\n---\n\n' + pairedThoughtsStr;
+            } else {
+              extractedThinking = pairedThoughtsStr;
             }
           }
+          finalDisplayableContent = contentParts.join('');
+
+          const lastOpenThinkIndex = finalDisplayableContent.lastIndexOf('<think>');
+          if (lastOpenThinkIndex !== -1) {
+            const fragmentAfterLastOpen = finalDisplayableContent.substring(lastOpenThinkIndex);
+            if (!fragmentAfterLastOpen.includes('</think>')) {
+              const unclosedThought = fragmentAfterLastOpen.substring('<think>'.length);
+              if (unclosedThought.trim()) {
+                if (extractedThinking) {
+                  extractedThinking += '\n\n---\n\n' + unclosedThought;
+                } else {
+                  extractedThinking = unclosedThought;
+                }
+              }
+              finalDisplayableContent = finalDisplayableContent.substring(0, lastOpenThinkIndex);
+            }
+          }
+
+          finalDisplayableContent = finalDisplayableContent.replace(/<\/?think>/g, '').trim();
 
           return [...prevMessage.slice(0, -1), {
             ...lastMessage,
             status: 'complete',
-            reasoningContent: reasoningContent,
-            content: content,
-            isReasoningExpanded: false  // 停止时折叠思维链面板
+            reasoningContent: extractedThinking || null,
+            content: finalDisplayableContent,
+            isReasoningExpanded: false
           }];
         }
         return prevMessage;
@@ -953,16 +935,13 @@ const Playground = () => {
     return <CustomInputRender {...props} />;
   }, []);
 
-  // 自定义操作按钮渲染
   const renderChatBoxAction = useCallback((props) => {
     const { message } = props;
 
-    // 对于正在加载或未完成的消息，只显示部分按钮
     const isLoading = message.status === 'loading' || message.status === 'incomplete';
 
     return (
       <div className="flex items-center gap-0.5">
-        {/* 重试按钮 - 只在消息完成或出错时显示 */}
         {!isLoading && (
           <Tooltip content={t('重试')} position="top">
             <Button
@@ -977,7 +956,6 @@ const Playground = () => {
           </Tooltip>
         )}
 
-        {/* 复制按钮 - 只在有内容时显示 */}
         {message.content && (
           <Tooltip content={t('复制')} position="top">
             <Button
@@ -992,7 +970,6 @@ const Playground = () => {
           </Tooltip>
         )}
 
-        {/* 删除按钮 - 只在消息完成或出错时显示，AI输出时隐藏 */}
         {!isLoading && (
           <Tooltip content={t('删除')} position="top">
             <Button
@@ -1038,76 +1015,78 @@ const Playground = () => {
       let thinkingSource = null;
 
       if (message.role === 'assistant') {
+        let baseContentForDisplay = message.content || "";
+        let combinedThinkingContent = "";
+
         if (message.reasoningContent) {
-          currentExtractedThinkingContent = message.reasoningContent;
+          combinedThinkingContent = message.reasoningContent;
           thinkingSource = 'reasoningContent';
-        } else if (message.content && message.content.includes('<think')) {
-          const fullContent = message.content;
-          let thoughts = [];
+        }
+
+        if (baseContentForDisplay.includes('<think')) {
+          const thinkTagRegex = /<think>([\s\S]*?)<\/think>/g;
+          let match;
+          let thoughtsFromPairedTags = [];
           let replyParts = [];
           let lastIndex = 0;
 
-          // 使用更安全的正则表达式，只匹配完整的 think 标签对
-          const thinkTagRegex = /<think>([\s\S]*?)<\/think>/g;
-          let match;
-
           thinkTagRegex.lastIndex = 0;
-          while ((match = thinkTagRegex.exec(fullContent)) !== null) {
-            replyParts.push(fullContent.substring(lastIndex, match.index));
-            thoughts.push(match[1]);
+          let tempContent = baseContentForDisplay;
+
+          while ((match = thinkTagRegex.exec(tempContent)) !== null) {
+            replyParts.push(tempContent.substring(lastIndex, match.index));
+            thoughtsFromPairedTags.push(match[1]);
             lastIndex = match.index + match[0].length;
           }
-          replyParts.push(fullContent.substring(lastIndex));
+          replyParts.push(tempContent.substring(lastIndex));
 
-          // 处理剩余的内容，移除未闭合的 think 标签
-          let finalContent = replyParts.join('');
+          if (thoughtsFromPairedTags.length > 0) {
+            const pairedThoughtsStr = thoughtsFromPairedTags.join('\n\n---\n\n');
+            if (combinedThinkingContent) {
+              combinedThinkingContent += '\n\n---\n\n' + pairedThoughtsStr;
+            } else {
+              combinedThinkingContent = pairedThoughtsStr;
+            }
 
-          // 如果还有未闭合的 <think> 标签，将其内容提取到思考区域
-          if (isThinkingStatus) {
-            const lastOpenThinkIndex = finalContent.lastIndexOf('<think>');
-            if (lastOpenThinkIndex !== -1) {
-              const fragmentAfterLastOpen = finalContent.substring(lastOpenThinkIndex);
-              // 检查是否有对应的闭合标签
-              if (!fragmentAfterLastOpen.includes('</think>')) {
-                // 提取未闭合的思考内容
-                const unclosedThought = fragmentAfterLastOpen.substring('<think>'.length);
-                if (unclosedThought.trim()) {
-                  if (currentExtractedThinkingContent) {
-                    currentExtractedThinkingContent += '\n\n---\n\n' + unclosedThought;
-                  } else {
-                    currentExtractedThinkingContent = unclosedThought;
-                  }
-                  if (!thinkingSource) thinkingSource = '<think> tags (streaming)';
-                }
-                // 移除未闭合的 think 标签部分
-                finalContent = finalContent.substring(0, lastOpenThinkIndex);
-              }
+            if (thinkingSource === 'reasoningContent') {
+              thinkingSource = 'reasoningContent & <think> tags';
+            } else if (!thinkingSource) {
+              thinkingSource = '<think> tags';
             }
           }
 
-          currentDisplayableFinalContent = finalContent.trim();
+          baseContentForDisplay = replyParts.join('');
+        }
 
-          if (thoughts.length > 0) {
-            if (currentExtractedThinkingContent) {
-              currentExtractedThinkingContent = thoughts.join('\n\n---\n\n') + '\n\n---\n\n' + currentExtractedThinkingContent;
-            } else {
-              currentExtractedThinkingContent = thoughts.join('\n\n---\n\n');
+        if (isThinkingStatus && baseContentForDisplay.includes('<think')) {
+          const lastOpenThinkIndex = baseContentForDisplay.lastIndexOf('<think>');
+          if (lastOpenThinkIndex !== -1) {
+            const fragmentAfterLastOpen = baseContentForDisplay.substring(lastOpenThinkIndex);
+            if (!fragmentAfterLastOpen.includes('</think>')) {
+              const unclosedThought = fragmentAfterLastOpen.substring('<think>'.length);
+              if (unclosedThought.trim()) {
+                if (combinedThinkingContent) {
+                  combinedThinkingContent += '\n\n---\n\n' + unclosedThought;
+                } else {
+                  combinedThinkingContent = unclosedThought;
+                }
+                if (thinkingSource && (thinkingSource.includes('<think> tags') || thinkingSource.includes('reasoningContent'))) {
+                  thinkingSource += ' + streaming <think>';
+                } else if (!thinkingSource) {
+                  thinkingSource = 'streaming <think>';
+                }
+              }
+              baseContentForDisplay = baseContentForDisplay.substring(0, lastOpenThinkIndex);
             }
-            thinkingSource = '<think> tags';
           }
         }
 
-        // 清理任何剩余的不完整 think 标签
-        if (typeof currentDisplayableFinalContent === 'string') {
-          // 移除任何孤立的 <think> 开始标签
-          currentDisplayableFinalContent = currentDisplayableFinalContent.replace(/<think>\s*$/g, '');
-          // 如果内容以 <think> 开始但没有完整的标签对，清空内容
-          if (currentDisplayableFinalContent.trim().startsWith("<think>")) {
-            const startsWithCompleteThinkTagRegex = /^<think>[\s\S]*?<\/think>/;
-            if (!startsWithCompleteThinkTagRegex.test(currentDisplayableFinalContent.trim())) {
-              currentDisplayableFinalContent = "";
-            }
-          }
+        currentExtractedThinkingContent = combinedThinkingContent || null;
+
+        if (typeof baseContentForDisplay === 'string') {
+          currentDisplayableFinalContent = baseContentForDisplay.replace(/<\/?think>/g, '').trim();
+        } else {
+          currentDisplayableFinalContent = "";
         }
       }
 
