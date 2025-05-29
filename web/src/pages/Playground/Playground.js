@@ -1161,11 +1161,11 @@ const Playground = () => {
                 className={`transition-all duration-500 ease-out ${message.isReasoningExpanded ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
                   } overflow-hidden`}
               >
-                {message.isReasoningExpanded && (
+                {message.isReasoningExpanded && finalExtractedThinkingContent && (
                   <div className="p-5 pt-4">
                     <div className="bg-white/70 backdrop-blur-sm rounded-xl p-4 shadow-inner overflow-x-auto max-h-50 overflow-y-auto">
                       <div className="prose prose-sm prose-purple max-w-none">
-                        <MarkdownRender raw={finalExtractedThinkingContent} />
+                        <MarkdownRender raw={finalExtractedThinkingContent.replace(/<\/?think>/g, '')} />
                       </div>
                     </div>
                   </div>
