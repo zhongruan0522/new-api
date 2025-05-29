@@ -122,11 +122,13 @@ func doRequest(c *gin.Context, req *http.Request, info *common.RelayInfo) (*http
 	var pingerWg sync.WaitGroup
 	if info.IsStream {
 		helper.SetEventStreamHeaders(c)
-		pingInterval := time.Duration(generalSettings.PingIntervalSeconds) * time.Second
-		var pingerCtx context.Context
-		pingerCtx, stopPinger = context.WithCancel(c.Request.Context())
 
 		if pingEnabled {
+			pingInterval := time.Duration(generalSettings.PingIntervalSeconds) * time.Second
+			var pingerCtx context.Context
+			pingerCtx, stopPinger = context.WithCancel(c.Request.Context())
+			// 退出时清理 pingerCtx 防止泄露
+			defer stopPinger()
 			pingerWg.Add(1)
 			gopool.Go(func() {
 				defer pingerWg.Done()
@@ -166,9 +168,8 @@ func doRequest(c *gin.Context, req *http.Request, info *common.RelayInfo) (*http
 	}
 
 	resp, err := client.Do(req)
-	// request结束后停止ping
+	// request结束后等待 ping goroutine 完成
 	if info.IsStream && pingEnabled {
-		stopPinger()
 		pingerWg.Wait()
 	}
 	if err != nil {
