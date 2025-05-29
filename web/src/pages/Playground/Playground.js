@@ -633,8 +633,7 @@ const Playground = () => {
             status: 'incomplete',
           };
         } else if (type === 'content') {
-          const shouldCollapseReasoning = !lastMessage.content && lastMessage.reasoningContent && lastMessage.isReasoningExpanded;
-
+          const shouldCollapseReasoning = !lastMessage.content && lastMessage.reasoningContent;
           const newContent = (lastMessage.content || '') + textChunk;
 
           let shouldCollapseFromThinkTag = false;
@@ -805,57 +804,54 @@ const Playground = () => {
           let currentContent = lastMessage.content || '';
           let currentReasoningContent = lastMessage.reasoningContent || '';
 
-          let finalDisplayableContent = currentContent;
-          let extractedThinking = currentReasoningContent;
+          if (currentContent.includes('<think>')) {
+            const thinkTagRegex = /<think>([\s\S]*?)<\/think>/g;
+            let match;
+            let thoughtsFromPairedTags = [];
+            let replyParts = [];
+            let lastIndex = 0;
 
-          const thinkTagRegex = /<think>([\s\S]*?)<\/think>/g;
-          let match;
-          let thoughtsFromPairedTags = [];
-          let contentParts = [];
-          let lastIndex = 0;
-
-          thinkTagRegex.lastIndex = 0;
-          let tempContentForPairExtraction = finalDisplayableContent;
-          while ((match = thinkTagRegex.exec(tempContentForPairExtraction)) !== null) {
-            contentParts.push(tempContentForPairExtraction.substring(lastIndex, match.index));
-            thoughtsFromPairedTags.push(match[1]);
-            lastIndex = match.index + match[0].length;
-          }
-          contentParts.push(tempContentForPairExtraction.substring(lastIndex));
-
-          if (thoughtsFromPairedTags.length > 0) {
-            const pairedThoughtsStr = thoughtsFromPairedTags.join('\n\n---\n\n');
-            if (extractedThinking) {
-              extractedThinking += '\n\n---\n\n' + pairedThoughtsStr;
-            } else {
-              extractedThinking = pairedThoughtsStr;
+            while ((match = thinkTagRegex.exec(currentContent)) !== null) {
+              replyParts.push(currentContent.substring(lastIndex, match.index));
+              thoughtsFromPairedTags.push(match[1]);
+              lastIndex = match.index + match[0].length;
             }
-          }
-          finalDisplayableContent = contentParts.join('');
+            replyParts.push(currentContent.substring(lastIndex));
 
-          const lastOpenThinkIndex = finalDisplayableContent.lastIndexOf('<think>');
+            if (thoughtsFromPairedTags.length > 0) {
+              const pairedThoughtsStr = thoughtsFromPairedTags.join('\n\n---\n\n');
+              if (currentReasoningContent) {
+                currentReasoningContent += '\n\n---\n\n' + pairedThoughtsStr;
+              } else {
+                currentReasoningContent = pairedThoughtsStr;
+              }
+            }
+            currentContent = replyParts.join('');
+          }
+
+          const lastOpenThinkIndex = currentContent.lastIndexOf('<think>');
           if (lastOpenThinkIndex !== -1) {
-            const fragmentAfterLastOpen = finalDisplayableContent.substring(lastOpenThinkIndex);
+            const fragmentAfterLastOpen = currentContent.substring(lastOpenThinkIndex);
             if (!fragmentAfterLastOpen.includes('</think>')) {
-              const unclosedThought = fragmentAfterLastOpen.substring('<think>'.length);
-              if (unclosedThought.trim()) {
-                if (extractedThinking) {
-                  extractedThinking += '\n\n---\n\n' + unclosedThought;
+              const unclosedThought = fragmentAfterLastOpen.substring('<think>'.length).trim();
+              if (unclosedThought) {
+                if (currentReasoningContent) {
+                  currentReasoningContent += '\n\n---\n\n' + unclosedThought;
                 } else {
-                  extractedThinking = unclosedThought;
+                  currentReasoningContent = unclosedThought;
                 }
               }
-              finalDisplayableContent = finalDisplayableContent.substring(0, lastOpenThinkIndex);
+              currentContent = currentContent.substring(0, lastOpenThinkIndex);
             }
           }
 
-          finalDisplayableContent = finalDisplayableContent.replace(/<\/?think>/g, '').trim();
+          currentContent = currentContent.replace(/<\/?think>/g, '').trim();
 
           return [...prevMessage.slice(0, -1), {
             ...lastMessage,
             status: 'complete',
-            reasoningContent: extractedThinking || null,
-            content: finalDisplayableContent,
+            reasoningContent: currentReasoningContent || null,
+            content: currentContent,
             isReasoningExpanded: false
           }];
         }
@@ -1023,22 +1019,19 @@ const Playground = () => {
           thinkingSource = 'reasoningContent';
         }
 
-        if (baseContentForDisplay.includes('<think')) {
+        if (baseContentForDisplay.includes('<think>')) {
           const thinkTagRegex = /<think>([\s\S]*?)<\/think>/g;
           let match;
           let thoughtsFromPairedTags = [];
           let replyParts = [];
           let lastIndex = 0;
 
-          thinkTagRegex.lastIndex = 0;
-          let tempContent = baseContentForDisplay;
-
-          while ((match = thinkTagRegex.exec(tempContent)) !== null) {
-            replyParts.push(tempContent.substring(lastIndex, match.index));
+          while ((match = thinkTagRegex.exec(baseContentForDisplay)) !== null) {
+            replyParts.push(baseContentForDisplay.substring(lastIndex, match.index));
             thoughtsFromPairedTags.push(match[1]);
             lastIndex = match.index + match[0].length;
           }
-          replyParts.push(tempContent.substring(lastIndex));
+          replyParts.push(baseContentForDisplay.substring(lastIndex));
 
           if (thoughtsFromPairedTags.length > 0) {
             const pairedThoughtsStr = thoughtsFromPairedTags.join('\n\n---\n\n');
@@ -1047,34 +1040,25 @@ const Playground = () => {
             } else {
               combinedThinkingContent = pairedThoughtsStr;
             }
-
-            if (thinkingSource === 'reasoningContent') {
-              thinkingSource = 'reasoningContent & <think> tags';
-            } else if (!thinkingSource) {
-              thinkingSource = '<think> tags';
-            }
+            thinkingSource = thinkingSource ? thinkingSource + ' & <think> tags' : '<think> tags';
           }
 
           baseContentForDisplay = replyParts.join('');
         }
 
-        if (isThinkingStatus && baseContentForDisplay.includes('<think')) {
+        if (isThinkingStatus) {
           const lastOpenThinkIndex = baseContentForDisplay.lastIndexOf('<think>');
           if (lastOpenThinkIndex !== -1) {
             const fragmentAfterLastOpen = baseContentForDisplay.substring(lastOpenThinkIndex);
             if (!fragmentAfterLastOpen.includes('</think>')) {
-              const unclosedThought = fragmentAfterLastOpen.substring('<think>'.length);
-              if (unclosedThought.trim()) {
+              const unclosedThought = fragmentAfterLastOpen.substring('<think>'.length).trim();
+              if (unclosedThought) {
                 if (combinedThinkingContent) {
                   combinedThinkingContent += '\n\n---\n\n' + unclosedThought;
                 } else {
                   combinedThinkingContent = unclosedThought;
                 }
-                if (thinkingSource && (thinkingSource.includes('<think> tags') || thinkingSource.includes('reasoningContent'))) {
-                  thinkingSource += ' + streaming <think>';
-                } else if (!thinkingSource) {
-                  thinkingSource = 'streaming <think>';
-                }
+                thinkingSource = thinkingSource ? thinkingSource + ' + streaming <think>' : 'streaming <think>';
               }
               baseContentForDisplay = baseContentForDisplay.substring(0, lastOpenThinkIndex);
             }
@@ -1082,12 +1066,7 @@ const Playground = () => {
         }
 
         currentExtractedThinkingContent = combinedThinkingContent || null;
-
-        if (typeof baseContentForDisplay === 'string') {
-          currentDisplayableFinalContent = baseContentForDisplay.replace(/<\/?think>/g, '').trim();
-        } else {
-          currentDisplayableFinalContent = "";
-        }
+        currentDisplayableFinalContent = baseContentForDisplay.replace(/<\/?think>/g, '').trim();
       }
 
       const headerText = isThinkingStatus ? t('思考中...') : t('思考过程');
@@ -1161,11 +1140,11 @@ const Playground = () => {
                 className={`transition-all duration-500 ease-out ${message.isReasoningExpanded ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
                   } overflow-hidden`}
               >
-                {message.isReasoningExpanded && finalExtractedThinkingContent && (
+                {message.isReasoningExpanded && (
                   <div className="p-5 pt-4">
                     <div className="bg-white/70 backdrop-blur-sm rounded-xl p-4 shadow-inner overflow-x-auto max-h-50 overflow-y-auto">
                       <div className="prose prose-sm prose-purple max-w-none">
-                        <MarkdownRender raw={finalExtractedThinkingContent.replace(/<\/?think>/g, '')} />
+                        <MarkdownRender raw={finalExtractedThinkingContent} />
                       </div>
                     </div>
                   </div>
