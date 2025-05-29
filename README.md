@@ -110,6 +110,7 @@ New API提供了丰富的功能，详细特性请参考[特性说明](https://do
 - `AZURE_DEFAULT_API_VERSION`：Azure渠道默认API版本，默认 `2025-04-01-preview`
 - `NOTIFICATION_LIMIT_DURATION_MINUTE`：通知限制持续时间，默认 `10`分钟
 - `NOTIFY_LIMIT_COUNT`：用户通知在指定持续时间内的最大数量，默认 `2`
+- `ERROR_LOG_ENABLED=true`: 是否记录并显示错误日志，默认`false`
 
 ## 部署
 
