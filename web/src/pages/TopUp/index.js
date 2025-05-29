@@ -26,20 +26,22 @@ import {
 import { SiAlipay, SiWechat } from 'react-icons/si';
 import { useTranslation } from 'react-i18next';
 import { UserContext } from '../../context/User';
+import { StatusContext } from '../../context/Status/index.js';
 
 const { Text } = Typography;
 
 const TopUp = () => {
   const { t } = useTranslation();
   const [userState, userDispatch] = useContext(UserContext);
+  const [statusState] = useContext(StatusContext);
 
   const [redemptionCode, setRedemptionCode] = useState('');
   const [topUpCode, setTopUpCode] = useState('');
-  const [topUpCount, setTopUpCount] = useState(0);
   const [amount, setAmount] = useState(0.0);
-  const [minTopUp, setMinTopUp] = useState(1);
-  const [topUpLink, setTopUpLink] = useState('');
-  const [enableOnlineTopUp, setEnableOnlineTopUp] = useState(false);
+  const [minTopUp, setMinTopUp] = useState(statusState?.status?.min_topup || 1);
+  const [topUpCount, setTopUpCount] = useState(statusState?.status?.min_topup || 1);
+  const [topUpLink, setTopUpLink] = useState(statusState?.status?.top_up_link || '');
+  const [enableOnlineTopUp, setEnableOnlineTopUp] = useState(statusState?.status?.enable_online_topup || false);
   const [userQuota, setUserQuota] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [open, setOpen] = useState(false);
@@ -207,20 +209,6 @@ const TopUp = () => {
   };
 
   useEffect(() => {
-    let status = localStorage.getItem('status');
-    if (status) {
-      status = JSON.parse(status);
-      if (status.top_up_link) {
-        setTopUpLink(status.top_up_link);
-      }
-      if (status.min_topup) {
-        setMinTopUp(status.min_topup);
-      }
-      if (status.enable_online_topup) {
-        setEnableOnlineTopUp(status.enable_online_topup);
-      }
-    }
-
     if (userState?.user?.id) {
       setUserDataLoading(false);
       setUserQuota(userState.user.quota);
@@ -228,6 +216,15 @@ const TopUp = () => {
       getUserQuota().then();
     }
   }, []);
+
+  useEffect(() => {
+    if (statusState?.status) {
+      setMinTopUp(statusState.status.min_topup || 1);
+      setTopUpCount(statusState.status.min_topup || 1);
+      setTopUpLink(statusState.status.top_up_link || '');
+      setEnableOnlineTopUp(statusState.status.enable_online_topup || false);
+    }
+  }, [statusState?.status]);
 
   const renderAmount = () => {
     return amount + ' ' + t('元');
@@ -493,7 +490,7 @@ const TopUp = () => {
                               t('充值数量，最低 ') + renderQuotaWithAmount(minTopUp)
                             }
                             value={topUpCount}
-                            min={1}
+                            min={minTopUp}
                             max={999999999}
                             step={1}
                             precision={0}
