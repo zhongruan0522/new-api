@@ -136,8 +136,10 @@ const MessageContent = ({
     !finalExtractedThinkingContent &&
     (!finalDisplayableFinalContent || finalDisplayableFinalContent.trim() === '')) {
     return (
-      <div className={`${className} flex items-center gap-2 sm:gap-4 p-4 sm:p-6 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl sm:rounded-2xl`}>
-        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center shadow-lg">
+      <div className={`${className} flex items-center gap-2 sm:gap-4 p-4 sm:p-6 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl sm:rounded-2xl`} style={{
+        background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(139, 92, 246, 0.12) 50%, rgba(168, 85, 247, 0.08) 100%)'
+      }}>
+        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg">
           <Loader2 className="animate-spin text-white" size={styleState.isMobile ? 16 : 20} />
         </div>
         <div className="flex flex-col">
@@ -170,13 +172,15 @@ const MessageContent = ({
 
       {/* 渲染推理内容 */}
       {message.role === 'assistant' && finalExtractedThinkingContent && (
-        <div className="bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 rounded-xl sm:rounded-2xl mb-2 sm:mb-4 overflow-hidden shadow-sm backdrop-blur-sm">
+        <div className="bg-gradient-to-br from-indigo-50 via-purple-50 to-violet-50 rounded-xl sm:rounded-2xl mb-2 sm:mb-4 overflow-hidden shadow-lg backdrop-blur-sm" style={{
+          background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(139, 92, 246, 0.12) 25%, rgba(168, 85, 247, 0.15) 50%, rgba(192, 132, 252, 0.12) 75%, rgba(216, 180, 254, 0.08) 100%)'
+        }}>
           <div
-            className="flex items-center justify-between p-3 sm:p-5 cursor-pointer hover:bg-gradient-to-r hover:from-white/40 hover:to-purple-50/60 transition-all"
+            className="flex items-center justify-between p-3 sm:p-5 cursor-pointer hover:bg-gradient-to-r hover:from-white/30 hover:to-purple-50/50 transition-all duration-300"
             onClick={() => onToggleReasoningExpansion(message.id)}
           >
             <div className="flex items-center gap-2 sm:gap-4">
-              <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center shadow-lg">
+              <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg">
                 <Brain className="text-white" size={styleState.isMobile ? 12 : 16} />
               </div>
               <div className="flex flex-col">
@@ -216,12 +220,12 @@ const MessageContent = ({
             {message.isReasoningExpanded && (
               <div className="p-3 sm:p-5 pt-2 sm:pt-4">
                 <div
-                  className="bg-white/70 backdrop-blur-sm rounded-lg sm:rounded-xl p-2 shadow-inner overflow-x-auto overflow-y-auto thinking-content-scroll"
+                  className="bg-white/80 backdrop-blur-sm rounded-xl p-2 shadow-inner overflow-x-auto overflow-y-auto thinking-content-scroll"
                   style={{
                     maxHeight: '200px',
                     minHeight: '100px',
                     scrollbarWidth: 'thin',
-                    scrollbarColor: 'rgba(0, 0, 0, 0.3) transparent'
+                    scrollbarColor: 'rgba(139, 92, 246, 0.3) transparent'
                   }}
                 >
                   <div className="prose prose-xs sm:prose-sm prose-purple max-w-none text-xs sm:text-sm">
