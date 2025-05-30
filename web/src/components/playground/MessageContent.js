@@ -15,10 +15,23 @@ const MessageContent = ({ message, className, styleState, onToggleReasoningExpan
   const { t } = useTranslation();
 
   if (message.status === 'error') {
+    let errorText;
+
+    if (Array.isArray(message.content)) {
+      const textContent = message.content.find(item => item.type === 'text');
+      errorText = textContent && textContent.text && typeof textContent.text === 'string'
+        ? textContent.text
+        : t('请求发生错误');
+    } else if (typeof message.content === 'string') {
+      errorText = message.content;
+    } else {
+      errorText = t('请求发生错误');
+    }
+
     return (
       <div className={`${className} flex items-center p-4 bg-red-50 rounded-xl`}>
         <Typography.Text type="danger" className="text-sm">
-          {message.content || t('请求发生错误')}
+          {errorText}
         </Typography.Text>
       </div>
     );
@@ -26,11 +39,23 @@ const MessageContent = ({ message, className, styleState, onToggleReasoningExpan
 
   const isThinkingStatus = message.status === 'loading' || message.status === 'incomplete';
   let currentExtractedThinkingContent = null;
-  let currentDisplayableFinalContent = message.content || "";
+  let currentDisplayableFinalContent = "";
   let thinkingSource = null;
 
+  const getTextContent = (content) => {
+    if (Array.isArray(content)) {
+      const textItem = content.find(item => item.type === 'text');
+      return textItem && textItem.text && typeof textItem.text === 'string' ? textItem.text : '';
+    } else if (typeof content === 'string') {
+      return content;
+    }
+    return '';
+  };
+
+  currentDisplayableFinalContent = getTextContent(message.content);
+
   if (message.role === 'assistant') {
-    let baseContentForDisplay = message.content || "";
+    let baseContentForDisplay = getTextContent(message.content);
     let combinedThinkingContent = "";
 
     if (message.reasoningContent) {
@@ -175,7 +200,6 @@ const MessageContent = ({ message, className, styleState, onToggleReasoningExpan
 
       {/* 渲染消息内容 */}
       {(() => {
-        // 处理多模态内容（文本+图片）
         if (Array.isArray(message.content)) {
           const textContent = message.content.find(item => item.type === 'text');
           const imageContents = message.content.filter(item => item.type === 'image_url');
@@ -209,7 +233,7 @@ const MessageContent = ({ message, className, styleState, onToggleReasoningExpan
               )}
 
               {/* 显示文本内容 */}
-              {textContent && textContent.text && textContent.text.trim() !== '' && (
+              {textContent && textContent.text && typeof textContent.text === 'string' && textContent.text.trim() !== '' && (
                 <div className="prose prose-xs sm:prose-sm prose-gray max-w-none overflow-x-auto text-xs sm:text-sm">
                   <MarkdownRender raw={textContent.text} />
                 </div>
@@ -218,10 +242,8 @@ const MessageContent = ({ message, className, styleState, onToggleReasoningExpan
           );
         }
 
-        // 处理纯文本内容或助手回复
         if (typeof message.content === 'string') {
           if (message.role === 'assistant') {
-            // 助手回复使用处理后的内容
             if (finalDisplayableFinalContent && finalDisplayableFinalContent.trim() !== '') {
               return (
                 <div className="prose prose-xs sm:prose-sm prose-gray max-w-none overflow-x-auto text-xs sm:text-sm">
@@ -230,7 +252,6 @@ const MessageContent = ({ message, className, styleState, onToggleReasoningExpan
               );
             }
           } else {
-            // 用户文本消息
             return (
               <div className="prose prose-xs sm:prose-sm prose-gray max-w-none overflow-x-auto text-xs sm:text-sm">
                 <MarkdownRender raw={message.content} />

@@ -712,18 +712,41 @@ const Playground = () => {
   const handleMessageCopy = useCallback((message) => {
     if (!message.content) return;
 
+    let textToCopy;
+
+    if (Array.isArray(message.content)) {
+      const textContent = message.content.find(item => item.type === 'text');
+      if (textContent && textContent.text && typeof textContent.text === 'string') {
+        textToCopy = textContent.text;
+      } else {
+        Toast.warning({
+          content: t('此消息没有可复制的文本内容'),
+          duration: 2,
+        });
+        return;
+      }
+    } else if (typeof message.content === 'string') {
+      textToCopy = message.content;
+    } else {
+      Toast.warning({
+        content: t('无法复制此类型的消息内容'),
+        duration: 2,
+      });
+      return;
+    }
+
     if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(message.content).then(() => {
+      navigator.clipboard.writeText(textToCopy).then(() => {
         Toast.success({
           content: t('消息已复制到剪贴板'),
           duration: 2,
         });
       }).catch(err => {
         console.error('Clipboard API 复制失败:', err);
-        fallbackCopyToClipboard(message.content);
+        fallbackCopyToClipboard(textToCopy);
       });
     } else {
-      fallbackCopyToClipboard(message.content);
+      fallbackCopyToClipboard(textToCopy);
     }
   }, [t]);
 
@@ -790,7 +813,14 @@ const Playground = () => {
       if (targetMessage.role === 'user') {
         const newMessages = prevMessages.slice(0, messageIndex);
         setTimeout(() => {
-          onMessageSend(targetMessage.content);
+          let contentToSend;
+          if (Array.isArray(targetMessage.content)) {
+            const textContent = targetMessage.content.find(item => item.type === 'text');
+            contentToSend = textContent && textContent.text ? textContent.text : '';
+          } else {
+            contentToSend = targetMessage.content;
+          }
+          onMessageSend(contentToSend);
         }, 100);
         return newMessages;
       } else if (targetMessage.role === 'assistant') {
@@ -802,7 +832,14 @@ const Playground = () => {
           const userMessage = prevMessages[userMessageIndex];
           const newMessages = prevMessages.slice(0, userMessageIndex);
           setTimeout(() => {
-            onMessageSend(userMessage.content);
+            let contentToSend;
+            if (Array.isArray(userMessage.content)) {
+              const textContent = userMessage.content.find(item => item.type === 'text');
+              contentToSend = textContent && textContent.text ? textContent.text : '';
+            } else {
+              contentToSend = userMessage.content;
+            }
+            onMessageSend(contentToSend);
           }, 100);
           return newMessages;
         }
