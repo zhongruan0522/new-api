@@ -16,6 +16,7 @@ import {
   Send,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import CodeViewer from './CodeViewer';
 
 const DebugPanel = ({
   debugData,
@@ -129,17 +130,11 @@ const DebugPanel = ({
               {t('预览请求体')}
             </div>
           } itemKey="preview">
-            <div className="h-full overflow-y-auto bg-gray-50 rounded-lg p-4 model-settings-scroll">
-              {debugData.previewRequest ? (
-                <pre className="debug-code text-gray-700 whitespace-pre-wrap break-words">
-                  {JSON.stringify(debugData.previewRequest, null, 2)}
-                </pre>
-              ) : (
-                <Typography.Text type="secondary" className="text-sm">
-                  {t('正在构造请求体预览...')}
-                </Typography.Text>
-              )}
-            </div>
+            <CodeViewer
+              content={debugData.previewRequest}
+              title="preview"
+              language="json"
+            />
           </TabPane>
 
           <TabPane tab={
@@ -148,19 +143,11 @@ const DebugPanel = ({
               {t('实际请求体')}
             </div>
           } itemKey="request">
-            <div className="h-full overflow-y-auto bg-gray-50 rounded-lg p-4 model-settings-scroll">
-              {debugData.request ? (
-                <>
-                  <pre className="debug-code text-gray-700 whitespace-pre-wrap break-words">
-                    {JSON.stringify(debugData.request, null, 2)}
-                  </pre>
-                </>
-              ) : (
-                <Typography.Text type="secondary" className="text-sm">
-                  {t('暂无请求数据')}
-                </Typography.Text>
-              )}
-            </div>
+            <CodeViewer
+              content={debugData.request}
+              title="request"
+              language="json"
+            />
           </TabPane>
 
           <TabPane tab={
@@ -169,17 +156,11 @@ const DebugPanel = ({
               {t('响应内容')}
             </div>
           } itemKey="response">
-            <div className="h-full overflow-y-auto bg-gray-50 rounded-lg p-4 model-settings-scroll">
-              {debugData.response ? (
-                <pre className="debug-code text-gray-700 whitespace-pre-wrap break-words">
-                  {debugData.response}
-                </pre>
-              ) : (
-                <Typography.Text type="secondary" className="text-sm">
-                  {t('暂无响应数据')}
-                </Typography.Text>
-              )}
-            </div>
+            <CodeViewer
+              content={debugData.response}
+              title="response"
+              language="javascript"
+            />
           </TabPane>
         </Tabs>
       </div>
