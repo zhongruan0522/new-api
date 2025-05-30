@@ -136,10 +136,8 @@ const MessageContent = ({
     !finalExtractedThinkingContent &&
     (!finalDisplayableFinalContent || finalDisplayableFinalContent.trim() === '')) {
     return (
-      <div className={`${className} flex items-center gap-2 sm:gap-4 p-4 sm:p-6 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl sm:rounded-2xl`} style={{
-        background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(139, 92, 246, 0.12) 50%, rgba(168, 85, 247, 0.08) 100%)'
-      }}>
-        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg">
+      <div className={`${className} flex items-center gap-2 sm:gap-4 p-4 sm:p-6 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl sm:rounded-2xl`}>
+        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center shadow-lg">
           <Loader2 className="animate-spin text-white" size={styleState.isMobile ? 16 : 20} />
         </div>
         <div className="flex flex-col">
@@ -172,42 +170,48 @@ const MessageContent = ({
 
       {/* 渲染推理内容 */}
       {message.role === 'assistant' && finalExtractedThinkingContent && (
-        <div className="bg-gradient-to-br from-indigo-50 via-purple-50 to-violet-50 rounded-xl sm:rounded-2xl mb-2 sm:mb-4 overflow-hidden shadow-lg backdrop-blur-sm" style={{
-          background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(139, 92, 246, 0.12) 25%, rgba(168, 85, 247, 0.15) 50%, rgba(192, 132, 252, 0.12) 75%, rgba(216, 180, 254, 0.08) 100%)'
-        }}>
+        <div className="rounded-xl sm:rounded-2xl mb-2 sm:mb-4 overflow-hidden shadow-sm backdrop-blur-sm">
           <div
-            className="flex items-center justify-between p-3 sm:p-5 cursor-pointer hover:bg-gradient-to-r hover:from-white/30 hover:to-purple-50/50 transition-all duration-300"
+            className="flex items-center justify-between p-3 sm:p-5 cursor-pointer hover:bg-gradient-to-r hover:from-white/20 hover:to-purple-50/30 transition-all"
+            style={{
+              background: 'linear-gradient(135deg, #4c1d95 0%, #6d28d9 50%, #7c3aed 100%)',
+              position: 'relative'
+            }}
             onClick={() => onToggleReasoningExpansion(message.id)}
           >
-            <div className="flex items-center gap-2 sm:gap-4">
-              <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg">
-                <Brain className="text-white" size={styleState.isMobile ? 12 : 16} />
+            <div className="absolute inset-0 overflow-hidden">
+              <div className="absolute -top-10 -right-10 w-40 h-40 bg-white opacity-5 rounded-full"></div>
+              <div className="absolute -bottom-8 -left-8 w-24 h-24 bg-white opacity-10 rounded-full"></div>
+            </div>
+            <div className="flex items-center gap-2 sm:gap-4 relative">
+              <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-white/20 flex items-center justify-center shadow-lg">
+                <Brain style={{ color: 'white' }} size={styleState.isMobile ? 12 : 16} />
               </div>
               <div className="flex flex-col">
-                <Typography.Text strong className="text-gray-800 text-sm sm:text-base">
+                <Typography.Text strong style={{ color: 'white' }} className="text-sm sm:text-base">
                   {headerText}
                 </Typography.Text>
                 {thinkingSource && (
-                  <Typography.Text className="text-gray-500 text-xs mt-0.5 hidden sm:block">
+                  <Typography.Text style={{ color: 'white' }} className="text-xs mt-0.5 opacity-80 hidden sm:block">
                     来源: {thinkingSource}
                   </Typography.Text>
                 )}
               </div>
             </div>
-            <div className="flex items-center gap-2 sm:gap-3">
+            <div className="flex items-center gap-2 sm:gap-3 relative">
               {isThinkingStatus && !message.isThinkingComplete && (
                 <div className="flex items-center gap-1 sm:gap-2">
-                  <Loader2 className="animate-spin text-purple-500" size={styleState.isMobile ? 14 : 18} />
-                  <Typography.Text className="text-purple-600 text-xs sm:text-sm font-medium">
+                  <Loader2 style={{ color: 'white' }} className="animate-spin" size={styleState.isMobile ? 14 : 18} />
+                  <Typography.Text style={{ color: 'white' }} className="text-xs sm:text-sm font-medium opacity-90">
                     思考中
                   </Typography.Text>
                 </div>
               )}
               {(!isThinkingStatus || message.isThinkingComplete) && (
-                <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-purple-100 flex items-center justify-center">
+                <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-white/20 flex items-center justify-center">
                   {message.isReasoningExpanded ?
-                    <ChevronUp size={styleState.isMobile ? 12 : 16} className="text-purple-600" /> :
-                    <ChevronRight size={styleState.isMobile ? 12 : 16} className="text-purple-600" />
+                    <ChevronUp size={styleState.isMobile ? 12 : 16} style={{ color: 'white' }} /> :
+                    <ChevronRight size={styleState.isMobile ? 12 : 16} style={{ color: 'white' }} />
                   }
                 </div>
               )}
@@ -215,17 +219,17 @@ const MessageContent = ({
           </div>
           <div
             className={`transition-all duration-500 ease-out ${message.isReasoningExpanded ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
-              } overflow-hidden`}
+              } overflow-hidden bg-gradient-to-br from-purple-50 via-indigo-50 to-violet-50`}
           >
             {message.isReasoningExpanded && (
               <div className="p-3 sm:p-5 pt-2 sm:pt-4">
                 <div
-                  className="bg-white/80 backdrop-blur-sm rounded-xl p-2 shadow-inner overflow-x-auto overflow-y-auto thinking-content-scroll"
+                  className="bg-white/70 backdrop-blur-sm rounded-lg sm:rounded-xl p-2 shadow-inner overflow-x-auto overflow-y-auto thinking-content-scroll"
                   style={{
                     maxHeight: '200px',
                     minHeight: '100px',
                     scrollbarWidth: 'thin',
-                    scrollbarColor: 'rgba(139, 92, 246, 0.3) transparent'
+                    scrollbarColor: 'rgba(0, 0, 0, 0.3) transparent'
                   }}
                 >
                   <div className="prose prose-xs sm:prose-sm prose-purple max-w-none text-xs sm:text-sm">
