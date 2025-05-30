@@ -24,6 +24,16 @@ export const useApiRequest = (
 ) => {
   const { t } = useTranslation();
 
+  // 处理消息自动关闭逻辑的公共函数
+  const applyAutoCollapseLogic = useCallback((message, isThinkingComplete = true) => {
+    const shouldAutoCollapse = isThinkingComplete && !message.hasAutoCollapsed;
+    return {
+      isThinkingComplete,
+      hasAutoCollapsed: shouldAutoCollapse || message.hasAutoCollapsed,
+      isReasoningExpanded: shouldAutoCollapse ? false : message.isReasoningExpanded,
+    };
+  }, []);
+
   // 流式消息更新
   const streamMessageUpdate = useCallback((textChunk, type) => {
     setMessage(prevMessage => {
@@ -65,17 +75,13 @@ export const useApiRequest = (
           const isThinkingComplete = (lastMessage.reasoningContent && !lastMessage.isThinkingComplete) ||
             thinkingCompleteFromTags;
 
-          // 只在第一次思考完成时自动关闭，之后由用户控制
-          const shouldAutoCollapse = isThinkingComplete && !lastMessage.hasAutoCollapsed;
+          const autoCollapseState = applyAutoCollapseLogic(lastMessage, isThinkingComplete);
 
           newMessage = {
             ...newMessage,
             content: newContent,
             status: MESSAGE_STATUS.INCOMPLETE,
-            isThinkingComplete: isThinkingComplete,
-            hasAutoCollapsed: shouldAutoCollapse ? true : lastMessage.hasAutoCollapsed,
-            isReasoningExpanded: shouldAutoCollapse
-              ? false : lastMessage.isReasoningExpanded,
+            ...autoCollapseState,
           };
         }
 
@@ -84,7 +90,7 @@ export const useApiRequest = (
 
       return prevMessage;
     });
-  }, [setMessage]);
+  }, [setMessage, applyAutoCollapseLogic]);
 
   // 完成消息
   const completeMessage = useCallback((status = MESSAGE_STATUS.COMPLETE) => {
@@ -95,21 +101,18 @@ export const useApiRequest = (
         return prevMessage;
       }
 
-      // 只在第一次思考完成时自动关闭，之后由用户控制
-      const shouldAutoCollapse = !lastMessage.hasAutoCollapsed;
+      const autoCollapseState = applyAutoCollapseLogic(lastMessage, true);
 
       return [
         ...prevMessage.slice(0, -1),
         {
           ...lastMessage,
           status: status,
-          isThinkingComplete: true,
-          hasAutoCollapsed: shouldAutoCollapse ? true : lastMessage.hasAutoCollapsed,
-          isReasoningExpanded: shouldAutoCollapse ? false : lastMessage.isReasoningExpanded
+          ...autoCollapseState,
         }
       ];
     });
-  }, [setMessage]);
+  }, [setMessage, applyAutoCollapseLogic]);
 
   // 非流式请求
   const handleNonStreamRequest = useCallback(async (payload) => {
@@ -172,17 +175,14 @@ export const useApiRequest = (
           const newMessages = [...prevMessage];
           const lastMessage = newMessages[newMessages.length - 1];
           if (lastMessage?.status === MESSAGE_STATUS.LOADING) {
-            // 只在第一次思考完成时自动关闭，之后由用户控制
-            const shouldAutoCollapse = !lastMessage.hasAutoCollapsed;
+            const autoCollapseState = applyAutoCollapseLogic(lastMessage, true);
 
             newMessages[newMessages.length - 1] = {
               ...lastMessage,
               content: processed.content,
               reasoningContent: processed.reasoningContent,
               status: MESSAGE_STATUS.COMPLETE,
-              isThinkingComplete: true,
-              hasAutoCollapsed: shouldAutoCollapse ? true : lastMessage.hasAutoCollapsed,
-              isReasoningExpanded: shouldAutoCollapse ? false : lastMessage.isReasoningExpanded
+              ...autoCollapseState,
             };
           }
           return newMessages;
@@ -202,22 +202,19 @@ export const useApiRequest = (
         const newMessages = [...prevMessage];
         const lastMessage = newMessages[newMessages.length - 1];
         if (lastMessage?.status === MESSAGE_STATUS.LOADING) {
-          // 只在第一次思考完成时自动关闭，之后由用户控制
-          const shouldAutoCollapse = !lastMessage.hasAutoCollapsed;
+          const autoCollapseState = applyAutoCollapseLogic(lastMessage, true);
 
           newMessages[newMessages.length - 1] = {
             ...lastMessage,
             content: t('请求发生错误: ') + error.message,
             status: MESSAGE_STATUS.ERROR,
-            isThinkingComplete: true,
-            hasAutoCollapsed: shouldAutoCollapse ? true : lastMessage.hasAutoCollapsed,
-            isReasoningExpanded: shouldAutoCollapse ? false : lastMessage.isReasoningExpanded
+            ...autoCollapseState,
           };
         }
         return newMessages;
       });
     }
-  }, [setDebugData, setActiveDebugTab, setMessage, t]);
+  }, [setDebugData, setActiveDebugTab, setMessage, t, applyAutoCollapseLogic]);
 
   // SSE请求
   const handleSSE = useCallback((payload) => {
@@ -337,7 +334,7 @@ export const useApiRequest = (
       streamMessageUpdate(t('建立连接时发生错误'), 'content');
       completeMessage(MESSAGE_STATUS.ERROR);
     }
-  }, [setDebugData, setActiveDebugTab, streamMessageUpdate, completeMessage, t]);
+  }, [setDebugData, setActiveDebugTab, streamMessageUpdate, completeMessage, t, applyAutoCollapseLogic]);
 
   // 停止生成
   const onStopGenerator = useCallback(() => {
@@ -355,8 +352,7 @@ export const useApiRequest = (
             lastMessage.reasoningContent || ''
           );
 
-          // 只在第一次思考完成时自动关闭，之后由用户控制
-          const shouldAutoCollapse = !lastMessage.hasAutoCollapsed;
+          const autoCollapseState = applyAutoCollapseLogic(lastMessage, true);
 
           return [
             ...prevMessage.slice(0, -1),
@@ -365,16 +361,14 @@ export const useApiRequest = (
               status: MESSAGE_STATUS.COMPLETE,
               reasoningContent: processed.reasoningContent || null,
               content: processed.content,
-              isThinkingComplete: true,
-              hasAutoCollapsed: shouldAutoCollapse ? true : lastMessage.hasAutoCollapsed,
-              isReasoningExpanded: shouldAutoCollapse ? false : lastMessage.isReasoningExpanded
+              ...autoCollapseState,
             }
           ];
         }
         return prevMessage;
       });
     }
-  }, [setMessage]);
+  }, [setMessage, applyAutoCollapseLogic]);
 
   // 发送请求
   const sendRequest = useCallback((payload, isStream) => {
