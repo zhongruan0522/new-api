@@ -74,11 +74,6 @@ body {
     height: 100% !important;
   }
 
-  /* 隐藏在移动设备上 */
-  .hide-on-mobile {
-    display: none !important;
-  }
-
   .semi-table-tbody,
   .semi-table-row,
   .semi-table-row-cell {
@@ -86,10 +81,12 @@ body {
     width: auto !important;
     padding: 2px !important;
   }
+
   .semi-table-row-cell {
     border-bottom: 0 !important;
   }
-  .semi-table-tbody > .semi-table-row {
+
+  .semi-table-tbody>.semi-table-row {
     border-bottom: 1px solid rgba(0, 0, 0, 0.1);
   }
 }
@@ -217,11 +214,28 @@ code {
   scrollbar-width: none;
 }
 
-/* 调试面板代码样式 */
-.debug-code {
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-  font-size: 11px;
-  line-height: 1.4;
+/* 思考内容区域滚动条样式 */
+.thinking-content-scroll::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.thinking-content-scroll::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+}
+
+.thinking-content-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.thinking-content-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.thinking-content-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
 }
 
 /* 调试面板标签样式 */

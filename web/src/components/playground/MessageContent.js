@@ -215,7 +215,15 @@ const MessageContent = ({
           >
             {message.isReasoningExpanded && (
               <div className="p-3 sm:p-5 pt-2 sm:pt-4">
-                <div className="bg-white/70 backdrop-blur-sm rounded-lg sm:rounded-xl p-2 shadow-inner overflow-x-auto max-h-50 overflow-y-auto">
+                <div
+                  className="bg-white/70 backdrop-blur-sm rounded-lg sm:rounded-xl p-2 shadow-inner overflow-x-auto overflow-y-auto thinking-content-scroll"
+                  style={{
+                    maxHeight: '200px',
+                    minHeight: '100px',
+                    scrollbarWidth: 'thin',
+                    scrollbarColor: 'rgba(0, 0, 0, 0.3) transparent'
+                  }}
+                >
                   <div className="prose prose-xs sm:prose-sm prose-purple max-w-none text-xs sm:text-sm">
                     <MarkdownRenderer
                       content={finalExtractedThinkingContent}
