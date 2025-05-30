@@ -65,12 +65,16 @@ export const useApiRequest = (
           const isThinkingComplete = (lastMessage.reasoningContent && !lastMessage.isThinkingComplete) ||
             thinkingCompleteFromTags;
 
+          // 只在第一次思考完成时自动关闭，之后由用户控制
+          const shouldAutoCollapse = isThinkingComplete && !lastMessage.hasAutoCollapsed;
+
           newMessage = {
             ...newMessage,
             content: newContent,
             status: MESSAGE_STATUS.INCOMPLETE,
             isThinkingComplete: isThinkingComplete,
-            isReasoningExpanded: (shouldCollapseReasoning || shouldCollapseFromThinkTag)
+            hasAutoCollapsed: shouldAutoCollapse ? true : lastMessage.hasAutoCollapsed,
+            isReasoningExpanded: shouldAutoCollapse
               ? false : lastMessage.isReasoningExpanded,
           };
         }
@@ -90,13 +94,18 @@ export const useApiRequest = (
         lastMessage.status === MESSAGE_STATUS.ERROR) {
         return prevMessage;
       }
+
+      // 只在第一次思考完成时自动关闭，之后由用户控制
+      const shouldAutoCollapse = !lastMessage.hasAutoCollapsed;
+
       return [
         ...prevMessage.slice(0, -1),
         {
           ...lastMessage,
           status: status,
           isThinkingComplete: true,
-          isReasoningExpanded: false
+          hasAutoCollapsed: shouldAutoCollapse ? true : lastMessage.hasAutoCollapsed,
+          isReasoningExpanded: shouldAutoCollapse ? false : lastMessage.isReasoningExpanded
         }
       ];
     });
@@ -163,13 +172,17 @@ export const useApiRequest = (
           const newMessages = [...prevMessage];
           const lastMessage = newMessages[newMessages.length - 1];
           if (lastMessage?.status === MESSAGE_STATUS.LOADING) {
+            // 只在第一次思考完成时自动关闭，之后由用户控制
+            const shouldAutoCollapse = !lastMessage.hasAutoCollapsed;
+
             newMessages[newMessages.length - 1] = {
               ...lastMessage,
               content: processed.content,
               reasoningContent: processed.reasoningContent,
               status: MESSAGE_STATUS.COMPLETE,
               isThinkingComplete: true,
-              isReasoningExpanded: false
+              hasAutoCollapsed: shouldAutoCollapse ? true : lastMessage.hasAutoCollapsed,
+              isReasoningExpanded: shouldAutoCollapse ? false : lastMessage.isReasoningExpanded
             };
           }
           return newMessages;
@@ -189,12 +202,16 @@ export const useApiRequest = (
         const newMessages = [...prevMessage];
         const lastMessage = newMessages[newMessages.length - 1];
         if (lastMessage?.status === MESSAGE_STATUS.LOADING) {
+          // 只在第一次思考完成时自动关闭，之后由用户控制
+          const shouldAutoCollapse = !lastMessage.hasAutoCollapsed;
+
           newMessages[newMessages.length - 1] = {
             ...lastMessage,
             content: t('请求发生错误: ') + error.message,
             status: MESSAGE_STATUS.ERROR,
             isThinkingComplete: true,
-            isReasoningExpanded: false
+            hasAutoCollapsed: shouldAutoCollapse ? true : lastMessage.hasAutoCollapsed,
+            isReasoningExpanded: shouldAutoCollapse ? false : lastMessage.isReasoningExpanded
           };
         }
         return newMessages;
@@ -338,6 +355,9 @@ export const useApiRequest = (
             lastMessage.reasoningContent || ''
           );
 
+          // 只在第一次思考完成时自动关闭，之后由用户控制
+          const shouldAutoCollapse = !lastMessage.hasAutoCollapsed;
+
           return [
             ...prevMessage.slice(0, -1),
             {
@@ -346,7 +366,8 @@ export const useApiRequest = (
               reasoningContent: processed.reasoningContent || null,
               content: processed.content,
               isThinkingComplete: true,
-              isReasoningExpanded: false
+              hasAutoCollapsed: shouldAutoCollapse ? true : lastMessage.hasAutoCollapsed,
+              isReasoningExpanded: shouldAutoCollapse ? false : lastMessage.isReasoningExpanded
             }
           ];
         }
