@@ -11,6 +11,7 @@ import { API, getLogo, getSystemName, showError } from '../helpers/index.js';
 import { setStatusData } from '../helpers/data.js';
 import { UserContext } from '../context/User/index.js';
 import { StatusContext } from '../context/Status/index.js';
+import { useLocation } from 'react-router-dom';
 const { Sider, Content, Header, Footer } = Layout;
 
 const PageLayout = () => {
@@ -18,6 +19,9 @@ const PageLayout = () => {
   const [statusState, statusDispatch] = useContext(StatusContext);
   const [styleState, styleDispatch] = useContext(StyleContext);
   const { i18n } = useTranslation();
+  const location = useLocation();
+
+  const isPlaygroundRoute = location.pathname === '/console/playground';
 
   const loadUser = () => {
     let user = localStorage.getItem('user');
@@ -144,14 +148,16 @@ const PageLayout = () => {
           >
             <App />
           </Content>
-          <Layout.Footer
-            style={{
-              flex: '0 0 auto',
-              width: '100%',
-            }}
-          >
-            <FooterBar />
-          </Layout.Footer>
+          {!isPlaygroundRoute && (
+            <Layout.Footer
+              style={{
+                flex: '0 0 auto',
+                width: '100%',
+              }}
+            >
+              <FooterBar />
+            </Layout.Footer>
+          )}
         </Layout>
       </Layout>
       <ToastContainer />

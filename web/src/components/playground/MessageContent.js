@@ -1,0 +1,248 @@
+import React from 'react';
+import {
+  Typography,
+  MarkdownRender,
+} from '@douyinfe/semi-ui';
+import {
+  ChevronRight,
+  ChevronUp,
+  Brain,
+  Loader2,
+} from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+
+const MessageContent = ({ message, className, styleState, onToggleReasoningExpansion }) => {
+  const { t } = useTranslation();
+
+  if (message.status === 'error') {
+    return (
+      <div className={`${className} flex items-center p-4 bg-red-50 rounded-xl`}>
+        <Typography.Text type="danger" className="text-sm">
+          {message.content || t('请求发生错误')}
+        </Typography.Text>
+      </div>
+    );
+  }
+
+  const isThinkingStatus = message.status === 'loading' || message.status === 'incomplete';
+  let currentExtractedThinkingContent = null;
+  let currentDisplayableFinalContent = message.content || "";
+  let thinkingSource = null;
+
+  if (message.role === 'assistant') {
+    let baseContentForDisplay = message.content || "";
+    let combinedThinkingContent = "";
+
+    if (message.reasoningContent) {
+      combinedThinkingContent = message.reasoningContent;
+      thinkingSource = 'reasoningContent';
+    }
+
+    if (baseContentForDisplay.includes('<think>')) {
+      const thinkTagRegex = /<think>([\s\S]*?)<\/think>/g;
+      let match;
+      let thoughtsFromPairedTags = [];
+      let replyParts = [];
+      let lastIndex = 0;
+
+      while ((match = thinkTagRegex.exec(baseContentForDisplay)) !== null) {
+        replyParts.push(baseContentForDisplay.substring(lastIndex, match.index));
+        thoughtsFromPairedTags.push(match[1]);
+        lastIndex = match.index + match[0].length;
+      }
+      replyParts.push(baseContentForDisplay.substring(lastIndex));
+
+      if (thoughtsFromPairedTags.length > 0) {
+        const pairedThoughtsStr = thoughtsFromPairedTags.join('\n\n---\n\n');
+        if (combinedThinkingContent) {
+          combinedThinkingContent += '\n\n---\n\n' + pairedThoughtsStr;
+        } else {
+          combinedThinkingContent = pairedThoughtsStr;
+        }
+        thinkingSource = thinkingSource ? thinkingSource + ' & <think> tags' : '<think> tags';
+      }
+
+      baseContentForDisplay = replyParts.join('');
+    }
+
+    if (isThinkingStatus) {
+      const lastOpenThinkIndex = baseContentForDisplay.lastIndexOf('<think>');
+      if (lastOpenThinkIndex !== -1) {
+        const fragmentAfterLastOpen = baseContentForDisplay.substring(lastOpenThinkIndex);
+        if (!fragmentAfterLastOpen.includes('</think>')) {
+          const unclosedThought = fragmentAfterLastOpen.substring('<think>'.length).trim();
+          if (unclosedThought) {
+            if (combinedThinkingContent) {
+              combinedThinkingContent += '\n\n---\n\n' + unclosedThought;
+            } else {
+              combinedThinkingContent = unclosedThought;
+            }
+            thinkingSource = thinkingSource ? thinkingSource + ' + streaming <think>' : 'streaming <think>';
+          }
+          baseContentForDisplay = baseContentForDisplay.substring(0, lastOpenThinkIndex);
+        }
+      }
+    }
+
+    currentExtractedThinkingContent = combinedThinkingContent || null;
+    currentDisplayableFinalContent = baseContentForDisplay.replace(/<\/?think>/g, '').trim();
+  }
+
+  const headerText = isThinkingStatus ? t('思考中...') : t('思考过程');
+  const finalExtractedThinkingContent = currentExtractedThinkingContent;
+  const finalDisplayableFinalContent = currentDisplayableFinalContent;
+
+  if (message.role === 'assistant' &&
+    isThinkingStatus &&
+    !finalExtractedThinkingContent &&
+    (!finalDisplayableFinalContent || finalDisplayableFinalContent.trim() === '')) {
+    return (
+      <div className={`${className} flex items-center gap-2 sm:gap-4 p-4 sm:p-6 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl sm:rounded-2xl`}>
+        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center shadow-lg">
+          <Loader2 className="animate-spin text-white" size={styleState.isMobile ? 16 : 20} />
+        </div>
+        <div className="flex flex-col">
+          <Typography.Text strong className="text-gray-800 text-sm sm:text-base">
+            {t('正在思考...')}
+          </Typography.Text>
+          <Typography.Text className="text-gray-500 text-xs sm:text-sm">
+            AI 正在分析您的问题
+          </Typography.Text>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={className}>
+      {/* 渲染推理内容 */}
+      {message.role === 'assistant' && finalExtractedThinkingContent && (
+        <div className="bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 rounded-xl sm:rounded-2xl mb-2 sm:mb-4 overflow-hidden shadow-sm backdrop-blur-sm">
+          <div
+            className="flex items-center justify-between p-3 sm:p-5 cursor-pointer hover:bg-gradient-to-r hover:from-white/40 hover:to-purple-50/60 transition-all"
+            onClick={() => onToggleReasoningExpansion(message.id)}
+          >
+            <div className="flex items-center gap-2 sm:gap-4">
+              <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center shadow-lg">
+                <Brain className="text-white" size={styleState.isMobile ? 12 : 16} />
+              </div>
+              <div className="flex flex-col">
+                <Typography.Text strong className="text-gray-800 text-sm sm:text-base">
+                  {headerText}
+                </Typography.Text>
+                {thinkingSource && (
+                  <Typography.Text className="text-gray-500 text-xs mt-0.5 hidden sm:block">
+                    来源: {thinkingSource}
+                  </Typography.Text>
+                )}
+              </div>
+            </div>
+            <div className="flex items-center gap-2 sm:gap-3">
+              {isThinkingStatus && (
+                <div className="flex items-center gap-1 sm:gap-2">
+                  <Loader2 className="animate-spin text-purple-500" size={styleState.isMobile ? 14 : 18} />
+                  <Typography.Text className="text-purple-600 text-xs sm:text-sm font-medium">
+                    思考中
+                  </Typography.Text>
+                </div>
+              )}
+              {!isThinkingStatus && (
+                <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-purple-100 flex items-center justify-center">
+                  {message.isReasoningExpanded ?
+                    <ChevronUp size={styleState.isMobile ? 12 : 16} className="text-purple-600" /> :
+                    <ChevronRight size={styleState.isMobile ? 12 : 16} className="text-purple-600" />
+                  }
+                </div>
+              )}
+            </div>
+          </div>
+          <div
+            className={`transition-all duration-500 ease-out ${message.isReasoningExpanded ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+              } overflow-hidden`}
+          >
+            {message.isReasoningExpanded && (
+              <div className="p-3 sm:p-5 pt-2 sm:pt-4">
+                <div className="bg-white/70 backdrop-blur-sm rounded-lg sm:rounded-xl p-2 shadow-inner overflow-x-auto max-h-50 overflow-y-auto">
+                  <div className="prose prose-xs sm:prose-sm prose-purple max-w-none text-xs sm:text-sm">
+                    <MarkdownRender raw={finalExtractedThinkingContent} />
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* 渲染消息内容 */}
+      {(() => {
+        // 处理多模态内容（文本+图片）
+        if (Array.isArray(message.content)) {
+          const textContent = message.content.find(item => item.type === 'text');
+          const imageContents = message.content.filter(item => item.type === 'image_url');
+
+          return (
+            <div>
+              {/* 显示图片 */}
+              {imageContents.length > 0 && (
+                <div className="mb-3 space-y-2">
+                  {imageContents.map((imgItem, index) => (
+                    <div key={index} className="max-w-sm">
+                      <img
+                        src={imgItem.image_url.url}
+                        alt={`用户上传的图片 ${index + 1}`}
+                        className="rounded-lg max-w-full h-auto shadow-sm border"
+                        style={{ maxHeight: '300px' }}
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                          e.target.nextSibling.style.display = 'block';
+                        }}
+                      />
+                      <div
+                        className="text-red-500 text-sm p-2 bg-red-50 rounded-lg border border-red-200"
+                        style={{ display: 'none' }}
+                      >
+                        图片加载失败: {imgItem.image_url.url}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* 显示文本内容 */}
+              {textContent && textContent.text && textContent.text.trim() !== '' && (
+                <div className="prose prose-xs sm:prose-sm prose-gray max-w-none overflow-x-auto text-xs sm:text-sm">
+                  <MarkdownRender raw={textContent.text} />
+                </div>
+              )}
+            </div>
+          );
+        }
+
+        // 处理纯文本内容或助手回复
+        if (typeof message.content === 'string') {
+          if (message.role === 'assistant') {
+            // 助手回复使用处理后的内容
+            if (finalDisplayableFinalContent && finalDisplayableFinalContent.trim() !== '') {
+              return (
+                <div className="prose prose-xs sm:prose-sm prose-gray max-w-none overflow-x-auto text-xs sm:text-sm">
+                  <MarkdownRender raw={finalDisplayableFinalContent} />
+                </div>
+              );
+            }
+          } else {
+            // 用户文本消息
+            return (
+              <div className="prose prose-xs sm:prose-sm prose-gray max-w-none overflow-x-auto text-xs sm:text-sm">
+                <MarkdownRender raw={message.content} />
+              </div>
+            );
+          }
+        }
+
+        return null;
+      })()}
+    </div>
+  );
+};
+
+export default MessageContent; 
