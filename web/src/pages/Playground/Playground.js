@@ -62,8 +62,7 @@ const Playground = () => {
     },
     system: {
       name: 'System',
-      avatar:
-        'https://lf3-static.bytednsdoc.com/obj/eden-cn/ptlz_zlp/ljhwZthlaukjlkulzlp/other/logo.png',
+      avatar: getLogo(),
     },
   };
 
@@ -1025,6 +1024,22 @@ const Playground = () => {
     });
   }, [setMessage, t]);
 
+  const handleRoleToggle = useCallback((targetMessage) => {
+    setMessage(prevMessages => {
+      return prevMessages.map(msg => {
+        if (msg.id === targetMessage.id && (msg.role === 'assistant' || msg.role === 'system')) {
+          const newRole = msg.role === 'assistant' ? 'system' : 'assistant';
+          Toast.success({
+            content: t(`已切换为${newRole === 'system' ? 'System' : 'Assistant'}角色`),
+            duration: 2,
+          });
+          return { ...msg, role: newRole };
+        }
+        return msg;
+      });
+    });
+  }, [setMessage, t]);
+
   const onStopGenerator = useCallback(() => {
     if (sseSourceRef.current) {
       sseSourceRef.current.close();
@@ -1127,10 +1142,11 @@ const Playground = () => {
         onMessageReset={handleMessageReset}
         onMessageCopy={handleMessageCopy}
         onMessageDelete={handleMessageDelete}
+        onRoleToggle={handleRoleToggle}
         isAnyMessageGenerating={isAnyMessageGenerating}
       />
     );
-  }, [handleMessageReset, handleMessageCopy, handleMessageDelete, styleState, message]);
+  }, [handleMessageReset, handleMessageCopy, handleMessageDelete, styleState, message, handleRoleToggle]);
 
   return (
     <div className="h-full bg-gray-50">
@@ -1189,6 +1205,7 @@ const Playground = () => {
                 onMessageCopy={handleMessageCopy}
                 onMessageReset={handleMessageReset}
                 onMessageDelete={handleMessageDelete}
+                onRoleToggle={handleRoleToggle}
                 onStopGenerator={onStopGenerator}
                 onClearMessages={() => setMessage([])}
                 onToggleDebugPanel={() => setShowDebugPanel(!showDebugPanel)}

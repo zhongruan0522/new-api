@@ -140,6 +140,20 @@ const MessageContent = ({ message, className, styleState, onToggleReasoningExpan
 
   return (
     <div className={className}>
+      {/* 为system角色添加特殊标识 */}
+      {message.role === 'system' && (
+        <div className="mb-2 sm:mb-4">
+          <div className="flex items-center gap-2 p-2 sm:p-3 bg-gradient-to-r from-amber-50 to-orange-50 rounded-lg" style={{ border: '1px solid var(--semi-color-border)' }}>
+            <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-sm">
+              <Typography.Text className="text-white text-xs font-bold">S</Typography.Text>
+            </div>
+            <Typography.Text className="text-amber-700 text-xs sm:text-sm font-medium">
+              {t('系统消息')}
+            </Typography.Text>
+          </div>
+        </div>
+      )}
+
       {/* 渲染推理内容 */}
       {message.role === 'assistant' && finalExtractedThinkingContent && (
         <div className="bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 rounded-xl sm:rounded-2xl mb-2 sm:mb-4 overflow-hidden shadow-sm backdrop-blur-sm">
