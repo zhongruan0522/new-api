@@ -181,7 +181,7 @@ const SettingsPanel = ({
 
       {/* 桌面端的配置管理放在底部 */}
       {!styleState.isMobile && (
-        <div className="flex-shrink-0 mt-4 pt-3">
+        <div className="flex-shrink-0 pt-3">
           <ConfigManager
             currentConfig={currentConfig}
             onConfigImport={onConfigImport}

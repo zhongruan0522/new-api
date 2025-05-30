@@ -1,17 +1,19 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Card,
   Typography,
   Tabs,
   TabPane,
   Button,
+  Dropdown,
 } from '@douyinfe/semi-ui';
 import {
   Code,
-  FileText,
   Zap,
   Clock,
   X,
+  Eye,
+  Send,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
@@ -23,6 +25,61 @@ const DebugPanel = ({
   onCloseDebugPanel,
 }) => {
   const { t } = useTranslation();
+
+  const [activeKey, setActiveKey] = useState(activeDebugTab);
+
+  useEffect(() => {
+    setActiveKey(activeDebugTab);
+  }, [activeDebugTab]);
+
+  const handleTabChange = (key) => {
+    setActiveKey(key);
+    onActiveDebugTabChange(key);
+  };
+
+  const renderArrow = (items, pos, handleArrowClick, defaultNode) => {
+    const style = {
+      width: 32,
+      height: 32,
+      margin: '0 12px',
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      borderRadius: '100%',
+      background: 'rgba(var(--semi-grey-1), 1)',
+      color: 'var(--semi-color-text)',
+      cursor: 'pointer',
+    };
+
+    return (
+      <Dropdown
+        render={
+          <Dropdown.Menu>
+            {items.map(item => {
+              return (
+                <Dropdown.Item
+                  key={item.itemKey}
+                  onClick={() => handleTabChange(item.itemKey)}
+                >
+                  {item.tab}
+                </Dropdown.Item>
+              );
+            })}
+          </Dropdown.Menu>
+        }
+      >
+        {pos === 'start' ? (
+          <div style={style} onClick={handleArrowClick}>
+            ←
+          </div>
+        ) : (
+          <div style={style} onClick={handleArrowClick}>
+            →
+          </div>
+        )}
+      </Dropdown>
+    );
+  };
 
   return (
     <Card
@@ -44,7 +101,6 @@ const DebugPanel = ({
           </Typography.Title>
         </div>
 
-        {/* 移动端关闭按钮 */}
         {styleState.isMobile && onCloseDebugPanel && (
           <Button
             icon={<X size={16} />}
@@ -59,23 +115,46 @@ const DebugPanel = ({
 
       <div className="flex-1 overflow-hidden debug-panel">
         <Tabs
-          type="line"
+          renderArrow={renderArrow}
+          type="card"
+          collapsible
           className="h-full"
           style={{ height: '100%', display: 'flex', flexDirection: 'column' }}
-          activeKey={activeDebugTab}
-          onChange={onActiveDebugTabChange}
+          activeKey={activeKey}
+          onChange={handleTabChange}
         >
           <TabPane tab={
             <div className="flex items-center gap-2">
-              <FileText size={16} />
-              {t('请求体')}
+              <Eye size={16} />
+              {t('预览请求体')}
+            </div>
+          } itemKey="preview">
+            <div className="h-full overflow-y-auto bg-gray-50 rounded-lg p-4 model-settings-scroll">
+              {debugData.previewRequest ? (
+                <pre className="debug-code text-gray-700 whitespace-pre-wrap break-words">
+                  {JSON.stringify(debugData.previewRequest, null, 2)}
+                </pre>
+              ) : (
+                <Typography.Text type="secondary" className="text-sm">
+                  {t('正在构造请求体预览...')}
+                </Typography.Text>
+              )}
+            </div>
+          </TabPane>
+
+          <TabPane tab={
+            <div className="flex items-center gap-2">
+              <Send size={16} />
+              {t('实际请求体')}
             </div>
           } itemKey="request">
             <div className="h-full overflow-y-auto bg-gray-50 rounded-lg p-4 model-settings-scroll">
               {debugData.request ? (
-                <pre className="debug-code text-gray-700 whitespace-pre-wrap break-words">
-                  {JSON.stringify(debugData.request, null, 2)}
-                </pre>
+                <>
+                  <pre className="debug-code text-gray-700 whitespace-pre-wrap break-words">
+                    {JSON.stringify(debugData.request, null, 2)}
+                  </pre>
+                </>
               ) : (
                 <Typography.Text type="secondary" className="text-sm">
                   {t('暂无请求数据')}
@@ -105,14 +184,20 @@ const DebugPanel = ({
         </Tabs>
       </div>
 
-      {debugData.timestamp && (
-        <div className="flex items-center gap-2 mt-4 pt-4 flex-shrink-0">
-          <Clock size={14} className="text-gray-500" />
-          <Typography.Text className="text-xs text-gray-500">
-            {t('最后更新')}: {new Date(debugData.timestamp).toLocaleString()}
-          </Typography.Text>
-        </div>
-      )}
+      <div className="flex items-center justify-between mt-4 pt-4 flex-shrink-0">
+        {(debugData.timestamp || debugData.previewTimestamp) && (
+          <div className="flex items-center gap-2">
+            <Clock size={14} className="text-gray-500" />
+            <Typography.Text className="text-xs text-gray-500">
+              {activeKey === 'preview' && debugData.previewTimestamp
+                ? `${t('预览更新')}: ${new Date(debugData.previewTimestamp).toLocaleString()}`
+                : debugData.timestamp
+                  ? `${t('最后请求')}: ${new Date(debugData.timestamp).toLocaleString()}`
+                  : ''}
+            </Typography.Text>
+          </div>
+        )}
+      </div>
     </Card>
   );
 };

@@ -38,9 +38,6 @@ const ImageUrlInput = ({ imageUrls, imageEnabled, onImageUrlsChange, onImageEnab
           <Typography.Text strong className="text-sm">
             图片地址
           </Typography.Text>
-          <Typography.Text className="text-xs text-gray-400">
-            (多模态对话)
-          </Typography.Text>
         </div>
         <div className="flex items-center gap-2">
           <Switch

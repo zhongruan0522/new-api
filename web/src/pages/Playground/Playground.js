@@ -102,12 +102,148 @@ const Playground = () => {
     response: null,
     timestamp: null
   });
-  const [activeDebugTab, setActiveDebugTab] = useState('request');
+  const [activeDebugTab, setActiveDebugTab] = useState('preview');
   const [styleState, styleDispatch] = useContext(StyleContext);
   const sseSourceRef = useRef(null);
   const chatRef = useRef(null);
 
   const saveConfigTimeoutRef = useRef(null);
+
+  const [previewPayload, setPreviewPayload] = useState(null);
+
+  const constructPreviewPayload = useCallback(() => {
+    try {
+      let systemMessage = null;
+      if (systemPrompt !== '') {
+        systemMessage = {
+          role: 'system',
+          id: '1',
+          createAt: 1715676751919,
+          content: systemPrompt,
+        };
+      }
+      
+      let messages = message.map((item) => {
+        return {
+          role: item.role,
+          content: item.content,
+        };
+      });
+      
+      if (messages.length === 0 || messages.every(msg => msg.role !== 'user')) {
+        const validImageUrls = inputs.imageUrls ? inputs.imageUrls.filter(url => url.trim() !== '') : [];
+        
+        if (inputs.imageEnabled && validImageUrls.length > 0) {
+          const messageContent = [
+            {
+              type: 'text',
+              text: '你好'
+            },
+            ...validImageUrls.map(url => ({
+              type: 'image_url',
+              image_url: {
+                url: url.trim(),
+              },
+            })),
+          ];
+          
+          messages.push({
+            role: 'user',
+            content: messageContent
+          });
+        } else {
+          messages.push({
+            role: 'user',
+            content: '你好'
+          });
+        }
+      } else {
+        const lastUserMessageIndex = messages.length - 1;
+        for (let i = messages.length - 1; i >= 0; i--) {
+          if (messages[i].role === 'user') {
+            if (inputs.imageEnabled && inputs.imageUrls) {
+              const validImageUrls = inputs.imageUrls.filter(url => url.trim() !== '');
+              if (validImageUrls.length > 0) {
+                let textContent = '示例消息';
+                
+                if (typeof messages[i].content === 'string') {
+                  textContent = messages[i].content;
+                } else if (Array.isArray(messages[i].content)) {
+                  const textPart = messages[i].content.find(item => item.type === 'text');
+                  if (textPart && textPart.text) {
+                    textContent = textPart.text;
+                  }
+                }
+                
+                messages[i] = {
+                  ...messages[i],
+                  content: [
+                    {
+                      type: 'text',
+                      text: textContent
+                    },
+                    ...validImageUrls.map(url => ({
+                      type: 'image_url',
+                      image_url: {
+                        url: url.trim(),
+                      },
+                    })),
+                  ]
+                };
+              }
+            }
+            break;
+          }
+        }
+      }
+      
+      if (systemMessage) {
+        messages.unshift(systemMessage);
+      }
+      
+      const payload = {
+        messages: messages,
+        stream: inputs.stream,
+        model: inputs.model,
+        group: inputs.group,
+      };
+
+      if (parameterEnabled.max_tokens && inputs.max_tokens > 0) {
+        payload.max_tokens = parseInt(inputs.max_tokens);
+      }
+      if (parameterEnabled.temperature) {
+        payload.temperature = inputs.temperature;
+      }
+      if (parameterEnabled.top_p) {
+        payload.top_p = inputs.top_p;
+      }
+      if (parameterEnabled.frequency_penalty) {
+        payload.frequency_penalty = inputs.frequency_penalty;
+      }
+      if (parameterEnabled.presence_penalty) {
+        payload.presence_penalty = inputs.presence_penalty;
+      }
+      if (parameterEnabled.seed && inputs.seed !== null && inputs.seed !== '') {
+        payload.seed = parseInt(inputs.seed);
+      }
+
+      return payload;
+    } catch (error) {
+      console.error('构造预览请求体失败:', error);
+      return null;
+    }
+  }, [inputs, parameterEnabled, systemPrompt, message]);
+
+  useEffect(() => {
+    const newPreviewPayload = constructPreviewPayload();
+    setPreviewPayload(newPreviewPayload);
+    
+    setDebugData(prev => ({
+      ...prev,
+      previewRequest: newPreviewPayload,
+      previewTimestamp: new Date().toISOString()
+    }));
+  }, [constructPreviewPayload]);
 
   const debouncedSaveConfig = useCallback(() => {
     if (saveConfigTimeoutRef.current) {
