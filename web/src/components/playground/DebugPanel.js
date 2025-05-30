@@ -159,7 +159,7 @@ const DebugPanel = ({
             <CodeViewer
               content={debugData.response}
               title="response"
-              language="javascript"
+              language="json"
             />
           </TabPane>
         </Tabs>

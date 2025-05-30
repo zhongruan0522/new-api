@@ -134,7 +134,30 @@ const CodeViewer = ({ content, title, language = 'json' }) => {
   const getHighlightedContent = () => {
     const formattedContent = getFormattedContent();
 
-    if (language === 'json') {
+    // 尝试检测是否为 JSON 格式
+    const isJsonLike = () => {
+      if (language === 'json') return true;
+
+      // 自动检测：如果内容看起来像 JSON，就用 JSON 高亮
+      const trimmed = formattedContent.trim();
+      const looksLikeJson = (trimmed.startsWith('{') && trimmed.endsWith('}')) ||
+        (trimmed.startsWith('[') && trimmed.endsWith(']'));
+
+      // 调试日志
+      if (process.env.NODE_ENV === 'development') {
+        console.log('CodeViewer Debug:', {
+          language,
+          contentType: typeof content,
+          trimmedStart: trimmed.substring(0, 10),
+          looksLikeJson,
+          willHighlight: looksLikeJson
+        });
+      }
+
+      return looksLikeJson;
+    };
+
+    if (isJsonLike()) {
       return highlightJson(formattedContent);
     }
 
