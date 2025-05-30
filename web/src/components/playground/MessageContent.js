@@ -1,11 +1,10 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React from 'react';
 import {
   Typography,
-  MarkdownRender,
   TextArea,
   Button,
-  Space,
 } from '@douyinfe/semi-ui';
+import MarkdownRenderer from '../common/MarkdownRenderer';
 import {
   ChevronRight,
   ChevronUp,
@@ -218,7 +217,10 @@ const MessageContent = ({
               <div className="p-3 sm:p-5 pt-2 sm:pt-4">
                 <div className="bg-white/70 backdrop-blur-sm rounded-lg sm:rounded-xl p-2 shadow-inner overflow-x-auto max-h-50 overflow-y-auto">
                   <div className="prose prose-xs sm:prose-sm prose-purple max-w-none text-xs sm:text-sm">
-                    <MarkdownRender raw={finalExtractedThinkingContent} />
+                    <MarkdownRenderer
+                      content={finalExtractedThinkingContent}
+                      className=""
+                    />
                   </div>
                 </div>
               </div>
@@ -304,8 +306,11 @@ const MessageContent = ({
 
                 {/* 显示文本内容 */}
                 {textContent && textContent.text && typeof textContent.text === 'string' && textContent.text.trim() !== '' && (
-                  <div className="prose prose-xs sm:prose-sm prose-gray max-w-none overflow-x-auto text-xs sm:text-sm">
-                    <MarkdownRender raw={textContent.text} />
+                  <div className={`prose prose-xs sm:prose-sm prose-gray max-w-none overflow-x-auto text-xs sm:text-sm ${message.role === 'user' ? 'user-message' : ''}`}>
+                    <MarkdownRenderer
+                      content={textContent.text}
+                      className={message.role === 'user' ? 'user-message' : ''}
+                    />
                   </div>
                 )}
               </div>
@@ -317,14 +322,20 @@ const MessageContent = ({
               if (finalDisplayableFinalContent && finalDisplayableFinalContent.trim() !== '') {
                 return (
                   <div className="prose prose-xs sm:prose-sm prose-gray max-w-none overflow-x-auto text-xs sm:text-sm">
-                    <MarkdownRender raw={finalDisplayableFinalContent} />
+                    <MarkdownRenderer
+                      content={finalDisplayableFinalContent}
+                      className=""
+                    />
                   </div>
                 );
               }
             } else {
               return (
-                <div className="prose prose-xs sm:prose-sm prose-gray max-w-none overflow-x-auto text-xs sm:text-sm">
-                  <MarkdownRender raw={message.content} />
+                <div className={`prose prose-xs sm:prose-sm prose-gray max-w-none overflow-x-auto text-xs sm:text-sm ${message.role === 'user' ? 'user-message' : ''}`}>
+                  <MarkdownRenderer
+                    content={message.content}
+                    className={message.role === 'user' ? 'user-message' : ''}
+                  />
                 </div>
               );
             }
