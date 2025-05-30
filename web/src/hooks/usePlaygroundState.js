@@ -1,9 +1,14 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { DEFAULT_MESSAGES, DEFAULT_CONFIG, DEBUG_TABS } from '../utils/constants';
 import { loadConfig, saveConfig } from '../components/playground/configStorage';
 
 export const usePlaygroundState = () => {
-  const savedConfig = loadConfig();
+  // 使用 ref 缓存初始配置，只加载一次
+  const initialConfigRef = useRef(null);
+  if (!initialConfigRef.current) {
+    initialConfigRef.current = loadConfig();
+  }
+  const savedConfig = initialConfigRef.current;
 
   // 基础配置状态
   const [inputs, setInputs] = useState(savedConfig.inputs || DEFAULT_CONFIG.inputs);
@@ -92,11 +97,10 @@ export const usePlaygroundState = () => {
   }, []);
 
   const handleConfigReset = useCallback(() => {
-    const defaultConfig = loadConfig();
-    setInputs(defaultConfig.inputs);
-    setParameterEnabled(defaultConfig.parameterEnabled);
-    setSystemPrompt(defaultConfig.systemPrompt);
-    setShowDebugPanel(defaultConfig.showDebugPanel);
+    setInputs(DEFAULT_CONFIG.inputs);
+    setParameterEnabled(DEFAULT_CONFIG.parameterEnabled);
+    setSystemPrompt(DEFAULT_CONFIG.systemPrompt);
+    setShowDebugPanel(DEFAULT_CONFIG.showDebugPanel);
   }, []);
 
   return {

@@ -22,7 +22,7 @@ import { Layout } from '@douyinfe/semi-ui';
 import Midjourney from './pages/Midjourney';
 import Pricing from './pages/Pricing/index.js';
 import Task from './pages/Task/index.js';
-import Playground from './pages/Playground/Playground.js';
+import Playground from './pages/Playground/index.js';
 import OAuth2Callback from './components/OAuth2Callback.js';
 import PersonalSetting from './components/PersonalSetting.js';
 import Setup from './pages/Setup/index.js';

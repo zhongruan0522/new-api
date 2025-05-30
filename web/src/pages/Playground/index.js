@@ -10,35 +10,35 @@ import { StyleContext } from '../../context/Style/index.js';
 // Utils and hooks
 import { API, showError, getLogo, isMobile } from '../../helpers/index.js';
 import { stringToColor } from '../../helpers/render.js';
-import { usePlaygroundState } from '../../hooks/usePlaygroundState';
-import { useMessageActions } from '../../hooks/useMessageActions';
-import { useApiRequest } from '../../hooks/useApiRequest';
+import { usePlaygroundState } from '../../hooks/usePlaygroundState.js';
+import { useMessageActions } from '../../hooks/useMessageActions.js';
+import { useApiRequest } from '../../hooks/useApiRequest.js';
 
 // Constants and utils
 import {
   DEFAULT_MESSAGES,
   MESSAGE_ROLES,
   API_ENDPOINTS
-} from '../../utils/constants';
+} from '../../utils/constants.js';
 import {
   buildMessageContent,
   createMessage,
   createLoadingAssistantMessage,
   getTextContent
-} from '../../utils/messageUtils';
+} from '../../utils/messageUtils.js';
 import {
   buildApiPayload,
   processModelsData,
   processGroupsData
-} from '../../utils/apiUtils';
+} from '../../utils/apiUtils.js';
 
 // Components
-import SettingsPanel from '../../components/playground/SettingsPanel';
-import ChatArea from '../../components/playground/ChatArea';
-import DebugPanel from '../../components/playground/DebugPanel';
-import MessageContent from '../../components/playground/MessageContent';
-import MessageActions from '../../components/playground/MessageActions';
-import FloatingButtons from '../../components/playground/FloatingButtons';
+import SettingsPanel from '../../components/playground/SettingsPanel.js';
+import ChatArea from '../../components/playground/ChatArea.js';
+import DebugPanel from '../../components/playground/DebugPanel.js';
+import MessageContent from '../../components/playground/MessageContent.js';
+import MessageActions from '../../components/playground/MessageActions.js';
+import FloatingButtons from '../../components/playground/FloatingButtons.js';
 
 // 生成头像
 const generateAvatarDataUrl = (username) => {
@@ -413,9 +413,10 @@ const Playground = () => {
     }));
   }, [constructPreviewPayload, setPreviewPayload, setDebugData]);
 
+  // 监听配置变化并自动保存
   useEffect(() => {
     debouncedSaveConfig();
-  }, [debouncedSaveConfig]);
+  }, [inputs, parameterEnabled, systemPrompt, showDebugPanel]);
 
   return (
     <div className="h-full bg-gray-50">
