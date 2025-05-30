@@ -3,15 +3,17 @@ import {
   Input,
   Typography,
   Button,
+  Switch,
 } from '@douyinfe/semi-ui';
 import { IconFile } from '@douyinfe/semi-icons';
 import {
   FileText,
   Plus,
   X,
+  Image,
 } from 'lucide-react';
 
-const ImageUrlInput = ({ imageUrls, onImageUrlsChange }) => {
+const ImageUrlInput = ({ imageUrls, imageEnabled, onImageUrlsChange, onImageEnabledChange }) => {
   const handleAddImageUrl = () => {
     const newUrls = [...imageUrls, ''];
     onImageUrlsChange(newUrls);
@@ -32,7 +34,7 @@ const ImageUrlInput = ({ imageUrls, onImageUrlsChange }) => {
     <div>
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
-          <FileText size={16} className="text-gray-500" />
+          <Image size={16} className={imageEnabled ? "text-blue-500" : "text-gray-400"} />
           <Typography.Text strong className="text-sm">
             图片地址
           </Typography.Text>
@@ -40,18 +42,32 @@ const ImageUrlInput = ({ imageUrls, onImageUrlsChange }) => {
             (多模态对话)
           </Typography.Text>
         </div>
-        <Button
-          icon={<Plus size={14} />}
-          size="small"
-          theme="solid"
-          type="primary"
-          onClick={handleAddImageUrl}
-          className="!rounded-full !w-4 !h-4 !p-0 !min-w-0"
-          disabled={imageUrls.length >= 5}
-        />
+        <div className="flex items-center gap-2">
+          <Switch
+            checked={imageEnabled}
+            onChange={onImageEnabledChange}
+            checkedText="启用"
+            uncheckedText="停用"
+            size="small"
+            className="flex-shrink-0"
+          />
+          <Button
+            icon={<Plus size={14} />}
+            size="small"
+            theme="solid"
+            type="primary"
+            onClick={handleAddImageUrl}
+            className="!rounded-full !w-4 !h-4 !p-0 !min-w-0"
+            disabled={!imageEnabled || imageUrls.length >= 5}
+          />
+        </div>
       </div>
 
-      {imageUrls.length === 0 ? (
+      {!imageEnabled ? (
+        <Typography.Text className="text-xs text-gray-500 mb-2 block">
+          图片发送已停用，启用后可添加图片URL进行多模态对话
+        </Typography.Text>
+      ) : imageUrls.length === 0 ? (
         <Typography.Text className="text-xs text-gray-500 mb-2 block">
           点击 + 按钮添加图片URL，支持最多5张图片
         </Typography.Text>
@@ -61,7 +77,7 @@ const ImageUrlInput = ({ imageUrls, onImageUrlsChange }) => {
         </Typography.Text>
       )}
 
-      <div className="space-y-2 max-h-32 overflow-y-auto">
+      <div className={`space-y-2 max-h-32 overflow-y-auto ${!imageEnabled ? 'opacity-50' : ''}`}>
         {imageUrls.map((url, index) => (
           <div key={index} className="flex items-center gap-2">
             <div className="flex-1">
@@ -72,6 +88,7 @@ const ImageUrlInput = ({ imageUrls, onImageUrlsChange }) => {
                 className="!rounded-lg"
                 size="small"
                 prefix={<IconFile size='small' />}
+                disabled={!imageEnabled}
               />
             </div>
             <Button
@@ -81,6 +98,7 @@ const ImageUrlInput = ({ imageUrls, onImageUrlsChange }) => {
               type="danger"
               onClick={() => handleRemoveImageUrl(index)}
               className="!rounded-full !w-6 !h-6 !p-0 !min-w-0 !text-red-500 hover:!bg-red-50 flex-shrink-0"
+              disabled={!imageEnabled}
             />
           </div>
         ))}

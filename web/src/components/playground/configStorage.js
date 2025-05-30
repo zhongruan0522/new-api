@@ -12,6 +12,7 @@ const DEFAULT_CONFIG = {
     seed: null,
     stream: true,
     imageUrls: [],
+    imageEnabled: false,
   },
   parameterEnabled: {
     max_tokens: true,

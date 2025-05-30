@@ -568,7 +568,7 @@ const Playground = () => {
         let messageContent;
         const validImageUrls = inputs.imageUrls.filter(url => url.trim() !== '');
 
-        if (validImageUrls.length > 0) {
+        if (inputs.imageEnabled && validImageUrls.length > 0) {
           messageContent = [
             {
               type: 'text',
@@ -643,6 +643,12 @@ const Playground = () => {
           handleNonStreamRequest(payload);
         }
 
+        if (inputs.imageEnabled) {
+          setTimeout(() => {
+            handleInputChange('imageEnabled', false);
+          }, 100);
+        }
+
         newMessage.push({
           role: 'assistant',
           content: '',
@@ -655,7 +661,7 @@ const Playground = () => {
         return newMessage;
       });
     },
-    [getSystemMessage, inputs, setMessage, parameterEnabled],
+    [getSystemMessage, inputs, setMessage, parameterEnabled, handleInputChange],
   );
 
   const completeMessage = useCallback((status = 'complete') => {

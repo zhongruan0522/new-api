@@ -125,7 +125,9 @@ const SettingsPanel = ({
         {/* 图片URL输入 */}
         <ImageUrlInput
           imageUrls={inputs.imageUrls}
+          imageEnabled={inputs.imageEnabled}
           onImageUrlsChange={(urls) => onInputChange('imageUrls', urls)}
+          onImageEnabledChange={(enabled) => onInputChange('imageEnabled', enabled)}
         />
 
         {/* 参数控制组件 */}
