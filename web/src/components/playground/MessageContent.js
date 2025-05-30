@@ -128,7 +128,7 @@ const MessageContent = ({
     currentDisplayableFinalContent = baseContentForDisplay.replace(/<\/?think>/g, '').trim();
   }
 
-  const headerText = isThinkingStatus ? t('思考中...') : t('思考过程');
+  const headerText = (isThinkingStatus && !message.isThinkingComplete) ? t('思考中...') : t('思考过程');
   const finalExtractedThinkingContent = currentExtractedThinkingContent;
   const finalDisplayableFinalContent = currentDisplayableFinalContent;
 
@@ -192,7 +192,7 @@ const MessageContent = ({
               </div>
             </div>
             <div className="flex items-center gap-2 sm:gap-3">
-              {isThinkingStatus && (
+              {isThinkingStatus && !message.isThinkingComplete && (
                 <div className="flex items-center gap-1 sm:gap-2">
                   <Loader2 className="animate-spin text-purple-500" size={styleState.isMobile ? 14 : 18} />
                   <Typography.Text className="text-purple-600 text-xs sm:text-sm font-medium">
@@ -200,7 +200,7 @@ const MessageContent = ({
                   </Typography.Text>
                 </div>
               )}
-              {!isThinkingStatus && (
+              {(!isThinkingStatus || message.isThinkingComplete) && (
                 <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-purple-100 flex items-center justify-center">
                   {message.isReasoningExpanded ?
                     <ChevronUp size={styleState.isMobile ? 12 : 16} className="text-purple-600" /> :

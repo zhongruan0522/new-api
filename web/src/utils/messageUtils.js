@@ -106,6 +106,7 @@ export const createLoadingAssistantMessage = () => createMessage(
   {
     reasoningContent: '',
     isReasoningExpanded: true,
+    isThinkingComplete: false,
     status: 'loading'
   }
 );

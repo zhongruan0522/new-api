@@ -42,25 +42,34 @@ export const useApiRequest = (
             ...newMessage,
             reasoningContent: (lastMessage.reasoningContent || '') + textChunk,
             status: MESSAGE_STATUS.INCOMPLETE,
+            isThinkingComplete: false,
           };
         } else if (type === 'content') {
           const shouldCollapseReasoning = !lastMessage.content && lastMessage.reasoningContent;
           const newContent = (lastMessage.content || '') + textChunk;
 
           let shouldCollapseFromThinkTag = false;
+          let thinkingCompleteFromTags = lastMessage.isThinkingComplete;
+
           if (lastMessage.isReasoningExpanded && newContent.includes('</think>')) {
             const thinkMatches = newContent.match(/<think>/g);
             const thinkCloseMatches = newContent.match(/<\/think>/g);
             if (thinkMatches && thinkCloseMatches &&
               thinkCloseMatches.length >= thinkMatches.length) {
               shouldCollapseFromThinkTag = true;
+              thinkingCompleteFromTags = true; // think标签闭合也标记思考完成
             }
           }
+
+          // 如果开始接收content内容，且之前有reasoning内容，或者think标签已闭合，则标记思考完成
+          const isThinkingComplete = (lastMessage.reasoningContent && !lastMessage.isThinkingComplete) ||
+            thinkingCompleteFromTags;
 
           newMessage = {
             ...newMessage,
             content: newContent,
             status: MESSAGE_STATUS.INCOMPLETE,
+            isThinkingComplete: isThinkingComplete,
             isReasoningExpanded: (shouldCollapseReasoning || shouldCollapseFromThinkTag)
               ? false : lastMessage.isReasoningExpanded,
           };
@@ -86,6 +95,7 @@ export const useApiRequest = (
         {
           ...lastMessage,
           status: status,
+          isThinkingComplete: true,
           isReasoningExpanded: false
         }
       ];
@@ -158,6 +168,7 @@ export const useApiRequest = (
               content: processed.content,
               reasoningContent: processed.reasoningContent,
               status: MESSAGE_STATUS.COMPLETE,
+              isThinkingComplete: true,
               isReasoningExpanded: false
             };
           }
@@ -182,6 +193,7 @@ export const useApiRequest = (
             ...lastMessage,
             content: t('请求发生错误: ') + error.message,
             status: MESSAGE_STATUS.ERROR,
+            isThinkingComplete: true,
             isReasoningExpanded: false
           };
         }
@@ -333,6 +345,7 @@ export const useApiRequest = (
               status: MESSAGE_STATUS.COMPLETE,
               reasoningContent: processed.reasoningContent || null,
               content: processed.content,
+              isThinkingComplete: true,
               isReasoningExpanded: false
             }
           ];
