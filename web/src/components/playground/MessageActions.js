@@ -33,7 +33,7 @@ const MessageActions = ({
   return (
     <div className="flex items-center gap-0.5">
       {!isLoading && (
-        <Tooltip content={shouldDisableActions ? t('正在生成中，请稍候...') : t('重试')} position="top">
+        <Tooltip content={shouldDisableActions ? t('操作暂时被禁用') : t('重试')} position="top">
           <Button
             theme="borderless"
             type="tertiary"
@@ -62,7 +62,7 @@ const MessageActions = ({
       )}
 
       {canEdit && (
-        <Tooltip content={shouldDisableActions ? t('正在生成中，请稍候...') : t('编辑')} position="top">
+        <Tooltip content={shouldDisableActions ? t('操作暂时被禁用') : t('编辑')} position="top">
           <Button
             theme="borderless"
             type="tertiary"
@@ -80,7 +80,7 @@ const MessageActions = ({
         <Tooltip
           content={
             shouldDisableActions
-              ? t('正在生成中，请稍候...')
+              ? t('操作暂时被禁用')
               : message.role === 'assistant'
                 ? t('切换为System角色')
                 : t('切换为Assistant角色')
@@ -101,7 +101,7 @@ const MessageActions = ({
       )}
 
       {!isLoading && (
-        <Tooltip content={shouldDisableActions ? t('正在生成中，请稍候...') : t('删除')} position="top">
+        <Tooltip content={shouldDisableActions ? t('操作暂时被禁用') : t('删除')} position="top">
           <Button
             theme="borderless"
             type="tertiary"
