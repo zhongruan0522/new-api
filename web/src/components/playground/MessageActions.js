@@ -8,6 +8,7 @@ import {
   Copy,
   Trash2,
   UserCheck,
+  Edit,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
@@ -18,13 +19,16 @@ const MessageActions = ({
   onMessageCopy,
   onMessageDelete,
   onRoleToggle,
-  isAnyMessageGenerating = false
+  onMessageEdit,
+  isAnyMessageGenerating = false,
+  isEditing = false
 }) => {
   const { t } = useTranslation();
 
   const isLoading = message.status === 'loading' || message.status === 'incomplete';
-  const shouldDisableActions = isAnyMessageGenerating;
+  const shouldDisableActions = isAnyMessageGenerating || isEditing;
   const canToggleRole = message.role === 'assistant' || message.role === 'system';
+  const canEdit = !isLoading && message.content && typeof onMessageEdit === 'function' && !isEditing;
 
   return (
     <div className="flex items-center gap-0.5">
@@ -53,6 +57,21 @@ const MessageActions = ({
             onClick={() => onMessageCopy(message)}
             className={`!rounded-md !text-gray-400 hover:!text-green-600 hover:!bg-green-50 ${styleState.isMobile ? '!w-6 !h-6' : '!w-7 !h-7'} !p-0 transition-all`}
             aria-label={t('复制')}
+          />
+        </Tooltip>
+      )}
+
+      {canEdit && (
+        <Tooltip content={shouldDisableActions ? t('正在生成中，请稍候...') : t('编辑')} position="top">
+          <Button
+            theme="borderless"
+            type="tertiary"
+            size="small"
+            icon={<Edit size={styleState.isMobile ? 12 : 14} />}
+            onClick={() => !shouldDisableActions && onMessageEdit(message)}
+            disabled={shouldDisableActions}
+            className={`!rounded-md ${shouldDisableActions ? '!text-gray-300 !cursor-not-allowed' : '!text-gray-400 hover:!text-yellow-600 hover:!bg-yellow-50'} ${styleState.isMobile ? '!w-6 !h-6' : '!w-7 !h-7'} !p-0 transition-all`}
+            aria-label={t('编辑')}
           />
         </Tooltip>
       )}

@@ -1,17 +1,32 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   Typography,
   MarkdownRender,
+  TextArea,
+  Button,
+  Space,
 } from '@douyinfe/semi-ui';
 import {
   ChevronRight,
   ChevronUp,
   Brain,
   Loader2,
+  Check,
+  X,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
-const MessageContent = ({ message, className, styleState, onToggleReasoningExpansion }) => {
+const MessageContent = ({
+  message,
+  className,
+  styleState,
+  onToggleReasoningExpansion,
+  isEditing = false,
+  onEditSave,
+  onEditCancel,
+  editValue,
+  onEditValueChange
+}) => {
   const { t } = useTranslation();
 
   if (message.status === 'error') {
@@ -213,69 +228,111 @@ const MessageContent = ({ message, className, styleState, onToggleReasoningExpan
       )}
 
       {/* 渲染消息内容 */}
-      {(() => {
-        if (Array.isArray(message.content)) {
-          const textContent = message.content.find(item => item.type === 'text');
-          const imageContents = message.content.filter(item => item.type === 'image_url');
+      {isEditing ? (
+        /* 编辑模式 */
+        <div className="space-y-3">
+          <TextArea
+            value={editValue}
+            onChange={(value) => onEditValueChange(value)}
+            placeholder={t('请输入消息内容...')}
+            autosize={{ minRows: 3, maxRows: 12 }}
+            style={{
+              resize: 'vertical',
+              fontSize: styleState.isMobile ? '14px' : '15px',
+              lineHeight: '1.6',
+            }}
+            className="!border-blue-200 focus:!border-blue-400 !bg-blue-50/50"
+          />
+          <div className="flex items-center gap-2 w-full">
+            <Button
+              size="small"
+              type="danger"
+              theme="light"
+              icon={<X size={14} />}
+              onClick={onEditCancel}
+              className="flex-1"
+            >
+              {t('取消')}
+            </Button>
+            <Button
+              size="small"
+              type="warning"
+              theme="solid"
+              icon={<Check size={14} />}
+              onClick={onEditSave}
+              disabled={!editValue || editValue.trim() === ''}
+              className="flex-1"
+            >
+              {t('保存')}
+            </Button>
+          </div>
+        </div>
+      ) : (
+        /* 正常显示模式 */
+        (() => {
+          if (Array.isArray(message.content)) {
+            const textContent = message.content.find(item => item.type === 'text');
+            const imageContents = message.content.filter(item => item.type === 'image_url');
 
-          return (
-            <div>
-              {/* 显示图片 */}
-              {imageContents.length > 0 && (
-                <div className="mb-3 space-y-2">
-                  {imageContents.map((imgItem, index) => (
-                    <div key={index} className="max-w-sm">
-                      <img
-                        src={imgItem.image_url.url}
-                        alt={`用户上传的图片 ${index + 1}`}
-                        className="rounded-lg max-w-full h-auto shadow-sm border"
-                        style={{ maxHeight: '300px' }}
-                        onError={(e) => {
-                          e.target.style.display = 'none';
-                          e.target.nextSibling.style.display = 'block';
-                        }}
-                      />
-                      <div
-                        className="text-red-500 text-sm p-2 bg-red-50 rounded-lg border border-red-200"
-                        style={{ display: 'none' }}
-                      >
-                        图片加载失败: {imgItem.image_url.url}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* 显示文本内容 */}
-              {textContent && textContent.text && typeof textContent.text === 'string' && textContent.text.trim() !== '' && (
-                <div className="prose prose-xs sm:prose-sm prose-gray max-w-none overflow-x-auto text-xs sm:text-sm">
-                  <MarkdownRender raw={textContent.text} />
-                </div>
-              )}
-            </div>
-          );
-        }
-
-        if (typeof message.content === 'string') {
-          if (message.role === 'assistant') {
-            if (finalDisplayableFinalContent && finalDisplayableFinalContent.trim() !== '') {
-              return (
-                <div className="prose prose-xs sm:prose-sm prose-gray max-w-none overflow-x-auto text-xs sm:text-sm">
-                  <MarkdownRender raw={finalDisplayableFinalContent} />
-                </div>
-              );
-            }
-          } else {
             return (
-              <div className="prose prose-xs sm:prose-sm prose-gray max-w-none overflow-x-auto text-xs sm:text-sm">
-                <MarkdownRender raw={message.content} />
+              <div>
+                {/* 显示图片 */}
+                {imageContents.length > 0 && (
+                  <div className="mb-3 space-y-2">
+                    {imageContents.map((imgItem, index) => (
+                      <div key={index} className="max-w-sm">
+                        <img
+                          src={imgItem.image_url.url}
+                          alt={`用户上传的图片 ${index + 1}`}
+                          className="rounded-lg max-w-full h-auto shadow-sm border"
+                          style={{ maxHeight: '300px' }}
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                            e.target.nextSibling.style.display = 'block';
+                          }}
+                        />
+                        <div
+                          className="text-red-500 text-sm p-2 bg-red-50 rounded-lg border border-red-200"
+                          style={{ display: 'none' }}
+                        >
+                          图片加载失败: {imgItem.image_url.url}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* 显示文本内容 */}
+                {textContent && textContent.text && typeof textContent.text === 'string' && textContent.text.trim() !== '' && (
+                  <div className="prose prose-xs sm:prose-sm prose-gray max-w-none overflow-x-auto text-xs sm:text-sm">
+                    <MarkdownRender raw={textContent.text} />
+                  </div>
+                )}
               </div>
             );
           }
-        }
 
-        return null;
-      })()}
+          if (typeof message.content === 'string') {
+            if (message.role === 'assistant') {
+              if (finalDisplayableFinalContent && finalDisplayableFinalContent.trim() !== '') {
+                return (
+                  <div className="prose prose-xs sm:prose-sm prose-gray max-w-none overflow-x-auto text-xs sm:text-sm">
+                    <MarkdownRender raw={finalDisplayableFinalContent} />
+                  </div>
+                );
+              }
+            } else {
+              return (
+                <div className="prose prose-xs sm:prose-sm prose-gray max-w-none overflow-x-auto text-xs sm:text-sm">
+                  <MarkdownRender raw={message.content} />
+                </div>
+              );
+            }
+          }
+
+          return null;
+        })()
+      )}
     </div>
   );
 };
