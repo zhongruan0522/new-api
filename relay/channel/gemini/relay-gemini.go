@@ -39,15 +39,22 @@ func CovertGemini2OpenAI(textRequest dto.GeneralOpenAIRequest, info *relaycommon
 	}
 
 	if model_setting.GetGeminiSettings().ThinkingAdapterEnabled {
-		if strings.HasSuffix(info.OriginModelName, "-thinking") {
-			budgetTokens := model_setting.GetGeminiSettings().ThinkingAdapterBudgetTokensPercentage * float64(geminiRequest.GenerationConfig.MaxOutputTokens)
-			if budgetTokens == 0 || budgetTokens > 24576 {
-				budgetTokens = 24576
-			}
-			geminiRequest.GenerationConfig.ThinkingConfig = &GeminiThinkingConfig{
-				ThinkingBudget:  common.GetPointer(int(budgetTokens)),
-				IncludeThoughts: true,
-			}
+	        if strings.HasSuffix(info.OriginModelName, "-thinking") {
+	            // 如果模型名以 gemini-2.5-pro 开头，不设置 ThinkingBudget
+	            if strings.HasPrefix(info.OriginModelName, "gemini-2.5-pro") {
+	                geminiRequest.GenerationConfig.ThinkingConfig = &GeminiThinkingConfig{
+	                    IncludeThoughts: true,
+	                }
+	            } else {
+	                budgetTokens := model_setting.GetGeminiSettings().ThinkingAdapterBudgetTokensPercentage * float64(geminiRequest.GenerationConfig.MaxOutputTokens)
+	                if budgetTokens == 0 || budgetTokens > 24576 {
+	                    budgetTokens = 24576
+	                }
+	                geminiRequest.GenerationConfig.ThinkingConfig = &GeminiThinkingConfig{
+	                    ThinkingBudget:  common.GetPointer(int(budgetTokens)),
+	                    IncludeThoughts: true,
+	                }
+	            }
 		} else if strings.HasSuffix(info.OriginModelName, "-nothinking") {
 			geminiRequest.GenerationConfig.ThinkingConfig = &GeminiThinkingConfig{
 				ThinkingBudget: common.GetPointer(0),
