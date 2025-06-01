@@ -7,42 +7,49 @@ import {
   Button,
   Switch,
   Divider,
+  Banner,
 } from '@douyinfe/semi-ui';
 import {
   Sparkles,
   Users,
-  Type,
   ToggleLeft,
   X,
+  AlertTriangle,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { renderGroupOption } from '../../helpers/render.js';
 import ParameterControl from './ParameterControl';
 import ImageUrlInput from './ImageUrlInput';
 import ConfigManager from './ConfigManager';
+import CustomRequestEditor from './CustomRequestEditor';
 
 const SettingsPanel = ({
   inputs,
   parameterEnabled,
   models,
   groups,
-  systemPrompt,
   styleState,
   showDebugPanel,
+  customRequestMode,
+  customRequestBody,
   onInputChange,
   onParameterToggle,
-  onSystemPromptChange,
   onCloseSettings,
   onConfigImport,
   onConfigReset,
+  onCustomRequestModeChange,
+  onCustomRequestBodyChange,
+  previewPayload,
+  messages,
 }) => {
   const { t } = useTranslation();
 
   const currentConfig = {
     inputs,
     parameterEnabled,
-    systemPrompt,
     showDebugPanel,
+    customRequestMode,
+    customRequestBody,
   };
 
   return (
@@ -63,6 +70,7 @@ const SettingsPanel = ({
             onConfigImport={onConfigImport}
             onConfigReset={onConfigReset}
             styleState={styleState}
+            messages={messages}
           />
           <Button
             icon={<X size={16} />}
@@ -76,13 +84,27 @@ const SettingsPanel = ({
       )}
 
       <div className="space-y-6 overflow-y-auto flex-1 pr-2 model-settings-scroll">
+        {/* 自定义请求体编辑器 */}
+        <CustomRequestEditor
+          customRequestMode={customRequestMode}
+          customRequestBody={customRequestBody}
+          onCustomRequestModeChange={onCustomRequestModeChange}
+          onCustomRequestBodyChange={onCustomRequestBodyChange}
+          defaultPayload={previewPayload}
+        />
+
         {/* 分组选择 */}
-        <div>
+        <div className={customRequestMode ? 'opacity-50' : ''}>
           <div className="flex items-center gap-2 mb-2">
             <Users size={16} className="text-gray-500" />
             <Typography.Text strong className="text-sm">
               {t('分组')}
             </Typography.Text>
+            {customRequestMode && (
+              <Typography.Text className="text-xs text-orange-600">
+                (已在自定义模式中忽略)
+              </Typography.Text>
+            )}
           </div>
           <Select
             placeholder={t('请选择分组')}
@@ -96,16 +118,22 @@ const SettingsPanel = ({
             renderOptionItem={renderGroupOption}
             style={{ width: '100%' }}
             className="!rounded-lg"
+            disabled={customRequestMode}
           />
         </div>
 
         {/* 模型选择 */}
-        <div>
+        <div className={customRequestMode ? 'opacity-50' : ''}>
           <div className="flex items-center gap-2 mb-2">
             <Sparkles size={16} className="text-gray-500" />
             <Typography.Text strong className="text-sm">
               {t('模型')}
             </Typography.Text>
+            {customRequestMode && (
+              <Typography.Text className="text-xs text-orange-600">
+                (已在自定义模式中忽略)
+              </Typography.Text>
+            )}
           </div>
           <Select
             placeholder={t('请选择模型')}
@@ -119,33 +147,45 @@ const SettingsPanel = ({
             autoComplete='new-password'
             optionList={models}
             className="!rounded-lg"
+            disabled={customRequestMode}
           />
         </div>
 
         {/* 图片URL输入 */}
-        <ImageUrlInput
-          imageUrls={inputs.imageUrls}
-          imageEnabled={inputs.imageEnabled}
-          onImageUrlsChange={(urls) => onInputChange('imageUrls', urls)}
-          onImageEnabledChange={(enabled) => onInputChange('imageEnabled', enabled)}
-        />
+        <div className={customRequestMode ? 'opacity-50' : ''}>
+          <ImageUrlInput
+            imageUrls={inputs.imageUrls}
+            imageEnabled={inputs.imageEnabled}
+            onImageUrlsChange={(urls) => onInputChange('imageUrls', urls)}
+            onImageEnabledChange={(enabled) => onInputChange('imageEnabled', enabled)}
+            disabled={customRequestMode}
+          />
+        </div>
 
         {/* 参数控制组件 */}
-        <ParameterControl
-          inputs={inputs}
-          parameterEnabled={parameterEnabled}
-          onInputChange={onInputChange}
-          onParameterToggle={onParameterToggle}
-        />
+        <div className={customRequestMode ? 'opacity-50' : ''}>
+          <ParameterControl
+            inputs={inputs}
+            parameterEnabled={parameterEnabled}
+            onInputChange={onInputChange}
+            onParameterToggle={onParameterToggle}
+            disabled={customRequestMode}
+          />
+        </div>
 
         {/* 流式输出开关 */}
-        <div>
+        <div className={customRequestMode ? 'opacity-50' : ''}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <ToggleLeft size={16} className="text-gray-500" />
               <Typography.Text strong className="text-sm">
                 流式输出
               </Typography.Text>
+              {customRequestMode && (
+                <Typography.Text className="text-xs text-orange-600">
+                  (已在自定义模式中忽略)
+                </Typography.Text>
+              )}
             </div>
             <Switch
               checked={inputs.stream}
@@ -153,29 +193,9 @@ const SettingsPanel = ({
               checkedText="开"
               uncheckedText="关"
               size="small"
+              disabled={customRequestMode}
             />
           </div>
-        </div>
-
-        {/* System Prompt */}
-        <div>
-          <div className="flex items-center gap-2 mb-2">
-            <Type size={16} className="text-gray-500" />
-            <Typography.Text strong className="text-sm">
-              System Prompt
-            </Typography.Text>
-          </div>
-          <TextArea
-            placeholder='System Prompt'
-            name='system'
-            required
-            autoComplete='new-password'
-            autosize
-            defaultValue={systemPrompt}
-            onChange={onSystemPromptChange}
-            className="!rounded-lg"
-            maxHeight={200}
-          />
         </div>
       </div>
 
@@ -187,6 +207,7 @@ const SettingsPanel = ({
             onConfigImport={onConfigImport}
             onConfigReset={onConfigReset}
             styleState={styleState}
+            messages={messages}
           />
         </div>
       )}

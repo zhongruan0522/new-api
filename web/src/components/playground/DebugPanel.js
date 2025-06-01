@@ -24,6 +24,7 @@ const DebugPanel = ({
   onActiveDebugTabChange,
   styleState,
   onCloseDebugPanel,
+  customRequestMode,
 }) => {
   const { t } = useTranslation();
 
@@ -128,6 +129,11 @@ const DebugPanel = ({
             <div className="flex items-center gap-2">
               <Eye size={16} />
               {t('预览请求体')}
+              {customRequestMode && (
+                <span className="px-1.5 py-0.5 text-xs bg-orange-100 text-orange-600 rounded-full">
+                  自定义
+                </span>
+              )}
             </div>
           } itemKey="preview">
             <CodeViewer

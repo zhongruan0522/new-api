@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useCallback } from 'react';
+import React, { useContext, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Layout, Toast, Modal } from '@douyinfe/semi-ui';
@@ -8,36 +8,37 @@ import { UserContext } from '../../context/User/index.js';
 import { StyleContext } from '../../context/Style/index.js';
 
 // Utils and hooks
-import { API, showError, getLogo, isMobile } from '../../helpers/index.js';
+import { getLogo } from '../../helpers/index.js';
 import { stringToColor } from '../../helpers/render.js';
 import { usePlaygroundState } from '../../hooks/usePlaygroundState.js';
 import { useMessageActions } from '../../hooks/useMessageActions.js';
 import { useApiRequest } from '../../hooks/useApiRequest.js';
+import { useSyncMessageAndCustomBody } from '../../hooks/useSyncMessageAndCustomBody.js';
+import { useMessageEdit } from '../../hooks/useMessageEdit.js';
+import { useDataLoader } from '../../hooks/useDataLoader.js';
 
 // Constants and utils
 import {
   DEFAULT_MESSAGES,
   MESSAGE_ROLES,
-  API_ENDPOINTS
+  ERROR_MESSAGES
 } from '../../utils/constants.js';
 import {
   buildMessageContent,
   createMessage,
   createLoadingAssistantMessage,
-  getTextContent
+  getTextContent,
+  buildApiPayload
 } from '../../utils/messageUtils.js';
-import {
-  buildApiPayload,
-  processModelsData,
-  processGroupsData
-} from '../../utils/apiUtils.js';
 
 // Components
-import SettingsPanel from '../../components/playground/SettingsPanel.js';
+import {
+  OptimizedSettingsPanel,
+  OptimizedDebugPanel,
+  OptimizedMessageContent,
+  OptimizedMessageActions
+} from '../../components/playground/OptimizedComponents.js';
 import ChatArea from '../../components/playground/ChatArea.js';
-import DebugPanel from '../../components/playground/DebugPanel.js';
-import MessageContent from '../../components/playground/MessageContent.js';
-import MessageActions from '../../components/playground/MessageActions.js';
 import FloatingButtons from '../../components/playground/FloatingButtons.js';
 
 // 生成头像
@@ -67,8 +68,9 @@ const Playground = () => {
   const {
     inputs,
     parameterEnabled,
-    systemPrompt,
     showDebugPanel,
+    customRequestMode,
+    customRequestBody,
     showSettings,
     models,
     groups,
@@ -77,8 +79,6 @@ const Playground = () => {
     debugData,
     activeDebugTab,
     previewPayload,
-    editingMessageId,
-    editValue,
     sseSourceRef,
     chatRef,
     handleInputChange,
@@ -94,10 +94,9 @@ const Playground = () => {
     setDebugData,
     setActiveDebugTab,
     setPreviewPayload,
-    setEditingMessageId,
-    setEditValue,
-    setSystemPrompt,
     setShowDebugPanel,
+    setCustomRequestMode,
+    setCustomRequestBody,
   } = state;
 
   // API 请求相关
@@ -106,6 +105,30 @@ const Playground = () => {
     setDebugData,
     setActiveDebugTab,
     sseSourceRef
+  );
+
+  // 数据加载
+  useDataLoader(userState, inputs, handleInputChange, setModels, setGroups);
+
+  // 消息编辑
+  const {
+    editingMessageId,
+    editValue,
+    setEditValue,
+    handleMessageEdit,
+    handleEditSave,
+    handleEditCancel
+  } = useMessageEdit(setMessage, inputs, parameterEnabled, sendRequest);
+
+  // 消息和自定义请求体同步
+  const { syncMessageToCustomBody, syncCustomBodyToMessage } = useSyncMessageAndCustomBody(
+    customRequestMode,
+    customRequestBody,
+    message,
+    inputs,
+    setCustomRequestBody,
+    setMessage,
+    debouncedSaveConfig
   );
 
   // 角色信息
@@ -130,12 +153,16 @@ const Playground = () => {
   // 构建预览请求体
   const constructPreviewPayload = useCallback(() => {
     try {
-      const systemMessage = systemPrompt !== '' ? createMessage(
-        MESSAGE_ROLES.SYSTEM,
-        systemPrompt,
-        { id: '1', createAt: 1715676751919 }
-      ) : null;
+      // 如果是自定义请求体模式且有自定义内容，直接返回解析后的自定义请求体
+      if (customRequestMode && customRequestBody && customRequestBody.trim()) {
+        try {
+          return JSON.parse(customRequestBody);
+        } catch (parseError) {
+          console.warn('自定义请求体JSON解析失败，回退到默认预览:', parseError);
+        }
+      }
 
+      // 默认预览逻辑
       let messages = [...message];
 
       // 如果没有用户消息，添加默认消息
@@ -145,7 +172,6 @@ const Playground = () => {
         messages = [createMessage(MESSAGE_ROLES.USER, content)];
       } else {
         // 处理最后一个用户消息的图片
-        const lastUserMessageIndex = messages.length - 1;
         for (let i = messages.length - 1; i >= 0; i--) {
           if (messages[i].role === MESSAGE_ROLES.USER) {
             if (inputs.imageEnabled && inputs.imageUrls) {
@@ -161,33 +187,51 @@ const Playground = () => {
         }
       }
 
-      return buildApiPayload(messages, systemMessage, inputs, parameterEnabled);
+      return buildApiPayload(messages, null, inputs, parameterEnabled);
     } catch (error) {
       console.error('构造预览请求体失败:', error);
       return null;
     }
-  }, [inputs, parameterEnabled, systemPrompt, message]);
+  }, [inputs, parameterEnabled, message, customRequestMode, customRequestBody]);
 
   // 发送消息
   function onMessageSend(content, attachment) {
     console.log('attachment: ', attachment);
 
-    const validImageUrls = inputs.imageUrls.filter(url => url.trim() !== '');
-    const messageContent = buildMessageContent(content, validImageUrls, inputs.imageEnabled);
-
-    const userMessage = createMessage(MESSAGE_ROLES.USER, messageContent);
+    // 创建用户消息和加载消息
+    const userMessage = createMessage(MESSAGE_ROLES.USER, content);
     const loadingMessage = createLoadingAssistantMessage();
 
+    // 如果是自定义请求体模式
+    if (customRequestMode && customRequestBody) {
+      try {
+        const customPayload = JSON.parse(customRequestBody);
+
+        setMessage(prevMessage => {
+          const newMessages = [...prevMessage, userMessage, loadingMessage];
+
+          // 发送自定义请求体
+          sendRequest(customPayload, customPayload.stream !== false);
+
+          return newMessages;
+        });
+        return;
+      } catch (error) {
+        console.error('自定义请求体JSON解析失败:', error);
+        Toast.error(ERROR_MESSAGES.JSON_PARSE_ERROR);
+        return;
+      }
+    }
+
+    // 默认模式
+    const validImageUrls = inputs.imageUrls.filter(url => url.trim() !== '');
+    const messageContent = buildMessageContent(content, validImageUrls, inputs.imageEnabled);
+    const userMessageWithImages = createMessage(MESSAGE_ROLES.USER, messageContent);
+
     setMessage(prevMessage => {
-      const newMessages = [...prevMessage, userMessage];
+      const newMessages = [...prevMessage, userMessageWithImages];
 
-      const systemMessage = systemPrompt !== '' ? createMessage(
-        MESSAGE_ROLES.SYSTEM,
-        systemPrompt,
-        { id: '1', createAt: 1715676751919 }
-      ) : null;
-
-      const payload = buildApiPayload(newMessages, systemMessage, inputs, parameterEnabled);
+      const payload = buildApiPayload(newMessages, null, inputs, parameterEnabled);
       sendRequest(payload, inputs.stream);
 
       // 禁用图片模式
@@ -201,127 +245,8 @@ const Playground = () => {
     });
   }
 
-  // 加载模型和分组
-  const loadModels = async () => {
-    try {
-      const res = await API.get(API_ENDPOINTS.USER_MODELS);
-      const { success, message, data } = res.data;
-
-      if (success) {
-        const { modelOptions, selectedModel } = processModelsData(data, inputs.model);
-        setModels(modelOptions);
-
-        if (selectedModel !== inputs.model) {
-          handleInputChange('model', selectedModel);
-        }
-      } else {
-        showError(t(message));
-      }
-    } catch (error) {
-      showError(t('加载模型失败'));
-    }
-  };
-
-  const loadGroups = async () => {
-    try {
-      const res = await API.get(API_ENDPOINTS.USER_GROUPS);
-      const { success, message, data } = res.data;
-
-      if (success) {
-        const userGroup = userState?.user?.group || JSON.parse(localStorage.getItem('user'))?.group;
-        const groupOptions = processGroupsData(data, userGroup);
-        setGroups(groupOptions);
-
-        const hasCurrentGroup = groupOptions.some(option => option.value === inputs.group);
-        if (!hasCurrentGroup) {
-          handleInputChange('group', groupOptions[0]?.value || '');
-        }
-      } else {
-        showError(t(message));
-      }
-    } catch (error) {
-      showError(t('加载分组失败'));
-    }
-  };
-
-  // 编辑消息相关
-  const handleMessageEdit = useCallback((targetMessage) => {
-    const editableContent = getTextContent(targetMessage);
-    setEditingMessageId(targetMessage.id);
-    setEditValue(editableContent);
-  }, [setEditingMessageId, setEditValue]);
-
-  const handleEditSave = useCallback(() => {
-    if (!editingMessageId || !editValue.trim()) return;
-
-    setMessage(prevMessages => {
-      const messageIndex = prevMessages.findIndex(msg => msg.id === editingMessageId);
-      if (messageIndex === -1) return prevMessages;
-
-      const targetMessage = prevMessages[messageIndex];
-      let newContent;
-
-      if (Array.isArray(targetMessage.content)) {
-        newContent = targetMessage.content.map(item =>
-          item.type === 'text' ? { ...item, text: editValue.trim() } : item
-        );
-      } else {
-        newContent = editValue.trim();
-      }
-
-      const updatedMessages = prevMessages.map(msg =>
-        msg.id === editingMessageId ? { ...msg, content: newContent } : msg
-      );
-
-      // 处理用户消息编辑后的重新生成
-      if (targetMessage.role === MESSAGE_ROLES.USER) {
-        const hasSubsequentAssistantReply = messageIndex < prevMessages.length - 1 &&
-          prevMessages[messageIndex + 1].role === MESSAGE_ROLES.ASSISTANT;
-
-        if (hasSubsequentAssistantReply) {
-          Modal.confirm({
-            title: t('消息已编辑'),
-            content: t('检测到该消息后有AI回复，是否删除后续回复并重新生成？'),
-            okText: t('重新生成'),
-            cancelText: t('仅保存'),
-            onOk: () => {
-              const messagesUntilUser = updatedMessages.slice(0, messageIndex + 1);
-              setMessage(messagesUntilUser);
-
-              setTimeout(() => {
-                const systemMessage = systemPrompt !== '' ? createMessage(
-                  MESSAGE_ROLES.SYSTEM,
-                  systemPrompt,
-                  { id: '1', createAt: 1715676751919 }
-                ) : null;
-
-                const payload = buildApiPayload(messagesUntilUser, systemMessage, inputs, parameterEnabled);
-
-                setMessage(prevMsg => [...prevMsg, createLoadingAssistantMessage()]);
-                sendRequest(payload, inputs.stream);
-              }, 100);
-            },
-            onCancel: () => setMessage(updatedMessages)
-          });
-          return prevMessages;
-        }
-      }
-
-      return updatedMessages;
-    });
-
-    setEditingMessageId(null);
-    setEditValue('');
-    Toast.success({ content: t('消息已更新'), duration: 2 });
-  }, [editingMessageId, editValue, t, systemPrompt, inputs, parameterEnabled, sendRequest, setMessage, setEditingMessageId, setEditValue]);
-
-  const handleEditCancel = useCallback(() => {
-    setEditingMessageId(null);
-    setEditValue('');
-  }, [setEditingMessageId, setEditValue]);
-
   // 切换推理展开状态
-  const toggleReasoningExpansion = (messageId) => {
+  const toggleReasoningExpansion = useCallback((messageId) => {
     setMessage(prevMessages =>
       prevMessages.map(msg =>
         msg.id === messageId && msg.role === MESSAGE_ROLES.ASSISTANT
@@ -329,7 +254,7 @@ const Playground = () => {
           : msg
       )
     );
-  };
+  }, [setMessage]);
 
   // 渲染函数
   const renderCustomChatContent = useCallback(
@@ -337,7 +262,7 @@ const Playground = () => {
       const isCurrentlyEditing = editingMessageId === message.id;
 
       return (
-        <MessageContent
+        <OptimizedMessageContent
           message={message}
           className={className}
           styleState={styleState}
@@ -350,7 +275,7 @@ const Playground = () => {
         />
       );
     },
-    [styleState, editingMessageId, editValue, handleEditSave, handleEditCancel, setEditValue],
+    [styleState, editingMessageId, editValue, handleEditSave, handleEditCancel, setEditValue, toggleReasoningExpansion],
   );
 
   const renderChatBoxAction = useCallback((props) => {
@@ -361,7 +286,7 @@ const Playground = () => {
     const isCurrentlyEditing = editingMessageId === currentMessage.id;
 
     return (
-      <MessageActions
+      <OptimizedMessageActions
         message={currentMessage}
         styleState={styleState}
         onMessageReset={messageActions.handleMessageReset}
@@ -376,47 +301,56 @@ const Playground = () => {
   }, [messageActions, styleState, message, editingMessageId, handleMessageEdit]);
 
   // Effects
+
+  // 同步消息和自定义请求体
+  useEffect(() => {
+    syncMessageToCustomBody();
+  }, [message, syncMessageToCustomBody]);
+
+  useEffect(() => {
+    syncCustomBodyToMessage();
+  }, [customRequestBody, syncCustomBodyToMessage]);
+
+  // 处理URL参数
   useEffect(() => {
     if (searchParams.get('expired')) {
-      showError(t('未登录或登录已过期，请重新登录！'));
+      Toast.warning(t('登录过期，请重新登录！'));
     }
-
-    const savedStatus = localStorage.getItem('status');
-    if (savedStatus) {
-      setStatus(JSON.parse(savedStatus));
-    }
-
-    loadModels();
-    loadGroups();
   }, [searchParams, t]);
 
+  // 处理窗口大小变化
   useEffect(() => {
     const handleResize = () => {
-      styleDispatch({
-        type: 'set_is_mobile',
-        payload: isMobile(),
-      });
+      const mobile = window.innerWidth < 768;
+      if (styleState.isMobile !== mobile) {
+        styleDispatch({ type: 'SET_IS_MOBILE', payload: mobile });
+      }
     };
 
     handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, [styleDispatch]);
+  }, [styleState.isMobile, styleDispatch]);
 
+  // 构建预览payload
   useEffect(() => {
-    const newPreviewPayload = constructPreviewPayload();
-    setPreviewPayload(newPreviewPayload);
-    setDebugData(prev => ({
-      ...prev,
-      previewRequest: newPreviewPayload,
-      previewTimestamp: new Date().toISOString()
-    }));
-  }, [constructPreviewPayload, setPreviewPayload, setDebugData]);
+    const timer = setTimeout(() => {
+      const preview = constructPreviewPayload();
+      setPreviewPayload(preview);
+      setDebugData(prev => ({
+        ...prev,
+        previewRequest: preview ? JSON.stringify(preview, null, 2) : null,
+        previewTimestamp: preview ? new Date().toISOString() : null
+      }));
+    }, 300);
 
-  // 监听配置变化并自动保存
+    return () => clearTimeout(timer);
+  }, [message, inputs, parameterEnabled, customRequestMode, customRequestBody, constructPreviewPayload, setPreviewPayload, setDebugData]);
+
+  // 自动保存配置
   useEffect(() => {
     debouncedSaveConfig();
-  }, [inputs, parameterEnabled, systemPrompt, showDebugPanel]);
+  }, [inputs, parameterEnabled, showDebugPanel, customRequestMode, customRequestBody, debouncedSaveConfig]);
 
   return (
     <div className="h-full bg-gray-50">
@@ -442,21 +376,25 @@ const Playground = () => {
             width={styleState.isMobile ? '100%' : 320}
             className={styleState.isMobile ? 'bg-white shadow-lg' : ''}
           >
-            <SettingsPanel
+            <OptimizedSettingsPanel
               inputs={inputs}
               parameterEnabled={parameterEnabled}
               models={models}
               groups={groups}
-              systemPrompt={systemPrompt}
               styleState={styleState}
               showSettings={showSettings}
               showDebugPanel={showDebugPanel}
+              customRequestMode={customRequestMode}
+              customRequestBody={customRequestBody}
               onInputChange={handleInputChange}
               onParameterToggle={handleParameterToggle}
-              onSystemPromptChange={setSystemPrompt}
               onCloseSettings={() => setShowSettings(false)}
               onConfigImport={handleConfigImport}
               onConfigReset={handleConfigReset}
+              onCustomRequestModeChange={setCustomRequestMode}
+              onCustomRequestBodyChange={setCustomRequestBody}
+              previewPayload={previewPayload}
+              messages={message}
             />
           </Layout.Sider>
         )}
@@ -487,11 +425,12 @@ const Playground = () => {
             {/* 调试面板 - 桌面端 */}
             {showDebugPanel && !styleState.isMobile && (
               <div className="w-96 flex-shrink-0 h-full">
-                <DebugPanel
+                <OptimizedDebugPanel
                   debugData={debugData}
                   activeDebugTab={activeDebugTab}
                   onActiveDebugTabChange={setActiveDebugTab}
                   styleState={styleState}
+                  customRequestMode={customRequestMode}
                 />
               </div>
             )}
@@ -512,13 +451,14 @@ const Playground = () => {
               }}
               className="shadow-lg"
             >
-              <DebugPanel
+              <OptimizedDebugPanel
                 debugData={debugData}
                 activeDebugTab={activeDebugTab}
                 onActiveDebugTabChange={setActiveDebugTab}
                 styleState={styleState}
                 showDebugPanel={showDebugPanel}
                 onCloseDebugPanel={() => setShowDebugPanel(false)}
+                customRequestMode={customRequestMode}
               />
             </div>
           )}

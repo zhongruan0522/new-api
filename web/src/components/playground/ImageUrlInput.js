@@ -13,7 +13,7 @@ import {
   Image,
 } from 'lucide-react';
 
-const ImageUrlInput = ({ imageUrls, imageEnabled, onImageUrlsChange, onImageEnabledChange }) => {
+const ImageUrlInput = ({ imageUrls, imageEnabled, onImageUrlsChange, onImageEnabledChange, disabled = false }) => {
   const handleAddImageUrl = () => {
     const newUrls = [...imageUrls, ''];
     onImageUrlsChange(newUrls);
@@ -31,13 +31,18 @@ const ImageUrlInput = ({ imageUrls, imageEnabled, onImageUrlsChange, onImageEnab
   };
 
   return (
-    <div>
+    <div className={disabled ? 'opacity-50' : ''}>
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
-          <Image size={16} className={imageEnabled ? "text-blue-500" : "text-gray-400"} />
+          <Image size={16} className={imageEnabled && !disabled ? "text-blue-500" : "text-gray-400"} />
           <Typography.Text strong className="text-sm">
             图片地址
           </Typography.Text>
+          {disabled && (
+            <Typography.Text className="text-xs text-orange-600">
+              (已在自定义模式中忽略)
+            </Typography.Text>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <Switch
@@ -47,6 +52,7 @@ const ImageUrlInput = ({ imageUrls, imageEnabled, onImageUrlsChange, onImageEnab
             uncheckedText="停用"
             size="small"
             className="flex-shrink-0"
+            disabled={disabled}
           />
           <Button
             icon={<Plus size={14} />}
@@ -55,26 +61,26 @@ const ImageUrlInput = ({ imageUrls, imageEnabled, onImageUrlsChange, onImageEnab
             type="primary"
             onClick={handleAddImageUrl}
             className="!rounded-full !w-4 !h-4 !p-0 !min-w-0"
-            disabled={!imageEnabled || imageUrls.length >= 5}
+            disabled={!imageEnabled || imageUrls.length >= 5 || disabled}
           />
         </div>
       </div>
 
       {!imageEnabled ? (
         <Typography.Text className="text-xs text-gray-500 mb-2 block">
-          图片发送已停用，启用后可添加图片URL进行多模态对话
+          {disabled ? '图片功能在自定义请求体模式下不可用' : '启用后可添加图片URL进行多模态对话'}
         </Typography.Text>
       ) : imageUrls.length === 0 ? (
         <Typography.Text className="text-xs text-gray-500 mb-2 block">
-          点击 + 按钮添加图片URL，支持最多5张图片
+          {disabled ? '图片功能在自定义请求体模式下不可用' : '点击 + 按钮添加图片URL，支持最多5张图片'}
         </Typography.Text>
       ) : (
         <Typography.Text className="text-xs text-gray-500 mb-2 block">
-          已添加 {imageUrls.length}/5 张图片
+          已添加 {imageUrls.length}/5 张图片{disabled ? ' (自定义模式下不可用)' : ''}
         </Typography.Text>
       )}
 
-      <div className={`space-y-2 max-h-32 overflow-y-auto ${!imageEnabled ? 'opacity-50' : ''}`}>
+      <div className={`space-y-2 max-h-32 overflow-y-auto ${!imageEnabled || disabled ? 'opacity-50' : ''}`}>
         {imageUrls.map((url, index) => (
           <div key={index} className="flex items-center gap-2">
             <div className="flex-1">
@@ -85,7 +91,7 @@ const ImageUrlInput = ({ imageUrls, imageEnabled, onImageUrlsChange, onImageEnab
                 className="!rounded-lg"
                 size="small"
                 prefix={<IconFile size='small' />}
-                disabled={!imageEnabled}
+                disabled={!imageEnabled || disabled}
               />
             </div>
             <Button
@@ -95,7 +101,7 @@ const ImageUrlInput = ({ imageUrls, imageEnabled, onImageUrlsChange, onImageEnab
               type="danger"
               onClick={() => handleRemoveImageUrl(index)}
               className="!rounded-full !w-6 !h-6 !p-0 !min-w-0 !text-red-500 hover:!bg-red-50 flex-shrink-0"
-              disabled={!imageEnabled}
+              disabled={!imageEnabled || disabled}
             />
           </div>
         ))}

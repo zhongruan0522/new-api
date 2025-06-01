@@ -1,37 +1,42 @@
 import { formatMessageForAPI } from './messageUtils';
 
 // 构建API请求载荷
-export const buildApiPayload = (messages, systemMessage, inputs, parameterEnabled) => {
-  const formattedMessages = messages.map(formatMessageForAPI);
+export const buildApiPayload = (messages, systemPrompt, inputs, parameterEnabled) => {
+  const processedMessages = messages.map(formatMessageForAPI);
 
-  if (systemMessage) {
-    formattedMessages.unshift(formatMessageForAPI(systemMessage));
+  // 如果有系统提示，插入到消息开头
+  if (systemPrompt && systemPrompt.trim()) {
+    processedMessages.unshift({
+      role: 'system',
+      content: systemPrompt.trim()
+    });
   }
 
   const payload = {
-    messages: formattedMessages,
-    stream: inputs.stream,
     model: inputs.model,
-    group: inputs.group,
+    messages: processedMessages,
+    stream: inputs.stream,
   };
 
-  // 添加可选参数
-  const optionalParams = [
-    'max_tokens', 'temperature', 'top_p',
-    'frequency_penalty', 'presence_penalty', 'seed'
-  ];
-
-  optionalParams.forEach(param => {
-    if (parameterEnabled[param]) {
-      if (param === 'max_tokens' && inputs[param] > 0) {
-        payload[param] = parseInt(inputs[param]);
-      } else if (param === 'seed' && inputs[param] !== null && inputs[param] !== '') {
-        payload[param] = parseInt(inputs[param]);
-      } else if (param !== 'max_tokens' && param !== 'seed') {
-        payload[param] = inputs[param];
-      }
-    }
-  });
+  // 添加启用的参数
+  if (parameterEnabled.temperature && inputs.temperature !== undefined) {
+    payload.temperature = inputs.temperature;
+  }
+  if (parameterEnabled.top_p && inputs.top_p !== undefined) {
+    payload.top_p = inputs.top_p;
+  }
+  if (parameterEnabled.max_tokens && inputs.max_tokens !== undefined) {
+    payload.max_tokens = inputs.max_tokens;
+  }
+  if (parameterEnabled.frequency_penalty && inputs.frequency_penalty !== undefined) {
+    payload.frequency_penalty = inputs.frequency_penalty;
+  }
+  if (parameterEnabled.presence_penalty && inputs.presence_penalty !== undefined) {
+    payload.presence_penalty = inputs.presence_penalty;
+  }
+  if (parameterEnabled.seed && inputs.seed !== undefined && inputs.seed !== null) {
+    payload.seed = inputs.seed;
+  }
 
   return payload;
 };

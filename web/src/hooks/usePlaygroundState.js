@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { DEFAULT_MESSAGES, DEFAULT_CONFIG, DEBUG_TABS } from '../utils/constants';
-import { loadConfig, saveConfig } from '../components/playground/configStorage';
+import { loadConfig, saveConfig, loadMessages, saveMessages } from '../components/playground/configStorage';
 
 export const usePlaygroundState = () => {
   // 使用 ref 缓存初始配置，只加载一次
@@ -10,16 +10,22 @@ export const usePlaygroundState = () => {
   }
   const savedConfig = initialConfigRef.current;
 
+  // 加载保存的消息，如果没有则使用默认消息
+  const initialMessages = loadMessages() || DEFAULT_MESSAGES;
+
   // 基础配置状态
   const [inputs, setInputs] = useState(savedConfig.inputs || DEFAULT_CONFIG.inputs);
   const [parameterEnabled, setParameterEnabled] = useState(
     savedConfig.parameterEnabled || DEFAULT_CONFIG.parameterEnabled
   );
-  const [systemPrompt, setSystemPrompt] = useState(
-    savedConfig.systemPrompt || DEFAULT_CONFIG.systemPrompt
-  );
   const [showDebugPanel, setShowDebugPanel] = useState(
     savedConfig.showDebugPanel || DEFAULT_CONFIG.showDebugPanel
+  );
+  const [customRequestMode, setCustomRequestMode] = useState(
+    savedConfig.customRequestMode || DEFAULT_CONFIG.customRequestMode
+  );
+  const [customRequestBody, setCustomRequestBody] = useState(
+    savedConfig.customRequestBody || DEFAULT_CONFIG.customRequestBody
   );
 
   // UI状态
@@ -28,8 +34,8 @@ export const usePlaygroundState = () => {
   const [groups, setGroups] = useState([]);
   const [status, setStatus] = useState({});
 
-  // 消息相关状态
-  const [message, setMessage] = useState(DEFAULT_MESSAGES);
+  // 消息相关状态 - 使用加载的消息初始化
+  const [message, setMessage] = useState(initialMessages);
 
   // 调试状态
   const [debugData, setDebugData] = useState({
@@ -50,6 +56,7 @@ export const usePlaygroundState = () => {
   const sseSourceRef = useRef(null);
   const chatRef = useRef(null);
   const saveConfigTimeoutRef = useRef(null);
+  const saveMessagesTimeoutRef = useRef(null);
 
   // 配置更新函数
   const handleInputChange = useCallback((name, value) => {
@@ -63,6 +70,17 @@ export const usePlaygroundState = () => {
     }));
   }, []);
 
+  // 消息保存函数
+  const debouncedSaveMessages = useCallback(() => {
+    if (saveMessagesTimeoutRef.current) {
+      clearTimeout(saveMessagesTimeoutRef.current);
+    }
+
+    saveMessagesTimeoutRef.current = setTimeout(() => {
+      saveMessages(message);
+    }, 1000);
+  }, [message]);
+
   // 配置保存
   const debouncedSaveConfig = useCallback(() => {
     if (saveConfigTimeoutRef.current) {
@@ -73,12 +91,13 @@ export const usePlaygroundState = () => {
       const configToSave = {
         inputs,
         parameterEnabled,
-        systemPrompt,
         showDebugPanel,
+        customRequestMode,
+        customRequestBody,
       };
       saveConfig(configToSave);
     }, 1000);
-  }, [inputs, parameterEnabled, systemPrompt, showDebugPanel]);
+  }, [inputs, parameterEnabled, showDebugPanel, customRequestMode, customRequestBody]);
 
   // 配置导入/重置
   const handleConfigImport = useCallback((importedConfig) => {
@@ -88,27 +107,60 @@ export const usePlaygroundState = () => {
     if (importedConfig.parameterEnabled) {
       setParameterEnabled(prev => ({ ...prev, ...importedConfig.parameterEnabled }));
     }
-    if (importedConfig.systemPrompt) {
-      setSystemPrompt(importedConfig.systemPrompt);
-    }
     if (typeof importedConfig.showDebugPanel === 'boolean') {
       setShowDebugPanel(importedConfig.showDebugPanel);
     }
+    if (importedConfig.customRequestMode) {
+      setCustomRequestMode(importedConfig.customRequestMode);
+    }
+    if (importedConfig.customRequestBody) {
+      setCustomRequestBody(importedConfig.customRequestBody);
+    }
+    // 如果导入的配置包含消息，也恢复消息
+    if (importedConfig.messages && Array.isArray(importedConfig.messages)) {
+      setMessage(importedConfig.messages);
+    }
   }, []);
 
-  const handleConfigReset = useCallback(() => {
+  const handleConfigReset = useCallback((options = {}) => {
+    const { resetMessages = false } = options;
+
     setInputs(DEFAULT_CONFIG.inputs);
     setParameterEnabled(DEFAULT_CONFIG.parameterEnabled);
-    setSystemPrompt(DEFAULT_CONFIG.systemPrompt);
     setShowDebugPanel(DEFAULT_CONFIG.showDebugPanel);
+    setCustomRequestMode(DEFAULT_CONFIG.customRequestMode);
+    setCustomRequestBody(DEFAULT_CONFIG.customRequestBody);
+
+    // 只有在明确指定时才重置消息
+    if (resetMessages) {
+      setMessage(DEFAULT_MESSAGES);
+    }
+  }, []);
+
+  // 监听消息变化并自动保存
+  useEffect(() => {
+    debouncedSaveMessages();
+  }, [debouncedSaveMessages]);
+
+  // 清理定时器
+  useEffect(() => {
+    return () => {
+      if (saveConfigTimeoutRef.current) {
+        clearTimeout(saveConfigTimeoutRef.current);
+      }
+      if (saveMessagesTimeoutRef.current) {
+        clearTimeout(saveMessagesTimeoutRef.current);
+      }
+    };
   }, []);
 
   return {
     // 配置状态
     inputs,
     parameterEnabled,
-    systemPrompt,
     showDebugPanel,
+    customRequestMode,
+    customRequestBody,
 
     // UI状态
     showSettings,
@@ -136,8 +188,9 @@ export const usePlaygroundState = () => {
     // 更新函数
     setInputs,
     setParameterEnabled,
-    setSystemPrompt,
     setShowDebugPanel,
+    setCustomRequestMode,
+    setCustomRequestBody,
     setShowSettings,
     setModels,
     setGroups,
@@ -153,6 +206,7 @@ export const usePlaygroundState = () => {
     handleInputChange,
     handleParameterToggle,
     debouncedSaveConfig,
+    debouncedSaveMessages,
     handleConfigImport,
     handleConfigReset,
   };

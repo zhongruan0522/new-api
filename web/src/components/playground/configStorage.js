@@ -1,30 +1,6 @@
-const STORAGE_KEY = 'playground_config';
+import { STORAGE_KEYS, DEFAULT_CONFIG } from '../../utils/constants';
 
-const DEFAULT_CONFIG = {
-  inputs: {
-    model: 'deepseek-r1',
-    group: '',
-    max_tokens: 0,
-    temperature: 0,
-    top_p: 1,
-    frequency_penalty: 0,
-    presence_penalty: 0,
-    seed: null,
-    stream: true,
-    imageUrls: [],
-    imageEnabled: false,
-  },
-  parameterEnabled: {
-    max_tokens: true,
-    temperature: true,
-    top_p: false,
-    frequency_penalty: false,
-    presence_penalty: false,
-    seed: false,
-  },
-  systemPrompt: 'You are a helpful assistant. You can help me by answering my questions. You can also ask me questions.',
-  showDebugPanel: false,
-};
+const MESSAGES_STORAGE_KEY = 'playground_messages';
 
 /**
  * 保存配置到 localStorage
@@ -36,10 +12,27 @@ export const saveConfig = (config) => {
       ...config,
       timestamp: new Date().toISOString(),
     };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(configToSave));
+    localStorage.setItem(STORAGE_KEYS.CONFIG, JSON.stringify(configToSave));
     console.log('配置已保存到本地存储');
   } catch (error) {
     console.error('保存配置失败:', error);
+  }
+};
+
+/**
+ * 保存消息到 localStorage
+ * @param {Array} messages - 要保存的消息数组
+ */
+export const saveMessages = (messages) => {
+  try {
+    const messagesToSave = {
+      messages,
+      timestamp: new Date().toISOString(),
+    };
+    localStorage.setItem(STORAGE_KEYS.MESSAGES, JSON.stringify(messagesToSave));
+    console.log('消息已保存到本地存储');
+  } catch (error) {
+    console.error('保存消息失败:', error);
   }
 };
 
@@ -49,7 +42,7 @@ export const saveConfig = (config) => {
  */
 export const loadConfig = () => {
   try {
-    const savedConfig = localStorage.getItem(STORAGE_KEY);
+    const savedConfig = localStorage.getItem(STORAGE_KEYS.CONFIG);
     if (savedConfig) {
       const parsedConfig = JSON.parse(savedConfig);
 
@@ -62,8 +55,9 @@ export const loadConfig = () => {
           ...DEFAULT_CONFIG.parameterEnabled,
           ...parsedConfig.parameterEnabled,
         },
-        systemPrompt: parsedConfig.systemPrompt || DEFAULT_CONFIG.systemPrompt,
         showDebugPanel: parsedConfig.showDebugPanel || DEFAULT_CONFIG.showDebugPanel,
+        customRequestMode: parsedConfig.customRequestMode || DEFAULT_CONFIG.customRequestMode,
+        customRequestBody: parsedConfig.customRequestBody || DEFAULT_CONFIG.customRequestBody,
       };
 
       console.log('配置已从本地存储加载');
@@ -78,14 +72,47 @@ export const loadConfig = () => {
 };
 
 /**
+ * 从 localStorage 加载消息
+ * @returns {Array} 消息数组，如果不存在则返回 null
+ */
+export const loadMessages = () => {
+  try {
+    const savedMessages = localStorage.getItem(STORAGE_KEYS.MESSAGES);
+    if (savedMessages) {
+      const parsedMessages = JSON.parse(savedMessages);
+      console.log('消息已从本地存储加载');
+      return parsedMessages.messages || null;
+    }
+  } catch (error) {
+    console.error('加载消息失败:', error);
+  }
+
+  console.log('没有找到保存的消息');
+  return null;
+};
+
+/**
  * 清除保存的配置
  */
 export const clearConfig = () => {
   try {
-    localStorage.removeItem(STORAGE_KEY);
-    console.log('配置已清除');
+    localStorage.removeItem(STORAGE_KEYS.CONFIG);
+    localStorage.removeItem(STORAGE_KEYS.MESSAGES); // 同时清除消息
+    console.log('配置和消息已清除');
   } catch (error) {
     console.error('清除配置失败:', error);
+  }
+};
+
+/**
+ * 清除保存的消息
+ */
+export const clearMessages = () => {
+  try {
+    localStorage.removeItem(STORAGE_KEYS.MESSAGES);
+    console.log('消息已清除');
+  } catch (error) {
+    console.error('清除消息失败:', error);
   }
 };
 
@@ -95,7 +122,7 @@ export const clearConfig = () => {
  */
 export const hasStoredConfig = () => {
   try {
-    return localStorage.getItem(STORAGE_KEY) !== null;
+    return localStorage.getItem(STORAGE_KEYS.CONFIG) !== null;
   } catch (error) {
     console.error('检查配置失败:', error);
     return false;
@@ -108,7 +135,7 @@ export const hasStoredConfig = () => {
  */
 export const getConfigTimestamp = () => {
   try {
-    const savedConfig = localStorage.getItem(STORAGE_KEY);
+    const savedConfig = localStorage.getItem(STORAGE_KEYS.CONFIG);
     if (savedConfig) {
       const parsedConfig = JSON.parse(savedConfig);
       return parsedConfig.timestamp || null;
@@ -120,13 +147,15 @@ export const getConfigTimestamp = () => {
 };
 
 /**
- * 导出配置为 JSON 文件
+ * 导出配置为 JSON 文件（包含消息）
  * @param {Object} config - 要导出的配置
+ * @param {Array} messages - 要导出的消息
  */
-export const exportConfig = (config) => {
+export const exportConfig = (config, messages = null) => {
   try {
     const configToExport = {
       ...config,
+      messages: messages || loadMessages(), // 包含消息数据
       exportTime: new Date().toISOString(),
       version: '1.0',
     };
@@ -148,7 +177,7 @@ export const exportConfig = (config) => {
 };
 
 /**
- * 从文件导入配置
+ * 从文件导入配置（包含消息）
  * @param {File} file - 包含配置的 JSON 文件
  * @returns {Promise<Object>} 导入的配置对象
  */
@@ -161,6 +190,11 @@ export const importConfig = (file) => {
           const importedConfig = JSON.parse(e.target.result);
 
           if (importedConfig.inputs && importedConfig.parameterEnabled) {
+            // 如果导入的配置包含消息，也一起导入
+            if (importedConfig.messages && Array.isArray(importedConfig.messages)) {
+              saveMessages(importedConfig.messages);
+            }
+
             console.log('配置已从文件导入');
             resolve(importedConfig);
           } else {

@@ -22,11 +22,12 @@ const ParameterControl = ({
   parameterEnabled,
   onInputChange,
   onParameterToggle,
+  disabled = false,
 }) => {
   return (
     <>
       {/* Temperature */}
-      <div className={`transition-opacity duration-200 ${!parameterEnabled.temperature ? 'opacity-50' : ''}`}>
+      <div className={`transition-opacity duration-200 ${!parameterEnabled.temperature || disabled ? 'opacity-50' : ''}`}>
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
             <Thermometer size={16} className="text-gray-500" />
@@ -44,6 +45,7 @@ const ParameterControl = ({
             icon={parameterEnabled.temperature ? <Check size={10} /> : <X size={10} />}
             onClick={() => onParameterToggle('temperature')}
             className="!rounded-full !w-4 !h-4 !p-0 !min-w-0"
+            disabled={disabled}
           />
         </div>
         <Typography.Text className="text-xs text-gray-500 mb-2">
@@ -56,12 +58,12 @@ const ParameterControl = ({
           value={inputs.temperature}
           onChange={(value) => onInputChange('temperature', value)}
           className="mt-2"
-          disabled={!parameterEnabled.temperature}
+          disabled={!parameterEnabled.temperature || disabled}
         />
       </div>
 
       {/* Top P */}
-      <div className={`transition-opacity duration-200 ${!parameterEnabled.top_p ? 'opacity-50' : ''}`}>
+      <div className={`transition-opacity duration-200 ${!parameterEnabled.top_p || disabled ? 'opacity-50' : ''}`}>
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
             <Target size={16} className="text-gray-500" />
@@ -79,6 +81,7 @@ const ParameterControl = ({
             icon={parameterEnabled.top_p ? <Check size={10} /> : <X size={10} />}
             onClick={() => onParameterToggle('top_p')}
             className="!rounded-full !w-4 !h-4 !p-0 !min-w-0"
+            disabled={disabled}
           />
         </div>
         <Typography.Text className="text-xs text-gray-500 mb-2">
@@ -91,12 +94,12 @@ const ParameterControl = ({
           value={inputs.top_p}
           onChange={(value) => onInputChange('top_p', value)}
           className="mt-2"
-          disabled={!parameterEnabled.top_p}
+          disabled={!parameterEnabled.top_p || disabled}
         />
       </div>
 
       {/* Frequency Penalty */}
-      <div className={`transition-opacity duration-200 ${!parameterEnabled.frequency_penalty ? 'opacity-50' : ''}`}>
+      <div className={`transition-opacity duration-200 ${!parameterEnabled.frequency_penalty || disabled ? 'opacity-50' : ''}`}>
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
             <Repeat size={16} className="text-gray-500" />
@@ -114,6 +117,7 @@ const ParameterControl = ({
             icon={parameterEnabled.frequency_penalty ? <Check size={10} /> : <X size={10} />}
             onClick={() => onParameterToggle('frequency_penalty')}
             className="!rounded-full !w-4 !h-4 !p-0 !min-w-0"
+            disabled={disabled}
           />
         </div>
         <Typography.Text className="text-xs text-gray-500 mb-2">
@@ -126,12 +130,12 @@ const ParameterControl = ({
           value={inputs.frequency_penalty}
           onChange={(value) => onInputChange('frequency_penalty', value)}
           className="mt-2"
-          disabled={!parameterEnabled.frequency_penalty}
+          disabled={!parameterEnabled.frequency_penalty || disabled}
         />
       </div>
 
       {/* Presence Penalty */}
-      <div className={`transition-opacity duration-200 ${!parameterEnabled.presence_penalty ? 'opacity-50' : ''}`}>
+      <div className={`transition-opacity duration-200 ${!parameterEnabled.presence_penalty || disabled ? 'opacity-50' : ''}`}>
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
             <Ban size={16} className="text-gray-500" />
@@ -149,6 +153,7 @@ const ParameterControl = ({
             icon={parameterEnabled.presence_penalty ? <Check size={10} /> : <X size={10} />}
             onClick={() => onParameterToggle('presence_penalty')}
             className="!rounded-full !w-4 !h-4 !p-0 !min-w-0"
+            disabled={disabled}
           />
         </div>
         <Typography.Text className="text-xs text-gray-500 mb-2">
@@ -161,12 +166,12 @@ const ParameterControl = ({
           value={inputs.presence_penalty}
           onChange={(value) => onInputChange('presence_penalty', value)}
           className="mt-2"
-          disabled={!parameterEnabled.presence_penalty}
+          disabled={!parameterEnabled.presence_penalty || disabled}
         />
       </div>
 
       {/* MaxTokens */}
-      <div className={`transition-opacity duration-200 ${!parameterEnabled.max_tokens ? 'opacity-50' : ''}`}>
+      <div className={`transition-opacity duration-200 ${!parameterEnabled.max_tokens || disabled ? 'opacity-50' : ''}`}>
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
             <Hash size={16} className="text-gray-500" />
@@ -181,6 +186,7 @@ const ParameterControl = ({
             icon={parameterEnabled.max_tokens ? <Check size={10} /> : <X size={10} />}
             onClick={() => onParameterToggle('max_tokens')}
             className="!rounded-full !w-4 !h-4 !p-0 !min-w-0"
+            disabled={disabled}
           />
         </div>
         <Input
@@ -192,12 +198,12 @@ const ParameterControl = ({
           value={inputs.max_tokens}
           onChange={(value) => onInputChange('max_tokens', value)}
           className="!rounded-lg"
-          disabled={!parameterEnabled.max_tokens}
+          disabled={!parameterEnabled.max_tokens || disabled}
         />
       </div>
 
       {/* Seed */}
-      <div className={`transition-opacity duration-200 ${!parameterEnabled.seed ? 'opacity-50' : ''}`}>
+      <div className={`transition-opacity duration-200 ${!parameterEnabled.seed || disabled ? 'opacity-50' : ''}`}>
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
             <Shuffle size={16} className="text-gray-500" />
@@ -215,6 +221,7 @@ const ParameterControl = ({
             icon={parameterEnabled.seed ? <Check size={10} /> : <X size={10} />}
             onClick={() => onParameterToggle('seed')}
             className="!rounded-full !w-4 !h-4 !p-0 !min-w-0"
+            disabled={disabled}
           />
         </div>
         <Input
@@ -224,7 +231,7 @@ const ParameterControl = ({
           value={inputs.seed || ''}
           onChange={(value) => onInputChange('seed', value === '' ? null : value)}
           className="!rounded-lg"
-          disabled={!parameterEnabled.seed}
+          disabled={!parameterEnabled.seed || disabled}
         />
       </div>
     </>
