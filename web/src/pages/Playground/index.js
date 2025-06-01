@@ -362,7 +362,7 @@ const Playground = () => {
               flexShrink: 0,
               minWidth: styleState.isMobile ? '100%' : 320,
               maxWidth: styleState.isMobile ? '100%' : 320,
-              height: styleState.isMobile ? 'auto' : 'calc(100vh - 64px)',
+              height: styleState.isMobile ? 'auto' : 'calc(100vh - 66px)',
               overflow: 'auto',
               position: styleState.isMobile ? 'fixed' : 'relative',
               zIndex: styleState.isMobile ? 1000 : 1,
@@ -399,7 +399,7 @@ const Playground = () => {
         )}
 
         <Layout.Content className="relative flex-1 overflow-hidden">
-          <div className="overflow-hidden flex flex-col lg:flex-row h-[calc(100vh-64px)]">
+          <div className="overflow-hidden flex flex-col lg:flex-row h-[calc(100vh-66px)]">
             <div className="flex-1 flex flex-col">
               <ChatArea
                 chatRef={chatRef}

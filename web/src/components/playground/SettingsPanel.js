@@ -2,19 +2,16 @@ import React from 'react';
 import {
   Card,
   Select,
-  TextArea,
   Typography,
   Button,
   Switch,
-  Divider,
-  Banner,
 } from '@douyinfe/semi-ui';
 import {
   Sparkles,
   Users,
   ToggleLeft,
   X,
-  AlertTriangle,
+  Settings,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { renderGroupOption } from '../../helpers/render.js';
@@ -54,32 +51,47 @@ const SettingsPanel = ({
 
   return (
     <Card
-      className={`h-full flex flex-col ${styleState.isMobile ? 'rounded-none border-none shadow-none' : ''}`}
+      className="h-full flex flex-col"
       bordered={false}
       bodyStyle={{
-        padding: styleState.isMobile ? '24px' : '24px 24px 16px 24px',
+        padding: styleState.isMobile ? '16px' : '24px',
         height: '100%',
         display: 'flex',
         flexDirection: 'column'
       }}
     >
-      {styleState.isMobile && (
-        <div className="flex items-center justify-between mb-4">
-          {/* 移动端显示配置管理下拉菜单和关闭按钮 */}
-          <ConfigManager
-            currentConfig={currentConfig}
-            onConfigImport={onConfigImport}
-            onConfigReset={onConfigReset}
-            styleState={styleState}
-            messages={messages}
-          />
+      {/* 标题区域 - 与调试面板保持一致 */}
+      <div className="flex items-center justify-between mb-6 flex-shrink-0">
+        <div className="flex items-center">
+          <div className="w-10 h-10 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center mr-3">
+            <Settings size={20} className="text-white" />
+          </div>
+          <Typography.Title heading={5} className="mb-0">
+            {t('模型配置')}
+          </Typography.Title>
+        </div>
+
+        {styleState.isMobile && onCloseSettings && (
           <Button
             icon={<X size={16} />}
             onClick={onCloseSettings}
             theme="borderless"
             type="tertiary"
             size="small"
-            className="!rounded-lg !text-gray-600 hover:!text-red-600 hover:!bg-red-50"
+            className="!rounded-lg"
+          />
+        )}
+      </div>
+
+      {/* 移动端配置管理 */}
+      {styleState.isMobile && (
+        <div className="mb-4 flex-shrink-0">
+          <ConfigManager
+            currentConfig={currentConfig}
+            onConfigImport={onConfigImport}
+            onConfigReset={onConfigReset}
+            styleState={{ ...styleState, isMobile: false }}
+            messages={messages}
           />
         </div>
       )}
