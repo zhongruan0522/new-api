@@ -27,7 +27,7 @@ const ParameterControl = ({
   return (
     <>
       {/* Temperature */}
-      <div className={`transition-opacity duration-200 ${!parameterEnabled.temperature || disabled ? 'opacity-50' : ''}`}>
+      <div className={`transition-opacity duration-200 mb-4 ${!parameterEnabled.temperature || disabled ? 'opacity-50' : ''}`}>
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
             <Thermometer size={16} className="text-gray-500" />
@@ -63,7 +63,7 @@ const ParameterControl = ({
       </div>
 
       {/* Top P */}
-      <div className={`transition-opacity duration-200 ${!parameterEnabled.top_p || disabled ? 'opacity-50' : ''}`}>
+      <div className={`transition-opacity duration-200 mb-4 ${!parameterEnabled.top_p || disabled ? 'opacity-50' : ''}`}>
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
             <Target size={16} className="text-gray-500" />
@@ -99,7 +99,7 @@ const ParameterControl = ({
       </div>
 
       {/* Frequency Penalty */}
-      <div className={`transition-opacity duration-200 ${!parameterEnabled.frequency_penalty || disabled ? 'opacity-50' : ''}`}>
+      <div className={`transition-opacity duration-200 mb-4 ${!parameterEnabled.frequency_penalty || disabled ? 'opacity-50' : ''}`}>
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
             <Repeat size={16} className="text-gray-500" />
@@ -135,7 +135,7 @@ const ParameterControl = ({
       </div>
 
       {/* Presence Penalty */}
-      <div className={`transition-opacity duration-200 ${!parameterEnabled.presence_penalty || disabled ? 'opacity-50' : ''}`}>
+      <div className={`transition-opacity duration-200 mb-4 ${!parameterEnabled.presence_penalty || disabled ? 'opacity-50' : ''}`}>
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
             <Ban size={16} className="text-gray-500" />
@@ -171,7 +171,7 @@ const ParameterControl = ({
       </div>
 
       {/* MaxTokens */}
-      <div className={`transition-opacity duration-200 ${!parameterEnabled.max_tokens || disabled ? 'opacity-50' : ''}`}>
+      <div className={`transition-opacity duration-200 mb-4 ${!parameterEnabled.max_tokens || disabled ? 'opacity-50' : ''}`}>
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
             <Hash size={16} className="text-gray-500" />
@@ -203,7 +203,7 @@ const ParameterControl = ({
       </div>
 
       {/* Seed */}
-      <div className={`transition-opacity duration-200 ${!parameterEnabled.seed || disabled ? 'opacity-50' : ''}`}>
+      <div className={`transition-opacity duration-200 mb-4 ${!parameterEnabled.seed || disabled ? 'opacity-50' : ''}`}>
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
             <Shuffle size={16} className="text-gray-500" />

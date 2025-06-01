@@ -81,7 +81,7 @@ const PasswordResetConfirm = () => {
       {/* 半透明遮罩层 */}
       <div className="absolute inset-0 bg-gradient-to-br from-teal-500/30 via-blue-500/30 to-purple-500/30 backdrop-blur-sm z-0"></div>
 
-      <div className="w-full max-w-md relative z-10">
+      <div className="w-full max-w-sm relative z-10">
         <div className="flex flex-col items-center">
           <div className="w-full max-w-md">
             <div className="flex items-center justify-center mb-6 gap-2">
