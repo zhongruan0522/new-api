@@ -1,12 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Card,
   TextArea,
   Typography,
   Button,
   Switch,
   Banner,
-  Tag,
 } from '@douyinfe/semi-ui';
 import {
   Code,
@@ -104,11 +102,6 @@ const CustomRequestEditor = ({
           <Typography.Text strong className="text-sm">
             自定义请求体模式
           </Typography.Text>
-          {customRequestMode && (
-            <Tag color="green" size="small" shape='circle'>
-              已启用
-            </Tag>
-          )}
         </div>
         <Switch
           checked={customRequestMode}
@@ -171,7 +164,7 @@ const CustomRequestEditor = ({
               onChange={handleValueChange}
               placeholder='{"model": "gpt-4o", "messages": [...], ...}'
               autosize={{ minRows: 8, maxRows: 20 }}
-              className={`!rounded-lg font-mono text-sm ${!isValid ? '!border-red-500' : ''}`}
+              className={`custom-request-textarea !rounded-lg font-mono text-sm ${!isValid ? '!border-red-500' : ''}`}
               style={{
                 fontFamily: 'Consolas, Monaco, "Courier New", monospace',
                 lineHeight: '1.5',

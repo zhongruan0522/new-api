@@ -183,25 +183,37 @@ code {
   overflow-x: hidden !important;
 }
 
+/* 隐藏所有聊天相关区域的滚动条 */
+.semi-chat::-webkit-scrollbar,
+.semi-chat-chatBox::-webkit-scrollbar,
+.semi-chat-chatBox-wrap::-webkit-scrollbar,
+.semi-chat-chatBox-content::-webkit-scrollbar,
+.semi-chat-content::-webkit-scrollbar,
+.semi-chat-list::-webkit-scrollbar {
+  display: none;
+}
+
+.semi-chat,
+.semi-chat-chatBox,
+.semi-chat-chatBox-wrap,
+.semi-chat-chatBox-content,
+.semi-chat-content,
+.semi-chat-list {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
 .semi-chat-container {
   overflow-x: hidden !important;
 }
 
 .semi-chat-container::-webkit-scrollbar {
-  width: 4px;
+  display: none;
 }
 
-.semi-chat-container::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.1);
-  border-radius: 2px;
-}
-
-.semi-chat-container::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.15);
-}
-
-.semi-chat-container::-webkit-scrollbar-track {
-  background: transparent;
+.semi-chat-container {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 /* 隐藏模型设置区域的滚动条 */
@@ -216,26 +228,31 @@ code {
 
 /* 思考内容区域滚动条样式 */
 .thinking-content-scroll::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-.thinking-content-scroll::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.2);
-  border-radius: 3px;
-}
-
-.thinking-content-scroll::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.3);
-}
-
-.thinking-content-scroll::-webkit-scrollbar-track {
-  background: transparent;
+  display: none;
 }
 
 .thinking-content-scroll {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* 隐藏请求体 JSON TextArea 的滚动条 */
+.custom-request-textarea .semi-input::-webkit-scrollbar {
+  display: none;
+}
+
+.custom-request-textarea .semi-input {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.custom-request-textarea textarea::-webkit-scrollbar {
+  display: none;
+}
+
+.custom-request-textarea textarea {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 /* 调试面板标签样式 */
