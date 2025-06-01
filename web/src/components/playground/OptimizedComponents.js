@@ -11,6 +11,7 @@ export const OptimizedMessageContent = React.memo(MessageContent, (prevProps, ne
     prevProps.message.id === nextProps.message.id &&
     prevProps.message.content === nextProps.message.content &&
     prevProps.message.status === nextProps.message.status &&
+    prevProps.message.role === nextProps.message.role &&
     prevProps.message.isReasoningExpanded === nextProps.message.isReasoningExpanded &&
     prevProps.isEditing === nextProps.isEditing &&
     prevProps.editValue === nextProps.editValue &&
@@ -22,6 +23,7 @@ export const OptimizedMessageContent = React.memo(MessageContent, (prevProps, ne
 export const OptimizedMessageActions = React.memo(MessageActions, (prevProps, nextProps) => {
   return (
     prevProps.message.id === nextProps.message.id &&
+    prevProps.message.role === nextProps.message.role &&
     prevProps.isAnyMessageGenerating === nextProps.isAnyMessageGenerating &&
     prevProps.isEditing === nextProps.isEditing
   );
