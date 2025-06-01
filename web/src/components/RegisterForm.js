@@ -26,9 +26,9 @@ import {
   onLinuxDOOAuthClicked,
   onOIDCClicked,
 } from './utils.js';
-import OIDCIcon from './OIDCIcon.js';
-import LinuxDoIcon from './LinuxDoIcon.js';
-import WeChatIcon from './WeChatIcon.js';
+import OIDCIcon from './common/logo/OIDCIcon.js';
+import LinuxDoIcon from './common/logo/LinuxDoIcon.js';
+import WeChatIcon from './common/logo/WeChatIcon.js';
 import TelegramLoginButton from 'react-telegram-login/src';
 import { setUserData } from '../helpers/data.js';
 import { UserContext } from '../context/User/index.js';

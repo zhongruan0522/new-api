@@ -4,7 +4,7 @@ import {
   TextArea,
   Button,
 } from '@douyinfe/semi-ui';
-import MarkdownRenderer from '../common/MarkdownRenderer';
+import MarkdownRenderer from '../common/markdown/MarkdownRenderer';
 import {
   ChevronRight,
   ChevronUp,
