@@ -85,7 +85,8 @@ const DebugPanel = ({
 
   return (
     <Card
-      className="!rounded-2xl h-full flex flex-col"
+      className="h-full flex flex-col"
+      bordered={false}
       bodyStyle={{
         padding: styleState.isMobile ? '16px' : '24px',
         height: '100%',
@@ -159,7 +160,7 @@ const DebugPanel = ({
           <TabPane tab={
             <div className="flex items-center gap-2">
               <Zap size={16} />
-              {t('响应内容')}
+              {t('响应')}
             </div>
           } itemKey="response">
             <CodeViewer

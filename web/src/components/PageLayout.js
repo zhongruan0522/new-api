@@ -5,7 +5,7 @@ import App from '../App.js';
 import FooterBar from './Footer.js';
 import { ToastContainer } from 'react-toastify';
 import React, { useContext, useEffect } from 'react';
-import { StyleContext } from '../context/Style/index.js';
+import { useStyle } from '../context/Style/index.js';
 import { useTranslation } from 'react-i18next';
 import { API, getLogo, getSystemName, showError } from '../helpers/index.js';
 import { setStatusData } from '../helpers/data.js';
@@ -17,11 +17,15 @@ const { Sider, Content, Header, Footer } = Layout;
 const PageLayout = () => {
   const [userState, userDispatch] = useContext(UserContext);
   const [statusState, statusDispatch] = useContext(StatusContext);
-  const [styleState, styleDispatch] = useContext(StyleContext);
+  const { state: styleState } = useStyle();
   const { i18n } = useTranslation();
   const location = useLocation();
 
-  const isPlaygroundRoute = location.pathname === '/console/playground';
+  const shouldHideFooter = location.pathname === '/console/playground' || location.pathname.startsWith('/console/chat');
+
+  const shouldInnerPadding = location.pathname.includes('/console') &&
+    !location.pathname.startsWith('/console/chat') &&
+    location.pathname !== '/console/playground';
 
   const loadUser = () => {
     let user = localStorage.getItem('user');
@@ -65,14 +69,7 @@ const PageLayout = () => {
     if (savedLang) {
       i18n.changeLanguage(savedLang);
     }
-
-    // 默认显示侧边栏
-    styleDispatch({ type: 'SET_SIDER', payload: true });
   }, [i18n]);
-
-  // 获取侧边栏折叠状态
-  const isSidebarCollapsed =
-    localStorage.getItem('default_collapse_sidebar') === 'true';
 
   return (
     <Layout
@@ -99,8 +96,8 @@ const PageLayout = () => {
       </Header>
       <Layout
         style={{
-          marginTop: '56px',
-          height: 'calc(100vh - 56px)',
+          marginTop: '64px',
+          height: 'calc(100vh - 64px)',
           overflow: styleState.isMobile ? 'visible' : 'auto',
           display: 'flex',
           flexDirection: 'column',
@@ -111,11 +108,11 @@ const PageLayout = () => {
             style={{
               position: 'fixed',
               left: 0,
-              top: '56px',
+              top: '64px',
               zIndex: 99,
               border: 'none',
               paddingRight: '0',
-              height: 'calc(100vh - 56px)',
+              height: 'calc(100vh - 64px)',
             }}
           >
             <SiderBar />
@@ -141,14 +138,14 @@ const PageLayout = () => {
               flex: '1 0 auto',
               overflowY: styleState.isMobile ? 'visible' : 'auto',
               WebkitOverflowScrolling: 'touch',
-              padding: styleState.shouldInnerPadding ? '24px' : '0',
+              padding: shouldInnerPadding ? '24px' : '0',
               position: 'relative',
               marginTop: styleState.isMobile ? '2px' : '0',
             }}
           >
             <App />
           </Content>
-          {!isPlaygroundRoute && (
+          {!shouldHideFooter && (
             <Layout.Footer
               style={{
                 flex: '0 0 auto',

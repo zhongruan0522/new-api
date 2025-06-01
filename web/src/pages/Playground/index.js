@@ -5,7 +5,7 @@ import { Layout, Toast, Modal } from '@douyinfe/semi-ui';
 
 // Context
 import { UserContext } from '../../context/User/index.js';
-import { StyleContext } from '../../context/Style/index.js';
+import { useStyle, styleActions } from '../../context/Style/index.js';
 
 // Utils and hooks
 import { getLogo } from '../../helpers/index.js';
@@ -60,10 +60,9 @@ const generateAvatarDataUrl = (username) => {
 const Playground = () => {
   const { t } = useTranslation();
   const [userState] = useContext(UserContext);
-  const [styleState, styleDispatch] = useContext(StyleContext);
+  const { state: styleState, dispatch: styleDispatch } = useStyle();
   const [searchParams] = useSearchParams();
 
-  // 使用自定义hooks
   const state = usePlaygroundState();
   const {
     inputs,
@@ -323,7 +322,7 @@ const Playground = () => {
     const handleResize = () => {
       const mobile = window.innerWidth < 768;
       if (styleState.isMobile !== mobile) {
-        styleDispatch({ type: 'SET_IS_MOBILE', payload: mobile });
+        styleDispatch(styleActions.setMobile(mobile));
       }
     };
 
@@ -363,7 +362,7 @@ const Playground = () => {
               flexShrink: 0,
               minWidth: styleState.isMobile ? '100%' : 320,
               maxWidth: styleState.isMobile ? '100%' : 320,
-              height: styleState.isMobile ? 'auto' : 'calc(100vh - 106px)',
+              height: styleState.isMobile ? 'auto' : 'calc(100vh - 64px)',
               overflow: 'auto',
               position: styleState.isMobile ? 'fixed' : 'relative',
               zIndex: styleState.isMobile ? 1000 : 1,
@@ -400,7 +399,7 @@ const Playground = () => {
         )}
 
         <Layout.Content className="relative flex-1 overflow-hidden">
-          <div className="sm:px-4 overflow-hidden flex flex-col lg:flex-row gap-2 sm:gap-4 h-[calc(100vh-106px)]">
+          <div className="overflow-hidden flex flex-col lg:flex-row h-[calc(100vh-64px)]">
             <div className="flex-1 flex flex-col">
               <ChatArea
                 chatRef={chatRef}

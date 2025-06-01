@@ -54,7 +54,8 @@ const SettingsPanel = ({
 
   return (
     <Card
-      className={`!rounded-2xl h-full flex flex-col ${styleState.isMobile ? 'rounded-none border-none shadow-none' : ''}`}
+      className={`h-full flex flex-col ${styleState.isMobile ? 'rounded-none border-none shadow-none' : ''}`}
+      bordered={false}
       bodyStyle={{
         padding: styleState.isMobile ? '24px' : '24px 24px 16px 24px',
         height: '100%',

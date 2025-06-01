@@ -42,7 +42,7 @@ import {
 import { setStatusData } from '../helpers/data.js';
 import { stringToColor } from '../helpers/render.js';
 import { useSetTheme, useTheme } from '../context/Theme/index.js';
-import { StyleContext } from '../context/Style/index.js';
+import { useStyle, styleActions } from '../context/Style/index.js';
 import Text from '@douyinfe/semi-ui/lib/es/typography/text';
 
 // 自定义侧边栏按钮样式
@@ -95,13 +95,11 @@ const routerMap = {
 
 const SiderBar = () => {
   const { t } = useTranslation();
-  const [styleState, styleDispatch] = useContext(StyleContext);
+  const { state: styleState, dispatch: styleDispatch } = useStyle();
   const [statusState, statusDispatch] = useContext(StatusContext);
-  const defaultIsCollapsed =
-    localStorage.getItem('default_collapse_sidebar') === 'true';
 
   const [selectedKeys, setSelectedKeys] = useState(['home']);
-  const [isCollapsed, setIsCollapsed] = useState(defaultIsCollapsed);
+  const [isCollapsed, setIsCollapsed] = useState(styleState.siderCollapsed);
   const [chatItems, setChatItems] = useState([]);
   const [openedKeys, setOpenedKeys] = useState([]);
   const theme = useTheme();
@@ -270,7 +268,7 @@ const SiderBar = () => {
 
     if (Array.isArray(chats) && chats.length > 0) {
       for (let i = 0; i < chats.length; i++) {
-        newRouterMap['chat' + i] = '/chat/' + i;
+        newRouterMap['chat' + i] = '/console/chat/' + i;
       }
     }
 
@@ -291,7 +289,7 @@ const SiderBar = () => {
             for (let key in chats[i]) {
               chat.text = key;
               chat.itemKey = 'chat' + i;
-              chat.to = '/chat/' + i;
+              chat.to = '/console/chat/' + i;
             }
             chatItems.push(chat);
           }
@@ -315,7 +313,7 @@ const SiderBar = () => {
     );
 
     // Handle chat routes
-    if (!matchingKey && currentPath.startsWith('/chat/')) {
+    if (!matchingKey && currentPath.startsWith('/console/chat/')) {
       const chatIndex = currentPath.split('/').pop();
       if (!isNaN(chatIndex)) {
         matchingKey = 'chat' + chatIndex;
@@ -365,15 +363,11 @@ const SiderBar = () => {
           overflowY: 'auto',
           WebkitOverflowScrolling: 'touch', // Improve scrolling on iOS devices
         }}
-        defaultIsCollapsed={
-          localStorage.getItem('default_collapse_sidebar') === 'true'
-        }
+        defaultIsCollapsed={styleState.siderCollapsed}
         isCollapsed={isCollapsed}
         onCollapseChange={(collapsed) => {
           setIsCollapsed(collapsed);
-          // styleDispatch({ type: 'SET_SIDER', payload: true });
-          styleDispatch({ type: 'SET_SIDER_COLLAPSED', payload: collapsed });
-          localStorage.setItem('default_collapse_sidebar', collapsed);
+          styleDispatch(styleActions.setSiderCollapsed(collapsed));
 
           // 确保在收起侧边栏时有选中的项目，避免不必要的计算
           if (selectedKeys.length === 0) {
@@ -384,7 +378,7 @@ const SiderBar = () => {
 
             if (matchingKey) {
               setSelectedKeys([matchingKey]);
-            } else if (currentPath.startsWith('/chat/')) {
+            } else if (currentPath.startsWith('/console/chat/')) {
               setSelectedKeys(['chat']);
             } else {
               setSelectedKeys(['detail']); // 默认选中首页
@@ -406,12 +400,6 @@ const SiderBar = () => {
           );
         }}
         onSelect={(key) => {
-          if (key.itemKey.toString().startsWith('chat')) {
-            styleDispatch({ type: 'SET_INNER_PADDING', payload: false });
-          } else {
-            styleDispatch({ type: 'SET_INNER_PADDING', payload: true });
-          }
-
           // 如果点击的是已经展开的子菜单的父项，则收起子菜单
           if (openedKeys.includes(key.itemKey)) {
             setOpenedKeys(openedKeys.filter((k) => k !== key.itemKey));

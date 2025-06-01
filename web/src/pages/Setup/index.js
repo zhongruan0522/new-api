@@ -1,21 +1,13 @@
-import React, { useContext, useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   Card,
-  Col,
-  Row,
   Form,
   Button,
   Typography,
-  Space,
-  RadioGroup,
-  Radio,
   Modal,
   Banner,
 } from '@douyinfe/semi-ui';
-import { API, showError, showNotice, timestamp2string } from '../../helpers';
-import { StatusContext } from '../../context/Status';
-import { marked } from 'marked';
-import { StyleContext } from '../../context/Style/index.js';
+import { API, showError, showNotice } from '../../helpers';
 import { useTranslation } from 'react-i18next';
 import {
   IconHelpCircle,
@@ -24,9 +16,7 @@ import {
 } from '@douyinfe/semi-icons';
 
 const Setup = () => {
-  const { t, i18n } = useTranslation();
-  const [statusState] = useContext(StatusContext);
-  const [styleState, styleDispatch] = useContext(StyleContext);
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [selfUseModeInfoVisible, setUsageModeInfoVisible] = useState(false);
   const [setupStatus, setSetupStatus] = useState({

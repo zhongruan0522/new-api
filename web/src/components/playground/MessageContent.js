@@ -136,17 +136,9 @@ const MessageContent = ({
     !finalExtractedThinkingContent &&
     (!finalDisplayableFinalContent || finalDisplayableFinalContent.trim() === '')) {
     return (
-      <div className={`${className} flex items-center gap-2 sm:gap-4 p-4 sm:p-6 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl sm:rounded-2xl`}>
-        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center shadow-lg">
+      <div className={`${className} flex items-center gap-2 sm:gap-4 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl sm:rounded-2xl`}>
+        <div className="w-4 h-4 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center shadow-lg">
           <Loader2 className="animate-spin text-white" size={styleState.isMobile ? 16 : 20} />
-        </div>
-        <div className="flex flex-col">
-          <Typography.Text strong className="text-gray-800 text-sm sm:text-base">
-            {t('正在思考...')}
-          </Typography.Text>
-          <Typography.Text className="text-gray-500 text-xs sm:text-sm">
-            AI 正在分析您的问题
-          </Typography.Text>
         </div>
       </div>
     );

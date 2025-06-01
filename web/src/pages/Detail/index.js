@@ -6,7 +6,6 @@ import {
   Card,
   Form,
   Spin,
-  Typography,
   IconButton,
   Modal,
   Avatar,
@@ -40,17 +39,14 @@ import {
   modelToColor,
 } from '../../helpers/render';
 import { UserContext } from '../../context/User/index.js';
-import { StyleContext } from '../../context/Style/index.js';
 import { useTranslation } from 'react-i18next';
 
 const Detail = (props) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { Text } = Typography;
   const formRef = useRef();
   let now = new Date();
   const [userState, userDispatch] = useContext(UserContext);
-  const [styleState, styleDispatch] = useContext(StyleContext);
   const [inputs, setInputs] = useState({
     username: '',
     token_name: '',

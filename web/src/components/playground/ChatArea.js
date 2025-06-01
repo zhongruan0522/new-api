@@ -38,8 +38,9 @@ const ChatArea = ({
 
   return (
     <Card
-      className="!rounded-2xl h-full"
-      bodyStyle={{ padding: 0, height: 'calc(100vh - 108px)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
+      className="h-full"
+      bordered={false}
+      bodyStyle={{ padding: 0, height: 'calc(100vh - 66px)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
     >
       {/* 聊天头部 */}
       {styleState.isMobile ? (

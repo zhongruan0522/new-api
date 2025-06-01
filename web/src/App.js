@@ -272,7 +272,7 @@ function App() {
           }
         />
         <Route
-          path='/chat/:id?'
+          path='/console/chat/:id?'
           element={
             <Suspense fallback={<Loading></Loading>} key={location.pathname}>
               <Chat />

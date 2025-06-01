@@ -45,7 +45,6 @@ import {
 } from '../helpers/render';
 import Paragraph from '@douyinfe/semi-ui/lib/es/typography/paragraph';
 import { getLogOther } from '../helpers/other.js';
-import { StyleContext } from '../context/Style/index.js';
 import {
   IconRefresh,
   IconSetting,
@@ -765,7 +764,6 @@ const LogsTable = () => {
     );
   };
 
-  const [styleState, styleDispatch] = useContext(StyleContext);
   const [logs, setLogs] = useState([]);
   const [expandData, setExpandData] = useState({});
   const [showStat, setShowStat] = useState(false);

@@ -31,13 +31,13 @@ import {
 } from '@douyinfe/semi-ui';
 import { stringToColor } from '../helpers/render';
 import { StatusContext } from '../context/Status/index.js';
-import { StyleContext } from '../context/Style/index.js';
+import { useStyle, styleActions } from '../context/Style/index.js';
 
 const HeaderBar = () => {
   const { t, i18n } = useTranslation();
   const [userState, userDispatch] = useContext(UserContext);
   const [statusState, statusDispatch] = useContext(StatusContext);
-  const [styleState, styleDispatch] = useContext(StyleContext);
+  const { state: styleState, dispatch: styleDispatch } = useStyle();
   const [isLoading, setIsLoading] = useState(true);
   let navigate = useNavigate();
   const [currentLang, setCurrentLang] = useState(i18n.language);
@@ -152,8 +152,7 @@ const HeaderBar = () => {
 
   const handleNavLinkClick = (itemKey) => {
     if (itemKey === 'home') {
-      styleDispatch({ type: 'SET_INNER_PADDING', payload: false });
-      styleDispatch({ type: 'SET_SIDER', payload: false });
+      styleDispatch(styleActions.setSider(false));
     }
     setMobileMenuOpen(false);
   };
@@ -383,7 +382,7 @@ const HeaderBar = () => {
                 onClick={() => {
                   if (isConsoleRoute) {
                     // 控制侧边栏的显示/隐藏，无论是否移动设备
-                    styleDispatch({ type: 'TOGGLE_SIDER' });
+                    styleDispatch(styleActions.toggleSider());
                   } else {
                     // 控制HeaderBar自己的移动菜单
                     setMobileMenuOpen(!mobileMenuOpen);
