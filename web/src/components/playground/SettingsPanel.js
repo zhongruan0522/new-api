@@ -130,6 +130,7 @@ const SettingsPanel = ({
             optionList={groups}
             renderOptionItem={renderGroupOption}
             style={{ width: '100%' }}
+            dropdownStyle={{ width: '100%', maxWidth: '100%' }}
             className="!rounded-lg"
             disabled={customRequestMode}
           />
@@ -159,6 +160,8 @@ const SettingsPanel = ({
             value={inputs.model}
             autoComplete='new-password'
             optionList={models}
+            style={{ width: '100%' }}
+            dropdownStyle={{ width: '100%', maxWidth: '100%' }}
             className="!rounded-lg"
             disabled={customRequestMode}
           />
