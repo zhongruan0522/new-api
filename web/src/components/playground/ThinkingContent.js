@@ -1,6 +1,6 @@
 import React from 'react';
 import { Typography } from '@douyinfe/semi-ui';
-import MarkdownRenderer from '../common/MarkdownRenderer';
+import MarkdownRenderer from '../common/markdown/MarkdownRenderer';
 import { ChevronRight, ChevronUp, Brain, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
@@ -21,7 +21,7 @@ const ThinkingContent = ({
   return (
     <div className="rounded-xl sm:rounded-2xl mb-2 sm:mb-4 overflow-hidden shadow-sm backdrop-blur-sm">
       <div
-        className="flex items-center justify-between p-3 sm:p-5 cursor-pointer hover:bg-gradient-to-r hover:from-white/20 hover:to-purple-50/30 transition-all"
+        className="flex items-center justify-between p-3 cursor-pointer hover:bg-gradient-to-r hover:from-white/20 hover:to-purple-50/30 transition-all"
         style={{
           background: 'linear-gradient(135deg, #4c1d95 0%, #6d28d9 50%, #7c3aed 100%)',
           position: 'relative'
