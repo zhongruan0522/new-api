@@ -206,14 +206,23 @@ const ConfigManager = ({
   // 桌面端显示紧凑的按钮组
   return (
     <div className="space-y-3">
-      {/* 配置状态信息，使用较小的字体 */}
-      <div className="text-center">
+      {/* 配置状态信息和重置按钮 */}
+      <div className="flex items-center justify-between">
         <Typography.Text className="text-xs text-gray-500">
           {getConfigStatus()}
         </Typography.Text>
+        <Button
+          icon={<RotateCcw size={12} />}
+          size="small"
+          theme="borderless"
+          type="danger"
+          onClick={handleReset}
+          className="!rounded-lg !text-xs !h-7 !px-2"
+          style={{ minWidth: 'auto' }}
+        />
       </div>
 
-      {/* 紧凑的按钮布局 */}
+      {/* 导出和导入按钮 */}
       <div className="flex gap-2">
         <Button
           icon={<Download size={12} />}
@@ -236,16 +245,6 @@ const ConfigManager = ({
         >
           {t('导入')}
         </Button>
-
-        <Button
-          icon={<RotateCcw size={12} />}
-          size="small"
-          theme="borderless"
-          type="danger"
-          onClick={handleReset}
-          className="!rounded-lg !text-xs !h-7 !px-2"
-          style={{ minWidth: 'auto' }}
-        />
       </div>
 
       <input
