@@ -12,6 +12,7 @@ export const OptimizedMessageContent = React.memo(MessageContent, (prevProps, ne
     prevProps.message.content === nextProps.message.content &&
     prevProps.message.status === nextProps.message.status &&
     prevProps.message.role === nextProps.message.role &&
+    prevProps.message.reasoningContent === nextProps.message.reasoningContent &&
     prevProps.message.isReasoningExpanded === nextProps.message.isReasoningExpanded &&
     prevProps.isEditing === nextProps.isEditing &&
     prevProps.editValue === nextProps.editValue &&

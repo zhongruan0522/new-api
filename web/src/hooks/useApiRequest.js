@@ -38,6 +38,8 @@ export const useApiRequest = (
   const streamMessageUpdate = useCallback((textChunk, type) => {
     setMessage(prevMessage => {
       const lastMessage = prevMessage[prevMessage.length - 1];
+      if (!lastMessage) return prevMessage;
+      if (lastMessage.role !== 'assistant') return prevMessage;
       if (lastMessage.status === MESSAGE_STATUS.ERROR) {
         return prevMessage;
       }

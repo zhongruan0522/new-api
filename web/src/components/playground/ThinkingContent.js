@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Typography } from '@douyinfe/semi-ui';
 import MarkdownRenderer from '../common/markdown/MarkdownRenderer';
 import { ChevronRight, ChevronUp, Brain, Loader2 } from 'lucide-react';
@@ -12,11 +12,18 @@ const ThinkingContent = ({
   onToggleReasoningExpansion
 }) => {
   const { t } = useTranslation();
+  const scrollRef = useRef(null);
 
   if (!finalExtractedThinkingContent) return null;
 
   const isThinkingStatus = message.status === 'loading' || message.status === 'incomplete';
   const headerText = (isThinkingStatus && !message.isThinkingComplete) ? t('思考中...') : t('思考过程');
+
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [finalExtractedThinkingContent, message.isReasoningExpanded]);
 
   return (
     <div className="rounded-xl sm:rounded-2xl mb-2 sm:mb-4 overflow-hidden shadow-sm backdrop-blur-sm">
@@ -73,6 +80,7 @@ const ThinkingContent = ({
         {message.isReasoningExpanded && (
           <div className="p-3 sm:p-5 pt-2 sm:pt-4">
             <div
+              ref={scrollRef}
               className="bg-white/70 backdrop-blur-sm rounded-lg sm:rounded-xl p-2 shadow-inner overflow-x-auto overflow-y-auto thinking-content-scroll"
               style={{
                 maxHeight: '200px',
