@@ -61,7 +61,7 @@ const ImageUrlInput = ({ imageUrls, imageEnabled, onImageUrlsChange, onImageEnab
             type="primary"
             onClick={handleAddImageUrl}
             className="!rounded-full !w-4 !h-4 !p-0 !min-w-0"
-            disabled={!imageEnabled || imageUrls.length >= 5 || disabled}
+            disabled={!imageEnabled || disabled}
           />
         </div>
       </div>
@@ -72,15 +72,15 @@ const ImageUrlInput = ({ imageUrls, imageEnabled, onImageUrlsChange, onImageEnab
         </Typography.Text>
       ) : imageUrls.length === 0 ? (
         <Typography.Text className="text-xs text-gray-500 mb-2 block">
-          {disabled ? '图片功能在自定义请求体模式下不可用' : '点击 + 按钮添加图片URL，支持最多5张图片'}
+          {disabled ? '图片功能在自定义请求体模式下不可用' : '点击 + 按钮添加图片URL进行多模态对话'}
         </Typography.Text>
       ) : (
         <Typography.Text className="text-xs text-gray-500 mb-2 block">
-          已添加 {imageUrls.length}/5 张图片{disabled ? ' (自定义模式下不可用)' : ''}
+          已添加 {imageUrls.length} 张图片{disabled ? ' (自定义模式下不可用)' : ''}
         </Typography.Text>
       )}
 
-      <div className={`space-y-2 max-h-32 overflow-y-auto ${!imageEnabled || disabled ? 'opacity-50' : ''}`}>
+      <div className={`space-y-2 max-h-32 overflow-y-auto image-list-scroll ${!imageEnabled || disabled ? 'opacity-50' : ''}`}>
         {imageUrls.map((url, index) => (
           <div key={index} className="flex items-center gap-2">
             <div className="flex-1">

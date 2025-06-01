@@ -236,6 +236,25 @@ code {
   scrollbar-width: none;
 }
 
+/* 图片列表滚动条样式 */
+.image-list-scroll::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.image-list-scroll::-webkit-scrollbar-thumb {
+  background: var(--semi-color-tertiary-light-default);
+  border-radius: 3px;
+}
+
+.image-list-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--semi-color-tertiary);
+}
+
+.image-list-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
 /* 隐藏请求体 JSON TextArea 的滚动条 */
 .custom-request-textarea .semi-input::-webkit-scrollbar {
   display: none;
