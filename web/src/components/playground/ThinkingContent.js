@@ -76,7 +76,6 @@ const ThinkingContent = ({
               className="bg-white/70 backdrop-blur-sm rounded-lg sm:rounded-xl p-2 shadow-inner overflow-x-auto overflow-y-auto thinking-content-scroll"
               style={{
                 maxHeight: '200px',
-                minHeight: '100px',
                 scrollbarWidth: 'thin',
                 scrollbarColor: 'rgba(0, 0, 0, 0.3) transparent'
               }}
