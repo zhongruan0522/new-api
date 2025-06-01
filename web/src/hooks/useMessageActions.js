@@ -163,19 +163,25 @@ export const useMessageActions = (message, setMessage, onMessageSend) => {
 
   // 切换角色
   const handleRoleToggle = useCallback((targetMessage) => {
+    if (!(targetMessage.role === 'assistant' || targetMessage.role === 'system')) {
+      return;
+    }
+
+    const newRole = targetMessage.role === 'assistant' ? 'system' : 'assistant';
+
     setMessage(prevMessages => {
       return prevMessages.map(msg => {
         if (msg.id === targetMessage.id &&
           (msg.role === 'assistant' || msg.role === 'system')) {
-          const newRole = msg.role === 'assistant' ? 'system' : 'assistant';
-          Toast.success({
-            content: t(`已切换为${newRole === 'system' ? 'System' : 'Assistant'}角色`),
-            duration: 2,
-          });
           return { ...msg, role: newRole };
         }
         return msg;
       });
+    });
+
+    Toast.success({
+      content: t(`已切换为${newRole === 'system' ? 'System' : 'Assistant'}角色`),
+      duration: 2,
     });
   }, [setMessage, t]);
 

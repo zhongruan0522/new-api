@@ -413,7 +413,6 @@ const Playground = () => {
                 onMessageCopy={messageActions.handleMessageCopy}
                 onMessageReset={messageActions.handleMessageReset}
                 onMessageDelete={messageActions.handleMessageDelete}
-                onRoleToggle={messageActions.handleRoleToggle}
                 onStopGenerator={onStopGenerator}
                 onClearMessages={() => setMessage([])}
                 onToggleDebugPanel={() => setShowDebugPanel(!showDebugPanel)}
