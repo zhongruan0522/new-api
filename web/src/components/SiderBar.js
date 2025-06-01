@@ -249,7 +249,7 @@ const SiderBar = () => {
   const chatMenuItems = useMemo(
     () => [
       {
-        text: 'Playground',
+        text: t('操练场'),
         itemKey: 'playground',
         to: '/playground',
         icon: <IconTerminal />,
