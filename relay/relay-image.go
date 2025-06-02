@@ -41,6 +41,9 @@ func getAndValidImageRequest(c *gin.Context, info *relaycommon.RelayInfo) (*dto.
 				imageRequest.Quality = "standard"
 			}
 		}
+		if imageRequest.N == 0 {
+			imageRequest.N = 1
+		}
 	default:
 		err := common.UnmarshalBodyReusable(c, imageRequest)
 		if err != nil {
