@@ -308,3 +308,7 @@ code {
 .semi-chat-chatBox-action {
   column-gap: 0 !important;
 }
+
+.semi-chat-inputBox-clearButton.semi-button .semi-icon {
+  font-size: 20px !important;
+}
