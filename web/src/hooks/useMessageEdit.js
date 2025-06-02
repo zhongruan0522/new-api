@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useRef } from 'react';
 import { Toast, Modal } from '@douyinfe/semi-ui';
 import { useTranslation } from 'react-i18next';
 import { getTextContent, buildApiPayload, createLoadingAssistantMessage } from '../utils/messageUtils';
@@ -14,10 +14,12 @@ export const useMessageEdit = (
   const { t } = useTranslation();
   const [editingMessageId, setEditingMessageId] = useState(null);
   const [editValue, setEditValue] = useState('');
+  const editingMessageRef = useRef(null);
 
   const handleMessageEdit = useCallback((targetMessage) => {
     const editableContent = getTextContent(targetMessage);
     setEditingMessageId(targetMessage.id);
+    editingMessageRef.current = targetMessage;
     setEditValue(editableContent);
   }, []);
 
@@ -25,8 +27,11 @@ export const useMessageEdit = (
     if (!editingMessageId || !editValue.trim()) return;
 
     setMessage(prevMessages => {
-      const messageIndex = prevMessages.findIndex(msg => msg.id === editingMessageId);
-      if (messageIndex === -1) return prevMessages;
+      let messageIndex = prevMessages.findIndex(msg => msg === editingMessageRef.current);
+
+      if (messageIndex === -1) {
+        messageIndex = prevMessages.findIndex(msg => msg.id === editingMessageId);
+      }
 
       const targetMessage = prevMessages[messageIndex];
       let newContent;
@@ -82,12 +87,14 @@ export const useMessageEdit = (
     });
 
     setEditingMessageId(null);
+    editingMessageRef.current = null;
     setEditValue('');
     Toast.success({ content: t('消息已更新'), duration: 2 });
   }, [editingMessageId, editValue, t, inputs, parameterEnabled, sendRequest, setMessage, saveMessages]);
 
   const handleEditCancel = useCallback(() => {
     setEditingMessageId(null);
+    editingMessageRef.current = null;
     setEditValue('');
   }, []);
 
