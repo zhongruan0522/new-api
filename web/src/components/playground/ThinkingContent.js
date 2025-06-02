@@ -13,6 +13,7 @@ const ThinkingContent = ({
 }) => {
   const { t } = useTranslation();
   const scrollRef = useRef(null);
+  const lastContentRef = useRef('');
 
   if (!finalExtractedThinkingContent) return null;
 
@@ -24,6 +25,26 @@ const ThinkingContent = ({
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [finalExtractedThinkingContent, message.isReasoningExpanded]);
+
+  // 流式状态结束时重置
+  useEffect(() => {
+    if (!isThinkingStatus) {
+      lastContentRef.current = '';
+    }
+  }, [isThinkingStatus]);
+
+  // 获取上一次的内容长度
+  let prevLength = 0;
+  if (isThinkingStatus && lastContentRef.current) {
+    if (finalExtractedThinkingContent.startsWith(lastContentRef.current)) {
+      prevLength = lastContentRef.current.length;
+    }
+  }
+
+  // 更新最后内容的引用
+  if (isThinkingStatus) {
+    lastContentRef.current = finalExtractedThinkingContent;
+  }
 
   return (
     <div className="rounded-xl sm:rounded-2xl mb-2 sm:mb-4 overflow-hidden shadow-sm backdrop-blur-sm">
@@ -93,6 +114,7 @@ const ThinkingContent = ({
                   content={finalExtractedThinkingContent}
                   className=""
                   animated={isThinkingStatus}
+                  previousContentLength={prevLength}
                 />
               </div>
             </div>

@@ -315,6 +315,7 @@ function _MarkdownContent(props) {
     content,
     className,
     animated = false,
+    previousContentLength = 0,
   } = props;
 
   const escapedContent = useMemo(() => {
@@ -336,10 +337,10 @@ function _MarkdownContent(props) {
       ],
     ];
     if (animated) {
-      base.push(rehypeSplitWordsIntoSpans);
+      base.push([rehypeSplitWordsIntoSpans, { previousContentLength }]);
     }
     return base;
-  }, [animated]);
+  }, [animated, previousContentLength]);
 
   return (
     <ReactMarkdown
@@ -463,6 +464,7 @@ export function MarkdownRenderer(props) {
     className,
     style,
     animated = false,
+    previousContentLength = 0,
     ...otherProps
   } = props;
 
@@ -498,7 +500,12 @@ export function MarkdownRenderer(props) {
           正在渲染...
         </div>
       ) : (
-        <MarkdownContent content={content} className={className} animated={animated} />
+        <MarkdownContent
+          content={content}
+          className={className}
+          animated={animated}
+          previousContentLength={previousContentLength}
+        />
       )}
     </div>
   );

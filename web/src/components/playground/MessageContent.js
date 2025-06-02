@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import {
   Typography,
   TextArea,
@@ -25,6 +25,8 @@ const MessageContent = ({
   onEditValueChange
 }) => {
   const { t } = useTranslation();
+  const previousContentLengthRef = useRef(0);
+  const lastContentRef = useRef('');
 
   if (message.status === 'error') {
     let errorText;
@@ -127,6 +129,14 @@ const MessageContent = ({
 
   const finalExtractedThinkingContent = currentExtractedThinkingContent;
   const finalDisplayableFinalContent = currentDisplayableFinalContent;
+
+  // 流式状态结束时重置
+  useEffect(() => {
+    if (!isThinkingStatus) {
+      previousContentLengthRef.current = 0;
+      lastContentRef.current = '';
+    }
+  }, [isThinkingStatus]);
 
   if (message.role === 'assistant' &&
     isThinkingStatus &&
@@ -243,6 +253,7 @@ const MessageContent = ({
                       content={textContent.text}
                       className={message.role === 'user' ? 'user-message' : ''}
                       animated={false}
+                      previousContentLength={0}
                     />
                   </div>
                 )}
@@ -253,12 +264,27 @@ const MessageContent = ({
           if (typeof message.content === 'string') {
             if (message.role === 'assistant') {
               if (finalDisplayableFinalContent && finalDisplayableFinalContent.trim() !== '') {
+                // 获取上一次的内容长度
+                let prevLength = 0;
+                if (isThinkingStatus && lastContentRef.current) {
+                  // 只有当前内容包含上一次内容时，才使用上一次的长度
+                  if (finalDisplayableFinalContent.startsWith(lastContentRef.current)) {
+                    prevLength = lastContentRef.current.length;
+                  }
+                }
+
+                // 更新最后内容的引用
+                if (isThinkingStatus) {
+                  lastContentRef.current = finalDisplayableFinalContent;
+                }
+
                 return (
                   <div className="prose prose-xs sm:prose-sm prose-gray max-w-none overflow-x-auto text-xs sm:text-sm">
                     <MarkdownRenderer
                       content={finalDisplayableFinalContent}
                       className=""
                       animated={isThinkingStatus}
+                      previousContentLength={prevLength}
                     />
                   </div>
                 );
@@ -270,6 +296,7 @@ const MessageContent = ({
                     content={message.content}
                     className={message.role === 'user' ? 'user-message' : ''}
                     animated={false}
+                    previousContentLength={0}
                   />
                 </div>
               );
