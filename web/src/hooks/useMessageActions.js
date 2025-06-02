@@ -164,8 +164,8 @@ export const useMessageActions = (message, setMessage, onMessageSend, saveMessag
             updatedMessages = prevMessages.filter(msg => msg.id !== targetMessage.id);
           }
 
-          // 删除消息后保存
-          setTimeout(() => saveMessages(), 0);
+          // 删除消息后保存，传入更新后的消息列表
+          setTimeout(() => saveMessages(updatedMessages), 0);
           return updatedMessages;
         });
       },
@@ -189,8 +189,8 @@ export const useMessageActions = (message, setMessage, onMessageSend, saveMessag
         return msg;
       });
 
-      // 切换角色后保存
-      setTimeout(() => saveMessages(), 0);
+      // 切换角色后保存，传入更新后的消息列表
+      setTimeout(() => saveMessages(updatedMessages), 0);
       return updatedMessages;
     });
 

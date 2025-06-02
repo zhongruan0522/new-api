@@ -115,9 +115,9 @@ export const useApiRequest = (
         }
       ];
 
-      // 在消息完成时保存
+      // 在消息完成时保存，传入更新后的消息列表
       if (status === MESSAGE_STATUS.COMPLETE || status === MESSAGE_STATUS.ERROR) {
-        setTimeout(() => saveMessages(), 0);
+        setTimeout(() => saveMessages(updatedMessages), 0);
       }
 
       return updatedMessages;
@@ -375,8 +375,8 @@ export const useApiRequest = (
             }
           ];
 
-          // 停止生成时也保存
-          setTimeout(() => saveMessages(), 0);
+          // 停止生成时也保存，传入更新后的消息列表
+          setTimeout(() => saveMessages(updatedMessages), 0);
 
           return updatedMessages;
         }

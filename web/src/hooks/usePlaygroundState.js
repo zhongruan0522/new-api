@@ -64,9 +64,10 @@ export const usePlaygroundState = () => {
     }));
   }, []);
 
-  // 消息保存函数 - 改为立即保存
-  const saveMessagesImmediately = useCallback(() => {
-    saveMessages(message);
+  // 消息保存函数 - 改为立即保存，可以接受参数
+  const saveMessagesImmediately = useCallback((messagesToSave) => {
+    // 如果提供了参数，使用参数；否则使用当前状态
+    saveMessages(messagesToSave || message);
   }, [message]);
 
   // 配置保存
@@ -190,7 +191,7 @@ export const usePlaygroundState = () => {
     handleInputChange,
     handleParameterToggle,
     debouncedSaveConfig,
-    saveMessagesImmediately,  // 改为导出立即保存函数
+    saveMessagesImmediately,
     handleConfigImport,
     handleConfigReset,
   };

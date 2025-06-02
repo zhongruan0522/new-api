@@ -57,8 +57,8 @@ export const useMessageEdit = (
             onOk: () => {
               const messagesUntilUser = updatedMessages.slice(0, messageIndex + 1);
               setMessage(messagesUntilUser);
-              // 编辑后保存（重新生成的情况）
-              setTimeout(() => saveMessages(), 0);
+              // 编辑后保存（重新生成的情况），传入更新后的消息列表
+              setTimeout(() => saveMessages(messagesUntilUser), 0);
 
               setTimeout(() => {
                 const payload = buildApiPayload(messagesUntilUser, null, inputs, parameterEnabled);
@@ -68,16 +68,16 @@ export const useMessageEdit = (
             },
             onCancel: () => {
               setMessage(updatedMessages);
-              // 编辑后保存（仅保存的情况）
-              setTimeout(() => saveMessages(), 0);
+              // 编辑后保存（仅保存的情况），传入更新后的消息列表
+              setTimeout(() => saveMessages(updatedMessages), 0);
             }
           });
           return prevMessages;
         }
       }
 
-      // 编辑后保存（普通情况）
-      setTimeout(() => saveMessages(), 0);
+      // 编辑后保存（普通情况），传入更新后的消息列表
+      setTimeout(() => saveMessages(updatedMessages), 0);
       return updatedMessages;
     });
 

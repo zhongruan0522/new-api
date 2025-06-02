@@ -214,8 +214,8 @@ const Playground = () => {
           // 发送自定义请求体
           sendRequest(customPayload, customPayload.stream !== false);
 
-          // 发送消息后保存
-          setTimeout(() => saveMessagesImmediately(), 0);
+          // 发送消息后保存，传入新消息列表
+          setTimeout(() => saveMessagesImmediately(newMessages), 0);
 
           return newMessages;
         });
@@ -245,10 +245,11 @@ const Playground = () => {
         }, 100);
       }
 
-      // 发送消息后保存
-      setTimeout(() => saveMessagesImmediately(), 0);
+      // 发送消息后保存，传入新消息列表（包含用户消息和加载消息）
+      const messagesWithLoading = [...newMessages, loadingMessage];
+      setTimeout(() => saveMessagesImmediately(messagesWithLoading), 0);
 
-      return [...newMessages, loadingMessage];
+      return messagesWithLoading;
     });
   }
 
@@ -362,8 +363,8 @@ const Playground = () => {
   // 清空对话的处理函数
   const handleClearMessages = useCallback(() => {
     setMessage([]);
-    // 清空对话后保存
-    setTimeout(() => saveMessagesImmediately(), 0);
+    // 清空对话后保存，传入空数组
+    setTimeout(() => saveMessagesImmediately([]), 0);
   }, [setMessage, saveMessagesImmediately]);
 
   return (
