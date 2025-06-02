@@ -166,12 +166,8 @@ const Playground = () => {
       // 默认预览逻辑
       let messages = [...message];
 
-      // 如果没有用户消息，添加默认消息
-      if (messages.length === 0 || messages.every(msg => msg.role !== MESSAGE_ROLES.USER)) {
-        const validImageUrls = inputs.imageUrls ? inputs.imageUrls.filter(url => url.trim() !== '') : [];
-        const content = buildMessageContent('你好', validImageUrls, inputs.imageEnabled);
-        messages = [createMessage(MESSAGE_ROLES.USER, content)];
-      } else {
+      // 如果存在用户消息
+      if (!(messages.length === 0 || messages.every(msg => msg.role !== MESSAGE_ROLES.USER))) {
         // 处理最后一个用户消息的图片
         for (let i = messages.length - 1; i >= 0; i--) {
           if (messages[i].role === MESSAGE_ROLES.USER) {
