@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { DEFAULT_MESSAGES, DEFAULT_CONFIG, DEBUG_TABS } from '../utils/constants';
+import { DEFAULT_MESSAGES, DEFAULT_CONFIG, DEBUG_TABS, MESSAGE_STATUS } from '../utils/constants';
 import { loadConfig, saveConfig, loadMessages, saveMessages } from '../components/playground/configStorage';
+import { processIncompleteThinkTags } from '../utils/messageUtils';
 
 export const usePlaygroundState = () => {
   // 使用惰性初始化，确保只在组件首次挂载时加载配置和消息
@@ -136,6 +137,33 @@ export const usePlaygroundState = () => {
         clearTimeout(saveConfigTimeoutRef.current);
       }
     };
+  }, []);
+
+  // 页面首次加载时，若最后一条消息仍处于 LOADING/INCOMPLETE 状态，自动修复
+  useEffect(() => {
+    if (!Array.isArray(message) || message.length === 0) return;
+
+    const lastMsg = message[message.length - 1];
+    if (lastMsg.status === MESSAGE_STATUS.LOADING || lastMsg.status === MESSAGE_STATUS.INCOMPLETE) {
+      const processed = processIncompleteThinkTags(
+        lastMsg.content || '',
+        lastMsg.reasoningContent || ''
+      );
+
+      const fixedLastMsg = {
+        ...lastMsg,
+        status: MESSAGE_STATUS.COMPLETE,
+        content: processed.content,
+        reasoningContent: processed.reasoningContent || null,
+        isThinkingComplete: true,
+      };
+
+      const updatedMessages = [...message.slice(0, -1), fixedLastMsg];
+      setMessage(updatedMessages);
+
+      // 保存修复后的消息列表
+      setTimeout(() => saveMessagesImmediately(updatedMessages), 0);
+    }
   }, []);
 
   return {

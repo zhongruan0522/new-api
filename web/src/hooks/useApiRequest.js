@@ -348,41 +348,45 @@ export const useApiRequest = (
 
   // 停止生成
   const onStopGenerator = useCallback(() => {
+    // 如果仍有活动的 SSE 连接，首先关闭
     if (sseSourceRef.current) {
       sseSourceRef.current.close();
       sseSourceRef.current = null;
-
-      setMessage(prevMessage => {
-        const lastMessage = prevMessage[prevMessage.length - 1];
-        if (lastMessage.status === MESSAGE_STATUS.LOADING ||
-          lastMessage.status === MESSAGE_STATUS.INCOMPLETE) {
-
-          const processed = processIncompleteThinkTags(
-            lastMessage.content || '',
-            lastMessage.reasoningContent || ''
-          );
-
-          const autoCollapseState = applyAutoCollapseLogic(lastMessage, true);
-
-          const updatedMessages = [
-            ...prevMessage.slice(0, -1),
-            {
-              ...lastMessage,
-              status: MESSAGE_STATUS.COMPLETE,
-              reasoningContent: processed.reasoningContent || null,
-              content: processed.content,
-              ...autoCollapseState,
-            }
-          ];
-
-          // 停止生成时也保存，传入更新后的消息列表
-          setTimeout(() => saveMessages(updatedMessages), 0);
-
-          return updatedMessages;
-        }
-        return prevMessage;
-      });
     }
+
+    // 无论是否存在 SSE 连接，都尝试处理最后一条正在生成的消息
+    setMessage(prevMessage => {
+      if (prevMessage.length === 0) return prevMessage;
+      const lastMessage = prevMessage[prevMessage.length - 1];
+
+      if (lastMessage.status === MESSAGE_STATUS.LOADING ||
+        lastMessage.status === MESSAGE_STATUS.INCOMPLETE) {
+
+        const processed = processIncompleteThinkTags(
+          lastMessage.content || '',
+          lastMessage.reasoningContent || ''
+        );
+
+        const autoCollapseState = applyAutoCollapseLogic(lastMessage, true);
+
+        const updatedMessages = [
+          ...prevMessage.slice(0, -1),
+          {
+            ...lastMessage,
+            status: MESSAGE_STATUS.COMPLETE,
+            reasoningContent: processed.reasoningContent || null,
+            content: processed.content,
+            ...autoCollapseState,
+          }
+        ];
+
+        // 停止生成时也保存，传入更新后的消息列表
+        setTimeout(() => saveMessages(updatedMessages), 0);
+
+        return updatedMessages;
+      }
+      return prevMessage;
+    });
   }, [setMessage, applyAutoCollapseLogic, saveMessages]);
 
   // 发送请求
