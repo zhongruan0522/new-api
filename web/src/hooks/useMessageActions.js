@@ -88,7 +88,14 @@ export const useMessageActions = (message, setMessage, onMessageSend, saveMessag
   // 重新生成消息
   const handleMessageReset = useCallback((targetMessage) => {
     setMessage(prevMessages => {
-      const messageIndex = prevMessages.findIndex(msg => msg.id === targetMessage.id);
+      // 使用引用查找索引，防止重复 id 造成误匹配
+      let messageIndex = prevMessages.findIndex(msg => msg === targetMessage);
+
+      // 回退到 id 匹配（兼容不同引用场景）
+      if (messageIndex === -1) {
+        messageIndex = prevMessages.findIndex(msg => msg.id === targetMessage.id);
+      }
+
       if (messageIndex === -1) return prevMessages;
 
       if (targetMessage.role === 'user') {
@@ -135,7 +142,14 @@ export const useMessageActions = (message, setMessage, onMessageSend, saveMessag
       },
       onOk: () => {
         setMessage(prevMessages => {
-          const messageIndex = prevMessages.findIndex(msg => msg.id === targetMessage.id);
+          // 使用引用查找索引，防止重复 id 造成误匹配
+          let messageIndex = prevMessages.findIndex(msg => msg === targetMessage);
+
+          // 回退到 id 匹配（兼容不同引用场景）
+          if (messageIndex === -1) {
+            messageIndex = prevMessages.findIndex(msg => msg.id === targetMessage.id);
+          }
+
           if (messageIndex === -1) return prevMessages;
 
           let updatedMessages;
