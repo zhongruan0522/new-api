@@ -122,7 +122,10 @@ export const usePlaygroundState = () => {
 
     // 只有在明确指定时才重置消息
     if (resetMessages) {
-      setMessage(DEFAULT_MESSAGES);
+      setMessage([]);
+      setTimeout(() => {
+        setMessage(DEFAULT_MESSAGES);
+      }, 0);
     }
   }, []);
 
@@ -132,10 +135,6 @@ export const usePlaygroundState = () => {
       if (saveConfigTimeoutRef.current) {
         clearTimeout(saveConfigTimeoutRef.current);
       }
-      // 移除消息保存定时器的清理
-      // if (saveMessagesTimeoutRef.current) {
-      //   clearTimeout(saveMessagesTimeoutRef.current);
-      // }
     };
   }, []);
 
