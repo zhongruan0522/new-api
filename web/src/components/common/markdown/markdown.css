@@ -424,13 +424,21 @@ pre:hover .copy-code-button {
 @keyframes fade-in {
   0% {
     opacity: 0;
+    transform: translateY(6px) scale(0.98);
+    filter: blur(3px);
   }
-
+  60% {
+    opacity: 0.85;
+    filter: blur(0.5px);
+  }
   100% {
     opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
   }
 }
 
 .animate-fade-in {
-  animation: fade-in 0.4s ease-in-out both;
+  animation: fade-in 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+  will-change: opacity, transform;
 }
