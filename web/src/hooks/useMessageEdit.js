@@ -8,7 +8,8 @@ export const useMessageEdit = (
   setMessage,
   inputs,
   parameterEnabled,
-  sendRequest
+  sendRequest,
+  saveMessages
 ) => {
   const { t } = useTranslation();
   const [editingMessageId, setEditingMessageId] = useState(null);
@@ -56,6 +57,8 @@ export const useMessageEdit = (
             onOk: () => {
               const messagesUntilUser = updatedMessages.slice(0, messageIndex + 1);
               setMessage(messagesUntilUser);
+              // 编辑后保存（重新生成的情况）
+              setTimeout(() => saveMessages(), 0);
 
               setTimeout(() => {
                 const payload = buildApiPayload(messagesUntilUser, null, inputs, parameterEnabled);
@@ -63,19 +66,25 @@ export const useMessageEdit = (
                 sendRequest(payload, inputs.stream);
               }, 100);
             },
-            onCancel: () => setMessage(updatedMessages)
+            onCancel: () => {
+              setMessage(updatedMessages);
+              // 编辑后保存（仅保存的情况）
+              setTimeout(() => saveMessages(), 0);
+            }
           });
           return prevMessages;
         }
       }
 
+      // 编辑后保存（普通情况）
+      setTimeout(() => saveMessages(), 0);
       return updatedMessages;
     });
 
     setEditingMessageId(null);
     setEditValue('');
     Toast.success({ content: t('消息已更新'), duration: 2 });
-  }, [editingMessageId, editValue, t, inputs, parameterEnabled, sendRequest, setMessage]);
+  }, [editingMessageId, editValue, t, inputs, parameterEnabled, sendRequest, setMessage, saveMessages]);
 
   const handleEditCancel = useCallback(() => {
     setEditingMessageId(null);

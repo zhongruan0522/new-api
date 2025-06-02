@@ -13,7 +13,6 @@ export const saveConfig = (config) => {
       timestamp: new Date().toISOString(),
     };
     localStorage.setItem(STORAGE_KEYS.CONFIG, JSON.stringify(configToSave));
-    console.log('配置已保存到本地存储');
   } catch (error) {
     console.error('保存配置失败:', error);
   }
@@ -30,7 +29,6 @@ export const saveMessages = (messages) => {
       timestamp: new Date().toISOString(),
     };
     localStorage.setItem(STORAGE_KEYS.MESSAGES, JSON.stringify(messagesToSave));
-    console.log('消息已保存到本地存储');
   } catch (error) {
     console.error('保存消息失败:', error);
   }
@@ -60,14 +58,12 @@ export const loadConfig = () => {
         customRequestBody: parsedConfig.customRequestBody || DEFAULT_CONFIG.customRequestBody,
       };
 
-      console.log('配置已从本地存储加载');
       return mergedConfig;
     }
   } catch (error) {
     console.error('加载配置失败:', error);
   }
 
-  console.log('使用默认配置');
   return DEFAULT_CONFIG;
 };
 
@@ -80,14 +76,12 @@ export const loadMessages = () => {
     const savedMessages = localStorage.getItem(STORAGE_KEYS.MESSAGES);
     if (savedMessages) {
       const parsedMessages = JSON.parse(savedMessages);
-      console.log('消息已从本地存储加载');
       return parsedMessages.messages || null;
     }
   } catch (error) {
     console.error('加载消息失败:', error);
   }
 
-  console.log('没有找到保存的消息');
   return null;
 };
 
@@ -98,7 +92,6 @@ export const clearConfig = () => {
   try {
     localStorage.removeItem(STORAGE_KEYS.CONFIG);
     localStorage.removeItem(STORAGE_KEYS.MESSAGES); // 同时清除消息
-    console.log('配置和消息已清除');
   } catch (error) {
     console.error('清除配置失败:', error);
   }
@@ -110,7 +103,6 @@ export const clearConfig = () => {
 export const clearMessages = () => {
   try {
     localStorage.removeItem(STORAGE_KEYS.MESSAGES);
-    console.log('消息已清除');
   } catch (error) {
     console.error('清除消息失败:', error);
   }
@@ -170,7 +162,6 @@ export const exportConfig = (config, messages = null) => {
 
     URL.revokeObjectURL(link.href);
 
-    console.log('配置已导出');
   } catch (error) {
     console.error('导出配置失败:', error);
   }
@@ -195,7 +186,6 @@ export const importConfig = (file) => {
               saveMessages(importedConfig.messages);
             }
 
-            console.log('配置已从文件导入');
             resolve(importedConfig);
           } else {
             reject(new Error('配置文件格式无效'));

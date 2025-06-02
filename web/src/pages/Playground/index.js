@@ -83,6 +83,7 @@ const Playground = () => {
     handleInputChange,
     handleParameterToggle,
     debouncedSaveConfig,
+    saveMessagesImmediately,
     handleConfigImport,
     handleConfigReset,
     setShowSettings,
@@ -103,7 +104,8 @@ const Playground = () => {
     setMessage,
     setDebugData,
     setActiveDebugTab,
-    sseSourceRef
+    sseSourceRef,
+    saveMessagesImmediately
   );
 
   // 数据加载
@@ -117,7 +119,7 @@ const Playground = () => {
     handleMessageEdit,
     handleEditSave,
     handleEditCancel
-  } = useMessageEdit(setMessage, inputs, parameterEnabled, sendRequest);
+  } = useMessageEdit(setMessage, inputs, parameterEnabled, sendRequest, saveMessagesImmediately);
 
   // 消息和自定义请求体同步
   const { syncMessageToCustomBody, syncCustomBodyToMessage } = useSyncMessageAndCustomBody(
@@ -147,7 +149,7 @@ const Playground = () => {
   };
 
   // 消息操作
-  const messageActions = useMessageActions(message, setMessage, onMessageSend);
+  const messageActions = useMessageActions(message, setMessage, onMessageSend, saveMessagesImmediately);
 
   // 构建预览请求体
   const constructPreviewPayload = useCallback(() => {
@@ -212,6 +214,9 @@ const Playground = () => {
           // 发送自定义请求体
           sendRequest(customPayload, customPayload.stream !== false);
 
+          // 发送消息后保存
+          setTimeout(() => saveMessagesImmediately(), 0);
+
           return newMessages;
         });
         return;
@@ -239,6 +244,9 @@ const Playground = () => {
           handleInputChange('imageEnabled', false);
         }, 100);
       }
+
+      // 发送消息后保存
+      setTimeout(() => saveMessagesImmediately(), 0);
 
       return [...newMessages, loadingMessage];
     });
@@ -351,6 +359,13 @@ const Playground = () => {
     debouncedSaveConfig();
   }, [inputs, parameterEnabled, showDebugPanel, customRequestMode, customRequestBody, debouncedSaveConfig]);
 
+  // 清空对话的处理函数
+  const handleClearMessages = useCallback(() => {
+    setMessage([]);
+    // 清空对话后保存
+    setTimeout(() => saveMessagesImmediately(), 0);
+  }, [setMessage, saveMessagesImmediately]);
+
   return (
     <div className="h-full bg-gray-50">
       <Layout style={{ height: '100%', background: 'transparent' }} className="flex flex-col md:flex-row">
@@ -413,7 +428,7 @@ const Playground = () => {
                 onMessageReset={messageActions.handleMessageReset}
                 onMessageDelete={messageActions.handleMessageDelete}
                 onStopGenerator={onStopGenerator}
-                onClearMessages={() => setMessage([])}
+                onClearMessages={handleClearMessages}
                 onToggleDebugPanel={() => setShowDebugPanel(!showDebugPanel)}
                 renderCustomChatContent={renderCustomChatContent}
                 renderChatBoxAction={renderChatBoxAction}

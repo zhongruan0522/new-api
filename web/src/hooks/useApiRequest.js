@@ -20,7 +20,8 @@ export const useApiRequest = (
   setMessage,
   setDebugData,
   setActiveDebugTab,
-  sseSourceRef
+  sseSourceRef,
+  saveMessages
 ) => {
   const { t } = useTranslation();
 
@@ -105,7 +106,7 @@ export const useApiRequest = (
 
       const autoCollapseState = applyAutoCollapseLogic(lastMessage, true);
 
-      return [
+      const updatedMessages = [
         ...prevMessage.slice(0, -1),
         {
           ...lastMessage,
@@ -113,8 +114,15 @@ export const useApiRequest = (
           ...autoCollapseState,
         }
       ];
+
+      // 在消息完成时保存
+      if (status === MESSAGE_STATUS.COMPLETE || status === MESSAGE_STATUS.ERROR) {
+        setTimeout(() => saveMessages(), 0);
+      }
+
+      return updatedMessages;
     });
-  }, [setMessage, applyAutoCollapseLogic]);
+  }, [setMessage, applyAutoCollapseLogic, saveMessages]);
 
   // 非流式请求
   const handleNonStreamRequest = useCallback(async (payload) => {
@@ -356,7 +364,7 @@ export const useApiRequest = (
 
           const autoCollapseState = applyAutoCollapseLogic(lastMessage, true);
 
-          return [
+          const updatedMessages = [
             ...prevMessage.slice(0, -1),
             {
               ...lastMessage,
@@ -366,11 +374,16 @@ export const useApiRequest = (
               ...autoCollapseState,
             }
           ];
+
+          // 停止生成时也保存
+          setTimeout(() => saveMessages(), 0);
+
+          return updatedMessages;
         }
         return prevMessage;
       });
     }
-  }, [setMessage, applyAutoCollapseLogic]);
+  }, [setMessage, applyAutoCollapseLogic, saveMessages]);
 
   // 发送请求
   const sendRequest = useCallback((payload, isStream) => {

@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { getTextContent } from '../utils/messageUtils';
 import { ERROR_MESSAGES } from '../utils/constants';
 
-export const useMessageActions = (message, setMessage, onMessageSend) => {
+export const useMessageActions = (message, setMessage, onMessageSend, saveMessages) => {
   const { t } = useTranslation();
 
   // 复制消息
@@ -138,6 +138,7 @@ export const useMessageActions = (message, setMessage, onMessageSend) => {
           const messageIndex = prevMessages.findIndex(msg => msg.id === targetMessage.id);
           if (messageIndex === -1) return prevMessages;
 
+          let updatedMessages;
           if (targetMessage.role === 'user' && messageIndex < prevMessages.length - 1) {
             const nextMessage = prevMessages[messageIndex + 1];
             if (nextMessage.role === 'assistant') {
@@ -145,21 +146,31 @@ export const useMessageActions = (message, setMessage, onMessageSend) => {
                 content: t('已删除消息及其回复'),
                 duration: 2,
               });
-              return prevMessages.filter((_, index) =>
+              updatedMessages = prevMessages.filter((_, index) =>
                 index !== messageIndex && index !== messageIndex + 1
               );
+            } else {
+              Toast.success({
+                content: t('消息已删除'),
+                duration: 2,
+              });
+              updatedMessages = prevMessages.filter(msg => msg.id !== targetMessage.id);
             }
+          } else {
+            Toast.success({
+              content: t('消息已删除'),
+              duration: 2,
+            });
+            updatedMessages = prevMessages.filter(msg => msg.id !== targetMessage.id);
           }
 
-          Toast.success({
-            content: t('消息已删除'),
-            duration: 2,
-          });
-          return prevMessages.filter(msg => msg.id !== targetMessage.id);
+          // 删除消息后保存
+          setTimeout(() => saveMessages(), 0);
+          return updatedMessages;
         });
       },
     });
-  }, [setMessage, t]);
+  }, [setMessage, t, saveMessages]);
 
   // 切换角色
   const handleRoleToggle = useCallback((targetMessage) => {
@@ -170,20 +181,24 @@ export const useMessageActions = (message, setMessage, onMessageSend) => {
     const newRole = targetMessage.role === 'assistant' ? 'system' : 'assistant';
 
     setMessage(prevMessages => {
-      return prevMessages.map(msg => {
+      const updatedMessages = prevMessages.map(msg => {
         if (msg.id === targetMessage.id &&
           (msg.role === 'assistant' || msg.role === 'system')) {
           return { ...msg, role: newRole };
         }
         return msg;
       });
+
+      // 切换角色后保存
+      setTimeout(() => saveMessages(), 0);
+      return updatedMessages;
     });
 
     Toast.success({
       content: t(`已切换为${newRole === 'system' ? 'System' : 'Assistant'}角色`),
       duration: 2,
     });
-  }, [setMessage, t]);
+  }, [setMessage, t, saveMessages]);
 
   return {
     handleMessageCopy,

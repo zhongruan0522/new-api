@@ -3,15 +3,9 @@ import { DEFAULT_MESSAGES, DEFAULT_CONFIG, DEBUG_TABS } from '../utils/constants
 import { loadConfig, saveConfig, loadMessages, saveMessages } from '../components/playground/configStorage';
 
 export const usePlaygroundState = () => {
-  // 使用 ref 缓存初始配置，只加载一次
-  const initialConfigRef = useRef(null);
-  if (!initialConfigRef.current) {
-    initialConfigRef.current = loadConfig();
-  }
-  const savedConfig = initialConfigRef.current;
-
-  // 加载保存的消息，如果没有则使用默认消息
-  const initialMessages = loadMessages() || DEFAULT_MESSAGES;
+  // 使用惰性初始化，确保只在组件首次挂载时加载配置和消息
+  const [savedConfig] = useState(() => loadConfig());
+  const [initialMessages] = useState(() => loadMessages() || DEFAULT_MESSAGES);
 
   // 基础配置状态
   const [inputs, setInputs] = useState(savedConfig.inputs || DEFAULT_CONFIG.inputs);
@@ -70,15 +64,9 @@ export const usePlaygroundState = () => {
     }));
   }, []);
 
-  // 消息保存函数
-  const debouncedSaveMessages = useCallback(() => {
-    if (saveMessagesTimeoutRef.current) {
-      clearTimeout(saveMessagesTimeoutRef.current);
-    }
-
-    saveMessagesTimeoutRef.current = setTimeout(() => {
-      saveMessages(message);
-    }, 1000);
+  // 消息保存函数 - 改为立即保存
+  const saveMessagesImmediately = useCallback(() => {
+    saveMessages(message);
   }, [message]);
 
   // 配置保存
@@ -137,20 +125,16 @@ export const usePlaygroundState = () => {
     }
   }, []);
 
-  // 监听消息变化并自动保存
-  useEffect(() => {
-    debouncedSaveMessages();
-  }, [debouncedSaveMessages]);
-
   // 清理定时器
   useEffect(() => {
     return () => {
       if (saveConfigTimeoutRef.current) {
         clearTimeout(saveConfigTimeoutRef.current);
       }
-      if (saveMessagesTimeoutRef.current) {
-        clearTimeout(saveMessagesTimeoutRef.current);
-      }
+      // 移除消息保存定时器的清理
+      // if (saveMessagesTimeoutRef.current) {
+      //   clearTimeout(saveMessagesTimeoutRef.current);
+      // }
     };
   }, []);
 
@@ -206,7 +190,7 @@ export const usePlaygroundState = () => {
     handleInputChange,
     handleParameterToggle,
     debouncedSaveConfig,
-    debouncedSaveMessages,
+    saveMessagesImmediately,  // 改为导出立即保存函数
     handleConfigImport,
     handleConfigReset,
   };
