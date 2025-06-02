@@ -26,7 +26,8 @@ export const OptimizedMessageActions = React.memo(MessageActions, (prevProps, ne
     prevProps.message.id === nextProps.message.id &&
     prevProps.message.role === nextProps.message.role &&
     prevProps.isAnyMessageGenerating === nextProps.isAnyMessageGenerating &&
-    prevProps.isEditing === nextProps.isEditing
+    prevProps.isEditing === nextProps.isEditing &&
+    prevProps.onMessageReset === nextProps.onMessageReset
   );
 });
 
