@@ -16,6 +16,7 @@ import { Button, Tooltip, Toast } from '@douyinfe/semi-ui';
 import { copy } from '../../../helpers/utils';
 import { IconCopy } from '@douyinfe/semi-icons';
 import { useTranslation } from 'react-i18next';
+import { rehypeSplitWordsIntoSpans } from '../../../utils/rehypeSplitWordsIntoSpans';
 
 mermaid.initialize({
   startOnLoad: false,
@@ -310,26 +311,40 @@ function tryWrapHtmlCode(text) {
 }
 
 function _MarkdownContent(props) {
+  const {
+    content,
+    className,
+    animated = false,
+  } = props;
+
   const escapedContent = useMemo(() => {
-    return tryWrapHtmlCode(escapeBrackets(props.content));
-  }, [props.content]);
+    return tryWrapHtmlCode(escapeBrackets(content));
+  }, [content]);
 
   // 判断是否为用户消息
-  const isUserMessage = props.className && props.className.includes('user-message');
+  const isUserMessage = className && className.includes('user-message');
+
+  const rehypePluginsBase = useMemo(() => {
+    const base = [
+      RehypeKatex,
+      [
+        RehypeHighlight,
+        {
+          detect: false,
+          ignoreMissing: true,
+        },
+      ],
+    ];
+    if (animated) {
+      base.push(rehypeSplitWordsIntoSpans);
+    }
+    return base;
+  }, [animated]);
 
   return (
     <ReactMarkdown
       remarkPlugins={[RemarkMath, RemarkGfm, RemarkBreaks]}
-      rehypePlugins={[
-        RehypeKatex,
-        [
-          RehypeHighlight,
-          {
-            detect: false,
-            ignoreMissing: true,
-          },
-        ],
-      ]}
+      rehypePlugins={rehypePluginsBase}
       components={{
         pre: PreCode,
         code: CustomCode,
@@ -447,6 +462,7 @@ export function MarkdownRenderer(props) {
     fontFamily = 'inherit',
     className,
     style,
+    animated = false,
     ...otherProps
   } = props;
 
@@ -482,7 +498,7 @@ export function MarkdownRenderer(props) {
           正在渲染...
         </div>
       ) : (
-        <MarkdownContent content={content} className={className} />
+        <MarkdownContent content={content} className={className} animated={animated} />
       )}
     </div>
   );

@@ -420,3 +420,17 @@ pre:hover .copy-code-button {
   margin: 12px 0;
   border-radius: 0 6px 6px 0;
 }
+
+@keyframes fade-in {
+  0% {
+    opacity: 0;
+  }
+
+  100% {
+    opacity: 1;
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.4s ease-in-out both;
+}

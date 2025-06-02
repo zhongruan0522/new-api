@@ -242,6 +242,7 @@ const MessageContent = ({
                     <MarkdownRenderer
                       content={textContent.text}
                       className={message.role === 'user' ? 'user-message' : ''}
+                      animated={false}
                     />
                   </div>
                 )}
@@ -257,6 +258,7 @@ const MessageContent = ({
                     <MarkdownRenderer
                       content={finalDisplayableFinalContent}
                       className=""
+                      animated={isThinkingStatus}
                     />
                   </div>
                 );
@@ -267,6 +269,7 @@ const MessageContent = ({
                   <MarkdownRenderer
                     content={message.content}
                     className={message.role === 'user' ? 'user-message' : ''}
+                    animated={false}
                   />
                 </div>
               );

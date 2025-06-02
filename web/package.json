@@ -40,6 +40,7 @@
     "semantic-ui-offline": "^2.5.0",
     "semantic-ui-react": "^2.1.3",
     "sse": "https://github.com/mpetazzoni/sse.js",
+    "unist-util-visit": "^5.0.0",
     "use-debounce": "^10.0.4"
   },
   "scripts": {

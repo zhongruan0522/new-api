@@ -92,6 +92,7 @@ const ThinkingContent = ({
                 <MarkdownRenderer
                   content={finalExtractedThinkingContent}
                   className=""
+                  animated={isThinkingStatus}
                 />
               </div>
             </div>
