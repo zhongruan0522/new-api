@@ -28,6 +28,15 @@ const MessageContent = ({
   const previousContentLengthRef = useRef(0);
   const lastContentRef = useRef('');
 
+  const isThinkingStatus = message.status === 'loading' || message.status === 'incomplete';
+
+  useEffect(() => {
+    if (!isThinkingStatus) {
+      previousContentLengthRef.current = 0;
+      lastContentRef.current = '';
+    }
+  }, [isThinkingStatus]);
+
   if (message.status === 'error') {
     let errorText;
 
@@ -51,7 +60,6 @@ const MessageContent = ({
     );
   }
 
-  const isThinkingStatus = message.status === 'loading' || message.status === 'incomplete';
   let currentExtractedThinkingContent = null;
   let currentDisplayableFinalContent = "";
   let thinkingSource = null;
@@ -129,14 +137,6 @@ const MessageContent = ({
 
   const finalExtractedThinkingContent = currentExtractedThinkingContent;
   const finalDisplayableFinalContent = currentDisplayableFinalContent;
-
-  // 流式状态结束时重置
-  useEffect(() => {
-    if (!isThinkingStatus) {
-      previousContentLengthRef.current = 0;
-      lastContentRef.current = '';
-    }
-  }, [isThinkingStatus]);
 
   if (message.role === 'assistant' &&
     isThinkingStatus &&

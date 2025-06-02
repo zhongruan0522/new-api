@@ -15,25 +15,23 @@ const ThinkingContent = ({
   const scrollRef = useRef(null);
   const lastContentRef = useRef('');
 
-  if (!finalExtractedThinkingContent) return null;
-
   const isThinkingStatus = message.status === 'loading' || message.status === 'incomplete';
   const headerText = (isThinkingStatus && !message.isThinkingComplete) ? t('思考中...') : t('思考过程');
 
   useEffect(() => {
-    if (scrollRef.current) {
+    if (scrollRef.current && finalExtractedThinkingContent && message.isReasoningExpanded) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [finalExtractedThinkingContent, message.isReasoningExpanded]);
 
-  // 流式状态结束时重置
   useEffect(() => {
     if (!isThinkingStatus) {
       lastContentRef.current = '';
     }
   }, [isThinkingStatus]);
 
-  // 获取上一次的内容长度
+  if (!finalExtractedThinkingContent) return null;
+
   let prevLength = 0;
   if (isThinkingStatus && lastContentRef.current) {
     if (finalExtractedThinkingContent.startsWith(lastContentRef.current)) {
@@ -41,7 +39,6 @@ const ThinkingContent = ({
     }
   }
 
-  // 更新最后内容的引用
   if (isThinkingStatus) {
     lastContentRef.current = finalExtractedThinkingContent;
   }
