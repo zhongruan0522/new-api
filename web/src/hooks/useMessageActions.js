@@ -100,7 +100,7 @@ export const useMessageActions = (message, setMessage, onMessageSend, saveMessag
         }, 100);
 
         return newMessages;
-      } else if (targetMessage.role === 'assistant') {
+      } else if (targetMessage.role === 'assistant' || targetMessage.role === 'system') {
         let userMessageIndex = messageIndex - 1;
         while (userMessageIndex >= 0 && prevMessages[userMessageIndex].role !== 'user') {
           userMessageIndex--;
