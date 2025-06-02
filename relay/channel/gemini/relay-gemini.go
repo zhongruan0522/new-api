@@ -18,6 +18,24 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+var geminiSupportedMimeTypes = map[string]bool{
+	"application/pdf": true,
+	"audio/mpeg":      true,
+	"audio/mp3":       true,
+	"audio/wav":       true,
+	"image/png":       true,
+	"image/jpeg":      true,
+	"text/plain":      true,
+	"video/mov":       true,
+	"video/mpeg":      true,
+	"video/mp4":       true,
+	"video/mpg":       true,
+	"video/avi":       true,
+	"video/wmv":       true,
+	"video/mpegps":    true,
+	"video/flv":       true,
+}
+
 // Setting safety to the lowest possible values since Gemini is already powerless enough
 func CovertGemini2OpenAI(textRequest dto.GeneralOpenAIRequest, info *relaycommon.RelayInfo) (*GeminiChatRequest, error) {
 
@@ -215,14 +233,20 @@ func CovertGemini2OpenAI(textRequest dto.GeneralOpenAIRequest, info *relaycommon
 				}
 				// 判断是否是url
 				if strings.HasPrefix(part.GetImageMedia().Url, "http") {
-					// 是url，获取图片的类型和base64编码的数据
+					// 是url，获取文件的类型和base64编码的数据
 					fileData, err := service.GetFileBase64FromUrl(part.GetImageMedia().Url)
 					if err != nil {
-						return nil, fmt.Errorf("get file base64 from url failed: %s", err.Error())
+						return nil, fmt.Errorf("get file base64 from url '%s' failed: %w", part.GetImageMedia().Url, err)
 					}
+
+					// 校验 MimeType 是否在 Gemini 支持的白名单中
+					if _, ok := geminiSupportedMimeTypes[strings.ToLower(fileData.MimeType)]; !ok {
+						return nil, fmt.Errorf("MIME type '%s' from URL '%s' is not supported by Gemini. Supported types are: %v", fileData.MimeType, part.GetImageMedia().Url, getSupportedMimeTypesList())
+					}
+
 					parts = append(parts, GeminiPart{
 						InlineData: &GeminiInlineData{
-							MimeType: fileData.MimeType,
+							MimeType: fileData.MimeType, // 使用原始的 MimeType，因为大小写可能对API有意义
 							Data:     fileData.Base64Data,
 						},
 					})
@@ -289,6 +313,15 @@ func CovertGemini2OpenAI(textRequest dto.GeneralOpenAIRequest, info *relaycommon
 	}
 
 	return &geminiRequest, nil
+}
+
+// Helper function to get a list of supported MIME types for error messages
+func getSupportedMimeTypesList() []string {
+	keys := make([]string, 0, len(geminiSupportedMimeTypes))
+	for k := range geminiSupportedMimeTypes {
+		keys = append(keys, k)
+	}
+	return keys
 }
 
 // cleanFunctionParameters recursively removes unsupported fields from Gemini function parameters.
