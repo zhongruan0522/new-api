@@ -1,6 +1,6 @@
 import i18next from 'i18next';
 import { Modal, Tag, Typography } from '@douyinfe/semi-ui';
-import { copy, isMobile, showSuccess } from './index.js';
+import { copy, isMobile, showSuccess } from './utils';
 import { visit } from 'unist-util-visit';
 
 export function renderText(text, limit) {

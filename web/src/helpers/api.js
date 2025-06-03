@@ -1,6 +1,6 @@
-import { getUserIdFromLocalStorage, showError } from './utils';
+import { getUserIdFromLocalStorage, showError, formatMessageForAPI, isValidMessage } from './utils';
 import axios from 'axios';
-import { formatMessageForAPI } from './index.js';
+import { MESSAGE_ROLES } from '../constants/playground.constants';
 
 export let API = axios.create({
   baseURL: import.meta.env.VITE_REACT_APP_SERVER_URL
