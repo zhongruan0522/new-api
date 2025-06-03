@@ -46,8 +46,8 @@ jobs:
             calciumion/new-api
             ghcr.io/${{ github.repository }}
           tags: |
-            type=raw,value=alpha,enable={{is_default_branch}}
-            type=raw,value=alpha-{{date 'YYYYMMDD'}}-{{sha}},enable={{is_default_branch}}
+            type=raw,value=alpha
+            type=raw,value=alpha-{{date 'YYYYMMDD'}}-{{sha}}
 
       - name: Build and push Docker images
         uses: docker/build-push-action@v5
