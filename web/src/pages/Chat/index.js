@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { useTokenKeys } from '../../components/fetchTokenKeys';
+import { useTokenKeys } from '../../hooks/useTokenKeys';
 import { Banner, Layout } from '@douyinfe/semi-ui';
 import { useParams } from 'react-router-dom';
 

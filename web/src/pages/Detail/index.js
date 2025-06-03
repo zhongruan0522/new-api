@@ -30,14 +30,12 @@ import {
   showError,
   timestamp2string,
   timestamp2string1,
-} from '../../helpers';
-import {
   getQuotaWithUnit,
   modelColorMap,
   renderNumber,
   renderQuota,
-  modelToColor,
-} from '../../helpers/render';
+  modelToColor
+} from '../../helpers';
 import { UserContext } from '../../context/User/index.js';
 import { useTranslation } from 'react-i18next';
 

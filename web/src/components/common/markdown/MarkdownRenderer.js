@@ -1,6 +1,6 @@
 import ReactMarkdown from 'react-markdown';
 import 'katex/dist/katex.min.css';
-import 'highlight.js/styles/default.css';
+import 'highlight.js/styles/github.css';
 import './markdown.css';
 import RemarkMath from 'remark-math';
 import RemarkBreaks from 'remark-breaks';
@@ -13,10 +13,9 @@ import React from 'react';
 import { useDebouncedCallback } from 'use-debounce';
 import clsx from 'clsx';
 import { Button, Tooltip, Toast } from '@douyinfe/semi-ui';
-import { copy } from '../../../helpers/utils';
+import { copy, rehypeSplitWordsIntoSpans } from '../../../helpers';
 import { IconCopy } from '@douyinfe/semi-icons';
 import { useTranslation } from 'react-i18next';
-import { rehypeSplitWordsIntoSpans } from '../../../utils/rehypeSplitWordsIntoSpans';
 
 mermaid.initialize({
   startOnLoad: false,

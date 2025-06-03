@@ -14,7 +14,7 @@ import {
   Settings,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { renderGroupOption } from '../../helpers/render.js';
+import { renderGroupOption } from '../../helpers';
 import ParameterControl from './ParameterControl';
 import ImageUrlInput from './ImageUrlInput';
 import ConfigManager from './ConfigManager';

@@ -17,8 +17,7 @@ import {
   IconSave,
   IconBolt,
 } from '@douyinfe/semi-icons';
-import { showError, showSuccess } from '../../../helpers';
-import { API } from '../../../helpers';
+import { API, showError, showSuccess } from '../../../helpers';
 import { useTranslation } from 'react-i18next';
 
 export default function ModelRatioNotSetEditor(props) {

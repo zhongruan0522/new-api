@@ -27,7 +27,7 @@ import {
   IconUser,
   IconCode,
 } from '@douyinfe/semi-icons';
-import { getChannelModels } from '../../components/utils.js';
+import { getChannelModels } from '../../helpers';
 import { useTranslation } from 'react-i18next';
 
 const { Text, Title } = Typography;

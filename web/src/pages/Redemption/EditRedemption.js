@@ -6,11 +6,9 @@ import {
   isMobile,
   showError,
   showSuccess,
-} from '../../helpers';
-import {
   renderQuota,
-  renderQuotaWithPrompt,
-} from '../../helpers/render';
+  renderQuotaWithPrompt
+} from '../../helpers';
 import {
   AutoComplete,
   Button,

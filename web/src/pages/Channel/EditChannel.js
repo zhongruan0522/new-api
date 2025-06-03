@@ -26,7 +26,7 @@ import {
   Card,
   Tag,
 } from '@douyinfe/semi-ui';
-import { getChannelModels } from '../../components/utils.js';
+import { getChannelModels } from '../../helpers';
 import {
   IconSave,
   IconClose,

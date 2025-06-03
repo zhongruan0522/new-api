@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { API, isMobile, showError, showSuccess } from '../../helpers';
-import { renderQuota, renderQuotaWithPrompt } from '../../helpers/render';
+import { API, isMobile, showError, showSuccess, renderQuota, renderQuotaWithPrompt } from '../../helpers';
 import {
   Button,
   Input,

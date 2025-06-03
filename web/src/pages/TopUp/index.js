@@ -1,10 +1,13 @@
 import React, { useEffect, useState, useContext } from 'react';
-import { API, showError, showInfo, showSuccess } from '../../helpers';
 import {
+  API,
+  showError,
+  showInfo,
+  showSuccess,
   renderQuota,
   renderQuotaWithAmount,
-  stringToColor,
-} from '../../helpers/render';
+  stringToColor
+} from '../../helpers';
 import {
   Layout,
   Typography,
@@ -262,7 +265,7 @@ const TopUp = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="bg-gray-50">
       <Layout>
         <Layout.Content>
           <Modal

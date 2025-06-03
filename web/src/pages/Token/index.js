@@ -1,5 +1,5 @@
 import React from 'react';
-import TokensTable from '../../components/TokensTable';
+import TokensTable from '../../components/table/TokensTable';
 
 const Token = () => {
   return (

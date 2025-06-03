@@ -1,20 +1,17 @@
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SSE } from 'sse';
-import { getUserIdFromLocalStorage } from '../helpers/index.js';
 import {
   API_ENDPOINTS,
   MESSAGE_STATUS,
   DEBUG_TABS
-} from '../utils/constants';
+} from '../constants/playground.constants';
 import {
-  buildApiPayload,
-  handleApiError
-} from '../utils/apiUtils';
-import {
+  getUserIdFromLocalStorage,
+  handleApiError,
   processThinkTags,
   processIncompleteThinkTags
-} from '../utils/messageUtils';
+} from '../helpers';
 
 export const useApiRequest = (
   setMessage,

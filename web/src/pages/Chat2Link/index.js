@@ -1,5 +1,5 @@
 import React from 'react';
-import { useTokenKeys } from '../../components/fetchTokenKeys';
+import { useTokenKeys } from '../../hooks/useTokenKeys';
 
 const chat2page = () => {
   const { keys, chatLink, serverAddress, isLoading } = useTokenKeys();

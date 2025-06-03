@@ -7,8 +7,9 @@ import { StatusProvider } from './context/Status';
 import { Layout } from '@douyinfe/semi-ui';
 import { ThemeProvider } from './context/Theme';
 import { StyleProvider } from './context/Style/index.js';
-import PageLayout from './components/PageLayout.js';
+import PageLayout from './components/layout/PageLayout.js';
 import './i18n/i18n.js';
+import './index.css';
 
 // initialization
 
