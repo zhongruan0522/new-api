@@ -1,8 +1,8 @@
-import React, { lazy, Suspense, useContext, useEffect } from 'react';
+import React, { lazy, Suspense } from 'react';
 import { Route, Routes, useLocation } from 'react-router-dom';
 import Loading from './components/Loading';
 import User from './pages/User';
-import { PrivateRoute } from './components/PrivateRoute';
+import { AuthRedirect, PrivateRoute } from './helpers';
 import RegisterForm from './components/RegisterForm';
 import LoginForm from './components/LoginForm';
 import NotFound from './pages/NotFound';
@@ -18,7 +18,6 @@ import TopUp from './pages/TopUp';
 import Log from './pages/Log';
 import Chat from './pages/Chat';
 import Chat2Link from './pages/Chat2Link';
-import { Layout } from '@douyinfe/semi-ui';
 import Midjourney from './pages/Midjourney';
 import Pricing from './pages/Pricing/index.js';
 import Task from './pages/Task/index.js';
@@ -27,7 +26,6 @@ import OAuth2Callback from './components/OAuth2Callback.js';
 import PersonalSetting from './components/PersonalSetting.js';
 import Setup from './pages/Setup/index.js';
 import SetupCheck from './components/SetupCheck';
-import AuthRedirect from './components/AuthRedirect';
 
 const Home = lazy(() => import('./pages/Home'));
 const Detail = lazy(() => import('./pages/Detail'));
