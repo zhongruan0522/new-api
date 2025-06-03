@@ -9,13 +9,11 @@ import {
   showSuccess,
   updateAPI,
   getSystemName,
-  setUserData
-} from '../helpers';
-import {
+  setUserData,
   onGitHubOAuthClicked,
   onOIDCClicked,
-  onLinuxDOOAuthClicked,
-} from './utils';
+  onLinuxDOOAuthClicked
+} from '../helpers';
 import Turnstile from 'react-turnstile';
 import {
   Button,

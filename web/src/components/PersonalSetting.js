@@ -11,15 +11,13 @@ import {
   getQuotaPerUnit,
   renderQuota,
   renderQuotaWithPrompt,
-  stringToColor
+  stringToColor,
+  onGitHubOAuthClicked,
+  onOIDCClicked,
+  onLinuxDOOAuthClicked
 } from '../helpers';
 import Turnstile from 'react-turnstile';
 import { UserContext } from '../context/User';
-import {
-  onGitHubOAuthClicked,
-  onOIDCClicked,
-  onLinuxDOOAuthClicked,
-} from './utils';
 import {
   Avatar,
   Banner,
