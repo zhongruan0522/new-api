@@ -46,7 +46,7 @@ import {
   IconCopy,
   IconSmallTriangleRight
 } from '@douyinfe/semi-icons';
-import { loadChannelModels } from './utils.js';
+import { loadChannelModels } from '../helpers';
 import EditTagModal from '../pages/Channel/EditTagModal.js';
 import { useTranslation } from 'react-i18next';
 

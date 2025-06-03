@@ -26,7 +26,7 @@ import {
   onGitHubOAuthClicked,
   onLinuxDOOAuthClicked,
   onOIDCClicked,
-} from './utils.js';
+} from '../helpers';
 import OIDCIcon from './common/logo/OIDCIcon.js';
 import LinuxDoIcon from './common/logo/LinuxDoIcon.js';
 import WeChatIcon from './common/logo/WeChatIcon.js';
