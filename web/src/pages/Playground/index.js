@@ -22,14 +22,14 @@ import {
   DEFAULT_MESSAGES,
   MESSAGE_ROLES,
   ERROR_MESSAGES
-} from '../../utils/constants.js';
+} from '../../constants/playground.constants.js';
 import {
   buildMessageContent,
   createMessage,
   createLoadingAssistantMessage,
   getTextContent,
   buildApiPayload
-} from '../../utils/messageUtils.js';
+} from '../../helpers/messageUtils.js';
 
 // Components
 import {

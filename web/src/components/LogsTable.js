@@ -44,7 +44,7 @@ import {
   stringToColor,
 } from '../helpers/render';
 import Paragraph from '@douyinfe/semi-ui/lib/es/typography/paragraph';
-import { getLogOther } from '../helpers/other.js';
+import { getLogOther } from '../helpers/logUtils.js';
 import {
   IconRefresh,
   IconSetting,

@@ -4,4 +4,4 @@ export function getLogOther(otherStr) {
   }
   let other = JSON.parse(otherStr);
   return other;
-}
+} 

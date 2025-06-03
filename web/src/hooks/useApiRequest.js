@@ -6,15 +6,15 @@ import {
   API_ENDPOINTS,
   MESSAGE_STATUS,
   DEBUG_TABS
-} from '../utils/constants';
+} from '../constants/playground.constants';
 import {
   buildApiPayload,
   handleApiError
-} from '../utils/apiUtils';
+} from '../helpers/apiUtils';
 import {
   processThinkTags,
   processIncompleteThinkTags
-} from '../utils/messageUtils';
+} from '../helpers/messageUtils';
 
 export const useApiRequest = (
   setMessage,

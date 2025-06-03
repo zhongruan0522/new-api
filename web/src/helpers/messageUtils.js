@@ -1,4 +1,4 @@
-import { THINK_TAG_REGEX, MESSAGE_ROLES } from './constants';
+import { THINK_TAG_REGEX, MESSAGE_ROLES } from '../constants/playground.constants';
 
 // 生成唯一ID
 let messageId = 4;
