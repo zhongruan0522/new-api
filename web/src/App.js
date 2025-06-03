@@ -25,7 +25,7 @@ import Playground from './pages/Playground/index.js';
 import OAuth2Callback from './components/auth/OAuth2Callback.js';
 import PersonalSetting from './components/settings/PersonalSetting.js';
 import Setup from './pages/Setup/index.js';
-import SetupCheck from './components/SetupCheck';
+import { useSetupCheck } from './hooks/useSetupCheck.js';
 
 const Home = lazy(() => import('./pages/Home'));
 const Detail = lazy(() => import('./pages/Detail'));
@@ -35,7 +35,7 @@ function App() {
   const location = useLocation();
 
   return (
-    <SetupCheck>
+    <useSetupCheck>
       <Routes>
         <Route
           path='/'
@@ -290,7 +290,7 @@ function App() {
         />
         <Route path='*' element={<NotFound />} />
       </Routes>
-    </SetupCheck>
+    </useSetupCheck>
   );
 }
 

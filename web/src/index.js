@@ -16,7 +16,7 @@ import './index.css';
 const root = ReactDOM.createRoot(document.getElementById('root'));
 const { Sider, Content, Header, Footer } = Layout;
 root.render(
-  // <React.StrictMode>
+  <React.StrictMode>
     <StatusProvider>
       <UserProvider>
         <BrowserRouter>
@@ -28,5 +28,5 @@ root.render(
         </BrowserRouter>
       </UserProvider>
     </StatusProvider>
-  // </React.StrictMode>,
+  </React.StrictMode>,
 );

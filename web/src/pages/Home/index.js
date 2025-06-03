@@ -5,7 +5,7 @@ import { StatusContext } from '../../context/Status';
 import { marked } from 'marked';
 import { useTranslation } from 'react-i18next';
 import { IconGithubLogo } from '@douyinfe/semi-icons';
-import exampleImage from '..//example.png';
+import exampleImage from '/example.png';
 import { Link } from 'react-router-dom';
 import NoticeModal from '../../components/layout/NoticeModal';
 import { Moonshot, OpenAI, XAI, Zhipu, Volcengine, Cohere, Claude, Gemini, Suno, Minimax, Wenxin, Spark, Qingyan, DeepSeek, Qwen, Midjourney, Grok, AzureAI, Hunyuan, Xinference } from '@lobehub/icons';
