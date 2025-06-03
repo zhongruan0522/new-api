@@ -6,9 +6,9 @@ import {
   showSuccess,
   timestamp2string,
   renderQuota
-} from '../helpers';
+} from '../../helpers';
 
-import { ITEMS_PER_PAGE } from '../constants';
+import { ITEMS_PER_PAGE } from '../../constants';
 import {
   Button,
   Card,
@@ -33,7 +33,7 @@ import {
   IconPlay,
   IconMore,
 } from '@douyinfe/semi-icons';
-import EditRedemption from '../pages/Redemption/EditRedemption';
+import EditRedemption from '../../pages/Redemption/EditRedemption';
 import { useTranslation } from 'react-i18next';
 
 const { Text } = Typography;

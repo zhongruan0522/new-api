@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Button, Modal, Empty } from '@douyinfe/semi-ui';
 import { useTranslation } from 'react-i18next';
-import { API, showError } from '../helpers';
+import { API, showError } from '../../helpers';
 import { marked } from 'marked';
 import { IllustrationNoContent, IllustrationNoContentDark } from '@douyinfe/semi-illustrations';
 

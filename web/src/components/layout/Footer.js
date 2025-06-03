@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useMemo, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Typography } from '@douyinfe/semi-ui';
-import { getFooterHTML, getLogo, getSystemName } from '../helpers';
-import { StatusContext } from '../context/Status';
+import { getFooterHTML, getLogo, getSystemName } from '../../helpers';
+import { StatusContext } from '../../context/Status';
 
 const FooterBar = () => {
   const { t } = useTranslation();

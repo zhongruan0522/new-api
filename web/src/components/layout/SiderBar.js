@@ -1,14 +1,12 @@
 import React, { useContext, useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { UserContext } from '../context/User';
-import { StatusContext } from '../context/Status';
+import { Link, useLocation } from 'react-router-dom';
+import { StatusContext } from '../../context/Status/index.js';
 import { useTranslation } from 'react-i18next';
 
 import {
   isAdmin,
   showError
-} from '../helpers';
-import '../index.css';
+} from '../../helpers/index.js';
 
 import {
   IconCalendarClock,
@@ -17,26 +15,19 @@ import {
   IconTerminal,
   IconCreditCard,
   IconGift,
-  IconHelpCircle,
   IconHistogram,
-  IconHome,
   IconImage,
   IconKey,
   IconLayers,
-  IconPriceTag,
   IconSetting,
   IconUser,
 } from '@douyinfe/semi-icons';
 import {
-  Avatar,
-  Dropdown,
-  Layout,
   Nav,
-  Switch,
   Divider,
 } from '@douyinfe/semi-ui';
-import { useSetTheme, useTheme } from '../context/Theme/index.js';
-import { useStyle, styleActions } from '../context/Style/index.js';
+import { useSetTheme, useTheme } from '../../context/Theme/index.js';
+import { useStyle, styleActions } from '../../context/Style/index.js';
 import Text from '@douyinfe/semi-ui/lib/es/typography/text';
 
 // 自定义侧边栏按钮样式

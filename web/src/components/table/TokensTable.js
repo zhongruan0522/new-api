@@ -8,9 +8,9 @@ import {
   timestamp2string,
   renderGroup,
   renderQuota
-} from '../helpers';
+} from '../../helpers';
 
-import { ITEMS_PER_PAGE } from '../constants';
+import { ITEMS_PER_PAGE } from '../../constants';
 import {
   Button,
   Card,
@@ -40,9 +40,9 @@ import {
   IconHistogram,
   IconRotate,
 } from '@douyinfe/semi-icons';
-import EditToken from '../pages/Token/EditToken';
+import EditToken from '../../pages/Token/EditToken';
 import { useTranslation } from 'react-i18next';
-import { UserContext } from '../context/User';
+import { UserContext } from '../../context/User';
 
 function renderTimestamp(timestamp) {
   return <>{timestamp2string(timestamp)}</>;

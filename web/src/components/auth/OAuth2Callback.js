@@ -1,8 +1,8 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { Spin, Typography, Space } from '@douyinfe/semi-ui';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { API, showError, showSuccess, updateAPI, setUserData } from '../helpers';
-import { UserContext } from '../context/User';
+import { API, showError, showSuccess, updateAPI, setUserData } from '../../helpers';
+import { UserContext } from '../../context/User';
 
 const OAuth2Callback = (props) => {
   const [searchParams, setSearchParams] = useSearchParams();

@@ -15,9 +15,9 @@ import {
   onGitHubOAuthClicked,
   onOIDCClicked,
   onLinuxDOOAuthClicked
-} from '../helpers';
+} from '../../helpers';
 import Turnstile from 'react-turnstile';
-import { UserContext } from '../context/User';
+import { UserContext } from '../../context/User';
 import {
   Avatar,
   Banner,

@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useRef, useMemo, useState } from 'react';
-import { API, copy, showError, showInfo, showSuccess } from '../helpers';
+import { API, copy, showError, showInfo, showSuccess } from '../../helpers/index.js';
 import { useTranslation } from 'react-i18next';
 
 import {
@@ -26,9 +26,9 @@ import {
   IconInfoCircle,
   IconCrown,
 } from '@douyinfe/semi-icons';
-import { UserContext } from '../context/User/index.js';
+import { UserContext } from '../../context/User/index.js';
 import { AlertCircle } from 'lucide-react';
-import { MODEL_CATEGORIES } from '../constants';
+import { MODEL_CATEGORIES } from '../../constants/index.js';
 
 const ModelPricing = () => {
   const { t } = useTranslation();

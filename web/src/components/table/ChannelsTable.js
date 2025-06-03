@@ -8,9 +8,9 @@ import {
   renderGroup,
   renderNumberWithPoint,
   renderQuota
-} from '../helpers';
+} from '../../helpers/index.js';
 
-import { CHANNEL_OPTIONS, ITEMS_PER_PAGE } from '../constants';
+import { CHANNEL_OPTIONS, ITEMS_PER_PAGE } from '../../constants/index.js';
 import {
   Button,
   Divider,
@@ -29,7 +29,7 @@ import {
   Card,
   Select
 } from '@douyinfe/semi-ui';
-import EditChannel from '../pages/Channel/EditChannel';
+import EditChannel from '../../pages/Channel/EditChannel.js';
 import {
   IconList,
   IconTreeTriangleDown,
@@ -46,8 +46,8 @@ import {
   IconCopy,
   IconSmallTriangleRight
 } from '@douyinfe/semi-icons';
-import { loadChannelModels } from '../helpers';
-import EditTagModal from '../pages/Channel/EditTagModal.js';
+import { loadChannelModels } from '../../helpers/index.js';
+import EditTagModal from '../../pages/Channel/EditTagModal.js';
 import { useTranslation } from 'react-i18next';
 
 const ChannelsTable = () => {

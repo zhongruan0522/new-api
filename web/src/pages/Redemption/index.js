@@ -1,5 +1,5 @@
 import React from 'react';
-import RedemptionsTable from '../../components/RedemptionsTable';
+import RedemptionsTable from '../../components/table/RedemptionsTable';
 
 const Redemption = () => {
   return (

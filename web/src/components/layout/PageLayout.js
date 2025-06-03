@@ -1,15 +1,15 @@
 import HeaderBar from './HeaderBar.js';
 import { Layout } from '@douyinfe/semi-ui';
 import SiderBar from './SiderBar.js';
-import App from '../App.js';
+import App from '../../App.js';
 import FooterBar from './Footer.js';
 import { ToastContainer } from 'react-toastify';
 import React, { useContext, useEffect } from 'react';
-import { useStyle } from '../context/Style/index.js';
+import { useStyle } from '../../context/Style/index.js';
 import { useTranslation } from 'react-i18next';
-import { API, getLogo, getSystemName, showError, setStatusData } from '../helpers';
-import { UserContext } from '../context/User/index.js';
-import { StatusContext } from '../context/Status/index.js';
+import { API, getLogo, getSystemName, showError, setStatusData } from '../../helpers/index.js';
+import { UserContext } from '../../context/User/index.js';
+import { StatusContext } from '../../context/Status/index.js';
 import { useLocation } from 'react-router-dom';
 const { Sider, Content, Header, Footer } = Layout;
 

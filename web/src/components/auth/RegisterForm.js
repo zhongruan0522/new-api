@@ -1,6 +1,5 @@
 import React, { useContext, useEffect, useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { UserContext } from '../context/User';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   API,
   getLogo,
@@ -9,11 +8,8 @@ import {
   showSuccess,
   updateAPI,
   getSystemName,
-  setUserData,
-  onGitHubOAuthClicked,
-  onOIDCClicked,
-  onLinuxDOOAuthClicked
-} from '../helpers';
+  setUserData
+} from '../../helpers/index.js';
 import Turnstile from 'react-turnstile';
 import {
   Button,
@@ -25,42 +21,50 @@ import {
 } from '@douyinfe/semi-ui';
 import Title from '@douyinfe/semi-ui/lib/es/typography/title';
 import Text from '@douyinfe/semi-ui/lib/es/typography/text';
-import TelegramLoginButton from 'react-telegram-login';
-
-import { IconGithubLogo, IconMail, IconLock } from '@douyinfe/semi-icons';
-import OIDCIcon from './common/logo/OIDCIcon.js';
-import WeChatIcon from './common/logo/WeChatIcon.js';
-import LinuxDoIcon from './common/logo/LinuxDoIcon.js';
+import { IconGithubLogo, IconMail, IconUser, IconLock, IconKey } from '@douyinfe/semi-icons';
+import {
+  onGitHubOAuthClicked,
+  onLinuxDOOAuthClicked,
+  onOIDCClicked,
+} from '../../helpers/index.js';
+import OIDCIcon from '../common/logo/OIDCIcon.js';
+import LinuxDoIcon from '../common/logo/LinuxDoIcon.js';
+import WeChatIcon from '../common/logo/WeChatIcon.js';
+import TelegramLoginButton from 'react-telegram-login/src';
+import { UserContext } from '../../context/User/index.js';
 import { useTranslation } from 'react-i18next';
-import Background from '../images/example.png';
+import Background from '/example.png';
 
-const LoginForm = () => {
+const RegisterForm = () => {
+  const { t } = useTranslation();
   const [inputs, setInputs] = useState({
     username: '',
     password: '',
+    password2: '',
+    email: '',
+    verification_code: '',
     wechat_verification_code: '',
   });
-  const [searchParams, setSearchParams] = useSearchParams();
-  const [submitted, setSubmitted] = useState(false);
-  const { username, password } = inputs;
+  const { username, password, password2 } = inputs;
+  const [showEmailVerification, setShowEmailVerification] = useState(false);
   const [userState, userDispatch] = useContext(UserContext);
   const [turnstileEnabled, setTurnstileEnabled] = useState(false);
   const [turnstileSiteKey, setTurnstileSiteKey] = useState('');
   const [turnstileToken, setTurnstileToken] = useState('');
-  let navigate = useNavigate();
-  const [status, setStatus] = useState({});
+  const [loading, setLoading] = useState(false);
   const [showWeChatLoginModal, setShowWeChatLoginModal] = useState(false);
-  const [showEmailLogin, setShowEmailLogin] = useState(false);
+  const [showEmailRegister, setShowEmailRegister] = useState(false);
+  const [status, setStatus] = useState({});
   const [wechatLoading, setWechatLoading] = useState(false);
   const [githubLoading, setGithubLoading] = useState(false);
   const [oidcLoading, setOidcLoading] = useState(false);
   const [linuxdoLoading, setLinuxdoLoading] = useState(false);
-  const [emailLoginLoading, setEmailLoginLoading] = useState(false);
-  const [loginLoading, setLoginLoading] = useState(false);
-  const [resetPasswordLoading, setResetPasswordLoading] = useState(false);
-  const [otherLoginOptionsLoading, setOtherLoginOptionsLoading] = useState(false);
+  const [emailRegisterLoading, setEmailRegisterLoading] = useState(false);
+  const [registerLoading, setRegisterLoading] = useState(false);
+  const [verificationCodeLoading, setVerificationCodeLoading] = useState(false);
+  const [otherRegisterOptionsLoading, setOtherRegisterOptionsLoading] = useState(false);
   const [wechatCodeSubmitLoading, setWechatCodeSubmitLoading] = useState(false);
-  const { t } = useTranslation();
+  let navigate = useNavigate();
 
   const logo = getLogo();
   const systemName = getSystemName();
@@ -71,13 +75,11 @@ const LoginForm = () => {
   }
 
   useEffect(() => {
-    if (searchParams.get('expired')) {
-      showError(t('未登录或登录已过期，请重新登录'));
-    }
     let status = localStorage.getItem('status');
     if (status) {
       status = JSON.parse(status);
       setStatus(status);
+      setShowEmailVerification(status.email_verification);
       if (status.turnstile_check) {
         setTurnstileEnabled(true);
         setTurnstileSiteKey(status.turnstile_site_key);
@@ -125,49 +127,110 @@ const LoginForm = () => {
   }
 
   async function handleSubmit(e) {
+    if (password.length < 8) {
+      showInfo('密码长度不得小于 8 位！');
+      return;
+    }
+    if (password !== password2) {
+      showInfo('两次输入的密码不一致');
+      return;
+    }
+    if (username && password) {
+      if (turnstileEnabled && turnstileToken === '') {
+        showInfo('请稍后几秒重试，Turnstile 正在检查用户环境！');
+        return;
+      }
+      setRegisterLoading(true);
+      try {
+        if (!affCode) {
+          affCode = localStorage.getItem('aff');
+        }
+        inputs.aff_code = affCode;
+        const res = await API.post(
+          `/api/user/register?turnstile=${turnstileToken}`,
+          inputs,
+        );
+        const { success, message } = res.data;
+        if (success) {
+          navigate('/login');
+          showSuccess('注册成功！');
+        } else {
+          showError(message);
+        }
+      } catch (error) {
+        showError('注册失败，请重试');
+      } finally {
+        setRegisterLoading(false);
+      }
+    }
+  }
+
+  const sendVerificationCode = async () => {
+    if (inputs.email === '') return;
     if (turnstileEnabled && turnstileToken === '') {
       showInfo('请稍后几秒重试，Turnstile 正在检查用户环境！');
       return;
     }
-    setSubmitted(true);
-    setLoginLoading(true);
+    setVerificationCodeLoading(true);
     try {
-      if (username && password) {
-        const res = await API.post(
-          `/api/user/login?turnstile=${turnstileToken}`,
-          {
-            username,
-            password,
-          },
-        );
-        const { success, message, data } = res.data;
-        if (success) {
-          userDispatch({ type: 'login', payload: data });
-          setUserData(data);
-          updateAPI();
-          showSuccess('登录成功！');
-          if (username === 'root' && password === '123456') {
-            Modal.error({
-              title: '您正在使用默认密码！',
-              content: '请立刻修改默认密码！',
-              centered: true,
-            });
-          }
-          navigate('/console');
-        } else {
-          showError(message);
-        }
+      const res = await API.get(
+        `/api/verification?email=${inputs.email}&turnstile=${turnstileToken}`,
+      );
+      const { success, message } = res.data;
+      if (success) {
+        showSuccess('验证码发送成功，请检查你的邮箱！');
       } else {
-        showError('请输入用户名和密码！');
+        showError(message);
       }
     } catch (error) {
-      showError('登录失败，请重试');
+      showError('发送验证码失败，请重试');
     } finally {
-      setLoginLoading(false);
+      setVerificationCodeLoading(false);
     }
-  }
+  };
 
-  // 添加Telegram登录处理函数
+  const handleGitHubClick = () => {
+    setGithubLoading(true);
+    try {
+      onGitHubOAuthClicked(status.github_client_id);
+    } finally {
+      setTimeout(() => setGithubLoading(false), 3000);
+    }
+  };
+
+  const handleOIDCClick = () => {
+    setOidcLoading(true);
+    try {
+      onOIDCClicked(
+        status.oidc_authorization_endpoint,
+        status.oidc_client_id
+      );
+    } finally {
+      setTimeout(() => setOidcLoading(false), 3000);
+    }
+  };
+
+  const handleLinuxDOClick = () => {
+    setLinuxdoLoading(true);
+    try {
+      onLinuxDOOAuthClicked(status.linuxdo_client_id);
+    } finally {
+      setTimeout(() => setLinuxdoLoading(false), 3000);
+    }
+  };
+
+  const handleEmailRegisterClick = () => {
+    setEmailRegisterLoading(true);
+    setShowEmailRegister(true);
+    setEmailRegisterLoading(false);
+  };
+
+  const handleOtherRegisterOptionsClick = () => {
+    setOtherRegisterOptionsLoading(true);
+    setShowEmailRegister(false);
+    setOtherRegisterOptionsLoading(false);
+  };
+
   const onTelegramLoginClicked = async (response) => {
     const fields = [
       'id',
@@ -203,63 +266,6 @@ const LoginForm = () => {
     }
   };
 
-  // 包装的GitHub登录点击处理
-  const handleGitHubClick = () => {
-    setGithubLoading(true);
-    try {
-      onGitHubOAuthClicked(status.github_client_id);
-    } finally {
-      // 由于重定向，这里不会执行到，但为了完整性添加
-      setTimeout(() => setGithubLoading(false), 3000);
-    }
-  };
-
-  // 包装的OIDC登录点击处理
-  const handleOIDCClick = () => {
-    setOidcLoading(true);
-    try {
-      onOIDCClicked(
-        status.oidc_authorization_endpoint,
-        status.oidc_client_id
-      );
-    } finally {
-      // 由于重定向，这里不会执行到，但为了完整性添加
-      setTimeout(() => setOidcLoading(false), 3000);
-    }
-  };
-
-  // 包装的LinuxDO登录点击处理
-  const handleLinuxDOClick = () => {
-    setLinuxdoLoading(true);
-    try {
-      onLinuxDOOAuthClicked(status.linuxdo_client_id);
-    } finally {
-      // 由于重定向，这里不会执行到，但为了完整性添加
-      setTimeout(() => setLinuxdoLoading(false), 3000);
-    }
-  };
-
-  // 包装的邮箱登录选项点击处理
-  const handleEmailLoginClick = () => {
-    setEmailLoginLoading(true);
-    setShowEmailLogin(true);
-    setEmailLoginLoading(false);
-  };
-
-  // 包装的重置密码点击处理
-  const handleResetPasswordClick = () => {
-    setResetPasswordLoading(true);
-    navigate('/reset');
-    setResetPasswordLoading(false);
-  };
-
-  // 包装的其他登录选项点击处理
-  const handleOtherLoginOptionsClick = () => {
-    setOtherLoginOptionsLoading(true);
-    setShowEmailLogin(false);
-    setOtherLoginOptionsLoading(false);
-  };
-
   const renderOAuthOptions = () => {
     return (
       <div className="flex flex-col items-center">
@@ -271,7 +277,7 @@ const LoginForm = () => {
 
           <Card className="shadow-xl border-0 !rounded-2xl overflow-hidden">
             <div className="flex justify-center pt-6 pb-2">
-              <Title heading={3} className="text-gray-800 dark:text-gray-200">{t('登 录')}</Title>
+              <Title heading={3} className="text-gray-800 dark:text-gray-200">{t('注 册')}</Title>
             </div>
             <div className="px-2 py-8">
               <div className="space-y-3">
@@ -350,15 +356,15 @@ const LoginForm = () => {
                   className="w-full h-12 flex items-center justify-center bg-black text-white !rounded-full hover:bg-gray-800 transition-colors"
                   icon={<IconMail size="large" />}
                   size="large"
-                  onClick={handleEmailLoginClick}
-                  loading={emailLoginLoading}
+                  onClick={handleEmailRegisterClick}
+                  loading={emailRegisterLoading}
                 >
-                  <span className="ml-3">{t('使用 邮箱 登录')}</span>
+                  <span className="ml-3">{t('使用 邮箱 注册')}</span>
                 </Button>
               </div>
 
               <div className="mt-6 text-center text-sm">
-                <Text>{t('没有账户？')} <Link to="/register" className="text-blue-600 hover:text-blue-800 font-medium">{t('注册')}</Link></Text>
+                <Text>{t('已有账户？')} <Link to="/login" className="text-blue-600 hover:text-blue-800 font-medium">{t('登录')}</Link></Text>
               </div>
             </div>
           </Card>
@@ -378,36 +384,36 @@ const LoginForm = () => {
     );
   };
 
-  const renderEmailLoginForm = () => {
+  const renderEmailRegisterForm = () => {
     return (
       <div className="flex flex-col items-center">
         <div className="w-full max-w-md">
           <div className="flex items-center justify-center mb-6 gap-2">
             <img src={logo} alt="Logo" className="h-10 rounded-full" />
-            <Title heading={3}>{systemName}</Title>
+            <Title heading={3} className='!text-white'>{systemName}</Title>
           </div>
 
           <Card className="shadow-xl border-0 !rounded-2xl overflow-hidden">
             <div className="flex justify-center pt-6 pb-2">
-              <Title heading={3} className="text-gray-800 dark:text-gray-200">{t('登 录')}</Title>
+              <Title heading={3} className="text-gray-800 dark:text-gray-200">{t('注 册')}</Title>
             </div>
             <div className="px-2 py-8">
               <Form className="space-y-3">
                 <Form.Input
                   field="username"
-                  label={t('邮箱')}
-                  placeholder={t('请输入您的邮箱地址')}
+                  label={t('用户名')}
+                  placeholder={t('请输入用户名')}
                   name="username"
                   size="large"
                   className="!rounded-md"
                   onChange={(value) => handleChange('username', value)}
-                  prefix={<IconMail />}
+                  prefix={<IconUser />}
                 />
 
                 <Form.Input
                   field="password"
                   label={t('密码')}
-                  placeholder={t('请输入您的密码')}
+                  placeholder={t('输入密码，最短 8 位，最长 20 位')}
                   name="password"
                   mode="password"
                   size="large"
@@ -415,6 +421,54 @@ const LoginForm = () => {
                   onChange={(value) => handleChange('password', value)}
                   prefix={<IconLock />}
                 />
+
+                <Form.Input
+                  field="password2"
+                  label={t('确认密码')}
+                  placeholder={t('确认密码')}
+                  name="password2"
+                  mode="password"
+                  size="large"
+                  className="!rounded-md"
+                  onChange={(value) => handleChange('password2', value)}
+                  prefix={<IconLock />}
+                />
+
+                {showEmailVerification && (
+                  <>
+                    <Form.Input
+                      field="email"
+                      label={t('邮箱')}
+                      placeholder={t('输入邮箱地址')}
+                      name="email"
+                      type="email"
+                      size="large"
+                      className="!rounded-md"
+                      onChange={(value) => handleChange('email', value)}
+                      prefix={<IconMail />}
+                      suffix={
+                        <Button
+                          onClick={sendVerificationCode}
+                          loading={verificationCodeLoading}
+                          size="small"
+                          className="!rounded-md mr-2"
+                        >
+                          {t('获取验证码')}
+                        </Button>
+                      }
+                    />
+                    <Form.Input
+                      field="verification_code"
+                      label={t('验证码')}
+                      placeholder={t('输入验证码')}
+                      name="verification_code"
+                      size="large"
+                      className="!rounded-md"
+                      onChange={(value) => handleChange('verification_code', value)}
+                      prefix={<IconKey />}
+                    />
+                  </>
+                )}
 
                 <div className="space-y-2 pt-2">
                   <Button
@@ -424,20 +478,9 @@ const LoginForm = () => {
                     htmlType="submit"
                     size="large"
                     onClick={handleSubmit}
-                    loading={loginLoading}
+                    loading={registerLoading}
                   >
-                    {t('继续')}
-                  </Button>
-
-                  <Button
-                    theme="borderless"
-                    type='tertiary'
-                    className="w-full !rounded-full"
-                    size="large"
-                    onClick={handleResetPasswordClick}
-                    loading={resetPasswordLoading}
-                  >
-                    {t('忘记密码？')}
+                    {t('注册')}
                   </Button>
                 </div>
               </Form>
@@ -452,11 +495,15 @@ const LoginForm = () => {
                   type="tertiary"
                   className="w-full !rounded-full"
                   size="large"
-                  onClick={handleOtherLoginOptionsClick}
-                  loading={otherLoginOptionsLoading}
+                  onClick={handleOtherRegisterOptionsClick}
+                  loading={otherRegisterOptionsLoading}
                 >
-                  {t('其他登录选项')}
+                  {t('其他注册选项')}
                 </Button>
+              </div>
+
+              <div className="mt-6 text-center text-sm">
+                <Text>{t('已有账户？')} <Link to="/login" className="text-blue-600 hover:text-blue-800 font-medium">{t('登录')}</Link></Text>
               </div>
             </div>
           </Card>
@@ -465,7 +512,6 @@ const LoginForm = () => {
     );
   };
 
-  // 微信登录模态框
   const renderWeChatLoginModal = () => {
     return (
       <Modal
@@ -504,7 +550,6 @@ const LoginForm = () => {
 
   return (
     <div className="min-h-screen relative flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 overflow-hidden">
-      {/* 背景图片容器 - 放大并保持居中 */}
       <div
         className="absolute inset-0 z-0 bg-cover bg-center scale-125 opacity-100"
         style={{
@@ -512,12 +557,11 @@ const LoginForm = () => {
         }}
       ></div>
 
-      {/* 半透明遮罩层 */}
       <div className="absolute inset-0 bg-gradient-to-br from-teal-500/30 via-blue-500/30 to-purple-500/30 backdrop-blur-sm z-0"></div>
 
       <div className="w-full max-w-sm relative z-10">
-        {showEmailLogin || !(status.github_oauth || status.oidc_enabled || status.wechat_login || status.linuxdo_oauth || status.telegram_oauth)
-          ? renderEmailLoginForm()
+        {showEmailRegister || !(status.github_oauth || status.oidc_enabled || status.wechat_login || status.linuxdo_oauth || status.telegram_oauth)
+          ? renderEmailRegisterForm()
           : renderOAuthOptions()}
         {renderWeChatLoginModal()}
       </div>
@@ -525,4 +569,4 @@ const LoginForm = () => {
   );
 };
 
-export default LoginForm;
+export default RegisterForm;

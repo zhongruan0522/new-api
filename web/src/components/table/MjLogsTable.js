@@ -7,7 +7,7 @@ import {
   showError,
   showSuccess,
   timestamp2string,
-} from '../helpers';
+} from '../../helpers';
 
 import {
   Button,
@@ -25,7 +25,7 @@ import {
   Tag,
   Typography,
 } from '@douyinfe/semi-ui';
-import { ITEMS_PER_PAGE } from '../constants';
+import { ITEMS_PER_PAGE } from '../../constants';
 import {
   IconEyeOpened,
   IconSearch,

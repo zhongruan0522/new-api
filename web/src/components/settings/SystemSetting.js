@@ -18,7 +18,7 @@ import {
   showError,
   showSuccess,
   verifyJSON
-} from '../helpers';
+} from '../../helpers';
 import axios from 'axios';
 
 const SystemSetting = () => {

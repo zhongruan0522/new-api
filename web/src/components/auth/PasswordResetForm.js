@@ -1,38 +1,40 @@
 import React, { useEffect, useState } from 'react';
-import { API, copy, showError, showNotice, getLogo, getSystemName } from '../helpers';
-import { useSearchParams, Link } from 'react-router-dom';
+import { API, getLogo, showError, showInfo, showSuccess, getSystemName } from '../../helpers';
+import Turnstile from 'react-turnstile';
 import { Button, Card, Form, Typography } from '@douyinfe/semi-ui';
-import { IconMail, IconLock } from '@douyinfe/semi-icons';
+import { IconMail } from '@douyinfe/semi-icons';
+import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import Background from '../images/example.png';
+import Background from '/example.png';
 
 const { Text, Title } = Typography;
 
-const PasswordResetConfirm = () => {
+const PasswordResetForm = () => {
   const { t } = useTranslation();
   const [inputs, setInputs] = useState({
     email: '',
-    token: '',
   });
-  const { email, token } = inputs;
+  const { email } = inputs;
 
   const [loading, setLoading] = useState(false);
+  const [turnstileEnabled, setTurnstileEnabled] = useState(false);
+  const [turnstileSiteKey, setTurnstileSiteKey] = useState('');
+  const [turnstileToken, setTurnstileToken] = useState('');
   const [disableButton, setDisableButton] = useState(false);
   const [countdown, setCountdown] = useState(30);
-  const [newPassword, setNewPassword] = useState('');
-
-  const [searchParams, setSearchParams] = useSearchParams();
 
   const logo = getLogo();
   const systemName = getSystemName();
 
   useEffect(() => {
-    let token = searchParams.get('token');
-    let email = searchParams.get('email');
-    setInputs({
-      token,
-      email,
-    });
+    let status = localStorage.getItem('status');
+    if (status) {
+      status = JSON.parse(status);
+      if (status.turnstile_check) {
+        setTurnstileEnabled(true);
+        setTurnstileSiteKey(status.turnstile_site_key);
+      }
+    }
   }, []);
 
   useEffect(() => {
@@ -48,20 +50,25 @@ const PasswordResetConfirm = () => {
     return () => clearInterval(countdownInterval);
   }, [disableButton, countdown]);
 
+  function handleChange(value) {
+    setInputs((inputs) => ({ ...inputs, email: value }));
+  }
+
   async function handleSubmit(e) {
-    if (!email || !token) return;
+    if (!email) return;
+    if (turnstileEnabled && turnstileToken === '') {
+      showInfo(t('请稍后几秒重试，Turnstile 正在检查用户环境！'));
+      return;
+    }
     setDisableButton(true);
     setLoading(true);
-    const res = await API.post(`/api/user/reset`, {
-      email,
-      token,
-    });
+    const res = await API.get(
+      `/api/reset_password?email=${email}&turnstile=${turnstileToken}`,
+    );
     const { success, message } = res.data;
     if (success) {
-      let password = res.data.data;
-      setNewPassword(password);
-      await copy(password);
-      showNotice(`${t('密码已重置并已复制到剪贴板')}: ${password}`);
+      showSuccess(t('重置邮件发送成功，请检查邮箱！'));
+      setInputs({ ...inputs, email: '' });
     } else {
       showError(message);
     }
@@ -91,38 +98,21 @@ const PasswordResetConfirm = () => {
 
             <Card className="shadow-xl border-0 !rounded-2xl overflow-hidden">
               <div className="flex justify-center pt-6 pb-2">
-                <Title heading={3} className="text-gray-800 dark:text-gray-200">{t('密码重置确认')}</Title>
+                <Title heading={3} className="text-gray-800 dark:text-gray-200">{t('密码重置')}</Title>
               </div>
               <div className="px-2 py-8">
                 <Form className="space-y-3">
                   <Form.Input
                     field="email"
                     label={t('邮箱')}
+                    placeholder={t('请输入您的邮箱地址')}
                     name="email"
                     size="large"
                     className="!rounded-md"
                     value={email}
-                    readOnly
+                    onChange={handleChange}
                     prefix={<IconMail />}
                   />
-
-                  {newPassword && (
-                    <Form.Input
-                      field="newPassword"
-                      label={t('新密码')}
-                      name="newPassword"
-                      size="large"
-                      className="!rounded-md"
-                      value={newPassword}
-                      readOnly
-                      prefix={<IconLock />}
-                      onClick={(e) => {
-                        e.target.select();
-                        navigator.clipboard.writeText(newPassword);
-                        showNotice(`${t('密码已复制到剪贴板')}: ${newPassword}`);
-                      }}
-                    />
-                  )}
 
                   <div className="space-y-2 pt-2">
                     <Button
@@ -133,18 +123,29 @@ const PasswordResetConfirm = () => {
                       size="large"
                       onClick={handleSubmit}
                       loading={loading}
-                      disabled={disableButton || newPassword}
+                      disabled={disableButton}
                     >
-                      {newPassword ? t('密码重置完成') : t('提交')}
+                      {disableButton ? `${t('重试')} (${countdown})` : t('提交')}
                     </Button>
                   </div>
                 </Form>
 
                 <div className="mt-6 text-center text-sm">
-                  <Text><Link to="/login" className="text-blue-600 hover:text-blue-800 font-medium">{t('返回登录')}</Link></Text>
+                  <Text>{t('想起来了？')} <Link to="/login" className="text-blue-600 hover:text-blue-800 font-medium">{t('登录')}</Link></Text>
                 </div>
               </div>
             </Card>
+
+            {turnstileEnabled && (
+              <div className="flex justify-center mt-6">
+                <Turnstile
+                  sitekey={turnstileSiteKey}
+                  onVerify={(token) => {
+                    setTurnstileToken(token);
+                  }}
+                />
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -152,4 +153,4 @@ const PasswordResetConfirm = () => {
   );
 };
 
-export default PasswordResetConfirm;
+export default PasswordResetForm;

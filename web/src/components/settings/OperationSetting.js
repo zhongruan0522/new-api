@@ -1,20 +1,20 @@
 import React, { useEffect, useState } from 'react';
 import { Card, Spin, Tabs } from '@douyinfe/semi-ui';
-import SettingsGeneral from '../pages/Setting/Operation/SettingsGeneral.js';
-import SettingsDrawing from '../pages/Setting/Operation/SettingsDrawing.js';
-import SettingsSensitiveWords from '../pages/Setting/Operation/SettingsSensitiveWords.js';
-import SettingsLog from '../pages/Setting/Operation/SettingsLog.js';
-import SettingsDataDashboard from '../pages/Setting/Operation/SettingsDataDashboard.js';
-import SettingsMonitoring from '../pages/Setting/Operation/SettingsMonitoring.js';
-import SettingsCreditLimit from '../pages/Setting/Operation/SettingsCreditLimit.js';
-import ModelSettingsVisualEditor from '../pages/Setting/Operation/ModelSettingsVisualEditor.js';
-import GroupRatioSettings from '../pages/Setting/Operation/GroupRatioSettings.js';
-import ModelRatioSettings from '../pages/Setting/Operation/ModelRatioSettings.js';
+import SettingsGeneral from '../../pages/Setting/Operation/SettingsGeneral.js';
+import SettingsDrawing from '../../pages/Setting/Operation/SettingsDrawing.js';
+import SettingsSensitiveWords from '../../pages/Setting/Operation/SettingsSensitiveWords.js';
+import SettingsLog from '../../pages/Setting/Operation/SettingsLog.js';
+import SettingsDataDashboard from '../../pages/Setting/Operation/SettingsDataDashboard.js';
+import SettingsMonitoring from '../../pages/Setting/Operation/SettingsMonitoring.js';
+import SettingsCreditLimit from '../../pages/Setting/Operation/SettingsCreditLimit.js';
+import ModelSettingsVisualEditor from '../../pages/Setting/Operation/ModelSettingsVisualEditor.js';
+import GroupRatioSettings from '../../pages/Setting/Operation/GroupRatioSettings.js';
+import ModelRatioSettings from '../../pages/Setting/Operation/ModelRatioSettings.js';
 
-import { API, showError, showSuccess } from '../helpers';
-import SettingsChats from '../pages/Setting/Operation/SettingsChats.js';
+import { API, showError, showSuccess } from '../../helpers';
+import SettingsChats from '../../pages/Setting/Operation/SettingsChats.js';
 import { useTranslation } from 'react-i18next';
-import ModelRatioNotSetEditor from '../pages/Setting/Operation/ModelRationNotSetEditor.js';
+import ModelRatioNotSetEditor from '../../pages/Setting/Operation/ModelRationNotSetEditor.js';
 
 const OperationSetting = () => {
   const { t } = useTranslation();

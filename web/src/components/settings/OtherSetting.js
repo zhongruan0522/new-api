@@ -9,10 +9,10 @@ import {
   Space,
   Card,
 } from '@douyinfe/semi-ui';
-import { API, showError, showSuccess, timestamp2string } from '../helpers';
+import { API, showError, showSuccess, timestamp2string } from '../../helpers';
 import { marked } from 'marked';
 import { useTranslation } from 'react-i18next';
-import { StatusContext } from '../context/Status/index.js';
+import { StatusContext } from '../../context/Status/index.js';
 import Text from '@douyinfe/semi-ui/lib/es/typography/text';
 
 const OtherSetting = () => {

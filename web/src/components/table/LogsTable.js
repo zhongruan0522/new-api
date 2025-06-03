@@ -20,7 +20,7 @@ import {
   renderQuota,
   stringToColor,
   getLogOther
-} from '../helpers';
+} from '../../helpers';
 
 import {
   Avatar,
@@ -41,7 +41,7 @@ import {
   Input,
   DatePicker,
 } from '@douyinfe/semi-ui';
-import { ITEMS_PER_PAGE } from '../constants';
+import { ITEMS_PER_PAGE } from '../../constants';
 import Paragraph from '@douyinfe/semi-ui/lib/es/typography/paragraph';
 import {
   IconRefresh,

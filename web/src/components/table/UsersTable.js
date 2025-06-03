@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { API, showError, showSuccess, renderGroup, renderNumber, renderQuota } from '../helpers';
+import { API, showError, showSuccess, renderGroup, renderNumber, renderQuota } from '../../helpers';
 import {
   Button,
   Card,
@@ -25,9 +25,9 @@ import {
   IconArrowUp,
   IconArrowDown,
 } from '@douyinfe/semi-icons';
-import { ITEMS_PER_PAGE } from '../constants';
-import AddUser from '../pages/User/AddUser';
-import EditUser from '../pages/User/EditUser';
+import { ITEMS_PER_PAGE } from '../../constants';
+import AddUser from '../../pages/User/AddUser';
+import EditUser from '../../pages/User/EditUser';
 import { useTranslation } from 'react-i18next';
 
 const { Text } = Typography;

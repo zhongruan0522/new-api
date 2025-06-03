@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { Card, Spin, Tabs } from '@douyinfe/semi-ui';
 
-import { API, showError, showSuccess } from '../helpers';
-import SettingsChats from '../pages/Setting/Operation/SettingsChats.js';
+import { API, showError, showSuccess } from '../../helpers/index.js';
+import SettingsChats from '../../pages/Setting/Operation/SettingsChats.js';
 import { useTranslation } from 'react-i18next';
-import RequestRateLimit from '../pages/Setting/RateLimit/SettingsRequestRateLimit.js';
+import RequestRateLimit from '../../pages/Setting/RateLimit/SettingsRequestRateLimit.js';
 
 const RateLimitSetting = () => {
   const { t } = useTranslation();
