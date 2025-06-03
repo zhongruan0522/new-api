@@ -481,7 +481,7 @@ const ModelPricing = () => {
   ), [filteredModels, loading, columns, rowSelection, pageSize, t]);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="bg-gray-50">
       <Layout>
         <Layout.Content>
           <div className="flex justify-center p-4 sm:p-6 md:p-8">

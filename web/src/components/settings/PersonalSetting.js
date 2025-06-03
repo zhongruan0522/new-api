@@ -406,7 +406,7 @@ const PersonalSetting = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="bg-gray-50">
       <Layout>
         <Layout.Content>
           {/* 划转模态框 */}
