@@ -5,14 +5,12 @@ import {
   showInfo,
   showSuccess,
   timestamp2string,
+  renderGroup,
+  renderNumberWithPoint,
+  renderQuota
 } from '../helpers';
 
 import { CHANNEL_OPTIONS, ITEMS_PER_PAGE } from '../constants';
-import {
-  renderGroup,
-  renderNumberWithPoint,
-  renderQuota,
-} from '../helpers/render';
 import {
   Button,
   Divider,
@@ -29,7 +27,7 @@ import {
   Typography,
   Checkbox,
   Card,
-  Select,
+  Select
 } from '@douyinfe/semi-ui';
 import EditChannel from '../pages/Channel/EditChannel';
 import {

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { API, showError, showSuccess } from '../helpers';
+import { API, showError, showSuccess, renderGroup, renderNumber, renderQuota } from '../helpers';
 import {
   Button,
   Card,
@@ -26,7 +26,6 @@ import {
   IconArrowDown,
 } from '@douyinfe/semi-icons';
 import { ITEMS_PER_PAGE } from '../constants';
-import { renderGroup, renderNumber, renderQuota } from '../helpers/render';
 import AddUser from '../pages/User/AddUser';
 import EditUser from '../pages/User/EditUser';
 import { useTranslation } from 'react-i18next';

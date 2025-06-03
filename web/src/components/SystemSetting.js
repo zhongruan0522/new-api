@@ -13,12 +13,12 @@ import {
 } from '@douyinfe/semi-ui';
 const { Text } = Typography;
 import {
+  API,
   removeTrailingSlash,
   showError,
   showSuccess,
-  verifyJSON,
-} from '../helpers/utils';
-import { API } from '../helpers/api';
+  verifyJSON
+} from '../helpers';
 import axios from 'axios';
 
 const SystemSetting = () => {

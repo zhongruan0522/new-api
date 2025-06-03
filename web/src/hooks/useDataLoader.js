@@ -1,8 +1,7 @@
 import { useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { API } from '../helpers/api';
+import { API, processModelsData, processGroupsData } from '../helpers';
 import { API_ENDPOINTS } from '../constants/playground.constants';
-import { processModelsData, processGroupsData } from '../helpers/apiUtils';
 
 export const useDataLoader = (
   userState,

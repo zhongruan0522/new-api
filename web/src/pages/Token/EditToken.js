@@ -6,8 +6,9 @@ import {
   showError,
   showSuccess,
   timestamp2string,
+  renderGroupOption,
+  renderQuotaWithPrompt
 } from '../../helpers';
-import { renderGroupOption, renderQuotaWithPrompt } from '../../helpers/render';
 import {
   AutoComplete,
   Banner,

@@ -8,6 +8,10 @@ import {
   showError,
   showInfo,
   showSuccess,
+  getQuotaPerUnit,
+  renderQuota,
+  renderQuotaWithPrompt,
+  stringToColor
 } from '../helpers';
 import Turnstile from 'react-turnstile';
 import { UserContext } from '../context/User';
@@ -54,12 +58,6 @@ import {
 } from '@douyinfe/semi-icons';
 import { SiTelegram, SiWechat, SiLinux } from 'react-icons/si';
 import { Bell, Shield, Webhook, Globe, Settings, UserPlus, ShieldCheck } from 'lucide-react';
-import {
-  getQuotaPerUnit,
-  renderQuota,
-  renderQuotaWithPrompt,
-  stringToColor,
-} from '../helpers/render';
 import TelegramLoginButton from 'react-telegram-login';
 import { useTranslation } from 'react-i18next';
 

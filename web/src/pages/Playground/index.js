@@ -7,9 +7,7 @@ import { Layout, Toast, Modal } from '@douyinfe/semi-ui';
 import { UserContext } from '../../context/User/index.js';
 import { useStyle, styleActions } from '../../context/Style/index.js';
 
-// Utils and hooks
-import { getLogo } from '../../helpers/index.js';
-import { stringToColor } from '../../helpers/render.js';
+// hooks
 import { usePlaygroundState } from '../../hooks/usePlaygroundState.js';
 import { useMessageActions } from '../../hooks/useMessageActions.js';
 import { useApiRequest } from '../../hooks/useApiRequest.js';
@@ -19,17 +17,18 @@ import { useDataLoader } from '../../hooks/useDataLoader.js';
 
 // Constants and utils
 import {
-  DEFAULT_MESSAGES,
   MESSAGE_ROLES,
   ERROR_MESSAGES
 } from '../../constants/playground.constants.js';
 import {
+  getLogo,
+  stringToColor,
   buildMessageContent,
   createMessage,
   createLoadingAssistantMessage,
   getTextContent,
   buildApiPayload
-} from '../../helpers/messageUtils.js';
+} from '../../helpers';
 
 // Components
 import {

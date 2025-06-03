@@ -6,10 +6,11 @@ import {
   showError,
   showSuccess,
   timestamp2string,
+  renderGroup,
+  renderQuota
 } from '../helpers';
 
 import { ITEMS_PER_PAGE } from '../constants';
-import { renderGroup, renderQuota } from '../helpers/render';
 import {
   Button,
   Card,

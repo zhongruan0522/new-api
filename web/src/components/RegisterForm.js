@@ -8,6 +8,7 @@ import {
   showSuccess,
   updateAPI,
   getSystemName,
+  setUserData
 } from '../helpers';
 import Turnstile from 'react-turnstile';
 import {
@@ -30,7 +31,6 @@ import OIDCIcon from './common/logo/OIDCIcon.js';
 import LinuxDoIcon from './common/logo/LinuxDoIcon.js';
 import WeChatIcon from './common/logo/WeChatIcon.js';
 import TelegramLoginButton from 'react-telegram-login/src';
-import { setUserData } from '../helpers/data.js';
 import { UserContext } from '../context/User/index.js';
 import { useTranslation } from 'react-i18next';
 import Background from '../images/example.png';

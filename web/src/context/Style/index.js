@@ -2,7 +2,7 @@
 
 import React, { useReducer, useEffect, useMemo, createContext } from 'react';
 import { useLocation } from 'react-router-dom';
-import { isMobile as getIsMobile } from '../../helpers/index.js';
+import { isMobile as getIsMobile } from '../../helpers';
 
 // Action Types
 const ACTION_TYPES = {

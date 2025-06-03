@@ -5,12 +5,8 @@ import { StatusContext } from '../context/Status';
 import { useTranslation } from 'react-i18next';
 
 import {
-  API,
-  getLogo,
-  getSystemName,
   isAdmin,
-  isMobile,
-  showError,
+  showError
 } from '../helpers';
 import '../index.css';
 
@@ -39,8 +35,6 @@ import {
   Switch,
   Divider,
 } from '@douyinfe/semi-ui';
-import { setStatusData } from '../helpers/data.js';
-import { stringToColor } from '../helpers/render.js';
 import { useSetTheme, useTheme } from '../context/Theme/index.js';
 import { useStyle, styleActions } from '../context/Style/index.js';
 import Text from '@douyinfe/semi-ui/lib/es/typography/text';

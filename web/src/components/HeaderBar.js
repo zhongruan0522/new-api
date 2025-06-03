@@ -3,7 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { UserContext } from '../context/User';
 import { useSetTheme, useTheme } from '../context/Theme';
 import { useTranslation } from 'react-i18next';
-import { API, getLogo, getSystemName, showSuccess } from '../helpers';
+import { API, getLogo, getSystemName, showSuccess, stringToColor } from '../helpers';
 import fireworks from 'react-fireworks';
 import { CN, GB } from 'country-flag-icons/react/3x2';
 import NoticeModal from './NoticeModal';
@@ -29,7 +29,6 @@ import {
   Typography,
   Skeleton,
 } from '@douyinfe/semi-ui';
-import { stringToColor } from '../helpers/render';
 import { StatusContext } from '../context/Status/index.js';
 import { useStyle, styleActions } from '../context/Style/index.js';
 

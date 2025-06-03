@@ -9,6 +9,7 @@ import {
   showSuccess,
   updateAPI,
   getSystemName,
+  setUserData
 } from '../helpers';
 import {
   onGitHubOAuthClicked,
@@ -31,7 +32,6 @@ import TelegramLoginButton from 'react-telegram-login';
 import { IconGithubLogo, IconMail, IconLock } from '@douyinfe/semi-icons';
 import OIDCIcon from './common/logo/OIDCIcon.js';
 import WeChatIcon from './common/logo/WeChatIcon.js';
-import { setUserData } from '../helpers/data.js';
 import LinuxDoIcon from './common/logo/LinuxDoIcon.js';
 import { useTranslation } from 'react-i18next';
 import Background from '../images/example.png';

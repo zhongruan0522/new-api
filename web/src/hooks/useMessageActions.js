@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { Toast, Modal } from '@douyinfe/semi-ui';
 import { useTranslation } from 'react-i18next';
-import { getTextContent } from '../helpers/messageUtils';
+import { getTextContent } from '../helpers';
 import { ERROR_MESSAGES } from '../constants/playground.constants';
 
 export const useMessageActions = (message, setMessage, onMessageSend, saveMessages) => {

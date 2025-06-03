@@ -5,10 +5,10 @@ import {
   showError,
   showSuccess,
   timestamp2string,
+  renderQuota
 } from '../helpers';
 
 import { ITEMS_PER_PAGE } from '../constants';
-import { renderQuota } from '../helpers/render';
 import {
   Button,
   Card,
