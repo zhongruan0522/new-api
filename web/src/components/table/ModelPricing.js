@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useRef, useMemo, useState } from 'react';
-import { API, copy, showError, showInfo, showSuccess } from '../../helpers/index.js';
+import { API, copy, showError, showInfo, showSuccess, getModelCategories } from '../../helpers/index.js';
 import { useTranslation } from 'react-i18next';
 
 import {
@@ -28,7 +28,6 @@ import {
 } from '@douyinfe/semi-icons';
 import { UserContext } from '../../context/User/index.js';
 import { AlertCircle } from 'lucide-react';
-import { MODEL_CATEGORIES } from '../../constants/index.js';
 
 const ModelPricing = () => {
   const { t } = useTranslation();
@@ -321,7 +320,7 @@ const ModelPricing = () => {
     refresh().then();
   }, []);
 
-  const modelCategories = MODEL_CATEGORIES(t);
+  const modelCategories = getModelCategories(t);
 
   const renderArrow = (items, pos, handleArrowClick) => {
     const style = {

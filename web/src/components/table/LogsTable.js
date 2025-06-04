@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   API,
@@ -19,7 +19,8 @@ import {
   renderNumber,
   renderQuota,
   stringToColor,
-  getLogOther
+  getLogOther,
+  renderModelTag
 } from '../../helpers';
 
 import {
@@ -39,18 +40,14 @@ import {
   Typography,
   Divider,
   Input,
-  DatePicker,
+  DatePicker
 } from '@douyinfe/semi-ui';
 import { ITEMS_PER_PAGE } from '../../constants';
 import Paragraph from '@douyinfe/semi-ui/lib/es/typography/paragraph';
 import {
-  IconRefresh,
   IconSetting,
-  IconEyeOpened,
   IconSearch,
-  IconCoinMoneyStroked,
-  IconPulse,
-  IconTypograph,
+  IconForward
 } from '@douyinfe/semi-icons';
 
 const { Text } = Typography;
@@ -202,19 +199,12 @@ const LogsTable = () => {
       other?.upstream_model_name &&
       other?.upstream_model_name !== '';
     if (!modelMapped) {
-      return (
-        <Tag
-          color={stringToColor(record.model_name)}
-          size='large'
-          shape='circle'
-          onClick={(event) => {
-            copyText(event, record.model_name).then((r) => { });
-          }}
-        >
-          {' '}
-          {record.model_name}{' '}
-        </Tag>
-      );
+      return renderModelTag(record.model_name, {
+        color: stringToColor(record.model_name),
+        onClick: (event) => {
+          copyText(event, record.model_name).then((r) => { });
+        }
+      });
     } else {
       return (
         <>
@@ -223,48 +213,35 @@ const LogsTable = () => {
               content={
                 <div style={{ padding: 10 }}>
                   <Space vertical align={'start'}>
-                    <Tag
-                      color={stringToColor(record.model_name)}
-                      size='large'
-                      shape='circle'
-                      onClick={(event) => {
-                        copyText(event, record.model_name).then((r) => { });
-                      }}
-                    >
-                      {t('请求并计费模型')} {record.model_name}{' '}
-                    </Tag>
-                    <Tag
-                      color={stringToColor(other.upstream_model_name)}
-                      size='large'
-                      shape='circle'
-                      onClick={(event) => {
-                        copyText(event, other.upstream_model_name).then(
-                          (r) => { },
-                        );
-                      }}
-                    >
-                      {t('实际模型')} {other.upstream_model_name}{' '}
-                    </Tag>
+                    <div className="flex items-center">
+                      <Text strong style={{ marginRight: 8 }}>{t('请求并计费模型')}:</Text>
+                      {renderModelTag(record.model_name, {
+                        color: stringToColor(record.model_name),
+                        onClick: (event) => {
+                          copyText(event, record.model_name).then((r) => { });
+                        }
+                      })}
+                    </div>
+                    <div className="flex items-center">
+                      <Text strong style={{ marginRight: 8 }}>{t('实际模型')}:</Text>
+                      {renderModelTag(other.upstream_model_name, {
+                        color: stringToColor(other.upstream_model_name),
+                        onClick: (event) => {
+                          copyText(event, other.upstream_model_name).then((r) => { });
+                        }
+                      })}
+                    </div>
                   </Space>
                 </div>
               }
             >
-              <Tag
-                color={stringToColor(record.model_name)}
-                size='large'
-                shape='circle'
-                onClick={(event) => {
+              {renderModelTag(record.model_name, {
+                color: stringToColor(record.model_name),
+                onClick: (event) => {
                   copyText(event, record.model_name).then((r) => { });
-                }}
-                suffixIcon={
-                  <IconRefresh
-                    style={{ width: '0.8em', height: '0.8em', opacity: 0.6 }}
-                  />
-                }
-              >
-                {' '}
-                {record.model_name}{' '}
-              </Tag>
+                },
+                suffixIcon: <IconForward style={{ width: '0.9em', height: '0.9em', opacity: 0.75 }} />
+              })}
             </Popover>
           </Space>
         </>
