@@ -200,7 +200,6 @@ const LogsTable = () => {
       other?.upstream_model_name !== '';
     if (!modelMapped) {
       return renderModelTag(record.model_name, {
-        color: stringToColor(record.model_name),
         onClick: (event) => {
           copyText(event, record.model_name).then((r) => { });
         }
@@ -216,7 +215,6 @@ const LogsTable = () => {
                     <div className="flex items-center">
                       <Text strong style={{ marginRight: 8 }}>{t('请求并计费模型')}:</Text>
                       {renderModelTag(record.model_name, {
-                        color: stringToColor(record.model_name),
                         onClick: (event) => {
                           copyText(event, record.model_name).then((r) => { });
                         }
@@ -225,7 +223,6 @@ const LogsTable = () => {
                     <div className="flex items-center">
                       <Text strong style={{ marginRight: 8 }}>{t('实际模型')}:</Text>
                       {renderModelTag(other.upstream_model_name, {
-                        color: stringToColor(other.upstream_model_name),
                         onClick: (event) => {
                           copyText(event, other.upstream_model_name).then((r) => { });
                         }
@@ -236,7 +233,6 @@ const LogsTable = () => {
               }
             >
               {renderModelTag(record.model_name, {
-                color: stringToColor(record.model_name),
                 onClick: (event) => {
                   copyText(event, record.model_name).then((r) => { });
                 },

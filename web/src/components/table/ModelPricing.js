@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useRef, useMemo, useState } from 'react';
-import { API, copy, showError, showInfo, showSuccess, getModelCategories } from '../../helpers/index.js';
+import { API, copy, showError, showInfo, showSuccess, getModelCategories, renderModelTag } from '../../helpers/index.js';
 import { useTranslation } from 'react-i18next';
 
 import {
@@ -120,18 +120,11 @@ const ModelPricing = () => {
       title: t('模型名称'),
       dataIndex: 'model_name',
       render: (text, record, index) => {
-        return (
-          <Tag
-            color='green'
-            size='large'
-            shape='circle'
-            onClick={() => {
-              copyText(text);
-            }}
-          >
-            {text}
-          </Tag>
-        );
+        return renderModelTag(text, {
+          onClick: () => {
+            copyText(text);
+          }
+        });
       },
       onFilter: (value, record) =>
         record.model_name.toLowerCase().includes(value.toLowerCase()),

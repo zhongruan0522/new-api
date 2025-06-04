@@ -313,7 +313,7 @@ export function renderModelTag(modelName, options = {}) {
 
   return (
     <Tag
-      color={color || modelToColor(modelName)}
+      color={color || stringToColor(modelName)}
       prefixIcon={icon}
       suffixIcon={suffixIcon}
       size={size}
