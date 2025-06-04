@@ -24,7 +24,7 @@ import {
   IconSearch,
   IconCopy,
   IconInfoCircle,
-  IconCrown,
+  IconLayers,
 } from '@douyinfe/semi-icons';
 import { UserContext } from '../../context/User/index.js';
 import { AlertCircle } from 'lucide-react';
@@ -534,7 +534,7 @@ const ModelPricing = () => {
                     <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 lg:gap-6">
                       <div className="flex items-start">
                         <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-white/10 flex items-center justify-center mr-3 sm:mr-4">
-                          <IconCrown size="large" className="text-white" />
+                          <IconLayers size="extra-large" className="text-white" />
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="text-base sm:text-lg font-semibold mb-1 sm:mb-2">
