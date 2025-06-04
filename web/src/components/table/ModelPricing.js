@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useRef, useMemo, useState } from 'react';
-import { API, copy, showError, showInfo, showSuccess, getModelCategories, renderModelTag } from '../../helpers/index.js';
+import { API, copy, showError, showInfo, showSuccess, getModelCategories, renderModelTag } from '../../helpers';
 import { useTranslation } from 'react-i18next';
 
 import {
@@ -315,6 +315,20 @@ const ModelPricing = () => {
 
   const modelCategories = getModelCategories(t);
 
+  const categoryCounts = useMemo(() => {
+    const counts = {};
+    if (models.length > 0) {
+      counts['all'] = models.length;
+
+      Object.entries(modelCategories).forEach(([key, category]) => {
+        if (key !== 'all') {
+          counts[key] = models.filter(model => category.filter(model)).length;
+        }
+      });
+    }
+    return counts;
+  }, [models, modelCategories]);
+
   const renderArrow = (items, pos, handleArrowClick) => {
     const style = {
       width: 32,
@@ -332,15 +346,29 @@ const ModelPricing = () => {
       <Dropdown
         render={
           <Dropdown.Menu>
-            {items.map(item => (
-              <Dropdown.Item
-                key={item.itemKey}
-                onClick={() => setActiveKey(item.itemKey)}
-                icon={modelCategories[item.itemKey]?.icon}
-              >
-                {modelCategories[item.itemKey]?.label || item.itemKey}
-              </Dropdown.Item>
-            ))}
+            {items.map(item => {
+              const key = item.itemKey;
+              const modelCount = categoryCounts[key] || 0;
+
+              return (
+                <Dropdown.Item
+                  key={item.itemKey}
+                  onClick={() => setActiveKey(item.itemKey)}
+                  icon={modelCategories[item.itemKey]?.icon}
+                >
+                  <div className="flex items-center gap-2">
+                    {modelCategories[item.itemKey]?.label || item.itemKey}
+                    <Tag
+                      color={activeKey === item.itemKey ? 'red' : 'grey'}
+                      size='small'
+                      shape='circle'
+                    >
+                      {modelCount}
+                    </Tag>
+                  </div>
+                </Dropdown.Item>
+              );
+            })}
           </Dropdown.Menu>
         }
       >
@@ -374,18 +402,29 @@ const ModelPricing = () => {
       >
         {Object.entries(modelCategories)
           .filter(([key]) => availableCategories.includes(key))
-          .map(([key, category]) => (
-            <TabPane
-              tab={
-                <span className="flex items-center gap-2">
-                  {category.icon && <span className="w-4 h-4">{category.icon}</span>}
-                  {category.label}
-                </span>
-              }
-              itemKey={key}
-              key={key}
-            />
-          ))}
+          .map(([key, category]) => {
+            const modelCount = categoryCounts[key] || 0;
+
+            return (
+              <TabPane
+                tab={
+                  <span className="flex items-center gap-2">
+                    {category.icon && <span className="w-4 h-4">{category.icon}</span>}
+                    {category.label}
+                    <Tag
+                      color={activeKey === key ? 'red' : 'grey'}
+                      size='small'
+                      shape='circle'
+                    >
+                      {modelCount}
+                    </Tag>
+                  </span>
+                }
+                itemKey={key}
+                key={key}
+              />
+            );
+          })}
       </Tabs>
     );
   };
