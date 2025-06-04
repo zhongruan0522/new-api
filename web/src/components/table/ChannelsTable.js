@@ -878,11 +878,14 @@ const ChannelsTable = () => {
   };
 
   const copySelectedChannel = async (record) => {
-    const channelToCopy = record;
+    const channelToCopy = { ...record };
     channelToCopy.name += t('_复制');
     channelToCopy.created_time = null;
     channelToCopy.balance = 0;
     channelToCopy.used_quota = 0;
+    // 删除可能导致类型不匹配的字段
+    delete channelToCopy.test_time;
+    delete channelToCopy.response_time;
     if (!channelToCopy) {
       showError(t('渠道未找到，请刷新页面后重试。'));
       return;
