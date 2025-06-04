@@ -485,22 +485,26 @@ const RegisterForm = () => {
                 </div>
               </Form>
 
-              <Divider margin='12px' align='center'>
-                {t('或')}
-              </Divider>
+              {(status.github_oauth || status.oidc_enabled || status.wechat_login || status.linuxdo_oauth || status.telegram_oauth) && (
+                <>
+                  <Divider margin='12px' align='center'>
+                    {t('或')}
+                  </Divider>
 
-              <div className="mt-4 text-center">
-                <Button
-                  theme="outline"
-                  type="tertiary"
-                  className="w-full !rounded-full"
-                  size="large"
-                  onClick={handleOtherRegisterOptionsClick}
-                  loading={otherRegisterOptionsLoading}
-                >
-                  {t('其他注册选项')}
-                </Button>
-              </div>
+                  <div className="mt-4 text-center">
+                    <Button
+                      theme="outline"
+                      type="tertiary"
+                      className="w-full !rounded-full"
+                      size="large"
+                      onClick={handleOtherRegisterOptionsClick}
+                      loading={otherRegisterOptionsLoading}
+                    >
+                      {t('其他注册选项')}
+                    </Button>
+                  </div>
+                </>
+              )}
 
               <div className="mt-6 text-center text-sm">
                 <Text>{t('已有账户？')} <Link to="/login" className="text-blue-600 hover:text-blue-800 font-medium">{t('登录')}</Link></Text>
@@ -549,7 +553,7 @@ const RegisterForm = () => {
   };
 
   return (
-    <div className="relative flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 overflow-hidden">
+    <div className="min-h-screen relative flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 overflow-hidden">
       <div
         className="absolute inset-0 z-0 bg-cover bg-center scale-125 opacity-100"
         style={{

@@ -442,21 +442,29 @@ const LoginForm = () => {
                 </div>
               </Form>
 
-              <Divider margin='12px' align='center'>
-                {t('或')}
-              </Divider>
+              {(status.github_oauth || status.oidc_enabled || status.wechat_login || status.linuxdo_oauth || status.telegram_oauth) && (
+                <>
+                  <Divider margin='12px' align='center'>
+                    {t('或')}
+                  </Divider>
 
-              <div className="mt-4 text-center">
-                <Button
-                  theme="outline"
-                  type="tertiary"
-                  className="w-full !rounded-full"
-                  size="large"
-                  onClick={handleOtherLoginOptionsClick}
-                  loading={otherLoginOptionsLoading}
-                >
-                  {t('其他登录选项')}
-                </Button>
+                  <div className="mt-4 text-center">
+                    <Button
+                      theme="outline"
+                      type="tertiary"
+                      className="w-full !rounded-full"
+                      size="large"
+                      onClick={handleOtherLoginOptionsClick}
+                      loading={otherLoginOptionsLoading}
+                    >
+                      {t('其他登录选项')}
+                    </Button>
+                  </div>
+                </>
+              )}
+
+              <div className="mt-6 text-center text-sm">
+                <Text>{t('没有账户？')} <Link to="/register" className="text-blue-600 hover:text-blue-800 font-medium">{t('注册')}</Link></Text>
               </div>
             </div>
           </Card>
@@ -503,7 +511,7 @@ const LoginForm = () => {
   };
 
   return (
-    <div className="relative flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 overflow-hidden">
+    <div className="min-h-screen relative flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 overflow-hidden">
       {/* 背景图片容器 - 放大并保持居中 */}
       <div
         className="absolute inset-0 z-0 bg-cover bg-center scale-125 opacity-100"
