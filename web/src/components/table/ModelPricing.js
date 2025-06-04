@@ -116,7 +116,6 @@ const ModelPricing = () => {
         return Number(aAvailable) - Number(bAvailable);
       },
       defaultSortOrder: 'descend',
-      width: 100,
     },
     {
       title: t('模型名称'),
@@ -138,7 +137,6 @@ const ModelPricing = () => {
       onFilter: (value, record) =>
         record.model_name.toLowerCase().includes(value.toLowerCase()),
       filteredValue,
-      width: 200,
     },
     {
       title: t('计费类型'),
@@ -147,7 +145,6 @@ const ModelPricing = () => {
         return renderQuotaType(parseInt(text));
       },
       sorter: (a, b) => a.quota_type - b.quota_type,
-      width: 120,
     },
     {
       title: t('可用分组'),
@@ -224,7 +221,6 @@ const ModelPricing = () => {
         );
         return content;
       },
-      width: 200,
     },
     {
       title: t('模型价格'),
@@ -259,7 +255,6 @@ const ModelPricing = () => {
         }
         return content;
       },
-      width: 250,
     },
   ];
 
