@@ -294,7 +294,7 @@ const LoginForm = () => {
                     theme='outline'
                     className="w-full h-12 flex items-center justify-center !rounded-full border border-gray-200 hover:bg-gray-50 transition-colors"
                     type="tertiary"
-                    icon={<IconGithubLogo size="large" style={{ color: '#24292e' }} />}
+                    icon={<IconGithubLogo size="large" />}
                     size="large"
                     onClick={handleGitHubClick}
                     loading={githubLoading}
@@ -353,7 +353,7 @@ const LoginForm = () => {
                   onClick={handleEmailLoginClick}
                   loading={emailLoginLoading}
                 >
-                  <span className="ml-3">{t('使用 邮箱 登录')}</span>
+                  <span className="ml-3">{t('使用 邮箱或用户名 登录')}</span>
                 </Button>
               </div>
 
@@ -395,8 +395,8 @@ const LoginForm = () => {
               <Form className="space-y-3">
                 <Form.Input
                   field="username"
-                  label={t('邮箱')}
-                  placeholder={t('请输入您的邮箱地址')}
+                  label={t('用户名或邮箱')}
+                  placeholder={t('请输入您的用户名或邮箱地址')}
                   name="username"
                   size="large"
                   className="!rounded-md"

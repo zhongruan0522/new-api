@@ -300,7 +300,7 @@ const RegisterForm = () => {
                     theme='outline'
                     className="w-full h-12 flex items-center justify-center !rounded-full border border-gray-200 hover:bg-gray-50 transition-colors"
                     type="tertiary"
-                    icon={<IconGithubLogo size="large" style={{ color: '#24292e' }} />}
+                    icon={<IconGithubLogo size="large" />}
                     size="large"
                     onClick={handleGitHubClick}
                     loading={githubLoading}
@@ -359,7 +359,7 @@ const RegisterForm = () => {
                   onClick={handleEmailRegisterClick}
                   loading={emailRegisterLoading}
                 >
-                  <span className="ml-3">{t('使用 邮箱 注册')}</span>
+                  <span className="ml-3">{t('使用 用户名 注册')}</span>
                 </Button>
               </div>
 
