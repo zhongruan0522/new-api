@@ -349,6 +349,7 @@ const Setup = () => {
                           size='large'
                           className="mb-4 !rounded-lg"
                           noLabel={false}
+                          mode="password"
                           validateStatus="default"
                           onChange={(value) =>
                             setFormData({ ...formData, password: value })
@@ -364,6 +365,7 @@ const Setup = () => {
                           size='large'
                           className="!rounded-lg"
                           noLabel={false}
+                          mode="password"
                           validateStatus="default"
                           onChange={(value) =>
                             setFormData({ ...formData, confirmPassword: value })
