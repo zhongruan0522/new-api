@@ -121,8 +121,8 @@ func GeminiTextGenerationStreamHandler(c *gin.Context, resp *http.Response, info
 	usage.PromptTokensDetails.TextTokens = usage.PromptTokens
 	usage.CompletionTokens = usage.TotalTokens - usage.PromptTokens
 
-	// 结束流式响应
-	helper.Done(c)
+	// 移除流式响应结尾的[Done]，因为Gemini API没有发送Done的行为
+	//helper.Done(c)
 
 	return usage, nil
 }
