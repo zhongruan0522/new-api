@@ -44,6 +44,9 @@
 
 详细文档请访问我们的官方Wiki：[https://docs.newapi.pro/](https://docs.newapi.pro/)
 
+也可访问AI生成的DeepWiki:
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/QuantumNous/new-api)
+
 ## ✨ 主要特性
 
 New API提供了丰富的功能，详细特性请参考[特性说明](https://docs.newapi.pro/wiki/features-introduction)：
