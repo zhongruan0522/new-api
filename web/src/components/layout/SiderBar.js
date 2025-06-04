@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 
 import {
   isAdmin,
+  isRoot,
   showError
 } from '../../helpers/index.js';
 
@@ -218,15 +219,17 @@ const SiderBar = () => {
         itemKey: 'user',
         to: '/user',
         icon: <IconUser />,
+        className: isAdmin() ? '' : 'tableHiddle',
       },
       {
         text: t('系统设置'),
         itemKey: 'setting',
         to: '/setting',
         icon: <IconSetting />,
+        className: isRoot() ? '' : 'tableHiddle',
       },
     ],
-    [isAdmin(), t],
+    [isAdmin(), isRoot(), t],
   );
 
   const chatMenuItems = useMemo(
