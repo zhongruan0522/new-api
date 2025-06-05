@@ -6,7 +6,9 @@ import {
   showSuccess,
   renderQuota,
   renderQuotaWithAmount,
-  stringToColor
+  stringToColor,
+  copy,
+  getQuotaPerUnit
 } from '../../helpers';
 import {
   Layout,
@@ -53,6 +55,11 @@ const TopUp = () => {
   const [amountLoading, setAmountLoading] = useState(false);
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [confirmLoading, setConfirmLoading] = useState(false);
+
+  // 邀请相关状态
+  const [affLink, setAffLink] = useState('');
+  const [openTransfer, setOpenTransfer] = useState(false);
+  const [transferAmount, setTransferAmount] = useState(0);
 
   const getUsername = () => {
     if (userState.user) {
@@ -211,6 +218,44 @@ const TopUp = () => {
     setUserDataLoading(false);
   };
 
+  // 获取邀请链接
+  const getAffLink = async () => {
+    const res = await API.get('/api/user/aff');
+    const { success, message, data } = res.data;
+    if (success) {
+      let link = `${window.location.origin}/register?aff=${data}`;
+      setAffLink(link);
+    } else {
+      showError(message);
+    }
+  };
+
+  // 划转邀请额度
+  const transfer = async () => {
+    if (transferAmount < getQuotaPerUnit()) {
+      showError(t('划转金额最低为') + ' ' + renderQuota(getQuotaPerUnit()));
+      return;
+    }
+    const res = await API.post(`/api/user/aff_transfer`, {
+      quota: transferAmount,
+    });
+    const { success, message } = res.data;
+    if (success) {
+      showSuccess(message);
+      setOpenTransfer(false);
+      getUserQuota().then();
+    } else {
+      showError(message);
+    }
+  };
+
+  // 复制邀请链接
+  const handleAffLinkClick = async (e) => {
+    e.target.select();
+    await copy(e.target.value);
+    showSuccess(t('邀请链接已复制到剪切板'));
+  };
+
   useEffect(() => {
     if (userState?.user?.id) {
       setUserDataLoading(false);
@@ -218,6 +263,8 @@ const TopUp = () => {
     } else {
       getUserQuota().then();
     }
+    getAffLink().then();
+    setTransferAmount(getQuotaPerUnit());
   }, []);
 
   useEffect(() => {
@@ -264,10 +311,58 @@ const TopUp = () => {
     setOpen(false);
   };
 
+  const handleTransferCancel = () => {
+    setOpenTransfer(false);
+  };
+
   return (
     <div className="bg-gray-50">
       <Layout>
         <Layout.Content>
+          {/* 划转模态框 */}
+          <Modal
+            title={
+              <div className="flex items-center">
+                <IconCreditCard className="mr-2" />
+                {t('请输入要划转的数量')}
+              </div>
+            }
+            visible={openTransfer}
+            onOk={transfer}
+            onCancel={handleTransferCancel}
+            maskClosable={false}
+            size={'small'}
+            centered={true}
+          >
+            <div className="space-y-4 py-4">
+              <div>
+                <Typography.Text strong className="block mb-2">
+                  {t('可用额度')} {renderQuota(userState?.user?.aff_quota)}
+                </Typography.Text>
+                <Input
+                  value={userState?.user?.aff_quota}
+                  disabled={true}
+                  size="large"
+                  className="!rounded-lg"
+                />
+              </div>
+              <div>
+                <Typography.Text strong className="block mb-2">
+                  {t('划转额度')} {renderQuota(transferAmount)}{' '}
+                  {t('最低') + renderQuota(getQuotaPerUnit())}
+                </Typography.Text>
+                <InputNumber
+                  min={0}
+                  value={transferAmount}
+                  onChange={(value) => setTransferAmount(value)}
+                  disabled={false}
+                  size="large"
+                  className="!rounded-lg w-full"
+                />
+              </div>
+            </div>
+          </Modal>
+
           <Modal
             title={
               <div className="flex items-center">
@@ -300,7 +395,7 @@ const TopUp = () => {
           </Modal>
 
           <div className="flex justify-center">
-            <div className="w-full max-w-4xl">
+            <div className="w-full">
               <Card className="!rounded-2xl shadow-lg border-0">
                 <Card
                   className="!rounded-2xl !border-0 !shadow-2xl overflow-hidden"
@@ -413,7 +508,81 @@ const TopUp = () => {
                 </Card>
 
                 <div className="p-6">
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    {/* 邀请信息部分 */}
+                    <div>
+                      <div className="flex items-center justify-between mb-6">
+                        <div className="flex items-center">
+                          <div className="w-12 h-12 rounded-full bg-orange-50 flex items-center justify-center mr-4">
+                            <IconLink size="large" className="text-orange-500" />
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-3">
+                              <Text className="text-xl font-semibold">{t('邀请信息')}</Text>
+                              <Button
+                                type="primary"
+                                theme="solid"
+                                onClick={() => setOpenTransfer(true)}
+                                size="small"
+                                className="!rounded-lg !bg-blue-500 hover:!bg-blue-600"
+                                icon={<IconCreditCard />}
+                              >
+                                {t('划转')}
+                              </Button>
+                            </div>
+                            <div className="text-gray-500 text-sm">{t('管理您的邀请链接和收益')}</div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                          <Card
+                            className="!rounded-2xl text-center"
+                            bodyStyle={{ padding: '16px' }}
+                            shadows='hover'
+                          >
+                            <div className="text-gray-600 text-xs font-medium">{t('待使用收益')}</div>
+                            <div className="text-gray-900 text-lg font-bold mt-1">
+                              {renderQuota(userState?.user?.aff_quota)}
+                            </div>
+
+                          </Card>
+                          <Card
+                            className="!rounded-2xl text-center"
+                            bodyStyle={{ padding: '16px' }}
+                            shadows='hover'
+                          >
+                            <div className="text-gray-600 text-xs font-medium">{t('总收益')}</div>
+                            <div className="text-gray-900 text-lg font-bold mt-1">
+                              {renderQuota(userState?.user?.aff_history_quota)}
+                            </div>
+                          </Card>
+                          <Card
+                            className="!rounded-2xl text-center"
+                            bodyStyle={{ padding: '16px' }}
+                            shadows='hover'
+                          >
+                            <div className="text-gray-600 text-xs font-medium">{t('邀请人数')}</div>
+                            <div className="text-gray-900 text-lg font-bold mt-1">
+                              {userState?.user?.aff_count || 0}
+                            </div>
+                          </Card>
+                        </div>
+
+                        <div className="bg-white rounded-lg p-3">
+                          <Typography.Text strong className="block mb-2 text-sm">{t('邀请链接')}</Typography.Text>
+                          <Input
+                            value={affLink}
+                            onClick={handleAffLinkClick}
+                            readOnly
+                            size="large"
+                            className="!rounded-lg"
+                            prefix={<IconLink />}
+                          />
+                        </div>
+                      </div>
+                    </div>
                     <div>
                       <div className="flex items-center mb-6">
                         <div className="w-12 h-12 rounded-full bg-green-50 flex items-center justify-center mr-4">

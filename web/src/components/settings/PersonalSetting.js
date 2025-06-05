@@ -8,13 +8,14 @@ import {
   showError,
   showInfo,
   showSuccess,
-  getQuotaPerUnit,
   renderQuota,
   renderQuotaWithPrompt,
   stringToColor,
   onGitHubOAuthClicked,
   onOIDCClicked,
-  onLinuxDOOAuthClicked
+  onLinuxDOOAuthClicked,
+  renderModelTag,
+  getModelCategories
 } from '../../helpers';
 import Turnstile from 'react-turnstile';
 import { UserContext } from '../../context/User';
@@ -23,11 +24,12 @@ import {
   Banner,
   Button,
   Card,
+  Empty,
   Image,
   Input,
-  InputNumber,
   Layout,
   Modal,
+  Skeleton,
   Space,
   Tag,
   Typography,
@@ -39,6 +41,7 @@ import {
   Tabs,
   TabPane,
 } from '@douyinfe/semi-ui';
+import { IllustrationNoContent, IllustrationNoContentDark } from '@douyinfe/semi-illustrations';
 import {
   IconMail,
   IconLock,
@@ -48,8 +51,6 @@ import {
   IconBell,
   IconGithubLogo,
   IconKey,
-  IconCreditCard,
-  IconLink,
   IconDelete,
   IconChevronDown,
   IconChevronUp,
@@ -84,16 +85,14 @@ const PersonalSetting = () => {
   const [loading, setLoading] = useState(false);
   const [disableButton, setDisableButton] = useState(false);
   const [countdown, setCountdown] = useState(30);
-  const [affLink, setAffLink] = useState('');
   const [systemToken, setSystemToken] = useState('');
   const [models, setModels] = useState([]);
-  const [openTransfer, setOpenTransfer] = useState(false);
-  const [transferAmount, setTransferAmount] = useState(0);
   const [isModelsExpanded, setIsModelsExpanded] = useState(() => {
     // Initialize from localStorage if available
     const savedState = localStorage.getItem('modelsExpanded');
     return savedState ? JSON.parse(savedState) : false;
   });
+  const [activeModelCategory, setActiveModelCategory] = useState('all');
   const MODELS_DISPLAY_COUNT = 25; // 默认显示的模型数量
   const [notificationSettings, setNotificationSettings] = useState({
     warningType: 'email',
@@ -103,6 +102,7 @@ const PersonalSetting = () => {
     notificationEmail: '',
     acceptUnsetModelRatioModel: false,
   });
+  const [modelsLoading, setModelsLoading] = useState(true);
   const [showWebhookDocs, setShowWebhookDocs] = useState(true);
 
   useEffect(() => {
@@ -119,8 +119,6 @@ const PersonalSetting = () => {
       console.log(userState);
     });
     loadModels().then();
-    getAffLink().then();
-    setTransferAmount(getQuotaPerUnit());
   }, []);
 
   useEffect(() => {
@@ -172,17 +170,6 @@ const PersonalSetting = () => {
     }
   };
 
-  const getAffLink = async () => {
-    const res = await API.get('/api/user/aff');
-    const { success, message, data } = res.data;
-    if (success) {
-      let link = `${window.location.origin}/register?aff=${data}`;
-      setAffLink(link);
-    } else {
-      showError(message);
-    }
-  };
-
   const getUserData = async () => {
     let res = await API.get(`/api/user/self`);
     const { success, message, data } = res.data;
@@ -194,21 +181,24 @@ const PersonalSetting = () => {
   };
 
   const loadModels = async () => {
-    let res = await API.get(`/api/user/models`);
-    const { success, message, data } = res.data;
-    if (success) {
-      if (data != null) {
-        setModels(data);
-      }
-    } else {
-      showError(message);
-    }
-  };
+    setModelsLoading(true);
 
-  const handleAffLinkClick = async (e) => {
-    e.target.select();
-    await copy(e.target.value);
-    showSuccess(t('邀请链接已复制到剪切板'));
+    try {
+      let res = await API.get(`/api/user/models`);
+      const { success, message, data } = res.data;
+
+      if (success) {
+        if (data != null) {
+          setModels(data);
+        }
+      } else {
+        showError(message);
+      }
+    } catch (error) {
+      showError(t('加载模型列表失败'));
+    } finally {
+      setModelsLoading(false);
+    }
   };
 
   const handleSystemTokenClick = async (e) => {
@@ -282,24 +272,6 @@ const PersonalSetting = () => {
     setShowChangePasswordModal(false);
   };
 
-  const transfer = async () => {
-    if (transferAmount < getQuotaPerUnit()) {
-      showError(t('划转金额最低为') + ' ' + renderQuota(getQuotaPerUnit()));
-      return;
-    }
-    const res = await API.post(`/api/user/aff_transfer`, {
-      quota: transferAmount,
-    });
-    const { success, message } = res.data;
-    if (success) {
-      showSuccess(message);
-      setOpenTransfer(false);
-      getUserData().then();
-    } else {
-      showError(message);
-    }
-  };
-
   const sendVerificationCode = async () => {
     if (inputs.email === '') {
       showError(t('请输入邮箱！'));
@@ -360,10 +332,6 @@ const PersonalSetting = () => {
     return 'NA';
   };
 
-  const handleCancel = () => {
-    setOpenTransfer(false);
-  };
-
   const copyText = async (text) => {
     if (await copy(text)) {
       showSuccess(t('已复制：') + text);
@@ -409,52 +377,9 @@ const PersonalSetting = () => {
     <div className="bg-gray-50">
       <Layout>
         <Layout.Content>
-          {/* 划转模态框 */}
-          <Modal
-            title={
-              <div className="flex items-center">
-                <IconCreditCard className="mr-2" />
-                {t('请输入要划转的数量')}
-              </div>
-            }
-            visible={openTransfer}
-            onOk={transfer}
-            onCancel={handleCancel}
-            maskClosable={false}
-            size={'small'}
-            centered={true}
-          >
-            <div className="space-y-4 py-4">
-              <div>
-                <Typography.Text strong className="block mb-2">
-                  {t('可用额度')} {renderQuotaWithPrompt(userState?.user?.aff_quota)}
-                </Typography.Text>
-                <Input
-                  value={userState?.user?.aff_quota}
-                  disabled={true}
-                  size="large"
-                  className="!rounded-lg"
-                />
-              </div>
-              <div>
-                <Typography.Text strong className="block mb-2">
-                  {t('划转额度')} {renderQuotaWithPrompt(transferAmount)}{' '}
-                  {t('最低') + renderQuota(getQuotaPerUnit())}
-                </Typography.Text>
-                <InputNumber
-                  min={0}
-                  value={transferAmount}
-                  onChange={(value) => setTransferAmount(value)}
-                  disabled={false}
-                  size="large"
-                  className="!rounded-lg w-full"
-                />
-              </div>
-            </div>
-          </Modal>
 
           <div className="flex justify-center">
-            <div className="w-full max-w-6xl">
+            <div className="w-full">
               {/* 主卡片容器 */}
               <Card className="!rounded-2xl shadow-lg border-0">
                 {/* 顶部用户信息区域 */}
@@ -600,17 +525,17 @@ const PersonalSetting = () => {
                 {/* 主内容区域 - 使用Tabs组织不同功能模块 */}
                 <div className="p-4">
                   <Tabs type='line' defaultActiveKey='models' className="modern-tabs">
-                    {/* 模型与邀请Tab */}
+                    {/* 可用模型Tab */}
                     <TabPane
                       tab={
                         <div className="flex items-center">
                           <Settings size={16} className="mr-2" />
-                          {t('模型与邀请')}
+                          {t('可用模型')}
                         </div>
                       }
                       itemKey='models'
                     >
-                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 py-4">
+                      <div className="gap-6 py-4">
                         {/* 可用模型部分 */}
                         <div className="bg-gray-50 rounded-xl">
                           <div className="flex items-center mb-4">
@@ -618,148 +543,176 @@ const PersonalSetting = () => {
                               <Settings size={20} className="text-purple-500" />
                             </div>
                             <div>
-                              <Typography.Title heading={6} className="mb-0">{t('可用模型')}</Typography.Title>
+                              <Typography.Title heading={6} className="mb-0">{t('模型列表')}</Typography.Title>
                               <div className="text-gray-500 text-sm">{t('点击模型名称可复制')}</div>
                             </div>
                           </div>
 
-                          <div className="bg-white rounded-lg p-3">
-                            {models.length <= MODELS_DISPLAY_COUNT ? (
-                              <Space wrap>
-                                {models.map((model) => (
-                                  <Tag
-                                    key={model}
-                                    color={stringToColor(model)}
-                                    onClick={() => copyText(model)}
-                                    className="cursor-pointer hover:opacity-80 transition-opacity !rounded-lg"
-                                  >
-                                    {model}
-                                  </Tag>
+                          {modelsLoading ? (
+                            // 骨架屏加载状态 - 模拟实际加载后的布局
+                            <div className="space-y-4">
+                              {/* 模拟分类标签 */}
+                              <div className="mb-4" style={{ borderBottom: '1px solid var(--semi-color-border)' }}>
+                                <div className="flex overflow-x-auto py-2 gap-2">
+                                  {Array.from({ length: 8 }).map((_, index) => (
+                                    <Skeleton.Button key={`cat-${index}`} style={{
+                                      width: index === 0 ? 130 : 100 + Math.random() * 50,
+                                      height: 36,
+                                      borderRadius: 8
+                                    }} />
+                                  ))}
+                                </div>
+                              </div>
+
+                              {/* 模拟模型标签列表 */}
+                              <div className="flex flex-wrap gap-2">
+                                {Array.from({ length: 20 }).map((_, index) => (
+                                  <Skeleton.Button
+                                    key={`model-${index}`}
+                                    style={{
+                                      width: 100 + Math.random() * 100,
+                                      height: 32,
+                                      borderRadius: 16,
+                                      margin: '4px'
+                                    }}
+                                  />
                                 ))}
-                              </Space>
-                            ) : (
-                              <>
-                                <Collapsible isOpen={isModelsExpanded}>
-                                  <Space wrap>
-                                    {models.map((model) => (
-                                      <Tag
-                                        key={model}
-                                        color={stringToColor(model)}
-                                        onClick={() => copyText(model)}
-                                        className="cursor-pointer hover:opacity-80 transition-opacity !rounded-lg"
-                                      >
-                                        {model}
-                                      </Tag>
-                                    ))}
-                                    <Tag
-                                      color='grey'
-                                      type='light'
-                                      className="cursor-pointer !rounded-lg"
-                                      onClick={() => setIsModelsExpanded(false)}
-                                      icon={<IconChevronUp />}
-                                    >
-                                      {t('收起')}
-                                    </Tag>
-                                  </Space>
-                                </Collapsible>
-                                {!isModelsExpanded && (
-                                  <Space wrap>
-                                    {models
-                                      .slice(0, MODELS_DISPLAY_COUNT)
-                                      .map((model) => (
-                                        <Tag
-                                          key={model}
-                                          color={stringToColor(model)}
-                                          onClick={() => copyText(model)}
-                                          className="cursor-pointer hover:opacity-80 transition-opacity !rounded-lg"
-                                        >
-                                          {model}
-                                        </Tag>
-                                      ))}
-                                    <Tag
-                                      color='grey'
-                                      type='light'
-                                      className="cursor-pointer !rounded-lg"
-                                      onClick={() => setIsModelsExpanded(true)}
-                                      icon={<IconChevronDown />}
-                                    >
-                                      {t('更多')} {models.length - MODELS_DISPLAY_COUNT} {t('个模型')}
-                                    </Tag>
-                                  </Space>
-                                )}
-                              </>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* 邀请信息部分 */}
-                        <div className="bg-gray-50 rounded-xl">
-                          <div className="flex items-center mb-4">
-                            <div className="w-10 h-10 rounded-full bg-orange-50 flex items-center justify-center mr-3">
-                              <IconLink size={20} className="text-orange-500" />
+                              </div>
                             </div>
-                            <div>
-                              <Typography.Title heading={6} className="mb-0">{t('邀请信息')}</Typography.Title>
-                              <div className="text-gray-500 text-sm">{t('管理您的邀请链接和收益')}</div>
-                            </div>
-                          </div>
-
-                          <div className="space-y-3">
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                              <Card
-                                className="!rounded-2xl text-center"
-                                bodyStyle={{ padding: '16px' }}
-                                shadows='hover'
-                              >
-                                <div className="text-gray-600 text-xs font-medium">{t('待使用收益')}</div>
-                                <div className="text-gray-900 text-lg font-bold mt-1">
-                                  {renderQuota(userState?.user?.aff_quota)}
-                                </div>
-                                <Button
-                                  type="primary"
-                                  theme="solid"
-                                  onClick={() => setOpenTransfer(true)}
-                                  size="small"
-                                  className="!rounded-lg !bg-blue-500 hover:!bg-blue-600 mt-2 w-full"
-                                  icon={<IconCreditCard />}
-                                >
-                                  {t('划转')}
-                                </Button>
-                              </Card>
-                              <Card
-                                className="!rounded-2xl text-center"
-                                bodyStyle={{ padding: '16px' }}
-                                shadows='hover'
-                              >
-                                <div className="text-gray-600 text-xs font-medium">{t('总收益')}</div>
-                                <div className="text-gray-900 text-lg font-bold mt-1">
-                                  {renderQuota(userState?.user?.aff_history_quota)}
-                                </div>
-                              </Card>
-                              <Card
-                                className="!rounded-2xl text-center"
-                                bodyStyle={{ padding: '16px' }}
-                                shadows='hover'
-                              >
-                                <div className="text-gray-600 text-xs font-medium">{t('邀请人数')}</div>
-                                <div className="text-gray-900 text-lg font-bold mt-1">
-                                  {userState?.user?.aff_count || 0}
-                                </div>
-                              </Card>
-                            </div>
-
-                            <div className="bg-white rounded-lg p-3">
-                              <Typography.Text strong className="block mb-2 text-sm">{t('邀请链接')}</Typography.Text>
-                              <Input
-                                value={affLink}
-                                onClick={handleAffLinkClick}
-                                readOnly
-                                size="large"
-                                className="!rounded-lg"
-                                prefix={<IconLink />}
+                          ) : models.length === 0 ? (
+                            <div className="py-8">
+                              <Empty
+                                image={<IllustrationNoContent style={{ width: 150, height: 150 }} />}
+                                darkModeImage={<IllustrationNoContentDark style={{ width: 150, height: 150 }} />}
+                                description={t('没有可用模型')}
+                                style={{ padding: '24px 0' }}
                               />
                             </div>
-                          </div>
+                          ) : (
+                            <>
+                              {/* 模型分类标签页 */}
+                              <div className="mb-4">
+                                <Tabs
+                                  type="card"
+                                  activeKey={activeModelCategory}
+                                  onChange={key => setActiveModelCategory(key)}
+                                  className="mt-2"
+                                >
+                                  {Object.entries(getModelCategories(t)).map(([key, category]) => {
+                                    // 计算该分类下的模型数量
+                                    const modelCount = key === 'all'
+                                      ? models.length
+                                      : models.filter(model => category.filter({ model_name: model })).length;
+
+                                    if (modelCount === 0 && key !== 'all') return null;
+
+                                    return (
+                                      <TabPane
+                                        tab={
+                                          <span className="flex items-center gap-2">
+                                            {category.icon && <span className="w-4 h-4">{category.icon}</span>}
+                                            {category.label}
+                                            <Tag
+                                              color={activeModelCategory === key ? 'red' : 'grey'}
+                                              size='small'
+                                              shape='circle'
+                                            >
+                                              {modelCount}
+                                            </Tag>
+                                          </span>
+                                        }
+                                        itemKey={key}
+                                        key={key}
+                                      />
+                                    );
+                                  })}
+                                </Tabs>
+                              </div>
+
+                              <div className="bg-white rounded-lg p-3">
+                                {(() => {
+                                  // 根据当前选中的分类过滤模型
+                                  const categories = getModelCategories(t);
+                                  const filteredModels = activeModelCategory === 'all'
+                                    ? models
+                                    : models.filter(model => categories[activeModelCategory].filter({ model_name: model }));
+
+                                  // 如果过滤后没有模型，显示空状态
+                                  if (filteredModels.length === 0) {
+                                    return (
+                                      <Empty
+                                        image={<IllustrationNoContent style={{ width: 120, height: 120 }} />}
+                                        darkModeImage={<IllustrationNoContentDark style={{ width: 120, height: 120 }} />}
+                                        description={t('该分类下没有可用模型')}
+                                        style={{ padding: '16px 0' }}
+                                      />
+                                    );
+                                  }
+
+                                  if (filteredModels.length <= MODELS_DISPLAY_COUNT) {
+                                    return (
+                                      <Space wrap>
+                                        {filteredModels.map((model) => (
+                                          renderModelTag(model, {
+                                            size: 'large',
+                                            shape: 'circle',
+                                            onClick: () => copyText(model),
+                                          })
+                                        ))}
+                                      </Space>
+                                    );
+                                  } else {
+                                    return (
+                                      <>
+                                        <Collapsible isOpen={isModelsExpanded}>
+                                          <Space wrap>
+                                            {filteredModels.map((model) => (
+                                              renderModelTag(model, {
+                                                size: 'large',
+                                                shape: 'circle',
+                                                onClick: () => copyText(model),
+                                              })
+                                            ))}
+                                            <Tag
+                                              color='grey'
+                                              type='light'
+                                              className="cursor-pointer !rounded-lg"
+                                              onClick={() => setIsModelsExpanded(false)}
+                                              icon={<IconChevronUp />}
+                                            >
+                                              {t('收起')}
+                                            </Tag>
+                                          </Space>
+                                        </Collapsible>
+                                        {!isModelsExpanded && (
+                                          <Space wrap>
+                                            {filteredModels
+                                              .slice(0, MODELS_DISPLAY_COUNT)
+                                              .map((model) => (
+                                                renderModelTag(model, {
+                                                  size: 'large',
+                                                  shape: 'circle',
+                                                  onClick: () => copyText(model),
+                                                })
+                                              ))}
+                                            <Tag
+                                              color='grey'
+                                              type='light'
+                                              className="cursor-pointer !rounded-lg"
+                                              onClick={() => setIsModelsExpanded(true)}
+                                              icon={<IconChevronDown />}
+                                            >
+                                              {t('更多')} {filteredModels.length - MODELS_DISPLAY_COUNT} {t('个模型')}
+                                            </Tag>
+                                          </Space>
+                                        )}
+                                      </>
+                                    );
+                                  }
+                                })()}
+                              </div>
+                            </>
+                          )}
                         </div>
                       </div>
                     </TabPane>
@@ -805,7 +758,7 @@ const PersonalSetting = () => {
                               >
                                 {userState.user && userState.user.email !== ''
                                   ? t('修改绑定')
-                                  : t('绑定邮箱')}
+                                  : t('绑定')}
                               </Button>
                             </div>
                           </Card>
