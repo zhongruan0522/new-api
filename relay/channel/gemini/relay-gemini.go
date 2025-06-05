@@ -58,8 +58,21 @@ func CovertGemini2OpenAI(textRequest dto.GeneralOpenAIRequest, info *relaycommon
 
 	if model_setting.GetGeminiSettings().ThinkingAdapterEnabled {
 		if strings.HasSuffix(info.OriginModelName, "-thinking") {
-			// 如果模型名以 gemini-2.5-pro 开头，不设置 ThinkingBudget
-			if strings.HasPrefix(info.OriginModelName, "gemini-2.5-pro") {
+			// 硬编码不支持 ThinkingBudget 的旧模型
+			unsupportedModels := []string{
+				"gemini-2.5-pro-preview-05-06",
+				"gemini-2.5-pro-preview-03-25",
+			}
+
+			isUnsupported := false
+			for _, unsupportedModel := range unsupportedModels {
+				if strings.HasPrefix(info.OriginModelName, unsupportedModel) {
+					isUnsupported = true
+					break
+				}
+			}
+
+			if isUnsupported {
 				geminiRequest.GenerationConfig.ThinkingConfig = &GeminiThinkingConfig{
 					IncludeThoughts: true,
 				}
