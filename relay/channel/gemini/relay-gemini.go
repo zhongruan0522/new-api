@@ -178,16 +178,6 @@ func CovertGemini2OpenAI(textRequest dto.GeneralOpenAIRequest, info *relaycommon
 				Name:     name,
 				Response: contentMap,
 			}
-			// If StrToMap returns nil because message.StringContent() is not a valid JSON object string,
-			// and Gemini strictly requires an object (e.g., {}), this might need adjustment.
-			// For example:
-			// if contentMap == nil && message.StringContent() != "" {
-			//    // Option 1: Send an empty object if that's preferred over null
-			//    // functionResp.Response = make(map[string]interface{})
-			//    // Option 2: Wrap the plain string if that's ever the case and needs to be an object
-			//    // functionResp.Response = map[string]interface{}{"text_content": message.StringContent()}
-			// }
-			// For now, directly assigning contentMap is the most straightforward fix for the reported issue.
 
 			*parts = append(*parts, GeminiPart{
 				FunctionResponse: functionResp,
