@@ -239,7 +239,7 @@ const EditUser = (props) => {
             readonly
           />
           <div style={{ marginTop: 20 }}>
-            <Typography.Text>{t('`已绑定的 OIDC 账户')}</Typography.Text>
+            <Typography.Text>{t('已绑定的 OIDC 账户')}</Typography.Text>
           </div>
           <Input
             name='oidc_id'

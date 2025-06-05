@@ -3,13 +3,15 @@ package baidu_v2
 import (
 	"errors"
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"io"
 	"net/http"
 	"one-api/dto"
 	"one-api/relay/channel"
 	"one-api/relay/channel/openai"
 	relaycommon "one-api/relay/common"
+	"strings"
+
+	"github.com/gin-gonic/gin"
 )
 
 type Adaptor struct {
@@ -48,6 +50,18 @@ func (a *Adaptor) ConvertOpenAIRequest(c *gin.Context, info *relaycommon.RelayIn
 	if request == nil {
 		return nil, errors.New("request is nil")
 	}
+	if strings.HasSuffix(info.UpstreamModelName, "-search") {
+		info.UpstreamModelName = strings.TrimSuffix(info.UpstreamModelName, "-search")
+		request.Model = info.UpstreamModelName
+		toMap := request.ToMap()
+		toMap["web_search"] = map[string]any{
+			"enable":          true,
+			"enable_citation": true,
+			"enable_trace":    true,
+			"enable_status":   false,
+		}
+		return toMap, nil
+	}
 	return request, nil
 }
 
@@ -57,6 +71,11 @@ func (a *Adaptor) ConvertRerankRequest(c *gin.Context, relayMode int, request dt
 
 func (a *Adaptor) ConvertEmbeddingRequest(c *gin.Context, info *relaycommon.RelayInfo, request dto.EmbeddingRequest) (any, error) {
 	//TODO implement me
+	return nil, errors.New("not implemented")
+}
+
+func (a *Adaptor) ConvertOpenAIResponsesRequest(c *gin.Context, info *relaycommon.RelayInfo, request dto.OpenAIResponsesRequest) (any, error) {
+	// TODO implement me
 	return nil, errors.New("not implemented")
 }
 

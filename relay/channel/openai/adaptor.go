@@ -8,6 +8,7 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http"
+	"net/textproto"
 	"one-api/common"
 	constant2 "one-api/constant"
 	"one-api/dto"
@@ -26,7 +27,6 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"net/textproto"
 )
 
 type Adaptor struct {
@@ -89,7 +89,10 @@ func (a *Adaptor) GetRequestURL(info *relaycommon.RelayInfo) (string, error) {
 		requestURL = fmt.Sprintf("%s?api-version=%s", requestURL, apiVersion)
 		task := strings.TrimPrefix(requestURL, "/v1/")
 		model_ := info.UpstreamModelName
-		model_ = strings.Replace(model_, ".", "", -1)
+		// 2025年5月10日后创建的渠道不移除.
+		if info.ChannelCreateTime < constant2.AzureNoRemoveDotTime {
+			model_ = strings.Replace(model_, ".", "", -1)
+		}
 		// https://github.com/songquanpeng/one-api/issues/67
 		requestURL = fmt.Sprintf("/openai/deployments/%s/%s", model_, task)
 		if info.RelayMode == constant.RelayModeRealtime {
@@ -169,7 +172,7 @@ func (a *Adaptor) ConvertOpenAIRequest(c *gin.Context, info *relaycommon.RelayIn
 		info.UpstreamModelName = request.Model
 
 		// o系列模型developer适配（o1-mini除外）
-		if !strings.HasPrefix(request.Model, "o1-mini") {
+		if !strings.HasPrefix(request.Model, "o1-mini") && !strings.HasPrefix(request.Model, "o1-preview") {
 			//修改第一个Message的内容，将system改为developer
 			if len(request.Messages) > 0 && request.Messages[0].Role == "system" {
 				request.Messages[0].Role = "developer"
@@ -380,6 +383,21 @@ func detectImageMimeType(filename string) string {
 	}
 }
 
+func (a *Adaptor) ConvertOpenAIResponsesRequest(c *gin.Context, info *relaycommon.RelayInfo, request dto.OpenAIResponsesRequest) (any, error) {
+	// 模型后缀转换 reasoning effort
+	if strings.HasSuffix(request.Model, "-high") {
+		request.Reasoning.Effort = "high"
+		request.Model = strings.TrimSuffix(request.Model, "-high")
+	} else if strings.HasSuffix(request.Model, "-low") {
+		request.Reasoning.Effort = "low"
+		request.Model = strings.TrimSuffix(request.Model, "-low")
+	} else if strings.HasSuffix(request.Model, "-medium") {
+		request.Reasoning.Effort = "medium"
+		request.Model = strings.TrimSuffix(request.Model, "-medium")
+	}
+	return request, nil
+}
+
 func (a *Adaptor) DoRequest(c *gin.Context, info *relaycommon.RelayInfo, requestBody io.Reader) (any, error) {
 	if info.RelayMode == constant.RelayModeAudioTranscription ||
 		info.RelayMode == constant.RelayModeAudioTranslation ||
@@ -406,6 +424,12 @@ func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, info *relaycom
 		err, usage = OpenaiHandlerWithUsage(c, resp, info)
 	case constant.RelayModeRerank:
 		err, usage = common_handler.RerankHandler(c, info, resp)
+	case constant.RelayModeResponses:
+		if info.IsStream {
+			err, usage = OaiResponsesStreamHandler(c, resp, info)
+		} else {
+			err, usage = OaiResponsesHandler(c, resp, info)
+		}
 	default:
 		if info.IsStream {
 			err, usage = OaiStreamHandler(c, resp, info)

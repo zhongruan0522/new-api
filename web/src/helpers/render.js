@@ -317,6 +317,12 @@ export function renderModelPrice(
   image = false,
   imageRatio = 1.0,
   imageOutputTokens = 0,
+  webSearch = false,
+  webSearchCallCount = 0,
+  webSearchPrice = 0,
+  fileSearch = false,
+  fileSearchCallCount = 0,
+  fileSearchPrice = 0,
 ) {
   if (modelPrice !== -1) {
     return i18next.t(
@@ -339,14 +345,17 @@ export function renderModelPrice(
     // Calculate effective input tokens (non-cached + cached with ratio applied)
     let effectiveInputTokens =
       inputTokens - cacheTokens + cacheTokens * cacheRatio;
-// Handle image tokens if present
+    // Handle image tokens if present
     if (image && imageOutputTokens > 0) {
-      effectiveInputTokens = inputTokens - imageOutputTokens + imageOutputTokens * imageRatio;
+      effectiveInputTokens =
+        inputTokens - imageOutputTokens + imageOutputTokens * imageRatio;
     }
 
     let price =
       (effectiveInputTokens / 1000000) * inputRatioPrice * groupRatio +
-      (completionTokens / 1000000) * completionRatioPrice * groupRatio;
+      (completionTokens / 1000000) * completionRatioPrice * groupRatio +
+      (webSearchCallCount / 1000) * webSearchPrice * groupRatio +
+      (fileSearchCallCount / 1000) * fileSearchPrice * groupRatio;
 
     return (
       <>
@@ -391,9 +400,23 @@ export function renderModelPrice(
               )}
             </p>
           )}
+          {webSearch && webSearchCallCount > 0 && (
+            <p>
+              {i18next.t('Web搜索价格：${{price}} / 1K 次', {
+                price: webSearchPrice,
+              })}
+            </p>
+          )}
+          {fileSearch && fileSearchCallCount > 0 && (
+            <p>
+              {i18next.t('文件搜索价格：${{price}} / 1K 次', {
+                price: fileSearchPrice,
+              })}
+            </p>
+          )}
           <p></p>
           <p>
-            {cacheTokens > 0 && !image
+            {cacheTokens > 0 && !image && !webSearch && !fileSearch
               ? i18next.t(
                   '输入 {{nonCacheInput}} tokens / 1M tokens * ${{price}} + 缓存 {{cacheInput}} tokens / 1M tokens * ${{cachePrice}} + 输出 {{completion}} tokens / 1M tokens * ${{compPrice}} * 分组 {{ratio}} = ${{total}}',
                   {
@@ -407,31 +430,82 @@ export function renderModelPrice(
                     total: price.toFixed(6),
                   },
                 )
-              : image && imageOutputTokens > 0
-              ? i18next.t(
-                  '输入 {{nonImageInput}} tokens + 图片输入 {{imageInput}} tokens * {{imageRatio}} / 1M tokens * ${{price}} + 输出 {{completion}} tokens / 1M tokens * ${{compPrice}} * 分组 {{ratio}} = ${{total}}',
-                  {
-                    nonImageInput: inputTokens - imageOutputTokens,
-                    imageInput: imageOutputTokens,
-                    imageRatio: imageRatio,
-                    price: inputRatioPrice,
-                    completion: completionTokens,
-                    compPrice: completionRatioPrice,
-                    ratio: groupRatio,
-                    total: price.toFixed(6),
-                  },
-                )
-              : i18next.t(
-                  '输入 {{input}} tokens / 1M tokens * ${{price}} + 输出 {{completion}} tokens / 1M tokens * ${{compPrice}} * 分组 {{ratio}} = ${{total}}',
-                  {
-                    input: inputTokens,
-                    price: inputRatioPrice,
-                    completion: completionTokens,
-                    compPrice: completionRatioPrice,
-                    ratio: groupRatio,
-                    total: price.toFixed(6),
-                  },
-                )}
+              : image && imageOutputTokens > 0 && !webSearch && !fileSearch
+                ? i18next.t(
+                    '输入 {{nonImageInput}} tokens + 图片输入 {{imageInput}} tokens * {{imageRatio}} / 1M tokens * ${{price}} + 输出 {{completion}} tokens / 1M tokens * ${{compPrice}} * 分组 {{ratio}} = ${{total}}',
+                    {
+                      nonImageInput: inputTokens - imageOutputTokens,
+                      imageInput: imageOutputTokens,
+                      imageRatio: imageRatio,
+                      price: inputRatioPrice,
+                      completion: completionTokens,
+                      compPrice: completionRatioPrice,
+                      ratio: groupRatio,
+                      total: price.toFixed(6),
+                    },
+                  )
+                : webSearch && webSearchCallCount > 0 && !image && !fileSearch
+                  ? i18next.t(
+                      '输入 {{input}} tokens / 1M tokens * ${{price}} + 输出 {{completion}} tokens / 1M tokens * ${{compPrice}} * 分组 {{ratio}} + Web搜索 {{webSearchCallCount}}次 / 1K 次 * ${{webSearchPrice}} * {{ratio}} = ${{total}}',
+                      {
+                        input: inputTokens,
+                        price: inputRatioPrice,
+                        completion: completionTokens,
+                        compPrice: completionRatioPrice,
+                        ratio: groupRatio,
+                        webSearchCallCount,
+                        webSearchPrice,
+                        total: price.toFixed(6),
+                      },
+                    )
+                  : fileSearch &&
+                      fileSearchCallCount > 0 &&
+                      !image &&
+                      !webSearch
+                    ? i18next.t(
+                        '输入 {{input}} tokens / 1M tokens * ${{price}} + 输出 {{completion}} tokens / 1M tokens * ${{compPrice}} * 分组 {{ratio}} + 文件搜索 {{fileSearchCallCount}}次 / 1K 次 * ${{fileSearchPrice}} * {{ratio}}= ${{total}}',
+                        {
+                          input: inputTokens,
+                          price: inputRatioPrice,
+                          completion: completionTokens,
+                          compPrice: completionRatioPrice,
+                          ratio: groupRatio,
+                          fileSearchCallCount,
+                          fileSearchPrice,
+                          total: price.toFixed(6),
+                        },
+                      )
+                    : webSearch &&
+                        webSearchCallCount > 0 &&
+                        fileSearch &&
+                        fileSearchCallCount > 0 &&
+                        !image
+                      ? i18next.t(
+                          '输入 {{input}} tokens / 1M tokens * ${{price}} + 输出 {{completion}} tokens / 1M tokens * ${{compPrice}} * 分组 {{ratio}} + Web搜索 {{webSearchCallCount}}次 / 1K 次 * ${{webSearchPrice}} * {{ratio}}+ 文件搜索 {{fileSearchCallCount}}次 / 1K 次 * ${{fileSearchPrice}} * {{ratio}}= ${{total}}',
+                          {
+                            input: inputTokens,
+                            price: inputRatioPrice,
+                            completion: completionTokens,
+                            compPrice: completionRatioPrice,
+                            ratio: groupRatio,
+                            webSearchCallCount,
+                            webSearchPrice,
+                            fileSearchCallCount,
+                            fileSearchPrice,
+                            total: price.toFixed(6),
+                          },
+                        )
+                      : i18next.t(
+                          '输入 {{input}} tokens / 1M tokens * ${{price}} + 输出 {{completion}} tokens / 1M tokens * ${{compPrice}} * 分组 {{ratio}} = ${{total}}',
+                          {
+                            input: inputTokens,
+                            price: inputRatioPrice,
+                            completion: completionTokens,
+                            compPrice: completionRatioPrice,
+                            ratio: groupRatio,
+                            total: price.toFixed(6),
+                          },
+                        )}
           </p>
           <p>{i18next.t('仅供参考，以实际扣费为准')}</p>
         </article>
@@ -448,33 +522,56 @@ export function renderLogContent(
   user_group_ratio,
   image = false,
   imageRatio = 1.0,
-  useUserGroupRatio = undefined
+  useUserGroupRatio = undefined,
+  webSearch = false,
+  webSearchCallCount = 0,
+  fileSearch = false,
+  fileSearchCallCount = 0,
 ) {
-  const ratioLabel = useUserGroupRatio ? i18next.t('专属倍率') : i18next.t('分组倍率');
+  const ratioLabel = useUserGroupRatio
+    ? i18next.t('专属倍率')
+    : i18next.t('分组倍率');
   const ratio = useUserGroupRatio ? user_group_ratio : groupRatio;
 
   if (modelPrice !== -1) {
     return i18next.t('模型价格 ${{price}}，{{ratioType}} {{ratio}}', {
       price: modelPrice,
       ratioType: ratioLabel,
-      ratio
+      ratio,
     });
   } else {
     if (image) {
-      return i18next.t('模型倍率 {{modelRatio}}，输出倍率 {{completionRatio}}，图片输入倍率 {{imageRatio}}，{{ratioType}} {{ratio}}', {
-        modelRatio: modelRatio,
-        completionRatio: completionRatio,
-        imageRatio: imageRatio,
-        ratioType: ratioLabel,
-        ratio
-      });
+      return i18next.t(
+        '模型倍率 {{modelRatio}}，输出倍率 {{completionRatio}}，图片输入倍率 {{imageRatio}}，{{ratioType}} {{ratio}}',
+        {
+          modelRatio: modelRatio,
+          completionRatio: completionRatio,
+          imageRatio: imageRatio,
+          ratioType: ratioLabel,
+          ratio,
+        },
+      );
+    } else if (webSearch) {
+      return i18next.t(
+        '模型倍率 {{modelRatio}}，输出倍率 {{completionRatio}}，{{ratioType}} {{ratio}}，Web 搜索调用 {{webSearchCallCount}} 次',
+        {
+          modelRatio: modelRatio,
+          completionRatio: completionRatio,
+          ratioType: ratioLabel,
+          ratio,
+          webSearchCallCount,
+        },
+      );
     } else {
-      return i18next.t('模型倍率 {{modelRatio}}，输出倍率 {{completionRatio}}，{{ratioType}} {{ratio}}', {
-        modelRatio: modelRatio,
-        completionRatio: completionRatio,
-        ratioType: ratioLabel,
-        ratio
-      });
+      return i18next.t(
+        '模型倍率 {{modelRatio}}，输出倍率 {{completionRatio}}，{{ratioType}} {{ratio}}',
+        {
+          modelRatio: modelRatio,
+          completionRatio: completionRatio,
+          ratioType: ratioLabel,
+          ratio,
+        },
+      );
     }
   }
 }

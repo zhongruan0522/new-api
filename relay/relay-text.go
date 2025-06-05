@@ -18,6 +18,7 @@ import (
 	"one-api/service"
 	"one-api/setting"
 	"one-api/setting/model_setting"
+	"one-api/setting/operation_setting"
 	"strings"
 	"time"
 
@@ -45,6 +46,20 @@ func getAndValidateTextRequest(c *gin.Context, relayInfo *relaycommon.RelayInfo)
 	}
 	if textRequest.Model == "" {
 		return nil, errors.New("model is required")
+	}
+	if textRequest.WebSearchOptions != nil {
+		if textRequest.WebSearchOptions.SearchContextSize != "" {
+			validSizes := map[string]bool{
+				"high":   true,
+				"medium": true,
+				"low":    true,
+			}
+			if !validSizes[textRequest.WebSearchOptions.SearchContextSize] {
+				return nil, errors.New("invalid search_context_size, must be one of: high, medium, low")
+			}
+		} else {
+			textRequest.WebSearchOptions.SearchContextSize = "medium"
+		}
 	}
 	switch relayInfo.RelayMode {
 	case relayconstant.RelayModeCompletions:
@@ -75,6 +90,10 @@ func TextHelper(c *gin.Context) (openaiErr *dto.OpenAIErrorWithStatusCode) {
 
 	// get & validate textRequest 获取并验证文本请求
 	textRequest, err := getAndValidateTextRequest(c, relayInfo)
+	if textRequest.WebSearchOptions != nil {
+		c.Set("chat_completion_web_search_context_size", textRequest.WebSearchOptions.SearchContextSize)
+	}
+
 	if err != nil {
 		common.LogError(c, fmt.Sprintf("getAndValidateTextRequest failed: %s", err.Error()))
 		return service.OpenAIErrorWrapperLocal(err, "invalid_text_request", http.StatusBadRequest)
@@ -193,6 +212,7 @@ func TextHelper(c *gin.Context) (openaiErr *dto.OpenAIErrorWithStatusCode) {
 
 	var httpResp *http.Response
 	resp, err := adaptor.DoRequest(c, relayInfo, requestBody)
+
 	if err != nil {
 		return service.OpenAIErrorWrapper(err, "do_request_failed", http.StatusInternalServerError)
 	}
@@ -358,6 +378,45 @@ func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo,
 
 	ratio := dModelRatio.Mul(dGroupRatio)
 
+	// openai web search 工具计费
+	var dWebSearchQuota decimal.Decimal
+	var webSearchPrice float64
+	if relayInfo.ResponsesUsageInfo != nil {
+		if webSearchTool, exists := relayInfo.ResponsesUsageInfo.BuiltInTools[dto.BuildInToolWebSearchPreview]; exists && webSearchTool.CallCount > 0 {
+			// 计算 web search 调用的配额 (配额 = 价格 * 调用次数 / 1000 * 分组倍率)
+			webSearchPrice = operation_setting.GetWebSearchPricePerThousand(modelName, webSearchTool.SearchContextSize)
+			dWebSearchQuota = decimal.NewFromFloat(webSearchPrice).
+				Mul(decimal.NewFromInt(int64(webSearchTool.CallCount))).
+				Div(decimal.NewFromInt(1000)).Mul(dGroupRatio).Mul(dQuotaPerUnit)
+			extraContent += fmt.Sprintf("Web Search 调用 %d 次，上下文大小 %s，调用花费 %s",
+				webSearchTool.CallCount, webSearchTool.SearchContextSize, dWebSearchQuota.String())
+		}
+	} else if strings.HasSuffix(modelName, "search-preview") {
+		// search-preview 模型不支持 response api
+		searchContextSize := ctx.GetString("chat_completion_web_search_context_size")
+		if searchContextSize == "" {
+			searchContextSize = "medium"
+		}
+		webSearchPrice = operation_setting.GetWebSearchPricePerThousand(modelName, searchContextSize)
+		dWebSearchQuota = decimal.NewFromFloat(webSearchPrice).
+			Div(decimal.NewFromInt(1000)).Mul(dGroupRatio).Mul(dQuotaPerUnit)
+		extraContent += fmt.Sprintf("Web Search 调用 1 次，上下文大小 %s，调用花费 %s",
+			searchContextSize, dWebSearchQuota.String())
+	}
+	// file search tool 计费
+	var dFileSearchQuota decimal.Decimal
+	var fileSearchPrice float64
+	if relayInfo.ResponsesUsageInfo != nil {
+		if fileSearchTool, exists := relayInfo.ResponsesUsageInfo.BuiltInTools[dto.BuildInToolFileSearch]; exists && fileSearchTool.CallCount > 0 {
+			fileSearchPrice = operation_setting.GetFileSearchPricePerThousand()
+			dFileSearchQuota = decimal.NewFromFloat(fileSearchPrice).
+				Mul(decimal.NewFromInt(int64(fileSearchTool.CallCount))).
+				Div(decimal.NewFromInt(1000)).Mul(dGroupRatio).Mul(dQuotaPerUnit)
+			extraContent += fmt.Sprintf("File Search 调用 %d 次，调用花费 $%s",
+				fileSearchTool.CallCount, dFileSearchQuota.String())
+		}
+	}
+
 	var quotaCalculateDecimal decimal.Decimal
 	if !priceData.UsePrice {
 		nonCachedTokens := dPromptTokens.Sub(dCacheTokens)
@@ -380,6 +439,9 @@ func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo,
 	} else {
 		quotaCalculateDecimal = dModelPrice.Mul(dQuotaPerUnit).Mul(dGroupRatio)
 	}
+	// 添加 responses tools call 调用的配额
+	quotaCalculateDecimal = quotaCalculateDecimal.Add(dWebSearchQuota)
+	quotaCalculateDecimal = quotaCalculateDecimal.Add(dFileSearchQuota)
 
 	quota := int(quotaCalculateDecimal.Round(0).IntPart())
 	totalTokens := promptTokens + completionTokens
@@ -429,6 +491,26 @@ func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo,
 		other["image"] = true
 		other["image_ratio"] = imageRatio
 		other["image_output"] = imageTokens
+	}
+	if !dWebSearchQuota.IsZero() {
+		if relayInfo.ResponsesUsageInfo != nil {
+			if webSearchTool, exists := relayInfo.ResponsesUsageInfo.BuiltInTools[dto.BuildInToolWebSearchPreview]; exists {
+				other["web_search"] = true
+				other["web_search_call_count"] = webSearchTool.CallCount
+				other["web_search_price"] = webSearchPrice
+			}
+		} else if strings.HasSuffix(modelName, "search-preview") {
+			other["web_search"] = true
+			other["web_search_call_count"] = 1
+			other["web_search_price"] = webSearchPrice
+		}
+	}
+	if !dFileSearchQuota.IsZero() && relayInfo.ResponsesUsageInfo != nil {
+		if fileSearchTool, exists := relayInfo.ResponsesUsageInfo.BuiltInTools[dto.BuildInToolFileSearch]; exists {
+			other["file_search"] = true
+			other["file_search_call_count"] = fileSearchTool.CallCount
+			other["file_search_price"] = fileSearchPrice
+		}
 	}
 	model.RecordConsumeLog(ctx, relayInfo.UserId, relayInfo.ChannelId, promptTokens, completionTokens, logModel,
 		tokenName, quota, logContent, relayInfo.TokenId, userQuota, int(useTimeSeconds), relayInfo.IsStream, relayInfo.Group, other)

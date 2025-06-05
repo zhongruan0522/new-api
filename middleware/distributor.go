@@ -162,6 +162,14 @@ func getModelRequest(c *gin.Context) (*ModelRequest, bool, error) {
 		}
 		c.Set("platform", string(constant.TaskPlatformSuno))
 		c.Set("relay_mode", relayMode)
+	} else if strings.HasPrefix(c.Request.URL.Path, "/v1beta/models/") {
+		// Gemini API 路径处理: /v1beta/models/gemini-2.0-flash:generateContent
+		relayMode := relayconstant.RelayModeGemini
+		modelName := extractModelNameFromGeminiPath(c.Request.URL.Path)
+		if modelName != "" {
+			modelRequest.Model = modelName
+		}
+		c.Set("relay_mode", relayMode)
 	} else if !strings.HasPrefix(c.Request.URL.Path, "/v1/audio/transcriptions") && !strings.HasPrefix(c.Request.URL.Path, "/v1/images/edits") {
 		err = common.UnmarshalBodyReusable(c, &modelRequest)
 	}
@@ -185,7 +193,7 @@ func getModelRequest(c *gin.Context) (*ModelRequest, bool, error) {
 	if strings.HasPrefix(c.Request.URL.Path, "/v1/images/generations") {
 		modelRequest.Model = common.GetStringIfEmpty(modelRequest.Model, "dall-e")
 	} else if strings.HasPrefix(c.Request.URL.Path, "/v1/images/edits") {
-		modelRequest.Model = common.GetStringIfEmpty(modelRequest.Model, "gpt-image-1")
+		modelRequest.Model = common.GetStringIfEmpty(c.PostForm("model"), "gpt-image-1")
 	}
 	if strings.HasPrefix(c.Request.URL.Path, "/v1/audio") {
 		relayMode := relayconstant.RelayModeAudioSpeech
@@ -213,6 +221,7 @@ func SetupContextForSelectedChannel(c *gin.Context, channel *model.Channel, mode
 	c.Set("channel_id", channel.Id)
 	c.Set("channel_name", channel.Name)
 	c.Set("channel_type", channel.Type)
+	c.Set("channel_create_time", channel.CreatedTime)
 	c.Set("channel_setting", channel.GetSetting())
 	c.Set("param_override", channel.GetParamOverride())
 	if nil != channel.OpenAIOrganization && "" != *channel.OpenAIOrganization {
@@ -239,5 +248,35 @@ func SetupContextForSelectedChannel(c *gin.Context, channel *model.Channel, mode
 		c.Set("api_version", channel.Other)
 	case common.ChannelTypeMokaAI:
 		c.Set("api_version", channel.Other)
+	case common.ChannelTypeCoze:
+		c.Set("bot_id", channel.Other)
 	}
+}
+
+// extractModelNameFromGeminiPath 从 Gemini API URL 路径中提取模型名
+// 输入格式: /v1beta/models/gemini-2.0-flash:generateContent
+// 输出: gemini-2.0-flash
+func extractModelNameFromGeminiPath(path string) string {
+	// 查找 "/models/" 的位置
+	modelsPrefix := "/models/"
+	modelsIndex := strings.Index(path, modelsPrefix)
+	if modelsIndex == -1 {
+		return ""
+	}
+
+	// 从 "/models/" 之后开始提取
+	startIndex := modelsIndex + len(modelsPrefix)
+	if startIndex >= len(path) {
+		return ""
+	}
+
+	// 查找 ":" 的位置，模型名在 ":" 之前
+	colonIndex := strings.Index(path[startIndex:], ":")
+	if colonIndex == -1 {
+		// 如果没有找到 ":"，返回从 "/models/" 到路径结尾的部分
+		return path[startIndex:]
+	}
+
+	// 返回模型名部分
+	return path[startIndex : startIndex+colonIndex]
 }

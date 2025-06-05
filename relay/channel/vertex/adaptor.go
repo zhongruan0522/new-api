@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"io"
 	"net/http"
 	"one-api/dto"
@@ -13,7 +12,11 @@ import (
 	"one-api/relay/channel/gemini"
 	"one-api/relay/channel/openai"
 	relaycommon "one-api/relay/common"
+	"one-api/relay/constant"
+	"one-api/setting/model_setting"
 	"strings"
+
+	"github.com/gin-gonic/gin"
 )
 
 const (
@@ -29,6 +32,8 @@ var claudeModelMap = map[string]string{
 	"claude-3-5-sonnet-20240620": "claude-3-5-sonnet@20240620",
 	"claude-3-5-sonnet-20241022": "claude-3-5-sonnet-v2@20241022",
 	"claude-3-7-sonnet-20250219": "claude-3-7-sonnet@20250219",
+	"claude-sonnet-4-20250514":   "claude-sonnet-4@20250514",
+	"claude-opus-4-20250514":     "claude-opus-4@20250514",
 }
 
 const anthropicVersion = "vertex-2023-10-16"
@@ -77,19 +82,37 @@ func (a *Adaptor) GetRequestURL(info *relaycommon.RelayInfo) (string, error) {
 	a.AccountCredentials = *adc
 	suffix := ""
 	if a.RequestMode == RequestModeGemini {
+		if model_setting.GetGeminiSettings().ThinkingAdapterEnabled {
+			// suffix -thinking and -nothinking
+			if strings.HasSuffix(info.OriginModelName, "-thinking") {
+				info.UpstreamModelName = strings.TrimSuffix(info.UpstreamModelName, "-thinking")
+			} else if strings.HasSuffix(info.OriginModelName, "-nothinking") {
+				info.UpstreamModelName = strings.TrimSuffix(info.UpstreamModelName, "-nothinking")
+			}
+		}
+
 		if info.IsStream {
 			suffix = "streamGenerateContent?alt=sse"
 		} else {
 			suffix = "generateContent"
 		}
-		return fmt.Sprintf(
-			"https://%s-aiplatform.googleapis.com/v1/projects/%s/locations/%s/publishers/google/models/%s:%s",
-			region,
-			adc.ProjectID,
-			region,
-			info.UpstreamModelName,
-			suffix,
-		), nil
+		if region == "global" {
+			return fmt.Sprintf(
+				"https://aiplatform.googleapis.com/v1/projects/%s/locations/global/publishers/google/models/%s:%s",
+				adc.ProjectID,
+				info.UpstreamModelName,
+				suffix,
+			), nil
+		} else {
+			return fmt.Sprintf(
+				"https://%s-aiplatform.googleapis.com/v1/projects/%s/locations/%s/publishers/google/models/%s:%s",
+				region,
+				adc.ProjectID,
+				region,
+				info.UpstreamModelName,
+				suffix,
+			), nil
+		}
 	} else if a.RequestMode == RequestModeClaude {
 		if info.IsStream {
 			suffix = "streamRawPredict?alt=sse"
@@ -164,6 +187,11 @@ func (a *Adaptor) ConvertEmbeddingRequest(c *gin.Context, info *relaycommon.Rela
 	return nil, errors.New("not implemented")
 }
 
+func (a *Adaptor) ConvertOpenAIResponsesRequest(c *gin.Context, info *relaycommon.RelayInfo, request dto.OpenAIResponsesRequest) (any, error) {
+	// TODO implement me
+	return nil, errors.New("not implemented")
+}
+
 func (a *Adaptor) DoRequest(c *gin.Context, info *relaycommon.RelayInfo, requestBody io.Reader) (any, error) {
 	return channel.DoApiRequest(a, c, info, requestBody)
 }
@@ -174,7 +202,11 @@ func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, info *relaycom
 		case RequestModeClaude:
 			err, usage = claude.ClaudeStreamHandler(c, resp, info, claude.RequestModeMessage)
 		case RequestModeGemini:
-			err, usage = gemini.GeminiChatStreamHandler(c, resp, info)
+			if info.RelayMode == constant.RelayModeGemini {
+				usage, err = gemini.GeminiTextGenerationStreamHandler(c, resp, info)
+			} else {
+				err, usage = gemini.GeminiChatStreamHandler(c, resp, info)
+			}
 		case RequestModeLlama:
 			err, usage = openai.OaiStreamHandler(c, resp, info)
 		}
@@ -183,7 +215,11 @@ func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, info *relaycom
 		case RequestModeClaude:
 			err, usage = claude.ClaudeHandler(c, resp, claude.RequestModeMessage, info)
 		case RequestModeGemini:
-			err, usage = gemini.GeminiChatHandler(c, resp, info)
+			if info.RelayMode == constant.RelayModeGemini {
+				usage, err = gemini.GeminiTextGenerationHandler(c, resp, info)
+			} else {
+				err, usage = gemini.GeminiChatHandler(c, resp, info)
+			}
 		case RequestModeLlama:
 			err, usage = openai.OpenaiHandler(c, resp, info)
 		}
