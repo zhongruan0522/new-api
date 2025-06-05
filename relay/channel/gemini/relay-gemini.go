@@ -186,17 +186,12 @@ func CovertGemini2OpenAI(textRequest dto.GeneralOpenAIRequest, info *relaycommon
 			} else if val, exists := tool_call_ids[message.ToolCallId]; exists {
 				name = val
 			}
-			content := common.StrToMap(message.StringContent())
+			contentMap := common.StrToMap(message.StringContent())
 			functionResp := &FunctionResponse{
-				Name: name,
-				Response: GeminiFunctionResponseContent{
-					Name:    name,
-					Content: content,
-				},
+				Name:     name,
+				Response: contentMap,
 			}
-			if content == nil {
-				functionResp.Response.Content = message.StringContent()
-			}
+
 			*parts = append(*parts, GeminiPart{
 				FunctionResponse: functionResp,
 			})
