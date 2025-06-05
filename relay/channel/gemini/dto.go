@@ -27,14 +27,14 @@ type FunctionCall struct {
 	Arguments    any    `json:"args"`
 }
 
-type GeminiFunctionResponseContent struct {
-	Name    string `json:"name"`
-	Content any    `json:"content"`
-}
+// type GeminiFunctionResponseContent struct {
+// 	Name    string `json:"name"`
+// 	Content any    `json:"content"`
+// }
 
 type FunctionResponse struct {
-	Name     string                        `json:"name"`
-	Response GeminiFunctionResponseContent `json:"response"`
+	Name     string                 `json:"name"`
+	Response map[string]interface{} `json:"response"`
 }
 
 type GeminiPartExecutableCode struct {

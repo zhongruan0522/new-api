@@ -57,22 +57,22 @@ func CovertGemini2OpenAI(textRequest dto.GeneralOpenAIRequest, info *relaycommon
 	}
 
 	if model_setting.GetGeminiSettings().ThinkingAdapterEnabled {
-	        if strings.HasSuffix(info.OriginModelName, "-thinking") {
-	            // 如果模型名以 gemini-2.5-pro 开头，不设置 ThinkingBudget
-	            if strings.HasPrefix(info.OriginModelName, "gemini-2.5-pro") {
-	                geminiRequest.GenerationConfig.ThinkingConfig = &GeminiThinkingConfig{
-	                    IncludeThoughts: true,
-	                }
-	            } else {
-	                budgetTokens := model_setting.GetGeminiSettings().ThinkingAdapterBudgetTokensPercentage * float64(geminiRequest.GenerationConfig.MaxOutputTokens)
-	                if budgetTokens == 0 || budgetTokens > 24576 {
-	                    budgetTokens = 24576
-	                }
-	                geminiRequest.GenerationConfig.ThinkingConfig = &GeminiThinkingConfig{
-	                    ThinkingBudget:  common.GetPointer(int(budgetTokens)),
-	                    IncludeThoughts: true,
-	                }
-	            }
+		if strings.HasSuffix(info.OriginModelName, "-thinking") {
+			// 如果模型名以 gemini-2.5-pro 开头，不设置 ThinkingBudget
+			if strings.HasPrefix(info.OriginModelName, "gemini-2.5-pro") {
+				geminiRequest.GenerationConfig.ThinkingConfig = &GeminiThinkingConfig{
+					IncludeThoughts: true,
+				}
+			} else {
+				budgetTokens := model_setting.GetGeminiSettings().ThinkingAdapterBudgetTokensPercentage * float64(geminiRequest.GenerationConfig.MaxOutputTokens)
+				if budgetTokens == 0 || budgetTokens > 24576 {
+					budgetTokens = 24576
+				}
+				geminiRequest.GenerationConfig.ThinkingConfig = &GeminiThinkingConfig{
+					ThinkingBudget:  common.GetPointer(int(budgetTokens)),
+					IncludeThoughts: true,
+				}
+			}
 		} else if strings.HasSuffix(info.OriginModelName, "-nothinking") {
 			geminiRequest.GenerationConfig.ThinkingConfig = &GeminiThinkingConfig{
 				ThinkingBudget: common.GetPointer(0),
@@ -173,17 +173,22 @@ func CovertGemini2OpenAI(textRequest dto.GeneralOpenAIRequest, info *relaycommon
 			} else if val, exists := tool_call_ids[message.ToolCallId]; exists {
 				name = val
 			}
-			content := common.StrToMap(message.StringContent())
+			contentMap := common.StrToMap(message.StringContent())
 			functionResp := &FunctionResponse{
-				Name: name,
-				Response: GeminiFunctionResponseContent{
-					Name:    name,
-					Content: content,
-				},
+				Name:     name,
+				Response: contentMap,
 			}
-			if content == nil {
-				functionResp.Response.Content = message.StringContent()
-			}
+			// If StrToMap returns nil because message.StringContent() is not a valid JSON object string,
+			// and Gemini strictly requires an object (e.g., {}), this might need adjustment.
+			// For example:
+			// if contentMap == nil && message.StringContent() != "" {
+			//    // Option 1: Send an empty object if that's preferred over null
+			//    // functionResp.Response = make(map[string]interface{})
+			//    // Option 2: Wrap the plain string if that's ever the case and needs to be an object
+			//    // functionResp.Response = map[string]interface{}{"text_content": message.StringContent()}
+			// }
+			// For now, directly assigning contentMap is the most straightforward fix for the reported issue.
+
 			*parts = append(*parts, GeminiPart{
 				FunctionResponse: functionResp,
 			})
