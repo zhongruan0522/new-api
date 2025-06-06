@@ -1084,6 +1084,11 @@ const LogsTable = () => {
     return <Descriptions data={expandData[record.key]} />;
   };
 
+  // 检查是否有任何记录有展开内容
+  const hasExpandableRows = () => {
+    return logs.some(log => expandData[log.key] && expandData[log.key].length > 0);
+  };
+
   return (
     <>
       {renderColumnSelector()}
@@ -1252,8 +1257,10 @@ const LogsTable = () => {
       >
         <Table
           columns={getVisibleColumns()}
-          expandedRowRender={expandRowRender}
-          expandRowByClick={true}
+          {...(hasExpandableRows() && {
+            expandedRowRender: expandRowRender,
+            expandRowByClick: true
+          })}
           dataSource={logs}
           rowKey='key'
           loading={loading}
