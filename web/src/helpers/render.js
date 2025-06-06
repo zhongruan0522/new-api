@@ -128,7 +128,10 @@ export const getModelCategories = (() => {
           model.model_name.toLowerCase().includes('babbage') ||
           model.model_name.toLowerCase().includes('davinci') ||
           model.model_name.toLowerCase().includes('curie') ||
-          model.model_name.toLowerCase().includes('ada')
+          model.model_name.toLowerCase().includes('ada') ||
+          model.model_name.toLowerCase().includes('o1') ||
+          model.model_name.toLowerCase().includes('o3') ||
+          model.model_name.toLowerCase().includes('o4')
       },
       anthropic: {
         label: 'Anthropic',
