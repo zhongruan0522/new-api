@@ -243,19 +243,16 @@ const ChannelsTable = () => {
       key: COLUMN_KEYS.ID,
       title: t('ID'),
       dataIndex: 'id',
-      width: 50,
     },
     {
       key: COLUMN_KEYS.NAME,
       title: t('名称'),
       dataIndex: 'name',
-      width: 80,
     },
     {
       key: COLUMN_KEYS.GROUP,
       title: t('分组'),
       dataIndex: 'group',
-      width: 180,
       render: (text, record, index) => (
         <div>
           <Space spacing={2}>
@@ -275,7 +272,6 @@ const ChannelsTable = () => {
       key: COLUMN_KEYS.TYPE,
       title: t('类型'),
       dataIndex: 'type',
-      width: 120,
       render: (text, record, index) => {
         if (record.children === undefined) {
           return <>{renderType(text)}</>;
@@ -288,7 +284,6 @@ const ChannelsTable = () => {
       key: COLUMN_KEYS.STATUS,
       title: t('状态'),
       dataIndex: 'status',
-      width: 120,
       render: (text, record, index) => {
         if (text === 3) {
           if (record.other_info === '') {
@@ -315,7 +310,6 @@ const ChannelsTable = () => {
       key: COLUMN_KEYS.RESPONSE_TIME,
       title: t('响应时间'),
       dataIndex: 'response_time',
-      width: 120,
       render: (text, record, index) => (
         <div>{renderResponseTime(text)}</div>
       ),
@@ -324,7 +318,6 @@ const ChannelsTable = () => {
       key: COLUMN_KEYS.BALANCE,
       title: t('已用/剩余'),
       dataIndex: 'expired_time',
-      width: 120,
       render: (text, record, index) => {
         if (record.children === undefined) {
           return (
@@ -364,7 +357,6 @@ const ChannelsTable = () => {
       key: COLUMN_KEYS.PRIORITY,
       title: t('优先级'),
       dataIndex: 'priority',
-      width: 100,
       render: (text, record, index) => {
         if (record.children === undefined) {
           return (
@@ -417,7 +409,6 @@ const ChannelsTable = () => {
       key: COLUMN_KEYS.WEIGHT,
       title: t('权重'),
       dataIndex: 'weight',
-      width: 100,
       render: (text, record, index) => {
         if (record.children === undefined) {
           return (
@@ -470,7 +461,7 @@ const ChannelsTable = () => {
       key: COLUMN_KEYS.OPERATE,
       title: '',
       dataIndex: 'operate',
-      width: 350,
+      fixed: 'right',
       render: (text, record, index) => {
         if (record.children === undefined) {
           // 创建更多操作的下拉菜单项
@@ -1636,45 +1627,48 @@ const ChannelsTable = () => {
       />
 
       <Card
-        className="!rounded-2xl overflow-hidden"
+        className="!rounded-2xl"
         title={renderHeader()}
         shadows='always'
         bordered={false}
       >
-        <Table
-          columns={getVisibleColumns()}
-          dataSource={pageData}
-          pagination={{
-            currentPage: activePage,
-            pageSize: pageSize,
-            total: channelCount,
-            pageSizeOpts: [10, 20, 50, 100],
-            showSizeChanger: true,
-            formatPageText: (page) => t('第 {{start}} - {{end}} 条，共 {{total}} 条', {
-              start: page.currentStart,
-              end: page.currentEnd,
-              total: channels.length,
-            }),
-            onPageSizeChange: (size) => {
-              handlePageSizeChange(size);
-            },
-            onPageChange: handlePageChange,
-          }}
-          expandAllRows={false}
-          onRow={handleRow}
-          rowSelection={
-            enableBatchDelete
-              ? {
-                onChange: (selectedRowKeys, selectedRows) => {
-                  setSelectedChannels(selectedRows);
-                },
-              }
-              : null
-          }
-          className="rounded-xl overflow-hidden"
-          size="middle"
-          loading={loading}
-        />
+        <div style={{ overflow: 'auto' }}>
+          <Table
+            columns={getVisibleColumns()}
+            dataSource={pageData}
+            scroll={{ x: 'max-content' }}
+            pagination={{
+              currentPage: activePage,
+              pageSize: pageSize,
+              total: channelCount,
+              pageSizeOpts: [10, 20, 50, 100],
+              showSizeChanger: true,
+              formatPageText: (page) => t('第 {{start}} - {{end}} 条，共 {{total}} 条', {
+                start: page.currentStart,
+                end: page.currentEnd,
+                total: channels.length,
+              }),
+              onPageSizeChange: (size) => {
+                handlePageSizeChange(size);
+              },
+              onPageChange: handlePageChange,
+            }}
+            expandAllRows={false}
+            onRow={handleRow}
+            rowSelection={
+              enableBatchDelete
+                ? {
+                  onChange: (selectedRowKeys, selectedRows) => {
+                    setSelectedChannels(selectedRows);
+                  },
+                }
+                : null
+            }
+            className="rounded-xl overflow-hidden"
+            size="middle"
+            loading={loading}
+          />
+        </div>
       </Card>
 
       {/* 批量设置标签模态框 */}

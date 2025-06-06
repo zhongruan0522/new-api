@@ -91,13 +91,11 @@ const TokensTable = () => {
     {
       title: t('名称'),
       dataIndex: 'name',
-      width: 180,
     },
     {
       title: t('状态'),
       dataIndex: 'status',
       key: 'status',
-      width: 200,
       render: (text, record, index) => {
         return (
           <div>
@@ -112,7 +110,6 @@ const TokensTable = () => {
     {
       title: t('已用额度'),
       dataIndex: 'used_quota',
-      width: 120,
       render: (text, record, index) => {
         return <div>{renderQuota(parseInt(text))}</div>;
       },
@@ -120,7 +117,6 @@ const TokensTable = () => {
     {
       title: t('剩余额度'),
       dataIndex: 'remain_quota',
-      width: 120,
       render: (text, record, index) => {
         return (
           <div>
@@ -140,7 +136,6 @@ const TokensTable = () => {
     {
       title: t('创建时间'),
       dataIndex: 'created_time',
-      width: 180,
       render: (text, record, index) => {
         return <div>{renderTimestamp(text)}</div>;
       },
@@ -148,7 +143,6 @@ const TokensTable = () => {
     {
       title: t('过期时间'),
       dataIndex: 'expired_time',
-      width: 180,
       render: (text, record, index) => {
         return (
           <div>
@@ -160,7 +154,7 @@ const TokensTable = () => {
     {
       title: '',
       dataIndex: 'operate',
-      width: 320,
+      fixed: 'right',
       render: (text, record, index) => {
         let chats = localStorage.getItem('chats');
         let chatsArray = [];
@@ -630,38 +624,41 @@ const TokensTable = () => {
       ></EditToken>
 
       <Card
-        className="!rounded-2xl overflow-hidden"
+        className="!rounded-2xl"
         title={renderHeader()}
         shadows='always'
         bordered={false}
       >
-        <Table
-          columns={columns}
-          dataSource={pageData}
-          pagination={{
-            currentPage: activePage,
-            pageSize: pageSize,
-            total: tokenCount,
-            showSizeChanger: true,
-            pageSizeOptions: [10, 20, 50, 100],
-            formatPageText: (page) =>
-              t('第 {{start}} - {{end}} 条，共 {{total}} 条', {
-                start: page.currentStart,
-                end: page.currentEnd,
-                total: tokens.length,
-              }),
-            onPageSizeChange: (size) => {
-              setPageSize(size);
-              setActivePage(1);
-            },
-            onPageChange: handlePageChange,
-          }}
-          loading={loading}
-          rowSelection={rowSelection}
-          onRow={handleRow}
-          className="rounded-xl overflow-hidden"
-          size="middle"
-        ></Table>
+        <div style={{ overflow: 'auto' }}>
+          <Table
+            columns={columns}
+            dataSource={pageData}
+            scroll={{ x: 'max-content' }}
+            pagination={{
+              currentPage: activePage,
+              pageSize: pageSize,
+              total: tokenCount,
+              showSizeChanger: true,
+              pageSizeOptions: [10, 20, 50, 100],
+              formatPageText: (page) =>
+                t('第 {{start}} - {{end}} 条，共 {{total}} 条', {
+                  start: page.currentStart,
+                  end: page.currentEnd,
+                  total: tokens.length,
+                }),
+              onPageSizeChange: (size) => {
+                setPageSize(size);
+                setActivePage(1);
+              },
+              onPageChange: handlePageChange,
+            }}
+            loading={loading}
+            rowSelection={rowSelection}
+            onRow={handleRow}
+            className="rounded-xl overflow-hidden"
+            size="middle"
+          ></Table>
+        </div>
       </Card>
     </>
   );

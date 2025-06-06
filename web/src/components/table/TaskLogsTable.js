@@ -289,7 +289,6 @@ const LogsTable = () => {
       key: COLUMN_KEYS.SUBMIT_TIME,
       title: t('提交时间'),
       dataIndex: 'submit_time',
-      width: 180,
       render: (text, record, index) => {
         return <div>{text ? renderTimestamp(text) : '-'}</div>;
       },
@@ -298,7 +297,6 @@ const LogsTable = () => {
       key: COLUMN_KEYS.FINISH_TIME,
       title: t('结束时间'),
       dataIndex: 'finish_time',
-      width: 180,
       render: (text, record, index) => {
         return <div>{text ? renderTimestamp(text) : '-'}</div>;
       },
@@ -307,7 +305,6 @@ const LogsTable = () => {
       key: COLUMN_KEYS.DURATION,
       title: t('花费时间'),
       dataIndex: 'finish_time',
-      width: 120,
       render: (finish, record) => {
         return <>{finish ? renderDuration(record.submit_time, finish) : '-'}</>;
       },
@@ -316,7 +313,6 @@ const LogsTable = () => {
       key: COLUMN_KEYS.CHANNEL,
       title: t('渠道'),
       dataIndex: 'channel_id',
-      width: 100,
       className: isAdminUser ? 'tableShow' : 'tableHiddle',
       render: (text, record, index) => {
         return isAdminUser ? (
@@ -341,7 +337,6 @@ const LogsTable = () => {
       key: COLUMN_KEYS.PLATFORM,
       title: t('平台'),
       dataIndex: 'platform',
-      width: 120,
       render: (text, record, index) => {
         return <div>{renderPlatform(text)}</div>;
       },
@@ -350,7 +345,6 @@ const LogsTable = () => {
       key: COLUMN_KEYS.TYPE,
       title: t('类型'),
       dataIndex: 'action',
-      width: 120,
       render: (text, record, index) => {
         return <div>{renderType(text)}</div>;
       },
@@ -359,7 +353,6 @@ const LogsTable = () => {
       key: COLUMN_KEYS.TASK_ID,
       title: t('任务ID'),
       dataIndex: 'task_id',
-      width: 200,
       render: (text, record, index) => {
         return (
           <Typography.Text
@@ -378,7 +371,6 @@ const LogsTable = () => {
       key: COLUMN_KEYS.TASK_STATUS,
       title: t('任务状态'),
       dataIndex: 'status',
-      width: 120,
       render: (text, record, index) => {
         return <div>{renderStatus(text)}</div>;
       },
@@ -387,7 +379,6 @@ const LogsTable = () => {
       key: COLUMN_KEYS.PROGRESS,
       title: t('进度'),
       dataIndex: 'progress',
-      width: 160,
       render: (text, record, index) => {
         return (
           <div>
@@ -415,7 +406,7 @@ const LogsTable = () => {
       key: COLUMN_KEYS.FAIL_REASON,
       title: t('失败原因'),
       dataIndex: 'fail_reason',
-      width: 160,
+      fixed: 'right',
       render: (text, record, index) => {
         if (!text) {
           return t('无');
@@ -613,7 +604,7 @@ const LogsTable = () => {
       {renderColumnSelector()}
       <Layout>
         <Card
-          className="!rounded-2xl overflow-hidden mb-4"
+          className="!rounded-2xl mb-4"
           title={
             <div className="flex flex-col w-full">
               <div className="flex flex-col md:flex-row justify-between items-center">
@@ -705,31 +696,34 @@ const LogsTable = () => {
           shadows='always'
           bordered={false}
         >
-          <Table
-            columns={getVisibleColumns()}
-            dataSource={pageData}
-            rowKey='key'
-            loading={loading}
-            className="rounded-xl overflow-hidden"
-            size="middle"
-            pagination={{
-              formatPageText: (page) =>
-                t('第 {{start}} - {{end}} 条，共 {{total}} 条', {
-                  start: page.currentStart,
-                  end: page.currentEnd,
-                  total: logCount,
-                }),
-              currentPage: activePage,
-              pageSize: pageSize,
-              total: logCount,
-              pageSizeOptions: [10, 20, 50, 100],
-              showSizeChanger: true,
-              onPageSizeChange: (size) => {
-                handlePageSizeChange(size);
-              },
-              onPageChange: handlePageChange,
-            }}
-          />
+          <div style={{ overflow: 'auto' }}>
+            <Table
+              columns={getVisibleColumns()}
+              dataSource={pageData}
+              rowKey='key'
+              loading={loading}
+              scroll={{ x: 'max-content' }}
+              className="rounded-xl overflow-hidden"
+              size="middle"
+              pagination={{
+                formatPageText: (page) =>
+                  t('第 {{start}} - {{end}} 条，共 {{total}} 条', {
+                    start: page.currentStart,
+                    end: page.currentEnd,
+                    total: logCount,
+                  }),
+                currentPage: activePage,
+                pageSize: pageSize,
+                total: logCount,
+                pageSizeOptions: [10, 20, 50, 100],
+                showSizeChanger: true,
+                onPageSizeChange: (size) => {
+                  handlePageSizeChange(size);
+                },
+                onPageChange: handlePageChange,
+              }}
+            />
+          </div>
         </Card>
 
         <Modal

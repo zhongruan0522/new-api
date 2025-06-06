@@ -345,13 +345,11 @@ const LogsTable = () => {
       key: COLUMN_KEYS.TIME,
       title: t('时间'),
       dataIndex: 'timestamp2string',
-      width: 180,
     },
     {
       key: COLUMN_KEYS.CHANNEL,
       title: t('渠道'),
       dataIndex: 'channel',
-      width: 80,
       className: isAdmin() ? 'tableShow' : 'tableHiddle',
       render: (text, record, index) => {
         return isAdminUser ? (
@@ -382,7 +380,6 @@ const LogsTable = () => {
       key: COLUMN_KEYS.USERNAME,
       title: t('用户'),
       dataIndex: 'username',
-      width: 150,
       className: isAdmin() ? 'tableShow' : 'tableHiddle',
       render: (text, record, index) => {
         return isAdminUser ? (
@@ -409,7 +406,6 @@ const LogsTable = () => {
       key: COLUMN_KEYS.TOKEN,
       title: t('令牌'),
       dataIndex: 'token_name',
-      width: 160,
       render: (text, record, index) => {
         return record.type === 0 || record.type === 2 || record.type === 5 ? (
           <div>
@@ -435,7 +431,6 @@ const LogsTable = () => {
       key: COLUMN_KEYS.GROUP,
       title: t('分组'),
       dataIndex: 'group',
-      width: 120,
       render: (text, record, index) => {
         if (record.type === 0 || record.type === 2 || record.type === 5) {
           if (record.group) {
@@ -468,7 +463,6 @@ const LogsTable = () => {
       key: COLUMN_KEYS.TYPE,
       title: t('类型'),
       dataIndex: 'type',
-      width: 100,
       render: (text, record, index) => {
         return <>{renderType(text)}</>;
       },
@@ -477,7 +471,6 @@ const LogsTable = () => {
       key: COLUMN_KEYS.MODEL,
       title: t('模型'),
       dataIndex: 'model_name',
-      width: 160,
       render: (text, record, index) => {
         return record.type === 0 || record.type === 2 || record.type === 5 ? (
           <>{renderModelName(record)}</>
@@ -490,7 +483,6 @@ const LogsTable = () => {
       key: COLUMN_KEYS.USE_TIME,
       title: t('用时/首字'),
       dataIndex: 'use_time',
-      width: 160,
       render: (text, record, index) => {
         if (record.is_stream) {
           let other = getLogOther(record.other);
@@ -519,7 +511,6 @@ const LogsTable = () => {
       key: COLUMN_KEYS.PROMPT,
       title: t('提示'),
       dataIndex: 'prompt_tokens',
-      width: 100,
       render: (text, record, index) => {
         return record.type === 0 || record.type === 2 || record.type === 5 ? (
           <>{<span> {text} </span>}</>
@@ -532,7 +523,6 @@ const LogsTable = () => {
       key: COLUMN_KEYS.COMPLETION,
       title: t('补全'),
       dataIndex: 'completion_tokens',
-      width: 100,
       render: (text, record, index) => {
         return parseInt(text) > 0 &&
           (record.type === 0 || record.type === 2 || record.type === 5) ? (
@@ -546,7 +536,6 @@ const LogsTable = () => {
       key: COLUMN_KEYS.COST,
       title: t('花费'),
       dataIndex: 'quota',
-      width: 120,
       render: (text, record, index) => {
         return record.type === 0 || record.type === 2 || record.type === 5 ? (
           <>{renderQuota(text, 6)}</>
@@ -559,7 +548,6 @@ const LogsTable = () => {
       key: COLUMN_KEYS.RETRY,
       title: t('重试'),
       dataIndex: 'retry',
-      width: 160,
       className: isAdmin() ? 'tableShow' : 'tableHiddle',
       render: (text, record, index) => {
         let content = t('渠道') + `：${record.channel}`;
@@ -588,7 +576,7 @@ const LogsTable = () => {
       key: COLUMN_KEYS.DETAILS,
       title: t('详情'),
       dataIndex: 'content',
-      width: 200,
+      fixed: 'right',
       render: (text, record, index) => {
         let other = getLogOther(record.other);
         if (other == null || record.type !== 2) {
@@ -1100,7 +1088,7 @@ const LogsTable = () => {
     <>
       {renderColumnSelector()}
       <Card
-        className="!rounded-2xl overflow-hidden mb-4"
+        className="!rounded-2xl mb-4"
         title={
           <div className="flex flex-col w-full">
             <Spin spinning={loadingStat}>
@@ -1262,33 +1250,36 @@ const LogsTable = () => {
         shadows='always'
         bordered={false}
       >
-        <Table
-          columns={getVisibleColumns()}
-          expandedRowRender={expandRowRender}
-          expandRowByClick={true}
-          dataSource={logs}
-          rowKey='key'
-          loading={loading}
-          className="rounded-xl overflow-hidden"
-          size="middle"
-          pagination={{
-            formatPageText: (page) =>
-              t('第 {{start}} - {{end}} 条，共 {{total}} 条', {
-                start: page.currentStart,
-                end: page.currentEnd,
-                total: logCount,
-              }),
-            currentPage: activePage,
-            pageSize: pageSize,
-            total: logCount,
-            pageSizeOptions: [10, 20, 50, 100],
-            showSizeChanger: true,
-            onPageSizeChange: (size) => {
-              handlePageSizeChange(size);
-            },
-            onPageChange: handlePageChange,
-          }}
-        />
+        <div style={{ overflow: 'auto' }}>
+          <Table
+            columns={getVisibleColumns()}
+            expandedRowRender={expandRowRender}
+            expandRowByClick={true}
+            dataSource={logs}
+            rowKey='key'
+            loading={loading}
+            scroll={{ x: 'max-content' }}
+            className="rounded-xl overflow-hidden"
+            size="middle"
+            pagination={{
+              formatPageText: (page) =>
+                t('第 {{start}} - {{end}} 条，共 {{total}} 条', {
+                  start: page.currentStart,
+                  end: page.currentEnd,
+                  total: logCount,
+                }),
+              currentPage: activePage,
+              pageSize: pageSize,
+              total: logCount,
+              pageSizeOptions: [10, 20, 50, 100],
+              showSizeChanger: true,
+              onPageSizeChange: (size) => {
+                handlePageSizeChange(size);
+              },
+              onPageChange: handlePageChange,
+            }}
+          />
+        </div>
       </Card>
     </>
   );

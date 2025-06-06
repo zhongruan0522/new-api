@@ -78,18 +78,15 @@ const RedemptionsTable = () => {
     {
       title: t('ID'),
       dataIndex: 'id',
-      width: 50,
     },
     {
       title: t('名称'),
       dataIndex: 'name',
-      width: 120,
     },
     {
       title: t('状态'),
       dataIndex: 'status',
       key: 'status',
-      width: 100,
       render: (text, record, index) => {
         return <div>{renderStatus(text)}</div>;
       },
@@ -97,7 +94,6 @@ const RedemptionsTable = () => {
     {
       title: t('额度'),
       dataIndex: 'quota',
-      width: 100,
       render: (text, record, index) => {
         return <div>{renderQuota(parseInt(text))}</div>;
       },
@@ -105,7 +101,6 @@ const RedemptionsTable = () => {
     {
       title: t('创建时间'),
       dataIndex: 'created_time',
-      width: 180,
       render: (text, record, index) => {
         return <div>{renderTimestamp(text)}</div>;
       },
@@ -113,7 +108,6 @@ const RedemptionsTable = () => {
     {
       title: t('兑换人ID'),
       dataIndex: 'used_user_id',
-      width: 100,
       render: (text, record, index) => {
         return <div>{text === 0 ? t('无') : text}</div>;
       },
@@ -121,7 +115,7 @@ const RedemptionsTable = () => {
     {
       title: '',
       dataIndex: 'operate',
-      width: 300,
+      fixed: 'right',
       render: (text, record, index) => {
         // 创建更多操作的下拉菜单项
         const moreMenuItems = [
@@ -499,43 +493,46 @@ const RedemptionsTable = () => {
       ></EditRedemption>
 
       <Card
-        className="!rounded-2xl overflow-hidden"
+        className="!rounded-2xl"
         title={renderHeader()}
         shadows='always'
         bordered={false}
       >
-        <Table
-          columns={columns}
-          dataSource={pageData}
-          pagination={{
-            currentPage: activePage,
-            pageSize: pageSize,
-            total: tokenCount,
-            showSizeChanger: true,
-            pageSizeOptions: [10, 20, 50, 100],
-            formatPageText: (page) =>
-              t('第 {{start}} - {{end}} 条，共 {{total}} 条', {
-                start: page.currentStart,
-                end: page.currentEnd,
-                total: tokenCount,
-              }),
-            onPageSizeChange: (size) => {
-              setPageSize(size);
-              setActivePage(1);
-              if (searchKeyword === '') {
-                loadRedemptions(1, size).then();
-              } else {
-                searchRedemptions(searchKeyword, 1, size).then();
-              }
-            },
-            onPageChange: handlePageChange,
-          }}
-          loading={loading}
-          rowSelection={rowSelection}
-          onRow={handleRow}
-          className="rounded-xl overflow-hidden"
-          size="middle"
-        ></Table>
+        <div style={{ overflow: 'auto' }}>
+          <Table
+            columns={columns}
+            dataSource={pageData}
+            scroll={{ x: 'max-content' }}
+            pagination={{
+              currentPage: activePage,
+              pageSize: pageSize,
+              total: tokenCount,
+              showSizeChanger: true,
+              pageSizeOptions: [10, 20, 50, 100],
+              formatPageText: (page) =>
+                t('第 {{start}} - {{end}} 条，共 {{total}} 条', {
+                  start: page.currentStart,
+                  end: page.currentEnd,
+                  total: tokenCount,
+                }),
+              onPageSizeChange: (size) => {
+                setPageSize(size);
+                setActivePage(1);
+                if (searchKeyword === '') {
+                  loadRedemptions(1, size).then();
+                } else {
+                  searchRedemptions(searchKeyword, 1, size).then();
+                }
+              },
+              onPageChange: handlePageChange,
+            }}
+            loading={loading}
+            rowSelection={rowSelection}
+            onRow={handleRow}
+            className="rounded-xl overflow-hidden"
+            size="middle"
+          ></Table>
+        </div>
       </Card>
     </>
   );
