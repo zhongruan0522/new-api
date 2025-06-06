@@ -864,7 +864,8 @@ const LogsTable = () => {
               </div>
             </div>
           }
-          shadows='hover'
+          shadows='always'
+          bordered={false}
         >
           <Table
             columns={getVisibleColumns()}

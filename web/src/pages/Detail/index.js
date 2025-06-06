@@ -208,6 +208,55 @@ const Detail = (props) => {
   // 添加一个新的状态来存储模型-颜色映射
   const [modelColors, setModelColors] = useState({});
 
+  // 添加趋势数据状态
+  const [trendData, setTrendData] = useState({
+    balance: [],
+    usedQuota: [],
+    requestCount: [],
+    times: [],
+    consumeQuota: [],
+    tokens: [],
+    rpm: [],
+    tpm: []
+  });
+
+  // 迷你趋势图配置
+  const getTrendSpec = (data, color) => ({
+    type: 'line',
+    data: [{ id: 'trend', values: data.map((val, idx) => ({ x: idx, y: val })) }],
+    xField: 'x',
+    yField: 'y',
+    height: 40,
+    width: 100,
+    axes: [
+      {
+        orient: 'bottom',
+        visible: false
+      },
+      {
+        orient: 'left',
+        visible: false
+      }
+    ],
+    padding: 0,
+    autoFit: false,
+    legends: { visible: false },
+    tooltip: { visible: false },
+    crosshair: { visible: false },
+    line: {
+      style: {
+        stroke: color,
+        lineWidth: 2
+      }
+    },
+    point: {
+      visible: false
+    },
+    background: {
+      fill: 'transparent'
+    }
+  });
+
   // 显示搜索Modal
   const showSearchModal = () => {
     setSearchModalVisible(true);
@@ -282,12 +331,75 @@ const Detail = (props) => {
     let uniqueModels = new Set();
     let totalTokens = 0;
 
-    // 收集所有唯一的模型名称
+    // 趋势数据处理
+    let timePoints = [];
+    let timeQuotaMap = new Map();
+    let timeTokensMap = new Map();
+    let timeCountMap = new Map();
+
+    // 收集所有唯一的模型名称和时间点
     data.forEach((item) => {
       uniqueModels.add(item.model_name);
       totalTokens += item.token_used;
       totalQuota += item.quota;
       totalTimes += item.count;
+
+      // 记录时间点
+      const timeKey = timestamp2string1(item.created_at, dataExportDefaultTime);
+      if (!timePoints.includes(timeKey)) {
+        timePoints.push(timeKey);
+      }
+
+      // 按时间点累加数据
+      if (!timeQuotaMap.has(timeKey)) {
+        timeQuotaMap.set(timeKey, 0);
+        timeTokensMap.set(timeKey, 0);
+        timeCountMap.set(timeKey, 0);
+      }
+      timeQuotaMap.set(timeKey, timeQuotaMap.get(timeKey) + item.quota);
+      timeTokensMap.set(timeKey, timeTokensMap.get(timeKey) + item.token_used);
+      timeCountMap.set(timeKey, timeCountMap.get(timeKey) + item.count);
+    });
+
+    // 确保时间点有序
+    timePoints.sort();
+
+    // 生成趋势数据
+    const quotaTrend = timePoints.map(time => timeQuotaMap.get(time) || 0);
+    const tokensTrend = timePoints.map(time => timeTokensMap.get(time) || 0);
+    const countTrend = timePoints.map(time => timeCountMap.get(time) || 0);
+
+    // 计算RPM和TPM趋势
+    const rpmTrend = [];
+    const tpmTrend = [];
+
+    if (timePoints.length >= 2) {
+      const interval = dataExportDefaultTime === 'hour'
+        ? 60 // 分钟/小时
+        : dataExportDefaultTime === 'day'
+          ? 1440 // 分钟/天
+          : 10080; // 分钟/周
+
+      for (let i = 0; i < timePoints.length; i++) {
+        rpmTrend.push(timeCountMap.get(timePoints[i]) / interval);
+        tpmTrend.push(timeTokensMap.get(timePoints[i]) / interval);
+      }
+    }
+
+    // 更新趋势数据状态
+    setTrendData({
+      // 账户数据不在API返回中，保持空数组
+      balance: [],
+      usedQuota: [],
+      // 使用统计
+      requestCount: [], // 没有总请求次数趋势数据
+      times: countTrend,
+      // 资源消耗
+      consumeQuota: quotaTrend,
+      tokens: tokensTrend,
+      // 性能指标
+      rpm: rpmTrend,
+      tpm: tpmTrend
     });
 
     // 处理颜色映射
@@ -336,10 +448,10 @@ const Detail = (props) => {
     }));
 
     // 生成时间点序列
-    let timePoints = Array.from(
+    let chartTimePoints = Array.from(
       new Set([...aggregatedData.values()].map((d) => d.time)),
     );
-    if (timePoints.length < 7) {
+    if (chartTimePoints.length < 7) {
       const lastTime = Math.max(...data.map((item) => item.created_at));
       const interval =
         dataExportDefaultTime === 'hour'
@@ -348,13 +460,13 @@ const Detail = (props) => {
             ? 86400
             : 604800;
 
-      timePoints = Array.from({ length: 7 }, (_, i) =>
+      chartTimePoints = Array.from({ length: 7 }, (_, i) =>
         timestamp2string1(lastTime - (6 - i) * interval, dataExportDefaultTime),
       );
     }
 
     // 生成柱状图数据
-    timePoints.forEach((time) => {
+    chartTimePoints.forEach((time) => {
       // 为每个时间点收集所有模型的数据
       let timeData = Array.from(uniqueModels).map((model) => {
         const key = `${time}-${model}`;
@@ -441,71 +553,103 @@ const Detail = (props) => {
   }, []);
 
   // 数据卡片信息
-  const statsData = [
+  const groupedStatsData = [
     {
-      title: t('当前余额'),
-      value: renderQuota(userState?.user?.quota),
-      icon: <IconMoneyExchangeStroked size="large" />,
+      title: t('账户数据'),
       color: 'bg-blue-50',
-      avatarColor: 'blue',
-      onClick: () => navigate('/console/topup'),
+      items: [
+        {
+          title: t('当前余额'),
+          value: renderQuota(userState?.user?.quota),
+          icon: <IconMoneyExchangeStroked size="large" />,
+          avatarColor: 'blue',
+          onClick: () => navigate('/console/topup'),
+          trendData: [], // 当前余额没有趋势数据
+          trendColor: '#3b82f6'
+        },
+        {
+          title: t('历史消耗'),
+          value: renderQuota(userState?.user?.used_quota),
+          icon: <IconHistogram size="large" />,
+          avatarColor: 'purple',
+          trendData: [], // 历史消耗没有趋势数据
+          trendColor: '#8b5cf6'
+        }
+      ]
     },
     {
-      title: t('历史消耗'),
-      value: renderQuota(userState?.user?.used_quota),
-      icon: <IconHistogram size="large" />,
-      color: 'bg-purple-50',
-      avatarColor: 'purple',
-    },
-    {
-      title: t('请求次数'),
-      value: userState.user?.request_count,
-      icon: <IconRotate size="large" />,
+      title: t('使用统计'),
       color: 'bg-green-50',
-      avatarColor: 'green',
+      items: [
+        {
+          title: t('请求次数'),
+          value: userState.user?.request_count,
+          icon: <IconRotate size="large" />,
+          avatarColor: 'green',
+          trendData: [], // 请求次数没有趋势数据
+          trendColor: '#10b981'
+        },
+        {
+          title: t('统计次数'),
+          value: times,
+          icon: <IconPulse size="large" />,
+          avatarColor: 'cyan',
+          trendData: trendData.times,
+          trendColor: '#06b6d4'
+        }
+      ]
     },
     {
-      title: t('统计额度'),
-      value: renderQuota(consumeQuota),
-      icon: <IconCoinMoneyStroked size="large" />,
+      title: t('资源消耗'),
       color: 'bg-yellow-50',
-      avatarColor: 'yellow',
+      items: [
+        {
+          title: t('统计额度'),
+          value: renderQuota(consumeQuota),
+          icon: <IconCoinMoneyStroked size="large" />,
+          avatarColor: 'yellow',
+          trendData: trendData.consumeQuota,
+          trendColor: '#f59e0b'
+        },
+        {
+          title: t('统计Tokens'),
+          value: isNaN(consumeTokens) ? 0 : consumeTokens,
+          icon: <IconTextStroked size="large" />,
+          avatarColor: 'pink',
+          trendData: trendData.tokens,
+          trendColor: '#ec4899'
+        }
+      ]
     },
     {
-      title: t('统计Tokens'),
-      value: isNaN(consumeTokens) ? 0 : consumeTokens,
-      icon: <IconTextStroked size="large" />,
-      color: 'bg-pink-50',
-      avatarColor: 'pink',
-    },
-    {
-      title: t('统计次数'),
-      value: times,
-      icon: <IconPulse size="large" />,
-      color: 'bg-teal-50',
-      avatarColor: 'cyan',
-    },
-    {
-      title: t('平均RPM'),
-      value: (
-        times /
-        ((Date.parse(end_timestamp) - Date.parse(start_timestamp)) / 60000)
-      ).toFixed(3),
-      icon: <IconStopwatchStroked size="large" />,
+      title: t('性能指标'),
       color: 'bg-indigo-50',
-      avatarColor: 'indigo',
-    },
-    {
-      title: t('平均TPM'),
-      value: (() => {
-        const tpm = consumeTokens /
-          ((Date.parse(end_timestamp) - Date.parse(start_timestamp)) / 60000);
-        return isNaN(tpm) ? '0' : tpm.toFixed(3);
-      })(),
-      icon: <IconTypograph size="large" />,
-      color: 'bg-orange-50',
-      avatarColor: 'orange',
-    },
+      items: [
+        {
+          title: t('平均RPM'),
+          value: (
+            times /
+            ((Date.parse(end_timestamp) - Date.parse(start_timestamp)) / 60000)
+          ).toFixed(3),
+          icon: <IconStopwatchStroked size="large" />,
+          avatarColor: 'indigo',
+          trendData: trendData.rpm,
+          trendColor: '#6366f1'
+        },
+        {
+          title: t('平均TPM'),
+          value: (() => {
+            const tpm = consumeTokens /
+              ((Date.parse(end_timestamp) - Date.parse(start_timestamp)) / 60000);
+            return isNaN(tpm) ? '0' : tpm.toFixed(3);
+          })(),
+          icon: <IconTypograph size="large" />,
+          avatarColor: 'orange',
+          trendData: trendData.tpm,
+          trendColor: '#f97316'
+        }
+      ]
+    }
   ];
 
   // 获取问候语
@@ -612,48 +756,84 @@ const Detail = (props) => {
       <Spin spinning={loading}>
         <div className="mb-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {statsData.map((stat, idx) => (
+            {groupedStatsData.map((group, idx) => (
               <Card
                 key={idx}
-                shadows='hover'
-                className={`${stat.color} border-0 !rounded-2xl w-full`}
-                headerLine={false}
-                onClick={stat.onClick}
+                shadows='always'
+                bordered={false}
+                className={`${group.color} border-0 !rounded-2xl w-full`}
+                headerLine={true}
+                header={<div style={{ color: 'white', fontWeight: 'bold', fontSize: '16px' }}>{group.title}</div>}
+                headerStyle={{
+                  background: idx === 0
+                    ? 'linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%)'
+                    : idx === 1
+                      ? 'linear-gradient(135deg, #10b981 0%, #34d399 100%)'
+                      : idx === 2
+                        ? 'linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%)'
+                        : 'linear-gradient(135deg, #ec4899 0%, #f472b6 100%)',
+                  borderTopLeftRadius: '16px',
+                  borderTopRightRadius: '16px',
+                  padding: '12px 16px',
+                }}
               >
-                <div className="flex items-center">
-                  <Avatar
-                    className="mr-3"
-                    size="medium"
-                    color={stat.avatarColor}
-                  >
-                    {stat.icon}
-                  </Avatar>
-                  <div>
-                    <div className="text-sm text-gray-500">{stat.title}</div>
-                    <div className="text-xl font-semibold">{stat.value}</div>
-                  </div>
+                <div className="space-y-4">
+                  {group.items.map((item, itemIdx) => (
+                    <div
+                      key={itemIdx}
+                      className="flex items-center justify-between cursor-pointer"
+                      onClick={item.onClick}
+                    >
+                      <div className="flex items-center">
+                        <Avatar
+                          className="mr-3"
+                          size="small"
+                          color={item.avatarColor}
+                        >
+                          {item.icon}
+                        </Avatar>
+                        <div>
+                          <div className="text-xs text-gray-500">{item.title}</div>
+                          <div className="text-lg font-semibold">{item.value}</div>
+                        </div>
+                      </div>
+                      {item.trendData && item.trendData.length > 0 && (
+                        <div className="w-24 h-10">
+                          <VChart
+                            spec={getTrendSpec(item.trendData, item.trendColor)}
+                            option={{ mode: 'desktop-browser' }}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  ))}
                 </div>
               </Card>
             ))}
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          <Card shadows='hover' className="shadow-sm !rounded-2xl" headerLine={true} title={t('模型消耗分布')}>
-            <div style={{ height: 400 }}>
-              <VChart
-                spec={spec_line}
-                option={{ mode: 'desktop-browser' }}
-              />
-            </div>
-          </Card>
-
-          <Card shadows='hover' className="shadow-sm !rounded-2xl" headerLine={true} title={t('模型调用次数占比')}>
-            <div style={{ height: 400 }}>
-              <VChart
-                spec={spec_pie}
-                option={{ mode: 'desktop-browser' }}
-              />
+        <div className="grid grid-cols-1 lg:grid-cols-1 gap-6 mb-6">
+          <Card
+            shadows='always'
+            bordered={false}
+            className="shadow-sm !rounded-2xl"
+            headerLine={true}
+            title={t('模型数据分析')}
+          >
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+              <div style={{ height: 400 }}>
+                <VChart
+                  spec={spec_line}
+                  option={{ mode: 'desktop-browser' }}
+                />
+              </div>
+              <div style={{ height: 400 }}>
+                <VChart
+                  spec={spec_pie}
+                  option={{ mode: 'desktop-browser' }}
+                />
+              </div>
             </div>
           </Card>
         </div>

@@ -1638,7 +1638,8 @@ const ChannelsTable = () => {
       <Card
         className="!rounded-2xl overflow-hidden"
         title={renderHeader()}
-        shadows='hover'
+        shadows='always'
+        bordered={false}
       >
         <Table
           columns={getVisibleColumns()}

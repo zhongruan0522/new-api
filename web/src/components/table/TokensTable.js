@@ -1,5 +1,4 @@
-import React, { useEffect, useState, useContext } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
 import {
   API,
   copy,
@@ -21,8 +20,6 @@ import {
   Table,
   Tag,
   Input,
-  Divider,
-  Avatar,
 } from '@douyinfe/semi-ui';
 
 import {
@@ -36,13 +33,9 @@ import {
   IconStop,
   IconPlay,
   IconMore,
-  IconMoneyExchangeStroked,
-  IconHistogram,
-  IconRotate,
 } from '@douyinfe/semi-icons';
 import EditToken from '../../pages/Token/EditToken';
 import { useTranslation } from 'react-i18next';
-import { UserContext } from '../../context/User';
 
 function renderTimestamp(timestamp) {
   return <>{timestamp2string(timestamp)}</>;
@@ -50,8 +43,6 @@ function renderTimestamp(timestamp) {
 
 const TokensTable = () => {
   const { t } = useTranslation();
-  const navigate = useNavigate();
-  const [userState, userDispatch] = useContext(UserContext);
 
   const renderStatus = (status, model_limits_enabled = false) => {
     switch (status) {
@@ -431,26 +422,9 @@ const TokensTable = () => {
     window.open(url, '_blank');
   };
 
-  // 获取用户数据
-  const getUserData = async () => {
-    try {
-      const res = await API.get(`/api/user/self`);
-      const { success, message, data } = res.data;
-      if (success) {
-        userDispatch({ type: 'login', payload: data });
-      } else {
-        showError(message);
-      }
-    } catch (error) {
-      console.error('获取用户数据失败:', error);
-      showError(t('获取用户数据失败'));
-    }
-  };
+
 
   useEffect(() => {
-    // 获取用户数据以确保显示正确的余额和使用量
-    getUserData();
-
     loadTokens(0)
       .then()
       .catch((reason) => {
@@ -574,71 +548,6 @@ const TokensTable = () => {
 
   const renderHeader = () => (
     <div className="flex flex-col w-full">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card
-          shadows='hover'
-          className="bg-blue-50 border-0 !rounded-2xl w-full"
-          headerLine={false}
-          onClick={() => navigate('/console/topup')}
-        >
-          <div className="flex items-center">
-            <Avatar
-              className="mr-3"
-              size="medium"
-              color="blue"
-            >
-              <IconMoneyExchangeStroked size="large" />
-            </Avatar>
-            <div>
-              <div className="text-sm text-gray-500">{t('当前余额')}</div>
-              <div className="text-xl font-semibold">{renderQuota(userState?.user?.quota)}</div>
-            </div>
-          </div>
-        </Card>
-
-        <Card
-          shadows='hover'
-          className="bg-purple-50 border-0 !rounded-2xl w-full"
-          headerLine={false}
-        >
-          <div className="flex items-center">
-            <Avatar
-              className="mr-3"
-              size="medium"
-              color="purple"
-            >
-              <IconHistogram size="large" />
-            </Avatar>
-            <div>
-              <div className="text-sm text-gray-500">{t('累计消费')}</div>
-              <div className="text-xl font-semibold">{renderQuota(userState?.user?.used_quota)}</div>
-            </div>
-          </div>
-        </Card>
-
-        <Card
-          shadows='hover'
-          className="bg-green-50 border-0 !rounded-2xl w-full"
-          headerLine={false}
-        >
-          <div className="flex items-center">
-            <Avatar
-              className="mr-3"
-              size="medium"
-              color="green"
-            >
-              <IconRotate size="large" />
-            </Avatar>
-            <div>
-              <div className="text-sm text-gray-500">{t('请求次数')}</div>
-              <div className="text-xl font-semibold">{userState?.user?.request_count || 0}</div>
-            </div>
-          </div>
-        </Card>
-      </div>
-
-      <Divider margin="12px" />
-
       <div className="flex flex-col md:flex-row justify-between items-center gap-4 w-full">
         <div className="flex gap-2 w-full md:w-auto order-2 md:order-1">
           <Button
@@ -723,7 +632,8 @@ const TokensTable = () => {
       <Card
         className="!rounded-2xl overflow-hidden"
         title={renderHeader()}
-        shadows='hover'
+        shadows='always'
+        bordered={false}
       >
         <Table
           columns={columns}

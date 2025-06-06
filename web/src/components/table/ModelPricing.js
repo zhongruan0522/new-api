@@ -241,7 +241,7 @@ const ModelPricing = () => {
           let price = parseFloat(text) * groupRatio[selectedGroup];
           content = (
             <div className="text-gray-700">
-              ${t('模型价格')}：${price.toFixed(3)}
+              {t('模型价格')}：${price.toFixed(3)}
             </div>
           );
         }
@@ -451,7 +451,7 @@ const ModelPricing = () => {
 
   // 搜索和操作区组件
   const SearchAndActions = useMemo(() => (
-    <Card className="!rounded-xl mb-6" shadows='hover'>
+    <Card className="!rounded-xl mb-6" bordered={false}>
       <div className="flex flex-wrap items-center gap-4">
         <div className="flex-1 min-w-[200px]">
           <Input
@@ -482,7 +482,7 @@ const ModelPricing = () => {
 
   // 表格组件
   const ModelTable = useMemo(() => (
-    <Card className="!rounded-xl overflow-hidden" shadows='hover'>
+    <Card className="!rounded-xl overflow-hidden" bordered={false}>
       <Table
         columns={columns}
         dataSource={filteredModels}
