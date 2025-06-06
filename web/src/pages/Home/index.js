@@ -79,7 +79,7 @@ const Home = () => {
               <div className="flex-shrink-0 w-full md:w-[480px] md:mr-[60px] lg:mr-[120px] mb-8 md:mb-0">
                 <div className="flex items-center gap-2 justify-center md:justify-start">
                   <h1 className="text-3xl md:text-4xl lg:text-5xl font-semibold text-semi-color-text-0 w-auto leading-normal md:leading-[67px]">
-                    {statusState?.status?.system_name}
+                    {statusState?.status?.system_name || 'New API'}
                   </h1>
                   {statusState?.status?.version && (
                     <Tag color='light-blue' size='large' shape='circle' className="ml-1">
