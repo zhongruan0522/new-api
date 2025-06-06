@@ -124,7 +124,7 @@ const PageLayout = () => {
               : styleState.showSider
                 ? styleState.siderCollapsed
                   ? '60px'
-                  : '200px'
+                  : '180px'
                 : '0',
             transition: 'margin-left 0.3s ease',
             flex: '1 1 auto',

@@ -1,8 +1,9 @@
-import React, { useContext, useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { StatusContext } from '../../context/Status/index.js';
 import { useTranslation } from 'react-i18next';
-
+import { getLucideIcon, sidebarIconColors } from '../../helpers/render.js';
+import { ChevronLeft } from 'lucide-react';
+import { useStyle, styleActions } from '../../context/Style/index.js';
 import {
   isAdmin,
   isRoot,
@@ -10,57 +11,11 @@ import {
 } from '../../helpers/index.js';
 
 import {
-  IconCalendarClock,
-  IconChecklistStroked,
-  IconComment,
-  IconTerminal,
-  IconCreditCard,
-  IconGift,
-  IconHistogram,
-  IconImage,
-  IconKey,
-  IconLayers,
-  IconSetting,
-  IconUser,
-} from '@douyinfe/semi-icons';
-import {
   Nav,
   Divider,
+  Tooltip,
 } from '@douyinfe/semi-ui';
-import { useSetTheme, useTheme } from '../../context/Theme/index.js';
-import { useStyle, styleActions } from '../../context/Style/index.js';
-import Text from '@douyinfe/semi-ui/lib/es/typography/text';
 
-// 自定义侧边栏按钮样式
-const navItemStyle = {
-  borderRadius: '6px',
-  margin: '4px 8px',
-};
-
-// 自定义侧边栏按钮悬停样式
-const navItemHoverStyle = {
-  backgroundColor: 'var(--semi-color-primary-light-default)',
-  color: 'var(--semi-color-primary)',
-};
-
-// 自定义侧边栏按钮选中样式
-const navItemSelectedStyle = {
-  backgroundColor: 'var(--semi-color-primary-light-default)',
-  color: 'var(--semi-color-primary)',
-  fontWeight: '600',
-};
-
-// 自定义图标样式
-const iconStyle = (itemKey, selectedKeys) => {
-  return {
-    fontSize: '18px',
-    color: selectedKeys.includes(itemKey)
-      ? 'var(--semi-color-primary)'
-      : 'var(--semi-color-text-2)',
-  };
-};
-
-// Define routerMap as a constant outside the component
 const routerMap = {
   home: '/',
   channel: '/console/channel',
@@ -82,52 +37,13 @@ const routerMap = {
 const SiderBar = () => {
   const { t } = useTranslation();
   const { state: styleState, dispatch: styleDispatch } = useStyle();
-  const [statusState, statusDispatch] = useContext(StatusContext);
 
   const [selectedKeys, setSelectedKeys] = useState(['home']);
   const [isCollapsed, setIsCollapsed] = useState(styleState.siderCollapsed);
   const [chatItems, setChatItems] = useState([]);
   const [openedKeys, setOpenedKeys] = useState([]);
-  const theme = useTheme();
-  const setTheme = useSetTheme();
   const location = useLocation();
   const [routerMapState, setRouterMapState] = useState(routerMap);
-
-  // 预先计算所有可能的图标样式
-  const allItemKeys = useMemo(() => {
-    const keys = [
-      'home',
-      'channel',
-      'token',
-      'redemption',
-      'topup',
-      'user',
-      'log',
-      'midjourney',
-      'setting',
-      'about',
-      'chat',
-      'detail',
-      'pricing',
-      'task',
-      'playground',
-      'personal',
-    ];
-    // 添加聊天项的keys
-    for (let i = 0; i < chatItems.length; i++) {
-      keys.push('chat' + i);
-    }
-    return keys;
-  }, [chatItems]);
-
-  // 使用useMemo一次性计算所有图标样式
-  const iconStyles = useMemo(() => {
-    const styles = {};
-    allItemKeys.forEach((key) => {
-      styles[key] = iconStyle(key, selectedKeys);
-    });
-    return styles;
-  }, [allItemKeys, selectedKeys]);
 
   const workspaceItems = useMemo(
     () => [
@@ -135,7 +51,6 @@ const SiderBar = () => {
         text: t('数据看板'),
         itemKey: 'detail',
         to: '/detail',
-        icon: <IconCalendarClock />,
         className:
           localStorage.getItem('enable_data_export') === 'true'
             ? ''
@@ -145,19 +60,16 @@ const SiderBar = () => {
         text: t('API令牌'),
         itemKey: 'token',
         to: '/token',
-        icon: <IconKey />,
       },
       {
         text: t('使用日志'),
         itemKey: 'log',
         to: '/log',
-        icon: <IconHistogram />,
       },
       {
         text: t('绘图日志'),
         itemKey: 'midjourney',
         to: '/midjourney',
-        icon: <IconImage />,
         className:
           localStorage.getItem('enable_drawing') === 'true'
             ? ''
@@ -167,7 +79,6 @@ const SiderBar = () => {
         text: t('任务日志'),
         itemKey: 'task',
         to: '/task',
-        icon: <IconChecklistStroked />,
         className:
           localStorage.getItem('enable_task') === 'true' ? '' : 'tableHiddle',
       },
@@ -186,13 +97,11 @@ const SiderBar = () => {
         text: t('钱包'),
         itemKey: 'topup',
         to: '/topup',
-        icon: <IconCreditCard />,
       },
       {
         text: t('个人设置'),
         itemKey: 'personal',
         to: '/personal',
-        icon: <IconUser />,
       },
     ],
     [t],
@@ -204,28 +113,24 @@ const SiderBar = () => {
         text: t('渠道'),
         itemKey: 'channel',
         to: '/channel',
-        icon: <IconLayers />,
         className: isAdmin() ? '' : 'tableHiddle',
       },
       {
         text: t('兑换码'),
         itemKey: 'redemption',
         to: '/redemption',
-        icon: <IconGift />,
         className: isAdmin() ? '' : 'tableHiddle',
       },
       {
         text: t('用户管理'),
         itemKey: 'user',
         to: '/user',
-        icon: <IconUser />,
         className: isAdmin() ? '' : 'tableHiddle',
       },
       {
         text: t('系统设置'),
         itemKey: 'setting',
         to: '/setting',
-        icon: <IconSetting />,
         className: isRoot() ? '' : 'tableHiddle',
       },
     ],
@@ -238,19 +143,17 @@ const SiderBar = () => {
         text: t('操练场'),
         itemKey: 'playground',
         to: '/playground',
-        icon: <IconTerminal />,
       },
       {
         text: t('聊天'),
         itemKey: 'chat',
         items: chatItems,
-        icon: <IconComment />,
       },
     ],
     [chatItems, t],
   );
 
-  // Function to update router map with chat routes
+  // 更新路由映射，添加聊天路由
   const updateRouterMapWithChats = (chats) => {
     const newRouterMap = { ...routerMap };
 
@@ -264,7 +167,7 @@ const SiderBar = () => {
     return newRouterMap;
   };
 
-  // Update the useEffect for chat items
+  // 加载聊天项
   useEffect(() => {
     let chats = localStorage.getItem('chats');
     if (chats) {
@@ -282,8 +185,6 @@ const SiderBar = () => {
             chatItems.push(chat);
           }
           setChatItems(chatItems);
-
-          // Update router map with chat routes
           updateRouterMapWithChats(chats);
         }
       } catch (e) {
@@ -293,14 +194,14 @@ const SiderBar = () => {
     }
   }, []);
 
-  // Update the useEffect for route selection
+  // 根据当前路径设置选中的菜单项
   useEffect(() => {
     const currentPath = location.pathname;
     let matchingKey = Object.keys(routerMapState).find(
       (key) => routerMapState[key] === currentPath,
     );
 
-    // Handle chat routes
+    // 处理聊天路由
     if (!matchingKey && currentPath.startsWith('/console/chat/')) {
       const chatIndex = currentPath.split('/').pop();
       if (!isNaN(chatIndex)) {
@@ -310,54 +211,129 @@ const SiderBar = () => {
       }
     }
 
-    // If we found a matching key, update the selected keys
+    // 如果找到匹配的键，更新选中的键
     if (matchingKey) {
       setSelectedKeys([matchingKey]);
     }
   }, [location.pathname, routerMapState]);
 
+  // 同步折叠状态
   useEffect(() => {
     setIsCollapsed(styleState.siderCollapsed);
   }, [styleState.siderCollapsed]);
 
-  // Custom divider style
-  const dividerStyle = {
-    margin: '8px 0',
-    opacity: 0.6,
+  // 获取菜单项对应的颜色
+  const getItemColor = (itemKey) => {
+    switch (itemKey) {
+      case 'detail': return sidebarIconColors.dashboard;
+      case 'playground': return sidebarIconColors.terminal;
+      case 'chat': return sidebarIconColors.message;
+      case 'token': return sidebarIconColors.key;
+      case 'log': return sidebarIconColors.chart;
+      case 'midjourney': return sidebarIconColors.image;
+      case 'task': return sidebarIconColors.check;
+      case 'topup': return sidebarIconColors.credit;
+      case 'channel': return sidebarIconColors.layers;
+      case 'redemption': return sidebarIconColors.gift;
+      case 'user':
+      case 'personal': return sidebarIconColors.user;
+      case 'setting': return sidebarIconColors.settings;
+      default:
+        // 处理聊天项
+        if (itemKey && itemKey.startsWith('chat')) return sidebarIconColors.message;
+        return 'currentColor';
+    }
   };
 
-  // Custom group label style
-  const groupLabelStyle = {
-    padding: '8px 16px',
-    color: 'var(--semi-color-text-2)',
-    fontSize: '12px',
-    fontWeight: 'bold',
-    textTransform: 'uppercase',
-    letterSpacing: '0.5px',
+  // 渲染自定义菜单项
+  const renderNavItem = (item) => {
+    // 跳过隐藏的项目
+    if (item.className === 'tableHiddle') return null;
+
+    const isSelected = selectedKeys.includes(item.itemKey);
+    const textColor = isSelected ? getItemColor(item.itemKey) : 'inherit';
+
+    return (
+      <Nav.Item
+        key={item.itemKey}
+        itemKey={item.itemKey}
+        text={
+          <div className="flex items-center">
+            <span className="truncate font-medium text-sm" style={{ color: textColor }}>
+              {item.text}
+            </span>
+          </div>
+        }
+        icon={
+          <div className="sidebar-icon-container flex-shrink-0">
+            {getLucideIcon(item.itemKey, isSelected)}
+          </div>
+        }
+        className={item.className}
+      />
+    );
+  };
+
+  // 渲染子菜单项
+  const renderSubItem = (item) => {
+    if (item.items && item.items.length > 0) {
+      const isSelected = selectedKeys.includes(item.itemKey);
+      const textColor = isSelected ? getItemColor(item.itemKey) : 'inherit';
+
+      return (
+        <Nav.Sub
+          key={item.itemKey}
+          itemKey={item.itemKey}
+          text={
+            <div className="flex items-center">
+              <span className="truncate font-medium text-sm" style={{ color: textColor }}>
+                {item.text}
+              </span>
+            </div>
+          }
+          icon={
+            <div className="sidebar-icon-container flex-shrink-0">
+              {getLucideIcon(item.itemKey, isSelected)}
+            </div>
+          }
+        >
+          {item.items.map((subItem) => {
+            const isSubSelected = selectedKeys.includes(subItem.itemKey);
+            const subTextColor = isSubSelected ? getItemColor(subItem.itemKey) : 'inherit';
+
+            return (
+              <Nav.Item
+                key={subItem.itemKey}
+                itemKey={subItem.itemKey}
+                text={
+                  <span className="truncate font-medium text-sm" style={{ color: subTextColor }}>
+                    {subItem.text}
+                  </span>
+                }
+              />
+            );
+          })}
+        </Nav.Sub>
+      );
+    } else {
+      return renderNavItem(item);
+    }
   };
 
   return (
-    <>
+    <div
+      className="sidebar-container"
+      style={{ width: isCollapsed ? '60px' : '180px' }}
+    >
       <Nav
-        className='custom-sidebar-nav'
-        style={{
-          width: isCollapsed ? '60px' : '200px',
-          borderRight: '1px solid var(--semi-color-border)',
-          background: 'var(--semi-color-bg-0)',
-          borderRadius: styleState.isMobile ? '0' : '0 8px 8px 0',
-          position: 'relative',
-          zIndex: 95,
-          height: '100%',
-          overflowY: 'auto',
-          WebkitOverflowScrolling: 'touch', // Improve scrolling on iOS devices
-        }}
+        className="sidebar-nav custom-sidebar-nav"
         defaultIsCollapsed={styleState.siderCollapsed}
         isCollapsed={isCollapsed}
         onCollapseChange={(collapsed) => {
           setIsCollapsed(collapsed);
           styleDispatch(styleActions.setSiderCollapsed(collapsed));
 
-          // 确保在收起侧边栏时有选中的项目，避免不必要的计算
+          // 确保在收起侧边栏时有选中的项目
           if (selectedKeys.length === 0) {
             const currentPath = location.pathname;
             const matchingKey = Object.keys(routerMapState).find(
@@ -374,14 +350,19 @@ const SiderBar = () => {
           }
         }}
         selectedKeys={selectedKeys}
-        itemStyle={navItemStyle}
-        hoverStyle={navItemHoverStyle}
-        selectedStyle={navItemSelectedStyle}
-        renderWrapper={({ itemElement, isSubNav, isInSubNav, props }) => {
+        itemStyle="sidebar-nav-item"
+        hoverStyle="sidebar-nav-item:hover"
+        selectedStyle="sidebar-nav-item-selected"
+        renderWrapper={({ itemElement, props }) => {
+          const to = routerMapState[props.itemKey] || routerMap[props.itemKey];
+
+          // 如果没有路由，直接返回元素
+          if (!to) return itemElement;
+
           return (
             <Link
               style={{ textDecoration: 'none' }}
-              to={routerMapState[props.itemKey] || routerMap[props.itemKey]}
+              to={to}
             >
               {itemElement}
             </Link>
@@ -400,107 +381,67 @@ const SiderBar = () => {
           setOpenedKeys(data.openKeys);
         }}
       >
-        {/* Chat Section - Only show if there are chat items */}
-        {chatMenuItems.map((item) => {
-          if (item.items && item.items.length > 0) {
-            return (
-              <Nav.Sub
-                key={item.itemKey}
-                itemKey={item.itemKey}
-                text={item.text}
-                icon={React.cloneElement(item.icon, {
-                  style: iconStyles[item.itemKey],
-                })}
-              >
-                {item.items.map((subItem) => (
-                  <Nav.Item
-                    key={subItem.itemKey}
-                    itemKey={subItem.itemKey}
-                    text={subItem.text}
-                  />
-                ))}
-              </Nav.Sub>
-            );
-          } else {
-            return (
-              <Nav.Item
-                key={item.itemKey}
-                itemKey={item.itemKey}
-                text={item.text}
-                icon={React.cloneElement(item.icon, {
-                  style: iconStyles[item.itemKey],
-                })}
-              />
-            );
-          }
-        })}
+        {/* 聊天区域 */}
+        <div className="sidebar-section">
+          {!isCollapsed && (
+            <div className="sidebar-group-label">{t('聊天')}</div>
+          )}
+          {chatMenuItems.map((item) => renderSubItem(item))}
+        </div>
 
-        {/* Divider */}
-        <Divider style={dividerStyle} />
+        {/* 控制台区域 */}
+        <Divider className="sidebar-divider" />
+        <div>
+          {!isCollapsed && (
+            <div className="sidebar-group-label">{t('控制台')}</div>
+          )}
+          {workspaceItems.map((item) => renderNavItem(item))}
+        </div>
 
-        {/* Workspace Section */}
-        {!isCollapsed && <Text style={groupLabelStyle}>{t('控制台')}</Text>}
-        {workspaceItems.map((item) => (
-          <Nav.Item
-            key={item.itemKey}
-            itemKey={item.itemKey}
-            text={item.text}
-            icon={React.cloneElement(item.icon, {
-              style: iconStyles[item.itemKey],
-            })}
-            className={item.className}
-          />
-        ))}
-
+        {/* 管理员区域 - 只在管理员时显示 */}
         {isAdmin() && (
           <>
-            {/* Divider */}
-            <Divider style={dividerStyle} />
-
-            {/* Admin Section */}
-            {!isCollapsed && <Text style={groupLabelStyle}>{t('管理员')}</Text>}
-            {adminItems.map((item) => (
-              <Nav.Item
-                key={item.itemKey}
-                itemKey={item.itemKey}
-                text={item.text}
-                icon={React.cloneElement(item.icon, {
-                  style: iconStyles[item.itemKey],
-                })}
-                className={item.className}
-              />
-            ))}
+            <Divider className="sidebar-divider" />
+            <div>
+              {!isCollapsed && (
+                <div className="sidebar-group-label">{t('管理员')}</div>
+              )}
+              {adminItems.map((item) => renderNavItem(item))}
+            </div>
           </>
         )}
 
-        {/* Divider */}
-        <Divider style={dividerStyle} />
-
-        {/* Finance Management Section */}
-        {!isCollapsed && <Text style={groupLabelStyle}>{t('个人中心')}</Text>}
-        {financeItems.map((item) => (
-          <Nav.Item
-            key={item.itemKey}
-            itemKey={item.itemKey}
-            text={item.text}
-            icon={React.cloneElement(item.icon, {
-              style: iconStyles[item.itemKey],
-            })}
-            className={item.className}
-          />
-        ))}
-
-        <Nav.Footer
-          collapseButton={true}
-          collapseText={(collapsed) => {
-            if (collapsed) {
-              return t('展开侧边栏');
-            }
-            return t('收起侧边栏');
-          }}
-        />
+        {/* 个人中心区域 */}
+        <Divider className="sidebar-divider" />
+        <div>
+          {!isCollapsed && (
+            <div className="sidebar-group-label">{t('个人中心')}</div>
+          )}
+          {financeItems.map((item) => renderNavItem(item))}
+        </div>
       </Nav>
-    </>
+
+      {/* 底部折叠按钮 */}
+      <div
+        className="sidebar-collapse-button"
+        onClick={() => {
+          const newCollapsed = !isCollapsed;
+          setIsCollapsed(newCollapsed);
+          styleDispatch(styleActions.setSiderCollapsed(newCollapsed));
+        }}
+      >
+        <Tooltip content={isCollapsed ? t('展开侧边栏') : t('收起侧边栏')} position="right">
+          <div className="sidebar-collapse-button-inner">
+            <span
+              className="sidebar-collapse-icon-container"
+              style={{ transform: isCollapsed ? 'rotate(180deg)' : 'rotate(0deg)' }}
+            >
+              <ChevronLeft size={16} strokeWidth={2.5} color="var(--semi-color-text-2)" />
+            </span>
+          </div>
+        </Tooltip>
+      </div>
+    </div>
   );
 };
 

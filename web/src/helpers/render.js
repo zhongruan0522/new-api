@@ -26,6 +26,80 @@ import {
   Doubao,
 } from '@lobehub/icons';
 
+import {
+  LayoutDashboard,
+  TerminalSquare,
+  MessageSquare,
+  Key,
+  BarChart3,
+  Image as ImageIcon,
+  CheckSquare,
+  CreditCard,
+  Layers,
+  Gift,
+  User,
+  Settings,
+  CircleUser,
+} from 'lucide-react';
+
+// 侧边栏图标颜色映射
+export const sidebarIconColors = {
+  dashboard: "#4F46E5", // 紫蓝色
+  terminal: "#10B981", // 绿色
+  message: "#06B6D4", // 青色
+  key: "#3B82F6", // 蓝色
+  chart: "#8B5CF6", // 紫色
+  image: "#EC4899", // 粉色
+  check: "#F59E0B", // 琥珀色
+  credit: "#F97316", // 橙色
+  layers: "#EF4444", // 红色
+  gift: "#F43F5E", // 玫红色
+  user: "#6366F1", // 靛蓝色
+  settings: "#6B7280", // 灰色
+};
+
+// 获取侧边栏Lucide图标组件
+export function getLucideIcon(key, selected = false) {
+  const size = 16;
+  const strokeWidth = 2;
+  const commonProps = {
+    size,
+    strokeWidth,
+    className: `transition-colors duration-200 ${selected ? 'transition-transform duration-200 scale-105' : ''}`,
+  };
+
+  // 根据不同的key返回不同的图标
+  switch (key) {
+    case 'detail':
+      return <LayoutDashboard {...commonProps} color={selected ? sidebarIconColors.dashboard : 'currentColor'} />;
+    case 'playground':
+      return <TerminalSquare {...commonProps} color={selected ? sidebarIconColors.terminal : 'currentColor'} />;
+    case 'chat':
+      return <MessageSquare {...commonProps} color={selected ? sidebarIconColors.message : 'currentColor'} />;
+    case 'token':
+      return <Key {...commonProps} color={selected ? sidebarIconColors.key : 'currentColor'} />;
+    case 'log':
+      return <BarChart3 {...commonProps} color={selected ? sidebarIconColors.chart : 'currentColor'} />;
+    case 'midjourney':
+      return <ImageIcon {...commonProps} color={selected ? sidebarIconColors.image : 'currentColor'} />;
+    case 'task':
+      return <CheckSquare {...commonProps} color={selected ? sidebarIconColors.check : 'currentColor'} />;
+    case 'topup':
+      return <CreditCard {...commonProps} color={selected ? sidebarIconColors.credit : 'currentColor'} />;
+    case 'channel':
+      return <Layers {...commonProps} color={selected ? sidebarIconColors.layers : 'currentColor'} />;
+    case 'redemption':
+      return <Gift {...commonProps} color={selected ? sidebarIconColors.gift : 'currentColor'} />;
+    case 'user':
+    case 'personal':
+      return <User {...commonProps} color={selected ? sidebarIconColors.user : 'currentColor'} />;
+    case 'setting':
+      return <Settings {...commonProps} color={selected ? sidebarIconColors.settings : 'currentColor'} />;
+    default:
+      return <CircleUser {...commonProps} color={selected ? sidebarIconColors.user : 'currentColor'} />;
+  }
+}
+
 // 获取模型分类
 export const getModelCategories = (() => {
   let categoriesCache = null;
