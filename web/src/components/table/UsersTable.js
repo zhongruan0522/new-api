@@ -547,34 +547,32 @@ const UsersTable = () => {
         shadows='always'
         bordered={false}
       >
-        <div style={{ overflow: 'auto' }}>
-          <Table
-            columns={columns}
-            dataSource={users}
-            scroll={{ x: 'max-content' }}
-            pagination={{
-              formatPageText: (page) =>
-                t('第 {{start}} - {{end}} 条，共 {{total}} 条', {
-                  start: page.currentStart,
-                  end: page.currentEnd,
-                  total: userCount,
-                }),
-              currentPage: activePage,
-              pageSize: pageSize,
-              total: userCount,
-              pageSizeOpts: [10, 20, 50, 100],
-              showSizeChanger: true,
-              onPageSizeChange: (size) => {
-                handlePageSizeChange(size);
-              },
-              onPageChange: handlePageChange,
-            }}
-            loading={loading}
-            onRow={handleRow}
-            className="rounded-xl overflow-hidden"
-            size="middle"
-          />
-        </div>
+        <Table
+          columns={columns}
+          dataSource={users}
+          scroll={{ x: 'max-content' }}
+          pagination={{
+            formatPageText: (page) =>
+              t('第 {{start}} - {{end}} 条，共 {{total}} 条', {
+                start: page.currentStart,
+                end: page.currentEnd,
+                total: userCount,
+              }),
+            currentPage: activePage,
+            pageSize: pageSize,
+            total: userCount,
+            pageSizeOpts: [10, 20, 50, 100],
+            showSizeChanger: true,
+            onPageSizeChange: (size) => {
+              handlePageSizeChange(size);
+            },
+            onPageChange: handlePageChange,
+          }}
+          loading={loading}
+          onRow={handleRow}
+          className="rounded-xl overflow-hidden"
+          size="middle"
+        />
       </Card>
     </>
   );

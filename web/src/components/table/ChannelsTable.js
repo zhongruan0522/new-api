@@ -1632,43 +1632,41 @@ const ChannelsTable = () => {
         shadows='always'
         bordered={false}
       >
-        <div style={{ overflow: 'auto' }}>
-          <Table
-            columns={getVisibleColumns()}
-            dataSource={pageData}
-            scroll={{ x: 'max-content' }}
-            pagination={{
-              currentPage: activePage,
-              pageSize: pageSize,
-              total: channelCount,
-              pageSizeOpts: [10, 20, 50, 100],
-              showSizeChanger: true,
-              formatPageText: (page) => t('第 {{start}} - {{end}} 条，共 {{total}} 条', {
-                start: page.currentStart,
-                end: page.currentEnd,
-                total: channels.length,
-              }),
-              onPageSizeChange: (size) => {
-                handlePageSizeChange(size);
-              },
-              onPageChange: handlePageChange,
-            }}
-            expandAllRows={false}
-            onRow={handleRow}
-            rowSelection={
-              enableBatchDelete
-                ? {
-                  onChange: (selectedRowKeys, selectedRows) => {
-                    setSelectedChannels(selectedRows);
-                  },
-                }
-                : null
-            }
-            className="rounded-xl overflow-hidden"
-            size="middle"
-            loading={loading}
-          />
-        </div>
+        <Table
+          columns={getVisibleColumns()}
+          dataSource={pageData}
+          scroll={{ x: 'max-content' }}
+          pagination={{
+            currentPage: activePage,
+            pageSize: pageSize,
+            total: channelCount,
+            pageSizeOpts: [10, 20, 50, 100],
+            showSizeChanger: true,
+            formatPageText: (page) => t('第 {{start}} - {{end}} 条，共 {{total}} 条', {
+              start: page.currentStart,
+              end: page.currentEnd,
+              total: channels.length,
+            }),
+            onPageSizeChange: (size) => {
+              handlePageSizeChange(size);
+            },
+            onPageChange: handlePageChange,
+          }}
+          expandAllRows={false}
+          onRow={handleRow}
+          rowSelection={
+            enableBatchDelete
+              ? {
+                onChange: (selectedRowKeys, selectedRows) => {
+                  setSelectedChannels(selectedRows);
+                },
+              }
+              : null
+          }
+          className="rounded-xl overflow-hidden"
+          size="middle"
+          loading={loading}
+        />
       </Card>
 
       {/* 批量设置标签模态框 */}

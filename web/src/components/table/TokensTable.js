@@ -629,36 +629,34 @@ const TokensTable = () => {
         shadows='always'
         bordered={false}
       >
-        <div style={{ overflow: 'auto' }}>
-          <Table
-            columns={columns}
-            dataSource={pageData}
-            scroll={{ x: 'max-content' }}
-            pagination={{
-              currentPage: activePage,
-              pageSize: pageSize,
-              total: tokenCount,
-              showSizeChanger: true,
-              pageSizeOptions: [10, 20, 50, 100],
-              formatPageText: (page) =>
-                t('第 {{start}} - {{end}} 条，共 {{total}} 条', {
-                  start: page.currentStart,
-                  end: page.currentEnd,
-                  total: tokens.length,
-                }),
-              onPageSizeChange: (size) => {
-                setPageSize(size);
-                setActivePage(1);
-              },
-              onPageChange: handlePageChange,
-            }}
-            loading={loading}
-            rowSelection={rowSelection}
-            onRow={handleRow}
-            className="rounded-xl overflow-hidden"
-            size="middle"
-          ></Table>
-        </div>
+        <Table
+          columns={columns}
+          dataSource={pageData}
+          scroll={{ x: 'max-content' }}
+          pagination={{
+            currentPage: activePage,
+            pageSize: pageSize,
+            total: tokenCount,
+            showSizeChanger: true,
+            pageSizeOptions: [10, 20, 50, 100],
+            formatPageText: (page) =>
+              t('第 {{start}} - {{end}} 条，共 {{total}} 条', {
+                start: page.currentStart,
+                end: page.currentEnd,
+                total: tokens.length,
+              }),
+            onPageSizeChange: (size) => {
+              setPageSize(size);
+              setActivePage(1);
+            },
+            onPageChange: handlePageChange,
+          }}
+          loading={loading}
+          rowSelection={rowSelection}
+          onRow={handleRow}
+          className="rounded-xl overflow-hidden"
+          size="middle"
+        ></Table>
       </Card>
     </>
   );

@@ -1250,36 +1250,34 @@ const LogsTable = () => {
         shadows='always'
         bordered={false}
       >
-        <div style={{ overflow: 'auto' }}>
-          <Table
-            columns={getVisibleColumns()}
-            expandedRowRender={expandRowRender}
-            expandRowByClick={true}
-            dataSource={logs}
-            rowKey='key'
-            loading={loading}
-            scroll={{ x: 'max-content' }}
-            className="rounded-xl overflow-hidden"
-            size="middle"
-            pagination={{
-              formatPageText: (page) =>
-                t('第 {{start}} - {{end}} 条，共 {{total}} 条', {
-                  start: page.currentStart,
-                  end: page.currentEnd,
-                  total: logCount,
-                }),
-              currentPage: activePage,
-              pageSize: pageSize,
-              total: logCount,
-              pageSizeOptions: [10, 20, 50, 100],
-              showSizeChanger: true,
-              onPageSizeChange: (size) => {
-                handlePageSizeChange(size);
-              },
-              onPageChange: handlePageChange,
-            }}
-          />
-        </div>
+        <Table
+          columns={getVisibleColumns()}
+          expandedRowRender={expandRowRender}
+          expandRowByClick={true}
+          dataSource={logs}
+          rowKey='key'
+          loading={loading}
+          scroll={{ x: 'max-content' }}
+          className="rounded-xl overflow-hidden"
+          size="middle"
+          pagination={{
+            formatPageText: (page) =>
+              t('第 {{start}} - {{end}} 条，共 {{total}} 条', {
+                start: page.currentStart,
+                end: page.currentEnd,
+                total: logCount,
+              }),
+            currentPage: activePage,
+            pageSize: pageSize,
+            total: logCount,
+            pageSizeOptions: [10, 20, 50, 100],
+            showSizeChanger: true,
+            onPageSizeChange: (size) => {
+              handlePageSizeChange(size);
+            },
+            onPageChange: handlePageChange,
+          }}
+        />
       </Card>
     </>
   );
