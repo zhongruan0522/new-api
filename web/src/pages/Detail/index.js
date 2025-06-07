@@ -1,44 +1,50 @@
 import React, { useContext, useEffect, useRef, useState } from 'react';
 import { initVChartSemiTheme } from '@visactor/vchart-semi-theme';
+import { useNavigate } from 'react-router-dom';
 
 import {
-  Button,
   Card,
-  Col,
-  Descriptions,
   Form,
-  Layout,
-  Row,
   Spin,
-  Tabs,
+  IconButton,
+  Modal,
+  Avatar,
 } from '@douyinfe/semi-ui';
+import {
+  IconRefresh,
+  IconSearch,
+  IconMoneyExchangeStroked,
+  IconHistogram,
+  IconRotate,
+  IconCoinMoneyStroked,
+  IconTextStroked,
+  IconPulse,
+  IconStopwatchStroked,
+  IconTypograph,
+} from '@douyinfe/semi-icons';
 import { VChart } from '@visactor/react-vchart';
 import {
   API,
   isAdmin,
+  isMobile,
   showError,
   timestamp2string,
   timestamp2string1,
-} from '../../helpers';
-import {
   getQuotaWithUnit,
   modelColorMap,
   renderNumber,
   renderQuota,
-  renderQuotaNumberWithDigit,
-  stringToColor,
-  modelToColor,
-} from '../../helpers/render';
+  modelToColor
+} from '../../helpers';
 import { UserContext } from '../../context/User/index.js';
-import { StyleContext } from '../../context/Style/index.js';
 import { useTranslation } from 'react-i18next';
 
 const Detail = (props) => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const formRef = useRef();
   let now = new Date();
   const [userState, userDispatch] = useContext(UserContext);
-  const [styleState, styleDispatch] = useContext(StyleContext);
   const [inputs, setInputs] = useState({
     username: '',
     token_name: '',
@@ -67,6 +73,8 @@ const Detail = (props) => {
   );
   const [pieData, setPieData] = useState([{ type: 'null', value: '0' }]);
   const [lineData, setLineData] = useState([]);
+  const [searchModalVisible, setSearchModalVisible] = useState(false);
+
   const [spec_pie, setSpecPie] = useState({
     type: 'pie',
     data: [
@@ -200,6 +208,71 @@ const Detail = (props) => {
   // 添加一个新的状态来存储模型-颜色映射
   const [modelColors, setModelColors] = useState({});
 
+  // 添加趋势数据状态
+  const [trendData, setTrendData] = useState({
+    balance: [],
+    usedQuota: [],
+    requestCount: [],
+    times: [],
+    consumeQuota: [],
+    tokens: [],
+    rpm: [],
+    tpm: []
+  });
+
+  // 迷你趋势图配置
+  const getTrendSpec = (data, color) => ({
+    type: 'line',
+    data: [{ id: 'trend', values: data.map((val, idx) => ({ x: idx, y: val })) }],
+    xField: 'x',
+    yField: 'y',
+    height: 40,
+    width: 100,
+    axes: [
+      {
+        orient: 'bottom',
+        visible: false
+      },
+      {
+        orient: 'left',
+        visible: false
+      }
+    ],
+    padding: 0,
+    autoFit: false,
+    legends: { visible: false },
+    tooltip: { visible: false },
+    crosshair: { visible: false },
+    line: {
+      style: {
+        stroke: color,
+        lineWidth: 2
+      }
+    },
+    point: {
+      visible: false
+    },
+    background: {
+      fill: 'transparent'
+    }
+  });
+
+  // 显示搜索Modal
+  const showSearchModal = () => {
+    setSearchModalVisible(true);
+  };
+
+  // 关闭搜索Modal
+  const handleCloseModal = () => {
+    setSearchModalVisible(false);
+  };
+
+  // 搜索Modal确认按钮
+  const handleSearchConfirm = () => {
+    refresh();
+    setSearchModalVisible(false);
+  };
+
   const handleInputChange = (value, name) => {
     if (name === 'data_export_default_time') {
       setDataExportDefaultTime(value);
@@ -258,12 +331,75 @@ const Detail = (props) => {
     let uniqueModels = new Set();
     let totalTokens = 0;
 
-    // 收集所有唯一的模型名称
+    // 趋势数据处理
+    let timePoints = [];
+    let timeQuotaMap = new Map();
+    let timeTokensMap = new Map();
+    let timeCountMap = new Map();
+
+    // 收集所有唯一的模型名称和时间点
     data.forEach((item) => {
       uniqueModels.add(item.model_name);
       totalTokens += item.token_used;
       totalQuota += item.quota;
       totalTimes += item.count;
+
+      // 记录时间点
+      const timeKey = timestamp2string1(item.created_at, dataExportDefaultTime);
+      if (!timePoints.includes(timeKey)) {
+        timePoints.push(timeKey);
+      }
+
+      // 按时间点累加数据
+      if (!timeQuotaMap.has(timeKey)) {
+        timeQuotaMap.set(timeKey, 0);
+        timeTokensMap.set(timeKey, 0);
+        timeCountMap.set(timeKey, 0);
+      }
+      timeQuotaMap.set(timeKey, timeQuotaMap.get(timeKey) + item.quota);
+      timeTokensMap.set(timeKey, timeTokensMap.get(timeKey) + item.token_used);
+      timeCountMap.set(timeKey, timeCountMap.get(timeKey) + item.count);
+    });
+
+    // 确保时间点有序
+    timePoints.sort();
+
+    // 生成趋势数据
+    const quotaTrend = timePoints.map(time => timeQuotaMap.get(time) || 0);
+    const tokensTrend = timePoints.map(time => timeTokensMap.get(time) || 0);
+    const countTrend = timePoints.map(time => timeCountMap.get(time) || 0);
+
+    // 计算RPM和TPM趋势
+    const rpmTrend = [];
+    const tpmTrend = [];
+
+    if (timePoints.length >= 2) {
+      const interval = dataExportDefaultTime === 'hour'
+        ? 60 // 分钟/小时
+        : dataExportDefaultTime === 'day'
+          ? 1440 // 分钟/天
+          : 10080; // 分钟/周
+
+      for (let i = 0; i < timePoints.length; i++) {
+        rpmTrend.push(timeCountMap.get(timePoints[i]) / interval);
+        tpmTrend.push(timeTokensMap.get(timePoints[i]) / interval);
+      }
+    }
+
+    // 更新趋势数据状态
+    setTrendData({
+      // 账户数据不在API返回中，保持空数组
+      balance: [],
+      usedQuota: [],
+      // 使用统计
+      requestCount: [], // 没有总请求次数趋势数据
+      times: countTrend,
+      // 资源消耗
+      consumeQuota: quotaTrend,
+      tokens: tokensTrend,
+      // 性能指标
+      rpm: rpmTrend,
+      tpm: tpmTrend
     });
 
     // 处理颜色映射
@@ -312,10 +448,10 @@ const Detail = (props) => {
     }));
 
     // 生成时间点序列
-    let timePoints = Array.from(
+    let chartTimePoints = Array.from(
       new Set([...aggregatedData.values()].map((d) => d.time)),
     );
-    if (timePoints.length < 7) {
+    if (chartTimePoints.length < 7) {
       const lastTime = Math.max(...data.map((item) => item.created_at));
       const interval =
         dataExportDefaultTime === 'hour'
@@ -324,13 +460,13 @@ const Detail = (props) => {
             ? 86400
             : 604800;
 
-      timePoints = Array.from({ length: 7 }, (_, i) =>
+      chartTimePoints = Array.from({ length: 7 }, (_, i) =>
         timestamp2string1(lastTime - (6 - i) * interval, dataExportDefaultTime),
       );
     }
 
     // 生成柱状图数据
-    timePoints.forEach((time) => {
+    chartTimePoints.forEach((time) => {
       // 为每个时间点收集所有模型的数据
       let timeData = Array.from(uniqueModels).map((model) => {
         const key = `${time}-${model}`;
@@ -416,165 +552,293 @@ const Detail = (props) => {
     }
   }, []);
 
+  // 数据卡片信息
+  const groupedStatsData = [
+    {
+      title: t('账户数据'),
+      color: 'bg-blue-50',
+      items: [
+        {
+          title: t('当前余额'),
+          value: renderQuota(userState?.user?.quota),
+          icon: <IconMoneyExchangeStroked size="large" />,
+          avatarColor: 'blue',
+          onClick: () => navigate('/console/topup'),
+          trendData: [], // 当前余额没有趋势数据
+          trendColor: '#3b82f6'
+        },
+        {
+          title: t('历史消耗'),
+          value: renderQuota(userState?.user?.used_quota),
+          icon: <IconHistogram size="large" />,
+          avatarColor: 'purple',
+          trendData: [], // 历史消耗没有趋势数据
+          trendColor: '#8b5cf6'
+        }
+      ]
+    },
+    {
+      title: t('使用统计'),
+      color: 'bg-green-50',
+      items: [
+        {
+          title: t('请求次数'),
+          value: userState.user?.request_count,
+          icon: <IconRotate size="large" />,
+          avatarColor: 'green',
+          trendData: [], // 请求次数没有趋势数据
+          trendColor: '#10b981'
+        },
+        {
+          title: t('统计次数'),
+          value: times,
+          icon: <IconPulse size="large" />,
+          avatarColor: 'cyan',
+          trendData: trendData.times,
+          trendColor: '#06b6d4'
+        }
+      ]
+    },
+    {
+      title: t('资源消耗'),
+      color: 'bg-yellow-50',
+      items: [
+        {
+          title: t('统计额度'),
+          value: renderQuota(consumeQuota),
+          icon: <IconCoinMoneyStroked size="large" />,
+          avatarColor: 'yellow',
+          trendData: trendData.consumeQuota,
+          trendColor: '#f59e0b'
+        },
+        {
+          title: t('统计Tokens'),
+          value: isNaN(consumeTokens) ? 0 : consumeTokens,
+          icon: <IconTextStroked size="large" />,
+          avatarColor: 'pink',
+          trendData: trendData.tokens,
+          trendColor: '#ec4899'
+        }
+      ]
+    },
+    {
+      title: t('性能指标'),
+      color: 'bg-indigo-50',
+      items: [
+        {
+          title: t('平均RPM'),
+          value: (
+            times /
+            ((Date.parse(end_timestamp) - Date.parse(start_timestamp)) / 60000)
+          ).toFixed(3),
+          icon: <IconStopwatchStroked size="large" />,
+          avatarColor: 'indigo',
+          trendData: trendData.rpm,
+          trendColor: '#6366f1'
+        },
+        {
+          title: t('平均TPM'),
+          value: (() => {
+            const tpm = consumeTokens /
+              ((Date.parse(end_timestamp) - Date.parse(start_timestamp)) / 60000);
+            return isNaN(tpm) ? '0' : tpm.toFixed(3);
+          })(),
+          icon: <IconTypograph size="large" />,
+          avatarColor: 'orange',
+          trendData: trendData.tpm,
+          trendColor: '#f97316'
+        }
+      ]
+    }
+  ];
+
+  // 获取问候语
+  const getGreeting = () => {
+    const hours = new Date().getHours();
+    let greeting = '';
+
+    if (hours >= 5 && hours < 12) {
+      greeting = t('早上好');
+    } else if (hours >= 12 && hours < 14) {
+      greeting = t('中午好');
+    } else if (hours >= 14 && hours < 18) {
+      greeting = t('下午好');
+    } else {
+      greeting = t('晚上好');
+    }
+
+    const username = userState?.user?.username || '';
+    return `👋${greeting}，${username}`;
+  };
+
   return (
-    <>
-      <Layout>
-        <Layout.Header>
-          <h3>{t('数据看板')}</h3>
-        </Layout.Header>
-        <Layout.Content>
-          <Form ref={formRef} layout='horizontal' style={{ marginTop: 10 }}>
-            <>
-              <Form.DatePicker
-                field='start_timestamp'
-                label={t('起始时间')}
-                style={{ width: 272 }}
-                initValue={start_timestamp}
-                value={start_timestamp}
-                type='dateTime'
-                name='start_timestamp'
-                onChange={(value) =>
-                  handleInputChange(value, 'start_timestamp')
-                }
-              />
-              <Form.DatePicker
-                field='end_timestamp'
-                fluid
-                label={t('结束时间')}
-                style={{ width: 272 }}
-                initValue={end_timestamp}
-                value={end_timestamp}
-                type='dateTime'
-                name='end_timestamp'
-                onChange={(value) => handleInputChange(value, 'end_timestamp')}
-              />
-              <Form.Select
-                field='data_export_default_time'
-                label={t('时间粒度')}
-                style={{ width: 176 }}
-                initValue={dataExportDefaultTime}
-                placeholder={t('时间粒度')}
-                name='data_export_default_time'
-                optionList={[
-                  { label: t('小时'), value: 'hour' },
-                  { label: t('天'), value: 'day' },
-                  { label: t('周'), value: 'week' },
-                ]}
-                onChange={(value) =>
-                  handleInputChange(value, 'data_export_default_time')
-                }
-              ></Form.Select>
-              {isAdminUser && (
-                <>
-                  <Form.Input
-                    field='username'
-                    label={t('用户名称')}
-                    style={{ width: 176 }}
-                    value={username}
-                    placeholder={t('可选值')}
-                    name='username'
-                    onChange={(value) => handleInputChange(value, 'username')}
-                  />
-                </>
-              )}
-              <Button
-                label={t('查询')}
-                type='primary'
-                htmlType='submit'
-                className='btn-margin-right'
-                onClick={refresh}
-                loading={loading}
-                style={{ marginTop: 24 }}
+    <div className="bg-gray-50 h-full">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-2xl font-semibold text-gray-800">{getGreeting()}</h2>
+        <div className="flex gap-3">
+          <IconButton
+            icon={<IconSearch />}
+            onClick={showSearchModal}
+            className="bg-green-500 text-white hover:bg-green-600 !rounded-full"
+          />
+          <IconButton
+            icon={<IconRefresh />}
+            onClick={refresh}
+            loading={loading}
+            className="bg-blue-500 text-white hover:bg-blue-600 !rounded-full"
+          />
+        </div>
+      </div>
+
+      {/* 搜索条件Modal */}
+      <Modal
+        title={t('搜索条件')}
+        visible={searchModalVisible}
+        onOk={handleSearchConfirm}
+        onCancel={handleCloseModal}
+        closeOnEsc={true}
+        size={isMobile() ? 'full-width' : 'small'}
+        centered
+      >
+        <Form ref={formRef} layout='vertical' className="w-full">
+          <Form.DatePicker
+            field='start_timestamp'
+            label={t('起始时间')}
+            className="w-full mb-2 !rounded-lg"
+            initValue={start_timestamp}
+            value={start_timestamp}
+            type='dateTime'
+            name='start_timestamp'
+            size='large'
+            onChange={(value) => handleInputChange(value, 'start_timestamp')}
+          />
+          <Form.DatePicker
+            field='end_timestamp'
+            label={t('结束时间')}
+            className="w-full mb-2 !rounded-lg"
+            initValue={end_timestamp}
+            value={end_timestamp}
+            type='dateTime'
+            name='end_timestamp'
+            size='large'
+            onChange={(value) => handleInputChange(value, 'end_timestamp')}
+          />
+          <Form.Select
+            field='data_export_default_time'
+            label={t('时间粒度')}
+            className="w-full mb-2 !rounded-lg"
+            initValue={dataExportDefaultTime}
+            placeholder={t('时间粒度')}
+            name='data_export_default_time'
+            size='large'
+            optionList={[
+              { label: t('小时'), value: 'hour' },
+              { label: t('天'), value: 'day' },
+              { label: t('周'), value: 'week' },
+            ]}
+            onChange={(value) => handleInputChange(value, 'data_export_default_time')}
+          />
+          {isAdminUser && (
+            <Form.Input
+              field='username'
+              label={t('用户名称')}
+              className="w-full mb-2 !rounded-lg"
+              value={username}
+              placeholder={t('可选值')}
+              name='username'
+              size='large'
+              onChange={(value) => handleInputChange(value, 'username')}
+            />
+          )}
+        </Form>
+      </Modal>
+
+      <Spin spinning={loading}>
+        <div className="mb-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {groupedStatsData.map((group, idx) => (
+              <Card
+                key={idx}
+                shadows='always'
+                bordered={false}
+                className={`${group.color} border-0 !rounded-2xl w-full`}
+                headerLine={true}
+                header={<div style={{ color: 'white', fontWeight: 'bold', fontSize: '16px' }}>{group.title}</div>}
+                headerStyle={{
+                  background: idx === 0
+                    ? 'linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%)'
+                    : idx === 1
+                      ? 'linear-gradient(135deg, #10b981 0%, #34d399 100%)'
+                      : idx === 2
+                        ? 'linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%)'
+                        : 'linear-gradient(135deg, #ec4899 0%, #f472b6 100%)',
+                  borderTopLeftRadius: '16px',
+                  borderTopRightRadius: '16px',
+                  padding: '12px 16px',
+                }}
               >
-                {t('查询')}
-              </Button>
-              <Form.Section></Form.Section>
-            </>
-          </Form>
-          <Spin spinning={loading}>
-            <Row
-              gutter={{ xs: 16, sm: 16, md: 16, lg: 24, xl: 24, xxl: 24 }}
-              style={{ marginTop: 20 }}
-              type='flex'
-              justify='space-between'
-            >
-              <Col span={styleState.isMobile ? 24 : 8}>
-                <Card className='panel-desc-card'>
-                  <Descriptions row size='small'>
-                    <Descriptions.Item itemKey={t('当前余额')}>
-                      {renderQuota(userState?.user?.quota)}
-                    </Descriptions.Item>
-                    <Descriptions.Item itemKey={t('历史消耗')}>
-                      {renderQuota(userState?.user?.used_quota)}
-                    </Descriptions.Item>
-                    <Descriptions.Item itemKey={t('请求次数')}>
-                      {userState.user?.request_count}
-                    </Descriptions.Item>
-                  </Descriptions>
-                </Card>
-              </Col>
-              <Col span={styleState.isMobile ? 24 : 8}>
-                <Card>
-                  <Descriptions row size='small'>
-                    <Descriptions.Item itemKey={t('统计额度')}>
-                      {renderQuota(consumeQuota)}
-                    </Descriptions.Item>
-                    <Descriptions.Item itemKey={t('统计Tokens')}>
-                      {consumeTokens}
-                    </Descriptions.Item>
-                    <Descriptions.Item itemKey={t('统计次数')}>
-                      {times}
-                    </Descriptions.Item>
-                  </Descriptions>
-                </Card>
-              </Col>
-              <Col span={styleState.isMobile ? 24 : 8}>
-                <Card>
-                  <Descriptions row size='small'>
-                    <Descriptions.Item itemKey={t('平均RPM')}>
-                      {(
-                        times /
-                        ((Date.parse(end_timestamp) -
-                          Date.parse(start_timestamp)) /
-                          60000)
-                      ).toFixed(3)}
-                    </Descriptions.Item>
-                    <Descriptions.Item itemKey={t('平均TPM')}>
-                      {(
-                        consumeTokens /
-                        ((Date.parse(end_timestamp) -
-                          Date.parse(start_timestamp)) /
-                          60000)
-                      ).toFixed(3)}
-                    </Descriptions.Item>
-                  </Descriptions>
-                </Card>
-              </Col>
-            </Row>
-            <Card style={{ marginTop: 20 }}>
-              <Tabs type='line' defaultActiveKey='1'>
-                <Tabs.TabPane tab={t('消耗分布')} itemKey='1'>
-                  <div style={{ height: 500 }}>
-                    <VChart
-                      spec={spec_line}
-                      option={{ mode: 'desktop-browser' }}
-                    />
-                  </div>
-                </Tabs.TabPane>
-                <Tabs.TabPane tab={t('调用次数分布')} itemKey='2'>
-                  <div style={{ height: 500 }}>
-                    <VChart
-                      spec={spec_pie}
-                      option={{ mode: 'desktop-browser' }}
-                    />
-                  </div>
-                </Tabs.TabPane>
-              </Tabs>
-            </Card>
-          </Spin>
-        </Layout.Content>
-      </Layout>
-    </>
+                <div className="space-y-4">
+                  {group.items.map((item, itemIdx) => (
+                    <div
+                      key={itemIdx}
+                      className="flex items-center justify-between cursor-pointer"
+                      onClick={item.onClick}
+                    >
+                      <div className="flex items-center">
+                        <Avatar
+                          className="mr-3"
+                          size="small"
+                          color={item.avatarColor}
+                        >
+                          {item.icon}
+                        </Avatar>
+                        <div>
+                          <div className="text-xs text-gray-500">{item.title}</div>
+                          <div className="text-lg font-semibold">{item.value}</div>
+                        </div>
+                      </div>
+                      {item.trendData && item.trendData.length > 0 && (
+                        <div className="w-24 h-10">
+                          <VChart
+                            spec={getTrendSpec(item.trendData, item.trendColor)}
+                            option={{ mode: 'desktop-browser' }}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            ))}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-1 gap-6 mb-6">
+          <Card
+            shadows='always'
+            bordered={false}
+            className="shadow-sm !rounded-2xl"
+            headerLine={true}
+            title={t('模型数据分析')}
+          >
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+              <div style={{ height: 400 }}>
+                <VChart
+                  spec={spec_line}
+                  option={{ mode: 'desktop-browser' }}
+                />
+              </div>
+              <div style={{ height: 400 }}>
+                <VChart
+                  spec={spec_pie}
+                  option={{ mode: 'desktop-browser' }}
+                />
+              </div>
+            </div>
+          </Card>
+        </div>
+      </Spin>
+    </div>
   );
 };
 

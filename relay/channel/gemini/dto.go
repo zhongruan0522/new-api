@@ -27,14 +27,9 @@ type FunctionCall struct {
 	Arguments    any    `json:"args"`
 }
 
-type GeminiFunctionResponseContent struct {
-	Name    string `json:"name"`
-	Content any    `json:"content"`
-}
-
 type FunctionResponse struct {
-	Name     string                        `json:"name"`
-	Response GeminiFunctionResponseContent `json:"response"`
+	Name     string                 `json:"name"`
+	Response map[string]interface{} `json:"response"`
 }
 
 type GeminiPartExecutableCode struct {
@@ -117,10 +112,16 @@ type GeminiChatResponse struct {
 }
 
 type GeminiUsageMetadata struct {
-	PromptTokenCount     int `json:"promptTokenCount"`
-	CandidatesTokenCount int `json:"candidatesTokenCount"`
-	TotalTokenCount      int `json:"totalTokenCount"`
-	ThoughtsTokenCount   int `json:"thoughtsTokenCount"`
+	PromptTokenCount     int                         `json:"promptTokenCount"`
+	CandidatesTokenCount int                         `json:"candidatesTokenCount"`
+	TotalTokenCount      int                         `json:"totalTokenCount"`
+	ThoughtsTokenCount   int                         `json:"thoughtsTokenCount"`
+	PromptTokensDetails  []GeminiPromptTokensDetails `json:"promptTokensDetails"`
+}
+
+type GeminiPromptTokensDetails struct {
+	Modality   string `json:"modality"`
+	TokenCount int    `json:"tokenCount"`
 }
 
 // Imagen related structs

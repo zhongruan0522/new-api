@@ -1,11 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { API, isMobile, showError, showSuccess } from '../../helpers';
-import { renderQuota, renderQuotaWithPrompt } from '../../helpers/render';
-import Title from '@douyinfe/semi-ui/lib/es/typography/title';
+import { API, isMobile, showError, showSuccess, renderQuota, renderQuotaWithPrompt } from '../../helpers';
 import {
   Button,
-  Divider,
   Input,
   Modal,
   Select,
@@ -13,8 +10,22 @@ import {
   Space,
   Spin,
   Typography,
+  Card,
+  Tag,
 } from '@douyinfe/semi-ui';
+import {
+  IconUser,
+  IconSave,
+  IconClose,
+  IconKey,
+  IconCreditCard,
+  IconLink,
+  IconUserGroup,
+  IconPlus,
+} from '@douyinfe/semi-icons';
 import { useTranslation } from 'react-i18next';
+
+const { Text, Title } = Typography;
 
 const EditUser = (props) => {
   const userId = props.editingUser.id;
@@ -129,21 +140,44 @@ const EditUser = (props) => {
     <>
       <SideSheet
         placement={'right'}
-        title={<Title level={3}>{t('编辑用户')}</Title>}
-        headerStyle={{ borderBottom: '1px solid var(--semi-color-border)' }}
-        bodyStyle={{ borderBottom: '1px solid var(--semi-color-border)' }}
+        title={
+          <Space>
+            <Tag color="blue" shape="circle">{t('编辑')}</Tag>
+            <Title heading={4} className="m-0">
+              {t('编辑用户')}
+            </Title>
+          </Space>
+        }
+        headerStyle={{
+          borderBottom: '1px solid var(--semi-color-border)',
+          padding: '24px'
+        }}
+        bodyStyle={{
+          backgroundColor: 'var(--semi-color-bg-0)',
+          padding: '0'
+        }}
         visible={props.visible}
+        width={isMobile() ? '100%' : 600}
         footer={
-          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <div className="flex justify-end bg-white">
             <Space>
-              <Button theme='solid' size={'large'} onClick={submit}>
+              <Button
+                theme="solid"
+                size="large"
+                className="!rounded-full"
+                onClick={submit}
+                icon={<IconSave />}
+                loading={loading}
+              >
                 {t('提交')}
               </Button>
               <Button
-                theme='solid'
-                size={'large'}
-                type={'tertiary'}
+                theme="light"
+                size="large"
+                className="!rounded-full"
+                type="primary"
                 onClick={handleCancel}
+                icon={<IconClose />}
               >
                 {t('取消')}
               </Button>
@@ -152,141 +186,232 @@ const EditUser = (props) => {
         }
         closeIcon={null}
         onCancel={() => handleCancel()}
-        width={isMobile() ? '100%' : 600}
       >
         <Spin spinning={loading}>
-          <div style={{ marginTop: 20 }}>
-            <Typography.Text>{t('用户名')}</Typography.Text>
-          </div>
-          <Input
-            label={t('用户名')}
-            name='username'
-            placeholder={t('请输入新的用户名')}
-            onChange={(value) => handleInputChange('username', value)}
-            value={username}
-            autoComplete='new-password'
-          />
-          <div style={{ marginTop: 20 }}>
-            <Typography.Text>{t('密码')}</Typography.Text>
-          </div>
-          <Input
-            label={t('密码')}
-            name='password'
-            type={'password'}
-            placeholder={t('请输入新的密码，最短 8 位')}
-            onChange={(value) => handleInputChange('password', value)}
-            value={password}
-            autoComplete='new-password'
-          />
-          <div style={{ marginTop: 20 }}>
-            <Typography.Text>{t('显示名称')}</Typography.Text>
-          </div>
-          <Input
-            label={t('显示名称')}
-            name='display_name'
-            placeholder={t('请输入新的显示名称')}
-            onChange={(value) => handleInputChange('display_name', value)}
-            value={display_name}
-            autoComplete='new-password'
-          />
-          {userId && (
-            <>
-              <div style={{ marginTop: 20 }}>
-                <Typography.Text>{t('分组')}</Typography.Text>
+          <div className="p-6">
+            <Card className="!rounded-2xl shadow-sm border-0 mb-6">
+              <div className="flex items-center mb-4 p-6 rounded-xl" style={{
+                background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 50%, #3b82f6 100%)',
+                position: 'relative'
+              }}>
+                <div className="absolute inset-0 overflow-hidden">
+                  <div className="absolute -top-10 -right-10 w-40 h-40 bg-white opacity-5 rounded-full"></div>
+                  <div className="absolute -bottom-8 -left-8 w-24 h-24 bg-white opacity-10 rounded-full"></div>
+                </div>
+                <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center mr-4 relative">
+                  <IconUser size="large" style={{ color: '#ffffff' }} />
+                </div>
+                <div className="relative">
+                  <Text style={{ color: '#ffffff' }} className="text-lg font-medium">{t('基本信息')}</Text>
+                  <div style={{ color: '#ffffff' }} className="text-sm opacity-80">{t('用户的基本账户信息')}</div>
+                </div>
               </div>
-              <Select
-                placeholder={t('请选择分组')}
-                name='group'
-                fluid
-                search
-                selection
-                allowAdditions
-                additionLabel={t(
-                  '请在系统设置页面编辑分组倍率以添加新的分组：',
-                )}
-                onChange={(value) => handleInputChange('group', value)}
-                value={inputs.group}
-                autoComplete='new-password'
-                optionList={groupOptions}
-              />
-              <div style={{ marginTop: 20 }}>
-                <Typography.Text>{`${t('剩余额度')}${renderQuotaWithPrompt(quota)}`}</Typography.Text>
+
+              <div className="space-y-4">
+                <div>
+                  <Text strong className="block mb-2">{t('用户名')}</Text>
+                  <Input
+                    placeholder={t('请输入新的用户名')}
+                    onChange={(value) => handleInputChange('username', value)}
+                    value={username}
+                    autoComplete="new-password"
+                    size="large"
+                    className="!rounded-lg"
+                    showClear
+                  />
+                </div>
+
+                <div>
+                  <Text strong className="block mb-2">{t('密码')}</Text>
+                  <Input
+                    type="password"
+                    placeholder={t('请输入新的密码，最短 8 位')}
+                    onChange={(value) => handleInputChange('password', value)}
+                    value={password}
+                    autoComplete="new-password"
+                    size="large"
+                    className="!rounded-lg"
+                    prefix={<IconKey />}
+                  />
+                </div>
+
+                <div>
+                  <Text strong className="block mb-2">{t('显示名称')}</Text>
+                  <Input
+                    placeholder={t('请输入新的显示名称')}
+                    onChange={(value) => handleInputChange('display_name', value)}
+                    value={display_name}
+                    autoComplete="new-password"
+                    size="large"
+                    className="!rounded-lg"
+                    showClear
+                  />
+                </div>
               </div>
-              <Space>
-                <Input
-                  name='quota'
-                  placeholder={t('请输入新的剩余额度')}
-                  onChange={(value) => handleInputChange('quota', value)}
-                  value={quota}
-                  type={'number'}
-                  autoComplete='new-password'
-                />
-                <Button onClick={openAddQuotaModal}>{t('添加额度')}</Button>
-              </Space>
-            </>
-          )}
-          <Divider style={{ marginTop: 20 }}>{t('以下信息不可修改')}</Divider>
-          <div style={{ marginTop: 20 }}>
-            <Typography.Text>{t('已绑定的 GitHub 账户')}</Typography.Text>
-          </div>
-          <Input
-            name='github_id'
-            value={github_id}
-            autoComplete='new-password'
-            placeholder={t(
-              '此项只读，需要用户通过个人设置页面的相关绑定按钮进行绑定，不可直接修改',
+            </Card>
+
+            {userId && (
+              <Card className="!rounded-2xl shadow-sm border-0 mb-6">
+                <div className="flex items-center mb-4 p-6 rounded-xl" style={{
+                  background: 'linear-gradient(135deg, #065f46 0%, #059669 50%, #10b981 100%)',
+                  position: 'relative'
+                }}>
+                  <div className="absolute inset-0 overflow-hidden">
+                    <div className="absolute -top-10 -right-10 w-40 h-40 bg-white opacity-5 rounded-full"></div>
+                    <div className="absolute -bottom-8 -left-8 w-24 h-24 bg-white opacity-10 rounded-full"></div>
+                  </div>
+                  <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center mr-4 relative">
+                    <IconUserGroup size="large" style={{ color: '#ffffff' }} />
+                  </div>
+                  <div className="relative">
+                    <Text style={{ color: '#ffffff' }} className="text-lg font-medium">{t('权限设置')}</Text>
+                    <div style={{ color: '#ffffff' }} className="text-sm opacity-80">{t('用户分组和额度管理')}</div>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <Text strong className="block mb-2">{t('分组')}</Text>
+                    <Select
+                      placeholder={t('请选择分组')}
+                      search
+                      allowAdditions
+                      additionLabel={t(
+                        '请在系统设置页面编辑分组倍率以添加新的分组：',
+                      )}
+                      onChange={(value) => handleInputChange('group', value)}
+                      value={inputs.group}
+                      autoComplete="new-password"
+                      optionList={groupOptions}
+                      size="large"
+                      className="w-full !rounded-lg"
+                      prefix={<IconUserGroup />}
+                    />
+                  </div>
+
+                  <div>
+                    <div className="flex justify-between mb-2">
+                      <Text strong>{t('剩余额度')}</Text>
+                      <Text type="tertiary">{renderQuotaWithPrompt(quota)}</Text>
+                    </div>
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder={t('请输入新的剩余额度')}
+                        onChange={(value) => handleInputChange('quota', value)}
+                        value={quota}
+                        type="number"
+                        autoComplete="new-password"
+                        size="large"
+                        className="flex-1 !rounded-lg"
+                        prefix={<IconCreditCard />}
+                      />
+                      <Button
+                        onClick={openAddQuotaModal}
+                        size="large"
+                        className="!rounded-lg"
+                        icon={<IconPlus />}
+                      >
+                        {t('添加额度')}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </Card>
             )}
-            readonly
-          />
-          <div style={{ marginTop: 20 }}>
-            <Typography.Text>{t('已绑定的 OIDC 账户')}</Typography.Text>
+
+            <Card className="!rounded-2xl shadow-sm border-0">
+              <div className="flex items-center mb-4 p-6 rounded-xl" style={{
+                background: 'linear-gradient(135deg, #92400e 0%, #d97706 50%, #f59e0b 100%)',
+                position: 'relative'
+              }}>
+                <div className="absolute inset-0 overflow-hidden">
+                  <div className="absolute -top-10 -right-10 w-40 h-40 bg-white opacity-5 rounded-full"></div>
+                  <div className="absolute -bottom-8 -left-8 w-24 h-24 bg-white opacity-10 rounded-full"></div>
+                </div>
+                <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center mr-4 relative">
+                  <IconLink size="large" style={{ color: '#ffffff' }} />
+                </div>
+                <div className="relative">
+                  <Text style={{ color: '#ffffff' }} className="text-lg font-medium">{t('绑定信息')}</Text>
+                  <div style={{ color: '#ffffff' }} className="text-sm opacity-80">{t('第三方账户绑定状态（只读）')}</div>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <Text strong className="block mb-2">{t('已绑定的 GitHub 账户')}</Text>
+                  <Input
+                    value={github_id}
+                    autoComplete="new-password"
+                    placeholder={t(
+                      '此项只读，需要用户通过个人设置页面的相关绑定按钮进行绑定，不可直接修改',
+                    )}
+                    readonly
+                    size="large"
+                    className="!rounded-lg"
+                  />
+                </div>
+
+                <div>
+                  <Text strong className="block mb-2">{t('已绑定的 OIDC 账户')}</Text>
+                  <Input
+                    value={oidc_id}
+                    placeholder={t(
+                      '此项只读，需要用户通过个人设置页面的相关绑定按钮进行绑定，不可直接修改',
+                    )}
+                    readonly
+                    size="large"
+                    className="!rounded-lg"
+                  />
+                </div>
+
+                <div>
+                  <Text strong className="block mb-2">{t('已绑定的微信账户')}</Text>
+                  <Input
+                    value={wechat_id}
+                    autoComplete="new-password"
+                    placeholder={t(
+                      '此项只读，需要用户通过个人设置页面的相关绑定按钮进行绑定，不可直接修改',
+                    )}
+                    readonly
+                    size="large"
+                    className="!rounded-lg"
+                  />
+                </div>
+
+                <div>
+                  <Text strong className="block mb-2">{t('已绑定的邮箱账户')}</Text>
+                  <Input
+                    value={email}
+                    autoComplete="new-password"
+                    placeholder={t(
+                      '此项只读，需要用户通过个人设置页面的相关绑定按钮进行绑定，不可直接修改',
+                    )}
+                    readonly
+                    size="large"
+                    className="!rounded-lg"
+                  />
+                </div>
+
+                <div>
+                  <Text strong className="block mb-2">{t('已绑定的 Telegram 账户')}</Text>
+                  <Input
+                    value={telegram_id}
+                    autoComplete="new-password"
+                    placeholder={t(
+                      '此项只读，需要用户通过个人设置页面的相关绑定按钮进行绑定，不可直接修改',
+                    )}
+                    readonly
+                    size="large"
+                    className="!rounded-lg"
+                  />
+                </div>
+              </div>
+            </Card>
           </div>
-          <Input
-            name='oidc_id'
-            value={oidc_id}
-            placeholder={t(
-              '此项只读，需要用户通过个人设置页面的相关绑定按钮进行绑定，不可直接修改',
-            )}
-            readonly
-          />
-          <div style={{ marginTop: 20 }}>
-            <Typography.Text>{t('已绑定的微信账户')}</Typography.Text>
-          </div>
-          <Input
-            name='wechat_id'
-            value={wechat_id}
-            autoComplete='new-password'
-            placeholder={t(
-              '此项只读，需要用户通过个人设置页面的相关绑定按钮进行绑定，不可直接修改',
-            )}
-            readonly
-          />
-          <div style={{ marginTop: 20 }}>
-            <Typography.Text>{t('已绑定的邮箱账户')}</Typography.Text>
-          </div>
-          <Input
-            name='email'
-            value={email}
-            autoComplete='new-password'
-            placeholder={t(
-              '此项只读，需要用户通过个人设置页面的相关绑定按钮进行绑定，不可直接修改',
-            )}
-            readonly
-          />
-          <div style={{ marginTop: 20 }}>
-            <Typography.Text>{t('已绑定的Telegram账户')}</Typography.Text>
-          </div>
-          <Input
-            name='telegram_id'
-            value={telegram_id}
-            autoComplete='new-password'
-            placeholder={t(
-              '此项只读，需要用户通过个人设置页面的相关绑定按钮进行绑定，不可直接修改',
-            )}
-            readonly
-          />
         </Spin>
       </SideSheet>
+
       <Modal
         centered={true}
         visible={addQuotaModalOpen}
@@ -296,19 +421,29 @@ const EditUser = (props) => {
         }}
         onCancel={() => setIsModalOpen(false)}
         closable={null}
+        title={
+          <div className="flex items-center">
+            <IconPlus className="mr-2" />
+            {t('添加额度')}
+          </div>
+        }
       >
-        <div style={{ marginTop: 20 }}>
-          <Typography.Text>{`${t('新额度')}${renderQuota(quota)} + ${renderQuota(addQuotaLocal)} = ${renderQuota(quota + parseInt(addQuotaLocal))}`}</Typography.Text>
+        <div className="mb-4">
+          <Text type="secondary" className="block mb-2">
+            {`${t('新额度')}${renderQuota(quota)} + ${renderQuota(addQuotaLocal)} = ${renderQuota(quota + parseInt(addQuotaLocal || 0))}`}
+          </Text>
         </div>
         <Input
-          name='addQuotaLocal'
           placeholder={t('需要添加的额度（支持负数）')}
           onChange={(value) => {
             setAddQuotaLocal(value);
           }}
           value={addQuotaLocal}
-          type={'number'}
-          autoComplete='new-password'
+          type="number"
+          autoComplete="new-password"
+          size="large"
+          className="!rounded-lg"
+          prefix={<IconCreditCard />}
         />
       </Modal>
     </>

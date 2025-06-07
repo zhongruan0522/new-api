@@ -1,5 +1,5 @@
 import React from 'react';
-import LogsTable from '../../components/LogsTable';
+import LogsTable from '../../components/table/LogsTable';
 
 const Token = () => (
   <>
