@@ -45,7 +45,7 @@ const About = () => {
         href='https://github.com/QuantumNous/new-api'
         target="_blank"
         rel="noopener noreferrer"
-        className="!text-semi-color-primary hover:!text-semi-color-primary-hover transition-colors"
+        className="!text-semi-color-primary"
       >
         https://github.com/QuantumNous/new-api
       </a>
@@ -54,28 +54,28 @@ const About = () => {
           href="https://github.com/QuantumNous/new-api"
           target="_blank"
           rel="noopener noreferrer"
-          className="!text-semi-color-primary hover:!text-semi-color-primary-hover transition-colors"
+          className="!text-semi-color-primary"
         >
           NewAPI
         </a> {t('© {{currentYear}}', { currentYear })} <a
           href="https://github.com/QuantumNous"
           target="_blank"
           rel="noopener noreferrer"
-          className="!text-semi-color-primary hover:!text-semi-color-primary-hover transition-colors"
+          className="!text-semi-color-primary"
         >
           QuantumNous
         </a> {t('| 基于')} <a
           href="https://github.com/songquanpeng/one-api/releases/tag/v0.5.4"
           target="_blank"
           rel="noopener noreferrer"
-          className="!text-semi-color-primary hover:!text-semi-color-primary-hover transition-colors"
+          className="!text-semi-color-primary"
         >
           One API v0.5.4
         </a> © 2023 <a
           href="https://github.com/songquanpeng"
           target="_blank"
           rel="noopener noreferrer"
-          className="!text-semi-color-primary hover:!text-semi-color-primary-hover transition-colors"
+          className="!text-semi-color-primary"
         >
           JustSong
         </a>
@@ -86,7 +86,7 @@ const About = () => {
           href="https://github.com/songquanpeng/one-api/blob/v0.5.4/LICENSE"
           target="_blank"
           rel="noopener noreferrer"
-          className="!text-semi-color-primary hover:!text-semi-color-primary-hover transition-colors"
+          className="!text-semi-color-primary"
         >
           {t('MIT许可证')}
         </a>
@@ -95,7 +95,7 @@ const About = () => {
           href="https://github.com/QuantumNous/new-api/blob/main/LICENSE"
           target="_blank"
           rel="noopener noreferrer"
-          className="!text-semi-color-primary hover:!text-semi-color-primary-hover transition-colors"
+          className="!text-semi-color-primary"
         >
           {t('Apache-2.0协议')}
         </a>
