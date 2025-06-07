@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { SSE } from 'sse';
+import { SSE } from 'sse.js';
 import {
   API_ENDPOINTS,
   MESSAGE_STATUS,

@@ -22,14 +22,14 @@ jobs:
           fetch-depth: 0
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: 1.2.8
+          bun-version: latest
       - name: Build Frontend
         env:
           CI: ""
         run: |
           cd web
           bun install
-          REACT_APP_VERSION=$(git describe --tags) bun run build
+          DISABLE_ESLINT_PLUGIN='true' VITE_REACT_APP_VERSION=$(git describe --tags) bun run build
           cd ..
       - name: Set up Go
         uses: actions/setup-go@v3
