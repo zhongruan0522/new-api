@@ -197,7 +197,7 @@ const LogsTable = () => {
     if (!modelMapped) {
       return renderModelTag(record.model_name, {
         onClick: (event) => {
-          copyText(event, record.model_name).then((r) => {});
+          copyText(event, record.model_name).then((r) => { });
         },
       });
     } else {
@@ -214,7 +214,7 @@ const LogsTable = () => {
                       </Text>
                       {renderModelTag(record.model_name, {
                         onClick: (event) => {
-                          copyText(event, record.model_name).then((r) => {});
+                          copyText(event, record.model_name).then((r) => { });
                         },
                       })}
                     </div>
@@ -225,7 +225,7 @@ const LogsTable = () => {
                       {renderModelTag(other.upstream_model_name, {
                         onClick: (event) => {
                           copyText(event, other.upstream_model_name).then(
-                            (r) => {},
+                            (r) => { },
                           );
                         },
                       })}
@@ -236,7 +236,7 @@ const LogsTable = () => {
             >
               {renderModelTag(record.model_name, {
                 onClick: (event) => {
-                  copyText(event, record.model_name).then((r) => {});
+                  copyText(event, record.model_name).then((r) => { });
                 },
                 suffixIcon: (
                   <IconForward
@@ -603,21 +603,21 @@ const LogsTable = () => {
         }
         let content = other?.claude
           ? renderClaudeModelPriceSimple(
-              other.model_ratio,
-              other.model_price,
-              other.group_ratio,
-              other.cache_tokens || 0,
-              other.cache_ratio || 1.0,
-              other.cache_creation_tokens || 0,
-              other.cache_creation_ratio || 1.0,
-            )
+            other.model_ratio,
+            other.model_price,
+            other.group_ratio,
+            other.cache_tokens || 0,
+            other.cache_ratio || 1.0,
+            other.cache_creation_tokens || 0,
+            other.cache_creation_ratio || 1.0,
+          )
           : renderModelPriceSimple(
-              other.model_ratio,
-              other.model_price,
-              other.group_ratio,
-              other.cache_tokens || 0,
-              other.cache_ratio || 1.0,
-            );
+            other.model_ratio,
+            other.model_price,
+            other.group_ratio,
+            other.cache_tokens || 0,
+            other.cache_ratio || 1.0,
+          );
         return (
           <Paragraph
             ellipsis={{
@@ -907,27 +907,27 @@ const LogsTable = () => {
           key: t('日志详情'),
           value: other?.claude
             ? renderClaudeLogContent(
-                other?.model_ratio,
-                other.completion_ratio,
-                other.model_price,
-                other.group_ratio,
-                other.cache_ratio || 1.0,
-                other.cache_creation_ratio || 1.0,
-              )
+              other?.model_ratio,
+              other.completion_ratio,
+              other.model_price,
+              other.group_ratio,
+              other.cache_ratio || 1.0,
+              other.cache_creation_ratio || 1.0,
+            )
             : renderLogContent(
-                other?.model_ratio,
-                other.completion_ratio,
-                other.model_price,
-                other.group_ratio,
-                other?.user_group_ratio,
-                false,
-                1.0,
-                undefined,
-                other.web_search || false,
-                other.web_search_call_count || 0,
-                other.file_search || false,
-                other.file_search_call_count || 0,
-              ),
+              other?.model_ratio,
+              other.completion_ratio,
+              other.model_price,
+              other.group_ratio,
+              other?.user_group_ratio,
+              false,
+              1.0,
+              undefined,
+              other.web_search || false,
+              other.web_search_call_count || 0,
+              other.file_search || false,
+              other.file_search_call_count || 0,
+            ),
         });
       }
       if (logs[i].type === 2) {
@@ -1045,7 +1045,7 @@ const LogsTable = () => {
 
   const handlePageChange = (page) => {
     setActivePage(page);
-    loadLogs(page, pageSize, logType).then((r) => {});
+    loadLogs(page, pageSize, logType).then((r) => { });
   };
 
   const handlePageSizeChange = async (size) => {
@@ -1268,6 +1268,7 @@ const LogsTable = () => {
           {...(hasExpandableRows() && {
             expandedRowRender: expandRowRender,
             expandRowByClick: true,
+            rowExpandable: (record) => expandData[record.key] && expandData[record.key].length > 0
           })}
           dataSource={logs}
           rowKey='key'
