@@ -846,7 +846,7 @@ const EditChannel = (props) => {
                     className="!rounded-lg font-mono"
                   />
                   <Text
-                    className="text-blue-500 cursor-pointer mt-1 block"
+                    className="!text-semi-color-primary cursor-pointer mt-1 block"
                     onClick={() => handleInputChange('model_mapping', JSON.stringify(MODEL_MAPPING_EXAMPLE, null, 2))}
                   >
                     {t('填入模板')}
@@ -940,7 +940,7 @@ const EditChannel = (props) => {
                       className="!rounded-lg font-mono"
                     />
                     <Text
-                      className="text-blue-500 cursor-pointer mt-1 block"
+                      className="!text-semi-color-primary cursor-pointer mt-1 block"
                       onClick={() => handleInputChange('other', JSON.stringify(REGION_EXAMPLE, null, 2))}
                     >
                       {t('填入模板')}
@@ -1062,7 +1062,7 @@ const EditChannel = (props) => {
                   />
                   <div className="flex gap-2 mt-1">
                     <Text
-                      className="text-blue-500 cursor-pointer"
+                      className="!text-semi-color-primary cursor-pointer"
                       onClick={() => {
                         handleInputChange(
                           'setting',
@@ -1073,10 +1073,10 @@ const EditChannel = (props) => {
                       {t('填入模板')}
                     </Text>
                     <Text
-                      className="text-blue-500 cursor-pointer"
+                      className="!text-semi-color-primary cursor-pointer"
                       onClick={() => {
                         window.open(
-                          'https://github.com/Calcium-Ion/new-api/blob/main/docs/channel/other_setting.md',
+                          'https://github.com/QuantumNous/new-api/blob/main/docs/channel/other_setting.md',
                         );
                       }}
                     >
@@ -1146,7 +1146,7 @@ const EditChannel = (props) => {
                     className="!rounded-lg font-mono"
                   />
                   <Text
-                    className="text-blue-500 cursor-pointer mt-1 block"
+                    className="!text-semi-color-primary cursor-pointer mt-1 block"
                     onClick={() => {
                       handleInputChange(
                         'status_code_mapping',

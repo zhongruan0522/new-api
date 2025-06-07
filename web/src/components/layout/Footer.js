@@ -40,36 +40,36 @@ const FooterBar = () => {
             <div className="text-left">
               <p className="!text-semi-color-text-0 font-semibold mb-5">{t('关于我们')}</p>
               <div className="flex flex-col gap-4">
-                <a href="https://docs.newapi.pro/wiki/project-introduction/" target="_blank" rel="noopener noreferrer" className="!text-semi-color-text-1 hover:!text-semi-color-primary transition-colors">{t('关于项目')}</a>
-                <a href="https://docs.newapi.pro/support/community-interaction/" target="_blank" rel="noopener noreferrer" className="!text-semi-color-text-1 hover:!text-semi-color-primary transition-colors">{t('联系我们')}</a>
-                <a href="https://docs.newapi.pro/wiki/features-introduction/" target="_blank" rel="noopener noreferrer" className="!text-semi-color-text-1 hover:!text-semi-color-primary transition-colors">{t('功能特性')}</a>
+                <a href="https://docs.newapi.pro/wiki/project-introduction/" target="_blank" rel="noopener noreferrer" className="!text-semi-color-text-1">{t('关于项目')}</a>
+                <a href="https://docs.newapi.pro/support/community-interaction/" target="_blank" rel="noopener noreferrer" className="!text-semi-color-text-1">{t('联系我们')}</a>
+                <a href="https://docs.newapi.pro/wiki/features-introduction/" target="_blank" rel="noopener noreferrer" className="!text-semi-color-text-1">{t('功能特性')}</a>
               </div>
             </div>
 
             <div className="text-left">
               <p className="!text-semi-color-text-0 font-semibold mb-5">{t('文档')}</p>
               <div className="flex flex-col gap-4">
-                <a href="https://docs.newapi.pro/getting-started/" target="_blank" rel="noopener noreferrer" className="!text-semi-color-text-1 hover:!text-semi-color-primary transition-colors">{t('快速开始')}</a>
-                <a href="https://docs.newapi.pro/installation/" target="_blank" rel="noopener noreferrer" className="!text-semi-color-text-1 hover:!text-semi-color-primary transition-colors">{t('安装指南')}</a>
-                <a href="https://docs.newapi.pro/api/" target="_blank" rel="noopener noreferrer" className="!text-semi-color-text-1 hover:!text-semi-color-primary transition-colors">{t('API 文档')}</a>
+                <a href="https://docs.newapi.pro/getting-started/" target="_blank" rel="noopener noreferrer" className="!text-semi-color-text-1">{t('快速开始')}</a>
+                <a href="https://docs.newapi.pro/installation/" target="_blank" rel="noopener noreferrer" className="!text-semi-color-text-1">{t('安装指南')}</a>
+                <a href="https://docs.newapi.pro/api/" target="_blank" rel="noopener noreferrer" className="!text-semi-color-text-1">{t('API 文档')}</a>
               </div>
             </div>
 
             <div className="text-left">
               <p className="!text-semi-color-text-0 font-semibold mb-5">{t('相关项目')}</p>
               <div className="flex flex-col gap-4">
-                <a href="https://github.com/songquanpeng/one-api" target="_blank" rel="noopener noreferrer" className="!text-semi-color-text-1 hover:!text-semi-color-primary transition-colors">One API</a>
-                <a href="https://github.com/novicezk/midjourney-proxy" target="_blank" rel="noopener noreferrer" className="!text-semi-color-text-1 hover:!text-semi-color-primary transition-colors">Midjourney-Proxy</a>
-                <a href="https://github.com/Deeptrain-Community/chatnio" target="_blank" rel="noopener noreferrer" className="!text-semi-color-text-1 hover:!text-semi-color-primary transition-colors">chatnio</a>
-                <a href="https://github.com/Calcium-Ion/neko-api-key-tool" target="_blank" rel="noopener noreferrer" className="!text-semi-color-text-1 hover:!text-semi-color-primary transition-colors">neko-api-key-tool</a>
+                <a href="https://github.com/songquanpeng/one-api" target="_blank" rel="noopener noreferrer" className="!text-semi-color-text-1">One API</a>
+                <a href="https://github.com/novicezk/midjourney-proxy" target="_blank" rel="noopener noreferrer" className="!text-semi-color-text-1">Midjourney-Proxy</a>
+                <a href="https://github.com/Deeptrain-Community/chatnio" target="_blank" rel="noopener noreferrer" className="!text-semi-color-text-1">chatnio</a>
+                <a href="https://github.com/Calcium-Ion/neko-api-key-tool" target="_blank" rel="noopener noreferrer" className="!text-semi-color-text-1">neko-api-key-tool</a>
               </div>
             </div>
 
             <div className="text-left">
               <p className="!text-semi-color-text-0 font-semibold mb-5">{t('基于New API的项目')}</p>
               <div className="flex flex-col gap-4">
-                <a href="https://github.com/Calcium-Ion/new-api-horizon" target="_blank" rel="noopener noreferrer" className="!text-semi-color-text-1 hover:!text-semi-color-primary transition-colors">new-api-horizon</a>
-                {/* <a href="https://github.com/VoAPI/VoAPI" target="_blank" rel="noopener noreferrer" className="!text-semi-color-text-1 hover:!text-semi-color-primary transition-colors">VoAPI</a> */}
+                <a href="https://github.com/Calcium-Ion/new-api-horizon" target="_blank" rel="noopener noreferrer" className="!text-semi-color-text-1">new-api-horizon</a>
+                {/* <a href="https://github.com/VoAPI/VoAPI" target="_blank" rel="noopener noreferrer" className="!text-semi-color-text-1">VoAPI</a> */}
               </div>
             </div>
           </div>
@@ -81,14 +81,12 @@ const FooterBar = () => {
           <Typography.Text className="text-sm !text-semi-color-text-1">© {currentYear} {systemName}. {t('版权所有')}</Typography.Text>
         </div>
 
-        {isDemoSiteMode && (
-          <div className="text-sm">
-            <span className="!text-semi-color-text-1">{t('设计与开发由')} </span>
-            <span className="!text-semi-color-primary">Douyin FE</span>
-            <span className="!text-semi-color-text-1"> & </span>
-            <a href="https://github.com/QuantumNous" target="_blank" rel="noreferrer" className="!text-semi-color-primary hover:!text-semi-color-primary-hover transition-colors">QuantumNous</a>
-          </div>
-        )}
+        <div className="text-sm">
+          <span className="!text-semi-color-text-1">{t('设计与开发由')} </span>
+          <a href="https://github.com/QuantumNous/new-api" target="_blank" rel="noopener noreferrer" className="!text-semi-color-primary font-medium">New API</a>
+          <span className="!text-semi-color-text-1"> & </span>
+          <a href="https://github.com/songquanpeng/one-api" target="_blank" rel="noopener noreferrer" className="!text-semi-color-primary font-medium">One API</a>
+        </div>
       </div>
     </footer>
   ), [logo, systemName, t, currentYear, isDemoSiteMode]);

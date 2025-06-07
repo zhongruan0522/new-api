@@ -14,7 +14,7 @@ const Loading = ({ prompt: name = '', size = 'large' }) => {
           tip={null}
         />
         <span className="whitespace-nowrap mt-2 text-center" style={{ color: 'var(--semi-color-primary)' }}>
-          {name ? t('加载{{name}}中...', { name }) : t('加载中...')}
+          {name ? t('{{name}}', { name }) : t('加载中...')}
         </span>
       </div>
     </div>
