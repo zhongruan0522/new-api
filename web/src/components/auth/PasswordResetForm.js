@@ -55,7 +55,10 @@ const PasswordResetForm = () => {
   }
 
   async function handleSubmit(e) {
-    if (!email) return;
+    if (!email) {
+      showError(t('请输入邮箱地址'));
+      return;
+    }
     if (turnstileEnabled && turnstileToken === '') {
       showInfo(t('请稍后几秒重试，Turnstile 正在检查用户环境！'));
       return;

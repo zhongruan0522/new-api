@@ -15,12 +15,12 @@ const PasswordResetConfirm = () => {
     token: '',
   });
   const { email, token } = inputs;
+  const isValidResetLink = email && token;
 
   const [loading, setLoading] = useState(false);
   const [disableButton, setDisableButton] = useState(false);
   const [countdown, setCountdown] = useState(30);
   const [newPassword, setNewPassword] = useState('');
-
   const [searchParams, setSearchParams] = useSearchParams();
 
   const logo = getLogo();
@@ -30,10 +30,10 @@ const PasswordResetConfirm = () => {
     let token = searchParams.get('token');
     let email = searchParams.get('email');
     setInputs({
-      token,
-      email,
+      token: token || '',
+      email: email || '',
     });
-  }, []);
+  }, [searchParams]);
 
   useEffect(() => {
     let countdownInterval = null;
@@ -49,7 +49,10 @@ const PasswordResetConfirm = () => {
   }, [disableButton, countdown]);
 
   async function handleSubmit(e) {
-    if (!email || !token) return;
+    if (!email || !token) {
+      showError(t('无效的重置链接，请重新发起密码重置请求'));
+      return;
+    }
     setDisableButton(true);
     setLoading(true);
     const res = await API.post(`/api/user/reset`, {
@@ -94,6 +97,11 @@ const PasswordResetConfirm = () => {
                 <Title heading={3} className="text-gray-800 dark:text-gray-200">{t('密码重置确认')}</Title>
               </div>
               <div className="px-2 py-8">
+                {!isValidResetLink && (
+                  <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+                    <Text>{t('无效的重置链接，请重新发起密码重置请求')}</Text>
+                  </div>
+                )}
                 <Form className="space-y-3">
                   <Form.Input
                     field="email"
@@ -101,9 +109,10 @@ const PasswordResetConfirm = () => {
                     name="email"
                     size="large"
                     className="!rounded-md"
-                    value={email}
-                    readOnly
+                    value={email || ''}
+                    disabled={true}
                     prefix={<IconMail />}
+                    placeholder={email ? '' : t('等待获取邮箱信息...')}
                   />
 
                   {newPassword && (
@@ -114,7 +123,7 @@ const PasswordResetConfirm = () => {
                       size="large"
                       className="!rounded-md"
                       value={newPassword}
-                      readOnly
+                      disabled={true}
                       prefix={<IconLock />}
                       onClick={(e) => {
                         e.target.select();
@@ -133,9 +142,9 @@ const PasswordResetConfirm = () => {
                       size="large"
                       onClick={handleSubmit}
                       loading={loading}
-                      disabled={disableButton || newPassword}
+                      disabled={disableButton || newPassword || !isValidResetLink}
                     >
-                      {newPassword ? t('密码重置完成') : t('提交')}
+                      {newPassword ? t('密码重置完成') : t('确认重置密码')}
                     </Button>
                   </div>
                 </Form>
