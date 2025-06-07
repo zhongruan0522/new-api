@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { API, copy, showError, showNotice, getLogo, getSystemName } from '../../helpers';
 import { useSearchParams, Link } from 'react-router-dom';
 import { Button, Card, Form, Typography, Banner } from '@douyinfe/semi-ui';
-import { IconMail, IconLock } from '@douyinfe/semi-icons';
+import { IconMail, IconLock, IconCopy } from '@douyinfe/semi-icons';
 import { useTranslation } from 'react-i18next';
 import Background from '/example.png';
 
@@ -71,7 +71,7 @@ const PasswordResetConfirm = () => {
       let password = res.data.data;
       setNewPassword(password);
       await copy(password);
-      showNotice(`${t('密码已重置并已复制到剪贴板')}: ${password}`);
+      showNotice(`${t('密码已重置并已复制到剪贴板：')} ${password}`);
     } else {
       showError(message);
     }
@@ -137,11 +137,19 @@ const PasswordResetConfirm = () => {
                       className="!rounded-md"
                       disabled={true}
                       prefix={<IconLock />}
-                      onClick={(e) => {
-                        e.target.select();
-                        navigator.clipboard.writeText(newPassword);
-                        showNotice(`${t('密码已复制到剪贴板')}: ${newPassword}`);
-                      }}
+                      suffix={
+                        <Button
+                          icon={<IconCopy />}
+                          type="tertiary"
+                          theme="borderless"
+                          onClick={async () => {
+                            await copy(newPassword);
+                            showNotice(`${t('密码已复制到剪贴板：')} ${newPassword}`);
+                          }}
+                        >
+                          {t('复制')}
+                        </Button>
+                      }
                     />
                   )}
 
