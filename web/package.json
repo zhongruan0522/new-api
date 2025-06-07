@@ -39,10 +39,14 @@
     "remark-math": "^6.0.0",
     "semantic-ui-offline": "^2.5.0",
     "semantic-ui-react": "^2.1.3",
-    "sse": "https://github.com/mpetazzoni/sse.js",
+    "sse.js": "^2.6.0",
     "unist-util-visit": "^5.0.0",
     "use-debounce": "^10.0.4"
   },
+  "trustedDependencies": [
+    "esbuild",
+    "@parcel/watcher"
+  ],
   "scripts": {
     "dev": "vite",
     "build": "vite build",
