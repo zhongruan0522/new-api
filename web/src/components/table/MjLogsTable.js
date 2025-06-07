@@ -462,6 +462,7 @@ const LogsTable = () => {
                 percent={text ? parseInt(text.replace('%', '')) : 0}
                 showInfo={true}
                 aria-label='drawing progress'
+                style={{ minWidth: '200px' }}
               />
             }
           </div>
