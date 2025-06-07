@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { API, copy, showError, showNotice, getLogo, getSystemName } from '../../helpers';
 import { useSearchParams, Link } from 'react-router-dom';
-import { Button, Card, Form, Typography } from '@douyinfe/semi-ui';
+import { Button, Card, Form, Typography, Banner } from '@douyinfe/semi-ui';
 import { IconMail, IconLock } from '@douyinfe/semi-icons';
 import { useTranslation } from 'react-i18next';
 import Background from '/example.png';
@@ -22,6 +22,7 @@ const PasswordResetConfirm = () => {
   const [countdown, setCountdown] = useState(30);
   const [newPassword, setNewPassword] = useState('');
   const [searchParams, setSearchParams] = useSearchParams();
+  const [formApi, setFormApi] = useState(null);
 
   const logo = getLogo();
   const systemName = getSystemName();
@@ -33,7 +34,13 @@ const PasswordResetConfirm = () => {
       token: token || '',
       email: email || '',
     });
-  }, [searchParams]);
+    if (formApi) {
+      formApi.setValues({
+        email: email || '',
+        newPassword: newPassword || ''
+      });
+    }
+  }, [searchParams, newPassword, formApi]);
 
   useEffect(() => {
     let countdownInterval = null;
@@ -98,18 +105,24 @@ const PasswordResetConfirm = () => {
               </div>
               <div className="px-2 py-8">
                 {!isValidResetLink && (
-                  <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
-                    <Text>{t('无效的重置链接，请重新发起密码重置请求')}</Text>
-                  </div>
+                  <Banner
+                    type="danger"
+                    description={t('无效的重置链接，请重新发起密码重置请求')}
+                    className="mb-4 !rounded-lg"
+                    closeIcon={null}
+                  />
                 )}
-                <Form className="space-y-3">
+                <Form
+                  getFormApi={(api) => setFormApi(api)}
+                  initValues={{ email: email || '', newPassword: newPassword || '' }}
+                  className="space-y-4"
+                >
                   <Form.Input
                     field="email"
                     label={t('邮箱')}
                     name="email"
                     size="large"
                     className="!rounded-md"
-                    value={email || ''}
                     disabled={true}
                     prefix={<IconMail />}
                     placeholder={email ? '' : t('等待获取邮箱信息...')}
@@ -122,7 +135,6 @@ const PasswordResetConfirm = () => {
                       name="newPassword"
                       size="large"
                       className="!rounded-md"
-                      value={newPassword}
                       disabled={true}
                       prefix={<IconLock />}
                       onClick={(e) => {
