@@ -22,11 +22,23 @@ const Home = () => {
   const isDemoSiteMode = statusState?.status?.demo_site_enabled || false;
 
   useEffect(() => {
-    const lastCloseDate = localStorage.getItem('notice_close_date');
-    const today = new Date().toDateString();
-    if (lastCloseDate !== today) {
-      setNoticeVisible(true);
-    }
+    const checkNoticeAndShow = async () => {
+      const lastCloseDate = localStorage.getItem('notice_close_date');
+      const today = new Date().toDateString();
+      if (lastCloseDate !== today) {
+        try {
+          const res = await API.get('/api/notice');
+          const { success, data } = res.data;
+          if (success && data && data.trim() !== '') {
+            setNoticeVisible(true);
+          }
+        } catch (error) {
+          console.error('获取公告失败:', error);
+        }
+      }
+    };
+
+    checkNoticeAndShow();
   }, []);
 
   const displayHomePageContent = async () => {
