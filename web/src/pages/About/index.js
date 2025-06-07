@@ -71,7 +71,14 @@ const About = () => {
           className="!text-semi-color-primary hover:!text-semi-color-primary-hover transition-colors"
         >
           One API v0.5.4
-        </a> {t('© 2023 JustSong。')}
+        </a> © 2023 <a
+          href="https://github.com/songquanpeng"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="!text-semi-color-primary hover:!text-semi-color-primary-hover transition-colors"
+        >
+          JustSong
+        </a>
       </p>
       <p>
         {t('本项目根据')}
@@ -81,7 +88,7 @@ const About = () => {
           rel="noopener noreferrer"
           className="!text-semi-color-primary hover:!text-semi-color-primary-hover transition-colors"
         >
-          MIT许可证
+          {t('MIT许可证')}
         </a>
         {t('授权，需在遵守')}
         <a
@@ -90,7 +97,7 @@ const About = () => {
           rel="noopener noreferrer"
           className="!text-semi-color-primary hover:!text-semi-color-primary-hover transition-colors"
         >
-          Apache-2.0协议
+          {t('Apache-2.0协议')}
         </a>
         {t('的前提下使用。')}
       </p>
