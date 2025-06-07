@@ -3,7 +3,6 @@ package ali
 import (
 	"bufio"
 	"encoding/json"
-	"github.com/gin-gonic/gin"
 	"io"
 	"net/http"
 	"one-api/common"
@@ -11,6 +10,8 @@ import (
 	"one-api/relay/helper"
 	"one-api/service"
 	"strings"
+
+	"github.com/gin-gonic/gin"
 )
 
 // https://help.aliyun.com/document_detail/613695.html?spm=a2c4g.2399480.0.0.1adb778fAdzP9w#341800c0f8w0r
@@ -27,9 +28,6 @@ func requestOpenAI2Ali(request dto.GeneralOpenAIRequest) *dto.GeneralOpenAIReque
 }
 
 func embeddingRequestOpenAI2Ali(request dto.EmbeddingRequest) *AliEmbeddingRequest {
-	if request.Model == "" {
-		request.Model = "text-embedding-v1"
-	}
 	return &AliEmbeddingRequest{
 		Model: request.Model,
 		Input: struct {
@@ -64,7 +62,11 @@ func aliEmbeddingHandler(c *gin.Context, resp *http.Response) (*dto.OpenAIErrorW
 		}, nil
 	}
 
-	fullTextResponse := embeddingResponseAli2OpenAI(&aliResponse)
+	model := c.GetString("model")
+	if model == "" {
+		model = "text-embedding-v4"
+	}
+	fullTextResponse := embeddingResponseAli2OpenAI(&aliResponse, model)
 	jsonResponse, err := json.Marshal(fullTextResponse)
 	if err != nil {
 		return service.OpenAIErrorWrapper(err, "marshal_response_body_failed", http.StatusInternalServerError), nil
@@ -75,11 +77,11 @@ func aliEmbeddingHandler(c *gin.Context, resp *http.Response) (*dto.OpenAIErrorW
 	return nil, &fullTextResponse.Usage
 }
 
-func embeddingResponseAli2OpenAI(response *AliEmbeddingResponse) *dto.OpenAIEmbeddingResponse {
+func embeddingResponseAli2OpenAI(response *AliEmbeddingResponse, model string) *dto.OpenAIEmbeddingResponse {
 	openAIEmbeddingResponse := dto.OpenAIEmbeddingResponse{
 		Object: "list",
 		Data:   make([]dto.OpenAIEmbeddingResponseItem, 0, len(response.Output.Embeddings)),
-		Model:  "text-embedding-v1",
+		Model:  model,
 		Usage:  dto.Usage{TotalTokens: response.Usage.TotalTokens},
 	}
 
