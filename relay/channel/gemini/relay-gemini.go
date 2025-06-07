@@ -313,13 +313,13 @@ func CovertGemini2OpenAI(textRequest dto.GeneralOpenAIRequest, info *relaycommon
 				if part.GetInputAudio().Data == "" {
 					return nil, fmt.Errorf("only base64 audio is supported in gemini")
 				}
-				format, base64String, err := service.DecodeBase64FileData(part.GetInputAudio().Data)
+				base64String, err := service.DecodeBase64AudioData(part.GetInputAudio().Data)
 				if err != nil {
 					return nil, fmt.Errorf("decode base64 audio data failed: %s", err.Error())
 				}
 				parts = append(parts, GeminiPart{
 					InlineData: &GeminiInlineData{
-						MimeType: format,
+						MimeType: "audio/" + part.GetInputAudio().Format,
 						Data:     base64String,
 					},
 				})
@@ -771,6 +771,13 @@ func GeminiChatStreamHandler(c *gin.Context, resp *http.Response, info *relaycom
 			usage.CompletionTokens = geminiResponse.UsageMetadata.CandidatesTokenCount
 			usage.CompletionTokenDetails.ReasoningTokens = geminiResponse.UsageMetadata.ThoughtsTokenCount
 			usage.TotalTokens = geminiResponse.UsageMetadata.TotalTokenCount
+			for _, detail := range geminiResponse.UsageMetadata.PromptTokensDetails {
+				if detail.Modality == "AUDIO" {
+					usage.PromptTokensDetails.AudioTokens = detail.TokenCount
+				} else if detail.Modality == "TEXT" {
+					usage.PromptTokensDetails.TextTokens = detail.TokenCount
+				}
+			}
 		}
 		err = helper.ObjectData(c, response)
 		if err != nil {
@@ -844,6 +851,14 @@ func GeminiChatHandler(c *gin.Context, resp *http.Response, info *relaycommon.Re
 
 	usage.CompletionTokenDetails.ReasoningTokens = geminiResponse.UsageMetadata.ThoughtsTokenCount
 	usage.CompletionTokens = usage.TotalTokens - usage.PromptTokens
+
+	for _, detail := range geminiResponse.UsageMetadata.PromptTokensDetails {
+		if detail.Modality == "AUDIO" {
+			usage.PromptTokensDetails.AudioTokens = detail.TokenCount
+		} else if detail.Modality == "TEXT" {
+			usage.PromptTokensDetails.TextTokens = detail.TokenCount
+		}
+	}
 
 	fullTextResponse.Usage = usage
 	jsonResponse, err := json.Marshal(fullTextResponse)

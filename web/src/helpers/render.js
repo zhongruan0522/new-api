@@ -44,18 +44,18 @@ import {
 
 // 侧边栏图标颜色映射
 export const sidebarIconColors = {
-  dashboard: "#4F46E5", // 紫蓝色
-  terminal: "#10B981", // 绿色
-  message: "#06B6D4", // 青色
-  key: "#3B82F6", // 蓝色
-  chart: "#8B5CF6", // 紫色
-  image: "#EC4899", // 粉色
-  check: "#F59E0B", // 琥珀色
-  credit: "#F97316", // 橙色
-  layers: "#EF4444", // 红色
-  gift: "#F43F5E", // 玫红色
-  user: "#6366F1", // 靛蓝色
-  settings: "#6B7280", // 灰色
+  dashboard: '#4F46E5', // 紫蓝色
+  terminal: '#10B981', // 绿色
+  message: '#06B6D4', // 青色
+  key: '#3B82F6', // 蓝色
+  chart: '#8B5CF6', // 紫色
+  image: '#EC4899', // 粉色
+  check: '#F59E0B', // 琥珀色
+  credit: '#F97316', // 橙色
+  layers: '#EF4444', // 红色
+  gift: '#F43F5E', // 玫红色
+  user: '#6366F1', // 靛蓝色
+  settings: '#6B7280', // 灰色
 };
 
 // 获取侧边栏Lucide图标组件
@@ -71,32 +71,97 @@ export function getLucideIcon(key, selected = false) {
   // 根据不同的key返回不同的图标
   switch (key) {
     case 'detail':
-      return <LayoutDashboard {...commonProps} color={selected ? sidebarIconColors.dashboard : 'currentColor'} />;
+      return (
+        <LayoutDashboard
+          {...commonProps}
+          color={selected ? sidebarIconColors.dashboard : 'currentColor'}
+        />
+      );
     case 'playground':
-      return <TerminalSquare {...commonProps} color={selected ? sidebarIconColors.terminal : 'currentColor'} />;
+      return (
+        <TerminalSquare
+          {...commonProps}
+          color={selected ? sidebarIconColors.terminal : 'currentColor'}
+        />
+      );
     case 'chat':
-      return <MessageSquare {...commonProps} color={selected ? sidebarIconColors.message : 'currentColor'} />;
+      return (
+        <MessageSquare
+          {...commonProps}
+          color={selected ? sidebarIconColors.message : 'currentColor'}
+        />
+      );
     case 'token':
-      return <Key {...commonProps} color={selected ? sidebarIconColors.key : 'currentColor'} />;
+      return (
+        <Key
+          {...commonProps}
+          color={selected ? sidebarIconColors.key : 'currentColor'}
+        />
+      );
     case 'log':
-      return <BarChart3 {...commonProps} color={selected ? sidebarIconColors.chart : 'currentColor'} />;
+      return (
+        <BarChart3
+          {...commonProps}
+          color={selected ? sidebarIconColors.chart : 'currentColor'}
+        />
+      );
     case 'midjourney':
-      return <ImageIcon {...commonProps} color={selected ? sidebarIconColors.image : 'currentColor'} />;
+      return (
+        <ImageIcon
+          {...commonProps}
+          color={selected ? sidebarIconColors.image : 'currentColor'}
+        />
+      );
     case 'task':
-      return <CheckSquare {...commonProps} color={selected ? sidebarIconColors.check : 'currentColor'} />;
+      return (
+        <CheckSquare
+          {...commonProps}
+          color={selected ? sidebarIconColors.check : 'currentColor'}
+        />
+      );
     case 'topup':
-      return <CreditCard {...commonProps} color={selected ? sidebarIconColors.credit : 'currentColor'} />;
+      return (
+        <CreditCard
+          {...commonProps}
+          color={selected ? sidebarIconColors.credit : 'currentColor'}
+        />
+      );
     case 'channel':
-      return <Layers {...commonProps} color={selected ? sidebarIconColors.layers : 'currentColor'} />;
+      return (
+        <Layers
+          {...commonProps}
+          color={selected ? sidebarIconColors.layers : 'currentColor'}
+        />
+      );
     case 'redemption':
-      return <Gift {...commonProps} color={selected ? sidebarIconColors.gift : 'currentColor'} />;
+      return (
+        <Gift
+          {...commonProps}
+          color={selected ? sidebarIconColors.gift : 'currentColor'}
+        />
+      );
     case 'user':
     case 'personal':
-      return <User {...commonProps} color={selected ? sidebarIconColors.user : 'currentColor'} />;
+      return (
+        <User
+          {...commonProps}
+          color={selected ? sidebarIconColors.user : 'currentColor'}
+        />
+      );
     case 'setting':
-      return <Settings {...commonProps} color={selected ? sidebarIconColors.settings : 'currentColor'} />;
+      return (
+        <Settings
+          {...commonProps}
+          color={selected ? sidebarIconColors.settings : 'currentColor'}
+        />
+      );
     default:
-      return <CircleUser {...commonProps} color={selected ? sidebarIconColors.user : 'currentColor'} />;
+      return (
+        <CircleUser
+          {...commonProps}
+          color={selected ? sidebarIconColors.user : 'currentColor'}
+        />
+      );
   }
 }
 
@@ -115,12 +180,13 @@ export const getModelCategories = (() => {
       all: {
         label: t('全部模型'),
         icon: null,
-        filter: () => true
+        filter: () => true,
       },
       openai: {
         label: 'OpenAI',
         icon: <OpenAI />,
-        filter: (model) => model.model_name.toLowerCase().includes('gpt') ||
+        filter: (model) =>
+          model.model_name.toLowerCase().includes('gpt') ||
           model.model_name.toLowerCase().includes('dall-e') ||
           model.model_name.toLowerCase().includes('whisper') ||
           model.model_name.toLowerCase().includes('tts') ||
@@ -131,109 +197,110 @@ export const getModelCategories = (() => {
           model.model_name.toLowerCase().includes('ada') ||
           model.model_name.toLowerCase().includes('o1') ||
           model.model_name.toLowerCase().includes('o3') ||
-          model.model_name.toLowerCase().includes('o4')
+          model.model_name.toLowerCase().includes('o4'),
       },
       anthropic: {
         label: 'Anthropic',
         icon: <Claude.Color />,
-        filter: (model) => model.model_name.toLowerCase().includes('claude')
+        filter: (model) => model.model_name.toLowerCase().includes('claude'),
       },
       gemini: {
         label: 'Gemini',
         icon: <Gemini.Color />,
-        filter: (model) => model.model_name.toLowerCase().includes('gemini')
+        filter: (model) => model.model_name.toLowerCase().includes('gemini'),
       },
       moonshot: {
         label: 'Moonshot',
         icon: <Moonshot />,
-        filter: (model) => model.model_name.toLowerCase().includes('moonshot')
+        filter: (model) => model.model_name.toLowerCase().includes('moonshot'),
       },
       zhipu: {
         label: t('智谱'),
         icon: <Zhipu.Color />,
-        filter: (model) => model.model_name.toLowerCase().includes('chatglm') ||
-          model.model_name.toLowerCase().includes('glm-')
+        filter: (model) =>
+          model.model_name.toLowerCase().includes('chatglm') ||
+          model.model_name.toLowerCase().includes('glm-'),
       },
       qwen: {
         label: t('通义千问'),
         icon: <Qwen.Color />,
-        filter: (model) => model.model_name.toLowerCase().includes('qwen')
+        filter: (model) => model.model_name.toLowerCase().includes('qwen'),
       },
       deepseek: {
         label: 'DeepSeek',
         icon: <DeepSeek.Color />,
-        filter: (model) => model.model_name.toLowerCase().includes('deepseek')
+        filter: (model) => model.model_name.toLowerCase().includes('deepseek'),
       },
       minimax: {
         label: 'MiniMax',
         icon: <Minimax.Color />,
-        filter: (model) => model.model_name.toLowerCase().includes('abab')
+        filter: (model) => model.model_name.toLowerCase().includes('abab'),
       },
       baidu: {
         label: t('文心一言'),
         icon: <Wenxin.Color />,
-        filter: (model) => model.model_name.toLowerCase().includes('ernie')
+        filter: (model) => model.model_name.toLowerCase().includes('ernie'),
       },
       xunfei: {
         label: t('讯飞星火'),
         icon: <Spark.Color />,
-        filter: (model) => model.model_name.toLowerCase().includes('spark')
+        filter: (model) => model.model_name.toLowerCase().includes('spark'),
       },
       midjourney: {
         label: 'Midjourney',
         icon: <Midjourney />,
-        filter: (model) => model.model_name.toLowerCase().includes('mj_')
+        filter: (model) => model.model_name.toLowerCase().includes('mj_'),
       },
       tencent: {
         label: t('腾讯混元'),
         icon: <Hunyuan.Color />,
-        filter: (model) => model.model_name.toLowerCase().includes('hunyuan')
+        filter: (model) => model.model_name.toLowerCase().includes('hunyuan'),
       },
       cohere: {
         label: 'Cohere',
         icon: <Cohere.Color />,
-        filter: (model) => model.model_name.toLowerCase().includes('command')
+        filter: (model) => model.model_name.toLowerCase().includes('command'),
       },
       cloudflare: {
         label: 'Cloudflare',
         icon: <Cloudflare.Color />,
-        filter: (model) => model.model_name.toLowerCase().includes('@cf/')
+        filter: (model) => model.model_name.toLowerCase().includes('@cf/'),
       },
       ai360: {
         label: t('360智脑'),
         icon: <Ai360.Color />,
-        filter: (model) => model.model_name.toLowerCase().includes('360')
+        filter: (model) => model.model_name.toLowerCase().includes('360'),
       },
       yi: {
         label: t('零一万物'),
         icon: <Yi.Color />,
-        filter: (model) => model.model_name.toLowerCase().includes('yi')
+        filter: (model) => model.model_name.toLowerCase().includes('yi'),
       },
       jina: {
         label: 'Jina',
         icon: <Jina />,
-        filter: (model) => model.model_name.toLowerCase().includes('jina')
+        filter: (model) => model.model_name.toLowerCase().includes('jina'),
       },
       mistral: {
         label: 'Mistral AI',
         icon: <Mistral.Color />,
-        filter: (model) => model.model_name.toLowerCase().includes('mistral')
+        filter: (model) => model.model_name.toLowerCase().includes('mistral'),
       },
       xai: {
         label: 'xAI',
         icon: <XAI />,
-        filter: (model) => model.model_name.toLowerCase().includes('grok')
+        filter: (model) => model.model_name.toLowerCase().includes('grok'),
       },
       llama: {
         label: 'Llama',
         icon: <Ollama />,
-        filter: (model) => model.model_name.toLowerCase().includes('llama')
+        filter: (model) => model.model_name.toLowerCase().includes('llama'),
       },
       doubao: {
         label: t('豆包'),
         icon: <Doubao.Color />,
-        filter: (model) => model.model_name.toLowerCase().includes('doubao')
-      }
+        filter: (model) => model.model_name.toLowerCase().includes('doubao'),
+      },
     };
 
     lastLocale = currentLocale;
@@ -376,7 +443,13 @@ export function stringToColor(str) {
 
 // 渲染带有模型图标的标签
 export function renderModelTag(modelName, options = {}) {
-  const { color, size = 'large', shape = 'circle', onClick, suffixIcon } = options;
+  const {
+    color,
+    size = 'large',
+    shape = 'circle',
+    onClick,
+    suffixIcon,
+  } = options;
 
   const categories = getModelCategories(i18next.t);
   let icon = null;
@@ -724,6 +797,9 @@ export function renderModelPrice(
   fileSearch = false,
   fileSearchCallCount = 0,
   fileSearchPrice = 0,
+  audioInputSeperatePrice = false,
+  audioInputTokens = 0,
+  audioInputPrice = 0,
 ) {
   if (modelPrice !== -1) {
     return i18next.t(
@@ -751,9 +827,12 @@ export function renderModelPrice(
       effectiveInputTokens =
         inputTokens - imageOutputTokens + imageOutputTokens * imageRatio;
     }
-
+    if (audioInputTokens > 0) {
+      effectiveInputTokens -= audioInputTokens;
+    }
     let price =
       (effectiveInputTokens / 1000000) * inputRatioPrice * groupRatio +
+      (audioInputTokens / 1000000) * audioInputPrice * groupRatio +
       (completionTokens / 1000000) * completionRatioPrice * groupRatio +
       (webSearchCallCount / 1000) * webSearchPrice * groupRatio +
       (fileSearchCallCount / 1000) * fileSearchPrice * groupRatio;
@@ -762,8 +841,11 @@ export function renderModelPrice(
       <>
         <article>
           <p>
-            {i18next.t('输入价格：${{price}} / 1M tokens', {
+            {i18next.t('输入价格：${{price}} / 1M tokens{{audioPrice}}', {
               price: inputRatioPrice,
+              audioPrice: audioInputSeperatePrice
+                ? `，音频 $${audioInputPrice} / 1M tokens`
+                : '',
             })}
           </p>
           <p>
@@ -817,96 +899,93 @@ export function renderModelPrice(
           )}
           <p></p>
           <p>
-            {cacheTokens > 0 && !image && !webSearch && !fileSearch
-              ? i18next.t(
-                '输入 {{nonCacheInput}} tokens / 1M tokens * ${{price}} + 缓存 {{cacheInput}} tokens / 1M tokens * ${{cachePrice}} + 输出 {{completion}} tokens / 1M tokens * ${{compPrice}} * 分组 {{ratio}} = ${{total}}',
-                {
-                  nonCacheInput: inputTokens - cacheTokens,
-                  cacheInput: cacheTokens,
-                  cachePrice: inputRatioPrice * cacheRatio,
-                  price: inputRatioPrice,
-                  completion: completionTokens,
-                  compPrice: completionRatioPrice,
-                  ratio: groupRatio,
-                  total: price.toFixed(6),
-                },
-              )
-              : image && imageOutputTokens > 0 && !webSearch && !fileSearch
-                ? i18next.t(
-                  '输入 {{nonImageInput}} tokens + 图片输入 {{imageInput}} tokens * {{imageRatio}} / 1M tokens * ${{price}} + 输出 {{completion}} tokens / 1M tokens * ${{compPrice}} * 分组 {{ratio}} = ${{total}}',
+            {(() => {
+              // 构建输入部分描述
+              let inputDesc = '';
+              if (image && imageOutputTokens > 0) {
+                inputDesc = i18next.t(
+                  '(输入 {{nonImageInput}} tokens + 图片输入 {{imageInput}} tokens * {{imageRatio}} / 1M tokens * ${{price}}',
                   {
                     nonImageInput: inputTokens - imageOutputTokens,
                     imageInput: imageOutputTokens,
                     imageRatio: imageRatio,
                     price: inputRatioPrice,
-                    completion: completionTokens,
-                    compPrice: completionRatioPrice,
-                    ratio: groupRatio,
-                    total: price.toFixed(6),
                   },
-                )
-                : webSearch && webSearchCallCount > 0 && !image && !fileSearch
+                );
+              } else if (cacheTokens > 0) {
+                inputDesc = i18next.t(
+                  '(输入 {{nonCacheInput}} tokens / 1M tokens * ${{price}} + 缓存 {{cacheInput}} tokens / 1M tokens * ${{cachePrice}}',
+                  {
+                    nonCacheInput: inputTokens - cacheTokens,
+                    cacheInput: cacheTokens,
+                    price: inputRatioPrice,
+                    cachePrice: cacheRatioPrice,
+                  },
+                );
+              } else if (audioInputSeperatePrice && audioInputTokens > 0) {
+                inputDesc = i18next.t(
+                  '(输入 {{nonAudioInput}} tokens / 1M tokens * ${{price}} + 音频输入 {{audioInput}} tokens / 1M tokens * ${{audioPrice}}',
+                  {
+                    nonAudioInput: inputTokens - audioInputTokens,
+                    audioInput: audioInputTokens,
+                    price: inputRatioPrice,
+                    audioPrice: audioInputPrice,
+                  },
+                );
+              } else {
+                inputDesc = i18next.t(
+                  '(输入 {{input}} tokens / 1M tokens * ${{price}}',
+                  {
+                    input: inputTokens,
+                    price: inputRatioPrice,
+                  },
+                );
+              }
+
+              // 构建输出部分描述
+              const outputDesc = i18next.t(
+                '输出 {{completion}} tokens / 1M tokens * ${{compPrice}}) * 分组倍率 {{ratio}}',
+                {
+                  completion: completionTokens,
+                  compPrice: completionRatioPrice,
+                  ratio: groupRatio,
+                },
+              );
+
+              // 构建额外服务描述
+              const extraServices = [
+                webSearch && webSearchCallCount > 0
                   ? i18next.t(
-                    '输入 {{input}} tokens / 1M tokens * ${{price}} + 输出 {{completion}} tokens / 1M tokens * ${{compPrice}} * 分组 {{ratio}} + Web搜索 {{webSearchCallCount}}次 / 1K 次 * ${{webSearchPrice}} * {{ratio}} = ${{total}}',
-                    {
-                      input: inputTokens,
-                      price: inputRatioPrice,
-                      completion: completionTokens,
-                      compPrice: completionRatioPrice,
-                      ratio: groupRatio,
-                      webSearchCallCount,
-                      webSearchPrice,
-                      total: price.toFixed(6),
-                    },
-                  )
-                  : fileSearch &&
-                    fileSearchCallCount > 0 &&
-                    !image &&
-                    !webSearch
-                    ? i18next.t(
-                      '输入 {{input}} tokens / 1M tokens * ${{price}} + 输出 {{completion}} tokens / 1M tokens * ${{compPrice}} * 分组 {{ratio}} + 文件搜索 {{fileSearchCallCount}}次 / 1K 次 * ${{fileSearchPrice}} * {{ratio}}= ${{total}}',
+                      ' + Web搜索 {{count}}次 / 1K 次 * ${{price}} * 分组倍率 {{ratio}}',
                       {
-                        input: inputTokens,
-                        price: inputRatioPrice,
-                        completion: completionTokens,
-                        compPrice: completionRatioPrice,
+                        count: webSearchCallCount,
+                        price: webSearchPrice,
                         ratio: groupRatio,
-                        fileSearchCallCount,
-                        fileSearchPrice,
-                        total: price.toFixed(6),
                       },
                     )
-                    : webSearch &&
-                      webSearchCallCount > 0 &&
-                      fileSearch &&
-                      fileSearchCallCount > 0 &&
-                      !image
-                      ? i18next.t(
-                        '输入 {{input}} tokens / 1M tokens * ${{price}} + 输出 {{completion}} tokens / 1M tokens * ${{compPrice}} * 分组 {{ratio}} + Web搜索 {{webSearchCallCount}}次 / 1K 次 * ${{webSearchPrice}} * {{ratio}}+ 文件搜索 {{fileSearchCallCount}}次 / 1K 次 * ${{fileSearchPrice}} * {{ratio}}= ${{total}}',
-                        {
-                          input: inputTokens,
-                          price: inputRatioPrice,
-                          completion: completionTokens,
-                          compPrice: completionRatioPrice,
-                          ratio: groupRatio,
-                          webSearchCallCount,
-                          webSearchPrice,
-                          fileSearchCallCount,
-                          fileSearchPrice,
-                          total: price.toFixed(6),
-                        },
-                      )
-                      : i18next.t(
-                        '输入 {{input}} tokens / 1M tokens * ${{price}} + 输出 {{completion}} tokens / 1M tokens * ${{compPrice}} * 分组 {{ratio}} = ${{total}}',
-                        {
-                          input: inputTokens,
-                          price: inputRatioPrice,
-                          completion: completionTokens,
-                          compPrice: completionRatioPrice,
-                          ratio: groupRatio,
-                          total: price.toFixed(6),
-                        },
-                      )}
+                  : '',
+                fileSearch && fileSearchCallCount > 0
+                  ? i18next.t(
+                      ' + 文件搜索 {{count}}次 / 1K 次 * ${{price}} * 分组倍率 {{ratio}}',
+                      {
+                        count: fileSearchCallCount,
+                        price: fileSearchPrice,
+                        ratio: groupRatio,
+                      },
+                    )
+                  : '',
+              ].join('');
+
+              return i18next.t(
+                '{{inputDesc}} + {{outputDesc}}{{extraServices}} = ${{total}}',
+                {
+                  inputDesc,
+                  outputDesc,
+                  extraServices,
+                  total: price.toFixed(6),
+                },
+              );
+            })()}
           </p>
           <p>{i18next.t('仅供参考，以实际扣费为准')}</p>
         </article>
@@ -1077,10 +1156,10 @@ export function renderAudioModelPrice(
     let audioPrice =
       (audioInputTokens / 1000000) * inputRatioPrice * audioRatio * groupRatio +
       (audioCompletionTokens / 1000000) *
-      inputRatioPrice *
-      audioRatio *
-      audioCompletionRatio *
-      groupRatio;
+        inputRatioPrice *
+        audioRatio *
+        audioCompletionRatio *
+        groupRatio;
     let price = textPrice + audioPrice;
     return (
       <>
@@ -1136,27 +1215,27 @@ export function renderAudioModelPrice(
           <p>
             {cacheTokens > 0
               ? i18next.t(
-                '文字提示 {{nonCacheInput}} tokens / 1M tokens * ${{price}} + 缓存 {{cacheInput}} tokens / 1M tokens * ${{cachePrice}} + 文字补全 {{completion}} tokens / 1M tokens * ${{compPrice}} = ${{total}}',
-                {
-                  nonCacheInput: inputTokens - cacheTokens,
-                  cacheInput: cacheTokens,
-                  cachePrice: inputRatioPrice * cacheRatio,
-                  price: inputRatioPrice,
-                  completion: completionTokens,
-                  compPrice: completionRatioPrice,
-                  total: textPrice.toFixed(6),
-                },
-              )
+                  '文字提示 {{nonCacheInput}} tokens / 1M tokens * ${{price}} + 缓存 {{cacheInput}} tokens / 1M tokens * ${{cachePrice}} + 文字补全 {{completion}} tokens / 1M tokens * ${{compPrice}} = ${{total}}',
+                  {
+                    nonCacheInput: inputTokens - cacheTokens,
+                    cacheInput: cacheTokens,
+                    cachePrice: inputRatioPrice * cacheRatio,
+                    price: inputRatioPrice,
+                    completion: completionTokens,
+                    compPrice: completionRatioPrice,
+                    total: textPrice.toFixed(6),
+                  },
+                )
               : i18next.t(
-                '文字提示 {{input}} tokens / 1M tokens * ${{price}} + 文字补全 {{completion}} tokens / 1M tokens * ${{compPrice}} = ${{total}}',
-                {
-                  input: inputTokens,
-                  price: inputRatioPrice,
-                  completion: completionTokens,
-                  compPrice: completionRatioPrice,
-                  total: textPrice.toFixed(6),
-                },
-              )}
+                  '文字提示 {{input}} tokens / 1M tokens * ${{price}} + 文字补全 {{completion}} tokens / 1M tokens * ${{compPrice}} = ${{total}}',
+                  {
+                    input: inputTokens,
+                    price: inputRatioPrice,
+                    completion: completionTokens,
+                    compPrice: completionRatioPrice,
+                    total: textPrice.toFixed(6),
+                  },
+                )}
           </p>
           <p>
             {i18next.t(
@@ -1293,33 +1372,33 @@ export function renderClaudeModelPrice(
           <p>
             {cacheTokens > 0 || cacheCreationTokens > 0
               ? i18next.t(
-                '提示 {{nonCacheInput}} tokens / 1M tokens * ${{price}} + 缓存 {{cacheInput}} tokens / 1M tokens * ${{cachePrice}} + 缓存创建 {{cacheCreationInput}} tokens / 1M tokens * ${{cacheCreationPrice}} + 补全 {{completion}} tokens / 1M tokens * ${{compPrice}} * 分组 {{ratio}} = ${{total}}',
-                {
-                  nonCacheInput: nonCachedTokens,
-                  cacheInput: cacheTokens,
-                  cacheRatio: cacheRatio,
-                  cacheCreationInput: cacheCreationTokens,
-                  cacheCreationRatio: cacheCreationRatio,
-                  cachePrice: cacheRatioPrice,
-                  cacheCreationPrice: cacheCreationRatioPrice,
-                  price: inputRatioPrice,
-                  completion: completionTokens,
-                  compPrice: completionRatioPrice,
-                  ratio: groupRatio,
-                  total: price.toFixed(6),
-                },
-              )
+                  '提示 {{nonCacheInput}} tokens / 1M tokens * ${{price}} + 缓存 {{cacheInput}} tokens / 1M tokens * ${{cachePrice}} + 缓存创建 {{cacheCreationInput}} tokens / 1M tokens * ${{cacheCreationPrice}} + 补全 {{completion}} tokens / 1M tokens * ${{compPrice}} * 分组 {{ratio}} = ${{total}}',
+                  {
+                    nonCacheInput: nonCachedTokens,
+                    cacheInput: cacheTokens,
+                    cacheRatio: cacheRatio,
+                    cacheCreationInput: cacheCreationTokens,
+                    cacheCreationRatio: cacheCreationRatio,
+                    cachePrice: cacheRatioPrice,
+                    cacheCreationPrice: cacheCreationRatioPrice,
+                    price: inputRatioPrice,
+                    completion: completionTokens,
+                    compPrice: completionRatioPrice,
+                    ratio: groupRatio,
+                    total: price.toFixed(6),
+                  },
+                )
               : i18next.t(
-                '提示 {{input}} tokens / 1M tokens * ${{price}} + 补全 {{completion}} tokens / 1M tokens * ${{compPrice}} * 分组 {{ratio}} = ${{total}}',
-                {
-                  input: inputTokens,
-                  price: inputRatioPrice,
-                  completion: completionTokens,
-                  compPrice: completionRatioPrice,
-                  ratio: groupRatio,
-                  total: price.toFixed(6),
-                },
-              )}
+                  '提示 {{input}} tokens / 1M tokens * ${{price}} + 补全 {{completion}} tokens / 1M tokens * ${{compPrice}} * 分组 {{ratio}} = ${{total}}',
+                  {
+                    input: inputTokens,
+                    price: inputRatioPrice,
+                    completion: completionTokens,
+                    compPrice: completionRatioPrice,
+                    ratio: groupRatio,
+                    total: price.toFixed(6),
+                  },
+                )}
           </p>
           <p>{i18next.t('仅供参考，以实际扣费为准')}</p>
         </article>
@@ -1410,7 +1489,9 @@ export function rehypeSplitWordsIntoSpans(options = {}) {
 
     visit(tree, 'element', (node) => {
       if (
-        ['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'li', 'strong'].includes(node.tagName) &&
+        ['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'li', 'strong'].includes(
+          node.tagName,
+        ) &&
         node.children
       ) {
         const newChildren = [];
@@ -1418,7 +1499,9 @@ export function rehypeSplitWordsIntoSpans(options = {}) {
           if (child.type === 'text') {
             try {
               // 使用 Intl.Segmenter 精准拆分中英文及标点
-              const segmenter = new Intl.Segmenter('zh', { granularity: 'word' });
+              const segmenter = new Intl.Segmenter('zh', {
+                granularity: 'word',
+              });
               const segments = segmenter.segment(child.value);
 
               Array.from(segments)
@@ -1472,4 +1555,4 @@ export function rehypeSplitWordsIntoSpans(options = {}) {
       }
     });
   };
-} 
+}
