@@ -1,6 +1,7 @@
 import react from '@vitejs/plugin-react';
 import { defineConfig, transformWithEsbuild } from 'vite';
-import { vitePluginSemi } from '@douyinfe/vite-plugin-semi';
+import pkg from '@douyinfe/vite-plugin-semi';
+const { vitePluginSemi } = pkg;
 
 // https://vitejs.dev/config/
 export default defineConfig({
