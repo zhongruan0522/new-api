@@ -784,19 +784,7 @@ const Detail = (props) => {
                 bordered={false}
                 className={`${group.color} border-0 !rounded-2xl w-full`}
                 headerLine={true}
-                header={<div style={{ color: 'white', fontWeight: 'bold', fontSize: '16px' }}>{group.title}</div>}
-                headerStyle={{
-                  background: idx === 0
-                    ? 'linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%)'
-                    : idx === 1
-                      ? 'linear-gradient(135deg, #10b981 0%, #34d399 100%)'
-                      : idx === 2
-                        ? 'linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%)'
-                        : 'linear-gradient(135deg, #ec4899 0%, #f472b6 100%)',
-                  borderTopLeftRadius: '16px',
-                  borderTopRightRadius: '16px',
-                  padding: '12px 16px',
-                }}
+                title={group.title}
               >
                 <div className="space-y-4">
                   {group.items.map((item, itemIdx) => (
