@@ -29,7 +29,6 @@ import {
   Descriptions,
   Modal,
   Popover,
-  Select,
   Space,
   Spin,
   Table,
@@ -39,23 +38,13 @@ import {
   Card,
   Typography,
   Divider,
-  Input,
-  DatePicker,
+  Form,
 } from '@douyinfe/semi-ui';
 import { ITEMS_PER_PAGE } from '../../constants';
 import Paragraph from '@douyinfe/semi-ui/lib/es/typography/paragraph';
 import { IconSetting, IconSearch, IconForward } from '@douyinfe/semi-icons';
 
 const { Text } = Typography;
-
-function renderTimestamp(timestamp) {
-  return <>{timestamp2string(timestamp)}</>;
-}
-
-const MODE_OPTIONS = [
-  { key: 'all', text: 'all', value: 'all' },
-  { key: 'self', text: 'current user', value: 'self' },
-];
 
 const colors = [
   'amber',
@@ -737,39 +726,67 @@ const LogsTable = () => {
   const [logType, setLogType] = useState(0);
   const isAdminUser = isAdmin();
   let now = new Date();
-  // 初始化start_timestamp为今天0点
-  const [inputs, setInputs] = useState({
+
+  // Form 初始值
+  const formInitValues = {
     username: '',
     token_name: '',
     model_name: '',
-    start_timestamp: timestamp2string(getTodayStartTimestamp()),
-    end_timestamp: timestamp2string(now.getTime() / 1000 + 3600),
     channel: '',
     group: '',
-  });
-  const {
-    username,
-    token_name,
-    model_name,
-    start_timestamp,
-    end_timestamp,
-    channel,
-    group,
-  } = inputs;
+    dateRange: [
+      timestamp2string(getTodayStartTimestamp()),
+      timestamp2string(now.getTime() / 1000 + 3600)
+    ],
+    logType: '0',
+  };
 
   const [stat, setStat] = useState({
     quota: 0,
     token: 0,
   });
 
-  const handleInputChange = (value, name) => {
-    setInputs((inputs) => ({ ...inputs, [name]: value }));
+  // Form API 引用
+  const [formApi, setFormApi] = useState(null);
+
+  // 获取表单值的辅助函数，确保所有值都是字符串
+  const getFormValues = () => {
+    const formValues = formApi ? formApi.getValues() : {};
+
+    // 处理时间范围
+    let start_timestamp = timestamp2string(getTodayStartTimestamp());
+    let end_timestamp = timestamp2string(now.getTime() / 1000 + 3600);
+
+    if (formValues.dateRange && Array.isArray(formValues.dateRange) && formValues.dateRange.length === 2) {
+      start_timestamp = formValues.dateRange[0];
+      end_timestamp = formValues.dateRange[1];
+    }
+
+    return {
+      username: formValues.username || '',
+      token_name: formValues.token_name || '',
+      model_name: formValues.model_name || '',
+      start_timestamp,
+      end_timestamp,
+      channel: formValues.channel || '',
+      group: formValues.group || '',
+      logType: formValues.logType ? parseInt(formValues.logType) : 0,
+    };
   };
 
   const getLogSelfStat = async () => {
+    const {
+      token_name,
+      model_name,
+      start_timestamp,
+      end_timestamp,
+      group,
+      logType: formLogType,
+    } = getFormValues();
+    const currentLogType = formLogType !== undefined ? formLogType : logType;
     let localStartTimestamp = Date.parse(start_timestamp) / 1000;
     let localEndTimestamp = Date.parse(end_timestamp) / 1000;
-    let url = `/api/log/self/stat?type=${logType}&token_name=${token_name}&model_name=${model_name}&start_timestamp=${localStartTimestamp}&end_timestamp=${localEndTimestamp}&group=${group}`;
+    let url = `/api/log/self/stat?type=${currentLogType}&token_name=${token_name}&model_name=${model_name}&start_timestamp=${localStartTimestamp}&end_timestamp=${localEndTimestamp}&group=${group}`;
     url = encodeURI(url);
     let res = await API.get(url);
     const { success, message, data } = res.data;
@@ -781,9 +798,20 @@ const LogsTable = () => {
   };
 
   const getLogStat = async () => {
+    const {
+      username,
+      token_name,
+      model_name,
+      start_timestamp,
+      end_timestamp,
+      channel,
+      group,
+      logType: formLogType,
+    } = getFormValues();
+    const currentLogType = formLogType !== undefined ? formLogType : logType;
     let localStartTimestamp = Date.parse(start_timestamp) / 1000;
     let localEndTimestamp = Date.parse(end_timestamp) / 1000;
-    let url = `/api/log/stat?type=${logType}&username=${username}&token_name=${token_name}&model_name=${model_name}&start_timestamp=${localStartTimestamp}&end_timestamp=${localEndTimestamp}&channel=${channel}&group=${group}`;
+    let url = `/api/log/stat?type=${currentLogType}&username=${username}&token_name=${token_name}&model_name=${model_name}&start_timestamp=${localStartTimestamp}&end_timestamp=${localEndTimestamp}&channel=${channel}&group=${group}`;
     url = encodeURI(url);
     let res = await API.get(url);
     const { success, message, data } = res.data;
@@ -1016,16 +1044,30 @@ const LogsTable = () => {
     setLogs(logs);
   };
 
-  const loadLogs = async (startIdx, pageSize, logType = 0) => {
+  const loadLogs = async (startIdx, pageSize, customLogType = null) => {
     setLoading(true);
 
     let url = '';
+    const {
+      username,
+      token_name,
+      model_name,
+      start_timestamp,
+      end_timestamp,
+      channel,
+      group,
+      logType: formLogType,
+    } = getFormValues();
+
+    // 使用传入的 logType 或者表单中的 logType 或者状态中的 logType
+    const currentLogType = customLogType !== null ? customLogType : formLogType !== undefined ? formLogType : logType;
+
     let localStartTimestamp = Date.parse(start_timestamp) / 1000;
     let localEndTimestamp = Date.parse(end_timestamp) / 1000;
     if (isAdminUser) {
-      url = `/api/log/?p=${startIdx}&page_size=${pageSize}&type=${logType}&username=${username}&token_name=${token_name}&model_name=${model_name}&start_timestamp=${localStartTimestamp}&end_timestamp=${localEndTimestamp}&channel=${channel}&group=${group}`;
+      url = `/api/log/?p=${startIdx}&page_size=${pageSize}&type=${currentLogType}&username=${username}&token_name=${token_name}&model_name=${model_name}&start_timestamp=${localStartTimestamp}&end_timestamp=${localEndTimestamp}&channel=${channel}&group=${group}`;
     } else {
-      url = `/api/log/self/?p=${startIdx}&page_size=${pageSize}&type=${logType}&token_name=${token_name}&model_name=${model_name}&start_timestamp=${localStartTimestamp}&end_timestamp=${localEndTimestamp}&group=${group}`;
+      url = `/api/log/self/?p=${startIdx}&page_size=${pageSize}&type=${currentLogType}&token_name=${token_name}&model_name=${model_name}&start_timestamp=${localStartTimestamp}&end_timestamp=${localEndTimestamp}&group=${group}`;
     }
     url = encodeURI(url);
     const res = await API.get(url);
@@ -1045,7 +1087,7 @@ const LogsTable = () => {
 
   const handlePageChange = (page) => {
     setActivePage(page);
-    loadLogs(page, pageSize, logType).then((r) => { });
+    loadLogs(page, pageSize).then((r) => { }); // 不传入logType，让其从表单获取最新值
   };
 
   const handlePageSizeChange = async (size) => {
@@ -1062,7 +1104,7 @@ const LogsTable = () => {
   const refresh = async () => {
     setActivePage(1);
     handleEyeClick();
-    await loadLogs(activePage, pageSize, logType);
+    await loadLogs(1, pageSize); // 不传入logType，让其从表单获取最新值
   };
 
   const copyText = async (e, text) => {
@@ -1083,8 +1125,14 @@ const LogsTable = () => {
       .catch((reason) => {
         showError(reason);
       });
-    handleEyeClick();
   }, []);
+
+  // 当 formApi 可用时，初始化统计
+  useEffect(() => {
+    if (formApi) {
+      handleEyeClick();
+    }
+  }, [formApi]);
 
   const expandRowRender = (record, index) => {
     return <Descriptions data={expandData[record.key]} />;
@@ -1149,115 +1197,148 @@ const LogsTable = () => {
             <Divider margin='12px' />
 
             {/* 搜索表单区域 */}
-            <div className='flex flex-col gap-4'>
-              <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4'>
-                {/* 时间选择器 */}
-                <div className='col-span-1 lg:col-span-2'>
-                  <DatePicker
-                    className='w-full'
-                    value={[start_timestamp, end_timestamp]}
-                    type='dateTimeRange'
-                    onChange={(value) => {
-                      if (Array.isArray(value) && value.length === 2) {
-                        handleInputChange(value[0], 'start_timestamp');
-                        handleInputChange(value[1], 'end_timestamp');
-                      }
-                    }}
+            <Form
+              initValues={formInitValues}
+              getFormApi={(api) => setFormApi(api)}
+              onSubmit={refresh}
+              allowEmpty={true}
+              autoComplete="off"
+              layout="vertical"
+              onValueChange={(values, changedValue) => {
+                // 实时监听日志类型变化
+                if (changedValue.logType !== undefined) {
+                  setLogType(parseInt(changedValue.logType));
+                  // 日志类型变化时自动搜索，不传入logType参数让其从表单获取最新值
+                  setTimeout(() => {
+                    setActivePage(1);
+                    handleEyeClick();
+                    loadLogs(1, pageSize); // 不传入logType参数
+                  }, 100);
+                }
+              }}
+              trigger="change"
+              stopValidateWithError={false}
+            >
+              <div className='flex flex-col gap-4'>
+                <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4'>
+                  {/* 时间选择器 */}
+                  <div className='col-span-1 lg:col-span-2'>
+                    <Form.DatePicker
+                      field='dateRange'
+                      className='w-full'
+                      type='dateTimeRange'
+                      placeholder={[t('开始时间'), t('结束时间')]}
+                      pure
+                    />
+                  </div>
+
+                  {/* 日志类型选择器 */}
+                  <Form.Select
+                    field='logType'
+                    placeholder={t('日志类型')}
+                    className='!rounded-full'
+                    showClear
+                    pure
+                  >
+                    <Form.Select.Option value='0'>{t('全部')}</Form.Select.Option>
+                    <Form.Select.Option value='1'>{t('充值')}</Form.Select.Option>
+                    <Form.Select.Option value='2'>{t('消费')}</Form.Select.Option>
+                    <Form.Select.Option value='3'>{t('管理')}</Form.Select.Option>
+                    <Form.Select.Option value='4'>{t('系统')}</Form.Select.Option>
+                    <Form.Select.Option value='5'>{t('错误')}</Form.Select.Option>
+                  </Form.Select>
+
+                  {/* 其他搜索字段 */}
+                  <Form.Input
+                    field='token_name'
+                    prefix={<IconSearch />}
+                    placeholder={t('令牌名称')}
+                    className='!rounded-full'
+                    showClear
+                    pure
                   />
+
+                  <Form.Input
+                    field='model_name'
+                    prefix={<IconSearch />}
+                    placeholder={t('模型名称')}
+                    className='!rounded-full'
+                    showClear
+                    pure
+                  />
+
+                  <Form.Input
+                    field='group'
+                    prefix={<IconSearch />}
+                    placeholder={t('分组')}
+                    className='!rounded-full'
+                    showClear
+                    pure
+                  />
+
+                  {isAdminUser && (
+                    <>
+                      <Form.Input
+                        field='channel'
+                        prefix={<IconSearch />}
+                        placeholder={t('渠道 ID')}
+                        className='!rounded-full'
+                        showClear
+                        pure
+                      />
+                      <Form.Input
+                        field='username'
+                        prefix={<IconSearch />}
+                        placeholder={t('用户名称')}
+                        className='!rounded-full'
+                        showClear
+                        pure
+                      />
+                    </>
+                  )}
                 </div>
 
-                {/* 日志类型选择器 */}
-                <Select
-                  value={logType.toString()}
-                  placeholder={t('日志类型')}
-                  className='!rounded-full'
-                  onChange={(value) => {
-                    setLogType(parseInt(value));
-                    loadLogs(0, pageSize, parseInt(value));
-                  }}
-                >
-                  <Select.Option value='0'>{t('全部')}</Select.Option>
-                  <Select.Option value='1'>{t('充值')}</Select.Option>
-                  <Select.Option value='2'>{t('消费')}</Select.Option>
-                  <Select.Option value='3'>{t('管理')}</Select.Option>
-                  <Select.Option value='4'>{t('系统')}</Select.Option>
-                  <Select.Option value='5'>{t('错误')}</Select.Option>
-                </Select>
-
-                {/* 其他搜索字段 */}
-                <Input
-                  prefix={<IconSearch />}
-                  placeholder={t('令牌名称')}
-                  value={token_name}
-                  onChange={(value) => handleInputChange(value, 'token_name')}
-                  className='!rounded-full'
-                  showClear
-                />
-
-                <Input
-                  prefix={<IconSearch />}
-                  placeholder={t('模型名称')}
-                  value={model_name}
-                  onChange={(value) => handleInputChange(value, 'model_name')}
-                  className='!rounded-full'
-                  showClear
-                />
-
-                <Input
-                  prefix={<IconSearch />}
-                  placeholder={t('分组')}
-                  value={group}
-                  onChange={(value) => handleInputChange(value, 'group')}
-                  className='!rounded-full'
-                  showClear
-                />
-
-                {isAdminUser && (
-                  <>
-                    <Input
-                      prefix={<IconSearch />}
-                      placeholder={t('渠道 ID')}
-                      value={channel}
-                      onChange={(value) => handleInputChange(value, 'channel')}
+                {/* 操作按钮区域 */}
+                <div className='flex justify-between items-center pt-2'>
+                  <div></div>
+                  <div className='flex gap-2'>
+                    <Button
+                      type='primary'
+                      htmlType='submit'
+                      loading={loading}
                       className='!rounded-full'
-                      showClear
-                    />
-                    <Input
-                      prefix={<IconSearch />}
-                      placeholder={t('用户名称')}
-                      value={username}
-                      onChange={(value) => handleInputChange(value, 'username')}
+                    >
+                      {t('查询')}
+                    </Button>
+                    <Button
+                      theme='light'
+                      onClick={() => {
+                        if (formApi) {
+                          formApi.reset();
+                          setLogType(0);
+                          // 重置后立即查询，使用setTimeout确保表单重置完成
+                          setTimeout(() => {
+                            refresh();
+                          }, 100);
+                        }
+                      }}
                       className='!rounded-full'
-                      showClear
-                    />
-                  </>
-                )}
-              </div>
-
-              {/* 操作按钮区域 */}
-              <div className='flex justify-between items-center pt-2'>
-                <div></div>
-                <div className='flex gap-2'>
-                  <Button
-                    type='primary'
-                    onClick={refresh}
-                    loading={loading}
-                    className='!rounded-full'
-                  >
-                    {t('查询')}
-                  </Button>
-                  <Button
-                    theme='light'
-                    type='tertiary'
-                    icon={<IconSetting />}
-                    onClick={() => setShowColumnSelector(true)}
-                    className='!rounded-full'
-                  >
-                    {t('列设置')}
-                  </Button>
+                    >
+                      {t('重置')}
+                    </Button>
+                    <Button
+                      theme='light'
+                      type='tertiary'
+                      icon={<IconSetting />}
+                      onClick={() => setShowColumnSelector(true)}
+                      className='!rounded-full'
+                    >
+                      {t('列设置')}
+                    </Button>
+                  </div>
                 </div>
               </div>
-            </div>
+            </Form>
           </div>
         }
         shadows='always'
