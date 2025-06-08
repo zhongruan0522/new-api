@@ -844,23 +844,27 @@ const ChannelsTable = () => {
   const searchChannels = async (enableTagMode) => {
     const { searchKeyword, searchGroup, searchModel } = getFormValues();
 
-    if (searchKeyword === '' && searchGroup === '' && searchModel === '') {
-      await loadChannels(activePage - 1, pageSize, idSort, enableTagMode);
-      // setActivePage(1);
-      return;
-    }
     setSearching(true);
-    const res = await API.get(
-      `/api/channel/search?keyword=${searchKeyword}&group=${searchGroup}&model=${searchModel}&id_sort=${idSort}&tag_mode=${enableTagMode}`,
-    );
-    const { success, message, data } = res.data;
-    if (success) {
-      setChannelFormat(data, enableTagMode);
-      setActivePage(1);
-    } else {
-      showError(message);
+    try {
+      if (searchKeyword === '' && searchGroup === '' && searchModel === '') {
+        await loadChannels(activePage - 1, pageSize, idSort, enableTagMode);
+        // setActivePage(1);
+        return;
+      }
+
+      const res = await API.get(
+        `/api/channel/search?keyword=${searchKeyword}&group=${searchGroup}&model=${searchModel}&id_sort=${idSort}&tag_mode=${enableTagMode}`,
+      );
+      const { success, message, data } = res.data;
+      if (success) {
+        setChannelFormat(data, enableTagMode);
+        setActivePage(1);
+      } else {
+        showError(message);
+      }
+    } finally {
+      setSearching(false);
     }
-    setSearching(false);
   };
 
   const updateChannelProperty = (channelId, updateFn) => {
@@ -1424,7 +1428,7 @@ const ChannelsTable = () => {
             <Button
               type="primary"
               htmlType="submit"
-              loading={searching}
+              loading={loading || searching}
               className="!rounded-full w-full md:w-auto"
             >
               {t('查询')}

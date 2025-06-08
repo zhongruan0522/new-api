@@ -504,7 +504,7 @@ const RedemptionsTable = () => {
               <Button
                 type="primary"
                 htmlType="submit"
-                loading={searching}
+                loading={loading || searching}
                 className="!rounded-full flex-1 md:flex-initial md:w-auto"
               >
                 {t('查询')}
