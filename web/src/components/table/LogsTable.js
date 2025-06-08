@@ -1204,18 +1204,6 @@ const LogsTable = () => {
               allowEmpty={true}
               autoComplete="off"
               layout="vertical"
-              onValueChange={(values, changedValue) => {
-                // 实时监听日志类型变化
-                if (changedValue.logType !== undefined) {
-                  setLogType(parseInt(changedValue.logType));
-                  // 日志类型变化时自动搜索，不传入logType参数让其从表单获取最新值
-                  setTimeout(() => {
-                    setActivePage(1);
-                    handleEyeClick();
-                    loadLogs(1, pageSize); // 不传入logType参数
-                  }, 100);
-                }
-              }}
               trigger="change"
               stopValidateWithError={false}
             >
@@ -1228,6 +1216,7 @@ const LogsTable = () => {
                       className='w-full'
                       type='dateTimeRange'
                       placeholder={[t('开始时间'), t('结束时间')]}
+                      showClear
                       pure
                     />
                   </div>
@@ -1239,6 +1228,12 @@ const LogsTable = () => {
                     className='!rounded-full'
                     showClear
                     pure
+                    onChange={() => {
+                      // 延迟执行搜索，让表单值先更新
+                      setTimeout(() => {
+                        refresh();
+                      }, 0);
+                    }}
                   >
                     <Form.Select.Option value='0'>{t('全部')}</Form.Select.Option>
                     <Form.Select.Option value='1'>{t('充值')}</Form.Select.Option>

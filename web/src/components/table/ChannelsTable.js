@@ -25,9 +25,8 @@ import {
   Tag,
   Tooltip,
   Typography,
-  Checkbox,
   Card,
-  Select
+  Form
 } from '@douyinfe/semi-ui';
 import EditChannel from '../../pages/Channel/EditChannel.js';
 import {
@@ -149,108 +148,17 @@ const ChannelsTable = () => {
     }
   };
 
-  // Define column keys for selection
-  const COLUMN_KEYS = {
-    ID: 'id',
-    NAME: 'name',
-    GROUP: 'group',
-    TYPE: 'type',
-    STATUS: 'status',
-    RESPONSE_TIME: 'response_time',
-    BALANCE: 'balance',
-    PRIORITY: 'priority',
-    WEIGHT: 'weight',
-    OPERATE: 'operate',
-  };
-
-  // State for column visibility
-  const [visibleColumns, setVisibleColumns] = useState({});
-  const [showColumnSelector, setShowColumnSelector] = useState(false);
-
-  // Load saved column preferences from localStorage
-  useEffect(() => {
-    const savedColumns = localStorage.getItem('channels-table-columns');
-    if (savedColumns) {
-      try {
-        const parsed = JSON.parse(savedColumns);
-        // Make sure all columns are accounted for
-        const defaults = getDefaultColumnVisibility();
-        const merged = { ...defaults, ...parsed };
-        setVisibleColumns(merged);
-      } catch (e) {
-        console.error('Failed to parse saved column preferences', e);
-        initDefaultColumns();
-      }
-    } else {
-      initDefaultColumns();
-    }
-  }, []);
-
-  // Update table when column visibility changes
-  useEffect(() => {
-    if (Object.keys(visibleColumns).length > 0) {
-      // Save to localStorage
-      localStorage.setItem(
-        'channels-table-columns',
-        JSON.stringify(visibleColumns),
-      );
-    }
-  }, [visibleColumns]);
-
-  // Get default column visibility
-  const getDefaultColumnVisibility = () => {
-    return {
-      [COLUMN_KEYS.ID]: true,
-      [COLUMN_KEYS.NAME]: true,
-      [COLUMN_KEYS.GROUP]: true,
-      [COLUMN_KEYS.TYPE]: true,
-      [COLUMN_KEYS.STATUS]: true,
-      [COLUMN_KEYS.RESPONSE_TIME]: true,
-      [COLUMN_KEYS.BALANCE]: true,
-      [COLUMN_KEYS.PRIORITY]: true,
-      [COLUMN_KEYS.WEIGHT]: true,
-      [COLUMN_KEYS.OPERATE]: true,
-    };
-  };
-
-  // Initialize default column visibility
-  const initDefaultColumns = () => {
-    const defaults = getDefaultColumnVisibility();
-    setVisibleColumns(defaults);
-  };
-
-  // Handle column visibility change
-  const handleColumnVisibilityChange = (columnKey, checked) => {
-    const updatedColumns = { ...visibleColumns, [columnKey]: checked };
-    setVisibleColumns(updatedColumns);
-  };
-
-  // Handle "Select All" checkbox
-  const handleSelectAll = (checked) => {
-    const allKeys = Object.keys(COLUMN_KEYS).map((key) => COLUMN_KEYS[key]);
-    const updatedColumns = {};
-
-    allKeys.forEach((key) => {
-      updatedColumns[key] = checked;
-    });
-
-    setVisibleColumns(updatedColumns);
-  };
-
-  // Define all columns with keys
-  const allColumns = [
+  // Define all columns
+  const columns = [
     {
-      key: COLUMN_KEYS.ID,
       title: t('ID'),
       dataIndex: 'id',
     },
     {
-      key: COLUMN_KEYS.NAME,
       title: t('名称'),
       dataIndex: 'name',
     },
     {
-      key: COLUMN_KEYS.GROUP,
       title: t('分组'),
       dataIndex: 'group',
       render: (text, record, index) => (
@@ -269,7 +177,6 @@ const ChannelsTable = () => {
       ),
     },
     {
-      key: COLUMN_KEYS.TYPE,
       title: t('类型'),
       dataIndex: 'type',
       render: (text, record, index) => {
@@ -281,7 +188,6 @@ const ChannelsTable = () => {
       },
     },
     {
-      key: COLUMN_KEYS.STATUS,
       title: t('状态'),
       dataIndex: 'status',
       render: (text, record, index) => {
@@ -307,7 +213,6 @@ const ChannelsTable = () => {
       },
     },
     {
-      key: COLUMN_KEYS.RESPONSE_TIME,
       title: t('响应时间'),
       dataIndex: 'response_time',
       render: (text, record, index) => (
@@ -315,7 +220,6 @@ const ChannelsTable = () => {
       ),
     },
     {
-      key: COLUMN_KEYS.BALANCE,
       title: t('已用/剩余'),
       dataIndex: 'expired_time',
       render: (text, record, index) => {
@@ -354,7 +258,6 @@ const ChannelsTable = () => {
       },
     },
     {
-      key: COLUMN_KEYS.PRIORITY,
       title: t('优先级'),
       dataIndex: 'priority',
       render: (text, record, index) => {
@@ -406,7 +309,6 @@ const ChannelsTable = () => {
       },
     },
     {
-      key: COLUMN_KEYS.WEIGHT,
       title: t('权重'),
       dataIndex: 'weight',
       render: (text, record, index) => {
@@ -458,7 +360,6 @@ const ChannelsTable = () => {
       },
     },
     {
-      key: COLUMN_KEYS.OPERATE,
       title: '',
       dataIndex: 'operate',
       fixed: 'right',
@@ -631,96 +532,10 @@ const ChannelsTable = () => {
     },
   ];
 
-  // Filter columns based on visibility settings
-  const getVisibleColumns = () => {
-    return allColumns.filter((column) => visibleColumns[column.key]);
-  };
-
-  // Column selector modal
-  const renderColumnSelector = () => {
-    return (
-      <Modal
-        title={t('列设置')}
-        visible={showColumnSelector}
-        onCancel={() => setShowColumnSelector(false)}
-        footer={
-          <div className="flex justify-end">
-            <Button
-              theme="light"
-              onClick={() => initDefaultColumns()}
-              className="!rounded-full"
-            >
-              {t('重置')}
-            </Button>
-            <Button
-              theme="light"
-              onClick={() => setShowColumnSelector(false)}
-              className="!rounded-full"
-            >
-              {t('取消')}
-            </Button>
-            <Button
-              type='primary'
-              onClick={() => setShowColumnSelector(false)}
-              className="!rounded-full"
-            >
-              {t('确定')}
-            </Button>
-          </div>
-        }
-        size="middle"
-        centered={true}
-      >
-        <div style={{ marginBottom: 20 }}>
-          <Checkbox
-            checked={Object.values(visibleColumns).every((v) => v === true)}
-            indeterminate={
-              Object.values(visibleColumns).some((v) => v === true) &&
-              !Object.values(visibleColumns).every((v) => v === true)
-            }
-            onChange={(e) => handleSelectAll(e.target.checked)}
-          >
-            {t('全选')}
-          </Checkbox>
-        </div>
-        <div
-          className="flex flex-wrap max-h-96 overflow-y-auto rounded-lg p-4"
-          style={{ border: '1px solid var(--semi-color-border)' }}
-        >
-          {allColumns.map((column) => {
-            // Skip columns without title
-            if (!column.title) {
-              return null;
-            }
-
-            return (
-              <div
-                key={column.key}
-                className="w-1/2 mb-4 pr-2"
-              >
-                <Checkbox
-                  checked={!!visibleColumns[column.key]}
-                  onChange={(e) =>
-                    handleColumnVisibilityChange(column.key, e.target.checked)
-                  }
-                >
-                  {column.title}
-                </Checkbox>
-              </div>
-            );
-          })}
-        </div>
-      </Modal>
-    );
-  };
-
   const [channels, setChannels] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activePage, setActivePage] = useState(1);
   const [idSort, setIdSort] = useState(false);
-  const [searchKeyword, setSearchKeyword] = useState('');
-  const [searchGroup, setSearchGroup] = useState('');
-  const [searchModel, setSearchModel] = useState('');
   const [searching, setSearching] = useState(false);
   const [pageSize, setPageSize] = useState(ITEMS_PER_PAGE);
   const [channelCount, setChannelCount] = useState(pageSize);
@@ -744,6 +559,16 @@ const ChannelsTable = () => {
   const [isBatchTesting, setIsBatchTesting] = useState(false);
   const [testQueue, setTestQueue] = useState([]);
   const [isProcessingQueue, setIsProcessingQueue] = useState(false);
+
+  // Form API 引用
+  const [formApi, setFormApi] = useState(null);
+
+  // Form 初始值
+  const formInitValues = {
+    searchKeyword: '',
+    searchGroup: '',
+    searchModel: '',
+  };
 
   const removeRecord = (record) => {
     let newDataSource = [...channels];
@@ -896,15 +721,11 @@ const ChannelsTable = () => {
   };
 
   const refresh = async () => {
+    const { searchKeyword, searchGroup, searchModel } = getFormValues();
     if (searchKeyword === '' && searchGroup === '' && searchModel === '') {
       await loadChannels(activePage - 1, pageSize, idSort, enableTagMode);
     } else {
-      await searchChannels(
-        searchKeyword,
-        searchGroup,
-        searchModel,
-        enableTagMode,
-      );
+      await searchChannels(enableTagMode);
     }
   };
 
@@ -1010,12 +831,19 @@ const ChannelsTable = () => {
     }
   };
 
-  const searchChannels = async (
-    searchKeyword,
-    searchGroup,
-    searchModel,
-    enableTagMode,
-  ) => {
+  // 获取表单值的辅助函数，确保所有值都是字符串
+  const getFormValues = () => {
+    const formValues = formApi ? formApi.getValues() : {};
+    return {
+      searchKeyword: formValues.searchKeyword || '',
+      searchGroup: formValues.searchGroup || '',
+      searchModel: formValues.searchModel || '',
+    };
+  };
+
+  const searchChannels = async (enableTagMode) => {
+    const { searchKeyword, searchGroup, searchModel } = getFormValues();
+
     if (searchKeyword === '' && searchGroup === '' && searchModel === '') {
       await loadChannels(activePage - 1, pageSize, idSort, enableTagMode);
       // setActivePage(1);
@@ -1540,71 +1368,83 @@ const ChannelsTable = () => {
           >
             {t('刷新')}
           </Button>
-
-          <Button
-            theme='light'
-            type='tertiary'
-            icon={<IconSetting />}
-            onClick={() => setShowColumnSelector(true)}
-            className="!rounded-full w-full md:w-auto"
-          >
-            {t('列设置')}
-          </Button>
         </div>
 
         <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto order-1 md:order-2">
-          <div className="relative w-full md:w-64">
-            <Input
-              prefix={<IconSearch />}
-              placeholder={t('搜索渠道的 ID，名称，密钥和API地址 ...')}
-              value={searchKeyword}
-              loading={searching}
-              onChange={(v) => {
-                setSearchKeyword(v.trim());
-              }}
-              className="!rounded-full"
-              showClear
-            />
-          </div>
-          <div className="w-full md:w-48">
-            <Input
-              prefix={<IconFilter />}
-              placeholder={t('模型关键字')}
-              value={searchModel}
-              loading={searching}
-              onChange={(v) => {
-                setSearchModel(v.trim());
-              }}
-              className="!rounded-full"
-              showClear
-            />
-          </div>
-          <div className="w-full md:w-48">
-            <Select
-              placeholder={t('选择分组')}
-              optionList={[
-                { label: t('选择分组'), value: null },
-                ...groupOptions,
-              ]}
-              value={searchGroup}
-              onChange={(v) => {
-                setSearchGroup(v);
-                searchChannels(searchKeyword, v, searchModel, enableTagMode);
-              }}
-              className="!rounded-full w-full"
-              showClear
-            />
-          </div>
-          <Button
-            type="primary"
-            onClick={() => {
-              searchChannels(searchKeyword, searchGroup, searchModel, enableTagMode);
-            }}
-            loading={searching}
-            className="!rounded-full w-full md:w-auto"
+          <Form
+            initValues={formInitValues}
+            getFormApi={(api) => setFormApi(api)}
+            onSubmit={() => searchChannels(enableTagMode)}
+            allowEmpty={true}
+            autoComplete="off"
+            layout="horizontal"
+            trigger="change"
+            stopValidateWithError={false}
+            className="flex flex-col md:flex-row items-center gap-4 w-full"
           >
-            {t('查询')}
-          </Button>
+            <div className="relative w-full md:w-64">
+              <Form.Input
+                field="searchKeyword"
+                prefix={<IconSearch />}
+                placeholder={t('搜索渠道的 ID，名称，密钥和API地址 ...')}
+                className="!rounded-full"
+                showClear
+                pure
+              />
+            </div>
+            <div className="w-full md:w-48">
+              <Form.Input
+                field="searchModel"
+                prefix={<IconFilter />}
+                placeholder={t('模型关键字')}
+                className="!rounded-full"
+                showClear
+                pure
+              />
+            </div>
+            <div className="w-full md:w-48">
+              <Form.Select
+                field="searchGroup"
+                placeholder={t('选择分组')}
+                optionList={[
+                  { label: t('选择分组'), value: null },
+                  ...groupOptions,
+                ]}
+                className="!rounded-full w-full"
+                showClear
+                pure
+                onChange={() => {
+                  // 延迟执行搜索，让表单值先更新
+                  setTimeout(() => {
+                    searchChannels(enableTagMode);
+                  }, 0);
+                }}
+              />
+            </div>
+            <Button
+              type="primary"
+              htmlType="submit"
+              loading={searching}
+              className="!rounded-full w-full md:w-auto"
+            >
+              {t('查询')}
+            </Button>
+            <Button
+              theme='light'
+              onClick={() => {
+                if (formApi) {
+                  formApi.reset();
+                  // 重置后立即查询，使用setTimeout确保表单重置完成
+                  setTimeout(() => {
+                    refresh();
+                  }, 100);
+                }
+              }}
+              className="!rounded-full w-full md:w-auto"
+            >
+              {t('重置')}
+            </Button>
+          </Form>
         </div>
       </div>
     </div>
@@ -1612,7 +1452,6 @@ const ChannelsTable = () => {
 
   return (
     <>
-      {renderColumnSelector()}
       <EditTagModal
         visible={showEditTag}
         tag={editingTag}
@@ -1633,7 +1472,7 @@ const ChannelsTable = () => {
         bordered={false}
       >
         <Table
-          columns={getVisibleColumns()}
+          columns={columns}
           dataSource={pageData}
           scroll={{ x: 'max-content' }}
           pagination={{

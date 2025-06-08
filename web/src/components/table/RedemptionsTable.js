@@ -14,7 +14,7 @@ import {
   Card,
   Divider,
   Dropdown,
-  Input,
+  Form,
   Modal,
   Popover,
   Space,
@@ -223,7 +223,6 @@ const RedemptionsTable = () => {
   const [redemptions, setRedemptions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activePage, setActivePage] = useState(1);
-  const [searchKeyword, setSearchKeyword] = useState('');
   const [searching, setSearching] = useState(false);
   const [tokenCount, setTokenCount] = useState(ITEMS_PER_PAGE);
   const [selectedKeys, setSelectedKeys] = useState([]);
@@ -232,6 +231,22 @@ const RedemptionsTable = () => {
     id: undefined,
   });
   const [showEdit, setShowEdit] = useState(false);
+
+  // Form 初始值
+  const formInitValues = {
+    searchKeyword: '',
+  };
+
+  // Form API 引用
+  const [formApi, setFormApi] = useState(null);
+
+  // 获取表单值的辅助函数
+  const getFormValues = () => {
+    const formValues = formApi ? formApi.getValues() : {};
+    return {
+      searchKeyword: formValues.searchKeyword || '',
+    };
+  };
 
   const closeEdit = () => {
     setShowEdit(false);
@@ -340,8 +355,14 @@ const RedemptionsTable = () => {
     setLoading(false);
   };
 
-  const searchRedemptions = async (keyword, page, pageSize) => {
-    if (searchKeyword === '') {
+  const searchRedemptions = async (keyword = null, page, pageSize) => {
+    // 如果没有传递keyword参数，从表单获取值
+    if (keyword === null) {
+      const formValues = getFormValues();
+      keyword = formValues.searchKeyword;
+    }
+
+    if (keyword === '') {
       await loadRedemptions(page, pageSize);
       return;
     }
@@ -361,10 +382,6 @@ const RedemptionsTable = () => {
     setSearching(false);
   };
 
-  const handleKeywordChange = async (value) => {
-    setSearchKeyword(value.trim());
-  };
-
   const sortRedemption = (key) => {
     if (redemptions.length === 0) return;
     setLoading(true);
@@ -381,6 +398,7 @@ const RedemptionsTable = () => {
 
   const handlePageChange = (page) => {
     setActivePage(page);
+    const { searchKeyword } = getFormValues();
     if (searchKeyword === '') {
       loadRedemptions(page, pageSize).then();
     } else {
@@ -457,28 +475,59 @@ const RedemptionsTable = () => {
           </Button>
         </div>
 
-        <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto order-1 md:order-2">
-          <div className="relative w-full md:w-64">
-            <Input
-              prefix={<IconSearch />}
-              placeholder={t('关键字(id或者名称)')}
-              value={searchKeyword}
-              onChange={handleKeywordChange}
-              className="!rounded-full"
-              showClear
-            />
+        <Form
+          initValues={formInitValues}
+          getFormApi={(api) => setFormApi(api)}
+          onSubmit={() => {
+            setActivePage(1);
+            searchRedemptions(null, 1, pageSize);
+          }}
+          allowEmpty={true}
+          autoComplete="off"
+          layout="horizontal"
+          trigger="change"
+          stopValidateWithError={false}
+          className="w-full md:w-auto order-1 md:order-2"
+        >
+          <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
+            <div className="relative w-full md:w-64">
+              <Form.Input
+                field="searchKeyword"
+                prefix={<IconSearch />}
+                placeholder={t('关键字(id或者名称)')}
+                className="!rounded-full"
+                showClear
+                pure
+              />
+            </div>
+            <div className="flex gap-2 w-full md:w-auto">
+              <Button
+                type="primary"
+                htmlType="submit"
+                loading={searching}
+                className="!rounded-full flex-1 md:flex-initial md:w-auto"
+              >
+                {t('查询')}
+              </Button>
+              <Button
+                theme="light"
+                onClick={() => {
+                  if (formApi) {
+                    formApi.reset();
+                    // 重置后立即查询，使用setTimeout确保表单重置完成
+                    setTimeout(() => {
+                      setActivePage(1);
+                      loadRedemptions(1, pageSize);
+                    }, 100);
+                  }
+                }}
+                className="!rounded-full flex-1 md:flex-initial md:w-auto"
+              >
+                {t('重置')}
+              </Button>
+            </div>
           </div>
-          <Button
-            type="primary"
-            onClick={() => {
-              searchRedemptions(searchKeyword, 1, pageSize).then();
-            }}
-            loading={searching}
-            className="!rounded-full w-full md:w-auto"
-          >
-            {t('查询')}
-          </Button>
-        </div>
+        </Form>
       </div>
     </div>
   );
@@ -517,6 +566,7 @@ const RedemptionsTable = () => {
             onPageSizeChange: (size) => {
               setPageSize(size);
               setActivePage(1);
+              const { searchKeyword } = getFormValues();
               if (searchKeyword === '') {
                 loadRedemptions(1, size).then();
               } else {

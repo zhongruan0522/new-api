@@ -5,9 +5,8 @@ import {
   Card,
   Divider,
   Dropdown,
-  Input,
+  Form,
   Modal,
-  Select,
   Space,
   Table,
   Tag,
@@ -285,9 +284,7 @@ const UsersTable = () => {
   const [loading, setLoading] = useState(true);
   const [activePage, setActivePage] = useState(1);
   const [pageSize, setPageSize] = useState(ITEMS_PER_PAGE);
-  const [searchKeyword, setSearchKeyword] = useState('');
   const [searching, setSearching] = useState(false);
-  const [searchGroup, setSearchGroup] = useState('');
   const [groupOptions, setGroupOptions] = useState([]);
   const [userCount, setUserCount] = useState(ITEMS_PER_PAGE);
   const [showAddUser, setShowAddUser] = useState(false);
@@ -295,6 +292,24 @@ const UsersTable = () => {
   const [editingUser, setEditingUser] = useState({
     id: undefined,
   });
+
+  // Form 初始值
+  const formInitValues = {
+    searchKeyword: '',
+    searchGroup: '',
+  };
+
+  // Form API 引用
+  const [formApi, setFormApi] = useState(null);
+
+  // 获取表单值的辅助函数
+  const getFormValues = () => {
+    const formValues = formApi ? formApi.getValues() : {};
+    return {
+      searchKeyword: formValues.searchKeyword || '',
+      searchGroup: formValues.searchGroup || '',
+    };
+  };
 
   const removeRecord = (key) => {
     let newDataSource = [...users];
@@ -363,9 +378,16 @@ const UsersTable = () => {
   const searchUsers = async (
     startIdx,
     pageSize,
-    searchKeyword,
-    searchGroup,
+    searchKeyword = null,
+    searchGroup = null,
   ) => {
+    // 如果没有传递参数，从表单获取值
+    if (searchKeyword === null || searchGroup === null) {
+      const formValues = getFormValues();
+      searchKeyword = formValues.searchKeyword;
+      searchGroup = formValues.searchGroup;
+    }
+
     if (searchKeyword === '' && searchGroup === '') {
       // if keyword is blank, load files instead.
       await loadUsers(startIdx, pageSize);
@@ -387,12 +409,9 @@ const UsersTable = () => {
     setSearching(false);
   };
 
-  const handleKeywordChange = async (value) => {
-    setSearchKeyword(value.trim());
-  };
-
   const handlePageChange = (page) => {
     setActivePage(page);
+    const { searchKeyword, searchGroup } = getFormValues();
     if (searchKeyword === '' && searchGroup === '') {
       loadUsers(page, pageSize).then();
     } else {
@@ -413,10 +432,11 @@ const UsersTable = () => {
 
   const refresh = async () => {
     setActivePage(1);
-    if (searchKeyword === '') {
-      await loadUsers(activePage, pageSize);
+    const { searchKeyword, searchGroup } = getFormValues();
+    if (searchKeyword === '' && searchGroup === '') {
+      await loadUsers(1, pageSize);
     } else {
-      await searchUsers(activePage, pageSize, searchKeyword, searchGroup);
+      await searchUsers(1, pageSize, searchKeyword, searchGroup);
     }
   };
 
@@ -488,41 +508,76 @@ const UsersTable = () => {
           </Button>
         </div>
 
-        <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto order-1 md:order-2">
-          <div className="relative w-full md:w-64">
-            <Input
-              prefix={<IconSearch />}
-              placeholder={t('支持搜索用户的 ID、用户名、显示名称和邮箱地址')}
-              value={searchKeyword}
-              onChange={handleKeywordChange}
-              className="!rounded-full"
-              showClear
-            />
+        <Form
+          initValues={formInitValues}
+          getFormApi={(api) => setFormApi(api)}
+          onSubmit={() => {
+            setActivePage(1);
+            searchUsers(1, pageSize);
+          }}
+          allowEmpty={true}
+          autoComplete="off"
+          layout="horizontal"
+          trigger="change"
+          stopValidateWithError={false}
+          className="w-full md:w-auto order-1 md:order-2"
+        >
+          <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
+            <div className="relative w-full md:w-64">
+              <Form.Input
+                field="searchKeyword"
+                prefix={<IconSearch />}
+                placeholder={t('支持搜索用户的 ID、用户名、显示名称和邮箱地址')}
+                className="!rounded-full"
+                showClear
+                pure
+              />
+            </div>
+            <div className="w-full md:w-48">
+              <Form.Select
+                field="searchGroup"
+                placeholder={t('选择分组')}
+                optionList={groupOptions}
+                onChange={(value) => {
+                  // 分组变化时自动搜索
+                  setTimeout(() => {
+                    setActivePage(1);
+                    searchUsers(1, pageSize);
+                  }, 100);
+                }}
+                className="!rounded-full w-full"
+                showClear
+                pure
+              />
+            </div>
+            <div className="flex gap-2 w-full md:w-auto">
+              <Button
+                type="primary"
+                htmlType="submit"
+                loading={searching}
+                className="!rounded-full flex-1 md:flex-initial md:w-auto"
+              >
+                {t('查询')}
+              </Button>
+              <Button
+                theme="light"
+                onClick={() => {
+                  if (formApi) {
+                    formApi.reset();
+                    // 重置后立即查询，使用setTimeout确保表单重置完成
+                    setTimeout(() => {
+                      setActivePage(1);
+                      loadUsers(1, pageSize);
+                    }, 100);
+                  }
+                }}
+                className="!rounded-full flex-1 md:flex-initial md:w-auto"
+              >
+                {t('重置')}
+              </Button>
+            </div>
           </div>
-          <div className="w-full md:w-48">
-            <Select
-              placeholder={t('选择分组')}
-              optionList={groupOptions}
-              value={searchGroup}
-              onChange={(value) => {
-                setSearchGroup(value);
-                searchUsers(activePage, pageSize, searchKeyword, value);
-              }}
-              className="!rounded-full w-full"
-              showClear
-            />
-          </div>
-          <Button
-            type="primary"
-            onClick={() => {
-              searchUsers(activePage, pageSize, searchKeyword, searchGroup);
-            }}
-            loading={searching}
-            className="!rounded-full w-full md:w-auto"
-          >
-            {t('查询')}
-          </Button>
-        </div>
+        </Form>
       </div>
     </div>
   );

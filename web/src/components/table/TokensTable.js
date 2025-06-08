@@ -14,12 +14,12 @@ import {
   Button,
   Card,
   Dropdown,
+  Form,
   Modal,
   Space,
   SplitButtonGroup,
   Table,
   Tag,
-  Input,
 } from '@douyinfe/semi-ui';
 
 import {
@@ -335,13 +335,28 @@ const TokensTable = () => {
   const [tokenCount, setTokenCount] = useState(pageSize);
   const [loading, setLoading] = useState(true);
   const [activePage, setActivePage] = useState(1);
-  const [searchKeyword, setSearchKeyword] = useState('');
-  const [searchToken, setSearchToken] = useState('');
   const [searching, setSearching] = useState(false);
-  const [chats, setChats] = useState([]);
   const [editingToken, setEditingToken] = useState({
     id: undefined,
   });
+
+  // Form 初始值
+  const formInitValues = {
+    searchKeyword: '',
+    searchToken: '',
+  };
+
+  // Form API 引用
+  const [formApi, setFormApi] = useState(null);
+
+  // 获取表单值的辅助函数
+  const getFormValues = () => {
+    const formValues = formApi ? formApi.getValues() : {};
+    return {
+      searchKeyword: formValues.searchKeyword || '',
+      searchToken: formValues.searchToken || '',
+    };
+  };
 
   const closeEdit = () => {
     setShowEdit(false);
@@ -416,8 +431,6 @@ const TokensTable = () => {
     window.open(url, '_blank');
   };
 
-
-
   useEffect(() => {
     loadTokens(0)
       .then()
@@ -472,6 +485,7 @@ const TokensTable = () => {
   };
 
   const searchTokens = async () => {
+    const { searchKeyword, searchToken } = getFormValues();
     if (searchKeyword === '' && searchToken === '') {
       await loadTokens(0);
       setActivePage(1);
@@ -489,14 +503,6 @@ const TokensTable = () => {
       showError(message);
     }
     setSearching(false);
-  };
-
-  const handleKeywordChange = async (value) => {
-    setSearchKeyword(value.trim());
-  };
-
-  const handleSearchTokenChange = async (value) => {
-    setSearchToken(value.trim());
   };
 
   const sortToken = (key) => {
@@ -580,36 +586,65 @@ const TokensTable = () => {
           </Button>
         </div>
 
-        <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto order-1 md:order-2">
-          <div className="relative w-full md:w-56">
-            <Input
-              prefix={<IconSearch />}
-              placeholder={t('搜索关键字')}
-              value={searchKeyword}
-              onChange={handleKeywordChange}
-              className="!rounded-full"
-              showClear
-            />
+        <Form
+          initValues={formInitValues}
+          getFormApi={(api) => setFormApi(api)}
+          onSubmit={searchTokens}
+          allowEmpty={true}
+          autoComplete="off"
+          layout="horizontal"
+          trigger="change"
+          stopValidateWithError={false}
+          className="w-full md:w-auto order-1 md:order-2"
+        >
+          <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
+            <div className="relative w-full md:w-56">
+              <Form.Input
+                field="searchKeyword"
+                prefix={<IconSearch />}
+                placeholder={t('搜索关键字')}
+                className="!rounded-full"
+                showClear
+                pure
+              />
+            </div>
+            <div className="relative w-full md:w-56">
+              <Form.Input
+                field="searchToken"
+                prefix={<IconSearch />}
+                placeholder={t('密钥')}
+                className="!rounded-full"
+                showClear
+                pure
+              />
+            </div>
+            <div className="flex gap-2 w-full md:w-auto">
+              <Button
+                type="primary"
+                htmlType="submit"
+                loading={searching}
+                className="!rounded-full flex-1 md:flex-initial md:w-auto"
+              >
+                {t('查询')}
+              </Button>
+              <Button
+                theme="light"
+                onClick={() => {
+                  if (formApi) {
+                    formApi.reset();
+                    // 重置后立即查询，使用setTimeout确保表单重置完成
+                    setTimeout(() => {
+                      searchTokens();
+                    }, 100);
+                  }
+                }}
+                className="!rounded-full flex-1 md:flex-initial md:w-auto"
+              >
+                {t('重置')}
+              </Button>
+            </div>
           </div>
-          <div className="relative w-full md:w-56">
-            <Input
-              prefix={<IconSearch />}
-              placeholder={t('密钥')}
-              value={searchToken}
-              onChange={handleSearchTokenChange}
-              className="!rounded-full"
-              showClear
-            />
-          </div>
-          <Button
-            type="primary"
-            onClick={searchTokens}
-            loading={searching}
-            className="!rounded-full w-full md:w-auto"
-          >
-            {t('查询')}
-          </Button>
-        </div>
+        </Form>
       </div>
     </div>
   );
