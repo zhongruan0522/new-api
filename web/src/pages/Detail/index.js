@@ -1,6 +1,7 @@
 import React, { useContext, useEffect, useRef, useState } from 'react';
 import { initVChartSemiTheme } from '@visactor/vchart-semi-theme';
 import { useNavigate } from 'react-router-dom';
+import { Wallet, Activity, Zap, Gauge, PieChart } from 'lucide-react';
 
 import {
   Card,
@@ -555,7 +556,12 @@ const Detail = (props) => {
   // 数据卡片信息
   const groupedStatsData = [
     {
-      title: t('账户数据'),
+      title: (
+        <div className="flex items-center gap-2">
+          <Wallet size={16} />
+          {t('账户数据')}
+        </div>
+      ),
       color: 'bg-blue-50',
       items: [
         {
@@ -578,7 +584,12 @@ const Detail = (props) => {
       ]
     },
     {
-      title: t('使用统计'),
+      title: (
+        <div className="flex items-center gap-2">
+          <Activity size={16} />
+          {t('使用统计')}
+        </div>
+      ),
       color: 'bg-green-50',
       items: [
         {
@@ -600,7 +611,12 @@ const Detail = (props) => {
       ]
     },
     {
-      title: t('资源消耗'),
+      title: (
+        <div className="flex items-center gap-2">
+          <Zap size={16} />
+          {t('资源消耗')}
+        </div>
+      ),
       color: 'bg-yellow-50',
       items: [
         {
@@ -622,7 +638,12 @@ const Detail = (props) => {
       ]
     },
     {
-      title: t('性能指标'),
+      title: (
+        <div className="flex items-center gap-2">
+          <Gauge size={16} />
+          {t('性能指标')}
+        </div>
+      ),
       color: 'bg-indigo-50',
       items: [
         {
@@ -819,7 +840,12 @@ const Detail = (props) => {
             bordered={false}
             className="shadow-sm !rounded-2xl"
             headerLine={true}
-            title={t('模型数据分析')}
+            title={
+              <div className="flex items-center gap-2">
+                <PieChart size={16} />
+                {t('模型数据分析')}
+              </div>
+            }
           >
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
               <div style={{ height: 400 }}>
