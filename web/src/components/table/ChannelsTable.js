@@ -21,7 +21,8 @@ import {
   Timer,
   Clock,
   AlertTriangle,
-  Coins
+  Coins,
+  Tags
 } from 'lucide-react';
 
 import { CHANNEL_OPTIONS, ITEMS_PER_PAGE } from '../../constants/index.js';
@@ -44,7 +45,6 @@ import {
 } from '@douyinfe/semi-ui';
 import EditChannel from '../../pages/Channel/EditChannel.js';
 import {
-  IconList,
   IconTreeTriangleDown,
   IconFilter,
   IconPlus,
@@ -92,7 +92,7 @@ const ChannelsTable = () => {
     return (
       <Tag
         color='light-blue'
-        prefixIcon={<IconList />}
+        prefixIcon={<Tags size={14} />}
         size='large'
         shape='circle'
         type='light'
