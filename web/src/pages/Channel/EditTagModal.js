@@ -366,6 +366,11 @@ const EditTagModal = (props) => {
             <div className="space-y-4">
               <div>
                 <Text strong className="block mb-2">{t('模型')}</Text>
+                <Banner
+                  type="info"
+                  description={t('当前模型列表为该标签下所有渠道模型列表最长的一个，并非所有渠道的并集，请注意可能导致某些渠道模型丢失。')}
+                  className="!rounded-lg mb-4"
+                />
                 <Select
                   placeholder={t('请选择该渠道所支持的模型，留空则不更改')}
                   name='models'
