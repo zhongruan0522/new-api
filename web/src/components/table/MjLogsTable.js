@@ -462,7 +462,7 @@ const LogsTable = () => {
                 percent={text ? parseInt(text.replace('%', '')) : 0}
                 showInfo={true}
                 aria-label='drawing progress'
-                style={{ minWidth: '200px' }}
+                style={{ minWidth: '160px' }}
               />
             }
           </div>
@@ -483,6 +483,7 @@ const LogsTable = () => {
               setModalImageUrl(text);
               setIsModalOpenurl(true);
             }}
+            className="!rounded-full"
           >
             {t('查看图片')}
           </Button>
