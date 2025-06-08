@@ -17,14 +17,19 @@ import {
   Tabs,
   TabPane,
   Dropdown,
+  Empty
 } from '@douyinfe/semi-ui';
+import {
+  IllustrationNoResult,
+  IllustrationNoResultDark
+} from '@douyinfe/semi-illustrations';
 import {
   IconVerify,
   IconHelpCircle,
   IconSearch,
   IconCopy,
   IconInfoCircle,
-  IconLayers,
+  IconLayers
 } from '@douyinfe/semi-icons';
 import { UserContext } from '../../context/User/index.js';
 import { AlertCircle } from 'lucide-react';
@@ -489,6 +494,14 @@ const ModelPricing = () => {
         loading={loading}
         rowSelection={rowSelection}
         className="custom-table"
+        empty={
+          <Empty
+            image={<IllustrationNoResult style={{ width: 150, height: 150 }} />}
+            darkModeImage={<IllustrationNoResultDark style={{ width: 150, height: 150 }} />}
+            description={t('搜索无结果')}
+            style={{ padding: 30 }}
+          />
+        }
         pagination={{
           defaultPageSize: 10,
           pageSize: pageSize,

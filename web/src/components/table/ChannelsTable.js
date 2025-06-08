@@ -30,6 +30,7 @@ import {
   Button,
   Divider,
   Dropdown,
+  Empty,
   Input,
   InputNumber,
   Modal,
@@ -43,6 +44,10 @@ import {
   Card,
   Form
 } from '@douyinfe/semi-ui';
+import {
+  IllustrationNoResult,
+  IllustrationNoResultDark
+} from '@douyinfe/semi-illustrations';
 import EditChannel from '../../pages/Channel/EditChannel.js';
 import {
   IconTreeTriangleDown,
@@ -1525,6 +1530,14 @@ const ChannelsTable = () => {
                 },
               }
               : null
+          }
+          empty={
+            <Empty
+              image={<IllustrationNoResult style={{ width: 150, height: 150 }} />}
+              darkModeImage={<IllustrationNoResultDark style={{ width: 150, height: 150 }} />}
+              description={t('搜索无结果')}
+              style={{ padding: 30 }}
+            />
           }
           className="rounded-xl overflow-hidden"
           size="middle"

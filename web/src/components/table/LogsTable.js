@@ -40,6 +40,7 @@ import {
   Avatar,
   Button,
   Descriptions,
+  Empty,
   Modal,
   Popover,
   Space,
@@ -53,6 +54,10 @@ import {
   Divider,
   Form
 } from '@douyinfe/semi-ui';
+import {
+  IllustrationNoResult,
+  IllustrationNoResultDark
+} from '@douyinfe/semi-illustrations';
 import { ITEMS_PER_PAGE } from '../../constants';
 import Paragraph from '@douyinfe/semi-ui/lib/es/typography/paragraph';
 import { IconSetting, IconSearch, IconForward } from '@douyinfe/semi-icons';
@@ -1367,6 +1372,14 @@ const LogsTable = () => {
           scroll={{ x: 'max-content' }}
           className='rounded-xl overflow-hidden'
           size='middle'
+          empty={
+            <Empty
+              image={<IllustrationNoResult style={{ width: 150, height: 150 }} />}
+              darkModeImage={<IllustrationNoResultDark style={{ width: 150, height: 150 }} />}
+              description={t('搜索无结果')}
+              style={{ padding: 30 }}
+            />
+          }
           pagination={{
             formatPageText: (page) =>
               t('第 {{start}} - {{end}} 条，共 {{total}} 条', {

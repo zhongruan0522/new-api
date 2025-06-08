@@ -22,6 +22,7 @@ import {
   Card,
   Divider,
   Dropdown,
+  Empty,
   Form,
   Modal,
   Popover,
@@ -30,6 +31,10 @@ import {
   Tag,
   Typography
 } from '@douyinfe/semi-ui';
+import {
+  IllustrationNoResult,
+  IllustrationNoResultDark
+} from '@douyinfe/semi-illustrations';
 import {
   IconPlus,
   IconCopy,
@@ -592,6 +597,14 @@ const RedemptionsTable = () => {
           loading={loading}
           rowSelection={rowSelection}
           onRow={handleRow}
+          empty={
+            <Empty
+              image={<IllustrationNoResult style={{ width: 150, height: 150 }} />}
+              darkModeImage={<IllustrationNoResultDark style={{ width: 150, height: 150 }} />}
+              description={t('搜索无结果')}
+              style={{ padding: 30 }}
+            />
+          }
           className="rounded-xl overflow-hidden"
           size="middle"
         ></Table>
