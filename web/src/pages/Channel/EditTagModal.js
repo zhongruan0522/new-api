@@ -412,19 +412,19 @@ const EditTagModal = (props) => {
                 />
                 <Space className="mt-2">
                   <Text
-                    className="text-blue-500 cursor-pointer"
+                    className="!text-semi-color-primary cursor-pointer"
                     onClick={() => handleInputChange('model_mapping', JSON.stringify(MODEL_MAPPING_EXAMPLE, null, 2))}
                   >
                     {t('填入模板')}
                   </Text>
                   <Text
-                    className="text-blue-500 cursor-pointer"
+                    className="!text-semi-color-primary cursor-pointer"
                     onClick={() => handleInputChange('model_mapping', JSON.stringify({}, null, 2))}
                   >
                     {t('清空重定向')}
                   </Text>
                   <Text
-                    className="text-blue-500 cursor-pointer"
+                    className="!text-semi-color-primary cursor-pointer"
                     onClick={() => handleInputChange('model_mapping', '')}
                   >
                     {t('不更改')}
