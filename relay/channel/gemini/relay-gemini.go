@@ -60,6 +60,8 @@ func CovertGemini2OpenAI(textRequest dto.GeneralOpenAIRequest, info *relaycommon
 		if strings.HasSuffix(info.OriginModelName, "-thinking") {
 			// 硬编码不支持 ThinkingBudget 的旧模型
 			unsupportedModels := []string{
+				"gemini-1.5",
+				"gemini-2.0",
 				"gemini-2.5-pro-preview-05-06",
 				"gemini-2.5-pro-preview-03-25",
 			}
