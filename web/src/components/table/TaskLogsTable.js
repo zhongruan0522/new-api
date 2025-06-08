@@ -1,12 +1,25 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
+  Music,
+  FileText,
+  HelpCircle,
+  CheckCircle,
+  Pause,
+  Clock,
+  Play,
+  XCircle,
+  Loader,
+  List,
+  Hash
+} from 'lucide-react';
+import {
   API,
   copy,
   isAdmin,
   showError,
   showSuccess,
-  timestamp2string,
+  timestamp2string
 } from '../../helpers';
 
 import {
@@ -21,13 +34,13 @@ import {
   Skeleton,
   Table,
   Tag,
-  Typography,
+  Typography
 } from '@douyinfe/semi-ui';
 import { ITEMS_PER_PAGE } from '../../constants';
 import {
   IconEyeOpened,
   IconSearch,
-  IconSetting,
+  IconSetting
 } from '@douyinfe/semi-icons';
 
 const { Text } = Typography;
@@ -96,7 +109,7 @@ function renderDuration(submit_time, finishTime) {
 
   // 返回带有样式的颜色标签
   return (
-    <Tag color={color} size='large'>
+    <Tag color={color} size='large' prefixIcon={<Clock size={14} />}>
       {durationSec} 秒
     </Tag>
   );
@@ -187,19 +200,19 @@ const LogsTable = () => {
     switch (type) {
       case 'MUSIC':
         return (
-          <Tag color='grey' size='large' shape='circle'>
+          <Tag color='grey' size='large' shape='circle' prefixIcon={<Music size={14} />}>
             {t('生成音乐')}
           </Tag>
         );
       case 'LYRICS':
         return (
-          <Tag color='pink' size='large' shape='circle'>
+          <Tag color='pink' size='large' shape='circle' prefixIcon={<FileText size={14} />}>
             {t('生成歌词')}
           </Tag>
         );
       default:
         return (
-          <Tag color='white' size='large' shape='circle'>
+          <Tag color='white' size='large' shape='circle' prefixIcon={<HelpCircle size={14} />}>
             {t('未知')}
           </Tag>
         );
@@ -210,13 +223,13 @@ const LogsTable = () => {
     switch (type) {
       case 'suno':
         return (
-          <Tag color='green' size='large' shape='circle'>
+          <Tag color='green' size='large' shape='circle' prefixIcon={<Music size={14} />}>
             Suno
           </Tag>
         );
       default:
         return (
-          <Tag color='white' size='large' shape='circle'>
+          <Tag color='white' size='large' shape='circle' prefixIcon={<HelpCircle size={14} />}>
             {t('未知')}
           </Tag>
         );
@@ -227,55 +240,55 @@ const LogsTable = () => {
     switch (type) {
       case 'SUCCESS':
         return (
-          <Tag color='green' size='large' shape='circle'>
+          <Tag color='green' size='large' shape='circle' prefixIcon={<CheckCircle size={14} />}>
             {t('成功')}
           </Tag>
         );
       case 'NOT_START':
         return (
-          <Tag color='grey' size='large' shape='circle'>
+          <Tag color='grey' size='large' shape='circle' prefixIcon={<Pause size={14} />}>
             {t('未启动')}
           </Tag>
         );
       case 'SUBMITTED':
         return (
-          <Tag color='yellow' size='large' shape='circle'>
+          <Tag color='yellow' size='large' shape='circle' prefixIcon={<Clock size={14} />}>
             {t('队列中')}
           </Tag>
         );
       case 'IN_PROGRESS':
         return (
-          <Tag color='blue' size='large' shape='circle'>
+          <Tag color='blue' size='large' shape='circle' prefixIcon={<Play size={14} />}>
             {t('执行中')}
           </Tag>
         );
       case 'FAILURE':
         return (
-          <Tag color='red' size='large' shape='circle'>
+          <Tag color='red' size='large' shape='circle' prefixIcon={<XCircle size={14} />}>
             {t('失败')}
           </Tag>
         );
       case 'QUEUED':
         return (
-          <Tag color='orange' size='large' shape='circle'>
+          <Tag color='orange' size='large' shape='circle' prefixIcon={<List size={14} />}>
             {t('排队中')}
           </Tag>
         );
       case 'UNKNOWN':
         return (
-          <Tag color='white' size='large' shape='circle'>
+          <Tag color='white' size='large' shape='circle' prefixIcon={<HelpCircle size={14} />}>
             {t('未知')}
           </Tag>
         );
       case '':
         return (
-          <Tag color='grey' size='large' shape='circle'>
+          <Tag color='grey' size='large' shape='circle' prefixIcon={<Loader size={14} />}>
             {t('正在提交')}
           </Tag>
         );
       default:
         return (
-          <Tag color='white' size='large' shape='circle'>
+          <Tag color='white' size='large' shape='circle' prefixIcon={<HelpCircle size={14} />}>
             {t('未知')}
           </Tag>
         );
@@ -320,6 +333,7 @@ const LogsTable = () => {
               color={colors[parseInt(text) % colors.length]}
               size='large'
               shape='circle'
+              prefixIcon={<Hash size={14} />}
               onClick={() => {
                 copyText(text);
               }}

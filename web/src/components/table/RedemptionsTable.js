@@ -8,6 +8,14 @@ import {
   renderQuota
 } from '../../helpers';
 
+import {
+  CheckCircle,
+  XCircle,
+  Minus,
+  HelpCircle,
+  Coins
+} from 'lucide-react';
+
 import { ITEMS_PER_PAGE } from '../../constants';
 import {
   Button,
@@ -20,7 +28,7 @@ import {
   Space,
   Table,
   Tag,
-  Typography,
+  Typography
 } from '@douyinfe/semi-ui';
 import {
   IconPlus,
@@ -31,7 +39,7 @@ import {
   IconDelete,
   IconStop,
   IconPlay,
-  IconMore,
+  IconMore
 } from '@douyinfe/semi-icons';
 import EditRedemption from '../../pages/Redemption/EditRedemption';
 import { useTranslation } from 'react-i18next';
@@ -49,25 +57,25 @@ const RedemptionsTable = () => {
     switch (status) {
       case 1:
         return (
-          <Tag color='green' size='large' shape='circle'>
+          <Tag color='green' size='large' shape='circle' prefixIcon={<CheckCircle size={14} />}>
             {t('未使用')}
           </Tag>
         );
       case 2:
         return (
-          <Tag color='red' size='large' shape='circle'>
+          <Tag color='red' size='large' shape='circle' prefixIcon={<XCircle size={14} />}>
             {t('已禁用')}
           </Tag>
         );
       case 3:
         return (
-          <Tag color='grey' size='large' shape='circle'>
+          <Tag color='grey' size='large' shape='circle' prefixIcon={<Minus size={14} />}>
             {t('已使用')}
           </Tag>
         );
       default:
         return (
-          <Tag color='black' size='large' shape='circle'>
+          <Tag color='black' size='large' shape='circle' prefixIcon={<HelpCircle size={14} />}>
             {t('未知状态')}
           </Tag>
         );
@@ -95,7 +103,13 @@ const RedemptionsTable = () => {
       title: t('额度'),
       dataIndex: 'quota',
       render: (text, record, index) => {
-        return <div>{renderQuota(parseInt(text))}</div>;
+        return (
+          <div>
+            <Tag size={'large'} color={'grey'} shape='circle' prefixIcon={<Coins size={14} />}>
+              {renderQuota(parseInt(text))}
+            </Tag>
+          </div>
+        );
       },
     },
     {

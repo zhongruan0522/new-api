@@ -6,7 +6,8 @@ import {
   showSuccess,
   timestamp2string,
   renderGroup,
-  renderQuota
+  renderQuota,
+  getQuotaPerUnit
 } from '../../helpers';
 
 import { ITEMS_PER_PAGE } from '../../constants';
@@ -19,8 +20,19 @@ import {
   Space,
   SplitButtonGroup,
   Table,
-  Tag,
+  Tag
 } from '@douyinfe/semi-ui';
+
+import {
+  CheckCircle,
+  Shield,
+  XCircle,
+  Clock,
+  Gauge,
+  HelpCircle,
+  Infinity,
+  Coins
+} from 'lucide-react';
 
 import {
   IconPlus,
@@ -32,7 +44,7 @@ import {
   IconDelete,
   IconStop,
   IconPlay,
-  IconMore,
+  IconMore
 } from '@douyinfe/semi-icons';
 import EditToken from '../../pages/Token/EditToken';
 import { useTranslation } from 'react-i18next';
@@ -49,38 +61,38 @@ const TokensTable = () => {
       case 1:
         if (model_limits_enabled) {
           return (
-            <Tag color='green' size='large' shape='circle'>
+            <Tag color='green' size='large' shape='circle' prefixIcon={<Shield size={14} />}>
               {t('已启用：限制模型')}
             </Tag>
           );
         } else {
           return (
-            <Tag color='green' size='large' shape='circle'>
+            <Tag color='green' size='large' shape='circle' prefixIcon={<CheckCircle size={14} />}>
               {t('已启用')}
             </Tag>
           );
         }
       case 2:
         return (
-          <Tag color='red' size='large' shape='circle'>
+          <Tag color='red' size='large' shape='circle' prefixIcon={<XCircle size={14} />}>
             {t('已禁用')}
           </Tag>
         );
       case 3:
         return (
-          <Tag color='yellow' size='large' shape='circle'>
+          <Tag color='yellow' size='large' shape='circle' prefixIcon={<Clock size={14} />}>
             {t('已过期')}
           </Tag>
         );
       case 4:
         return (
-          <Tag color='grey' size='large' shape='circle'>
+          <Tag color='grey' size='large' shape='circle' prefixIcon={<Gauge size={14} />}>
             {t('已耗尽')}
           </Tag>
         );
       default:
         return (
-          <Tag color='black' size='large' shape='circle'>
+          <Tag color='black' size='large' shape='circle' prefixIcon={<HelpCircle size={14} />}>
             {t('未知状态')}
           </Tag>
         );
@@ -111,21 +123,45 @@ const TokensTable = () => {
       title: t('已用额度'),
       dataIndex: 'used_quota',
       render: (text, record, index) => {
-        return <div>{renderQuota(parseInt(text))}</div>;
+        return (
+          <div>
+            <Tag size={'large'} color={'grey'} shape='circle' prefixIcon={<Coins size={14} />}>
+              {renderQuota(parseInt(text))}
+            </Tag>
+          </div>
+        );
       },
     },
     {
       title: t('剩余额度'),
       dataIndex: 'remain_quota',
       render: (text, record, index) => {
+        const getQuotaColor = (quotaValue) => {
+          const quotaPerUnit = getQuotaPerUnit();
+          const dollarAmount = quotaValue / quotaPerUnit;
+
+          if (dollarAmount <= 0) {
+            return 'red';
+          } else if (dollarAmount <= 100) {
+            return 'yellow';
+          } else {
+            return 'green';
+          }
+        };
+
         return (
           <div>
             {record.unlimited_quota ? (
-              <Tag size={'large'} color={'white'} shape='circle'>
+              <Tag size={'large'} color={'white'} shape='circle' prefixIcon={<Infinity size={14} />}>
                 {t('无限制')}
               </Tag>
             ) : (
-              <Tag size={'large'} color={'light-blue'} shape='circle'>
+              <Tag
+                size={'large'}
+                color={getQuotaColor(parseInt(text))}
+                shape='circle'
+                prefixIcon={<Coins size={14} />}
+              >
                 {renderQuota(parseInt(text))}
               </Tag>
             )}

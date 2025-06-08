@@ -73,6 +73,7 @@ code {
 .semi-page-item,
 .semi-navigation-item,
 .semi-tag-closable,
+.semi-input-wrapper,
 .semi-datepicker-range-input {
   border-radius: 9999px !important;
 }

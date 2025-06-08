@@ -1,5 +1,20 @@
 import React, { useEffect, useState } from 'react';
 import { API, showError, showSuccess, renderGroup, renderNumber, renderQuota } from '../../helpers';
+
+import {
+  User,
+  Shield,
+  Crown,
+  HelpCircle,
+  CheckCircle,
+  XCircle,
+  Minus,
+  Coins,
+  Activity,
+  Users,
+  DollarSign,
+  UserPlus
+} from 'lucide-react';
 import {
   Button,
   Card,
@@ -10,7 +25,7 @@ import {
   Space,
   Table,
   Tag,
-  Typography,
+  Typography
 } from '@douyinfe/semi-ui';
 import {
   IconPlus,
@@ -22,7 +37,7 @@ import {
   IconMore,
   IconUserAdd,
   IconArrowUp,
-  IconArrowDown,
+  IconArrowDown
 } from '@douyinfe/semi-icons';
 import { ITEMS_PER_PAGE } from '../../constants';
 import AddUser from '../../pages/User/AddUser';
@@ -38,25 +53,25 @@ const UsersTable = () => {
     switch (role) {
       case 1:
         return (
-          <Tag size='large' color='blue' shape='circle'>
+          <Tag size='large' color='blue' shape='circle' prefixIcon={<User size={14} />}>
             {t('普通用户')}
           </Tag>
         );
       case 10:
         return (
-          <Tag color='yellow' size='large' shape='circle'>
+          <Tag color='yellow' size='large' shape='circle' prefixIcon={<Shield size={14} />}>
             {t('管理员')}
           </Tag>
         );
       case 100:
         return (
-          <Tag color='orange' size='large' shape='circle'>
+          <Tag color='orange' size='large' shape='circle' prefixIcon={<Crown size={14} />}>
             {t('超级管理员')}
           </Tag>
         );
       default:
         return (
-          <Tag color='red' size='large' shape='circle'>
+          <Tag color='red' size='large' shape='circle' prefixIcon={<HelpCircle size={14} />}>
             {t('未知身份')}
           </Tag>
         );
@@ -66,16 +81,16 @@ const UsersTable = () => {
   const renderStatus = (status) => {
     switch (status) {
       case 1:
-        return <Tag size='large' color='green' shape='circle'>{t('已激活')}</Tag>;
+        return <Tag size='large' color='green' shape='circle' prefixIcon={<CheckCircle size={14} />}>{t('已激活')}</Tag>;
       case 2:
         return (
-          <Tag size='large' color='red' shape='circle'>
+          <Tag size='large' color='red' shape='circle' prefixIcon={<XCircle size={14} />}>
             {t('已封禁')}
           </Tag>
         );
       default:
         return (
-          <Tag size='large' color='grey' shape='circle'>
+          <Tag size='large' color='grey' shape='circle' prefixIcon={<HelpCircle size={14} />}>
             {t('未知状态')}
           </Tag>
         );
@@ -105,13 +120,13 @@ const UsersTable = () => {
         return (
           <div>
             <Space spacing={1}>
-              <Tag color='white' size='large' shape='circle' className="!text-xs">
+              <Tag color='white' size='large' shape='circle' className="!text-xs" prefixIcon={<Coins size={14} />}>
                 {t('剩余')}: {renderQuota(record.quota)}
               </Tag>
-              <Tag color='white' size='large' shape='circle' className="!text-xs">
+              <Tag color='white' size='large' shape='circle' className="!text-xs" prefixIcon={<Coins size={14} />}>
                 {t('已用')}: {renderQuota(record.used_quota)}
               </Tag>
-              <Tag color='white' size='large' shape='circle' className="!text-xs">
+              <Tag color='white' size='large' shape='circle' className="!text-xs" prefixIcon={<Activity size={14} />}>
                 {t('调用')}: {renderNumber(record.request_count)}
               </Tag>
             </Space>
@@ -126,13 +141,13 @@ const UsersTable = () => {
         return (
           <div>
             <Space spacing={1}>
-              <Tag color='white' size='large' shape='circle' className="!text-xs">
+              <Tag color='white' size='large' shape='circle' className="!text-xs" prefixIcon={<Users size={14} />}>
                 {t('邀请')}: {renderNumber(record.aff_count)}
               </Tag>
-              <Tag color='white' size='large' shape='circle' className="!text-xs">
+              <Tag color='white' size='large' shape='circle' className="!text-xs" prefixIcon={<DollarSign size={14} />}>
                 {t('收益')}: {renderQuota(record.aff_history_quota)}
               </Tag>
-              <Tag color='white' size='large' shape='circle' className="!text-xs">
+              <Tag color='white' size='large' shape='circle' className="!text-xs" prefixIcon={<UserPlus size={14} />}>
                 {record.inviter_id === 0 ? t('无邀请人') : `邀请人: ${record.inviter_id}`}
               </Tag>
             </Space>
@@ -154,7 +169,7 @@ const UsersTable = () => {
         return (
           <div>
             {record.DeletedAt !== null ? (
-              <Tag color='red' shape='circle'>{t('已注销')}</Tag>
+              <Tag color='red' shape='circle' prefixIcon={<Minus size={14} />}>{t('已注销')}</Tag>
             ) : (
               renderStatus(text)
             )}

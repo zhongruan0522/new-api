@@ -7,8 +7,22 @@ import {
   timestamp2string,
   renderGroup,
   renderNumberWithPoint,
-  renderQuota
+  renderQuota,
+  getChannelIcon
 } from '../../helpers/index.js';
+
+import {
+  CheckCircle,
+  XCircle,
+  AlertCircle,
+  HelpCircle,
+  TestTube,
+  Zap,
+  Timer,
+  Clock,
+  AlertTriangle,
+  Coins
+} from 'lucide-react';
 
 import { CHANNEL_OPTIONS, ITEMS_PER_PAGE } from '../../constants/index.js';
 import {
@@ -63,7 +77,12 @@ const ChannelsTable = () => {
       type2label[0] = { value: 0, label: t('未知类型'), color: 'grey' };
     }
     return (
-      <Tag size='large' color={type2label[type]?.color} shape='circle'>
+      <Tag
+        size='large'
+        color={type2label[type]?.color}
+        shape='circle'
+        prefixIcon={getChannelIcon(type)}
+      >
         {type2label[type]?.label}
       </Tag>
     );
@@ -87,25 +106,25 @@ const ChannelsTable = () => {
     switch (status) {
       case 1:
         return (
-          <Tag size='large' color='green' shape='circle'>
+          <Tag size='large' color='green' shape='circle' prefixIcon={<CheckCircle size={14} />}>
             {t('已启用')}
           </Tag>
         );
       case 2:
         return (
-          <Tag size='large' color='yellow' shape='circle'>
+          <Tag size='large' color='yellow' shape='circle' prefixIcon={<XCircle size={14} />}>
             {t('已禁用')}
           </Tag>
         );
       case 3:
         return (
-          <Tag size='large' color='yellow' shape='circle'>
+          <Tag size='large' color='yellow' shape='circle' prefixIcon={<AlertCircle size={14} />}>
             {t('自动禁用')}
           </Tag>
         );
       default:
         return (
-          <Tag size='large' color='grey' shape='circle'>
+          <Tag size='large' color='grey' shape='circle' prefixIcon={<HelpCircle size={14} />}>
             {t('未知状态')}
           </Tag>
         );
@@ -117,31 +136,31 @@ const ChannelsTable = () => {
     time = time.toFixed(2) + t(' 秒');
     if (responseTime === 0) {
       return (
-        <Tag size='large' color='grey' shape='circle'>
+        <Tag size='large' color='grey' shape='circle' prefixIcon={<TestTube size={14} />}>
           {t('未测试')}
         </Tag>
       );
     } else if (responseTime <= 1000) {
       return (
-        <Tag size='large' color='green' shape='circle'>
+        <Tag size='large' color='green' shape='circle' prefixIcon={<Zap size={14} />}>
           {time}
         </Tag>
       );
     } else if (responseTime <= 3000) {
       return (
-        <Tag size='large' color='lime' shape='circle'>
+        <Tag size='large' color='lime' shape='circle' prefixIcon={<Timer size={14} />}>
           {time}
         </Tag>
       );
     } else if (responseTime <= 5000) {
       return (
-        <Tag size='large' color='yellow' shape='circle'>
+        <Tag size='large' color='yellow' shape='circle' prefixIcon={<Clock size={14} />}>
           {time}
         </Tag>
       );
     } else {
       return (
-        <Tag size='large' color='red' shape='circle'>
+        <Tag size='large' color='red' shape='circle' prefixIcon={<AlertTriangle size={14} />}>
           {time}
         </Tag>
       );
@@ -228,7 +247,7 @@ const ChannelsTable = () => {
             <div>
               <Space spacing={1}>
                 <Tooltip content={t('已用额度')}>
-                  <Tag color='white' type='ghost' size='large' shape='circle'>
+                  <Tag color='white' type='ghost' size='large' shape='circle' prefixIcon={<Coins size={14} />}>
                     {renderQuota(record.used_quota)}
                   </Tag>
                 </Tooltip>
@@ -238,6 +257,7 @@ const ChannelsTable = () => {
                     type='ghost'
                     size='large'
                     shape='circle'
+                    prefixIcon={<Coins size={14} />}
                     onClick={() => updateChannelBalance(record)}
                   >
                     ${renderNumberWithPoint(record.balance)}
@@ -249,7 +269,7 @@ const ChannelsTable = () => {
         } else {
           return (
             <Tooltip content={t('已用额度')}>
-              <Tag color='white' type='ghost' size='large' shape='circle'>
+              <Tag color='white' type='ghost' size='large' shape='circle' prefixIcon={<Coins size={14} />}>
                 {renderQuota(record.used_quota)}
               </Tag>
             </Tooltip>
