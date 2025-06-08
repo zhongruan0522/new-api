@@ -37,11 +37,11 @@ type GeneralOpenAIRequest struct {
 	Input               any               `json:"input,omitempty"`
 	Instruction         string            `json:"instruction,omitempty"`
 	Size                string            `json:"size,omitempty"`
-	Functions           any               `json:"functions,omitempty"`
+	Functions           json.RawMessage   `json:"functions,omitempty"`
 	FrequencyPenalty    float64           `json:"frequency_penalty,omitempty"`
 	PresencePenalty     float64           `json:"presence_penalty,omitempty"`
 	ResponseFormat      *ResponseFormat   `json:"response_format,omitempty"`
-	EncodingFormat      any               `json:"encoding_format,omitempty"`
+	EncodingFormat      json.RawMessage   `json:"encoding_format,omitempty"`
 	Seed                float64           `json:"seed,omitempty"`
 	ParallelTooCalls    *bool             `json:"parallel_tool_calls,omitempty"`
 	Tools               []ToolCallRequest `json:"tools,omitempty"`
@@ -50,10 +50,10 @@ type GeneralOpenAIRequest struct {
 	LogProbs            bool              `json:"logprobs,omitempty"`
 	TopLogProbs         int               `json:"top_logprobs,omitempty"`
 	Dimensions          int               `json:"dimensions,omitempty"`
-	Modalities          any               `json:"modalities,omitempty"`
-	Audio               any               `json:"audio,omitempty"`
+	Modalities          json.RawMessage   `json:"modalities,omitempty"`
+	Audio               json.RawMessage   `json:"audio,omitempty"`
 	EnableThinking      any               `json:"enable_thinking,omitempty"` // ali
-	ExtraBody           any               `json:"extra_body,omitempty"`
+	ExtraBody           json.RawMessage   `json:"extra_body,omitempty"`
 	WebSearchOptions    *WebSearchOptions `json:"web_search_options,omitempty"`
 	// OpenRouter Params
 	Reasoning json.RawMessage `json:"reasoning,omitempty"`
