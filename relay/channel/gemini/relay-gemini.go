@@ -211,7 +211,22 @@ func CovertGemini2OpenAI(textRequest dto.GeneralOpenAIRequest, info *relaycommon
 			} else if val, exists := tool_call_ids[message.ToolCallId]; exists {
 				name = val
 			}
-			contentMap := common.StrToMap(message.StringContent())
+			var contentMap map[string]interface{}
+			contentStr := message.StringContent()
+
+			// 1. 尝试解析为 JSON 对象
+			if err := json.Unmarshal([]byte(contentStr), &contentMap); err != nil {
+				// 2. 如果失败，尝试解析为 JSON 数组
+				var contentSlice []interface{}
+				if err := json.Unmarshal([]byte(contentStr), &contentSlice); err == nil {
+					// 如果是数组，包装成对象
+					contentMap = map[string]interface{}{"result": contentSlice}
+				} else {
+					// 3. 如果再次失败，作为纯文本处理
+					contentMap = map[string]interface{}{"content": contentStr}
+				}
+			}
+
 			functionResp := &FunctionResponse{
 				Name:     name,
 				Response: contentMap,
