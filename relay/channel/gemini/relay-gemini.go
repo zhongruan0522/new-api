@@ -175,12 +175,6 @@ func CovertGemini2OpenAI(textRequest dto.GeneralOpenAIRequest, info *relaycommon
 		// common.SysLog("tools: " + fmt.Sprintf("%+v", geminiRequest.Tools))
 		// json_data, _ := json.Marshal(geminiRequest.Tools)
 		// common.SysLog("tools_json: " + string(json_data))
-	} else if textRequest.Functions != nil {
-		//geminiRequest.Tools = []GeminiChatTool{
-		//	{
-		//		FunctionDeclarations: textRequest.Functions,
-		//	},
-		//}
 	}
 
 	if textRequest.ResponseFormat != nil && (textRequest.ResponseFormat.Type == "json_schema" || textRequest.ResponseFormat.Type == "json_object") {
@@ -609,14 +603,13 @@ func responseGeminiChat2OpenAI(response *GeminiChatResponse) *dto.OpenAITextResp
 		Created: common.GetTimestamp(),
 		Choices: make([]dto.OpenAITextResponseChoice, 0, len(response.Candidates)),
 	}
-	content, _ := json.Marshal("")
 	isToolCall := false
 	for _, candidate := range response.Candidates {
 		choice := dto.OpenAITextResponseChoice{
 			Index: int(candidate.Index),
 			Message: dto.Message{
 				Role:    "assistant",
-				Content: content,
+				Content: "",
 			},
 			FinishReason: constant.FinishReasonStop,
 		}
