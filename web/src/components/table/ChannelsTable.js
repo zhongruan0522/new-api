@@ -6,9 +6,9 @@ import {
   showSuccess,
   timestamp2string,
   renderGroup,
-  renderNumberWithPoint,
   renderQuota,
-  getChannelIcon
+  getChannelIcon,
+  renderQuotaWithAmount
 } from '../../helpers/index.js';
 
 import {
