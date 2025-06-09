@@ -86,28 +86,35 @@ const Home = () => {
         <div className="w-full overflow-x-hidden">
           {/* Banner 部分 */}
           <div className="w-full border-b border-semi-color-border min-h-[500px] md:min-h-[600px] lg:min-h-[700px] relative overflow-x-hidden">
-            <div className="flex items-center justify-center h-full px-4 py-12 md:py-16 lg:py-20">
+            <div className="flex items-center justify-center h-full px-4 py-20 md:py-24 lg:py-32">
               {/* 居中内容区 */}
               <div className="flex flex-col items-center justify-center text-center max-w-4xl mx-auto">
                 <div className="flex flex-col items-center justify-center mb-6 md:mb-8">
-                  <h1 className="text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-semibold text-semi-color-text-0 leading-tight">
-                    {statusState?.status?.system_name || 'New API'}
+                  <h1 className="text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-semibold text-semi-color-text-0 leading-tight">
+                    {i18n.language === 'en' ? (
+                      <>
+                        The Unified<br />
+                        LLMs API Gateway
+                      </>
+                    ) : (
+                      t('统一的大模型接口网关')
+                    )}
                   </h1>
+                  <p className="text-lg md:text-xl lg:text-2xl text-semi-color-text-1 mt-4 md:mt-6">
+                    {t('更好的价格，更好的稳定性，无需订阅')}
+                  </p>
                 </div>
-                <p className="text-base md:text-lg lg:text-xl text-semi-color-text-0 leading-7 md:leading-8 lg:leading-9 max-w-2xl px-4">
-                  {t('新一代大模型网关与AI资产管理系统，一键接入主流大模型，轻松管理您的AI资产')}
-                </p>
 
                 {/* 操作按钮 */}
-                <div className="mt-8 md:mt-10 lg:mt-12 flex flex-row gap-4 justify-center items-center">
+                <div className="flex flex-row gap-4 justify-center items-center">
                   <Link to="/console">
-                    <Button theme="solid" type="primary" size="large" className="!rounded-3xl px-8 py-2" icon={<IconPlay />}>
+                    <Button theme="solid" type="primary" size={isMobile() ? "default" : "large"} className="!rounded-3xl px-8 py-2" icon={<IconPlay />}>
                       {t('开始使用')}
                     </Button>
                   </Link>
                   {isDemoSiteMode && statusState?.status?.version ? (
                     <Button
-                      size="large"
+                      size={isMobile() ? "default" : "large"}
                       className="flex items-center !rounded-3xl px-6 py-2"
                       icon={<IconGithubLogo />}
                       onClick={() => window.open('https://github.com/QuantumNous/new-api', '_blank')}
@@ -117,7 +124,7 @@ const Home = () => {
                   ) : (
                     docsLink && (
                       <Button
-                        size="large"
+                        size={isMobile() ? "default" : "large"}
                         className="flex items-center !rounded-3xl px-6 py-2"
                         icon={<IconFile />}
                         onClick={() => window.open(docsLink, '_blank')}
