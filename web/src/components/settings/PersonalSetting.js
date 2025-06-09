@@ -19,6 +19,7 @@ import {
 } from '../../helpers';
 import Turnstile from 'react-turnstile';
 import { UserContext } from '../../context/User';
+import { useTheme } from '../../context/Theme';
 import {
   Avatar,
   Banner,
@@ -39,7 +40,7 @@ import {
   AutoComplete,
   Checkbox,
   Tabs,
-  TabPane,
+  TabPane
 } from '@douyinfe/semi-ui';
 import { IllustrationNoContent, IllustrationNoContentDark } from '@douyinfe/semi-illustrations';
 import {
@@ -53,7 +54,7 @@ import {
   IconKey,
   IconDelete,
   IconChevronDown,
-  IconChevronUp,
+  IconChevronUp
 } from '@douyinfe/semi-icons';
 import { SiTelegram, SiWechat, SiLinux } from 'react-icons/si';
 import { Bell, Shield, Webhook, Globe, Settings, UserPlus, ShieldCheck } from 'lucide-react';
@@ -64,6 +65,7 @@ const PersonalSetting = () => {
   const [userState, userDispatch] = useContext(UserContext);
   let navigate = useNavigate();
   const { t } = useTranslation();
+  const theme = useTheme();
 
   const [inputs, setInputs] = useState({
     wechat_verification_code: '',
@@ -104,33 +106,6 @@ const PersonalSetting = () => {
   });
   const [modelsLoading, setModelsLoading] = useState(true);
   const [showWebhookDocs, setShowWebhookDocs] = useState(true);
-  const [isDarkMode, setIsDarkMode] = useState(false);
-
-  // 检测暗色模式
-  useEffect(() => {
-    const checkDarkMode = () => {
-      const isDark = document.documentElement.classList.contains('dark') || 
-                    window.matchMedia('(prefers-color-scheme: dark)').matches;
-      setIsDarkMode(isDark);
-    };
-
-    checkDarkMode();
-    
-    // 监听主题变化
-    const observer = new MutationObserver(checkDarkMode);
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ['class']
-    });
-
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    mediaQuery.addListener(checkDarkMode);
-
-    return () => {
-      observer.disconnect();
-      mediaQuery.removeListener(checkDarkMode);
-    };
-  }, []);
 
   useEffect(() => {
     let status = localStorage.getItem('status');
@@ -413,7 +388,7 @@ const PersonalSetting = () => {
                 <Card
                   className="!rounded-2xl !border-0 !shadow-lg overflow-hidden"
                   style={{
-                    background: isDarkMode 
+                    background: theme === 'dark'
                       ? 'linear-gradient(135deg, #1e293b 0%, #334155 50%, #475569 100%)'
                       : 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #cbd5e1 100%)',
                     position: 'relative'
@@ -444,7 +419,7 @@ const PersonalSetting = () => {
                             {isRoot() ? (
                               <Tag
                                 size='small'
-                                className="!rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600"
+                                className="!rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
                                 style={{ fontWeight: '500' }}
                               >
                                 {t('超级管理员')}
@@ -452,7 +427,7 @@ const PersonalSetting = () => {
                             ) : isAdmin() ? (
                               <Tag
                                 size='small'
-                                className="!rounded-full bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600"
+                                className="!rounded-full bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
                                 style={{ fontWeight: '500' }}
                               >
                                 {t('管理员')}
@@ -460,7 +435,7 @@ const PersonalSetting = () => {
                             ) : (
                               <Tag
                                 size='small'
-                                className="!rounded-full bg-slate-50 dark:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-600"
+                                className="!rounded-full bg-slate-50 dark:bg-slate-700 text-slate-600 dark:text-slate-300"
                                 style={{ fontWeight: '500' }}
                               >
                                 {t('普通用户')}
@@ -468,7 +443,7 @@ const PersonalSetting = () => {
                             )}
                             <Tag
                               size='small'
-                              className="!rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-600"
+                              className="!rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300"
                               style={{ fontWeight: '500' }}
                             >
                               ID: {userState?.user?.id}
@@ -737,7 +712,7 @@ const PersonalSetting = () => {
                             shadows='hover'
                           >
                             <div className="flex items-center justify-between">
-                                                              <div className="flex items-center flex-1">
+                              <div className="flex items-center flex-1">
                                 <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center mr-3">
                                   <IconMail size="default" className="text-slate-600 dark:text-slate-300" />
                                 </div>
@@ -1255,11 +1230,11 @@ const PersonalSetting = () => {
                             itemKey='price'
                           >
                             <div className="py-4">
-                                                              <div className="bg-white rounded-xl">
-                                  <div className="flex items-start">
-                                    <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center mt-1">
-                                      <Shield size={20} className="text-slate-600" />
-                                    </div>
+                              <div className="bg-white rounded-xl">
+                                <div className="flex items-start">
+                                  <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center mt-1">
+                                    <Shield size={20} className="text-slate-600" />
+                                  </div>
                                   <div className="flex-1">
                                     <div className="flex items-center justify-between">
                                       <div>

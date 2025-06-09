@@ -1,19 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  CreditCard,
-  ShoppingCart,
-  Settings,
-  Server,
-  AlertTriangle,
-  HelpCircle,
-  Zap,
-  Play,
-  Clock,
-  Hash,
-  Key
-} from 'lucide-react';
-import {
   API,
   copy,
   getTodayStartTimestamp,
