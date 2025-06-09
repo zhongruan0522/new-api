@@ -1294,11 +1294,11 @@ const LogsTable = () => {
                 {/* 操作按钮区域 */}
                 <div className='flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3'>
                   {/* 日志类型选择器 */}
-                  <div className='w-full sm:w-auto min-w-[140px]'>
+                  <div className='w-full sm:w-auto'>
                     <Form.Select
                       field='logType'
                       placeholder={t('日志类型')}
-                      className='!rounded-full w-full sm:w-auto'
+                      className='!rounded-full w-full sm:w-auto min-w-[120px]'
                       showClear
                       pure
                       onChange={() => {
@@ -1316,7 +1316,7 @@ const LogsTable = () => {
                       <Form.Select.Option value='5'>{t('错误')}</Form.Select.Option>
                     </Form.Select>
                   </div>
-                  
+
                   <div className='flex gap-2 w-full sm:w-auto justify-end'>
                     <Button
                       type='primary'
