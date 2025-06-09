@@ -15,20 +15,9 @@
 
 /* ==================== 全局基础样式 ==================== */
 body {
-  margin: 0;
-  padding-top: 0;
-  font-family:
-    Lato, 'Helvetica Neue', Arial, Helvetica, 'Microsoft YaHei', sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  scrollbar-width: none;
-  color: var(--semi-color-text-0) !important;
-  background-color: var(--semi-color-bg-0) !important;
-  height: 100vh;
-}
-
-body::-webkit-scrollbar {
-  display: none;
+  font-family: Lato, 'Helvetica Neue', Arial, Helvetica, 'Microsoft YaHei', sans-serif;
+  color: var(--semi-color-text-0);
+  background-color: var(--semi-color-bg-0);
 }
 
 code {
@@ -36,34 +25,20 @@ code {
     source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
 }
 
-#root {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
 /* ==================== 布局相关样式 ==================== */
+.semi-layout::-webkit-scrollbar,
 .semi-layout-content::-webkit-scrollbar,
 .semi-sider::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  display: none;
+  width: 0;
+  height: 0;
 }
 
-.semi-layout-content::-webkit-scrollbar-thumb,
-.semi-sider::-webkit-scrollbar-thumb {
-  background: var(--semi-color-tertiary-light-default);
-  border-radius: 3px;
-}
-
-.semi-layout-content::-webkit-scrollbar-thumb:hover,
-.semi-sider::-webkit-scrollbar-thumb:hover {
-  background: var(--semi-color-tertiary);
-}
-
-.semi-layout-content::-webkit-scrollbar-track,
-.semi-sider::-webkit-scrollbar-track {
-  background: transparent;
+.semi-layout,
+.semi-layout-content,
+.semi-sider {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 /* ==================== 导航和侧边栏样式 ==================== */
@@ -438,41 +413,6 @@ code {
 
 /* ==================== 响应式/移动端样式 ==================== */
 @media only screen and (max-width: 767px) {
-  #root>section>header>section>div>div>div>div.semi-navigation-footer>div>a>li {
-    padding: 0 0;
-  }
-
-  #root>section>header>section>div>div>div>div.semi-navigation-header-list-outer>div.semi-navigation-list-wrapper>ul>div>a>li {
-    padding: 0 5px;
-  }
-
-  #root>section>header>section>div>div>div>div.semi-navigation-footer>div:nth-child(1)>a>li {
-    padding: 0 5px;
-  }
-
-  .semi-navigation-horizontal .semi-navigation-header {
-    margin-right: 0;
-  }
-
-  /* 确保移动端内容可滚动 */
-  .semi-layout-content {
-    -webkit-overflow-scrolling: touch !important;
-    overscroll-behavior-y: auto !important;
-  }
-
-  /* 修复移动端下拉刷新 */
-  body {
-    overflow: visible !important;
-    overscroll-behavior-y: auto !important;
-    position: static !important;
-    height: 100% !important;
-  }
-
-  /* 确保内容区域在移动端可以正常滚动 */
-  #root {
-    overflow: visible !important;
-    height: 100% !important;
-  }
 
   /* 移动端表格样式调整 */
   .semi-table-tbody,
