@@ -347,7 +347,7 @@ const TopUp = () => {
   };
 
   return (
-    <div className="mx-auto">
+    <div className="mx-auto relative min-h-screen lg:min-h-0">
       {/* 划转模态框 */}
       <Modal
         title={
@@ -485,7 +485,7 @@ const TopUp = () => {
           >
             <div className="space-y-4">
               {/* 账户余额信息 */}
-              <div className="grid grid-cols-2 gap-4 mb-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
                 <Card className="!rounded-2xl">
                   <Text type="tertiary" className="mb-1">
                     {t('当前余额')}
@@ -517,7 +517,7 @@ const TopUp = () => {
                   {/* 预设充值额度卡片网格 */}
                   <div>
                     <Text strong className="block mb-3">{t('选择充值额度')}</Text>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
                       {presetAmounts.map((preset, index) => (
                         <Card
                           key={index}
@@ -539,72 +539,74 @@ const TopUp = () => {
                       ))}
                     </div>
                   </div>
+                  {/* 桌面端显示的自定义金额和支付按钮 */}
+                  <div className="hidden md:block space-y-4">
+                    <Divider style={{ margin: '24px 0' }}>
+                      <Text className="text-sm font-medium">{t('或输入自定义金额')}</Text>
+                    </Divider>
 
-                  <Divider style={{ margin: '24px 0' }}>
-                    <Text className="text-sm font-medium">{t('或输入自定义金额')}</Text>
-                  </Divider>
-
-                  <div>
-                    <div className="flex justify-between mb-2">
-                      <Text strong>{t('充值数量')}</Text>
-                      {amountLoading ? (
-                        <Skeleton.Title style={{ width: '80px', height: '16px' }} />
-                      ) : (
-                        <Text type="tertiary">{t('实付金额：') + renderAmount()}</Text>
-                      )}
+                    <div>
+                      <div className="flex justify-between mb-2">
+                        <Text strong>{t('充值数量')}</Text>
+                        {amountLoading ? (
+                          <Skeleton.Title style={{ width: '80px', height: '16px' }} />
+                        ) : (
+                          <Text type="tertiary">{t('实付金额：') + renderAmount()}</Text>
+                        )}
+                      </div>
+                      <InputNumber
+                        disabled={!enableOnlineTopUp}
+                        placeholder={t('充值数量，最低 ') + renderQuotaWithAmount(minTopUp)}
+                        value={topUpCount}
+                        min={minTopUp}
+                        max={999999999}
+                        step={1}
+                        precision={0}
+                        onChange={async (value) => {
+                          if (value && value >= 1) {
+                            setTopUpCount(value);
+                            setSelectedPreset(null);
+                            await getAmount(value);
+                          }
+                        }}
+                        onBlur={(e) => {
+                          const value = parseInt(e.target.value);
+                          if (!value || value < 1) {
+                            setTopUpCount(1);
+                            getAmount(1);
+                          }
+                        }}
+                        size="large"
+                        className="w-full"
+                        formatter={(value) => value ? `${value}` : ''}
+                        parser={(value) => value ? parseInt(value.replace(/[^\d]/g, '')) : 0}
+                      />
                     </div>
-                    <InputNumber
-                      disabled={!enableOnlineTopUp}
-                      placeholder={t('充值数量，最低 ') + renderQuotaWithAmount(minTopUp)}
-                      value={topUpCount}
-                      min={minTopUp}
-                      max={999999999}
-                      step={1}
-                      precision={0}
-                      onChange={async (value) => {
-                        if (value && value >= 1) {
-                          setTopUpCount(value);
-                          setSelectedPreset(null);
-                          await getAmount(value);
-                        }
-                      }}
-                      onBlur={(e) => {
-                        const value = parseInt(e.target.value);
-                        if (!value || value < 1) {
-                          setTopUpCount(1);
-                          getAmount(1);
-                        }
-                      }}
-                      size="large"
-                      className="w-full"
-                      formatter={(value) => value ? `${value}` : ''}
-                      parser={(value) => value ? parseInt(value.replace(/[^\d]/g, '')) : 0}
-                    />
-                  </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <Button
-                      type="primary"
-                      onClick={() => preTopUp('zfb')}
-                      size="large"
-                      disabled={!enableOnlineTopUp}
-                      loading={paymentLoading && payWay === 'zfb'}
-                      icon={<SiAlipay size={18} />}
-                      style={{ height: '44px' }}
-                    >
-                      <span className="ml-2">{t('支付宝')}</span>
-                    </Button>
-                    <Button
-                      type="primary"
-                      onClick={() => preTopUp('wx')}
-                      size="large"
-                      disabled={!enableOnlineTopUp}
-                      loading={paymentLoading && payWay === 'wx'}
-                      icon={<SiWechat size={18} />}
-                      style={{ height: '44px' }}
-                    >
-                      <span className="ml-2">{t('微信')}</span>
-                    </Button>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <Button
+                        type="primary"
+                        onClick={() => preTopUp('zfb')}
+                        size="large"
+                        disabled={!enableOnlineTopUp}
+                        loading={paymentLoading && payWay === 'zfb'}
+                        icon={<SiAlipay size={18} />}
+                        style={{ height: '44px' }}
+                      >
+                        <span className="ml-2">{t('支付宝')}</span>
+                      </Button>
+                      <Button
+                        type="primary"
+                        onClick={() => preTopUp('wx')}
+                        size="large"
+                        disabled={!enableOnlineTopUp}
+                        loading={paymentLoading && payWay === 'wx'}
+                        icon={<SiWechat size={18} />}
+                        style={{ height: '44px' }}
+                      >
+                        <span className="ml-2">{t('微信')}</span>
+                      </Button>
+                    </div>
                   </div>
                 </>
               )}
@@ -612,7 +614,7 @@ const TopUp = () => {
               {!enableOnlineTopUp && (
                 <Banner
                   type="warning"
-                  description={t('管理员未开启在线充值功能，请联系管理员或使用兑换码充值。')}
+                  description={t('管理员未开启在线充值功能，请联系管理员开启或使用兑换码充值。')}
                   closeIcon={null}
                   className="!rounded-2xl"
                 />
@@ -735,22 +737,21 @@ const TopUp = () => {
 
               <div className="space-y-4">
                 <Title heading={6}>{t('邀请链接')}</Title>
-                <div className="relative">
-                  <Input
-                    value={affLink}
-                    readOnly
-                    size="large"
-                  />
-                  <Button
-                    type="primary"
-                    theme="light"
-                    onClick={handleAffLinkClick}
-                    className="absolute right-1 top-1 bottom-1"
-                    icon={<Copy size={14} />}
-                  >
-                    {t('复制')}
-                  </Button>
-                </div>
+                <Input
+                  value={affLink}
+                  readOnly
+                  size="large"
+                  suffix={
+                    <Button
+                      type="primary"
+                      theme="light"
+                      onClick={handleAffLinkClick}
+                      icon={<Copy size={14} />}
+                    >
+                      {t('复制')}
+                    </Button>
+                  }
+                />
 
                 <div className="mt-4">
                   <Card className="!rounded-2xl">
@@ -781,6 +782,71 @@ const TopUp = () => {
           </Card>
         </div>
       </div>
+
+      {/* 移动端底部固定的自定义金额和支付区域 */}
+      {enableOnlineTopUp && (
+        <div className="md:hidden fixed bottom-0 left-0 right-0 p-4 shadow-lg z-50" style={{ background: 'var(--semi-color-bg-0)' }}>
+          <div className="space-y-4">
+            <div>
+              <div className="flex justify-between mb-2">
+                <Text strong>{t('充值数量')}</Text>
+                {amountLoading ? (
+                  <Skeleton.Title style={{ width: '80px', height: '16px' }} />
+                ) : (
+                  <Text type="tertiary">{t('实付金额：') + renderAmount()}</Text>
+                )}
+              </div>
+              <InputNumber
+                disabled={!enableOnlineTopUp}
+                placeholder={t('充值数量，最低 ') + renderQuotaWithAmount(minTopUp)}
+                value={topUpCount}
+                min={minTopUp}
+                max={999999999}
+                step={1}
+                precision={0}
+                onChange={async (value) => {
+                  if (value && value >= 1) {
+                    setTopUpCount(value);
+                    setSelectedPreset(null);
+                    await getAmount(value);
+                  }
+                }}
+                onBlur={(e) => {
+                  const value = parseInt(e.target.value);
+                  if (!value || value < 1) {
+                    setTopUpCount(1);
+                    getAmount(1);
+                  }
+                }}
+                className="w-full"
+                formatter={(value) => value ? `${value}` : ''}
+                parser={(value) => value ? parseInt(value.replace(/[^\d]/g, '')) : 0}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <Button
+                type="primary"
+                onClick={() => preTopUp('zfb')}
+                disabled={!enableOnlineTopUp}
+                loading={paymentLoading && payWay === 'zfb'}
+                icon={<SiAlipay size={18} />}
+              >
+                <span className="ml-2">{t('支付宝')}</span>
+              </Button>
+              <Button
+                type="primary"
+                onClick={() => preTopUp('wx')}
+                disabled={!enableOnlineTopUp}
+                loading={paymentLoading && payWay === 'wx'}
+                icon={<SiWechat size={18} />}
+              >
+                <span className="ml-2">{t('微信')}</span>
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

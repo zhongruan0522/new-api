@@ -46,8 +46,7 @@ import {
   Gift,
   User,
   Settings,
-  CircleUser,
-  Users
+  CircleUser
 } from 'lucide-react';
 
 // 侧边栏图标颜色映射
