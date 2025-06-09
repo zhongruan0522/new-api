@@ -854,7 +854,7 @@ export function renderQuotaWithAmount(amount) {
   if (displayInCurrency) {
     return '$' + amount;
   } else {
-    return renderUnitWithQuota(amount);
+    return renderNumber(renderUnitWithQuota(amount));
   }
 }
 
