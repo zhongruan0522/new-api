@@ -13,6 +13,7 @@ import {
   Tabs,
   TabPane,
   Empty,
+  Tag
 } from '@douyinfe/semi-ui';
 import {
   IconRefresh,
@@ -25,7 +26,7 @@ import {
   IconPulse,
   IconStopwatchStroked,
   IconTypograph,
-  IconPieChart2Stroked,
+  IconPieChart2Stroked
 } from '@douyinfe/semi-icons';
 import { IllustrationConstruction, IllustrationConstructionDark } from '@douyinfe/semi-illustrations';
 import { VChart } from '@visactor/react-vchart';
@@ -495,6 +496,12 @@ const Detail = (props) => {
     }
   }, [t]);
 
+  const handleSpeedTest = useCallback((apiUrl) => {
+    const encodedUrl = encodeURIComponent(apiUrl);
+    const speedTestUrl = `https://www.tcptest.cn/http/${encodedUrl}`;
+    window.open(speedTestUrl, '_blank');
+  }, []);
+
   const handleInputChange = useCallback((value, name) => {
     if (name === 'data_export_default_time') {
       setDataExportDefaultTime(value);
@@ -698,22 +705,17 @@ const Detail = (props) => {
   }, [dataExportDefaultTime, getTimeInterval]);
 
   const updateChartData = useCallback((data) => {
-    // 处理原始数据
     const processedData = processRawData(data);
     const { totalQuota, totalTimes, totalTokens, uniqueModels, timePoints, timeQuotaMap, timeTokensMap, timeCountMap } = processedData;
 
-    // 计算趋势数据
     const trendDataResult = calculateTrendData(timePoints, timeQuotaMap, timeTokensMap, timeCountMap);
     setTrendData(trendDataResult);
 
-    // 生成模型颜色映射
     const newModelColors = generateModelColors(uniqueModels);
     setModelColors(newModelColors);
 
-    // 聚合数据
     const aggregatedData = aggregateDataByTimeAndModel(data);
 
-    // 生成饼图数据
     const modelTotals = new Map();
     for (let [_, value] of aggregatedData) {
       updateMapValue(modelTotals, value.model, value.count);
@@ -724,7 +726,6 @@ const Detail = (props) => {
       value: count,
     })).sort((a, b) => b.value - a.value);
 
-    // 生成线图数据
     const chartTimePoints = generateChartTimePoints(aggregatedData, data);
     let newLineData = [];
 
@@ -748,7 +749,6 @@ const Detail = (props) => {
 
     newLineData.sort((a, b) => a.Time.localeCompare(b.Time));
 
-    // 更新图表配置
     updateChartSpec(
       setSpecPie,
       newPieData,
@@ -765,7 +765,6 @@ const Detail = (props) => {
       'barData'
     );
 
-    // 更新状态
     setPieData(newPieData);
     setLineData(newLineData);
     setConsumeQuota(totalQuota);
@@ -994,7 +993,17 @@ const Detail = (props) => {
                             </Avatar>
                           </div>
                           <div className="flex-1">
-                            <div className="text-sm font-medium text-gray-900 mb-1">
+                            <div className="text-sm font-medium text-gray-900 mb-1 !font-bold flex items-center gap-2">
+                              <Tag
+                                prefixIcon={<Gauge size={12} />}
+                                size="small"
+                                color="white"
+                                shape='circle'
+                                onClick={() => handleSpeedTest(api.url)}
+                                className="cursor-pointer hover:opacity-80 text-xs"
+                              >
+                                {t('测速')}
+                              </Tag>
                               {api.route}
                             </div>
                             <div

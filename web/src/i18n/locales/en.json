@@ -1585,5 +1585,6 @@
   "请输入说明": "Please enter the description",
   "如：香港线路": "e.g. Hong Kong line",
   "请联系管理员在系统设置中配置API信息": "Please contact the administrator to configure API information in the system settings.",
-  "确定要删除此API信息吗？": "Are you sure you want to delete this API information?"
+  "确定要删除此API信息吗？": "Are you sure you want to delete this API information?",
+  "测速": "Speed Test"
 }
