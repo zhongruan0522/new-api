@@ -55,6 +55,7 @@ const TopUp = () => {
   const [amountLoading, setAmountLoading] = useState(false);
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [confirmLoading, setConfirmLoading] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(false);
 
   // 邀请相关状态
   const [affLink, setAffLink] = useState('');
@@ -256,6 +257,32 @@ const TopUp = () => {
     showSuccess(t('邀请链接已复制到剪切板'));
   };
 
+  // 检测暗色模式
+  useEffect(() => {
+    const checkDarkMode = () => {
+      const isDark = document.documentElement.classList.contains('dark') || 
+                    window.matchMedia('(prefers-color-scheme: dark)').matches;
+      setIsDarkMode(isDark);
+    };
+
+    checkDarkMode();
+    
+    // 监听主题变化
+    const observer = new MutationObserver(checkDarkMode);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class']
+    });
+
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    mediaQuery.addListener(checkDarkMode);
+
+    return () => {
+      observer.disconnect();
+      mediaQuery.removeListener(checkDarkMode);
+    };
+  }, []);
+
   useEffect(() => {
     if (userState?.user?.id) {
       setUserDataLoading(false);
@@ -398,48 +425,45 @@ const TopUp = () => {
             <div className="w-full">
               <Card className="!rounded-2xl shadow-lg border-0">
                 <Card
-                  className="!rounded-2xl !border-0 !shadow-2xl overflow-hidden"
+                  className="!rounded-2xl !border-0 !shadow-lg overflow-hidden"
                   style={{
-                    background: 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 25%, #2563eb 50%, #3b82f6 75%, #60a5fa 100%)',
+                    background: isDarkMode 
+                      ? 'linear-gradient(135deg, #1e293b 0%, #334155 50%, #475569 100%)'
+                      : 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #cbd5e1 100%)',
                     position: 'relative'
                   }}
                   bodyStyle={{ padding: 0 }}
                 >
                   <div className="absolute inset-0 overflow-hidden">
-                    <div className="absolute -top-10 -right-10 w-40 h-40 bg-white opacity-5 rounded-full"></div>
-                    <div className="absolute -bottom-16 -left-16 w-48 h-48 bg-white opacity-3 rounded-full"></div>
-                    <div className="absolute top-1/2 right-1/4 w-24 h-24 bg-yellow-400 opacity-10 rounded-full"></div>
+                    <div className="absolute -top-10 -right-10 w-40 h-40 bg-slate-400 opacity-5 rounded-full"></div>
+                    <div className="absolute -bottom-16 -left-16 w-48 h-48 bg-slate-300 opacity-8 rounded-full"></div>
+                    <div className="absolute top-1/2 right-1/4 w-24 h-24 bg-slate-400 opacity-6 rounded-full"></div>
                   </div>
 
-                  <div className="relative p-4 sm:p-6 md:p-8" style={{ color: 'white' }}>
+                  <div className="relative p-4 sm:p-6 md:p-8 text-gray-600 dark:text-gray-300">
                     <div className="flex justify-between items-start mb-4 sm:mb-6">
                       <div className="flex-1 min-w-0">
                         {userDataLoading ? (
                           <Skeleton.Title style={{ width: '200px', height: '20px' }} />
                         ) : (
-                          <div className="text-base sm:text-lg font-semibold truncate" style={{ color: 'white' }}>
+                          <div className="text-base sm:text-lg font-semibold truncate text-gray-800 dark:text-gray-100">
                             {t('尊敬的')} {getUsername()}
                           </div>
                         )}
                       </div>
-                      <div
-                        className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center shadow-lg flex-shrink-0 ml-2"
-                        style={{
-                          background: `linear-gradient(135deg, ${stringToColor(getUsername())} 0%, #f59e0b 100%)`
-                        }}
-                      >
-                        <IconCreditCard size="default" style={{ color: 'white' }} />
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center shadow-md flex-shrink-0 ml-2 bg-slate-400 dark:bg-slate-500">
+                        <IconCreditCard size="default" className="text-white" />
                       </div>
                     </div>
 
                     <div className="mb-4 sm:mb-6">
-                      <div className="text-xs sm:text-sm mb-1 sm:mb-2" style={{ color: 'rgba(255, 255, 255, 0.7)' }}>
+                      <div className="text-xs sm:text-sm mb-1 sm:mb-2 text-gray-500 dark:text-gray-400">
                         {t('当前余额')}
                       </div>
                       {userDataLoading ? (
                         <Skeleton.Title style={{ width: '180px', height: '32px' }} />
                       ) : (
-                        <div className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-wide" style={{ color: 'white' }}>
+                        <div className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-wide text-gray-900 dark:text-gray-100">
                           {renderQuota(userState?.user?.quota || userQuota)}
                         </div>
                       )}
@@ -448,37 +472,37 @@ const TopUp = () => {
                     <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end">
                       <div className="grid grid-cols-3 gap-2 sm:flex sm:space-x-6 lg:space-x-8 mb-3 sm:mb-0">
                         <div className="text-center sm:text-left">
-                          <div className="text-xs" style={{ color: 'rgba(255, 255, 255, 0.6)' }}>
+                          <div className="text-xs text-gray-400 dark:text-gray-500">
                             {t('历史消耗')}
                           </div>
                           {userDataLoading ? (
                             <Skeleton.Title style={{ width: '60px', height: '14px' }} />
                           ) : (
-                            <div className="text-xs sm:text-sm font-medium truncate" style={{ color: 'white' }}>
+                            <div className="text-xs sm:text-sm font-medium truncate text-gray-600 dark:text-gray-300">
                               {renderQuota(userState?.user?.used_quota || 0)}
                             </div>
                           )}
                         </div>
                         <div className="text-center sm:text-left">
-                          <div className="text-xs" style={{ color: 'rgba(255, 255, 255, 0.6)' }}>
+                          <div className="text-xs text-gray-400 dark:text-gray-500">
                             {t('用户分组')}
                           </div>
                           {userDataLoading ? (
                             <Skeleton.Title style={{ width: '50px', height: '14px' }} />
                           ) : (
-                            <div className="text-xs sm:text-sm font-medium truncate" style={{ color: 'white' }}>
+                            <div className="text-xs sm:text-sm font-medium truncate text-gray-600 dark:text-gray-300">
                               {userState?.user?.group || t('默认')}
                             </div>
                           )}
                         </div>
                         <div className="text-center sm:text-left">
-                          <div className="text-xs" style={{ color: 'rgba(255, 255, 255, 0.6)' }}>
+                          <div className="text-xs text-gray-400 dark:text-gray-500">
                             {t('用户角色')}
                           </div>
                           {userDataLoading ? (
                             <Skeleton.Title style={{ width: '60px', height: '14px' }} />
                           ) : (
-                            <div className="text-xs sm:text-sm font-medium truncate" style={{ color: 'white' }}>
+                            <div className="text-xs sm:text-sm font-medium truncate text-gray-600 dark:text-gray-300">
                               {getUserRole()}
                             </div>
                           )}
@@ -489,32 +513,187 @@ const TopUp = () => {
                         {userDataLoading ? (
                           <Skeleton.Title style={{ width: '50px', height: '24px' }} />
                         ) : (
-                          <div
-                            className="px-2 py-1 sm:px-3 rounded-md text-xs sm:text-sm font-medium inline-block"
-                            style={{
-                              backgroundColor: 'rgba(255, 255, 255, 0.2)',
-                              color: 'white',
-                              backdropFilter: 'blur(10px)'
-                            }}
-                          >
+                          <div className="px-2 py-1 sm:px-3 rounded-md text-xs sm:text-sm font-medium inline-block bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-600">
                             ID: {userState?.user?.id || '---'}
                           </div>
                         )}
                       </div>
                     </div>
 
-                    <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-yellow-400 via-orange-400 to-red-400" style={{ opacity: 0.6 }}></div>
+                    <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-slate-300 via-slate-400 to-slate-500 dark:from-slate-600 dark:via-slate-500 dark:to-slate-400 opacity-40"></div>
                   </div>
                 </Card>
 
                 <div className="p-6">
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* 邀请信息部分 */}
-                    <div>
+                    {/* 左侧：在线充值和兑换余额 */}
+                    <div className="lg:col-span-2 space-y-8">
+                      {/* 在线充值部分 */}
+                      <div>
+                        <div className="flex items-center mb-6">
+                          <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center mr-4">
+                            <IconPlus size="large" className="text-slate-600 dark:text-slate-300" />
+                          </div>
+                          <div>
+                            <Text className="text-xl font-semibold">{t('在线充值')}</Text>
+                            <div className="text-gray-500 text-sm">{t('支持多种支付方式')}</div>
+                          </div>
+                        </div>
+
+                        <div className="space-y-4">
+                          <div>
+                            <div className="flex justify-between mb-2">
+                              <Text strong>{t('充值数量')}</Text>
+                              {amountLoading ? (
+                                <Skeleton.Title style={{ width: '80px', height: '14px' }} />
+                              ) : (
+                                <Text type="tertiary">{t('实付金额：') + ' ' + renderAmount()}</Text>
+                              )}
+                            </div>
+                            <InputNumber
+                              disabled={!enableOnlineTopUp}
+                              placeholder={
+                                t('充值数量，最低 ') + renderQuotaWithAmount(minTopUp)
+                              }
+                              value={topUpCount}
+                              min={minTopUp}
+                              max={999999999}
+                              step={1}
+                              precision={0}
+                              onChange={async (value) => {
+                                if (value && value >= 1) {
+                                  setTopUpCount(value);
+                                  await getAmount(value);
+                                }
+                              }}
+                              onBlur={(e) => {
+                                const value = parseInt(e.target.value);
+                                if (!value || value < 1) {
+                                  setTopUpCount(1);
+                                  getAmount(1);
+                                }
+                              }}
+                              size="large"
+                              className="!rounded-lg w-full"
+                              prefix={<IconCreditCard />}
+                              formatter={(value) => value ? `${value}` : ''}
+                              parser={(value) => value ? parseInt(value.replace(/[^\d]/g, '')) : 0}
+                            />
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <Button
+                              type="primary"
+                              theme="solid"
+                              onClick={async () => {
+                                preTopUp('zfb');
+                              }}
+                              size="large"
+                              className="!rounded-lg !bg-slate-600 hover:!bg-slate-700 h-14"
+                              disabled={!enableOnlineTopUp}
+                              loading={paymentLoading}
+                              icon={<SiAlipay size={20} />}
+                            >
+                              <span className="ml-2">{t('支付宝')}</span>
+                            </Button>
+                            <Button
+                              type="primary"
+                              theme="solid"
+                              onClick={async () => {
+                                preTopUp('wx');
+                              }}
+                              size="large"
+                              className="!rounded-lg !bg-slate-600 hover:!bg-slate-700 h-14"
+                              disabled={!enableOnlineTopUp}
+                              loading={paymentLoading}
+                              icon={<SiWechat size={20} />}
+                            >
+                              <span className="ml-2">{t('微信')}</span>
+                            </Button>
+                          </div>
+
+                          {!enableOnlineTopUp && (
+                            <Banner
+                              fullMode={false}
+                              type="warning"
+                              icon={null}
+                              closeIcon={null}
+                              className="!rounded-lg"
+                              title={
+                                <div style={{ fontWeight: 600, fontSize: '14px', lineHeight: '20px' }}>
+                                  {t('在线充值功能未开启')}
+                                </div>
+                              }
+                              description={
+                                <div>
+                                  {t('管理员未开启在线充值功能，请联系管理员开启或使用兑换码充值。')}
+                                </div>
+                              }
+                            />
+                          )}
+                        </div>
+                      </div>
+
+                      {/* 兑换余额部分 */}
+                      <div>
+                        <div className="flex items-center mb-6">
+                          <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center mr-4">
+                            <IconGift size="large" className="text-slate-600 dark:text-slate-300" />
+                          </div>
+                          <div>
+                            <Text className="text-xl font-semibold">{t('兑换余额')}</Text>
+                            <div className="text-gray-500 text-sm">{t('使用兑换码充值余额')}</div>
+                          </div>
+                        </div>
+
+                        <div className="space-y-4">
+                          <div>
+                            <Text strong className="block mb-2">{t('兑换码')}</Text>
+                            <Input
+                              placeholder={t('请输入兑换码')}
+                              value={redemptionCode}
+                              onChange={(value) => setRedemptionCode(value)}
+                              size="large"
+                              className="!rounded-lg"
+                              prefix={<IconGift />}
+                            />
+                          </div>
+
+                          <div className="flex flex-col sm:flex-row gap-3">
+                            {topUpLink && (
+                              <Button
+                                type="primary"
+                                theme="solid"
+                                onClick={openTopUpLink}
+                                size="large"
+                                className="!rounded-lg flex-1"
+                                icon={<IconLink />}
+                              >
+                                {t('获取兑换码')}
+                              </Button>
+                            )}
+                            <Button
+                              type="warning"
+                              theme="solid"
+                              onClick={topUp}
+                              disabled={isSubmitting}
+                              loading={isSubmitting}
+                              size="large"
+                              className="!rounded-lg flex-1"
+                            >
+                              {isSubmitting ? t('兑换中...') : t('兑换')}
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 右侧：邀请信息部分 */}
+                    <div className="lg:col-span-1">
                       <div className="flex items-center justify-between mb-6">
                         <div className="flex items-center">
-                          <div className="w-12 h-12 rounded-full bg-orange-50 flex items-center justify-center mr-4">
-                            <IconLink size="large" className="text-orange-500" />
+                          <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center mr-4">
+                            <IconLink size="large" className="text-slate-600 dark:text-slate-300" />
                           </div>
                           <div>
                             <div className="flex items-center gap-3">
@@ -524,7 +703,7 @@ const TopUp = () => {
                                 theme="solid"
                                 onClick={() => setOpenTransfer(true)}
                                 size="small"
-                                className="!rounded-lg !bg-blue-500 hover:!bg-blue-600"
+                                className="!rounded-lg !bg-slate-600 hover:!bg-slate-700"
                                 icon={<IconCreditCard />}
                               >
                                 {t('划转')}
@@ -536,7 +715,7 @@ const TopUp = () => {
                       </div>
 
                       <div className="space-y-4">
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div className="grid grid-cols-1 gap-3">
                           <Card
                             className="!rounded-2xl text-center"
                             bodyStyle={{ padding: '16px' }}
@@ -546,7 +725,6 @@ const TopUp = () => {
                             <div className="text-gray-900 text-lg font-bold mt-1">
                               {renderQuota(userState?.user?.aff_quota)}
                             </div>
-
                           </Card>
                           <Card
                             className="!rounded-2xl text-center"
@@ -581,162 +759,6 @@ const TopUp = () => {
                             prefix={<IconLink />}
                           />
                         </div>
-                      </div>
-                    </div>
-                    <div>
-                      <div className="flex items-center mb-6">
-                        <div className="w-12 h-12 rounded-full bg-green-50 flex items-center justify-center mr-4">
-                          <IconGift size="large" className="text-green-500" />
-                        </div>
-                        <div>
-                          <Text className="text-xl font-semibold">{t('兑换余额')}</Text>
-                          <div className="text-gray-500 text-sm">{t('使用兑换码充值余额')}</div>
-                        </div>
-                      </div>
-
-                      <div className="space-y-4">
-                        <div>
-                          <Text strong className="block mb-2">{t('兑换码')}</Text>
-                          <Input
-                            placeholder={t('请输入兑换码')}
-                            value={redemptionCode}
-                            onChange={(value) => setRedemptionCode(value)}
-                            size="large"
-                            className="!rounded-lg"
-                            prefix={<IconGift />}
-                          />
-                        </div>
-
-                        <div className="flex flex-col sm:flex-row gap-3">
-                          {topUpLink && (
-                            <Button
-                              type="primary"
-                              theme="solid"
-                              onClick={openTopUpLink}
-                              size="large"
-                              className="!rounded-lg flex-1"
-                              icon={<IconLink />}
-                            >
-                              {t('获取兑换码')}
-                            </Button>
-                          )}
-                          <Button
-                            type="warning"
-                            theme="solid"
-                            onClick={topUp}
-                            disabled={isSubmitting}
-                            loading={isSubmitting}
-                            size="large"
-                            className="!rounded-lg flex-1"
-                          >
-                            {isSubmitting ? t('兑换中...') : t('兑换')}
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div>
-                      <div className="flex items-center mb-6">
-                        <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center mr-4">
-                          <IconPlus size="large" className="text-blue-500" />
-                        </div>
-                        <div>
-                          <Text className="text-xl font-semibold">{t('在线充值')}</Text>
-                          <div className="text-gray-500 text-sm">{t('支持多种支付方式')}</div>
-                        </div>
-                      </div>
-
-                      <div className="space-y-4">
-                        <div>
-                          <div className="flex justify-between mb-2">
-                            <Text strong>{t('充值数量')}</Text>
-                            {amountLoading ? (
-                              <Skeleton.Title style={{ width: '80px', height: '14px' }} />
-                            ) : (
-                              <Text type="tertiary">{t('实付金额：') + ' ' + renderAmount()}</Text>
-                            )}
-                          </div>
-                          <InputNumber
-                            disabled={!enableOnlineTopUp}
-                            placeholder={
-                              t('充值数量，最低 ') + renderQuotaWithAmount(minTopUp)
-                            }
-                            value={topUpCount}
-                            min={minTopUp}
-                            max={999999999}
-                            step={1}
-                            precision={0}
-                            onChange={async (value) => {
-                              if (value && value >= 1) {
-                                setTopUpCount(value);
-                                await getAmount(value);
-                              }
-                            }}
-                            onBlur={(e) => {
-                              const value = parseInt(e.target.value);
-                              if (!value || value < 1) {
-                                setTopUpCount(1);
-                                getAmount(1);
-                              }
-                            }}
-                            size="large"
-                            className="!rounded-lg w-full"
-                            prefix={<IconCreditCard />}
-                            formatter={(value) => value ? `${value}` : ''}
-                            parser={(value) => value ? parseInt(value.replace(/[^\d]/g, '')) : 0}
-                          />
-                        </div>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          <Button
-                            type="primary"
-                            theme="solid"
-                            onClick={async () => {
-                              preTopUp('zfb');
-                            }}
-                            size="large"
-                            className="!rounded-lg !bg-blue-500 hover:!bg-blue-600 h-14"
-                            disabled={!enableOnlineTopUp}
-                            loading={paymentLoading}
-                            icon={<SiAlipay size={20} />}
-                          >
-                            <span className="ml-2">{t('支付宝')}</span>
-                          </Button>
-                          <Button
-                            type="primary"
-                            theme="solid"
-                            onClick={async () => {
-                              preTopUp('wx');
-                            }}
-                            size="large"
-                            className="!rounded-lg !bg-green-500 hover:!bg-green-600 h-14"
-                            disabled={!enableOnlineTopUp}
-                            loading={paymentLoading}
-                            icon={<SiWechat size={20} />}
-                          >
-                            <span className="ml-2">{t('微信')}</span>
-                          </Button>
-                        </div>
-
-                        {!enableOnlineTopUp && (
-                          <Banner
-                            fullMode={false}
-                            type="warning"
-                            icon={null}
-                            closeIcon={null}
-                            className="!rounded-lg"
-                            title={
-                              <div style={{ fontWeight: 600, fontSize: '14px', lineHeight: '20px' }}>
-                                {t('在线充值功能未开启')}
-                              </div>
-                            }
-                            description={
-                              <div>
-                                {t('管理员未开启在线充值功能，请联系管理员开启或使用兑换码充值。')}
-                              </div>
-                            }
-                          />
-                        )}
                       </div>
                     </div>
                   </div>
