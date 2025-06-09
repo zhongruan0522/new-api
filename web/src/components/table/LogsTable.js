@@ -47,7 +47,8 @@ import {
 } from '@douyinfe/semi-illustrations';
 import { ITEMS_PER_PAGE } from '../../constants';
 import Paragraph from '@douyinfe/semi-ui/lib/es/typography/paragraph';
-import { IconSetting, IconSearch, IconForward } from '@douyinfe/semi-icons';
+import { IconSetting, IconSearch } from '@douyinfe/semi-icons';
+import { Route } from 'lucide-react';
 
 const { Text } = Typography;
 
@@ -232,6 +233,11 @@ const LogsTable = () => {
                 onClick: (event) => {
                   copyText(event, record.model_name).then((r) => { });
                 },
+                suffixIcon: (
+                  <Route
+                    style={{ width: '0.9em', height: '0.9em', opacity: 0.75 }}
+                  />
+                ),
               })}
             </Popover>
           </Space>
