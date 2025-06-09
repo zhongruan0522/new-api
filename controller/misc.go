@@ -74,9 +74,31 @@ func GetStatus(c *gin.Context) {
 			"oidc_client_id":              system_setting.GetOIDCSettings().ClientId,
 			"oidc_authorization_endpoint": system_setting.GetOIDCSettings().AuthorizationEndpoint,
 			"setup":                       constant.Setup,
+			"api_info":                    getApiInfo(),
 		},
 	})
 	return
+}
+
+func getApiInfo() []map[string]interface{} {
+	// 从OptionMap中获取API信息，如果不存在则返回空数组
+	common.OptionMapRWMutex.RLock()
+	apiInfoStr, exists := common.OptionMap["ApiInfo"]
+	common.OptionMapRWMutex.RUnlock()
+	
+	if !exists || apiInfoStr == "" {
+		// 如果没有配置，返回空数组
+		return []map[string]interface{}{}
+	}
+	
+	// 解析存储的API信息
+	var apiInfo []map[string]interface{}
+	if err := json.Unmarshal([]byte(apiInfoStr), &apiInfo); err != nil {
+		// 如果解析失败，返回空数组
+		return []map[string]interface{}{}
+	}
+	
+	return apiInfo
 }
 
 func GetNotice(c *gin.Context) {
