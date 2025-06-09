@@ -986,7 +986,7 @@ const Detail = (props) => {
                         <div key={api.id} className="flex p-2 hover:bg-white rounded-lg transition-colors cursor-pointer">
                           <div className="flex-shrink-0 mr-3">
                             <Avatar
-                              size="extra-extra-small"
+                              size="extra-small"
                               color={api.color}
                             >
                               {api.route.substring(0, 2)}
