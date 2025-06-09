@@ -256,7 +256,7 @@ const ChannelsTable = () => {
                     {renderQuota(record.used_quota)}
                   </Tag>
                 </Tooltip>
-                <Tooltip content={t('剩余额度') + record.balance + t('，点击更新')}>
+                <Tooltip content={t('剩余额度$') + record.balance + t('，点击更新')}>
                   <Tag
                     color='white'
                     type='ghost'
@@ -265,7 +265,7 @@ const ChannelsTable = () => {
                     prefixIcon={<Coins size={14} />}
                     onClick={() => updateChannelBalance(record)}
                   >
-                    ${renderNumberWithPoint(record.balance)}
+                    {renderQuotaWithAmount(record.balance)}
                   </Tag>
                 </Tooltip>
               </Space>
