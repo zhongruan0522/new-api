@@ -89,37 +89,37 @@ const LogsTable = () => {
     switch (type) {
       case 1:
         return (
-          <Tag color='cyan' size='large' shape='circle' prefixIcon={<CreditCard size={14} />}>
+          <Tag color='cyan' size='large' shape='circle'>
             {t('充值')}
           </Tag>
         );
       case 2:
         return (
-          <Tag color='lime' size='large' shape='circle' prefixIcon={<ShoppingCart size={14} />}>
+          <Tag color='lime' size='large' shape='circle'>
             {t('消费')}
           </Tag>
         );
       case 3:
         return (
-          <Tag color='orange' size='large' shape='circle' prefixIcon={<Settings size={14} />}>
+          <Tag color='orange' size='large' shape='circle'>
             {t('管理')}
           </Tag>
         );
       case 4:
         return (
-          <Tag color='purple' size='large' shape='circle' prefixIcon={<Server size={14} />}>
+          <Tag color='purple' size='large' shape='circle'>
             {t('系统')}
           </Tag>
         );
       case 5:
         return (
-          <Tag color='red' size='large' shape='circle' prefixIcon={<AlertTriangle size={14} />}>
+          <Tag color='red' size='large' shape='circle'>
             {t('错误')}
           </Tag>
         );
       default:
         return (
-          <Tag color='grey' size='large' shape='circle' prefixIcon={<HelpCircle size={14} />}>
+          <Tag color='grey' size='large' shape='circle'>
             {t('未知')}
           </Tag>
         );
@@ -129,13 +129,13 @@ const LogsTable = () => {
   function renderIsStream(bool) {
     if (bool) {
       return (
-        <Tag color='blue' size='large' shape='circle' prefixIcon={<Zap size={14} />}>
+        <Tag color='blue' size='large' shape='circle'>
           {t('流')}
         </Tag>
       );
     } else {
       return (
-        <Tag color='purple' size='large' shape='circle' prefixIcon={<Play size={14} />}>
+        <Tag color='purple' size='large' shape='circle'>
           {t('非流')}
         </Tag>
       );
@@ -146,21 +146,21 @@ const LogsTable = () => {
     const time = parseInt(type);
     if (time < 101) {
       return (
-        <Tag color='green' size='large' shape='circle' prefixIcon={<Clock size={14} />}>
+        <Tag color='green' size='large' shape='circle'>
           {' '}
           {time} s{' '}
         </Tag>
       );
     } else if (time < 300) {
       return (
-        <Tag color='orange' size='large' shape='circle' prefixIcon={<Clock size={14} />}>
+        <Tag color='orange' size='large' shape='circle'>
           {' '}
           {time} s{' '}
         </Tag>
       );
     } else {
       return (
-        <Tag color='red' size='large' shape='circle' prefixIcon={<Clock size={14} />}>
+        <Tag color='red' size='large' shape='circle'>
           {' '}
           {time} s{' '}
         </Tag>
@@ -173,21 +173,21 @@ const LogsTable = () => {
     time = time.toFixed(1);
     if (time < 3) {
       return (
-        <Tag color='green' size='large' shape='circle' prefixIcon={<Zap size={14} />}>
+        <Tag color='green' size='large' shape='circle'>
           {' '}
           {time} s{' '}
         </Tag>
       );
     } else if (time < 10) {
       return (
-        <Tag color='orange' size='large' shape='circle' prefixIcon={<Zap size={14} />}>
+        <Tag color='orange' size='large' shape='circle'>
           {' '}
           {time} s{' '}
         </Tag>
       );
     } else {
       return (
-        <Tag color='red' size='large' shape='circle' prefixIcon={<Zap size={14} />}>
+        <Tag color='red' size='large' shape='circle'>
           {' '}
           {time} s{' '}
         </Tag>
@@ -245,11 +245,6 @@ const LogsTable = () => {
                 onClick: (event) => {
                   copyText(event, record.model_name).then((r) => { });
                 },
-                suffixIcon: (
-                  <IconForward
-                    style={{ width: '0.9em', height: '0.9em', opacity: 0.75 }}
-                  />
-                ),
               })}
             </Popover>
           </Space>
@@ -374,7 +369,6 @@ const LogsTable = () => {
                     color={colors[parseInt(text) % colors.length]}
                     size='large'
                     shape='circle'
-                    prefixIcon={<Hash size={14} />}
                   >
                     {' '}
                     {text}{' '}
@@ -427,7 +421,6 @@ const LogsTable = () => {
               color='grey'
               size='large'
               shape='circle'
-              prefixIcon={<Key size={14} />}
               onClick={(event) => {
                 //cancel the row click event
                 copyText(event, text);
