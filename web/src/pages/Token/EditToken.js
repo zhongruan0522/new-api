@@ -219,9 +219,15 @@ const EditToken = (props) => {
       let successCount = 0; // 记录成功创建的令牌数量
       for (let i = 0; i < tokenCount; i++) {
         let localInputs = { ...inputs };
-        if (i !== 0) {
-          // 如果用户想要创建多个令牌，则给每个令牌一个序号后缀
-          localInputs.name = `${inputs.name}-${generateRandomSuffix()}`;
+
+        // 检查用户是否填写了令牌名称
+        const baseName = inputs.name.trim() === '' ? 'default' : inputs.name;
+
+        if (i !== 0 || inputs.name.trim() === '') {
+          // 如果创建多个令牌（i !== 0）或者用户没有填写名称，则添加随机后缀
+          localInputs.name = `${baseName}-${generateRandomSuffix()}`;
+        } else {
+          localInputs.name = baseName;
         }
         localInputs.remain_quota = parseInt(localInputs.remain_quota);
 

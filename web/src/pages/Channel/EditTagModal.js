@@ -194,6 +194,24 @@ const EditTagModal = (props) => {
   }, [originModelOptions, inputs.models]);
 
   useEffect(() => {
+    const fetchTagModels = async () => {
+      if (!tag) return;
+      setLoading(true);
+      try {
+        const res = await API.get(`/api/channel/tag/models?tag=${tag}`);
+        if (res?.data?.success) {
+          const models = res.data.data ? res.data.data.split(',') : [];
+          setInputs((inputs) => ({ ...inputs, models: models }));
+        } else {
+          showError(res.data.message);
+        }
+      } catch (error) {
+        showError(error.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     setInputs({
       ...originInputs,
       tag: tag,
@@ -201,7 +219,8 @@ const EditTagModal = (props) => {
     });
     fetchModels().then();
     fetchGroups().then();
-  }, [visible]);
+    fetchTagModels().then(); // Call the new function
+  }, [visible, tag]); // Add tag to dependency array
 
   const addCustomModels = () => {
     if (customModel.trim() === '') return;
@@ -347,6 +366,11 @@ const EditTagModal = (props) => {
             <div className="space-y-4">
               <div>
                 <Text strong className="block mb-2">{t('模型')}</Text>
+                <Banner
+                  type="info"
+                  description={t('当前模型列表为该标签下所有渠道模型列表最长的一个，并非所有渠道的并集，请注意可能导致某些渠道模型丢失。')}
+                  className="!rounded-lg mb-4"
+                />
                 <Select
                   placeholder={t('请选择该渠道所支持的模型，留空则不更改')}
                   name='models'
@@ -388,19 +412,19 @@ const EditTagModal = (props) => {
                 />
                 <Space className="mt-2">
                   <Text
-                    className="text-blue-500 cursor-pointer"
+                    className="!text-semi-color-primary cursor-pointer"
                     onClick={() => handleInputChange('model_mapping', JSON.stringify(MODEL_MAPPING_EXAMPLE, null, 2))}
                   >
                     {t('填入模板')}
                   </Text>
                   <Text
-                    className="text-blue-500 cursor-pointer"
+                    className="!text-semi-color-primary cursor-pointer"
                     onClick={() => handleInputChange('model_mapping', JSON.stringify({}, null, 2))}
                   >
                     {t('清空重定向')}
                   </Text>
                   <Text
-                    className="text-blue-500 cursor-pointer"
+                    className="!text-semi-color-primary cursor-pointer"
                     onClick={() => handleInputChange('model_mapping', '')}
                   >
                     {t('不更改')}

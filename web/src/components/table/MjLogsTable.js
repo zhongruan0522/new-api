@@ -1,35 +1,65 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
+  Palette,
+  ZoomIn,
+  Shuffle,
+  Move,
+  FileText,
+  Blend,
+  Upload,
+  Minimize2,
+  RotateCcw,
+  PaintBucket,
+  Focus,
+  Move3D,
+  Monitor,
+  UserCheck,
+  HelpCircle,
+  CheckCircle,
+  Clock,
+  Copy,
+  FileX,
+  Pause,
+  XCircle,
+  Loader,
+  AlertCircle,
+  Hash
+} from 'lucide-react';
+import {
   API,
   copy,
   isAdmin,
   showError,
   showSuccess,
-  timestamp2string,
+  timestamp2string
 } from '../../helpers';
 
 import {
   Button,
   Card,
   Checkbox,
-  DatePicker,
   Divider,
+  Empty,
+  Form,
   ImagePreview,
-  Input,
   Layout,
   Modal,
   Progress,
   Skeleton,
   Table,
   Tag,
-  Typography,
+  Typography
 } from '@douyinfe/semi-ui';
+import {
+  IllustrationNoResult,
+  IllustrationNoResultDark
+} from '@douyinfe/semi-illustrations';
 import { ITEMS_PER_PAGE } from '../../constants';
 import {
   IconEyeOpened,
   IconSearch,
-  IconSetting,
+  IconSetting
 } from '@douyinfe/semi-icons';
 
 const { Text } = Typography;
@@ -154,103 +184,103 @@ const LogsTable = () => {
     switch (type) {
       case 'IMAGINE':
         return (
-          <Tag color='blue' size='large' shape='circle'>
+          <Tag color='blue' size='large' shape='circle' prefixIcon={<Palette size={14} />}>
             {t('绘图')}
           </Tag>
         );
       case 'UPSCALE':
         return (
-          <Tag color='orange' size='large' shape='circle'>
+          <Tag color='orange' size='large' shape='circle' prefixIcon={<ZoomIn size={14} />}>
             {t('放大')}
           </Tag>
         );
       case 'VARIATION':
         return (
-          <Tag color='purple' size='large' shape='circle'>
+          <Tag color='purple' size='large' shape='circle' prefixIcon={<Shuffle size={14} />}>
             {t('变换')}
           </Tag>
         );
       case 'HIGH_VARIATION':
         return (
-          <Tag color='purple' size='large' shape='circle'>
+          <Tag color='purple' size='large' shape='circle' prefixIcon={<Shuffle size={14} />}>
             {t('强变换')}
           </Tag>
         );
       case 'LOW_VARIATION':
         return (
-          <Tag color='purple' size='large' shape='circle'>
+          <Tag color='purple' size='large' shape='circle' prefixIcon={<Shuffle size={14} />}>
             {t('弱变换')}
           </Tag>
         );
       case 'PAN':
         return (
-          <Tag color='cyan' size='large' shape='circle'>
+          <Tag color='cyan' size='large' shape='circle' prefixIcon={<Move size={14} />}>
             {t('平移')}
           </Tag>
         );
       case 'DESCRIBE':
         return (
-          <Tag color='yellow' size='large' shape='circle'>
+          <Tag color='yellow' size='large' shape='circle' prefixIcon={<FileText size={14} />}>
             {t('图生文')}
           </Tag>
         );
       case 'BLEND':
         return (
-          <Tag color='lime' size='large' shape='circle'>
+          <Tag color='lime' size='large' shape='circle' prefixIcon={<Blend size={14} />}>
             {t('图混合')}
           </Tag>
         );
       case 'UPLOAD':
         return (
-          <Tag color='blue' size='large' shape='circle'>
+          <Tag color='blue' size='large' shape='circle' prefixIcon={<Upload size={14} />}>
             上传文件
           </Tag>
         );
       case 'SHORTEN':
         return (
-          <Tag color='pink' size='large' shape='circle'>
+          <Tag color='pink' size='large' shape='circle' prefixIcon={<Minimize2 size={14} />}>
             {t('缩词')}
           </Tag>
         );
       case 'REROLL':
         return (
-          <Tag color='indigo' size='large' shape='circle'>
+          <Tag color='indigo' size='large' shape='circle' prefixIcon={<RotateCcw size={14} />}>
             {t('重绘')}
           </Tag>
         );
       case 'INPAINT':
         return (
-          <Tag color='violet' size='large' shape='circle'>
+          <Tag color='violet' size='large' shape='circle' prefixIcon={<PaintBucket size={14} />}>
             {t('局部重绘-提交')}
           </Tag>
         );
       case 'ZOOM':
         return (
-          <Tag color='teal' size='large' shape='circle'>
+          <Tag color='teal' size='large' shape='circle' prefixIcon={<Focus size={14} />}>
             {t('变焦')}
           </Tag>
         );
       case 'CUSTOM_ZOOM':
         return (
-          <Tag color='teal' size='large' shape='circle'>
+          <Tag color='teal' size='large' shape='circle' prefixIcon={<Move3D size={14} />}>
             {t('自定义变焦-提交')}
           </Tag>
         );
       case 'MODAL':
         return (
-          <Tag color='green' size='large' shape='circle'>
+          <Tag color='green' size='large' shape='circle' prefixIcon={<Monitor size={14} />}>
             {t('窗口处理')}
           </Tag>
         );
       case 'SWAP_FACE':
         return (
-          <Tag color='light-green' size='large' shape='circle'>
+          <Tag color='light-green' size='large' shape='circle' prefixIcon={<UserCheck size={14} />}>
             {t('换脸')}
           </Tag>
         );
       default:
         return (
-          <Tag color='white' size='large' shape='circle'>
+          <Tag color='white' size='large' shape='circle' prefixIcon={<HelpCircle size={14} />}>
             {t('未知')}
           </Tag>
         );
@@ -261,31 +291,31 @@ const LogsTable = () => {
     switch (code) {
       case 1:
         return (
-          <Tag color='green' size='large' shape='circle'>
+          <Tag color='green' size='large' shape='circle' prefixIcon={<CheckCircle size={14} />}>
             {t('已提交')}
           </Tag>
         );
       case 21:
         return (
-          <Tag color='lime' size='large' shape='circle'>
+          <Tag color='lime' size='large' shape='circle' prefixIcon={<Clock size={14} />}>
             {t('等待中')}
           </Tag>
         );
       case 22:
         return (
-          <Tag color='orange' size='large' shape='circle'>
+          <Tag color='orange' size='large' shape='circle' prefixIcon={<Copy size={14} />}>
             {t('重复提交')}
           </Tag>
         );
       case 0:
         return (
-          <Tag color='yellow' size='large' shape='circle'>
+          <Tag color='yellow' size='large' shape='circle' prefixIcon={<FileX size={14} />}>
             {t('未提交')}
           </Tag>
         );
       default:
         return (
-          <Tag color='white' size='large' shape='circle'>
+          <Tag color='white' size='large' shape='circle' prefixIcon={<HelpCircle size={14} />}>
             {t('未知')}
           </Tag>
         );
@@ -296,43 +326,43 @@ const LogsTable = () => {
     switch (type) {
       case 'SUCCESS':
         return (
-          <Tag color='green' size='large' shape='circle'>
+          <Tag color='green' size='large' shape='circle' prefixIcon={<CheckCircle size={14} />}>
             {t('成功')}
           </Tag>
         );
       case 'NOT_START':
         return (
-          <Tag color='grey' size='large' shape='circle'>
+          <Tag color='grey' size='large' shape='circle' prefixIcon={<Pause size={14} />}>
             {t('未启动')}
           </Tag>
         );
       case 'SUBMITTED':
         return (
-          <Tag color='yellow' size='large' shape='circle'>
+          <Tag color='yellow' size='large' shape='circle' prefixIcon={<Clock size={14} />}>
             {t('队列中')}
           </Tag>
         );
       case 'IN_PROGRESS':
         return (
-          <Tag color='blue' size='large' shape='circle'>
+          <Tag color='blue' size='large' shape='circle' prefixIcon={<Loader size={14} />}>
             {t('执行中')}
           </Tag>
         );
       case 'FAILURE':
         return (
-          <Tag color='red' size='large' shape='circle'>
+          <Tag color='red' size='large' shape='circle' prefixIcon={<XCircle size={14} />}>
             {t('失败')}
           </Tag>
         );
       case 'MODAL':
         return (
-          <Tag color='yellow' size='large' shape='circle'>
+          <Tag color='yellow' size='large' shape='circle' prefixIcon={<AlertCircle size={14} />}>
             {t('窗口等待')}
           </Tag>
         );
       default:
         return (
-          <Tag color='white' size='large' shape='circle'>
+          <Tag color='white' size='large' shape='circle' prefixIcon={<HelpCircle size={14} />}>
             {t('未知')}
           </Tag>
         );
@@ -362,7 +392,7 @@ const LogsTable = () => {
     const color = durationSec > 60 ? 'red' : 'green';
 
     return (
-      <Tag color={color} size='large' shape='circle'>
+      <Tag color={color} size='large' shape='circle' prefixIcon={<Clock size={14} />}>
         {durationSec} {t('秒')}
       </Tag>
     );
@@ -398,6 +428,7 @@ const LogsTable = () => {
               color={colors[parseInt(text) % colors.length]}
               size='large'
               shape='circle'
+              prefixIcon={<Hash size={14} />}
               onClick={() => {
                 copyText(text);
               }}
@@ -462,7 +493,7 @@ const LogsTable = () => {
                 percent={text ? parseInt(text.replace('%', '')) : 0}
                 showInfo={true}
                 aria-label='drawing progress'
-                style={{ minWidth: '200px' }}
+                style={{ minWidth: '160px' }}
               />
             }
           </div>
@@ -483,6 +514,7 @@ const LogsTable = () => {
               setModalImageUrl(text);
               setIsModalOpenurl(true);
             }}
+            className="!rounded-full"
           >
             {t('查看图片')}
           </Button>
@@ -570,7 +602,6 @@ const LogsTable = () => {
   const [loading, setLoading] = useState(true);
   const [activePage, setActivePage] = useState(1);
   const [logCount, setLogCount] = useState(ITEMS_PER_PAGE);
-  const [logType, setLogType] = useState(0);
   const [pageSize, setPageSize] = useState(ITEMS_PER_PAGE);
   const [isModalOpenurl, setIsModalOpenurl] = useState(false);
   const [showBanner, setShowBanner] = useState(false);
@@ -578,22 +609,44 @@ const LogsTable = () => {
   // 定义模态框图片URL的状态和更新函数
   const [modalImageUrl, setModalImageUrl] = useState('');
   let now = new Date();
-  // 初始化start_timestamp为前一天
-  const [inputs, setInputs] = useState({
+
+  // Form 初始值
+  const formInitValues = {
     channel_id: '',
     mj_id: '',
-    start_timestamp: timestamp2string(now.getTime() / 1000 - 2592000),
-    end_timestamp: timestamp2string(now.getTime() / 1000 + 3600),
-  });
-  const { channel_id, mj_id, start_timestamp, end_timestamp } = inputs;
+    dateRange: [
+      timestamp2string(now.getTime() / 1000 - 2592000),
+      timestamp2string(now.getTime() / 1000 + 3600)
+    ],
+  };
+
+  // Form API 引用
+  const [formApi, setFormApi] = useState(null);
 
   const [stat, setStat] = useState({
     quota: 0,
     token: 0,
   });
 
-  const handleInputChange = (value, name) => {
-    setInputs((inputs) => ({ ...inputs, [name]: value }));
+  // 获取表单值的辅助函数
+  const getFormValues = () => {
+    const formValues = formApi ? formApi.getValues() : {};
+
+    // 处理时间范围
+    let start_timestamp = timestamp2string(now.getTime() / 1000 - 2592000);
+    let end_timestamp = timestamp2string(now.getTime() / 1000 + 3600);
+
+    if (formValues.dateRange && Array.isArray(formValues.dateRange) && formValues.dateRange.length === 2) {
+      start_timestamp = formValues.dateRange[0];
+      end_timestamp = formValues.dateRange[1];
+    }
+
+    return {
+      channel_id: formValues.channel_id || '',
+      mj_id: formValues.mj_id || '',
+      start_timestamp,
+      end_timestamp,
+    };
   };
 
   const setLogsFormat = (logs) => {
@@ -611,6 +664,7 @@ const LogsTable = () => {
     setLoading(true);
 
     let url = '';
+    const { channel_id, mj_id, start_timestamp, end_timestamp } = getFormValues();
     let localStartTimestamp = Date.parse(start_timestamp);
     let localEndTimestamp = Date.parse(end_timestamp);
     if (isAdminUser) {
@@ -673,7 +727,7 @@ const LogsTable = () => {
     const localPageSize = parseInt(localStorage.getItem('mj-page-size')) || ITEMS_PER_PAGE;
     setPageSize(localPageSize);
     loadLogs(0, localPageSize).then();
-  }, [logType]);
+  }, []);
 
   useEffect(() => {
     const mjNotifyEnabled = localStorage.getItem('mj_notify_enabled');
@@ -788,70 +842,93 @@ const LogsTable = () => {
               <Divider margin="12px" />
 
               {/* 搜索表单区域 */}
-              <div className="flex flex-col gap-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  {/* 时间选择器 */}
-                  <div className="col-span-1 lg:col-span-2">
-                    <DatePicker
-                      className="w-full"
-                      value={[start_timestamp, end_timestamp]}
-                      type='dateTimeRange'
-                      onChange={(value) => {
-                        if (Array.isArray(value) && value.length === 2) {
-                          handleInputChange(value[0], 'start_timestamp');
-                          handleInputChange(value[1], 'end_timestamp');
-                        }
-                      }}
-                    />
-                  </div>
+              <Form
+                initValues={formInitValues}
+                getFormApi={(api) => setFormApi(api)}
+                onSubmit={refresh}
+                allowEmpty={true}
+                autoComplete="off"
+                layout="vertical"
+                trigger="change"
+                stopValidateWithError={false}
+              >
+                <div className="flex flex-col gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {/* 时间选择器 */}
+                    <div className="col-span-1 lg:col-span-2">
+                      <Form.DatePicker
+                        field='dateRange'
+                        className="w-full"
+                        type='dateTimeRange'
+                        placeholder={[t('开始时间'), t('结束时间')]}
+                        showClear
+                        pure
+                      />
+                    </div>
 
-                  {/* 任务 ID */}
-                  <Input
-                    prefix={<IconSearch />}
-                    placeholder={t('任务 ID')}
-                    value={mj_id}
-                    onChange={(value) => handleInputChange(value, 'mj_id')}
-                    className="!rounded-full"
-                    showClear
-                  />
-
-                  {/* 渠道 ID - 仅管理员可见 */}
-                  {isAdminUser && (
-                    <Input
+                    {/* 任务 ID */}
+                    <Form.Input
+                      field='mj_id'
                       prefix={<IconSearch />}
-                      placeholder={t('渠道 ID')}
-                      value={channel_id}
-                      onChange={(value) => handleInputChange(value, 'channel_id')}
+                      placeholder={t('任务 ID')}
                       className="!rounded-full"
                       showClear
+                      pure
                     />
-                  )}
-                </div>
 
-                {/* 操作按钮区域 */}
-                <div className="flex justify-between items-center pt-2">
-                  <div></div>
-                  <div className="flex gap-2">
-                    <Button
-                      type='primary'
-                      onClick={refresh}
-                      loading={loading}
-                      className="!rounded-full"
-                    >
-                      {t('查询')}
-                    </Button>
-                    <Button
-                      theme='light'
-                      type='tertiary'
-                      icon={<IconSetting />}
-                      onClick={() => setShowColumnSelector(true)}
-                      className="!rounded-full"
-                    >
-                      {t('列设置')}
-                    </Button>
+                    {/* 渠道 ID - 仅管理员可见 */}
+                    {isAdminUser && (
+                      <Form.Input
+                        field='channel_id'
+                        prefix={<IconSearch />}
+                        placeholder={t('渠道 ID')}
+                        className="!rounded-full"
+                        showClear
+                        pure
+                      />
+                    )}
+                  </div>
+
+                  {/* 操作按钮区域 */}
+                  <div className="flex justify-between items-center">
+                    <div></div>
+                    <div className="flex gap-2">
+                      <Button
+                        type='primary'
+                        htmlType='submit'
+                        loading={loading}
+                        className="!rounded-full"
+                      >
+                        {t('查询')}
+                      </Button>
+                      <Button
+                        theme='light'
+                        onClick={() => {
+                          if (formApi) {
+                            formApi.reset();
+                            // 重置后立即查询，使用setTimeout确保表单重置完成
+                            setTimeout(() => {
+                              refresh();
+                            }, 100);
+                          }
+                        }}
+                        className="!rounded-full"
+                      >
+                        {t('重置')}
+                      </Button>
+                      <Button
+                        theme='light'
+                        type='tertiary'
+                        icon={<IconSetting />}
+                        onClick={() => setShowColumnSelector(true)}
+                        className="!rounded-full"
+                      >
+                        {t('列设置')}
+                      </Button>
+                    </div>
                   </div>
                 </div>
-              </div>
+              </Form>
             </div>
           }
           shadows='always'
@@ -865,6 +942,14 @@ const LogsTable = () => {
             scroll={{ x: 'max-content' }}
             className="rounded-xl overflow-hidden"
             size="middle"
+            empty={
+              <Empty
+                image={<IllustrationNoResult style={{ width: 150, height: 150 }} />}
+                darkModeImage={<IllustrationNoResultDark style={{ width: 150, height: 150 }} />}
+                description={t('搜索无结果')}
+                style={{ padding: 30 }}
+              />
+            }
             pagination={{
               formatPageText: (page) =>
                 t('第 {{start}} - {{end}} 条，共 {{total}} 条', {

@@ -1,18 +1,37 @@
 import React, { useEffect, useState } from 'react';
 import { API, showError, showSuccess, renderGroup, renderNumber, renderQuota } from '../../helpers';
+
+import {
+  User,
+  Shield,
+  Crown,
+  HelpCircle,
+  CheckCircle,
+  XCircle,
+  Minus,
+  Coins,
+  Activity,
+  Users,
+  DollarSign,
+  UserPlus
+} from 'lucide-react';
 import {
   Button,
   Card,
   Divider,
   Dropdown,
-  Input,
+  Empty,
+  Form,
   Modal,
-  Select,
   Space,
   Table,
   Tag,
-  Typography,
+  Typography
 } from '@douyinfe/semi-ui';
+import {
+  IllustrationNoResult,
+  IllustrationNoResultDark
+} from '@douyinfe/semi-illustrations';
 import {
   IconPlus,
   IconSearch,
@@ -23,7 +42,7 @@ import {
   IconMore,
   IconUserAdd,
   IconArrowUp,
-  IconArrowDown,
+  IconArrowDown
 } from '@douyinfe/semi-icons';
 import { ITEMS_PER_PAGE } from '../../constants';
 import AddUser from '../../pages/User/AddUser';
@@ -39,25 +58,25 @@ const UsersTable = () => {
     switch (role) {
       case 1:
         return (
-          <Tag size='large' color='blue' shape='circle'>
+          <Tag size='large' color='blue' shape='circle' prefixIcon={<User size={14} />}>
             {t('普通用户')}
           </Tag>
         );
       case 10:
         return (
-          <Tag color='yellow' size='large' shape='circle'>
+          <Tag color='yellow' size='large' shape='circle' prefixIcon={<Shield size={14} />}>
             {t('管理员')}
           </Tag>
         );
       case 100:
         return (
-          <Tag color='orange' size='large' shape='circle'>
+          <Tag color='orange' size='large' shape='circle' prefixIcon={<Crown size={14} />}>
             {t('超级管理员')}
           </Tag>
         );
       default:
         return (
-          <Tag color='red' size='large' shape='circle'>
+          <Tag color='red' size='large' shape='circle' prefixIcon={<HelpCircle size={14} />}>
             {t('未知身份')}
           </Tag>
         );
@@ -67,16 +86,16 @@ const UsersTable = () => {
   const renderStatus = (status) => {
     switch (status) {
       case 1:
-        return <Tag size='large' color='green' shape='circle'>{t('已激活')}</Tag>;
+        return <Tag size='large' color='green' shape='circle' prefixIcon={<CheckCircle size={14} />}>{t('已激活')}</Tag>;
       case 2:
         return (
-          <Tag size='large' color='red' shape='circle'>
+          <Tag size='large' color='red' shape='circle' prefixIcon={<XCircle size={14} />}>
             {t('已封禁')}
           </Tag>
         );
       default:
         return (
-          <Tag size='large' color='grey' shape='circle'>
+          <Tag size='large' color='grey' shape='circle' prefixIcon={<HelpCircle size={14} />}>
             {t('未知状态')}
           </Tag>
         );
@@ -106,13 +125,13 @@ const UsersTable = () => {
         return (
           <div>
             <Space spacing={1}>
-              <Tag color='white' size='large' shape='circle' className="!text-xs">
+              <Tag color='white' size='large' shape='circle' className="!text-xs" prefixIcon={<Coins size={14} />}>
                 {t('剩余')}: {renderQuota(record.quota)}
               </Tag>
-              <Tag color='white' size='large' shape='circle' className="!text-xs">
+              <Tag color='white' size='large' shape='circle' className="!text-xs" prefixIcon={<Coins size={14} />}>
                 {t('已用')}: {renderQuota(record.used_quota)}
               </Tag>
-              <Tag color='white' size='large' shape='circle' className="!text-xs">
+              <Tag color='white' size='large' shape='circle' className="!text-xs" prefixIcon={<Activity size={14} />}>
                 {t('调用')}: {renderNumber(record.request_count)}
               </Tag>
             </Space>
@@ -127,13 +146,13 @@ const UsersTable = () => {
         return (
           <div>
             <Space spacing={1}>
-              <Tag color='white' size='large' shape='circle' className="!text-xs">
+              <Tag color='white' size='large' shape='circle' className="!text-xs" prefixIcon={<Users size={14} />}>
                 {t('邀请')}: {renderNumber(record.aff_count)}
               </Tag>
-              <Tag color='white' size='large' shape='circle' className="!text-xs">
+              <Tag color='white' size='large' shape='circle' className="!text-xs" prefixIcon={<DollarSign size={14} />}>
                 {t('收益')}: {renderQuota(record.aff_history_quota)}
               </Tag>
-              <Tag color='white' size='large' shape='circle' className="!text-xs">
+              <Tag color='white' size='large' shape='circle' className="!text-xs" prefixIcon={<UserPlus size={14} />}>
                 {record.inviter_id === 0 ? t('无邀请人') : `邀请人: ${record.inviter_id}`}
               </Tag>
             </Space>
@@ -155,7 +174,7 @@ const UsersTable = () => {
         return (
           <div>
             {record.DeletedAt !== null ? (
-              <Tag color='red' shape='circle'>{t('已注销')}</Tag>
+              <Tag color='red' shape='circle' prefixIcon={<Minus size={14} />}>{t('已注销')}</Tag>
             ) : (
               renderStatus(text)
             )}
@@ -285,9 +304,7 @@ const UsersTable = () => {
   const [loading, setLoading] = useState(true);
   const [activePage, setActivePage] = useState(1);
   const [pageSize, setPageSize] = useState(ITEMS_PER_PAGE);
-  const [searchKeyword, setSearchKeyword] = useState('');
   const [searching, setSearching] = useState(false);
-  const [searchGroup, setSearchGroup] = useState('');
   const [groupOptions, setGroupOptions] = useState([]);
   const [userCount, setUserCount] = useState(ITEMS_PER_PAGE);
   const [showAddUser, setShowAddUser] = useState(false);
@@ -295,6 +312,24 @@ const UsersTable = () => {
   const [editingUser, setEditingUser] = useState({
     id: undefined,
   });
+
+  // Form 初始值
+  const formInitValues = {
+    searchKeyword: '',
+    searchGroup: '',
+  };
+
+  // Form API 引用
+  const [formApi, setFormApi] = useState(null);
+
+  // 获取表单值的辅助函数
+  const getFormValues = () => {
+    const formValues = formApi ? formApi.getValues() : {};
+    return {
+      searchKeyword: formValues.searchKeyword || '',
+      searchGroup: formValues.searchGroup || '',
+    };
+  };
 
   const removeRecord = (key) => {
     let newDataSource = [...users];
@@ -363,9 +398,16 @@ const UsersTable = () => {
   const searchUsers = async (
     startIdx,
     pageSize,
-    searchKeyword,
-    searchGroup,
+    searchKeyword = null,
+    searchGroup = null,
   ) => {
+    // 如果没有传递参数，从表单获取值
+    if (searchKeyword === null || searchGroup === null) {
+      const formValues = getFormValues();
+      searchKeyword = formValues.searchKeyword;
+      searchGroup = formValues.searchGroup;
+    }
+
     if (searchKeyword === '' && searchGroup === '') {
       // if keyword is blank, load files instead.
       await loadUsers(startIdx, pageSize);
@@ -387,12 +429,9 @@ const UsersTable = () => {
     setSearching(false);
   };
 
-  const handleKeywordChange = async (value) => {
-    setSearchKeyword(value.trim());
-  };
-
   const handlePageChange = (page) => {
     setActivePage(page);
+    const { searchKeyword, searchGroup } = getFormValues();
     if (searchKeyword === '' && searchGroup === '') {
       loadUsers(page, pageSize).then();
     } else {
@@ -413,10 +452,11 @@ const UsersTable = () => {
 
   const refresh = async () => {
     setActivePage(1);
-    if (searchKeyword === '') {
-      await loadUsers(activePage, pageSize);
+    const { searchKeyword, searchGroup } = getFormValues();
+    if (searchKeyword === '' && searchGroup === '') {
+      await loadUsers(1, pageSize);
     } else {
-      await searchUsers(activePage, pageSize, searchKeyword, searchGroup);
+      await searchUsers(1, pageSize, searchKeyword, searchGroup);
     }
   };
 
@@ -488,41 +528,76 @@ const UsersTable = () => {
           </Button>
         </div>
 
-        <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto order-1 md:order-2">
-          <div className="relative w-full md:w-64">
-            <Input
-              prefix={<IconSearch />}
-              placeholder={t('支持搜索用户的 ID、用户名、显示名称和邮箱地址')}
-              value={searchKeyword}
-              onChange={handleKeywordChange}
-              className="!rounded-full"
-              showClear
-            />
+        <Form
+          initValues={formInitValues}
+          getFormApi={(api) => setFormApi(api)}
+          onSubmit={() => {
+            setActivePage(1);
+            searchUsers(1, pageSize);
+          }}
+          allowEmpty={true}
+          autoComplete="off"
+          layout="horizontal"
+          trigger="change"
+          stopValidateWithError={false}
+          className="w-full md:w-auto order-1 md:order-2"
+        >
+          <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
+            <div className="relative w-full md:w-64">
+              <Form.Input
+                field="searchKeyword"
+                prefix={<IconSearch />}
+                placeholder={t('支持搜索用户的 ID、用户名、显示名称和邮箱地址')}
+                className="!rounded-full"
+                showClear
+                pure
+              />
+            </div>
+            <div className="w-full md:w-48">
+              <Form.Select
+                field="searchGroup"
+                placeholder={t('选择分组')}
+                optionList={groupOptions}
+                onChange={(value) => {
+                  // 分组变化时自动搜索
+                  setTimeout(() => {
+                    setActivePage(1);
+                    searchUsers(1, pageSize);
+                  }, 100);
+                }}
+                className="!rounded-full w-full"
+                showClear
+                pure
+              />
+            </div>
+            <div className="flex gap-2 w-full md:w-auto">
+              <Button
+                type="primary"
+                htmlType="submit"
+                loading={loading || searching}
+                className="!rounded-full flex-1 md:flex-initial md:w-auto"
+              >
+                {t('查询')}
+              </Button>
+              <Button
+                theme="light"
+                onClick={() => {
+                  if (formApi) {
+                    formApi.reset();
+                    // 重置后立即查询，使用setTimeout确保表单重置完成
+                    setTimeout(() => {
+                      setActivePage(1);
+                      loadUsers(1, pageSize);
+                    }, 100);
+                  }
+                }}
+                className="!rounded-full flex-1 md:flex-initial md:w-auto"
+              >
+                {t('重置')}
+              </Button>
+            </div>
           </div>
-          <div className="w-full md:w-48">
-            <Select
-              placeholder={t('选择分组')}
-              optionList={groupOptions}
-              value={searchGroup}
-              onChange={(value) => {
-                setSearchGroup(value);
-                searchUsers(activePage, pageSize, searchKeyword, value);
-              }}
-              className="!rounded-full w-full"
-              showClear
-            />
-          </div>
-          <Button
-            type="primary"
-            onClick={() => {
-              searchUsers(activePage, pageSize, searchKeyword, searchGroup);
-            }}
-            loading={searching}
-            className="!rounded-full w-full md:w-auto"
-          >
-            {t('查询')}
-          </Button>
-        </div>
+        </Form>
       </div>
     </div>
   );
@@ -570,6 +645,14 @@ const UsersTable = () => {
           }}
           loading={loading}
           onRow={handleRow}
+          empty={
+            <Empty
+              image={<IllustrationNoResult style={{ width: 150, height: 150 }} />}
+              darkModeImage={<IllustrationNoResultDark style={{ width: 150, height: 150 }} />}
+              description={t('搜索无结果')}
+              style={{ padding: 30 }}
+            />
+          }
           className="rounded-xl overflow-hidden"
           size="middle"
         />

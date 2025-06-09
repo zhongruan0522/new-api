@@ -133,7 +133,7 @@ const Setup = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="bg-gray-50">
       <Layout>
         <Layout.Content>
           <div className="flex justify-center px-4 py-8">

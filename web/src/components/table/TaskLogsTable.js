@@ -1,34 +1,51 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
+  Music,
+  FileText,
+  HelpCircle,
+  CheckCircle,
+  Pause,
+  Clock,
+  Play,
+  XCircle,
+  Loader,
+  List,
+  Hash
+} from 'lucide-react';
+import {
   API,
   copy,
   isAdmin,
   showError,
   showSuccess,
-  timestamp2string,
+  timestamp2string
 } from '../../helpers';
 
 import {
   Button,
   Card,
   Checkbox,
-  DatePicker,
   Divider,
-  Input,
+  Empty,
+  Form,
   Layout,
   Modal,
   Progress,
   Skeleton,
   Table,
   Tag,
-  Typography,
+  Typography
 } from '@douyinfe/semi-ui';
+import {
+  IllustrationNoResult,
+  IllustrationNoResultDark
+} from '@douyinfe/semi-illustrations';
 import { ITEMS_PER_PAGE } from '../../constants';
 import {
   IconEyeOpened,
   IconSearch,
-  IconSetting,
+  IconSetting
 } from '@douyinfe/semi-icons';
 
 const { Text } = Typography;
@@ -97,7 +114,7 @@ function renderDuration(submit_time, finishTime) {
 
   // 返回带有样式的颜色标签
   return (
-    <Tag color={color} size='large'>
+    <Tag color={color} size='large' prefixIcon={<Clock size={14} />}>
       {durationSec} 秒
     </Tag>
   );
@@ -188,19 +205,19 @@ const LogsTable = () => {
     switch (type) {
       case 'MUSIC':
         return (
-          <Tag color='grey' size='large' shape='circle'>
+          <Tag color='grey' size='large' shape='circle' prefixIcon={<Music size={14} />}>
             {t('生成音乐')}
           </Tag>
         );
       case 'LYRICS':
         return (
-          <Tag color='pink' size='large' shape='circle'>
+          <Tag color='pink' size='large' shape='circle' prefixIcon={<FileText size={14} />}>
             {t('生成歌词')}
           </Tag>
         );
       default:
         return (
-          <Tag color='white' size='large' shape='circle'>
+          <Tag color='white' size='large' shape='circle' prefixIcon={<HelpCircle size={14} />}>
             {t('未知')}
           </Tag>
         );
@@ -211,13 +228,13 @@ const LogsTable = () => {
     switch (type) {
       case 'suno':
         return (
-          <Tag color='green' size='large' shape='circle'>
+          <Tag color='green' size='large' shape='circle' prefixIcon={<Music size={14} />}>
             Suno
           </Tag>
         );
       default:
         return (
-          <Tag color='white' size='large' shape='circle'>
+          <Tag color='white' size='large' shape='circle' prefixIcon={<HelpCircle size={14} />}>
             {t('未知')}
           </Tag>
         );
@@ -228,55 +245,55 @@ const LogsTable = () => {
     switch (type) {
       case 'SUCCESS':
         return (
-          <Tag color='green' size='large' shape='circle'>
+          <Tag color='green' size='large' shape='circle' prefixIcon={<CheckCircle size={14} />}>
             {t('成功')}
           </Tag>
         );
       case 'NOT_START':
         return (
-          <Tag color='grey' size='large' shape='circle'>
+          <Tag color='grey' size='large' shape='circle' prefixIcon={<Pause size={14} />}>
             {t('未启动')}
           </Tag>
         );
       case 'SUBMITTED':
         return (
-          <Tag color='yellow' size='large' shape='circle'>
+          <Tag color='yellow' size='large' shape='circle' prefixIcon={<Clock size={14} />}>
             {t('队列中')}
           </Tag>
         );
       case 'IN_PROGRESS':
         return (
-          <Tag color='blue' size='large' shape='circle'>
+          <Tag color='blue' size='large' shape='circle' prefixIcon={<Play size={14} />}>
             {t('执行中')}
           </Tag>
         );
       case 'FAILURE':
         return (
-          <Tag color='red' size='large' shape='circle'>
+          <Tag color='red' size='large' shape='circle' prefixIcon={<XCircle size={14} />}>
             {t('失败')}
           </Tag>
         );
       case 'QUEUED':
         return (
-          <Tag color='orange' size='large' shape='circle'>
+          <Tag color='orange' size='large' shape='circle' prefixIcon={<List size={14} />}>
             {t('排队中')}
           </Tag>
         );
       case 'UNKNOWN':
         return (
-          <Tag color='white' size='large' shape='circle'>
+          <Tag color='white' size='large' shape='circle' prefixIcon={<HelpCircle size={14} />}>
             {t('未知')}
           </Tag>
         );
       case '':
         return (
-          <Tag color='grey' size='large' shape='circle'>
+          <Tag color='grey' size='large' shape='circle' prefixIcon={<Loader size={14} />}>
             {t('正在提交')}
           </Tag>
         );
       default:
         return (
-          <Tag color='white' size='large' shape='circle'>
+          <Tag color='white' size='large' shape='circle' prefixIcon={<HelpCircle size={14} />}>
             {t('未知')}
           </Tag>
         );
@@ -321,6 +338,7 @@ const LogsTable = () => {
               color={colors[parseInt(text) % colors.length]}
               size='large'
               shape='circle'
+              prefixIcon={<Hash size={14} />}
               onClick={() => {
                 copyText(text);
               }}
@@ -395,7 +413,7 @@ const LogsTable = () => {
                   percent={text ? parseInt(text.replace('%', '')) : 0}
                   showInfo={true}
                   aria-label='task progress'
-                  style={{ minWidth: '200px' }}
+                  style={{ minWidth: '160px' }}
                 />
               )
             }
@@ -437,21 +455,43 @@ const LogsTable = () => {
   const [loading, setLoading] = useState(true);
   const [activePage, setActivePage] = useState(1);
   const [logCount, setLogCount] = useState(ITEMS_PER_PAGE);
-  const [logType] = useState(0);
 
   let now = new Date();
   // 初始化start_timestamp为前一天
   let zeroNow = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const [inputs, setInputs] = useState({
+
+  // Form 初始值
+  const formInitValues = {
     channel_id: '',
     task_id: '',
-    start_timestamp: timestamp2string(zeroNow.getTime() / 1000),
-    end_timestamp: '',
-  });
-  const { channel_id, task_id, start_timestamp, end_timestamp } = inputs;
+    dateRange: [
+      timestamp2string(zeroNow.getTime() / 1000),
+      timestamp2string(now.getTime() / 1000 + 3600)
+    ],
+  };
 
-  const handleInputChange = (value, name) => {
-    setInputs((inputs) => ({ ...inputs, [name]: value }));
+  // Form API 引用
+  const [formApi, setFormApi] = useState(null);
+
+  // 获取表单值的辅助函数
+  const getFormValues = () => {
+    const formValues = formApi ? formApi.getValues() : {};
+
+    // 处理时间范围
+    let start_timestamp = timestamp2string(zeroNow.getTime() / 1000);
+    let end_timestamp = timestamp2string(now.getTime() / 1000 + 3600);
+
+    if (formValues.dateRange && Array.isArray(formValues.dateRange) && formValues.dateRange.length === 2) {
+      start_timestamp = formValues.dateRange[0];
+      end_timestamp = formValues.dateRange[1];
+    }
+
+    return {
+      channel_id: formValues.channel_id || '',
+      task_id: formValues.task_id || '',
+      start_timestamp,
+      end_timestamp,
+    };
   };
 
   const setLogsFormat = (logs) => {
@@ -469,6 +509,7 @@ const LogsTable = () => {
     setLoading(true);
 
     let url = '';
+    const { channel_id, task_id, start_timestamp, end_timestamp } = getFormValues();
     let localStartTimestamp = parseInt(Date.parse(start_timestamp) / 1000);
     let localEndTimestamp = parseInt(Date.parse(end_timestamp) / 1000);
     if (isAdminUser) {
@@ -528,7 +569,7 @@ const LogsTable = () => {
     const localPageSize = parseInt(localStorage.getItem('task-page-size')) || ITEMS_PER_PAGE;
     setPageSize(localPageSize);
     loadLogs(0, localPageSize).then();
-  }, [logType]);
+  }, []);
 
   // 列选择器模态框
   const renderColumnSelector = () => {
@@ -628,70 +669,93 @@ const LogsTable = () => {
               <Divider margin="12px" />
 
               {/* 搜索表单区域 */}
-              <div className="flex flex-col gap-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  {/* 时间选择器 */}
-                  <div className="col-span-1 lg:col-span-2">
-                    <DatePicker
-                      className="w-full"
-                      value={[start_timestamp, end_timestamp]}
-                      type='dateTimeRange'
-                      onChange={(value) => {
-                        if (Array.isArray(value) && value.length === 2) {
-                          handleInputChange(value[0], 'start_timestamp');
-                          handleInputChange(value[1], 'end_timestamp');
-                        }
-                      }}
-                    />
-                  </div>
+              <Form
+                initValues={formInitValues}
+                getFormApi={(api) => setFormApi(api)}
+                onSubmit={refresh}
+                allowEmpty={true}
+                autoComplete="off"
+                layout="vertical"
+                trigger="change"
+                stopValidateWithError={false}
+              >
+                <div className="flex flex-col gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {/* 时间选择器 */}
+                    <div className="col-span-1 lg:col-span-2">
+                      <Form.DatePicker
+                        field='dateRange'
+                        className="w-full"
+                        type='dateTimeRange'
+                        placeholder={[t('开始时间'), t('结束时间')]}
+                        showClear
+                        pure
+                      />
+                    </div>
 
-                  {/* 任务 ID */}
-                  <Input
-                    prefix={<IconSearch />}
-                    placeholder={t('任务 ID')}
-                    value={task_id}
-                    onChange={(value) => handleInputChange(value, 'task_id')}
-                    className="!rounded-full"
-                    showClear
-                  />
-
-                  {/* 渠道 ID - 仅管理员可见 */}
-                  {isAdminUser && (
-                    <Input
+                    {/* 任务 ID */}
+                    <Form.Input
+                      field='task_id'
                       prefix={<IconSearch />}
-                      placeholder={t('渠道 ID')}
-                      value={channel_id}
-                      onChange={(value) => handleInputChange(value, 'channel_id')}
+                      placeholder={t('任务 ID')}
                       className="!rounded-full"
                       showClear
+                      pure
                     />
-                  )}
-                </div>
 
-                {/* 操作按钮区域 */}
-                <div className="flex justify-between items-center pt-2">
-                  <div></div>
-                  <div className="flex gap-2">
-                    <Button
-                      type='primary'
-                      onClick={refresh}
-                      loading={loading}
-                      className="!rounded-full"
-                    >
-                      {t('查询')}
-                    </Button>
-                    <Button
-                      theme='light'
-                      type='tertiary'
-                      icon={<IconSetting />}
-                      onClick={() => setShowColumnSelector(true)}
-                      className="!rounded-full"
-                    >
-                      {t('列设置')}
-                    </Button>
+                    {/* 渠道 ID - 仅管理员可见 */}
+                    {isAdminUser && (
+                      <Form.Input
+                        field='channel_id'
+                        prefix={<IconSearch />}
+                        placeholder={t('渠道 ID')}
+                        className="!rounded-full"
+                        showClear
+                        pure
+                      />
+                    )}
+                  </div>
+
+                  {/* 操作按钮区域 */}
+                  <div className="flex justify-between items-center">
+                    <div></div>
+                    <div className="flex gap-2">
+                      <Button
+                        type='primary'
+                        htmlType='submit'
+                        loading={loading}
+                        className="!rounded-full"
+                      >
+                        {t('查询')}
+                      </Button>
+                      <Button
+                        theme='light'
+                        onClick={() => {
+                          if (formApi) {
+                            formApi.reset();
+                            // 重置后立即查询，使用setTimeout确保表单重置完成
+                            setTimeout(() => {
+                              refresh();
+                            }, 100);
+                          }
+                        }}
+                        className="!rounded-full"
+                      >
+                        {t('重置')}
+                      </Button>
+                      <Button
+                        theme='light'
+                        type='tertiary'
+                        icon={<IconSetting />}
+                        onClick={() => setShowColumnSelector(true)}
+                        className="!rounded-full"
+                      >
+                        {t('列设置')}
+                      </Button>
+                    </div>
                   </div>
                 </div>
-              </div>
+              </Form>
             </div>
           }
           shadows='always'
@@ -705,6 +769,14 @@ const LogsTable = () => {
             scroll={{ x: 'max-content' }}
             className="rounded-xl overflow-hidden"
             size="middle"
+            empty={
+              <Empty
+                image={<IllustrationNoResult style={{ width: 150, height: 150 }} />}
+                darkModeImage={<IllustrationNoResultDark style={{ width: 150, height: 150 }} />}
+                description={t('搜索无结果')}
+                style={{ padding: 30 }}
+              />
+            }
             pagination={{
               formatPageText: (page) =>
                 t('第 {{start}} - {{end}} 条，共 {{total}} 条', {

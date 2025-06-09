@@ -47,7 +47,7 @@ func requestOpenAI2Mistral(request *dto.GeneralOpenAIRequest) *dto.GeneralOpenAI
 		}
 
 		mediaMessages := message.ParseContent()
-		if message.Role == "assistant" && message.ToolCalls != nil && string(message.Content) == "null" {
+		if message.Role == "assistant" && message.ToolCalls != nil && message.Content == "" {
 			mediaMessages = []dto.MediaContent{}
 		}
 		for j, mediaMessage := range mediaMessages {

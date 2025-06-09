@@ -74,6 +74,7 @@ func GetStatus(c *gin.Context) {
 			"oidc_client_id":              system_setting.GetOIDCSettings().ClientId,
 			"oidc_authorization_endpoint": system_setting.GetOIDCSettings().AuthorizationEndpoint,
 			"setup":                       constant.Setup,
+			"api_info":                    setting.GetApiInfo(),
 		},
 	})
 	return

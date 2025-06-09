@@ -6,10 +6,10 @@ import { useTranslation } from 'react-i18next';
 import SystemSetting from '../../components/settings/SystemSetting.js';
 import { isRoot } from '../../helpers';
 import OtherSetting from '../../components/settings/OtherSetting';
-import PersonalSetting from '../../components/settings/PersonalSetting.js';
 import OperationSetting from '../../components/settings/OperationSetting.js';
 import RateLimitSetting from '../../components/settings/RateLimitSetting.js';
 import ModelSetting from '../../components/settings/ModelSetting.js';
+import DashboardSetting from '../../components/settings/DashboardSetting.js';
 
 const Setting = () => {
   const { t } = useTranslation();
@@ -43,6 +43,11 @@ const Setting = () => {
       tab: t('其他设置'),
       content: <OtherSetting />,
       itemKey: 'other',
+    });
+    panes.push({
+      tab: t('仪表盘配置'),
+      content: <DashboardSetting />,
+      itemKey: 'dashboard',
     });
   }
   const onChangeTab = (key) => {
