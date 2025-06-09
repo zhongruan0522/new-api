@@ -984,24 +984,26 @@ const Detail = (props) => {
                   >
                     {apiInfoData.length > 0 ? (
                       apiInfoData.map((api) => (
-                        <div key={api.id} className="flex items-center justify-between p-2 hover:bg-white rounded-lg transition-colors cursor-pointer">
+                        <div key={api.id} className="flex p-2 hover:bg-white rounded-lg transition-colors cursor-pointer">
+                          <div className="flex-shrink-0 mr-3">
+                            <Avatar
+                              size="extra-extra-small"
+                              color={api.color}
+                            >
+                              {api.route.substring(0, 2)}
+                            </Avatar>
+                          </div>
                           <div className="flex-1">
-                            <div className="flex items-center gap-2 text-sm font-medium text-gray-900 mb-1">
-                              <Avatar
-                                size="extra-extra-small"
-                                color={api.color}
-                              >
-                                {api.route.substring(0, 2)}
-                              </Avatar>
+                            <div className="text-sm font-medium text-gray-900 mb-1">
                               {api.route}
                             </div>
                             <div
-                              className="text-xs !text-semi-color-primary font-mono break-all cursor-pointer hover:underline"
+                              className="text-xs !text-semi-color-primary font-mono break-all cursor-pointer hover:underline mb-1"
                               onClick={() => handleCopyUrl(api.url)}
                             >
                               {api.url}
                             </div>
-                            <div className="text-xs text-gray-500 mt-1">
+                            <div className="text-xs text-gray-500">
                               {api.description}
                             </div>
                           </div>
