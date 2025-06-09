@@ -890,7 +890,7 @@ const LogsTable = () => {
                   </div>
 
                   {/* 操作按钮区域 */}
-                  <div className="flex justify-between items-center pt-2">
+                  <div className="flex justify-between items-center">
                     <div></div>
                     <div className="flex gap-2">
                       <Button

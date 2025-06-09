@@ -1241,28 +1241,6 @@ const LogsTable = () => {
                     />
                   </div>
 
-                  {/* 日志类型选择器 */}
-                  <Form.Select
-                    field='logType'
-                    placeholder={t('日志类型')}
-                    className='!rounded-full'
-                    showClear
-                    pure
-                    onChange={() => {
-                      // 延迟执行搜索，让表单值先更新
-                      setTimeout(() => {
-                        refresh();
-                      }, 0);
-                    }}
-                  >
-                    <Form.Select.Option value='0'>{t('全部')}</Form.Select.Option>
-                    <Form.Select.Option value='1'>{t('充值')}</Form.Select.Option>
-                    <Form.Select.Option value='2'>{t('消费')}</Form.Select.Option>
-                    <Form.Select.Option value='3'>{t('管理')}</Form.Select.Option>
-                    <Form.Select.Option value='4'>{t('系统')}</Form.Select.Option>
-                    <Form.Select.Option value='5'>{t('错误')}</Form.Select.Option>
-                  </Form.Select>
-
                   {/* 其他搜索字段 */}
                   <Form.Input
                     field='token_name'
@@ -1314,9 +1292,32 @@ const LogsTable = () => {
                 </div>
 
                 {/* 操作按钮区域 */}
-                <div className='flex justify-between items-center pt-2'>
-                  <div></div>
-                  <div className='flex gap-2'>
+                <div className='flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3'>
+                  {/* 日志类型选择器 */}
+                  <div className='w-full sm:w-auto min-w-[140px]'>
+                    <Form.Select
+                      field='logType'
+                      placeholder={t('日志类型')}
+                      className='!rounded-full w-full sm:w-auto'
+                      showClear
+                      pure
+                      onChange={() => {
+                        // 延迟执行搜索，让表单值先更新
+                        setTimeout(() => {
+                          refresh();
+                        }, 0);
+                      }}
+                    >
+                      <Form.Select.Option value='0'>{t('全部')}</Form.Select.Option>
+                      <Form.Select.Option value='1'>{t('充值')}</Form.Select.Option>
+                      <Form.Select.Option value='2'>{t('消费')}</Form.Select.Option>
+                      <Form.Select.Option value='3'>{t('管理')}</Form.Select.Option>
+                      <Form.Select.Option value='4'>{t('系统')}</Form.Select.Option>
+                      <Form.Select.Option value='5'>{t('错误')}</Form.Select.Option>
+                    </Form.Select>
+                  </div>
+                  
+                  <div className='flex gap-2 w-full sm:w-auto justify-end'>
                     <Button
                       type='primary'
                       htmlType='submit'
