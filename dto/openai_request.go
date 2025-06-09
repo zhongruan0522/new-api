@@ -132,21 +132,50 @@ type MediaContent struct {
 
 func (m *MediaContent) GetImageMedia() *MessageImageUrl {
 	if m.ImageUrl != nil {
-		return m.ImageUrl.(*MessageImageUrl)
+		if _, ok := m.ImageUrl.(*MessageImageUrl); ok {
+			return m.ImageUrl.(*MessageImageUrl)
+		}
+		if itemMap, ok := m.ImageUrl.(map[string]any); ok {
+			out := &MessageImageUrl{
+				Url:      common.Interface2String(itemMap["url"]),
+				Detail:   common.Interface2String(itemMap["detail"]),
+				MimeType: common.Interface2String(itemMap["mime_type"]),
+			}
+			return out
+		}
 	}
 	return nil
 }
 
 func (m *MediaContent) GetInputAudio() *MessageInputAudio {
 	if m.InputAudio != nil {
-		return m.InputAudio.(*MessageInputAudio)
+		if _, ok := m.InputAudio.(*MessageInputAudio); ok {
+			return m.InputAudio.(*MessageInputAudio)
+		}
+		if itemMap, ok := m.InputAudio.(map[string]any); ok {
+			out := &MessageInputAudio{
+				Data:   common.Interface2String(itemMap["data"]),
+				Format: common.Interface2String(itemMap["format"]),
+			}
+			return out
+		}
 	}
 	return nil
 }
 
 func (m *MediaContent) GetFile() *MessageFile {
 	if m.File != nil {
-		return m.File.(*MessageFile)
+		if _, ok := m.File.(*MessageFile); ok {
+			return m.File.(*MessageFile)
+		}
+		if itemMap, ok := m.File.(map[string]any); ok {
+			out := &MessageFile{
+				FileName: common.Interface2String(itemMap["file_name"]),
+				FileData: common.Interface2String(itemMap["file_data"]),
+				FileId:   common.Interface2String(itemMap["file_id"]),
+			}
+			return out
+		}
 	}
 	return nil
 }
@@ -286,6 +315,12 @@ func (m *Message) ParseContent() []MediaContent {
 	}
 
 	for _, contentItemAny := range arrayContent {
+		mediaItem, ok := contentItemAny.(MediaContent)
+		if ok {
+			contentList = append(contentList, mediaItem)
+			continue
+		}
+
 		contentItem, ok := contentItemAny.(map[string]any)
 		if !ok {
 			continue
