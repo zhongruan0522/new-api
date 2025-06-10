@@ -52,7 +52,6 @@ import {
 import EditChannel from '../../pages/Channel/EditChannel.js';
 import {
   IconTreeTriangleDown,
-  IconFilter,
   IconPlus,
   IconRefresh,
   IconSetting,
@@ -731,8 +730,6 @@ const ChannelsTable = () => {
             </Button>
           </div>
         }
-        size="middle"
-        centered={true}
       >
         <div style={{ marginBottom: 20 }}>
           <Checkbox
@@ -1616,7 +1613,7 @@ const ChannelsTable = () => {
             <div className="w-full md:w-48">
               <Form.Input
                 field="searchModel"
-                prefix={<IconFilter />}
+                prefix={<IconSearch />}
                 placeholder={t('模型关键字')}
                 className="!rounded-full"
                 showClear
@@ -1825,7 +1822,6 @@ const ChannelsTable = () => {
           </div>
         }
         maskClosable={!isBatchTesting}
-        centered={true}
         className="!rounded-lg"
         size="large"
       >
@@ -1926,7 +1922,6 @@ const ChannelsTable = () => {
                     key: model
                   }))}
                 pagination={false}
-                size="middle"
               />
             </div>
           )}
