@@ -82,18 +82,11 @@ func GetUptimeKumaStatus(c *gin.Context) {
 	slug := common.OptionMap["UptimeKumaSlug"]
 	common.OptionMapRWMutex.RUnlock()
 
-	if uptimeKumaUrl == "" {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"success": false,
-			"message": "未配置 Uptime Kuma URL",
-		})
-		return
-	}
-
-	if slug == "" {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"success": false,
-			"message": "未配置 Uptime Kuma Slug",
+	if uptimeKumaUrl == "" || slug == "" {
+		c.JSON(http.StatusOK, gin.H{
+			"success": true,
+			"message": "",
+			"data":    []MonitorStatus{},
 		})
 		return
 	}
