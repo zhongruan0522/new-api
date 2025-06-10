@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/tiktoken-go/tokenizer"
+	"github.com/tiktoken-go/tokenizer/codec"
 	"image"
 	"log"
 	"math"
@@ -21,20 +22,16 @@ var defaultTokenEncoder tokenizer.Codec
 
 func InitTokenEncoders() {
 	common.SysLog("initializing token encoders")
-	cl100TokenEncoder, err := tokenizer.Get(tokenizer.Cl100kBase)
-	if err != nil {
-		common.FatalLog(fmt.Sprintf("failed to get gpt-3.5-turbo token encoder: %s", err.Error()))
-	}
-	defaultTokenEncoder = cl100TokenEncoder
+	defaultTokenEncoder = codec.NewCl100kBase()
 	common.SysLog("token encoders initialized")
 }
 
 func getTokenEncoder(model string) tokenizer.Codec {
-	codec, err := tokenizer.ForModel(tokenizer.Model(model))
+	modelCodec, err := tokenizer.ForModel(tokenizer.Model(model))
 	if err != nil {
 		return defaultTokenEncoder
 	}
-	return codec
+	return modelCodec
 }
 
 func getTokenNum(tokenEncoder tokenizer.Codec, text string) int {
