@@ -881,7 +881,6 @@
   "你好，": "Hello,",
   "线路监控": "line monitoring",
   "查看全部": "View all",
-  "高延迟": "high latency",
   "异常": "Abnormal",
   "的未命名令牌": "unnamed token",
   "令牌更新成功！": "Token updated successfully!",
@@ -1644,6 +1643,8 @@
   "服务可用性": "Service Status",
   "可用率": "Availability",
   "有异常": "Abnormal",
+  "高延迟": "High latency",
+  "维护中": "Maintenance",
   "暂无监控数据": "No monitoring data",
   "请联系管理员在系统设置中配置Uptime": "Please contact the administrator to configure Uptime in the system settings."
 }

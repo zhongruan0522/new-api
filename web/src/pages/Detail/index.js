@@ -846,28 +846,27 @@ const Detail = (props) => {
     { color: 'red', label: t('异常'), type: 'error' }
   ], [t]);
 
-  const uptimeLegendData = useMemo(() => [
-    { color: 'green', label: t('正常'), status: 1 },
-    { color: 'red', label: t('异常'), status: 0 }
-  ], [t]);
+  const uptimeStatusMap = useMemo(() => ({
+    1: { color: '#10b981', label: t('正常'), text: t('可用率') },   // UP
+    0: { color: '#ef4444', label: t('异常'), text: t('有异常') },   // DOWN
+    2: { color: '#f59e0b', label: t('高延迟'), text: t('高延迟') }, // PENDING
+    3: { color: '#3b82f6', label: t('维护中'), text: t('维护中') }   // MAINTENANCE
+  }), [t]);
 
-  const getUptimeStatusColor = useCallback((status) => {
-    switch (status) {
-      case 1:
-        return '#10b981'; // 绿色 - 正常
-      default:
-        return '#ef4444'; // 红色 - 异常
-    }
-  }, []);
+  const uptimeLegendData = useMemo(() =>
+    Object.entries(uptimeStatusMap).map(([status, info]) => ({
+      status: Number(status),
+      color: info.color,
+      label: info.label
+    })), [uptimeStatusMap]);
 
-  const getUptimeStatusText = useCallback((status) => {
-    switch (status) {
-      case 1:
-        return t('可用率');
-      default:
-        return t('有异常');
-    }
-  }, [t]);
+  const getUptimeStatusColor = useCallback((status) =>
+    uptimeStatusMap[status]?.color || '#8b9aa7',
+    [uptimeStatusMap]);
+
+  const getUptimeStatusText = useCallback((status) =>
+    uptimeStatusMap[status]?.text || t('未知'),
+    [uptimeStatusMap, t]);
 
   const apiInfoData = useMemo(() => {
     return statusState?.status?.api_info || [];
@@ -1263,38 +1262,41 @@ const Detail = (props) => {
                 {...CARD_PROPS}
                 className="shadow-sm !rounded-2xl lg:col-span-1"
                 title={
-                  <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-2 w-full">
+                  <div className="flex items-center justify-between w-full gap-2">
                     <div className="flex items-center gap-2">
                       <Gauge size={16} />
                       {t('服务可用性')}
                     </div>
-                    <div className="flex items-center gap-3">
-                      {/* 图例 */}
-                      <div className="flex flex-wrap gap-3 text-xs">
-                        {uptimeLegendData.map((legend, index) => (
-                          <div key={index} className="flex items-center gap-1">
-                            <div
-                              className="w-2 h-2 rounded-full"
-                              style={{
-                                backgroundColor: legend.color === 'green' ? '#10b981' :
-                                  legend.color === 'red' ? '#ef4444' : '#8b9aa7'
-                              }}
-                            />
-                            <span className="text-gray-600">{legend.label}</span>
-                          </div>
-                        ))}
-                      </div>
-                      <IconButton
-                        icon={<IconRefresh />}
-                        onClick={loadUptimeData}
-                        loading={uptimeLoading}
-                        size="small"
-                        theme="borderless"
-                        className="text-gray-500 hover:text-blue-500 hover:bg-blue-50 !rounded-full"
-                      />
-                    </div>
+                    <IconButton
+                      icon={<IconRefresh />}
+                      onClick={loadUptimeData}
+                      loading={uptimeLoading}
+                      size="small"
+                      theme="borderless"
+                      className="text-gray-500 hover:text-blue-500 hover:bg-blue-50 !rounded-full"
+                    />
                   </div>
                 }
+                footer={uptimeData.length > 0 ? (
+                  <Card
+                    shadows="always"
+                    bordered={false}
+                    className="!rounded-full backdrop-blur"
+                  >
+                    <div className="flex flex-wrap gap-3 text-xs justify-center">
+                      {uptimeLegendData.map((legend, index) => (
+                        <div key={index} className="flex items-center gap-1">
+                          <div
+                            className="w-2 h-2 rounded-full"
+                            style={{ backgroundColor: legend.color }}
+                          />
+                          <span className="text-gray-600">{legend.label}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </Card>
+                ) : null}
+                footerStyle={uptimeData.length > 0 ? { marginTop: '-100px' } : undefined}
               >
                 <div className="card-content-container">
                   <Spin spinning={uptimeLoading}>
