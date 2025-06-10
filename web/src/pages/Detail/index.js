@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import { initVChartSemiTheme } from '@visactor/vchart-semi-theme';
 import { useNavigate } from 'react-router-dom';
-import { Wallet, Activity, Zap, Gauge, PieChart } from 'lucide-react';
+import { Wallet, Activity, Zap, Gauge, PieChart, Server } from 'lucide-react';
 
 import {
   Card,
@@ -970,7 +970,7 @@ const Detail = (props) => {
                 className="bg-gray-50 border-0 !rounded-2xl"
                 title={
                   <div className={FLEX_CENTER_GAP2}>
-                    <IconSearch size={16} />
+                    <Server size={16} />
                     {t('API信息')}
                   </div>
                 }
@@ -1007,12 +1007,12 @@ const Detail = (props) => {
                               {api.route}
                             </div>
                             <div
-                              className="text-xs !text-semi-color-primary font-mono break-all cursor-pointer hover:underline mb-1"
+                              className="!text-semi-color-primary break-all cursor-pointer hover:underline mb-1"
                               onClick={() => handleCopyUrl(api.url)}
                             >
                               {api.url}
                             </div>
-                            <div className="text-xs text-gray-500">
+                            <div className="text-gray-500">
                               {api.description}
                             </div>
                           </div>
