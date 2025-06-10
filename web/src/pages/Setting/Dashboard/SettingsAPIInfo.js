@@ -127,7 +127,7 @@ const SettingsAPIInfo = ({ options, refresh }) => {
       const newList = apiInfoList.filter(api => api.id !== deletingApi.id);
       setApiInfoList(newList);
       setHasChanges(true);
-      showSuccess('API信息已删除，请及时点击“保存配置”进行保存');
+      showSuccess('API信息已删除，请及时点击“保存设置”进行保存');
     }
     setShowDeleteModal(false);
     setDeletingApi(null);
@@ -161,7 +161,7 @@ const SettingsAPIInfo = ({ options, refresh }) => {
       setApiInfoList(newList);
       setHasChanges(true);
       setShowApiModal(false);
-      showSuccess(editingApi ? 'API信息已更新，请及时点击“保存配置”进行保存' : 'API信息已添加，请及时点击“保存配置”进行保存');
+      showSuccess(editingApi ? 'API信息已更新，请及时点击“保存设置”进行保存' : 'API信息已添加，请及时点击“保存设置”进行保存');
     } catch (error) {
       showError('操作失败: ' + error.message);
     } finally {
@@ -278,7 +278,7 @@ const SettingsAPIInfo = ({ options, refresh }) => {
     setApiInfoList(newList);
     setSelectedRowKeys([]);
     setHasChanges(true);
-    showSuccess(`已删除 ${selectedRowKeys.length} 个API信息，请及时点击“保存配置”进行保存`);
+    showSuccess(`已删除 ${selectedRowKeys.length} 个API信息，请及时点击“保存设置”进行保存`);
   };
 
   const renderHeader = () => (
@@ -321,7 +321,7 @@ const SettingsAPIInfo = ({ options, refresh }) => {
             type='secondary'
             className="!rounded-full w-full md:w-auto"
           >
-            {t('保存配置')}
+            {t('保存设置')}
           </Button>
         </div>
       </div>

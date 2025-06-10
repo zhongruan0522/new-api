@@ -15,7 +15,8 @@ import {
   Empty,
   Tag,
   Timeline,
-  Collapse
+  Collapse,
+  Progress
 } from '@douyinfe/semi-ui';
 import {
   IconRefresh,
@@ -200,6 +201,20 @@ const Detail = (props) => {
     rpm: [],
     tpm: []
   });
+
+  // ========== Additional Refs for new cards ==========
+  const announcementScrollRef = useRef(null);
+  const faqScrollRef = useRef(null);
+  const uptimeScrollRef = useRef(null);
+
+  // ========== Additional State for scroll hints ==========
+  const [showAnnouncementScrollHint, setShowAnnouncementScrollHint] = useState(false);
+  const [showFaqScrollHint, setShowFaqScrollHint] = useState(false);
+  const [showUptimeScrollHint, setShowUptimeScrollHint] = useState(false);
+
+  // ========== Uptime data ==========
+  const [uptimeData, setUptimeData] = useState([]);
+  const [uptimeLoading, setUptimeLoading] = useState(false);
 
   // ========== Props Destructuring ==========
   const { username, model_name, start_timestamp, end_timestamp, channel } = inputs;
@@ -548,9 +563,26 @@ const Detail = (props) => {
     }
   }, [start_timestamp, end_timestamp, username, dataExportDefaultTime, isAdminUser]);
 
+  const loadUptimeData = useCallback(async () => {
+    setUptimeLoading(true);
+    try {
+      const res = await API.get('/api/uptime/status');
+      const { success, message, data } = res.data;
+      if (success) {
+        setUptimeData(data || []);
+      } else {
+        showError(message);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setUptimeLoading(false);
+    }
+  }, []);
+
   const refresh = useCallback(async () => {
-    await loadQuotaData();
-  }, [loadQuotaData]);
+    await Promise.all([loadQuotaData(), loadUptimeData()]);
+  }, [loadQuotaData, loadUptimeData]);
 
   const handleSearchConfirm = useCallback(() => {
     refresh();
@@ -559,7 +591,8 @@ const Detail = (props) => {
 
   const initChart = useCallback(async () => {
     await loadQuotaData();
-  }, [loadQuotaData]);
+    await loadUptimeData();
+  }, [loadQuotaData, loadUptimeData]);
 
   const showSearchModal = useCallback(() => {
     setSearchModalVisible(true);
@@ -596,23 +629,16 @@ const Detail = (props) => {
     checkCardScrollable(ref, setHintFunction);
   };
 
-  // ========== Additional Refs for new cards ==========
-  const announcementScrollRef = useRef(null);
-  const faqScrollRef = useRef(null);
-
-  // ========== Additional State for scroll hints ==========
-  const [showAnnouncementScrollHint, setShowAnnouncementScrollHint] = useState(false);
-  const [showFaqScrollHint, setShowFaqScrollHint] = useState(false);
-
   // ========== Effects for scroll detection ==========
   useEffect(() => {
     const timer = setTimeout(() => {
       checkApiScrollable();
       checkCardScrollable(announcementScrollRef, setShowAnnouncementScrollHint);
       checkCardScrollable(faqScrollRef, setShowFaqScrollHint);
+      checkCardScrollable(uptimeScrollRef, setShowUptimeScrollHint);
     }, 100);
     return () => clearTimeout(timer);
-  }, []);
+  }, [uptimeData]);
 
   const getUserData = async () => {
     let res = await API.get(`/api/user/self`);
@@ -819,6 +845,29 @@ const Detail = (props) => {
     { color: 'orange', label: t('警告'), type: 'warning' },
     { color: 'red', label: t('异常'), type: 'error' }
   ], [t]);
+
+  const uptimeLegendData = useMemo(() => [
+    { color: 'green', label: t('正常'), status: 1 },
+    { color: 'red', label: t('异常'), status: 0 }
+  ], [t]);
+
+  const getUptimeStatusColor = useCallback((status) => {
+    switch (status) {
+      case 1:
+        return '#10b981'; // 绿色 - 正常
+      default:
+        return '#ef4444'; // 红色 - 异常
+    }
+  }, []);
+
+  const getUptimeStatusText = useCallback((status) => {
+    switch (status) {
+      case 1:
+        return t('可用率');
+      default:
+        return t('有异常');
+    }
+  }, [t]);
 
   const apiInfoData = useMemo(() => {
     return statusState?.status?.api_info || [];
@@ -1160,7 +1209,7 @@ const Detail = (props) => {
               {/* 常见问答卡片 */}
               <Card
                 {...CARD_PROPS}
-                className="shadow-sm !rounded-2xl lg:col-span-2"
+                className="shadow-sm !rounded-2xl lg:col-span-1"
                 title={
                   <div className={FLEX_CENTER_GAP2}>
                     <HelpCircle size={16} />
@@ -1205,6 +1254,99 @@ const Detail = (props) => {
                   <div
                     className="card-content-fade-indicator"
                     style={{ opacity: showFaqScrollHint ? 1 : 0 }}
+                  />
+                </div>
+              </Card>
+
+              {/* 服务可用性卡片 */}
+              <Card
+                {...CARD_PROPS}
+                className="shadow-sm !rounded-2xl lg:col-span-1"
+                title={
+                  <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-2 w-full">
+                    <div className="flex items-center gap-2">
+                      <Gauge size={16} />
+                      {t('服务可用性')}
+                    </div>
+                    <div className="flex items-center gap-3">
+                      {/* 图例 */}
+                      <div className="flex flex-wrap gap-3 text-xs">
+                        {uptimeLegendData.map((legend, index) => (
+                          <div key={index} className="flex items-center gap-1">
+                            <div
+                              className="w-2 h-2 rounded-full"
+                              style={{
+                                backgroundColor: legend.color === 'green' ? '#10b981' :
+                                  legend.color === 'red' ? '#ef4444' : '#8b9aa7'
+                              }}
+                            />
+                            <span className="text-gray-600">{legend.label}</span>
+                          </div>
+                        ))}
+                      </div>
+                      <IconButton
+                        icon={<IconRefresh />}
+                        onClick={loadUptimeData}
+                        loading={uptimeLoading}
+                        size="small"
+                        theme="borderless"
+                        className="text-gray-500 hover:text-blue-500 hover:bg-blue-50 !rounded-full"
+                      />
+                    </div>
+                  </div>
+                }
+              >
+                <div className="card-content-container">
+                  <Spin spinning={uptimeLoading}>
+                    <div
+                      ref={uptimeScrollRef}
+                      className="p-2 max-h-96 overflow-y-auto card-content-scroll"
+                      onScroll={() => handleCardScroll(uptimeScrollRef, setShowUptimeScrollHint)}
+                    >
+                      {uptimeData.length > 0 ? (
+                        uptimeData.map((monitor, idx) => (
+                          <div key={idx} className="p-2 hover:bg-white rounded-lg transition-colors">
+                            <div className="flex items-center justify-between mb-1">
+                              <div className="flex items-center gap-2">
+                                <div
+                                  className="w-2 h-2 rounded-full flex-shrink-0"
+                                  style={{
+                                    backgroundColor: getUptimeStatusColor(monitor.status)
+                                  }}
+                                />
+                                <span className="text-sm font-medium text-gray-900">{monitor.name}</span>
+                              </div>
+                              <span className="text-xs text-gray-500">{((monitor.uptime || 0) * 100).toFixed(2)}%</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-gray-500">{getUptimeStatusText(monitor.status)}</span>
+                              <div className="flex-1">
+                                <Progress
+                                  percent={(monitor.uptime || 0) * 100}
+                                  showInfo={false}
+                                  aria-label={`${monitor.name} uptime`}
+                                  stroke={getUptimeStatusColor(monitor.status)}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="flex justify-center items-center py-8">
+                          <Empty
+                            image={<IllustrationConstruction style={{ width: 80, height: 80 }} />}
+                            darkModeImage={<IllustrationConstructionDark style={{ width: 80, height: 80 }} />}
+                            title={t('暂无监控数据')}
+                            description={t('请联系管理员在系统设置中配置Uptime')}
+                            style={{ padding: '12px' }}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </Spin>
+                  <div
+                    className="card-content-fade-indicator"
+                    style={{ opacity: showUptimeScrollHint ? 1 : 0 }}
                   />
                 </div>
               </Card>

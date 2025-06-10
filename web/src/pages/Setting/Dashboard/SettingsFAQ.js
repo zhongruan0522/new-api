@@ -162,7 +162,7 @@ const SettingsFAQ = ({ options, refresh }) => {
       const newList = faqList.filter(item => item.id !== deletingFaq.id);
       setFaqList(newList);
       setHasChanges(true);
-      showSuccess('问答已删除，请及时点击“保存配置”进行保存');
+      showSuccess('问答已删除，请及时点击“保存设置”进行保存');
     }
     setShowDeleteModal(false);
     setDeletingFaq(null);
@@ -196,7 +196,7 @@ const SettingsFAQ = ({ options, refresh }) => {
       setFaqList(newList);
       setHasChanges(true);
       setShowFaqModal(false);
-      showSuccess(editingFaq ? '问答已更新，请及时点击“保存配置”进行保存' : '问答已添加，请及时点击“保存配置”进行保存');
+      showSuccess(editingFaq ? '问答已更新，请及时点击“保存设置”进行保存' : '问答已添加，请及时点击“保存设置”进行保存');
     } catch (error) {
       showError('操作失败: ' + error.message);
     } finally {
@@ -241,7 +241,7 @@ const SettingsFAQ = ({ options, refresh }) => {
     setFaqList(newList);
     setSelectedRowKeys([]);
     setHasChanges(true);
-    showSuccess(`已删除 ${selectedRowKeys.length} 个常见问答，请及时点击“保存配置”进行保存`);
+    showSuccess(`已删除 ${selectedRowKeys.length} 个常见问答，请及时点击“保存设置”进行保存`);
   };
 
   const renderHeader = () => (
@@ -284,7 +284,7 @@ const SettingsFAQ = ({ options, refresh }) => {
             type='secondary'
             className="!rounded-full w-full md:w-auto"
           >
-            {t('保存配置')}
+            {t('保存设置')}
           </Button>
         </div>
       </div>

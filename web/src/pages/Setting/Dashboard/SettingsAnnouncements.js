@@ -218,7 +218,7 @@ const SettingsAnnouncements = ({ options, refresh }) => {
       const newList = announcementsList.filter(item => item.id !== deletingAnnouncement.id);
       setAnnouncementsList(newList);
       setHasChanges(true);
-      showSuccess('公告已删除，请及时点击“保存配置”进行保存');
+      showSuccess('公告已删除，请及时点击“保存设置”进行保存');
     }
     setShowDeleteModal(false);
     setDeletingAnnouncement(null);
@@ -258,7 +258,7 @@ const SettingsAnnouncements = ({ options, refresh }) => {
       setAnnouncementsList(newList);
       setHasChanges(true);
       setShowAnnouncementModal(false);
-      showSuccess(editingAnnouncement ? '公告已更新，请及时点击“保存配置”进行保存' : '公告已添加，请及时点击“保存配置”进行保存');
+      showSuccess(editingAnnouncement ? '公告已更新，请及时点击“保存设置”进行保存' : '公告已添加，请及时点击“保存设置”进行保存');
     } catch (error) {
       showError('操作失败: ' + error.message);
     } finally {
@@ -303,7 +303,7 @@ const SettingsAnnouncements = ({ options, refresh }) => {
     setAnnouncementsList(newList);
     setSelectedRowKeys([]);
     setHasChanges(true);
-    showSuccess(`已删除 ${selectedRowKeys.length} 个系统公告，请及时点击“保存配置”进行保存`);
+    showSuccess(`已删除 ${selectedRowKeys.length} 个系统公告，请及时点击“保存设置”进行保存`);
   };
 
   const renderHeader = () => (
@@ -346,7 +346,7 @@ const SettingsAnnouncements = ({ options, refresh }) => {
             type='secondary'
             className="!rounded-full w-full md:w-auto"
           >
-            {t('保存配置')}
+            {t('保存设置')}
           </Button>
         </div>
       </div>
