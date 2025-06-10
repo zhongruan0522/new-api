@@ -68,8 +68,8 @@ func getTokenNum(tokenEncoder tokenizer.Codec, text string) int {
 	if text == "" {
 		return 0
 	}
-	ids, _, _ := tokenEncoder.Encode(text)
-	return len(ids)
+	tkm, _ := tokenEncoder.Count(text)
+	return tkm
 }
 
 func getImageToken(info *relaycommon.RelayInfo, imageUrl *dto.MessageImageUrl, model string, stream bool) (int, error) {
