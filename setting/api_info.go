@@ -33,8 +33,10 @@ func ValidateApiInfo(apiInfoStr string) error {
 		"violet": true, "grey": true,
 	}
 	
-	// URL正则表达式
-	urlRegex := regexp.MustCompile(`^https?://[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*(/.*)?$`)
+	// URL正则表达式，支持域名和IP地址格式
+	// 域名格式：https://example.com 或 https://sub.example.com:8080
+	// IP地址格式：https://192.168.1.1 或 https://192.168.1.1:8080
+	urlRegex := regexp.MustCompile(`^https?://(?:(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)*[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?|(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?))(?::[0-9]{1,5})?(?:/.*)?$`)
 	
 	for i, apiInfo := range apiInfoList {
 		// 检查必填字段
