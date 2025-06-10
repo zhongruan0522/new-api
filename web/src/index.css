@@ -301,12 +301,12 @@ code {
   font-size: 1.1em;
 }
 
-/* API信息卡片样式 */
-.api-info-container {
+/* 卡片内容容器通用样式 */
+.card-content-container {
   position: relative;
 }
 
-.api-info-fade-indicator {
+.card-content-fade-indicator {
   position: absolute;
   bottom: 0;
   left: 0;
@@ -374,8 +374,8 @@ code {
   background: transparent;
 }
 
-/* 隐藏模型设置区域的滚动条 */
-.api-info-scroll::-webkit-scrollbar,
+/* 隐藏卡片内容区域的滚动条 */
+.card-content-scroll::-webkit-scrollbar,
 .model-settings-scroll::-webkit-scrollbar,
 .thinking-content-scroll::-webkit-scrollbar,
 .custom-request-textarea .semi-input::-webkit-scrollbar,
@@ -383,7 +383,7 @@ code {
   display: none;
 }
 
-.api-info-scroll,
+.card-content-scroll,
 .model-settings-scroll,
 .thinking-content-scroll,
 .custom-request-textarea .semi-input,
