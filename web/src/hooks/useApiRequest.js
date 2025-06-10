@@ -246,9 +246,11 @@ export const useApiRequest = (
 
     let responseData = '';
     let hasReceivedFirstResponse = false;
+    let isStreamComplete = false; // 添加标志位跟踪流是否正常完成
 
     source.addEventListener('message', (e) => {
       if (e.data === '[DONE]') {
+        isStreamComplete = true; // 标记流正常完成
         source.close();
         sseSourceRef.current = null;
         setDebugData(prev => ({ ...prev, response: responseData }));
@@ -290,26 +292,30 @@ export const useApiRequest = (
     });
 
     source.addEventListener('error', (e) => {
-      console.error('SSE Error:', e);
-      const errorMessage = e.data || t('请求发生错误');
+      // 只有在流没有正常完成且连接状态异常时才处理错误
+      if (!isStreamComplete && source.readyState !== 2) {
+        console.error('SSE Error:', e);
+        const errorMessage = e.data || t('请求发生错误');
 
-      const errorInfo = handleApiError(new Error(errorMessage));
-      errorInfo.readyState = source.readyState;
+        const errorInfo = handleApiError(new Error(errorMessage));
+        errorInfo.readyState = source.readyState;
 
-      setDebugData(prev => ({
-        ...prev,
-        response: responseData + '\n\nSSE Error:\n' + JSON.stringify(errorInfo, null, 2)
-      }));
-      setActiveDebugTab(DEBUG_TABS.RESPONSE);
+        setDebugData(prev => ({
+          ...prev,
+          response: responseData + '\n\nSSE Error:\n' + JSON.stringify(errorInfo, null, 2)
+        }));
+        setActiveDebugTab(DEBUG_TABS.RESPONSE);
 
-      streamMessageUpdate(errorMessage, 'content');
-      completeMessage(MESSAGE_STATUS.ERROR);
-      sseSourceRef.current = null;
-      source.close();
+        streamMessageUpdate(errorMessage, 'content');
+        completeMessage(MESSAGE_STATUS.ERROR);
+        sseSourceRef.current = null;
+        source.close();
+      }
     });
 
     source.addEventListener('readystatechange', (e) => {
-      if (e.readyState >= 2 && source.status !== undefined && source.status !== 200) {
+      // 检查 HTTP 状态错误，但避免与正常关闭重复处理
+      if (e.readyState >= 2 && source.status !== undefined && source.status !== 200 && !isStreamComplete) {
         const errorInfo = handleApiError(new Error('HTTP状态错误'));
         errorInfo.status = source.status;
         errorInfo.readyState = source.readyState;
@@ -401,4 +407,4 @@ export const useApiRequest = (
     streamMessageUpdate,
     completeMessage,
   };
-}; 
+};
