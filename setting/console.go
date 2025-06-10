@@ -9,12 +9,22 @@ import (
 	"strings"
 )
 
-// ValidateApiInfo 验证API信息格式
-func ValidateApiInfo(apiInfoStr string) error {
-	if apiInfoStr == "" {
+// ValidateConsoleSettings 验证控制台设置信息格式
+func ValidateConsoleSettings(settingsStr string, settingType string) error {
+	if settingsStr == "" {
 		return nil // 空字符串是合法的
 	}
 	
+	switch settingType {
+	case "ApiInfo":
+		return validateApiInfo(settingsStr)
+	default:
+		return fmt.Errorf("未知的设置类型：%s", settingType)
+	}
+}
+
+// validateApiInfo 验证API信息格式
+func validateApiInfo(apiInfoStr string) error {
 	var apiInfoList []map[string]interface{}
 	if err := json.Unmarshal([]byte(apiInfoStr), &apiInfoList); err != nil {
 		return fmt.Errorf("API信息格式错误：%s", err.Error())
@@ -101,6 +111,11 @@ func ValidateApiInfo(apiInfoStr string) error {
 	}
 	
 	return nil
+}
+
+// ValidateApiInfo 保持向后兼容的函数
+func ValidateApiInfo(apiInfoStr string) error {
+	return validateApiInfo(apiInfoStr)
 }
 
 // GetApiInfo 获取API信息列表
