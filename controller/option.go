@@ -128,6 +128,24 @@ func UpdateOption(c *gin.Context) {
 			})
 			return
 		}
+	case "Announcements":
+		err = setting.ValidateConsoleSettings(option.Value, "Announcements")
+		if err != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": err.Error(),
+			})
+			return
+		}
+	case "FAQ":
+		err = setting.ValidateConsoleSettings(option.Value, "FAQ")
+		if err != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": err.Error(),
+			})
+			return
+		}
 	}
 	err = model.UpdateOption(option.Key, option.Value)
 	if err != nil {

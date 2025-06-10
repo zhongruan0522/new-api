@@ -44,6 +44,9 @@ const SettingsAPIInfo = ({ options, refresh }) => {
     route: '',
     color: 'blue'
   });
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
 
   const colorOptions = [
     { value: 'blue', label: 'blue' },
@@ -237,6 +240,7 @@ const SettingsAPIInfo = ({ options, refresh }) => {
     {
       title: t('操作'),
       fixed: 'right',
+      width: 150,
       render: (_, record) => (
         <Space>
           <Button
@@ -264,12 +268,25 @@ const SettingsAPIInfo = ({ options, refresh }) => {
     },
   ];
 
+  const handleBatchDelete = () => {
+    if (selectedRowKeys.length === 0) {
+      showError('请先选择要删除的API信息');
+      return;
+    }
+
+    const newList = apiInfoList.filter(api => !selectedRowKeys.includes(api.id));
+    setApiInfoList(newList);
+    setSelectedRowKeys([]);
+    setHasChanges(true);
+    showSuccess(`已删除 ${selectedRowKeys.length} 个API信息，请及时点击“保存配置”进行保存`);
+  };
+
   const renderHeader = () => (
     <div className="flex flex-col w-full">
       <div className="mb-2">
         <div className="flex items-center text-blue-500">
           <Settings size={16} className="mr-2" />
-          <Text>{t('API信息管理，可以配置多个API地址用于状态展示和负载均衡')}</Text>
+          <Text>{t('API信息管理，可以配置多个API地址用于状态展示和负载均衡（最多50个）')}</Text>
         </div>
       </div>
 
@@ -287,6 +304,16 @@ const SettingsAPIInfo = ({ options, refresh }) => {
             {t('添加API')}
           </Button>
           <Button
+            icon={<Trash2 size={14} />}
+            type='danger'
+            theme='light'
+            onClick={handleBatchDelete}
+            disabled={selectedRowKeys.length === 0}
+            className="!rounded-full w-full md:w-auto"
+          >
+            {t('批量删除')} {selectedRowKeys.length > 0 && `(${selectedRowKeys.length})`}
+          </Button>
+          <Button
             icon={<Save size={14} />}
             onClick={submitApiInfo}
             loading={loading}
@@ -301,14 +328,56 @@ const SettingsAPIInfo = ({ options, refresh }) => {
     </div>
   );
 
+  // 计算当前页显示的数据
+  const getCurrentPageData = () => {
+    const startIndex = (currentPage - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+    return apiInfoList.slice(startIndex, endIndex);
+  };
+
+  const rowSelection = {
+    selectedRowKeys,
+    onChange: (selectedRowKeys, selectedRows) => {
+      setSelectedRowKeys(selectedRowKeys);
+    },
+    onSelect: (record, selected, selectedRows) => {
+      console.log(`选择行: ${selected}`, record);
+    },
+    onSelectAll: (selected, selectedRows) => {
+      console.log(`全选: ${selected}`, selectedRows);
+    },
+    getCheckboxProps: (record) => ({
+      disabled: false,
+      name: record.id,
+    }),
+  };
+
   return (
     <>
       <Form.Section text={renderHeader()}>
         <Table
           columns={columns}
-          dataSource={apiInfoList}
+          dataSource={getCurrentPageData()}
+          rowSelection={rowSelection}
+          rowKey="id"
           scroll={{ x: 'max-content' }}
-          pagination={false}
+          pagination={{
+            currentPage: currentPage,
+            pageSize: pageSize,
+            total: apiInfoList.length,
+            showSizeChanger: true,
+            showQuickJumper: true,
+            showTotal: (total, range) => t(`共 ${total} 条记录，显示第 ${range[0]}-${range[1]} 条`),
+            pageSizeOptions: ['5', '10', '20', '50'],
+            onChange: (page, size) => {
+              setCurrentPage(page);
+              setPageSize(size);
+            },
+            onShowSizeChange: (current, size) => {
+              setCurrentPage(1);
+              setPageSize(size);
+            }
+          }}
           size='middle'
           loading={loading}
           empty={
