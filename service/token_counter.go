@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/tiktoken-go/tokenizer"
 	"image"
 	"log"
 	"math"
@@ -11,78 +12,37 @@ import (
 	"one-api/constant"
 	"one-api/dto"
 	relaycommon "one-api/relay/common"
-	"one-api/setting/operation_setting"
 	"strings"
 	"unicode/utf8"
-
-	"github.com/pkoukk/tiktoken-go"
 )
 
 // tokenEncoderMap won't grow after initialization
-var tokenEncoderMap = map[string]*tiktoken.Tiktoken{}
-var defaultTokenEncoder *tiktoken.Tiktoken
-var o200kTokenEncoder *tiktoken.Tiktoken
+var defaultTokenEncoder tokenizer.Codec
 
 func InitTokenEncoders() {
 	common.SysLog("initializing token encoders")
-	cl100TokenEncoder, err := tiktoken.GetEncoding(tiktoken.MODEL_CL100K_BASE)
+	cl100TokenEncoder, err := tokenizer.Get(tokenizer.Cl100kBase)
 	if err != nil {
 		common.FatalLog(fmt.Sprintf("failed to get gpt-3.5-turbo token encoder: %s", err.Error()))
 	}
 	defaultTokenEncoder = cl100TokenEncoder
-	o200kTokenEncoder, err = tiktoken.GetEncoding(tiktoken.MODEL_O200K_BASE)
-	if err != nil {
-		common.FatalLog(fmt.Sprintf("failed to get gpt-4o token encoder: %s", err.Error()))
-	}
-	for model, _ := range operation_setting.GetDefaultModelRatioMap() {
-		if strings.HasPrefix(model, "gpt-3.5") {
-			tokenEncoderMap[model] = cl100TokenEncoder
-		} else if strings.HasPrefix(model, "gpt-4") {
-			if strings.HasPrefix(model, "gpt-4o") {
-				tokenEncoderMap[model] = o200kTokenEncoder
-			} else {
-				tokenEncoderMap[model] = defaultTokenEncoder
-			}
-		} else if strings.HasPrefix(model, "o") {
-			tokenEncoderMap[model] = o200kTokenEncoder
-		} else {
-			tokenEncoderMap[model] = defaultTokenEncoder
-		}
-	}
 	common.SysLog("token encoders initialized")
 }
 
-func getModelDefaultTokenEncoder(model string) *tiktoken.Tiktoken {
-	if strings.HasPrefix(model, "gpt-4o") || strings.HasPrefix(model, "chatgpt-4o") || strings.HasPrefix(model, "o1") {
-		return o200kTokenEncoder
+func getTokenEncoder(model string) tokenizer.Codec {
+	codec, err := tokenizer.ForModel(tokenizer.Model(model))
+	if err != nil {
+		return defaultTokenEncoder
 	}
-	return defaultTokenEncoder
+	return codec
 }
 
-func getTokenEncoder(model string) *tiktoken.Tiktoken {
-	tokenEncoder, ok := tokenEncoderMap[model]
-	if ok && tokenEncoder != nil {
-		return tokenEncoder
-	}
-	// 如果ok（即model在tokenEncoderMap中），但是tokenEncoder为nil，说明可能是自定义模型
-	if ok {
-		tokenEncoder, err := tiktoken.EncodingForModel(model)
-		if err != nil {
-			common.SysError(fmt.Sprintf("failed to get token encoder for model %s: %s, using encoder for gpt-3.5-turbo", model, err.Error()))
-			tokenEncoder = getModelDefaultTokenEncoder(model)
-		}
-		tokenEncoderMap[model] = tokenEncoder
-		return tokenEncoder
-	}
-	// 如果model不在tokenEncoderMap中，直接返回默认的tokenEncoder
-	return getModelDefaultTokenEncoder(model)
-}
-
-func getTokenNum(tokenEncoder *tiktoken.Tiktoken, text string) int {
+func getTokenNum(tokenEncoder tokenizer.Codec, text string) int {
 	if text == "" {
 		return 0
 	}
-	return len(tokenEncoder.Encode(text, nil, nil))
+	ids, _, _ := tokenEncoder.Encode(text)
+	return len(ids)
 }
 
 func getImageToken(info *relaycommon.RelayInfo, imageUrl *dto.MessageImageUrl, model string, stream bool) (int, error) {
