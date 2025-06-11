@@ -1279,9 +1279,8 @@ const Detail = (props) => {
                 }
                 footer={uptimeData.length > 0 ? (
                   <Card
-                    shadows="always"
                     bordered={false}
-                    className="!rounded-full backdrop-blur"
+                    className="!rounded-2xl backdrop-blur !shadow-none"
                   >
                     <div className="flex flex-wrap gap-3 text-xs justify-center">
                       {uptimeLegendData.map((legend, index) => (
@@ -1296,13 +1295,13 @@ const Detail = (props) => {
                     </div>
                   </Card>
                 ) : null}
-                footerStyle={uptimeData.length > 0 ? { marginTop: '-100px' } : undefined}
+                footerStyle={uptimeData.length > 0 ? { padding: '0px' } : undefined}
               >
                 <div className="card-content-container">
                   <Spin spinning={uptimeLoading}>
                     <div
                       ref={uptimeScrollRef}
-                      className="p-2 max-h-96 overflow-y-auto card-content-scroll"
+                      className="p-2 max-h-80 overflow-y-auto card-content-scroll"
                       onScroll={() => handleCardScroll(uptimeScrollRef, setShowUptimeScrollHint)}
                     >
                       {uptimeData.length > 0 ? (
