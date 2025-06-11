@@ -14,10 +14,16 @@ var groupRatio = map[string]float64{
 }
 var groupRatioMutex sync.RWMutex
 
+var GroupGroupRatio = map[string]map[string]float64{
+	"vip": {
+		"edit_this": 0.9,
+	},
+}
+
 func GetGroupRatioCopy() map[string]float64 {
 	groupRatioMutex.RLock()
 	defer groupRatioMutex.RUnlock()
-	
+
 	groupRatioCopy := make(map[string]float64)
 	for k, v := range groupRatio {
 		groupRatioCopy[k] = v
@@ -28,7 +34,7 @@ func GetGroupRatioCopy() map[string]float64 {
 func ContainsGroupRatio(name string) bool {
 	groupRatioMutex.RLock()
 	defer groupRatioMutex.RUnlock()
-	
+
 	_, ok := groupRatio[name]
 	return ok
 }
@@ -36,7 +42,7 @@ func ContainsGroupRatio(name string) bool {
 func GroupRatio2JSONString() string {
 	groupRatioMutex.RLock()
 	defer groupRatioMutex.RUnlock()
-	
+
 	jsonBytes, err := json.Marshal(groupRatio)
 	if err != nil {
 		common.SysError("error marshalling model ratio: " + err.Error())
@@ -47,7 +53,7 @@ func GroupRatio2JSONString() string {
 func UpdateGroupRatioByJSONString(jsonStr string) error {
 	groupRatioMutex.Lock()
 	defer groupRatioMutex.Unlock()
-	
+
 	groupRatio = make(map[string]float64)
 	return json.Unmarshal([]byte(jsonStr), &groupRatio)
 }
@@ -55,13 +61,38 @@ func UpdateGroupRatioByJSONString(jsonStr string) error {
 func GetGroupRatio(name string) float64 {
 	groupRatioMutex.RLock()
 	defer groupRatioMutex.RUnlock()
-	
+
 	ratio, ok := groupRatio[name]
 	if !ok {
 		common.SysError("group ratio not found: " + name)
 		return 1
 	}
 	return ratio
+}
+
+func GetGroupGroupRatio(group, name string) (float64, bool) {
+	gp, ok := GroupGroupRatio[group]
+	if !ok {
+		return -1, false
+	}
+	ratio, ok := gp[name]
+	if !ok {
+		return -1, false
+	}
+	return ratio, true
+}
+
+func GroupGroupRatio2JSONString() string {
+	jsonBytes, err := json.Marshal(GroupGroupRatio)
+	if err != nil {
+		common.SysError("error marshalling group-group ratio: " + err.Error())
+	}
+	return string(jsonBytes)
+}
+
+func UpdateGroupGroupRatioByJSONString(jsonStr string) error {
+	GroupGroupRatio = make(map[string]map[string]float64)
+	return json.Unmarshal([]byte(jsonStr), &GroupGroupRatio)
 }
 
 func CheckGroupRatio(jsonStr string) error {

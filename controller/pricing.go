@@ -1,10 +1,11 @@
 package controller
 
 import (
-	"github.com/gin-gonic/gin"
 	"one-api/model"
 	"one-api/setting"
 	"one-api/setting/operation_setting"
+
+	"github.com/gin-gonic/gin"
 )
 
 func GetPricing(c *gin.Context) {
@@ -20,6 +21,12 @@ func GetPricing(c *gin.Context) {
 		user, err := model.GetUserCache(userId.(int))
 		if err == nil {
 			group = user.Group
+			for g := range groupRatio {
+				ratio, ok := setting.GetGroupGroupRatio(group, g)
+				if ok {
+					groupRatio[g] = ratio
+				}
+			}
 		}
 	}
 
