@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"one-api/common"
 	"one-api/constant"
+	"one-api/middleware"
 	"one-api/model"
 	"one-api/setting"
 	"one-api/setting/operation_setting"
@@ -24,14 +25,18 @@ func TestStatus(c *gin.Context) {
 		})
 		return
 	}
+	// 获取HTTP统计信息
+	httpStats := middleware.GetStats()
 	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"message": "Server is running",
+		"success":    true,
+		"message":    "Server is running",
+		"http_stats": httpStats,
 	})
 	return
 }
 
 func GetStatus(c *gin.Context) {
+
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
@@ -74,6 +79,9 @@ func GetStatus(c *gin.Context) {
 			"oidc_client_id":              system_setting.GetOIDCSettings().ClientId,
 			"oidc_authorization_endpoint": system_setting.GetOIDCSettings().AuthorizationEndpoint,
 			"setup":                       constant.Setup,
+			"api_info":                    setting.GetApiInfo(),
+			"announcements":               setting.GetAnnouncements(),
+			"faq":                         setting.GetFAQ(),
 		},
 	})
 	return

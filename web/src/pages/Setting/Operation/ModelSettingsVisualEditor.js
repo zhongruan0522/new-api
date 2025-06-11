@@ -1,5 +1,5 @@
 // ModelSettingsVisualEditor.js
-import React, { useContext, useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   Table,
   Button,
@@ -8,9 +8,7 @@ import {
   Form,
   Space,
   RadioGroup,
-  Radio,
-  Tabs,
-  TabPane,
+  Radio
 } from '@douyinfe/semi-ui';
 import {
   IconDelete,
@@ -19,11 +17,8 @@ import {
   IconSave,
   IconEdit,
 } from '@douyinfe/semi-icons';
-import { showError, showSuccess } from '../../../helpers';
-import { API } from '../../../helpers';
+import { API, showError, showSuccess, getQuotaPerUnit } from '../../../helpers';
 import { useTranslation } from 'react-i18next';
-import { StatusContext } from '../../../context/Status/index.js';
-import { getQuotaPerUnit } from '../../../helpers/render.js';
 
 export default function ModelSettingsVisualEditor(props) {
   const { t } = useTranslation();
@@ -304,11 +299,11 @@ export default function ModelSettingsVisualEditor(props) {
         prev.map((model, index) =>
           index === existingModelIndex
             ? {
-                name: values.name,
-                price: values.price || '',
-                ratio: values.ratio || '',
-                completionRatio: values.completionRatio || '',
-              }
+              name: values.name,
+              price: values.price || '',
+              ratio: values.ratio || '',
+              completionRatio: values.completionRatio || '',
+            }
             : model,
         ),
       );
@@ -456,8 +451,8 @@ export default function ModelSettingsVisualEditor(props) {
       <Modal
         title={
           currentModel &&
-          currentModel.name &&
-          models.some((model) => model.name === currentModel.name)
+            currentModel.name &&
+            models.some((model) => model.name === currentModel.name)
             ? t('编辑模型')
             : t('添加模型')
         }

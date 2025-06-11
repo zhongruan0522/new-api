@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   API,
@@ -7,12 +6,9 @@ import {
   isMobile,
   showError,
   showSuccess,
-} from '../../helpers';
-import {
-  getQuotaPerUnit,
   renderQuota,
-  renderQuotaWithPrompt,
-} from '../../helpers/render';
+  renderQuotaWithPrompt
+} from '../../helpers';
 import {
   AutoComplete,
   Button,
@@ -22,17 +18,24 @@ import {
   Space,
   Spin,
   Typography,
+  Card,
+  Tag,
 } from '@douyinfe/semi-ui';
-import Title from '@douyinfe/semi-ui/lib/es/typography/title';
-import { Divider } from 'semantic-ui-react';
+import {
+  IconCreditCard,
+  IconSave,
+  IconClose,
+  IconPlusCircle,
+  IconGift,
+} from '@douyinfe/semi-icons';
+
+const { Text, Title } = Typography;
 
 const EditRedemption = (props) => {
   const { t } = useTranslation();
   const isEdit = props.editingRedemption.id !== undefined;
   const [loading, setLoading] = useState(isEdit);
 
-  const params = useParams();
-  const navigate = useNavigate();
   const originInputs = {
     name: '',
     quota: 100000,
@@ -134,24 +137,46 @@ const EditRedemption = (props) => {
       <SideSheet
         placement={isEdit ? 'right' : 'left'}
         title={
-          <Title level={3}>
-            {isEdit ? t('更新兑换码信息') : t('创建新的兑换码')}
-          </Title>
+          <Space>
+            {isEdit ?
+              <Tag color="blue" shape="circle">{t('更新')}</Tag> :
+              <Tag color="green" shape="circle">{t('新建')}</Tag>
+            }
+            <Title heading={4} className="m-0">
+              {isEdit ? t('更新兑换码信息') : t('创建新的兑换码')}
+            </Title>
+          </Space>
         }
-        headerStyle={{ borderBottom: '1px solid var(--semi-color-border)' }}
-        bodyStyle={{ borderBottom: '1px solid var(--semi-color-border)' }}
+        headerStyle={{
+          borderBottom: '1px solid var(--semi-color-border)',
+          padding: '24px'
+        }}
+        bodyStyle={{
+          backgroundColor: 'var(--semi-color-bg-0)',
+          padding: '0'
+        }}
         visible={props.visiable}
+        width={isMobile() ? '100%' : 600}
         footer={
-          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <div className="flex justify-end bg-white">
             <Space>
-              <Button theme='solid' size={'large'} onClick={submit}>
+              <Button
+                theme="solid"
+                size="large"
+                className="!rounded-full"
+                onClick={submit}
+                icon={<IconSave />}
+                loading={loading}
+              >
                 {t('提交')}
               </Button>
               <Button
-                theme='solid'
-                size={'large'}
-                type={'tertiary'}
+                theme="light"
+                size="large"
+                className="!rounded-full"
+                type="primary"
                 onClick={handleCancel}
+                icon={<IconClose />}
               >
                 {t('取消')}
               </Button>
@@ -160,59 +185,106 @@ const EditRedemption = (props) => {
         }
         closeIcon={null}
         onCancel={() => handleCancel()}
-        width={isMobile() ? '100%' : 600}
       >
         <Spin spinning={loading}>
-          <Input
-            style={{ marginTop: 20 }}
-            label={t('名称')}
-            name='name'
-            placeholder={t('请输入名称')}
-            onChange={(value) => handleInputChange('name', value)}
-            value={name}
-            autoComplete='new-password'
-            required={!isEdit}
-          />
-          <Divider />
-          <div style={{ marginTop: 20 }}>
-            <Typography.Text>
-              {t('额度') + renderQuotaWithPrompt(quota)}
-            </Typography.Text>
+          <div className="p-6">
+            <Card className="!rounded-2xl shadow-sm border-0 mb-6">
+              <div className="flex items-center mb-4 p-6 rounded-xl" style={{
+                background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 50%, #3b82f6 100%)',
+                position: 'relative'
+              }}>
+                <div className="absolute inset-0 overflow-hidden">
+                  <div className="absolute -top-10 -right-10 w-40 h-40 bg-white opacity-5 rounded-full"></div>
+                  <div className="absolute -bottom-8 -left-8 w-24 h-24 bg-white opacity-10 rounded-full"></div>
+                </div>
+                <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center mr-4 relative">
+                  <IconGift size="large" style={{ color: '#ffffff' }} />
+                </div>
+                <div className="relative">
+                  <Text style={{ color: '#ffffff' }} className="text-lg font-medium">{t('基本信息')}</Text>
+                  <div style={{ color: '#ffffff' }} className="text-sm opacity-80">{t('设置兑换码的基本信息')}</div>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <Text strong className="block mb-2">{t('名称')}</Text>
+                  <Input
+                    placeholder={t('请输入名称')}
+                    onChange={(value) => handleInputChange('name', value)}
+                    value={name}
+                    autoComplete="new-password"
+                    size="large"
+                    className="!rounded-lg"
+                    showClear
+                    required={!isEdit}
+                  />
+                </div>
+              </div>
+            </Card>
+
+            <Card className="!rounded-2xl shadow-sm border-0">
+              <div className="flex items-center mb-4 p-6 rounded-xl" style={{
+                background: 'linear-gradient(135deg, #065f46 0%, #059669 50%, #10b981 100%)',
+                position: 'relative'
+              }}>
+                <div className="absolute inset-0 overflow-hidden">
+                  <div className="absolute -top-10 -right-10 w-40 h-40 bg-white opacity-5 rounded-full"></div>
+                  <div className="absolute -bottom-8 -left-8 w-24 h-24 bg-white opacity-10 rounded-full"></div>
+                </div>
+                <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center mr-4 relative">
+                  <IconCreditCard size="large" style={{ color: '#ffffff' }} />
+                </div>
+                <div className="relative">
+                  <Text style={{ color: '#ffffff' }} className="text-lg font-medium">{t('额度设置')}</Text>
+                  <div style={{ color: '#ffffff' }} className="text-sm opacity-80">{t('设置兑换码的额度和数量')}</div>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <div className="flex justify-between mb-2">
+                    <Text strong>{t('额度')}</Text>
+                    <Text type="tertiary">{renderQuotaWithPrompt(quota)}</Text>
+                  </div>
+                  <AutoComplete
+                    placeholder={t('请输入额度')}
+                    onChange={(value) => handleInputChange('quota', value)}
+                    value={quota}
+                    autoComplete="new-password"
+                    type="number"
+                    size="large"
+                    className="w-full !rounded-lg"
+                    prefix={<IconCreditCard />}
+                    data={[
+                      { value: 500000, label: '1$' },
+                      { value: 5000000, label: '10$' },
+                      { value: 25000000, label: '50$' },
+                      { value: 50000000, label: '100$' },
+                      { value: 250000000, label: '500$' },
+                      { value: 500000000, label: '1000$' },
+                    ]}
+                  />
+                </div>
+
+                {!isEdit && (
+                  <div>
+                    <Text strong className="block mb-2">{t('生成数量')}</Text>
+                    <Input
+                      placeholder={t('请输入生成数量')}
+                      onChange={(value) => handleInputChange('count', value)}
+                      value={count}
+                      autoComplete="new-password"
+                      type="number"
+                      size="large"
+                      className="!rounded-lg"
+                      prefix={<IconPlusCircle />}
+                    />
+                  </div>
+                )}
+              </div>
+            </Card>
           </div>
-          <AutoComplete
-            style={{ marginTop: 8 }}
-            name='quota'
-            placeholder={t('请输入额度')}
-            onChange={(value) => handleInputChange('quota', value)}
-            value={quota}
-            autoComplete='new-password'
-            type='number'
-            position={'bottom'}
-            data={[
-              { value: 500000, label: '1$' },
-              { value: 5000000, label: '10$' },
-              { value: 25000000, label: '50$' },
-              { value: 50000000, label: '100$' },
-              { value: 250000000, label: '500$' },
-              { value: 500000000, label: '1000$' },
-            ]}
-          />
-          {!isEdit && (
-            <>
-              <Divider />
-              <Typography.Text>{t('生成数量')}</Typography.Text>
-              <Input
-                style={{ marginTop: 8 }}
-                label={t('生成数量')}
-                name='count'
-                placeholder={t('请输入生成数量')}
-                onChange={(value) => handleInputChange('count', value)}
-                value={count}
-                autoComplete='new-password'
-                type='number'
-              />
-            </>
-          )}
         </Spin>
       </SideSheet>
     </>

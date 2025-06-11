@@ -113,7 +113,7 @@ export const CHANNEL_OPTIONS = [
   {
     value: 45,
     color: 'blue',
-    label: '字节火山方舟、豆包、DeepSeek通用',
+    label: '字节火山方舟、豆包通用',
   },
   {
     value: 48,
