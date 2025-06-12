@@ -2,12 +2,13 @@ package helper
 
 import (
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"one-api/common"
 	constant2 "one-api/constant"
 	relaycommon "one-api/relay/common"
 	"one-api/setting"
 	"one-api/setting/operation_setting"
+
+	"github.com/gin-gonic/gin"
 )
 
 type PriceData struct {
@@ -18,6 +19,7 @@ type PriceData struct {
 	CacheCreationRatio     float64
 	ImageRatio             float64
 	GroupRatio             float64
+	UserGroupRatio         float64
 	UsePrice               bool
 	ShouldPreConsumedQuota int
 }
@@ -29,6 +31,10 @@ func (p PriceData) ToSetting() string {
 func ModelPriceHelper(c *gin.Context, info *relaycommon.RelayInfo, promptTokens int, maxTokens int) (PriceData, error) {
 	modelPrice, usePrice := operation_setting.GetModelPrice(info.OriginModelName, false)
 	groupRatio := setting.GetGroupRatio(info.Group)
+	userGroupRatio, ok := setting.GetGroupGroupRatio(info.UserGroup, info.Group)
+	if ok {
+		groupRatio = userGroupRatio
+	}
 	var preConsumedQuota int
 	var modelRatio float64
 	var completionRatio float64
@@ -69,6 +75,7 @@ func ModelPriceHelper(c *gin.Context, info *relaycommon.RelayInfo, promptTokens 
 		ModelRatio:             modelRatio,
 		CompletionRatio:        completionRatio,
 		GroupRatio:             groupRatio,
+		UserGroupRatio:         userGroupRatio,
 		UsePrice:               usePrice,
 		CacheRatio:             cacheRatio,
 		ImageRatio:             imageRatio,

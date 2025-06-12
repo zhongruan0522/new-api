@@ -30,6 +30,7 @@ const OperationSetting = () => {
     CompletionRatio: '',
     ModelPrice: '',
     GroupRatio: '',
+    GroupGroupRatio: '',
     UserUsableGroups: '',
     TopUpLink: '',
     'general_setting.docs_link': '',
@@ -74,6 +75,7 @@ const OperationSetting = () => {
         if (
           item.key === 'ModelRatio' ||
           item.key === 'GroupRatio' ||
+          item.key === 'GroupGroupRatio' ||
           item.key === 'UserUsableGroups' ||
           item.key === 'CompletionRatio' ||
           item.key === 'ModelPrice' ||
