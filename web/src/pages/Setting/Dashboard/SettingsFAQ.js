@@ -330,7 +330,11 @@ const SettingsFAQ = ({ options, refresh }) => {
             total: faqList.length,
             showSizeChanger: true,
             showQuickJumper: true,
-            showTotal: (total, range) => t(`共 ${total} 条记录，显示第 ${range[0]}-${range[1]} 条`),
+            formatPageText: (page) => t('第 {{start}} - {{end}} 条，共 {{total}} 条', {
+              start: page.currentStart,
+              end: page.currentEnd,
+              total: faqList.length,
+            }),
             pageSizeOptions: ['5', '10', '20', '50'],
             onChange: (page, size) => {
               setCurrentPage(page);
