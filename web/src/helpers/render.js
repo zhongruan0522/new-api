@@ -1122,7 +1122,6 @@ export function renderLogContent(
   user_group_ratio,
   image = false,
   imageRatio = 1.0,
-  useUserGroupRatio = undefined,
   webSearch = false,
   webSearchCallCount = 0,
   fileSearch = false,

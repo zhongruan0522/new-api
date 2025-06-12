@@ -963,7 +963,6 @@ const LogsTable = () => {
                 other?.user_group_ratio,
                 false,
                 1.0,
-                undefined,
                 other.web_search || false,
                 other.web_search_call_count || 0,
                 other.file_search || false,
