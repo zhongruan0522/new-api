@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"one-api/common"
+	"one-api/constant"
 	"os"
 	"strings"
 	"time"
@@ -32,6 +33,7 @@ type Log struct {
 	ChannelName      string `json:"channel_name" gorm:"->"`
 	TokenId          int    `json:"token_id" gorm:"default:0;index"`
 	Group            string `json:"group" gorm:"index"`
+	Ip               string `json:"ip" gorm:"index;default:''"`
 	Other            string `json:"other"`
 }
 
@@ -95,6 +97,15 @@ func RecordErrorLog(c *gin.Context, userId int, channelId int, modelName string,
 	common.LogInfo(c, fmt.Sprintf("record error log: userId=%d, channelId=%d, modelName=%s, tokenName=%s, content=%s", userId, channelId, modelName, tokenName, content))
 	username := c.GetString("username")
 	otherStr := common.MapToJsonStr(other)
+	// 判断是否需要记录 IP
+	needRecordIp := false
+	if settingMap, err := GetUserSetting(userId, false); err == nil {
+		if v, ok := settingMap[constant.UserSettingRecordIpLog]; ok {
+			if vb, ok := v.(bool); ok && vb {
+				needRecordIp = true
+			}
+		}
+	}
 	log := &Log{
 		UserId:           userId,
 		Username:         username,
@@ -111,6 +122,7 @@ func RecordErrorLog(c *gin.Context, userId int, channelId int, modelName string,
 		UseTime:          useTimeSeconds,
 		IsStream:         isStream,
 		Group:            group,
+		Ip:               func() string { if needRecordIp { return c.ClientIP() }; return "" }(),
 		Other:            otherStr,
 	}
 	err := LOG_DB.Create(log).Error
@@ -128,6 +140,15 @@ func RecordConsumeLog(c *gin.Context, userId int, channelId int, promptTokens in
 	}
 	username := c.GetString("username")
 	otherStr := common.MapToJsonStr(other)
+	// 判断是否需要记录 IP
+	needRecordIp := false
+	if settingMap, err := GetUserSetting(userId, false); err == nil {
+		if v, ok := settingMap[constant.UserSettingRecordIpLog]; ok {
+			if vb, ok := v.(bool); ok && vb {
+				needRecordIp = true
+			}
+		}
+	}
 	log := &Log{
 		UserId:           userId,
 		Username:         username,
@@ -144,6 +165,7 @@ func RecordConsumeLog(c *gin.Context, userId int, channelId int, promptTokens in
 		UseTime:          useTimeSeconds,
 		IsStream:         isStream,
 		Group:            group,
+		Ip:               func() string { if needRecordIp { return c.ClientIP() }; return "" }(),
 		Other:            otherStr,
 	}
 	err := LOG_DB.Create(log).Error

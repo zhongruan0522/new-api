@@ -1646,5 +1646,9 @@
   "高延迟": "High latency",
   "维护中": "Maintenance",
   "暂无监控数据": "No monitoring data",
-  "请联系管理员在系统设置中配置Uptime": "Please contact the administrator to configure Uptime in the system settings."
+  "请联系管理员在系统设置中配置Uptime": "Please contact the administrator to configure Uptime in the system settings.",
+  "IP记录": "IP Record",
+  "记录请求与错误日志 IP": "Record request and error log IP",
+  "开启后，仅“消费”和“错误”日志将记录您的客户端 IP 地址": "After enabling, only \"consumption\" and \"error\" logs will record your client IP address",
+  "只有当用户设置开启IP记录时，才会进行请求和错误类型日志的IP记录": "Only when the user sets IP recording, the IP recording of request and error type logs will be performed"
 }

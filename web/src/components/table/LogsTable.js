@@ -47,7 +47,7 @@ import {
 } from '@douyinfe/semi-illustrations';
 import { ITEMS_PER_PAGE } from '../../constants';
 import Paragraph from '@douyinfe/semi-ui/lib/es/typography/paragraph';
-import { IconSetting, IconSearch } from '@douyinfe/semi-icons';
+import { IconSetting, IconSearch, IconHelpCircle } from '@douyinfe/semi-icons';
 import { Route } from 'lucide-react';
 
 const { Text } = Typography;
@@ -260,6 +260,7 @@ const LogsTable = () => {
     COMPLETION: 'completion',
     COST: 'cost',
     RETRY: 'retry',
+    IP: 'ip',
     DETAILS: 'details',
   };
 
@@ -301,6 +302,7 @@ const LogsTable = () => {
       [COLUMN_KEYS.COMPLETION]: true,
       [COLUMN_KEYS.COST]: true,
       [COLUMN_KEYS.RETRY]: isAdminUser,
+      [COLUMN_KEYS.IP]: true,
       [COLUMN_KEYS.DETAILS]: true,
     };
   };
@@ -485,6 +487,9 @@ const LogsTable = () => {
       title: t('用时/首字'),
       dataIndex: 'use_time',
       render: (text, record, index) => {
+        if (!(record.type === 2 || record.type === 5)) {
+          return <></>;
+        }
         if (record.is_stream) {
           let other = getLogOther(record.other);
           return (
@@ -546,11 +551,44 @@ const LogsTable = () => {
       },
     },
     {
+      key: COLUMN_KEYS.IP,
+      title: (
+        <div className="flex items-center gap-1">
+          {t('IP')}
+          <Tooltip content={t('只有当用户设置开启IP记录时，才会进行请求和错误类型日志的IP记录')}>
+            <IconHelpCircle className="text-gray-400 cursor-help" />
+          </Tooltip>
+        </div>
+      ),
+      dataIndex: 'ip',
+      render: (text, record, index) => {
+        return (record.type === 2 || record.type === 5) && text ? (
+          <Tooltip content={text}>
+            <Tag
+              color='orange'
+              size='large'
+              shape='circle'
+              onClick={(event) => {
+                copyText(event, text);
+              }}
+            >
+              {text}
+            </Tag>
+          </Tooltip>
+        ) : (
+          <></>
+        );
+      },
+    },
+    {
       key: COLUMN_KEYS.RETRY,
       title: t('重试'),
       dataIndex: 'retry',
       className: isAdmin() ? 'tableShow' : 'tableHiddle',
       render: (text, record, index) => {
+        if (!(record.type === 2 || record.type === 5)) {
+          return <></>;
+        }
         let content = t('渠道') + `：${record.channel}`;
         if (record.other !== '') {
           let other = JSON.parse(record.other);
