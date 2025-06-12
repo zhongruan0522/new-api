@@ -868,7 +868,27 @@ export function renderQuota(quota, digits = 2) {
 }
 
 function isValidGroupRatio(ratio) {
-  return ratio !== undefined && ratio !== null && ratio !== -1;
+  return Number.isFinite(ratio) && ratio !== -1;
+}
+
+/**
+ * Helper function to get effective ratio and label
+ * @param {number} groupRatio - The default group ratio
+ * @param {number} user_group_ratio - The user-specific group ratio  
+ * @returns {Object} - Object containing { ratio, label, useUserGroupRatio }
+ */
+function getEffectiveRatio(groupRatio, user_group_ratio) {
+  const useUserGroupRatio = isValidGroupRatio(user_group_ratio);
+  const ratioLabel = useUserGroupRatio
+    ? i18next.t('专属倍率')
+    : i18next.t('分组倍率');
+  const effectiveRatio = useUserGroupRatio ? user_group_ratio : groupRatio;
+  
+  return {
+    ratio: effectiveRatio,
+    label: ratioLabel,
+    useUserGroupRatio: useUserGroupRatio
+  };
 }
 
 export function renderModelPrice(
@@ -894,11 +914,9 @@ export function renderModelPrice(
   audioInputTokens = 0,
   audioInputPrice = 0,
 ) {
-  const useUserGroupRatio = isValidGroupRatio(user_group_ratio);
-  const ratioLabel = useUserGroupRatio
-    ? i18next.t('专属倍率')
-    : i18next.t('分组倍率');
-  groupRatio = useUserGroupRatio ? user_group_ratio : groupRatio;
+  const { ratio: effectiveGroupRatio, label: ratioLabel } = getEffectiveRatio(groupRatio, user_group_ratio);
+  groupRatio = effectiveGroupRatio;
+
   if (modelPrice !== -1) {
     return i18next.t(
       '模型价格：${{price}} * {{ratioType}}：{{ratio}} = ${{total}}',
@@ -1110,11 +1128,7 @@ export function renderLogContent(
   fileSearch = false,
   fileSearchCallCount = 0,
 ) {
-  useUserGroupRatio = isValidGroupRatio(user_group_ratio);
-  const ratioLabel = useUserGroupRatio
-    ? i18next.t('专属倍率')
-    : i18next.t('分组倍率');
-  const ratio = useUserGroupRatio ? user_group_ratio : groupRatio;
+  const { ratio, label: ratioLabel, useUserGroupRatio: useUserGroupRatio } = getEffectiveRatio(groupRatio, user_group_ratio);
 
   if (modelPrice !== -1) {
     return i18next.t('模型价格 ${{price}}，{{ratioType}} {{ratio}}', {
@@ -1169,11 +1183,8 @@ export function renderModelPriceSimple(
   image = false,
   imageRatio = 1.0,
 ) {
-  const useUserGroupRatio = isValidGroupRatio(user_group_ratio);
-  const ratioLabel = useUserGroupRatio
-    ? i18next.t('专属倍率')
-    : i18next.t('分组倍率');
-  groupRatio = useUserGroupRatio ? user_group_ratio : groupRatio;
+  const { ratio: effectiveGroupRatio, label: ratioLabel } = getEffectiveRatio(groupRatio, user_group_ratio);
+  groupRatio = effectiveGroupRatio;
   if (modelPrice !== -1) {
     return i18next.t('价格：${{price}} * {{ratioType}}：{{ratio}}', {
       price: modelPrice,
@@ -1236,11 +1247,8 @@ export function renderAudioModelPrice(
   cacheTokens = 0,
   cacheRatio = 1.0,
 ) {
-  const useUserGroupRatio = isValidGroupRatio(user_group_ratio);
-  const ratioLabel = useUserGroupRatio
-    ? i18next.t('专属倍率')
-    : i18next.t('分组倍率');
-  groupRatio = useUserGroupRatio ? user_group_ratio : groupRatio;
+  const { ratio: effectiveGroupRatio, label: ratioLabel } = getEffectiveRatio(groupRatio, user_group_ratio);
+  groupRatio = effectiveGroupRatio;
   // 1 ratio = $0.002 / 1K tokens
   if (modelPrice !== -1) {
     return i18next.t(
@@ -1409,11 +1417,8 @@ export function renderClaudeModelPrice(
   cacheCreationTokens = 0,
   cacheCreationRatio = 1.0,
 ) {
-  const useUserGroupRatio = isValidGroupRatio(user_group_ratio);
-  const ratioLabel = useUserGroupRatio
-    ? i18next.t('专属倍率')
-    : i18next.t('分组倍率');
-  groupRatio = useUserGroupRatio ? user_group_ratio : groupRatio;
+  const { ratio: effectiveGroupRatio, label: ratioLabel } = getEffectiveRatio(groupRatio, user_group_ratio);
+  groupRatio = effectiveGroupRatio;
 
   if (modelPrice !== -1) {
     return i18next.t(
@@ -1541,11 +1546,8 @@ export function renderClaudeLogContent(
   cacheRatio = 1.0,
   cacheCreationRatio = 1.0,
 ) {
-  const useUserGroupRatio = isValidGroupRatio(user_group_ratio);
-  const ratioLabel = useUserGroupRatio
-    ? i18next.t('专属倍率')
-    : i18next.t('分组倍率');
-  groupRatio = useUserGroupRatio ? user_group_ratio : groupRatio;
+  const { ratio: effectiveGroupRatio, label: ratioLabel } = getEffectiveRatio(groupRatio, user_group_ratio);
+  groupRatio = effectiveGroupRatio;
 
   if (modelPrice !== -1) {
     return i18next.t('模型价格 ${{price}}，{{ratioType}} {{ratio}}', {
@@ -1578,11 +1580,8 @@ export function renderClaudeModelPriceSimple(
   cacheCreationTokens = 0,
   cacheCreationRatio = 1.0,
 ) {
-  const useUserGroupRatio = isValidGroupRatio(user_group_ratio);
-  const ratioLabel = useUserGroupRatio
-    ? i18next.t('专属倍率')
-    : i18next.t('分组倍率');
-  groupRatio = useUserGroupRatio ? user_group_ratio : groupRatio;
+  const { ratio: effectiveGroupRatio, label: ratioLabel } = getEffectiveRatio(groupRatio, user_group_ratio);
+  groupRatio = effectiveGroupRatio;
 
   if (modelPrice !== -1) {
     return i18next.t('价格：${{price}} * {{ratioType}}：{{ratio}}', {
