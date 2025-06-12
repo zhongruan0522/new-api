@@ -61,6 +61,7 @@ type RelayInfo struct {
 	TokenKey          string
 	UserId            int
 	Group             string
+	UserGroup         string
 	TokenUnlimited    bool
 	StartTime         time.Time
 	FirstResponseTime time.Time
@@ -204,6 +205,7 @@ func GenRelayInfo(c *gin.Context) *RelayInfo {
 		TokenKey:          tokenKey,
 		UserId:            userId,
 		Group:             group,
+		UserGroup:         c.GetString(constant.ContextKeyUserGroup),
 		TokenUnlimited:    tokenUnlimited,
 		StartTime:         startTime,
 		FirstResponseTime: startTime.Add(-time.Second),
