@@ -601,7 +601,7 @@ const LogsTable = () => {
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activePage, setActivePage] = useState(1);
-  const [logCount, setLogCount] = useState(ITEMS_PER_PAGE);
+  const [logCount, setLogCount] = useState(0);
   const [pageSize, setPageSize] = useState(ITEMS_PER_PAGE);
   const [isModalOpenurl, setIsModalOpenurl] = useState(false);
   const [showBanner, setShowBanner] = useState(false);
@@ -649,69 +649,53 @@ const LogsTable = () => {
     };
   };
 
-  const setLogsFormat = (logs) => {
-    for (let i = 0; i < logs.length; i++) {
-      logs[i].timestamp2string = timestamp2string(logs[i].created_at);
-      logs[i].key = '' + logs[i].id;
-    }
-    // data.key = '' + data.id
-    setLogs(logs);
-    setLogCount(logs.length + pageSize);
-    // console.log(logCount);
+  const enrichLogs = (items) => {
+    return items.map((log) => ({
+      ...log,
+      timestamp2string: timestamp2string(log.created_at),
+      key: '' + log.id,
+    }));
   };
 
-  const loadLogs = async (startIdx, pageSize = ITEMS_PER_PAGE) => {
-    setLoading(true);
+  const syncPageData = (payload) => {
+    const items = enrichLogs(payload.items || []);
+    setLogs(items);
+    setLogCount(payload.total || 0);
+    setActivePage(payload.page || 1);
+    setPageSize(payload.page_size || pageSize);
+  };
 
-    let url = '';
+  const loadLogs = async (page = 1, size = pageSize) => {
+    setLoading(true);
     const { channel_id, mj_id, start_timestamp, end_timestamp } = getFormValues();
     let localStartTimestamp = Date.parse(start_timestamp);
     let localEndTimestamp = Date.parse(end_timestamp);
-    if (isAdminUser) {
-      url = `/api/mj/?p=${startIdx}&page_size=${pageSize}&channel_id=${channel_id}&mj_id=${mj_id}&start_timestamp=${localStartTimestamp}&end_timestamp=${localEndTimestamp}`;
-    } else {
-      url = `/api/mj/self/?p=${startIdx}&page_size=${pageSize}&mj_id=${mj_id}&start_timestamp=${localStartTimestamp}&end_timestamp=${localEndTimestamp}`;
-    }
+    const url = isAdminUser
+      ? `/api/mj/?p=${page}&page_size=${size}&channel_id=${channel_id}&mj_id=${mj_id}&start_timestamp=${localStartTimestamp}&end_timestamp=${localEndTimestamp}`
+      : `/api/mj/self/?p=${page}&page_size=${size}&mj_id=${mj_id}&start_timestamp=${localStartTimestamp}&end_timestamp=${localEndTimestamp}`;
     const res = await API.get(url);
     const { success, message, data } = res.data;
     if (success) {
-      if (startIdx === 0) {
-        setLogsFormat(data);
-      } else {
-        let newLogs = [...logs];
-        newLogs.splice(startIdx * pageSize, data.length, ...data);
-        setLogsFormat(newLogs);
-      }
+      syncPageData(data);
     } else {
       showError(message);
     }
     setLoading(false);
   };
 
-  const pageData = logs.slice(
-    (activePage - 1) * pageSize,
-    activePage * pageSize,
-  );
+  const pageData = logs;
 
   const handlePageChange = (page) => {
-    setActivePage(page);
-    if (page === Math.ceil(logs.length / pageSize) + 1) {
-      // In this case we have to load more data and then append them.
-      loadLogs(page - 1, pageSize).then((r) => { });
-    }
+    loadLogs(page, pageSize).then();
   };
 
   const handlePageSizeChange = async (size) => {
     localStorage.setItem('mj-page-size', size + '');
-    setPageSize(size);
-    setActivePage(1);
-    await loadLogs(0, size);
+    await loadLogs(1, size);
   };
 
   const refresh = async () => {
-    // setLoading(true);
-    setActivePage(1);
-    await loadLogs(0, pageSize);
+    await loadLogs(1, pageSize);
   };
 
   const copyText = async (text) => {
@@ -726,7 +710,7 @@ const LogsTable = () => {
   useEffect(() => {
     const localPageSize = parseInt(localStorage.getItem('mj-page-size')) || ITEMS_PER_PAGE;
     setPageSize(localPageSize);
-    loadLogs(0, localPageSize).then();
+    loadLogs(1, localPageSize).then();
   }, []);
 
   useEffect(() => {
@@ -936,7 +920,7 @@ const LogsTable = () => {
         >
           <Table
             columns={getVisibleColumns()}
-            dataSource={pageData}
+            dataSource={logs}
             rowKey='key'
             loading={loading}
             scroll={{ x: 'max-content' }}
@@ -962,9 +946,7 @@ const LogsTable = () => {
               total: logCount,
               pageSizeOptions: [10, 20, 50, 100],
               showSizeChanger: true,
-              onPageSizeChange: (size) => {
-                handlePageSizeChange(size);
-              },
+              onPageSizeChange: handlePageSizeChange,
               onPageChange: handlePageChange,
             }}
           />

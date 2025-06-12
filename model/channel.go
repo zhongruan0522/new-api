@@ -583,3 +583,17 @@ func BatchSetChannelTag(ids []int, tag *string) error {
 	// 提交事务
 	return tx.Commit().Error
 }
+
+// CountAllChannels returns total channels in DB
+func CountAllChannels() (int64, error) {
+	var total int64
+	err := DB.Model(&Channel{}).Count(&total).Error
+	return total, err
+}
+
+// CountAllTags returns number of non-empty distinct tags
+func CountAllTags() (int64, error) {
+	var total int64
+	err := DB.Model(&Channel{}).Where("tag is not null AND tag != ''").Distinct("tag").Count(&total).Error
+	return total, err
+}

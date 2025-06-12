@@ -865,32 +865,22 @@ const ChannelsTable = () => {
         tagChannelDates.response_time = tagChannelDates.response_time / 2;
       }
     }
-    // data.key = '' + data.id
     setChannels(channelDates);
-    if (channelDates.length >= pageSize) {
-      setChannelCount(channelDates.length + pageSize);
-    } else {
-      setChannelCount(channelDates.length);
-    }
   };
 
-  const loadChannels = async (startIdx, pageSize, idSort, enableTagMode) => {
+  const loadChannels = async (page, pageSize, idSort, enableTagMode) => {
     setLoading(true);
     const res = await API.get(
-      `/api/channel/?p=${startIdx}&page_size=${pageSize}&id_sort=${idSort}&tag_mode=${enableTagMode}`,
+      `/api/channel/?p=${page}&page_size=${pageSize}&id_sort=${idSort}&tag_mode=${enableTagMode}`,
     );
     if (res === undefined) {
       return;
     }
     const { success, message, data } = res.data;
     if (success) {
-      if (startIdx === 0) {
-        setChannelFormat(data, enableTagMode);
-      } else {
-        let newChannels = [...channels];
-        newChannels.splice(startIdx * pageSize, data.length, ...data);
-        setChannelFormat(newChannels, enableTagMode);
-      }
+      const { items, total } = data;
+      setChannelFormat(items, enableTagMode);
+      setChannelCount(total);
     } else {
       showError(message);
     }
@@ -903,7 +893,6 @@ const ChannelsTable = () => {
     channelToCopy.created_time = null;
     channelToCopy.balance = 0;
     channelToCopy.used_quota = 0;
-    // 删除可能导致类型不匹配的字段
     delete channelToCopy.test_time;
     delete channelToCopy.response_time;
     if (!channelToCopy) {
@@ -927,7 +916,7 @@ const ChannelsTable = () => {
   const refresh = async () => {
     const { searchKeyword, searchGroup, searchModel } = getFormValues();
     if (searchKeyword === '' && searchGroup === '' && searchModel === '') {
-      await loadChannels(activePage - 1, pageSize, idSort, enableTagMode);
+      await loadChannels(activePage, pageSize, idSort, enableTagMode);
     } else {
       await searchChannels(enableTagMode);
     }
@@ -944,7 +933,7 @@ const ChannelsTable = () => {
     setPageSize(localPageSize);
     setEnableTagMode(localEnableTagMode);
     setEnableBatchDelete(localEnableBatchDelete);
-    loadChannels(0, localPageSize, localIdSort, localEnableTagMode)
+    loadChannels(1, localPageSize, localIdSort, localEnableTagMode)
       .then()
       .catch((reason) => {
         showError(reason);
@@ -1052,7 +1041,6 @@ const ChannelsTable = () => {
     try {
       if (searchKeyword === '' && searchGroup === '' && searchModel === '') {
         await loadChannels(activePage - 1, pageSize, idSort, enableTagMode);
-        // setActivePage(1);
         return;
       }
 
@@ -1191,24 +1179,18 @@ const ChannelsTable = () => {
     }
   };
 
-  let pageData = channels.slice(
-    (activePage - 1) * pageSize,
-    activePage * pageSize,
-  );
+  let pageData = channels;
 
   const handlePageChange = (page) => {
     setActivePage(page);
-    if (page === Math.ceil(channels.length / pageSize) + 1) {
-      // In this case we have to load more data and then append them.
-      loadChannels(page - 1, pageSize, idSort, enableTagMode).then((r) => { });
-    }
+    loadChannels(page, pageSize, idSort, enableTagMode).then(() => { });
   };
 
   const handlePageSizeChange = async (size) => {
     localStorage.setItem('page-size', size + '');
     setPageSize(size);
     setActivePage(1);
-    loadChannels(0, size, idSort, enableTagMode)
+    loadChannels(1, size, idSort, enableTagMode)
       .then()
       .catch((reason) => {
         showError(reason);
@@ -1218,8 +1200,6 @@ const ChannelsTable = () => {
   const fetchGroups = async () => {
     try {
       let res = await API.get(`/api/group/`);
-      // add 'all' option
-      // res.data.data.unshift('all');
       if (res === undefined) {
         return;
       }
@@ -1514,7 +1494,7 @@ const ChannelsTable = () => {
               onChange={(v) => {
                 localStorage.setItem('id-sort', v + '');
                 setIdSort(v);
-                loadChannels(0, pageSize, v, enableTagMode);
+                loadChannels(activePage, pageSize, v, enableTagMode);
               }}
             />
           </div>
@@ -1541,7 +1521,8 @@ const ChannelsTable = () => {
               onChange={(v) => {
                 localStorage.setItem('enable-tag-mode', v + '');
                 setEnableTagMode(v);
-                loadChannels(0, pageSize, idSort, v);
+                setActivePage(1);
+                loadChannels(1, pageSize, idSort, v);
               }}
             />
           </div>
@@ -1703,7 +1684,7 @@ const ChannelsTable = () => {
             formatPageText: (page) => t('第 {{start}} - {{end}} 条，共 {{total}} 条', {
               start: page.currentStart,
               end: page.currentEnd,
-              total: channels.length,
+              total: channelCount,
             }),
             onPageSizeChange: (size) => {
               handlePageSizeChange(size);

@@ -408,31 +408,20 @@ const TokensTable = () => {
     }, 500);
   };
 
-  const setTokensFormat = (tokens) => {
-    setTokens(tokens);
-    if (tokens.length >= pageSize) {
-      setTokenCount(tokens.length + pageSize);
-    } else {
-      setTokenCount(tokens.length);
-    }
+  // 将后端返回的数据写入状态
+  const syncPageData = (payload) => {
+    setTokens(payload.items || []);
+    setTokenCount(payload.total || 0);
+    setActivePage(payload.page || 1);
+    setPageSize(payload.page_size || pageSize);
   };
 
-  let pageData = tokens.slice(
-    (activePage - 1) * pageSize,
-    activePage * pageSize,
-  );
-  const loadTokens = async (startIdx) => {
+  const loadTokens = async (page = 1, size = pageSize) => {
     setLoading(true);
-    const res = await API.get(`/api/token/?p=${startIdx}&size=${pageSize}`);
+    const res = await API.get(`/api/token/?p=${page}&size=${size}`);
     const { success, message, data } = res.data;
     if (success) {
-      if (startIdx === 0) {
-        setTokensFormat(data);
-      } else {
-        let newTokens = [...tokens];
-        newTokens.splice(startIdx * pageSize, data.length, ...data);
-        setTokensFormat(newTokens);
-      }
+      syncPageData(data);
     } else {
       showError(message);
     }
@@ -440,7 +429,7 @@ const TokensTable = () => {
   };
 
   const refresh = async () => {
-    await loadTokens(activePage - 1);
+    await loadTokens(1);
   };
 
   const copyText = async (text) => {
@@ -473,7 +462,7 @@ const TokensTable = () => {
   };
 
   useEffect(() => {
-    loadTokens(0)
+    loadTokens(1)
       .then()
       .catch((reason) => {
         showError(reason);
@@ -487,7 +476,7 @@ const TokensTable = () => {
 
       if (idx > -1) {
         newDataSource.splice(idx, 1);
-        setTokensFormat(newDataSource);
+        setTokens(newDataSource);
       }
     }
   };
@@ -518,7 +507,7 @@ const TokensTable = () => {
       } else {
         record.status = token.status;
       }
-      setTokensFormat(newTokens);
+      setTokens(newTokens);
     } else {
       showError(message);
     }
@@ -528,8 +517,7 @@ const TokensTable = () => {
   const searchTokens = async () => {
     const { searchKeyword, searchToken } = getFormValues();
     if (searchKeyword === '' && searchToken === '') {
-      await loadTokens(0);
-      setActivePage(1);
+      await loadTokens(1);
       return;
     }
     setSearching(true);
@@ -538,7 +526,8 @@ const TokensTable = () => {
     );
     const { success, message, data } = res.data;
     if (success) {
-      setTokensFormat(data);
+      setTokens(data);
+      setTokenCount(data.length);
       setActivePage(1);
     } else {
       showError(message);
@@ -561,10 +550,12 @@ const TokensTable = () => {
   };
 
   const handlePageChange = (page) => {
-    setActivePage(page);
-    if (page === Math.ceil(tokens.length / pageSize) + 1) {
-      loadTokens(page - 1).then((r) => { });
-    }
+    loadTokens(page, pageSize).then();
+  };
+
+  const handlePageSizeChange = async (size) => {
+    setPageSize(size);
+    await loadTokens(1, size);
   };
 
   const rowSelection = {
@@ -707,7 +698,7 @@ const TokensTable = () => {
       >
         <Table
           columns={columns}
-          dataSource={pageData}
+          dataSource={tokens}
           scroll={{ x: 'max-content' }}
           pagination={{
             currentPage: activePage,
@@ -719,12 +710,9 @@ const TokensTable = () => {
               t('第 {{start}} - {{end}} 条，共 {{total}} 条', {
                 start: page.currentStart,
                 end: page.currentEnd,
-                total: tokens.length,
+                total: tokenCount,
               }),
-            onPageSizeChange: (size) => {
-              setPageSize(size);
-              setActivePage(1);
-            },
+            onPageSizeChange: handlePageSizeChange,
             onPageChange: handlePageChange,
           }}
           loading={loading}

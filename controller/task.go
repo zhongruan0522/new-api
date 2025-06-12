@@ -224,9 +224,14 @@ func checkTaskNeedUpdate(oldTask *model.Task, newTask dto.SunoDataResponse) bool
 
 func GetAllTask(c *gin.Context) {
 	p, _ := strconv.Atoi(c.Query("p"))
-	if p < 0 {
-		p = 0
+	if p < 1 {
+		p = 1
 	}
+	pageSize, _ := strconv.Atoi(c.Query("page_size"))
+	if pageSize <= 0 {
+		pageSize = common.ItemsPerPage
+	}
+
 	startTimestamp, _ := strconv.ParseInt(c.Query("start_timestamp"), 10, 64)
 	endTimestamp, _ := strconv.ParseInt(c.Query("end_timestamp"), 10, 64)
 	// 解析其他查询参数
@@ -237,24 +242,32 @@ func GetAllTask(c *gin.Context) {
 		Action:         c.Query("action"),
 		StartTimestamp: startTimestamp,
 		EndTimestamp:   endTimestamp,
+		ChannelID:      c.Query("channel_id"),
 	}
 
-	logs := model.TaskGetAllTasks(p*common.ItemsPerPage, common.ItemsPerPage, queryParams)
-	if logs == nil {
-		logs = make([]*model.Task, 0)
-	}
+	items := model.TaskGetAllTasks((p-1)*pageSize, pageSize, queryParams)
+	total := model.TaskCountAllTasks(queryParams)
 
 	c.JSON(200, gin.H{
 		"success": true,
 		"message": "",
-		"data":    logs,
+		"data": gin.H{
+			"items":     items,
+			"total":     total,
+			"page":      p,
+			"page_size": pageSize,
+		},
 	})
 }
 
 func GetUserTask(c *gin.Context) {
 	p, _ := strconv.Atoi(c.Query("p"))
-	if p < 0 {
-		p = 0
+	if p < 1 {
+		p = 1
+	}
+	pageSize, _ := strconv.Atoi(c.Query("page_size"))
+	if pageSize <= 0 {
+		pageSize = common.ItemsPerPage
 	}
 
 	userId := c.GetInt("id")
@@ -271,14 +284,17 @@ func GetUserTask(c *gin.Context) {
 		EndTimestamp:   endTimestamp,
 	}
 
-	logs := model.TaskGetAllUserTask(userId, p*common.ItemsPerPage, common.ItemsPerPage, queryParams)
-	if logs == nil {
-		logs = make([]*model.Task, 0)
-	}
+	items := model.TaskGetAllUserTask(userId, (p-1)*pageSize, pageSize, queryParams)
+	total := model.TaskCountAllUserTask(userId, queryParams)
 
 	c.JSON(200, gin.H{
 		"success": true,
 		"message": "",
-		"data":    logs,
+		"data": gin.H{
+			"items":     items,
+			"total":     total,
+			"page":      p,
+			"page_size": pageSize,
+		},
 	})
 }

@@ -43,22 +43,23 @@ type OpenAIModelsResponse struct {
 func GetAllChannels(c *gin.Context) {
 	p, _ := strconv.Atoi(c.Query("p"))
 	pageSize, _ := strconv.Atoi(c.Query("page_size"))
-	if p < 0 {
-		p = 0
+	if p < 1 {
+		p = 1
 	}
-	if pageSize < 0 {
+	if pageSize < 1 {
 		pageSize = common.ItemsPerPage
 	}
 	channelData := make([]*model.Channel, 0)
 	idSort, _ := strconv.ParseBool(c.Query("id_sort"))
 	enableTagMode, _ := strconv.ParseBool(c.Query("tag_mode"))
+
+	var total int64
+
 	if enableTagMode {
-		tags, err := model.GetPaginatedTags(p*pageSize, pageSize)
+		// tag 分页：先分页 tag，再取各 tag 下 channels
+		tags, err := model.GetPaginatedTags((p-1)*pageSize, pageSize)
 		if err != nil {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": err.Error(),
-			})
+			c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
 			return
 		}
 		for _, tag := range tags {
@@ -69,21 +70,27 @@ func GetAllChannels(c *gin.Context) {
 				}
 			}
 		}
+		// 计算 tag 总数用于分页
+		total, _ = model.CountAllTags()
 	} else {
-		channels, err := model.GetAllChannels(p*pageSize, pageSize, false, idSort)
+		channels, err := model.GetAllChannels((p-1)*pageSize, pageSize, false, idSort)
 		if err != nil {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": err.Error(),
-			})
+			c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
 			return
 		}
 		channelData = channels
+		total, _ = model.CountAllChannels()
 	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
-		"data":    channelData,
+		"data": gin.H{
+			"items":     channelData,
+			"total":     total,
+			"page":      p,
+			"page_size": pageSize,
+		},
 	})
 	return
 }

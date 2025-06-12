@@ -320,3 +320,10 @@ func decreaseTokenQuota(id int, quota int) (err error) {
 	).Error
 	return err
 }
+
+// CountUserTokens returns total number of tokens for the given user, used for pagination
+func CountUserTokens(userId int) (int64, error) {
+	var total int64
+	err := DB.Model(&Token{}).Where("user_id = ?", userId).Count(&total).Error
+	return total, err
+}
