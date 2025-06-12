@@ -14,11 +14,14 @@ var groupRatio = map[string]float64{
 }
 var groupRatioMutex sync.RWMutex
 
-var GroupGroupRatio = map[string]map[string]float64{
-	"vip": {
-		"edit_this": 0.9,
-	},
-}
+var (
+	GroupGroupRatio = map[string]map[string]float64{
+		"vip": {
+			"edit_this": 0.9,
+		},
+	}
+	groupGroupRatioMutex sync.RWMutex
+)
 
 func GetGroupRatioCopy() map[string]float64 {
 	groupRatioMutex.RLock()
@@ -71,6 +74,9 @@ func GetGroupRatio(name string) float64 {
 }
 
 func GetGroupGroupRatio(group, name string) (float64, bool) {
+	groupGroupRatioMutex.RLock()
+	defer groupGroupRatioMutex.RUnlock()
+
 	gp, ok := GroupGroupRatio[group]
 	if !ok {
 		return -1, false
@@ -83,6 +89,9 @@ func GetGroupGroupRatio(group, name string) (float64, bool) {
 }
 
 func GroupGroupRatio2JSONString() string {
+	groupGroupRatioMutex.RLock()
+	defer groupGroupRatioMutex.RUnlock()
+
 	jsonBytes, err := json.Marshal(GroupGroupRatio)
 	if err != nil {
 		common.SysError("error marshalling group-group ratio: " + err.Error())
@@ -91,6 +100,9 @@ func GroupGroupRatio2JSONString() string {
 }
 
 func UpdateGroupGroupRatioByJSONString(jsonStr string) error {
+	groupGroupRatioMutex.Lock()
+	defer groupGroupRatioMutex.Unlock()
+
 	GroupGroupRatio = make(map[string]map[string]float64)
 	return json.Unmarshal([]byte(jsonStr), &GroupGroupRatio)
 }
