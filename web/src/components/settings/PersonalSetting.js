@@ -368,13 +368,13 @@ const PersonalSetting = () => {
       });
 
       if (res.data.success) {
-        showSuccess(t('通知设置已更新'));
+        showSuccess(t('设置保存成功'));
         await getUserData();
       } else {
         showError(res.data.message);
       }
     } catch (error) {
-      showError(t('更新通知设置失败'));
+      showError(t('设置保存失败'));
     }
   };
 
