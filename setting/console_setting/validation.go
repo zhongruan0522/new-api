@@ -96,11 +96,6 @@ func validateApiInfo(apiInfoStr string) error {
     return nil
 }
 
-// ValidateApiInfo 保持向后兼容
-func ValidateApiInfo(apiInfoStr string) error {
-    return validateApiInfo(apiInfoStr)
-}
-
 // GetApiInfo 获取 API 信息列表
 func GetApiInfo() []map[string]interface{} {
     apiInfoStr := GetConsoleSetting().ApiInfo
