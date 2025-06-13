@@ -13,7 +13,8 @@ import {
   XCircle,
   Minus,
   HelpCircle,
-  Coins
+  Coins,
+  Ticket
 } from 'lucide-react';
 
 import { ITEMS_PER_PAGE } from '../../constants';
@@ -450,7 +451,7 @@ const RedemptionsTable = () => {
     <div className="flex flex-col w-full">
       <div className="mb-2">
         <div className="flex items-center text-orange-500">
-          <IconEyeOpened className="mr-2" />
+          <Ticket size={16} className="mr-2" />
           <Text>{t('兑换码可以批量生成和分发，适合用于推广活动或批量充值。')}</Text>
         </div>
       </div>

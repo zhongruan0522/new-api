@@ -14,6 +14,7 @@ import { ITEMS_PER_PAGE } from '../../constants';
 import {
   Button,
   Card,
+  Divider,
   Dropdown,
   Empty,
   Form,
@@ -21,7 +22,8 @@ import {
   Space,
   SplitButtonGroup,
   Table,
-  Tag
+  Tag,
+  Typography
 } from '@douyinfe/semi-ui';
 import {
   IllustrationNoResult,
@@ -36,7 +38,8 @@ import {
   Gauge,
   HelpCircle,
   Infinity,
-  Coins
+  Coins,
+  Key
 } from 'lucide-react';
 
 import {
@@ -53,6 +56,8 @@ import {
 } from '@douyinfe/semi-icons';
 import EditToken from '../../pages/Token/EditToken';
 import { useTranslation } from 'react-i18next';
+
+const { Text } = Typography;
 
 function renderTimestamp(timestamp) {
   return <>{timestamp2string(timestamp)}</>;
@@ -580,6 +585,15 @@ const TokensTable = () => {
 
   const renderHeader = () => (
     <div className="flex flex-col w-full">
+      <div className="mb-2">
+        <div className="flex items-center text-blue-500">
+          <Key size={16} className="mr-2" />
+          <Text>{t('令牌用于API访问认证，可以设置额度限制和模型权限。')}</Text>
+        </div>
+      </div>
+
+      <Divider margin="12px" />
+
       <div className="flex flex-col md:flex-row justify-between items-center gap-4 w-full">
         <div className="flex gap-2 w-full md:w-auto order-2 md:order-1">
           <Button

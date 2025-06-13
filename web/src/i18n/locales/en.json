@@ -1654,5 +1654,6 @@
   "设置保存成功": "Settings saved successfully",
   "设置保存失败": "Settings save failed",
   "已新增 {{count}} 个模型：{{list}}": "Added {{count}} models: {{list}}",
-  "未发现新增模型": "No new models were added"
+  "未发现新增模型": "No new models were added",
+  "令牌用于API访问认证，可以设置额度限制和模型权限。": "Tokens are used for API access authentication, and can set quota limits and model permissions."
 }
