@@ -1655,5 +1655,9 @@
   "设置保存失败": "Settings save failed",
   "已新增 {{count}} 个模型：{{list}}": "Added {{count}} models: {{list}}",
   "未发现新增模型": "No new models were added",
-  "令牌用于API访问认证，可以设置额度限制和模型权限。": "Tokens are used for API access authentication, and can set quota limits and model permissions."
+  "令牌用于API访问认证，可以设置额度限制和模型权限。": "Tokens are used for API access authentication, and can set quota limits and model permissions.",
+  "清除失效兑换码": "Clear invalid redemption codes",
+  "确定清除所有失效兑换码？": "Are you sure you want to clear all invalid redemption codes?",
+  "将删除已使用、已禁用及过期的兑换码，此操作不可撤销。": "This will delete all used, disabled, and expired redemption codes, this operation cannot be undone.",
+  "选择过期时间（可选，留空为永久）": "Select expiration time (optional, leave blank for permanent)"
 }

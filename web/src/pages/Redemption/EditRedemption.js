@@ -20,6 +20,8 @@ import {
   Typography,
   Card,
   Tag,
+  Form,
+  DatePicker,
 } from '@douyinfe/semi-ui';
 import {
   IconCreditCard,
@@ -40,9 +42,10 @@ const EditRedemption = (props) => {
     name: '',
     quota: 100000,
     count: 1,
+    expired_time: 0,
   };
   const [inputs, setInputs] = useState(originInputs);
-  const { name, quota, count } = inputs;
+  const { name, quota, count, expired_time } = inputs;
 
   const handleCancel = () => {
     props.handleClose();
@@ -85,6 +88,9 @@ const EditRedemption = (props) => {
     localInputs.count = parseInt(localInputs.count);
     localInputs.quota = parseInt(localInputs.quota);
     localInputs.name = name;
+    if (localInputs.expired_time === null || localInputs.expired_time === undefined) {
+      localInputs.expired_time = 0;
+    }
     let res;
     if (isEdit) {
       res = await API.put(`/api/redemption/`, {
@@ -218,6 +224,25 @@ const EditRedemption = (props) => {
                     className="!rounded-lg"
                     showClear
                     required={!isEdit}
+                  />
+                </div>
+                <div>
+                  <Text strong className="block mb-2">{t('过期时间')}</Text>
+                  <DatePicker
+                    type="dateTime"
+                    placeholder={t('选择过期时间（可选，留空为永久）')}
+                    showClear
+                    value={expired_time ? new Date(expired_time * 1000) : null}
+                    onChange={(value) => {
+                      if (value === null || value === undefined) {
+                        handleInputChange('expired_time', 0);
+                      } else {
+                        const timestamp = Math.floor(value.getTime() / 1000);
+                        handleInputChange('expired_time', timestamp);
+                      }
+                    }}
+                    size="large"
+                    className="!rounded-lg w-full"
                   />
                 </div>
               </div>
