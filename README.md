@@ -27,6 +27,9 @@
   <a href="https://goreportcard.com/report/github.com/Calcium-Ion/new-api">
     <img src="https://goreportcard.com/badge/github.com/Calcium-Ion/new-api" alt="GoReportCard">
   </a>
+  <a href="https://coderabbit.ai">
+    <img src="https://img.shields.io/coderabbit/prs/github/QuantumNous/new-api?utm_source=oss&utm_medium=github&utm_campaign=QuantumNous%2Fnew-api&labelColor=171717&color=FF570A&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit+Reviews" alt="CodeRabbit Pull Request Reviews">
+  </a>
 </p>
 </div>
 
@@ -180,7 +183,6 @@ docker run --name new-api -d --restart always -p 3000:3000 -e SQL_DSN="root:1234
 
 其他基于New API的项目：
 - [new-api-horizon](https://github.com/Calcium-Ion/new-api-horizon)：New API高性能优化版
-- [VoAPI](https://github.com/VoAPI/VoAPI)：基于New API的前端美化版本
 
 ## 帮助支持
 
