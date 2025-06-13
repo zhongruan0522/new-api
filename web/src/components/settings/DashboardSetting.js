@@ -13,6 +13,10 @@ const DashboardSetting = () => {
     'console_setting.faq': '',
     'console_setting.uptime_kuma_url': '',
     'console_setting.uptime_kuma_slug': '',
+    'console_setting.api_info_enabled': '',
+    'console_setting.announcements_enabled': '',
+    'console_setting.faq_enabled': '',
+    'console_setting.uptime_kuma_enabled': '',
 
     // 用于迁移检测的旧键，下个版本会删除
     ApiInfo: '',

@@ -5,6 +5,7 @@ import {
   Typography,
   Row,
   Col,
+  Switch,
 } from '@douyinfe/semi-ui';
 import {
   Save,
@@ -19,6 +20,7 @@ const SettingsUptimeKuma = ({ options, refresh }) => {
   const { t } = useTranslation();
 
   const [loading, setLoading] = useState(false);
+  const [panelEnabled, setPanelEnabled] = useState(true);
   const formApiRef = useRef(null);
 
   const initValues = useMemo(() => ({
@@ -31,6 +33,11 @@ const SettingsUptimeKuma = ({ options, refresh }) => {
       formApiRef.current.setValues(initValues, { isOverride: true });
     }
   }, [initValues]);
+
+  useEffect(() => {
+    const enabledStr = options?.['console_setting.uptime_kuma_enabled'];
+    setPanelEnabled(enabledStr === undefined ? true : enabledStr === 'true' || enabledStr === true);
+  }, [options?.['console_setting.uptime_kuma_enabled']]);
 
   const handleSave = async () => {
     const api = formApiRef.current;
@@ -75,6 +82,25 @@ const SettingsUptimeKuma = ({ options, refresh }) => {
     }
   };
 
+  const handleToggleEnabled = async (checked) => {
+    const newValue = checked ? 'true' : 'false';
+    try {
+      const res = await API.put('/api/option/', {
+        key: 'console_setting.uptime_kuma_enabled',
+        value: newValue,
+      });
+      if (res.data.success) {
+        setPanelEnabled(checked);
+        showSuccess(t('设置已保存'));
+        refresh?.();
+      } else {
+        showError(res.data.message);
+      }
+    } catch (err) {
+      showError(err.message);
+    }
+  };
+
   const isValidUrl = useCallback((string) => {
     try {
       new URL(string);
@@ -103,7 +129,7 @@ const SettingsUptimeKuma = ({ options, refresh }) => {
           </Text>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
           <Button
             icon={<Save size={14} />}
             theme='solid'
@@ -114,6 +140,9 @@ const SettingsUptimeKuma = ({ options, refresh }) => {
           >
             {t('保存设置')}
           </Button>
+
+          <Switch checked={panelEnabled} onChange={handleToggleEnabled} />
+          <Text>{panelEnabled ? t('已启用') : t('已禁用')}</Text>
         </div>
       </div>
     </div>

@@ -7,7 +7,8 @@ import {
   Typography,
   Empty,
   Divider,
-  Modal
+  Modal,
+  Switch
 } from '@douyinfe/semi-ui';
 import {
   IllustrationNoResult,
@@ -43,6 +44,9 @@ const SettingsFAQ = ({ options, refresh }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
+
+  // 面板启用状态
+  const [panelEnabled, setPanelEnabled] = useState(true);
 
   const columns = [
     {
@@ -231,6 +235,30 @@ const SettingsFAQ = ({ options, refresh }) => {
     }
   }, [options['console_setting.faq']]);
 
+  useEffect(() => {
+    const enabledStr = options['console_setting.faq_enabled'];
+    setPanelEnabled(enabledStr === undefined ? true : enabledStr === 'true' || enabledStr === true);
+  }, [options['console_setting.faq_enabled']]);
+
+  const handleToggleEnabled = async (checked) => {
+    const newValue = checked ? 'true' : 'false';
+    try {
+      const res = await API.put('/api/option/', {
+        key: 'console_setting.faq_enabled',
+        value: newValue,
+      });
+      if (res.data.success) {
+        setPanelEnabled(checked);
+        showSuccess(t('设置已保存'));
+        refresh?.();
+      } else {
+        showError(res.data.message);
+      }
+    } catch (err) {
+      showError(err.message);
+    }
+  };
+
   const handleBatchDelete = () => {
     if (selectedRowKeys.length === 0) {
       showError('请先选择要删除的常见问答');
@@ -286,6 +314,12 @@ const SettingsFAQ = ({ options, refresh }) => {
           >
             {t('保存设置')}
           </Button>
+        </div>
+
+        {/* 启用开关 */}
+        <div className="order-1 md:order-2 flex items-center gap-2">
+          <Switch checked={panelEnabled} onChange={handleToggleEnabled} />
+          <Text>{panelEnabled ? t('已启用') : t('已禁用')}</Text>
         </div>
       </div>
     </div>
