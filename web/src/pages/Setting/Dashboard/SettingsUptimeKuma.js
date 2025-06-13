@@ -22,9 +22,9 @@ const SettingsUptimeKuma = ({ options, refresh }) => {
   const formApiRef = useRef(null);
 
   const initValues = useMemo(() => ({
-    uptimeKumaUrl: options?.UptimeKumaUrl || '',
-    uptimeKumaSlug: options?.UptimeKumaSlug || ''
-  }), [options?.UptimeKumaUrl, options?.UptimeKumaSlug]);
+    uptimeKumaUrl: options?.['console_setting.uptime_kuma_url'] || '',
+    uptimeKumaSlug: options?.['console_setting.uptime_kuma_slug'] || ''
+  }), [options?.['console_setting.uptime_kuma_url'], options?.['console_setting.uptime_kuma_slug']]);
 
   useEffect(() => {
     if (formApiRef.current) {
@@ -46,18 +46,18 @@ const SettingsUptimeKuma = ({ options, refresh }) => {
       const trimmedUrl = (uptimeKumaUrl || '').trim();
       const trimmedSlug = (uptimeKumaSlug || '').trim();
 
-      if (trimmedUrl === options?.UptimeKumaUrl && trimmedSlug === options?.UptimeKumaSlug) {
+      if (trimmedUrl === options?.['console_setting.uptime_kuma_url'] && trimmedSlug === options?.['console_setting.uptime_kuma_slug']) {
         showSuccess(t('无需保存，配置未变动'));
         return;
       }
 
       const [urlRes, slugRes] = await Promise.all([
-        trimmedUrl === options?.UptimeKumaUrl ? Promise.resolve({ data: { success: true } }) : API.put('/api/option/', {
-          key: 'UptimeKumaUrl',
+        trimmedUrl === options?.['console_setting.uptime_kuma_url'] ? Promise.resolve({ data: { success: true } }) : API.put('/api/option/', {
+          key: 'console_setting.uptime_kuma_url',
           value: trimmedUrl
         }),
-        trimmedSlug === options?.UptimeKumaSlug ? Promise.resolve({ data: { success: true } }) : API.put('/api/option/', {
-          key: 'UptimeKumaSlug',
+        trimmedSlug === options?.['console_setting.uptime_kuma_slug'] ? Promise.resolve({ data: { success: true } }) : API.put('/api/option/', {
+          key: 'console_setting.uptime_kuma_slug',
           value: trimmedSlug
         })
       ]);

@@ -85,7 +85,7 @@ const SettingsAPIInfo = ({ options, refresh }) => {
     try {
       setLoading(true);
       const apiInfoJson = JSON.stringify(apiInfoList);
-      await updateOption('ApiInfo', apiInfoJson);
+      await updateOption('console_setting.api_info', apiInfoJson);
       setHasChanges(false);
     } catch (error) {
       console.error('API信息更新失败', error);
@@ -185,10 +185,11 @@ const SettingsAPIInfo = ({ options, refresh }) => {
   };
 
   useEffect(() => {
-    if (options.ApiInfo !== undefined) {
-      parseApiInfo(options.ApiInfo);
+    const apiInfoStr = options['console_setting.api_info'] ?? options.ApiInfo;
+    if (apiInfoStr !== undefined) {
+      parseApiInfo(apiInfoStr);
     }
-  }, [options.ApiInfo]);
+  }, [options['console_setting.api_info'], options.ApiInfo]);
 
   const columns = [
     {

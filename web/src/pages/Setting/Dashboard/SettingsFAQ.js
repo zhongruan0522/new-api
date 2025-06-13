@@ -37,8 +37,8 @@ const SettingsFAQ = ({ options, refresh }) => {
   const [loading, setLoading] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [faqForm, setFaqForm] = useState({
-    title: '',
-    content: ''
+    question: '',
+    answer: ''
   });
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -47,8 +47,8 @@ const SettingsFAQ = ({ options, refresh }) => {
   const columns = [
     {
       title: t('问题标题'),
-      dataIndex: 'title',
-      key: 'title',
+      dataIndex: 'question',
+      key: 'question',
       render: (text) => (
         <div style={{
           maxWidth: '300px',
@@ -61,8 +61,8 @@ const SettingsFAQ = ({ options, refresh }) => {
     },
     {
       title: t('回答内容'),
-      dataIndex: 'content',
-      key: 'content',
+      dataIndex: 'answer',
+      key: 'answer',
       render: (text) => (
         <div style={{
           maxWidth: '400px',
@@ -124,7 +124,7 @@ const SettingsFAQ = ({ options, refresh }) => {
     try {
       setLoading(true);
       const faqJson = JSON.stringify(faqList);
-      await updateOption('FAQ', faqJson);
+      await updateOption('console_setting.faq', faqJson);
       setHasChanges(false);
     } catch (error) {
       console.error('常见问答更新失败', error);
@@ -137,8 +137,8 @@ const SettingsFAQ = ({ options, refresh }) => {
   const handleAddFaq = () => {
     setEditingFaq(null);
     setFaqForm({
-      title: '',
-      content: ''
+      question: '',
+      answer: ''
     });
     setShowFaqModal(true);
   };
@@ -146,8 +146,8 @@ const SettingsFAQ = ({ options, refresh }) => {
   const handleEditFaq = (faq) => {
     setEditingFaq(faq);
     setFaqForm({
-      title: faq.title,
-      content: faq.content
+      question: faq.question,
+      answer: faq.answer
     });
     setShowFaqModal(true);
   };
@@ -169,7 +169,7 @@ const SettingsFAQ = ({ options, refresh }) => {
   };
 
   const handleSaveFaq = async () => {
-    if (!faqForm.title || !faqForm.content) {
+    if (!faqForm.question || !faqForm.answer) {
       showError('请填写完整的问答信息');
       return;
     }
@@ -226,10 +226,10 @@ const SettingsFAQ = ({ options, refresh }) => {
   };
 
   useEffect(() => {
-    if (options.FAQ !== undefined) {
-      parseFAQ(options.FAQ);
+    if (options['console_setting.faq'] !== undefined) {
+      parseFAQ(options['console_setting.faq']);
     }
-  }, [options.FAQ]);
+  }, [options['console_setting.faq']]);
 
   const handleBatchDelete = () => {
     if (selectedRowKeys.length === 0) {
@@ -372,21 +372,21 @@ const SettingsFAQ = ({ options, refresh }) => {
       >
         <Form layout='vertical' initValues={faqForm} key={editingFaq ? editingFaq.id : 'new'}>
           <Form.Input
-            field='title'
+            field='question'
             label={t('问题标题')}
             placeholder={t('请输入问题标题')}
             maxLength={200}
             rules={[{ required: true, message: t('请输入问题标题') }]}
-            onChange={(value) => setFaqForm({ ...faqForm, title: value })}
+            onChange={(value) => setFaqForm({ ...faqForm, question: value })}
           />
           <Form.TextArea
-            field='content'
+            field='answer'
             label={t('回答内容')}
             placeholder={t('请输入回答内容')}
             maxCount={1000}
             rows={6}
             rules={[{ required: true, message: t('请输入回答内容') }]}
-            onChange={(value) => setFaqForm({ ...faqForm, content: value })}
+            onChange={(value) => setFaqForm({ ...faqForm, answer: value })}
           />
         </Form>
       </Modal>

@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"one-api/common"
+	"one-api/setting/console_setting"
 	"strings"
 	"time"
 
@@ -77,10 +77,9 @@ func getAndDecode(ctx context.Context, client *http.Client, url string, dest int
 }
 
 func GetUptimeKumaStatus(c *gin.Context) {
-	common.OptionMapRWMutex.RLock()
-	uptimeKumaUrl := common.OptionMap["UptimeKumaUrl"]
-	slug := common.OptionMap["UptimeKumaSlug"]
-	common.OptionMapRWMutex.RUnlock()
+	cs := console_setting.GetConsoleSetting()
+	uptimeKumaUrl := cs.UptimeKumaUrl
+	slug := cs.UptimeKumaSlug
 
 	if uptimeKumaUrl == "" || slug == "" {
 		c.JSON(http.StatusOK, gin.H{

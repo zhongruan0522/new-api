@@ -176,7 +176,7 @@ const SettingsAnnouncements = ({ options, refresh }) => {
     try {
       setLoading(true);
       const announcementsJson = JSON.stringify(announcementsList);
-      await updateOption('Announcements', announcementsJson);
+      await updateOption('console_setting.announcements', announcementsJson);
       setHasChanges(false);
     } catch (error) {
       console.error('系统公告更新失败', error);
@@ -288,10 +288,11 @@ const SettingsAnnouncements = ({ options, refresh }) => {
   };
 
   useEffect(() => {
-    if (options.Announcements !== undefined) {
-      parseAnnouncements(options.Announcements);
+    const annStr = options['console_setting.announcements'] ?? options.Announcements;
+    if (annStr !== undefined) {
+      parseAnnouncements(annStr);
     }
-  }, [options.Announcements]);
+  }, [options['console_setting.announcements'], options.Announcements]);
 
   const handleBatchDelete = () => {
     if (selectedRowKeys.length === 0) {

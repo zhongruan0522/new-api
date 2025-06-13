@@ -8,11 +8,11 @@ import SettingsUptimeKuma from '../../pages/Setting/Dashboard/SettingsUptimeKuma
 
 const DashboardSetting = () => {
   let [inputs, setInputs] = useState({
-    ApiInfo: '',
-    Announcements: '',
-    FAQ: '',
-    UptimeKumaUrl: '',
-    UptimeKumaSlug: '',
+    'console_setting.api_info': '',
+    'console_setting.announcements': '',
+    'console_setting.faq': '',
+    'console_setting.uptime_kuma_url': '',
+    'console_setting.uptime_kuma_slug': '',
   });
 
   let [loading, setLoading] = useState(false);

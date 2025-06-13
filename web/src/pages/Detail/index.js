@@ -1231,10 +1231,10 @@ const Detail = (props) => {
                         {faqData.map((item, index) => (
                           <Collapse.Panel
                             key={index}
-                            header={item.title}
+                            header={item.question}
                             itemKey={index.toString()}
                           >
-                            <p>{item.content}</p>
+                            <p>{item.answer}</p>
                           </Collapse.Panel>
                         ))}
                       </Collapse>
