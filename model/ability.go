@@ -133,9 +133,15 @@ func GetRandomSatisfiedChannel(group string, model string, retry int) (*Channel,
 func (channel *Channel) AddAbilities() error {
 	models_ := strings.Split(channel.Models, ",")
 	groups_ := strings.Split(channel.Group, ",")
+	abilitySet := make(map[string]struct{})
 	abilities := make([]Ability, 0, len(models_))
 	for _, model := range models_ {
 		for _, group := range groups_ {
+			key := strings.ToLower(group) + "|" + strings.ToLower(model)
+			if _, exists := abilitySet[key]; exists {
+				continue
+			}
+			abilitySet[key] = struct{}{}
 			ability := Ability{
 				Group:     group,
 				Model:     model,
@@ -194,9 +200,15 @@ func (channel *Channel) UpdateAbilities(tx *gorm.DB) error {
 	// Then add new abilities
 	models_ := strings.Split(channel.Models, ",")
 	groups_ := strings.Split(channel.Group, ",")
+	abilitySet := make(map[string]struct{})
 	abilities := make([]Ability, 0, len(models_))
 	for _, model := range models_ {
 		for _, group := range groups_ {
+			key := strings.ToLower(group) + "|" + strings.ToLower(model)
+			if _, exists := abilitySet[key]; exists {
+				continue
+			}
+			abilitySet[key] = struct{}{}
 			ability := Ability{
 				Group:     group,
 				Model:     model,
