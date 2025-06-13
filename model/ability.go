@@ -137,7 +137,7 @@ func (channel *Channel) AddAbilities() error {
 	abilities := make([]Ability, 0, len(models_))
 	for _, model := range models_ {
 		for _, group := range groups_ {
-			key := strings.ToLower(group) + "|" + strings.ToLower(model)
+			key := group + "|" + model
 			if _, exists := abilitySet[key]; exists {
 				continue
 			}
@@ -204,7 +204,7 @@ func (channel *Channel) UpdateAbilities(tx *gorm.DB) error {
 	abilities := make([]Ability, 0, len(models_))
 	for _, model := range models_ {
 		for _, group := range groups_ {
-			key := strings.ToLower(group) + "|" + strings.ToLower(model)
+			key := group + "|" + model
 			if _, exists := abilitySet[key]; exists {
 				continue
 			}
