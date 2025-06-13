@@ -1652,5 +1652,7 @@
   "开启后，仅“消费”和“错误”日志将记录您的客户端 IP 地址": "After enabling, only \"consumption\" and \"error\" logs will record your client IP address",
   "只有当用户设置开启IP记录时，才会进行请求和错误类型日志的IP记录": "Only when the user sets IP recording, the IP recording of request and error type logs will be performed",
   "设置保存成功": "Settings saved successfully",
-  "设置保存失败": "Settings save failed"
+  "设置保存失败": "Settings save failed",
+  "已新增 {{count}} 个模型：{{list}}": "Added {{count}} models: {{list}}",
+  "未发现新增模型": "No new models were added"
 }
