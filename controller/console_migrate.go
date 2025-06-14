@@ -67,13 +67,28 @@ func MigrateConsoleSetting(c *gin.Context) {
         }
         model.UpdateOption("FAQ", "")
     }
-    // Uptime
-    if v := valMap["UptimeKumaUrl"]; v != "" {
-        model.UpdateOption("console_setting.uptime_kuma_url", v)
+    // Uptime Kuma 迁移到新的 groups 结构（console_setting.uptime_kuma_groups）
+    url := valMap["UptimeKumaUrl"]
+    slug := valMap["UptimeKumaSlug"]
+    if url != "" && slug != "" {
+        // 仅当同时存在 URL 与 Slug 时才进行迁移
+        groups := []map[string]interface{}{
+            {
+                "id":           1,
+                "categoryName": "old",
+                "url":          url,
+                "slug":         slug,
+                "description":  "",
+            },
+        }
+        bytes, _ := json.Marshal(groups)
+        model.UpdateOption("console_setting.uptime_kuma_groups", string(bytes))
+    }
+    // 清空旧键内容
+    if url != "" {
         model.UpdateOption("UptimeKumaUrl", "")
     }
-    if v := valMap["UptimeKumaSlug"]; v != "" {
-        model.UpdateOption("console_setting.uptime_kuma_slug", v)
+    if slug != "" {
         model.UpdateOption("UptimeKumaSlug", "")
     }
 
