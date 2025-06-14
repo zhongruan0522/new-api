@@ -136,6 +136,20 @@ func GeminiHelper(c *gin.Context) (openaiErr *dto.OpenAIErrorWithStatusCode) {
 
 	adaptor.Init(relayInfo)
 
+	// Clean up empty system instruction
+	if req.SystemInstructions != nil {
+		hasContent := false
+		for _, part := range req.SystemInstructions.Parts {
+			if part.Text != "" {
+				hasContent = true
+				break
+			}
+		}
+		if !hasContent {
+			req.SystemInstructions = nil
+		}
+	}
+
 	requestBody, err := json.Marshal(req)
 	if err != nil {
 		return service.OpenAIErrorWrapperLocal(err, "marshal_text_request_failed", http.StatusInternalServerError)
