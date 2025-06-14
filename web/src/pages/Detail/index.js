@@ -87,6 +87,8 @@ const Detail = (props) => {
   const ICON_BUTTON_CLASS = "text-white hover:bg-opacity-80 !rounded-full";
   const FLEX_CENTER_GAP2 = "flex items-center gap-2";
 
+  const ILLUSTRATION_SIZE = { width: 96, height: 96 };
+
   // ========== Constants ==========
   let now = new Date();
   const isAdminUser = isAdmin();
@@ -912,10 +914,9 @@ const Detail = (props) => {
       return (
         <div className="flex justify-center items-center py-4">
           <Empty
-            image={<IllustrationConstruction />}
-            darkModeImage={<IllustrationConstructionDark />}
+            image={<IllustrationConstruction style={ILLUSTRATION_SIZE} />}
+            darkModeImage={<IllustrationConstructionDark style={ILLUSTRATION_SIZE} />}
             title={t('暂无监控数据')}
-            style={{ padding: '8px' }}
           />
         </div>
       );
@@ -1202,11 +1203,10 @@ const Detail = (props) => {
                     ) : (
                       <div className="flex justify-center items-center py-8">
                         <Empty
-                          image={<IllustrationConstruction />}
-                          darkModeImage={<IllustrationConstructionDark />}
+                          image={<IllustrationConstruction style={ILLUSTRATION_SIZE} />}
+                          darkModeImage={<IllustrationConstructionDark style={ILLUSTRATION_SIZE} />}
                           title={t('暂无API信息')}
                           description={t('请联系管理员在系统设置中配置API信息')}
-                          style={{ padding: '12px' }}
                         />
                       </div>
                     )}
@@ -1274,11 +1274,10 @@ const Detail = (props) => {
                       ) : (
                         <div className="flex justify-center items-center py-8">
                           <Empty
-                            image={<IllustrationConstruction />}
-                            darkModeImage={<IllustrationConstructionDark />}
+                            image={<IllustrationConstruction style={ILLUSTRATION_SIZE} />}
+                            darkModeImage={<IllustrationConstructionDark style={ILLUSTRATION_SIZE} />}
                             title={t('暂无系统公告')}
                             description={t('请联系管理员在系统设置中配置公告信息')}
-                            style={{ padding: '12px' }}
                           />
                         </div>
                       )}
@@ -1329,11 +1328,10 @@ const Detail = (props) => {
                       ) : (
                         <div className="flex justify-center items-center py-8">
                           <Empty
-                            image={<IllustrationConstruction />}
-                            darkModeImage={<IllustrationConstructionDark />}
+                            image={<IllustrationConstruction style={ILLUSTRATION_SIZE} />}
+                            darkModeImage={<IllustrationConstructionDark style={ILLUSTRATION_SIZE} />}
                             title={t('暂无常见问答')}
                             description={t('请联系管理员在系统设置中配置常见问答')}
-                            style={{ padding: '12px' }}
                           />
                         </div>
                       )}
@@ -1440,11 +1438,10 @@ const Detail = (props) => {
                       ) : (
                         <div className="flex justify-center items-center py-8">
                           <Empty
-                            image={<IllustrationConstruction />}
-                            darkModeImage={<IllustrationConstructionDark />}
+                            image={<IllustrationConstruction style={ILLUSTRATION_SIZE} />}
+                            darkModeImage={<IllustrationConstructionDark style={ILLUSTRATION_SIZE} />}
                             title={t('暂无监控数据')}
-                            description={t('请联系管理员在系统设置中配置Uptime分组')}
-                            style={{ padding: '12px' }}
+                            description={t('请联系管理员在系统设置中配置Uptime')}
                           />
                         </div>
                       )}
