@@ -3,11 +3,10 @@ package console_setting
 import "one-api/setting/config"
 
 type ConsoleSetting struct {
-    ApiInfo        string `json:"api_info"`         // 控制台 API 信息 (JSON 数组字符串)
-    UptimeKumaUrl  string `json:"uptime_kuma_url"`  // Uptime Kuma 服务地址（如 https://status.example.com ）
-    UptimeKumaSlug string `json:"uptime_kuma_slug"` // Uptime Kuma Status Page Slug
-    Announcements  string `json:"announcements"`    // 系统公告 (JSON 数组字符串)
-    FAQ            string `json:"faq"`              // 常见问题 (JSON 数组字符串)
+    ApiInfo           string `json:"api_info"`           // 控制台 API 信息 (JSON 数组字符串)
+    UptimeKumaGroups  string `json:"uptime_kuma_groups"` // Uptime Kuma 分组配置 (JSON 数组字符串)
+    Announcements     string `json:"announcements"`      // 系统公告 (JSON 数组字符串)
+    FAQ               string `json:"faq"`                // 常见问题 (JSON 数组字符串)
     ApiInfoEnabled        bool `json:"api_info_enabled"`        // 是否启用 API 信息面板
     UptimeKumaEnabled     bool `json:"uptime_kuma_enabled"`     // 是否启用 Uptime Kuma 面板
     AnnouncementsEnabled  bool `json:"announcements_enabled"`   // 是否启用系统公告面板
@@ -16,11 +15,10 @@ type ConsoleSetting struct {
 
 // 默认配置
 var defaultConsoleSetting = ConsoleSetting{
-    ApiInfo:        "",
-    UptimeKumaUrl:  "",
-    UptimeKumaSlug: "",
-    Announcements:  "",
-    FAQ:            "",
+    ApiInfo:          "",
+    UptimeKumaGroups: "",
+    Announcements:    "",
+    FAQ:              "",
     ApiInfoEnabled:       true,
     UptimeKumaEnabled:    true,
     AnnouncementsEnabled: true,

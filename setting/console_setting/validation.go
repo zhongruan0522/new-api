@@ -9,10 +9,58 @@ import (
     "time"
 )
 
-// ValidateConsoleSettings 验证控制台设置信息格式
+var (
+    urlRegex = regexp.MustCompile(`^https?://(?:(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)*[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?|(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?))(?:\:[0-9]{1,5})?(?:/.*)?$`)
+    dangerousChars = []string{"<script", "<iframe", "javascript:", "onload=", "onerror=", "onclick="}
+    validColors = map[string]bool{
+        "blue": true, "green": true, "cyan": true, "purple": true, "pink": true,
+        "red": true, "orange": true, "amber": true, "yellow": true, "lime": true,
+        "light-green": true, "teal": true, "light-blue": true, "indigo": true,
+        "violet": true, "grey": true,
+    }
+    slugRegex = regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
+)
+
+func parseJSONArray(jsonStr string, typeName string) ([]map[string]interface{}, error) {
+    var list []map[string]interface{}
+    if err := json.Unmarshal([]byte(jsonStr), &list); err != nil {
+        return nil, fmt.Errorf("%s格式错误：%s", typeName, err.Error())
+    }
+    return list, nil
+}
+
+func validateURL(urlStr string, index int, itemType string) error {
+    if !urlRegex.MatchString(urlStr) {
+        return fmt.Errorf("第%d个%s的URL格式不正确", index, itemType)
+    }
+    if _, err := url.Parse(urlStr); err != nil {
+        return fmt.Errorf("第%d个%s的URL无法解析：%s", index, itemType, err.Error())
+    }
+    return nil
+}
+
+func checkDangerousContent(content string, index int, itemType string) error {
+    lower := strings.ToLower(content)
+    for _, d := range dangerousChars {
+        if strings.Contains(lower, d) {
+            return fmt.Errorf("第%d个%s包含不允许的内容", index, itemType)
+        }
+    }
+    return nil
+}
+
+func getJSONList(jsonStr string) []map[string]interface{} {
+    if jsonStr == "" {
+        return []map[string]interface{}{}
+    }
+    var list []map[string]interface{}
+    json.Unmarshal([]byte(jsonStr), &list)
+    return list
+}
+
 func ValidateConsoleSettings(settingsStr string, settingType string) error {
     if settingsStr == "" {
-        return nil // 空字符串是合法的
+        return nil
     }
 
     switch settingType {
@@ -22,33 +70,22 @@ func ValidateConsoleSettings(settingsStr string, settingType string) error {
         return validateAnnouncements(settingsStr)
     case "FAQ":
         return validateFAQ(settingsStr)
+    case "UptimeKumaGroups":
+        return validateUptimeKumaGroups(settingsStr)
     default:
         return fmt.Errorf("未知的设置类型：%s", settingType)
     }
 }
 
-// validateApiInfo 验证API信息格式
 func validateApiInfo(apiInfoStr string) error {
-    var apiInfoList []map[string]interface{}
-    if err := json.Unmarshal([]byte(apiInfoStr), &apiInfoList); err != nil {
-        return fmt.Errorf("API信息格式错误：%s", err.Error())
+    apiInfoList, err := parseJSONArray(apiInfoStr, "API信息")
+    if err != nil {
+        return err
     }
 
-    // 验证数组长度
     if len(apiInfoList) > 50 {
         return fmt.Errorf("API信息数量不能超过50个")
     }
-
-    // 允许的颜色值
-    validColors := map[string]bool{
-        "blue": true, "green": true, "cyan": true, "purple": true, "pink": true,
-        "red": true, "orange": true, "amber": true, "yellow": true, "lime": true,
-        "light-green": true, "teal": true, "light-blue": true, "indigo": true,
-        "violet": true, "grey": true,
-    }
-
-    // URL 正则，支持域名 / IP
-    urlRegex := regexp.MustCompile(`^https?://(?:(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)*[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?|(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?))(?:\:[0-9]{1,5})?(?:/.*)?$`)
 
     for i, apiInfo := range apiInfoList {
         urlStr, ok := apiInfo["url"].(string)
@@ -67,12 +104,11 @@ func validateApiInfo(apiInfoStr string) error {
         if !ok || color == "" {
             return fmt.Errorf("第%d个API信息缺少颜色字段", i+1)
         }
-        if !urlRegex.MatchString(urlStr) {
-            return fmt.Errorf("第%d个API信息的URL格式不正确", i+1)
+
+        if err := validateURL(urlStr, i+1, "API信息"); err != nil {
+            return err
         }
-        if _, err := url.Parse(urlStr); err != nil {
-            return fmt.Errorf("第%d个API信息的URL无法解析：%s", i+1, err.Error())
-        }
+
         if len(urlStr) > 500 {
             return fmt.Errorf("第%d个API信息的URL长度不能超过500字符", i+1)
         }
@@ -82,39 +118,29 @@ func validateApiInfo(apiInfoStr string) error {
         if len(description) > 200 {
             return fmt.Errorf("第%d个API信息的说明长度不能超过200字符", i+1)
         }
+
         if !validColors[color] {
             return fmt.Errorf("第%d个API信息的颜色值不合法", i+1)
         }
-        dangerousChars := []string{"<script", "<iframe", "javascript:", "onload=", "onerror=", "onclick="}
-        for _, d := range dangerousChars {
-            lower := strings.ToLower(description)
-            if strings.Contains(lower, d) || strings.Contains(strings.ToLower(route), d) {
-                return fmt.Errorf("第%d个API信息包含不允许的内容", i+1)
-            }
+
+        if err := checkDangerousContent(description, i+1, "API信息"); err != nil {
+            return err
+        }
+        if err := checkDangerousContent(route, i+1, "API信息"); err != nil {
+            return err
         }
     }
     return nil
 }
 
-// GetApiInfo 获取 API 信息列表
 func GetApiInfo() []map[string]interface{} {
-    apiInfoStr := GetConsoleSetting().ApiInfo
-    if apiInfoStr == "" {
-        return []map[string]interface{}{}
-    }
-    var apiInfo []map[string]interface{}
-    if err := json.Unmarshal([]byte(apiInfoStr), &apiInfo); err != nil {
-        return []map[string]interface{}{}
-    }
-    return apiInfo
+    return getJSONList(GetConsoleSetting().ApiInfo)
 }
 
-// ----------------- 公告 / FAQ -----------------
-
 func validateAnnouncements(announcementsStr string) error {
-    var list []map[string]interface{}
-    if err := json.Unmarshal([]byte(announcementsStr), &list); err != nil {
-        return fmt.Errorf("系统公告格式错误：%s", err.Error())
+    list, err := parseJSONArray(announcementsStr, "系统公告")
+    if err != nil {
+        return err
     }
     if len(list) > 100 {
         return fmt.Errorf("系统公告数量不能超过100个")
@@ -158,9 +184,9 @@ func validateAnnouncements(announcementsStr string) error {
 }
 
 func validateFAQ(faqStr string) error {
-    var list []map[string]interface{}
-    if err := json.Unmarshal([]byte(faqStr), &list); err != nil {
-        return fmt.Errorf("FAQ信息格式错误：%s", err.Error())
+    list, err := parseJSONArray(faqStr, "FAQ信息")
+    if err != nil {
+        return err
     }
     if len(list) > 100 {
         return fmt.Errorf("FAQ数量不能超过100个")
@@ -184,24 +210,79 @@ func validateFAQ(faqStr string) error {
     return nil
 }
 
-// GetAnnouncements 获取系统公告
 func GetAnnouncements() []map[string]interface{} {
-    annStr := GetConsoleSetting().Announcements
-    if annStr == "" {
-        return []map[string]interface{}{}
-    }
-    var ann []map[string]interface{}
-    _ = json.Unmarshal([]byte(annStr), &ann)
-    return ann
+    return getJSONList(GetConsoleSetting().Announcements)
 }
 
-// GetFAQ 获取常见问题
 func GetFAQ() []map[string]interface{} {
-    faqStr := GetConsoleSetting().FAQ
-    if faqStr == "" {
-        return []map[string]interface{}{}
+    return getJSONList(GetConsoleSetting().FAQ)
+}
+
+func validateUptimeKumaGroups(groupsStr string) error {
+    groups, err := parseJSONArray(groupsStr, "Uptime Kuma分组配置")
+    if err != nil {
+        return err
     }
-    var faq []map[string]interface{}
-    _ = json.Unmarshal([]byte(faqStr), &faq)
-    return faq
+
+    if len(groups) > 20 {
+        return fmt.Errorf("Uptime Kuma分组数量不能超过20个")
+    }
+
+    nameSet := make(map[string]bool)
+
+    for i, group := range groups {
+        categoryName, ok := group["categoryName"].(string)
+        if !ok || categoryName == "" {
+            return fmt.Errorf("第%d个分组缺少分类名称字段", i+1)
+        }
+        if nameSet[categoryName] {
+            return fmt.Errorf("第%d个分组的分类名称与其他分组重复", i+1)
+        }
+        nameSet[categoryName] = true
+        urlStr, ok := group["url"].(string)
+        if !ok || urlStr == "" {
+            return fmt.Errorf("第%d个分组缺少URL字段", i+1)
+        }
+        slug, ok := group["slug"].(string)
+        if !ok || slug == "" {
+            return fmt.Errorf("第%d个分组缺少Slug字段", i+1)
+        }
+        description, ok := group["description"].(string)
+        if !ok {
+            description = ""
+        }
+
+        if err := validateURL(urlStr, i+1, "分组"); err != nil {
+            return err
+        }
+
+        if len(categoryName) > 50 {
+            return fmt.Errorf("第%d个分组的分类名称长度不能超过50字符", i+1)
+        }
+        if len(urlStr) > 500 {
+            return fmt.Errorf("第%d个分组的URL长度不能超过500字符", i+1)
+        }
+        if len(slug) > 100 {
+            return fmt.Errorf("第%d个分组的Slug长度不能超过100字符", i+1)
+        }
+        if len(description) > 200 {
+            return fmt.Errorf("第%d个分组的描述长度不能超过200字符", i+1)
+        }
+
+        if !slugRegex.MatchString(slug) {
+            return fmt.Errorf("第%d个分组的Slug只能包含字母、数字、下划线和连字符", i+1)
+        }
+
+        if err := checkDangerousContent(description, i+1, "分组"); err != nil {
+            return err
+        }
+        if err := checkDangerousContent(categoryName, i+1, "分组"); err != nil {
+            return err
+        }
+    }
+    return nil
+}
+
+func GetUptimeKumaGroups() []map[string]interface{} {
+    return getJSONList(GetConsoleSetting().UptimeKumaGroups)
 } 

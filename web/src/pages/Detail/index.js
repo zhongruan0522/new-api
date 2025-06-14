@@ -16,7 +16,8 @@ import {
   Tag,
   Timeline,
   Collapse,
-  Progress
+  Progress,
+  Divider
 } from '@douyinfe/semi-ui';
 import {
   IconRefresh,
@@ -215,6 +216,7 @@ const Detail = (props) => {
   const announcementScrollRef = useRef(null);
   const faqScrollRef = useRef(null);
   const uptimeScrollRef = useRef(null);
+  const uptimeTabScrollRefs = useRef({});
 
   // ========== Additional State for scroll hints ==========
   const [showAnnouncementScrollHint, setShowAnnouncementScrollHint] = useState(false);
@@ -224,6 +226,7 @@ const Detail = (props) => {
   // ========== Uptime data ==========
   const [uptimeData, setUptimeData] = useState([]);
   const [uptimeLoading, setUptimeLoading] = useState(false);
+  const [activeUptimeTab, setActiveUptimeTab] = useState('');
 
   // ========== Props Destructuring ==========
   const { username, model_name, start_timestamp, end_timestamp, channel } = inputs;
@@ -579,6 +582,9 @@ const Detail = (props) => {
       const { success, message, data } = res.data;
       if (success) {
         setUptimeData(data || []);
+        if (data && data.length > 0 && !activeUptimeTab) {
+          setActiveUptimeTab(data[0].categoryName);
+        }
       } else {
         showError(message);
       }
@@ -587,7 +593,7 @@ const Detail = (props) => {
     } finally {
       setUptimeLoading(false);
     }
-  }, []);
+  }, [activeUptimeTab]);
 
   const refresh = useCallback(async () => {
     await Promise.all([loadQuotaData(), loadUptimeData()]);
@@ -644,10 +650,18 @@ const Detail = (props) => {
       checkApiScrollable();
       checkCardScrollable(announcementScrollRef, setShowAnnouncementScrollHint);
       checkCardScrollable(faqScrollRef, setShowFaqScrollHint);
-      checkCardScrollable(uptimeScrollRef, setShowUptimeScrollHint);
+
+      if (uptimeData.length === 1) {
+        checkCardScrollable(uptimeScrollRef, setShowUptimeScrollHint);
+      } else if (uptimeData.length > 1 && activeUptimeTab) {
+        const activeTabRef = uptimeTabScrollRefs.current[activeUptimeTab];
+        if (activeTabRef) {
+          checkCardScrollable(activeTabRef, setShowUptimeScrollHint);
+        }
+      }
     }, 100);
     return () => clearTimeout(timer);
-  }, [uptimeData]);
+  }, [uptimeData, activeUptimeTab]);
 
   const getUserData = async () => {
     let res = await API.get(`/api/user/self`);
@@ -883,7 +897,6 @@ const Detail = (props) => {
 
   const announcementData = useMemo(() => {
     const announcements = statusState?.status?.announcements || [];
-    // 处理后台配置的公告数据，自动生成相对时间
     return announcements.map(item => ({
       ...item,
       time: getRelativeTime(item.publishDate)
@@ -893,6 +906,68 @@ const Detail = (props) => {
   const faqData = useMemo(() => {
     return statusState?.status?.faq || [];
   }, [statusState?.status?.faq]);
+
+  const renderMonitorList = useCallback((monitors) => {
+    if (!monitors || monitors.length === 0) {
+      return (
+        <div className="flex justify-center items-center py-4">
+          <Empty
+            image={<IllustrationConstruction />}
+            darkModeImage={<IllustrationConstructionDark />}
+            title={t('暂无监控数据')}
+            style={{ padding: '8px' }}
+          />
+        </div>
+      );
+    }
+
+    const grouped = {};
+    monitors.forEach((m) => {
+      const g = m.group || '';
+      if (!grouped[g]) grouped[g] = [];
+      grouped[g].push(m);
+    });
+
+    const renderItem = (monitor, idx) => (
+      <div key={idx} className="p-2 hover:bg-white rounded-lg transition-colors">
+        <div className="flex items-center justify-between mb-1">
+          <div className="flex items-center gap-2">
+            <div
+              className="w-2 h-2 rounded-full flex-shrink-0"
+              style={{ backgroundColor: getUptimeStatusColor(monitor.status) }}
+            />
+            <span className="text-sm font-medium text-gray-900">{monitor.name}</span>
+          </div>
+          <span className="text-xs text-gray-500">{((monitor.uptime || 0) * 100).toFixed(2)}%</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-gray-500">{getUptimeStatusText(monitor.status)}</span>
+          <div className="flex-1">
+            <Progress
+              percent={(monitor.uptime || 0) * 100}
+              showInfo={false}
+              aria-label={`${monitor.name} uptime`}
+              stroke={getUptimeStatusColor(monitor.status)}
+            />
+          </div>
+        </div>
+      </div>
+    );
+
+    return Object.entries(grouped).map(([gname, list]) => (
+      <div key={gname || 'default'} className="mb-2">
+        {gname && (
+          <>
+            <div className="text-md font-semibold text-gray-500 px-2 py-1">
+              {gname}
+            </div>
+            <Divider />
+          </>
+        )}
+        {list.map(renderItem)}
+      </div>
+    ));
+  }, [t, getUptimeStatusColor, getUptimeStatusText]);
 
   // ========== Hooks - Effects ==========
   useEffect(() => {
@@ -1127,8 +1202,8 @@ const Detail = (props) => {
                     ) : (
                       <div className="flex justify-center items-center py-8">
                         <Empty
-                          image={<IllustrationConstruction style={{ width: 80, height: 80 }} />}
-                          darkModeImage={<IllustrationConstructionDark style={{ width: 80, height: 80 }} />}
+                          image={<IllustrationConstruction />}
+                          darkModeImage={<IllustrationConstructionDark />}
                           title={t('暂无API信息')}
                           description={t('请联系管理员在系统设置中配置API信息')}
                           style={{ padding: '12px' }}
@@ -1199,8 +1274,8 @@ const Detail = (props) => {
                       ) : (
                         <div className="flex justify-center items-center py-8">
                           <Empty
-                            image={<IllustrationConstruction style={{ width: 80, height: 80 }} />}
-                            darkModeImage={<IllustrationConstructionDark style={{ width: 80, height: 80 }} />}
+                            image={<IllustrationConstruction />}
+                            darkModeImage={<IllustrationConstructionDark />}
                             title={t('暂无系统公告')}
                             description={t('请联系管理员在系统设置中配置公告信息')}
                             style={{ padding: '12px' }}
@@ -1227,6 +1302,7 @@ const Detail = (props) => {
                       {t('常见问答')}
                     </div>
                   }
+                  bodyStyle={{ padding: 0 }}
                 >
                   <div className="card-content-container">
                     <div
@@ -1253,8 +1329,8 @@ const Detail = (props) => {
                       ) : (
                         <div className="flex justify-center items-center py-8">
                           <Empty
-                            image={<IllustrationConstruction style={{ width: 80, height: 80 }} />}
-                            darkModeImage={<IllustrationConstructionDark style={{ width: 80, height: 80 }} />}
+                            image={<IllustrationConstruction />}
+                            darkModeImage={<IllustrationConstructionDark />}
                             title={t('暂无常见问答')}
                             description={t('请联系管理员在系统设置中配置常见问答')}
                             style={{ padding: '12px' }}
@@ -1274,7 +1350,7 @@ const Detail = (props) => {
               {uptimeEnabled && (
                 <Card
                   {...CARD_PROPS}
-                  className="shadow-sm !rounded-2xl lg:col-span-1"
+                  className="shadow-sm !rounded-2xl lg:col-span-1 flex flex-col"
                   title={
                     <div className="flex items-center justify-between w-full gap-2">
                       <div className="flex items-center gap-2">
@@ -1291,11 +1367,93 @@ const Detail = (props) => {
                       />
                     </div>
                   }
-                  footer={uptimeData.length > 0 ? (
-                    <Card
-                      bordered={false}
-                      className="!rounded-2xl backdrop-blur !shadow-none"
-                    >
+                  bodyStyle={{ padding: 0 }}
+                >
+                  {/* 内容区域 */}
+                  <div className="flex-1 relative">
+                    <Spin spinning={uptimeLoading}>
+                      {uptimeData.length > 0 ? (
+                        uptimeData.length === 1 ? (
+                          <div className="card-content-container">
+                            <div
+                              ref={uptimeScrollRef}
+                              className="p-2 max-h-[24rem] overflow-y-auto card-content-scroll"
+                              onScroll={() => handleCardScroll(uptimeScrollRef, setShowUptimeScrollHint)}
+                            >
+                              {renderMonitorList(uptimeData[0].monitors)}
+                            </div>
+                            <div
+                              className="card-content-fade-indicator"
+                              style={{ opacity: showUptimeScrollHint ? 1 : 0 }}
+                            />
+                          </div>
+                        ) : (
+                          <Tabs
+                            type="card"
+                            collapsible
+                            activeKey={activeUptimeTab}
+                            onChange={setActiveUptimeTab}
+                            size="small"
+                          >
+                            {uptimeData.map((group, groupIdx) => {
+                              if (!uptimeTabScrollRefs.current[group.categoryName]) {
+                                uptimeTabScrollRefs.current[group.categoryName] = React.createRef();
+                              }
+                              const tabScrollRef = uptimeTabScrollRefs.current[group.categoryName];
+
+                              return (
+                                <TabPane
+                                  tab={
+                                    <span className="flex items-center gap-2">
+                                      <Gauge size={14} />
+                                      {group.categoryName}
+                                      <Tag
+                                        color={activeUptimeTab === group.categoryName ? 'red' : 'grey'}
+                                        size='small'
+                                        shape='circle'
+                                      >
+                                        {group.monitors ? group.monitors.length : 0}
+                                      </Tag>
+                                    </span>
+                                  }
+                                  itemKey={group.categoryName}
+                                  key={groupIdx}
+                                >
+                                  <div className="card-content-container">
+                                    <div
+                                      ref={tabScrollRef}
+                                      className="p-2 max-h-[21.5rem] overflow-y-auto card-content-scroll"
+                                      onScroll={() => handleCardScroll(tabScrollRef, setShowUptimeScrollHint)}
+                                    >
+                                      {renderMonitorList(group.monitors)}
+                                    </div>
+                                    <div
+                                      className="card-content-fade-indicator"
+                                      style={{ opacity: activeUptimeTab === group.categoryName ? showUptimeScrollHint ? 1 : 0 : 0 }}
+                                    />
+                                  </div>
+                                </TabPane>
+                              );
+                            })}
+                          </Tabs>
+                        )
+                      ) : (
+                        <div className="flex justify-center items-center py-8">
+                          <Empty
+                            image={<IllustrationConstruction />}
+                            darkModeImage={<IllustrationConstructionDark />}
+                            title={t('暂无监控数据')}
+                            description={t('请联系管理员在系统设置中配置Uptime分组')}
+                            style={{ padding: '12px' }}
+                          />
+                        </div>
+                      )}
+                    </Spin>
+                  </div>
+
+                  {/* 固定在底部的图例 */}
+                  {uptimeData.length > 0 && (
+                    <div className="p-3 mt-auto bg-gray-50 rounded-b-2xl">
                       <div className="flex flex-wrap gap-3 text-xs justify-center">
                         {uptimeLegendData.map((legend, index) => (
                           <div key={index} className="flex items-center gap-1">
@@ -1307,63 +1465,8 @@ const Detail = (props) => {
                           </div>
                         ))}
                       </div>
-                    </Card>
-                  ) : null}
-                  footerStyle={uptimeData.length > 0 ? { padding: '0px' } : undefined}
-                >
-                  <div className="card-content-container">
-                    <Spin spinning={uptimeLoading}>
-                      <div
-                        ref={uptimeScrollRef}
-                        className="p-2 max-h-80 overflow-y-auto card-content-scroll"
-                        onScroll={() => handleCardScroll(uptimeScrollRef, setShowUptimeScrollHint)}
-                      >
-                        {uptimeData.length > 0 ? (
-                          uptimeData.map((monitor, idx) => (
-                            <div key={idx} className="p-2 hover:bg-white rounded-lg transition-colors">
-                              <div className="flex items-center justify-between mb-1">
-                                <div className="flex items-center gap-2">
-                                  <div
-                                    className="w-2 h-2 rounded-full flex-shrink-0"
-                                    style={{
-                                      backgroundColor: getUptimeStatusColor(monitor.status)
-                                    }}
-                                  />
-                                  <span className="text-sm font-medium text-gray-900">{monitor.name}</span>
-                                </div>
-                                <span className="text-xs text-gray-500">{((monitor.uptime || 0) * 100).toFixed(2)}%</span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <span className="text-xs text-gray-500">{getUptimeStatusText(monitor.status)}</span>
-                                <div className="flex-1">
-                                  <Progress
-                                    percent={(monitor.uptime || 0) * 100}
-                                    showInfo={false}
-                                    aria-label={`${monitor.name} uptime`}
-                                    stroke={getUptimeStatusColor(monitor.status)}
-                                  />
-                                </div>
-                              </div>
-                            </div>
-                          ))
-                        ) : (
-                          <div className="flex justify-center items-center py-8">
-                            <Empty
-                              image={<IllustrationConstruction style={{ width: 80, height: 80 }} />}
-                              darkModeImage={<IllustrationConstructionDark style={{ width: 80, height: 80 }} />}
-                              title={t('暂无监控数据')}
-                              description={t('请联系管理员在系统设置中配置Uptime')}
-                              style={{ padding: '12px' }}
-                            />
-                          </div>
-                        )}
-                      </div>
-                    </Spin>
-                    <div
-                      className="card-content-fade-indicator"
-                      style={{ opacity: showUptimeScrollHint ? 1 : 0 }}
-                    />
-                  </div>
+                    </div>
+                  )}
                 </Card>
               )}
             </div>
