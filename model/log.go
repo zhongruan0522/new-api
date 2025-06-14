@@ -227,12 +227,17 @@ func GetAllLogs(logType int, startTimestamp int64, endTimestamp int64, modelName
 		return nil, 0, err
 	}
 
-	channelIds := make([]int, 0)
+	channelIdsMap := make(map[int]struct{})
 	channelMap := make(map[int]string)
 	for _, log := range logs {
 		if log.ChannelId != 0 {
-			channelIds = append(channelIds, log.ChannelId)
+			channelIdsMap[log.ChannelId] = struct{}{}
 		}
+	}
+
+	channelIds := make([]int, 0, len(channelIdsMap))
+	for channelId := range channelIdsMap {
+		channelIds = append(channelIds, channelId)
 	}
 	if len(channelIds) > 0 {
 		var channels []struct {
