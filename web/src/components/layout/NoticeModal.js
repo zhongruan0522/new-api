@@ -64,11 +64,7 @@ const NoticeModal = ({ visible, onClose, isMobile }) => {
     return (
       <div
         dangerouslySetInnerHTML={{ __html: noticeContent }}
-        className="max-h-[60vh] overflow-y-auto pr-2"
-        style={{
-          scrollbarWidth: 'thin',
-          scrollbarColor: 'var(--semi-color-tertiary) transparent'
-        }}
+        className="notice-content-scroll max-h-[60vh] overflow-y-auto pr-2"
       />
     );
   };
