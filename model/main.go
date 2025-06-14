@@ -18,6 +18,8 @@ import (
 
 var commonGroupCol string
 var commonKeyCol string
+var commonTrueVal string
+var commonFalseVal string
 
 var logKeyCol string
 var logGroupCol string
@@ -27,11 +29,15 @@ func initCol() {
 	if common.UsingPostgreSQL {
 		commonGroupCol = `"group"`
 		commonKeyCol = `"key"`
+		commonTrueVal = "true"
+		commonFalseVal = "false"
 	} else {
 		commonGroupCol = "`group`"
 		commonKeyCol = "`key`"
+		commonTrueVal = "1"
+		commonFalseVal = "0"
 	}
-	if DB != LOG_DB {
+	if os.Getenv("LOG_SQL_DSN") != "" {
 		switch common.LogSqlType {
 		case common.DatabaseTypePostgreSQL:
 			logGroupCol = `"group"`

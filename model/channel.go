@@ -145,7 +145,7 @@ func SearchChannels(keyword string, group string, model string, idSort bool) ([]
 	}
 
 	// 构造基础查询
-	baseQuery := DB.Model(&Channel{}).Omit(commonKeyCol)
+	baseQuery := DB.Model(&Channel{}).Omit("key")
 
 	// 构造WHERE子句
 	var whereClause string
@@ -478,7 +478,7 @@ func SearchTags(keyword string, group string, model string, idSort bool) ([]*str
 	}
 
 	// 构造基础查询
-	baseQuery := DB.Model(&Channel{}).Omit(commonKeyCol)
+	baseQuery := DB.Model(&Channel{}).Omit("key")
 
 	// 构造WHERE子句
 	var whereClause string
