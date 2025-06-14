@@ -232,6 +232,30 @@ func InitLogDB() (err error) {
 }
 
 func migrateDB() error {
+	if !common.UsingPostgreSQL {
+		return migrateDBFast()
+	}
+	err := DB.AutoMigrate(
+		&Channel{},
+		&Token{},
+		&User{},
+		&Option{},
+		&Redemption{},
+		&Ability{},
+		&Log{},
+		&Midjourney{},
+		&TopUp{},
+		&QuotaData{},
+		&Task{},
+		&Setup{},
+	)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func migrateDBFast() error {
 	var wg sync.WaitGroup
 	errChan := make(chan error, 12) // Buffer size matches number of migrations
 
@@ -273,7 +297,6 @@ func migrateDB() error {
 			return err
 		}
 	}
-
 	common.SysLog("database migrated")
 	return nil
 }
