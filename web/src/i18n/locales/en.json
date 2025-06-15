@@ -1658,5 +1658,6 @@
   "清除失效兑换码": "Clear invalid redemption codes",
   "确定清除所有失效兑换码？": "Are you sure you want to clear all invalid redemption codes?",
   "将删除已使用、已禁用及过期的兑换码，此操作不可撤销。": "This will delete all used, disabled, and expired redemption codes, this operation cannot be undone.",
-  "选择过期时间（可选，留空为永久）": "Select expiration time (optional, leave blank for permanent)"
+  "选择过期时间（可选，留空为永久）": "Select expiration time (optional, leave blank for permanent)",
+  "请输入备注（仅管理员可见）": "Please enter a remark (only visible to administrators)"
 }

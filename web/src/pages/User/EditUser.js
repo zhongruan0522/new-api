@@ -22,6 +22,7 @@ import {
   IconLink,
   IconUserGroup,
   IconPlus,
+  IconEdit,
 } from '@douyinfe/semi-icons';
 import { useTranslation } from 'react-i18next';
 
@@ -42,6 +43,7 @@ const EditUser = (props) => {
     email: '',
     quota: 0,
     group: 'default',
+    remark: '',
   });
   const [groupOptions, setGroupOptions] = useState([]);
   const {
@@ -55,6 +57,7 @@ const EditUser = (props) => {
     email,
     quota,
     group,
+    remark,
   } = inputs;
   const handleInputChange = (name, value) => {
     setInputs((inputs) => ({ ...inputs, [name]: value }));
@@ -244,6 +247,20 @@ const EditUser = (props) => {
                     autoComplete="new-password"
                     size="large"
                     className="!rounded-lg"
+                    showClear
+                  />
+                </div>
+
+                <div>
+                  <Text strong className="block mb-2">{t('备注')}</Text>
+                  <Input
+                    placeholder={t('请输入备注（仅管理员可见）')}
+                    onChange={(value) => handleInputChange('remark', value)}
+                    value={remark}
+                    autoComplete="off"
+                    size="large"
+                    className="!rounded-lg"
+                    prefix={<IconEdit />}
                     showClear
                   />
                 </div>

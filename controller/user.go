@@ -459,6 +459,9 @@ func GetSelf(c *gin.Context) {
 		})
 		return
 	}
+	// Hide admin remarks: set to empty to trigger omitempty tag, ensuring the remark field is not included in JSON returned to regular users
+	user.Remark = ""
+
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
