@@ -9,6 +9,11 @@ import (
 	"gorm.io/gorm"
 )
 
+type ChannelInfo struct {
+	MultiKeyMode       bool        `json:"multi_key_mode"`        // 是否多Key模式
+	MultiKeyStatusList map[int]int `json:"multi_key_status_list"` // key状态列表，key index -> status
+}
+
 type Channel struct {
 	Id                 int     `json:"id"`
 	Type               int     `json:"type" gorm:"default:0"`
@@ -35,8 +40,10 @@ type Channel struct {
 	AutoBan           *int    `json:"auto_ban" gorm:"default:1"`
 	OtherInfo         string  `json:"other_info"`
 	Tag               *string `json:"tag" gorm:"index"`
-	Setting           *string `json:"setting" gorm:"type:text"`
+	Setting           *string `json:"setting" gorm:"type:text"` // 渠道额外设置
 	ParamOverride     *string `json:"param_override" gorm:"type:text"`
+	// add after v0.8.5
+	ChannelInfo ChannelInfo `json:"channel_info" gorm:"type:json"`
 }
 
 func (channel *Channel) GetModels() []string {
