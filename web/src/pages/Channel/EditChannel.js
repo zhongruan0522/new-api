@@ -25,6 +25,7 @@ import {
   ImagePreview,
   Card,
   Tag,
+  Upload,
 } from '@douyinfe/semi-ui';
 import { getChannelModels } from '../../helpers';
 import {
@@ -34,6 +35,7 @@ import {
   IconSetting,
   IconCode,
   IconGlobe,
+  IconBolt,
 } from '@douyinfe/semi-icons';
 
 const { Text, Title } = Typography;
@@ -97,8 +99,9 @@ const EditChannel = (props) => {
     tag: '',
   };
   const [batch, setBatch] = useState(false);
+  const [mergeToSingle, setMergeToSingle] = useState(false);
   const [autoBan, setAutoBan] = useState(true);
-  // const [autoBan, setAutoBan] = useState(true);
+  const [jsonFiles, setJsonFiles] = useState([]);
   const [inputs, setInputs] = useState(originInputs);
   const [originModelOptions, setOriginModelOptions] = useState([]);
   const [modelOptions, setModelOptions] = useState([]);
@@ -325,9 +328,20 @@ const EditChannel = (props) => {
   }, [props.editingChannel.id]);
 
   const submit = async () => {
-    if (!isEdit && (inputs.name === '' || inputs.key === '')) {
-      showInfo(t('请填写渠道名称和渠道密钥！'));
-      return;
+    if (!isEdit) {
+      if (inputs.name === '') {
+        showInfo(t('请填写渠道名称！'));
+        return;
+      }
+      if (inputs.type === 41 && batch) {
+        if (jsonFiles.length === 0) {
+          showInfo(t('请至少选择一个 JSON 凭证文件！'));
+          return;
+        }
+      } else if (inputs.key === '') {
+        showInfo(t('请填写渠道密钥！'));
+        return;
+      }
     }
     if (inputs.models.length === 0) {
       showInfo(t('请至少选择一个模型！'));
@@ -356,13 +370,32 @@ const EditChannel = (props) => {
     localInputs.auto_ban = autoBan ? 1 : 0;
     localInputs.models = localInputs.models.join(',');
     localInputs.group = localInputs.groups.join(',');
+
+    if (inputs.type === 41 && batch) {
+      const keyObj = {};
+      jsonFiles.forEach((content, idx) => {
+        keyObj[content] = idx;
+      });
+      localInputs.key = JSON.stringify(keyObj);
+    }
+
+    let mode = 'single';
+    if (batch) {
+      mode = mergeToSingle ? 'multi_to_single' : 'batch';
+    }
+
+    const payload = {
+      mode,
+      channel: localInputs,
+    };
+
     if (isEdit) {
       res = await API.put(`/api/channel/`, {
         ...localInputs,
         id: parseInt(channelId),
       });
     } else {
-      res = await API.post(`/api/channel/`, localInputs);
+      res = await API.post(`/api/channel/`, payload);
     }
     const { success, message } = res.data;
     if (success) {
@@ -413,6 +446,18 @@ const EditChannel = (props) => {
     } else {
       showInfo(t('未发现新增模型'));
     }
+  };
+
+  const handleJsonFileUpload = (file) => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const content = e.target.result;
+        setJsonFiles((prev) => [...prev, content]);
+        resolve({ shouldUpload: false, status: 'success' });
+      };
+      reader.readAsText(file);
+    });
   };
 
   return (
@@ -522,72 +567,107 @@ const EditChannel = (props) => {
                 <div>
                   <Text strong className="block mb-2">{t('密钥')}</Text>
                   {batch ? (
-                    <TextArea
-                      name='key'
-                      required
-                      placeholder={t('请输入密钥，一行一个')}
-                      onChange={(value) => {
-                        handleInputChange('key', value);
-                      }}
-                      value={inputs.key}
-                      style={{ minHeight: 150, fontFamily: 'JetBrains Mono, Consolas' }}
-                      autoComplete='new-password'
-                      className="!rounded-lg"
-                    />
+                    inputs.type === 41 ? (
+                      <Upload
+                        uploadTrigger="custom"
+                        action="#"
+                        accept=".json,application/json"
+                        multiple
+                        beforeUpload={handleJsonFileUpload}
+                        showUploadList
+                        draggable={true}
+                        dragIcon={<IconBolt />}
+                        dragMainText={t('点击上传文件或拖拽文件到这里')}
+                        dragSubText={t('仅支持 JSON 格式的凭证文件')}
+                        style={{ marginTop: 10 }}
+                      />
+                    ) : (
+                      <TextArea
+                        name="key"
+                        required
+                        placeholder={t('请输入密钥，一行一个')}
+                        onChange={(value) => {
+                          handleInputChange('key', value);
+                        }}
+                        value={inputs.key}
+                        style={{ minHeight: 150, fontFamily: 'JetBrains Mono, Consolas' }}
+                        autoComplete="new-password"
+                        className="!rounded-lg"
+                      />
+                    )
                   ) : (
-                    <>
-                      {inputs.type === 41 ? (
-                        <TextArea
-                          name='key'
-                          required
-                          placeholder={
-                            '{\n' +
-                            '  "type": "service_account",\n' +
-                            '  "project_id": "abc-bcd-123-456",\n' +
-                            '  "private_key_id": "123xxxxx456",\n' +
-                            '  "private_key": "-----BEGIN PRIVATE KEY-----xxxx\n' +
-                            '  "client_email": "xxx@developer.gserviceaccount.com",\n' +
-                            '  "client_id": "111222333",\n' +
-                            '  "auth_uri": "https://accounts.google.com/o/oauth2/auth",\n' +
-                            '  "token_uri": "https://oauth2.googleapis.com/token",\n' +
-                            '  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",\n' +
-                            '  "client_x509_cert_url": "https://xxxxx.gserviceaccount.com",\n' +
-                            '  "universe_domain": "googleapis.com"\n' +
-                            '}'
-                          }
-                          onChange={(value) => {
-                            handleInputChange('key', value);
-                          }}
-                          autosize={{ minRows: 10 }}
-                          value={inputs.key}
-                          autoComplete='new-password'
-                          className="!rounded-lg font-mono"
-                        />
-                      ) : (
-                        <Input
-                          name='key'
-                          required
-                          placeholder={t(type2secretPrompt(inputs.type))}
-                          onChange={(value) => {
-                            handleInputChange('key', value);
-                          }}
-                          value={inputs.key}
-                          autoComplete='new-password'
-                          size="large"
-                          className="!rounded-lg"
-                        />
-                      )}
-                    </>
+                    inputs.type === 41 ? (
+                      <TextArea
+                        name="key"
+                        required
+                        placeholder={
+                          '{\n' +
+                          '  "type": "service_account",\n' +
+                          '  "project_id": "abc-bcd-123-456",\n' +
+                          '  "private_key_id": "123xxxxx456",\n' +
+                          '  "private_key": "-----BEGIN PRIVATE KEY-----xxxx\n' +
+                          '  "client_email": "xxx@developer.gserviceaccount.com",\n' +
+                          '  "client_id": "111222333",\n' +
+                          '  "auth_uri": "https://accounts.google.com/o/oauth2/auth",\n' +
+                          '  "token_uri": "https://oauth2.googleapis.com/token",\n' +
+                          '  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",\n' +
+                          '  "client_x509_cert_url": "https://xxxxx.gserviceaccount.com",\n' +
+                          '  "universe_domain": "googleapis.com"\n' +
+                          '}'
+                        }
+                        onChange={(value) => {
+                          handleInputChange('key', value);
+                        }}
+                        autosize={{ minRows: 10 }}
+                        value={inputs.key}
+                        autoComplete="new-password"
+                        className="!rounded-lg font-mono"
+                      />
+                    ) : (
+                      <Input
+                        name="key"
+                        required
+                        placeholder={t(type2secretPrompt(inputs.type))}
+                        onChange={(value) => {
+                          handleInputChange('key', value);
+                        }}
+                        value={inputs.key}
+                        autoComplete="new-password"
+                        size="large"
+                        className="!rounded-lg"
+                      />
+                    )
                   )}
                 </div>
 
                 {!isEdit && (
-                  <div className="flex items-center">
-                    <Checkbox
-                      checked={batch}
-                      onChange={() => setBatch(!batch)}
-                    />
-                    <Text strong className="ml-2">{t('批量创建')}</Text>
+                  <div className="flex flex-col mt-2 gap-2">
+                    <div className="flex items-center">
+                      <Checkbox
+                        checked={batch}
+                        onChange={() => {
+                          setBatch(!batch);
+                          if (!batch === false) setMergeToSingle(false);
+                        }}
+                      />
+                      <Text strong className="ml-2">{t('批量创建')}</Text>
+                      {inputs.type === 41 && batch && (
+                        <Text type='tertiary' className='ml-2'>
+                          {t('已选择 {{count}} 个文件', { count: jsonFiles.length })}
+                        </Text>
+                      )}
+                    </div>
+                    {batch && (
+                      <div className="flex items-center pl-6">
+                        <Checkbox
+                          checked={mergeToSingle}
+                          onChange={() => setMergeToSingle(!mergeToSingle)}
+                        />
+                        <Text style={{ fontSize: 12 }} className="ml-2 text-gray-600">
+                          {t('合并为单通道（多 Key 模式）')}
+                        </Text>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
