@@ -1,6 +1,7 @@
 package model
 
 import (
+	"database/sql/driver"
 	"encoding/json"
 	"one-api/common"
 	"strings"
@@ -8,11 +9,6 @@ import (
 
 	"gorm.io/gorm"
 )
-
-type ChannelInfo struct {
-	MultiKeyMode       bool        `json:"multi_key_mode"`        // 是否多Key模式
-	MultiKeyStatusList map[int]int `json:"multi_key_status_list"` // key状态列表，key index -> status
-}
 
 type Channel struct {
 	Id                 int     `json:"id"`
@@ -44,6 +40,23 @@ type Channel struct {
 	ParamOverride     *string `json:"param_override" gorm:"type:text"`
 	// add after v0.8.5
 	ChannelInfo ChannelInfo `json:"channel_info" gorm:"type:json"`
+}
+
+type ChannelInfo struct {
+	MultiKeyMode       bool        `json:"multi_key_mode"`        // 是否多Key模式
+	MultiKeyStatusList map[int]int `json:"multi_key_status_list"` // key状态列表，key index -> status
+	MultiKeySize       int         `json:"multi_key_size"`        // 多Key模式下的key数量
+}
+
+// Value implements driver.Valuer interface
+func (c ChannelInfo) Value() (driver.Value, error) {
+	return json.Marshal(c)
+}
+
+// Scan implements sql.Scanner interface
+func (c *ChannelInfo) Scan(value interface{}) error {
+	bytesValue, _ := value.([]byte)
+	return json.Unmarshal(bytesValue, c)
 }
 
 func (channel *Channel) GetModels() []string {

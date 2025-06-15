@@ -664,7 +664,7 @@ const EditChannel = (props) => {
                           onChange={() => setMergeToSingle(!mergeToSingle)}
                         />
                         <Text style={{ fontSize: 12 }} className="ml-2 text-gray-600">
-                          {t('合并为单通道（多 Key 模式）')}
+                          {t('合并为单通道（多 Key 聚合模式）')}
                         </Text>
                       </div>
                     )}

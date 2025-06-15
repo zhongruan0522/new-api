@@ -22,7 +22,7 @@ import {
   Clock,
   AlertTriangle,
   Coins,
-  Tags
+  Tags, Boxes
 } from 'lucide-react';
 
 import { CHANNEL_OPTIONS, ITEMS_PER_PAGE } from '../../constants/index.js';
@@ -73,13 +73,31 @@ const ChannelsTable = () => {
 
   let type2label = undefined;
 
-  const renderType = (type) => {
+  const renderType = (type, multiKeyMode=false) => {
     if (!type2label) {
       type2label = new Map();
       for (let i = 0; i < CHANNEL_OPTIONS.length; i++) {
         type2label[CHANNEL_OPTIONS[i].value] = CHANNEL_OPTIONS[i];
       }
       type2label[0] = { value: 0, label: t('未知类型'), color: 'grey' };
+    }
+
+    if (multiKeyMode) {
+      return (
+        <Tag
+          size='large'
+          color={type2label[type]?.color}
+          shape='circle'
+          prefixIcon={
+          <div className="flex items-center">
+            <Boxes size={14} className="mr-1" />
+            {getChannelIcon(type)}
+          </div>
+          }
+        >
+          {type2label[type]?.label}
+        </Tag>
+      );
     }
     return (
       <Tag
@@ -107,7 +125,63 @@ const ChannelsTable = () => {
     );
   };
 
-  const renderStatus = (status) => {
+  const renderMultiKeyStatus = (status, channelInfo) => {
+    if (!channelInfo || !channelInfo.multi_key_mode) {
+      return renderStatus(status, channelInfo);
+    }
+
+    const { multi_key_status_list, multi_key_size } = channelInfo;
+    const totalCount = multi_key_size || 0;
+    
+    // If multi_key_status_list is null, it means all keys are enabled
+    if (!multi_key_status_list) {
+      return (
+        <Tag size='large' color='green' shape='circle' prefixIcon={<CheckCircle size={14} />}>
+          {t('已启用')}:{totalCount}/{totalCount}
+        </Tag>
+      );
+    }
+
+    // Count enabled keys from the status map
+    const statusValues = Object.values(multi_key_status_list);
+    const enabledCount = statusValues.filter(s => s === 1).length;
+    
+    // Determine status text, color and icon based on enabled ratio
+    let statusText, statusColor, statusIcon;
+    const enabledRatio = totalCount > 0 ? enabledCount / totalCount : 0;
+    
+    if (enabledCount === totalCount) {
+      statusText = t('已启用');
+      statusColor = 'green';
+      statusIcon = <CheckCircle size={14} />;
+    } else if (enabledCount === 0) {
+      statusText = t('已禁用');
+      statusColor = 'red';
+      statusIcon = <XCircle size={14} />;
+    } else {
+      statusText = t('部分启用');
+      // Color based on percentage: green (>80%), yellow (20-80%), red (<20%)
+      if (enabledRatio > 0.8) {
+        statusColor = 'green';
+      } else if (enabledRatio >= 0.2) {
+        statusColor = 'yellow';
+      } else {
+        statusColor = 'red';
+      }
+      statusIcon = <AlertCircle size={14} />;
+    }
+
+    return (
+      <Tag size='large' color={statusColor} shape='circle' prefixIcon={statusIcon}>
+        {statusText}:{enabledCount}/{totalCount}
+      </Tag>
+    );
+  };
+
+  const renderStatus = (status, channelInfo=undefined) => {
+    if (channelInfo?.multi_key_mode) {
+      return renderMultiKeyStatus(status, channelInfo);
+    }
     switch (status) {
       case 1:
         return (
@@ -297,7 +371,7 @@ const ChannelsTable = () => {
       dataIndex: 'type',
       render: (text, record, index) => {
         if (record.children === undefined) {
-          return <>{renderType(text)}</>;
+          return <>{renderType(text, record.channel_info?.multi_key_mode)}</>;
         } else {
           return <>{renderTagType()}</>;
         }
@@ -320,12 +394,12 @@ const ChannelsTable = () => {
               <Tooltip
                 content={t('原因：') + reason + t('，时间：') + timestamp2string(time)}
               >
-                {renderStatus(text)}
+                {renderStatus(text, record.channel_info)}
               </Tooltip>
             </div>
           );
         } else {
-          return renderStatus(text);
+          return renderStatus(text, record.channel_info);
         }
       },
     },

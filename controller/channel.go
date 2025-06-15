@@ -318,6 +318,22 @@ func AddChannel(c *gin.Context) {
 				})
 				return
 			}
+			toMap := common.StrToMap(addChannelRequest.Channel.Key)
+			if toMap != nil {
+				addChannelRequest.Channel.ChannelInfo.MultiKeySize = len(toMap)
+			} else {
+				addChannelRequest.Channel.ChannelInfo.MultiKeySize = 0
+			}
+		} else {
+			cleanKeys := make([]string, 0)
+			for _, key := range strings.Split(addChannelRequest.Channel.Key, "\n") {
+				if key == "" {
+					continue
+				}
+				cleanKeys = append(cleanKeys, key)
+			}
+			addChannelRequest.Channel.ChannelInfo.MultiKeySize = len(cleanKeys)
+			addChannelRequest.Channel.Key = strings.Join(cleanKeys, "\n")
 		}
 		keys = []string{addChannelRequest.Channel.Key}
 	case "batch":
