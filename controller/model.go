@@ -2,7 +2,6 @@ package controller
 
 import (
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"net/http"
 	"one-api/common"
 	"one-api/constant"
@@ -15,6 +14,9 @@ import (
 	"one-api/relay/channel/moonshot"
 	relaycommon "one-api/relay/common"
 	relayconstant "one-api/relay/constant"
+	"one-api/setting"
+
+	"github.com/gin-gonic/gin"
 )
 
 // https://platform.openai.com/docs/api-reference/models/list
@@ -179,7 +181,19 @@ func ListModels(c *gin.Context) {
 		if tokenGroup != "" {
 			group = tokenGroup
 		}
-		models := model.GetGroupModels(group)
+		var models []string
+		if tokenGroup == "auto" {
+			for _, autoGroup := range setting.AutoGroups {
+				groupModels := model.GetGroupModels(autoGroup)
+				for _, g := range groupModels {
+					if !common.StringsContains(models, g) {
+						models = append(models, g)
+					}
+				}
+			}
+		} else {
+			models = model.GetGroupModels(group)
+		}
 		for _, s := range models {
 			if _, ok := openAIModelsMap[s]; ok {
 				userOpenAiModels = append(userOpenAiModels, openAIModelsMap[s])

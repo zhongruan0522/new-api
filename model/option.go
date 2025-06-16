@@ -76,6 +76,8 @@ func InitOptionMap() {
 	common.OptionMap["MinTopUp"] = strconv.Itoa(setting.MinTopUp)
 	common.OptionMap["TopupGroupRatio"] = common.TopupGroupRatio2JSONString()
 	common.OptionMap["Chats"] = setting.Chats2JsonString()
+	common.OptionMap["AutoGroups"] = setting.AutoGroups2JsonString()
+	common.OptionMap["DefaultUseAutoGroup"] = strconv.FormatBool(setting.DefaultUseAutoGroup)
 	common.OptionMap["GitHubClientId"] = ""
 	common.OptionMap["GitHubClientSecret"] = ""
 	common.OptionMap["TelegramBotToken"] = ""
@@ -287,6 +289,10 @@ func updateOptionMap(key string, value string) (err error) {
 		setting.PayAddress = value
 	case "Chats":
 		err = setting.UpdateChatsByJsonString(value)
+	case "AutoGroups":
+		err = setting.UpdateAutoGroupsByJsonString(value)
+	case "DefaultUseAutoGroup":
+		setting.DefaultUseAutoGroup = value == "true"
 	case "CustomCallbackAddress":
 		setting.CustomCallbackAddress = value
 	case "EpayId":

@@ -3,6 +3,7 @@ package service
 import (
 	"errors"
 	"fmt"
+	"log"
 	"one-api/common"
 	constant2 "one-api/constant"
 	"one-api/dto"
@@ -94,11 +95,20 @@ func PreWssConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usag
 	audioInputTokens := usage.InputTokenDetails.AudioTokens
 	audioOutTokens := usage.OutputTokenDetails.AudioTokens
 	groupRatio := setting.GetGroupRatio(relayInfo.Group)
+	modelRatio, _ := operation_setting.GetModelRatio(modelName)
+
+	autoGroup, exists := ctx.Get("auto_group")
+	if exists {
+		groupRatio = setting.GetGroupRatio(autoGroup.(string))
+		log.Printf("final group ratio: %f", groupRatio)
+		relayInfo.Group = autoGroup.(string)
+	}
+
+	actualGroupRatio := groupRatio
 	userGroupRatio, ok := setting.GetGroupGroupRatio(relayInfo.UserGroup, relayInfo.Group)
 	if ok {
-		groupRatio = userGroupRatio
+		actualGroupRatio = userGroupRatio
 	}
-	modelRatio, _ := operation_setting.GetModelRatio(modelName)
 
 	quotaInfo := QuotaInfo{
 		InputDetails: TokenDetails{
@@ -112,7 +122,7 @@ func PreWssConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usag
 		ModelName:  modelName,
 		UsePrice:   relayInfo.UsePrice,
 		ModelRatio: modelRatio,
-		GroupRatio: groupRatio,
+		GroupRatio: actualGroupRatio,
 	}
 
 	quota := calculateAudioQuota(quotaInfo)
@@ -148,6 +158,13 @@ func PostWssConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, mod
 	completionRatio := decimal.NewFromFloat(operation_setting.GetCompletionRatio(modelName))
 	audioRatio := decimal.NewFromFloat(operation_setting.GetAudioRatio(relayInfo.OriginModelName))
 	audioCompletionRatio := decimal.NewFromFloat(operation_setting.GetAudioCompletionRatio(modelName))
+
+	autoGroup, exists := ctx.Get("auto_group")
+	if exists {
+		groupRatio = setting.GetGroupRatio(autoGroup.(string))
+		log.Printf("final group ratio: %f", groupRatio)
+		relayInfo.Group = autoGroup.(string)
+	}
 
 	actualGroupRatio := groupRatio
 	userGroupRatio, ok := setting.GetGroupGroupRatio(relayInfo.UserGroup, relayInfo.Group)
@@ -289,6 +306,13 @@ func PostAudioConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo,
 	groupRatio := priceData.GroupRatio
 	modelPrice := priceData.ModelPrice
 	usePrice := priceData.UsePrice
+
+	autoGroup, exists := ctx.Get("auto_group")
+	if exists {
+		groupRatio = setting.GetGroupRatio(autoGroup.(string))
+		log.Printf("final group ratio: %f", groupRatio)
+		relayInfo.Group = autoGroup.(string)
+	}
 
 	actualGroupRatio := groupRatio
 	userGroupRatio, ok := setting.GetGroupGroupRatio(relayInfo.UserGroup, relayInfo.Group)

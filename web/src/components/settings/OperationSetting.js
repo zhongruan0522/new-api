@@ -31,6 +31,8 @@ const OperationSetting = () => {
     ModelPrice: '',
     GroupRatio: '',
     GroupGroupRatio: '',
+    AutoGroups: '',
+    DefaultUseAutoGroup: false,
     UserUsableGroups: '',
     TopUpLink: '',
     'general_setting.docs_link': '',
@@ -76,6 +78,7 @@ const OperationSetting = () => {
           item.key === 'ModelRatio' ||
           item.key === 'GroupRatio' ||
           item.key === 'GroupGroupRatio' ||
+          item.key === 'AutoGroups' ||
           item.key === 'UserUsableGroups' ||
           item.key === 'CompletionRatio' ||
           item.key === 'ModelPrice' ||
@@ -85,7 +88,8 @@ const OperationSetting = () => {
         }
         if (
           item.key.endsWith('Enabled') ||
-          ['DefaultCollapseSidebar'].includes(item.key)
+          ['DefaultCollapseSidebar'].includes(item.key) ||
+          ['DefaultUseAutoGroup'].includes(item.key)
         ) {
           newInputs[item.key] = item.value === 'true' ? true : false;
         } else {

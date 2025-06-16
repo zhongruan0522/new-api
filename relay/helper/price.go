@@ -2,6 +2,7 @@ package helper
 
 import (
 	"fmt"
+	"log"
 	"one-api/common"
 	constant2 "one-api/constant"
 	relaycommon "one-api/relay/common"
@@ -31,10 +32,19 @@ func (p PriceData) ToSetting() string {
 func ModelPriceHelper(c *gin.Context, info *relaycommon.RelayInfo, promptTokens int, maxTokens int) (PriceData, error) {
 	modelPrice, usePrice := operation_setting.GetModelPrice(info.OriginModelName, false)
 	groupRatio := setting.GetGroupRatio(info.Group)
+	var userGroupRatio float64
+	autoGroup, exists := c.Get("auto_group")
+	if exists {
+		groupRatio = setting.GetGroupRatio(autoGroup.(string))
+		log.Printf("final group ratio: %f", groupRatio)
+		info.Group = autoGroup.(string)
+	}
+	actualGroupRatio := groupRatio
 	userGroupRatio, ok := setting.GetGroupGroupRatio(info.UserGroup, info.Group)
 	if ok {
-		groupRatio = userGroupRatio
+		actualGroupRatio = userGroupRatio
 	}
+	groupRatio = actualGroupRatio
 	var preConsumedQuota int
 	var modelRatio float64
 	var completionRatio float64

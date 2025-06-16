@@ -49,8 +49,10 @@ func Distribute() func(c *gin.Context) {
 			}
 			// check group in common.GroupRatio
 			if !setting.ContainsGroupRatio(tokenGroup) {
-				abortWithOpenAiMessage(c, http.StatusForbidden, fmt.Sprintf("分组 %s 已被弃用", tokenGroup))
-				return
+				if tokenGroup != "auto" {
+					abortWithOpenAiMessage(c, http.StatusForbidden, fmt.Sprintf("分组 %s 已被弃用", tokenGroup))
+					return
+				}
 			}
 			userGroup = tokenGroup
 		}
@@ -95,9 +97,14 @@ func Distribute() func(c *gin.Context) {
 			}
 
 			if shouldSelectChannel {
-				channel, err = model.CacheGetRandomSatisfiedChannel(userGroup, modelRequest.Model, 0)
+				var selectGroup string
+				channel, selectGroup, err = model.CacheGetRandomSatisfiedChannel(c, userGroup, modelRequest.Model, 0)
 				if err != nil {
-					message := fmt.Sprintf("当前分组 %s 下对于模型 %s 无可用渠道", userGroup, modelRequest.Model)
+					showGroup := userGroup
+					if userGroup == "auto" {
+						showGroup = fmt.Sprintf("auto(%s)", selectGroup)
+					}
+					message := fmt.Sprintf("当前分组 %s 下对于模型 %s 无可用渠道", showGroup, modelRequest.Model)
 					// 如果错误，但是渠道不为空，说明是数据库一致性问题
 					if channel != nil {
 						common.SysError(fmt.Sprintf("渠道不存在：%d", channel.Id))

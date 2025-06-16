@@ -226,6 +226,9 @@ func Register(c *gin.Context) {
 			UnlimitedQuota:     true,
 			ModelLimitsEnabled: false,
 		}
+		if setting.DefaultUseAutoGroup {
+			token.Group = "auto"
+		}
 		if err := token.Insert(); err != nil {
 			c.JSON(http.StatusOK, gin.H{
 				"success": false,
