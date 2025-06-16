@@ -347,17 +347,20 @@ func UpdateModelRatioByJSONString(jsonStr string) error {
 	return json.Unmarshal([]byte(jsonStr), &modelRatioMap)
 }
 
+// 处理带有思考预算的模型名称，方便统一定价
+func handleThinkingBudgetModel(name, prefix, wildcard string) string {
+	if strings.HasPrefix(name, prefix) && strings.Contains(name, "-thinking-") {
+		return wildcard
+	}
+	return name
+}
+
 func GetModelRatio(name string) (float64, bool) {
 	modelRatioMapMutex.RLock()
 	defer modelRatioMapMutex.RUnlock()
-	// 处理带有思考预算的模型名称，方便统一定价
-	handleThinkingBudgetModel := func(prefix, wildcard string) {
-		if strings.HasPrefix(name, prefix) && strings.Contains(name, "-thinking-") {
-			name = wildcard
-		}
-	}
-	handleThinkingBudgetModel("gemini-2.5-flash", "gemini-2.5-flash-thinking-*")
-	handleThinkingBudgetModel("gemini-2.5-pro", "gemini-2.5-pro-thinking-*")
+
+	name = handleThinkingBudgetModel(name, "gemini-2.5-flash", "gemini-2.5-flash-thinking-*")
+	name = handleThinkingBudgetModel(name, "gemini-2.5-pro", "gemini-2.5-pro-thinking-*")
 	if strings.HasPrefix(name, "gpt-4-gizmo") {
 		name = "gpt-4-gizmo-*"
 	}
