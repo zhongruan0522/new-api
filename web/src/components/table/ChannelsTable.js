@@ -22,7 +22,8 @@ import {
   Clock,
   AlertTriangle,
   Coins,
-  Tags, Boxes
+  Tags,
+  List
 } from 'lucide-react';
 
 import { CHANNEL_OPTIONS, ITEMS_PER_PAGE } from '../../constants/index.js';
@@ -90,7 +91,7 @@ const ChannelsTable = () => {
           shape='circle'
           prefixIcon={
           <div className="flex items-center">
-            <Boxes size={14} className="mr-1" />
+            <List size={14} className="mr-1" />
             {getChannelIcon(type)}
           </div>
           }
