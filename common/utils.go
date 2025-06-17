@@ -249,13 +249,36 @@ func SaveTmpFile(filename string, data io.Reader) (string, error) {
 }
 
 // GetAudioDuration returns the duration of an audio file in seconds.
-func GetAudioDuration(ctx context.Context, filename string) (float64, error) {
+func GetAudioDuration(ctx context.Context, filename string, ext string) (float64, error) {
 	// ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 {{input}}
 	c := exec.CommandContext(ctx, "ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", filename)
 	output, err := c.Output()
 	if err != nil {
 		return 0, errors.Wrap(err, "failed to get audio duration")
 	}
+  durationStr := string(bytes.TrimSpace(output))
+  if durationStr == "N/A" {
+    // Create a temporary output file name
+    tmpFp, err := os.CreateTemp("", "audio-*"+ext)
+    if err != nil {
+      return 0, errors.Wrap(err, "failed to create temporary file")
+    }
+    defer os.Remove(tmpFp.Name())
+    defer tmpFp.Close()
 
-	return strconv.ParseFloat(string(bytes.TrimSpace(output)), 64)
+    // ffmpeg -y -i filename -vcodec copy -acodec copy tmpFp
+    ffmpegCmd := exec.CommandContext(ctx, "ffmpeg", "-y", "-i", filename, "-vcodec", "copy", "-acodec", "copy", tmpFp.Name())
+    if err := ffmpegCmd.Run(); err != nil {
+      return 0, errors.Wrap(err, "failed to run ffmpeg")
+    }
+
+    // Recalculate the duration of the new file
+    c = exec.CommandContext(ctx, "ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", tmpFp.Name())
+    output, err := c.Output()
+    if err != nil {
+      return 0, errors.Wrap(err, "failed to get audio duration after ffmpeg")
+    }
+    durationStr = string(bytes.TrimSpace(output))
+  }
+	return strconv.ParseFloat(durationStr, 64)
 }
