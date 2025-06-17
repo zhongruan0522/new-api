@@ -1112,7 +1112,7 @@ const Detail = (props) => {
                   </div>
                   <Tabs
                     type="button"
-                    preventScroll
+                    preventScroll={true}
                     activeKey={activeChartTab}
                     onChange={setActiveChartTab}
                   >
@@ -1389,7 +1389,7 @@ const Detail = (props) => {
                         ) : (
                           <Tabs
                             type="card"
-                            preventScroll
+                            preventScroll={true}
                             collapsible
                             activeKey={activeUptimeTab}
                             onChange={setActiveUptimeTab}
