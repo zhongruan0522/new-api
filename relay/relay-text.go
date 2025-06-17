@@ -90,13 +90,14 @@ func TextHelper(c *gin.Context) (openaiErr *dto.OpenAIErrorWithStatusCode) {
 
 	// get & validate textRequest 获取并验证文本请求
 	textRequest, err := getAndValidateTextRequest(c, relayInfo)
-	if textRequest.WebSearchOptions != nil {
-		c.Set("chat_completion_web_search_context_size", textRequest.WebSearchOptions.SearchContextSize)
-	}
 
 	if err != nil {
 		common.LogError(c, fmt.Sprintf("getAndValidateTextRequest failed: %s", err.Error()))
 		return service.OpenAIErrorWrapperLocal(err, "invalid_text_request", http.StatusBadRequest)
+	}
+
+	if textRequest.WebSearchOptions != nil {
+		c.Set("chat_completion_web_search_context_size", textRequest.WebSearchOptions.SearchContextSize)
 	}
 
 	if setting.ShouldCheckPromptSensitive() {
