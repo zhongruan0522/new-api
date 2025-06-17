@@ -180,8 +180,27 @@ export default function GroupRatioSettings(props) {
                 stopValidateWithError
                 rules={[
                   {
-                    validator: (rule, value) => verifyJSON(value),
-                    message: t('不是合法的 JSON 字符串'),
+                    validator: (rule, value) => {
+                      if (!value || value.trim() === '') {
+                        return true; // Allow empty values
+                      }
+                      
+                      // First check if it's valid JSON
+                      try {
+                        const parsed = JSON.parse(value);
+                        
+                        // Check if it's an array
+                        if (!Array.isArray(parsed)) {
+                          return false;
+                        }
+                        
+                        // Check if every element is a string
+                        return parsed.every(item => typeof item === 'string');
+                      } catch (error) {
+                        return false;
+                      }
+                    },
+                    message: t('必须是有效的 JSON 字符串数组，例如：["g1","g2"]'),
                   },
                 ]}
                 onChange={(value) =>
