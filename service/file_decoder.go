@@ -86,7 +86,7 @@ func GetMimeTypeByExtension(ext string) string {
 	ext = strings.ToLower(ext)
 	switch ext {
 	// Text files
-	case "txt":
+	case "txt", "md", "markdown", "csv", "json", "xml", "html", "htm":
 		return "text/plain"
 
 	// Image files
