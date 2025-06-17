@@ -70,7 +70,7 @@ func updateUserCache(user User) error {
 	return common.RedisHSetObj(
 		getUserCacheKey(user.Id),
 		user.ToBaseUser(),
-		time.Duration(constant.UserId2QuotaCacheSeconds)*time.Second,
+		time.Duration(constant.RedisKeyCacheSeconds())*time.Second,
 	)
 }
 

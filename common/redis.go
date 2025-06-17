@@ -141,7 +141,11 @@ func RedisHSetObj(key string, obj interface{}, expiration time.Duration) error {
 
 	txn := RDB.TxPipeline()
 	txn.HSet(ctx, key, data)
-	txn.Expire(ctx, key, expiration)
+
+	// 只有在 expiration 大于 0 时才设置过期时间
+	if expiration > 0 {
+		txn.Expire(ctx, key, expiration)
+	}
 
 	_, err := txn.Exec(ctx)
 	if err != nil {
