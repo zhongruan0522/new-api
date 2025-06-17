@@ -351,6 +351,7 @@ func countAudioTokens(c *gin.Context) (int, error) {
 	if err != nil {
 		return 0, errors.WithStack(err)
 	}
+  defer reqFp.Close()
 
 	tmpFp, err := os.CreateTemp("", "audio-*"+ext)
 	if err != nil {

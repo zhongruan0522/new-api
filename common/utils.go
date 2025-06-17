@@ -263,17 +263,19 @@ func GetAudioDuration(ctx context.Context, filename string, ext string) (float64
     if err != nil {
       return 0, errors.Wrap(err, "failed to create temporary file")
     }
-    defer os.Remove(tmpFp.Name())
-    defer tmpFp.Close()
+    tmpName := tmpFp.Name()
+    // Close immediately so ffmpeg can open the file on Windows.
+    _ = tmpFp.Close()
+    defer os.Remove(tmpName)
 
-    // ffmpeg -y -i filename -vcodec copy -acodec copy tmpFp
-    ffmpegCmd := exec.CommandContext(ctx, "ffmpeg", "-y", "-i", filename, "-vcodec", "copy", "-acodec", "copy", tmpFp.Name())
+    // ffmpeg -y -i filename -vcodec copy -acodec copy <tmpName>
+    ffmpegCmd := exec.CommandContext(ctx, "ffmpeg", "-y", "-i", filename, "-vcodec", "copy", "-acodec", "copy", tmpName)
     if err := ffmpegCmd.Run(); err != nil {
       return 0, errors.Wrap(err, "failed to run ffmpeg")
     }
 
     // Recalculate the duration of the new file
-    c = exec.CommandContext(ctx, "ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", tmpFp.Name())
+    c = exec.CommandContext(ctx, "ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", tmpName)
     output, err := c.Output()
     if err != nil {
       return 0, errors.Wrap(err, "failed to get audio duration after ffmpeg")
