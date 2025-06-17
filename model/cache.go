@@ -3,7 +3,6 @@ package model
 import (
 	"errors"
 	"fmt"
-	"log"
 	"math/rand"
 	"one-api/common"
 	"one-api/setting"
@@ -88,14 +87,18 @@ func CacheGetRandomSatisfiedChannel(c *gin.Context, group string, model string, 
 			return nil, selectGroup, errors.New("auto groups is not enabled")
 		}
 		for _, autoGroup := range setting.AutoGroups {
-			log.Printf("autoGroup: %s", autoGroup)
+			if common.DebugEnabled {
+				println("autoGroup:", autoGroup)
+			}
 			channel, _ = getRandomSatisfiedChannel(autoGroup, model, retry)
 			if channel == nil {
 				continue
 			} else {
 				c.Set("auto_group", autoGroup)
 				selectGroup = autoGroup
-				log.Printf("selectGroup: %s", selectGroup)
+				if common.DebugEnabled {
+					println("selectGroup:", selectGroup)
+				}
 				break
 			}
 		}

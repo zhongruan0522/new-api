@@ -162,7 +162,7 @@ func ImageHelper(c *gin.Context) *dto.OpenAIErrorWithStatusCode {
 
 		// reset model price
 		priceData.ModelPrice *= sizeRatio * qualityRatio * float64(imageRequest.N)
-		quota = int(priceData.ModelPrice * priceData.GroupRatio * common.QuotaPerUnit)
+		quota = int(priceData.ModelPrice * priceData.GroupRatioInfo.GroupRatio * common.QuotaPerUnit)
 		userQuota, err = model.GetUserQuota(relayInfo.UserId, false)
 		if err != nil {
 			return service.OpenAIErrorWrapperLocal(err, "get_user_quota_failed", http.StatusInternalServerError)

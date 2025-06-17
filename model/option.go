@@ -194,7 +194,7 @@ func updateOptionMap(key string, value string) (err error) {
 			common.ImageDownloadPermission = intValue
 		}
 	}
-	if strings.HasSuffix(key, "Enabled") || key == "DefaultCollapseSidebar" {
+	if strings.HasSuffix(key, "Enabled") || key == "DefaultCollapseSidebar" || key == "DefaultUseAutoGroup" {
 		boolValue := value == "true"
 		switch key {
 		case "PasswordRegisterEnabled":
@@ -263,6 +263,8 @@ func updateOptionMap(key string, value string) (err error) {
 			common.SMTPSSLEnabled = boolValue
 		case "WorkerAllowHttpImageRequestEnabled":
 			setting.WorkerAllowHttpImageRequestEnabled = boolValue
+		case "DefaultUseAutoGroup":
+			setting.DefaultUseAutoGroup = boolValue
 		}
 	}
 	switch key {
@@ -291,8 +293,6 @@ func updateOptionMap(key string, value string) (err error) {
 		err = setting.UpdateChatsByJsonString(value)
 	case "AutoGroups":
 		err = setting.UpdateAutoGroupsByJsonString(value)
-	case "DefaultUseAutoGroup":
-		setting.DefaultUseAutoGroup = value == "true"
 	case "CustomCallbackAddress":
 		setting.CustomCallbackAddress = value
 	case "EpayId":
