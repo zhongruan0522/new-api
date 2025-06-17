@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io"
+	"one-api/common"
 	"one-api/constant"
 	"one-api/dto"
 	"strings"
@@ -33,6 +34,9 @@ func GetFileBase64FromUrl(url string) (*dto.LocalFileData, error) {
 
 	mimeType := resp.Header.Get("Content-Type")
 	if mimeType == "application/octet-stream" {
+		if common.DebugEnabled {
+			println("MIME type is application/octet-stream, trying to guess from URL or filename")
+		}
 		// try to guess the MIME type from the url last segment
 		urlParts := strings.Split(url, "/")
 		if len(urlParts) > 0 {
