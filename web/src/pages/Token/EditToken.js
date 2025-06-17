@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   API,
@@ -7,7 +7,7 @@ import {
   showSuccess,
   timestamp2string,
   renderGroupOption,
-  renderQuotaWithPrompt
+  renderQuotaWithPrompt,
 } from '../../helpers';
 import {
   AutoComplete,
@@ -37,11 +37,13 @@ import {
   IconPlusCircle,
 } from '@douyinfe/semi-icons';
 import { useTranslation } from 'react-i18next';
+import { StatusContext } from '../../context/Status';
 
 const { Text, Title } = Typography;
 
 const EditToken = (props) => {
   const { t } = useTranslation();
+  const [statusState, statusDispatch] = useContext(StatusContext);
   const [isEdit, setIsEdit] = useState(false);
   const [loading, setLoading] = useState(isEdit);
   const originInputs = {
@@ -119,7 +121,19 @@ const EditToken = (props) => {
         value: group,
         ratio: info.ratio,
       }));
+      if (statusState?.status?.default_use_auto_group) {
+        // if contain auto, add it to the first position
+        if (localGroupOptions.some((group) => group.value === 'auto')) {
+          // 排序
+          localGroupOptions.sort((a, b) => (a.value === 'auto' ? -1 : 1));
+        } else {
+          localGroupOptions.unshift({ label: t('自动选择'), value: 'auto' });
+        }
+      }
       setGroups(localGroupOptions);
+      if (statusState?.status?.default_use_auto_group) {
+        setInputs({ ...inputs, group: 'auto' });
+      }
     } else {
       showError(t(message));
     }
@@ -268,32 +282,37 @@ const EditToken = (props) => {
       placement={isEdit ? 'right' : 'left'}
       title={
         <Space>
-          {isEdit ?
-            <Tag color="blue" shape="circle">{t('更新')}</Tag> :
-            <Tag color="green" shape="circle">{t('新建')}</Tag>
-          }
-          <Title heading={4} className="m-0">
+          {isEdit ? (
+            <Tag color='blue' shape='circle'>
+              {t('更新')}
+            </Tag>
+          ) : (
+            <Tag color='green' shape='circle'>
+              {t('新建')}
+            </Tag>
+          )}
+          <Title heading={4} className='m-0'>
             {isEdit ? t('更新令牌信息') : t('创建新的令牌')}
           </Title>
         </Space>
       }
       headerStyle={{
         borderBottom: '1px solid var(--semi-color-border)',
-        padding: '24px'
+        padding: '24px',
       }}
       bodyStyle={{
         backgroundColor: 'var(--semi-color-bg-0)',
-        padding: '0'
+        padding: '0',
       }}
       visible={props.visiable}
       width={isMobile() ? '100%' : 600}
       footer={
-        <div className="flex justify-end bg-white">
+        <div className='flex justify-end bg-white'>
           <Space>
             <Button
-              theme="solid"
-              size="large"
-              className="!rounded-full"
+              theme='solid'
+              size='large'
+              className='!rounded-full'
               onClick={submit}
               icon={<IconSave />}
               loading={loading}
@@ -301,10 +320,10 @@ const EditToken = (props) => {
               {t('提交')}
             </Button>
             <Button
-              theme="light"
-              size="large"
-              className="!rounded-full"
-              type="primary"
+              theme='light'
+              size='large'
+              className='!rounded-full'
+              type='primary'
               onClick={handleCancel}
               icon={<IconClose />}
             >
@@ -317,87 +336,107 @@ const EditToken = (props) => {
       onCancel={() => handleCancel()}
     >
       <Spin spinning={loading}>
-        <div className="p-6">
-          <Card className="!rounded-2xl shadow-sm border-0 mb-6">
-            <div className="flex items-center mb-4 p-6 rounded-xl" style={{
-              background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 50%, #3b82f6 100%)',
-              position: 'relative'
-            }}>
-              <div className="absolute inset-0 overflow-hidden">
-                <div className="absolute -top-10 -right-10 w-40 h-40 bg-white opacity-5 rounded-full"></div>
-                <div className="absolute -bottom-8 -left-8 w-24 h-24 bg-white opacity-10 rounded-full"></div>
+        <div className='p-6'>
+          <Card className='!rounded-2xl shadow-sm border-0 mb-6'>
+            <div
+              className='flex items-center mb-4 p-6 rounded-xl'
+              style={{
+                background:
+                  'linear-gradient(135deg, #1e3a8a 0%, #2563eb 50%, #3b82f6 100%)',
+                position: 'relative',
+              }}
+            >
+              <div className='absolute inset-0 overflow-hidden'>
+                <div className='absolute -top-10 -right-10 w-40 h-40 bg-white opacity-5 rounded-full'></div>
+                <div className='absolute -bottom-8 -left-8 w-24 h-24 bg-white opacity-10 rounded-full'></div>
               </div>
-              <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center mr-4 relative">
-                <IconPlusCircle size="large" style={{ color: '#ffffff' }} />
+              <div className='w-10 h-10 rounded-full bg-white/20 flex items-center justify-center mr-4 relative'>
+                <IconPlusCircle size='large' style={{ color: '#ffffff' }} />
               </div>
-              <div className="relative">
-                <Text style={{ color: '#ffffff' }} className="text-lg font-medium">{t('基本信息')}</Text>
-                <div style={{ color: '#ffffff' }} className="text-sm opacity-80">{t('设置令牌的基本信息')}</div>
+              <div className='relative'>
+                <Text
+                  style={{ color: '#ffffff' }}
+                  className='text-lg font-medium'
+                >
+                  {t('基本信息')}
+                </Text>
+                <div
+                  style={{ color: '#ffffff' }}
+                  className='text-sm opacity-80'
+                >
+                  {t('设置令牌的基本信息')}
+                </div>
               </div>
             </div>
 
-            <div className="space-y-4">
+            <div className='space-y-4'>
               <div>
-                <Text strong className="block mb-2">{t('名称')}</Text>
+                <Text strong className='block mb-2'>
+                  {t('名称')}
+                </Text>
                 <Input
                   placeholder={t('请输入名称')}
                   onChange={(value) => handleInputChange('name', value)}
                   value={name}
-                  autoComplete="new-password"
-                  size="large"
-                  className="!rounded-lg"
+                  autoComplete='new-password'
+                  size='large'
+                  className='!rounded-lg'
                   showClear
                   required
                 />
               </div>
 
               <div>
-                <Text strong className="block mb-2">{t('过期时间')}</Text>
-                <div className="mb-2">
+                <Text strong className='block mb-2'>
+                  {t('过期时间')}
+                </Text>
+                <div className='mb-2'>
                   <DatePicker
                     placeholder={t('请选择过期时间')}
-                    onChange={(value) => handleInputChange('expired_time', value)}
+                    onChange={(value) =>
+                      handleInputChange('expired_time', value)
+                    }
                     value={expired_time}
-                    autoComplete="new-password"
-                    type="dateTime"
-                    className="w-full !rounded-lg"
-                    size="large"
+                    autoComplete='new-password'
+                    type='dateTime'
+                    className='w-full !rounded-lg'
+                    size='large'
                     prefix={<IconCalendar />}
                   />
                 </div>
 
-                <div className="flex flex-wrap gap-2">
+                <div className='flex flex-wrap gap-2'>
                   <Button
-                    theme="light"
-                    type="primary"
+                    theme='light'
+                    type='primary'
                     onClick={() => setExpiredTime(0, 0, 0, 0)}
-                    className="!rounded-full"
+                    className='!rounded-full'
                   >
                     {t('永不过期')}
                   </Button>
                   <Button
-                    theme="light"
-                    type="tertiary"
+                    theme='light'
+                    type='tertiary'
                     onClick={() => setExpiredTime(0, 0, 1, 0)}
-                    className="!rounded-full"
+                    className='!rounded-full'
                     icon={<IconClock />}
                   >
                     {t('一小时')}
                   </Button>
                   <Button
-                    theme="light"
-                    type="tertiary"
+                    theme='light'
+                    type='tertiary'
                     onClick={() => setExpiredTime(0, 1, 0, 0)}
-                    className="!rounded-full"
+                    className='!rounded-full'
                     icon={<IconCalendar />}
                   >
                     {t('一天')}
                   </Button>
                   <Button
-                    theme="light"
-                    type="tertiary"
+                    theme='light'
+                    type='tertiary'
                     onClick={() => setExpiredTime(1, 0, 0, 0)}
-                    className="!rounded-full"
+                    className='!rounded-full'
                     icon={<IconCalendar />}
                   >
                     {t('一个月')}
@@ -407,44 +446,62 @@ const EditToken = (props) => {
             </div>
           </Card>
 
-          <Card className="!rounded-2xl shadow-sm border-0 mb-6">
-            <div className="flex items-center mb-4 p-6 rounded-xl" style={{
-              background: 'linear-gradient(135deg, #065f46 0%, #059669 50%, #10b981 100%)',
-              position: 'relative'
-            }}>
-              <div className="absolute inset-0 overflow-hidden">
-                <div className="absolute -top-10 -right-10 w-40 h-40 bg-white opacity-5 rounded-full"></div>
-                <div className="absolute -bottom-8 -left-8 w-24 h-24 bg-white opacity-10 rounded-full"></div>
+          <Card className='!rounded-2xl shadow-sm border-0 mb-6'>
+            <div
+              className='flex items-center mb-4 p-6 rounded-xl'
+              style={{
+                background:
+                  'linear-gradient(135deg, #065f46 0%, #059669 50%, #10b981 100%)',
+                position: 'relative',
+              }}
+            >
+              <div className='absolute inset-0 overflow-hidden'>
+                <div className='absolute -top-10 -right-10 w-40 h-40 bg-white opacity-5 rounded-full'></div>
+                <div className='absolute -bottom-8 -left-8 w-24 h-24 bg-white opacity-10 rounded-full'></div>
               </div>
-              <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center mr-4 relative">
-                <IconCreditCard size="large" style={{ color: '#ffffff' }} />
+              <div className='w-10 h-10 rounded-full bg-white/20 flex items-center justify-center mr-4 relative'>
+                <IconCreditCard size='large' style={{ color: '#ffffff' }} />
               </div>
-              <div className="relative">
-                <Text style={{ color: '#ffffff' }} className="text-lg font-medium">{t('额度设置')}</Text>
-                <div style={{ color: '#ffffff' }} className="text-sm opacity-80">{t('设置令牌可用额度和数量')}</div>
+              <div className='relative'>
+                <Text
+                  style={{ color: '#ffffff' }}
+                  className='text-lg font-medium'
+                >
+                  {t('额度设置')}
+                </Text>
+                <div
+                  style={{ color: '#ffffff' }}
+                  className='text-sm opacity-80'
+                >
+                  {t('设置令牌可用额度和数量')}
+                </div>
               </div>
             </div>
 
             <Banner
-              type="warning"
-              description={t('注意，令牌的额度仅用于限制令牌本身的最大额度使用量，实际的使用受到账户的剩余额度限制。')}
-              className="mb-4 !rounded-lg"
+              type='warning'
+              description={t(
+                '注意，令牌的额度仅用于限制令牌本身的最大额度使用量，实际的使用受到账户的剩余额度限制。',
+              )}
+              className='mb-4 !rounded-lg'
             />
 
-            <div className="space-y-4">
+            <div className='space-y-4'>
               <div>
-                <div className="flex justify-between mb-2">
+                <div className='flex justify-between mb-2'>
                   <Text strong>{t('额度')}</Text>
-                  <Text type="tertiary">{renderQuotaWithPrompt(remain_quota)}</Text>
+                  <Text type='tertiary'>
+                    {renderQuotaWithPrompt(remain_quota)}
+                  </Text>
                 </div>
                 <AutoComplete
                   placeholder={t('请输入额度')}
                   onChange={(value) => handleInputChange('remain_quota', value)}
                   value={remain_quota}
-                  autoComplete="new-password"
-                  type="number"
-                  size="large"
-                  className="w-full !rounded-lg"
+                  autoComplete='new-password'
+                  type='number'
+                  size='large'
+                  className='w-full !rounded-lg'
                   prefix={<IconCreditCard />}
                   data={[
                     { value: 500000, label: '1$' },
@@ -460,16 +517,18 @@ const EditToken = (props) => {
 
               {!isEdit && (
                 <div>
-                  <Text strong className="block mb-2">{t('新建数量')}</Text>
+                  <Text strong className='block mb-2'>
+                    {t('新建数量')}
+                  </Text>
                   <AutoComplete
                     placeholder={t('请选择或输入创建令牌的数量')}
                     onChange={(value) => handleTokenCountChange(value)}
                     onSelect={(value) => handleTokenCountChange(value)}
                     value={tokenCount.toString()}
-                    autoComplete="off"
-                    type="number"
-                    className="w-full !rounded-lg"
-                    size="large"
+                    autoComplete='off'
+                    type='number'
+                    className='w-full !rounded-lg'
+                    size='large'
                     prefix={<IconPlusCircle />}
                     data={[
                       { value: 10, label: t('10个') },
@@ -482,12 +541,12 @@ const EditToken = (props) => {
                 </div>
               )}
 
-              <div className="flex justify-end">
+              <div className='flex justify-end'>
                 <Button
-                  theme="light"
-                  type={unlimited_quota ? "danger" : "warning"}
+                  theme='light'
+                  type={unlimited_quota ? 'danger' : 'warning'}
                   onClick={setUnlimitedQuota}
-                  className="!rounded-full"
+                  className='!rounded-full'
                 >
                   {unlimited_quota ? t('取消无限额度') : t('设为无限额度')}
                 </Button>
@@ -495,92 +554,137 @@ const EditToken = (props) => {
             </div>
           </Card>
 
-          <Card className="!rounded-2xl shadow-sm border-0 mb-6">
-            <div className="flex items-center mb-4 p-6 rounded-xl" style={{
-              background: 'linear-gradient(135deg, #4c1d95 0%, #6d28d9 50%, #7c3aed 100%)',
-              position: 'relative'
-            }}>
-              <div className="absolute inset-0 overflow-hidden">
-                <div className="absolute -top-10 -right-10 w-40 h-40 bg-white opacity-5 rounded-full"></div>
-                <div className="absolute -bottom-8 -left-8 w-24 h-24 bg-white opacity-10 rounded-full"></div>
+          <Card className='!rounded-2xl shadow-sm border-0 mb-6'>
+            <div
+              className='flex items-center mb-4 p-6 rounded-xl'
+              style={{
+                background:
+                  'linear-gradient(135deg, #4c1d95 0%, #6d28d9 50%, #7c3aed 100%)',
+                position: 'relative',
+              }}
+            >
+              <div className='absolute inset-0 overflow-hidden'>
+                <div className='absolute -top-10 -right-10 w-40 h-40 bg-white opacity-5 rounded-full'></div>
+                <div className='absolute -bottom-8 -left-8 w-24 h-24 bg-white opacity-10 rounded-full'></div>
               </div>
-              <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center mr-4 relative">
-                <IconLink size="large" style={{ color: '#ffffff' }} />
+              <div className='w-10 h-10 rounded-full bg-white/20 flex items-center justify-center mr-4 relative'>
+                <IconLink size='large' style={{ color: '#ffffff' }} />
               </div>
-              <div className="relative">
-                <Text style={{ color: '#ffffff' }} className="text-lg font-medium">{t('访问限制')}</Text>
-                <div style={{ color: '#ffffff' }} className="text-sm opacity-80">{t('设置令牌的访问限制')}</div>
+              <div className='relative'>
+                <Text
+                  style={{ color: '#ffffff' }}
+                  className='text-lg font-medium'
+                >
+                  {t('访问限制')}
+                </Text>
+                <div
+                  style={{ color: '#ffffff' }}
+                  className='text-sm opacity-80'
+                >
+                  {t('设置令牌的访问限制')}
+                </div>
               </div>
             </div>
 
-            <div className="space-y-4">
+            <div className='space-y-4'>
               <div>
-                <Text strong className="block mb-2">{t('IP白名单')}</Text>
+                <Text strong className='block mb-2'>
+                  {t('IP白名单')}
+                </Text>
                 <TextArea
                   placeholder={t('允许的IP，一行一个，不填写则不限制')}
                   onChange={(value) => handleInputChange('allow_ips', value)}
                   value={inputs.allow_ips}
                   style={{ fontFamily: 'JetBrains Mono, Consolas' }}
-                  className="!rounded-lg"
+                  className='!rounded-lg'
                   rows={4}
                 />
-                <Text type="tertiary" className="mt-1 block text-xs">{t('请勿过度信任此功能，IP可能被伪造')}</Text>
+                <Text type='tertiary' className='mt-1 block text-xs'>
+                  {t('请勿过度信任此功能，IP可能被伪造')}
+                </Text>
               </div>
 
               <div>
-                <div className="flex items-center mb-2">
+                <div className='flex items-center mb-2'>
                   <Checkbox
                     checked={model_limits_enabled}
-                    onChange={(e) => handleInputChange('model_limits_enabled', e.target.checked)}
+                    onChange={(e) =>
+                      handleInputChange(
+                        'model_limits_enabled',
+                        e.target.checked,
+                      )
+                    }
                   >
                     <Text strong>{t('模型限制')}</Text>
                   </Checkbox>
                 </div>
                 <Select
-                  placeholder={model_limits_enabled ? t('请选择该渠道所支持的模型') : t('勾选启用模型限制后可选择')}
+                  placeholder={
+                    model_limits_enabled
+                      ? t('请选择该渠道所支持的模型')
+                      : t('勾选启用模型限制后可选择')
+                  }
                   onChange={(value) => handleInputChange('model_limits', value)}
                   value={inputs.model_limits}
                   multiple
-                  size="large"
-                  className="w-full !rounded-lg"
+                  size='large'
+                  className='w-full !rounded-lg'
                   prefix={<IconServer />}
                   optionList={models}
                   disabled={!model_limits_enabled}
                   maxTagCount={3}
                 />
-                <Text type="tertiary" className="mt-1 block text-xs">{t('非必要，不建议启用模型限制')}</Text>
+                <Text type='tertiary' className='mt-1 block text-xs'>
+                  {t('非必要，不建议启用模型限制')}
+                </Text>
               </div>
             </div>
           </Card>
 
-          <Card className="!rounded-2xl shadow-sm border-0">
-            <div className="flex items-center mb-4 p-6 rounded-xl" style={{
-              background: 'linear-gradient(135deg, #92400e 0%, #d97706 50%, #f59e0b 100%)',
-              position: 'relative'
-            }}>
-              <div className="absolute inset-0 overflow-hidden">
-                <div className="absolute -top-10 -right-10 w-40 h-40 bg-white opacity-5 rounded-full"></div>
-                <div className="absolute -bottom-8 -left-8 w-24 h-24 bg-white opacity-10 rounded-full"></div>
+          <Card className='!rounded-2xl shadow-sm border-0'>
+            <div
+              className='flex items-center mb-4 p-6 rounded-xl'
+              style={{
+                background:
+                  'linear-gradient(135deg, #92400e 0%, #d97706 50%, #f59e0b 100%)',
+                position: 'relative',
+              }}
+            >
+              <div className='absolute inset-0 overflow-hidden'>
+                <div className='absolute -top-10 -right-10 w-40 h-40 bg-white opacity-5 rounded-full'></div>
+                <div className='absolute -bottom-8 -left-8 w-24 h-24 bg-white opacity-10 rounded-full'></div>
               </div>
-              <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center mr-4 relative">
-                <IconUserGroup size="large" style={{ color: '#ffffff' }} />
+              <div className='w-10 h-10 rounded-full bg-white/20 flex items-center justify-center mr-4 relative'>
+                <IconUserGroup size='large' style={{ color: '#ffffff' }} />
               </div>
-              <div className="relative">
-                <Text style={{ color: '#ffffff' }} className="text-lg font-medium">{t('分组信息')}</Text>
-                <div style={{ color: '#ffffff' }} className="text-sm opacity-80">{t('设置令牌的分组')}</div>
+              <div className='relative'>
+                <Text
+                  style={{ color: '#ffffff' }}
+                  className='text-lg font-medium'
+                >
+                  {t('分组信息')}
+                </Text>
+                <div
+                  style={{ color: '#ffffff' }}
+                  className='text-sm opacity-80'
+                >
+                  {t('设置令牌的分组')}
+                </div>
               </div>
             </div>
 
             <div>
-              <Text strong className="block mb-2">{t('令牌分组')}</Text>
+              <Text strong className='block mb-2'>
+                {t('令牌分组')}
+              </Text>
               {groups.length > 0 ? (
                 <Select
                   placeholder={t('令牌分组，默认为用户的分组')}
                   onChange={(value) => handleInputChange('group', value)}
                   renderOptionItem={renderGroupOption}
                   value={inputs.group}
-                  size="large"
-                  className="w-full !rounded-lg"
+                  size='large'
+                  className='w-full !rounded-lg'
                   prefix={<IconUserGroup />}
                   optionList={groups}
                 />
@@ -588,8 +692,8 @@ const EditToken = (props) => {
                 <Select
                   placeholder={t('管理员未设置用户可选分组')}
                   disabled={true}
-                  size="large"
-                  className="w-full !rounded-lg"
+                  size='large'
+                  className='w-full !rounded-lg'
                   prefix={<IconUserGroup />}
                 />
               )}

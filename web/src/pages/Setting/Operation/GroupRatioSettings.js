@@ -17,6 +17,8 @@ export default function GroupRatioSettings(props) {
     GroupRatio: '',
     UserUsableGroups: '',
     GroupGroupRatio: '',
+    AutoGroups: '',
+    DefaultUseAutoGroup: false,
   });
   const refForm = useRef();
   const [inputsRow, setInputsRow] = useState(inputs);
@@ -163,6 +165,59 @@ export default function GroupRatioSettings(props) {
                 ]}
                 onChange={(value) =>
                   setInputs({ ...inputs, GroupGroupRatio: value })
+                }
+              />
+            </Col>
+          </Row>
+          <Row gutter={16}>
+            <Col xs={24} sm={16}>
+              <Form.TextArea
+                label={t('自动分组auto，从第一个开始选择')}
+                placeholder={t('为一个 JSON 文本')}
+                field={'AutoGroups'}
+                autosize={{ minRows: 6, maxRows: 12 }}
+                trigger='blur'
+                stopValidateWithError
+                rules={[
+                  {
+                    validator: (rule, value) => {
+                      if (!value || value.trim() === '') {
+                        return true; // Allow empty values
+                      }
+                      
+                      // First check if it's valid JSON
+                      try {
+                        const parsed = JSON.parse(value);
+                        
+                        // Check if it's an array
+                        if (!Array.isArray(parsed)) {
+                          return false;
+                        }
+                        
+                        // Check if every element is a string
+                        return parsed.every(item => typeof item === 'string');
+                      } catch (error) {
+                        return false;
+                      }
+                    },
+                    message: t('必须是有效的 JSON 字符串数组，例如：["g1","g2"]'),
+                  },
+                ]}
+                onChange={(value) =>
+                  setInputs({ ...inputs, AutoGroups: value })
+                }
+              />
+            </Col>
+          </Row>
+          <Row gutter={16}>
+            <Col span={16}>
+              <Form.Switch
+                label={t(
+                  '创建令牌默认选择auto分组，初始令牌也将设为auto（否则留空，为用户默认分组）',
+                )}
+                field={'DefaultUseAutoGroup'}
+                onChange={(value) =>
+                  setInputs({ ...inputs, DefaultUseAutoGroup: value })
                 }
               />
             </Col>

@@ -11,6 +11,11 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+type GroupRatioInfo struct {
+	GroupRatio        float64
+	GroupSpecialRatio float64
+}
+
 type PriceData struct {
 	ModelPrice             float64
 	ModelRatio             float64
@@ -18,23 +23,50 @@ type PriceData struct {
 	CacheRatio             float64
 	CacheCreationRatio     float64
 	ImageRatio             float64
-	GroupRatio             float64
-	UserGroupRatio         float64
 	UsePrice               bool
 	ShouldPreConsumedQuota int
+	GroupRatioInfo         GroupRatioInfo
 }
 
 func (p PriceData) ToSetting() string {
-	return fmt.Sprintf("ModelPrice: %f, ModelRatio: %f, CompletionRatio: %f, CacheRatio: %f, GroupRatio: %f, UsePrice: %t, CacheCreationRatio: %f, ShouldPreConsumedQuota: %d, ImageRatio: %f", p.ModelPrice, p.ModelRatio, p.CompletionRatio, p.CacheRatio, p.GroupRatio, p.UsePrice, p.CacheCreationRatio, p.ShouldPreConsumedQuota, p.ImageRatio)
+	return fmt.Sprintf("ModelPrice: %f, ModelRatio: %f, CompletionRatio: %f, CacheRatio: %f, GroupRatio: %f, UsePrice: %t, CacheCreationRatio: %f, ShouldPreConsumedQuota: %d, ImageRatio: %f", p.ModelPrice, p.ModelRatio, p.CompletionRatio, p.CacheRatio, p.GroupRatioInfo.GroupRatio, p.UsePrice, p.CacheCreationRatio, p.ShouldPreConsumedQuota, p.ImageRatio)
+}
+
+// HandleGroupRatio checks for "auto_group" in the context and updates the group ratio and relayInfo.Group if present
+func HandleGroupRatio(ctx *gin.Context, relayInfo *relaycommon.RelayInfo) GroupRatioInfo {
+	groupRatioInfo := GroupRatioInfo{
+		GroupRatio:        1.0, // default ratio
+		GroupSpecialRatio: 1.0, // default user group ratio
+	}
+
+	// check auto group
+	autoGroup, exists := ctx.Get("auto_group")
+	if exists {
+		if common.DebugEnabled {
+			println(fmt.Sprintf("final group: %s", autoGroup))
+		}
+		relayInfo.Group = autoGroup.(string)
+	}
+
+	// check user group special ratio
+	userGroupRatio, ok := setting.GetGroupGroupRatio(relayInfo.UserGroup, relayInfo.Group)
+	if ok {
+		// user group special ratio
+		groupRatioInfo.GroupSpecialRatio = userGroupRatio
+		groupRatioInfo.GroupRatio = userGroupRatio
+	} else {
+		// normal group ratio
+		groupRatioInfo.GroupRatio = setting.GetGroupRatio(relayInfo.Group)
+	}
+
+	return groupRatioInfo
 }
 
 func ModelPriceHelper(c *gin.Context, info *relaycommon.RelayInfo, promptTokens int, maxTokens int) (PriceData, error) {
 	modelPrice, usePrice := operation_setting.GetModelPrice(info.OriginModelName, false)
-	groupRatio := setting.GetGroupRatio(info.Group)
-	userGroupRatio, ok := setting.GetGroupGroupRatio(info.UserGroup, info.Group)
-	if ok {
-		groupRatio = userGroupRatio
-	}
+
+	groupRatioInfo := HandleGroupRatio(c, info)
+
 	var preConsumedQuota int
 	var modelRatio float64
 	var completionRatio float64
@@ -64,18 +96,17 @@ func ModelPriceHelper(c *gin.Context, info *relaycommon.RelayInfo, promptTokens 
 		cacheRatio, _ = operation_setting.GetCacheRatio(info.OriginModelName)
 		cacheCreationRatio, _ = operation_setting.GetCreateCacheRatio(info.OriginModelName)
 		imageRatio, _ = operation_setting.GetImageRatio(info.OriginModelName)
-		ratio := modelRatio * groupRatio
+		ratio := modelRatio * groupRatioInfo.GroupRatio
 		preConsumedQuota = int(float64(preConsumedTokens) * ratio)
 	} else {
-		preConsumedQuota = int(modelPrice * common.QuotaPerUnit * groupRatio)
+		preConsumedQuota = int(modelPrice * common.QuotaPerUnit * groupRatioInfo.GroupRatio)
 	}
 
 	priceData := PriceData{
 		ModelPrice:             modelPrice,
 		ModelRatio:             modelRatio,
 		CompletionRatio:        completionRatio,
-		GroupRatio:             groupRatio,
-		UserGroupRatio:         userGroupRatio,
+		GroupRatioInfo:         groupRatioInfo,
 		UsePrice:               usePrice,
 		CacheRatio:             cacheRatio,
 		ImageRatio:             imageRatio,
