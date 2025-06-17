@@ -104,9 +104,7 @@ func updateVideoSingleTask(ctx context.Context, adaptor channel.TaskAdaptor, cha
 		case "succeed":
 			task.Status = model.TaskStatusSuccess
 			task.Progress = "100%"
-			if url, err := adaptor.(interface {
-				ParseResultUrl(map[string]any) (string, error)
-			}).ParseResultUrl(responseItem); err == nil {
+			if url, err := adaptor.ParseResultUrl(responseItem); err == nil {
 				task.FailReason = url
 			} else {
 				common.LogWarn(ctx, fmt.Sprintf("Failed to get url from body for task %s: %s", task.TaskID, err.Error()))

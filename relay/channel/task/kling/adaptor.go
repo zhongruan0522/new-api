@@ -107,7 +107,7 @@ func (a *TaskAdaptor) BuildRequestURL(info *relaycommon.TaskRelayInfo) (string, 
 func (a *TaskAdaptor) BuildRequestHeader(c *gin.Context, req *http.Request, info *relaycommon.TaskRelayInfo) error {
 	token, err := a.createJWTToken()
 	if err != nil {
-		token = info.ApiKey // fallback
+		return fmt.Errorf("failed to create JWT token: %w", err)
 	}
 
 	req.Header.Set("Content-Type", "application/json")
