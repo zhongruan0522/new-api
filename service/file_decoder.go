@@ -6,6 +6,7 @@ import (
 	"io"
 	"one-api/constant"
 	"one-api/dto"
+	"strings"
 )
 
 func GetFileBase64FromUrl(url string) (*dto.LocalFileData, error) {
@@ -30,9 +31,97 @@ func GetFileBase64FromUrl(url string) (*dto.LocalFileData, error) {
 	// Convert to base64
 	base64Data := base64.StdEncoding.EncodeToString(fileBytes)
 
+	mimeType := resp.Header.Get("Content-Type")
+	if mimeType == "application/octet-stream" {
+		// try to guess the MIME type from the url last segment
+		urlParts := strings.Split(url, "/")
+		if len(urlParts) > 0 {
+			lastSegment := urlParts[len(urlParts)-1]
+			if strings.Contains(lastSegment, ".") {
+				// Extract the file extension
+				filename := strings.Split(lastSegment, ".")
+				if len(filename) > 1 {
+					ext := strings.ToLower(filename[len(filename)-1])
+					// Guess MIME type based on file extension
+					mimeType = GetMimeTypeByExtension(ext)
+				}
+			}
+		} else {
+			// try to guess the MIME type from the file extension
+			fileName := resp.Header.Get("Content-Disposition")
+			if fileName != "" {
+				// Extract the filename from the Content-Disposition header
+				parts := strings.Split(fileName, ";")
+				for _, part := range parts {
+					if strings.HasPrefix(strings.TrimSpace(part), "filename=") {
+						fileName = strings.TrimSpace(strings.TrimPrefix(part, "filename="))
+						// Remove quotes if present
+						if len(fileName) > 2 && fileName[0] == '"' && fileName[len(fileName)-1] == '"' {
+							fileName = fileName[1 : len(fileName)-1]
+						}
+						// Guess MIME type based on file extension
+						if ext := strings.ToLower(strings.TrimPrefix(fileName, ".")); ext != "" {
+							mimeType = GetMimeTypeByExtension(ext)
+						}
+						break
+					}
+				}
+			}
+		}
+	}
+
 	return &dto.LocalFileData{
 		Base64Data: base64Data,
-		MimeType:   resp.Header.Get("Content-Type"),
+		MimeType:   mimeType,
 		Size:       int64(len(fileBytes)),
 	}, nil
+}
+
+func GetMimeTypeByExtension(ext string) string {
+	// Convert to lowercase for case-insensitive comparison
+	ext = strings.ToLower(ext)
+	switch ext {
+	// Text files
+	case "txt":
+		return "text/plain"
+
+	// Image files
+	case "jpg", "jpeg":
+		return "image/jpeg"
+	case "png":
+		return "image/png"
+	case "gif":
+		return "image/gif"
+
+	// Audio files
+	case "mp3":
+		return "audio/mp3"
+	case "wav":
+		return "audio/wav"
+	case "mpeg":
+		return "audio/mpeg"
+
+	// Video files
+	case "mp4":
+		return "video/mp4"
+	case "wmv":
+		return "video/wmv"
+	case "flv":
+		return "video/flv"
+	case "mov":
+		return "video/mov"
+	case "mpg":
+		return "video/mpg"
+	case "avi":
+		return "video/avi"
+	case "mpegps":
+		return "video/mpegps"
+
+	// Document files
+	case "pdf":
+		return "application/pdf"
+
+	default:
+		return "application/octet-stream" // Default for unknown types
+	}
 }
