@@ -18,6 +18,7 @@ const (
 	// Gemini Audio Input Price
 	Gemini25FlashPreviewInputAudioPrice     = 1.00
 	Gemini25FlashProductionInputAudioPrice  = 1.00 // for `gemini-2.5-flash`
+	Gemini25FlashLitePreviewInputAudioPrice = 0.50
 	Gemini25FlashNativeAudioInputAudioPrice = 3.00
 	Gemini20FlashInputAudioPrice            = 0.70
 )
@@ -67,6 +68,8 @@ func GetFileSearchPricePerThousand() float64 {
 func GetGeminiInputAudioPricePerMillionTokens(modelName string) float64 {
 	if strings.HasPrefix(modelName, "gemini-2.5-flash-preview-native-audio") {
 		return Gemini25FlashNativeAudioInputAudioPrice
+	} else if strings.HasPrefix(modelName, "gemini-2.5-flash-preview-lite") {
+		return Gemini25FlashLitePreviewInputAudioPrice
 	} else if strings.HasPrefix(modelName, "gemini-2.5-flash-preview") {
 		return Gemini25FlashPreviewInputAudioPrice
 	} else if strings.HasPrefix(modelName, "gemini-2.5-flash") {
