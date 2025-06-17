@@ -867,7 +867,7 @@ const ChannelsTable = () => {
   const loadChannels = async (page, pageSize, idSort, enableTagMode, typeKey = activeTypeKey) => {
     const reqId = ++requestCounter.current; // 记录当前请求序号
     setLoading(true);
-    const typeParam = typeKey === 'all' ? '' : `&type=${typeKey}`;
+    const typeParam = (!enableTagMode && typeKey !== 'all') ? `&type=${typeKey}` : '';
     const res = await API.get(
       `/api/channel/?p=${page}&page_size=${pageSize}&id_sort=${idSort}&tag_mode=${enableTagMode}${typeParam}`,
     );
@@ -1046,7 +1046,7 @@ const ChannelsTable = () => {
         return;
       }
 
-      const typeParam = activeTypeKey === 'all' ? '' : `&type=${activeTypeKey}`;
+      const typeParam = (!enableTagMode && activeTypeKey !== 'all') ? `&type=${activeTypeKey}` : '';
       const res = await API.get(
         `/api/channel/search?keyword=${searchKeyword}&group=${searchGroup}&model=${searchModel}&id_sort=${idSort}&tag_mode=${enableTagMode}${typeParam}`,
       );
@@ -1212,6 +1212,8 @@ const ChannelsTable = () => {
   }, [channelTypeCounts]);
 
   const renderTypeTabs = () => {
+    if (enableTagMode) return null;
+
     return (
       <Tabs
         activeKey={activeTypeKey}
