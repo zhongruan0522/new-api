@@ -324,7 +324,10 @@ func CovertGemini2OpenAI(textRequest dto.GeneralOpenAIRequest, info *relaycommon
 
 					// 校验 MimeType 是否在 Gemini 支持的白名单中
 					if _, ok := geminiSupportedMimeTypes[strings.ToLower(fileData.MimeType)]; !ok {
-						return nil, fmt.Errorf("MIME type '%s' from URL '%s' is not supported by Gemini. Supported types are: %v", fileData.MimeType, part.GetImageMedia().Url, getSupportedMimeTypesList())
+						url := part.GetImageMedia().Url
+						url = strings.TrimPrefix(url, "http://")
+						url = strings.TrimPrefix(url, "https://")
+						return nil, fmt.Errorf("MIME type '%s' from URL '%s' is not supported by Gemini. Supported types are: %v", fileData.MimeType, url, getSupportedMimeTypesList())
 					}
 
 					parts = append(parts, GeminiPart{

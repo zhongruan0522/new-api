@@ -33,6 +33,10 @@ func GetFileBase64FromUrl(url string) (*dto.LocalFileData, error) {
 	base64Data := base64.StdEncoding.EncodeToString(fileBytes)
 
 	mimeType := resp.Header.Get("Content-Type")
+	if len(strings.Split(mimeType, ";")) > 1 {
+		// If Content-Type has parameters, take the first part
+		mimeType = strings.Split(mimeType, ";")[0]
+	}
 	if mimeType == "application/octet-stream" {
 		if common.DebugEnabled {
 			println("MIME type is application/octet-stream, trying to guess from URL or filename")
