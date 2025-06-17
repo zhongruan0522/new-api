@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Card, Spin, Tabs } from '@douyinfe/semi-ui';
+import { Card, Spin } from '@douyinfe/semi-ui';
 import SettingsGeneral from '../../pages/Setting/Operation/SettingsGeneral.js';
 import SettingsDrawing from '../../pages/Setting/Operation/SettingsDrawing.js';
 import SettingsSensitiveWords from '../../pages/Setting/Operation/SettingsSensitiveWords.js';
@@ -7,63 +7,58 @@ import SettingsLog from '../../pages/Setting/Operation/SettingsLog.js';
 import SettingsDataDashboard from '../../pages/Setting/Operation/SettingsDataDashboard.js';
 import SettingsMonitoring from '../../pages/Setting/Operation/SettingsMonitoring.js';
 import SettingsCreditLimit from '../../pages/Setting/Operation/SettingsCreditLimit.js';
-import ModelSettingsVisualEditor from '../../pages/Setting/Operation/ModelSettingsVisualEditor.js';
-import GroupRatioSettings from '../../pages/Setting/Operation/GroupRatioSettings.js';
-import ModelRatioSettings from '../../pages/Setting/Operation/ModelRatioSettings.js';
-
-import { API, showError, showSuccess } from '../../helpers';
 import SettingsChats from '../../pages/Setting/Operation/SettingsChats.js';
-import { useTranslation } from 'react-i18next';
-import ModelRatioNotSetEditor from '../../pages/Setting/Operation/ModelRationNotSetEditor.js';
+import { API, showError } from '../../helpers';
 
 const OperationSetting = () => {
-  const { t } = useTranslation();
   let [inputs, setInputs] = useState({
+    /* 额度相关 */
     QuotaForNewUser: 0,
+    PreConsumedQuota: 0,
     QuotaForInviter: 0,
     QuotaForInvitee: 0,
-    QuotaRemindThreshold: 0,
-    PreConsumedQuota: 0,
-    StreamCacheQueueLength: 0,
-    ModelRatio: '',
-    CacheRatio: '',
-    CompletionRatio: '',
-    ModelPrice: '',
-    GroupRatio: '',
-    GroupGroupRatio: '',
-    AutoGroups: '',
-    DefaultUseAutoGroup: false,
-    UserUsableGroups: '',
+
+    /* 通用设置 */
     TopUpLink: '',
     'general_setting.docs_link': '',
-    // ChatLink2: '', // 添加的新状态变量
     QuotaPerUnit: 0,
-    AutomaticDisableChannelEnabled: false,
-    AutomaticEnableChannelEnabled: false,
-    ChannelDisableThreshold: 0,
-    LogConsumeEnabled: false,
+    RetryTimes: 0,
     DisplayInCurrencyEnabled: false,
     DisplayTokenStatEnabled: false,
-    CheckSensitiveEnabled: false,
-    CheckSensitiveOnPromptEnabled: false,
-    CheckSensitiveOnCompletionEnabled: '',
-    StopOnSensitiveEnabled: '',
-    SensitiveWords: '',
+    DefaultCollapseSidebar: false,
+    DemoSiteEnabled: false,
+    SelfUseModeEnabled: false,
+
+    /* 绘图设置 */
+    DrawingEnabled: false,
     MjNotifyEnabled: false,
     MjAccountFilterEnabled: false,
-    MjModeClearEnabled: false,
     MjForwardUrlEnabled: false,
+    MjModeClearEnabled: false,
     MjActionCheckSuccessEnabled: false,
-    DrawingEnabled: false,
+
+    /* 敏感词设置 */
+    CheckSensitiveEnabled: false,
+    CheckSensitiveOnPromptEnabled: false,
+    SensitiveWords: '',
+
+    /* 日志设置 */
+    LogConsumeEnabled: false,
+
+    /* 数据看板 */
     DataExportEnabled: false,
     DataExportDefaultTime: 'hour',
     DataExportInterval: 5,
-    DefaultCollapseSidebar: false, // 默认折叠侧边栏
-    RetryTimes: 0,
-    Chats: '[]',
-    DemoSiteEnabled: false,
-    SelfUseModeEnabled: false,
+
+    /* 监控设置 */
+    ChannelDisableThreshold: 0,
+    QuotaRemindThreshold: 0,
+    AutomaticDisableChannelEnabled: false,
+    AutomaticEnableChannelEnabled: false,
     AutomaticDisableKeywords: '',
+
+    /* 聊天设置 */
+    Chats: '[]',
   });
 
   let [loading, setLoading] = useState(false);
@@ -75,21 +70,8 @@ const OperationSetting = () => {
       let newInputs = {};
       data.forEach((item) => {
         if (
-          item.key === 'ModelRatio' ||
-          item.key === 'GroupRatio' ||
-          item.key === 'GroupGroupRatio' ||
-          item.key === 'AutoGroups' ||
-          item.key === 'UserUsableGroups' ||
-          item.key === 'CompletionRatio' ||
-          item.key === 'ModelPrice' ||
-          item.key === 'CacheRatio'
-        ) {
-          item.value = JSON.stringify(JSON.parse(item.value), null, 2);
-        }
-        if (
           item.key.endsWith('Enabled') ||
-          ['DefaultCollapseSidebar'].includes(item.key) ||
-          ['DefaultUseAutoGroup'].includes(item.key)
+          ['DefaultCollapseSidebar'].includes(item.key)
         ) {
           newInputs[item.key] = item.value === 'true' ? true : false;
         } else {
@@ -152,24 +134,6 @@ const OperationSetting = () => {
         {/* 聊天设置 */}
         <Card style={{ marginTop: '10px' }}>
           <SettingsChats options={inputs} refresh={onRefresh} />
-        </Card>
-        {/* 分组倍率设置 */}
-        <Card style={{ marginTop: '10px' }}>
-          <GroupRatioSettings options={inputs} refresh={onRefresh} />
-        </Card>
-        {/* 合并模型倍率设置和可视化倍率设置 */}
-        <Card style={{ marginTop: '10px' }}>
-          <Tabs type='line'>
-            <Tabs.TabPane tab={t('模型倍率设置')} itemKey='model'>
-              <ModelRatioSettings options={inputs} refresh={onRefresh} />
-            </Tabs.TabPane>
-            <Tabs.TabPane tab={t('可视化倍率设置')} itemKey='visual'>
-              <ModelSettingsVisualEditor options={inputs} refresh={onRefresh} />
-            </Tabs.TabPane>
-            <Tabs.TabPane tab={t('未设置倍率模型')} itemKey='unset_models'>
-              <ModelRatioNotSetEditor options={inputs} refresh={onRefresh} />
-            </Tabs.TabPane>
-          </Tabs>
         </Card>
       </Spin>
     </>

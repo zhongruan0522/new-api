@@ -1588,7 +1588,7 @@
   "性能指标": "Performance Indicators",
   "模型数据分析": "Model Data Analysis",
   "搜索无结果": "No results found",
-  "仪表盘配置": "Dashboard Configuration",
+  "仪表盘设置": "Dashboard Settings",
   "API信息管理，可以配置多个API地址用于状态展示和负载均衡（最多50个）": "API information management, you can configure multiple API addresses for status display and load balancing (maximum 50)",
   "线路描述": "Route description",
   "颜色": "Color",
