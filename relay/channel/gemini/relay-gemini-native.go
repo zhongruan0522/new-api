@@ -64,6 +64,9 @@ func GeminiTextGenerationHandler(c *gin.Context, resp *http.Response, info *rela
 			usage.PromptTokensDetails.TextTokens = detail.TokenCount
 		}
 	}
+	
+	// 计算最终使用量
+	usage.CompletionTokens = usage.TotalTokens - usage.PromptTokens
 
 	// 直接返回 Gemini 原生格式的 JSON 响应
 	jsonResponse, err := json.Marshal(geminiResponse)
