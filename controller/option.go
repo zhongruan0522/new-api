@@ -7,6 +7,7 @@ import (
 	"one-api/model"
 	"one-api/setting"
 	"one-api/setting/console_setting"
+	"one-api/setting/ratio_setting"
 	"one-api/setting/system_setting"
 	"strings"
 
@@ -103,7 +104,7 @@ func UpdateOption(c *gin.Context) {
 			return
 		}
 	case "GroupRatio":
-		err = setting.CheckGroupRatio(option.Value)
+		err = ratio_setting.CheckGroupRatio(option.Value)
 		if err != nil {
 			c.JSON(http.StatusOK, gin.H{
 				"success": false,

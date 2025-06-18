@@ -4,13 +4,14 @@ import (
 	"net/http"
 	"one-api/model"
 	"one-api/setting"
+	"one-api/setting/ratio_setting"
 
 	"github.com/gin-gonic/gin"
 )
 
 func GetGroups(c *gin.Context) {
 	groupNames := make([]string, 0)
-	for groupName, _ := range setting.GetGroupRatioCopy() {
+	for groupName := range ratio_setting.GetGroupRatioCopy() {
 		groupNames = append(groupNames, groupName)
 	}
 	c.JSON(http.StatusOK, gin.H{
@@ -25,7 +26,7 @@ func GetUserGroups(c *gin.Context) {
 	userGroup := ""
 	userId := c.GetInt("id")
 	userGroup, _ = model.GetUserGroup(userId, false)
-	for groupName, ratio := range setting.GetGroupRatioCopy() {
+	for groupName, ratio := range ratio_setting.GetGroupRatioCopy() {
 		// UserUsableGroups contains the groups that the user can use
 		userUsableGroups := setting.GetUserUsableGroups(userGroup)
 		if desc, ok := userUsableGroups[groupName]; ok {
