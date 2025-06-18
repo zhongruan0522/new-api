@@ -13,7 +13,8 @@ import {
   XCircle,
   Minus,
   HelpCircle,
-  Coins
+  Coins,
+  Ticket
 } from 'lucide-react';
 
 import { ITEMS_PER_PAGE } from '../../constants';
@@ -58,7 +59,16 @@ function renderTimestamp(timestamp) {
 const RedemptionsTable = () => {
   const { t } = useTranslation();
 
-  const renderStatus = (status) => {
+  const isExpired = (rec) => {
+    return rec.status === 1 && rec.expired_time !== 0 && rec.expired_time < Math.floor(Date.now() / 1000);
+  };
+
+  const renderStatus = (status, record) => {
+    if (isExpired(record)) {
+      return (
+        <Tag color='orange' size='large' shape='circle' prefixIcon={<Minus size={14} />}>{t('已过期')}</Tag>
+      );
+    }
     switch (status) {
       case 1:
         return (
@@ -101,7 +111,7 @@ const RedemptionsTable = () => {
       dataIndex: 'status',
       key: 'status',
       render: (text, record, index) => {
-        return <div>{renderStatus(text)}</div>;
+        return <div>{renderStatus(text, record)}</div>;
       },
     },
     {
@@ -122,6 +132,13 @@ const RedemptionsTable = () => {
       dataIndex: 'created_time',
       render: (text, record, index) => {
         return <div>{renderTimestamp(text)}</div>;
+      },
+    },
+    {
+      title: t('过期时间'),
+      dataIndex: 'expired_time',
+      render: (text) => {
+        return <div>{text === 0 ? t('永不过期') : renderTimestamp(text)}</div>;
       },
     },
     {
@@ -157,8 +174,7 @@ const RedemptionsTable = () => {
           }
         ];
 
-        // 动态添加启用/禁用按钮
-        if (record.status === 1) {
+        if (record.status === 1 && !isExpired(record)) {
           moreMenuItems.push({
             node: 'item',
             name: t('禁用'),
@@ -168,7 +184,7 @@ const RedemptionsTable = () => {
               manageRedemption(record.id, 'disable', record);
             },
           });
-        } else {
+        } else if (!isExpired(record)) {
           moreMenuItems.push({
             node: 'item',
             name: t('启用'),
@@ -435,7 +451,7 @@ const RedemptionsTable = () => {
   };
 
   const handleRow = (record, index) => {
-    if (record.status !== 1) {
+    if (record.status !== 1 || isExpired(record)) {
       return {
         style: {
           background: 'var(--semi-color-disabled-border)',
@@ -450,7 +466,7 @@ const RedemptionsTable = () => {
     <div className="flex flex-col w-full">
       <div className="mb-2">
         <div className="flex items-center text-orange-500">
-          <IconEyeOpened className="mr-2" />
+          <Ticket size={16} className="mr-2" />
           <Text>{t('兑换码可以批量生成和分发，适合用于推广活动或批量充值。')}</Text>
         </div>
       </div>
@@ -458,39 +474,66 @@ const RedemptionsTable = () => {
       <Divider margin="12px" />
 
       <div className="flex flex-col md:flex-row justify-between items-center gap-4 w-full">
-        <div className="flex gap-2 w-full md:w-auto order-2 md:order-1">
+        <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto order-2 md:order-1">
+          <div className="flex gap-2 w-full sm:w-auto">
+            <Button
+              theme='light'
+              type='primary'
+              icon={<IconPlus />}
+              className="!rounded-full w-full sm:w-auto"
+              onClick={() => {
+                setEditingRedemption({
+                  id: undefined,
+                });
+                setShowEdit(true);
+              }}
+            >
+              {t('添加兑换码')}
+            </Button>
+            <Button
+              type='warning'
+              icon={<IconCopy />}
+              className="!rounded-full w-full sm:w-auto"
+              onClick={async () => {
+                if (selectedKeys.length === 0) {
+                  showError(t('请至少选择一个兑换码！'));
+                  return;
+                }
+                let keys = '';
+                for (let i = 0; i < selectedKeys.length; i++) {
+                  keys +=
+                    selectedKeys[i].name + '    ' + selectedKeys[i].key + '\n';
+                }
+                await copyText(keys);
+              }}
+            >
+              {t('复制所选兑换码到剪贴板')}
+            </Button>
+          </div>
           <Button
-            theme='light'
-            type='primary'
-            icon={<IconPlus />}
-            className="!rounded-full w-full md:w-auto"
+            type='danger'
+            icon={<IconDelete />}
+            className="!rounded-full w-full sm:w-auto"
             onClick={() => {
-              setEditingRedemption({
-                id: undefined,
+              Modal.confirm({
+                title: t('确定清除所有失效兑换码？'),
+                content: t('将删除已使用、已禁用及过期的兑换码，此操作不可撤销。'),
+                onOk: async () => {
+                  setLoading(true);
+                  const res = await API.delete('/api/redemption/invalid');
+                  const { success, message, data } = res.data;
+                  if (success) {
+                    showSuccess(t('已删除 {{count}} 条失效兑换码', { count: data }));
+                    await refresh();
+                  } else {
+                    showError(message);
+                  }
+                  setLoading(false);
+                },
               });
-              setShowEdit(true);
             }}
           >
-            {t('添加兑换码')}
-          </Button>
-          <Button
-            type='warning'
-            icon={<IconCopy />}
-            className="!rounded-full w-full md:w-auto"
-            onClick={async () => {
-              if (selectedKeys.length === 0) {
-                showError(t('请至少选择一个兑换码！'));
-                return;
-              }
-              let keys = '';
-              for (let i = 0; i < selectedKeys.length; i++) {
-                keys +=
-                  selectedKeys[i].name + '    ' + selectedKeys[i].key + '\n';
-              }
-              await copyText(keys);
-            }}
-          >
-            {t('复制所选兑换码到剪贴板')}
+            {t('清除失效兑换码')}
           </Button>
         </div>
 

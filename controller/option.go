@@ -6,6 +6,7 @@ import (
 	"one-api/common"
 	"one-api/model"
 	"one-api/setting"
+	"one-api/setting/console_setting"
 	"one-api/setting/system_setting"
 	"strings"
 
@@ -119,8 +120,8 @@ func UpdateOption(c *gin.Context) {
 			})
 			return
 		}
-	case "ApiInfo":
-		err = setting.ValidateApiInfo(option.Value)
+	case "console_setting.api_info":
+		err = console_setting.ValidateConsoleSettings(option.Value, "ApiInfo")
 		if err != nil {
 			c.JSON(http.StatusOK, gin.H{
 				"success": false,
@@ -128,8 +129,8 @@ func UpdateOption(c *gin.Context) {
 			})
 			return
 		}
-	case "Announcements":
-		err = setting.ValidateConsoleSettings(option.Value, "Announcements")
+	case "console_setting.announcements":
+		err = console_setting.ValidateConsoleSettings(option.Value, "Announcements")
 		if err != nil {
 			c.JSON(http.StatusOK, gin.H{
 				"success": false,
@@ -137,8 +138,17 @@ func UpdateOption(c *gin.Context) {
 			})
 			return
 		}
-	case "FAQ":
-		err = setting.ValidateConsoleSettings(option.Value, "FAQ")
+	case "console_setting.faq":
+		err = console_setting.ValidateConsoleSettings(option.Value, "FAQ")
+		if err != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": err.Error(),
+			})
+			return
+		}
+	case "console_setting.uptime_kuma_groups":
+		err = console_setting.ValidateConsoleSettings(option.Value, "UptimeKumaGroups")
 		if err != nil {
 			c.JSON(http.StatusOK, gin.H{
 				"success": false,

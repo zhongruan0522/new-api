@@ -9,7 +9,8 @@ import {
   Divider,
   Avatar,
   Modal,
-  Tag
+  Tag,
+  Switch
 } from '@douyinfe/semi-ui';
 import {
   IllustrationNoResult,
@@ -48,6 +49,9 @@ const SettingsAPIInfo = ({ options, refresh }) => {
   const [pageSize, setPageSize] = useState(10);
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
 
+  // 面板启用状态 state
+  const [panelEnabled, setPanelEnabled] = useState(true);
+
   const colorOptions = [
     { value: 'blue', label: 'blue' },
     { value: 'green', label: 'green' },
@@ -85,7 +89,7 @@ const SettingsAPIInfo = ({ options, refresh }) => {
     try {
       setLoading(true);
       const apiInfoJson = JSON.stringify(apiInfoList);
-      await updateOption('ApiInfo', apiInfoJson);
+      await updateOption('console_setting.api_info', apiInfoJson);
       setHasChanges(false);
     } catch (error) {
       console.error('API信息更新失败', error);
@@ -185,10 +189,35 @@ const SettingsAPIInfo = ({ options, refresh }) => {
   };
 
   useEffect(() => {
-    if (options.ApiInfo !== undefined) {
-      parseApiInfo(options.ApiInfo);
+    const apiInfoStr = options['console_setting.api_info'] ?? options.ApiInfo;
+    if (apiInfoStr !== undefined) {
+      parseApiInfo(apiInfoStr);
     }
-  }, [options.ApiInfo]);
+  }, [options['console_setting.api_info'], options.ApiInfo]);
+
+  useEffect(() => {
+    const enabledStr = options['console_setting.api_info_enabled'];
+    setPanelEnabled(enabledStr === undefined ? true : enabledStr === 'true' || enabledStr === true);
+  }, [options['console_setting.api_info_enabled']]);
+
+  const handleToggleEnabled = async (checked) => {
+    const newValue = checked ? 'true' : 'false';
+    try {
+      const res = await API.put('/api/option/', {
+        key: 'console_setting.api_info_enabled',
+        value: newValue,
+      });
+      if (res.data.success) {
+        setPanelEnabled(checked);
+        showSuccess(t('设置已保存'));
+        refresh?.();
+      } else {
+        showError(res.data.message);
+      }
+    } catch (err) {
+      showError(err.message);
+    }
+  };
 
   const columns = [
     {
@@ -324,6 +353,15 @@ const SettingsAPIInfo = ({ options, refresh }) => {
             {t('保存设置')}
           </Button>
         </div>
+
+        {/* 启用开关 */}
+        <div className="order-1 md:order-2 flex items-center gap-2">
+          <Switch
+            checked={panelEnabled}
+            onChange={handleToggleEnabled}
+          />
+          <Text>{panelEnabled ? t('已启用') : t('已禁用')}</Text>
+        </div>
       </div>
     </div>
   );
@@ -367,7 +405,11 @@ const SettingsAPIInfo = ({ options, refresh }) => {
             total: apiInfoList.length,
             showSizeChanger: true,
             showQuickJumper: true,
-            showTotal: (total, range) => t(`共 ${total} 条记录，显示第 ${range[0]}-${range[1]} 条`),
+            formatPageText: (page) => t('第 {{start}} - {{end}} 条，共 {{total}} 条', {
+              start: page.currentStart,
+              end: page.currentEnd,
+              total: apiInfoList.length,
+            }),
             pageSizeOptions: ['5', '10', '20', '50'],
             onChange: (page, size) => {
               setCurrentPage(page);

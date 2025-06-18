@@ -6,14 +6,13 @@ import { API } from './api';
  */
 export async function fetchTokenKeys() {
   try {
-    const response = await API.get('/api/token/?p=0&size=100');
+    const response = await API.get('/api/token/?p=1&size=10');
     const { success, data } = response.data;
-    if (success) {
-      const activeTokens = data.filter((token) => token.status === 1);
-      return activeTokens.map((token) => token.key);
-    } else {
-      throw new Error('Failed to fetch token keys');
-    }
+    if (!success) throw new Error('Failed to fetch token keys');
+
+    const tokenItems = Array.isArray(data) ? data : data.items || [];
+    const activeTokens = tokenItems.filter((token) => token.status === 1);
+    return activeTokens.map((token) => token.key);
   } catch (error) {
     console.error('Error fetching token keys:', error);
     return [];

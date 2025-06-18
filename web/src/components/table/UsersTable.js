@@ -26,6 +26,7 @@ import {
   Space,
   Table,
   Tag,
+  Tooltip,
   Typography
 } from '@douyinfe/semi-ui';
 import {
@@ -110,6 +111,27 @@ const UsersTable = () => {
     {
       title: t('用户名'),
       dataIndex: 'username',
+      render: (text, record) => {
+        const remark = record.remark;
+        if (!remark) {
+          return <span>{text}</span>;
+        }
+        const maxLen = 10;
+        const displayRemark = remark.length > maxLen ? remark.slice(0, maxLen) + '…' : remark;
+        return (
+          <Space spacing={2}>
+            <span>{text}</span>
+            <Tooltip content={remark} position="top" showArrow>
+              <Tag color='white' size='large' shape='circle' className="!text-xs">
+                <div className="flex items-center gap-1">
+                  <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: '#10b981' }} />
+                  {displayRemark}
+                </div>
+              </Tag>
+            </Tooltip>
+          </Space>
+        );
+      },
     },
     {
       title: t('分组'),

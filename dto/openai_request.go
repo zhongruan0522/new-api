@@ -58,6 +58,8 @@ type GeneralOpenAIRequest struct {
 	// OpenRouter Params
 	Usage     json.RawMessage `json:"usage,omitempty"`
 	Reasoning json.RawMessage `json:"reasoning,omitempty"`
+	// Ali Qwen Params
+	VlHighResolutionImages json.RawMessage `json:"vl_high_resolution_images,omitempty"`
 }
 
 func (r *GeneralOpenAIRequest) ToMap() map[string]any {

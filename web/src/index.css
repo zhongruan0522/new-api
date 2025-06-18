@@ -375,21 +375,23 @@ code {
 }
 
 /* 隐藏卡片内容区域的滚动条 */
-.card-content-scroll::-webkit-scrollbar,
-.model-settings-scroll::-webkit-scrollbar,
-.thinking-content-scroll::-webkit-scrollbar,
-.custom-request-textarea .semi-input::-webkit-scrollbar,
-.custom-request-textarea textarea::-webkit-scrollbar {
-  display: none;
-}
-
 .card-content-scroll,
 .model-settings-scroll,
 .thinking-content-scroll,
 .custom-request-textarea .semi-input,
-.custom-request-textarea textarea {
+.custom-request-textarea textarea,
+.notice-content-scroll {
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+
+.card-content-scroll::-webkit-scrollbar,
+.model-settings-scroll::-webkit-scrollbar,
+.thinking-content-scroll::-webkit-scrollbar,
+.custom-request-textarea .semi-input::-webkit-scrollbar,
+.custom-request-textarea textarea::-webkit-scrollbar,
+.notice-content-scroll::-webkit-scrollbar {
+  display: none;
 }
 
 /* 图片列表滚动条样式 */

@@ -21,10 +21,10 @@ func ClaudeToOpenAIRequest(claudeRequest dto.ClaudeRequest, info *relaycommon.Re
 
 	isOpenRouter := info.ChannelType == common.ChannelTypeOpenRouter
 
-	if claudeRequest.Thinking != nil {
+	if claudeRequest.Thinking != nil && claudeRequest.Thinking.Type == "enabled" {
 		if isOpenRouter {
 			reasoning := openrouter.RequestReasoning{
-				MaxTokens: claudeRequest.Thinking.BudgetTokens,
+				MaxTokens: claudeRequest.Thinking.GetBudgetTokens(),
 			}
 			reasoningJSON, err := json.Marshal(reasoning)
 			if err != nil {

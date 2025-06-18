@@ -2,12 +2,10 @@ package constant
 
 import "one-api/common"
 
-var (
-	TokenCacheSeconds         = common.SyncFrequency
-	UserId2GroupCacheSeconds  = common.SyncFrequency
-	UserId2QuotaCacheSeconds  = common.SyncFrequency
-	UserId2StatusCacheSeconds = common.SyncFrequency
-)
+// 使用函数来避免初始化顺序带来的赋值问题
+func RedisKeyCacheSeconds() int {
+	return common.SyncFrequency
+}
 
 // Cache keys
 const (

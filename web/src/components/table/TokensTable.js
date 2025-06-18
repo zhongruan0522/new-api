@@ -14,6 +14,7 @@ import { ITEMS_PER_PAGE } from '../../constants';
 import {
   Button,
   Card,
+  Divider,
   Dropdown,
   Empty,
   Form,
@@ -21,7 +22,8 @@ import {
   Space,
   SplitButtonGroup,
   Table,
-  Tag
+  Tag,
+  Typography
 } from '@douyinfe/semi-ui';
 import {
   IllustrationNoResult,
@@ -36,7 +38,8 @@ import {
   Gauge,
   HelpCircle,
   Infinity,
-  Coins
+  Coins,
+  Key
 } from 'lucide-react';
 
 import {
@@ -53,6 +56,8 @@ import {
 } from '@douyinfe/semi-icons';
 import EditToken from '../../pages/Token/EditToken';
 import { useTranslation } from 'react-i18next';
+
+const { Text } = Typography;
 
 function renderTimestamp(timestamp) {
   return <>{timestamp2string(timestamp)}</>;
@@ -408,31 +413,20 @@ const TokensTable = () => {
     }, 500);
   };
 
-  const setTokensFormat = (tokens) => {
-    setTokens(tokens);
-    if (tokens.length >= pageSize) {
-      setTokenCount(tokens.length + pageSize);
-    } else {
-      setTokenCount(tokens.length);
-    }
+  // 将后端返回的数据写入状态
+  const syncPageData = (payload) => {
+    setTokens(payload.items || []);
+    setTokenCount(payload.total || 0);
+    setActivePage(payload.page || 1);
+    setPageSize(payload.page_size || pageSize);
   };
 
-  let pageData = tokens.slice(
-    (activePage - 1) * pageSize,
-    activePage * pageSize,
-  );
-  const loadTokens = async (startIdx) => {
+  const loadTokens = async (page = 1, size = pageSize) => {
     setLoading(true);
-    const res = await API.get(`/api/token/?p=${startIdx}&size=${pageSize}`);
+    const res = await API.get(`/api/token/?p=${page}&size=${size}`);
     const { success, message, data } = res.data;
     if (success) {
-      if (startIdx === 0) {
-        setTokensFormat(data);
-      } else {
-        let newTokens = [...tokens];
-        newTokens.splice(startIdx * pageSize, data.length, ...data);
-        setTokensFormat(newTokens);
-      }
+      syncPageData(data);
     } else {
       showError(message);
     }
@@ -440,7 +434,7 @@ const TokensTable = () => {
   };
 
   const refresh = async () => {
-    await loadTokens(activePage - 1);
+    await loadTokens(1);
   };
 
   const copyText = async (text) => {
@@ -473,7 +467,7 @@ const TokensTable = () => {
   };
 
   useEffect(() => {
-    loadTokens(0)
+    loadTokens(1)
       .then()
       .catch((reason) => {
         showError(reason);
@@ -487,7 +481,7 @@ const TokensTable = () => {
 
       if (idx > -1) {
         newDataSource.splice(idx, 1);
-        setTokensFormat(newDataSource);
+        setTokens(newDataSource);
       }
     }
   };
@@ -518,7 +512,7 @@ const TokensTable = () => {
       } else {
         record.status = token.status;
       }
-      setTokensFormat(newTokens);
+      setTokens(newTokens);
     } else {
       showError(message);
     }
@@ -528,8 +522,7 @@ const TokensTable = () => {
   const searchTokens = async () => {
     const { searchKeyword, searchToken } = getFormValues();
     if (searchKeyword === '' && searchToken === '') {
-      await loadTokens(0);
-      setActivePage(1);
+      await loadTokens(1);
       return;
     }
     setSearching(true);
@@ -538,7 +531,8 @@ const TokensTable = () => {
     );
     const { success, message, data } = res.data;
     if (success) {
-      setTokensFormat(data);
+      setTokens(data);
+      setTokenCount(data.length);
       setActivePage(1);
     } else {
       showError(message);
@@ -561,10 +555,12 @@ const TokensTable = () => {
   };
 
   const handlePageChange = (page) => {
-    setActivePage(page);
-    if (page === Math.ceil(tokens.length / pageSize) + 1) {
-      loadTokens(page - 1).then((r) => { });
-    }
+    loadTokens(page, pageSize).then();
+  };
+
+  const handlePageSizeChange = async (size) => {
+    setPageSize(size);
+    await loadTokens(1, size);
   };
 
   const rowSelection = {
@@ -589,6 +585,15 @@ const TokensTable = () => {
 
   const renderHeader = () => (
     <div className="flex flex-col w-full">
+      <div className="mb-2">
+        <div className="flex items-center text-blue-500">
+          <Key size={16} className="mr-2" />
+          <Text>{t('令牌用于API访问认证，可以设置额度限制和模型权限。')}</Text>
+        </div>
+      </div>
+
+      <Divider margin="12px" />
+
       <div className="flex flex-col md:flex-row justify-between items-center gap-4 w-full">
         <div className="flex gap-2 w-full md:w-auto order-2 md:order-1">
           <Button
@@ -663,7 +668,7 @@ const TokensTable = () => {
               <Button
                 type="primary"
                 htmlType="submit"
-                loading={searching}
+                loading={loading || searching}
                 className="!rounded-full flex-1 md:flex-initial md:w-auto"
               >
                 {t('查询')}
@@ -707,7 +712,7 @@ const TokensTable = () => {
       >
         <Table
           columns={columns}
-          dataSource={pageData}
+          dataSource={tokens}
           scroll={{ x: 'max-content' }}
           pagination={{
             currentPage: activePage,
@@ -719,12 +724,9 @@ const TokensTable = () => {
               t('第 {{start}} - {{end}} 条，共 {{total}} 条', {
                 start: page.currentStart,
                 end: page.currentEnd,
-                total: tokens.length,
+                total: tokenCount,
               }),
-            onPageSizeChange: (size) => {
-              setPageSize(size);
-              setActivePage(1);
-            },
+            onPageSizeChange: handlePageSizeChange,
             onPageChange: handlePageChange,
           }}
           loading={loading}

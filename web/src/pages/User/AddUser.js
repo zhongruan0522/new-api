@@ -16,6 +16,7 @@ import {
   IconClose,
   IconKey,
   IconUserAdd,
+  IconEdit,
 } from '@douyinfe/semi-icons';
 import { useTranslation } from 'react-i18next';
 
@@ -27,10 +28,11 @@ const AddUser = (props) => {
     username: '',
     display_name: '',
     password: '',
+    remark: '',
   };
   const [inputs, setInputs] = useState(originInputs);
   const [loading, setLoading] = useState(false);
-  const { username, display_name, password } = inputs;
+  const { username, display_name, password, remark } = inputs;
 
   const handleInputChange = (name, value) => {
     setInputs((inputs) => ({ ...inputs, [name]: value }));
@@ -173,6 +175,20 @@ const AddUser = (props) => {
                     className="!rounded-lg"
                     prefix={<IconKey />}
                     required
+                  />
+                </div>
+
+                <div>
+                  <Text strong className="block mb-2">{t('备注')}</Text>
+                  <Input
+                    placeholder={t('请输入备注（仅管理员可见）')}
+                    onChange={(value) => handleInputChange('remark', value)}
+                    value={remark}
+                    autoComplete="off"
+                    size="large"
+                    className="!rounded-lg"
+                    prefix={<IconEdit />}
+                    showClear
                   />
                 </div>
               </div>

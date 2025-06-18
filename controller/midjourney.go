@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"io"
-	"log"
 	"net/http"
 	"one-api/common"
 	"one-api/dto"
@@ -215,8 +214,12 @@ func checkMjTaskNeedUpdate(oldTask *model.Midjourney, newTask dto.MidjourneyDto)
 
 func GetAllMidjourney(c *gin.Context) {
 	p, _ := strconv.Atoi(c.Query("p"))
-	if p < 0 {
-		p = 0
+	if p < 1 {
+		p = 1
+	}
+	pageSize, _ := strconv.Atoi(c.Query("page_size"))
+	if pageSize <= 0 {
+		pageSize = common.ItemsPerPage
 	}
 
 	// 解析其他查询参数
@@ -227,31 +230,38 @@ func GetAllMidjourney(c *gin.Context) {
 		EndTimestamp:   c.Query("end_timestamp"),
 	}
 
-	logs := model.GetAllTasks(p*common.ItemsPerPage, common.ItemsPerPage, queryParams)
-	if logs == nil {
-		logs = make([]*model.Midjourney, 0)
-	}
+	items := model.GetAllTasks((p-1)*pageSize, pageSize, queryParams)
+	total := model.CountAllTasks(queryParams)
+
 	if setting.MjForwardUrlEnabled {
-		for i, midjourney := range logs {
+		for i, midjourney := range items {
 			midjourney.ImageUrl = setting.ServerAddress + "/mj/image/" + midjourney.MjId
-			logs[i] = midjourney
+			items[i] = midjourney
 		}
 	}
 	c.JSON(200, gin.H{
 		"success": true,
 		"message": "",
-		"data":    logs,
+		"data": gin.H{
+			"items":     items,
+			"total":     total,
+			"page":      p,
+			"page_size": pageSize,
+		},
 	})
 }
 
 func GetUserMidjourney(c *gin.Context) {
 	p, _ := strconv.Atoi(c.Query("p"))
-	if p < 0 {
-		p = 0
+	if p < 1 {
+		p = 1
+	}
+	pageSize, _ := strconv.Atoi(c.Query("page_size"))
+	if pageSize <= 0 {
+		pageSize = common.ItemsPerPage
 	}
 
 	userId := c.GetInt("id")
-	log.Printf("userId = %d \n", userId)
 
 	queryParams := model.TaskQueryParams{
 		MjID:           c.Query("mj_id"),
@@ -259,19 +269,23 @@ func GetUserMidjourney(c *gin.Context) {
 		EndTimestamp:   c.Query("end_timestamp"),
 	}
 
-	logs := model.GetAllUserTask(userId, p*common.ItemsPerPage, common.ItemsPerPage, queryParams)
-	if logs == nil {
-		logs = make([]*model.Midjourney, 0)
-	}
+	items := model.GetAllUserTask(userId, (p-1)*pageSize, pageSize, queryParams)
+	total := model.CountAllUserTask(userId, queryParams)
+
 	if setting.MjForwardUrlEnabled {
-		for i, midjourney := range logs {
+		for i, midjourney := range items {
 			midjourney.ImageUrl = setting.ServerAddress + "/mj/image/" + midjourney.MjId
-			logs[i] = midjourney
+			items[i] = midjourney
 		}
 	}
 	c.JSON(200, gin.H{
 		"success": true,
 		"message": "",
-		"data":    logs,
+		"data": gin.H{
+			"items":     items,
+			"total":     total,
+			"page":      p,
+			"page_size": pageSize,
+		},
 	})
 }

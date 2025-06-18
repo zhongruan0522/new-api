@@ -5,10 +5,13 @@ import (
 	"fmt"
 	"math/rand"
 	"one-api/common"
+	"one-api/setting"
 	"sort"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/gin-gonic/gin"
 )
 
 var group2model2channels map[string]map[string][]*Channel
@@ -75,7 +78,43 @@ func SyncChannelCache(frequency int) {
 	}
 }
 
-func CacheGetRandomSatisfiedChannel(group string, model string, retry int) (*Channel, error) {
+func CacheGetRandomSatisfiedChannel(c *gin.Context, group string, model string, retry int) (*Channel, string, error) {
+	var channel *Channel
+	var err error
+	selectGroup := group
+	if group == "auto" {
+		if len(setting.AutoGroups) == 0 {
+			return nil, selectGroup, errors.New("auto groups is not enabled")
+		}
+		for _, autoGroup := range setting.AutoGroups {
+			if common.DebugEnabled {
+				println("autoGroup:", autoGroup)
+			}
+			channel, _ = getRandomSatisfiedChannel(autoGroup, model, retry)
+			if channel == nil {
+				continue
+			} else {
+				c.Set("auto_group", autoGroup)
+				selectGroup = autoGroup
+				if common.DebugEnabled {
+					println("selectGroup:", selectGroup)
+				}
+				break
+			}
+		}
+	} else {
+		channel, err = getRandomSatisfiedChannel(group, model, retry)
+		if err != nil {
+			return nil, group, err
+		}
+	}
+	if channel == nil {
+		return nil, group, errors.New("channel not found")
+	}
+	return channel, selectGroup, nil
+}
+
+func getRandomSatisfiedChannel(group string, model string, retry int) (*Channel, error) {
 	if strings.HasPrefix(model, "gpt-4-gizmo") {
 		model = "gpt-4-gizmo-*"
 	}

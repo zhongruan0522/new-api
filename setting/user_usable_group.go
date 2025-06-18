@@ -50,3 +50,10 @@ func GroupInUserUsableGroups(groupName string) bool {
 	_, ok := userUsableGroups[groupName]
 	return ok
 }
+
+func GetUsableGroupDescription(groupName string) string {
+	if desc, ok := userUsableGroups[groupName]; ok {
+		return desc
+	}
+	return groupName
+}

@@ -103,6 +103,7 @@ const PersonalSetting = () => {
     webhookSecret: '',
     notificationEmail: '',
     acceptUnsetModelRatioModel: false,
+    recordIpLog: false,
   });
   const [modelsLoading, setModelsLoading] = useState(true);
   const [showWebhookDocs, setShowWebhookDocs] = useState(true);
@@ -147,6 +148,7 @@ const PersonalSetting = () => {
         notificationEmail: settings.notification_email || '',
         acceptUnsetModelRatioModel:
           settings.accept_unset_model_ratio_model || false,
+        recordIpLog: settings.record_ip_log || false,
       });
     }
   }, [userState?.user?.setting]);
@@ -346,7 +348,7 @@ const PersonalSetting = () => {
   const handleNotificationSettingChange = (type, value) => {
     setNotificationSettings((prev) => ({
       ...prev,
-      [type]: value.target ? value.target.value : value, // 处理 Radio 事件对象
+      [type]: value.target ? value.target.value !== undefined ? value.target.value : value.target.checked : value, // handle checkbox properly
     }));
   };
 
@@ -362,16 +364,17 @@ const PersonalSetting = () => {
         notification_email: notificationSettings.notificationEmail,
         accept_unset_model_ratio_model:
           notificationSettings.acceptUnsetModelRatioModel,
+        record_ip_log: notificationSettings.recordIpLog,
       });
 
       if (res.data.success) {
-        showSuccess(t('通知设置已更新'));
+        showSuccess(t('设置保存成功'));
         await getUserData();
       } else {
         showError(res.data.message);
       }
     } catch (error) {
-      showError(t('更新通知设置失败'));
+      showError(t('设置保存失败'));
     }
   };
 
@@ -1063,7 +1066,7 @@ const PersonalSetting = () => {
                       tab={
                         <div className="flex items-center">
                           <Bell size={16} className="mr-2" />
-                          {t('通知设置')}
+                          {t('其他设置')}
                         </div>
                       }
                       itemKey='notification'
@@ -1230,26 +1233,66 @@ const PersonalSetting = () => {
                             itemKey='price'
                           >
                             <div className="py-4">
+                              <div className="space-y-4">
+                                {/* 接受未设置价格模型 */}
+                                <div className="bg-white rounded-xl">
+                                  <div className="flex items-start">
+                                    <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center mt-1">
+                                      <Shield size={20} className="text-slate-600" />
+                                    </div>
+                                    <div className="flex-1">
+                                      <div className="flex items-center justify-between">
+                                        <div>
+                                          <Typography.Text strong className="block mb-2">
+                                            {t('接受未设置价格模型')}
+                                          </Typography.Text>
+                                          <div className="text-gray-500 text-sm">
+                                            {t('当模型没有设置价格时仍接受调用，仅当您信任该网站时使用，可能会产生高额费用')}
+                                          </div>
+                                        </div>
+                                        <Checkbox
+                                          checked={notificationSettings.acceptUnsetModelRatioModel}
+                                          onChange={(e) =>
+                                            handleNotificationSettingChange(
+                                              'acceptUnsetModelRatioModel',
+                                              e.target.checked,
+                                            )
+                                          }
+                                          className="ml-4"
+                                        />
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </TabPane>
+
+                          <TabPane
+                            tab={t('IP记录')}
+                            itemKey='ip'
+                          >
+                            <div className="py-4">
                               <div className="bg-white rounded-xl">
                                 <div className="flex items-start">
                                   <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center mt-1">
-                                    <Shield size={20} className="text-slate-600" />
+                                    <ShieldCheck size={20} className="text-slate-600" />
                                   </div>
                                   <div className="flex-1">
                                     <div className="flex items-center justify-between">
                                       <div>
                                         <Typography.Text strong className="block mb-2">
-                                          {t('接受未设置价格模型')}
+                                          {t('记录请求与错误日志 IP')}
                                         </Typography.Text>
                                         <div className="text-gray-500 text-sm">
-                                          {t('当模型没有设置价格时仍接受调用，仅当您信任该网站时使用，可能会产生高额费用')}
+                                          {t('开启后，仅“消费”和“错误”日志将记录您的客户端 IP 地址')}
                                         </div>
                                       </div>
                                       <Checkbox
-                                        checked={notificationSettings.acceptUnsetModelRatioModel}
+                                        checked={notificationSettings.recordIpLog}
                                         onChange={(e) =>
                                           handleNotificationSettingChange(
-                                            'acceptUnsetModelRatioModel',
+                                            'recordIpLog',
                                             e.target.checked,
                                           )
                                         }

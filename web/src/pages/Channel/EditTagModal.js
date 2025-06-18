@@ -229,7 +229,7 @@ const EditTagModal = (props) => {
 
     let localModels = [...inputs.models];
     let localModelOptions = [...modelOptions];
-    let hasError = false;
+    const addedModels = [];
 
     modelArray.forEach((model) => {
       // 检查模型是否已存在，且模型名称非空
@@ -241,18 +241,25 @@ const EditTagModal = (props) => {
           text: model,
           value: model,
         });
-      } else if (model) {
-        showError('某些模型已存在！');
-        hasError = true;
+        addedModels.push(model);
       }
     });
-
-    if (hasError) return; // 如果有错误则终止操作
 
     // 更新状态值
     setModelOptions(localModelOptions);
     setCustomModel('');
     handleInputChange('models', localModels);
+
+    if (addedModels.length > 0) {
+      showSuccess(
+        t('已新增 {{count}} 个模型：{{list}}', {
+          count: addedModels.length,
+          list: addedModels.join(', '),
+        })
+      );
+    } else {
+      showInfo(t('未发现新增模型'));
+    }
   };
 
   return (

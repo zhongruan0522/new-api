@@ -20,7 +20,7 @@ import {
   renderQuota,
   stringToColor,
   getLogOther,
-  renderModelTag
+  renderModelTag,
 } from '../../helpers';
 
 import {
@@ -39,15 +39,15 @@ import {
   Card,
   Typography,
   Divider,
-  Form
+  Form,
 } from '@douyinfe/semi-ui';
 import {
   IllustrationNoResult,
-  IllustrationNoResultDark
+  IllustrationNoResultDark,
 } from '@douyinfe/semi-illustrations';
 import { ITEMS_PER_PAGE } from '../../constants';
 import Paragraph from '@douyinfe/semi-ui/lib/es/typography/paragraph';
-import { IconSetting, IconSearch } from '@douyinfe/semi-icons';
+import { IconSetting, IconSearch, IconHelpCircle } from '@douyinfe/semi-icons';
 import { Route } from 'lucide-react';
 
 const { Text } = Typography;
@@ -192,7 +192,7 @@ const LogsTable = () => {
     if (!modelMapped) {
       return renderModelTag(record.model_name, {
         onClick: (event) => {
-          copyText(event, record.model_name).then((r) => { });
+          copyText(event, record.model_name).then((r) => {});
         },
       });
     } else {
@@ -209,7 +209,7 @@ const LogsTable = () => {
                       </Text>
                       {renderModelTag(record.model_name, {
                         onClick: (event) => {
-                          copyText(event, record.model_name).then((r) => { });
+                          copyText(event, record.model_name).then((r) => {});
                         },
                       })}
                     </div>
@@ -220,7 +220,7 @@ const LogsTable = () => {
                       {renderModelTag(other.upstream_model_name, {
                         onClick: (event) => {
                           copyText(event, other.upstream_model_name).then(
-                            (r) => { },
+                            (r) => {},
                           );
                         },
                       })}
@@ -231,7 +231,7 @@ const LogsTable = () => {
             >
               {renderModelTag(record.model_name, {
                 onClick: (event) => {
-                  copyText(event, record.model_name).then((r) => { });
+                  copyText(event, record.model_name).then((r) => {});
                 },
                 suffixIcon: (
                   <Route
@@ -260,6 +260,7 @@ const LogsTable = () => {
     COMPLETION: 'completion',
     COST: 'cost',
     RETRY: 'retry',
+    IP: 'ip',
     DETAILS: 'details',
   };
 
@@ -301,6 +302,7 @@ const LogsTable = () => {
       [COLUMN_KEYS.COMPLETION]: true,
       [COLUMN_KEYS.COST]: true,
       [COLUMN_KEYS.RETRY]: isAdminUser,
+      [COLUMN_KEYS.IP]: true,
       [COLUMN_KEYS.DETAILS]: true,
     };
   };
@@ -485,6 +487,9 @@ const LogsTable = () => {
       title: t('用时/首字'),
       dataIndex: 'use_time',
       render: (text, record, index) => {
+        if (!(record.type === 2 || record.type === 5)) {
+          return <></>;
+        }
         if (record.is_stream) {
           let other = getLogOther(record.other);
           return (
@@ -546,11 +551,44 @@ const LogsTable = () => {
       },
     },
     {
+      key: COLUMN_KEYS.IP,
+      title: (
+        <div className="flex items-center gap-1">
+          {t('IP')}
+          <Tooltip content={t('只有当用户设置开启IP记录时，才会进行请求和错误类型日志的IP记录')}>
+            <IconHelpCircle className="text-gray-400 cursor-help" />
+          </Tooltip>
+        </div>
+      ),
+      dataIndex: 'ip',
+      render: (text, record, index) => {
+        return (record.type === 2 || record.type === 5) && text ? (
+          <Tooltip content={text}>
+            <Tag
+              color='orange'
+              size='large'
+              shape='circle'
+              onClick={(event) => {
+                copyText(event, text);
+              }}
+            >
+              {text}
+            </Tag>
+          </Tooltip>
+        ) : (
+          <></>
+        );
+      },
+    },
+    {
       key: COLUMN_KEYS.RETRY,
       title: t('重试'),
       dataIndex: 'retry',
       className: isAdmin() ? 'tableShow' : 'tableHiddle',
       render: (text, record, index) => {
+        if (!(record.type === 2 || record.type === 5)) {
+          return <></>;
+        }
         let content = t('渠道') + `：${record.channel}`;
         if (record.other !== '') {
           let other = JSON.parse(record.other);
@@ -598,21 +636,23 @@ const LogsTable = () => {
         }
         let content = other?.claude
           ? renderClaudeModelPriceSimple(
-            other.model_ratio,
-            other.model_price,
-            other.group_ratio,
-            other.cache_tokens || 0,
-            other.cache_ratio || 1.0,
-            other.cache_creation_tokens || 0,
-            other.cache_creation_ratio || 1.0,
-          )
+              other.model_ratio,
+              other.model_price,
+              other.group_ratio,
+              other?.user_group_ratio,
+              other.cache_tokens || 0,
+              other.cache_ratio || 1.0,
+              other.cache_creation_tokens || 0,
+              other.cache_creation_ratio || 1.0,
+            )
           : renderModelPriceSimple(
-            other.model_ratio,
-            other.model_price,
-            other.group_ratio,
-            other.cache_tokens || 0,
-            other.cache_ratio || 1.0,
-          );
+              other.model_ratio,
+              other.model_price,
+              other.group_ratio,
+              other?.user_group_ratio,
+              other.cache_tokens || 0,
+              other.cache_ratio || 1.0,
+            );
         return (
           <Paragraph
             ellipsis={{
@@ -742,7 +782,7 @@ const LogsTable = () => {
     group: '',
     dateRange: [
       timestamp2string(getTodayStartTimestamp()),
-      timestamp2string(now.getTime() / 1000 + 3600)
+      timestamp2string(now.getTime() / 1000 + 3600),
     ],
     logType: '0',
   };
@@ -763,7 +803,11 @@ const LogsTable = () => {
     let start_timestamp = timestamp2string(getTodayStartTimestamp());
     let end_timestamp = timestamp2string(now.getTime() / 1000 + 3600);
 
-    if (formValues.dateRange && Array.isArray(formValues.dateRange) && formValues.dateRange.length === 2) {
+    if (
+      formValues.dateRange &&
+      Array.isArray(formValues.dateRange) &&
+      formValues.dateRange.length === 2
+    ) {
       start_timestamp = formValues.dateRange[0];
       end_timestamp = formValues.dateRange[1];
     }
@@ -941,27 +985,27 @@ const LogsTable = () => {
           key: t('日志详情'),
           value: other?.claude
             ? renderClaudeLogContent(
-              other?.model_ratio,
-              other.completion_ratio,
-              other.model_price,
-              other.group_ratio,
-              other.cache_ratio || 1.0,
-              other.cache_creation_ratio || 1.0,
-            )
+                other?.model_ratio,
+                other.completion_ratio,
+                other.model_price,
+                other.group_ratio,
+                other?.user_group_ratio,
+                other.cache_ratio || 1.0,
+                other.cache_creation_ratio || 1.0,
+              )
             : renderLogContent(
-              other?.model_ratio,
-              other.completion_ratio,
-              other.model_price,
-              other.group_ratio,
-              other?.user_group_ratio,
-              false,
-              1.0,
-              undefined,
-              other.web_search || false,
-              other.web_search_call_count || 0,
-              other.file_search || false,
-              other.file_search_call_count || 0,
-            ),
+                other?.model_ratio,
+                other.completion_ratio,
+                other.model_price,
+                other.group_ratio,
+                other?.user_group_ratio,
+                false,
+                1.0,
+                other.web_search || false,
+                other.web_search_call_count || 0,
+                other.file_search || false,
+                other.file_search_call_count || 0,
+              ),
         });
       }
       if (logs[i].type === 2) {
@@ -992,6 +1036,7 @@ const LogsTable = () => {
             other?.audio_ratio,
             other?.audio_completion_ratio,
             other?.group_ratio,
+            other?.user_group_ratio,
             other?.cache_tokens || 0,
             other?.cache_ratio || 1.0,
           );
@@ -1003,6 +1048,7 @@ const LogsTable = () => {
             other.model_price,
             other.completion_ratio,
             other.group_ratio,
+            other?.user_group_ratio,
             other.cache_tokens || 0,
             other.cache_ratio || 1.0,
             other.cache_creation_tokens || 0,
@@ -1016,6 +1062,7 @@ const LogsTable = () => {
             other?.model_price,
             other?.completion_ratio,
             other?.group_ratio,
+            other?.user_group_ratio,
             other?.cache_tokens || 0,
             other?.cache_ratio || 1.0,
             other?.image || false,
@@ -1066,7 +1113,12 @@ const LogsTable = () => {
     } = getFormValues();
 
     // 使用传入的 logType 或者表单中的 logType 或者状态中的 logType
-    const currentLogType = customLogType !== null ? customLogType : formLogType !== undefined ? formLogType : logType;
+    const currentLogType =
+      customLogType !== null
+        ? customLogType
+        : formLogType !== undefined
+          ? formLogType
+          : logType;
 
     let localStartTimestamp = Date.parse(start_timestamp) / 1000;
     let localEndTimestamp = Date.parse(end_timestamp) / 1000;
@@ -1093,7 +1145,7 @@ const LogsTable = () => {
 
   const handlePageChange = (page) => {
     setActivePage(page);
-    loadLogs(page, pageSize).then((r) => { }); // 不传入logType，让其从表单获取最新值
+    loadLogs(page, pageSize).then((r) => {}); // 不传入logType，让其从表单获取最新值
   };
 
   const handlePageSizeChange = async (size) => {
@@ -1208,9 +1260,9 @@ const LogsTable = () => {
               getFormApi={(api) => setFormApi(api)}
               onSubmit={refresh}
               allowEmpty={true}
-              autoComplete="off"
-              layout="vertical"
-              trigger="change"
+              autoComplete='off'
+              layout='vertical'
+              trigger='change'
               stopValidateWithError={false}
             >
               <div className='flex flex-col gap-4'>
@@ -1294,12 +1346,24 @@ const LogsTable = () => {
                         }, 0);
                       }}
                     >
-                      <Form.Select.Option value='0'>{t('全部')}</Form.Select.Option>
-                      <Form.Select.Option value='1'>{t('充值')}</Form.Select.Option>
-                      <Form.Select.Option value='2'>{t('消费')}</Form.Select.Option>
-                      <Form.Select.Option value='3'>{t('管理')}</Form.Select.Option>
-                      <Form.Select.Option value='4'>{t('系统')}</Form.Select.Option>
-                      <Form.Select.Option value='5'>{t('错误')}</Form.Select.Option>
+                      <Form.Select.Option value='0'>
+                        {t('全部')}
+                      </Form.Select.Option>
+                      <Form.Select.Option value='1'>
+                        {t('充值')}
+                      </Form.Select.Option>
+                      <Form.Select.Option value='2'>
+                        {t('消费')}
+                      </Form.Select.Option>
+                      <Form.Select.Option value='3'>
+                        {t('管理')}
+                      </Form.Select.Option>
+                      <Form.Select.Option value='4'>
+                        {t('系统')}
+                      </Form.Select.Option>
+                      <Form.Select.Option value='5'>
+                        {t('错误')}
+                      </Form.Select.Option>
                     </Form.Select>
                   </div>
 
@@ -1351,7 +1415,8 @@ const LogsTable = () => {
           {...(hasExpandableRows() && {
             expandedRowRender: expandRowRender,
             expandRowByClick: true,
-            rowExpandable: (record) => expandData[record.key] && expandData[record.key].length > 0
+            rowExpandable: (record) =>
+              expandData[record.key] && expandData[record.key].length > 0,
           })}
           dataSource={logs}
           rowKey='key'
@@ -1361,8 +1426,12 @@ const LogsTable = () => {
           size='middle'
           empty={
             <Empty
-              image={<IllustrationNoResult style={{ width: 150, height: 150 }} />}
-              darkModeImage={<IllustrationNoResultDark style={{ width: 150, height: 150 }} />}
+              image={
+                <IllustrationNoResult style={{ width: 150, height: 150 }} />
+              }
+              darkModeImage={
+                <IllustrationNoResultDark style={{ width: 150, height: 150 }} />
+              }
               description={t('搜索无结果')}
               style={{ padding: 30 }}
             />

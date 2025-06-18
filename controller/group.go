@@ -1,10 +1,11 @@
 package controller
 
 import (
-	"github.com/gin-gonic/gin"
 	"net/http"
 	"one-api/model"
 	"one-api/setting"
+
+	"github.com/gin-gonic/gin"
 )
 
 func GetGroups(c *gin.Context) {
@@ -32,6 +33,12 @@ func GetUserGroups(c *gin.Context) {
 				"ratio": ratio,
 				"desc":  desc,
 			}
+		}
+	}
+	if setting.GroupInUserUsableGroups("auto") {
+		usableGroups["auto"] = map[string]interface{}{
+			"ratio": "自动",
+			"desc":  setting.GetUsableGroupDescription("auto"),
 		}
 	}
 	c.JSON(http.StatusOK, gin.H{

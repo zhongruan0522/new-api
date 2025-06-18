@@ -8,6 +8,7 @@ import (
 	"math"
 	"mime/multipart"
 	"net/http"
+	"path/filepath"
 	"one-api/common"
 	"one-api/constant"
 	"one-api/dto"
@@ -345,13 +346,14 @@ func countAudioTokens(c *gin.Context) (int, error) {
 	if err = c.ShouldBind(&reqBody); err != nil {
 		return 0, errors.WithStack(err)
 	}
-
+  ext := filepath.Ext(reqBody.File.Filename) // 获取文件扩展名
 	reqFp, err := reqBody.File.Open()
 	if err != nil {
 		return 0, errors.WithStack(err)
 	}
+  defer reqFp.Close()
 
-	tmpFp, err := os.CreateTemp("", "audio-*")
+	tmpFp, err := os.CreateTemp("", "audio-*"+ext)
 	if err != nil {
 		return 0, errors.WithStack(err)
 	}
@@ -365,7 +367,7 @@ func countAudioTokens(c *gin.Context) (int, error) {
 		return 0, errors.WithStack(err)
 	}
 
-	duration, err := common.GetAudioDuration(c.Request.Context(), tmpFp.Name())
+	duration, err := common.GetAudioDuration(c.Request.Context(), tmpFp.Name(), ext)
 	if err != nil {
 		return 0, errors.WithStack(err)
 	}
