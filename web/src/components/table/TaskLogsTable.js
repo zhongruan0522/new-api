@@ -96,20 +96,8 @@ const renderTimestamp = (timestampInSeconds) => {
 };
 
 function renderDuration(submit_time, finishTime) {
-  // 确保startTime和finishTime都是有效的时间戳
   if (!submit_time || !finishTime) return 'N/A';
-
-  // 将时间戳转换为Date对象
-  const start = new Date(submit_time);
-  const finish = new Date(finishTime);
-
-  // 计算时间差（毫秒）
-  const durationMs = finish - start;
-
-  // 将时间差转换为秒，并保留一位小数
-  const durationSec = (durationMs / 1000).toFixed(1);
-
-  // 设置颜色：大于60秒则为红色，小于等于60秒则为绿色
+  const durationSec = finishTime - submit_time;
   const color = durationSec > 60 ? 'red' : 'green';
 
   // 返回带有样式的颜色标签
