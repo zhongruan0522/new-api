@@ -232,9 +232,15 @@ func PostClaudeConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo,
 	cacheCreationRatio := priceData.CacheCreationRatio
 	cacheCreationTokens := usage.PromptTokensDetails.CachedCreationTokens
 
-	if relayInfo.ChannelType == common.ChannelTypeOpenRouter && priceData.CacheCreationRatio != 1 {
-		cacheCreationTokens = CalcOpenRouterCacheCreateTokens(*usage, priceData)
-		promptTokens = promptTokens - cacheCreationTokens - cacheTokens
+	if relayInfo.ChannelType == common.ChannelTypeOpenRouter {
+		promptTokens -= cacheTokens
+		if cacheCreationTokens == 0 && priceData.CacheCreationRatio != 1 && usage.Cost != 0 {
+			maybeCacheCreationTokens := CalcOpenRouterCacheCreateTokens(*usage, priceData)
+			if promptTokens >= maybeCacheCreationTokens {
+				cacheCreationTokens = maybeCacheCreationTokens
+			}
+		}
+		promptTokens -= cacheCreationTokens
 	}
 
 	calculateQuota := 0.0
