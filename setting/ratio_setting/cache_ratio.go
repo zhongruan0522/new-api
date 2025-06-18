@@ -1,4 +1,4 @@
-package operation_setting
+package ratio_setting
 
 import (
 	"encoding/json"

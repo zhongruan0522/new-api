@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import {
   API,
   showError,
@@ -16,11 +16,6 @@ import {
   XCircle,
   AlertCircle,
   HelpCircle,
-  TestTube,
-  Zap,
-  Timer,
-  Clock,
-  AlertTriangle,
   Coins,
   Tags
 } from 'lucide-react';
@@ -43,7 +38,9 @@ import {
   Typography,
   Checkbox,
   Card,
-  Form
+  Form,
+  Tabs,
+  TabPane
 } from '@douyinfe/semi-ui';
 import {
   IllustrationNoResult,
@@ -141,31 +138,31 @@ const ChannelsTable = () => {
     time = time.toFixed(2) + t(' 秒');
     if (responseTime === 0) {
       return (
-        <Tag size='large' color='grey' shape='circle' prefixIcon={<TestTube size={14} />}>
+        <Tag size='large' color='grey' shape='circle'>
           {t('未测试')}
         </Tag>
       );
     } else if (responseTime <= 1000) {
       return (
-        <Tag size='large' color='green' shape='circle' prefixIcon={<Zap size={14} />}>
+        <Tag size='large' color='green' shape='circle'>
           {time}
         </Tag>
       );
     } else if (responseTime <= 3000) {
       return (
-        <Tag size='large' color='lime' shape='circle' prefixIcon={<Timer size={14} />}>
+        <Tag size='large' color='lime' shape='circle'>
           {time}
         </Tag>
       );
     } else if (responseTime <= 5000) {
       return (
-        <Tag size='large' color='yellow' shape='circle' prefixIcon={<Clock size={14} />}>
+        <Tag size='large' color='yellow' shape='circle'>
           {time}
         </Tag>
       );
     } else {
       return (
-        <Tag size='large' color='red' shape='circle' prefixIcon={<AlertTriangle size={14} />}>
+        <Tag size='large' color='red' shape='circle'>
           {time}
         </Tag>
       );
@@ -682,11 +679,10 @@ const ChannelsTable = () => {
   const [isBatchTesting, setIsBatchTesting] = useState(false);
   const [testQueue, setTestQueue] = useState([]);
   const [isProcessingQueue, setIsProcessingQueue] = useState(false);
-
-  // Form API 引用
+  const [activeTypeKey, setActiveTypeKey] = useState('all');
+  const [typeCounts, setTypeCounts] = useState({});
+  const requestCounter = useRef(0);
   const [formApi, setFormApi] = useState(null);
-
-  // Form 初始值
   const formInitValues = {
     searchKeyword: '',
     searchGroup: '',
@@ -868,17 +864,23 @@ const ChannelsTable = () => {
     setChannels(channelDates);
   };
 
-  const loadChannels = async (page, pageSize, idSort, enableTagMode) => {
+  const loadChannels = async (page, pageSize, idSort, enableTagMode, typeKey = activeTypeKey) => {
+    const reqId = ++requestCounter.current; // 记录当前请求序号
     setLoading(true);
+    const typeParam = (!enableTagMode && typeKey !== 'all') ? `&type=${typeKey}` : '';
     const res = await API.get(
-      `/api/channel/?p=${page}&page_size=${pageSize}&id_sort=${idSort}&tag_mode=${enableTagMode}`,
+      `/api/channel/?p=${page}&page_size=${pageSize}&id_sort=${idSort}&tag_mode=${enableTagMode}${typeParam}`,
     );
-    if (res === undefined) {
+    if (res === undefined || reqId !== requestCounter.current) {
       return;
     }
     const { success, message, data } = res.data;
     if (success) {
-      const { items, total } = data;
+      const { items, total, type_counts } = data;
+      if (type_counts) {
+        const sumAll = Object.values(type_counts).reduce((acc, v) => acc + v, 0);
+        setTypeCounts({ ...type_counts, all: sumAll });
+      }
       setChannelFormat(items, enableTagMode);
       setChannelCount(total);
     } else {
@@ -1044,12 +1046,16 @@ const ChannelsTable = () => {
         return;
       }
 
+      const typeParam = (!enableTagMode && activeTypeKey !== 'all') ? `&type=${activeTypeKey}` : '';
       const res = await API.get(
-        `/api/channel/search?keyword=${searchKeyword}&group=${searchGroup}&model=${searchModel}&id_sort=${idSort}&tag_mode=${enableTagMode}`,
+        `/api/channel/search?keyword=${searchKeyword}&group=${searchGroup}&model=${searchModel}&id_sort=${idSort}&tag_mode=${enableTagMode}${typeParam}`,
       );
       const { success, message, data } = res.data;
       if (success) {
-        setChannelFormat(data, enableTagMode);
+        const { items = [], type_counts = {} } = data;
+        const sumAll = Object.values(type_counts).reduce((acc, v) => acc + v, 0);
+        setTypeCounts({ ...type_counts, all: sumAll });
+        setChannelFormat(items, enableTagMode);
         setActivePage(1);
       } else {
         showError(message);
@@ -1179,7 +1185,94 @@ const ChannelsTable = () => {
     }
   };
 
+  const channelTypeCounts = useMemo(() => {
+    if (Object.keys(typeCounts).length > 0) return typeCounts;
+    // fallback 本地计算
+    const counts = { all: channels.length };
+    channels.forEach((channel) => {
+      const collect = (ch) => {
+        const type = ch.type;
+        counts[type] = (counts[type] || 0) + 1;
+      };
+      if (channel.children !== undefined) {
+        channel.children.forEach(collect);
+      } else {
+        collect(channel);
+      }
+    });
+    return counts;
+  }, [typeCounts, channels]);
+
+  const availableTypeKeys = useMemo(() => {
+    const keys = ['all'];
+    Object.entries(channelTypeCounts).forEach(([k, v]) => {
+      if (k !== 'all' && v > 0) keys.push(String(k));
+    });
+    return keys;
+  }, [channelTypeCounts]);
+
+  const renderTypeTabs = () => {
+    if (enableTagMode) return null;
+
+    return (
+      <Tabs
+        activeKey={activeTypeKey}
+        type="card"
+        collapsible
+        onChange={(key) => {
+          setActiveTypeKey(key);
+          setActivePage(1);
+          loadChannels(1, pageSize, idSort, enableTagMode, key);
+        }}
+        className="mb-4"
+      >
+        <TabPane
+          itemKey="all"
+          tab={
+            <span className="flex items-center gap-2">
+              {t('全部')}
+              <Tag color={activeTypeKey === 'all' ? 'red' : 'grey'} size='small' shape='circle'>
+                {channelTypeCounts['all'] || 0}
+              </Tag>
+            </span>
+          }
+        />
+
+        {CHANNEL_OPTIONS.filter((opt) => availableTypeKeys.includes(String(opt.value))).map((option) => {
+          const key = String(option.value);
+          const count = channelTypeCounts[option.value] || 0;
+          return (
+            <TabPane
+              key={key}
+              itemKey={key}
+              tab={
+                <span className="flex items-center gap-2">
+                  {getChannelIcon(option.value)}
+                  {option.label}
+                  <Tag color={activeTypeKey === key ? 'red' : 'grey'} size='small' shape='circle'>
+                    {count}
+                  </Tag>
+                </span>
+              }
+            />
+          );
+        })}
+      </Tabs>
+    );
+  };
+
   let pageData = channels;
+  if (activeTypeKey !== 'all') {
+    const typeVal = parseInt(activeTypeKey);
+    if (!isNaN(typeVal)) {
+      pageData = pageData.filter((ch) => {
+        if (ch.children !== undefined) {
+          return ch.children.some((c) => c.type === typeVal);
+        }
+        return ch.type === typeVal;
+      });
+    }
+  }
 
   const handlePageChange = (page) => {
     setActivePage(page);
@@ -1371,6 +1464,7 @@ const ChannelsTable = () => {
 
   const renderHeader = () => (
     <div className="flex flex-col w-full">
+      {renderTypeTabs()}
       <div className="flex flex-col md:flex-row justify-between gap-4">
         <div className="flex flex-wrap md:flex-nowrap items-center gap-2 w-full md:w-auto order-2 md:order-1">
           <Button

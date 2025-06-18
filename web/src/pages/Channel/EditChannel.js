@@ -530,7 +530,7 @@ const EditChannel = (props) => {
                         handleInputChange('key', value);
                       }}
                       value={inputs.key}
-                      style={{ minHeight: 150, fontFamily: 'JetBrains Mono, Consolas' }}
+                      autosize={{ minRows: 6, maxRows: 6 }}
                       autoComplete='new-password'
                       className="!rounded-lg"
                     />

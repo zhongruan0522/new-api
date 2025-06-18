@@ -10,6 +10,7 @@ import OperationSetting from '../../components/settings/OperationSetting.js';
 import RateLimitSetting from '../../components/settings/RateLimitSetting.js';
 import ModelSetting from '../../components/settings/ModelSetting.js';
 import DashboardSetting from '../../components/settings/DashboardSetting.js';
+import RatioSetting from '../../components/settings/RatioSetting.js';
 
 const Setting = () => {
   const { t } = useTranslation();
@@ -23,6 +24,11 @@ const Setting = () => {
       tab: t('运营设置'),
       content: <OperationSetting />,
       itemKey: 'operation',
+    });
+    panes.push({
+      tab: t('倍率设置'),
+      content: <RatioSetting />,
+      itemKey: 'ratio',
     });
     panes.push({
       tab: t('速率限制设置'),
@@ -45,7 +51,7 @@ const Setting = () => {
       itemKey: 'other',
     });
     panes.push({
-      tab: t('仪表盘配置'),
+      tab: t('仪表盘设置'),
       content: <DashboardSetting />,
       itemKey: 'dashboard',
     });

@@ -12,7 +12,7 @@ import (
 	"one-api/model"
 	"one-api/router"
 	"one-api/service"
-	"one-api/setting/operation_setting"
+	"one-api/setting/ratio_setting"
 	"os"
 	"strconv"
 
@@ -74,7 +74,7 @@ func main() {
 	}
 
 	// Initialize model settings
-	operation_setting.InitRatioSettings()
+	ratio_setting.InitRatioSettings()
 	// Initialize constants
 	constant.InitEnv()
 	// Initialize options
