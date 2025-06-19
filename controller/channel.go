@@ -102,14 +102,14 @@ func GetAllChannels(c *gin.Context) {
 	typeCounts, _ := model.CountChannelsGroupByType()
 
 	c.JSON(http.StatusOK, gin.H{
-		"success":     true,
-		"message":     "",
-		"data":        gin.H{
-			"items":         channelData,
-			"total":         total,
-			"page":          p,
-			"page_size":     pageSize,
-			"type_counts":   typeCounts,
+		"success": true,
+		"message": "",
+		"data": gin.H{
+			"items":       channelData,
+			"total":       total,
+			"page":        p,
+			"page_size":   pageSize,
+			"type_counts": typeCounts,
 		},
 	})
 	return
@@ -237,10 +237,20 @@ func SearchChannels(c *gin.Context) {
 		}
 		channelData = channels
 	}
+
+	// calculate type counts for search results
+	typeCounts := make(map[int64]int64)
+	for _, channel := range channelData {
+		typeCounts[int64(channel.Type)]++
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
-		"data":    channelData,
+		"data": gin.H{
+			"items":       channelData,
+			"type_counts": typeCounts,
+		},
 	})
 	return
 }
