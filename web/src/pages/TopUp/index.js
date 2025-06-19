@@ -588,11 +588,10 @@ const TopUp = () => {
                         <Card
                           key={index}
                           onClick={() => selectPresetAmount(preset)}
-                          className={`cursor-pointer !rounded-2xl transition-all hover:shadow-md ${
-                            selectedPreset === preset.value
-                              ? 'border-blue-500'
-                              : 'border-gray-200 hover:border-gray-300'
-                          }`}
+                          className={`cursor-pointer !rounded-2xl transition-all hover:shadow-md ${selectedPreset === preset.value
+                            ? 'border-blue-500'
+                            : 'border-gray-200 hover:border-gray-300'
+                            }`}
                           bodyStyle={{ textAlign: 'center' }}
                         >
                           <div className='font-medium text-lg flex items-center justify-center mb-1'>
@@ -661,54 +660,139 @@ const TopUp = () => {
                       />
                     </div>
 
-                    <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
-                      {/* <Button
-                        type='primary'
-                        onClick={() => preTopUp('zfb')}
-                        size='large'
-                        disabled={!enableOnlineTopUp}
-                        loading={paymentLoading && payWay === 'zfb'}
-                        icon={<SiAlipay size={18} />}
-                        style={{ height: '44px' }}
-                      >
-                        <span className='ml-2'>{t('支付宝')}</span>
-                      </Button>
-                      <Button
-                        type='primary'
-                        onClick={() => preTopUp('wx')}
-                        size='large'
-                        disabled={!enableOnlineTopUp}
-                        loading={paymentLoading && payWay === 'wx'}
-                        icon={<SiWechat size={18} />}
-                        style={{ height: '44px' }}
-                      >
-                        <span className='ml-2'>{t('微信')}</span>
-                      </Button> */}
-                      {payMethods.map((payMethod) => (
-                        <Button
-                          key={payMethod.type}
-                          type='primary'
-                          onClick={() => preTopUp(payMethod.type)}
-                          size='large'
-                          disabled={!enableOnlineTopUp}
-                          loading={paymentLoading && payWay === payMethod.type}
-                          icon={
-                            payMethod.type === 'zfb' ? (
-                              <SiAlipay size={18} />
-                            ) : payMethod.type === 'wx' ? (
-                              <SiWechat size={18} />
-                            ) : (
-                              <CreditCard size={18} />
-                            )
-                          }
-                          style={{
-                            height: '44px',
-                            color: payMethod.color,
-                          }}
-                        >
-                          <span className='ml-2'>{payMethod.name}</span>
-                        </Button>
-                      ))}
+                    <div>
+                      <Text strong className='block mb-3'>
+                        {t('选择支付方式')}
+                      </Text>
+                      {payMethods.length === 2 ? (
+                        <div className='grid grid-cols-1 sm:grid-cols-2 gap-3'>
+                          {payMethods.map((payMethod) => (
+                            <Button
+                              key={payMethod.type}
+                              type='primary'
+                              onClick={() => preTopUp(payMethod.type)}
+                              size='large'
+                              disabled={!enableOnlineTopUp}
+                              loading={paymentLoading && payWay === payMethod.type}
+                              icon={
+                                payMethod.type === 'zfb' ? (
+                                  <SiAlipay size={16} />
+                                ) : payMethod.type === 'wx' ? (
+                                  <SiWechat size={16} />
+                                ) : (
+                                  <CreditCard size={16} />
+                                )
+                              }
+                              style={{
+                                height: '40px',
+                                color: payMethod.color,
+                              }}
+                              className='transition-all hover:shadow-md w-full'
+                            >
+                              <span className='ml-1'>{payMethod.name}</span>
+                            </Button>
+                          ))}
+                        </div>
+                      ) : payMethods.length === 3 ? (
+                        <div className='grid grid-cols-1 sm:grid-cols-3 gap-3'>
+                          {payMethods.map((payMethod) => (
+                            <Button
+                              key={payMethod.type}
+                              type='primary'
+                              onClick={() => preTopUp(payMethod.type)}
+                              size='large'
+                              disabled={!enableOnlineTopUp}
+                              loading={paymentLoading && payWay === payMethod.type}
+                              icon={
+                                payMethod.type === 'zfb' ? (
+                                  <SiAlipay size={16} />
+                                ) : payMethod.type === 'wx' ? (
+                                  <SiWechat size={16} />
+                                ) : (
+                                  <CreditCard size={16} />
+                                )
+                              }
+                              style={{
+                                height: '40px',
+                                color: payMethod.color,
+                              }}
+                              className='transition-all hover:shadow-md w-full'
+                            >
+                              <span className='ml-1'>{payMethod.name}</span>
+                            </Button>
+                          ))}
+                        </div>
+                      ) : payMethods.length > 3 ? (
+                        <div className='grid grid-cols-2 sm:grid-cols-4 gap-3'>
+                          {payMethods.map((payMethod) => (
+                            <Card
+                              key={payMethod.type}
+                              onClick={() => preTopUp(payMethod.type)}
+                              disabled={!enableOnlineTopUp}
+                              className={`cursor-pointer !rounded-xl p-0 transition-all hover:shadow-md ${paymentLoading && payWay === payMethod.type
+                                ? 'border-blue-400'
+                                : 'border-gray-200 hover:border-gray-300'
+                                }`}
+                              bodyStyle={{
+                                padding: '10px',
+                                textAlign: 'center',
+                                opacity: !enableOnlineTopUp ? 0.5 : 1
+                              }}
+                            >
+                              {paymentLoading && payWay === payMethod.type ? (
+                                <div className='flex flex-col items-center justify-center h-full'>
+                                  <div className='mb-1'>
+                                    <div className='animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500'></div>
+                                  </div>
+                                  <div className='text-xs text-gray-500'>{t('处理中')}</div>
+                                </div>
+                              ) : (
+                                <>
+                                  <div className='flex items-center justify-center mb-1'>
+                                    {payMethod.type === 'zfb' ? (
+                                      <SiAlipay size={20} color={payMethod.color} />
+                                    ) : payMethod.type === 'wx' ? (
+                                      <SiWechat size={20} color={payMethod.color} />
+                                    ) : (
+                                      <CreditCard size={20} color={payMethod.color} />
+                                    )}
+                                  </div>
+                                  <div className='text-sm font-medium'>{payMethod.name}</div>
+                                </>
+                              )}
+                            </Card>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className='grid grid-cols-1 gap-3'>
+                          {payMethods.map((payMethod) => (
+                            <Button
+                              key={payMethod.type}
+                              type='primary'
+                              onClick={() => preTopUp(payMethod.type)}
+                              size='large'
+                              disabled={!enableOnlineTopUp}
+                              loading={paymentLoading && payWay === payMethod.type}
+                              icon={
+                                payMethod.type === 'zfb' ? (
+                                  <SiAlipay size={16} />
+                                ) : payMethod.type === 'wx' ? (
+                                  <SiWechat size={16} />
+                                ) : (
+                                  <CreditCard size={16} />
+                                )
+                              }
+                              style={{
+                                height: '40px',
+                                color: payMethod.color,
+                              }}
+                              className='transition-all hover:shadow-md w-full'
+                            >
+                              <span className='ml-1'>{payMethod.name}</span>
+                            </Button>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </>
@@ -941,48 +1025,71 @@ const TopUp = () => {
               />
             </div>
 
-            <div className='grid grid-cols-2 gap-4'>
-              {/* <Button
-                type='primary'
-                onClick={() => preTopUp('zfb')}
-                disabled={!enableOnlineTopUp}
-                loading={paymentLoading && payWay === 'zfb'}
-                icon={<SiAlipay size={18} />}
-              >
-                <span className='ml-2'>{t('支付宝')}</span>
-              </Button>
-              <Button
-                type='primary'
-                onClick={() => preTopUp('wx')}
-                disabled={!enableOnlineTopUp}
-                loading={paymentLoading && payWay === 'wx'}
-                icon={<SiWechat size={18} />}
-              >
-                <span className='ml-2'>{t('微信')}</span>
-              </Button> */}
-              {payMethods.map((payMethod) => (
-                <Button
-                  key={payMethod.type}
-                  type='primary'
-                  onClick={() => preTopUp(payMethod.type)}
-                  disabled={!enableOnlineTopUp}
-                  loading={paymentLoading && payWay === payMethod.type}
-                  icon={
-                    payMethod.type === 'zfb' ? (
-                      <SiAlipay size={18} />
-                    ) : payMethod.type === 'wx' ? (
-                      <SiWechat size={18} />
-                    ) : (
-                      <CreditCard size={18} />
-                    )
-                  }
-                  style={{
-                    color: payMethod.color,
-                  }}
-                >
-                  <span className='ml-2'>{payMethod.name}</span>
-                </Button>
-              ))}
+            <div>
+              {payMethods.length === 2 ? (
+                <div className='grid grid-cols-2 gap-3'>
+                  {payMethods.map((payMethod) => (
+                    <Button
+                      key={payMethod.type}
+                      type='primary'
+                      onClick={() => preTopUp(payMethod.type)}
+                      disabled={!enableOnlineTopUp}
+                      loading={paymentLoading && payWay === payMethod.type}
+                      icon={
+                        payMethod.type === 'zfb' ? (
+                          <SiAlipay size={16} />
+                        ) : payMethod.type === 'wx' ? (
+                          <SiWechat size={16} />
+                        ) : (
+                          <CreditCard size={16} />
+                        )
+                      }
+                      style={{
+                        color: payMethod.color,
+                      }}
+                      className='h-10'
+                    >
+                      <span className='ml-1'>{payMethod.name}</span>
+                    </Button>
+                  ))}
+                </div>
+              ) : (
+                <div className='grid grid-cols-4 gap-2'>
+                  {payMethods.map((payMethod) => (
+                    <Card
+                      key={payMethod.type}
+                      onClick={() => preTopUp(payMethod.type)}
+                      disabled={!enableOnlineTopUp}
+                      className={`cursor-pointer !rounded-xl p-0 transition-all ${paymentLoading && payWay === payMethod.type
+                        ? 'border-blue-400'
+                        : 'border-gray-200'
+                        }`}
+                      bodyStyle={{
+                        padding: '8px',
+                        textAlign: 'center',
+                        opacity: !enableOnlineTopUp ? 0.5 : 1
+                      }}
+                    >
+                      {paymentLoading && payWay === payMethod.type ? (
+                        <div className='animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500 mx-auto'></div>
+                      ) : (
+                        <>
+                          <div className='flex justify-center'>
+                            {payMethod.type === 'zfb' ? (
+                              <SiAlipay size={18} color={payMethod.color} />
+                            ) : payMethod.type === 'wx' ? (
+                              <SiWechat size={18} color={payMethod.color} />
+                            ) : (
+                              <CreditCard size={18} color={payMethod.color} />
+                            )}
+                          </div>
+                          <div className='text-xs mt-1'>{payMethod.name}</div>
+                        </>
+                      )}
+                    </Card>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
