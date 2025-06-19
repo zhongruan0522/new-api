@@ -46,6 +46,15 @@ func initCol() {
 			logGroupCol = commonGroupCol
 			logKeyCol = commonKeyCol
 		}
+	} else {
+		// LOG_SQL_DSN 为空时，日志数据库与主数据库相同
+		if common.UsingPostgreSQL {
+			logGroupCol = `"group"`
+			logKeyCol = `"key"`
+		} else {
+			logGroupCol = commonGroupCol
+			logKeyCol = commonKeyCol
+		}
 	}
 	// log sql type and database type
 	common.SysLog("Using Log SQL Type: " + common.LogSqlType)
