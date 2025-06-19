@@ -155,6 +155,10 @@ func GeminiHelper(c *gin.Context) (openaiErr *dto.OpenAIErrorWithStatusCode) {
 		return service.OpenAIErrorWrapperLocal(err, "marshal_text_request_failed", http.StatusInternalServerError)
 	}
 
+	if common.DebugEnabled {
+		println("Gemini request body: %s", string(requestBody))
+	}
+
 	resp, err := adaptor.DoRequest(c, relayInfo, bytes.NewReader(requestBody))
 	if err != nil {
 		common.LogError(c, "Do gemini request failed: "+err.Error())

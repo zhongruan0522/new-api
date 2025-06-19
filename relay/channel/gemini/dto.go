@@ -140,6 +140,7 @@ type GeminiChatGenerationConfig struct {
 	Seed               int64                 `json:"seed,omitempty"`
 	ResponseModalities []string              `json:"responseModalities,omitempty"`
 	ThinkingConfig     *GeminiThinkingConfig `json:"thinkingConfig,omitempty"`
+	SpeechConfig       json.RawMessage       `json:"speechConfig,omitempty"` // RawMessage to allow flexible speech config
 }
 
 type GeminiChatCandidate struct {

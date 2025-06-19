@@ -15,8 +15,7 @@ import (
 	relaycommon "one-api/relay/common"
 	relayconstant "one-api/relay/constant"
 	"one-api/service"
-	"one-api/setting"
-	"one-api/setting/operation_setting"
+	"one-api/setting/ratio_setting"
 )
 
 /*
@@ -38,9 +37,9 @@ func RelayTaskSubmit(c *gin.Context, relayMode int) (taskErr *dto.TaskError) {
 	}
 
 	modelName := service.CoverTaskActionToModelName(platform, relayInfo.Action)
-	modelPrice, success := operation_setting.GetModelPrice(modelName, true)
+	modelPrice, success := ratio_setting.GetModelPrice(modelName, true)
 	if !success {
-		defaultPrice, ok := operation_setting.GetDefaultModelRatioMap()[modelName]
+		defaultPrice, ok := ratio_setting.GetDefaultModelRatioMap()[modelName]
 		if !ok {
 			modelPrice = 0.1
 		} else {
@@ -49,7 +48,7 @@ func RelayTaskSubmit(c *gin.Context, relayMode int) (taskErr *dto.TaskError) {
 	}
 
 	// 预扣
-	groupRatio := setting.GetGroupRatio(relayInfo.Group)
+	groupRatio := ratio_setting.GetGroupRatio(relayInfo.Group)
 	ratio := modelPrice * groupRatio
 	userQuota, err := model.GetUserQuota(relayInfo.UserId, false)
 	if err != nil {
