@@ -2,6 +2,7 @@ package controller
 
 import (
 	"fmt"
+	"github.com/samber/lo"
 	"net/http"
 	"one-api/common"
 	"one-api/constant"
@@ -136,6 +137,9 @@ func init() {
 		adaptor.Init(meta)
 		channelId2Models[i] = adaptor.GetModelList()
 	}
+	openAIModels = lo.UniqBy(openAIModels, func(m dto.OpenAIModels) string {
+		return m.Id
+	})
 }
 
 func ListModels(c *gin.Context) {
