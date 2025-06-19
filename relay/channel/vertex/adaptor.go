@@ -123,14 +123,23 @@ func (a *Adaptor) GetRequestURL(info *relaycommon.RelayInfo) (string, error) {
 		if v, ok := claudeModelMap[info.UpstreamModelName]; ok {
 			model = v
 		}
-		return fmt.Sprintf(
-			"https://%s-aiplatform.googleapis.com/v1/projects/%s/locations/%s/publishers/anthropic/models/%s:%s",
-			region,
-			adc.ProjectID,
-			region,
-			model,
-			suffix,
-		), nil
+		if region == "global" {
+			return fmt.Sprintf(
+				"https://aiplatform.googleapis.com/v1/projects/%s/locations/global/publishers/anthropic/models/%s:%s",
+				adc.ProjectID,
+				model,
+				suffix,
+			), nil
+		} else {
+			return fmt.Sprintf(
+				"https://%s-aiplatform.googleapis.com/v1/projects/%s/locations/%s/publishers/anthropic/models/%s:%s",
+				region,
+				adc.ProjectID,
+				region,
+				model,
+				suffix,
+			), nil
+		}
 	} else if a.RequestMode == RequestModeLlama {
 		return fmt.Sprintf(
 			"https://%s-aiplatform.googleapis.com/v1beta1/projects/%s/locations/%s/endpoints/openapi/chat/completions",

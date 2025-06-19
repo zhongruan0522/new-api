@@ -7,7 +7,7 @@ import {
   renderQuota,
   renderQuotaWithAmount,
   copy,
-  getQuotaPerUnit
+  getQuotaPerUnit,
 } from '../../helpers';
 import {
   Avatar,
@@ -34,7 +34,7 @@ import {
   Copy,
   Users,
   User,
-  Coins
+  Coins,
 } from 'lucide-react';
 
 const { Text, Title } = Typography;
@@ -49,9 +49,15 @@ const TopUp = () => {
   const [topUpCode, setTopUpCode] = useState('');
   const [amount, setAmount] = useState(0.0);
   const [minTopUp, setMinTopUp] = useState(statusState?.status?.min_topup || 1);
-  const [topUpCount, setTopUpCount] = useState(statusState?.status?.min_topup || 1);
-  const [topUpLink, setTopUpLink] = useState(statusState?.status?.top_up_link || '');
-  const [enableOnlineTopUp, setEnableOnlineTopUp] = useState(statusState?.status?.enable_online_topup || false);
+  const [topUpCount, setTopUpCount] = useState(
+    statusState?.status?.min_topup || 1,
+  );
+  const [topUpLink, setTopUpLink] = useState(
+    statusState?.status?.top_up_link || '',
+  );
+  const [enableOnlineTopUp, setEnableOnlineTopUp] = useState(
+    statusState?.status?.enable_online_topup || false,
+  );
   const [priceRatio, setPriceRatio] = useState(statusState?.status?.price || 1);
   const [userQuota, setUserQuota] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -61,6 +67,7 @@ const TopUp = () => {
   const [amountLoading, setAmountLoading] = useState(false);
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [confirmLoading, setConfirmLoading] = useState(false);
+  const [payMethods, setPayMethods] = useState([]);
 
   // 邀请相关状态
   const [affLink, setAffLink] = useState('');
@@ -76,7 +83,7 @@ const TopUp = () => {
     { value: 100 },
     { value: 300 },
     { value: 500 },
-    { value: 1000 }
+    { value: 1000 },
   ]);
   const [selectedPreset, setSelectedPreset] = useState(null);
 
@@ -126,7 +133,7 @@ const TopUp = () => {
         if (userState.user) {
           const updatedUser = {
             ...userState.user,
-            quota: userState.user.quota + data
+            quota: userState.user.quota + data,
           };
           userDispatch({ type: 'login', payload: updatedUser });
         }
@@ -283,6 +290,34 @@ const TopUp = () => {
     }
     getAffLink().then();
     setTransferAmount(getQuotaPerUnit());
+
+    let payMethods = localStorage.getItem('pay_methods');
+    try {
+      payMethods = JSON.parse(payMethods);
+      if (payMethods && payMethods.length > 0) {
+        // 检查name和type是否为空
+        payMethods = payMethods.filter((method) => {
+          return method.name && method.type;
+        });
+        // 如果没有color，则设置默认颜色
+        payMethods = payMethods.map((method) => {
+          if (!method.color) {
+            if (method.type === 'zfb') {
+              method.color = 'rgba(var(--semi-blue-5), 1)';
+            } else if (method.type === 'wx') {
+              method.color = 'rgba(var(--semi-green-5), 1)';
+            } else {
+              method.color = 'rgba(var(--semi-primary-5), 1)';
+            }
+          }
+          return method;
+        });
+        setPayMethods(payMethods);
+      }
+    } catch (e) {
+      console.log(e);
+      showError(t('支付方式配置错误, 请联系管理员'));
+    }
   }, []);
 
   useEffect(() => {
@@ -347,12 +382,12 @@ const TopUp = () => {
   };
 
   return (
-    <div className="mx-auto relative min-h-screen lg:min-h-0">
+    <div className='mx-auto relative min-h-screen lg:min-h-0'>
       {/* 划转模态框 */}
       <Modal
         title={
-          <div className="flex items-center">
-            <CreditCard className="mr-2" size={18} />
+          <div className='flex items-center'>
+            <CreditCard className='mr-2' size={18} />
             {t('划转邀请额度')}
           </div>
         }
@@ -360,22 +395,22 @@ const TopUp = () => {
         onOk={transfer}
         onCancel={handleTransferCancel}
         maskClosable={false}
-        size="small"
+        size='small'
         centered
       >
-        <div className="space-y-4">
+        <div className='space-y-4'>
           <div>
-            <Typography.Text strong className="block mb-2">
+            <Typography.Text strong className='block mb-2'>
               {t('可用邀请额度')}
             </Typography.Text>
             <Input
               value={renderQuota(userState?.user?.aff_quota)}
               disabled
-              size="large"
+              size='large'
             />
           </div>
           <div>
-            <Typography.Text strong className="block mb-2">
+            <Typography.Text strong className='block mb-2'>
               {t('划转额度')} ({t('最低') + renderQuota(getQuotaPerUnit())})
             </Typography.Text>
             <InputNumber
@@ -383,8 +418,8 @@ const TopUp = () => {
               max={userState?.user?.aff_quota || 0}
               value={transferAmount}
               onChange={(value) => setTransferAmount(value)}
-              size="large"
-              className="w-full"
+              size='large'
+              className='w-full'
             />
           </div>
         </div>
@@ -393,8 +428,8 @@ const TopUp = () => {
       {/* 充值确认模态框 */}
       <Modal
         title={
-          <div className="flex items-center">
-            <CreditCard className="mr-2" size={18} />
+          <div className='flex items-center'>
+            <CreditCard className='mr-2' size={18} />
             {t('充值确认')}
           </div>
         }
@@ -402,57 +437,80 @@ const TopUp = () => {
         onOk={onlineTopUp}
         onCancel={handleCancel}
         maskClosable={false}
-        size="small"
+        size='small'
         centered
         confirmLoading={confirmLoading}
       >
-        <div className="space-y-4">
-          <div className="flex justify-between items-center py-2">
+        <div className='space-y-4'>
+          <div className='flex justify-between items-center py-2'>
             <Text strong>{t('充值数量')}：</Text>
             <Text>{renderQuotaWithAmount(topUpCount)}</Text>
           </div>
-          <div className="flex justify-between items-center py-2">
+          <div className='flex justify-between items-center py-2'>
             <Text strong>{t('实付金额')}：</Text>
             {amountLoading ? (
               <Skeleton.Title style={{ width: '60px', height: '16px' }} />
             ) : (
-              <Text type="danger" strong>{renderAmount()}</Text>
+              <Text type='danger' strong>
+                {renderAmount()}
+              </Text>
             )}
           </div>
-          <div className="flex justify-between items-center py-2">
+          <div className='flex justify-between items-center py-2'>
             <Text strong>{t('支付方式')}：</Text>
             <Text>
-              {payWay === 'zfb' ? (
-                <div className="flex items-center">
-                  <SiAlipay className="mr-1" size={16} />
-                  {t('支付宝')}
-                </div>
-              ) : (
-                <div className="flex items-center">
-                  <SiWechat className="mr-1" size={16} />
-                  {t('微信')}
-                </div>
-              )}
+              {(() => {
+                const payMethod = payMethods.find(
+                  (method) => method.type === payWay,
+                );
+                if (payMethod) {
+                  return (
+                    <div className='flex items-center'>
+                      {payMethod.type === 'zfb' ? (
+                        <SiAlipay className='mr-1' size={16} />
+                      ) : payMethod.type === 'wx' ? (
+                        <SiWechat className='mr-1' size={16} />
+                      ) : (
+                        <CreditCard className='mr-1' size={16} />
+                      )}
+                      {payMethod.name}
+                    </div>
+                  );
+                } else {
+                  // 默认充值方式
+                  return payWay === 'zfb' ? (
+                    <div className='flex items-center'>
+                      <SiAlipay className='mr-1' size={16} />
+                      {t('支付宝')}
+                    </div>
+                  ) : (
+                    <div className='flex items-center'>
+                      <SiWechat className='mr-1' size={16} />
+                      {t('微信')}
+                    </div>
+                  );
+                }
+              })()}
             </Text>
           </div>
         </div>
       </Modal>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <div className='grid grid-cols-1 lg:grid-cols-12 gap-6'>
         {/* 左侧充值区域 */}
-        <div className="lg:col-span-7 space-y-6 w-full">
+        <div className='lg:col-span-7 space-y-6 w-full'>
           {/* 在线充值卡片 */}
           <Card
-            className="!rounded-2xl"
+            className='!rounded-2xl'
             shadows='always'
             bordered={false}
             header={
-              <div className="px-5 py-4 pb-0">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
+              <div className='px-5 py-4 pb-0'>
+                <div className='flex items-center justify-between'>
+                  <div className='flex items-center'>
                     <Avatar
-                      className="mr-3 shadow-md flex-shrink-0"
-                      color="blue"
+                      className='mr-3 shadow-md flex-shrink-0'
+                      color='blue'
                     >
                       <CreditCard size={24} />
                     </Avatar>
@@ -460,21 +518,23 @@ const TopUp = () => {
                       <Title heading={5} style={{ margin: 0 }}>
                         {t('在线充值')}
                       </Title>
-                      <Text type="tertiary" className="text-sm">
+                      <Text type='tertiary' className='text-sm'>
                         {t('快速方便的充值方式')}
                       </Text>
                     </div>
                   </div>
 
-                  <div className="flex items-center">
+                  <div className='flex items-center'>
                     {userDataLoading ? (
                       <Skeleton.Paragraph style={{ width: '120px' }} rows={1} />
                     ) : (
-                      <Text type="tertiary" className="hidden sm:block">
-                        <div className="flex items-center">
-                          <User size={14} className="mr-1" />
-                          <span className="hidden md:inline">{getUsername()} ({getUserRole()})</span>
-                          <span className="md:hidden">{getUsername()}</span>
+                      <Text type='tertiary' className='hidden sm:block'>
+                        <div className='flex items-center'>
+                          <User size={14} className='mr-1' />
+                          <span className='hidden md:inline'>
+                            {getUsername()} ({getUserRole()})
+                          </span>
+                          <span className='md:hidden'>{getUsername()}</span>
                         </div>
                       </Text>
                     )}
@@ -483,29 +543,33 @@ const TopUp = () => {
               </div>
             }
           >
-            <div className="space-y-4">
+            <div className='space-y-4'>
               {/* 账户余额信息 */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
-                <Card className="!rounded-2xl">
-                  <Text type="tertiary" className="mb-1">
+              <div className='grid grid-cols-1 md:grid-cols-2 gap-4 mb-2'>
+                <Card className='!rounded-2xl'>
+                  <Text type='tertiary' className='mb-1'>
                     {t('当前余额')}
                   </Text>
                   {userDataLoading ? (
-                    <Skeleton.Title style={{ width: '100px', height: '30px' }} />
+                    <Skeleton.Title
+                      style={{ width: '100px', height: '30px' }}
+                    />
                   ) : (
-                    <div className="text-xl font-semibold mt-2">
+                    <div className='text-xl font-semibold mt-2'>
                       {renderQuota(userState?.user?.quota || userQuota)}
                     </div>
                   )}
                 </Card>
-                <Card className="!rounded-2xl">
-                  <Text type="tertiary" className="mb-1">
+                <Card className='!rounded-2xl'>
+                  <Text type='tertiary' className='mb-1'>
                     {t('历史消耗')}
                   </Text>
                   {userDataLoading ? (
-                    <Skeleton.Title style={{ width: '100px', height: '30px' }} />
+                    <Skeleton.Title
+                      style={{ width: '100px', height: '30px' }}
+                    />
                   ) : (
-                    <div className="text-xl font-semibold mt-2">
+                    <div className='text-xl font-semibold mt-2'>
                       {renderQuota(userState?.user?.used_quota || 0)}
                     </div>
                   )}
@@ -516,47 +580,59 @@ const TopUp = () => {
                 <>
                   {/* 预设充值额度卡片网格 */}
                   <div>
-                    <Text strong className="block mb-3">{t('选择充值额度')}</Text>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+                    <Text strong className='block mb-3'>
+                      {t('选择充值额度')}
+                    </Text>
+                    <div className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3'>
                       {presetAmounts.map((preset, index) => (
                         <Card
                           key={index}
                           onClick={() => selectPresetAmount(preset)}
-                          className={`cursor-pointer !rounded-2xl transition-all hover:shadow-md ${selectedPreset === preset.value
-                            ? 'border-blue-500'
-                            : 'border-gray-200 hover:border-gray-300'
-                            }`}
+                          className={`cursor-pointer !rounded-2xl transition-all hover:shadow-md ${
+                            selectedPreset === preset.value
+                              ? 'border-blue-500'
+                              : 'border-gray-200 hover:border-gray-300'
+                          }`}
                           bodyStyle={{ textAlign: 'center' }}
                         >
-                          <div className="font-medium text-lg flex items-center justify-center mb-1">
-                            <Coins size={16} className="mr-0.5" />
+                          <div className='font-medium text-lg flex items-center justify-center mb-1'>
+                            <Coins size={16} className='mr-0.5' />
                             {formatLargeNumber(preset.value)}
                           </div>
-                          <div className="text-xs text-gray-500">
-                            {t('实付')} ￥{(preset.value * priceRatio).toFixed(2)}
+                          <div className='text-xs text-gray-500'>
+                            {t('实付')} ￥
+                            {(preset.value * priceRatio).toFixed(2)}
                           </div>
                         </Card>
                       ))}
                     </div>
                   </div>
                   {/* 桌面端显示的自定义金额和支付按钮 */}
-                  <div className="hidden md:block space-y-4">
+                  <div className='hidden md:block space-y-4'>
                     <Divider style={{ margin: '24px 0' }}>
-                      <Text className="text-sm font-medium">{t('或输入自定义金额')}</Text>
+                      <Text className='text-sm font-medium'>
+                        {t('或输入自定义金额')}
+                      </Text>
                     </Divider>
 
                     <div>
-                      <div className="flex justify-between mb-2">
+                      <div className='flex justify-between mb-2'>
                         <Text strong>{t('充值数量')}</Text>
                         {amountLoading ? (
-                          <Skeleton.Title style={{ width: '80px', height: '16px' }} />
+                          <Skeleton.Title
+                            style={{ width: '80px', height: '16px' }}
+                          />
                         ) : (
-                          <Text type="tertiary">{t('实付金额：') + renderAmount()}</Text>
+                          <Text type='tertiary'>
+                            {t('实付金额：') + renderAmount()}
+                          </Text>
                         )}
                       </div>
                       <InputNumber
                         disabled={!enableOnlineTopUp}
-                        placeholder={t('充值数量，最低 ') + renderQuotaWithAmount(minTopUp)}
+                        placeholder={
+                          t('充值数量，最低 ') + renderQuotaWithAmount(minTopUp)
+                        }
                         value={topUpCount}
                         min={minTopUp}
                         max={999999999}
@@ -576,36 +652,63 @@ const TopUp = () => {
                             getAmount(1);
                           }
                         }}
-                        size="large"
-                        className="w-full"
-                        formatter={(value) => value ? `${value}` : ''}
-                        parser={(value) => value ? parseInt(value.replace(/[^\d]/g, '')) : 0}
+                        size='large'
+                        className='w-full'
+                        formatter={(value) => (value ? `${value}` : '')}
+                        parser={(value) =>
+                          value ? parseInt(value.replace(/[^\d]/g, '')) : 0
+                        }
                       />
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <Button
-                        type="primary"
+                    <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
+                      {/* <Button
+                        type='primary'
                         onClick={() => preTopUp('zfb')}
-                        size="large"
+                        size='large'
                         disabled={!enableOnlineTopUp}
                         loading={paymentLoading && payWay === 'zfb'}
                         icon={<SiAlipay size={18} />}
                         style={{ height: '44px' }}
                       >
-                        <span className="ml-2">{t('支付宝')}</span>
+                        <span className='ml-2'>{t('支付宝')}</span>
                       </Button>
                       <Button
-                        type="primary"
+                        type='primary'
                         onClick={() => preTopUp('wx')}
-                        size="large"
+                        size='large'
                         disabled={!enableOnlineTopUp}
                         loading={paymentLoading && payWay === 'wx'}
                         icon={<SiWechat size={18} />}
                         style={{ height: '44px' }}
                       >
-                        <span className="ml-2">{t('微信')}</span>
-                      </Button>
+                        <span className='ml-2'>{t('微信')}</span>
+                      </Button> */}
+                      {payMethods.map((payMethod) => (
+                        <Button
+                          key={payMethod.type}
+                          type='primary'
+                          onClick={() => preTopUp(payMethod.type)}
+                          size='large'
+                          disabled={!enableOnlineTopUp}
+                          loading={paymentLoading && payWay === payMethod.type}
+                          icon={
+                            payMethod.type === 'zfb' ? (
+                              <SiAlipay size={18} />
+                            ) : payMethod.type === 'wx' ? (
+                              <SiWechat size={18} />
+                            ) : (
+                              <CreditCard size={18} />
+                            )
+                          }
+                          style={{
+                            height: '44px',
+                            color: payMethod.color,
+                          }}
+                        >
+                          <span className='ml-2'>{payMethod.name}</span>
+                        </Button>
+                      ))}
                     </div>
                   </div>
                 </>
@@ -613,39 +716,41 @@ const TopUp = () => {
 
               {!enableOnlineTopUp && (
                 <Banner
-                  type="warning"
-                  description={t('管理员未开启在线充值功能，请联系管理员开启或使用兑换码充值。')}
+                  type='warning'
+                  description={t(
+                    '管理员未开启在线充值功能，请联系管理员开启或使用兑换码充值。',
+                  )}
                   closeIcon={null}
-                  className="!rounded-2xl"
+                  className='!rounded-2xl'
                 />
               )}
 
               <Divider style={{ margin: '24px 0' }}>
-                <Text className="text-sm font-medium">{t('兑换码充值')}</Text>
+                <Text className='text-sm font-medium'>{t('兑换码充值')}</Text>
               </Divider>
 
-              <Card className="!rounded-2xl">
-                <div className="flex items-start mb-4">
-                  <Gift size={16} className="mr-2 mt-0.5" />
+              <Card className='!rounded-2xl'>
+                <div className='flex items-start mb-4'>
+                  <Gift size={16} className='mr-2 mt-0.5' />
                   <Text strong>{t('使用兑换码快速充值')}</Text>
                 </div>
 
-                <div className="mb-4">
+                <div className='mb-4'>
                   <Input
                     placeholder={t('请输入兑换码')}
                     value={redemptionCode}
                     onChange={(value) => setRedemptionCode(value)}
-                    size="large"
+                    size='large'
                   />
                 </div>
 
-                <div className="flex flex-col sm:flex-row gap-3">
+                <div className='flex flex-col sm:flex-row gap-3'>
                   {topUpLink && (
                     <Button
-                      type="secondary"
+                      type='secondary'
                       onClick={openTopUpLink}
-                      size="large"
-                      className="flex-1"
+                      size='large'
+                      className='flex-1'
                       icon={<LinkIcon size={16} />}
                       style={{ height: '40px' }}
                     >
@@ -653,12 +758,12 @@ const TopUp = () => {
                     </Button>
                   )}
                   <Button
-                    type="primary"
+                    type='primary'
                     onClick={topUp}
                     disabled={isSubmitting || !redemptionCode}
                     loading={isSubmitting}
-                    size="large"
-                    className="flex-1"
+                    size='large'
+                    className='flex-1'
                     style={{ height: '40px' }}
                   >
                     {isSubmitting ? t('兑换中...') : t('兑换')}
@@ -670,18 +775,18 @@ const TopUp = () => {
         </div>
 
         {/* 右侧邀请信息卡片 */}
-        <div className="lg:col-span-5">
+        <div className='lg:col-span-5'>
           <Card
-            className="!rounded-2xl"
+            className='!rounded-2xl'
             shadows='always'
             bordered={false}
             header={
-              <div className="px-5 py-4 pb-0">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
+              <div className='px-5 py-4 pb-0'>
+                <div className='flex items-center justify-between'>
+                  <div className='flex items-center'>
                     <Avatar
-                      className="mr-3 shadow-md flex-shrink-0"
-                      color="green"
+                      className='mr-3 shadow-md flex-shrink-0'
+                      color='green'
                     >
                       <Users size={24} />
                     </Avatar>
@@ -689,7 +794,7 @@ const TopUp = () => {
                       <Title heading={5} style={{ margin: 0 }}>
                         {t('邀请奖励')}
                       </Title>
-                      <Text type="tertiary" className="text-sm">
+                      <Text type='tertiary' className='text-sm'>
                         {t('邀请好友获得额外奖励')}
                       </Text>
                     </div>
@@ -698,53 +803,56 @@ const TopUp = () => {
               </div>
             }
           >
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 gap-4">
-                <Card className="!rounded-2xl">
-                  <div className="flex justify-between items-center">
-                    <Text type="tertiary">{t('待使用收益')}</Text>
+            <div className='space-y-6'>
+              <div className='grid grid-cols-1 gap-4'>
+                <Card className='!rounded-2xl'>
+                  <div className='flex justify-between items-center'>
+                    <Text type='tertiary'>{t('待使用收益')}</Text>
                     <Button
-                      type="primary"
-                      theme="solid"
-                      size="small"
-                      disabled={!userState?.user?.aff_quota || userState?.user?.aff_quota <= 0}
+                      type='primary'
+                      theme='solid'
+                      size='small'
+                      disabled={
+                        !userState?.user?.aff_quota ||
+                        userState?.user?.aff_quota <= 0
+                      }
                       onClick={() => setOpenTransfer(true)}
                     >
                       {t('划转到余额')}
                     </Button>
                   </div>
-                  <div className="text-2xl font-semibold mt-2">
+                  <div className='text-2xl font-semibold mt-2'>
                     {renderQuota(userState?.user?.aff_quota || 0)}
                   </div>
                 </Card>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <Card className="!rounded-2xl">
-                    <Text type="tertiary">{t('总收益')}</Text>
-                    <div className="text-xl font-semibold mt-2">
+                <div className='grid grid-cols-2 gap-4'>
+                  <Card className='!rounded-2xl'>
+                    <Text type='tertiary'>{t('总收益')}</Text>
+                    <div className='text-xl font-semibold mt-2'>
                       {renderQuota(userState?.user?.aff_history_quota || 0)}
                     </div>
                   </Card>
-                  <Card className="!rounded-2xl">
-                    <Text type="tertiary">{t('邀请人数')}</Text>
-                    <div className="text-xl font-semibold mt-2 flex items-center">
-                      <Users size={16} className="mr-1" />
+                  <Card className='!rounded-2xl'>
+                    <Text type='tertiary'>{t('邀请人数')}</Text>
+                    <div className='text-xl font-semibold mt-2 flex items-center'>
+                      <Users size={16} className='mr-1' />
                       {userState?.user?.aff_count || 0}
                     </div>
                   </Card>
                 </div>
               </div>
 
-              <div className="space-y-4">
+              <div className='space-y-4'>
                 <Title heading={6}>{t('邀请链接')}</Title>
                 <Input
                   value={affLink}
                   readOnly
-                  size="large"
+                  size='large'
                   suffix={
                     <Button
-                      type="primary"
-                      theme="light"
+                      type='primary'
+                      theme='light'
                       onClick={handleAffLinkClick}
                       icon={<Copy size={14} />}
                     >
@@ -753,24 +861,24 @@ const TopUp = () => {
                   }
                 />
 
-                <div className="mt-4">
-                  <Card className="!rounded-2xl">
-                    <div className="space-y-4">
-                      <div className="flex items-start">
-                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-2 mr-3 flex-shrink-0"></div>
-                        <Text type="tertiary" className="text-sm leading-6">
+                <div className='mt-4'>
+                  <Card className='!rounded-2xl'>
+                    <div className='space-y-4'>
+                      <div className='flex items-start'>
+                        <div className='w-1.5 h-1.5 rounded-full bg-blue-500 mt-2 mr-3 flex-shrink-0'></div>
+                        <Text type='tertiary' className='text-sm leading-6'>
                           {t('邀请好友注册，好友充值后您可获得相应奖励')}
                         </Text>
                       </div>
-                      <div className="flex items-start">
-                        <div className="w-1.5 h-1.5 rounded-full bg-green-500 mt-2 mr-3 flex-shrink-0"></div>
-                        <Text type="tertiary" className="text-sm leading-6">
+                      <div className='flex items-start'>
+                        <div className='w-1.5 h-1.5 rounded-full bg-green-500 mt-2 mr-3 flex-shrink-0'></div>
+                        <Text type='tertiary' className='text-sm leading-6'>
                           {t('通过划转功能将奖励额度转入到您的账户余额中')}
                         </Text>
                       </div>
-                      <div className="flex items-start">
-                        <div className="w-1.5 h-1.5 rounded-full bg-purple-500 mt-2 mr-3 flex-shrink-0"></div>
-                        <Text type="tertiary" className="text-sm leading-6">
+                      <div className='flex items-start'>
+                        <div className='w-1.5 h-1.5 rounded-full bg-purple-500 mt-2 mr-3 flex-shrink-0'></div>
+                        <Text type='tertiary' className='text-sm leading-6'>
                           {t('邀请的好友越多，获得的奖励越多')}
                         </Text>
                       </div>
@@ -785,20 +893,27 @@ const TopUp = () => {
 
       {/* 移动端底部固定的自定义金额和支付区域 */}
       {enableOnlineTopUp && (
-        <div className="md:hidden fixed bottom-0 left-0 right-0 p-4 shadow-lg z-50" style={{ background: 'var(--semi-color-bg-0)' }}>
-          <div className="space-y-4">
+        <div
+          className='md:hidden fixed bottom-0 left-0 right-0 p-4 shadow-lg z-50'
+          style={{ background: 'var(--semi-color-bg-0)' }}
+        >
+          <div className='space-y-4'>
             <div>
-              <div className="flex justify-between mb-2">
+              <div className='flex justify-between mb-2'>
                 <Text strong>{t('充值数量')}</Text>
                 {amountLoading ? (
                   <Skeleton.Title style={{ width: '80px', height: '16px' }} />
                 ) : (
-                  <Text type="tertiary">{t('实付金额：') + renderAmount()}</Text>
+                  <Text type='tertiary'>
+                    {t('实付金额：') + renderAmount()}
+                  </Text>
                 )}
               </div>
               <InputNumber
                 disabled={!enableOnlineTopUp}
-                placeholder={t('充值数量，最低 ') + renderQuotaWithAmount(minTopUp)}
+                placeholder={
+                  t('充值数量，最低 ') + renderQuotaWithAmount(minTopUp)
+                }
                 value={topUpCount}
                 min={minTopUp}
                 max={999999999}
@@ -818,31 +933,56 @@ const TopUp = () => {
                     getAmount(1);
                   }
                 }}
-                className="w-full"
-                formatter={(value) => value ? `${value}` : ''}
-                parser={(value) => value ? parseInt(value.replace(/[^\d]/g, '')) : 0}
+                className='w-full'
+                formatter={(value) => (value ? `${value}` : '')}
+                parser={(value) =>
+                  value ? parseInt(value.replace(/[^\d]/g, '')) : 0
+                }
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <Button
-                type="primary"
+            <div className='grid grid-cols-2 gap-4'>
+              {/* <Button
+                type='primary'
                 onClick={() => preTopUp('zfb')}
                 disabled={!enableOnlineTopUp}
                 loading={paymentLoading && payWay === 'zfb'}
                 icon={<SiAlipay size={18} />}
               >
-                <span className="ml-2">{t('支付宝')}</span>
+                <span className='ml-2'>{t('支付宝')}</span>
               </Button>
               <Button
-                type="primary"
+                type='primary'
                 onClick={() => preTopUp('wx')}
                 disabled={!enableOnlineTopUp}
                 loading={paymentLoading && payWay === 'wx'}
                 icon={<SiWechat size={18} />}
               >
-                <span className="ml-2">{t('微信')}</span>
-              </Button>
+                <span className='ml-2'>{t('微信')}</span>
+              </Button> */}
+              {payMethods.map((payMethod) => (
+                <Button
+                  key={payMethod.type}
+                  type='primary'
+                  onClick={() => preTopUp(payMethod.type)}
+                  disabled={!enableOnlineTopUp}
+                  loading={paymentLoading && payWay === payMethod.type}
+                  icon={
+                    payMethod.type === 'zfb' ? (
+                      <SiAlipay size={18} />
+                    ) : payMethod.type === 'wx' ? (
+                      <SiWechat size={18} />
+                    ) : (
+                      <CreditCard size={18} />
+                    )
+                  }
+                  style={{
+                    color: payMethod.color,
+                  }}
+                >
+                  <span className='ml-2'>{payMethod.name}</span>
+                </Button>
+              ))}
             </div>
           </div>
         </div>

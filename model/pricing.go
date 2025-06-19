@@ -2,7 +2,7 @@ package model
 
 import (
 	"one-api/common"
-	"one-api/setting/operation_setting"
+	"one-api/setting/ratio_setting"
 	"sync"
 	"time"
 )
@@ -65,14 +65,14 @@ func updatePricing() {
 			ModelName:   model,
 			EnableGroup: groups,
 		}
-		modelPrice, findPrice := operation_setting.GetModelPrice(model, false)
+		modelPrice, findPrice := ratio_setting.GetModelPrice(model, false)
 		if findPrice {
 			pricing.ModelPrice = modelPrice
 			pricing.QuotaType = 1
 		} else {
-			modelRatio, _ := operation_setting.GetModelRatio(model)
+			modelRatio, _ := ratio_setting.GetModelRatio(model)
 			pricing.ModelRatio = modelRatio
-			pricing.CompletionRatio = operation_setting.GetCompletionRatio(model)
+			pricing.CompletionRatio = ratio_setting.GetCompletionRatio(model)
 			pricing.QuotaType = 0
 		}
 		pricingMap = append(pricingMap, pricing)

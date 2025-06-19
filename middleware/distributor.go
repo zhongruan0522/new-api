@@ -11,6 +11,7 @@ import (
 	relayconstant "one-api/relay/constant"
 	"one-api/service"
 	"one-api/setting"
+	"one-api/setting/ratio_setting"
 	"strconv"
 	"strings"
 	"time"
@@ -48,7 +49,7 @@ func Distribute() func(c *gin.Context) {
 				return
 			}
 			// check group in common.GroupRatio
-			if !setting.ContainsGroupRatio(tokenGroup) {
+			if !ratio_setting.ContainsGroupRatio(tokenGroup) {
 				if tokenGroup != "auto" {
 					abortWithOpenAiMessage(c, http.StatusForbidden, fmt.Sprintf("分组 %s 已被弃用", tokenGroup))
 					return

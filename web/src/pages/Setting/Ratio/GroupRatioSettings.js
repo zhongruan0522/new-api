@@ -184,16 +184,16 @@ export default function GroupRatioSettings(props) {
                       if (!value || value.trim() === '') {
                         return true; // Allow empty values
                       }
-                      
+
                       // First check if it's valid JSON
                       try {
                         const parsed = JSON.parse(value);
-                        
+
                         // Check if it's an array
                         if (!Array.isArray(parsed)) {
                           return false;
                         }
-                        
+
                         // Check if every element is a string
                         return parsed.every(item => typeof item === 'string');
                       } catch (error) {

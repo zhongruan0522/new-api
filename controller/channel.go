@@ -52,6 +52,14 @@ func GetAllChannels(c *gin.Context) {
 	channelData := make([]*model.Channel, 0)
 	idSort, _ := strconv.ParseBool(c.Query("id_sort"))
 	enableTagMode, _ := strconv.ParseBool(c.Query("tag_mode"))
+	// type filter
+	typeStr := c.Query("type")
+	typeFilter := -1
+	if typeStr != "" {
+		if t, err := strconv.Atoi(typeStr); err == nil {
+			typeFilter = t
+		}
+	}
 
 	var total int64
 
@@ -72,6 +80,14 @@ func GetAllChannels(c *gin.Context) {
 		}
 		// 计算 tag 总数用于分页
 		total, _ = model.CountAllTags()
+	} else if typeFilter >= 0 {
+		channels, err := model.GetChannelsByType((p-1)*pageSize, pageSize, idSort, typeFilter)
+		if err != nil {
+			c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
+			return
+		}
+		channelData = channels
+		total, _ = model.CountChannelsByType(typeFilter)
 	} else {
 		channels, err := model.GetAllChannels((p-1)*pageSize, pageSize, false, idSort)
 		if err != nil {
@@ -82,14 +98,18 @@ func GetAllChannels(c *gin.Context) {
 		total, _ = model.CountAllChannels()
 	}
 
+	// calculate type counts
+	typeCounts, _ := model.CountChannelsGroupByType()
+
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
 		"data": gin.H{
-			"items":     channelData,
-			"total":     total,
-			"page":      p,
-			"page_size": pageSize,
+			"items":       channelData,
+			"total":       total,
+			"page":        p,
+			"page_size":   pageSize,
+			"type_counts": typeCounts,
 		},
 	})
 	return
@@ -217,10 +237,20 @@ func SearchChannels(c *gin.Context) {
 		}
 		channelData = channels
 	}
+
+	// calculate type counts for search results
+	typeCounts := make(map[int64]int64)
+	for _, channel := range channelData {
+		typeCounts[int64(channel.Type)]++
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
-		"data":    channelData,
+		"data": gin.H{
+			"items":       channelData,
+			"type_counts": typeCounts,
+		},
 	})
 	return
 }

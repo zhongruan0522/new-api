@@ -5,8 +5,7 @@ import (
 	"one-api/common"
 	constant2 "one-api/constant"
 	relaycommon "one-api/relay/common"
-	"one-api/setting"
-	"one-api/setting/operation_setting"
+	"one-api/setting/ratio_setting"
 
 	"github.com/gin-gonic/gin"
 )
@@ -36,7 +35,7 @@ func (p PriceData) ToSetting() string {
 func HandleGroupRatio(ctx *gin.Context, relayInfo *relaycommon.RelayInfo) GroupRatioInfo {
 	groupRatioInfo := GroupRatioInfo{
 		GroupRatio:        1.0, // default ratio
-		GroupSpecialRatio: 1.0, // default user group ratio
+		GroupSpecialRatio: -1,
 	}
 
 	// check auto group
@@ -49,21 +48,21 @@ func HandleGroupRatio(ctx *gin.Context, relayInfo *relaycommon.RelayInfo) GroupR
 	}
 
 	// check user group special ratio
-	userGroupRatio, ok := setting.GetGroupGroupRatio(relayInfo.UserGroup, relayInfo.Group)
+	userGroupRatio, ok := ratio_setting.GetGroupGroupRatio(relayInfo.UserGroup, relayInfo.Group)
 	if ok {
 		// user group special ratio
 		groupRatioInfo.GroupSpecialRatio = userGroupRatio
 		groupRatioInfo.GroupRatio = userGroupRatio
 	} else {
 		// normal group ratio
-		groupRatioInfo.GroupRatio = setting.GetGroupRatio(relayInfo.Group)
+		groupRatioInfo.GroupRatio = ratio_setting.GetGroupRatio(relayInfo.Group)
 	}
 
 	return groupRatioInfo
 }
 
 func ModelPriceHelper(c *gin.Context, info *relaycommon.RelayInfo, promptTokens int, maxTokens int) (PriceData, error) {
-	modelPrice, usePrice := operation_setting.GetModelPrice(info.OriginModelName, false)
+	modelPrice, usePrice := ratio_setting.GetModelPrice(info.OriginModelName, false)
 
 	groupRatioInfo := HandleGroupRatio(c, info)
 
@@ -79,7 +78,7 @@ func ModelPriceHelper(c *gin.Context, info *relaycommon.RelayInfo, promptTokens 
 			preConsumedTokens = promptTokens + maxTokens
 		}
 		var success bool
-		modelRatio, success = operation_setting.GetModelRatio(info.OriginModelName)
+		modelRatio, success = ratio_setting.GetModelRatio(info.OriginModelName)
 		if !success {
 			acceptUnsetRatio := false
 			if accept, ok := info.UserSetting[constant2.UserAcceptUnsetRatioModel]; ok {
@@ -92,10 +91,10 @@ func ModelPriceHelper(c *gin.Context, info *relaycommon.RelayInfo, promptTokens 
 				return PriceData{}, fmt.Errorf("模型 %s 倍率或价格未配置，请联系管理员设置或开始自用模式；Model %s ratio or price not set, please set or start self-use mode", info.OriginModelName, info.OriginModelName)
 			}
 		}
-		completionRatio = operation_setting.GetCompletionRatio(info.OriginModelName)
-		cacheRatio, _ = operation_setting.GetCacheRatio(info.OriginModelName)
-		cacheCreationRatio, _ = operation_setting.GetCreateCacheRatio(info.OriginModelName)
-		imageRatio, _ = operation_setting.GetImageRatio(info.OriginModelName)
+		completionRatio = ratio_setting.GetCompletionRatio(info.OriginModelName)
+		cacheRatio, _ = ratio_setting.GetCacheRatio(info.OriginModelName)
+		cacheCreationRatio, _ = ratio_setting.GetCreateCacheRatio(info.OriginModelName)
+		imageRatio, _ = ratio_setting.GetImageRatio(info.OriginModelName)
 		ratio := modelRatio * groupRatioInfo.GroupRatio
 		preConsumedQuota = int(float64(preConsumedTokens) * ratio)
 	} else {
@@ -122,11 +121,11 @@ func ModelPriceHelper(c *gin.Context, info *relaycommon.RelayInfo, promptTokens 
 }
 
 func ContainPriceOrRatio(modelName string) bool {
-	_, ok := operation_setting.GetModelPrice(modelName, false)
+	_, ok := ratio_setting.GetModelPrice(modelName, false)
 	if ok {
 		return true
 	}
-	_, ok = operation_setting.GetModelRatio(modelName)
+	_, ok = ratio_setting.GetModelRatio(modelName)
 	if ok {
 		return true
 	}
