@@ -25,6 +25,7 @@ export default function ModelRatioSettings(props) {
     ModelRatio: '',
     CacheRatio: '',
     CompletionRatio: '',
+    ExposeRatioEnabled: false,
   });
   const refForm = useRef();
   const [inputsRow, setInputsRow] = useState(inputs);
@@ -202,6 +203,17 @@ export default function ModelRatioSettings(props) {
                 ]}
                 onChange={(value) =>
                   setInputs({ ...inputs, CompletionRatio: value })
+                }
+              />
+            </Col>
+          </Row>
+          <Row gutter={16}>
+            <Col span={16}>
+              <Form.Switch
+                label={t('暴露倍率接口')}
+                field={'ExposeRatioEnabled'}
+                onChange={(value) =>
+                  setInputs({ ...inputs, ExposeRatioEnabled: value })
                 }
               />
             </Col>

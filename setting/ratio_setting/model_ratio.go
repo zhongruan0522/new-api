@@ -317,7 +317,11 @@ func UpdateModelPriceByJSONString(jsonStr string) error {
 	modelPriceMapMutex.Lock()
 	defer modelPriceMapMutex.Unlock()
 	modelPriceMap = make(map[string]float64)
-	return json.Unmarshal([]byte(jsonStr), &modelPriceMap)
+	err := json.Unmarshal([]byte(jsonStr), &modelPriceMap)
+	if err == nil {
+		InvalidateExposedDataCache()
+	}
+	return err
 }
 
 // GetModelPrice 返回模型的价格，如果模型不存在则返回-1，false
@@ -345,7 +349,11 @@ func UpdateModelRatioByJSONString(jsonStr string) error {
 	modelRatioMapMutex.Lock()
 	defer modelRatioMapMutex.Unlock()
 	modelRatioMap = make(map[string]float64)
-	return json.Unmarshal([]byte(jsonStr), &modelRatioMap)
+	err := json.Unmarshal([]byte(jsonStr), &modelRatioMap)
+	if err == nil {
+		InvalidateExposedDataCache()
+	}
+	return err
 }
 
 // 处理带有思考预算的模型名称，方便统一定价
@@ -405,7 +413,11 @@ func UpdateCompletionRatioByJSONString(jsonStr string) error {
 	CompletionRatioMutex.Lock()
 	defer CompletionRatioMutex.Unlock()
 	CompletionRatio = make(map[string]float64)
-	return json.Unmarshal([]byte(jsonStr), &CompletionRatio)
+	err := json.Unmarshal([]byte(jsonStr), &CompletionRatio)
+	if err == nil {
+		InvalidateExposedDataCache()
+	}
+	return err
 }
 
 func GetCompletionRatio(name string) float64 {
@@ -608,4 +620,34 @@ func GetImageRatio(name string) (float64, bool) {
 		return 1, false // Default to 1 if not found
 	}
 	return ratio, true
+}
+
+func GetModelRatioCopy() map[string]float64 {
+	modelRatioMapMutex.RLock()
+	defer modelRatioMapMutex.RUnlock()
+	copyMap := make(map[string]float64, len(modelRatioMap))
+	for k, v := range modelRatioMap {
+		copyMap[k] = v
+	}
+	return copyMap
+}
+
+func GetModelPriceCopy() map[string]float64 {
+	modelPriceMapMutex.RLock()
+	defer modelPriceMapMutex.RUnlock()
+	copyMap := make(map[string]float64, len(modelPriceMap))
+	for k, v := range modelPriceMap {
+		copyMap[k] = v
+	}
+	return copyMap
+}
+
+func GetCompletionRatioCopy() map[string]float64 {
+	CompletionRatioMutex.RLock()
+	defer CompletionRatioMutex.RUnlock()
+	copyMap := make(map[string]float64, len(CompletionRatio))
+	for k, v := range CompletionRatio {
+		copyMap[k] = v
+	}
+	return copyMap
 }
