@@ -29,7 +29,6 @@ type DifferenceItem struct {
     Upstreams map[string]interface{} `json:"upstreams"` // 上游值：具体值/"same"/null
 }
 
-// SyncableChannel 可同步的渠道信息
 type SyncableChannel struct {
     ID      int    `json:"id"`
     Name    string `json:"name"`
@@ -37,7 +36,6 @@ type SyncableChannel struct {
     Status  int    `json:"status"`
 }
 
-// FetchUpstreamRatios 后端并发拉取上游倍率
 func FetchUpstreamRatios(c *gin.Context) {
     var req dto.UpstreamRequest
     if err := c.ShouldBindJSON(&req); err != nil {
@@ -49,10 +47,8 @@ func FetchUpstreamRatios(c *gin.Context) {
         req.Timeout = 10
     }
 
-    // build upstream list from ids
     var upstreams []dto.UpstreamDTO
     if len(req.ChannelIDs) > 0 {
-        // convert []int64 -> []int for model function
         intIds := make([]int, 0, len(req.ChannelIDs))
         for _, id64 := range req.ChannelIDs {
             intIds = append(intIds, int(id64))
@@ -62,7 +58,7 @@ func FetchUpstreamRatios(c *gin.Context) {
             upstreams = append(upstreams, dto.UpstreamDTO{
                 Name:     ch.Name,
                 BaseURL:  ch.GetBaseURL(),
-                Endpoint: "", // assume default endpoint
+                Endpoint: "",
             })
         }
     }
@@ -110,7 +106,6 @@ func FetchUpstreamRatios(c *gin.Context) {
     wg.Wait()
     close(ch)
 
-    // 本地倍率配置
     localData := ratio_setting.GetExposedData()
 
     var testResults []dto.TestResult
@@ -138,7 +133,6 @@ func FetchUpstreamRatios(c *gin.Context) {
         }
     }
 
-    // 构建差异化数据
     differences := buildDifferences(localData, successfulChannels)
 
     c.JSON(http.StatusOK, gin.H{
@@ -150,7 +144,6 @@ func FetchUpstreamRatios(c *gin.Context) {
     })
 }
 
-// buildDifferences 构建差异化数据，只返回有意义的差异
 func buildDifferences(localData map[string]any, successfulChannels []struct {
     name string
     data map[string]any
@@ -158,10 +151,8 @@ func buildDifferences(localData map[string]any, successfulChannels []struct {
     differences := make(map[string]map[string]dto.DifferenceItem)
     ratioTypes := []string{"model_ratio", "completion_ratio", "cache_ratio", "model_price"}
 
-    // 收集所有模型名称
     allModels := make(map[string]struct{})
     
-    // 从本地数据收集模型名称
     for _, ratioType := range ratioTypes {
         if localRatioAny, ok := localData[ratioType]; ok {
             if localRatio, ok := localRatioAny.(map[string]float64); ok {
@@ -172,7 +163,6 @@ func buildDifferences(localData map[string]any, successfulChannels []struct {
         }
     }
     
-    // 从上游数据收集模型名称
     for _, channel := range successfulChannels {
         for _, ratioType := range ratioTypes {
             if upstreamRatio, ok := channel.data[ratioType].(map[string]any); ok {
@@ -183,10 +173,8 @@ func buildDifferences(localData map[string]any, successfulChannels []struct {
         }
     }
 
-    // 对每个模型和每个比率类型进行分析
     for modelName := range allModels {
         for _, ratioType := range ratioTypes {
-            // 获取本地值
             var localValue interface{} = nil
             if localRatioAny, ok := localData[ratioType]; ok {
                 if localRatio, ok := localRatioAny.(map[string]float64); ok {
@@ -196,7 +184,6 @@ func buildDifferences(localData map[string]any, successfulChannels []struct {
                 }
             }
 
-            // 收集上游值
             upstreamValues := make(map[string]interface{})
             hasUpstreamValue := false
             hasDifference := false
@@ -209,7 +196,6 @@ func buildDifferences(localData map[string]any, successfulChannels []struct {
                         upstreamValue = val
                         hasUpstreamValue = true
                         
-                        // 检查是否与本地值不同
                         if localValue != nil && localValue != val {
                             hasDifference = true
                         } else if localValue == val {
@@ -217,8 +203,10 @@ func buildDifferences(localData map[string]any, successfulChannels []struct {
                         }
                     }
                 }
+                if upstreamValue == nil && localValue == nil {
+                    upstreamValue = "same"
+                }
                 
-                // 如果本地值为空但上游有值，这也是差异
                 if localValue == nil && upstreamValue != nil && upstreamValue != "same" {
                     hasDifference = true
                 }
@@ -226,17 +214,13 @@ func buildDifferences(localData map[string]any, successfulChannels []struct {
                 upstreamValues[channel.name] = upstreamValue
             }
 
-            // 应用过滤逻辑
             shouldInclude := false
             
             if localValue != nil {
-                // 规则1: 本地值存在，至少有一个上游与本地值不同
                 if hasDifference {
                     shouldInclude = true
                 }
-                // 规则2: 本地值存在，但所有上游都未设置 - 不包含
             } else {
-                // 规则3: 本地值不存在，至少有一个上游设置了值
                 if hasUpstreamValue {
                     shouldInclude = true
                 }
@@ -254,10 +238,31 @@ func buildDifferences(localData map[string]any, successfulChannels []struct {
         }
     }
 
+    channelHasDiff := make(map[string]bool)
+    for _, ratioMap := range differences {
+        for _, item := range ratioMap {
+            for chName, val := range item.Upstreams {
+                if val != nil && val != "same" {
+                    channelHasDiff[chName] = true
+                }
+            }
+        }
+    }
+
+    for modelName, ratioMap := range differences {
+        for ratioType, item := range ratioMap {
+            for chName := range item.Upstreams {
+                if !channelHasDiff[chName] {
+                    delete(item.Upstreams, chName)
+                }
+            }
+            differences[modelName][ratioType] = item
+        }
+    }
+
     return differences
 }
 
-// GetSyncableChannels 获取可用于倍率同步的渠道（base_url 不为空的渠道）
 func GetSyncableChannels(c *gin.Context) {
     channels, err := model.GetAllChannels(0, 0, true, false)
     if err != nil {
@@ -270,7 +275,6 @@ func GetSyncableChannels(c *gin.Context) {
 
     var syncableChannels []dto.SyncableChannel
     for _, channel := range channels {
-        // 只返回 base_url 不为空的渠道
         if channel.GetBaseURL() != "" {
             syncableChannels = append(syncableChannels, dto.SyncableChannel{
                 ID:      channel.Id,
