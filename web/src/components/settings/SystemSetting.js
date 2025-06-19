@@ -17,7 +17,7 @@ import {
   removeTrailingSlash,
   showError,
   showSuccess,
-  verifyJSON
+  verifyJSON,
 } from '../../helpers';
 import axios from 'axios';
 
@@ -73,6 +73,7 @@ const SystemSetting = () => {
     LinuxDOOAuthEnabled: '',
     LinuxDOClientId: '',
     LinuxDOClientSecret: '',
+    PayMethods: '',
   });
 
   const [originInputs, setOriginInputs] = useState({});
@@ -230,6 +231,12 @@ const SystemSetting = () => {
         return;
       }
     }
+    if (originInputs['PayMethods'] !== inputs.PayMethods) {
+      if (!verifyJSON(inputs.PayMethods)) {
+        showError('充值方式设置不是合法的 JSON 字符串');
+        return;
+      }
+    }
 
     const options = [
       { key: 'PayAddress', value: removeTrailingSlash(inputs.PayAddress) },
@@ -255,6 +262,9 @@ const SystemSetting = () => {
     }
     if (originInputs['TopupGroupRatio'] !== inputs.TopupGroupRatio) {
       options.push({ key: 'TopupGroupRatio', value: inputs.TopupGroupRatio });
+    }
+    if (originInputs['PayMethods'] !== inputs.PayMethods) {
+      options.push({ key: 'PayMethods', value: inputs.PayMethods });
     }
 
     await updateOptions(options);
@@ -656,6 +666,12 @@ const SystemSetting = () => {
                     field='TopupGroupRatio'
                     label='充值分组倍率'
                     placeholder='为一个 JSON 文本，键为组名称，值为倍率'
+                    autosize
+                  />
+                  <Form.TextArea
+                    field='PayMethods'
+                    label='充值方式设置'
+                    placeholder='为一个 JSON 文本'
                     autosize
                   />
                   <Button onClick={submitPayAddress}>更新支付设置</Button>

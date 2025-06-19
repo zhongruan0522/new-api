@@ -76,6 +76,7 @@ func GetStatus(c *gin.Context) {
 		"demo_site_enabled":        operation_setting.DemoSiteEnabled,
 		"self_use_mode_enabled":    operation_setting.SelfUseModeEnabled,
 		"default_use_auto_group":   setting.DefaultUseAutoGroup,
+		"pay_methods":              setting.PayMethods,
 
 		// 面板启用开关
 		"api_info_enabled":      cs.ApiInfoEnabled,
