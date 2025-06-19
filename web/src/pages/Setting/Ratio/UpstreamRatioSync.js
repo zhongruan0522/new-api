@@ -42,14 +42,6 @@ export default function UpstreamRatioSync(props) {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
-  // 当前倍率快照
-  const currentRatiosSnapshot = useMemo(() => ({
-    model_ratio: JSON.parse(props.options.ModelRatio || '{}'),
-    completion_ratio: JSON.parse(props.options.CompletionRatio || '{}'),
-    cache_ratio: JSON.parse(props.options.CacheRatio || '{}'),
-    model_price: JSON.parse(props.options.ModelPrice || '{}'),
-  }), [props.options]);
-
   // 获取所有渠道
   const fetchAllChannels = async () => {
     setLoading(true);

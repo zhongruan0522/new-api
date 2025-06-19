@@ -49,7 +49,7 @@ func FetchUpstreamRatios(c *gin.Context) {
         req.Timeout = 10
     }
 
-    // build upstream list from ids + custom
+    // build upstream list from ids
     var upstreams []dto.UpstreamDTO
     if len(req.ChannelIDs) > 0 {
         // convert []int64 -> []int for model function
