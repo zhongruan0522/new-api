@@ -35,19 +35,6 @@ func GeminiTextGenerationHandler(c *gin.Context, resp *http.Response, info *rela
 		return nil, service.OpenAIErrorWrapper(err, "unmarshal_response_body_failed", http.StatusInternalServerError)
 	}
 
-	// 检查是否有候选响应
-	if len(geminiResponse.Candidates) == 0 {
-		return nil, &dto.OpenAIErrorWithStatusCode{
-			Error: dto.OpenAIError{
-				Message: "No candidates returned",
-				Type:    "server_error",
-				Param:   "",
-				Code:    500,
-			},
-			StatusCode: resp.StatusCode,
-		}
-	}
-
 	// 计算使用量（基于 UsageMetadata）
 	usage := dto.Usage{
 		PromptTokens:     geminiResponse.UsageMetadata.PromptTokenCount,
