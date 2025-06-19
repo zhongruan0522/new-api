@@ -6,7 +6,9 @@ import {
   Empty,
   Checkbox,
   Form,
+  Input,
 } from '@douyinfe/semi-ui';
+import { IconSearch } from '@douyinfe/semi-icons';
 import {
   RefreshCcw,
   CheckSquare,
@@ -37,9 +39,15 @@ export default function UpstreamRatioSync(props) {
   const [differences, setDifferences] = useState({});
   const [resolutions, setResolutions] = useState({});
 
+  // 是否已经执行过同步
+  const [hasSynced, setHasSynced] = useState(false);
+
   // 分页相关状态
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+
+  // 搜索相关状态
+  const [searchKeyword, setSearchKeyword] = useState('');
 
   const fetchAllChannels = async () => {
     setLoading(true);
@@ -114,6 +122,7 @@ export default function UpstreamRatioSync(props) {
 
       setDifferences(differences);
       setResolutions({});
+      setHasSynced(true);
 
       if (Object.keys(differences).length === 0) {
         showSuccess(t('已与上游倍率完全一致，无需同步'));
@@ -233,6 +242,15 @@ export default function UpstreamRatioSync(props) {
               </Button>
             );
           })()}
+
+          <Input
+            prefix={<IconSearch size={14} />}
+            placeholder={t('搜索模型名称')}
+            value={searchKeyword}
+            onChange={setSearchKeyword}
+            className="!rounded-full w-full md:w-64 mt-2"
+            showClear
+          />
         </div>
       </div>
     </div>
@@ -257,20 +275,37 @@ export default function UpstreamRatioSync(props) {
       return tmp;
     }, [differences]);
 
+    const filteredDataSource = useMemo(() => {
+      if (!searchKeyword.trim()) {
+        return dataSource;
+      }
+
+      const keyword = searchKeyword.toLowerCase().trim();
+      return dataSource.filter(item =>
+        item.model.toLowerCase().includes(keyword)
+      );
+    }, [dataSource, searchKeyword]);
+
     const upstreamNames = useMemo(() => {
       const set = new Set();
-      dataSource.forEach((row) => {
+      filteredDataSource.forEach((row) => {
         Object.keys(row.upstreams || {}).forEach((name) => set.add(name));
       });
       return Array.from(set);
-    }, [dataSource]);
+    }, [filteredDataSource]);
 
-    if (dataSource.length === 0) {
+    if (filteredDataSource.length === 0) {
       return (
         <Empty
           image={<IllustrationNoResult style={{ width: 150, height: 150 }} />}
           darkModeImage={<IllustrationNoResultDark style={{ width: 150, height: 150 }} />}
-          description={Object.keys(differences).length === 0 ? t('暂无差异化倍率显示') : t('请先选择同步渠道')}
+          description={
+            searchKeyword.trim()
+              ? t('未找到匹配的模型')
+              : (Object.keys(differences).length === 0 ?
+                (hasSynced ? t('暂无差异化倍率显示') : t('请先选择同步渠道'))
+                : t('请先选择同步渠道'))
+          }
           style={{ padding: 30 }}
         />
       );
@@ -309,7 +344,7 @@ export default function UpstreamRatioSync(props) {
           let selectableCount = 0;
           let selectedCount = 0;
 
-          dataSource.forEach((row) => {
+          filteredDataSource.forEach((row) => {
             const upstreamVal = row.upstreams?.[upName];
             if (upstreamVal !== null && upstreamVal !== undefined && upstreamVal !== 'same') {
               selectableCount++;
@@ -333,7 +368,7 @@ export default function UpstreamRatioSync(props) {
           setResolutions((prev) => {
             const newRes = { ...prev };
 
-            dataSource.forEach((row) => {
+            filteredDataSource.forEach((row) => {
               const upstreamVal = row.upstreams?.[upName];
               if (upstreamVal !== null && upstreamVal !== undefined && upstreamVal !== 'same') {
                 if (checked) {
@@ -412,17 +447,17 @@ export default function UpstreamRatioSync(props) {
     return (
       <Table
         columns={columns}
-        dataSource={getCurrentPageData(dataSource)}
+        dataSource={getCurrentPageData(filteredDataSource)}
         pagination={{
           currentPage: currentPage,
           pageSize: pageSize,
-          total: dataSource.length,
+          total: filteredDataSource.length,
           showSizeChanger: true,
           showQuickJumper: true,
           formatPageText: (page) => t('第 {{start}} - {{end}} 条，共 {{total}} 条', {
             start: page.currentStart,
             end: page.currentEnd,
-            total: dataSource.length,
+            total: filteredDataSource.length,
           }),
           pageSizeOptions: ['5', '10', '20', '50'],
           onChange: (page, size) => {

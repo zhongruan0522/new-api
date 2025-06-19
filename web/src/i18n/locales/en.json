@@ -1687,5 +1687,6 @@
   "缓存倍率": "Cache ratio",
   "暂无差异化倍率显示": "No differential ratio display",
   "请先选择同步渠道": "Please select the synchronization channel first",
-  "与本地相同": "Same as local"
+  "与本地相同": "Same as local",
+  "未找到匹配的模型": "No matching model found"
 }
