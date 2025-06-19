@@ -35,7 +35,7 @@ func (p PriceData) ToSetting() string {
 func HandleGroupRatio(ctx *gin.Context, relayInfo *relaycommon.RelayInfo) GroupRatioInfo {
 	groupRatioInfo := GroupRatioInfo{
 		GroupRatio:        1.0, // default ratio
-		GroupSpecialRatio: 1.0, // default user group ratio
+		GroupSpecialRatio: -1,
 	}
 
 	// check auto group
