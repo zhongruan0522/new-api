@@ -66,7 +66,6 @@ func FetchUpstreamRatios(c *gin.Context) {
             })
         }
     }
-    upstreams = append(upstreams, req.CustomChannels...)
 
     var wg sync.WaitGroup
     ch := make(chan upstreamResult, len(upstreams))

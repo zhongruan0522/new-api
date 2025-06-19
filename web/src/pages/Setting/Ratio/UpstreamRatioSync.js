@@ -11,11 +11,8 @@ import {
   RefreshCcw,
   CheckSquare,
 } from 'lucide-react';
-import {
-  DEFAULT_ENDPOINT,
-  buildEndpointUrl,
-} from '../../../helpers/ratio';
 import { API, showError, showSuccess, showWarning } from '../../../helpers';
+import { DEFAULT_ENDPOINT } from '../../../constants';
 import { useTranslation } from 'react-i18next';
 import {
   IllustrationNoResult,
@@ -32,11 +29,6 @@ export default function UpstreamRatioSync(props) {
   // 渠道选择相关
   const [allChannels, setAllChannels] = useState([]);
   const [selectedChannelIds, setSelectedChannelIds] = useState([]);
-
-  // 自定义渠道
-  const [customUrl, setCustomUrl] = useState('');
-  const [customEndpoint, setCustomEndpoint] = useState(DEFAULT_ENDPOINT);
-  const [customChannelTesting, setCustomChannelTesting] = useState(false);
 
   // 渠道端点配置
   const [channelEndpoints, setChannelEndpoints] = useState({}); // { channelId: endpoint }
@@ -94,86 +86,6 @@ export default function UpstreamRatioSync(props) {
     }
   };
 
-  // 测试自定义渠道
-  const testCustomChannel = async () => {
-    if (!customUrl) {
-      showWarning(t('请输入渠道地址'));
-      return false;
-    }
-
-    setCustomChannelTesting(true);
-
-    try {
-      const url = buildEndpointUrl(customUrl, customEndpoint);
-      const client = { timeout: 10000 };
-
-      const response = await fetch(url, {
-        method: 'GET',
-        signal: AbortSignal.timeout(client.timeout)
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success) {
-          return true;
-        } else {
-          showError(t('测试失败') + `: ${data.message || t('响应格式错误')}`);
-          return false;
-        }
-      } else {
-        showError(t('测试失败') + `: HTTP ${response.status}`);
-        return false;
-      }
-    } catch (error) {
-      showError(t('测试失败') + `: ${error.message || t('请求超时')}`);
-      return false;
-    } finally {
-      setCustomChannelTesting(false);
-    }
-  };
-
-  // 添加自定义渠道
-  const addCustomChannel = async () => {
-    if (!customUrl) {
-      showWarning(t('请输入渠道地址'));
-      return;
-    }
-
-    // 先测试渠道
-    const testResult = await testCustomChannel();
-    if (!testResult) {
-      return;
-    }
-
-    let hostname;
-    try {
-      hostname = new URL(customUrl).hostname;
-    } catch (e) {
-      hostname = customUrl;
-    }
-
-    const customId = `custom_${Date.now()}`;
-    const newChannel = {
-      key: customId,
-      label: hostname,
-      value: customId,
-      disabled: false,
-      _originalData: {
-        id: customId,
-        name: hostname,
-        base_url: customUrl.endsWith('/') ? customUrl.slice(0, -1) : customUrl,
-        status: 1,
-        is_custom: true,
-      },
-    };
-
-    setAllChannels([...allChannels, newChannel]);
-    setSelectedChannelIds([...selectedChannelIds, customId]);
-    setChannelEndpoints(prev => ({ ...prev, [customId]: customEndpoint }));
-    setCustomUrl('');
-    showSuccess(t('测试成功，渠道添加成功'));
-  };
-
   // 确认选择渠道
   const confirmChannelSelection = () => {
     const selected = allChannels
@@ -193,18 +105,9 @@ export default function UpstreamRatioSync(props) {
   const fetchRatiosFromChannels = async (channelList) => {
     setSyncLoading(true);
 
-    // 分离数据库渠道和自定义渠道
-    const dbChannels = channelList.filter(ch => !ch.is_custom);
-    const customChannels = channelList.filter(ch => ch.is_custom);
-
     const payload = {
-      channel_ids: dbChannels.map(ch => parseInt(ch.id)),
-      custom_channels: customChannels.map(ch => ({
-        name: ch.name,
-        base_url: ch.base_url,
-        endpoint: channelEndpoints[ch.id] || DEFAULT_ENDPOINT,
-      })),
-      timeout: 10
+      channel_ids: channelList.map(ch => parseInt(ch.id)),
+      timeout: 10,
     };
 
     try {
@@ -391,12 +294,10 @@ export default function UpstreamRatioSync(props) {
         title: t('模型'),
         dataIndex: 'model',
         fixed: 'left',
-        width: 160,
       },
       {
         title: t('倍率类型'),
         dataIndex: 'ratioType',
-        width: 140,
         render: (text) => {
           const typeMap = {
             model_ratio: t('模型倍率'),
@@ -410,7 +311,6 @@ export default function UpstreamRatioSync(props) {
       {
         title: t('当前值'),
         dataIndex: 'current',
-        width: 100,
         render: (text) => (
           <Tag color={text !== null && text !== undefined ? 'blue' : 'default'} shape="circle">
             {text !== null && text !== undefined ? text : t('未设置')}
@@ -486,7 +386,6 @@ export default function UpstreamRatioSync(props) {
             <span>{upName}</span>
           ),
           dataIndex: upName,
-          width: 140,
           render: (_, record) => {
             const upstreamVal = record.upstreams?.[upName];
 
@@ -582,12 +481,6 @@ export default function UpstreamRatioSync(props) {
         allChannels={allChannels}
         selectedChannelIds={selectedChannelIds}
         setSelectedChannelIds={setSelectedChannelIds}
-        customUrl={customUrl}
-        setCustomUrl={setCustomUrl}
-        customEndpoint={customEndpoint}
-        setCustomEndpoint={setCustomEndpoint}
-        customChannelTesting={customChannelTesting}
-        addCustomChannel={addCustomChannel}
         channelEndpoints={channelEndpoints}
         updateChannelEndpoint={updateChannelEndpoint}
       />

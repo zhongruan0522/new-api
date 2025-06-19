@@ -3,12 +3,10 @@ import {
   Modal,
   Transfer,
   Input,
-  Card,
   Space,
-  Button,
   Checkbox,
 } from '@douyinfe/semi-ui';
-import { IconPlus, IconClose } from '@douyinfe/semi-icons';
+import { IconClose } from '@douyinfe/semi-icons';
 
 /**
  * ChannelSelectorModal
@@ -20,21 +18,13 @@ export default function ChannelSelectorModal({
   visible,
   onCancel,
   onOk,
-  // 渠道与选择
+  // 渠道选择
   allChannels = [],
   selectedChannelIds = [],
   setSelectedChannelIds,
-  // 自定义渠道
-  customUrl,
-  setCustomUrl,
-  customEndpoint,
-  setCustomEndpoint,
-  customChannelTesting,
-  addCustomChannel,
   // 渠道端点
   channelEndpoints,
   updateChannelEndpoint,
-  // 测试相关
 }) {
   // Transfer 自定义渲染
   const renderSourceItem = (item) => {
@@ -107,32 +97,6 @@ export default function ChannelSelectorModal({
       width={1000}
     >
       <Space vertical style={{ width: '100%' }}>
-        <Card title={t('添加自定义渠道')} className="w-full">
-          <Space direction="horizontal" style={{ width: '100%' }}>
-            <Input
-              placeholder={t('渠道地址，如：https://example.com')}
-              value={customUrl}
-              onChange={setCustomUrl}
-              style={{ flex: 1 }}
-            />
-            <Input
-              placeholder={t('接口路径')}
-              value={customEndpoint}
-              onChange={setCustomEndpoint}
-              style={{ width: 150 }}
-            />
-            <Button
-              icon={<IconPlus />}
-              onClick={addCustomChannel}
-              loading={customChannelTesting}
-              disabled={!customUrl}
-              className="whitespace-nowrap"
-            >
-              {customChannelTesting ? t('测试中...') : t('添加')}
-            </Button>
-          </Space>
-        </Card>
-
         <Transfer
           style={{ width: '100%' }}
           dataSource={allChannels}
