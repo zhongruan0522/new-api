@@ -108,7 +108,7 @@ func GeminiTextGenerationStreamHandler(c *gin.Context, resp *http.Response, info
 		}
 
 		// 直接发送 GeminiChatResponse 响应
-		err = helper.ObjectData(c, geminiResponse)
+		err = helper.StringData(c, data)
 		if err != nil {
 			common.LogError(c, err.Error())
 		}
