@@ -7,7 +7,6 @@ import SettingsLog from '../../pages/Setting/Operation/SettingsLog.js';
 import SettingsDataDashboard from '../../pages/Setting/Operation/SettingsDataDashboard.js';
 import SettingsMonitoring from '../../pages/Setting/Operation/SettingsMonitoring.js';
 import SettingsCreditLimit from '../../pages/Setting/Operation/SettingsCreditLimit.js';
-import SettingsChats from '../../pages/Setting/Operation/SettingsChats.js';
 import { API, showError } from '../../helpers';
 
 const OperationSetting = () => {
@@ -56,9 +55,6 @@ const OperationSetting = () => {
     AutomaticDisableChannelEnabled: false,
     AutomaticEnableChannelEnabled: false,
     AutomaticDisableKeywords: '',
-
-    /* 聊天设置 */
-    Chats: '[]',
   });
 
   let [loading, setLoading] = useState(false);
@@ -130,10 +126,6 @@ const OperationSetting = () => {
         {/* 额度设置 */}
         <Card style={{ marginTop: '10px' }}>
           <SettingsCreditLimit options={inputs} refresh={onRefresh} />
-        </Card>
-        {/* 聊天设置 */}
-        <Card style={{ marginTop: '10px' }}>
-          <SettingsChats options={inputs} refresh={onRefresh} />
         </Card>
       </Spin>
     </>

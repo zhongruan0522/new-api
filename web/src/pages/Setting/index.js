@@ -9,7 +9,8 @@ import {
   Shapes,
   Cog,
   MoreHorizontal,
-  LayoutDashboard
+  LayoutDashboard,
+  MessageSquare
 } from 'lucide-react';
 
 import SystemSetting from '../../components/settings/SystemSetting.js';
@@ -20,6 +21,7 @@ import RateLimitSetting from '../../components/settings/RateLimitSetting.js';
 import ModelSetting from '../../components/settings/ModelSetting.js';
 import DashboardSetting from '../../components/settings/DashboardSetting.js';
 import RatioSetting from '../../components/settings/RatioSetting.js';
+import ChatsSetting from '../../components/settings/ChatsSetting.js';
 
 const Setting = () => {
   const { t } = useTranslation();
@@ -38,6 +40,16 @@ const Setting = () => {
       ),
       content: <OperationSetting />,
       itemKey: 'operation',
+    });
+    panes.push({
+      tab: (
+        <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+          <MessageSquare size={18} />
+          {t('聊天设置')}
+        </span>
+      ),
+      content: <ChatsSetting />,
+      itemKey: 'chats',
     });
     panes.push({
       tab: (

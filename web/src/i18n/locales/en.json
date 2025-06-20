@@ -1206,7 +1206,7 @@
   "默认折叠侧边栏": "Default collapse sidebar",
   "聊天链接功能已经弃用，请使用下方聊天设置功能": "Chat link function has been deprecated, please use the chat settings below",
   "你似乎并没有修改什么": "You seem to have not modified anything",
-  "令牌聊天设置": "Chat settings",
+  "聊天设置": "Chat settings",
   "必须将上方聊天链接全部设置为空，才能使用下方聊天设置功能": "Must set all chat links above to empty to use the chat settings below",
   "链接中的{key}将自动替换为sk-xxxx，{address}将自动替换为系统设置的服务器地址，末尾不带/和/v1": "The {key} in the link will be automatically replaced with sk-xxxx, the {address} will be automatically replaced with the server address in system settings, and the end will not have / and /v1",
   "聊天配置": "Chat configuration",
