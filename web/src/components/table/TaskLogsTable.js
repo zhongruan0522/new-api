@@ -11,7 +11,9 @@ import {
   XCircle,
   Loader,
   List,
-  Hash
+  Hash,
+  Video,
+  Sparkles
 } from 'lucide-react';
 import {
   API,
@@ -80,6 +82,7 @@ const COLUMN_KEYS = {
   TASK_STATUS: 'task_status',
   PROGRESS: 'progress',
   FAIL_REASON: 'fail_reason',
+  RESULT_URL: 'result_url',
 };
 
 const renderTimestamp = (timestampInSeconds) => {
@@ -150,6 +153,7 @@ const LogsTable = () => {
       [COLUMN_KEYS.TASK_STATUS]: true,
       [COLUMN_KEYS.PROGRESS]: true,
       [COLUMN_KEYS.FAIL_REASON]: true,
+      [COLUMN_KEYS.RESULT_URL]: true,
     };
   };
 
@@ -203,6 +207,12 @@ const LogsTable = () => {
             {t('生成歌词')}
           </Tag>
         );
+      case 'generate':
+        return (
+          <Tag color='blue' size='large' shape='circle' prefixIcon={<Sparkles size={14} />}>
+            {t('生成视频')}
+          </Tag>
+        );
       default:
         return (
           <Tag color='white' size='large' shape='circle' prefixIcon={<HelpCircle size={14} />}>
@@ -218,6 +228,12 @@ const LogsTable = () => {
         return (
           <Tag color='green' size='large' shape='circle' prefixIcon={<Music size={14} />}>
             Suno
+          </Tag>
+        );
+      case 'kling':
+        return (
+          <Tag color='blue' size='large' shape='circle' prefixIcon={<Video size={14} />}>
+            Kling
           </Tag>
         );
       default:
@@ -411,10 +427,21 @@ const LogsTable = () => {
     },
     {
       key: COLUMN_KEYS.FAIL_REASON,
-      title: t('失败原因'),
+      title: t('详情'),
       dataIndex: 'fail_reason',
       fixed: 'right',
       render: (text, record, index) => {
+        // 仅当为视频生成任务且成功，且 fail_reason 是 URL 时显示可点击链接
+        const isVideoTask = record.action === 'generate';
+        const isSuccess = record.status === 'SUCCESS';
+        const isUrl = typeof text === 'string' && /^https?:\/\//.test(text);
+        if (isSuccess && isVideoTask && isUrl) {
+          return (
+            <a href={text} target="_blank" rel="noopener noreferrer">
+              {t('点击预览视频')}
+            </a>
+          );
+        }
         if (!text) {
           return t('无');
         }

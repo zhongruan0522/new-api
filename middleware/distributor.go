@@ -170,6 +170,15 @@ func getModelRequest(c *gin.Context) (*ModelRequest, bool, error) {
 		}
 		c.Set("platform", string(constant.TaskPlatformSuno))
 		c.Set("relay_mode", relayMode)
+	} else if strings.Contains(c.Request.URL.Path, "/v1/video/generations") {
+		relayMode := relayconstant.Path2RelayKling(c.Request.Method, c.Request.URL.Path)
+		if relayMode == relayconstant.RelayModeKlingFetchByID {
+			shouldSelectChannel = false
+		} else {
+			err = common.UnmarshalBodyReusable(c, &modelRequest)
+		}
+		c.Set("platform", string(constant.TaskPlatformKling))
+		c.Set("relay_mode", relayMode)
 	} else if strings.HasPrefix(c.Request.URL.Path, "/v1beta/models/") {
 		// Gemini API 路径处理: /v1beta/models/gemini-2.0-flash:generateContent
 		relayMode := relayconstant.RelayModeGemini
