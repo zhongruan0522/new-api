@@ -388,11 +388,17 @@ const SettingsAnnouncements = ({ options, refresh }) => {
     </div>
   );
 
-  // 计算当前页显示的数据
+  // 计算当前页显示的数据（按发布时间倒序排序，最新优先显示）
   const getCurrentPageData = () => {
+    const sortedList = [...announcementsList].sort((a, b) => {
+      const dateA = new Date(a.publishDate).getTime();
+      const dateB = new Date(b.publishDate).getTime();
+      return dateB - dateA; // 倒序，最新的排在前面
+    });
+
     const startIndex = (currentPage - 1) * pageSize;
     const endIndex = startIndex + pageSize;
-    return announcementsList.slice(startIndex, endIndex);
+    return sortedList.slice(startIndex, endIndex);
   };
 
   const rowSelection = {

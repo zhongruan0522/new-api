@@ -121,14 +121,14 @@ const DashboardSetting = () => {
           <SettingsDataDashboard options={inputs} refresh={onRefresh} />
         </Card>
 
-        {/* API信息管理 */}
-        <Card style={{ marginTop: '10px' }}>
-          <SettingsAPIInfo options={inputs} refresh={onRefresh} />
-        </Card>
-
         {/* 系统公告管理 */}
         <Card style={{ marginTop: '10px' }}>
           <SettingsAnnouncements options={inputs} refresh={onRefresh} />
+        </Card>
+
+        {/* API信息管理 */}
+        <Card style={{ marginTop: '10px' }}>
+          <SettingsAPIInfo options={inputs} refresh={onRefresh} />
         </Card>
 
         {/* 常见问答管理 */}
