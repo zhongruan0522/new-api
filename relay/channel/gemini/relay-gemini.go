@@ -103,7 +103,6 @@ func CovertGemini2OpenAI(textRequest dto.GeneralOpenAIRequest, info *relaycommon
 		isNew25Pro := strings.HasPrefix(modelName, "gemini-2.5-pro") &&
 			!strings.HasPrefix(modelName, "gemini-2.5-pro-preview-05-06") &&
 			!strings.HasPrefix(modelName, "gemini-2.5-pro-preview-03-25")
-		is25FlashLite := strings.HasPrefix(modelName, "gemini-2.5-flash-lite")
 
 		if strings.Contains(modelName, "-thinking-") {
 			parts := strings.SplitN(modelName, "-thinking-", 2)
@@ -142,7 +141,7 @@ func CovertGemini2OpenAI(textRequest dto.GeneralOpenAIRequest, info *relaycommon
 				}
 			}
 		} else if strings.HasSuffix(modelName, "-nothinking") {
-			if !isNew25Pro && !is25FlashLite {
+			if !isNew25Pro {
 				geminiRequest.GenerationConfig.ThinkingConfig = &GeminiThinkingConfig{
 					ThinkingBudget: common.GetPointer(0),
 				}
