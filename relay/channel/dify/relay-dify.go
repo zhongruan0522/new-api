@@ -243,15 +243,8 @@ func difyStreamHandler(c *gin.Context, resp *http.Response, info *relaycommon.Re
 		return true
 	})
 	helper.Done(c)
-	err := resp.Body.Close()
-	if err != nil {
-		// return service.OpenAIErrorWrapper(err, "close_response_body_failed", http.StatusInternalServerError), nil
-		common.SysError("close_response_body_failed: " + err.Error())
-	}
 	if usage.TotalTokens == 0 {
-		usage.PromptTokens = info.PromptTokens
-		usage.CompletionTokens, _ = service.CountTextToken("gpt-3.5-turbo", responseText)
-		usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
+		usage = service.ResponseText2Usage(responseText, info.UpstreamModelName, info.PromptTokens)
 	}
 	usage.CompletionTokens += nodeToken
 	return nil, usage

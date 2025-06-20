@@ -40,10 +40,10 @@ func checkInputSensitive(textRequest *dto.OpenAIResponsesRequest, info *relaycom
 	return sensitiveWords, err
 }
 
-func getInputTokens(req *dto.OpenAIResponsesRequest, info *relaycommon.RelayInfo) (int, error) {
-	inputTokens, err := service.CountTokenInput(req.Input, req.Model)
+func getInputTokens(req *dto.OpenAIResponsesRequest, info *relaycommon.RelayInfo) int {
+	inputTokens := service.CountTokenInput(req.Input, req.Model)
 	info.PromptTokens = inputTokens
-	return inputTokens, err
+	return inputTokens
 }
 
 func ResponsesHelper(c *gin.Context) (openaiErr *dto.OpenAIErrorWithStatusCode) {
@@ -72,10 +72,7 @@ func ResponsesHelper(c *gin.Context) (openaiErr *dto.OpenAIErrorWithStatusCode) 
 		promptTokens := value.(int)
 		relayInfo.SetPromptTokens(promptTokens)
 	} else {
-		promptTokens, err := getInputTokens(req, relayInfo)
-		if err != nil {
-			return service.OpenAIErrorWrapperLocal(err, "count_input_tokens_error", http.StatusBadRequest)
-		}
+		promptTokens := getInputTokens(req, relayInfo)
 		c.Set("prompt_tokens", promptTokens)
 	}
 

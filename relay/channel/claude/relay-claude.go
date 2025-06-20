@@ -549,7 +549,7 @@ func HandleStreamResponseData(c *gin.Context, info *relaycommon.RelayInfo, claud
 func HandleStreamFinalResponse(c *gin.Context, info *relaycommon.RelayInfo, claudeInfo *ClaudeResponseInfo, requestMode int) {
 
 	if requestMode == RequestModeCompletion {
-		claudeInfo.Usage, _ = service.ResponseText2Usage(claudeInfo.ResponseText.String(), info.UpstreamModelName, info.PromptTokens)
+		claudeInfo.Usage = service.ResponseText2Usage(claudeInfo.ResponseText.String(), info.UpstreamModelName, info.PromptTokens)
 	} else {
 		if claudeInfo.Usage.PromptTokens == 0 {
 			//上游出错
@@ -558,7 +558,7 @@ func HandleStreamFinalResponse(c *gin.Context, info *relaycommon.RelayInfo, clau
 			if common.DebugEnabled {
 				common.SysError("claude response usage is not complete, maybe upstream error")
 			}
-			claudeInfo.Usage, _ = service.ResponseText2Usage(claudeInfo.ResponseText.String(), info.UpstreamModelName, claudeInfo.Usage.PromptTokens)
+			claudeInfo.Usage = service.ResponseText2Usage(claudeInfo.ResponseText.String(), info.UpstreamModelName, claudeInfo.Usage.PromptTokens)
 		}
 	}
 
@@ -618,10 +618,7 @@ func HandleClaudeResponseData(c *gin.Context, info *relaycommon.RelayInfo, claud
 		}
 	}
 	if requestMode == RequestModeCompletion {
-		completionTokens, err := service.CountTextToken(claudeResponse.Completion, info.OriginModelName)
-		if err != nil {
-			return service.OpenAIErrorWrapper(err, "count_token_text_failed", http.StatusInternalServerError)
-		}
+		completionTokens := service.CountTextToken(claudeResponse.Completion, info.OriginModelName)
 		claudeInfo.Usage.PromptTokens = info.PromptTokens
 		claudeInfo.Usage.CompletionTokens = completionTokens
 		claudeInfo.Usage.TotalTokens = info.PromptTokens + completionTokens
