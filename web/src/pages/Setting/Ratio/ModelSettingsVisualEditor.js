@@ -404,7 +404,7 @@ export default function ModelSettingsVisualEditor(props) {
   return (
     <>
       <Space vertical align='start' style={{ width: '100%' }}>
-        <Space>
+        <Space className='mt-2'>
           <Button
             icon={<IconPlus />}
             onClick={() => {

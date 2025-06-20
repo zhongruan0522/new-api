@@ -82,7 +82,7 @@ const RatioSetting = () => {
     <Spin spinning={loading} size='large'>
       {/* 模型倍率设置以及可视化编辑器 */}
       <Card style={{ marginTop: '10px' }}>
-        <Tabs type='line'>
+        <Tabs type='card'>
           <Tabs.TabPane tab={t('模型倍率设置')} itemKey='model'>
             <ModelRatioSettings options={inputs} refresh={onRefresh} />
           </Tabs.TabPane>
