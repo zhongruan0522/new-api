@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Card, Spin } from '@douyinfe/semi-ui';
 import SettingsGeneral from '../../pages/Setting/Operation/SettingsGeneral.js';
-import SettingsDrawing from '../../pages/Setting/Operation/SettingsDrawing.js';
 import SettingsSensitiveWords from '../../pages/Setting/Operation/SettingsSensitiveWords.js';
 import SettingsLog from '../../pages/Setting/Operation/SettingsLog.js';
 import SettingsDataDashboard from '../../pages/Setting/Operation/SettingsDataDashboard.js';
@@ -27,14 +26,6 @@ const OperationSetting = () => {
     DefaultCollapseSidebar: false,
     DemoSiteEnabled: false,
     SelfUseModeEnabled: false,
-
-    /* 绘图设置 */
-    DrawingEnabled: false,
-    MjNotifyEnabled: false,
-    MjAccountFilterEnabled: false,
-    MjForwardUrlEnabled: false,
-    MjModeClearEnabled: false,
-    MjActionCheckSuccessEnabled: false,
 
     /* 敏感词设置 */
     CheckSensitiveEnabled: false,
@@ -102,10 +93,6 @@ const OperationSetting = () => {
         {/* 通用设置 */}
         <Card style={{ marginTop: '10px' }}>
           <SettingsGeneral options={inputs} refresh={onRefresh} />
-        </Card>
-        {/* 绘图设置 */}
-        <Card style={{ marginTop: '10px' }}>
-          <SettingsDrawing options={inputs} refresh={onRefresh} />
         </Card>
         {/* 屏蔽词过滤设置 */}
         <Card style={{ marginTop: '10px' }}>

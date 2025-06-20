@@ -10,7 +10,8 @@ import {
   Cog,
   MoreHorizontal,
   LayoutDashboard,
-  MessageSquare
+  MessageSquare,
+  Palette
 } from 'lucide-react';
 
 import SystemSetting from '../../components/settings/SystemSetting.js';
@@ -22,6 +23,7 @@ import ModelSetting from '../../components/settings/ModelSetting.js';
 import DashboardSetting from '../../components/settings/DashboardSetting.js';
 import RatioSetting from '../../components/settings/RatioSetting.js';
 import ChatsSetting from '../../components/settings/ChatsSetting.js';
+import DrawingSetting from '../../components/settings/DrawingSetting.js';
 
 const Setting = () => {
   const { t } = useTranslation();
@@ -50,6 +52,16 @@ const Setting = () => {
       ),
       content: <ChatsSetting />,
       itemKey: 'chats',
+    });
+    panes.push({
+      tab: (
+        <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+          <Palette size={18} />
+          {t('绘图设置')}
+        </span>
+      ),
+      content: <DrawingSetting />,
+      itemKey: 'drawing',
     });
     panes.push({
       tab: (
@@ -131,6 +143,7 @@ const Setting = () => {
         <Layout.Content>
           <Tabs
             type='card'
+            collapsible
             activeKey={tabActiveKey}
             onChange={(key) => onChangeTab(key)}
           >
