@@ -15,7 +15,7 @@ import (
 )
 
 func getEmbeddingPromptToken(embeddingRequest dto.EmbeddingRequest) int {
-	token, _ := service.CountTokenInput(embeddingRequest.Input, embeddingRequest.Model)
+	token := service.CountTokenInput(embeddingRequest.Input, embeddingRequest.Model)
 	return token
 }
 

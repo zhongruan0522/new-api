@@ -14,12 +14,10 @@ import (
 )
 
 func getRerankPromptToken(rerankRequest dto.RerankRequest) int {
-	token, _ := service.CountTokenInput(rerankRequest.Query, rerankRequest.Model)
+	token := service.CountTokenInput(rerankRequest.Query, rerankRequest.Model)
 	for _, document := range rerankRequest.Documents {
-		tkm, err := service.CountTokenInput(document, rerankRequest.Model)
-		if err == nil {
-			token += tkm
-		}
+		tkm := service.CountTokenInput(document, rerankRequest.Model)
+		token += tkm
 	}
 	return token
 }

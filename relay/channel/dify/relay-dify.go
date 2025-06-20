@@ -250,7 +250,7 @@ func difyStreamHandler(c *gin.Context, resp *http.Response, info *relaycommon.Re
 	}
 	if usage.TotalTokens == 0 {
 		usage.PromptTokens = info.PromptTokens
-		usage.CompletionTokens, _ = service.CountTextToken("gpt-3.5-turbo", responseText)
+		usage.CompletionTokens = service.CountTextToken("gpt-3.5-turbo", responseText)
 		usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
 	}
 	usage.CompletionTokens += nodeToken
