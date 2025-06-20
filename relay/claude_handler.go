@@ -46,12 +46,10 @@ func ClaudeHelper(c *gin.Context) (claudeError *dto.ClaudeErrorWithStatusCode) {
 		relayInfo.IsStream = true
 	}
 
-	err = helper.ModelMappedHelper(c, relayInfo)
+	err = helper.ModelMappedHelper(c, relayInfo, textRequest)
 	if err != nil {
 		return service.ClaudeErrorWrapperLocal(err, "model_mapped_error", http.StatusInternalServerError)
 	}
-
-	textRequest.Model = relayInfo.UpstreamModelName
 
 	promptTokens, err := getClaudePromptTokens(textRequest, relayInfo)
 	// count messages token error 计算promptTokens错误
@@ -126,7 +124,7 @@ func ClaudeHelper(c *gin.Context) (claudeError *dto.ClaudeErrorWithStatusCode) {
 	var httpResp *http.Response
 	resp, err := adaptor.DoRequest(c, relayInfo, requestBody)
 	if err != nil {
-		return service.ClaudeErrorWrapperLocal(err, "do_request_failed", http.StatusInternalServerError)
+		return service.ClaudeErrorWrapper(err, "do_request_failed", http.StatusInternalServerError)
 	}
 
 	if resp != nil {

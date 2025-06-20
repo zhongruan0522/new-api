@@ -14,12 +14,10 @@ import (
 )
 
 func getRerankPromptToken(rerankRequest dto.RerankRequest) int {
-	token, _ := service.CountTokenInput(rerankRequest.Query, rerankRequest.Model)
+	token := service.CountTokenInput(rerankRequest.Query, rerankRequest.Model)
 	for _, document := range rerankRequest.Documents {
-		tkm, err := service.CountTokenInput(document, rerankRequest.Model)
-		if err == nil {
-			token += tkm
-		}
+		tkm := service.CountTokenInput(document, rerankRequest.Model)
+		token += tkm
 	}
 	return token
 }
@@ -42,12 +40,10 @@ func RerankHelper(c *gin.Context, relayMode int) (openaiErr *dto.OpenAIErrorWith
 		return service.OpenAIErrorWrapperLocal(fmt.Errorf("documents is empty"), "invalid_documents", http.StatusBadRequest)
 	}
 
-	err = helper.ModelMappedHelper(c, relayInfo)
+	err = helper.ModelMappedHelper(c, relayInfo, rerankRequest)
 	if err != nil {
 		return service.OpenAIErrorWrapperLocal(err, "model_mapped_error", http.StatusInternalServerError)
 	}
-
-	rerankRequest.Model = relayInfo.UpstreamModelName
 
 	promptToken := getRerankPromptToken(*rerankRequest)
 	relayInfo.PromptTokens = promptToken

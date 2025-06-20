@@ -9,6 +9,7 @@ import (
 	relaycommon "one-api/relay/common"
 	"one-api/relay/helper"
 	"one-api/service"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -75,6 +76,8 @@ func GeminiTextGenerationStreamHandler(c *gin.Context, resp *http.Response, info
 
 	helper.SetEventStreamHeaders(c)
 
+	responseText := strings.Builder{}
+
 	helper.StreamScannerHandler(c, resp, info, func(data string) bool {
 		var geminiResponse GeminiChatResponse
 		err := common.DecodeJsonStr(data, &geminiResponse)
@@ -88,6 +91,9 @@ func GeminiTextGenerationStreamHandler(c *gin.Context, resp *http.Response, info
 			for _, part := range candidate.Content.Parts {
 				if part.InlineData != nil && part.InlineData.MimeType != "" {
 					imageCount++
+				}
+				if part.Text != "" {
+					responseText.WriteString(part.Text)
 				}
 			}
 		}
@@ -108,7 +114,7 @@ func GeminiTextGenerationStreamHandler(c *gin.Context, resp *http.Response, info
 		}
 
 		// 直接发送 GeminiChatResponse 响应
-		err = helper.ObjectData(c, geminiResponse)
+		err = helper.StringData(c, data)
 		if err != nil {
 			common.LogError(c, err.Error())
 		}
@@ -122,8 +128,16 @@ func GeminiTextGenerationStreamHandler(c *gin.Context, resp *http.Response, info
 		}
 	}
 
-	// 计算最终使用量
-	// usage.CompletionTokens = usage.TotalTokens - usage.PromptTokens
+	// 如果usage.CompletionTokens为0，则使用本地统计的completion tokens
+	if usage.CompletionTokens == 0 {
+		str := responseText.String()
+		if len(str) > 0 {
+			usage = service.ResponseText2Usage(responseText.String(), info.UpstreamModelName, info.PromptTokens)
+		} else {
+			// 空补全，不需要使用量
+			usage = &dto.Usage{}
+		}
+	}
 
 	// 移除流式响应结尾的[Done]，因为Gemini API没有发送Done的行为
 	//helper.Done(c)
