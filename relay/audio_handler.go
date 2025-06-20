@@ -67,9 +67,6 @@ func AudioHelper(c *gin.Context) (openaiErr *dto.OpenAIErrorWithStatusCode) {
 	preConsumedTokens := common.PreConsumedQuota
 	if relayInfo.RelayMode == relayconstant.RelayModeAudioSpeech {
 		promptTokens = service.CountTTSToken(audioRequest.Input, audioRequest.Model)
-		if err != nil {
-			return service.OpenAIErrorWrapper(err, "count_audio_token_failed", http.StatusInternalServerError)
-		}
 		preConsumedTokens = promptTokens
 		relayInfo.PromptTokens = promptTokens
 	}

@@ -73,9 +73,6 @@ func ResponsesHelper(c *gin.Context) (openaiErr *dto.OpenAIErrorWithStatusCode) 
 		relayInfo.SetPromptTokens(promptTokens)
 	} else {
 		promptTokens := getInputTokens(req, relayInfo)
-		if err != nil {
-			return service.OpenAIErrorWrapperLocal(err, "count_input_tokens_error", http.StatusBadRequest)
-		}
 		c.Set("prompt_tokens", promptTokens)
 	}
 
