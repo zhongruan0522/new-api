@@ -6,6 +6,7 @@ import GroupRatioSettings from '../../pages/Setting/Ratio/GroupRatioSettings.js'
 import ModelRatioSettings from '../../pages/Setting/Ratio/ModelRatioSettings.js';
 import ModelSettingsVisualEditor from '../../pages/Setting/Ratio/ModelSettingsVisualEditor.js';
 import ModelRatioNotSetEditor from '../../pages/Setting/Ratio/ModelRationNotSetEditor.js';
+import UpstreamRatioSync from '../../pages/Setting/Ratio/UpstreamRatioSync.js';
 
 import { API, showError } from '../../helpers';
 
@@ -21,6 +22,7 @@ const RatioSetting = () => {
     GroupGroupRatio: '',
     AutoGroups: '',
     DefaultUseAutoGroup: false,
+    ExposeRatioEnabled: false,
     UserUsableGroups: '',
   });
 
@@ -48,7 +50,7 @@ const RatioSetting = () => {
             // 如果后端返回的不是合法 JSON，直接展示
           }
         }
-        if (['DefaultUseAutoGroup'].includes(item.key)) {
+        if (['DefaultUseAutoGroup', 'ExposeRatioEnabled'].includes(item.key)) {
           newInputs[item.key] = item.value === 'true' ? true : false;
         } else {
           newInputs[item.key] = item.value;
@@ -78,10 +80,6 @@ const RatioSetting = () => {
 
   return (
     <Spin spinning={loading} size='large'>
-      {/* 分组倍率设置 */}
-      <Card style={{ marginTop: '10px' }}>
-        <GroupRatioSettings options={inputs} refresh={onRefresh} />
-      </Card>
       {/* 模型倍率设置以及可视化编辑器 */}
       <Card style={{ marginTop: '10px' }}>
         <Tabs type='line'>
@@ -100,7 +98,17 @@ const RatioSetting = () => {
               refresh={onRefresh}
             />
           </Tabs.TabPane>
+          <Tabs.TabPane tab={t('上游倍率同步')} itemKey='upstream_sync'>
+            <UpstreamRatioSync
+              options={inputs}
+              refresh={onRefresh}
+            />
+          </Tabs.TabPane>
         </Tabs>
+      </Card>
+      {/* 分组倍率设置 */}
+      <Card style={{ marginTop: '10px' }}>
+        <GroupRatioSettings options={inputs} refresh={onRefresh} />
       </Card>
     </Spin>
   );
