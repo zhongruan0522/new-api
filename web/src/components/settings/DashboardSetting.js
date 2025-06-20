@@ -5,6 +5,7 @@ import SettingsAPIInfo from '../../pages/Setting/Dashboard/SettingsAPIInfo.js';
 import SettingsAnnouncements from '../../pages/Setting/Dashboard/SettingsAnnouncements.js';
 import SettingsFAQ from '../../pages/Setting/Dashboard/SettingsFAQ.js';
 import SettingsUptimeKuma from '../../pages/Setting/Dashboard/SettingsUptimeKuma.js';
+import SettingsDataDashboard from '../../pages/Setting/Dashboard/SettingsDataDashboard.js';
 
 const DashboardSetting = () => {
   let [inputs, setInputs] = useState({
@@ -23,6 +24,11 @@ const DashboardSetting = () => {
     FAQ: '',
     UptimeKumaUrl: '',
     UptimeKumaSlug: '',
+
+    /* 数据看板 */
+    DataExportEnabled: false,
+    DataExportDefaultTime: 'hour',
+    DataExportInterval: 5,
   });
 
   let [loading, setLoading] = useState(false);
@@ -36,6 +42,10 @@ const DashboardSetting = () => {
       data.forEach((item) => {
         if (item.key in inputs) {
           newInputs[item.key] = item.value;
+        }
+        if (item.key.endsWith('Enabled') &&
+          (item.key === 'DataExportEnabled')) {
+          newInputs[item.key] = item.value === 'true' ? true : false;
         }
       });
       setInputs(newInputs);
@@ -105,6 +115,11 @@ const DashboardSetting = () => {
             <strong>注意：</strong>迁移过程中会自动处理数据格式转换，迁移完成后旧配置将被清除，请在迁移前在数据库中备份好旧配置。
           </p>
         </Modal>
+
+        {/* 数据看板设置 */}
+        <Card style={{ marginTop: '10px' }}>
+          <SettingsDataDashboard options={inputs} refresh={onRefresh} />
+        </Card>
 
         {/* API信息管理 */}
         <Card style={{ marginTop: '10px' }}>

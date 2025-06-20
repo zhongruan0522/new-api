@@ -3,7 +3,6 @@ import { Card, Spin } from '@douyinfe/semi-ui';
 import SettingsGeneral from '../../pages/Setting/Operation/SettingsGeneral.js';
 import SettingsSensitiveWords from '../../pages/Setting/Operation/SettingsSensitiveWords.js';
 import SettingsLog from '../../pages/Setting/Operation/SettingsLog.js';
-import SettingsDataDashboard from '../../pages/Setting/Operation/SettingsDataDashboard.js';
 import SettingsMonitoring from '../../pages/Setting/Operation/SettingsMonitoring.js';
 import SettingsCreditLimit from '../../pages/Setting/Operation/SettingsCreditLimit.js';
 import { API, showError } from '../../helpers';
@@ -34,11 +33,6 @@ const OperationSetting = () => {
 
     /* 日志设置 */
     LogConsumeEnabled: false,
-
-    /* 数据看板 */
-    DataExportEnabled: false,
-    DataExportDefaultTime: 'hour',
-    DataExportInterval: 5,
 
     /* 监控设置 */
     ChannelDisableThreshold: 0,
@@ -101,10 +95,6 @@ const OperationSetting = () => {
         {/* 日志设置 */}
         <Card style={{ marginTop: '10px' }}>
           <SettingsLog options={inputs} refresh={onRefresh} />
-        </Card>
-        {/* 数据看板 */}
-        <Card style={{ marginTop: '10px' }}>
-          <SettingsDataDashboard options={inputs} refresh={onRefresh} />
         </Card>
         {/* 监控设置 */}
         <Card style={{ marginTop: '10px' }}>
