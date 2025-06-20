@@ -2,6 +2,15 @@ import React, { useEffect, useState } from 'react';
 import { Layout, TabPane, Tabs } from '@douyinfe/semi-ui';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import {
+  Settings,
+  Calculator,
+  Gauge,
+  Shapes,
+  Cog,
+  MoreHorizontal,
+  LayoutDashboard
+} from 'lucide-react';
 
 import SystemSetting from '../../components/settings/SystemSetting.js';
 import { isRoot } from '../../helpers';
@@ -21,39 +30,74 @@ const Setting = () => {
 
   if (isRoot()) {
     panes.push({
-      tab: t('运营设置'),
+      tab: (
+        <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+          <Settings size={18} />
+          {t('运营设置')}
+        </span>
+      ),
       content: <OperationSetting />,
       itemKey: 'operation',
     });
     panes.push({
-      tab: t('倍率设置'),
+      tab: (
+        <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+          <Calculator size={18} />
+          {t('倍率设置')}
+        </span>
+      ),
       content: <RatioSetting />,
       itemKey: 'ratio',
     });
     panes.push({
-      tab: t('速率限制设置'),
+      tab: (
+        <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+          <Gauge size={18} />
+          {t('速率限制设置')}
+        </span>
+      ),
       content: <RateLimitSetting />,
       itemKey: 'ratelimit',
     });
     panes.push({
-      tab: t('模型相关设置'),
+      tab: (
+        <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+          <Shapes size={18} />
+          {t('模型相关设置')}
+        </span>
+      ),
       content: <ModelSetting />,
       itemKey: 'models',
     });
     panes.push({
-      tab: t('系统设置'),
+      tab: (
+        <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+          <Cog size={18} />
+          {t('系统设置')}
+        </span>
+      ),
       content: <SystemSetting />,
       itemKey: 'system',
     });
     panes.push({
-      tab: t('其他设置'),
-      content: <OtherSetting />,
-      itemKey: 'other',
-    });
-    panes.push({
-      tab: t('仪表盘设置'),
+      tab: (
+        <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+          <LayoutDashboard size={18} />
+          {t('仪表盘设置')}
+        </span>
+      ),
       content: <DashboardSetting />,
       itemKey: 'dashboard',
+    });
+    panes.push({
+      tab: (
+        <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+          <MoreHorizontal size={18} />
+          {t('其他设置')}
+        </span>
+      ),
+      content: <OtherSetting />,
+      itemKey: 'other',
     });
   }
   const onChangeTab = (key) => {
@@ -74,7 +118,7 @@ const Setting = () => {
       <Layout>
         <Layout.Content>
           <Tabs
-            type='line'
+            type='card'
             activeKey={tabActiveKey}
             onChange={(key) => onChangeTab(key)}
           >
