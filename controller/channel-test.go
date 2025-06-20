@@ -90,7 +90,7 @@ func testChannel(channel *model.Channel, testModel string) (err error, openAIErr
 
 	info := relaycommon.GenRelayInfo(c)
 
-	err = helper.ModelMappedHelper(c, info)
+	err = helper.ModelMappedHelper(c, info, nil)
 	if err != nil {
 		return err, nil
 	}

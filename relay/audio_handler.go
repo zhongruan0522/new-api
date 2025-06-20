@@ -55,7 +55,7 @@ func getAndValidAudioRequest(c *gin.Context, info *relaycommon.RelayInfo) (*dto.
 }
 
 func AudioHelper(c *gin.Context) (openaiErr *dto.OpenAIErrorWithStatusCode) {
-	relayInfo := relaycommon.GenRelayInfo(c)
+	relayInfo := relaycommon.GenRelayInfoOpenAIAudio(c)
 	audioRequest, err := getAndValidAudioRequest(c, relayInfo)
 
 	if err != nil {
@@ -89,12 +89,10 @@ func AudioHelper(c *gin.Context) (openaiErr *dto.OpenAIErrorWithStatusCode) {
 		}
 	}()
 
-	err = helper.ModelMappedHelper(c, relayInfo)
+	err = helper.ModelMappedHelper(c, relayInfo, audioRequest)
 	if err != nil {
 		return service.OpenAIErrorWrapperLocal(err, "model_mapped_error", http.StatusInternalServerError)
 	}
-
-	audioRequest.Model = relayInfo.UpstreamModelName
 
 	adaptor := GetAdaptor(relayInfo.ApiType)
 	if adaptor == nil {

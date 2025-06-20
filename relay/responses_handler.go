@@ -63,11 +63,11 @@ func ResponsesHelper(c *gin.Context) (openaiErr *dto.OpenAIErrorWithStatusCode) 
 		}
 	}
 
-	err = helper.ModelMappedHelper(c, relayInfo)
+	err = helper.ModelMappedHelper(c, relayInfo, req)
 	if err != nil {
 		return service.OpenAIErrorWrapperLocal(err, "model_mapped_error", http.StatusBadRequest)
 	}
-	req.Model = relayInfo.UpstreamModelName
+
 	if value, exists := c.Get("prompt_tokens"); exists {
 		promptTokens := value.(int)
 		relayInfo.SetPromptTokens(promptTokens)
