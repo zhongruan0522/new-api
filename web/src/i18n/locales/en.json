@@ -1689,5 +1689,16 @@
   "请先选择同步渠道": "Please select the synchronization channel first",
   "与本地相同": "Same as local",
   "未找到匹配的模型": "No matching model found",
-  "暴露倍率接口": "Expose ratio API"
+  "暴露倍率接口": "Expose ratio API",
+  "支付设置": "Payment Settings",
+  "（当前仅支持易支付接口，默认使用上方服务器地址作为回调地址！）": "(Currently only supports Epay interface, the default callback address is the server address above!)",
+  "支付地址": "Payment address",
+  "易支付商户ID": "Epay merchant ID",
+  "易支付商户密钥": "Epay merchant key",
+  "回调地址": "Callback address",
+  "充值价格（x元/美金）": "Recharge price (x yuan/dollar)",
+  "最低充值美元数量": "Minimum recharge dollar amount",
+  "充值分组倍率": "Recharge group ratio",
+  "充值方式设置": "Recharge method settings",
+  "更新支付设置": "Update payment settings"
 }
