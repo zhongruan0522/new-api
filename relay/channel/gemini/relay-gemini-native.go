@@ -75,6 +75,9 @@ func GeminiTextGenerationStreamHandler(c *gin.Context, resp *http.Response, info
 
 	helper.SetEventStreamHeaders(c)
 
+	// 本地统计的completion tokens
+	localCompletionTokens := 0
+
 	helper.StreamScannerHandler(c, resp, info, func(data string) bool {
 		var geminiResponse GeminiChatResponse
 		err := common.DecodeJsonStr(data, &geminiResponse)
@@ -89,6 +92,12 @@ func GeminiTextGenerationStreamHandler(c *gin.Context, resp *http.Response, info
 				if part.InlineData != nil && part.InlineData.MimeType != "" {
 					imageCount++
 				}
+				// 本地统计completion tokens
+				textTokens, err := service.CountTextToken(part.Text, info.UpstreamModelName)
+				if err != nil {
+					common.LogError(c, "error counting text token: "+err.Error())
+				}
+				localCompletionTokens += textTokens
 			}
 		}
 
@@ -120,6 +129,12 @@ func GeminiTextGenerationStreamHandler(c *gin.Context, resp *http.Response, info
 		if usage.CompletionTokens == 0 {
 			usage.CompletionTokens = imageCount * 258
 		}
+	}
+
+	// 如果usage.CompletionTokens为0，则使用本地统计的completion tokens
+	if usage.CompletionTokens == 0 {
+		usage.CompletionTokens = localCompletionTokens
+		usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
 	}
 
 	// 计算最终使用量
