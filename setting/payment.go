@@ -13,12 +13,12 @@ var PayMethods = []map[string]string{
 	{
 		"name":  "支付宝",
 		"color": "rgba(var(--semi-blue-5), 1)",
-		"type":  "zfb",
+		"type":  "alipay",
 	},
 	{
 		"name":  "微信",
 		"color": "rgba(var(--semi-green-5), 1)",
-		"type":  "wx",
+		"type":  "wxpay",
 	},
 }
 
