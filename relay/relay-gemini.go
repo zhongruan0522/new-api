@@ -162,7 +162,7 @@ func GeminiHelper(c *gin.Context) (openaiErr *dto.OpenAIErrorWithStatusCode) {
 	resp, err := adaptor.DoRequest(c, relayInfo, bytes.NewReader(requestBody))
 	if err != nil {
 		common.LogError(c, "Do gemini request failed: "+err.Error())
-		return service.OpenAIErrorWrapperLocal(err, "do_request_failed", http.StatusInternalServerError)
+		return service.OpenAIErrorWrapper(err, "do_request_failed", http.StatusInternalServerError)
 	}
 
 	statusCodeMappingStr := c.GetString("status_code_mapping")
