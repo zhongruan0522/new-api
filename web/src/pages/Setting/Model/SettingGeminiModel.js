@@ -209,8 +209,8 @@ export default function SettingGeminiModel(props) {
                   label={t('思考预算占比')}
                   field={'gemini.thinking_adapter_budget_tokens_percentage'}
                   initValue={''}
-                  extraText={t('0.1-1之间的小数')}
-                  min={0.1}
+                  extraText={t('0.002-1之间的小数')} 
+                  min={0.002}
                   max={1}
                   onChange={(value) =>
                     setInputs({

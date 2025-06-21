@@ -1,13 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { Card, Spin } from '@douyinfe/semi-ui';
 import SettingsGeneral from '../../pages/Setting/Operation/SettingsGeneral.js';
-import SettingsDrawing from '../../pages/Setting/Operation/SettingsDrawing.js';
 import SettingsSensitiveWords from '../../pages/Setting/Operation/SettingsSensitiveWords.js';
 import SettingsLog from '../../pages/Setting/Operation/SettingsLog.js';
-import SettingsDataDashboard from '../../pages/Setting/Operation/SettingsDataDashboard.js';
 import SettingsMonitoring from '../../pages/Setting/Operation/SettingsMonitoring.js';
 import SettingsCreditLimit from '../../pages/Setting/Operation/SettingsCreditLimit.js';
-import SettingsChats from '../../pages/Setting/Operation/SettingsChats.js';
 import { API, showError } from '../../helpers';
 
 const OperationSetting = () => {
@@ -29,14 +26,6 @@ const OperationSetting = () => {
     DemoSiteEnabled: false,
     SelfUseModeEnabled: false,
 
-    /* 绘图设置 */
-    DrawingEnabled: false,
-    MjNotifyEnabled: false,
-    MjAccountFilterEnabled: false,
-    MjForwardUrlEnabled: false,
-    MjModeClearEnabled: false,
-    MjActionCheckSuccessEnabled: false,
-
     /* 敏感词设置 */
     CheckSensitiveEnabled: false,
     CheckSensitiveOnPromptEnabled: false,
@@ -45,20 +34,12 @@ const OperationSetting = () => {
     /* 日志设置 */
     LogConsumeEnabled: false,
 
-    /* 数据看板 */
-    DataExportEnabled: false,
-    DataExportDefaultTime: 'hour',
-    DataExportInterval: 5,
-
     /* 监控设置 */
     ChannelDisableThreshold: 0,
     QuotaRemindThreshold: 0,
     AutomaticDisableChannelEnabled: false,
     AutomaticEnableChannelEnabled: false,
     AutomaticDisableKeywords: '',
-
-    /* 聊天设置 */
-    Chats: '[]',
   });
 
   let [loading, setLoading] = useState(false);
@@ -107,10 +88,6 @@ const OperationSetting = () => {
         <Card style={{ marginTop: '10px' }}>
           <SettingsGeneral options={inputs} refresh={onRefresh} />
         </Card>
-        {/* 绘图设置 */}
-        <Card style={{ marginTop: '10px' }}>
-          <SettingsDrawing options={inputs} refresh={onRefresh} />
-        </Card>
         {/* 屏蔽词过滤设置 */}
         <Card style={{ marginTop: '10px' }}>
           <SettingsSensitiveWords options={inputs} refresh={onRefresh} />
@@ -119,10 +96,6 @@ const OperationSetting = () => {
         <Card style={{ marginTop: '10px' }}>
           <SettingsLog options={inputs} refresh={onRefresh} />
         </Card>
-        {/* 数据看板 */}
-        <Card style={{ marginTop: '10px' }}>
-          <SettingsDataDashboard options={inputs} refresh={onRefresh} />
-        </Card>
         {/* 监控设置 */}
         <Card style={{ marginTop: '10px' }}>
           <SettingsMonitoring options={inputs} refresh={onRefresh} />
@@ -130,10 +103,6 @@ const OperationSetting = () => {
         {/* 额度设置 */}
         <Card style={{ marginTop: '10px' }}>
           <SettingsCreditLimit options={inputs} refresh={onRefresh} />
-        </Card>
-        {/* 聊天设置 */}
-        <Card style={{ marginTop: '10px' }}>
-          <SettingsChats options={inputs} refresh={onRefresh} />
         </Card>
       </Spin>
     </>

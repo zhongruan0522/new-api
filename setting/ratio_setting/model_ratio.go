@@ -140,6 +140,7 @@ var defaultModelRatio = map[string]float64{
 	"gemini-2.0-flash":                          0.05,
 	"gemini-2.5-pro-exp-03-25":                  0.625,
 	"gemini-2.5-pro-preview-03-25":              0.625,
+	"gemini-2.5-pro":                            0.625,
 	"gemini-2.5-flash-preview-04-17":            0.075,
 	"gemini-2.5-flash-preview-04-17-thinking":   0.075,
 	"gemini-2.5-flash-preview-04-17-nothinking": 0.075,
@@ -148,6 +149,8 @@ var defaultModelRatio = map[string]float64{
 	"gemini-2.5-flash-preview-05-20-nothinking": 0.075,
 	"gemini-2.5-flash-thinking-*":               0.075, // 用于为后续所有2.5 flash thinking budget 模型设置默认倍率
 	"gemini-2.5-pro-thinking-*":                 0.625, // 用于为后续所有2.5 pro thinking budget 模型设置默认倍率
+	"gemini-2.5-flash-lite-preview-06-17":       0.05,
+	"gemini-2.5-flash":                          0.15,
 	"text-embedding-004":                        0.001,
 	"chatglm_turbo":                             0.3572,     // ￥0.005 / 1k tokens
 	"chatglm_pro":                               0.7143,     // ￥0.01 / 1k tokens
@@ -423,7 +426,12 @@ func UpdateCompletionRatioByJSONString(jsonStr string) error {
 func GetCompletionRatio(name string) float64 {
 	CompletionRatioMutex.RLock()
 	defer CompletionRatioMutex.RUnlock()
-
+	if strings.HasPrefix(name, "gpt-4-gizmo") {
+		name = "gpt-4-gizmo-*"
+	}
+	if strings.HasPrefix(name, "gpt-4o-gizmo") {
+		name = "gpt-4o-gizmo-*"
+	}
 	if strings.Contains(name, "/") {
 		if ratio, ok := CompletionRatio[name]; ok {
 			return ratio
@@ -441,12 +449,6 @@ func GetCompletionRatio(name string) float64 {
 
 func getHardcodedCompletionModelRatio(name string) (float64, bool) {
 	lowercaseName := strings.ToLower(name)
-	if strings.HasPrefix(name, "gpt-4-gizmo") {
-		name = "gpt-4-gizmo-*"
-	}
-	if strings.HasPrefix(name, "gpt-4o-gizmo") {
-		name = "gpt-4o-gizmo-*"
-	}
 	if strings.HasPrefix(name, "gpt-4") && !strings.HasSuffix(name, "-all") && !strings.HasSuffix(name, "-gizmo-*") {
 		if strings.HasPrefix(name, "gpt-4o") {
 			if name == "gpt-4o-2024-05-13" {
@@ -500,12 +502,17 @@ func getHardcodedCompletionModelRatio(name string) (float64, bool) {
 			return 4, true
 		} else if strings.HasPrefix(name, "gemini-2.5-pro") { // 移除preview来增加兼容性，这里假设正式版的倍率和preview一致
 			return 8, true
-		} else if strings.HasPrefix(name, "gemini-2.5-flash") { // 同上
-			if strings.HasSuffix(name, "-nothinking") {
-				return 4, false
-			} else {
-				return 3.5 / 0.6, false
+		} else if strings.HasPrefix(name, "gemini-2.5-flash") { // 处理不同的flash模型倍率
+			if strings.HasPrefix(name, "gemini-2.5-flash-preview") {
+				if strings.HasSuffix(name, "-nothinking") {
+					return 4, true
+				}
+				return 3.5 / 0.15, true
 			}
+			if strings.HasPrefix(name, "gemini-2.5-flash-lite-preview") {
+				return 4, true
+			}
+			return 2.5 / 0.3, true
 		}
 		return 4, false
 	}

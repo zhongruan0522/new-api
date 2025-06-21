@@ -1,18 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { Card, Spin } from '@douyinfe/semi-ui';
+import SettingsChats from '../../pages/Setting/Chat/SettingsChats.js';
+import { API, showError } from '../../helpers';
 
-import { API, showError } from '../../helpers/index.js';
-import { useTranslation } from 'react-i18next';
-import RequestRateLimit from '../../pages/Setting/RateLimit/SettingsRequestRateLimit.js';
-
-const RateLimitSetting = () => {
-  const { t } = useTranslation();
+const ChatsSetting = () => {
   let [inputs, setInputs] = useState({
-    ModelRequestRateLimitEnabled: false,
-    ModelRequestRateLimitCount: 0,
-    ModelRequestRateLimitSuccessCount: 1000,
-    ModelRequestRateLimitDurationMinutes: 1,
-    ModelRequestRateLimitGroup: '',
+    /* 聊天设置 */
+    Chats: '[]',
   });
 
   let [loading, setLoading] = useState(false);
@@ -23,11 +17,10 @@ const RateLimitSetting = () => {
     if (success) {
       let newInputs = {};
       data.forEach((item) => {
-        if (item.key === 'ModelRequestRateLimitGroup') {
-          item.value = JSON.stringify(JSON.parse(item.value), null, 2);
-        }
-
-        if (item.key.endsWith('Enabled')) {
+        if (
+          item.key.endsWith('Enabled') ||
+          ['DefaultCollapseSidebar'].includes(item.key)
+        ) {
           newInputs[item.key] = item.value === 'true' ? true : false;
         } else {
           newInputs[item.key] = item.value;
@@ -39,11 +32,11 @@ const RateLimitSetting = () => {
       showError(message);
     }
   };
+
   async function onRefresh() {
     try {
       setLoading(true);
       await getOptions();
-      // showSuccess('刷新成功');
     } catch (error) {
       showError('刷新失败');
     } finally {
@@ -58,13 +51,13 @@ const RateLimitSetting = () => {
   return (
     <>
       <Spin spinning={loading} size='large'>
-        {/* AI请求速率限制 */}
+        {/* 聊天设置 */}
         <Card style={{ marginTop: '10px' }}>
-          <RequestRateLimit options={inputs} refresh={onRefresh} />
+          <SettingsChats options={inputs} refresh={onRefresh} />
         </Card>
       </Spin>
     </>
   );
 };
 
-export default RateLimitSetting;
+export default ChatsSetting; 

@@ -125,7 +125,7 @@ export default function UpstreamRatioSync(props) {
       setHasSynced(true);
 
       if (Object.keys(differences).length === 0) {
-        showSuccess(t('已与上游倍率完全一致，无需同步'));
+        showSuccess(t('未找到差异化倍率，无需同步'));
       }
     } catch (e) {
       showError(t('请求后端接口失败：') + e.message);

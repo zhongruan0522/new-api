@@ -372,7 +372,7 @@ export default function ModelRatioNotSetEditor(props) {
   return (
     <>
       <Space vertical align='start' style={{ width: '100%' }}>
-        <Space>
+        <Space className='mt-2'>
           <Button icon={<IconPlus />} onClick={() => setVisible(true)}>
             {t('添加模型')}
           </Button>
