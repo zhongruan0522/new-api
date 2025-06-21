@@ -67,6 +67,8 @@ function type2secretPrompt(type) {
       return '按照如下格式输入：Ak|Sk|Region';
     case 50:
       return '按照如下格式输入: AccessKey|SecretKey';
+    case 51:
+      return '按照如下格式输入: Access Key ID|Secret Access Key';
     default:
       return '请输入渠道对应的鉴权密钥';
   }
