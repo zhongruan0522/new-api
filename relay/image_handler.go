@@ -17,6 +17,8 @@ import (
 	"one-api/setting"
 	"strings"
 
+	"one-api/relay/constant"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -43,6 +45,11 @@ func getAndValidImageRequest(c *gin.Context, info *relaycommon.RelayInfo) (*dto.
 		}
 		if imageRequest.N == 0 {
 			imageRequest.N = 1
+		}
+
+		if info.ApiType == constant.APITypeVolcEngine {
+			watermark := formData.Has("watermark")
+			imageRequest.Watermark = &watermark
 		}
 	default:
 		err := common.UnmarshalBodyReusable(c, imageRequest)
