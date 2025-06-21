@@ -134,13 +134,6 @@ func FetchUpstreamModels(c *gin.Context) {
 		return
 	}
 
-	//if channel.Type != common.ChannelTypeOpenAI {
-	//	c.JSON(http.StatusOK, gin.H{
-	//		"success": false,
-	//		"message": "仅支持 OpenAI 类型渠道",
-	//	})
-	//	return
-	//}
 	baseURL := common.ChannelBaseURLs[channel.Type]
 	if channel.GetBaseURL() != "" {
 		baseURL = channel.GetBaseURL()
