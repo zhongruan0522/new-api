@@ -130,7 +130,7 @@ const SettingsAnnouncements = ({ options, refresh }) => {
       dataIndex: 'extra',
       key: 'extra',
       render: (text) => (
-        <Tooltip content={text || '-'} position='topLeft' showArrow>
+        <Tooltip content={text || '-'} showArrow>
           <div style={{
             maxWidth: '200px',
             overflow: 'hidden',

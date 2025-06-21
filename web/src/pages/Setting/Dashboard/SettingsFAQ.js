@@ -8,7 +8,8 @@ import {
   Empty,
   Divider,
   Modal,
-  Switch
+  Switch,
+  Tooltip
 } from '@douyinfe/semi-ui';
 import {
   IllustrationNoResult,
@@ -54,13 +55,17 @@ const SettingsFAQ = ({ options, refresh }) => {
       dataIndex: 'question',
       key: 'question',
       render: (text) => (
-        <div style={{
-          maxWidth: '300px',
-          wordBreak: 'break-word',
-          fontWeight: 'bold'
-        }}>
-          {text}
-        </div>
+        <Tooltip content={text} showArrow>
+          <div style={{
+            maxWidth: '300px',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+            fontWeight: 'bold'
+          }}>
+            {text}
+          </div>
+        </Tooltip>
       )
     },
     {
@@ -68,14 +73,17 @@ const SettingsFAQ = ({ options, refresh }) => {
       dataIndex: 'answer',
       key: 'answer',
       render: (text) => (
-        <div style={{
-          maxWidth: '400px',
-          wordBreak: 'break-word',
-          whiteSpace: 'pre-wrap',
-          color: 'var(--semi-color-text-1)'
-        }}>
-          {text}
-        </div>
+        <Tooltip content={text} showArrow>
+          <div style={{
+            maxWidth: '400px',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+            color: 'var(--semi-color-text-1)'
+          }}>
+            {text}
+          </div>
+        </Tooltip>
       )
     },
     {
