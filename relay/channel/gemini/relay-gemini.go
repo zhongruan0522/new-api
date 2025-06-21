@@ -133,11 +133,13 @@ func CovertGemini2OpenAI(textRequest dto.GeneralOpenAIRequest, info *relaycommon
 					IncludeThoughts: true,
 				}
 			} else {
-				budgetTokens := model_setting.GetGeminiSettings().ThinkingAdapterBudgetTokensPercentage * float64(geminiRequest.GenerationConfig.MaxOutputTokens)
-				clampedBudget := clampThinkingBudget(modelName, int(budgetTokens))
 				geminiRequest.GenerationConfig.ThinkingConfig = &GeminiThinkingConfig{
-					ThinkingBudget:  common.GetPointer(clampedBudget),
 					IncludeThoughts: true,
+				}
+				if geminiRequest.GenerationConfig.MaxOutputTokens > 0 {
+					budgetTokens := model_setting.GetGeminiSettings().ThinkingAdapterBudgetTokensPercentage * float64(geminiRequest.GenerationConfig.MaxOutputTokens)
+					clampedBudget := clampThinkingBudget(modelName, int(budgetTokens))
+					geminiRequest.GenerationConfig.ThinkingConfig.ThinkingBudget = common.GetPointer(clampedBudget)
 				}
 			}
 		} else if strings.HasSuffix(modelName, "-nothinking") {
