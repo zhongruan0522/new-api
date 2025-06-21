@@ -1710,5 +1710,8 @@
   "可信": "Reliable",
   "所有上游数据均可信": "All upstream data is reliable",
   "以下上游数据可能不可信：": "The following upstream data may not be reliable: ",
-  "按倍率类型筛选": "Filter by ratio type"
+  "按倍率类型筛选": "Filter by ratio type",
+  "内容": "Content",
+  "放大编辑": "Expand editor",
+  "编辑公告内容": "Edit announcement content"
 }
