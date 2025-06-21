@@ -494,7 +494,7 @@ const SettingsAnnouncements = ({ options, refresh }) => {
           <Form.TextArea
             field='content'
             label={t('公告内容')}
-            placeholder={t('请输入公告内容')}
+            placeholder={t('请输入公告内容（支持 Markdown/HTML）')}
             maxCount={500}
             rows={3}
             rules={[{ required: true, message: t('请输入公告内容') }]}
@@ -571,7 +571,7 @@ const SettingsAnnouncements = ({ options, refresh }) => {
       >
         <TextArea
           value={announcementForm.content}
-          placeholder={t('请输入公告内容')}
+          placeholder={t('请输入公告内容（支持 Markdown/HTML）')}
           maxCount={500}
           rows={15}
           style={{ width: '100%' }}
