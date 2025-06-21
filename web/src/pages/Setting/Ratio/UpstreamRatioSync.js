@@ -7,11 +7,15 @@ import {
   Checkbox,
   Form,
   Input,
+  Tooltip,
+  Select,
 } from '@douyinfe/semi-ui';
 import { IconSearch } from '@douyinfe/semi-icons';
 import {
   RefreshCcw,
   CheckSquare,
+  AlertTriangle,
+  CheckCircle,
 } from 'lucide-react';
 import { API, showError, showSuccess, showWarning, stringToColor } from '../../../helpers';
 import { DEFAULT_ENDPOINT } from '../../../constants';
@@ -49,6 +53,11 @@ export default function UpstreamRatioSync(props) {
   // 搜索相关状态
   const [searchKeyword, setSearchKeyword] = useState('');
 
+  // 倍率类型过滤
+  const [ratioTypeFilter, setRatioTypeFilter] = useState('');
+
+  const channelSelectorRef = React.useRef(null);
+
   const fetchAllChannels = async () => {
     setLoading(true);
     try {
@@ -67,11 +76,16 @@ export default function UpstreamRatioSync(props) {
 
         setAllChannels(transferData);
 
-        const initialEndpoints = {};
-        transferData.forEach(channel => {
-          initialEndpoints[channel.key] = DEFAULT_ENDPOINT;
+        // 合并已有 endpoints，避免每次打开弹窗都重置
+        setChannelEndpoints(prev => {
+          const merged = { ...prev };
+          transferData.forEach(channel => {
+            if (!merged[channel.key]) {
+              merged[channel.key] = DEFAULT_ENDPOINT;
+            }
+          });
+          return merged;
         });
-        setChannelEndpoints(initialEndpoints);
       } else {
         showError(res.data.message);
       }
@@ -99,8 +113,15 @@ export default function UpstreamRatioSync(props) {
   const fetchRatiosFromChannels = async (channelList) => {
     setSyncLoading(true);
 
+    const upstreams = channelList.map(ch => ({
+      id: ch.id,
+      name: ch.name,
+      base_url: ch.base_url,
+      endpoint: channelEndpoints[ch.id] || DEFAULT_ENDPOINT,
+    }));
+
     const payload = {
-      channel_ids: channelList.map(ch => parseInt(ch.id)),
+      upstreams: upstreams,
       timeout: 10,
     };
 
@@ -215,13 +236,15 @@ export default function UpstreamRatioSync(props) {
   const renderHeader = () => (
     <div className="flex flex-col w-full">
       <div className="flex flex-col md:flex-row justify-between items-center gap-4 w-full">
-        <div className="flex gap-2 w-full md:w-auto order-2 md:order-1">
+        <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto order-2 md:order-1">
           <Button
             icon={<RefreshCcw size={14} />}
             className="!rounded-full w-full md:w-auto mt-2"
             onClick={() => {
               setModalVisible(true);
-              fetchAllChannels();
+              if (allChannels.length === 0) {
+                fetchAllChannels();
+              }
             }}
           >
             {t('选择同步渠道')}
@@ -243,14 +266,30 @@ export default function UpstreamRatioSync(props) {
             );
           })()}
 
-          <Input
-            prefix={<IconSearch size={14} />}
-            placeholder={t('搜索模型名称')}
-            value={searchKeyword}
-            onChange={setSearchKeyword}
-            className="!rounded-full w-full md:w-64 mt-2"
-            showClear
-          />
+          <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto mt-2">
+            <Input
+              prefix={<IconSearch size={14} />}
+              placeholder={t('搜索模型名称')}
+              value={searchKeyword}
+              onChange={setSearchKeyword}
+              className="!rounded-full w-full sm:w-64"
+              showClear
+            />
+
+            <Select
+              placeholder={t('按倍率类型筛选')}
+              value={ratioTypeFilter}
+              onChange={setRatioTypeFilter}
+              className="!rounded-full w-full sm:w-48"
+              showClear
+              onClear={() => setRatioTypeFilter('')}
+            >
+              <Select.Option value="model_ratio">{t('模型倍率')}</Select.Option>
+              <Select.Option value="completion_ratio">{t('补全倍率')}</Select.Option>
+              <Select.Option value="cache_ratio">{t('缓存倍率')}</Select.Option>
+              <Select.Option value="model_price">{t('固定价格')}</Select.Option>
+            </Select>
+          </div>
         </div>
       </div>
     </div>
@@ -268,6 +307,7 @@ export default function UpstreamRatioSync(props) {
             ratioType,
             current: diff.current,
             upstreams: diff.upstreams,
+            confidence: diff.confidence || {},
           });
         });
       });
@@ -276,15 +316,20 @@ export default function UpstreamRatioSync(props) {
     }, [differences]);
 
     const filteredDataSource = useMemo(() => {
-      if (!searchKeyword.trim()) {
+      if (!searchKeyword.trim() && !ratioTypeFilter) {
         return dataSource;
       }
 
-      const keyword = searchKeyword.toLowerCase().trim();
-      return dataSource.filter(item =>
-        item.model.toLowerCase().includes(keyword)
-      );
-    }, [dataSource, searchKeyword]);
+      return dataSource.filter(item => {
+        const matchesKeyword = !searchKeyword.trim() ||
+          item.model.toLowerCase().includes(searchKeyword.toLowerCase().trim());
+
+        const matchesRatioType = !ratioTypeFilter ||
+          item.ratioType === ratioTypeFilter;
+
+        return matchesKeyword && matchesRatioType;
+      });
+    }, [dataSource, searchKeyword, ratioTypeFilter]);
 
     const upstreamNames = useMemo(() => {
       const set = new Set();
@@ -328,6 +373,36 @@ export default function UpstreamRatioSync(props) {
             model_price: t('固定价格'),
           };
           return <Tag color={stringToColor(text)} shape="circle">{typeMap[text] || text}</Tag>;
+        },
+      },
+      {
+        title: t('置信度'),
+        dataIndex: 'confidence',
+        render: (_, record) => {
+          const allConfident = Object.values(record.confidence || {}).every(v => v !== false);
+
+          if (allConfident) {
+            return (
+              <Tooltip content={t('所有上游数据均可信')}>
+                <Tag color="green" shape="circle" type="light" prefixIcon={<CheckCircle size={14} />}>
+                  {t('可信')}
+                </Tag>
+              </Tooltip>
+            );
+          } else {
+            const untrustedSources = Object.entries(record.confidence || {})
+              .filter(([_, isConfident]) => isConfident === false)
+              .map(([name]) => name)
+              .join(', ');
+
+            return (
+              <Tooltip content={t('以下上游数据可能不可信：') + untrustedSources}>
+                <Tag color="yellow" shape="circle" type="light" prefixIcon={<AlertTriangle size={14} />}>
+                  {t('谨慎')}
+                </Tag>
+              </Tooltip>
+            );
+          }
         },
       },
       {
@@ -404,6 +479,7 @@ export default function UpstreamRatioSync(props) {
           dataIndex: upName,
           render: (_, record) => {
             const upstreamVal = record.upstreams?.[upName];
+            const isConfident = record.confidence?.[upName] !== false;
 
             if (upstreamVal === null || upstreamVal === undefined) {
               return <Tag color="default" shape="circle">{t('未设置')}</Tag>;
@@ -416,28 +492,35 @@ export default function UpstreamRatioSync(props) {
             const isSelected = resolutions[record.model]?.[record.ratioType] === upstreamVal;
 
             return (
-              <Checkbox
-                checked={isSelected}
-                onChange={(e) => {
-                  const isChecked = e.target.checked;
-                  if (isChecked) {
-                    selectValue(record.model, record.ratioType, upstreamVal);
-                  } else {
-                    setResolutions((prev) => {
-                      const newRes = { ...prev };
-                      if (newRes[record.model]) {
-                        delete newRes[record.model][record.ratioType];
-                        if (Object.keys(newRes[record.model]).length === 0) {
-                          delete newRes[record.model];
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  checked={isSelected}
+                  onChange={(e) => {
+                    const isChecked = e.target.checked;
+                    if (isChecked) {
+                      selectValue(record.model, record.ratioType, upstreamVal);
+                    } else {
+                      setResolutions((prev) => {
+                        const newRes = { ...prev };
+                        if (newRes[record.model]) {
+                          delete newRes[record.model][record.ratioType];
+                          if (Object.keys(newRes[record.model]).length === 0) {
+                            delete newRes[record.model];
+                          }
                         }
-                      }
-                      return newRes;
-                    });
-                  }
-                }}
-              >
-                {upstreamVal}
-              </Checkbox>
+                        return newRes;
+                      });
+                    }
+                  }}
+                >
+                  {upstreamVal}
+                </Checkbox>
+                {!isConfident && (
+                  <Tooltip position='left' content={t('该数据可能不可信，请谨慎使用')}>
+                    <AlertTriangle size={16} className="text-yellow-500" />
+                  </Tooltip>
+                )}
+              </div>
             );
           },
         };
@@ -481,6 +564,13 @@ export default function UpstreamRatioSync(props) {
     setChannelEndpoints(prev => ({ ...prev, [channelId]: endpoint }));
   }, []);
 
+  const handleModalClose = () => {
+    setModalVisible(false);
+    if (channelSelectorRef.current) {
+      channelSelectorRef.current.resetPagination();
+    }
+  };
+
   return (
     <>
       <Form.Section text={renderHeader()}>
@@ -488,9 +578,10 @@ export default function UpstreamRatioSync(props) {
       </Form.Section>
 
       <ChannelSelectorModal
+        ref={channelSelectorRef}
         t={t}
         visible={modalVisible}
-        onCancel={() => setModalVisible(false)}
+        onCancel={handleModalClose}
         onOk={confirmChannelSelection}
         allChannels={allChannels}
         selectedChannelIds={selectedChannelIds}

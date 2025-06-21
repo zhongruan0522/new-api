@@ -114,7 +114,7 @@ const ChannelsTable = () => {
         );
       case 2:
         return (
-          <Tag size='large' color='yellow' shape='circle' prefixIcon={<XCircle size={14} />}>
+          <Tag size='large' color='red' shape='circle' prefixIcon={<XCircle size={14} />}>
             {t('已禁用')}
           </Tag>
         );

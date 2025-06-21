@@ -1701,5 +1701,14 @@
   "充值分组倍率": "Recharge group ratio",
   "充值方式设置": "Recharge method settings",
   "更新支付设置": "Update payment settings",
-  "通知": "Notice"
+  "通知": "Notice",
+  "源地址": "Source address",
+  "同步接口": "Synchronization interface",
+  "置信度": "Confidence",
+  "谨慎": "Cautious",
+  "该数据可能不可信，请谨慎使用": "This data may not be reliable, please use with caution",
+  "可信": "Reliable",
+  "所有上游数据均可信": "All upstream data is reliable",
+  "以下上游数据可能不可信：": "The following upstream data may not be reliable: ",
+  "按倍率类型筛选": "Filter by ratio type"
 }
