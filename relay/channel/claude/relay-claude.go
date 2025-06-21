@@ -125,7 +125,7 @@ func RequestOpenAI2ClaudeMessage(textRequest dto.GeneralOpenAIRequest) (*dto.Cla
 
 	if textRequest.Reasoning != nil {
 		var reasoning openrouter.RequestReasoning
-		if err := json.Unmarshal(textRequest.Reasoning, &reasoning); err != nil {
+		if err := common.DecodeJson(textRequest.Reasoning, &reasoning); err != nil {
 			return nil, err
 		}
 
@@ -133,7 +133,7 @@ func RequestOpenAI2ClaudeMessage(textRequest dto.GeneralOpenAIRequest) (*dto.Cla
 		if budgetTokens > 0 {
 			claudeRequest.Thinking = &dto.Thinking{
 				Type:         "enabled",
-				BudgetTokens: budgetTokens,
+				BudgetTokens: &budgetTokens,
 			}
 		}
 	}
