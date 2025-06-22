@@ -539,6 +539,7 @@ func UpdateChannel(c *gin.Context) {
 		})
 		return
 	}
+	channel.Key = ""
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
