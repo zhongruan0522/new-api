@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import {
   API,
   copy,
@@ -52,10 +52,12 @@ import {
   IconDelete,
   IconStop,
   IconPlay,
-  IconMore
+  IconMore,
+  IconDescend
 } from '@douyinfe/semi-icons';
 import EditToken from '../../pages/Token/EditToken';
 import { useTranslation } from 'react-i18next';
+import { useTableCompactMode } from '../../hooks/useTableCompactMode';
 
 const { Text } = Typography;
 
@@ -385,6 +387,7 @@ const TokensTable = () => {
   const [editingToken, setEditingToken] = useState({
     id: undefined,
   });
+  const [compactMode, setCompactMode] = useTableCompactMode('tokens');
 
   // Form 初始值
   const formInitValues = {
@@ -610,9 +613,20 @@ const TokensTable = () => {
   const renderHeader = () => (
     <div className="flex flex-col w-full">
       <div className="mb-2">
-        <div className="flex items-center text-blue-500">
-          <Key size={16} className="mr-2" />
-          <Text>{t('令牌用于API访问认证，可以设置额度限制和模型权限。')}</Text>
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-2 w-full">
+          <div className="flex items-center text-blue-500">
+            <Key size={16} className="mr-2" />
+            <Text>{t('令牌用于API访问认证，可以设置额度限制和模型权限。')}</Text>
+          </div>
+          <Button
+            theme="light"
+            type="secondary"
+            icon={<IconDescend />}
+            className="!rounded-full w-full md:w-auto"
+            onClick={() => setCompactMode(!compactMode)}
+          >
+            {compactMode ? t('自适应列表') : t('紧凑列表')}
+          </Button>
         </div>
       </div>
 
@@ -687,7 +701,6 @@ const TokensTable = () => {
           >
             {t('复制所选令牌')}
           </Button>
-          <div className="w-full md:hidden"></div>
           <Button
             theme="light"
             type="danger"
@@ -791,9 +804,15 @@ const TokensTable = () => {
         bordered={false}
       >
         <Table
-          columns={columns}
+          columns={compactMode ? columns.map(col => {
+            if (col.dataIndex === 'operate') {
+              const { fixed, ...rest } = col;
+              return rest;
+            }
+            return col;
+          }) : columns}
           dataSource={tokens}
-          scroll={{ x: 'max-content' }}
+          scroll={compactMode ? undefined : { x: 'max-content' }}
           pagination={{
             currentPage: activePage,
             pageSize: pageSize,

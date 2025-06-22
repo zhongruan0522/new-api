@@ -17,7 +17,7 @@ import {
   AlertCircle,
   HelpCircle,
   Coins,
-  Tags
+  Tags,
 } from 'lucide-react';
 
 import { CHANNEL_OPTIONS, ITEMS_PER_PAGE } from '../../constants/index.js';
@@ -52,6 +52,7 @@ import {
   IconPlus,
   IconRefresh,
   IconSetting,
+  IconDescend,
   IconSearch,
   IconEdit,
   IconDelete,
@@ -64,6 +65,7 @@ import {
 import { loadChannelModels } from '../../helpers/index.js';
 import EditTagModal from '../../pages/Channel/EditTagModal.js';
 import { useTranslation } from 'react-i18next';
+import { useTableCompactMode } from '../../hooks/useTableCompactMode';
 
 const ChannelsTable = () => {
   const { t } = useTranslation();
@@ -683,6 +685,7 @@ const ChannelsTable = () => {
   const [typeCounts, setTypeCounts] = useState({});
   const requestCounter = useRef(0);
   const [formApi, setFormApi] = useState(null);
+  const [compactMode, setCompactMode] = useTableCompactMode('channels');
   const formInitValues = {
     searchKeyword: '',
     searchGroup: '',
@@ -1576,6 +1579,16 @@ const ChannelsTable = () => {
               {t('批量操作')}
             </Button>
           </Dropdown>
+
+          <Button
+            theme='light'
+            type='secondary'
+            icon={<IconDescend />}
+            className="!rounded-full w-full md:w-auto"
+            onClick={() => setCompactMode(!compactMode)}
+          >
+            {compactMode ? t('自适应列表') : t('紧凑列表')}
+          </Button>
         </div>
 
         <div className="flex flex-col md:flex-row items-start md:items-center gap-4 w-full md:w-auto order-1 md:order-2">
@@ -1766,9 +1779,9 @@ const ChannelsTable = () => {
         bordered={false}
       >
         <Table
-          columns={getVisibleColumns()}
+          columns={compactMode ? getVisibleColumns().map(({ fixed, ...rest }) => rest) : getVisibleColumns()}
           dataSource={pageData}
-          scroll={{ x: 'max-content' }}
+          scroll={compactMode ? undefined : { x: 'max-content' }}
           pagination={{
             currentPage: activePage,
             pageSize: pageSize,
