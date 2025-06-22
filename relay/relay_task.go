@@ -52,9 +52,9 @@ func RelayTaskSubmit(c *gin.Context, relayMode int) (taskErr *dto.TaskError) {
 	}
 
 	// 预扣
-	groupRatio := ratio_setting.GetGroupRatio(relayInfo.Group)
+	groupRatio := ratio_setting.GetGroupRatio(relayInfo.UsingGroup)
 	var ratio float64
-	userGroupRatio, hasUserGroupRatio := ratio_setting.GetGroupGroupRatio(relayInfo.UserGroup, relayInfo.Group)
+	userGroupRatio, hasUserGroupRatio := ratio_setting.GetGroupGroupRatio(relayInfo.UserGroup, relayInfo.UsingGroup)
 	if hasUserGroupRatio {
 		ratio = modelPrice * userGroupRatio
 	} else {
@@ -140,7 +140,7 @@ func RelayTaskSubmit(c *gin.Context, relayMode int) (taskErr *dto.TaskError) {
 					other["user_group_ratio"] = userGroupRatio
 				}
 				model.RecordConsumeLog(c, relayInfo.UserId, relayInfo.ChannelId, 0, 0,
-					modelName, tokenName, quota, logContent, relayInfo.TokenId, userQuota, 0, false, relayInfo.Group, other)
+					modelName, tokenName, quota, logContent, relayInfo.TokenId, userQuota, 0, false, relayInfo.UsingGroup, other)
 				model.UpdateUserUsedQuotaAndRequestCount(relayInfo.UserId, quota)
 				model.UpdateChannelUsedQuota(relayInfo.ChannelId, quota)
 			}
