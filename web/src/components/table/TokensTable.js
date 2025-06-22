@@ -435,6 +435,7 @@ const TokensTable = () => {
 
   const refresh = async () => {
     await loadTokens(1);
+    setSelectedKeys([]);
   };
 
   const copyText = async (text) => {
@@ -583,6 +584,29 @@ const TokensTable = () => {
     }
   };
 
+  const batchDeleteTokens = async () => {
+    if (selectedKeys.length === 0) {
+      showError(t('请先选择要删除的令牌！'));
+      return;
+    }
+    setLoading(true);
+    try {
+      const ids = selectedKeys.map((token) => token.id);
+      const res = await API.post('/api/token/batch', { ids });
+      if (res?.data?.success) {
+        const count = res.data.data || 0;
+        showSuccess(t('已删除 {{count}} 个令牌！', { count }));
+        await refresh();
+      } else {
+        showError(res?.data?.message || t('删除失败'));
+      }
+    } catch (error) {
+      showError(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const renderHeader = () => (
     <div className="flex flex-col w-full">
       <div className="mb-2">
@@ -595,12 +619,12 @@ const TokensTable = () => {
       <Divider margin="12px" />
 
       <div className="flex flex-col md:flex-row justify-between items-center gap-4 w-full">
-        <div className="flex gap-2 w-full md:w-auto order-2 md:order-1">
+        <div className="flex flex-wrap gap-2 w-full md:w-auto order-2 md:order-1">
           <Button
             theme="light"
             type="primary"
             icon={<IconPlus />}
-            className="!rounded-full w-full md:w-auto"
+            className="!rounded-full flex-1 md:flex-initial"
             onClick={() => {
               setEditingToken({
                 id: undefined,
@@ -614,7 +638,7 @@ const TokensTable = () => {
             theme="light"
             type="warning"
             icon={<IconCopy />}
-            className="!rounded-full w-full md:w-auto"
+            className="!rounded-full flex-1 md:flex-initial"
             onClick={async () => {
               if (selectedKeys.length === 0) {
                 showError(t('请至少选择一个令牌！'));
@@ -629,6 +653,29 @@ const TokensTable = () => {
             }}
           >
             {t('复制所选令牌到剪贴板')}
+          </Button>
+          <div className="w-full md:hidden"></div>
+          <Button
+            theme="light"
+            type="danger"
+            className="!rounded-full w-full md:w-auto"
+            onClick={() => {
+              if (selectedKeys.length === 0) {
+                showError(t('请至少选择一个令牌！'));
+                return;
+              }
+              Modal.confirm({
+                title: t('批量删除令牌'),
+                content: (
+                  <div>
+                    {t('确定要删除所选的 {{count}} 个令牌吗？', { count: selectedKeys.length })}
+                  </div>
+                ),
+                onOk: () => batchDeleteTokens(),
+              });
+            }}
+          >
+            {t('删除所选令牌')}
           </Button>
         </div>
 
