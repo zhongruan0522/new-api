@@ -185,7 +185,13 @@ func RelaySwapFace(c *gin.Context) *dto.MidjourneyResponse {
 		}
 	}
 	groupRatio := ratio_setting.GetGroupRatio(group)
-	ratio := modelPrice * groupRatio
+	var ratio float64
+	userGroupRatio, hasUserGroupRatio := ratio_setting.GetGroupGroupRatio(relayInfo.UserGroup, group)
+	if hasUserGroupRatio {
+		ratio = modelPrice * userGroupRatio
+	} else {
+		ratio = modelPrice * groupRatio
+	}
 	userQuota, err := model.GetUserQuota(userId, false)
 	if err != nil {
 		return &dto.MidjourneyResponse{
@@ -215,19 +221,20 @@ func RelaySwapFace(c *gin.Context) *dto.MidjourneyResponse {
 				common.SysError("error consuming token remain quota: " + err.Error())
 			}
 			//err = model.CacheUpdateUserQuota(userId)
-			if err != nil {
-				common.SysError("error update user quota cache: " + err.Error())
-			}
+			// if err != nil {
+			// 	common.SysError("error update user quota cache: " + err.Error())
+			// }
 			if quota != 0 {
 				tokenName := c.GetString("token_name")
-				logContent := fmt.Sprintf("模型固定价格 %.2f，分组倍率 %.2f，操作 %s", modelPrice, groupRatio, constant.MjActionSwapFace)
-				other := make(map[string]interface{})
-				other["model_price"] = modelPrice
-				other["group_ratio"] = groupRatio
+				gRatio := groupRatio
+				if hasUserGroupRatio {
+					gRatio = userGroupRatio
+				}
+				logContent := fmt.Sprintf("模型固定价格 %.2f，分组倍率 %.2f，操作 %s", modelPrice, gRatio, constant.MjActionSwapFace)
+				other := genMjOtherInfo(modelPrice, groupRatio, userGroupRatio, hasUserGroupRatio)
 				model.RecordConsumeLog(c, userId, channelId, 0, 0, modelName, tokenName,
 					quota, logContent, tokenId, userQuota, 0, false, group, other)
 				model.UpdateUserUsedQuotaAndRequestCount(userId, quota)
-				channelId := c.GetInt("channel_id")
 				model.UpdateChannelUsedQuota(channelId, quota)
 			}
 		}
@@ -491,7 +498,13 @@ func RelayMidjourneySubmit(c *gin.Context, relayMode int) *dto.MidjourneyRespons
 		}
 	}
 	groupRatio := ratio_setting.GetGroupRatio(group)
-	ratio := modelPrice * groupRatio
+	var ratio float64
+	userGroupRatio, hasUserGroupRatio := ratio_setting.GetGroupGroupRatio(relayInfo.UserGroup, group)
+	if hasUserGroupRatio {
+		ratio = modelPrice * userGroupRatio
+	} else {
+		ratio = modelPrice * groupRatio
+	}
 	userQuota, err := model.GetUserQuota(userId, false)
 	if err != nil {
 		return &dto.MidjourneyResponse{
@@ -522,14 +535,15 @@ func RelayMidjourneySubmit(c *gin.Context, relayMode int) *dto.MidjourneyRespons
 			}
 			if quota != 0 {
 				tokenName := c.GetString("token_name")
-				logContent := fmt.Sprintf("模型固定价格 %.2f，分组倍率 %.2f，操作 %s，ID %s", modelPrice, groupRatio, midjRequest.Action, midjResponse.Result)
-				other := make(map[string]interface{})
-				other["model_price"] = modelPrice
-				other["group_ratio"] = groupRatio
+				gRatio := groupRatio
+				if hasUserGroupRatio {
+					gRatio = userGroupRatio
+				}
+				logContent := fmt.Sprintf("模型固定价格 %.2f，分组倍率 %.2f，操作 %s，ID %s", modelPrice, gRatio, midjRequest.Action, midjResponse.Result)
+				other := genMjOtherInfo(modelPrice, groupRatio, userGroupRatio, hasUserGroupRatio)
 				model.RecordConsumeLog(c, userId, channelId, 0, 0, modelName, tokenName,
 					quota, logContent, tokenId, userQuota, 0, false, group, other)
 				model.UpdateUserUsedQuotaAndRequestCount(userId, quota)
-				channelId := c.GetInt("channel_id")
 				model.UpdateChannelUsedQuota(channelId, quota)
 			}
 		}
@@ -658,4 +672,14 @@ func getMjRequestPath(path string) string {
 		requestURL = "/mj/" + urls[1]
 	}
 	return requestURL
+}
+
+func genMjOtherInfo(modelPrice, groupRatio, userGroupRatio float64, hasUserGroupRatio bool) map[string]interface{} {
+	other := make(map[string]interface{})
+	other["model_price"] = modelPrice
+	other["group_ratio"] = groupRatio
+	if hasUserGroupRatio && userGroupRatio > 0 {
+		other["user_group_ratio"] = userGroupRatio
+	}
+	return other
 }
