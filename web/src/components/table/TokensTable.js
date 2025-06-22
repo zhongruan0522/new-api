@@ -639,20 +639,53 @@ const TokensTable = () => {
             type="warning"
             icon={<IconCopy />}
             className="!rounded-full flex-1 md:flex-initial"
-            onClick={async () => {
+            onClick={() => {
               if (selectedKeys.length === 0) {
                 showError(t('请至少选择一个令牌！'));
                 return;
               }
-              let keys = '';
-              for (let i = 0; i < selectedKeys.length; i++) {
-                keys +=
-                  selectedKeys[i].name + '    sk-' + selectedKeys[i].key + '\n';
-              }
-              await copyText(keys);
+              Modal.info({
+                title: t('复制令牌'),
+                icon: null,
+                content: t('请选择你的复制方式'),
+                footer: (
+                  <Space>
+                    <Button
+                      type="primary"
+                      theme="solid"
+                      icon={<IconCopy />}
+                      onClick={async () => {
+                        let content = '';
+                        for (let i = 0; i < selectedKeys.length; i++) {
+                          content +=
+                            selectedKeys[i].name + '    sk-' + selectedKeys[i].key + '\n';
+                        }
+                        await copyText(content);
+                        Modal.destroyAll();
+                      }}
+                    >
+                      {t('名称+密钥')}
+                    </Button>
+                    <Button
+                      theme="light"
+                      icon={<IconCopy />}
+                      onClick={async () => {
+                        let content = '';
+                        for (let i = 0; i < selectedKeys.length; i++) {
+                          content += 'sk-' + selectedKeys[i].key + '\n';
+                        }
+                        await copyText(content);
+                        Modal.destroyAll();
+                      }}
+                    >
+                      {t('仅密钥')}
+                    </Button>
+                  </Space>
+                ),
+              });
             }}
           >
-            {t('复制所选令牌到剪贴板')}
+            {t('复制所选令牌')}
           </Button>
           <div className="w-full md:hidden"></div>
           <Button
