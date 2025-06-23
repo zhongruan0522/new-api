@@ -111,6 +111,10 @@ const EditChannel = (props) => {
   const [modalImageUrl, setModalImageUrl] = useState('');
   const [isModalOpenurl, setIsModalOpenurl] = useState(false);
   const handleInputChange = (name, value) => {
+    if (name === 'models' && Array.isArray(value)) {
+      value = Array.from(new Set(value.map((m) => (m || '').trim())));
+    }
+
     if (name === 'base_url' && value.endsWith('/v1')) {
       Modal.confirm({
         title: '警告',
@@ -265,10 +269,14 @@ const EditChannel = (props) => {
   const fetchModels = async () => {
     try {
       let res = await API.get(`/api/channel/models`);
-      let localModelOptions = res.data.data.map((model) => ({
-        label: model.id,
-        value: model.id,
-      }));
+      const localModelOptions = res.data.data.map((model) => {
+        const id = (model.id || '').trim();
+        return {
+          key: id,
+          label: id,
+          value: id,
+        };
+      });
       setOriginModelOptions(localModelOptions);
       setFullModels(res.data.data.map((model) => model.id));
       setBasicModels(
@@ -301,20 +309,22 @@ const EditChannel = (props) => {
   };
 
   useEffect(() => {
-    // 使用 Map 来避免重复，以 value 为键
     const modelMap = new Map();
 
-    // 先添加原始模型选项
     originModelOptions.forEach(option => {
-      modelMap.set(option.value, option);
+      const v = (option.value || '').trim();
+      if (!modelMap.has(v)) {
+        modelMap.set(v, option);
+      }
     });
 
-    // 再添加当前选中的模型（如果不存在）
     inputs.models.forEach(model => {
-      if (!modelMap.has(model)) {
-        modelMap.set(model, {
-          label: model,
-          value: model,
+      const v = (model || '').trim();
+      if (!modelMap.has(v)) {
+        modelMap.set(v, {
+          key: v,
+          label: v,
+          value: v,
         });
       }
     });
@@ -403,7 +413,7 @@ const EditChannel = (props) => {
         localModels.push(model);
         localModelOptions.push({
           key: model,
-          text: model,
+          label: model,
           value: model,
         });
         addedModels.push(model);
