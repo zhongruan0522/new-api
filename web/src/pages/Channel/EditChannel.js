@@ -26,7 +26,7 @@ import {
   Card,
   Tag,
 } from '@douyinfe/semi-ui';
-import { getChannelModels } from '../../helpers';
+import { getChannelModels, copy } from '../../helpers';
 import {
   IconSave,
   IconClose,
@@ -831,6 +831,16 @@ useEffect(() => {
                     className="!rounded-lg"
                   >
                     {t('清除所有模型')}
+                  </Button>
+                  <Button
+                    type='tertiary'
+                    onClick={() => {
+                      copy(inputs.models.join(','));
+                    }}
+                    size="large"
+                    className="!rounded-lg"
+                  >
+                    {t('复制所有模型')}
                   </Button>
                 </div>
 
