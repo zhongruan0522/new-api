@@ -1734,5 +1734,8 @@
   "该模型存在固定价格与倍率计费方式冲突，请确认选择": "The model has a fixed price and ratio billing method conflict, please confirm the selection",
   "当前计费": "Current billing",
   "修改为": "Modify to",
-  "状态筛选": "Status filter"
+  "状态筛选": "Status filter",
+  "没有模型可以复制": "No models to copy",
+  "模型列表已复制到剪贴板": "Model list copied to clipboard",
+  "复制失败": "Copy failed"
 }
