@@ -886,7 +886,7 @@ const ChannelsTable = () => {
     const { searchKeyword, searchGroup, searchModel } = getFormValues();
     if (searchKeyword !== '' || searchGroup !== '' || searchModel !== '') {
       setLoading(true);
-      await searchChannels(enableTagMode, typeKey, statusF);
+      await searchChannels(enableTagMode, typeKey, statusF, page, pageSize, idSort);
       setLoading(false);
       return;
     }
@@ -947,7 +947,7 @@ const ChannelsTable = () => {
     if (searchKeyword === '' && searchGroup === '' && searchModel === '') {
       await loadChannels(activePage, pageSize, idSort, enableTagMode);
     } else {
-      await searchChannels(enableTagMode);
+      await searchChannels(enableTagMode, activeTypeKey, statusFilter, activePage, pageSize, idSort);
     }
   };
 
@@ -1053,7 +1053,7 @@ const ChannelsTable = () => {
     }
   };
 
-  // 获取表单值的辅助函数，确保所有值都是字符串
+  // 获取表单值的辅助函数
   const getFormValues = () => {
     const formValues = formApi ? formApi.getValues() : {};
     return {
@@ -1063,28 +1063,35 @@ const ChannelsTable = () => {
     };
   };
 
-  const searchChannels = async (enableTagMode, typeKey = activeTypeKey, statusF = statusFilter) => {
+  const searchChannels = async (
+    enableTagMode,
+    typeKey = activeTypeKey,
+    statusF = statusFilter,
+    page = 1,
+    pageSz = pageSize,
+    sortFlag = idSort,
+  ) => {
     const { searchKeyword, searchGroup, searchModel } = getFormValues();
-
     setSearching(true);
     try {
       if (searchKeyword === '' && searchGroup === '' && searchModel === '') {
-        await loadChannels(activePage - 1, pageSize, idSort, enableTagMode, typeKey, statusF);
+        await loadChannels(page, pageSz, sortFlag, enableTagMode, typeKey, statusF);
         return;
       }
 
       const typeParam = (typeKey !== 'all') ? `&type=${typeKey}` : '';
       const statusParam = statusF !== 'all' ? `&status=${statusF}` : '';
       const res = await API.get(
-        `/api/channel/search?keyword=${searchKeyword}&group=${searchGroup}&model=${searchModel}&id_sort=${idSort}&tag_mode=${enableTagMode}${typeParam}${statusParam}`,
+        `/api/channel/search?keyword=${searchKeyword}&group=${searchGroup}&model=${searchModel}&id_sort=${sortFlag}&tag_mode=${enableTagMode}&p=${page}&page_size=${pageSz}${typeParam}${statusParam}`,
       );
       const { success, message, data } = res.data;
       if (success) {
-        const { items = [], type_counts = {} } = data;
+        const { items = [], total = 0, type_counts = {} } = data;
         const sumAll = Object.values(type_counts).reduce((acc, v) => acc + v, 0);
         setTypeCounts({ ...type_counts, all: sumAll });
         setChannelFormat(items, enableTagMode);
-        setActivePage(1);
+        setChannelCount(total);
+        setActivePage(page);
       } else {
         showError(message);
       }
@@ -1292,19 +1299,29 @@ const ChannelsTable = () => {
   let pageData = channels;
 
   const handlePageChange = (page) => {
+    const { searchKeyword, searchGroup, searchModel } = getFormValues();
     setActivePage(page);
-    loadChannels(page, pageSize, idSort, enableTagMode).then(() => { });
+    if (searchKeyword === '' && searchGroup === '' && searchModel === '') {
+      loadChannels(page, pageSize, idSort, enableTagMode).then(() => { });
+    } else {
+      searchChannels(enableTagMode, activeTypeKey, statusFilter, page, pageSize, idSort);
+    }
   };
 
   const handlePageSizeChange = async (size) => {
     localStorage.setItem('page-size', size + '');
     setPageSize(size);
     setActivePage(1);
-    loadChannels(1, size, idSort, enableTagMode)
-      .then()
-      .catch((reason) => {
-        showError(reason);
-      });
+    const { searchKeyword, searchGroup, searchModel } = getFormValues();
+    if (searchKeyword === '' && searchGroup === '' && searchModel === '') {
+      loadChannels(1, size, idSort, enableTagMode)
+        .then()
+        .catch((reason) => {
+          showError(reason);
+        });
+    } else {
+      searchChannels(enableTagMode, activeTypeKey, statusFilter, 1, size, idSort);
+    }
   };
 
   const fetchGroups = async () => {
@@ -1615,7 +1632,12 @@ const ChannelsTable = () => {
               onChange={(v) => {
                 localStorage.setItem('id-sort', v + '');
                 setIdSort(v);
-                loadChannels(activePage, pageSize, v, enableTagMode);
+                const { searchKeyword, searchGroup, searchModel } = getFormValues();
+                if (searchKeyword === '' && searchGroup === '' && searchModel === '') {
+                  loadChannels(activePage, pageSize, v, enableTagMode);
+                } else {
+                  searchChannels(enableTagMode, activeTypeKey, statusFilter, activePage, pageSize, v);
+                }
               }}
             />
           </div>
