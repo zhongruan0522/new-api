@@ -455,6 +455,7 @@ export default function ModelSettingsVisualEditor(props) {
               setCurrentPage(1);
             }}
             style={{ width: 200 }}
+            showClear
           />
           <Checkbox
             checked={conflictOnly}

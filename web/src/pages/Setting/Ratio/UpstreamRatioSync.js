@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import {
   Button,
   Table,
@@ -57,6 +57,10 @@ export default function UpstreamRatioSync(props) {
   const [ratioTypeFilter, setRatioTypeFilter] = useState('');
 
   const channelSelectorRef = React.useRef(null);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [ratioTypeFilter, searchKeyword]);
 
   const fetchAllChannels = async () => {
     setLoading(true);
