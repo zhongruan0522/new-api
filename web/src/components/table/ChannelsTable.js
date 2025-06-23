@@ -880,22 +880,14 @@ const ChannelsTable = () => {
     enableTagMode,
     typeKey = activeTypeKey,
     statusF,
-    searchParams = null,
   ) => {
     if (statusF === undefined) statusF = statusFilter;
     const reqId = ++requestCounter.current; // 记录当前请求序号
     setLoading(true);
-
-    const { searchKeyword, searchGroup, searchModel } = searchParams || getFormValues();
-
     const typeParam = (typeKey !== 'all') ? `&type=${typeKey}` : '';
     const statusParam = statusF !== 'all' ? `&status=${statusF}` : '';
-    const groupParam = searchGroup ? `&group=${searchGroup}` : '';
-    const modelParam = searchModel ? `&model=${searchModel}` : '';
-    const keywordParam = searchKeyword ? `&keyword=${searchKeyword}` : '';
-
     const res = await API.get(
-      `/api/channel/?p=${page}&page_size=${pageSize}&id_sort=${idSort}&tag_mode=${enableTagMode}${typeParam}${statusParam}${groupParam}${modelParam}${keywordParam}`,
+      `/api/channel/?p=${page}&page_size=${pageSize}&id_sort=${idSort}&tag_mode=${enableTagMode}${typeParam}${statusParam}`,
     );
     if (res === undefined || reqId !== requestCounter.current) {
       return;
@@ -942,9 +934,9 @@ const ChannelsTable = () => {
   };
 
   const refresh = async () => {
-    const formValues = getFormValues();
-    if (formValues.searchKeyword === '' && formValues.searchGroup === '' && formValues.searchModel === '') {
-      await loadChannels(activePage, pageSize, idSort, enableTagMode, activeTypeKey, statusFilter, formValues);
+    const { searchKeyword, searchGroup, searchModel } = getFormValues();
+    if (searchKeyword === '' && searchGroup === '' && searchModel === '') {
+      await loadChannels(activePage, pageSize, idSort, enableTagMode);
     } else {
       await searchChannels(enableTagMode);
     }
@@ -1068,7 +1060,7 @@ const ChannelsTable = () => {
     setSearching(true);
     try {
       if (searchKeyword === '' && searchGroup === '' && searchModel === '') {
-        await loadChannels(activePage, pageSize, idSort, enableTagMode, activeTypeKey, statusFilter);
+        await loadChannels(activePage - 1, pageSize, idSort, enableTagMode);
         return;
       }
 
@@ -1249,7 +1241,7 @@ const ChannelsTable = () => {
         onChange={(key) => {
           setActiveTypeKey(key);
           setActivePage(1);
-          loadChannels(1, pageSize, idSort, enableTagMode, key, statusFilter, getFormValues());
+          loadChannels(1, pageSize, idSort, enableTagMode, key);
         }}
         className="mb-4"
       >
@@ -1292,14 +1284,14 @@ const ChannelsTable = () => {
 
   const handlePageChange = (page) => {
     setActivePage(page);
-    loadChannels(page, pageSize, idSort, enableTagMode, activeTypeKey, statusFilter, getFormValues()).then(() => { });
+    loadChannels(page, pageSize, idSort, enableTagMode).then(() => { });
   };
 
   const handlePageSizeChange = async (size) => {
     localStorage.setItem('page-size', size + '');
     setPageSize(size);
     setActivePage(1);
-    loadChannels(1, size, idSort, enableTagMode, activeTypeKey, statusFilter, getFormValues())
+    loadChannels(1, size, idSort, enableTagMode)
       .then()
       .catch((reason) => {
         showError(reason);
@@ -1658,7 +1650,7 @@ const ChannelsTable = () => {
                 localStorage.setItem('channel-status-filter', v);
                 setStatusFilter(v);
                 setActivePage(1);
-                loadChannels(1, pageSize, idSort, enableTagMode, activeTypeKey, v, getFormValues());
+                loadChannels(1, pageSize, idSort, enableTagMode, activeTypeKey, v);
               }}
               size="small"
             >
@@ -1756,12 +1748,7 @@ const ChannelsTable = () => {
                 onChange={() => {
                   // 延迟执行搜索，让表单值先更新
                   setTimeout(() => {
-                    const values = getFormValues();
-                    if (values.searchKeyword === '' && values.searchModel === '') {
-                      loadChannels(1, pageSize, idSort, enableTagMode, activeTypeKey, statusFilter, values);
-                    } else {
-                      searchChannels(enableTagMode);
-                    }
+                    searchChannels(enableTagMode);
                   }, 0);
                 }}
               />
