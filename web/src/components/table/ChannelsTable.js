@@ -1876,7 +1876,7 @@ const ChannelsTable = () => {
           }
           className="rounded-xl overflow-hidden"
           size="middle"
-          loading={loading}
+          loading={loading || searching}
         />
       </Card>
 
