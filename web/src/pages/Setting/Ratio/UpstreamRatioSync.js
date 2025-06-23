@@ -9,6 +9,7 @@ import {
   Input,
   Tooltip,
   Select,
+  Modal,
 } from '@douyinfe/semi-ui';
 import { IconSearch } from '@douyinfe/semi-icons';
 import {
@@ -17,7 +18,7 @@ import {
   AlertTriangle,
   CheckCircle,
 } from 'lucide-react';
-import { API, showError, showSuccess, showWarning, stringToColor } from '../../../helpers';
+import { API, showError, showSuccess, showWarning, stringToColor, isMobile } from '../../../helpers';
 import { DEFAULT_ENDPOINT } from '../../../constants';
 import { useTranslation } from 'react-i18next';
 import {
@@ -25,6 +26,35 @@ import {
   IllustrationNoResultDark
 } from '@douyinfe/semi-illustrations';
 import ChannelSelectorModal from '../../../components/settings/ChannelSelectorModal';
+
+function ConflictConfirmModal({ t, visible, items, onOk, onCancel }) {
+  const columns = [
+    { title: t('渠道'), dataIndex: 'channel' },
+    { title: t('模型'), dataIndex: 'model' },
+    {
+      title: t('当前计费'),
+      dataIndex: 'current',
+      render: (text) => <div style={{ whiteSpace: 'pre-wrap' }}>{text}</div>,
+    },
+    {
+      title: t('修改为'),
+      dataIndex: 'newVal',
+      render: (text) => <div style={{ whiteSpace: 'pre-wrap' }}>{text}</div>,
+    },
+  ];
+
+  return (
+    <Modal
+      title={t('确认冲突项修改')}
+      visible={visible}
+      onCancel={onCancel}
+      onOk={onOk}
+      size={isMobile() ? 'full-width' : 'large'}
+    >
+      <Table columns={columns} dataSource={items} pagination={false} size="small" />
+    </Modal>
+  );
+}
 
 export default function UpstreamRatioSync(props) {
   const { t } = useTranslation();
@@ -55,6 +85,10 @@ export default function UpstreamRatioSync(props) {
 
   // 倍率类型过滤
   const [ratioTypeFilter, setRatioTypeFilter] = useState('');
+
+  // 冲突确认弹窗相关
+  const [confirmVisible, setConfirmVisible] = useState(false);
+  const [conflictItems, setConflictItems] = useState([]); // {channel, model, current, newVal, ratioType}
 
   const channelSelectorRef = React.useRef(null);
 
@@ -159,15 +193,30 @@ export default function UpstreamRatioSync(props) {
     }
   };
 
-  const selectValue = (model, ratioType, value) => {
-    setResolutions(prev => ({
-      ...prev,
-      [model]: {
-        ...prev[model],
-        [ratioType]: value,
-      },
-    }));
-  };
+  function getBillingCategory(ratioType) {
+    return ratioType === 'model_price' ? 'price' : 'ratio';
+  }
+
+  const selectValue = useCallback((model, ratioType, value) => {
+    const category = getBillingCategory(ratioType);
+
+    setResolutions(prev => {
+      const newModelRes = { ...(prev[model] || {}) };
+
+      Object.keys(newModelRes).forEach((rt) => {
+        if (getBillingCategory(rt) !== category) {
+          delete newModelRes[rt];
+        }
+      });
+
+      newModelRes[ratioType] = value;
+
+      return {
+        ...prev,
+        [model]: newModelRes,
+      };
+    });
+  }, [setResolutions]);
 
   const applySync = async () => {
     const currentRatios = {
@@ -177,19 +226,100 @@ export default function UpstreamRatioSync(props) {
       ModelPrice: JSON.parse(props.options.ModelPrice || '{}'),
     };
 
+    const conflicts = [];
+
+    const getLocalBillingCategory = (model) => {
+      if (currentRatios.ModelPrice[model] !== undefined) return 'price';
+      if (currentRatios.ModelRatio[model] !== undefined ||
+        currentRatios.CompletionRatio[model] !== undefined ||
+        currentRatios.CacheRatio[model] !== undefined) return 'ratio';
+      return null;
+    };
+
+    const findSourceChannel = (model, ratioType, value) => {
+      if (differences[model] && differences[model][ratioType]) {
+        const upMap = differences[model][ratioType].upstreams || {};
+        const entry = Object.entries(upMap).find(([_, v]) => v === value);
+        if (entry) return entry[0];
+      }
+      return t('未知');
+    };
+
     Object.entries(resolutions).forEach(([model, ratios]) => {
+      const localCat = getLocalBillingCategory(model);
+      const newCat = 'model_price' in ratios ? 'price' : 'ratio';
+
+      if (localCat && localCat !== newCat) {
+        const currentDesc = localCat === 'price'
+          ? `${t('固定价格')} : ${currentRatios.ModelPrice[model]}`
+          : `${t('模型倍率')} : ${currentRatios.ModelRatio[model] ?? '-'}\n${t('补全倍率')} : ${currentRatios.CompletionRatio[model] ?? '-'}`;
+
+        let newDesc = '';
+        if (newCat === 'price') {
+          newDesc = `${t('固定价格')} : ${ratios['model_price']}`;
+        } else {
+          const newModelRatio = ratios['model_ratio'] ?? '-';
+          const newCompRatio = ratios['completion_ratio'] ?? '-';
+          newDesc = `${t('模型倍率')} : ${newModelRatio}\n${t('补全倍率')} : ${newCompRatio}`;
+        }
+
+        const channels = Object.entries(ratios)
+          .map(([rt, val]) => findSourceChannel(model, rt, val))
+          .filter((v, idx, arr) => arr.indexOf(v) === idx)
+          .join(', ');
+
+        conflicts.push({
+          channel: channels,
+          model,
+          current: currentDesc,
+          newVal: newDesc,
+        });
+      }
+    });
+
+    if (conflicts.length > 0) {
+      setConflictItems(conflicts);
+      setConfirmVisible(true);
+      return;
+    }
+
+    await performSync(currentRatios);
+  };
+
+  const performSync = useCallback(async (currentRatios) => {
+    const finalRatios = {
+      ModelRatio: { ...currentRatios.ModelRatio },
+      CompletionRatio: { ...currentRatios.CompletionRatio },
+      CacheRatio: { ...currentRatios.CacheRatio },
+      ModelPrice: { ...currentRatios.ModelPrice },
+    };
+
+    Object.entries(resolutions).forEach(([model, ratios]) => {
+      const selectedTypes = Object.keys(ratios);
+      const hasPrice = selectedTypes.includes('model_price');
+      const hasRatio = selectedTypes.some(rt => rt !== 'model_price');
+
+      if (hasPrice) {
+        delete finalRatios.ModelRatio[model];
+        delete finalRatios.CompletionRatio[model];
+        delete finalRatios.CacheRatio[model];
+      }
+      if (hasRatio) {
+        delete finalRatios.ModelPrice[model];
+      }
+
       Object.entries(ratios).forEach(([ratioType, value]) => {
         const optionKey = ratioType
           .split('_')
           .map(word => word.charAt(0).toUpperCase() + word.slice(1))
           .join('');
-        currentRatios[optionKey][model] = parseFloat(value);
+        finalRatios[optionKey][model] = parseFloat(value);
       });
     });
 
     setLoading(true);
     try {
-      const updates = Object.entries(currentRatios).map(([key, value]) =>
+      const updates = Object.entries(finalRatios).map(([key, value]) =>
         API.put('/api/option/', {
           key,
           value: JSON.stringify(value, null, 2),
@@ -229,7 +359,7 @@ export default function UpstreamRatioSync(props) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [resolutions, props.options, props.refresh]);
 
   const getCurrentPageData = (dataSource) => {
     const startIndex = (currentPage - 1) * pageSize;
@@ -304,6 +434,10 @@ export default function UpstreamRatioSync(props) {
       const tmp = [];
 
       Object.entries(differences).forEach(([model, ratioTypes]) => {
+        const hasPrice = 'model_price' in ratioTypes;
+        const hasOtherRatio = ['model_ratio', 'completion_ratio', 'cache_ratio'].some(rt => rt in ratioTypes);
+        const billingConflict = hasPrice && hasOtherRatio;
+
         Object.entries(ratioTypes).forEach(([ratioType, diff]) => {
           tmp.push({
             key: `${model}_${ratioType}`,
@@ -312,6 +446,7 @@ export default function UpstreamRatioSync(props) {
             current: diff.current,
             upstreams: diff.upstreams,
             confidence: diff.confidence || {},
+            billingConflict,
           });
         });
       });
@@ -369,14 +504,25 @@ export default function UpstreamRatioSync(props) {
       {
         title: t('倍率类型'),
         dataIndex: 'ratioType',
-        render: (text) => {
+        render: (text, record) => {
           const typeMap = {
             model_ratio: t('模型倍率'),
             completion_ratio: t('补全倍率'),
             cache_ratio: t('缓存倍率'),
             model_price: t('固定价格'),
           };
-          return <Tag color={stringToColor(text)} shape="circle">{typeMap[text] || text}</Tag>;
+          const baseTag = <Tag color={stringToColor(text)} shape="circle">{typeMap[text] || text}</Tag>;
+          if (record?.billingConflict) {
+            return (
+              <div className="flex items-center gap-1">
+                {baseTag}
+                <Tooltip position="top" content={t('该模型存在固定价格与倍率计费方式冲突，请确认选择')}>
+                  <AlertTriangle size={14} className="text-yellow-500" />
+                </Tooltip>
+              </div>
+            );
+          }
+          return baseTag;
         },
       },
       {
@@ -444,28 +590,27 @@ export default function UpstreamRatioSync(props) {
         })();
 
         const handleBulkSelect = (checked) => {
-          setResolutions((prev) => {
-            const newRes = { ...prev };
-
+          if (checked) {
             filteredDataSource.forEach((row) => {
               const upstreamVal = row.upstreams?.[upName];
               if (upstreamVal !== null && upstreamVal !== undefined && upstreamVal !== 'same') {
-                if (checked) {
-                  if (!newRes[row.model]) newRes[row.model] = {};
-                  newRes[row.model][row.ratioType] = upstreamVal;
-                } else {
-                  if (newRes[row.model]) {
-                    delete newRes[row.model][row.ratioType];
-                    if (Object.keys(newRes[row.model]).length === 0) {
-                      delete newRes[row.model];
-                    }
-                  }
-                }
+                selectValue(row.model, row.ratioType, upstreamVal);
               }
             });
-
-            return newRes;
-          });
+          } else {
+            setResolutions((prev) => {
+              const newRes = { ...prev };
+              filteredDataSource.forEach((row) => {
+                if (newRes[row.model]) {
+                  delete newRes[row.model][row.ratioType];
+                  if (Object.keys(newRes[row.model]).length === 0) {
+                    delete newRes[row.model];
+                  }
+                }
+              });
+              return newRes;
+            });
+          }
         };
 
         return {
@@ -592,6 +737,23 @@ export default function UpstreamRatioSync(props) {
         setSelectedChannelIds={setSelectedChannelIds}
         channelEndpoints={channelEndpoints}
         updateChannelEndpoint={updateChannelEndpoint}
+      />
+
+      <ConflictConfirmModal
+        t={t}
+        visible={confirmVisible}
+        items={conflictItems}
+        onOk={async () => {
+          setConfirmVisible(false);
+          const curRatios = {
+            ModelRatio: JSON.parse(props.options.ModelRatio || '{}'),
+            CompletionRatio: JSON.parse(props.options.CompletionRatio || '{}'),
+            CacheRatio: JSON.parse(props.options.CacheRatio || '{}'),
+            ModelPrice: JSON.parse(props.options.ModelPrice || '{}'),
+          };
+          await performSync(curRatios);
+        }}
+        onCancel={() => setConfirmVisible(false)}
       />
     </>
   );

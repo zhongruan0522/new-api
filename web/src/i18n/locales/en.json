@@ -1728,5 +1728,9 @@
   "自适应列表": "Adaptive list",
   "紧凑列表": "Compact list",
   "仅显示矛盾倍率": "Only show conflicting ratios",
-  "矛盾": "Conflict"
+  "矛盾": "Conflict",
+  "确认冲突项修改": "Confirm conflict item modification",
+  "该模型存在固定价格与倍率计费方式冲突，请确认选择": "The model has a fixed price and ratio billing method conflict, please confirm the selection",
+  "当前计费": "Current billing",
+  "修改为": "Modify to"
 }
