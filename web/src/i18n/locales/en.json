@@ -1726,5 +1726,7 @@
   "放大编辑": "Expand editor",
   "编辑公告内容": "Edit announcement content",
   "自适应列表": "Adaptive list",
-  "紧凑列表": "Compact list"
+  "紧凑列表": "Compact list",
+  "仅显示矛盾倍率": "Only show conflicting ratios",
+  "矛盾": "Conflict"
 }
