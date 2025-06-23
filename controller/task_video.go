@@ -56,8 +56,15 @@ func updateVideoSingleTask(ctx context.Context, adaptor channel.TaskAdaptor, cha
 	if channel.GetBaseURL() != "" {
 		baseURL = channel.GetBaseURL()
 	}
+
+	task := taskM[taskId]
+	if task == nil {
+		common.LogError(ctx, fmt.Sprintf("Task %s not found in taskM", taskId))
+		return fmt.Errorf("task %s not found", taskId)
+	}
 	resp, err := adaptor.FetchTask(baseURL, channel.Key, map[string]any{
 		"task_id": taskId,
+		"action":  task.Action,
 	})
 	if err != nil {
 		return fmt.Errorf("FetchTask failed for task %s: %w", taskId, err)
@@ -87,12 +94,6 @@ func updateVideoSingleTask(ctx context.Context, adaptor channel.TaskAdaptor, cha
 	if !ok {
 		common.LogError(ctx, fmt.Sprintf("Video task data format error: %s", string(responseBody)))
 		return fmt.Errorf("video task data format error for task %s", taskId)
-	}
-
-	task := taskM[taskId]
-	if task == nil {
-		common.LogError(ctx, fmt.Sprintf("Task %s not found in taskM", taskId))
-		return fmt.Errorf("task %s not found", taskId)
 	}
 
 	if status, ok := data["task_status"].(string); ok {
