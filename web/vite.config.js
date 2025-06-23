@@ -1,5 +1,7 @@
 import react from '@vitejs/plugin-react';
 import { defineConfig, transformWithEsbuild } from 'vite';
+import pkg from '@douyinfe/vite-plugin-semi';
+const { vitePluginSemi } = pkg;
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -20,6 +22,9 @@ export default defineConfig({
       },
     },
     react(),
+    vitePluginSemi({
+      cssLayer: true
+    })
   ],
   optimizeDeps: {
     force: true,
@@ -36,7 +41,6 @@ export default defineConfig({
         manualChunks: {
           'react-core': ['react', 'react-dom', 'react-router-dom'],
           'semi-ui': ['@douyinfe/semi-icons', '@douyinfe/semi-ui'],
-          semantic: ['semantic-ui-offline', 'semantic-ui-react'],
           visactor: ['@visactor/react-vchart', '@visactor/vchart'],
           tools: ['axios', 'history', 'marked'],
           'react-components': [

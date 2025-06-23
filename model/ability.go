@@ -8,6 +8,7 @@ import (
 
 	"github.com/samber/lo"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type Ability struct {
@@ -23,7 +24,7 @@ type Ability struct {
 func GetGroupModels(group string) []string {
 	var models []string
 	// Find distinct models
-	DB.Table("abilities").Where(groupCol+" = ? and enabled = ?", group, true).Distinct("model").Pluck("model", &models)
+	DB.Table("abilities").Where(commonGroupCol+" = ? and enabled = ?", group, true).Distinct("model").Pluck("model", &models)
 	return models
 }
 
@@ -41,15 +42,11 @@ func GetAllEnableAbilities() []Ability {
 }
 
 func getPriority(group string, model string, retry int) (int, error) {
-	trueVal := "1"
-	if common.UsingPostgreSQL {
-		trueVal = "true"
-	}
 
 	var priorities []int
 	err := DB.Model(&Ability{}).
 		Select("DISTINCT(priority)").
-		Where(groupCol+" = ? and model = ? and enabled = "+trueVal, group, model).
+		Where(commonGroupCol+" = ? and model = ? and enabled = ?", group, model, commonTrueVal).
 		Order("priority DESC").              // 按优先级降序排序
 		Pluck("priority", &priorities).Error // Pluck用于将查询的结果直接扫描到一个切片中
 
@@ -75,18 +72,14 @@ func getPriority(group string, model string, retry int) (int, error) {
 }
 
 func getChannelQuery(group string, model string, retry int) *gorm.DB {
-	trueVal := "1"
-	if common.UsingPostgreSQL {
-		trueVal = "true"
-	}
-	maxPrioritySubQuery := DB.Model(&Ability{}).Select("MAX(priority)").Where(groupCol+" = ? and model = ? and enabled = "+trueVal, group, model)
-	channelQuery := DB.Where(groupCol+" = ? and model = ? and enabled = "+trueVal+" and priority = (?)", group, model, maxPrioritySubQuery)
+	maxPrioritySubQuery := DB.Model(&Ability{}).Select("MAX(priority)").Where(commonGroupCol+" = ? and model = ? and enabled = ?", group, model, commonTrueVal)
+	channelQuery := DB.Where(commonGroupCol+" = ? and model = ? and enabled = ? and priority = (?)", group, model, commonTrueVal, maxPrioritySubQuery)
 	if retry != 0 {
 		priority, err := getPriority(group, model, retry)
 		if err != nil {
 			common.SysError(fmt.Sprintf("Get priority failed: %s", err.Error()))
 		} else {
-			channelQuery = DB.Where(groupCol+" = ? and model = ? and enabled = "+trueVal+" and priority = ?", group, model, priority)
+			channelQuery = DB.Where(commonGroupCol+" = ? and model = ? and enabled = ? and priority = ?", group, model, commonTrueVal, priority)
 		}
 	}
 
@@ -133,9 +126,15 @@ func GetRandomSatisfiedChannel(group string, model string, retry int) (*Channel,
 func (channel *Channel) AddAbilities() error {
 	models_ := strings.Split(channel.Models, ",")
 	groups_ := strings.Split(channel.Group, ",")
+	abilitySet := make(map[string]struct{})
 	abilities := make([]Ability, 0, len(models_))
 	for _, model := range models_ {
 		for _, group := range groups_ {
+			key := group + "|" + model
+			if _, exists := abilitySet[key]; exists {
+				continue
+			}
+			abilitySet[key] = struct{}{}
 			ability := Ability{
 				Group:     group,
 				Model:     model,
@@ -152,7 +151,7 @@ func (channel *Channel) AddAbilities() error {
 		return nil
 	}
 	for _, chunk := range lo.Chunk(abilities, 50) {
-		err := DB.Create(&chunk).Error
+		err := DB.Clauses(clause.OnConflict{DoNothing: true}).Create(&chunk).Error
 		if err != nil {
 			return err
 		}
@@ -194,9 +193,15 @@ func (channel *Channel) UpdateAbilities(tx *gorm.DB) error {
 	// Then add new abilities
 	models_ := strings.Split(channel.Models, ",")
 	groups_ := strings.Split(channel.Group, ",")
+	abilitySet := make(map[string]struct{})
 	abilities := make([]Ability, 0, len(models_))
 	for _, model := range models_ {
 		for _, group := range groups_ {
+			key := group + "|" + model
+			if _, exists := abilitySet[key]; exists {
+				continue
+			}
+			abilitySet[key] = struct{}{}
 			ability := Ability{
 				Group:     group,
 				Model:     model,
@@ -212,7 +217,7 @@ func (channel *Channel) UpdateAbilities(tx *gorm.DB) error {
 
 	if len(abilities) > 0 {
 		for _, chunk := range lo.Chunk(abilities, 50) {
-			err = tx.Create(&chunk).Error
+			err = tx.Clauses(clause.OnConflict{DoNothing: true}).Create(&chunk).Error
 			if err != nil {
 				if isNewTx {
 					tx.Rollback()
@@ -261,12 +266,28 @@ func FixAbility() (int, error) {
 		common.SysError(fmt.Sprintf("Get channel ids from channel table failed: %s", err.Error()))
 		return 0, err
 	}
-	// Delete abilities of channels that are not in channel table
-	err = DB.Where("channel_id NOT IN (?)", channelIds).Delete(&Ability{}).Error
-	if err != nil {
-		common.SysError(fmt.Sprintf("Delete abilities of channels that are not in channel table failed: %s", err.Error()))
-		return 0, err
+
+	// Delete abilities of channels that are not in channel table - in batches to avoid too many placeholders
+	if len(channelIds) > 0 {
+		// Process deletion in chunks to avoid "too many placeholders" error
+		for _, chunk := range lo.Chunk(channelIds, 100) {
+			err = DB.Where("channel_id NOT IN (?)", chunk).Delete(&Ability{}).Error
+			if err != nil {
+				common.SysError(fmt.Sprintf("Delete abilities of channels (batch) that are not in channel table failed: %s", err.Error()))
+				return 0, err
+			}
+		}
+	} else {
+		// If no channels exist, delete all abilities
+		err = DB.Delete(&Ability{}).Error
+		if err != nil {
+			common.SysError(fmt.Sprintf("Delete all abilities failed: %s", err.Error()))
+			return 0, err
+		}
+		common.SysLog("Delete all abilities successfully")
+		return 0, nil
 	}
+
 	common.SysLog(fmt.Sprintf("Delete abilities of channels that are not in channel table successfully, ids: %v", channelIds))
 	count += len(channelIds)
 
@@ -275,17 +296,26 @@ func FixAbility() (int, error) {
 	err = DB.Table("abilities").Distinct("channel_id").Pluck("channel_id", &abilityChannelIds).Error
 	if err != nil {
 		common.SysError(fmt.Sprintf("Get channel ids from abilities table failed: %s", err.Error()))
-		return 0, err
+		return count, err
 	}
+
 	var channels []Channel
 	if len(abilityChannelIds) == 0 {
 		err = DB.Find(&channels).Error
 	} else {
-		err = DB.Where("id NOT IN (?)", abilityChannelIds).Find(&channels).Error
+		// Process query in chunks to avoid "too many placeholders" error
+		err = nil
+		for _, chunk := range lo.Chunk(abilityChannelIds, 100) {
+			var channelsChunk []Channel
+			err = DB.Where("id NOT IN (?)", chunk).Find(&channelsChunk).Error
+			if err != nil {
+				common.SysError(fmt.Sprintf("Find channels not in abilities table failed: %s", err.Error()))
+				return count, err
+			}
+			channels = append(channels, channelsChunk...)
+		}
 	}
-	if err != nil {
-		return 0, err
-	}
+
 	for _, channel := range channels {
 		err := channel.UpdateAbilities(nil)
 		if err != nil {

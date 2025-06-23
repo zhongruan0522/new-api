@@ -40,6 +40,8 @@ func relayHandler(c *gin.Context, relayMode int) *dto.OpenAIErrorWithStatusCode 
 		err = relay.EmbeddingHelper(c)
 	case relayconstant.RelayModeResponses:
 		err = relay.ResponsesHelper(c)
+	case relayconstant.RelayModeGemini:
+		err = relay.GeminiHelper(c)
 	default:
 		err = relay.TextHelper(c)
 	}
@@ -257,7 +259,7 @@ func getChannel(c *gin.Context, group, originalModel string, retryCount int) (*m
 			AutoBan: &autoBanInt,
 		}, nil
 	}
-	channel, err := model.CacheGetRandomSatisfiedChannel(group, originalModel, retryCount)
+	channel, _, err := model.CacheGetRandomSatisfiedChannel(c, group, originalModel, retryCount)
 	if err != nil {
 		return nil, errors.New(fmt.Sprintf("获取重试渠道失败: %s", err.Error()))
 	}
@@ -386,7 +388,7 @@ func RelayTask(c *gin.Context) {
 		retryTimes = 0
 	}
 	for i := 0; shouldRetryTaskRelay(c, channelId, taskErr, retryTimes) && i < retryTimes; i++ {
-		channel, err := model.CacheGetRandomSatisfiedChannel(group, originalModel, i)
+		channel, _, err := model.CacheGetRandomSatisfiedChannel(c, group, originalModel, i)
 		if err != nil {
 			common.LogError(c, fmt.Sprintf("CacheGetRandomSatisfiedChannel failed: %s", err.Error()))
 			break
@@ -418,7 +420,7 @@ func RelayTask(c *gin.Context) {
 func taskRelayHandler(c *gin.Context, relayMode int) *dto.TaskError {
 	var err *dto.TaskError
 	switch relayMode {
-	case relayconstant.RelayModeSunoFetch, relayconstant.RelayModeSunoFetchByID:
+	case relayconstant.RelayModeSunoFetch, relayconstant.RelayModeSunoFetchByID, relayconstant.RelayModeKlingFetchByID:
 		err = relay.RelayTaskFetch(c, relayMode)
 	default:
 		err = relay.RelayTaskSubmit(c, relayMode)

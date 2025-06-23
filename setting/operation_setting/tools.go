@@ -14,6 +14,15 @@ const (
 	FileSearchPrice = 2.5
 )
 
+const (
+	// Gemini Audio Input Price
+	Gemini25FlashPreviewInputAudioPrice     = 1.00
+	Gemini25FlashProductionInputAudioPrice  = 1.00 // for `gemini-2.5-flash`
+	Gemini25FlashLitePreviewInputAudioPrice = 0.50
+	Gemini25FlashNativeAudioInputAudioPrice = 3.00
+	Gemini20FlashInputAudioPrice            = 0.70
+)
+
 func GetWebSearchPricePerThousand(modelName string, contextSize string) float64 {
 	// 确定模型类型
 	// https://platform.openai.com/docs/pricing Web search 价格按模型类型和 search context size 收费
@@ -54,4 +63,19 @@ func GetWebSearchPricePerThousand(modelName string, contextSize string) float64 
 
 func GetFileSearchPricePerThousand() float64 {
 	return FileSearchPrice
+}
+
+func GetGeminiInputAudioPricePerMillionTokens(modelName string) float64 {
+	if strings.HasPrefix(modelName, "gemini-2.5-flash-preview-native-audio") {
+		return Gemini25FlashNativeAudioInputAudioPrice
+	} else if strings.HasPrefix(modelName, "gemini-2.5-flash-preview-lite") {
+		return Gemini25FlashLitePreviewInputAudioPrice
+	} else if strings.HasPrefix(modelName, "gemini-2.5-flash-preview") {
+		return Gemini25FlashPreviewInputAudioPrice
+	} else if strings.HasPrefix(modelName, "gemini-2.5-flash") {
+		return Gemini25FlashProductionInputAudioPrice
+	} else if strings.HasPrefix(modelName, "gemini-2.0-flash") {
+		return Gemini20FlashInputAudioPrice
+	}
+	return 0
 }

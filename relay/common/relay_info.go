@@ -34,9 +34,14 @@ type ClaudeConvertInfo struct {
 }
 
 const (
-	RelayFormatOpenAI = "openai"
-	RelayFormatClaude = "claude"
-	RelayFormatGemini = "gemini"
+	RelayFormatOpenAI          = "openai"
+	RelayFormatClaude          = "claude"
+	RelayFormatGemini          = "gemini"
+	RelayFormatOpenAIResponses = "openai_responses"
+	RelayFormatOpenAIAudio     = "openai_audio"
+	RelayFormatOpenAIImage     = "openai_image"
+	RelayFormatRerank          = "rerank"
+	RelayFormatEmbedding       = "embedding"
 )
 
 type RerankerInfo struct {
@@ -61,6 +66,7 @@ type RelayInfo struct {
 	TokenKey          string
 	UserId            int
 	Group             string
+	UserGroup         string
 	TokenUnlimited    bool
 	StartTime         time.Time
 	FirstResponseTime time.Time
@@ -142,6 +148,7 @@ func GenRelayInfoClaude(c *gin.Context) *RelayInfo {
 func GenRelayInfoRerank(c *gin.Context, req *dto.RerankRequest) *RelayInfo {
 	info := GenRelayInfo(c)
 	info.RelayMode = relayconstant.RelayModeRerank
+	info.RelayFormat = RelayFormatRerank
 	info.RerankerInfo = &RerankerInfo{
 		Documents:       req.Documents,
 		ReturnDocuments: req.GetReturnDocuments(),
@@ -149,9 +156,25 @@ func GenRelayInfoRerank(c *gin.Context, req *dto.RerankRequest) *RelayInfo {
 	return info
 }
 
+func GenRelayInfoOpenAIAudio(c *gin.Context) *RelayInfo {
+	info := GenRelayInfo(c)
+	info.RelayFormat = RelayFormatOpenAIAudio
+	return info
+}
+
+func GenRelayInfoEmbedding(c *gin.Context) *RelayInfo {
+	info := GenRelayInfo(c)
+	info.RelayFormat = RelayFormatEmbedding
+	return info
+}
+
 func GenRelayInfoResponses(c *gin.Context, req *dto.OpenAIResponsesRequest) *RelayInfo {
 	info := GenRelayInfo(c)
 	info.RelayMode = relayconstant.RelayModeResponses
+	info.RelayFormat = RelayFormatOpenAIResponses
+
+	info.SupportStreamOptions = false
+
 	info.ResponsesUsageInfo = &ResponsesUsageInfo{
 		BuiltInTools: make(map[string]*BuildInToolInfo),
 	}
@@ -171,6 +194,19 @@ func GenRelayInfoResponses(c *gin.Context, req *dto.OpenAIResponsesRequest) *Rel
 		}
 	}
 	info.IsStream = req.Stream
+	return info
+}
+
+func GenRelayInfoGemini(c *gin.Context) *RelayInfo {
+	info := GenRelayInfo(c)
+	info.RelayFormat = RelayFormatGemini
+	info.ShouldIncludeUsage = false
+	return info
+}
+
+func GenRelayInfoImage(c *gin.Context) *RelayInfo {
+	info := GenRelayInfo(c)
+	info.RelayFormat = RelayFormatOpenAIImage
 	return info
 }
 
@@ -204,6 +240,7 @@ func GenRelayInfo(c *gin.Context) *RelayInfo {
 		TokenKey:          tokenKey,
 		UserId:            userId,
 		Group:             group,
+		UserGroup:         c.GetString(constant.ContextKeyUserGroup),
 		TokenUnlimited:    tokenUnlimited,
 		StartTime:         startTime,
 		FirstResponseTime: startTime.Add(-time.Second),
@@ -240,10 +277,6 @@ func GenRelayInfo(c *gin.Context) *RelayInfo {
 	}
 	if streamSupportedChannels[info.ChannelType] {
 		info.SupportStreamOptions = true
-	}
-	// responses 模式不支持 StreamOptions
-	if relayconstant.RelayModeResponses == info.RelayMode {
-		info.SupportStreamOptions = false
 	}
 	return info
 }

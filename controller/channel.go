@@ -43,22 +43,31 @@ type OpenAIModelsResponse struct {
 func GetAllChannels(c *gin.Context) {
 	p, _ := strconv.Atoi(c.Query("p"))
 	pageSize, _ := strconv.Atoi(c.Query("page_size"))
-	if p < 0 {
-		p = 0
+	if p < 1 {
+		p = 1
 	}
-	if pageSize < 0 {
+	if pageSize < 1 {
 		pageSize = common.ItemsPerPage
 	}
 	channelData := make([]*model.Channel, 0)
 	idSort, _ := strconv.ParseBool(c.Query("id_sort"))
 	enableTagMode, _ := strconv.ParseBool(c.Query("tag_mode"))
+	// type filter
+	typeStr := c.Query("type")
+	typeFilter := -1
+	if typeStr != "" {
+		if t, err := strconv.Atoi(typeStr); err == nil {
+			typeFilter = t
+		}
+	}
+
+	var total int64
+
 	if enableTagMode {
-		tags, err := model.GetPaginatedTags(p*pageSize, pageSize)
+		// tag 分页：先分页 tag，再取各 tag 下 channels
+		tags, err := model.GetPaginatedTags((p-1)*pageSize, pageSize)
 		if err != nil {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": err.Error(),
-			})
+			c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
 			return
 		}
 		for _, tag := range tags {
@@ -69,21 +78,39 @@ func GetAllChannels(c *gin.Context) {
 				}
 			}
 		}
-	} else {
-		channels, err := model.GetAllChannels(p*pageSize, pageSize, false, idSort)
+		// 计算 tag 总数用于分页
+		total, _ = model.CountAllTags()
+	} else if typeFilter >= 0 {
+		channels, err := model.GetChannelsByType((p-1)*pageSize, pageSize, idSort, typeFilter)
 		if err != nil {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": err.Error(),
-			})
+			c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
 			return
 		}
 		channelData = channels
+		total, _ = model.CountChannelsByType(typeFilter)
+	} else {
+		channels, err := model.GetAllChannels((p-1)*pageSize, pageSize, false, idSort)
+		if err != nil {
+			c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
+			return
+		}
+		channelData = channels
+		total, _ = model.CountAllChannels()
 	}
+
+	// calculate type counts
+	typeCounts, _ := model.CountChannelsGroupByType()
+
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
-		"data":    channelData,
+		"data": gin.H{
+			"items":       channelData,
+			"total":       total,
+			"page":        p,
+			"page_size":   pageSize,
+			"type_counts": typeCounts,
+		},
 	})
 	return
 }
@@ -119,8 +146,11 @@ func FetchUpstreamModels(c *gin.Context) {
 		baseURL = channel.GetBaseURL()
 	}
 	url := fmt.Sprintf("%s/v1/models", baseURL)
-	if channel.Type == common.ChannelTypeGemini {
+	switch channel.Type {
+	case common.ChannelTypeGemini:
 		url = fmt.Sprintf("%s/v1beta/openai/models", baseURL)
+	case common.ChannelTypeAli:
+		url = fmt.Sprintf("%s/compatible-mode/v1/models", baseURL)
 	}
 	body, err := GetResponseBody("GET", url, channel, GetAuthHeader(channel.Key))
 	if err != nil {
@@ -207,10 +237,20 @@ func SearchChannels(c *gin.Context) {
 		}
 		channelData = channels
 	}
+
+	// calculate type counts for search results
+	typeCounts := make(map[int64]int64)
+	for _, channel := range channelData {
+		typeCounts[int64(channel.Type)]++
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
-		"data":    channelData,
+		"data": gin.H{
+			"items":       channelData,
+			"type_counts": typeCounts,
+		},
 	})
 	return
 }
@@ -617,6 +657,47 @@ func BatchSetChannelTag(c *gin.Context) {
 		"success": true,
 		"message": "",
 		"data":    len(channelBatch.Ids),
+	})
+	return
+}
+
+func GetTagModels(c *gin.Context) {
+	tag := c.Query("tag")
+	if tag == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"message": "tag不能为空",
+		})
+		return
+	}
+
+	channels, err := model.GetChannelsByTag(tag, false) // Assuming false for idSort is fine here
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"message": err.Error(),
+		})
+		return
+	}
+
+	var longestModels string
+	maxLength := 0
+
+	// Find the longest models string among all channels with the given tag
+	for _, channel := range channels {
+		if channel.Models != "" {
+			currentModels := strings.Split(channel.Models, ",")
+			if len(currentModels) > maxLength {
+				maxLength = len(currentModels)
+				longestModels = channel.Models
+			}
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "",
+		"data":    longestModels,
 	})
 	return
 }

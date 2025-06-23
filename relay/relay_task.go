@@ -15,8 +15,7 @@ import (
 	relaycommon "one-api/relay/common"
 	relayconstant "one-api/relay/constant"
 	"one-api/service"
-	"one-api/setting"
-	"one-api/setting/operation_setting"
+	"one-api/setting/ratio_setting"
 )
 
 /*
@@ -38,9 +37,12 @@ func RelayTaskSubmit(c *gin.Context, relayMode int) (taskErr *dto.TaskError) {
 	}
 
 	modelName := service.CoverTaskActionToModelName(platform, relayInfo.Action)
-	modelPrice, success := operation_setting.GetModelPrice(modelName, true)
+	if platform == constant.TaskPlatformKling {
+		modelName = relayInfo.OriginModelName
+	}
+	modelPrice, success := ratio_setting.GetModelPrice(modelName, true)
 	if !success {
-		defaultPrice, ok := operation_setting.GetDefaultModelRatioMap()[modelName]
+		defaultPrice, ok := ratio_setting.GetDefaultModelRatioMap()[modelName]
 		if !ok {
 			modelPrice = 0.1
 		} else {
@@ -49,7 +51,7 @@ func RelayTaskSubmit(c *gin.Context, relayMode int) (taskErr *dto.TaskError) {
 	}
 
 	// 预扣
-	groupRatio := setting.GetGroupRatio(relayInfo.Group)
+	groupRatio := ratio_setting.GetGroupRatio(relayInfo.Group)
 	ratio := modelPrice * groupRatio
 	userQuota, err := model.GetUserQuota(relayInfo.UserId, false)
 	if err != nil {
@@ -137,10 +139,11 @@ func RelayTaskSubmit(c *gin.Context, relayMode int) (taskErr *dto.TaskError) {
 	}
 	relayInfo.ConsumeQuota = true
 	// insert task
-	task := model.InitTask(constant.TaskPlatformSuno, relayInfo)
+	task := model.InitTask(platform, relayInfo)
 	task.TaskID = taskID
 	task.Quota = quota
 	task.Data = taskData
+	task.Action = relayInfo.Action
 	err = task.Insert()
 	if err != nil {
 		taskErr = service.TaskErrorWrapper(err, "insert_task_failed", http.StatusInternalServerError)
@@ -150,8 +153,9 @@ func RelayTaskSubmit(c *gin.Context, relayMode int) (taskErr *dto.TaskError) {
 }
 
 var fetchRespBuilders = map[int]func(c *gin.Context) (respBody []byte, taskResp *dto.TaskError){
-	relayconstant.RelayModeSunoFetchByID: sunoFetchByIDRespBodyBuilder,
-	relayconstant.RelayModeSunoFetch:     sunoFetchRespBodyBuilder,
+	relayconstant.RelayModeSunoFetchByID:  sunoFetchByIDRespBodyBuilder,
+	relayconstant.RelayModeSunoFetch:      sunoFetchRespBodyBuilder,
+	relayconstant.RelayModeKlingFetchByID: videoFetchByIDRespBodyBuilder,
 }
 
 func RelayTaskFetch(c *gin.Context, relayMode int) (taskResp *dto.TaskError) {
@@ -206,6 +210,27 @@ func sunoFetchRespBodyBuilder(c *gin.Context) (respBody []byte, taskResp *dto.Ta
 }
 
 func sunoFetchByIDRespBodyBuilder(c *gin.Context) (respBody []byte, taskResp *dto.TaskError) {
+	taskId := c.Param("id")
+	userId := c.GetInt("id")
+
+	originTask, exist, err := model.GetByTaskId(userId, taskId)
+	if err != nil {
+		taskResp = service.TaskErrorWrapper(err, "get_task_failed", http.StatusInternalServerError)
+		return
+	}
+	if !exist {
+		taskResp = service.TaskErrorWrapperLocal(errors.New("task_not_exist"), "task_not_exist", http.StatusBadRequest)
+		return
+	}
+
+	respBody, err = json.Marshal(dto.TaskResponse[any]{
+		Code: "success",
+		Data: TaskModel2Dto(originTask),
+	})
+	return
+}
+
+func videoFetchByIDRespBodyBuilder(c *gin.Context) (respBody []byte, taskResp *dto.TaskError) {
 	taskId := c.Param("id")
 	userId := c.GetInt("id")
 

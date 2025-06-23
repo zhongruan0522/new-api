@@ -226,6 +226,9 @@ func Register(c *gin.Context) {
 			UnlimitedQuota:     true,
 			ModelLimitsEnabled: false,
 		}
+		if setting.DefaultUseAutoGroup {
+			token.Group = "auto"
+		}
 		if err := token.Insert(); err != nil {
 			c.JSON(http.StatusOK, gin.H{
 				"success": false,
@@ -459,6 +462,9 @@ func GetSelf(c *gin.Context) {
 		})
 		return
 	}
+	// Hide admin remarks: set to empty to trigger omitempty tag, ensuring the remark field is not included in JSON returned to regular users
+	user.Remark = ""
+
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
@@ -943,6 +949,7 @@ type UpdateUserSettingRequest struct {
 	WebhookSecret              string  `json:"webhook_secret,omitempty"`
 	NotificationEmail          string  `json:"notification_email,omitempty"`
 	AcceptUnsetModelRatioModel bool    `json:"accept_unset_model_ratio_model"`
+	RecordIpLog                bool    `json:"record_ip_log"`
 }
 
 func UpdateUserSetting(c *gin.Context) {
@@ -1019,6 +1026,7 @@ func UpdateUserSetting(c *gin.Context) {
 		constant.UserSettingNotifyType:            req.QuotaWarningType,
 		constant.UserSettingQuotaWarningThreshold: req.QuotaWarningThreshold,
 		"accept_unset_model_ratio_model":          req.AcceptUnsetModelRatioModel,
+		constant.UserSettingRecordIpLog:           req.RecordIpLog,
 	}
 
 	// 如果是webhook类型,添加webhook相关设置

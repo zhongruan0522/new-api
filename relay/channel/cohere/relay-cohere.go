@@ -3,7 +3,6 @@ package cohere
 import (
 	"bufio"
 	"encoding/json"
-	"fmt"
 	"github.com/gin-gonic/gin"
 	"io"
 	"net/http"
@@ -78,7 +77,7 @@ func stopReasonCohere2OpenAI(reason string) string {
 }
 
 func cohereStreamHandler(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (*dto.OpenAIErrorWithStatusCode, *dto.Usage) {
-	responseId := fmt.Sprintf("chatcmpl-%s", common.GetUUID())
+	responseId := helper.GetResponseID(c)
 	createdTime := common.GetTimestamp()
 	usage := &dto.Usage{}
 	responseText := ""
@@ -163,7 +162,7 @@ func cohereStreamHandler(c *gin.Context, resp *http.Response, info *relaycommon.
 		}
 	})
 	if usage.PromptTokens == 0 {
-		usage, _ = service.ResponseText2Usage(responseText, info.UpstreamModelName, info.PromptTokens)
+		usage = service.ResponseText2Usage(responseText, info.UpstreamModelName, info.PromptTokens)
 	}
 	return nil, usage
 }
@@ -195,11 +194,10 @@ func cohereHandler(c *gin.Context, resp *http.Response, modelName string, prompt
 	openaiResp.Model = modelName
 	openaiResp.Usage = usage
 
-	content, _ := json.Marshal(cohereResp.Text)
 	openaiResp.Choices = []dto.OpenAITextResponseChoice{
 		{
 			Index:        0,
-			Message:      dto.Message{Content: content, Role: "assistant"},
+			Message:      dto.Message{Content: cohereResp.Text, Role: "assistant"},
 			FinishReason: stopReasonCohere2OpenAI(cohereResp.FinishReason),
 		},
 	}

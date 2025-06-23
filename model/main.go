@@ -1,6 +1,7 @@
 package model
 
 import (
+	"fmt"
 	"log"
 	"one-api/common"
 	"one-api/constant"
@@ -15,18 +16,48 @@ import (
 	"gorm.io/gorm"
 )
 
-var groupCol string
-var keyCol string
+var commonGroupCol string
+var commonKeyCol string
+var commonTrueVal string
+var commonFalseVal string
+
+var logKeyCol string
+var logGroupCol string
 
 func initCol() {
+	// init common column names
 	if common.UsingPostgreSQL {
-		groupCol = `"group"`
-		keyCol = `"key"`
-
+		commonGroupCol = `"group"`
+		commonKeyCol = `"key"`
+		commonTrueVal = "true"
+		commonFalseVal = "false"
 	} else {
-		groupCol = "`group`"
-		keyCol = "`key`"
+		commonGroupCol = "`group`"
+		commonKeyCol = "`key`"
+		commonTrueVal = "1"
+		commonFalseVal = "0"
 	}
+	if os.Getenv("LOG_SQL_DSN") != "" {
+		switch common.LogSqlType {
+		case common.DatabaseTypePostgreSQL:
+			logGroupCol = `"group"`
+			logKeyCol = `"key"`
+		default:
+			logGroupCol = commonGroupCol
+			logKeyCol = commonKeyCol
+		}
+	} else {
+		// LOG_SQL_DSN 为空时，日志数据库与主数据库相同
+		if common.UsingPostgreSQL {
+			logGroupCol = `"group"`
+			logKeyCol = `"key"`
+		} else {
+			logGroupCol = commonGroupCol
+			logKeyCol = commonKeyCol
+		}
+	}
+	// log sql type and database type
+	common.SysLog("Using Log SQL Type: " + common.LogSqlType)
 }
 
 var DB *gorm.DB
@@ -83,7 +114,7 @@ func CheckSetup() {
 	}
 }
 
-func chooseDB(envName string) (*gorm.DB, error) {
+func chooseDB(envName string, isLog bool) (*gorm.DB, error) {
 	defer func() {
 		initCol()
 	}()
@@ -92,7 +123,11 @@ func chooseDB(envName string) (*gorm.DB, error) {
 		if strings.HasPrefix(dsn, "postgres://") || strings.HasPrefix(dsn, "postgresql://") {
 			// Use PostgreSQL
 			common.SysLog("using PostgreSQL as database")
-			common.UsingPostgreSQL = true
+			if !isLog {
+				common.UsingPostgreSQL = true
+			} else {
+				common.LogSqlType = common.DatabaseTypePostgreSQL
+			}
 			return gorm.Open(postgres.New(postgres.Config{
 				DSN:                  dsn,
 				PreferSimpleProtocol: true, // disables implicit prepared statement usage
@@ -102,7 +137,11 @@ func chooseDB(envName string) (*gorm.DB, error) {
 		}
 		if strings.HasPrefix(dsn, "local") {
 			common.SysLog("SQL_DSN not set, using SQLite as database")
-			common.UsingSQLite = true
+			if !isLog {
+				common.UsingSQLite = true
+			} else {
+				common.LogSqlType = common.DatabaseTypeSQLite
+			}
 			return gorm.Open(sqlite.Open(common.SQLitePath), &gorm.Config{
 				PrepareStmt: true, // precompile SQL
 			})
@@ -117,7 +156,11 @@ func chooseDB(envName string) (*gorm.DB, error) {
 				dsn += "?parseTime=true"
 			}
 		}
-		common.UsingMySQL = true
+		if !isLog {
+			common.UsingMySQL = true
+		} else {
+			common.LogSqlType = common.DatabaseTypeMySQL
+		}
 		return gorm.Open(mysql.Open(dsn), &gorm.Config{
 			PrepareStmt: true, // precompile SQL
 		})
@@ -131,7 +174,7 @@ func chooseDB(envName string) (*gorm.DB, error) {
 }
 
 func InitDB() (err error) {
-	db, err := chooseDB("SQL_DSN")
+	db, err := chooseDB("SQL_DSN", false)
 	if err == nil {
 		if common.DebugEnabled {
 			db = db.Debug()
@@ -149,7 +192,7 @@ func InitDB() (err error) {
 			return nil
 		}
 		if common.UsingMySQL {
-			_, _ = sqlDB.Exec("ALTER TABLE channels MODIFY model_mapping TEXT;") // TODO: delete this line when most users have upgraded
+			//_, _ = sqlDB.Exec("ALTER TABLE channels MODIFY model_mapping TEXT;") // TODO: delete this line when most users have upgraded
 		}
 		common.SysLog("database migration started")
 		err = migrateDB()
@@ -165,7 +208,7 @@ func InitLogDB() (err error) {
 		LOG_DB = DB
 		return
 	}
-	db, err := chooseDB("LOG_SQL_DSN")
+	db, err := chooseDB("LOG_SQL_DSN", true)
 	if err == nil {
 		if common.DebugEnabled {
 			db = db.Debug()
@@ -198,54 +241,73 @@ func InitLogDB() (err error) {
 }
 
 func migrateDB() error {
-	err := DB.AutoMigrate(&Channel{})
+	if !common.UsingPostgreSQL {
+		return migrateDBFast()
+	}
+	err := DB.AutoMigrate(
+		&Channel{},
+		&Token{},
+		&User{},
+		&Option{},
+		&Redemption{},
+		&Ability{},
+		&Log{},
+		&Midjourney{},
+		&TopUp{},
+		&QuotaData{},
+		&Task{},
+		&Setup{},
+	)
 	if err != nil {
 		return err
 	}
-	err = DB.AutoMigrate(&Token{})
-	if err != nil {
-		return err
+	return nil
+}
+
+func migrateDBFast() error {
+	var wg sync.WaitGroup
+	errChan := make(chan error, 12) // Buffer size matches number of migrations
+
+	migrations := []struct {
+		model interface{}
+		name  string
+	}{
+		{&Channel{}, "Channel"},
+		{&Token{}, "Token"},
+		{&User{}, "User"},
+		{&Option{}, "Option"},
+		{&Redemption{}, "Redemption"},
+		{&Ability{}, "Ability"},
+		{&Log{}, "Log"},
+		{&Midjourney{}, "Midjourney"},
+		{&TopUp{}, "TopUp"},
+		{&QuotaData{}, "QuotaData"},
+		{&Task{}, "Task"},
+		{&Setup{}, "Setup"},
 	}
-	err = DB.AutoMigrate(&User{})
-	if err != nil {
-		return err
+
+	for _, m := range migrations {
+		wg.Add(1)
+		go func(model interface{}, name string) {
+			defer wg.Done()
+			if err := DB.AutoMigrate(model); err != nil {
+				errChan <- fmt.Errorf("failed to migrate %s: %v", name, err)
+			}
+		}(m.model, m.name)
 	}
-	err = DB.AutoMigrate(&Option{})
-	if err != nil {
-		return err
+
+	// Wait for all migrations to complete
+	wg.Wait()
+	close(errChan)
+
+	// Check for any errors
+	for err := range errChan {
+		if err != nil {
+			return err
+		}
 	}
-	err = DB.AutoMigrate(&Redemption{})
-	if err != nil {
-		return err
-	}
-	err = DB.AutoMigrate(&Ability{})
-	if err != nil {
-		return err
-	}
-	err = DB.AutoMigrate(&Log{})
-	if err != nil {
-		return err
-	}
-	err = DB.AutoMigrate(&Midjourney{})
-	if err != nil {
-		return err
-	}
-	err = DB.AutoMigrate(&TopUp{})
-	if err != nil {
-		return err
-	}
-	err = DB.AutoMigrate(&QuotaData{})
-	if err != nil {
-		return err
-	}
-	err = DB.AutoMigrate(&Task{})
-	if err != nil {
-		return err
-	}
-	err = DB.AutoMigrate(&Setup{})
 	common.SysLog("database migrated")
-	//err = createRootAccountIfNeed()
-	return err
+	return nil
 }
 
 func migrateLOGDB() error {

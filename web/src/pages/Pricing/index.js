@@ -1,5 +1,5 @@
 import React from 'react';
-import ModelPricing from '../../components/ModelPricing.js';
+import ModelPricing from '../../components/table/ModelPricing.js';
 
 const Pricing = () => (
   <>

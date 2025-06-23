@@ -10,6 +10,7 @@ import (
 	"one-api/dto"
 	"one-api/relay/channel"
 	relaycommon "one-api/relay/common"
+	"one-api/relay/constant"
 	"one-api/service"
 	"one-api/setting/model_setting"
 	"strings"
@@ -71,10 +72,13 @@ func (a *Adaptor) Init(info *relaycommon.RelayInfo) {
 func (a *Adaptor) GetRequestURL(info *relaycommon.RelayInfo) (string, error) {
 
 	if model_setting.GetGeminiSettings().ThinkingAdapterEnabled {
-		// suffix -thinking and -nothinking
-		if strings.HasSuffix(info.OriginModelName, "-thinking") {
+		// 新增逻辑：处理 -thinking-<budget> 格式
+		if strings.Contains(info.UpstreamModelName, "-thinking-") {
+			parts := strings.Split(info.UpstreamModelName, "-thinking-")
+			info.UpstreamModelName = parts[0]
+		} else if strings.HasSuffix(info.UpstreamModelName, "-thinking") { // 旧的适配
 			info.UpstreamModelName = strings.TrimSuffix(info.UpstreamModelName, "-thinking")
-		} else if strings.HasSuffix(info.OriginModelName, "-nothinking") {
+		} else if strings.HasSuffix(info.UpstreamModelName, "-nothinking") {
 			info.UpstreamModelName = strings.TrimSuffix(info.UpstreamModelName, "-nothinking")
 		}
 	}
@@ -165,6 +169,14 @@ func (a *Adaptor) DoRequest(c *gin.Context, info *relaycommon.RelayInfo, request
 }
 
 func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (usage any, err *dto.OpenAIErrorWithStatusCode) {
+	if info.RelayMode == constant.RelayModeGemini {
+		if info.IsStream {
+			return GeminiTextGenerationStreamHandler(c, resp, info)
+		} else {
+			return GeminiTextGenerationHandler(c, resp, info)
+		}
+	}
+
 	if strings.HasPrefix(info.UpstreamModelName, "imagen") {
 		return GeminiImageHandler(c, resp, info)
 	}

@@ -11,6 +11,7 @@ import (
 	relayconstant "one-api/relay/constant"
 	"one-api/service"
 	"one-api/setting"
+	"one-api/setting/ratio_setting"
 	"strconv"
 	"strings"
 	"time"
@@ -48,9 +49,11 @@ func Distribute() func(c *gin.Context) {
 				return
 			}
 			// check group in common.GroupRatio
-			if !setting.ContainsGroupRatio(tokenGroup) {
-				abortWithOpenAiMessage(c, http.StatusForbidden, fmt.Sprintf("分组 %s 已被弃用", tokenGroup))
-				return
+			if !ratio_setting.ContainsGroupRatio(tokenGroup) {
+				if tokenGroup != "auto" {
+					abortWithOpenAiMessage(c, http.StatusForbidden, fmt.Sprintf("分组 %s 已被弃用", tokenGroup))
+					return
+				}
 			}
 			userGroup = tokenGroup
 		}
@@ -95,9 +98,14 @@ func Distribute() func(c *gin.Context) {
 			}
 
 			if shouldSelectChannel {
-				channel, err = model.CacheGetRandomSatisfiedChannel(userGroup, modelRequest.Model, 0)
+				var selectGroup string
+				channel, selectGroup, err = model.CacheGetRandomSatisfiedChannel(c, userGroup, modelRequest.Model, 0)
 				if err != nil {
-					message := fmt.Sprintf("当前分组 %s 下对于模型 %s 无可用渠道", userGroup, modelRequest.Model)
+					showGroup := userGroup
+					if userGroup == "auto" {
+						showGroup = fmt.Sprintf("auto(%s)", selectGroup)
+					}
+					message := fmt.Sprintf("当前分组 %s 下对于模型 %s 无可用渠道", showGroup, modelRequest.Model)
 					// 如果错误，但是渠道不为空，说明是数据库一致性问题
 					if channel != nil {
 						common.SysError(fmt.Sprintf("渠道不存在：%d", channel.Id))
@@ -161,6 +169,23 @@ func getModelRequest(c *gin.Context) (*ModelRequest, bool, error) {
 			modelRequest.Model = modelName
 		}
 		c.Set("platform", string(constant.TaskPlatformSuno))
+		c.Set("relay_mode", relayMode)
+	} else if strings.Contains(c.Request.URL.Path, "/v1/video/generations") {
+		relayMode := relayconstant.Path2RelayKling(c.Request.Method, c.Request.URL.Path)
+		if relayMode == relayconstant.RelayModeKlingFetchByID {
+			shouldSelectChannel = false
+		} else {
+			err = common.UnmarshalBodyReusable(c, &modelRequest)
+		}
+		c.Set("platform", string(constant.TaskPlatformKling))
+		c.Set("relay_mode", relayMode)
+	} else if strings.HasPrefix(c.Request.URL.Path, "/v1beta/models/") {
+		// Gemini API 路径处理: /v1beta/models/gemini-2.0-flash:generateContent
+		relayMode := relayconstant.RelayModeGemini
+		modelName := extractModelNameFromGeminiPath(c.Request.URL.Path)
+		if modelName != "" {
+			modelRequest.Model = modelName
+		}
 		c.Set("relay_mode", relayMode)
 	} else if !strings.HasPrefix(c.Request.URL.Path, "/v1/audio/transcriptions") && !strings.HasPrefix(c.Request.URL.Path, "/v1/images/edits") {
 		err = common.UnmarshalBodyReusable(c, &modelRequest)
@@ -243,4 +268,32 @@ func SetupContextForSelectedChannel(c *gin.Context, channel *model.Channel, mode
 	case common.ChannelTypeCoze:
 		c.Set("bot_id", channel.Other)
 	}
+}
+
+// extractModelNameFromGeminiPath 从 Gemini API URL 路径中提取模型名
+// 输入格式: /v1beta/models/gemini-2.0-flash:generateContent
+// 输出: gemini-2.0-flash
+func extractModelNameFromGeminiPath(path string) string {
+	// 查找 "/models/" 的位置
+	modelsPrefix := "/models/"
+	modelsIndex := strings.Index(path, modelsPrefix)
+	if modelsIndex == -1 {
+		return ""
+	}
+
+	// 从 "/models/" 之后开始提取
+	startIndex := modelsIndex + len(modelsPrefix)
+	if startIndex >= len(path) {
+		return ""
+	}
+
+	// 查找 ":" 的位置，模型名在 ":" 之前
+	colonIndex := strings.Index(path[startIndex:], ":")
+	if colonIndex == -1 {
+		// 如果没有找到 ":"，返回从 "/models/" 到路径结尾的部分
+		return path[startIndex:]
+	}
+
+	// 返回模型名部分
+	return path[startIndex : startIndex+colonIndex]
 }

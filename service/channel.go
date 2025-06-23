@@ -59,6 +59,8 @@ func ShouldDisableChannel(channelType int, err *dto.OpenAIErrorWithStatusCode) b
 		return true
 	case "billing_not_active":
 		return true
+	case "pre_consume_token_quota_failed":
+		return true
 	}
 	switch err.Error.Type {
 	case "insufficient_quota":

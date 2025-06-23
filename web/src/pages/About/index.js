@@ -1,11 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { API, showError } from '../../helpers';
 import { marked } from 'marked';
-import { Layout } from '@douyinfe/semi-ui';
+import { Empty } from '@douyinfe/semi-ui';
+import { IllustrationConstruction, IllustrationConstructionDark } from '@douyinfe/semi-illustrations';
+import { useTranslation } from 'react-i18next';
 
 const About = () => {
+  const { t } = useTranslation();
   const [about, setAbout] = useState('');
   const [aboutLoaded, setAboutLoaded] = useState(false);
+  const currentYear = new Date().getFullYear();
 
   const displayAbout = async () => {
     setAbout(localStorage.getItem('about') || '');
@@ -20,7 +24,7 @@ const About = () => {
       localStorage.setItem('about', aboutContent);
     } else {
       showError(message);
-      setAbout('加载关于内容失败...');
+      setAbout(t('加载关于内容失败...'));
     }
     setAboutLoaded(true);
   };
@@ -29,30 +33,90 @@ const About = () => {
     displayAbout().then();
   }, []);
 
+  const emptyStyle = {
+    padding: '24px'
+  };
+
+  const customDescription = (
+    <div style={{ textAlign: 'center' }}>
+      <p>{t('可在设置页面设置关于内容，支持 HTML & Markdown')}</p>
+      {t('New API项目仓库地址：')}
+      <a
+        href='https://github.com/QuantumNous/new-api'
+        target="_blank"
+        rel="noopener noreferrer"
+        className="!text-semi-color-primary"
+      >
+        https://github.com/QuantumNous/new-api
+      </a>
+      <p>
+        <a
+          href="https://github.com/QuantumNous/new-api"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="!text-semi-color-primary"
+        >
+          NewAPI
+        </a> {t('© {{currentYear}}', { currentYear })} <a
+          href="https://github.com/QuantumNous"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="!text-semi-color-primary"
+        >
+          QuantumNous
+        </a> {t('| 基于')} <a
+          href="https://github.com/songquanpeng/one-api/releases/tag/v0.5.4"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="!text-semi-color-primary"
+        >
+          One API v0.5.4
+        </a> © 2023 <a
+          href="https://github.com/songquanpeng"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="!text-semi-color-primary"
+        >
+          JustSong
+        </a>
+      </p>
+      <p>
+        {t('本项目根据')}
+        <a
+          href="https://github.com/songquanpeng/one-api/blob/v0.5.4/LICENSE"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="!text-semi-color-primary"
+        >
+          {t('MIT许可证')}
+        </a>
+        {t('授权，需在遵守')}
+        <a
+          href="https://github.com/QuantumNous/new-api/blob/main/LICENSE"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="!text-semi-color-primary"
+        >
+          {t('Apache-2.0协议')}
+        </a>
+        {t('的前提下使用。')}
+      </p>
+    </div>
+  );
+
   return (
     <>
       {aboutLoaded && about === '' ? (
-        <>
-          <Layout>
-            <Layout.Header>
-              <h3>关于</h3>
-            </Layout.Header>
-            <Layout.Content>
-              <p>可在设置页面设置关于内容，支持 HTML & Markdown</p>
-              New-API项目仓库地址：
-              <a href='https://github.com/Calcium-Ion/new-api'>
-                https://github.com/Calcium-Ion/new-api
-              </a>
-              <p>
-                NewAPI © 2023 CalciumIon | 基于 One API v0.5.4 © 2023
-                JustSong。
-              </p>
-              <p>
-                本项目根据MIT许可证授权，需在遵守Apache-2.0协议的前提下使用。
-              </p>
-            </Layout.Content>
-          </Layout>
-        </>
+        <div className="flex justify-center items-center h-screen p-8">
+          <Empty
+            image={<IllustrationConstruction style={{ width: 150, height: 150 }} />}
+            darkModeImage={<IllustrationConstructionDark style={{ width: 150, height: 150 }} />}
+            description={t('管理员暂时未设置任何关于内容')}
+            style={emptyStyle}
+          >
+            {customDescription}
+          </Empty>
+        </div>
       ) : (
         <>
           {about.startsWith('https://') ? (

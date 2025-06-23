@@ -6,12 +6,10 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	"net/http"
-	"one-api/common"
 	"one-api/dto"
 	relaycommon "one-api/relay/common"
+	"one-api/relay/helper"
 	"one-api/service"
-	"one-api/setting"
-	"one-api/setting/operation_setting"
 )
 
 func WssHelper(c *gin.Context, ws *websocket.Conn) (openaiErr *dto.OpenAIErrorWithStatusCode) {
@@ -39,43 +37,14 @@ func WssHelper(c *gin.Context, ws *websocket.Conn) (openaiErr *dto.OpenAIErrorWi
 			//isModelMapped = true
 		}
 	}
-	//relayInfo.UpstreamModelName = textRequest.Model
-	modelPrice, getModelPriceSuccess := operation_setting.GetModelPrice(relayInfo.UpstreamModelName, false)
-	groupRatio := setting.GetGroupRatio(relayInfo.Group)
 
-	var preConsumedQuota int
-	var ratio float64
-	var modelRatio float64
-	//err := service.SensitiveWordsCheck(textRequest)
-
-	//if constant.ShouldCheckPromptSensitive() {
-	//	err = checkRequestSensitive(textRequest, relayInfo)
-	//	if err != nil {
-	//		return service.OpenAIErrorWrapperLocal(err, "sensitive_words_detected", http.StatusBadRequest)
-	//	}
-	//}
-
-	//promptTokens, err := getWssPromptTokens(realtimeEvent, relayInfo)
-	//// count messages token error 计算promptTokens错误
-	//if err != nil {
-	//	return service.OpenAIErrorWrapper(err, "count_token_messages_failed", http.StatusInternalServerError)
-	//}
-	//
-	if !getModelPriceSuccess {
-		preConsumedTokens := common.PreConsumedQuota
-		//if realtimeEvent.Session.MaxResponseOutputTokens != 0 {
-		//	preConsumedTokens = promptTokens + int(realtimeEvent.Session.MaxResponseOutputTokens)
-		//}
-		modelRatio, _ = operation_setting.GetModelRatio(relayInfo.UpstreamModelName)
-		ratio = modelRatio * groupRatio
-		preConsumedQuota = int(float64(preConsumedTokens) * ratio)
-	} else {
-		preConsumedQuota = int(modelPrice * common.QuotaPerUnit * groupRatio)
-		relayInfo.UsePrice = true
+	priceData, err := helper.ModelPriceHelper(c, relayInfo, 0, 0)
+	if err != nil {
+		return service.OpenAIErrorWrapperLocal(err, "model_price_error", http.StatusInternalServerError)
 	}
 
 	// pre-consume quota 预消耗配额
-	preConsumedQuota, userQuota, openaiErr := preConsumeQuota(c, preConsumedQuota, relayInfo)
+	preConsumedQuota, userQuota, openaiErr := preConsumeQuota(c, priceData.ShouldPreConsumedQuota, relayInfo)
 	if openaiErr != nil {
 		return openaiErr
 	}
@@ -113,6 +82,6 @@ func WssHelper(c *gin.Context, ws *websocket.Conn) (openaiErr *dto.OpenAIErrorWi
 		return openaiErr
 	}
 	service.PostWssConsumeQuota(c, relayInfo, relayInfo.UpstreamModelName, usage.(*dto.RealtimeUsage), preConsumedQuota,
-		userQuota, modelRatio, groupRatio, modelPrice, getModelPriceSuccess, "")
+		userQuota, priceData, "")
 	return nil
 }

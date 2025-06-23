@@ -15,6 +15,7 @@ import (
 	"one-api/relay/helper"
 	"one-api/service"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/bytedance/gopkg/util/gopool"
@@ -180,7 +181,7 @@ func OaiStreamHandler(c *gin.Context, resp *http.Response, info *relaycommon.Rel
 	}
 
 	if !containStreamUsage {
-		usage, _ = service.ResponseText2Usage(responseTextBuilder.String(), info.UpstreamModelName, info.PromptTokens)
+		usage = service.ResponseText2Usage(responseTextBuilder.String(), info.UpstreamModelName, info.PromptTokens)
 		usage.CompletionTokens += toolCount * 7
 	} else {
 		if info.ChannelType == common.ChannelTypeDeepSeek {
@@ -215,7 +216,7 @@ func OpenaiHandler(c *gin.Context, resp *http.Response, info *relaycommon.RelayI
 			StatusCode: resp.StatusCode,
 		}, nil
 	}
-	
+
 	forceFormat := false
 	if forceFmt, ok := info.ChannelSetting[constant.ForceFormat].(bool); ok {
 		forceFormat = forceFmt
@@ -224,7 +225,7 @@ func OpenaiHandler(c *gin.Context, resp *http.Response, info *relaycommon.RelayI
 	if simpleResponse.Usage.TotalTokens == 0 || (simpleResponse.Usage.PromptTokens == 0 && simpleResponse.Usage.CompletionTokens == 0) {
 		completionTokens := 0
 		for _, choice := range simpleResponse.Choices {
-			ctkm, _ := service.CountTextToken(choice.Message.StringContent()+choice.Message.ReasoningContent+choice.Message.Reasoning, info.UpstreamModelName)
+			ctkm := service.CountTextToken(choice.Message.StringContent()+choice.Message.ReasoningContent+choice.Message.Reasoning, info.UpstreamModelName)
 			completionTokens += ctkm
 		}
 		simpleResponse.Usage = dto.Usage{
@@ -273,36 +274,25 @@ func OpenaiHandler(c *gin.Context, resp *http.Response, info *relaycommon.RelayI
 }
 
 func OpenaiTTSHandler(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (*dto.OpenAIErrorWithStatusCode, *dto.Usage) {
-	responseBody, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return service.OpenAIErrorWrapper(err, "read_response_body_failed", http.StatusInternalServerError), nil
-	}
-	err = resp.Body.Close()
-	if err != nil {
-		return service.OpenAIErrorWrapper(err, "close_response_body_failed", http.StatusInternalServerError), nil
-	}
-	// Reset response body
-	resp.Body = io.NopCloser(bytes.NewBuffer(responseBody))
-	// We shouldn't set the header before we parse the response body, because the parse part may fail.
-	// And then we will have to send an error response, but in this case, the header has already been set.
-	// So the httpClient will be confused by the response.
-	// For example, Postman will report error, and we cannot check the response at all.
+	// the status code has been judged before, if there is a body reading failure,
+	// it should be regarded as a non-recoverable error, so it should not return err for external retry.
+	// Analogous to nginx's load balancing, it will only retry if it can't be requested or
+	// if the upstream returns a specific status code, once the upstream has already written the header,
+	// the subsequent failure of the response body should be regarded as a non-recoverable error,
+	// and can be terminated directly.
+	defer resp.Body.Close()
+	usage := &dto.Usage{}
+	usage.PromptTokens = info.PromptTokens
+	usage.TotalTokens = info.PromptTokens
 	for k, v := range resp.Header {
 		c.Writer.Header().Set(k, v[0])
 	}
 	c.Writer.WriteHeader(resp.StatusCode)
-	_, err = io.Copy(c.Writer, resp.Body)
+	c.Writer.WriteHeaderNow()
+	_, err := io.Copy(c.Writer, resp.Body)
 	if err != nil {
-		return service.OpenAIErrorWrapper(err, "copy_response_body_failed", http.StatusInternalServerError), nil
+		common.LogError(c, err.Error())
 	}
-	err = resp.Body.Close()
-	if err != nil {
-		return service.OpenAIErrorWrapper(err, "close_response_body_failed", http.StatusInternalServerError), nil
-	}
-
-	usage := &dto.Usage{}
-	usage.PromptTokens = info.PromptTokens
-	usage.TotalTokens = info.PromptTokens
 	return nil, usage
 }
 
@@ -356,13 +346,14 @@ func countAudioTokens(c *gin.Context) (int, error) {
 	if err = c.ShouldBind(&reqBody); err != nil {
 		return 0, errors.WithStack(err)
 	}
-
+	ext := filepath.Ext(reqBody.File.Filename) // 获取文件扩展名
 	reqFp, err := reqBody.File.Open()
 	if err != nil {
 		return 0, errors.WithStack(err)
 	}
+	defer reqFp.Close()
 
-	tmpFp, err := os.CreateTemp("", "audio-*")
+	tmpFp, err := os.CreateTemp("", "audio-*"+ext)
 	if err != nil {
 		return 0, errors.WithStack(err)
 	}
@@ -376,7 +367,7 @@ func countAudioTokens(c *gin.Context) (int, error) {
 		return 0, errors.WithStack(err)
 	}
 
-	duration, err := common.GetAudioDuration(c.Request.Context(), tmpFp.Name())
+	duration, err := common.GetAudioDuration(c.Request.Context(), tmpFp.Name(), ext)
 	if err != nil {
 		return 0, errors.WithStack(err)
 	}

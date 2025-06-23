@@ -6,8 +6,10 @@ import (
 	"net/http"
 	"one-api/common"
 	"one-api/constant"
+	"one-api/middleware"
 	"one-api/model"
 	"one-api/setting"
+	"one-api/setting/console_setting"
 	"one-api/setting/operation_setting"
 	"one-api/setting/system_setting"
 	"strings"
@@ -24,57 +26,85 @@ func TestStatus(c *gin.Context) {
 		})
 		return
 	}
+	// 获取HTTP统计信息
+	httpStats := middleware.GetStats()
 	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"message": "Server is running",
+		"success":    true,
+		"message":    "Server is running",
+		"http_stats": httpStats,
 	})
 	return
 }
 
 func GetStatus(c *gin.Context) {
+
+	cs := console_setting.GetConsoleSetting()
+
+	data := gin.H{
+		"version":                  common.Version,
+		"start_time":               common.StartTime,
+		"email_verification":       common.EmailVerificationEnabled,
+		"github_oauth":             common.GitHubOAuthEnabled,
+		"github_client_id":         common.GitHubClientId,
+		"linuxdo_oauth":            common.LinuxDOOAuthEnabled,
+		"linuxdo_client_id":        common.LinuxDOClientId,
+		"telegram_oauth":           common.TelegramOAuthEnabled,
+		"telegram_bot_name":        common.TelegramBotName,
+		"system_name":              common.SystemName,
+		"logo":                     common.Logo,
+		"footer_html":              common.Footer,
+		"wechat_qrcode":            common.WeChatAccountQRCodeImageURL,
+		"wechat_login":             common.WeChatAuthEnabled,
+		"server_address":           setting.ServerAddress,
+		"price":                    setting.Price,
+		"min_topup":                setting.MinTopUp,
+		"turnstile_check":          common.TurnstileCheckEnabled,
+		"turnstile_site_key":       common.TurnstileSiteKey,
+		"top_up_link":              common.TopUpLink,
+		"docs_link":                operation_setting.GetGeneralSetting().DocsLink,
+		"quota_per_unit":           common.QuotaPerUnit,
+		"display_in_currency":      common.DisplayInCurrencyEnabled,
+		"enable_batch_update":      common.BatchUpdateEnabled,
+		"enable_drawing":           common.DrawingEnabled,
+		"enable_task":              common.TaskEnabled,
+		"enable_data_export":       common.DataExportEnabled,
+		"data_export_default_time": common.DataExportDefaultTime,
+		"default_collapse_sidebar": common.DefaultCollapseSidebar,
+		"enable_online_topup":      setting.PayAddress != "" && setting.EpayId != "" && setting.EpayKey != "",
+		"mj_notify_enabled":        setting.MjNotifyEnabled,
+		"chats":                    setting.Chats,
+		"demo_site_enabled":        operation_setting.DemoSiteEnabled,
+		"self_use_mode_enabled":    operation_setting.SelfUseModeEnabled,
+		"default_use_auto_group":   setting.DefaultUseAutoGroup,
+		"pay_methods":              setting.PayMethods,
+
+		// 面板启用开关
+		"api_info_enabled":      cs.ApiInfoEnabled,
+		"uptime_kuma_enabled":   cs.UptimeKumaEnabled,
+		"announcements_enabled": cs.AnnouncementsEnabled,
+		"faq_enabled":           cs.FAQEnabled,
+
+		"oidc_enabled":                system_setting.GetOIDCSettings().Enabled,
+		"oidc_client_id":              system_setting.GetOIDCSettings().ClientId,
+		"oidc_authorization_endpoint": system_setting.GetOIDCSettings().AuthorizationEndpoint,
+		"setup":                       constant.Setup,
+	}
+
+	// 根据启用状态注入可选内容
+	if cs.ApiInfoEnabled {
+		data["api_info"] = console_setting.GetApiInfo()
+	}
+	if cs.AnnouncementsEnabled {
+		data["announcements"] = console_setting.GetAnnouncements()
+	}
+	if cs.FAQEnabled {
+		data["faq"] = console_setting.GetFAQ()
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
-		"data": gin.H{
-			"version":                     common.Version,
-			"start_time":                  common.StartTime,
-			"email_verification":          common.EmailVerificationEnabled,
-			"github_oauth":                common.GitHubOAuthEnabled,
-			"github_client_id":            common.GitHubClientId,
-			"linuxdo_oauth":               common.LinuxDOOAuthEnabled,
-			"linuxdo_client_id":           common.LinuxDOClientId,
-			"telegram_oauth":              common.TelegramOAuthEnabled,
-			"telegram_bot_name":           common.TelegramBotName,
-			"system_name":                 common.SystemName,
-			"logo":                        common.Logo,
-			"footer_html":                 common.Footer,
-			"wechat_qrcode":               common.WeChatAccountQRCodeImageURL,
-			"wechat_login":                common.WeChatAuthEnabled,
-			"server_address":              setting.ServerAddress,
-			"price":                       setting.Price,
-			"min_topup":                   setting.MinTopUp,
-			"turnstile_check":             common.TurnstileCheckEnabled,
-			"turnstile_site_key":          common.TurnstileSiteKey,
-			"top_up_link":                 common.TopUpLink,
-			"docs_link":                   operation_setting.GetGeneralSetting().DocsLink,
-			"quota_per_unit":              common.QuotaPerUnit,
-			"display_in_currency":         common.DisplayInCurrencyEnabled,
-			"enable_batch_update":         common.BatchUpdateEnabled,
-			"enable_drawing":              common.DrawingEnabled,
-			"enable_task":                 common.TaskEnabled,
-			"enable_data_export":          common.DataExportEnabled,
-			"data_export_default_time":    common.DataExportDefaultTime,
-			"default_collapse_sidebar":    common.DefaultCollapseSidebar,
-			"enable_online_topup":         setting.PayAddress != "" && setting.EpayId != "" && setting.EpayKey != "",
-			"mj_notify_enabled":           setting.MjNotifyEnabled,
-			"chats":                       setting.Chats,
-			"demo_site_enabled":           operation_setting.DemoSiteEnabled,
-			"self_use_mode_enabled":       operation_setting.SelfUseModeEnabled,
-			"oidc_enabled":                system_setting.GetOIDCSettings().Enabled,
-			"oidc_client_id":              system_setting.GetOIDCSettings().ClientId,
-			"oidc_authorization_endpoint": system_setting.GetOIDCSettings().AuthorizationEndpoint,
-			"setup":                       constant.Setup,
-		},
+		"data":    data,
 	})
 	return
 }
