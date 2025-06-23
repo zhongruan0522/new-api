@@ -40,6 +40,17 @@ type OpenAIModelsResponse struct {
 	Success bool          `json:"success"`
 }
 
+func parseStatusFilter(statusParam string) int {
+	switch strings.ToLower(statusParam) {
+	case "enabled", "1":
+		return common.ChannelStatusEnabled
+	case "disabled", "0":
+		return 0
+	default:
+		return -1
+	}
+}
+
 func GetAllChannels(c *gin.Context) {
 	p, _ := strconv.Atoi(c.Query("p"))
 	pageSize, _ := strconv.Atoi(c.Query("page_size"))
@@ -52,6 +63,9 @@ func GetAllChannels(c *gin.Context) {
 	channelData := make([]*model.Channel, 0)
 	idSort, _ := strconv.ParseBool(c.Query("id_sort"))
 	enableTagMode, _ := strconv.ParseBool(c.Query("tag_mode"))
+	statusParam := c.Query("status")
+	// statusFilter: -1 all, 1 enabled, 0 disabled (include auto & manual)
+	statusFilter := parseStatusFilter(statusParam)
 	// type filter
 	typeStr := c.Query("type")
 	typeFilter := -1
@@ -64,42 +78,75 @@ func GetAllChannels(c *gin.Context) {
 	var total int64
 
 	if enableTagMode {
-		// tag 分页：先分页 tag，再取各 tag 下 channels
 		tags, err := model.GetPaginatedTags((p-1)*pageSize, pageSize)
 		if err != nil {
 			c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
 			return
 		}
 		for _, tag := range tags {
-			if tag != nil && *tag != "" {
-				tagChannel, err := model.GetChannelsByTag(*tag, idSort)
-				if err == nil {
-					channelData = append(channelData, tagChannel...)
-				}
+			if tag == nil || *tag == "" {
+				continue
 			}
+			tagChannels, err := model.GetChannelsByTag(*tag, idSort)
+			if err != nil {
+				continue
+			}
+			filtered := make([]*model.Channel, 0)
+			for _, ch := range tagChannels {
+				if statusFilter == common.ChannelStatusEnabled && ch.Status != common.ChannelStatusEnabled {
+					continue
+				}
+				if statusFilter == 0 && ch.Status == common.ChannelStatusEnabled {
+					continue
+				}
+				if typeFilter >= 0 && ch.Type != typeFilter {
+					continue
+				}
+				filtered = append(filtered, ch)
+			}
+			channelData = append(channelData, filtered...)
 		}
-		// 计算 tag 总数用于分页
 		total, _ = model.CountAllTags()
-	} else if typeFilter >= 0 {
-		channels, err := model.GetChannelsByType((p-1)*pageSize, pageSize, idSort, typeFilter)
-		if err != nil {
-			c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
-			return
-		}
-		channelData = channels
-		total, _ = model.CountChannelsByType(typeFilter)
 	} else {
-		channels, err := model.GetAllChannels((p-1)*pageSize, pageSize, false, idSort)
+		baseQuery := model.DB.Model(&model.Channel{})
+		if typeFilter >= 0 {
+			baseQuery = baseQuery.Where("type = ?", typeFilter)
+		}
+		if statusFilter == common.ChannelStatusEnabled {
+			baseQuery = baseQuery.Where("status = ?", common.ChannelStatusEnabled)
+		} else if statusFilter == 0 {
+			baseQuery = baseQuery.Where("status != ?", common.ChannelStatusEnabled)
+		}
+
+		baseQuery.Count(&total)
+
+		order := "priority desc"
+		if idSort {
+			order = "id desc"
+		}
+
+		err := baseQuery.Order(order).Limit(pageSize).Offset((p-1)*pageSize).Omit("key").Find(&channelData).Error
 		if err != nil {
 			c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
 			return
 		}
-		channelData = channels
-		total, _ = model.CountAllChannels()
 	}
 
-	// calculate type counts
-	typeCounts, _ := model.CountChannelsGroupByType()
+	countQuery := model.DB.Model(&model.Channel{})
+	if statusFilter == common.ChannelStatusEnabled {
+		countQuery = countQuery.Where("status = ?", common.ChannelStatusEnabled)
+	} else if statusFilter == 0 {
+		countQuery = countQuery.Where("status != ?", common.ChannelStatusEnabled)
+	}
+	var results []struct {
+		Type  int64
+		Count int64
+	}
+	_ = countQuery.Select("type, count(*) as count").Group("type").Find(&results).Error
+	typeCounts := make(map[int64]int64)
+	for _, r := range results {
+		typeCounts[r.Type] = r.Count
+	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
@@ -199,6 +246,8 @@ func SearchChannels(c *gin.Context) {
 	keyword := c.Query("keyword")
 	group := c.Query("group")
 	modelKeyword := c.Query("model")
+	statusParam := c.Query("status")
+	statusFilter := parseStatusFilter(statusParam)
 	idSort, _ := strconv.ParseBool(c.Query("id_sort"))
 	enableTagMode, _ := strconv.ParseBool(c.Query("tag_mode"))
 	channelData := make([]*model.Channel, 0)
@@ -229,6 +278,20 @@ func SearchChannels(c *gin.Context) {
 			return
 		}
 		channelData = channels
+	}
+
+	if statusFilter == common.ChannelStatusEnabled || statusFilter == 0 {
+		filtered := make([]*model.Channel, 0, len(channelData))
+		for _, ch := range channelData {
+			if statusFilter == common.ChannelStatusEnabled && ch.Status != common.ChannelStatusEnabled {
+				continue
+			}
+			if statusFilter == 0 && ch.Status == common.ChannelStatusEnabled {
+				continue
+			}
+			filtered = append(filtered, ch)
+		}
+		channelData = filtered
 	}
 
 	// calculate type counts for search results

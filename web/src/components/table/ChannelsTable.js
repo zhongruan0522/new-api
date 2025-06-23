@@ -40,7 +40,8 @@ import {
   Card,
   Form,
   Tabs,
-  TabPane
+  TabPane,
+  Select,
 } from '@douyinfe/semi-ui';
 import {
   IllustrationNoResult,
@@ -188,6 +189,11 @@ const ChannelsTable = () => {
   // State for column visibility
   const [visibleColumns, setVisibleColumns] = useState({});
   const [showColumnSelector, setShowColumnSelector] = useState(false);
+
+  // 状态筛选 all / enabled / disabled
+  const [statusFilter, setStatusFilter] = useState(
+    localStorage.getItem('channel-status-filter') || 'all'
+  );
 
   // Load saved column preferences from localStorage
   useEffect(() => {
@@ -867,12 +873,21 @@ const ChannelsTable = () => {
     setChannels(channelDates);
   };
 
-  const loadChannels = async (page, pageSize, idSort, enableTagMode, typeKey = activeTypeKey) => {
+  const loadChannels = async (
+    page,
+    pageSize,
+    idSort,
+    enableTagMode,
+    typeKey = activeTypeKey,
+    statusF,
+  ) => {
+    if (statusF === undefined) statusF = statusFilter;
     const reqId = ++requestCounter.current; // 记录当前请求序号
     setLoading(true);
-    const typeParam = (!enableTagMode && typeKey !== 'all') ? `&type=${typeKey}` : '';
+    const typeParam = (typeKey !== 'all') ? `&type=${typeKey}` : '';
+    const statusParam = statusF !== 'all' ? `&status=${statusF}` : '';
     const res = await API.get(
-      `/api/channel/?p=${page}&page_size=${pageSize}&id_sort=${idSort}&tag_mode=${enableTagMode}${typeParam}`,
+      `/api/channel/?p=${page}&page_size=${pageSize}&id_sort=${idSort}&tag_mode=${enableTagMode}${typeParam}${statusParam}`,
     );
     if (res === undefined || reqId !== requestCounter.current) {
       return;
@@ -1049,9 +1064,10 @@ const ChannelsTable = () => {
         return;
       }
 
-      const typeParam = (!enableTagMode && activeTypeKey !== 'all') ? `&type=${activeTypeKey}` : '';
+      const typeParam = (activeTypeKey !== 'all') ? `&type=${activeTypeKey}` : '';
+      const statusParam = statusFilter !== 'all' ? `&status=${statusFilter}` : '';
       const res = await API.get(
-        `/api/channel/search?keyword=${searchKeyword}&group=${searchGroup}&model=${searchModel}&id_sort=${idSort}&tag_mode=${enableTagMode}${typeParam}`,
+        `/api/channel/search?keyword=${searchKeyword}&group=${searchGroup}&model=${searchModel}&id_sort=${idSort}&tag_mode=${enableTagMode}${typeParam}${statusParam}`,
       );
       const { success, message, data } = res.data;
       if (success) {
@@ -1265,17 +1281,6 @@ const ChannelsTable = () => {
   };
 
   let pageData = channels;
-  if (activeTypeKey !== 'all') {
-    const typeVal = parseInt(activeTypeKey);
-    if (!isNaN(typeVal)) {
-      pageData = pageData.filter((ch) => {
-        if (ch.children !== undefined) {
-          return ch.children.some((c) => c.type === typeVal);
-        }
-        return ch.type === typeVal;
-      });
-    }
-  }
 
   const handlePageChange = (page) => {
     setActivePage(page);
@@ -1632,6 +1637,27 @@ const ChannelsTable = () => {
                 loadChannels(1, pageSize, idSort, v);
               }}
             />
+          </div>
+
+          {/* 状态筛选器 */}
+          <div className="flex items-center justify-between w-full md:w-auto">
+            <Typography.Text strong className="mr-2">
+              {t('状态筛选')}
+            </Typography.Text>
+            <Select
+              value={statusFilter}
+              onChange={(v) => {
+                localStorage.setItem('channel-status-filter', v);
+                setStatusFilter(v);
+                setActivePage(1);
+                loadChannels(1, pageSize, idSort, enableTagMode, activeTypeKey, v);
+              }}
+              size="small"
+            >
+              <Select.Option value="all">{t('全部')}</Select.Option>
+              <Select.Option value="enabled">{t('已启用')}</Select.Option>
+              <Select.Option value="disabled">{t('已禁用')}</Select.Option>
+            </Select>
           </div>
         </div>
       </div>

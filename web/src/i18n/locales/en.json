@@ -1732,5 +1732,6 @@
   "确认冲突项修改": "Confirm conflict item modification",
   "该模型存在固定价格与倍率计费方式冲突，请确认选择": "The model has a fixed price and ratio billing method conflict, please confirm the selection",
   "当前计费": "Current billing",
-  "修改为": "Modify to"
+  "修改为": "Modify to",
+  "状态筛选": "Status filter"
 }
