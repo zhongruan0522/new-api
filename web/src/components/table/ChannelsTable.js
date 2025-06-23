@@ -1726,7 +1726,7 @@ const ChannelsTable = () => {
               <Form.Input
                 field="searchKeyword"
                 prefix={<IconSearch />}
-                placeholder={t('搜索渠道的 ID，名称，密钥和API地址 ...')}
+                placeholder={t('渠道ID，名称，密钥，API地址')}
                 className="!rounded-full"
                 showClear
                 pure
