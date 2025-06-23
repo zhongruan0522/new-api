@@ -882,6 +882,15 @@ const ChannelsTable = () => {
     statusF,
   ) => {
     if (statusF === undefined) statusF = statusFilter;
+
+    const { searchKeyword, searchGroup, searchModel } = getFormValues();
+    if (searchKeyword !== '' || searchGroup !== '' || searchModel !== '') {
+      setLoading(true);
+      await searchChannels(enableTagMode, typeKey, statusF);
+      setLoading(false);
+      return;
+    }
+
     const reqId = ++requestCounter.current; // 记录当前请求序号
     setLoading(true);
     const typeParam = (typeKey !== 'all') ? `&type=${typeKey}` : '';
@@ -1054,18 +1063,18 @@ const ChannelsTable = () => {
     };
   };
 
-  const searchChannels = async (enableTagMode) => {
+  const searchChannels = async (enableTagMode, typeKey = activeTypeKey, statusF = statusFilter) => {
     const { searchKeyword, searchGroup, searchModel } = getFormValues();
 
     setSearching(true);
     try {
       if (searchKeyword === '' && searchGroup === '' && searchModel === '') {
-        await loadChannels(activePage - 1, pageSize, idSort, enableTagMode);
+        await loadChannels(activePage - 1, pageSize, idSort, enableTagMode, typeKey, statusF);
         return;
       }
 
-      const typeParam = (activeTypeKey !== 'all') ? `&type=${activeTypeKey}` : '';
-      const statusParam = statusFilter !== 'all' ? `&status=${statusFilter}` : '';
+      const typeParam = (typeKey !== 'all') ? `&type=${typeKey}` : '';
+      const statusParam = statusF !== 'all' ? `&status=${statusF}` : '';
       const res = await API.get(
         `/api/channel/search?keyword=${searchKeyword}&group=${searchGroup}&model=${searchModel}&id_sort=${idSort}&tag_mode=${enableTagMode}${typeParam}${statusParam}`,
       );
