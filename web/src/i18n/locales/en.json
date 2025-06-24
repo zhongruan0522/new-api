@@ -1737,5 +1737,11 @@
   "状态筛选": "Status filter",
   "没有模型可以复制": "No models to copy",
   "模型列表已复制到剪贴板": "Model list copied to clipboard",
-  "复制失败": "Copy failed"
+  "复制失败": "Copy failed",
+  "复制已选": "Copy selected",
+  "选择成功": "Selection successful",
+  "暂无成功模型": "No successful models",
+  "请先选择模型！": "Please select a model first!",
+  "已复制 ${count} 个模型": "Copied ${count} models",
+  "复制失败，请手动复制": "Copy failed, please copy manually"
 }

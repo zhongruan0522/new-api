@@ -20,7 +20,7 @@ import {
   Tags,
 } from 'lucide-react';
 
-import { CHANNEL_OPTIONS, ITEMS_PER_PAGE } from '../../constants/index.js';
+import { CHANNEL_OPTIONS, ITEMS_PER_PAGE, MODEL_TABLE_PAGE_SIZE } from '../../constants/index.js';
 import {
   Button,
   Divider,
@@ -63,7 +63,7 @@ import {
   IconCopy,
   IconSmallTriangleRight
 } from '@douyinfe/semi-icons';
-import { loadChannelModels } from '../../helpers/index.js';
+import { loadChannelModels, isMobile, copy } from '../../helpers';
 import EditTagModal from '../../pages/Channel/EditTagModal.js';
 import { useTranslation } from 'react-i18next';
 import { useTableCompactMode } from '../../hooks/useTableCompactMode';
@@ -684,9 +684,11 @@ const ChannelsTable = () => {
   const [modelSearchKeyword, setModelSearchKeyword] = useState('');
   const [modelTestResults, setModelTestResults] = useState({});
   const [testingModels, setTestingModels] = useState(new Set());
+  const [selectedModelKeys, setSelectedModelKeys] = useState([]);
   const [isBatchTesting, setIsBatchTesting] = useState(false);
   const [testQueue, setTestQueue] = useState([]);
   const [isProcessingQueue, setIsProcessingQueue] = useState(false);
+  const [modelTablePage, setModelTablePage] = useState(1);
   const [activeTypeKey, setActiveTypeKey] = useState('all');
   const [typeCounts, setTypeCounts] = useState({});
   const requestCounter = useRef(0);
@@ -697,6 +699,7 @@ const ChannelsTable = () => {
     searchGroup: '',
     searchModel: '',
   };
+  const allSelectingRef = useRef(false);
 
   // Filter columns based on visibility settings
   const getVisibleColumns = () => {
@@ -1131,7 +1134,22 @@ const ChannelsTable = () => {
   const processTestQueue = async () => {
     if (!isProcessingQueue || testQueue.length === 0) return;
 
-    const { channel, model } = testQueue[0];
+    const { channel, model, indexInFiltered } = testQueue[0];
+
+    // 自动翻页到正在测试的模型所在页
+    if (currentTestChannel && currentTestChannel.id === channel.id) {
+      let pageNo;
+      if (indexInFiltered !== undefined) {
+        pageNo = Math.floor(indexInFiltered / MODEL_TABLE_PAGE_SIZE) + 1;
+      } else {
+        const filteredModelsList = currentTestChannel.models
+          .split(',')
+          .filter((m) => m.toLowerCase().includes(modelSearchKeyword.toLowerCase()));
+        const modelIdx = filteredModelsList.indexOf(model);
+        pageNo = modelIdx !== -1 ? Math.floor(modelIdx / MODEL_TABLE_PAGE_SIZE) + 1 : 1;
+      }
+      setModelTablePage(pageNo);
+    }
 
     try {
       setTestingModels(prev => new Set([...prev, model]));
@@ -1194,16 +1212,22 @@ const ChannelsTable = () => {
 
     setIsBatchTesting(true);
 
-    const models = currentTestChannel.models
+    // 重置分页到第一页
+    setModelTablePage(1);
+
+    const filteredModels = currentTestChannel.models
       .split(',')
       .filter((model) =>
-        model.toLowerCase().includes(modelSearchKeyword.toLowerCase())
+        model.toLowerCase().includes(modelSearchKeyword.toLowerCase()),
       );
 
-    setTestQueue(models.map(model => ({
-      channel: currentTestChannel,
-      model
-    })));
+    setTestQueue(
+      filteredModels.map((model, idx) => ({
+        channel: currentTestChannel,
+        model,
+        indexInFiltered: idx, // 记录在过滤列表中的顺序
+      })),
+    );
     setIsProcessingQueue(true);
   };
 
@@ -1217,6 +1241,8 @@ const ChannelsTable = () => {
     } else {
       setShowModelTestModal(false);
       setModelSearchKeyword('');
+      setSelectedModelKeys([]);
+      setModelTablePage(1);
     }
   };
 
@@ -1912,13 +1938,73 @@ const ChannelsTable = () => {
       <Modal
         title={
           currentTestChannel && (
-            <div className="flex items-center gap-2">
-              <Typography.Text strong className="!text-[var(--semi-color-text-0)] !text-base">
-                {currentTestChannel.name} {t('渠道的模型测试')}
-              </Typography.Text>
-              <Typography.Text type="tertiary" className="!text-xs flex items-center">
-                {t('共')} {currentTestChannel.models.split(',').length} {t('个模型')}
-              </Typography.Text>
+            <div className="flex flex-col gap-2 w-full">
+              <div className="flex items-center gap-2">
+                <Typography.Text strong className="!text-[var(--semi-color-text-0)] !text-base">
+                  {currentTestChannel.name} {t('渠道的模型测试')}
+                </Typography.Text>
+                <Typography.Text type="tertiary" className="!text-xs flex items-center">
+                  {t('共')} {currentTestChannel.models.split(',').length} {t('个模型')}
+                </Typography.Text>
+              </div>
+
+              {/* 搜索与操作按钮 */}
+              <div className="flex items-center justify-end gap-2 w-full">
+                <Input
+                  placeholder={t('搜索模型...')}
+                  value={modelSearchKeyword}
+                  onChange={(v) => {
+                    setModelSearchKeyword(v);
+                    setModelTablePage(1);
+                  }}
+                  className="!w-full !rounded-full"
+                  prefix={<IconSearch />}
+                  showClear
+                />
+
+                <Button
+                  theme='light'
+                  icon={<IconCopy />}
+                  className="!rounded-full"
+                  onClick={() => {
+                    if (selectedModelKeys.length === 0) {
+                      showError(t('请先选择模型！'));
+                      return;
+                    }
+                    copy(selectedModelKeys.join(',')).then((ok) => {
+                      if (ok) {
+                        showSuccess(t('已复制 ${count} 个模型').replace('${count}', selectedModelKeys.length));
+                      } else {
+                        showError(t('复制失败，请手动复制'));
+                      }
+                    });
+                  }}
+                >
+                  {t('复制已选')}
+                </Button>
+
+                <Button
+                  theme='light'
+                  type='primary'
+                  className="!rounded-full"
+                  onClick={() => {
+                    if (!currentTestChannel) return;
+                    const successKeys = currentTestChannel.models
+                      .split(',')
+                      .filter((m) => m.toLowerCase().includes(modelSearchKeyword.toLowerCase()))
+                      .filter((m) => {
+                        const result = modelTestResults[`${currentTestChannel.id}-${m}`];
+                        return result && result.success;
+                      });
+                    if (successKeys.length === 0) {
+                      showInfo(t('暂无成功模型'));
+                    }
+                    setSelectedModelKeys(successKeys);
+                  }}
+                >
+                  {t('选择成功')}
+                </Button>
+              </div>
             </div>
           )
         }
@@ -1968,22 +2054,11 @@ const ChannelsTable = () => {
         }
         maskClosable={!isBatchTesting}
         className="!rounded-lg"
-        size="large"
+        size={isMobile() ? 'full-width' : 'large'}
       >
-        <div className="max-h-[600px] overflow-y-auto">
+        <div className="model-test-scroll">
           {currentTestChannel && (
             <div>
-              <div className="flex items-center justify-end mb-2">
-                <Input
-                  placeholder={t('搜索模型...')}
-                  value={modelSearchKeyword}
-                  onChange={(v) => setModelSearchKeyword(v)}
-                  className="w-64 !rounded-full"
-                  prefix={<IconSearch />}
-                  showClear
-                />
-              </div>
-
               <Table
                 columns={[
                   {
@@ -2057,16 +2132,47 @@ const ChannelsTable = () => {
                     }
                   }
                 ]}
-                dataSource={currentTestChannel.models
-                  .split(',')
-                  .filter((model) =>
-                    model.toLowerCase().includes(modelSearchKeyword.toLowerCase())
-                  )
-                  .map((model) => ({
+                dataSource={(() => {
+                  const filtered = currentTestChannel.models
+                    .split(',')
+                    .filter((model) =>
+                      model.toLowerCase().includes(modelSearchKeyword.toLowerCase()),
+                    );
+                  const start = (modelTablePage - 1) * MODEL_TABLE_PAGE_SIZE;
+                  const end = start + MODEL_TABLE_PAGE_SIZE;
+                  return filtered.slice(start, end).map((model) => ({
                     model,
-                    key: model
-                  }))}
-                pagination={false}
+                    key: model,
+                  }));
+                })()}
+                rowSelection={{
+                  selectedRowKeys: selectedModelKeys,
+                  onChange: (keys) => {
+                    if (allSelectingRef.current) {
+                      allSelectingRef.current = false;
+                      return;
+                    }
+                    setSelectedModelKeys(keys);
+                  },
+                  onSelectAll: (checked) => {
+                    const filtered = currentTestChannel.models
+                      .split(',')
+                      .filter((m) => m.toLowerCase().includes(modelSearchKeyword.toLowerCase()));
+                    allSelectingRef.current = true;
+                    setSelectedModelKeys(checked ? filtered : []);
+                  },
+                }}
+                pagination={{
+                  currentPage: modelTablePage,
+                  pageSize: MODEL_TABLE_PAGE_SIZE,
+                  total: currentTestChannel.models
+                    .split(',')
+                    .filter((model) =>
+                      model.toLowerCase().includes(modelSearchKeyword.toLowerCase()),
+                    ).length,
+                  showSizeChanger: false,
+                  onPageChange: (page) => setModelTablePage(page),
+                }}
               />
             </div>
           )}

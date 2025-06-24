@@ -131,3 +131,5 @@ export const CHANNEL_OPTIONS = [
     label: '可灵',
   },
 ];
+
+export const MODEL_TABLE_PAGE_SIZE = 10;
