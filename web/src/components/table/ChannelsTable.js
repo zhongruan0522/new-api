@@ -1528,6 +1528,7 @@ const ChannelsTable = () => {
       <div className="flex flex-col md:flex-row justify-between gap-4">
         <div className="flex flex-wrap md:flex-nowrap items-center gap-2 w-full md:w-auto order-2 md:order-1">
           <Button
+            size='small'
             disabled={!enableBatchDelete}
             theme='light'
             type='danger'
@@ -1544,6 +1545,7 @@ const ChannelsTable = () => {
           </Button>
 
           <Button
+            size='small'
             disabled={!enableBatchDelete}
             theme='light'
             type='primary'
@@ -1554,11 +1556,13 @@ const ChannelsTable = () => {
           </Button>
 
           <Dropdown
+            size='small'
             trigger='click'
             render={
               <Dropdown.Menu>
                 <Dropdown.Item>
                   <Button
+                    size='small'
                     theme='light'
                     type='warning'
                     className="!rounded-full w-full"
@@ -1577,6 +1581,7 @@ const ChannelsTable = () => {
                 </Dropdown.Item>
                 <Dropdown.Item>
                   <Button
+                    size='small'
                     theme='light'
                     type='secondary'
                     className="!rounded-full w-full"
@@ -1595,6 +1600,7 @@ const ChannelsTable = () => {
                 </Dropdown.Item>
                 <Dropdown.Item>
                   <Button
+                    size='small'
                     theme='light'
                     type='danger'
                     className="!rounded-full w-full"
@@ -1613,6 +1619,7 @@ const ChannelsTable = () => {
                 </Dropdown.Item>
                 <Dropdown.Item>
                   <Button
+                    size='small'
                     theme='light'
                     type='tertiary'
                     className="!rounded-full w-full"
@@ -1632,15 +1639,15 @@ const ChannelsTable = () => {
               </Dropdown.Menu>
             }
           >
-            <Button theme='light' type='tertiary' icon={<IconSetting />} className="!rounded-full w-full md:w-auto">
+            <Button size='small' theme='light' type='tertiary' className="!rounded-full w-full md:w-auto">
               {t('批量操作')}
             </Button>
           </Dropdown>
 
           <Button
+            size='small'
             theme='light'
             type='secondary'
-            icon={<IconDescend />}
             className="!rounded-full w-full md:w-auto"
             onClick={() => setCompactMode(!compactMode)}
           >
@@ -1654,6 +1661,7 @@ const ChannelsTable = () => {
               {t('使用ID排序')}
             </Typography.Text>
             <Switch
+              size='small'
               checked={idSort}
               onChange={(v) => {
                 localStorage.setItem('id-sort', v + '');
@@ -1673,6 +1681,7 @@ const ChannelsTable = () => {
               {t('开启批量操作')}
             </Typography.Text>
             <Switch
+              size='small'
               checked={enableBatchDelete}
               onChange={(v) => {
                 localStorage.setItem('enable-batch-delete', v + '');
@@ -1686,6 +1695,7 @@ const ChannelsTable = () => {
               {t('标签聚合模式')}
             </Typography.Text>
             <Switch
+              size='small'
               checked={enableTagMode}
               onChange={(v) => {
                 localStorage.setItem('enable-tag-mode', v + '');
@@ -1702,6 +1712,7 @@ const ChannelsTable = () => {
               {t('状态筛选')}
             </Typography.Text>
             <Select
+              size='small'
               value={statusFilter}
               onChange={(v) => {
                 localStorage.setItem('channel-status-filter', v);
@@ -1709,7 +1720,6 @@ const ChannelsTable = () => {
                 setActivePage(1);
                 loadChannels(1, pageSize, idSort, enableTagMode, activeTypeKey, v);
               }}
-              size="small"
             >
               <Select.Option value="all">{t('全部')}</Select.Option>
               <Select.Option value="enabled">{t('已启用')}</Select.Option>
@@ -1724,6 +1734,7 @@ const ChannelsTable = () => {
       <div className="flex flex-col md:flex-row justify-between items-center gap-4 w-full">
         <div className="flex gap-2 w-full md:w-auto order-2 md:order-1">
           <Button
+            size='small'
             theme='light'
             type='primary'
             icon={<IconPlus />}
@@ -1739,9 +1750,9 @@ const ChannelsTable = () => {
           </Button>
 
           <Button
+            size='small'
             theme='light'
             type='primary'
-            icon={<IconRefresh />}
             className="!rounded-full w-full md:w-auto"
             onClick={refresh}
           >
@@ -1749,9 +1760,9 @@ const ChannelsTable = () => {
           </Button>
 
           <Button
+            size='small'
             theme='light'
             type='tertiary'
-            icon={<IconSetting />}
             onClick={() => setShowColumnSelector(true)}
             className="!rounded-full w-full md:w-auto"
           >
@@ -1773,6 +1784,7 @@ const ChannelsTable = () => {
           >
             <div className="relative w-full md:w-64">
               <Form.Input
+                size='small'
                 field="searchKeyword"
                 prefix={<IconSearch />}
                 placeholder={t('渠道ID，名称，密钥，API地址')}
@@ -1783,6 +1795,7 @@ const ChannelsTable = () => {
             </div>
             <div className="w-full md:w-48">
               <Form.Input
+                size='small'
                 field="searchModel"
                 prefix={<IconSearch />}
                 placeholder={t('模型关键字')}
@@ -1791,8 +1804,9 @@ const ChannelsTable = () => {
                 pure
               />
             </div>
-            <div className="w-full md:w-48">
+            <div className="w-full md:w-32">
               <Form.Select
+                size='small'
                 field="searchGroup"
                 placeholder={t('选择分组')}
                 optionList={[
@@ -1811,6 +1825,7 @@ const ChannelsTable = () => {
               />
             </div>
             <Button
+              size='small'
               type="primary"
               htmlType="submit"
               loading={loading || searching}
@@ -1819,6 +1834,7 @@ const ChannelsTable = () => {
               {t('查询')}
             </Button>
             <Button
+              size='small'
               theme='light'
               onClick={() => {
                 if (formApi) {
