@@ -42,9 +42,9 @@ const LoginForm = () => {
     wechat_verification_code: '',
   });
   const { username, password } = inputs;
-  const [searchParams] = useSearchParams();
-  const [setSubmitted] = useState(false);
-  const [userDispatch] = useContext(UserContext);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [submitted, setSubmitted] = useState(false);
+  const [userState, userDispatch] = useContext(UserContext);
   const [turnstileEnabled, setTurnstileEnabled] = useState(false);
   const [turnstileSiteKey, setTurnstileSiteKey] = useState('');
   const [turnstileToken, setTurnstileToken] = useState('');
