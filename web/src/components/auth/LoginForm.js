@@ -358,9 +358,19 @@ const LoginForm = () => {
                 </Button>
               </div>
 
-              <div className="mt-6 text-center text-sm">
-                <Text>{t('没有账户？')} <Link to="/register" className="text-blue-600 hover:text-blue-800 font-medium">{t('注册')}</Link></Text>
-              </div>
+              {!status.self_use_mode_enabled && (
+                <div className="mt-6 text-center text-sm">
+                  <Text>
+                    {t('没有账户？')}{' '}
+                    <Link
+                      to="/register"
+                      className="text-blue-600 hover:text-blue-800 font-medium"
+                    >
+                      {t('注册')}
+                    </Link>
+                  </Text>
+                </div>
+              )}
             </div>
           </Card>
         </div>
@@ -453,9 +463,19 @@ const LoginForm = () => {
                 </>
               )}
 
-              <div className="mt-6 text-center text-sm">
-                <Text>{t('没有账户？')} <Link to="/register" className="text-blue-600 hover:text-blue-800 font-medium">{t('注册')}</Link></Text>
-              </div>
+              {!status.self_use_mode_enabled && (
+                <div className="mt-6 text-center text-sm">
+                  <Text>
+                    {t('没有账户？')}{' '}
+                    <Link
+                      to="/register"
+                      className="text-blue-600 hover:text-blue-800 font-medium"
+                    >
+                      {t('注册')}
+                    </Link>
+                  </Text>
+                </div>
+              )}
             </div>
           </Card>
         </div>
