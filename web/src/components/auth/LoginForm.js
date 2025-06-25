@@ -84,7 +84,7 @@ const LoginForm = () => {
     if (searchParams.get('expired')) {
       showError(t('未登录或登录已过期，请重新登录'));
     }
-  }, [searchParams, t]);
+  }, []);
 
   const onWeChatLoginClicked = () => {
     setWechatLoading(true);
