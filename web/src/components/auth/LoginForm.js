@@ -499,7 +499,7 @@ const LoginForm = () => {
   };
 
   return (
-    <div className="bg-gray-100 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div className="bg-gray-100 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 mt-[64px]">
       <div className="w-full max-w-sm">
         {showEmailLogin || !(status.github_oauth || status.oidc_enabled || status.wechat_login || status.linuxdo_oauth || status.telegram_oauth)
           ? renderEmailLoginForm()
