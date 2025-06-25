@@ -34,20 +34,20 @@ import LinuxDoIcon from '../common/logo/LinuxDoIcon.js';
 import { useTranslation } from 'react-i18next';
 
 const LoginForm = () => {
+  let navigate = useNavigate();
+  const { t } = useTranslation();
   const [inputs, setInputs] = useState({
     username: '',
     password: '',
     wechat_verification_code: '',
   });
-  const [searchParams, setSearchParams] = useSearchParams();
-  const [submitted, setSubmitted] = useState(false);
   const { username, password } = inputs;
-  const [userState, userDispatch] = useContext(UserContext);
+  const [searchParams] = useSearchParams();
+  const [setSubmitted] = useState(false);
+  const [userDispatch] = useContext(UserContext);
   const [turnstileEnabled, setTurnstileEnabled] = useState(false);
   const [turnstileSiteKey, setTurnstileSiteKey] = useState('');
   const [turnstileToken, setTurnstileToken] = useState('');
-  let navigate = useNavigate();
-  const [status, setStatus] = useState({});
   const [showWeChatLoginModal, setShowWeChatLoginModal] = useState(false);
   const [showEmailLogin, setShowEmailLogin] = useState(false);
   const [wechatLoading, setWechatLoading] = useState(false);
@@ -59,7 +59,6 @@ const LoginForm = () => {
   const [resetPasswordLoading, setResetPasswordLoading] = useState(false);
   const [otherLoginOptionsLoading, setOtherLoginOptionsLoading] = useState(false);
   const [wechatCodeSubmitLoading, setWechatCodeSubmitLoading] = useState(false);
-  const { t } = useTranslation();
 
   const logo = getLogo();
   const systemName = getSystemName();
@@ -69,20 +68,23 @@ const LoginForm = () => {
     localStorage.setItem('aff', affCode);
   }
 
+  const [status] = useState(() => {
+    const savedStatus = localStorage.getItem('status');
+    return savedStatus ? JSON.parse(savedStatus) : {};
+  });
+
+  useEffect(() => {
+    if (status.turnstile_check) {
+      setTurnstileEnabled(true);
+      setTurnstileSiteKey(status.turnstile_site_key);
+    }
+  }, [status]);
+
   useEffect(() => {
     if (searchParams.get('expired')) {
       showError(t('未登录或登录已过期，请重新登录'));
     }
-    let status = localStorage.getItem('status');
-    if (status) {
-      status = JSON.parse(status);
-      setStatus(status);
-      if (status.turnstile_check) {
-        setTurnstileEnabled(true);
-        setTurnstileSiteKey(status.turnstile_site_key);
-      }
-    }
-  }, []);
+  }, [searchParams, t]);
 
   const onWeChatLoginClicked = () => {
     setWechatLoading(true);

@@ -35,6 +35,7 @@ import { UserContext } from '../../context/User/index.js';
 import { useTranslation } from 'react-i18next';
 
 const RegisterForm = () => {
+  let navigate = useNavigate();
   const { t } = useTranslation();
   const [inputs, setInputs] = useState({
     username: '',
@@ -45,15 +46,12 @@ const RegisterForm = () => {
     wechat_verification_code: '',
   });
   const { username, password, password2 } = inputs;
-  const [showEmailVerification, setShowEmailVerification] = useState(false);
-  const [userState, userDispatch] = useContext(UserContext);
+  const [userDispatch] = useContext(UserContext);
   const [turnstileEnabled, setTurnstileEnabled] = useState(false);
   const [turnstileSiteKey, setTurnstileSiteKey] = useState('');
   const [turnstileToken, setTurnstileToken] = useState('');
-  const [loading, setLoading] = useState(false);
   const [showWeChatLoginModal, setShowWeChatLoginModal] = useState(false);
   const [showEmailRegister, setShowEmailRegister] = useState(false);
-  const [status, setStatus] = useState({});
   const [wechatLoading, setWechatLoading] = useState(false);
   const [githubLoading, setGithubLoading] = useState(false);
   const [oidcLoading, setOidcLoading] = useState(false);
@@ -63,7 +61,6 @@ const RegisterForm = () => {
   const [verificationCodeLoading, setVerificationCodeLoading] = useState(false);
   const [otherRegisterOptionsLoading, setOtherRegisterOptionsLoading] = useState(false);
   const [wechatCodeSubmitLoading, setWechatCodeSubmitLoading] = useState(false);
-  let navigate = useNavigate();
 
   const logo = getLogo();
   const systemName = getSystemName();
@@ -73,18 +70,22 @@ const RegisterForm = () => {
     localStorage.setItem('aff', affCode);
   }
 
+  const [status] = useState(() => {
+    const savedStatus = localStorage.getItem('status');
+    return savedStatus ? JSON.parse(savedStatus) : {};
+  });
+
+  const [showEmailVerification, setShowEmailVerification] = useState(() => {
+    return status.email_verification ?? false;
+  });
+
   useEffect(() => {
-    let status = localStorage.getItem('status');
-    if (status) {
-      status = JSON.parse(status);
-      setStatus(status);
-      setShowEmailVerification(status.email_verification);
-      if (status.turnstile_check) {
-        setTurnstileEnabled(true);
-        setTurnstileSiteKey(status.turnstile_site_key);
-      }
+    setShowEmailVerification(status.email_verification);
+    if (status.turnstile_check) {
+      setTurnstileEnabled(true);
+      setTurnstileSiteKey(status.turnstile_site_key);
     }
-  }, []);
+  }, [status]);
 
   const onWeChatLoginClicked = () => {
     setWechatLoading(true);
