@@ -523,10 +523,10 @@ const ModelPricing = () => {
     <div className="bg-gray-50">
       <Layout>
         <Layout.Content>
-          <div className="flex justify-center p-4 sm:p-6 md:p-8">
+          <div className="flex justify-center">
             <div className="w-full">
               {/* 主卡片容器 */}
-              <Card className="!rounded-2xl shadow-lg border-0">
+              <Card bordered={false} className="!rounded-2xl shadow-lg border-0">
                 {/* 顶部状态卡片 */}
                 <Card
                   className="!rounded-2xl !border-0 !shadow-md overflow-hidden mb-6"
