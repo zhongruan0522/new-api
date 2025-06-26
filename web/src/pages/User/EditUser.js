@@ -18,12 +18,9 @@ import {
   IconUser,
   IconSave,
   IconClose,
-  IconKey,
-  IconCreditCard,
   IconLink,
   IconUserGroup,
   IconPlus,
-  IconEdit,
 } from '@douyinfe/semi-icons';
 import { useTranslation } from 'react-i18next';
 
@@ -222,7 +219,6 @@ const EditUser = (props) => {
                     value={password}
                     autoComplete="new-password"
                     className="!rounded-lg"
-                    prefix={<IconKey />}
                   />
                 </div>
 
@@ -246,7 +242,6 @@ const EditUser = (props) => {
                     value={remark}
                     autoComplete="off"
                     className="!rounded-lg"
-                    prefix={<IconEdit />}
                     showClear
                   />
                 </div>
@@ -281,7 +276,6 @@ const EditUser = (props) => {
                       autoComplete="new-password"
                       optionList={groupOptions}
                       className="w-full !rounded-lg"
-                      prefix={<IconUserGroup />}
                     />
                   </div>
 
@@ -298,7 +292,6 @@ const EditUser = (props) => {
                         type="number"
                         autoComplete="new-password"
                         className="flex-1 !rounded-lg"
-                        prefix={<IconCreditCard />}
                       />
                       <Button
                         onClick={openAddQuotaModal}
@@ -425,7 +418,6 @@ const EditUser = (props) => {
           type="number"
           autoComplete="new-password"
           className="!rounded-lg"
-          prefix={<IconCreditCard />}
         />
       </Modal>
     </>

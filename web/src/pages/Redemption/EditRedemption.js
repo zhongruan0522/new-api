@@ -28,7 +28,6 @@ import {
   IconCreditCard,
   IconSave,
   IconClose,
-  IconPlusCircle,
   IconGift,
 } from '@douyinfe/semi-icons';
 
@@ -261,7 +260,6 @@ const EditRedemption = (props) => {
                     autoComplete="new-password"
                     type="number"
                     className="w-full !rounded-lg"
-                    prefix={<IconCreditCard />}
                     data={[
                       { value: 500000, label: '1$' },
                       { value: 5000000, label: '10$' },
@@ -283,7 +281,6 @@ const EditRedemption = (props) => {
                       autoComplete="new-password"
                       type="number"
                       className="!rounded-lg"
-                      prefix={<IconPlusCircle />}
                     />
                   </div>
                 )}

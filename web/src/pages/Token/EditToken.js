@@ -27,11 +27,8 @@ import {
   Avatar,
 } from '@douyinfe/semi-ui';
 import {
-  IconClock,
-  IconCalendar,
   IconCreditCard,
   IconLink,
-  IconServer,
   IconUserGroup,
   IconSave,
   IconClose,
@@ -375,7 +372,6 @@ const EditToken = (props) => {
                     autoComplete='new-password'
                     type='dateTime'
                     className='w-full !rounded-lg'
-                    prefix={<IconCalendar />}
                   />
                 </div>
 
@@ -393,7 +389,6 @@ const EditToken = (props) => {
                     type='tertiary'
                     onClick={() => setExpiredTime(0, 0, 1, 0)}
                     className='!rounded-full'
-                    icon={<IconClock />}
                   >
                     {t('一小时')}
                   </Button>
@@ -402,7 +397,6 @@ const EditToken = (props) => {
                     type='tertiary'
                     onClick={() => setExpiredTime(0, 1, 0, 0)}
                     className='!rounded-full'
-                    icon={<IconCalendar />}
                   >
                     {t('一天')}
                   </Button>
@@ -411,7 +405,6 @@ const EditToken = (props) => {
                     type='tertiary'
                     onClick={() => setExpiredTime(1, 0, 0, 0)}
                     className='!rounded-full'
-                    icon={<IconCalendar />}
                   >
                     {t('一个月')}
                   </Button>
@@ -455,7 +448,6 @@ const EditToken = (props) => {
                   autoComplete='new-password'
                   type='number'
                   className='w-full !rounded-lg'
-                  prefix={<IconCreditCard />}
                   data={[
                     { value: 500000, label: '1$' },
                     { value: 5000000, label: '10$' },
@@ -481,7 +473,6 @@ const EditToken = (props) => {
                     autoComplete='off'
                     type='number'
                     className='w-full !rounded-lg'
-                    prefix={<IconPlusCircle />}
                     data={[
                       { value: 10, label: t('10个') },
                       { value: 20, label: t('20个') },
@@ -560,7 +551,6 @@ const EditToken = (props) => {
                   value={inputs.model_limits}
                   multiple
                   className='w-full !rounded-lg'
-                  prefix={<IconServer />}
                   optionList={models}
                   disabled={!model_limits_enabled}
                   maxTagCount={3}
@@ -595,7 +585,6 @@ const EditToken = (props) => {
                   renderOptionItem={renderGroupOption}
                   value={inputs.group}
                   className='w-full !rounded-lg'
-                  prefix={<IconUserGroup />}
                   optionList={groups}
                 />
               ) : (
@@ -603,7 +592,6 @@ const EditToken = (props) => {
                   placeholder={t('管理员未设置用户可选分组')}
                   disabled={true}
                   className='w-full !rounded-lg'
-                  prefix={<IconUserGroup />}
                 />
               )}
             </div>

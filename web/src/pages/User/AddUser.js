@@ -12,12 +12,9 @@ import {
   Avatar
 } from '@douyinfe/semi-ui';
 import {
-  IconUser,
   IconSave,
   IconClose,
-  IconKey,
   IconUserAdd,
-  IconEdit,
 } from '@douyinfe/semi-icons';
 import { useTranslation } from 'react-i18next';
 
@@ -131,7 +128,6 @@ const AddUser = (props) => {
                     value={username}
                     autoComplete="off"
                     className="!rounded-lg"
-                    prefix={<IconUser />}
                     showClear
                     required
                   />
@@ -145,7 +141,6 @@ const AddUser = (props) => {
                     value={display_name}
                     autoComplete="off"
                     className="!rounded-lg"
-                    prefix={<IconUser />}
                     showClear
                   />
                 </div>
@@ -159,7 +154,6 @@ const AddUser = (props) => {
                     value={password}
                     autoComplete="off"
                     className="!rounded-lg"
-                    prefix={<IconKey />}
                     required
                   />
                 </div>
@@ -172,7 +166,6 @@ const AddUser = (props) => {
                     value={remark}
                     autoComplete="off"
                     className="!rounded-lg"
-                    prefix={<IconEdit />}
                     showClear
                   />
                 </div>
