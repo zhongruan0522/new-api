@@ -300,6 +300,7 @@ const RedemptionsTable = () => {
   };
 
   const loadRedemptions = async (startIdx, pageSize) => {
+    setLoading(true);
     const res = await API.get(
       `/api/redemption/?p=${startIdx}&page_size=${pageSize}`,
     );
