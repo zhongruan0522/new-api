@@ -1745,5 +1745,7 @@
   "已复制 ${count} 个模型": "Copied ${count} models",
   "复制失败，请手动复制": "Copy failed, please copy manually",
   "快捷设置": "Quick settings",
-  "批量创建时会在名称后自动添加随机后缀": "When creating in batches, a random suffix will be automatically added to the name"
+  "批量创建时会在名称后自动添加随机后缀": "When creating in batches, a random suffix will be automatically added to the name",
+  "额度必须大于0": "Quota must be greater than 0",
+  "生成数量必须大于0": "Generation quantity must be greater than 0"
 }
