@@ -457,7 +457,7 @@
   "令牌分组，默认为用户的分组": "Token group, default is the your's group",
   "IP白名单": "IP whitelist",
   "注意，令牌的额度仅用于限制令牌本身的最大额度使用量，实际的使用受到账户的剩余额度限制。": "Note that the quota of the token is only used to limit the maximum quota usage of the token itself, and the actual usage is limited by the remaining quota of the account.",
-  "设为无限额度": "Set to unlimited quota",
+  "无限额度": "Unlimited quota",
   "更新令牌信息": "Update Token Information",
   "请输入充值码！": "Please enter the recharge code!",
   "请输入名称": "Please enter a name",
@@ -516,7 +516,6 @@
   "注意，系统请求的时模型名称中的点会被剔除，例如：gpt-4.1会请求为gpt-41，所以在Azure部署的时候，部署模型名称需要手动改为gpt-41": "Note that the dot in the model name requested by the system will be removed, for example: gpt-4.1 will be requested as gpt-41, so when deploying on Azure, the deployment model name needs to be manually changed to gpt-41",
   "2025年5月10日后添加的渠道，不需要再在部署的时候移除模型名称中的\".\"": "After May 10, 2025, channels added do not need to remove the dot in the model name during deployment",
   "模型映射必须是合法的 JSON 格式！": "Model mapping must be in valid JSON format!",
-  "取消无限额度": "Cancel unlimited quota",
   "取消": "Cancel",
   "重置": "Reset",
   "请输入新的剩余额度": "Please enter the new remaining quota",
@@ -1459,7 +1458,8 @@
   "访问限制": "Access Restrictions",
   "设置令牌的访问限制": "Set token access restrictions",
   "请勿过度信任此功能，IP可能被伪造": "Do not over-trust this feature, IP can be spoofed",
-  "勾选启用模型限制后可选择": "Select after checking to enable model restrictions",
+  "模型限制列表": "Model restrictions list",
+  "请选择该令牌支持的模型，留空支持所有模型": "Select models supported by the token, leave blank to support all models",
   "非必要，不建议启用模型限制": "Not necessary, model restrictions are not recommended",
   "分组信息": "Group Information",
   "设置令牌的分组": "Set token grouping",
@@ -1743,5 +1743,7 @@
   "暂无成功模型": "No successful models",
   "请先选择模型！": "Please select a model first!",
   "已复制 ${count} 个模型": "Copied ${count} models",
-  "复制失败，请手动复制": "Copy failed, please copy manually"
+  "复制失败，请手动复制": "Copy failed, please copy manually",
+  "快捷设置": "Quick settings",
+  "批量创建时会在名称后自动添加随机后缀": "When creating in batches, a random suffix will be automatically added to the name"
 }
