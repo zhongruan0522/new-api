@@ -12,6 +12,7 @@ import {
   Typography,
   Card,
   Tag,
+  Avatar,
 } from '@douyinfe/semi-ui';
 import {
   IconUser,
@@ -155,10 +156,7 @@ const EditUser = (props) => {
           borderBottom: '1px solid var(--semi-color-border)',
           padding: '24px'
         }}
-        bodyStyle={{
-          backgroundColor: 'var(--semi-color-bg-0)',
-          padding: '0'
-        }}
+        bodyStyle={{ padding: '0' }}
         visible={props.visible}
         width={isMobile() ? '100%' : 600}
         footer={
@@ -166,7 +164,6 @@ const EditUser = (props) => {
             <Space>
               <Button
                 theme="solid"
-                size="large"
                 className="!rounded-full"
                 onClick={submit}
                 icon={<IconSave />}
@@ -176,7 +173,6 @@ const EditUser = (props) => {
               </Button>
               <Button
                 theme="light"
-                size="large"
                 className="!rounded-full"
                 type="primary"
                 onClick={handleCancel}
@@ -193,20 +189,14 @@ const EditUser = (props) => {
         <Spin spinning={loading}>
           <div className="p-6">
             <Card className="!rounded-2xl shadow-sm border-0 mb-6">
-              <div className="flex items-center mb-4 p-6 rounded-xl" style={{
-                background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 50%, #3b82f6 100%)',
-                position: 'relative'
-              }}>
-                <div className="absolute inset-0 overflow-hidden">
-                  <div className="absolute -top-10 -right-10 w-40 h-40 bg-white opacity-5 rounded-full"></div>
-                  <div className="absolute -bottom-8 -left-8 w-24 h-24 bg-white opacity-10 rounded-full"></div>
-                </div>
-                <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center mr-4 relative">
-                  <IconUser size="large" style={{ color: '#ffffff' }} />
-                </div>
-                <div className="relative">
-                  <Text style={{ color: '#ffffff' }} className="text-lg font-medium">{t('基本信息')}</Text>
-                  <div style={{ color: '#ffffff' }} className="text-sm opacity-80">{t('用户的基本账户信息')}</div>
+              {/* Header: Basic Info */}
+              <div className="flex items-center mb-2">
+                <Avatar size="small" color="blue" className="mr-2 shadow-md">
+                  <IconUser size={16} />
+                </Avatar>
+                <div>
+                  <Text className="text-lg font-medium">{t('基本信息')}</Text>
+                  <div className="text-xs text-gray-600">{t('用户的基本账户信息')}</div>
                 </div>
               </div>
 
@@ -218,7 +208,6 @@ const EditUser = (props) => {
                     onChange={(value) => handleInputChange('username', value)}
                     value={username}
                     autoComplete="new-password"
-                    size="large"
                     className="!rounded-lg"
                     showClear
                   />
@@ -232,7 +221,6 @@ const EditUser = (props) => {
                     onChange={(value) => handleInputChange('password', value)}
                     value={password}
                     autoComplete="new-password"
-                    size="large"
                     className="!rounded-lg"
                     prefix={<IconKey />}
                   />
@@ -245,7 +233,6 @@ const EditUser = (props) => {
                     onChange={(value) => handleInputChange('display_name', value)}
                     value={display_name}
                     autoComplete="new-password"
-                    size="large"
                     className="!rounded-lg"
                     showClear
                   />
@@ -258,7 +245,6 @@ const EditUser = (props) => {
                     onChange={(value) => handleInputChange('remark', value)}
                     value={remark}
                     autoComplete="off"
-                    size="large"
                     className="!rounded-lg"
                     prefix={<IconEdit />}
                     showClear
@@ -269,20 +255,14 @@ const EditUser = (props) => {
 
             {userId && (
               <Card className="!rounded-2xl shadow-sm border-0 mb-6">
-                <div className="flex items-center mb-4 p-6 rounded-xl" style={{
-                  background: 'linear-gradient(135deg, #065f46 0%, #059669 50%, #10b981 100%)',
-                  position: 'relative'
-                }}>
-                  <div className="absolute inset-0 overflow-hidden">
-                    <div className="absolute -top-10 -right-10 w-40 h-40 bg-white opacity-5 rounded-full"></div>
-                    <div className="absolute -bottom-8 -left-8 w-24 h-24 bg-white opacity-10 rounded-full"></div>
-                  </div>
-                  <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center mr-4 relative">
-                    <IconUserGroup size="large" style={{ color: '#ffffff' }} />
-                  </div>
-                  <div className="relative">
-                    <Text style={{ color: '#ffffff' }} className="text-lg font-medium">{t('权限设置')}</Text>
-                    <div style={{ color: '#ffffff' }} className="text-sm opacity-80">{t('用户分组和额度管理')}</div>
+                {/* Header: Permission Settings */}
+                <div className="flex items-center mb-2">
+                  <Avatar size="small" color="green" className="mr-2 shadow-md">
+                    <IconUserGroup size={16} />
+                  </Avatar>
+                  <div>
+                    <Text className="text-lg font-medium">{t('权限设置')}</Text>
+                    <div className="text-xs text-gray-600">{t('用户分组和额度管理')}</div>
                   </div>
                 </div>
 
@@ -300,7 +280,6 @@ const EditUser = (props) => {
                       value={inputs.group}
                       autoComplete="new-password"
                       optionList={groupOptions}
-                      size="large"
                       className="w-full !rounded-lg"
                       prefix={<IconUserGroup />}
                     />
@@ -318,13 +297,11 @@ const EditUser = (props) => {
                         value={quota}
                         type="number"
                         autoComplete="new-password"
-                        size="large"
                         className="flex-1 !rounded-lg"
                         prefix={<IconCreditCard />}
                       />
                       <Button
                         onClick={openAddQuotaModal}
-                        size="large"
                         className="!rounded-lg"
                         icon={<IconPlus />}
                       >
@@ -337,20 +314,14 @@ const EditUser = (props) => {
             )}
 
             <Card className="!rounded-2xl shadow-sm border-0">
-              <div className="flex items-center mb-4 p-6 rounded-xl" style={{
-                background: 'linear-gradient(135deg, #92400e 0%, #d97706 50%, #f59e0b 100%)',
-                position: 'relative'
-              }}>
-                <div className="absolute inset-0 overflow-hidden">
-                  <div className="absolute -top-10 -right-10 w-40 h-40 bg-white opacity-5 rounded-full"></div>
-                  <div className="absolute -bottom-8 -left-8 w-24 h-24 bg-white opacity-10 rounded-full"></div>
-                </div>
-                <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center mr-4 relative">
-                  <IconLink size="large" style={{ color: '#ffffff' }} />
-                </div>
-                <div className="relative">
-                  <Text style={{ color: '#ffffff' }} className="text-lg font-medium">{t('绑定信息')}</Text>
-                  <div style={{ color: '#ffffff' }} className="text-sm opacity-80">{t('第三方账户绑定状态（只读）')}</div>
+              {/* Header: Bindings */}
+              <div className="flex items-center mb-2">
+                <Avatar size="small" color="purple" className="mr-2 shadow-md">
+                  <IconLink size={16} />
+                </Avatar>
+                <div>
+                  <Text className="text-lg font-medium">{t('绑定信息')}</Text>
+                  <div className="text-xs text-gray-600">{t('第三方账户绑定状态（只读）')}</div>
                 </div>
               </div>
 
@@ -364,7 +335,6 @@ const EditUser = (props) => {
                       '此项只读，需要用户通过个人设置页面的相关绑定按钮进行绑定，不可直接修改',
                     )}
                     readonly
-                    size="large"
                     className="!rounded-lg"
                   />
                 </div>
@@ -377,7 +347,6 @@ const EditUser = (props) => {
                       '此项只读，需要用户通过个人设置页面的相关绑定按钮进行绑定，不可直接修改',
                     )}
                     readonly
-                    size="large"
                     className="!rounded-lg"
                   />
                 </div>
@@ -391,7 +360,6 @@ const EditUser = (props) => {
                       '此项只读，需要用户通过个人设置页面的相关绑定按钮进行绑定，不可直接修改',
                     )}
                     readonly
-                    size="large"
                     className="!rounded-lg"
                   />
                 </div>
@@ -405,7 +373,6 @@ const EditUser = (props) => {
                       '此项只读，需要用户通过个人设置页面的相关绑定按钮进行绑定，不可直接修改',
                     )}
                     readonly
-                    size="large"
                     className="!rounded-lg"
                   />
                 </div>
@@ -419,7 +386,6 @@ const EditUser = (props) => {
                       '此项只读，需要用户通过个人设置页面的相关绑定按钮进行绑定，不可直接修改',
                     )}
                     readonly
-                    size="large"
                     className="!rounded-lg"
                   />
                 </div>
@@ -458,7 +424,6 @@ const EditUser = (props) => {
           value={addQuotaLocal}
           type="number"
           autoComplete="new-password"
-          size="large"
           className="!rounded-lg"
           prefix={<IconCreditCard />}
         />

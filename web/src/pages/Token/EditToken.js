@@ -24,6 +24,7 @@ import {
   Typography,
   Card,
   Tag,
+  Avatar,
 } from '@douyinfe/semi-ui';
 import {
   IconClock,
@@ -300,10 +301,7 @@ const EditToken = (props) => {
         borderBottom: '1px solid var(--semi-color-border)',
         padding: '24px',
       }}
-      bodyStyle={{
-        backgroundColor: 'var(--semi-color-bg-0)',
-        padding: '0',
-      }}
+      bodyStyle={{ padding: '0' }}
       visible={props.visiable}
       width={isMobile() ? '100%' : 600}
       footer={
@@ -311,7 +309,6 @@ const EditToken = (props) => {
           <Space>
             <Button
               theme='solid'
-              size='large'
               className='!rounded-full'
               onClick={submit}
               icon={<IconSave />}
@@ -321,7 +318,6 @@ const EditToken = (props) => {
             </Button>
             <Button
               theme='light'
-              size='large'
               className='!rounded-full'
               type='primary'
               onClick={handleCancel}
@@ -338,34 +334,14 @@ const EditToken = (props) => {
       <Spin spinning={loading}>
         <div className='p-6'>
           <Card className='!rounded-2xl shadow-sm border-0 mb-6'>
-            <div
-              className='flex items-center mb-4 p-6 rounded-xl'
-              style={{
-                background:
-                  'linear-gradient(135deg, #1e3a8a 0%, #2563eb 50%, #3b82f6 100%)',
-                position: 'relative',
-              }}
-            >
-              <div className='absolute inset-0 overflow-hidden'>
-                <div className='absolute -top-10 -right-10 w-40 h-40 bg-white opacity-5 rounded-full'></div>
-                <div className='absolute -bottom-8 -left-8 w-24 h-24 bg-white opacity-10 rounded-full'></div>
-              </div>
-              <div className='w-10 h-10 rounded-full bg-white/20 flex items-center justify-center mr-4 relative'>
-                <IconPlusCircle size='large' style={{ color: '#ffffff' }} />
-              </div>
-              <div className='relative'>
-                <Text
-                  style={{ color: '#ffffff' }}
-                  className='text-lg font-medium'
-                >
-                  {t('基本信息')}
-                </Text>
-                <div
-                  style={{ color: '#ffffff' }}
-                  className='text-sm opacity-80'
-                >
-                  {t('设置令牌的基本信息')}
-                </div>
+            {/* Header: Basic Info */}
+            <div className='flex items-center mb-2'>
+              <Avatar size='small' color='blue' className='mr-2 shadow-md'>
+                <IconPlusCircle size={16} />
+              </Avatar>
+              <div>
+                <Text className='text-lg font-medium'>{t('基本信息')}</Text>
+                <div className='text-xs text-gray-600'>{t('设置令牌的基本信息')}</div>
               </div>
             </div>
 
@@ -379,7 +355,6 @@ const EditToken = (props) => {
                   onChange={(value) => handleInputChange('name', value)}
                   value={name}
                   autoComplete='new-password'
-                  size='large'
                   className='!rounded-lg'
                   showClear
                   required
@@ -400,7 +375,6 @@ const EditToken = (props) => {
                     autoComplete='new-password'
                     type='dateTime'
                     className='w-full !rounded-lg'
-                    size='large'
                     prefix={<IconCalendar />}
                   />
                 </div>
@@ -447,34 +421,14 @@ const EditToken = (props) => {
           </Card>
 
           <Card className='!rounded-2xl shadow-sm border-0 mb-6'>
-            <div
-              className='flex items-center mb-4 p-6 rounded-xl'
-              style={{
-                background:
-                  'linear-gradient(135deg, #065f46 0%, #059669 50%, #10b981 100%)',
-                position: 'relative',
-              }}
-            >
-              <div className='absolute inset-0 overflow-hidden'>
-                <div className='absolute -top-10 -right-10 w-40 h-40 bg-white opacity-5 rounded-full'></div>
-                <div className='absolute -bottom-8 -left-8 w-24 h-24 bg-white opacity-10 rounded-full'></div>
-              </div>
-              <div className='w-10 h-10 rounded-full bg-white/20 flex items-center justify-center mr-4 relative'>
-                <IconCreditCard size='large' style={{ color: '#ffffff' }} />
-              </div>
-              <div className='relative'>
-                <Text
-                  style={{ color: '#ffffff' }}
-                  className='text-lg font-medium'
-                >
-                  {t('额度设置')}
-                </Text>
-                <div
-                  style={{ color: '#ffffff' }}
-                  className='text-sm opacity-80'
-                >
-                  {t('设置令牌可用额度和数量')}
-                </div>
+            {/* Header: Quota Settings */}
+            <div className='flex items-center mb-2'>
+              <Avatar size='small' color='green' className='mr-2 shadow-md'>
+                <IconCreditCard size={16} />
+              </Avatar>
+              <div>
+                <Text className='text-lg font-medium'>{t('额度设置')}</Text>
+                <div className='text-xs text-gray-600'>{t('设置令牌可用额度和数量')}</div>
               </div>
             </div>
 
@@ -500,7 +454,6 @@ const EditToken = (props) => {
                   value={remain_quota}
                   autoComplete='new-password'
                   type='number'
-                  size='large'
                   className='w-full !rounded-lg'
                   prefix={<IconCreditCard />}
                   data={[
@@ -528,7 +481,6 @@ const EditToken = (props) => {
                     autoComplete='off'
                     type='number'
                     className='w-full !rounded-lg'
-                    size='large'
                     prefix={<IconPlusCircle />}
                     data={[
                       { value: 10, label: t('10个') },
@@ -555,34 +507,14 @@ const EditToken = (props) => {
           </Card>
 
           <Card className='!rounded-2xl shadow-sm border-0 mb-6'>
-            <div
-              className='flex items-center mb-4 p-6 rounded-xl'
-              style={{
-                background:
-                  'linear-gradient(135deg, #4c1d95 0%, #6d28d9 50%, #7c3aed 100%)',
-                position: 'relative',
-              }}
-            >
-              <div className='absolute inset-0 overflow-hidden'>
-                <div className='absolute -top-10 -right-10 w-40 h-40 bg-white opacity-5 rounded-full'></div>
-                <div className='absolute -bottom-8 -left-8 w-24 h-24 bg-white opacity-10 rounded-full'></div>
-              </div>
-              <div className='w-10 h-10 rounded-full bg-white/20 flex items-center justify-center mr-4 relative'>
-                <IconLink size='large' style={{ color: '#ffffff' }} />
-              </div>
-              <div className='relative'>
-                <Text
-                  style={{ color: '#ffffff' }}
-                  className='text-lg font-medium'
-                >
-                  {t('访问限制')}
-                </Text>
-                <div
-                  style={{ color: '#ffffff' }}
-                  className='text-sm opacity-80'
-                >
-                  {t('设置令牌的访问限制')}
-                </div>
+            {/* Header: Access Limits */}
+            <div className='flex items-center mb-2'>
+              <Avatar size='small' color='purple' className='mr-2 shadow-md'>
+                <IconLink size={16} />
+              </Avatar>
+              <div>
+                <Text className='text-lg font-medium'>{t('访问限制')}</Text>
+                <div className='text-xs text-gray-600'>{t('设置令牌的访问限制')}</div>
               </div>
             </div>
 
@@ -627,7 +559,6 @@ const EditToken = (props) => {
                   onChange={(value) => handleInputChange('model_limits', value)}
                   value={inputs.model_limits}
                   multiple
-                  size='large'
                   className='w-full !rounded-lg'
                   prefix={<IconServer />}
                   optionList={models}
@@ -642,34 +573,14 @@ const EditToken = (props) => {
           </Card>
 
           <Card className='!rounded-2xl shadow-sm border-0'>
-            <div
-              className='flex items-center mb-4 p-6 rounded-xl'
-              style={{
-                background:
-                  'linear-gradient(135deg, #92400e 0%, #d97706 50%, #f59e0b 100%)',
-                position: 'relative',
-              }}
-            >
-              <div className='absolute inset-0 overflow-hidden'>
-                <div className='absolute -top-10 -right-10 w-40 h-40 bg-white opacity-5 rounded-full'></div>
-                <div className='absolute -bottom-8 -left-8 w-24 h-24 bg-white opacity-10 rounded-full'></div>
-              </div>
-              <div className='w-10 h-10 rounded-full bg-white/20 flex items-center justify-center mr-4 relative'>
-                <IconUserGroup size='large' style={{ color: '#ffffff' }} />
-              </div>
-              <div className='relative'>
-                <Text
-                  style={{ color: '#ffffff' }}
-                  className='text-lg font-medium'
-                >
-                  {t('分组信息')}
-                </Text>
-                <div
-                  style={{ color: '#ffffff' }}
-                  className='text-sm opacity-80'
-                >
-                  {t('设置令牌的分组')}
-                </div>
+            {/* Header: Group Info */}
+            <div className='flex items-center mb-2'>
+              <Avatar size='small' color='orange' className='mr-2 shadow-md'>
+                <IconUserGroup size={16} />
+              </Avatar>
+              <div>
+                <Text className='text-lg font-medium'>{t('分组信息')}</Text>
+                <div className='text-xs text-gray-600'>{t('设置令牌的分组')}</div>
               </div>
             </div>
 
@@ -683,7 +594,6 @@ const EditToken = (props) => {
                   onChange={(value) => handleInputChange('group', value)}
                   renderOptionItem={renderGroupOption}
                   value={inputs.group}
-                  size='large'
                   className='w-full !rounded-lg'
                   prefix={<IconUserGroup />}
                   optionList={groups}
@@ -692,7 +602,6 @@ const EditToken = (props) => {
                 <Select
                   placeholder={t('管理员未设置用户可选分组')}
                   disabled={true}
-                  size='large'
                   className='w-full !rounded-lg'
                   prefix={<IconUserGroup />}
                 />
