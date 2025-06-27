@@ -967,7 +967,7 @@ const PersonalSetting = () => {
                                 {systemToken && (
                                   <div className="mt-3">
                                     <Input
-                                      readOnly
+                                      readonly
                                       value={systemToken}
                                       onClick={handleSystemTokenClick}
                                       size="large"

@@ -931,7 +931,7 @@ const TopUp = () => {
                 <Title heading={6}>{t('邀请链接')}</Title>
                 <Input
                   value={affLink}
-                  readOnly
+                  readonly
                   size='large'
                   suffix={
                     <Button

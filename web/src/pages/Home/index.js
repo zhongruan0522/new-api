@@ -130,7 +130,7 @@ const Home = () => {
                   {/* BASE URL 与端点选择 */}
                   <div className="flex flex-col md:flex-row items-center justify-center gap-4 w-full mt-4 md:mt-6 max-w-md">
                     <Input
-                      readOnly
+                      readonly
                       value={serverAddress}
                       className="flex-1 !rounded-full"
                       size={isMobile() ? 'default' : 'large'}
