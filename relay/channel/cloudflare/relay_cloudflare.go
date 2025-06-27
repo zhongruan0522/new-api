@@ -81,10 +81,7 @@ func cfStreamHandler(c *gin.Context, resp *http.Response, info *relaycommon.Rela
 	}
 	helper.Done(c)
 
-	err := resp.Body.Close()
-	if err != nil {
-		common.LogError(c, "close_response_body_failed: "+err.Error())
-	}
+	common.CloseResponseBodyGracefully(resp)
 
 	return nil, usage
 }

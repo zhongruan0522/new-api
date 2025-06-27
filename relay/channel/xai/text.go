@@ -73,11 +73,7 @@ func xAIStreamHandler(c *gin.Context, resp *http.Response, info *relaycommon.Rel
 	}
 
 	helper.Done(c)
-	err := resp.Body.Close()
-	if err != nil {
-		//return service.OpenAIErrorWrapper(err, "close_response_body_failed", http.StatusInternalServerError), nil
-		common.SysError("close_response_body_failed: " + err.Error())
-	}
+	common.CloseResponseBodyGracefully(resp)
 	return nil, usage
 }
 
