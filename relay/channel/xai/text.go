@@ -1,9 +1,7 @@
 package xai
 
 import (
-	"bytes"
 	"encoding/json"
-	"github.com/gin-gonic/gin"
 	"io"
 	"net/http"
 	"one-api/common"
@@ -13,6 +11,8 @@ import (
 	"one-api/relay/helper"
 	"one-api/service"
 	"strings"
+
+	"github.com/gin-gonic/gin"
 )
 
 func streamResponseXAI2OpenAI(xAIResp *dto.ChatCompletionsStreamResponse, usage *dto.Usage) *dto.ChatCompletionsStreamResponse {
@@ -78,8 +78,10 @@ func xAIStreamHandler(c *gin.Context, resp *http.Response, info *relaycommon.Rel
 }
 
 func xAIHandler(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (*dto.OpenAIErrorWithStatusCode, *dto.Usage) {
+	defer common.CloseResponseBodyGracefully(resp)
+
 	responseBody, err := io.ReadAll(resp.Body)
-	var response *dto.TextResponse
+	var response *dto.SimpleResponse
 	err = common.DecodeJson(responseBody, &response)
 	if err != nil {
 		common.SysError("error unmarshalling stream response: " + err.Error())
@@ -95,18 +97,7 @@ func xAIHandler(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo
 		return nil, nil
 	}
 
-	// set new body
-	resp.Body = io.NopCloser(bytes.NewBuffer(encodeJson))
-
-	for k, v := range resp.Header {
-		c.Writer.Header().Set(k, v[0])
-	}
-	c.Writer.WriteHeader(resp.StatusCode)
-	_, err = io.Copy(c.Writer, resp.Body)
-	if err != nil {
-		return service.OpenAIErrorWrapper(err, "copy_response_body_failed", http.StatusInternalServerError), nil
-	}
-	common.CloseResponseBodyGracefully(resp)
+	common.IOCopyBytesGracefully(c, resp, encodeJson)
 
 	return nil, &response.Usage
 }
