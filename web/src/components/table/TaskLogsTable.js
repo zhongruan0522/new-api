@@ -212,7 +212,13 @@ const LogsTable = () => {
       case 'generate':
         return (
           <Tag color='blue' size='large' shape='circle' prefixIcon={<Sparkles size={14} />}>
-            {t('生成视频')}
+            {t('图生视频')}
+          </Tag>
+        );
+      case 'textGenerate':
+        return (
+          <Tag color='blue' size='large' shape='circle' prefixIcon={<Sparkles size={14} />}>
+            {t('文生视频')}
           </Tag>
         );
       default:
@@ -434,7 +440,7 @@ const LogsTable = () => {
       fixed: 'right',
       render: (text, record, index) => {
         // 仅当为视频生成任务且成功，且 fail_reason 是 URL 时显示可点击链接
-        const isVideoTask = record.action === 'generate';
+        const isVideoTask = record.action === 'generate' || record.action === 'textGenerate';
         const isSuccess = record.status === 'SUCCESS';
         const isUrl = typeof text === 'string' && /^https?:\/\//.test(text);
         if (isSuccess && isVideoTask && isUrl) {
