@@ -33,7 +33,7 @@ func sendStreamData(c *gin.Context, info *relaycommon.RelayInfo, data string, fo
 	}
 
 	var lastStreamResponse dto.ChatCompletionsStreamResponse
-	if err := common.DecodeJsonStr(data, &lastStreamResponse); err != nil {
+	if err := common.UnmarshalJsonStr(data, &lastStreamResponse); err != nil {
 		return err
 	}
 
@@ -188,7 +188,7 @@ func OpenaiHandler(c *gin.Context, resp *http.Response, info *relaycommon.RelayI
 	if err != nil {
 		return service.OpenAIErrorWrapper(err, "read_response_body_failed", http.StatusInternalServerError), nil
 	}
-	err = common.DecodeJson(responseBody, &simpleResponse)
+	err = common.UnmarshalJson(responseBody, &simpleResponse)
 	if err != nil {
 		return service.OpenAIErrorWrapper(err, "unmarshal_response_body_failed", http.StatusInternalServerError), nil
 	}
@@ -368,7 +368,7 @@ func OpenaiRealtimeHandler(c *gin.Context, info *relaycommon.RelayInfo) (*dto.Op
 				}
 
 				realtimeEvent := &dto.RealtimeEvent{}
-				err = common.DecodeJson(message, realtimeEvent)
+				err = common.UnmarshalJson(message, realtimeEvent)
 				if err != nil {
 					errChan <- fmt.Errorf("error unmarshalling message: %v", err)
 					return
@@ -428,7 +428,7 @@ func OpenaiRealtimeHandler(c *gin.Context, info *relaycommon.RelayInfo) (*dto.Op
 				}
 				info.SetFirstResponseTime()
 				realtimeEvent := &dto.RealtimeEvent{}
-				err = common.DecodeJson(message, realtimeEvent)
+				err = common.UnmarshalJson(message, realtimeEvent)
 				if err != nil {
 					errChan <- fmt.Errorf("error unmarshalling message: %v", err)
 					return
@@ -562,7 +562,7 @@ func OpenaiHandlerWithUsage(c *gin.Context, resp *http.Response, info *relaycomm
 	}
 
 	var usageResp dto.SimpleResponse
-	err = common.DecodeJson(responseBody, &usageResp)
+	err = common.UnmarshalJson(responseBody, &usageResp)
 	if err != nil {
 		return service.OpenAIErrorWrapper(err, "parse_response_body_failed", http.StatusInternalServerError), nil
 	}

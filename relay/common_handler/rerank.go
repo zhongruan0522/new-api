@@ -23,7 +23,7 @@ func RerankHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Respo
 	var jinaResp dto.RerankResponse
 	if info.ChannelType == common.ChannelTypeXinference {
 		var xinRerankResponse xinference.XinRerankResponse
-		err = common.DecodeJson(responseBody, &xinRerankResponse)
+		err = common.UnmarshalJson(responseBody, &xinRerankResponse)
 		if err != nil {
 			return service.OpenAIErrorWrapper(err, "unmarshal_response_body_failed", http.StatusInternalServerError), nil
 		}
@@ -58,7 +58,7 @@ func RerankHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Respo
 			},
 		}
 	} else {
-		err = common.DecodeJson(responseBody, &jinaResp)
+		err = common.UnmarshalJson(responseBody, &jinaResp)
 		if err != nil {
 			return service.OpenAIErrorWrapper(err, "unmarshal_response_body_failed", http.StatusInternalServerError), nil
 		}

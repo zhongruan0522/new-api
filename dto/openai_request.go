@@ -66,7 +66,7 @@ type GeneralOpenAIRequest struct {
 func (r *GeneralOpenAIRequest) ToMap() map[string]any {
 	result := make(map[string]any)
 	data, _ := common.EncodeJson(r)
-	_ = common.DecodeJson(data, &result)
+	_ = common.UnmarshalJson(data, &result)
 	return result
 }
 

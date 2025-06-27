@@ -82,7 +82,7 @@ func xAIHandler(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo
 
 	responseBody, err := io.ReadAll(resp.Body)
 	var response *dto.SimpleResponse
-	err = common.DecodeJson(responseBody, &response)
+	err = common.UnmarshalJson(responseBody, &response)
 	if err != nil {
 		common.SysError("error unmarshalling stream response: " + err.Error())
 		return nil, nil

@@ -125,7 +125,7 @@ func RequestOpenAI2ClaudeMessage(textRequest dto.GeneralOpenAIRequest) (*dto.Cla
 
 	if textRequest.Reasoning != nil {
 		var reasoning openrouter.RequestReasoning
-		if err := common.DecodeJson(textRequest.Reasoning, &reasoning); err != nil {
+		if err := common.UnmarshalJson(textRequest.Reasoning, &reasoning); err != nil {
 			return nil, err
 		}
 
@@ -519,7 +519,7 @@ func FormatClaudeResponseInfo(requestMode int, claudeResponse *dto.ClaudeRespons
 
 func HandleStreamResponseData(c *gin.Context, info *relaycommon.RelayInfo, claudeInfo *ClaudeResponseInfo, data string, requestMode int) *dto.OpenAIErrorWithStatusCode {
 	var claudeResponse dto.ClaudeResponse
-	err := common.DecodeJsonStr(data, &claudeResponse)
+	err := common.UnmarshalJsonStr(data, &claudeResponse)
 	if err != nil {
 		common.SysError("error unmarshalling stream response: " + err.Error())
 		return service.OpenAIErrorWrapper(err, "stream_response_error", http.StatusInternalServerError)
@@ -619,7 +619,7 @@ func ClaudeStreamHandler(c *gin.Context, resp *http.Response, info *relaycommon.
 
 func HandleClaudeResponseData(c *gin.Context, info *relaycommon.RelayInfo, claudeInfo *ClaudeResponseInfo, data []byte, requestMode int) *dto.OpenAIErrorWithStatusCode {
 	var claudeResponse dto.ClaudeResponse
-	err := common.DecodeJson(data, &claudeResponse)
+	err := common.UnmarshalJson(data, &claudeResponse)
 	if err != nil {
 		return service.OpenAIErrorWrapper(err, "unmarshal_claude_response_failed", http.StatusInternalServerError)
 	}
@@ -657,13 +657,14 @@ func HandleClaudeResponseData(c *gin.Context, info *relaycommon.RelayInfo, claud
 	case relaycommon.RelayFormatClaude:
 		responseData = data
 	}
-	c.Writer.Header().Set("Content-Type", "application/json")
-	c.Writer.WriteHeader(http.StatusOK)
-	_, err = c.Writer.Write(responseData)
+
+	common.IOCopyBytesGracefully(c, nil, responseData)
 	return nil
 }
 
 func ClaudeHandler(c *gin.Context, resp *http.Response, requestMode int, info *relaycommon.RelayInfo) (*dto.OpenAIErrorWithStatusCode, *dto.Usage) {
+	defer common.CloseResponseBodyGracefully(resp)
+
 	claudeInfo := &ClaudeResponseInfo{
 		ResponseId:   fmt.Sprintf("chatcmpl-%s", common.GetUUID()),
 		Created:      common.GetTimestamp(),
@@ -675,7 +676,6 @@ func ClaudeHandler(c *gin.Context, resp *http.Response, requestMode int, info *r
 	if err != nil {
 		return service.OpenAIErrorWrapper(err, "read_response_body_failed", http.StatusInternalServerError), nil
 	}
-	resp.Body.Close()
 	if common.DebugEnabled {
 		println("responseBody: ", string(responseBody))
 	}
