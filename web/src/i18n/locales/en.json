@@ -1748,5 +1748,6 @@
   "快捷设置": "Quick settings",
   "批量创建时会在名称后自动添加随机后缀": "When creating in batches, a random suffix will be automatically added to the name",
   "额度必须大于0": "Quota must be greater than 0",
-  "生成数量必须大于0": "Generation quantity must be greater than 0"
+  "生成数量必须大于0": "Generation quantity must be greater than 0",
+  "创建后可在编辑渠道时获取上游模型列表": "After creation, you can get the upstream model list when editing the channel"
 }

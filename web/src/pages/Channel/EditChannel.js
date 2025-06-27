@@ -792,13 +792,15 @@ const EditChannel = (props) => {
                   >
                     {t('填入所有模型')}
                   </Button>
-                  <Button
-                    type='tertiary'
-                    onClick={() => fetchUpstreamModelList('models')}
-                    className="!rounded-lg"
-                  >
-                    {t('获取模型列表')}
-                  </Button>
+                  {isEdit ? (
+                    <Button
+                      type='tertiary'
+                      onClick={() => fetchUpstreamModelList('models')}
+                      className="!rounded-lg"
+                    >
+                      {t('获取模型列表')}
+                    </Button>
+                  ) : null}
                   <Button
                     type='warning'
                     onClick={() => handleInputChange('models', [])}
@@ -825,6 +827,14 @@ const EditChannel = (props) => {
                     {t('复制所有模型')}
                   </Button>
                 </div>
+
+                {!isEdit && (
+                  <Banner
+                    type='info'
+                    description={t('创建后可在编辑渠道时获取上游模型列表')}
+                    className='!rounded-lg'
+                  />
+                )}
 
                 <div>
                   <Input
