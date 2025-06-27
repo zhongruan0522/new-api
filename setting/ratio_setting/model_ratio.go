@@ -509,8 +509,11 @@ func getHardcodedCompletionModelRatio(name string) (float64, bool) {
 				}
 				return 3.5 / 0.15, false
 			}
-			if strings.HasPrefix(name, "gemini-2.5-flash-lite-preview") {
-				return 4, true
+			if strings.HasPrefix(name, "gemini-2.5-flash-lite") {
+				if strings.HasPrefix(name, "gemini-2.5-flash-lite-preview") {
+					return 4, false
+				}
+				return 4, false
 			}
 			return 2.5 / 0.3, true
 		}
