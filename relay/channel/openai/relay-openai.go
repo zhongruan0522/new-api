@@ -2,7 +2,6 @@ package openai
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"io"
 	"math"
@@ -220,7 +219,7 @@ func OpenaiHandler(c *gin.Context, resp *http.Response, info *relaycommon.RelayI
 	switch info.RelayFormat {
 	case relaycommon.RelayFormatOpenAI:
 		if forceFormat {
-			responseBody, err = json.Marshal(simpleResponse)
+			responseBody, err = common.EncodeJson(simpleResponse)
 			if err != nil {
 				return service.OpenAIErrorWrapper(err, "marshal_response_body_failed", http.StatusInternalServerError), nil
 			}
@@ -229,7 +228,7 @@ func OpenaiHandler(c *gin.Context, resp *http.Response, info *relaycommon.RelayI
 		}
 	case relaycommon.RelayFormatClaude:
 		claudeResp := service.ResponseOpenAI2Claude(&simpleResponse, info)
-		claudeRespStr, err := json.Marshal(claudeResp)
+		claudeRespStr, err := common.EncodeJson(claudeResp)
 		if err != nil {
 			return service.OpenAIErrorWrapper(err, "marshal_response_body_failed", http.StatusInternalServerError), nil
 		}
@@ -368,7 +367,7 @@ func OpenaiRealtimeHandler(c *gin.Context, info *relaycommon.RelayInfo) (*dto.Op
 				}
 
 				realtimeEvent := &dto.RealtimeEvent{}
-				err = json.Unmarshal(message, realtimeEvent)
+				err = common.DecodeJson(message, realtimeEvent)
 				if err != nil {
 					errChan <- fmt.Errorf("error unmarshalling message: %v", err)
 					return
@@ -428,7 +427,7 @@ func OpenaiRealtimeHandler(c *gin.Context, info *relaycommon.RelayInfo) (*dto.Op
 				}
 				info.SetFirstResponseTime()
 				realtimeEvent := &dto.RealtimeEvent{}
-				err = json.Unmarshal(message, realtimeEvent)
+				err = common.DecodeJson(message, realtimeEvent)
 				if err != nil {
 					errChan <- fmt.Errorf("error unmarshalling message: %v", err)
 					return
@@ -560,7 +559,7 @@ func OpenaiHandlerWithUsage(c *gin.Context, resp *http.Response, info *relaycomm
 	}
 
 	var usageResp dto.SimpleResponse
-	err = json.Unmarshal(responseBody, &usageResp)
+	err = common.DecodeJson(responseBody, &usageResp)
 	if err != nil {
 		return service.OpenAIErrorWrapper(err, "parse_response_body_failed", http.StatusInternalServerError), nil
 	}
