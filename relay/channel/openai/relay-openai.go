@@ -202,10 +202,7 @@ func OpenaiHandler(c *gin.Context, resp *http.Response, info *relaycommon.RelayI
 	if err != nil {
 		return service.OpenAIErrorWrapper(err, "read_response_body_failed", http.StatusInternalServerError), nil
 	}
-	err = resp.Body.Close()
-	if err != nil {
-		return service.OpenAIErrorWrapper(err, "close_response_body_failed", http.StatusInternalServerError), nil
-	}
+	common.CloseResponseBodyGracefully(resp)
 	err = common.DecodeJson(responseBody, &simpleResponse)
 	if err != nil {
 		return service.OpenAIErrorWrapper(err, "unmarshal_response_body_failed", http.StatusInternalServerError), nil
@@ -269,7 +266,7 @@ func OpenaiHandler(c *gin.Context, resp *http.Response, info *relaycommon.RelayI
 		//return service.OpenAIErrorWrapper(err, "copy_response_body_failed", http.StatusInternalServerError), nil
 		common.SysError("error copying response body: " + err.Error())
 	}
-	resp.Body.Close()
+	common.CloseResponseBodyGracefully(resp)
 	return nil, &simpleResponse.Usage
 }
 
@@ -280,7 +277,7 @@ func OpenaiTTSHandler(c *gin.Context, resp *http.Response, info *relaycommon.Rel
 	// if the upstream returns a specific status code, once the upstream has already written the header,
 	// the subsequent failure of the response body should be regarded as a non-recoverable error,
 	// and can be terminated directly.
-	defer resp.Body.Close()
+	defer common.CloseResponseBodyGracefully(resp)
 	usage := &dto.Usage{}
 	usage.PromptTokens = info.PromptTokens
 	usage.TotalTokens = info.PromptTokens
@@ -306,7 +303,7 @@ func OpenaiSTTHandler(c *gin.Context, resp *http.Response, info *relaycommon.Rel
 	if err != nil {
 		return service.OpenAIErrorWrapper(err, "read_response_body_failed", http.StatusInternalServerError), nil
 	}
-	err = resp.Body.Close()
+	common.CloseResponseBodyGracefully(resp)
 	if err != nil {
 		return service.OpenAIErrorWrapper(err, "close_response_body_failed", http.StatusInternalServerError), nil
 	}
@@ -324,7 +321,7 @@ func OpenaiSTTHandler(c *gin.Context, resp *http.Response, info *relaycommon.Rel
 	if err != nil {
 		return service.OpenAIErrorWrapper(err, "copy_response_body_failed", http.StatusInternalServerError), nil
 	}
-	resp.Body.Close()
+	common.CloseResponseBodyGracefully(resp)
 
 	usage := &dto.Usage{}
 	usage.PromptTokens = audioTokens
@@ -605,10 +602,7 @@ func OpenaiHandlerWithUsage(c *gin.Context, resp *http.Response, info *relaycomm
 	if err != nil {
 		return service.OpenAIErrorWrapper(err, "read_response_body_failed", http.StatusInternalServerError), nil
 	}
-	err = resp.Body.Close()
-	if err != nil {
-		return service.OpenAIErrorWrapper(err, "close_response_body_failed", http.StatusInternalServerError), nil
-	}
+	common.CloseResponseBodyGracefully(resp)
 	// Reset response body
 	resp.Body = io.NopCloser(bytes.NewBuffer(responseBody))
 	// We shouldn't set the header before we parse the response body, because the parse part may fail.
@@ -625,7 +619,7 @@ func OpenaiHandlerWithUsage(c *gin.Context, resp *http.Response, info *relaycomm
 	if err != nil {
 		common.SysError("error copying response body: " + err.Error())
 	}
-	_ = resp.Body.Close()
+	common.CloseResponseBodyGracefully(resp)
 
 	// Once we've written to the client, we should not return errors anymore
 	// because the upstream has already consumed resources and returned content

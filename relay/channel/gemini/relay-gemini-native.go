@@ -20,10 +20,7 @@ func GeminiTextGenerationHandler(c *gin.Context, resp *http.Response, info *rela
 	if err != nil {
 		return nil, service.OpenAIErrorWrapper(err, "read_response_body_failed", http.StatusInternalServerError)
 	}
-	err = resp.Body.Close()
-	if err != nil {
-		return nil, service.OpenAIErrorWrapper(err, "close_response_body_failed", http.StatusInternalServerError)
-	}
+	common.CloseResponseBodyGracefully(resp)
 
 	if common.DebugEnabled {
 		println(string(responseBody))
