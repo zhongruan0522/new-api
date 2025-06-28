@@ -399,7 +399,6 @@ const LoginForm = () => {
                   placeholder={t('请输入您的用户名或邮箱地址')}
                   name="username"
                   size="large"
-                  className="!rounded-md"
                   onChange={(value) => handleChange('username', value)}
                   prefix={<IconMail />}
                 />
@@ -411,7 +410,6 @@ const LoginForm = () => {
                   name="password"
                   mode="password"
                   size="large"
-                  className="!rounded-md"
                   onChange={(value) => handleChange('password', value)}
                   prefix={<IconLock />}
                 />

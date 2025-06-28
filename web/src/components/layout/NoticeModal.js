@@ -170,8 +170,8 @@ const NoticeModal = ({ visible, onClose, isMobile, defaultTab = 'inApp', unreadK
       onCancel={onClose}
       footer={(
         <div className="flex justify-end">
-          <Button type='secondary' className='!rounded-full' onClick={handleCloseTodayNotice}>{t('今日关闭')}</Button>
-          <Button type="primary" className='!rounded-full' onClick={onClose}>{t('关闭公告')}</Button>
+          <Button type='secondary' onClick={handleCloseTodayNotice}>{t('今日关闭')}</Button>
+          <Button type="primary" onClick={onClose}>{t('关闭公告')}</Button>
         </div>
       )}
       size={isMobile ? 'full-width' : 'large'}

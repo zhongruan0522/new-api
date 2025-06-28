@@ -162,7 +162,6 @@ const EditRedemption = (props) => {
             <Space>
               <Button
                 theme="solid"
-                className="!rounded-full"
                 onClick={() => formApiRef.current?.submitForm()}
                 icon={<IconSave />}
                 loading={loading}
@@ -171,7 +170,6 @@ const EditRedemption = (props) => {
               </Button>
               <Button
                 theme="light"
-                className="!rounded-full"
                 type="primary"
                 onClick={handleCancel}
                 icon={<IconClose />}
@@ -191,7 +189,7 @@ const EditRedemption = (props) => {
             onSubmit={submit}
           >
             {({ values }) => (
-              <div className="p-6 space-y-6">
+              <div className="p-2">
                 <Card className="!rounded-2xl shadow-sm border-0 mb-6">
                   {/* Header: Basic Info */}
                   <div className="flex items-center mb-2">

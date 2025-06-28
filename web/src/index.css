@@ -43,6 +43,7 @@ code {
 
 /* ==================== 导航和侧边栏样式 ==================== */
 /* 导航项样式 */
+.semi-input-textarea-wrapper,
 .semi-navigation-sub-title,
 .semi-chat-inputBox-sendButton,
 .semi-page-item,
@@ -53,7 +54,7 @@ code {
 .semi-select,
 .semi-button,
 .semi-datepicker-range-input {
-  border-radius: 9999px !important;
+  border-radius: 10px !important;
 }
 
 .semi-navigation-item {

@@ -113,7 +113,6 @@ const PasswordResetConfirm = () => {
                     label={t('邮箱')}
                     name="email"
                     size="large"
-                    className="!rounded-md"
                     disabled={true}
                     prefix={<IconMail />}
                     placeholder={email ? '' : t('等待获取邮箱信息...')}
@@ -125,7 +124,6 @@ const PasswordResetConfirm = () => {
                       label={t('新密码')}
                       name="newPassword"
                       size="large"
-                      className="!rounded-md"
                       disabled={true}
                       prefix={<IconLock />}
                       suffix={

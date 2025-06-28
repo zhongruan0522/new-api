@@ -457,7 +457,6 @@ const EditChannel = (props) => {
             <Space>
               <Button
                 theme="solid"
-                className="!rounded-full"
                 onClick={submit}
                 icon={<IconSave />}
               >
@@ -465,7 +464,6 @@ const EditChannel = (props) => {
               </Button>
               <Button
                 theme="light"
-                className="!rounded-full"
                 type="primary"
                 onClick={handleCancel}
                 icon={<IconClose />}
@@ -479,7 +477,7 @@ const EditChannel = (props) => {
         onCancel={() => handleCancel()}
       >
         <Spin spinning={loading}>
-          <div className="p-6">
+          <div className="p-2">
             <Card className="!rounded-2xl shadow-sm border-0 mb-6">
               {/* Header: Basic Info */}
               <div className="flex items-center mb-2">
@@ -505,7 +503,6 @@ const EditChannel = (props) => {
                     filter
                     searchPosition='dropdown'
                     placeholder={t('请选择渠道类型')}
-                    className="!rounded-lg"
                   />
                 </div>
 
@@ -520,7 +517,6 @@ const EditChannel = (props) => {
                     }}
                     value={inputs.name}
                     autoComplete='new-password'
-                    className="!rounded-lg"
                   />
                 </div>
 
@@ -537,7 +533,6 @@ const EditChannel = (props) => {
                       value={inputs.key}
                       autosize={{ minRows: 6, maxRows: 6 }}
                       autoComplete='new-password'
-                      className="!rounded-lg"
                     />
                   ) : (
                     <>
@@ -566,7 +561,6 @@ const EditChannel = (props) => {
                           autosize={{ minRows: 10 }}
                           value={inputs.key}
                           autoComplete='new-password'
-                          className="!rounded-lg font-mono"
                         />
                       ) : (
                         <Input
@@ -578,7 +572,6 @@ const EditChannel = (props) => {
                           }}
                           value={inputs.key}
                           autoComplete='new-password'
-                          className="!rounded-lg"
                         />
                       )}
                     </>
@@ -627,7 +620,6 @@ const EditChannel = (props) => {
                         </Text>
                       </div>
                     }
-                    className='!rounded-lg'
                   />
                 )}
 
@@ -646,7 +638,6 @@ const EditChannel = (props) => {
                         onChange={(value) => handleInputChange('base_url', value)}
                         value={inputs.base_url}
                         autoComplete='new-password'
-                        className="!rounded-lg"
                       />
                     </div>
                     <div>
@@ -657,7 +648,6 @@ const EditChannel = (props) => {
                         onChange={(value) => handleInputChange('other', value)}
                         value={inputs.other}
                         autoComplete='new-password'
-                        className="!rounded-lg"
                       />
                     </div>
                   </>
@@ -678,7 +668,6 @@ const EditChannel = (props) => {
                         onChange={(value) => handleInputChange('base_url', value)}
                         value={inputs.base_url}
                         autoComplete='new-password'
-                        className="!rounded-lg"
                       />
                     </div>
                   </>
@@ -701,7 +690,6 @@ const EditChannel = (props) => {
                       onChange={(value) => handleInputChange('base_url', value)}
                       value={inputs.base_url}
                       autoComplete='new-password'
-                      className="!rounded-lg"
                     />
                     <Text type="tertiary" className="mt-1 text-xs">
                       {t('对于官方渠道，new-api已经内置地址，除非是第三方代理站点或者Azure的特殊接入地址，否则不需要填写')}
@@ -718,7 +706,6 @@ const EditChannel = (props) => {
                       onChange={(value) => handleInputChange('base_url', value)}
                       value={inputs.base_url}
                       autoComplete='new-password'
-                      className="!rounded-lg"
                     />
                   </div>
                 )}
@@ -734,7 +721,6 @@ const EditChannel = (props) => {
                       onChange={(value) => handleInputChange('base_url', value)}
                       value={inputs.base_url}
                       autoComplete='new-password'
-                      className="!rounded-lg"
                     />
                   </div>
                 )}
@@ -769,7 +755,6 @@ const EditChannel = (props) => {
                     value={inputs.models}
                     autoComplete='new-password'
                     optionList={modelOptions}
-                    className="!rounded-lg"
                   />
                 </div>
 
@@ -777,14 +762,12 @@ const EditChannel = (props) => {
                   <Button
                     type='primary'
                     onClick={() => handleInputChange('models', basicModels)}
-                    className="!rounded-lg"
                   >
                     {t('填入相关模型')}
                   </Button>
                   <Button
                     type='secondary'
                     onClick={() => handleInputChange('models', fullModels)}
-                    className="!rounded-lg"
                   >
                     {t('填入所有模型')}
                   </Button>
@@ -792,7 +775,6 @@ const EditChannel = (props) => {
                     <Button
                       type='tertiary'
                       onClick={() => fetchUpstreamModelList('models')}
-                      className="!rounded-lg"
                     >
                       {t('获取模型列表')}
                     </Button>
@@ -800,7 +782,6 @@ const EditChannel = (props) => {
                   <Button
                     type='warning'
                     onClick={() => handleInputChange('models', [])}
-                    className="!rounded-lg"
                   >
                     {t('清除所有模型')}
                   </Button>
@@ -818,7 +799,6 @@ const EditChannel = (props) => {
                         showError(t('复制失败'));
                       }
                     }}
-                    className="!rounded-lg"
                   >
                     {t('复制所有模型')}
                   </Button>
@@ -842,7 +822,6 @@ const EditChannel = (props) => {
                     placeholder={t('输入自定义模型名称')}
                     value={customModel}
                     onChange={(value) => setCustomModel(value.trim())}
-                    className="!rounded-lg"
                   />
                 </div>
 
@@ -858,7 +837,6 @@ const EditChannel = (props) => {
                     autosize
                     value={inputs.model_mapping}
                     autoComplete='new-password'
-                    className="!rounded-lg font-mono"
                   />
                   <Text
                     className="!text-semi-color-primary cursor-pointer mt-1 block"
@@ -875,7 +853,6 @@ const EditChannel = (props) => {
                     placeholder={t('不填则为模型列表第一个')}
                     onChange={(value) => handleInputChange('test_model', value)}
                     value={inputs.test_model}
-                    className="!rounded-lg"
                   />
                 </div>
               </div>
@@ -909,7 +886,6 @@ const EditChannel = (props) => {
                     value={inputs.groups}
                     autoComplete='new-password'
                     optionList={groupOptions}
-                    className="!rounded-lg"
                   />
                 </div>
 
@@ -922,7 +898,6 @@ const EditChannel = (props) => {
                       onChange={(value) => handleInputChange('other', value)}
                       value={inputs.other}
                       autoComplete='new-password'
-                      className="!rounded-lg"
                     />
                   </div>
                 )}
@@ -943,7 +918,6 @@ const EditChannel = (props) => {
                       onChange={(value) => handleInputChange('other', value)}
                       value={inputs.other}
                       autoComplete='new-password'
-                      className="!rounded-lg font-mono"
                     />
                     <Text
                       className="!text-semi-color-primary cursor-pointer mt-1 block"
@@ -963,7 +937,6 @@ const EditChannel = (props) => {
                       onChange={(value) => handleInputChange('other', value)}
                       value={inputs.other}
                       autoComplete='new-password'
-                      className="!rounded-lg"
                     />
                   </div>
                 )}
@@ -977,7 +950,6 @@ const EditChannel = (props) => {
                       onChange={(value) => handleInputChange('other', value)}
                       value={inputs.other}
                       autoComplete='new-password'
-                      className="!rounded-lg"
                     />
                   </div>
                 )}
@@ -991,7 +963,6 @@ const EditChannel = (props) => {
                       onChange={(value) => handleInputChange('other', value)}
                       value={inputs.other}
                       autoComplete='new-password'
-                      className="!rounded-lg"
                     />
                   </div>
                 )}
@@ -1004,7 +975,6 @@ const EditChannel = (props) => {
                     onChange={(value) => handleInputChange('tag', value)}
                     value={inputs.tag}
                     autoComplete='new-password'
-                    className="!rounded-lg"
                   />
                 </div>
 
@@ -1023,7 +993,6 @@ const EditChannel = (props) => {
                     }}
                     value={inputs.priority}
                     autoComplete='new-password'
-                    className="!rounded-lg"
                   />
                 </div>
 
@@ -1042,7 +1011,6 @@ const EditChannel = (props) => {
                     }}
                     value={inputs.weight}
                     autoComplete='new-password'
-                    className="!rounded-lg"
                   />
                 </div>
 
@@ -1058,7 +1026,6 @@ const EditChannel = (props) => {
                     autosize
                     value={inputs.setting}
                     autoComplete='new-password'
-                    className="!rounded-lg font-mono"
                   />
                   <div className="flex gap-2 mt-1">
                     <Text
@@ -1097,7 +1064,6 @@ const EditChannel = (props) => {
                     autosize
                     value={inputs.param_override}
                     autoComplete='new-password'
-                    className="!rounded-lg font-mono"
                   />
                 </div>
 
@@ -1109,7 +1075,6 @@ const EditChannel = (props) => {
                       placeholder={t('请输入组织org-xxx')}
                       onChange={(value) => handleInputChange('openai_organization', value)}
                       value={inputs.openai_organization}
-                      className="!rounded-lg"
                     />
                     <Text type="tertiary" className="mt-1 text-xs">
                       {t('组织，可选，不填则为默认组织')}
@@ -1142,7 +1107,6 @@ const EditChannel = (props) => {
                     autosize
                     value={inputs.status_code_mapping}
                     autoComplete='new-password'
-                    className="!rounded-lg font-mono"
                   />
                   <Text
                     className="!text-semi-color-primary cursor-pointer mt-1 block"

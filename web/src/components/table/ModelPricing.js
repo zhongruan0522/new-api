@@ -161,6 +161,7 @@ const ModelPricing = () => {
                     <Tag
                       color='blue'
                       size='large'
+                      shape='circle'
                       onClick={() => {
                         setSelectedGroup(group);
                         showInfo(
@@ -170,7 +171,7 @@ const ModelPricing = () => {
                           }),
                         );
                       }}
-                      className="cursor-pointer hover:opacity-80 transition-opacity !rounded-full"
+                      className="cursor-pointer hover:opacity-80 transition-opacity"
                     >
                       {group}
                     </Tag>
@@ -404,7 +405,6 @@ const ModelPricing = () => {
           <Input
             prefix={<IconSearch />}
             placeholder={t('模糊搜索模型名称')}
-            className="!rounded-lg"
             onCompositionStart={handleCompositionStart}
             onCompositionEnd={handleCompositionEnd}
             onChange={handleChange}
@@ -418,7 +418,7 @@ const ModelPricing = () => {
           icon={<IconCopy />}
           onClick={() => copyText(selectedRowKeys)}
           disabled={selectedRowKeys.length === 0}
-          className="!rounded-lg !bg-blue-500 hover:!bg-blue-600 text-white"
+          className="!bg-blue-500 hover:!bg-blue-600 text-white"
           size="large"
         >
           {t('复制选中模型')}
@@ -477,13 +477,6 @@ const ModelPricing = () => {
                   }}
                   bodyStyle={{ padding: 0 }}
                 >
-                  {/* 装饰性背景元素 */}
-                  <div className="absolute inset-0 overflow-hidden">
-                    <div className="absolute -top-10 -right-10 w-40 h-40 bg-white opacity-5 rounded-full"></div>
-                    <div className="absolute -bottom-16 -left-16 w-48 h-48 bg-white opacity-3 rounded-full"></div>
-                    <div className="absolute top-1/2 right-1/4 w-24 h-24 bg-yellow-400 opacity-10 rounded-full"></div>
-                  </div>
-
                   <div className="relative p-6 sm:p-8" style={{ color: 'white' }}>
                     <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 lg:gap-6">
                       <div className="flex items-start">
