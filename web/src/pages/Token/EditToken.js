@@ -254,10 +254,6 @@ const EditToken = (props) => {
           </Title>
         </Space>
       }
-      headerStyle={{
-        borderBottom: '1px solid var(--semi-color-border)',
-        padding: '24px',
-      }}
       bodyStyle={{ padding: '0' }}
       visible={props.visiable}
       width={isMobile() ? '100%' : 600}

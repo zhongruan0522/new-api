@@ -134,7 +134,6 @@ const EditUser = (props) => {
             </Title>
           </Space>
         }
-        headerStyle={{ borderBottom: '1px solid var(--semi-color-border)', padding: '24px' }}
         bodyStyle={{ padding: 0 }}
         visible={props.visible}
         width={isMobile() ? '100%' : 600}
