@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"encoding/json"
-	"github.com/gin-gonic/gin"
 	"io"
 	"log"
 	"net/http"
@@ -15,6 +14,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/gin-gonic/gin"
 )
 
 func CoverActionToModelName(mjAction string) string {
@@ -38,6 +39,10 @@ func GetMjRequestModel(relayMode int, midjRequest *dto.MidjourneyRequest) (strin
 		switch relayMode {
 		case relayconstant.RelayModeMidjourneyImagine:
 			action = constant.MjActionImagine
+		case relayconstant.RelayModeMidjourneyVideo:
+			action = constant.MjActionVideo
+		case relayconstant.RelayModeMidjourneyEdits:
+			action = constant.MjActionEdits
 		case relayconstant.RelayModeMidjourneyDescribe:
 			action = constant.MjActionDescribe
 		case relayconstant.RelayModeMidjourneyBlend:
