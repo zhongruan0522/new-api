@@ -271,7 +271,7 @@ func getBaiduAccessTokenHelper(apiKey string) (*BaiduAccessToken, error) {
 	}
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("Accept", "application/json")
-	res, err := service.GetImpatientHttpClient().Do(req)
+	res, err := service.GetHttpClient().Do(req)
 	if err != nil {
 		return nil, err
 	}
