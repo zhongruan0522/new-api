@@ -77,8 +77,8 @@ func (a *TaskAdaptor) Init(info *relaycommon.TaskRelayInfo) {
 	a.ChannelType = info.ChannelType
 	a.baseURL = info.BaseUrl
 
-	// apiKey format: "access_key,secret_key"
-	keyParts := strings.Split(info.ApiKey, ",")
+	// apiKey format: "access_key|secret_key"
+	keyParts := strings.Split(info.ApiKey, "|")
 	if len(keyParts) == 2 {
 		a.accessKey = strings.TrimSpace(keyParts[0])
 		a.secretKey = strings.TrimSpace(keyParts[1])
@@ -192,9 +192,9 @@ func (a *TaskAdaptor) FetchTask(baseUrl, key string, body map[string]any) (*http
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("Content-Type", "application/json")
 
-	keyParts := strings.Split(key, ",")
+	keyParts := strings.Split(key, "|")
 	if len(keyParts) != 2 {
-		return nil, fmt.Errorf("invalid api key format for jimeng: expected 'ak,sk'")
+		return nil, fmt.Errorf("invalid api key format for jimeng: expected 'ak|sk'")
 	}
 	accessKey := strings.TrimSpace(keyParts[0])
 	secretKey := strings.TrimSpace(keyParts[1])
