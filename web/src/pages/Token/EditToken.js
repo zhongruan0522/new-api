@@ -9,7 +9,6 @@ import {
   renderQuotaWithPrompt,
 } from '../../helpers';
 import {
-  Banner,
   Button,
   SideSheet,
   Space,
@@ -27,7 +26,7 @@ import {
   IconLink,
   IconSave,
   IconClose,
-  IconPlusCircle,
+  IconKey,
 } from '@douyinfe/semi-icons';
 import { useTranslation } from 'react-i18next';
 import { StatusContext } from '../../context/Status';
@@ -37,11 +36,11 @@ const { Text, Title } = Typography;
 const EditToken = (props) => {
   const { t } = useTranslation();
   const [statusState, statusDispatch] = useContext(StatusContext);
-  const [isEdit, setIsEdit] = useState(false);
   const [loading, setLoading] = useState(false);
   const formApiRef = useRef(null);
   const [models, setModels] = useState([]);
   const [groups, setGroups] = useState([]);
+  const isEdit = props.editingToken.id !== undefined;
 
   const getInitValues = () => ({
     name: '',
@@ -137,10 +136,6 @@ const EditToken = (props) => {
   };
 
   useEffect(() => {
-    setIsEdit(props.editingToken.id !== undefined);
-  }, [props.editingToken.id]);
-
-  useEffect(() => {
     if (formApiRef.current) {
       if (!isEdit) {
         formApiRef.current.setValues(getInitValues());
@@ -150,7 +145,7 @@ const EditToken = (props) => {
     }
     loadModels();
     loadGroups();
-  }, [isEdit]);
+  }, [props.editingToken.id]);
 
   const generateRandomSuffix = () => {
     const characters =
@@ -254,10 +249,6 @@ const EditToken = (props) => {
           </Title>
         </Space>
       }
-      headerStyle={{
-        borderBottom: '1px solid var(--semi-color-border)',
-        padding: '24px',
-      }}
       bodyStyle={{ padding: '0' }}
       visible={props.visiable}
       width={isMobile() ? '100%' : 600}
@@ -266,7 +257,7 @@ const EditToken = (props) => {
           <Space>
             <Button
               theme='solid'
-              className='!rounded-full'
+              className='!rounded-lg'
               onClick={() => formApiRef.current?.submitForm()}
               icon={<IconSave />}
               loading={loading}
@@ -275,7 +266,7 @@ const EditToken = (props) => {
             </Button>
             <Button
               theme='light'
-              className='!rounded-full'
+              className='!rounded-lg'
               type='primary'
               onClick={handleCancel}
               icon={<IconClose />}
@@ -296,12 +287,12 @@ const EditToken = (props) => {
           onSubmit={submit}
         >
           {({ values }) => (
-            <div className='p-6 space-y-6'>
+            <div className='p-2'>
               {/* 基本信息 */}
               <Card className='!rounded-2xl shadow-sm border-0'>
                 <div className='flex items-center mb-2'>
                   <Avatar size='small' color='blue' className='mr-2 shadow-md'>
-                    <IconPlusCircle size={16} />
+                    <IconKey size={16} />
                   </Avatar>
                   <div>
                     <Text className='text-lg font-medium'>{t('基本信息')}</Text>
@@ -326,33 +317,36 @@ const EditToken = (props) => {
                         placeholder={t('令牌分组，默认为用户的分组')}
                         optionList={groups}
                         renderOptionItem={renderGroupOption}
+                        showClear
+                        style={{ width: '100%' }}
                       />
                     ) : (
                       <Form.Select
                         placeholder={t('管理员未设置用户可选分组')}
                         disabled
                         label={t('令牌分组')}
+                        style={{ width: '100%' }}
                       />
                     )}
                   </Col>
-                  <Col span={10}>
+                  <Col xs={24} sm={24} md={24} lg={10} xl={10}>
                     <Form.DatePicker
                       field='expired_time'
                       label={t('过期时间')}
                       type='dateTime'
                       placeholder={t('请选择过期时间')}
-                      style={{ width: '100%' }}
                       rules={[{ required: true, message: t('请选择过期时间') }]}
+                      showClear
+                      style={{ width: '100%' }}
                     />
                   </Col>
-                  <Col span={14} className='flex flex-col justify-end'>
-                    <Form.Slot label={t('快捷设置')}>
+                  <Col xs={24} sm={24} md={24} lg={14} xl={14}>
+                    <Form.Slot label={t('过期时间快捷设置')}>
                       <Space wrap>
                         <Button
                           theme='light'
                           type='primary'
                           onClick={() => setExpiredTime(0, 0, 0, 0)}
-                          className='!rounded-full'
                         >
                           {t('永不过期')}
                         </Button>
@@ -360,7 +354,6 @@ const EditToken = (props) => {
                           theme='light'
                           type='tertiary'
                           onClick={() => setExpiredTime(1, 0, 0, 0)}
-                          className='!rounded-full'
                         >
                           {t('一个月')}
                         </Button>
@@ -368,7 +361,6 @@ const EditToken = (props) => {
                           theme='light'
                           type='tertiary'
                           onClick={() => setExpiredTime(0, 1, 0, 0)}
-                          className='!rounded-full'
                         >
                           {t('一天')}
                         </Button>
@@ -376,7 +368,6 @@ const EditToken = (props) => {
                           theme='light'
                           type='tertiary'
                           onClick={() => setExpiredTime(0, 0, 1, 0)}
-                          className='!rounded-full'
                         >
                           {t('一小时')}
                         </Button>
@@ -391,6 +382,7 @@ const EditToken = (props) => {
                         min={1}
                         extraText={t('批量创建时会在名称后自动添加随机后缀')}
                         rules={[{ required: true, message: t('请输入新建数量') }]}
+                        style={{ width: '100%' }}
                       />
                     </Col>
                   )}
@@ -409,7 +401,7 @@ const EditToken = (props) => {
                   </div>
                 </div>
                 <Row gutter={12}>
-                  <Col span={10}>
+                  <Col span={24}>
                     <Form.AutoComplete
                       field='remain_quota'
                       label={t('额度')}
@@ -428,15 +420,15 @@ const EditToken = (props) => {
                       ]}
                     />
                   </Col>
-                  <Col span={14} className='flex justify-end'>
-                    <Form.Switch field='unlimited_quota' label={t('无限额度')} size='large' />
+                  <Col span={24}>
+                    <Form.Switch
+                      field='unlimited_quota'
+                      label={t('无限额度')}
+                      size='large'
+                      extraText={t('令牌的额度仅用于限制令牌本身的最大额度使用量，实际的使用受到账户的剩余额度限制')}
+                    />
                   </Col>
                 </Row>
-                <Banner
-                  type='warning'
-                  description={t('注意，令牌的额度仅用于限制令牌本身的最大额度使用量，实际的使用受到账户的剩余额度限制。')}
-                  className='mb-4 !rounded-lg'
-                />
               </Card>
 
               {/* 访问限制 */}
@@ -456,8 +448,11 @@ const EditToken = (props) => {
                       field='allow_ips'
                       label={t('IP白名单')}
                       placeholder={t('允许的IP，一行一个，不填写则不限制')}
-                      rows={4}
+                      autosize
+                      rows={1}
                       extraText={t('请勿过度信任此功能，IP可能被伪造')}
+                      showClear
+                      style={{ width: '100%' }}
                     />
                   </Col>
                   <Col span={24}>
@@ -469,6 +464,8 @@ const EditToken = (props) => {
                       optionList={models}
                       maxTagCount={3}
                       extraText={t('非必要，不建议启用模型限制')}
+                      showClear
+                      style={{ width: '100%' }}
                     />
                   </Col>
                 </Row>

@@ -274,10 +274,6 @@ const EditTagModal = (props) => {
           </Title>
         </Space>
       }
-      headerStyle={{
-        borderBottom: '1px solid var(--semi-color-border)',
-        padding: '24px'
-      }}
       bodyStyle={{ padding: '0' }}
       visible={visible}
       width={600}
@@ -287,7 +283,6 @@ const EditTagModal = (props) => {
           <Space>
             <Button
               theme="solid"
-              className="!rounded-full"
               onClick={handleSave}
               loading={loading}
               icon={<IconSave />}
@@ -296,7 +291,6 @@ const EditTagModal = (props) => {
             </Button>
             <Button
               theme="light"
-              className="!rounded-full"
               type="primary"
               onClick={handleClose}
               icon={<IconClose />}
@@ -309,7 +303,7 @@ const EditTagModal = (props) => {
       closeIcon={null}
     >
       <Spin spinning={loading}>
-        <div className="p-6">
+        <div className="p-2">
           <Card className="!rounded-2xl shadow-sm border-0 mb-6">
             {/* Header: Tag Info */}
             <div className="flex items-center mb-2">
@@ -335,7 +329,6 @@ const EditTagModal = (props) => {
                   value={inputs.new_tag}
                   onChange={(value) => setInputs({ ...inputs, new_tag: value })}
                   placeholder={t('请输入新标签，留空则解散标签')}
-                  className="!rounded-lg"
                 />
               </div>
             </div>
@@ -370,7 +363,6 @@ const EditTagModal = (props) => {
                   onChange={(value) => handleInputChange('models', value)}
                   value={inputs.models}
                   optionList={modelOptions}
-                  className="!rounded-lg"
                 />
               </div>
 
@@ -384,7 +376,6 @@ const EditTagModal = (props) => {
                   placeholder={t('输入自定义模型名称')}
                   value={customModel}
                   onChange={(value) => setCustomModel(value.trim())}
-                  className="!rounded-lg"
                 />
               </div>
 
@@ -396,7 +387,6 @@ const EditTagModal = (props) => {
                   onChange={(value) => handleInputChange('model_mapping', value)}
                   autosize
                   value={inputs.model_mapping}
-                  className="!rounded-lg font-mono"
                 />
                 <Space className="mt-2">
                   <Text
@@ -446,7 +436,6 @@ const EditTagModal = (props) => {
                   onChange={(value) => handleInputChange('groups', value)}
                   value={inputs.groups}
                   optionList={groupOptions}
-                  className="!rounded-lg"
                 />
               </div>
             </div>

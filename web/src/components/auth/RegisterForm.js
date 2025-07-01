@@ -394,7 +394,6 @@ const RegisterForm = () => {
                   placeholder={t('请输入用户名')}
                   name="username"
                   size="large"
-                  className="!rounded-md"
                   onChange={(value) => handleChange('username', value)}
                   prefix={<IconUser />}
                 />
@@ -406,7 +405,6 @@ const RegisterForm = () => {
                   name="password"
                   mode="password"
                   size="large"
-                  className="!rounded-md"
                   onChange={(value) => handleChange('password', value)}
                   prefix={<IconLock />}
                 />
@@ -418,7 +416,6 @@ const RegisterForm = () => {
                   name="password2"
                   mode="password"
                   size="large"
-                  className="!rounded-md"
                   onChange={(value) => handleChange('password2', value)}
                   prefix={<IconLock />}
                 />
@@ -432,7 +429,6 @@ const RegisterForm = () => {
                       name="email"
                       type="email"
                       size="large"
-                      className="!rounded-md"
                       onChange={(value) => handleChange('email', value)}
                       prefix={<IconMail />}
                       suffix={
@@ -440,7 +436,6 @@ const RegisterForm = () => {
                           onClick={sendVerificationCode}
                           loading={verificationCodeLoading}
                           size="small"
-                          className="!rounded-md mr-2"
                         >
                           {t('获取验证码')}
                         </Button>
@@ -452,7 +447,6 @@ const RegisterForm = () => {
                       placeholder={t('输入验证码')}
                       name="verification_code"
                       size="large"
-                      className="!rounded-md"
                       onChange={(value) => handleChange('verification_code', value)}
                       prefix={<IconKey />}
                     />

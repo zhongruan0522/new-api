@@ -65,10 +65,6 @@ const AddUser = (props) => {
             </Title>
           </Space>
         }
-        headerStyle={{
-          borderBottom: '1px solid var(--semi-color-border)',
-          padding: '24px'
-        }}
         bodyStyle={{ padding: '0' }}
         visible={props.visible}
         width={isMobile() ? '100%' : 600}
@@ -77,7 +73,6 @@ const AddUser = (props) => {
             <Space>
               <Button
                 theme="solid"
-                className="!rounded-full"
                 onClick={() => formApiRef.current?.submitForm()}
                 icon={<IconSave />}
                 loading={loading}
@@ -86,7 +81,6 @@ const AddUser = (props) => {
               </Button>
               <Button
                 theme="light"
-                className="!rounded-full"
                 type="primary"
                 onClick={handleCancel}
                 icon={<IconClose />}
@@ -110,7 +104,7 @@ const AddUser = (props) => {
               formApiRef.current?.scrollToError();
             }}
           >
-            <div className="p-6 space-y-6">
+            <div className="p-2">
               <Card className="!rounded-2xl shadow-sm border-0">
                 <div className="flex items-center mb-2">
                   <Avatar size="small" color="blue" className="mr-2 shadow-md">
@@ -128,13 +122,17 @@ const AddUser = (props) => {
                       field='username'
                       label={t('用户名')}
                       placeholder={t('请输入用户名')}
-                      rules={[{ required: true, message: t('请输入用户名') }]} />
+                      rules={[{ required: true, message: t('请输入用户名') }]}
+                      showClear
+                    />
                   </Col>
                   <Col span={24}>
                     <Form.Input
                       field='display_name'
                       label={t('显示名称')}
-                      placeholder={t('请输入显示名称')} />
+                      placeholder={t('请输入显示名称')}
+                      showClear
+                    />
                   </Col>
                   <Col span={24}>
                     <Form.Input
@@ -142,13 +140,17 @@ const AddUser = (props) => {
                       label={t('密码')}
                       type='password'
                       placeholder={t('请输入密码')}
-                      rules={[{ required: true, message: t('请输入密码') }]} />
+                      rules={[{ required: true, message: t('请输入密码') }]}
+                      showClear
+                    />
                   </Col>
                   <Col span={24}>
                     <Form.Input
                       field='remark'
                       label={t('备注')}
-                      placeholder={t('请输入备注（仅管理员可见）')} />
+                      placeholder={t('请输入备注（仅管理员可见）')}
+                      showClear
+                    />
                   </Col>
                 </Row>
               </Card>

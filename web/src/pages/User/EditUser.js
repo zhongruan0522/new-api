@@ -134,7 +134,6 @@ const EditUser = (props) => {
             </Title>
           </Space>
         }
-        headerStyle={{ borderBottom: '1px solid var(--semi-color-border)', padding: '24px' }}
         bodyStyle={{ padding: 0 }}
         visible={props.visible}
         width={isMobile() ? '100%' : 600}
@@ -143,7 +142,6 @@ const EditUser = (props) => {
             <Space>
               <Button
                 theme='solid'
-                className='!rounded-full'
                 onClick={() => formApiRef.current?.submitForm()}
                 icon={<IconSave />}
                 loading={loading}
@@ -152,7 +150,6 @@ const EditUser = (props) => {
               </Button>
               <Button
                 theme='light'
-                className='!rounded-full'
                 type='primary'
                 onClick={handleCancel}
                 icon={<IconClose />}
@@ -172,7 +169,7 @@ const EditUser = (props) => {
             onSubmit={submit}
           >
             {({ values }) => (
-              <div className='p-6 space-y-6'>
+              <div className='p-2'>
                 {/* 基本信息 */}
                 <Card className='!rounded-2xl shadow-sm border-0'>
                   <div className='flex items-center mb-2'>

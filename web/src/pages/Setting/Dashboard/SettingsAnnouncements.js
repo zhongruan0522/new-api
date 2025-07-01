@@ -155,7 +155,6 @@ const SettingsAnnouncements = ({ options, refresh }) => {
             theme='light'
             type='tertiary'
             size='small'
-            className="!rounded-full"
             onClick={() => handleEditAnnouncement(record)}
           >
             {t('编辑')}
@@ -165,7 +164,6 @@ const SettingsAnnouncements = ({ options, refresh }) => {
             type='danger'
             theme='light'
             size='small'
-            className="!rounded-full"
             onClick={() => handleDeleteAnnouncement(record)}
           >
             {t('删除')}
@@ -365,7 +363,7 @@ const SettingsAnnouncements = ({ options, refresh }) => {
             theme='light'
             type='primary'
             icon={<Plus size={14} />}
-            className="!rounded-full w-full md:w-auto"
+            className="w-full md:w-auto"
             onClick={handleAddAnnouncement}
           >
             {t('添加公告')}
@@ -376,7 +374,7 @@ const SettingsAnnouncements = ({ options, refresh }) => {
             theme='light'
             onClick={handleBatchDelete}
             disabled={selectedRowKeys.length === 0}
-            className="!rounded-full w-full md:w-auto"
+            className="w-full md:w-auto"
           >
             {t('批量删除')} {selectedRowKeys.length > 0 && `(${selectedRowKeys.length})`}
           </Button>
@@ -386,7 +384,7 @@ const SettingsAnnouncements = ({ options, refresh }) => {
             loading={loading}
             disabled={!hasChanges}
             type='secondary'
-            className="!rounded-full w-full md:w-auto"
+            className="w-full md:w-auto"
           >
             {t('保存设置')}
           </Button>
@@ -471,7 +469,7 @@ const SettingsAnnouncements = ({ options, refresh }) => {
               style={{ padding: 30 }}
             />
           }
-          className="rounded-xl overflow-hidden"
+          className="overflow-hidden"
         />
       </Form.Section>
 
@@ -482,7 +480,6 @@ const SettingsAnnouncements = ({ options, refresh }) => {
         onCancel={() => setShowAnnouncementModal(false)}
         okText={t('保存')}
         cancelText={t('取消')}
-        className="rounded-xl"
         confirmLoading={modalLoading}
       >
         <Form
@@ -543,7 +540,6 @@ const SettingsAnnouncements = ({ options, refresh }) => {
         okText={t('确认删除')}
         cancelText={t('取消')}
         type="warning"
-        className="rounded-xl"
         okButtonProps={{
           type: 'danger',
           theme: 'solid'
@@ -566,7 +562,6 @@ const SettingsAnnouncements = ({ options, refresh }) => {
         onCancel={() => setShowContentModal(false)}
         okText={t('确定')}
         cancelText={t('取消')}
-        className="rounded-xl"
         width={800}
       >
         <TextArea

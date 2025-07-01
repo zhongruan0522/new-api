@@ -47,8 +47,6 @@ import { ITEMS_PER_PAGE } from '../../constants';
 import {
   IconEyeOpened,
   IconSearch,
-  IconSetting,
-  IconDescend
 } from '@douyinfe/semi-icons';
 import { useTableCompactMode } from '../../hooks/useTableCompactMode';
 
@@ -600,21 +598,18 @@ const LogsTable = () => {
             <Button
               theme="light"
               onClick={() => initDefaultColumns()}
-              className="!rounded-full"
             >
               {t('重置')}
             </Button>
             <Button
               theme="light"
               onClick={() => setShowColumnSelector(false)}
-              className="!rounded-full"
             >
               {t('取消')}
             </Button>
             <Button
               type='primary'
               onClick={() => setShowColumnSelector(false)}
-              className="!rounded-full"
             >
               {t('确定')}
             </Button>
@@ -684,8 +679,7 @@ const LogsTable = () => {
                 <Button
                   theme='light'
                   type='secondary'
-                  icon={<IconDescend />}
-                  className="!rounded-full w-full md:w-auto"
+                  className="w-full md:w-auto"
                   onClick={() => setCompactMode(!compactMode)}
                 >
                   {compactMode ? t('自适应列表') : t('紧凑列表')}
@@ -724,7 +718,6 @@ const LogsTable = () => {
                       field='task_id'
                       prefix={<IconSearch />}
                       placeholder={t('任务 ID')}
-                      className="!rounded-full"
                       showClear
                       pure
                     />
@@ -735,7 +728,6 @@ const LogsTable = () => {
                         field='channel_id'
                         prefix={<IconSearch />}
                         placeholder={t('渠道 ID')}
-                        className="!rounded-full"
                         showClear
                         pure
                       />
@@ -750,7 +742,6 @@ const LogsTable = () => {
                         type='primary'
                         htmlType='submit'
                         loading={loading}
-                        className="!rounded-full"
                       >
                         {t('查询')}
                       </Button>
@@ -765,16 +756,13 @@ const LogsTable = () => {
                             }, 100);
                           }
                         }}
-                        className="!rounded-full"
                       >
                         {t('重置')}
                       </Button>
                       <Button
                         theme='light'
                         type='tertiary'
-                        icon={<IconSetting />}
                         onClick={() => setShowColumnSelector(true)}
-                        className="!rounded-full"
                       >
                         {t('列设置')}
                       </Button>

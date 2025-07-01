@@ -8,14 +8,7 @@ import {
   renderQuota
 } from '../../helpers';
 
-import {
-  CheckCircle,
-  XCircle,
-  Minus,
-  HelpCircle,
-  Coins,
-  Ticket
-} from 'lucide-react';
+import { Ticket } from 'lucide-react';
 
 import { ITEMS_PER_PAGE } from '../../constants';
 import {
@@ -37,16 +30,8 @@ import {
   IllustrationNoResultDark
 } from '@douyinfe/semi-illustrations';
 import {
-  IconPlus,
-  IconCopy,
   IconSearch,
-  IconEyeOpened,
-  IconEdit,
-  IconDelete,
-  IconStop,
-  IconPlay,
   IconMore,
-  IconDescend
 } from '@douyinfe/semi-icons';
 import EditRedemption from '../../pages/Redemption/EditRedemption';
 import { useTranslation } from 'react-i18next';
@@ -68,31 +53,31 @@ const RedemptionsTable = () => {
   const renderStatus = (status, record) => {
     if (isExpired(record)) {
       return (
-        <Tag color='orange' size='large' shape='circle' prefixIcon={<Minus size={14} />}>{t('已过期')}</Tag>
+        <Tag color='orange' size='large' shape='circle'>{t('已过期')}</Tag>
       );
     }
     switch (status) {
       case 1:
         return (
-          <Tag color='green' size='large' shape='circle' prefixIcon={<CheckCircle size={14} />}>
+          <Tag color='green' size='large' shape='circle'>
             {t('未使用')}
           </Tag>
         );
       case 2:
         return (
-          <Tag color='red' size='large' shape='circle' prefixIcon={<XCircle size={14} />}>
+          <Tag color='red' size='large' shape='circle'>
             {t('已禁用')}
           </Tag>
         );
       case 3:
         return (
-          <Tag color='grey' size='large' shape='circle' prefixIcon={<Minus size={14} />}>
+          <Tag color='grey' size='large' shape='circle'>
             {t('已使用')}
           </Tag>
         );
       default:
         return (
-          <Tag color='black' size='large' shape='circle' prefixIcon={<HelpCircle size={14} />}>
+          <Tag color='black' size='large' shape='circle'>
             {t('未知状态')}
           </Tag>
         );
@@ -122,7 +107,7 @@ const RedemptionsTable = () => {
       render: (text, record, index) => {
         return (
           <div>
-            <Tag size={'large'} color={'grey'} shape='circle' prefixIcon={<Coins size={14} />}>
+            <Tag size={'large'} color={'grey'} shape='circle'>
               {renderQuota(parseInt(text))}
             </Tag>
           </div>
@@ -160,7 +145,6 @@ const RedemptionsTable = () => {
           {
             node: 'item',
             name: t('删除'),
-            icon: <IconDelete />,
             type: 'danger',
             onClick: () => {
               Modal.confirm({
@@ -180,7 +164,6 @@ const RedemptionsTable = () => {
           moreMenuItems.push({
             node: 'item',
             name: t('禁用'),
-            icon: <IconStop />,
             type: 'warning',
             onClick: () => {
               manageRedemption(record.id, 'disable', record);
@@ -190,7 +173,6 @@ const RedemptionsTable = () => {
           moreMenuItems.push({
             node: 'item',
             name: t('启用'),
-            icon: <IconPlay />,
             type: 'secondary',
             onClick: () => {
               manageRedemption(record.id, 'enable', record);
@@ -203,21 +185,17 @@ const RedemptionsTable = () => {
           <Space>
             <Popover content={record.key} style={{ padding: 20 }} position='top'>
               <Button
-                icon={<IconEyeOpened />}
                 theme='light'
                 type='tertiary'
                 size="small"
-                className="!rounded-full"
               >
                 {t('查看')}
               </Button>
             </Popover>
             <Button
-              icon={<IconCopy />}
               theme='light'
               type='secondary'
               size="small"
-              className="!rounded-full"
               onClick={async () => {
                 await copyText(record.key);
               }}
@@ -225,11 +203,9 @@ const RedemptionsTable = () => {
               {t('复制')}
             </Button>
             <Button
-              icon={<IconEdit />}
               theme='light'
               type='tertiary'
               size="small"
-              className="!rounded-full"
               onClick={() => {
                 setEditingRedemption(record);
                 setShowEdit(true);
@@ -244,11 +220,10 @@ const RedemptionsTable = () => {
               menu={moreMenuItems}
             >
               <Button
-                icon={<IconMore />}
                 theme='light'
                 type='tertiary'
                 size="small"
-                className="!rounded-full"
+                icon={<IconMore />}
               />
             </Dropdown>
           </Space>
@@ -451,8 +426,7 @@ const RedemptionsTable = () => {
           <Button
             theme='light'
             type='secondary'
-            icon={<IconDescend />}
-            className="!rounded-full w-full md:w-auto"
+            className="w-full md:w-auto"
             onClick={() => setCompactMode(!compactMode)}
           >
             {compactMode ? t('自适应列表') : t('紧凑列表')}
@@ -468,8 +442,7 @@ const RedemptionsTable = () => {
             <Button
               theme='light'
               type='primary'
-              icon={<IconPlus />}
-              className="!rounded-full w-full sm:w-auto"
+              className="w-full sm:w-auto"
               onClick={() => {
                 setEditingRedemption({
                   id: undefined,
@@ -481,8 +454,7 @@ const RedemptionsTable = () => {
             </Button>
             <Button
               type='warning'
-              icon={<IconCopy />}
-              className="!rounded-full w-full sm:w-auto"
+              className="w-full sm:w-auto"
               onClick={async () => {
                 if (selectedKeys.length === 0) {
                   showError(t('请至少选择一个兑换码！'));
@@ -501,8 +473,7 @@ const RedemptionsTable = () => {
           </div>
           <Button
             type='danger'
-            icon={<IconDelete />}
-            className="!rounded-full w-full sm:w-auto"
+            className="w-full sm:w-auto"
             onClick={() => {
               Modal.confirm({
                 title: t('确定清除所有失效兑换码？'),
@@ -546,7 +517,6 @@ const RedemptionsTable = () => {
                 field="searchKeyword"
                 prefix={<IconSearch />}
                 placeholder={t('关键字(id或者名称)')}
-                className="!rounded-full"
                 showClear
                 pure
               />
@@ -556,7 +526,7 @@ const RedemptionsTable = () => {
                 type="primary"
                 htmlType="submit"
                 loading={loading || searching}
-                className="!rounded-full flex-1 md:flex-initial md:w-auto"
+                className="flex-1 md:flex-initial md:w-auto"
               >
                 {t('查询')}
               </Button>
@@ -572,7 +542,7 @@ const RedemptionsTable = () => {
                     }, 100);
                   }
                 }}
-                className="!rounded-full flex-1 md:flex-initial md:w-auto"
+                className="flex-1 md:flex-initial md:w-auto"
               >
                 {t('重置')}
               </Button>

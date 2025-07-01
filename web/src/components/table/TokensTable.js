@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   API,
   copy,
@@ -9,7 +9,6 @@ import {
   renderQuota,
   getQuotaPerUnit
 } from '../../helpers';
-
 import { ITEMS_PER_PAGE } from '../../constants';
 import {
   Button,
@@ -29,32 +28,12 @@ import {
   IllustrationNoResult,
   IllustrationNoResultDark
 } from '@douyinfe/semi-illustrations';
-
 import {
-  CheckCircle,
-  Shield,
-  XCircle,
-  Clock,
-  Gauge,
-  HelpCircle,
-  Infinity,
-  Coins,
-  Key
-} from 'lucide-react';
-
-import {
-  IconPlus,
-  IconCopy,
   IconSearch,
   IconTreeTriangleDown,
-  IconEyeOpened,
-  IconEdit,
-  IconDelete,
-  IconStop,
-  IconPlay,
   IconMore,
-  IconDescend
 } from '@douyinfe/semi-icons';
+import { Key } from 'lucide-react';
 import EditToken from '../../pages/Token/EditToken';
 import { useTranslation } from 'react-i18next';
 import { useTableCompactMode } from '../../hooks/useTableCompactMode';
@@ -73,38 +52,38 @@ const TokensTable = () => {
       case 1:
         if (model_limits_enabled) {
           return (
-            <Tag color='green' size='large' shape='circle' prefixIcon={<Shield size={14} />}>
+            <Tag color='green' size='large' shape='circle' >
               {t('已启用：限制模型')}
             </Tag>
           );
         } else {
           return (
-            <Tag color='green' size='large' shape='circle' prefixIcon={<CheckCircle size={14} />}>
+            <Tag color='green' size='large' shape='circle' >
               {t('已启用')}
             </Tag>
           );
         }
       case 2:
         return (
-          <Tag color='red' size='large' shape='circle' prefixIcon={<XCircle size={14} />}>
+          <Tag color='red' size='large' shape='circle' >
             {t('已禁用')}
           </Tag>
         );
       case 3:
         return (
-          <Tag color='yellow' size='large' shape='circle' prefixIcon={<Clock size={14} />}>
+          <Tag color='yellow' size='large' shape='circle' >
             {t('已过期')}
           </Tag>
         );
       case 4:
         return (
-          <Tag color='grey' size='large' shape='circle' prefixIcon={<Gauge size={14} />}>
+          <Tag color='grey' size='large' shape='circle' >
             {t('已耗尽')}
           </Tag>
         );
       default:
         return (
-          <Tag color='black' size='large' shape='circle' prefixIcon={<HelpCircle size={14} />}>
+          <Tag color='black' size='large' shape='circle' >
             {t('未知状态')}
           </Tag>
         );
@@ -137,7 +116,7 @@ const TokensTable = () => {
       render: (text, record, index) => {
         return (
           <div>
-            <Tag size={'large'} color={'grey'} shape='circle' prefixIcon={<Coins size={14} />}>
+            <Tag size={'large'} color={'grey'} shape='circle' >
               {renderQuota(parseInt(text))}
             </Tag>
           </div>
@@ -164,7 +143,7 @@ const TokensTable = () => {
         return (
           <div>
             {record.unlimited_quota ? (
-              <Tag size={'large'} color={'white'} shape='circle' prefixIcon={<Infinity size={14} />}>
+              <Tag size={'large'} color={'white'} shape='circle' >
                 {t('无限制')}
               </Tag>
             ) : (
@@ -172,7 +151,6 @@ const TokensTable = () => {
                 size={'large'}
                 color={getQuotaColor(parseInt(text))}
                 shape='circle'
-                prefixIcon={<Coins size={14} />}
               >
                 {renderQuota(parseInt(text))}
               </Tag>
@@ -238,7 +216,6 @@ const TokensTable = () => {
           {
             node: 'item',
             name: t('查看'),
-            icon: <IconEyeOpened />,
             onClick: () => {
               Modal.info({
                 title: t('令牌详情'),
@@ -250,7 +227,6 @@ const TokensTable = () => {
           {
             node: 'item',
             name: t('删除'),
-            icon: <IconDelete />,
             type: 'danger',
             onClick: () => {
               Modal.confirm({
@@ -271,7 +247,6 @@ const TokensTable = () => {
           moreMenuItems.push({
             node: 'item',
             name: t('禁用'),
-            icon: <IconStop />,
             type: 'warning',
             onClick: () => {
               manageToken(record.id, 'disable', record);
@@ -281,7 +256,6 @@ const TokensTable = () => {
           moreMenuItems.push({
             node: 'item',
             name: t('启用'),
-            icon: <IconPlay />,
             type: 'secondary',
             onClick: () => {
               manageToken(record.id, 'enable', record);
@@ -292,7 +266,7 @@ const TokensTable = () => {
         return (
           <Space wrap>
             <SplitButtonGroup
-              className="!rounded-full overflow-hidden"
+              className="overflow-hidden"
               aria-label={t('项目操作按钮组')}
             >
               <Button
@@ -331,11 +305,9 @@ const TokensTable = () => {
             </SplitButtonGroup>
 
             <Button
-              icon={<IconCopy />}
               theme='light'
               type='secondary'
               size="small"
-              className="!rounded-full"
               onClick={async (text) => {
                 await copyText('sk-' + record.key);
               }}
@@ -344,11 +316,9 @@ const TokensTable = () => {
             </Button>
 
             <Button
-              icon={<IconEdit />}
               theme='light'
               type='tertiary'
               size="small"
-              className="!rounded-full"
               onClick={() => {
                 setEditingToken(record);
                 setShowEdit(true);
@@ -367,7 +337,6 @@ const TokensTable = () => {
                 theme='light'
                 type='tertiary'
                 size="small"
-                className="!rounded-full"
               />
             </Dropdown>
           </Space>
@@ -621,8 +590,7 @@ const TokensTable = () => {
           <Button
             theme="light"
             type="secondary"
-            icon={<IconDescend />}
-            className="!rounded-full w-full md:w-auto"
+            className="w-full md:w-auto"
             onClick={() => setCompactMode(!compactMode)}
           >
             {compactMode ? t('自适应列表') : t('紧凑列表')}
@@ -637,8 +605,7 @@ const TokensTable = () => {
           <Button
             theme="light"
             type="primary"
-            icon={<IconPlus />}
-            className="!rounded-full flex-1 md:flex-initial"
+            className="flex-1 md:flex-initial"
             onClick={() => {
               setEditingToken({
                 id: undefined,
@@ -651,8 +618,7 @@ const TokensTable = () => {
           <Button
             theme="light"
             type="warning"
-            icon={<IconCopy />}
-            className="!rounded-full flex-1 md:flex-initial"
+            className="flex-1 md:flex-initial"
             onClick={() => {
               if (selectedKeys.length === 0) {
                 showError(t('请至少选择一个令牌！'));
@@ -667,7 +633,6 @@ const TokensTable = () => {
                     <Button
                       type="primary"
                       theme="solid"
-                      icon={<IconCopy />}
                       onClick={async () => {
                         let content = '';
                         for (let i = 0; i < selectedKeys.length; i++) {
@@ -682,7 +647,6 @@ const TokensTable = () => {
                     </Button>
                     <Button
                       theme="light"
-                      icon={<IconCopy />}
                       onClick={async () => {
                         let content = '';
                         for (let i = 0; i < selectedKeys.length; i++) {
@@ -704,8 +668,7 @@ const TokensTable = () => {
           <Button
             theme="light"
             type="danger"
-            icon={<IconDelete />}
-            className="!rounded-full w-full md:w-auto"
+            className="w-full md:w-auto"
             onClick={() => {
               if (selectedKeys.length === 0) {
                 showError(t('请至少选择一个令牌！'));
@@ -743,7 +706,6 @@ const TokensTable = () => {
                 field="searchKeyword"
                 prefix={<IconSearch />}
                 placeholder={t('搜索关键字')}
-                className="!rounded-full"
                 showClear
                 pure
               />
@@ -753,7 +715,6 @@ const TokensTable = () => {
                 field="searchToken"
                 prefix={<IconSearch />}
                 placeholder={t('密钥')}
-                className="!rounded-full"
                 showClear
                 pure
               />
@@ -763,7 +724,7 @@ const TokensTable = () => {
                 type="primary"
                 htmlType="submit"
                 loading={loading || searching}
-                className="!rounded-full flex-1 md:flex-initial md:w-auto"
+                className="flex-1 md:flex-initial md:w-auto"
               >
                 {t('查询')}
               </Button>
@@ -778,7 +739,7 @@ const TokensTable = () => {
                     }, 100);
                   }
                 }}
-                className="!rounded-full flex-1 md:flex-initial md:w-auto"
+                className="flex-1 md:flex-initial md:w-auto"
               >
                 {t('重置')}
               </Button>

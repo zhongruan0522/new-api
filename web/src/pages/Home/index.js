@@ -149,6 +149,7 @@ const Home = () => {
                             type="primary"
                             onClick={handleCopyBaseURL}
                             icon={<IconCopy />}
+                            className="!rounded-full"
                           />
                         </div>
                       }

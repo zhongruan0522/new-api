@@ -102,7 +102,6 @@ const PasswordResetForm = () => {
                     placeholder={t('请输入您的邮箱地址')}
                     name="email"
                     size="large"
-                    className="!rounded-md"
                     value={email}
                     onChange={handleChange}
                     prefix={<IconMail />}

@@ -10,16 +10,6 @@ import {
   getChannelIcon,
   renderQuotaWithAmount
 } from '../../helpers/index.js';
-
-import {
-  CheckCircle,
-  XCircle,
-  AlertCircle,
-  HelpCircle,
-  Coins,
-  Tags,
-} from 'lucide-react';
-
 import { CHANNEL_OPTIONS, ITEMS_PER_PAGE, MODEL_TABLE_PAGE_SIZE } from '../../constants/index.js';
 import {
   Button,
@@ -50,12 +40,8 @@ import {
 import EditChannel from '../../pages/Channel/EditChannel.js';
 import {
   IconTreeTriangleDown,
-  IconPlus,
   IconSearch,
-  IconDelete,
   IconMore,
-  IconCopy,
-  IconSmallTriangleRight
 } from '@douyinfe/semi-icons';
 import { loadChannelModels, isMobile, copy } from '../../helpers';
 import EditTagModal from '../../pages/Channel/EditTagModal.js';
@@ -91,7 +77,6 @@ const ChannelsTable = () => {
     return (
       <Tag
         color='light-blue'
-        prefixIcon={<Tags size={14} />}
         size='large'
         shape='circle'
         type='light'
@@ -105,25 +90,25 @@ const ChannelsTable = () => {
     switch (status) {
       case 1:
         return (
-          <Tag size='large' color='green' shape='circle' prefixIcon={<CheckCircle size={14} />}>
+          <Tag size='large' color='green' shape='circle'>
             {t('已启用')}
           </Tag>
         );
       case 2:
         return (
-          <Tag size='large' color='red' shape='circle' prefixIcon={<XCircle size={14} />}>
+          <Tag size='large' color='red' shape='circle'>
             {t('已禁用')}
           </Tag>
         );
       case 3:
         return (
-          <Tag size='large' color='yellow' shape='circle' prefixIcon={<AlertCircle size={14} />}>
+          <Tag size='large' color='yellow' shape='circle'>
             {t('自动禁用')}
           </Tag>
         );
       default:
         return (
-          <Tag size='large' color='grey' shape='circle' prefixIcon={<HelpCircle size={14} />}>
+          <Tag size='large' color='grey' shape='circle'>
             {t('未知状态')}
           </Tag>
         );
@@ -346,7 +331,7 @@ const ChannelsTable = () => {
             <div>
               <Space spacing={1}>
                 <Tooltip content={t('已用额度')}>
-                  <Tag color='white' type='ghost' size='large' shape='circle' prefixIcon={<Coins size={14} />}>
+                  <Tag color='white' type='ghost' size='large' shape='circle'>
                     {renderQuota(record.used_quota)}
                   </Tag>
                 </Tooltip>
@@ -356,7 +341,6 @@ const ChannelsTable = () => {
                     type='ghost'
                     size='large'
                     shape='circle'
-                    prefixIcon={<Coins size={14} />}
                     onClick={() => updateChannelBalance(record)}
                   >
                     {renderQuotaWithAmount(record.balance)}
@@ -368,7 +352,7 @@ const ChannelsTable = () => {
         } else {
           return (
             <Tooltip content={t('已用额度')}>
-              <Tag color='white' type='ghost' size='large' shape='circle' prefixIcon={<Coins size={14} />}>
+              <Tag color='white' type='ghost' size='large' shape='circle'>
                 {renderQuota(record.used_quota)}
               </Tag>
             </Tooltip>
@@ -492,7 +476,6 @@ const ChannelsTable = () => {
             {
               node: 'item',
               name: t('删除'),
-              icon: <IconDelete />,
               type: 'danger',
               onClick: () => {
                 Modal.confirm({
@@ -509,7 +492,6 @@ const ChannelsTable = () => {
             {
               node: 'item',
               name: t('复制'),
-              icon: <IconCopy />,
               type: 'primary',
               onClick: () => {
                 Modal.confirm({
@@ -524,7 +506,7 @@ const ChannelsTable = () => {
           return (
             <Space wrap>
               <SplitButtonGroup
-                className="!rounded-full overflow-hidden"
+                className="overflow-hidden"
                 aria-label={t('测试单个渠道操作项目组')}
               >
                 <Button
@@ -550,7 +532,6 @@ const ChannelsTable = () => {
                   theme='light'
                   type='warning'
                   size="small"
-                  className="!rounded-full"
                   onClick={() => manageChannel(record.id, 'disable', record)}
                 >
                   {t('禁用')}
@@ -560,7 +541,6 @@ const ChannelsTable = () => {
                   theme='light'
                   type='secondary'
                   size="small"
-                  className="!rounded-full"
                   onClick={() => manageChannel(record.id, 'enable', record)}
                 >
                   {t('启用')}
@@ -571,7 +551,6 @@ const ChannelsTable = () => {
                 theme='light'
                 type='tertiary'
                 size="small"
-                className="!rounded-full"
                 onClick={() => {
                   setEditingChannel(record);
                   setShowEdit(true);
@@ -590,7 +569,6 @@ const ChannelsTable = () => {
                   theme='light'
                   type='tertiary'
                   size="small"
-                  className="!rounded-full"
                 />
               </Dropdown>
             </Space>
@@ -603,7 +581,6 @@ const ChannelsTable = () => {
                 theme='light'
                 type='secondary'
                 size="small"
-                className="!rounded-full"
                 onClick={() => manageTag(record.key, 'enable')}
               >
                 {t('启用全部')}
@@ -612,7 +589,6 @@ const ChannelsTable = () => {
                 theme='light'
                 type='warning'
                 size="small"
-                className="!rounded-full"
                 onClick={() => manageTag(record.key, 'disable')}
               >
                 {t('禁用全部')}
@@ -621,7 +597,6 @@ const ChannelsTable = () => {
                 theme='light'
                 type='tertiary'
                 size="small"
-                className="!rounded-full"
                 onClick={() => {
                   setShowEditTag(true);
                   setEditingTag(record.key);
@@ -694,21 +669,18 @@ const ChannelsTable = () => {
             <Button
               theme="light"
               onClick={() => initDefaultColumns()}
-              className="!rounded-full"
             >
               {t('重置')}
             </Button>
             <Button
               theme="light"
               onClick={() => setShowColumnSelector(false)}
-              className="!rounded-full"
             >
               {t('取消')}
             </Button>
             <Button
               type='primary'
               onClick={() => setShowColumnSelector(false)}
-              className="!rounded-full"
             >
               {t('确定')}
             </Button>
@@ -1508,7 +1480,7 @@ const ChannelsTable = () => {
             disabled={!enableBatchDelete}
             theme='light'
             type='danger'
-            className="!rounded-full w-full md:w-auto"
+            className="w-full md:w-auto"
             onClick={() => {
               Modal.confirm({
                 title: t('确定是否要删除所选通道？'),
@@ -1526,7 +1498,7 @@ const ChannelsTable = () => {
             theme='light'
             type='primary'
             onClick={() => setShowBatchSetTag(true)}
-            className="!rounded-full w-full md:w-auto"
+            className="w-full md:w-auto"
           >
             {t('批量设置标签')}
           </Button>
@@ -1541,7 +1513,7 @@ const ChannelsTable = () => {
                     size='small'
                     theme='light'
                     type='warning'
-                    className="!rounded-full w-full"
+                    className="w-full"
                     onClick={() => {
                       Modal.confirm({
                         title: t('确定？'),
@@ -1560,7 +1532,7 @@ const ChannelsTable = () => {
                     size='small'
                     theme='light'
                     type='secondary'
-                    className="!rounded-full w-full"
+                    className="w-full"
                     onClick={() => {
                       Modal.confirm({
                         title: t('确定？'),
@@ -1579,7 +1551,7 @@ const ChannelsTable = () => {
                     size='small'
                     theme='light'
                     type='danger'
-                    className="!rounded-full w-full"
+                    className="w-full"
                     onClick={() => {
                       Modal.confirm({
                         title: t('确定是否要删除禁用通道？'),
@@ -1598,7 +1570,7 @@ const ChannelsTable = () => {
                     size='small'
                     theme='light'
                     type='tertiary'
-                    className="!rounded-full w-full"
+                    className="w-full"
                     onClick={() => {
                       Modal.confirm({
                         title: t('确定是否要修复数据库一致性？'),
@@ -1615,7 +1587,7 @@ const ChannelsTable = () => {
               </Dropdown.Menu>
             }
           >
-            <Button size='small' theme='light' type='tertiary' className="!rounded-full w-full md:w-auto">
+            <Button size='small' theme='light' type='tertiary' className="w-full md:w-auto">
               {t('批量操作')}
             </Button>
           </Dropdown>
@@ -1624,7 +1596,7 @@ const ChannelsTable = () => {
             size='small'
             theme='light'
             type='secondary'
-            className="!rounded-full w-full md:w-auto"
+            className="w-full md:w-auto"
             onClick={() => setCompactMode(!compactMode)}
           >
             {compactMode ? t('自适应列表') : t('紧凑列表')}
@@ -1713,8 +1685,7 @@ const ChannelsTable = () => {
             size='small'
             theme='light'
             type='primary'
-            icon={<IconPlus />}
-            className="!rounded-full w-full md:w-auto"
+            className="w-full md:w-auto"
             onClick={() => {
               setEditingChannel({
                 id: undefined,
@@ -1729,7 +1700,7 @@ const ChannelsTable = () => {
             size='small'
             theme='light'
             type='primary'
-            className="!rounded-full w-full md:w-auto"
+            className="w-full md:w-auto"
             onClick={refresh}
           >
             {t('刷新')}
@@ -1740,7 +1711,7 @@ const ChannelsTable = () => {
             theme='light'
             type='tertiary'
             onClick={() => setShowColumnSelector(true)}
-            className="!rounded-full w-full md:w-auto"
+            className="w-full md:w-auto"
           >
             {t('列设置')}
           </Button>
@@ -1764,7 +1735,6 @@ const ChannelsTable = () => {
                 field="searchKeyword"
                 prefix={<IconSearch />}
                 placeholder={t('渠道ID，名称，密钥，API地址')}
-                className="!rounded-full"
                 showClear
                 pure
               />
@@ -1775,7 +1745,6 @@ const ChannelsTable = () => {
                 field="searchModel"
                 prefix={<IconSearch />}
                 placeholder={t('模型关键字')}
-                className="!rounded-full"
                 showClear
                 pure
               />
@@ -1789,7 +1758,7 @@ const ChannelsTable = () => {
                   { label: t('选择分组'), value: null },
                   ...groupOptions,
                 ]}
-                className="!rounded-full w-full"
+                className="w-full"
                 showClear
                 pure
                 onChange={() => {
@@ -1805,7 +1774,7 @@ const ChannelsTable = () => {
               type="primary"
               htmlType="submit"
               loading={loading || searching}
-              className="!rounded-full w-full md:w-auto"
+              className="w-full md:w-auto"
             >
               {t('查询')}
             </Button>
@@ -1821,7 +1790,7 @@ const ChannelsTable = () => {
                   }, 100);
                 }
               }}
-              className="!rounded-full w-full md:w-auto"
+              className="w-full md:w-auto"
             >
               {t('重置')}
             </Button>
@@ -1917,7 +1886,6 @@ const ChannelsTable = () => {
           value={batchSetTagValue}
           onChange={(v) => setBatchSetTagValue(v)}
           size='large'
-          className="!rounded-full"
         />
         <div className="mt-4">
           <Typography.Text type='secondary'>
@@ -1949,15 +1917,13 @@ const ChannelsTable = () => {
                     setModelSearchKeyword(v);
                     setModelTablePage(1);
                   }}
-                  className="!w-full !rounded-full"
+                  className="!w-full"
                   prefix={<IconSearch />}
                   showClear
                 />
 
                 <Button
                   theme='light'
-                  icon={<IconCopy />}
-                  className="!rounded-full"
                   onClick={() => {
                     if (selectedModelKeys.length === 0) {
                       showError(t('请先选择模型！'));
@@ -1978,7 +1944,6 @@ const ChannelsTable = () => {
                 <Button
                   theme='light'
                   type='primary'
-                  className="!rounded-full"
                   onClick={() => {
                     if (!currentTestChannel) return;
                     const successKeys = currentTestChannel.models
@@ -2008,7 +1973,6 @@ const ChannelsTable = () => {
               <Button
                 theme='light'
                 type='warning'
-                className="!rounded-full"
                 onClick={handleCloseModal}
               >
                 {t('停止测试')}
@@ -2017,7 +1981,6 @@ const ChannelsTable = () => {
               <Button
                 theme='light'
                 type='tertiary'
-                className="!rounded-full"
                 onClick={handleCloseModal}
               >
                 {t('取消')}
@@ -2026,7 +1989,6 @@ const ChannelsTable = () => {
             <Button
               theme='light'
               type='primary'
-              className="!rounded-full"
               onClick={batchTestModels}
               loading={isBatchTesting}
               disabled={isBatchTesting}
@@ -2071,7 +2033,7 @@ const ChannelsTable = () => {
 
                       if (isTesting) {
                         return (
-                          <Tag size='large' color='blue' className="!rounded-full">
+                          <Tag size='large' color='blue' shape='circle'>
                             {t('测试中')}
                           </Tag>
                         );
@@ -2079,7 +2041,7 @@ const ChannelsTable = () => {
 
                       if (!testResult) {
                         return (
-                          <Tag size='large' color='grey' className="!rounded-full">
+                          <Tag size='large' color='grey' shape='circle'>
                             {t('未开始')}
                           </Tag>
                         );
@@ -2090,7 +2052,7 @@ const ChannelsTable = () => {
                           <Tag
                             size='large'
                             color={testResult.success ? 'green' : 'red'}
-                            className="!rounded-full"
+                            shape='circle'
                           >
                             {testResult.success ? t('成功') : t('失败')}
                           </Tag>
@@ -2112,11 +2074,9 @@ const ChannelsTable = () => {
                         <Button
                           theme='light'
                           type='primary'
-                          className="!rounded-full"
                           onClick={() => testChannel(currentTestChannel, record.model)}
                           loading={isTesting}
                           size='small'
-                          icon={<IconSmallTriangleRight />}
                         >
                           {t('测试')}
                         </Button>
