@@ -78,8 +78,7 @@ const EditRedemption = (props) => {
 
   const submit = async (values) => {
     let name = values.name;
-    if (!isEdit && values.name === '') {
-
+    if (!isEdit && (!name || name === '')) {
       name = renderQuota(values.quota);
     }
     setLoading(true);
@@ -209,7 +208,7 @@ const EditRedemption = (props) => {
                         label={t('名称')}
                         placeholder={t('请输入名称')}
                         style={{ width: '100%' }}
-                        rules={isEdit ? [] : [{ required: true, message: t('请输入名称') }]}
+                        rules={!isEdit ? [] : [{ required: true, message: t('请输入名称') }]}
                         showClear
                       />
                     </Col>
