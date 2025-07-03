@@ -169,10 +169,8 @@ func InitResources() error {
 		common.SysLog("No .env file found, using default environment variables. If needed, please create a .env file and set the relevant variables.")
 	}
 
-	// 加载旧的(common)环境变量
-	common.InitCommonEnv()
-	// 加载constants的环境变量
-	constant.InitEnv()
+	// 加载环境变量
+	common.InitEnv()
 
 	// Initialize model settings
 	ratio_setting.InitRatioSettings()
@@ -192,6 +190,9 @@ func InitResources() error {
 
 	// Initialize options, should after model.InitDB()
 	model.InitOptionMap()
+
+	// 初始化模型
+	model.GetPricing()
 
 	// Initialize SQL Database
 	err = model.InitLogDB()

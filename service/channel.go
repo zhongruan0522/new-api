@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"one-api/common"
+	"one-api/constant"
 	"one-api/dto"
 	"one-api/model"
 	"one-api/setting/operation_setting"
@@ -48,7 +49,7 @@ func ShouldDisableChannel(channelType int, err *dto.OpenAIErrorWithStatusCode) b
 	}
 	if err.StatusCode == http.StatusForbidden {
 		switch channelType {
-		case common.ChannelTypeGemini:
+		case constant.ChannelTypeGemini:
 			return true
 		}
 	}

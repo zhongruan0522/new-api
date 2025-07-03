@@ -487,7 +487,7 @@ func GetUserModels(c *gin.Context) {
 	groups := setting.GetUserUsableGroups(user.Group)
 	var models []string
 	for group := range groups {
-		for _, g := range model.GetGroupModels(group) {
+		for _, g := range model.GetGroupEnabledModels(group) {
 			if !common.StringsContains(models, g) {
 				models = append(models, g)
 			}

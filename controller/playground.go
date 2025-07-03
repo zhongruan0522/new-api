@@ -65,7 +65,7 @@ func Playground(c *gin.Context) {
 		return
 	}
 	middleware.SetupContextForSelectedChannel(c, channel, playgroundRequest.Model)
-	c.Set(constant.ContextKeyRequestStartTime, time.Now())
+	common.SetContextKey(c, constant.ContextKeyRequestStartTime, time.Now())
 
 	// Write user context to ensure acceptUnsetRatio is available
 	userId := c.GetInt("id")

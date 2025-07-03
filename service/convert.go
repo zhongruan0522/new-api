@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"one-api/common"
+	"one-api/constant"
 	"one-api/dto"
 	"one-api/relay/channel/openrouter"
 	relaycommon "one-api/relay/common"
@@ -19,7 +20,7 @@ func ClaudeToOpenAIRequest(claudeRequest dto.ClaudeRequest, info *relaycommon.Re
 		Stream:      claudeRequest.Stream,
 	}
 
-	isOpenRouter := info.ChannelType == common.ChannelTypeOpenRouter
+	isOpenRouter := info.ChannelType == constant.ChannelTypeOpenRouter
 
 	if claudeRequest.Thinking != nil && claudeRequest.Thinking.Type == "enabled" {
 		if isOpenRouter {

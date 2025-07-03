@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"one-api/common"
+	"one-api/constant"
 	"one-api/dto"
 	"one-api/relay/channel/xinference"
 	relaycommon "one-api/relay/common"
@@ -21,7 +22,7 @@ func RerankHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Respo
 		println("reranker response body: ", string(responseBody))
 	}
 	var jinaResp dto.RerankResponse
-	if info.ChannelType == common.ChannelTypeXinference {
+	if info.ChannelType == constant.ChannelTypeXinference {
 		var xinRerankResponse xinference.XinRerankResponse
 		err = common.UnmarshalJson(responseBody, &xinRerankResponse)
 		if err != nil {
