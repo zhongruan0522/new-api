@@ -139,13 +139,23 @@ const EditToken = (props) => {
     if (formApiRef.current) {
       if (!isEdit) {
         formApiRef.current.setValues(getInitValues());
-      } else {
-        loadToken();
       }
     }
     loadModels();
     loadGroups();
   }, [props.editingToken.id]);
+
+  useEffect(() => {
+    if (props.visiable) {
+      if (isEdit) {
+        loadToken();
+      } else {
+        formApiRef.current?.setValues(getInitValues());
+      }
+    } else {
+      formApiRef.current?.reset();
+    }
+  }, [props.visiable, props.editingToken.id]);
 
   const generateRandomSuffix = () => {
     const characters =

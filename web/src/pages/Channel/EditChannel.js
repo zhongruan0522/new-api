@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
@@ -15,10 +15,7 @@ import {
   Space,
   Spin,
   Button,
-  Input,
   Typography,
-  Select,
-  TextArea,
   Checkbox,
   Banner,
   Modal,
@@ -26,6 +23,9 @@ import {
   Card,
   Tag,
   Avatar,
+  Form,
+  Row,
+  Col,
 } from '@douyinfe/semi-ui';
 import { getChannelModels, copy } from '../../helpers';
 import {
@@ -113,7 +113,12 @@ const EditChannel = (props) => {
   const [customModel, setCustomModel] = useState('');
   const [modalImageUrl, setModalImageUrl] = useState('');
   const [isModalOpenurl, setIsModalOpenurl] = useState(false);
+  const formApiRef = useRef(null);
+  const getInitValues = () => ({ ...originInputs });
   const handleInputChange = (name, value) => {
+    if (formApiRef.current) {
+      formApiRef.current.setValue(name, value);
+    }
     if (name === 'models' && Array.isArray(value)) {
       value = Array.from(new Set(value.map((m) => (m || '').trim())));
     }
@@ -205,6 +210,9 @@ const EditChannel = (props) => {
         );
       }
       setInputs(data);
+      if (formApiRef.current) {
+        formApiRef.current.setValues(data);
+      }
       if (data.auto_ban === 0) {
         setAutoBan(false);
       } else {
@@ -338,30 +346,51 @@ const EditChannel = (props) => {
   useEffect(() => {
     fetchModels().then();
     fetchGroups().then();
-    if (isEdit) {
-      loadChannel().then(() => { });
-    } else {
+    if (!isEdit) {
       setInputs(originInputs);
+      if (formApiRef.current) {
+        formApiRef.current.setValues(originInputs);
+      }
       let localModels = getChannelModels(inputs.type);
       setBasicModels(localModels);
       setInputs((inputs) => ({ ...inputs, models: localModels }));
     }
   }, [props.editingChannel.id]);
 
+  useEffect(() => {
+    if (formApiRef.current) {
+      formApiRef.current.setValues(inputs);
+    }
+  }, [inputs]);
+
+  useEffect(() => {
+    if (props.visible) {
+      if (isEdit) {
+        loadChannel();
+      } else {
+        formApiRef.current?.setValues(getInitValues());
+      }
+    } else {
+      formApiRef.current?.reset();
+    }
+  }, [props.visible, channelId]);
+
   const submit = async () => {
-    if (!isEdit && (inputs.name === '' || inputs.key === '')) {
+    const formValues = formApiRef.current ? formApiRef.current.getValues() : {};
+    let localInputs = { ...formValues };
+
+    if (!isEdit && (!localInputs.name || !localInputs.key)) {
       showInfo(t('请填写渠道名称和渠道密钥！'));
       return;
     }
-    if (inputs.models.length === 0) {
+    if (!Array.isArray(localInputs.models) || localInputs.models.length === 0) {
       showInfo(t('请至少选择一个模型！'));
       return;
     }
-    if (inputs.model_mapping !== '' && !verifyJSON(inputs.model_mapping)) {
+    if (localInputs.model_mapping && localInputs.model_mapping !== '' && !verifyJSON(localInputs.model_mapping)) {
       showInfo(t('模型映射必须是合法的 JSON 格式！'));
       return;
     }
-    let localInputs = { ...inputs };
     if (localInputs.base_url && localInputs.base_url.endsWith('/')) {
       localInputs.base_url = localInputs.base_url.slice(
         0,
@@ -372,14 +401,9 @@ const EditChannel = (props) => {
       localInputs.other = 'v2.1';
     }
     let res;
-    if (!Array.isArray(localInputs.models)) {
-      showError(t('提交失败，请勿重复提交！'));
-      handleCancel();
-      return;
-    }
-    localInputs.auto_ban = autoBan ? 1 : 0;
+    localInputs.auto_ban = localInputs.auto_ban ? 1 : 0;
     localInputs.models = localInputs.models.join(',');
-    localInputs.group = localInputs.groups.join(',');
+    localInputs.group = (localInputs.groups || []).join(',');
     if (isEdit) {
       res = await API.put(`/api/channel/`, {
         ...localInputs,
@@ -439,6 +463,11 @@ const EditChannel = (props) => {
     }
   };
 
+  const batchAllowed = !isEdit && inputs.type !== 41;
+  const batchExtra = batchAllowed ? (
+    <Checkbox checked={batch} onChange={() => setBatch(!batch)}>{t('批量创建')}</Checkbox>
+  ) : null;
+
   return (
     <>
       <SideSheet
@@ -459,7 +488,7 @@ const EditChannel = (props) => {
             <Space>
               <Button
                 theme="solid"
-                onClick={submit}
+                onClick={() => formApiRef.current?.submitForm()}
                 icon={<IconSave />}
               >
                 {t('提交')}
@@ -478,70 +507,66 @@ const EditChannel = (props) => {
         closeIcon={null}
         onCancel={() => handleCancel()}
       >
-        <Spin spinning={loading}>
-          <div className="p-2">
-            <Card className="!rounded-2xl shadow-sm border-0 mb-6">
-              {/* Header: Basic Info */}
-              <div className="flex items-center mb-2">
-                <Avatar size="small" color="blue" className="mr-2 shadow-md">
-                  <IconServer size={16} />
-                </Avatar>
-                <div>
-                  <Text className="text-lg font-medium">{t('基本信息')}</Text>
-                  <div className="text-xs text-gray-600">{t('渠道的基本配置信息')}</div>
-                </div>
-              </div>
+        <Form
+          key={isEdit ? 'edit' : 'new'}
+          initValues={originInputs}
+          getFormApi={(api) => (formApiRef.current = api)}
+          onSubmit={submit}
+        >
+          {() => (
+            <Spin spinning={loading}>
+              <div className="p-2">
+                <Card className="!rounded-2xl shadow-sm border-0 mb-6">
+                  {/* Header: Basic Info */}
+                  <div className="flex items-center mb-2">
+                    <Avatar size="small" color="blue" className="mr-2 shadow-md">
+                      <IconServer size={16} />
+                    </Avatar>
+                    <div>
+                      <Text className="text-lg font-medium">{t('基本信息')}</Text>
+                      <div className="text-xs text-gray-600">{t('渠道的基本配置信息')}</div>
+                    </div>
+                  </div>
 
-              <div className="space-y-4">
-                <div>
-                  <Text strong className="block mb-2">{t('类型')}</Text>
-                  <Select
-                    name='type'
-                    required
+                  <Form.Select
+                    field='type'
+                    label={t('类型')}
+                    placeholder={t('请选择渠道类型')}
+                    rules={[{ required: true, message: t('请选择渠道类型') }]}
                     optionList={CHANNEL_OPTIONS}
-                    value={inputs.type}
-                    onChange={(value) => handleInputChange('type', value)}
                     style={{ width: '100%' }}
                     filter
                     searchPosition='dropdown'
-                    placeholder={t('请选择渠道类型')}
+                    onChange={(value) => handleInputChange('type', value)}
                   />
-                </div>
 
-                <div>
-                  <Text strong className="block mb-2">{t('名称')}</Text>
-                  <Input
-                    required
-                    name='name'
+                  <Form.Input
+                    field='name'
+                    label={t('名称')}
                     placeholder={t('请为渠道命名')}
-                    onChange={(value) => {
-                      handleInputChange('name', value);
-                    }}
-                    value={inputs.name}
+                    rules={[{ required: true, message: t('请为渠道命名') }]}
+                    showClear
+                    onChange={(value) => handleInputChange('name', value)}
                     autoComplete='new-password'
                   />
-                </div>
 
-                <div>
-                  <Text strong className="block mb-2">{t('密钥')}</Text>
                   {batch ? (
-                    <TextArea
-                      name='key'
-                      required
+                    <Form.TextArea
+                      field='key'
+                      label={t('密钥')}
                       placeholder={t('请输入密钥，一行一个')}
-                      onChange={(value) => {
-                        handleInputChange('key', value);
-                      }}
-                      value={inputs.key}
+                      rules={isEdit ? [] : [{ required: true, message: t('请输入密钥') }]}
                       autosize={{ minRows: 6, maxRows: 6 }}
                       autoComplete='new-password'
+                      onChange={(value) => handleInputChange('key', value)}
+                      extraText={batchExtra}
                     />
                   ) : (
                     <>
                       {inputs.type === 41 ? (
-                        <TextArea
-                          name='key'
-                          required
+                        <Form.TextArea
+                          field='key'
+                          label={t('密钥')}
                           placeholder={
                             '{\n' +
                             '  "type": "service_account",\n' +
@@ -557,575 +582,467 @@ const EditChannel = (props) => {
                             '  "universe_domain": "googleapis.com"\n' +
                             '}'
                           }
-                          onChange={(value) => {
-                            handleInputChange('key', value);
-                          }}
+                          rules={isEdit ? [] : [{ required: true, message: t('请输入密钥') }]}
                           autosize={{ minRows: 10 }}
-                          value={inputs.key}
                           autoComplete='new-password'
+                          onChange={(value) => handleInputChange('key', value)}
+                          extraText={batchExtra}
                         />
                       ) : (
-                        <Input
-                          name='key'
-                          required
+                        <Form.Input
+                          field='key'
+                          label={t('密钥')}
                           placeholder={t(type2secretPrompt(inputs.type))}
-                          onChange={(value) => {
-                            handleInputChange('key', value);
-                          }}
-                          value={inputs.key}
+                          rules={isEdit ? [] : [{ required: true, message: t('请输入密钥') }]}
                           autoComplete='new-password'
+                          onChange={(value) => handleInputChange('key', value)}
+                          extraText={batchExtra}
                         />
                       )}
                     </>
                   )}
-                </div>
+                </Card>
 
-                {!isEdit && (
-                  <div className="flex items-center">
-                    <Checkbox
-                      checked={batch}
-                      onChange={() => setBatch(!batch)}
-                    />
-                    <Text strong className="ml-2">{t('批量创建')}</Text>
+                {/* API Configuration Card */}
+                <Card className="!rounded-2xl shadow-sm border-0 mb-6">
+                  {/* Header: API Config */}
+                  <div className="flex items-center mb-2">
+                    <Avatar size="small" color="green" className="mr-2 shadow-md">
+                      <IconGlobe size={16} />
+                    </Avatar>
+                    <div>
+                      <Text className="text-lg font-medium">{t('API 配置')}</Text>
+                      <div className="text-xs text-gray-600">{t('API 地址和相关配置')}</div>
+                    </div>
                   </div>
-                )}
-              </div>
-            </Card>
 
-            {/* API Configuration Card */}
-            <Card className="!rounded-2xl shadow-sm border-0 mb-6">
-              {/* Header: API Config */}
-              <div className="flex items-center mb-2">
-                <Avatar size="small" color="green" className="mr-2 shadow-md">
-                  <IconGlobe size={16} />
-                </Avatar>
-                <div>
-                  <Text className="text-lg font-medium">{t('API 配置')}</Text>
-                  <div className="text-xs text-gray-600">{t('API 地址和相关配置')}</div>
-                </div>
-              </div>
+                  {inputs.type === 40 && (
+                    <Banner
+                      type='info'
+                      description={
+                        <div>
+                          <Text strong>{t('邀请链接')}:</Text>
+                          <Text
+                            link
+                            underline
+                            className="ml-2 cursor-pointer"
+                            onClick={() => window.open('https://cloud.siliconflow.cn/i/hij0YNTZ')}
+                          >
+                            https://cloud.siliconflow.cn/i/hij0YNTZ
+                          </Text>
+                        </div>
+                      }
+                      className='!rounded-lg'
+                    />
+                  )}
 
-              <div className="space-y-4">
-                {inputs.type === 40 && (
-                  <Banner
-                    type='info'
-                    description={
+                  {inputs.type === 3 && (
+                    <>
+                      <Banner
+                        type='warning'
+                        description={t('2025年5月10日后添加的渠道，不需要再在部署的时候移除模型名称中的"."')}
+                        className='!rounded-lg'
+                      />
                       <div>
-                        <Text strong>{t('邀请链接')}:</Text>
-                        <Text
-                          link
-                          underline
-                          className="ml-2 cursor-pointer"
-                          onClick={() => window.open('https://cloud.siliconflow.cn/i/hij0YNTZ')}
-                        >
-                          https://cloud.siliconflow.cn/i/hij0YNTZ
-                        </Text>
+                        <Form.Input
+                          field='base_url'
+                          label='AZURE_OPENAI_ENDPOINT'
+                          placeholder={t('请输入 AZURE_OPENAI_ENDPOINT，例如：https://docs-test-001.openai.azure.com')}
+                          onChange={(value) => handleInputChange('base_url', value)}
+                          showClear
+                        />
                       </div>
-                    }
-                  />
-                )}
+                      <div>
+                        <Form.Input
+                          field='other'
+                          label={t('默认 API 版本')}
+                          placeholder={t('请输入默认 API 版本，例如：2025-04-01-preview')}
+                          onChange={(value) => handleInputChange('other', value)}
+                          showClear
+                        />
+                      </div>
+                    </>
+                  )}
 
-                {inputs.type === 3 && (
-                  <>
+                  {inputs.type === 8 && (
+                    <>
+                      <Banner
+                        type='warning'
+                        description={t('如果你对接的是上游One API或者New API等转发项目，请使用OpenAI类型，不要使用此类型，除非你知道你在做什么。')}
+                        className='!rounded-lg'
+                      />
+                      <div>
+                        <Form.Input
+                          field='base_url'
+                          label={t('完整的 Base URL，支持变量{model}')}
+                          placeholder={t('请输入完整的URL，例如：https://api.openai.com/v1/chat/completions')}
+                          onChange={(value) => handleInputChange('base_url', value)}
+                          showClear
+                        />
+                      </div>
+                    </>
+                  )}
+
+                  {inputs.type === 37 && (
                     <Banner
                       type='warning'
-                      description={t('2025年5月10日后添加的渠道，不需要再在部署的时候移除模型名称中的"."')}
+                      description={t('Dify渠道只适配chatflow和agent，并且agent不支持图片！')}
                       className='!rounded-lg'
                     />
+                  )}
+
+                  {inputs.type !== 3 && inputs.type !== 8 && inputs.type !== 22 && inputs.type !== 36 && inputs.type !== 45 && (
                     <div>
-                      <Text strong className="block mb-2">AZURE_OPENAI_ENDPOINT</Text>
-                      <Input
-                        name='azure_base_url'
-                        placeholder={t('请输入 AZURE_OPENAI_ENDPOINT，例如：https://docs-test-001.openai.azure.com')}
+                      <Form.Input
+                        field='base_url'
+                        label={t('API地址')}
+                        placeholder={t('此项可选，用于通过自定义API地址来进行 API 调用，末尾不要带/v1和/')}
                         onChange={(value) => handleInputChange('base_url', value)}
-                        value={inputs.base_url}
-                        autoComplete='new-password'
+                        showClear
+                        extraText={t('对于官方渠道，new-api已经内置地址，除非是第三方代理站点或者Azure的特殊接入地址，否则不需要填写')}
                       />
                     </div>
-                    <div>
-                      <Text strong className="block mb-2">{t('默认 API 版本')}</Text>
-                      <Input
-                        name='azure_other'
-                        placeholder={t('请输入默认 API 版本，例如：2025-04-01-preview')}
-                        onChange={(value) => handleInputChange('other', value)}
-                        value={inputs.other}
-                        autoComplete='new-password'
-                      />
-                    </div>
-                  </>
-                )}
+                  )}
 
-                {inputs.type === 8 && (
-                  <>
-                    <Banner
-                      type='warning'
-                      description={t('如果你对接的是上游One API或者New API等转发项目，请使用OpenAI类型，不要使用此类型，除非你知道你在做什么。')}
-                      className='!rounded-lg'
-                    />
+                  {inputs.type === 22 && (
                     <div>
-                      <Text strong className="block mb-2">{t('完整的 Base URL，支持变量{model}')}</Text>
-                      <Input
-                        name='base_url'
-                        placeholder={t('请输入完整的URL，例如：https://api.openai.com/v1/chat/completions')}
+                      <Form.Input
+                        field='base_url'
+                        label={t('私有部署地址')}
+                        placeholder={t('请输入私有部署地址，格式为：https://fastgpt.run/api/openapi')}
                         onChange={(value) => handleInputChange('base_url', value)}
-                        value={inputs.base_url}
-                        autoComplete='new-password'
+                        showClear
                       />
                     </div>
-                  </>
-                )}
+                  )}
 
-                {inputs.type === 37 && (
-                  <Banner
-                    type='warning'
-                    description={t('Dify渠道只适配chatflow和agent，并且agent不支持图片！')}
-                    className='!rounded-lg'
-                  />
-                )}
+                  {inputs.type === 36 && (
+                    <div>
+                      <Form.Input
+                        field='base_url'
+                        label={t('注意非Chat API，请务必填写正确的API地址，否则可能导致无法使用')}
+                        placeholder={t('请输入到 /suno 前的路径，通常就是域名，例如：https://api.example.com')}
+                        onChange={(value) => handleInputChange('base_url', value)}
+                        showClear
+                      />
+                    </div>
+                  )}
+                </Card>
 
-                {inputs.type !== 3 && inputs.type !== 8 && inputs.type !== 22 && inputs.type !== 36 && inputs.type !== 45 && (
-                  <div>
-                    <Text strong className="block mb-2">{t('API地址')}</Text>
-                    <Input
-                      name='base_url'
-                      placeholder={t('此项可选，用于通过自定义API地址来进行 API 调用，末尾不要带/v1和/')}
-                      onChange={(value) => handleInputChange('base_url', value)}
-                      value={inputs.base_url}
-                      autoComplete='new-password'
-                    />
-                    <Text type="tertiary" className="mt-1 text-xs">
-                      {t('对于官方渠道，new-api已经内置地址，除非是第三方代理站点或者Azure的特殊接入地址，否则不需要填写')}
-                    </Text>
+                {/* Model Configuration Card */}
+                <Card className="!rounded-2xl shadow-sm border-0 mb-6">
+                  {/* Header: Model Config */}
+                  <div className="flex items-center mb-2">
+                    <Avatar size="small" color="purple" className="mr-2 shadow-md">
+                      <IconCode size={16} />
+                    </Avatar>
+                    <div>
+                      <Text className="text-lg font-medium">{t('模型配置')}</Text>
+                      <div className="text-xs text-gray-600">{t('模型选择和映射设置')}</div>
+                    </div>
                   </div>
-                )}
 
-                {inputs.type === 22 && (
-                  <div>
-                    <Text strong className="block mb-2">{t('私有部署地址')}</Text>
-                    <Input
-                      name='base_url'
-                      placeholder={t('请输入私有部署地址，格式为：https://fastgpt.run/api/openapi')}
-                      onChange={(value) => handleInputChange('base_url', value)}
-                      value={inputs.base_url}
-                      autoComplete='new-password'
-                    />
-                  </div>
-                )}
-
-                {inputs.type === 36 && (
-                  <div>
-                    <Text strong className="block mb-2">
-                      {t('注意非Chat API，请务必填写正确的API地址，否则可能导致无法使用')}
-                    </Text>
-                    <Input
-                      name='base_url'
-                      placeholder={t('请输入到 /suno 前的路径，通常就是域名，例如：https://api.example.com')}
-                      onChange={(value) => handleInputChange('base_url', value)}
-                      value={inputs.base_url}
-                      autoComplete='new-password'
-                    />
-                  </div>
-                )}
-              </div>
-            </Card>
-
-            {/* Model Configuration Card */}
-            <Card className="!rounded-2xl shadow-sm border-0 mb-6">
-              {/* Header: Model Config */}
-              <div className="flex items-center mb-2">
-                <Avatar size="small" color="purple" className="mr-2 shadow-md">
-                  <IconCode size={16} />
-                </Avatar>
-                <div>
-                  <Text className="text-lg font-medium">{t('模型配置')}</Text>
-                  <div className="text-xs text-gray-600">{t('模型选择和映射设置')}</div>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <Text strong className="block mb-2">{t('模型')}</Text>
-                  <Select
-                    placeholder={t('请选择该渠道所支持的模型')}
-                    name='models'
-                    required
+                  <Form.Select
+                    field='models'
+                    label={t('模型')}
+                    placeholder={isEdit ? t('请选择该渠道所支持的模型') : t('创建后可在编辑渠道时获取上游模型列表')}
+                    rules={[{ required: true, message: t('请选择模型') }]}
                     multiple
-                    selection
                     filter
                     searchPosition='dropdown'
-                    onChange={(value) => handleInputChange('models', value)}
-                    value={inputs.models}
-                    autoComplete='new-password'
                     optionList={modelOptions}
+                    style={{ width: '100%' }}
+                    onChange={(value) => handleInputChange('models', value)}
+                    extraText={(
+                      <Space wrap>
+                        <Button size='small' type='primary' onClick={() => handleInputChange('models', basicModels)}>
+                          {t('填入相关模型')}
+                        </Button>
+                        <Button size='small' type='secondary' onClick={() => handleInputChange('models', fullModels)}>
+                          {t('填入所有模型')}
+                        </Button>
+                        {isEdit && (
+                          <Button size='small' type='tertiary' onClick={() => fetchUpstreamModelList('models')}>
+                            {t('获取模型列表')}
+                          </Button>
+                        )}
+                        <Button size='small' type='warning' onClick={() => handleInputChange('models', [])}>
+                          {t('清除所有模型')}
+                        </Button>
+                        <Button
+                          size='small'
+                          type='tertiary'
+                          onClick={() => {
+                            if (inputs.models.length === 0) {
+                              showInfo(t('没有模型可以复制'));
+                              return;
+                            }
+                            try {
+                              copy(inputs.models.join(','));
+                              showSuccess(t('模型列表已复制到剪贴板'));
+                            } catch (error) {
+                              showError(t('复制失败'));
+                            }
+                          }}
+                        >
+                          {t('复制所有模型')}
+                        </Button>
+                      </Space>
+                    )}
                   />
-                </div>
 
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    type='primary'
-                    onClick={() => handleInputChange('models', basicModels)}
-                  >
-                    {t('填入相关模型')}
-                  </Button>
-                  <Button
-                    type='secondary'
-                    onClick={() => handleInputChange('models', fullModels)}
-                  >
-                    {t('填入所有模型')}
-                  </Button>
-                  {isEdit ? (
-                    <Button
-                      type='tertiary'
-                      onClick={() => fetchUpstreamModelList('models')}
-                    >
-                      {t('获取模型列表')}
-                    </Button>
-                  ) : null}
-                  <Button
-                    type='warning'
-                    onClick={() => handleInputChange('models', [])}
-                  >
-                    {t('清除所有模型')}
-                  </Button>
-                  <Button
-                    type='tertiary'
-                    onClick={() => {
-                      if (inputs.models.length === 0) {
-                        showInfo(t('没有模型可以复制'));
-                        return;
-                      }
-                      try {
-                        copy(inputs.models.join(','));
-                        showSuccess(t('模型列表已复制到剪贴板'));
-                      } catch (error) {
-                        showError(t('复制失败'));
-                      }
-                    }}
-                  >
-                    {t('复制所有模型')}
-                  </Button>
-                </div>
-
-                {!isEdit && (
-                  <Banner
-                    type='info'
-                    description={t('创建后可在编辑渠道时获取上游模型列表')}
-                    className='!rounded-lg'
-                  />
-                )}
-
-                <div>
-                  <Input
-                    addonAfter={
-                      <Button type='primary' onClick={addCustomModels} className="!rounded-r-lg">
+                  <Form.Input
+                    field='custom_model'
+                    label={t('自定义模型名称')}
+                    placeholder={t('输入自定义模型名称')}
+                    onChange={(value) => setCustomModel(value.trim())}
+                    value={customModel}
+                    suffix={
+                      <Button size='small' type='primary' onClick={addCustomModels}>
                         {t('填入')}
                       </Button>
                     }
-                    placeholder={t('输入自定义模型名称')}
-                    value={customModel}
-                    onChange={(value) => setCustomModel(value.trim())}
                   />
-                </div>
 
-                <div>
-                  <Text strong className="block mb-2">{t('模型重定向')}</Text>
-                  <TextArea
+                  <Form.Input
+                    field='test_model'
+                    label={t('默认测试模型')}
+                    placeholder={t('不填则为模型列表第一个')}
+                    onChange={(value) => handleInputChange('test_model', value)}
+                    showClear
+                  />
+
+                  <Form.TextArea
+                    field='model_mapping'
+                    label={t('模型重定向')}
                     placeholder={
                       t('此项可选，用于修改请求体中的模型名称，为一个 JSON 字符串，键为请求中模型名称，值为要替换的模型名称，例如：') +
                       `\n${JSON.stringify(MODEL_MAPPING_EXAMPLE, null, 2)}`
                     }
-                    name='model_mapping'
-                    onChange={(value) => handleInputChange('model_mapping', value)}
                     autosize
-                    value={inputs.model_mapping}
-                    autoComplete='new-password'
+                    onChange={(value) => handleInputChange('model_mapping', value)}
+                    extraText={
+                      <Text
+                        className="!text-semi-color-primary cursor-pointer"
+                        onClick={() => handleInputChange('model_mapping', JSON.stringify(MODEL_MAPPING_EXAMPLE, null, 2))}
+                      >
+                        {t('填入模板')}
+                      </Text>
+                    }
+                    showClear
                   />
-                  <Text
-                    className="!text-semi-color-primary cursor-pointer mt-1 block"
-                    onClick={() => handleInputChange('model_mapping', JSON.stringify(MODEL_MAPPING_EXAMPLE, null, 2))}
-                  >
-                    {t('填入模板')}
-                  </Text>
-                </div>
+                </Card>
 
-                <div>
-                  <Text strong className="block mb-2">{t('默认测试模型')}</Text>
-                  <Input
-                    name='test_model'
-                    placeholder={t('不填则为模型列表第一个')}
-                    onChange={(value) => handleInputChange('test_model', value)}
-                    value={inputs.test_model}
-                  />
-                </div>
-              </div>
-            </Card>
+                {/* Advanced Settings Card */}
+                <Card className="!rounded-2xl shadow-sm border-0 mb-6">
+                  {/* Header: Advanced Settings */}
+                  <div className="flex items-center mb-2">
+                    <Avatar size="small" color="orange" className="mr-2 shadow-md">
+                      <IconSetting size={16} />
+                    </Avatar>
+                    <div>
+                      <Text className="text-lg font-medium">{t('高级设置')}</Text>
+                      <div className="text-xs text-gray-600">{t('渠道的高级配置选项')}</div>
+                    </div>
+                  </div>
 
-            {/* Advanced Settings Card */}
-            <Card className="!rounded-2xl shadow-sm border-0 mb-6">
-              {/* Header: Advanced Settings */}
-              <div className="flex items-center mb-2">
-                <Avatar size="small" color="orange" className="mr-2 shadow-md">
-                  <IconSetting size={16} />
-                </Avatar>
-                <div>
-                  <Text className="text-lg font-medium">{t('高级设置')}</Text>
-                  <div className="text-xs text-gray-600">{t('渠道的高级配置选项')}</div>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <Text strong className="block mb-2">{t('分组')}</Text>
-                  <Select
+                  <Form.Select
+                    field='groups'
+                    label={t('分组')}
                     placeholder={t('请选择可以使用该渠道的分组')}
-                    name='groups'
-                    required
                     multiple
-                    selection
                     allowAdditions
                     additionLabel={t('请在系统设置页面编辑分组倍率以添加新的分组：')}
-                    onChange={(value) => handleInputChange('groups', value)}
-                    value={inputs.groups}
-                    autoComplete='new-password'
                     optionList={groupOptions}
+                    style={{ width: '100%' }}
+                    onChange={(value) => handleInputChange('groups', value)}
                   />
-                </div>
 
-                {inputs.type === 18 && (
-                  <div>
-                    <Text strong className="block mb-2">{t('模型版本')}</Text>
-                    <Input
-                      name='other'
+                  {inputs.type === 18 && (
+                    <Form.Input
+                      field='other'
+                      label={t('模型版本')}
                       placeholder={'请输入星火大模型版本，注意是接口地址中的版本号，例如：v2.1'}
                       onChange={(value) => handleInputChange('other', value)}
-                      value={inputs.other}
-                      autoComplete='new-password'
+                      showClear
                     />
-                  </div>
-                )}
+                  )}
 
-                {inputs.type === 41 && (
-                  <div>
-                    <Text strong className="block mb-2">{t('部署地区')}</Text>
-                    <TextArea
-                      name='other'
+                  {inputs.type === 41 && (
+                    <Form.TextArea
+                      field='other'
+                      label={t('部署地区')}
                       placeholder={t(
-                        '请输入部署地区，例如：us-central1\n支持使用模型映射格式\n' +
-                        '{\n' +
-                        '    "default": "us-central1",\n' +
-                        '    "claude-3-5-sonnet-20240620": "europe-west1"\n' +
-                        '}'
+                        '请输入部署地区，例如：us-central1\n支持使用模型映射格式\n{\n    "default": "us-central1",\n    "claude-3-5-sonnet-20240620": "europe-west1"\n}'
                       )}
                       autosize={{ minRows: 2 }}
                       onChange={(value) => handleInputChange('other', value)}
-                      value={inputs.other}
-                      autoComplete='new-password'
+                      extraText={
+                        <Text
+                          className="!text-semi-color-primary cursor-pointer"
+                          onClick={() => handleInputChange('other', JSON.stringify(REGION_EXAMPLE, null, 2))}
+                        >
+                          {t('填入模板')}
+                        </Text>
+                      }
                     />
-                    <Text
-                      className="!text-semi-color-primary cursor-pointer mt-1 block"
-                      onClick={() => handleInputChange('other', JSON.stringify(REGION_EXAMPLE, null, 2))}
-                    >
-                      {t('填入模板')}
-                    </Text>
-                  </div>
-                )}
+                  )}
 
-                {inputs.type === 21 && (
-                  <div>
-                    <Text strong className="block mb-2">{t('知识库 ID')}</Text>
-                    <Input
-                      name='other'
+                  {inputs.type === 21 && (
+                    <Form.Input
+                      field='other'
+                      label={t('知识库 ID')}
                       placeholder={'请输入知识库 ID，例如：123456'}
                       onChange={(value) => handleInputChange('other', value)}
-                      value={inputs.other}
-                      autoComplete='new-password'
+                      showClear
                     />
-                  </div>
-                )}
+                  )}
 
-                {inputs.type === 39 && (
-                  <div>
-                    <Text strong className="block mb-2">Account ID</Text>
-                    <Input
-                      name='other'
+                  {inputs.type === 39 && (
+                    <Form.Input
+                      field='other'
+                      label='Account ID'
                       placeholder={'请输入Account ID，例如：d6b5da8hk1awo8nap34ube6gh'}
                       onChange={(value) => handleInputChange('other', value)}
-                      value={inputs.other}
-                      autoComplete='new-password'
+                      showClear
                     />
-                  </div>
-                )}
+                  )}
 
-                {inputs.type === 49 && (
-                  <div>
-                    <Text strong className="block mb-2">{t('智能体ID')}</Text>
-                    <Input
-                      name='other'
+                  {inputs.type === 49 && (
+                    <Form.Input
+                      field='other'
+                      label={t('智能体ID')}
                       placeholder={'请输入智能体ID，例如：7342866812345'}
                       onChange={(value) => handleInputChange('other', value)}
-                      value={inputs.other}
-                      autoComplete='new-password'
+                      showClear
                     />
-                  </div>
-                )}
+                  )}
 
-                <div>
-                  <Text strong className="block mb-2">{t('渠道标签')}</Text>
-                  <Input
-                    name='tag'
+                  {inputs.type === 1 && (
+                    <Form.Input
+                      field='openai_organization'
+                      label={t('组织')}
+                      placeholder={t('请输入组织org-xxx')}
+                      showClear
+                      helpText={t('组织，可选，不填则为默认组织')}
+                      onChange={(value) => handleInputChange('openai_organization', value)}
+                    />
+                  )}
+
+                  <Form.Input
+                    field='tag'
+                    label={t('渠道标签')}
                     placeholder={t('渠道标签')}
+                    showClear
                     onChange={(value) => handleInputChange('tag', value)}
-                    value={inputs.tag}
-                    autoComplete='new-password'
                   />
-                </div>
 
-                <div>
-                  <Text strong className="block mb-2">{t('渠道优先级')}</Text>
-                  <Input
-                    name='priority'
-                    placeholder={t('渠道优先级')}
-                    onChange={(value) => {
-                      const number = parseInt(value);
-                      if (isNaN(number)) {
-                        handleInputChange('priority', value);
-                      } else {
-                        handleInputChange('priority', number);
-                      }
-                    }}
-                    value={inputs.priority}
-                    autoComplete='new-password'
+                  <Row gutter={12}>
+                    <Col span={12}>
+                      <Form.InputNumber
+                        field='priority'
+                        label={t('渠道优先级')}
+                        placeholder={t('渠道优先级')}
+                        min={0}
+                        onNumberChange={(value) => handleInputChange('priority', value)}
+                        style={{ width: '100%' }}
+                      />
+                    </Col>
+                    <Col span={12}>
+                      <Form.InputNumber
+                        field='weight'
+                        label={t('渠道权重')}
+                        placeholder={t('渠道权重')}
+                        min={0}
+                        onNumberChange={(value) => handleInputChange('weight', value)}
+                        style={{ width: '100%' }}
+                      />
+                    </Col>
+                  </Row>
+
+                  <Form.Switch
+                    field='auto_ban'
+                    label={t('是否自动禁用')}
+                    checkedText={t('开')}
+                    uncheckedText={t('关')}
+                    onChange={(val) => setAutoBan(val)}
+                    extraText={t('仅当自动禁用开启时有效，关闭后不会自动禁用该渠道')}
+                    initValue={autoBan}
                   />
-                </div>
 
-                <div>
-                  <Text strong className="block mb-2">{t('渠道权重')}</Text>
-                  <Input
-                    name='weight'
-                    placeholder={t('渠道权重')}
-                    onChange={(value) => {
-                      const number = parseInt(value);
-                      if (isNaN(number)) {
-                        handleInputChange('weight', value);
-                      } else {
-                        handleInputChange('weight', number);
-                      }
-                    }}
-                    value={inputs.weight}
-                    autoComplete='new-password'
-                  />
-                </div>
-
-                <div>
-                  <Text strong className="block mb-2">{t('渠道额外设置')}</Text>
-                  <TextArea
-                    placeholder={
-                      t('此项可选，用于配置渠道特定设置，为一个 JSON 字符串，例如：') +
-                      '\n{\n  "force_format": true\n}'
-                    }
-                    name='setting'
-                    onChange={(value) => handleInputChange('setting', value)}
-                    autosize
-                    value={inputs.setting}
-                    autoComplete='new-password'
-                  />
-                  <div className="flex gap-2 mt-1">
-                    <Text
-                      className="!text-semi-color-primary cursor-pointer"
-                      onClick={() => {
-                        handleInputChange(
-                          'setting',
-                          JSON.stringify({ force_format: true }, null, 2),
-                        );
-                      }}
-                    >
-                      {t('填入模板')}
-                    </Text>
-                    <Text
-                      className="!text-semi-color-primary cursor-pointer"
-                      onClick={() => {
-                        window.open(
-                          'https://github.com/QuantumNous/new-api/blob/main/docs/channel/other_setting.md',
-                        );
-                      }}
-                    >
-                      {t('设置说明')}
-                    </Text>
-                  </div>
-                </div>
-
-                <div>
-                  <Text strong className="block mb-2">{t('参数覆盖')}</Text>
-                  <TextArea
+                  <Form.TextArea
+                    field='param_override'
+                    label={t('参数覆盖')}
                     placeholder={
                       t('此项可选，用于覆盖请求参数。不支持覆盖 stream 参数。为一个 JSON 字符串，例如：') +
                       '\n{\n  "temperature": 0\n}'
                     }
-                    name='param_override'
-                    onChange={(value) => handleInputChange('param_override', value)}
                     autosize
-                    value={inputs.param_override}
-                    autoComplete='new-password'
+                    onChange={(value) => handleInputChange('param_override', value)}
+                    extraText={
+                      <Text
+                        className="!text-semi-color-primary cursor-pointer"
+                        onClick={() => handleInputChange('param_override', JSON.stringify({ temperature: 0 }, null, 2))}
+                      >
+                        {t('填入模板')}
+                      </Text>
+                    }
+                    showClear
                   />
-                </div>
 
-                {inputs.type === 1 && (
-                  <div>
-                    <Text strong className="block mb-2">{t('组织')}</Text>
-                    <Input
-                      name='openai_organization'
-                      placeholder={t('请输入组织org-xxx')}
-                      onChange={(value) => handleInputChange('openai_organization', value)}
-                      value={inputs.openai_organization}
-                    />
-                    <Text type="tertiary" className="mt-1 text-xs">
-                      {t('组织，可选，不填则为默认组织')}
-                    </Text>
-                  </div>
-                )}
-
-                <div className="flex items-center">
-                  <Checkbox
-                    checked={autoBan}
-                    onChange={() => setAutoBan(!autoBan)}
-                  />
-                  <Text strong className="ml-2">
-                    {t('是否自动禁用（仅当自动禁用开启时有效），关闭后不会自动禁用该渠道')}
-                  </Text>
-                </div>
-
-                <div>
-                  <Text strong className="block mb-2">
-                    {t('状态码复写（仅影响本地判断，不修改返回到上游的状态码）')}
-                  </Text>
-                  <TextArea
+                  <Form.TextArea
+                    field='status_code_mapping'
+                    label={t('状态码复写')}
                     placeholder={
-                      t('此项可选，用于复写返回的状态码，比如将claude渠道的400错误复写为500（用于重试），请勿滥用该功能，例如：') +
+                      t('此项可选，用于复写返回的状态码，仅影响本地判断，不修改返回到上游的状态码，比如将claude渠道的400错误复写为500（用于重试），请勿滥用该功能，例如：') +
                       '\n' +
                       JSON.stringify(STATUS_CODE_MAPPING_EXAMPLE, null, 2)
                     }
-                    name='status_code_mapping'
-                    onChange={(value) => handleInputChange('status_code_mapping', value)}
                     autosize
-                    value={inputs.status_code_mapping}
-                    autoComplete='new-password'
+                    onChange={(value) => handleInputChange('status_code_mapping', value)}
+                    extraText={
+                      <Text
+                        className="!text-semi-color-primary cursor-pointer"
+                        onClick={() => handleInputChange('status_code_mapping', JSON.stringify(STATUS_CODE_MAPPING_EXAMPLE, null, 2))}
+                      >
+                        {t('填入模板')}
+                      </Text>
+                    }
+                    showClear
                   />
-                  <Text
-                    className="!text-semi-color-primary cursor-pointer mt-1 block"
-                    onClick={() => {
-                      handleInputChange(
-                        'status_code_mapping',
-                        JSON.stringify(STATUS_CODE_MAPPING_EXAMPLE, null, 2),
-                      );
-                    }}
-                  >
-                    {t('填入模板')}
-                  </Text>
-                </div>
+
+                  <Form.TextArea
+                    field='setting'
+                    label={t('渠道额外设置')}
+                    placeholder={
+                      t('此项可选，用于配置渠道特定设置，为一个 JSON 字符串，例如：') +
+                      '\n{\n  "force_format": true\n}'
+                    }
+                    autosize
+                    onChange={(value) => handleInputChange('setting', value)}
+                    extraText={(
+                      <Space wrap>
+                        <Text
+                          className="!text-semi-color-primary cursor-pointer"
+                          onClick={() => handleInputChange('setting', JSON.stringify({ force_format: true }, null, 2))}
+                        >
+                          {t('填入模板')}
+                        </Text>
+                        <Text
+                          className="!text-semi-color-primary cursor-pointer"
+                          onClick={() => window.open('https://github.com/QuantumNous/new-api/blob/main/docs/channel/other_setting.md')}
+                        >
+                          {t('设置说明')}
+                        </Text>
+                      </Space>
+                    )}
+                    showClear
+                  />
+                </Card>
               </div>
-            </Card>
-          </div>
-        </Spin>
+            </Spin>
+          )}
+        </Form>
         <ImagePreview
           src={modalImageUrl}
           visible={isModalOpenurl}
