@@ -11,12 +11,12 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"one-api/common"
+	"one-api/constant"
 	"one-api/dto"
 	"one-api/middleware"
 	"one-api/model"
 	"one-api/relay"
 	relaycommon "one-api/relay/common"
-	"one-api/relay/constant"
 	"one-api/relay/helper"
 	"one-api/service"
 	"strconv"
@@ -31,19 +31,19 @@ import (
 
 func testChannel(channel *model.Channel, testModel string) (err error, openAIErrorWithStatusCode *dto.OpenAIErrorWithStatusCode) {
 	tik := time.Now()
-	if channel.Type == common.ChannelTypeMidjourney {
+	if channel.Type == constant.ChannelTypeMidjourney {
 		return errors.New("midjourney channel test is not supported"), nil
 	}
-	if channel.Type == common.ChannelTypeMidjourneyPlus {
-		return errors.New("midjourney plus channel test is not supported!!!"), nil
+	if channel.Type == constant.ChannelTypeMidjourneyPlus {
+		return errors.New("midjourney plus channel test is not supported"), nil
 	}
-	if channel.Type == common.ChannelTypeSunoAPI {
+	if channel.Type == constant.ChannelTypeSunoAPI {
 		return errors.New("suno channel test is not supported"), nil
 	}
-	if channel.Type == common.ChannelTypeKling {
+	if channel.Type == constant.ChannelTypeKling {
 		return errors.New("kling channel test is not supported"), nil
 	}
-	if channel.Type == common.ChannelTypeJimeng {
+	if channel.Type == constant.ChannelTypeJimeng {
 		return errors.New("jimeng channel test is not supported"), nil
 	}
 	w := httptest.NewRecorder()
@@ -56,7 +56,7 @@ func testChannel(channel *model.Channel, testModel string) (err error, openAIErr
 		strings.HasPrefix(testModel, "m3e") || // m3e 系列模型
 		strings.Contains(testModel, "bge-") || // bge 系列模型
 		strings.Contains(testModel, "embed") ||
-		channel.Type == common.ChannelTypeMokaAI { // 其他 embedding 模型
+		channel.Type == constant.ChannelTypeMokaAI { // 其他 embedding 模型
 		requestPath = "/v1/embeddings" // 修改请求路径
 	}
 
@@ -102,7 +102,7 @@ func testChannel(channel *model.Channel, testModel string) (err error, openAIErr
 	}
 	testModel = info.UpstreamModelName
 
-	apiType, _ := constant.ChannelType2APIType(channel.Type)
+	apiType, _ := common.ChannelType2APIType(channel.Type)
 	adaptor := relay.GetAdaptor(apiType)
 	if adaptor == nil {
 		return fmt.Errorf("invalid api type: %d, adaptor is nil", apiType), nil

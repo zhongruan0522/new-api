@@ -24,12 +24,12 @@ type UserBase struct {
 }
 
 func (user *UserBase) WriteContext(c *gin.Context) {
-	c.Set(constant.ContextKeyUserGroup, user.Group)
-	c.Set(constant.ContextKeyUserQuota, user.Quota)
-	c.Set(constant.ContextKeyUserStatus, user.Status)
-	c.Set(constant.ContextKeyUserEmail, user.Email)
-	c.Set("username", user.Username)
-	c.Set(constant.ContextKeyUserSetting, user.GetSetting())
+	common.SetContextKey(c, constant.ContextKeyUserGroup, user.Group)
+	common.SetContextKey(c, constant.ContextKeyUserQuota, user.Quota)
+	common.SetContextKey(c, constant.ContextKeyUserStatus, user.Status)
+	common.SetContextKey(c, constant.ContextKeyUserEmail, user.Email)
+	common.SetContextKey(c, constant.ContextKeyUserName, user.Username)
+	common.SetContextKey(c, constant.ContextKeyUserSetting, user.GetSetting())
 }
 
 func (user *UserBase) GetSetting() map[string]interface{} {
@@ -70,7 +70,7 @@ func updateUserCache(user User) error {
 	return common.RedisHSetObj(
 		getUserCacheKey(user.Id),
 		user.ToBaseUser(),
-		time.Duration(constant.RedisKeyCacheSeconds())*time.Second,
+		time.Duration(common.RedisKeyCacheSeconds())*time.Second,
 	)
 }
 

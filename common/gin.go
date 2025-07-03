@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"github.com/gin-gonic/gin"
 	"io"
+	"one-api/constant"
 	"strings"
+	"time"
 )
 
 const KeyRequestBody = "key_request_body"
@@ -41,4 +43,36 @@ func UnmarshalBodyReusable(c *gin.Context, v any) error {
 	// Reset request body
 	c.Request.Body = io.NopCloser(bytes.NewBuffer(requestBody))
 	return nil
+}
+
+func SetContextKey(c *gin.Context, key constant.ContextKey, value any) {
+	c.Set(string(key), value)
+}
+
+func GetContextKey(c *gin.Context, key constant.ContextKey) (any, bool) {
+	return c.Get(string(key))
+}
+
+func GetContextKeyString(c *gin.Context, key constant.ContextKey) string {
+	return c.GetString(string(key))
+}
+
+func GetContextKeyInt(c *gin.Context, key constant.ContextKey) int {
+	return c.GetInt(string(key))
+}
+
+func GetContextKeyBool(c *gin.Context, key constant.ContextKey) bool {
+	return c.GetBool(string(key))
+}
+
+func GetContextKeyStringSlice(c *gin.Context, key constant.ContextKey) []string {
+	return c.GetStringSlice(string(key))
+}
+
+func GetContextKeyStringMap(c *gin.Context, key constant.ContextKey) map[string]any {
+	return c.GetStringMap(string(key))
+}
+
+func GetContextKeyTime(c *gin.Context, key constant.ContextKey) time.Time {
+	return c.GetTime(string(key))
 }

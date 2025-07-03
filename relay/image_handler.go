@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"one-api/common"
+	"one-api/constant"
 	"one-api/dto"
 	"one-api/model"
 	relaycommon "one-api/relay/common"
@@ -16,8 +17,6 @@ import (
 	"one-api/service"
 	"one-api/setting"
 	"strings"
-
-	"one-api/relay/constant"
 
 	"github.com/gin-gonic/gin"
 )

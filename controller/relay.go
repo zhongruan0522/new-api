@@ -8,12 +8,12 @@ import (
 	"log"
 	"net/http"
 	"one-api/common"
+	"one-api/constant"
 	constant2 "one-api/constant"
 	"one-api/dto"
 	"one-api/middleware"
 	"one-api/model"
 	"one-api/relay"
-	"one-api/relay/constant"
 	relayconstant "one-api/relay/constant"
 	"one-api/relay/helper"
 	"one-api/service"
@@ -69,7 +69,7 @@ func relayHandler(c *gin.Context, relayMode int) *dto.OpenAIErrorWithStatusCode 
 }
 
 func Relay(c *gin.Context) {
-	relayMode := constant.Path2RelayMode(c.Request.URL.Path)
+	relayMode := relayconstant.Path2RelayMode(c.Request.URL.Path)
 	requestId := c.GetString(common.RequestIdKey)
 	group := c.GetString("group")
 	originalModel := c.GetString("original_model")
@@ -132,7 +132,7 @@ func WssRelay(c *gin.Context) {
 		return
 	}
 
-	relayMode := constant.Path2RelayMode(c.Request.URL.Path)
+	relayMode := relayconstant.Path2RelayMode(c.Request.URL.Path)
 	requestId := c.GetString(common.RequestIdKey)
 	group := c.GetString("group")
 	//wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-10-01
@@ -295,7 +295,7 @@ func shouldRetry(c *gin.Context, openaiErr *dto.OpenAIErrorWithStatusCode, retry
 	}
 	if openaiErr.StatusCode == http.StatusBadRequest {
 		channelType := c.GetInt("channel_type")
-		if channelType == common.ChannelTypeAnthropic {
+		if channelType == constant.ChannelTypeAnthropic {
 			return true
 		}
 		return false

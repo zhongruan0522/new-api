@@ -1,6 +1,7 @@
 package relay
 
 import (
+	"one-api/constant"
 	commonconstant "one-api/constant"
 	"one-api/relay/channel"
 	"one-api/relay/channel/ali"
@@ -32,7 +33,6 @@ import (
 	"one-api/relay/channel/xunfei"
 	"one-api/relay/channel/zhipu"
 	"one-api/relay/channel/zhipu_4v"
-	"one-api/relay/constant"
 )
 
 func GetAdaptor(apiType int) channel.Adaptor {

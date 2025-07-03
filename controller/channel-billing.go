@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"one-api/common"
+	"one-api/constant"
 	"one-api/model"
 	"one-api/service"
 	"one-api/setting"
@@ -341,34 +342,34 @@ func updateChannelMoonshotBalance(channel *model.Channel) (float64, error) {
 }
 
 func updateChannelBalance(channel *model.Channel) (float64, error) {
-	baseURL := common.ChannelBaseURLs[channel.Type]
+	baseURL := constant.ChannelBaseURLs[channel.Type]
 	if channel.GetBaseURL() == "" {
 		channel.BaseURL = &baseURL
 	}
 	switch channel.Type {
-	case common.ChannelTypeOpenAI:
+	case constant.ChannelTypeOpenAI:
 		if channel.GetBaseURL() != "" {
 			baseURL = channel.GetBaseURL()
 		}
-	case common.ChannelTypeAzure:
+	case constant.ChannelTypeAzure:
 		return 0, errors.New("尚未实现")
-	case common.ChannelTypeCustom:
+	case constant.ChannelTypeCustom:
 		baseURL = channel.GetBaseURL()
 	//case common.ChannelTypeOpenAISB:
 	//	return updateChannelOpenAISBBalance(channel)
-	case common.ChannelTypeAIProxy:
+	case constant.ChannelTypeAIProxy:
 		return updateChannelAIProxyBalance(channel)
-	case common.ChannelTypeAPI2GPT:
+	case constant.ChannelTypeAPI2GPT:
 		return updateChannelAPI2GPTBalance(channel)
-	case common.ChannelTypeAIGC2D:
+	case constant.ChannelTypeAIGC2D:
 		return updateChannelAIGC2DBalance(channel)
-	case common.ChannelTypeSiliconFlow:
+	case constant.ChannelTypeSiliconFlow:
 		return updateChannelSiliconFlowBalance(channel)
-	case common.ChannelTypeDeepSeek:
+	case constant.ChannelTypeDeepSeek:
 		return updateChannelDeepSeekBalance(channel)
-	case common.ChannelTypeOpenRouter:
+	case constant.ChannelTypeOpenRouter:
 		return updateChannelOpenRouterBalance(channel)
-	case common.ChannelTypeMoonshot:
+	case constant.ChannelTypeMoonshot:
 		return updateChannelMoonshotBalance(channel)
 	default:
 		return 0, errors.New("尚未实现")

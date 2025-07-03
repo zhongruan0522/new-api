@@ -25,7 +25,7 @@ type ModelRequest struct {
 
 func Distribute() func(c *gin.Context) {
 	return func(c *gin.Context) {
-		allowIpsMap := c.GetStringMap("allow_ips")
+		allowIpsMap := common.GetContextKeyStringMap(c, constant.ContextKeyTokenAllowIps)
 		if len(allowIpsMap) != 0 {
 			clientIp := c.ClientIP()
 			if _, ok := allowIpsMap[clientIp]; !ok {
@@ -34,14 +34,14 @@ func Distribute() func(c *gin.Context) {
 			}
 		}
 		var channel *model.Channel
-		channelId, ok := c.Get("specific_channel_id")
+		channelId, ok := common.GetContextKey(c, constant.ContextKeyTokenSpecificChannelId)
 		modelRequest, shouldSelectChannel, err := getModelRequest(c)
 		if err != nil {
 			abortWithOpenAiMessage(c, http.StatusBadRequest, "Invalid request, "+err.Error())
 			return
 		}
-		userGroup := c.GetString(constant.ContextKeyUserGroup)
-		tokenGroup := c.GetString("token_group")
+		userGroup := common.GetContextKeyString(c, constant.ContextKeyUserGroup)
+		tokenGroup := common.GetContextKeyString(c, constant.ContextKeyTokenGroup)
 		if tokenGroup != "" {
 			// check common.UserUsableGroups[userGroup]
 			if _, ok := setting.GetUserUsableGroups(userGroup)[tokenGroup]; !ok {
@@ -57,7 +57,7 @@ func Distribute() func(c *gin.Context) {
 			}
 			userGroup = tokenGroup
 		}
-		c.Set(constant.ContextKeyUsingGroup, userGroup)
+		common.SetContextKey(c, constant.ContextKeyUsingGroup, userGroup)
 		if ok {
 			id, err := strconv.Atoi(channelId.(string))
 			if err != nil {
@@ -76,9 +76,9 @@ func Distribute() func(c *gin.Context) {
 		} else {
 			// Select a channel for the user
 			// check token model mapping
-			modelLimitEnable := c.GetBool("token_model_limit_enabled")
+			modelLimitEnable := common.GetContextKeyBool(c, constant.ContextKeyTokenModelLimitEnabled)
 			if modelLimitEnable {
-				s, ok := c.Get("token_model_limit")
+				s, ok := common.GetContextKey(c, constant.ContextKeyTokenModelLimit)
 				var tokenModelLimit map[string]bool
 				if ok {
 					tokenModelLimit = s.(map[string]bool)
@@ -121,7 +121,7 @@ func Distribute() func(c *gin.Context) {
 				}
 			}
 		}
-		c.Set(constant.ContextKeyRequestStartTime, time.Now())
+		common.SetContextKey(c, constant.ContextKeyRequestStartTime, time.Now())
 		SetupContextForSelectedChannel(c, channel, modelRequest.Model)
 		c.Next()
 	}
@@ -261,21 +261,21 @@ func SetupContextForSelectedChannel(c *gin.Context, channel *model.Channel, mode
 	c.Set("base_url", channel.GetBaseURL())
 	// TODO: api_version统一
 	switch channel.Type {
-	case common.ChannelTypeAzure:
+	case constant.ChannelTypeAzure:
 		c.Set("api_version", channel.Other)
-	case common.ChannelTypeVertexAi:
+	case constant.ChannelTypeVertexAi:
 		c.Set("region", channel.Other)
-	case common.ChannelTypeXunfei:
+	case constant.ChannelTypeXunfei:
 		c.Set("api_version", channel.Other)
-	case common.ChannelTypeGemini:
+	case constant.ChannelTypeGemini:
 		c.Set("api_version", channel.Other)
-	case common.ChannelTypeAli:
+	case constant.ChannelTypeAli:
 		c.Set("plugin", channel.Other)
-	case common.ChannelCloudflare:
+	case constant.ChannelCloudflare:
 		c.Set("api_version", channel.Other)
-	case common.ChannelTypeMokaAI:
+	case constant.ChannelTypeMokaAI:
 		c.Set("api_version", channel.Other)
-	case common.ChannelTypeCoze:
+	case constant.ChannelTypeCoze:
 		c.Set("bot_id", channel.Other)
 	}
 }
