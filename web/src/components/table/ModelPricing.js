@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useRef, useMemo, useState } from 'react';
-import { API, copy, showError, showInfo, showSuccess, getModelCategories, renderModelTag } from '../../helpers';
+import { API, copy, showError, showInfo, showSuccess, getModelCategories, renderModelTag, stringToColor } from '../../helpers';
 import { useTranslation } from 'react-i18next';
 
 import {
@@ -106,6 +106,26 @@ const ModelPricing = () => {
     ) : null;
   }
 
+  function renderSupportedEndpoints(endpoints) {
+    if (!endpoints || endpoints.length === 0) {
+      return null;
+    }
+    return (
+      <Space wrap>
+        {endpoints.map((endpoint, idx) => (
+          <Tag
+            key={endpoint}
+            color={stringToColor(endpoint)}
+            size='large'
+            shape='circle'
+          >
+            {endpoint}
+          </Tag>
+        ))}
+      </Space>
+    );
+  }
+
   const columns = [
     {
       title: t('可用性'),
@@ -119,6 +139,13 @@ const ModelPricing = () => {
         return Number(aAvailable) - Number(bAvailable);
       },
       defaultSortOrder: 'descend',
+    },
+    {
+      title: t('可用端点类型'),
+      dataIndex: 'supported_endpoint_types',
+      render: (text, record, index) => {
+        return renderSupportedEndpoints(text);
+      },
     },
     {
       title: t('模型名称'),
@@ -499,7 +526,7 @@ const ModelPricing = () => {
                               <div className="flex items-center">
                                 <AlertCircle size={14} className="mr-1.5 flex-shrink-0" />
                                 <span className="truncate">
-                                  {t('未登录，使用默认分组倍率')}: {groupRatio['default']}
+                                  {t('未登录，使用默认分组倍率：')}{groupRatio['default']}
                                 </span>
                               </div>
                             )}
