@@ -172,9 +172,6 @@ func CountTokenChatRequest(info *relaycommon.RelayInfo, request dto.GeneralOpenA
 			}
 		}
 		toolTokens := CountTokenInput(countStr, request.Model)
-		if err != nil {
-			return 0, err
-		}
 		tkm += 8
 		tkm += toolTokens
 	}
@@ -195,9 +192,6 @@ func CountTokenClaudeRequest(request dto.ClaudeRequest, model string) (int, erro
 	// Count tokens in system message
 	if request.System != "" {
 		systemTokens := CountTokenInput(request.System, model)
-		if err != nil {
-			return 0, err
-		}
 		tkm += systemTokens
 	}
 
