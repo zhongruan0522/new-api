@@ -373,7 +373,7 @@ export default function UpstreamRatioSync(props) {
         <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto order-2 md:order-1">
           <Button
             icon={<RefreshCcw size={14} />}
-            className="!rounded-full w-full md:w-auto mt-2"
+            className="w-full md:w-auto mt-2"
             onClick={() => {
               setModalVisible(true);
               if (allChannels.length === 0) {
@@ -393,7 +393,7 @@ export default function UpstreamRatioSync(props) {
                 type='secondary'
                 onClick={applySync}
                 disabled={!hasSelections}
-                className="!rounded-full w-full md:w-auto mt-2"
+                className="w-full md:w-auto mt-2"
               >
                 {t('应用同步')}
               </Button>
@@ -406,7 +406,7 @@ export default function UpstreamRatioSync(props) {
               placeholder={t('搜索模型名称')}
               value={searchKeyword}
               onChange={setSearchKeyword}
-              className="!rounded-full w-full sm:w-64"
+              className="w-full sm:w-64"
               showClear
             />
 
@@ -414,7 +414,7 @@ export default function UpstreamRatioSync(props) {
               placeholder={t('按倍率类型筛选')}
               value={ratioTypeFilter}
               onChange={setRatioTypeFilter}
-              className="!rounded-full w-full sm:w-48"
+              className="w-full sm:w-48"
               showClear
               onClear={() => setRatioTypeFilter('')}
             >
@@ -704,7 +704,6 @@ export default function UpstreamRatioSync(props) {
         scroll={{ x: 'max-content' }}
         size='middle'
         loading={loading || syncLoading}
-        className="rounded-xl overflow-hidden"
       />
     );
   };
