@@ -22,6 +22,7 @@ import {
   Row,
   Col,
   Input,
+  InputNumber,
 } from '@douyinfe/semi-ui';
 import {
   IconUser,
@@ -39,7 +40,7 @@ const EditUser = (props) => {
   const userId = props.editingUser.id;
   const [loading, setLoading] = useState(true);
   const [addQuotaModalOpen, setIsModalOpen] = useState(false);
-  const [addQuotaLocal, setAddQuotaLocal] = useState('0');
+  const [addQuotaLocal, setAddQuotaLocal] = useState('');
   const [groupOptions, setGroupOptions] = useState([]);
   const formApiRef = useRef(null);
 
@@ -254,7 +255,6 @@ const EditUser = (props) => {
                           field='quota'
                           label={t('剩余额度')}
                           placeholder={t('请输入新的剩余额度')}
-                          min={0}
                           step={500000}
                           extraText={renderQuotaWithPrompt(values.quota || 0)}
                           rules={[{ required: true, message: t('请输入额度') }]}
@@ -328,18 +328,19 @@ const EditUser = (props) => {
               const current = formApiRef.current?.getValue('quota') || 0;
               return (
                 <Text type='secondary' className='block mb-2'>
-                  {`${t('新额度')}${renderQuota(current)} + ${renderQuota(addQuotaLocal)} = ${renderQuota(current + parseInt(addQuotaLocal || 0))}`}
+                  {`${t('新额度：')}${renderQuota(current)} + ${renderQuota(addQuotaLocal)} = ${renderQuota(current + parseInt(addQuotaLocal || 0))}`}
                 </Text>
               );
             })()
           }
         </div>
-        <Input
+        <InputNumber
           placeholder={t('需要添加的额度（支持负数）')}
-          type='number'
           value={addQuotaLocal}
           onChange={setAddQuotaLocal}
+          style={{ width: '100%' }}
           showClear
+          step={500000}
         />
       </Modal>
     </>

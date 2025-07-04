@@ -119,7 +119,7 @@ const UsersTable = () => {
             <Tooltip content={remark} position="top" showArrow>
               <Tag color='white' size='large' shape='circle' className="!text-xs">
                 <div className="flex items-center gap-1">
-                  <div className="w-2 h-2 flex-shrink-0" style={{ backgroundColor: '#10b981' }} />
+                  <div className="w-2 h-2 flex-shrink-0 rounded-full" style={{ backgroundColor: '#10b981' }} />
                   {displayRemark}
                 </div>
               </Tag>
