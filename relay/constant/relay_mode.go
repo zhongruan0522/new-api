@@ -29,6 +29,8 @@ const (
 	RelayModeMidjourneyShorten
 	RelayModeSwapFace
 	RelayModeMidjourneyUpload
+	RelayModeMidjourneyVideo
+	RelayModeMidjourneyEdits
 
 	RelayModeAudioSpeech        // tts
 	RelayModeAudioTranscription // whisper
@@ -108,6 +110,10 @@ func Path2RelayModeMidjourney(path string) int {
 		relayMode = RelayModeMidjourneyUpload
 	} else if strings.HasSuffix(path, "/mj/submit/imagine") {
 		relayMode = RelayModeMidjourneyImagine
+	} else if strings.HasSuffix(path, "/mj/submit/video") {
+		relayMode = RelayModeMidjourneyVideo
+	} else if strings.HasSuffix(path, "/mj/submit/edits") {
+		relayMode = RelayModeMidjourneyEdits
 	} else if strings.HasSuffix(path, "/mj/submit/blend") {
 		relayMode = RelayModeMidjourneyBlend
 	} else if strings.HasSuffix(path, "/mj/submit/describe") {

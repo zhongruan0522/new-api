@@ -103,6 +103,8 @@ func registerMjRouterGroup(relayMjRouter *gin.RouterGroup) {
 		relayMjRouter.POST("/submit/simple-change", controller.RelayMidjourney)
 		relayMjRouter.POST("/submit/describe", controller.RelayMidjourney)
 		relayMjRouter.POST("/submit/blend", controller.RelayMidjourney)
+		relayMjRouter.POST("/submit/edits", controller.RelayMidjourney)
+		relayMjRouter.POST("/submit/video", controller.RelayMidjourney)
 		relayMjRouter.POST("/notify", controller.RelayMidjourney)
 		relayMjRouter.GET("/task/:id/fetch", controller.RelayMidjourney)
 		relayMjRouter.GET("/task/:id/image-seed", controller.RelayMidjourney)

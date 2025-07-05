@@ -106,6 +106,9 @@ func RelayMidjourneyNotify(c *gin.Context) *dto.MidjourneyResponse {
 	midjourneyTask.StartTime = midjRequest.StartTime
 	midjourneyTask.FinishTime = midjRequest.FinishTime
 	midjourneyTask.ImageUrl = midjRequest.ImageUrl
+	midjourneyTask.VideoUrl = midjRequest.VideoUrl
+	videoUrlsStr, _ := json.Marshal(midjRequest.VideoUrls)
+	midjourneyTask.VideoUrls = string(videoUrlsStr)
 	midjourneyTask.Status = midjRequest.Status
 	midjourneyTask.FailReason = midjRequest.FailReason
 	err = midjourneyTask.Update()
@@ -136,6 +139,9 @@ func coverMidjourneyTaskDto(c *gin.Context, originTask *model.Midjourney) (midjo
 	} else {
 		midjourneyTask.ImageUrl = originTask.ImageUrl
 	}
+	if originTask.VideoUrl != "" {
+		midjourneyTask.VideoUrl = originTask.VideoUrl
+	}
 	midjourneyTask.Status = originTask.Status
 	midjourneyTask.FailReason = originTask.FailReason
 	midjourneyTask.Action = originTask.Action
@@ -146,6 +152,13 @@ func coverMidjourneyTaskDto(c *gin.Context, originTask *model.Midjourney) (midjo
 		err := json.Unmarshal([]byte(originTask.Buttons), &buttons)
 		if err == nil {
 			midjourneyTask.Buttons = buttons
+		}
+	}
+	if originTask.VideoUrls != "" {
+		var videoUrls []dto.ImgUrls
+		err := json.Unmarshal([]byte(originTask.VideoUrls), &videoUrls)
+		if err == nil {
+			midjourneyTask.VideoUrls = videoUrls
 		}
 	}
 	if originTask.Properties != "" {
@@ -370,6 +383,9 @@ func RelayMidjourneySubmit(c *gin.Context, relayMode int) *dto.MidjourneyRespons
 		}
 		relayMode = relayconstant.RelayModeMidjourneyChange
 	}
+	if relayMode == relayconstant.RelayModeMidjourneyVideo {
+		midjRequest.Action = constant.MjActionVideo
+	}
 
 	if relayMode == relayconstant.RelayModeMidjourneyImagine { //绘画任务，此类任务可重复
 		if midjRequest.Prompt == "" {
@@ -378,6 +394,8 @@ func RelayMidjourneySubmit(c *gin.Context, relayMode int) *dto.MidjourneyRespons
 		midjRequest.Action = constant.MjActionImagine
 	} else if relayMode == relayconstant.RelayModeMidjourneyDescribe { //按图生文任务，此类任务可重复
 		midjRequest.Action = constant.MjActionDescribe
+	} else if relayMode == relayconstant.RelayModeMidjourneyEdits { //编辑任务，此类任务可重复
+		midjRequest.Action = constant.MjActionEdits
 	} else if relayMode == relayconstant.RelayModeMidjourneyShorten { //缩短任务，此类任务可重复，plus only
 		midjRequest.Action = constant.MjActionShorten
 	} else if relayMode == relayconstant.RelayModeMidjourneyBlend { //绘画任务，此类任务可重复
@@ -412,6 +430,14 @@ func RelayMidjourneySubmit(c *gin.Context, relayMode int) *dto.MidjourneyRespons
 			//}
 			mjId = midjRequest.TaskId
 			midjRequest.Action = constant.MjActionModal
+		} else if relayMode == relayconstant.RelayModeMidjourneyVideo {
+			midjRequest.Action = constant.MjActionVideo
+			if midjRequest.TaskId == "" {
+				return service.MidjourneyErrorWrapper(constant.MjRequestError, "task_id_is_required")
+			} else if midjRequest.Action == "" {
+				return service.MidjourneyErrorWrapper(constant.MjRequestError, "action_is_required")
+			}
+			mjId = midjRequest.TaskId
 		}
 
 		originTask := model.GetByMJId(userId, mjId)

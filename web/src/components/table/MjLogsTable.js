@@ -195,6 +195,18 @@ const LogsTable = () => {
             {t('放大')}
           </Tag>
         );
+      case 'VIDEO':
+        return (
+          <Tag color='orange' size='large' shape='circle' prefixIcon={<Video size={14} />}>
+            {t('视频')}
+          </Tag>
+        );
+      case 'EDITS':
+        return (
+          <Tag color='orange' size='large' shape='circle' prefixIcon={<Video size={14} />}>
+            {t('编辑')}
+          </Tag>
+        );
       case 'VARIATION':
         return (
           <Tag color='purple' size='large' shape='circle' prefixIcon={<Shuffle size={14} />}>

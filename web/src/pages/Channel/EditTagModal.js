@@ -77,6 +77,8 @@ const EditTagModal = (props) => {
           localModels = [
             'swap_face',
             'mj_imagine',
+            'mj_video',
+            'mj_edits',
             'mj_variation',
             'mj_reroll',
             'mj_blend',
