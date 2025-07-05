@@ -366,6 +366,86 @@ const Detail = (props) => {
     },
   });
 
+  // 模型消耗趋势折线图
+  const [spec_model_line, setSpecModelLine] = useState({
+    type: 'line',
+    data: [
+      {
+        id: 'lineData',
+        values: [],
+      },
+    ],
+    xField: 'Time',
+    yField: 'Count',
+    seriesField: 'Model',
+    legends: {
+      visible: true,
+      selectMode: 'single',
+    },
+    title: {
+      visible: true,
+      text: t('模型消耗趋势'),
+      subtext: '',
+    },
+    tooltip: {
+      mark: {
+        content: [
+          {
+            key: (datum) => datum['Model'],
+            value: (datum) => renderNumber(datum['Count']),
+          },
+        ],
+      },
+    },
+    color: {
+      specified: modelColorMap,
+    },
+  });
+
+  // 模型调用次数排行柱状图
+  const [spec_rank_bar, setSpecRankBar] = useState({
+    type: 'bar',
+    data: [
+      {
+        id: 'rankData',
+        values: [],
+      },
+    ],
+    xField: 'Model',
+    yField: 'Count',
+    seriesField: 'Model',
+    legends: {
+      visible: true,
+      selectMode: 'single',
+    },
+    title: {
+      visible: true,
+      text: t('模型调用次数排行'),
+      subtext: '',
+    },
+    bar: {
+      state: {
+        hover: {
+          stroke: '#000',
+          lineWidth: 1,
+        },
+      },
+    },
+    tooltip: {
+      mark: {
+        content: [
+          {
+            key: (datum) => datum['Model'],
+            value: (datum) => renderNumber(datum['Count']),
+          },
+        ],
+      },
+    },
+    color: {
+      specified: modelColorMap,
+    },
+  });
+
   // ========== Hooks - Memoized Values ==========
   const performanceMetrics = useMemo(() => {
     const timeDiff = (Date.parse(end_timestamp) - Date.parse(start_timestamp)) / 60000;
@@ -853,6 +933,46 @@ const Detail = (props) => {
       'barData'
     );
 
+    // ===== 模型调用次数折线图 =====
+    let modelLineData = [];
+    chartTimePoints.forEach((time) => {
+      const timeData = Array.from(uniqueModels).map((model) => {
+        const key = `${time}-${model}`;
+        const aggregated = aggregatedData.get(key);
+        return {
+          Time: time,
+          Model: model,
+          Count: aggregated?.count || 0,
+        };
+      });
+      modelLineData.push(...timeData);
+    });
+    modelLineData.sort((a, b) => a.Time.localeCompare(b.Time));
+
+    // ===== 模型调用次数排行柱状图 =====
+    const rankData = Array.from(modelTotals)
+      .map(([model, count]) => ({
+        Model: model,
+        Count: count,
+      }))
+      .sort((a, b) => b.Count - a.Count);
+
+    updateChartSpec(
+      setSpecModelLine,
+      modelLineData,
+      `${t('总计')}：${renderNumber(totalTimes)}`,
+      newModelColors,
+      'lineData'
+    );
+
+    updateChartSpec(
+      setSpecRankBar,
+      rankData,
+      `${t('总计')}：${renderNumber(totalTimes)}`,
+      newModelColors,
+      'rankData'
+    );
+
     setPieData(newPieData);
     setLineData(newLineData);
     setConsumeQuota(totalQuota);
@@ -1124,23 +1244,48 @@ const Detail = (props) => {
                     } itemKey="1" />
                     <TabPane tab={
                       <span>
+                        <IconPulse />
+                        {t('消耗趋势')}
+                      </span>
+                    } itemKey="2" />
+                    <TabPane tab={
+                      <span>
                         <IconPieChart2Stroked />
                         {t('调用次数分布')}
                       </span>
-                    } itemKey="2" />
+                    } itemKey="3" />
+                    <TabPane tab={
+                      <span>
+                        <IconHistogram />
+                        {t('调用次数排行')}
+                      </span>
+                    } itemKey="4" />
                   </Tabs>
                 </div>
               }
             >
               <div style={{ height: 400 }}>
-                {activeChartTab === '1' ? (
+                {activeChartTab === '1' && (
                   <VChart
                     spec={spec_line}
                     option={CHART_CONFIG}
                   />
-                ) : (
+                )}
+                {activeChartTab === '2' && (
+                  <VChart
+                    spec={spec_model_line}
+                    option={CHART_CONFIG}
+                  />
+                )}
+                {activeChartTab === '3' && (
                   <VChart
                     spec={spec_pie}
+                    option={CHART_CONFIG}
+                  />
+                )}
+                {activeChartTab === '4' && (
+                  <VChart
+                    spec={spec_rank_bar}
                     option={CHART_CONFIG}
                   />
                 )}

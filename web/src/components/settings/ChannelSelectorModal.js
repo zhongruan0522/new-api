@@ -197,7 +197,6 @@ const ChannelSelectorModal = forwardRef(({
           value={searchText}
           onChange={setSearchText}
           showClear
-          className="!rounded-full"
         />
 
         <Table
