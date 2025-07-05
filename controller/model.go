@@ -139,7 +139,7 @@ func ListModels(c *gin.Context) {
 			return
 		}
 		group := userGroup
-		tokenGroup := common.GetContextKeyString(c, constant.ContextKeyUserGroup)
+		tokenGroup := common.GetContextKeyString(c, constant.ContextKeyTokenGroup)
 		if tokenGroup != "" {
 			group = tokenGroup
 		}
