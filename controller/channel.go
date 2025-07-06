@@ -394,9 +394,19 @@ func getVertexArrayKeys(keys string) ([]string, error) {
 	}
 	cleanKeys := make([]string, 0, len(keyArray))
 	for _, key := range keyArray {
-		keyStr := fmt.Sprintf("%v", key)
+		var keyStr string
+		switch v := key.(type) {
+		case string:
+			keyStr = strings.TrimSpace(v)
+		default:
+			bytes, err := json.Marshal(v)
+			if err != nil {
+				return nil, fmt.Errorf("Vertex AI key JSON 编码失败: %w", err)
+			}
+			keyStr = string(bytes)
+		}
 		if keyStr != "" {
-			cleanKeys = append(cleanKeys, strings.TrimSpace(keyStr))
+			cleanKeys = append(cleanKeys, keyStr)
 		}
 	}
 	if len(cleanKeys) == 0 {

@@ -53,8 +53,8 @@ type ChannelInfo struct {
 }
 
 // Value implements driver.Valuer interface
-func (c *ChannelInfo) Value() (driver.Value, error) {
-	return common.EncodeJson(c)
+func (c ChannelInfo) Value() (driver.Value, error) {
+	return common.EncodeJson(&c)
 }
 
 // Scan implements sql.Scanner interface
