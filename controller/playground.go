@@ -57,18 +57,24 @@ func Playground(c *gin.Context) {
 		}
 		c.Set("group", group)
 	}
-	c.Set("token_name", "playground-"+group)
-	channel, finalGroup, err := model.CacheGetRandomSatisfiedChannel(c, group, playgroundRequest.Model, 0)
+
+	userId := c.GetInt("id")
+	//c.Set("token_name", "playground-"+group)
+	tempToken := &model.Token{
+		UserId: userId,
+		Name:   fmt.Sprintf("playground-%s", group),
+		Group:  group,
+	}
+	_ = middleware.SetupContextForToken(c, tempToken)
+	_, err = getChannel(c, group, playgroundRequest.Model, 0)
 	if err != nil {
-		message := fmt.Sprintf("当前分组 %s 下对于模型 %s 无可用渠道", finalGroup, playgroundRequest.Model)
-		openaiErr = service.OpenAIErrorWrapperLocal(errors.New(message), "get_playground_channel_failed", http.StatusInternalServerError)
+		openaiErr = service.OpenAIErrorWrapperLocal(err, "get_playground_channel_failed", http.StatusInternalServerError)
 		return
 	}
-	middleware.SetupContextForSelectedChannel(c, channel, playgroundRequest.Model)
+	//middleware.SetupContextForSelectedChannel(c, channel, playgroundRequest.Model)
 	common.SetContextKey(c, constant.ContextKeyRequestStartTime, time.Now())
 
 	// Write user context to ensure acceptUnsetRatio is available
-	userId := c.GetInt("id")
 	userCache, err := model.GetUserCache(userId)
 	if err != nil {
 		openaiErr = service.OpenAIErrorWrapperLocal(err, "get_user_cache_failed", http.StatusInternalServerError)

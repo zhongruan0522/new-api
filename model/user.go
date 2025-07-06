@@ -68,11 +68,16 @@ func (user *User) SetAccessToken(token string) {
 	user.AccessToken = &token
 }
 
-func (user *User) GetSetting() map[string]interface{} {
+func (user *User) GetSetting() (map[string]interface{}, error) {
 	if user.Setting == "" {
-		return nil
+		return map[string]interface{}{}, nil
 	}
-	return common.StrToMap(user.Setting)
+	toMap, err := common.StrToMap(user.Setting)
+	if err != nil {
+		common.SysError("failed to convert setting to map: " + err.Error())
+		return nil, fmt.Errorf("failed to convert setting to map")
+	}
+	return toMap, nil
 }
 
 func (user *User) SetSetting(setting map[string]interface{}) {
@@ -651,7 +656,12 @@ func GetUserSetting(id int, fromDB bool) (settingMap map[string]interface{}, err
 		return map[string]interface{}{}, err
 	}
 
-	return common.StrToMap(setting), nil
+	toMap, err := common.StrToMap(setting)
+	if err != nil {
+		common.SysError("failed to convert setting to map: " + err.Error())
+		return nil, fmt.Errorf("failed to convert setting to map")
+	}
+	return toMap, nil
 }
 
 func IncreaseUserQuota(id int, quota int, db bool) (err error) {

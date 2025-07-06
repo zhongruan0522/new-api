@@ -21,6 +21,7 @@ import (
 
 type ModelRequest struct {
 	Model string `json:"model"`
+	Group string `json:"group,omitempty"`
 }
 
 func Distribute() func(c *gin.Context) {
@@ -237,6 +238,14 @@ func getModelRequest(c *gin.Context) (*ModelRequest, bool, error) {
 		}
 		c.Set("relay_mode", relayMode)
 	}
+	if strings.HasPrefix(c.Request.URL.Path, "/pg/chat/completions") {
+		// playground chat completions
+		err = common.UnmarshalBodyReusable(c, &modelRequest)
+		if err != nil {
+			return nil, false, errors.New("无效的请求, " + err.Error())
+		}
+		common.SetContextKey(c, constant.ContextKeyTokenGroup, modelRequest.Group)
+	}
 	return &modelRequest, shouldSelectChannel, nil
 }
 
@@ -245,20 +254,25 @@ func SetupContextForSelectedChannel(c *gin.Context, channel *model.Channel, mode
 	if channel == nil {
 		return
 	}
-	c.Set("channel_id", channel.Id)
-	c.Set("channel_name", channel.Name)
-	c.Set("channel_type", channel.Type)
-	c.Set("channel_create_time", channel.CreatedTime)
-	c.Set("channel_setting", channel.GetSetting())
-	c.Set("param_override", channel.GetParamOverride())
-	if nil != channel.OpenAIOrganization && "" != *channel.OpenAIOrganization {
-		c.Set("channel_organization", *channel.OpenAIOrganization)
+	common.SetContextKey(c, constant.ContextKeyChannelId, channel.Id)
+	common.SetContextKey(c, constant.ContextKeyChannelName, channel.Name)
+	common.SetContextKey(c, constant.ContextKeyChannelType, channel.Type)
+	common.SetContextKey(c, constant.ContextKeyChannelCreateTime, channel.CreatedTime)
+	common.SetContextKey(c, constant.ContextKeyChannelSetting, channel.GetSetting())
+	common.SetContextKey(c, constant.ContextKeyChannelParamOverride, channel.GetParamOverride())
+	if nil != channel.OpenAIOrganization && *channel.OpenAIOrganization != "" {
+		common.SetContextKey(c, constant.ContextKeyChannelOrganization, *channel.OpenAIOrganization)
 	}
-	c.Set("auto_ban", channel.GetAutoBan())
-	c.Set("model_mapping", channel.GetModelMapping())
-	c.Set("status_code_mapping", channel.GetStatusCodeMapping())
+	common.SetContextKey(c, constant.ContextKeyChannelAutoBan, channel.GetAutoBan())
+	common.SetContextKey(c, constant.ContextKeyChannelModelMapping, channel.GetModelMapping())
+	common.SetContextKey(c, constant.ContextKeyChannelStatusCodeMapping, channel.GetStatusCodeMapping())
+	if channel.ChannelInfo.IsMultiKey {
+		common.SetContextKey(c, constant.ContextKeyChannelIsMultiKey, true)
+
+	}
 	c.Request.Header.Set("Authorization", fmt.Sprintf("Bearer %s", channel.Key))
-	c.Set("base_url", channel.GetBaseURL())
+	common.SetContextKey(c, constant.ContextKeyChannelBaseUrl, channel.GetBaseURL())
+
 	// TODO: api_version统一
 	switch channel.Type {
 	case constant.ChannelTypeAzure:

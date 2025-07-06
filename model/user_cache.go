@@ -36,7 +36,12 @@ func (user *UserBase) GetSetting() map[string]interface{} {
 	if user.Setting == "" {
 		return nil
 	}
-	return common.StrToMap(user.Setting)
+	toMap, err := common.StrToMap(user.Setting)
+	if err != nil {
+		common.SysError("failed to convert user setting to map: " + err.Error())
+		return nil
+	}
+	return toMap
 }
 
 func (user *UserBase) SetSetting(setting map[string]interface{}) {
