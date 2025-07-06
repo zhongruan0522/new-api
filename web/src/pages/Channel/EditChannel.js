@@ -108,7 +108,6 @@ const EditChannel = (props) => {
   const [multiToSingle, setMultiToSingle] = useState(false);
   const [multiKeyMode, setMultiKeyMode] = useState('random');
   const [autoBan, setAutoBan] = useState(true);
-  // const [autoBan, setAutoBan] = useState(true);
   const [inputs, setInputs] = useState(originInputs);
   const [originModelOptions, setOriginModelOptions] = useState([]);
   const [modelOptions, setModelOptions] = useState([]);
@@ -122,6 +121,7 @@ const EditChannel = (props) => {
   const [vertexKeys, setVertexKeys] = useState([]);
   const [vertexFileList, setVertexFileList] = useState([]);
   const vertexErroredNames = useRef(new Set()); // 避免重复报错
+  const [isMultiKeyChannel, setIsMultiKeyChannel] = useState(false);
   const getInitValues = () => ({ ...originInputs });
   const handleInputChange = (name, value) => {
     if (formApiRef.current) {
@@ -218,6 +218,19 @@ const EditChannel = (props) => {
           null,
           2,
         );
+      }
+      const chInfo = data.channel_info || {};
+      const isMulti = chInfo.is_multi_key === true;
+      setIsMultiKeyChannel(isMulti);
+      if (isMulti) {
+        setBatch(true);
+        setMultiToSingle(true);
+        const modeVal = chInfo.multi_key_mode || 'random';
+        setMultiKeyMode(modeVal);
+        data.multi_key_mode = modeVal;
+      } else {
+        setBatch(false);
+        setMultiToSingle(false);
       }
       setInputs(data);
       if (formApiRef.current) {
@@ -545,7 +558,7 @@ const EditChannel = (props) => {
     }
   };
 
-  const batchAllowed = !isEdit;
+  const batchAllowed = !isEdit || isMultiKeyChannel;
   const batchExtra = batchAllowed ? (
     <Space>
       <Checkbox checked={batch} onChange={() => {
