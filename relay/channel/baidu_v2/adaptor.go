@@ -42,7 +42,12 @@ func (a *Adaptor) GetRequestURL(info *relaycommon.RelayInfo) (string, error) {
 
 func (a *Adaptor) SetupRequestHeader(c *gin.Context, req *http.Header, info *relaycommon.RelayInfo) error {
 	channel.SetupApiRequestHeader(info, c, req)
-	req.Set("Authorization", "Bearer "+info.ApiKey)
+        infos := strings.Split(info.ApiKey, "|")
+	if len(infos) > 1 {
+		req.Set("appid", infos[1])
+	}
+
+	req.Set("Authorization", "Bearer "+infos[0])
 	return nil
 }
 
