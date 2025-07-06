@@ -41,6 +41,7 @@ type User struct {
 	DeletedAt        gorm.DeletedAt `gorm:"index"`
 	LinuxDOId        string         `json:"linux_do_id" gorm:"column:linux_do_id;index"`
 	Setting          string         `json:"setting" gorm:"type:text;column:setting"`
+	Remark           string         `json:"remark,omitempty" gorm:"type:varchar(255)" validate:"max=255"`
 }
 
 func (user *User) ToBaseUser() *UserBase {
@@ -113,7 +114,7 @@ func GetMaxUserId() int {
 	return user.Id
 }
 
-func GetAllUsers(startIdx int, num int) (users []*User, total int64, err error) {
+func GetAllUsers(pageInfo *common.PageInfo) (users []*User, total int64, err error) {
 	// Start transaction
 	tx := DB.Begin()
 	if tx.Error != nil {
@@ -133,7 +134,7 @@ func GetAllUsers(startIdx int, num int) (users []*User, total int64, err error) 
 	}
 
 	// Get paginated users within same transaction
-	err = tx.Unscoped().Order("id desc").Limit(num).Offset(startIdx).Omit("password").Find(&users).Error
+	err = tx.Unscoped().Order("id desc").Limit(pageInfo.GetPageSize()).Offset(pageInfo.GetStartIdx()).Omit("password").Find(&users).Error
 	if err != nil {
 		tx.Rollback()
 		return nil, 0, err
@@ -366,6 +367,7 @@ func (user *User) Edit(updatePassword bool) error {
 		"display_name": newUser.DisplayName,
 		"group":        newUser.Group,
 		"quota":        newUser.Quota,
+		"remark":       newUser.Remark,
 	}
 	if updatePassword {
 		updates["password"] = newUser.Password

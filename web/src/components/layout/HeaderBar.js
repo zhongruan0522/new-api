@@ -28,6 +28,7 @@ import {
   Tag,
   Typography,
   Skeleton,
+  Badge,
 } from '@douyinfe/semi-ui';
 import { StatusContext } from '../../context/Status/index.js';
 import { useStyle, styleActions } from '../../context/Style/index.js';
@@ -43,6 +44,7 @@ const HeaderBar = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
   const [noticeVisible, setNoticeVisible] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   const systemName = getSystemName();
   const logo = getLogo();
@@ -53,8 +55,43 @@ const HeaderBar = () => {
   const docsLink = statusState?.status?.docs_link || '';
   const isDemoSiteMode = statusState?.status?.demo_site_enabled || false;
 
+  const isConsoleRoute = location.pathname.startsWith('/console');
+
   const theme = useTheme();
   const setTheme = useSetTheme();
+
+  const announcements = statusState?.status?.announcements || [];
+
+  const getAnnouncementKey = (a) => `${a?.publishDate || ''}-${(a?.content || '').slice(0, 30)}`;
+
+  const calculateUnreadCount = () => {
+    if (!announcements.length) return 0;
+    let readKeys = [];
+    try {
+      readKeys = JSON.parse(localStorage.getItem('notice_read_keys')) || [];
+    } catch (_) {
+      readKeys = [];
+    }
+    const readSet = new Set(readKeys);
+    return announcements.filter((a) => !readSet.has(getAnnouncementKey(a))).length;
+  };
+
+  const getUnreadKeys = () => {
+    if (!announcements.length) return [];
+    let readKeys = [];
+    try {
+      readKeys = JSON.parse(localStorage.getItem('notice_read_keys')) || [];
+    } catch (_) {
+      readKeys = [];
+    }
+    const readSet = new Set(readKeys);
+    return announcements.filter((a) => !readSet.has(getAnnouncementKey(a))).map(getAnnouncementKey);
+  };
+
+  useEffect(() => {
+    setUnreadCount(calculateUnreadCount());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [announcements]);
 
   const mainNavLinks = [
     {
@@ -104,6 +141,25 @@ const HeaderBar = () => {
     setTimeout(() => {
       fireworks.stop();
     }, 3000);
+  };
+
+  const handleNoticeOpen = () => {
+    setNoticeVisible(true);
+  };
+
+  const handleNoticeClose = () => {
+    setNoticeVisible(false);
+    if (announcements.length) {
+      let readKeys = [];
+      try {
+        readKeys = JSON.parse(localStorage.getItem('notice_read_keys')) || [];
+      } catch (_) {
+        readKeys = [];
+      }
+      const mergedKeys = Array.from(new Set([...readKeys, ...announcements.map(getAnnouncementKey)]));
+      localStorage.setItem('notice_read_keys', JSON.stringify(mergedKeys));
+    }
+    setUnreadCount(0);
   };
 
   useEffect(() => {
@@ -353,15 +409,14 @@ const HeaderBar = () => {
     }
   };
 
-  // 检查当前路由是否以/console开头
-  const isConsoleRoute = location.pathname.startsWith('/console');
-
   return (
     <header className="text-semi-color-text-0 sticky top-0 z-50 transition-colors duration-300 bg-white/75 dark:bg-zinc-900/75 backdrop-blur-lg">
       <NoticeModal
         visible={noticeVisible}
-        onClose={() => setNoticeVisible(false)}
+        onClose={handleNoticeClose}
         isMobile={styleState.isMobile}
+        defaultTab={unreadCount > 0 ? 'system' : 'inApp'}
+        unreadKeys={getUnreadKeys()}
       />
       <div className="w-full px-2">
         <div className="flex items-center justify-between h-16">
@@ -462,14 +517,27 @@ const HeaderBar = () => {
               </Dropdown>
             )}
 
-            <Button
-              icon={<IconBell className="text-lg" />}
-              aria-label={t('系统公告')}
-              onClick={() => setNoticeVisible(true)}
-              theme="borderless"
-              type="tertiary"
-              className="!p-1.5 !text-current focus:!bg-semi-color-fill-1 dark:focus:!bg-gray-700 !rounded-full !bg-semi-color-fill-0 dark:!bg-semi-color-fill-1 hover:!bg-semi-color-fill-1 dark:hover:!bg-semi-color-fill-2"
-            />
+            {unreadCount > 0 ? (
+              <Badge count={unreadCount} type="danger" overflowCount={99}>
+                <Button
+                  icon={<IconBell className="text-lg" />}
+                  aria-label={t('系统公告')}
+                  onClick={handleNoticeOpen}
+                  theme="borderless"
+                  type="tertiary"
+                  className="!p-1.5 !text-current focus:!bg-semi-color-fill-1 dark:focus:!bg-gray-700 !rounded-full !bg-semi-color-fill-0 dark:!bg-semi-color-fill-1 hover:!bg-semi-color-fill-1 dark:hover:!bg-semi-color-fill-2"
+                />
+              </Badge>
+            ) : (
+              <Button
+                icon={<IconBell className="text-lg" />}
+                aria-label={t('系统公告')}
+                onClick={handleNoticeOpen}
+                theme="borderless"
+                type="tertiary"
+                className="!p-1.5 !text-current focus:!bg-semi-color-fill-1 dark:focus:!bg-gray-700 !rounded-full !bg-semi-color-fill-0 dark:!bg-semi-color-fill-1 hover:!bg-semi-color-fill-1 dark:hover:!bg-semi-color-fill-2"
+              />
+            )}
 
             <Button
               icon={theme === 'dark' ? <IconSun size="large" className="text-yellow-500" /> : <IconMoon size="large" className="text-gray-300" />}

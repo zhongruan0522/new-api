@@ -44,4 +44,6 @@ type TaskAdaptor interface {
 
 	// FetchTask
 	FetchTask(baseUrl, key string, body map[string]any) (*http.Response, error)
+
+	ParseTaskResult(respBody []byte) (*relaycommon.TaskInfo, error)
 }

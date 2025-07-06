@@ -11,7 +11,9 @@ import {
   XCircle,
   Loader,
   List,
-  Hash
+  Hash,
+  Video,
+  Sparkles
 } from 'lucide-react';
 import {
   API,
@@ -45,8 +47,9 @@ import { ITEMS_PER_PAGE } from '../../constants';
 import {
   IconEyeOpened,
   IconSearch,
-  IconSetting
 } from '@douyinfe/semi-icons';
+import { useTableCompactMode } from '../../hooks/useTableCompactMode';
+import { TASK_ACTION_GENERATE, TASK_ACTION_TEXT_GENERATE } from '../../constants/common.constant';
 
 const { Text } = Typography;
 
@@ -80,6 +83,7 @@ const COLUMN_KEYS = {
   TASK_STATUS: 'task_status',
   PROGRESS: 'progress',
   FAIL_REASON: 'fail_reason',
+  RESULT_URL: 'result_url',
 };
 
 const renderTimestamp = (timestampInSeconds) => {
@@ -96,20 +100,8 @@ const renderTimestamp = (timestampInSeconds) => {
 };
 
 function renderDuration(submit_time, finishTime) {
-  // 确保startTime和finishTime都是有效的时间戳
   if (!submit_time || !finishTime) return 'N/A';
-
-  // 将时间戳转换为Date对象
-  const start = new Date(submit_time);
-  const finish = new Date(finishTime);
-
-  // 计算时间差（毫秒）
-  const durationMs = finish - start;
-
-  // 将时间差转换为秒，并保留一位小数
-  const durationSec = (durationMs / 1000).toFixed(1);
-
-  // 设置颜色：大于60秒则为红色，小于等于60秒则为绿色
+  const durationSec = finishTime - submit_time;
   const color = durationSec > 60 ? 'red' : 'green';
 
   // 返回带有样式的颜色标签
@@ -162,6 +154,7 @@ const LogsTable = () => {
       [COLUMN_KEYS.TASK_STATUS]: true,
       [COLUMN_KEYS.PROGRESS]: true,
       [COLUMN_KEYS.FAIL_REASON]: true,
+      [COLUMN_KEYS.RESULT_URL]: true,
     };
   };
 
@@ -215,6 +208,18 @@ const LogsTable = () => {
             {t('生成歌词')}
           </Tag>
         );
+      case TASK_ACTION_GENERATE:
+        return (
+          <Tag color='blue' size='large' shape='circle' prefixIcon={<Sparkles size={14} />}>
+            {t('图生视频')}
+          </Tag>
+        );
+      case TASK_ACTION_TEXT_GENERATE:
+        return (
+          <Tag color='blue' size='large' shape='circle' prefixIcon={<Sparkles size={14} />}>
+            {t('文生视频')}
+          </Tag>
+        );
       default:
         return (
           <Tag color='white' size='large' shape='circle' prefixIcon={<HelpCircle size={14} />}>
@@ -224,12 +229,24 @@ const LogsTable = () => {
     }
   };
 
-  const renderPlatform = (type) => {
-    switch (type) {
+  const renderPlatform = (platform) => {
+    switch (platform) {
       case 'suno':
         return (
           <Tag color='green' size='large' shape='circle' prefixIcon={<Music size={14} />}>
             Suno
+          </Tag>
+        );
+      case 'kling':
+        return (
+          <Tag color='orange' size='large' shape='circle' prefixIcon={<Video size={14} />}>
+            Kling
+          </Tag>
+        );
+      case 'jimeng':
+        return (
+          <Tag color='purple' size='large' shape='circle' prefixIcon={<Video size={14} />}>
+            Jimeng
           </Tag>
         );
       default:
@@ -423,10 +440,21 @@ const LogsTable = () => {
     },
     {
       key: COLUMN_KEYS.FAIL_REASON,
-      title: t('失败原因'),
+      title: t('详情'),
       dataIndex: 'fail_reason',
       fixed: 'right',
       render: (text, record, index) => {
+        // 仅当为视频生成任务且成功，且 fail_reason 是 URL 时显示可点击链接
+        const isVideoTask = record.action === TASK_ACTION_GENERATE || record.action === TASK_ACTION_TEXT_GENERATE;
+        const isSuccess = record.status === 'SUCCESS';
+        const isUrl = typeof text === 'string' && /^https?:\/\//.test(text);
+        if (isSuccess && isVideoTask && isUrl) {
+          return (
+            <a href={text} target="_blank" rel="noopener noreferrer">
+              {t('点击预览视频')}
+            </a>
+          );
+        }
         if (!text) {
           return t('无');
         }
@@ -455,6 +483,8 @@ const LogsTable = () => {
   const [logCount, setLogCount] = useState(0);
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(false);
+
+  const [compactMode, setCompactMode] = useTableCompactMode('taskLogs');
 
   useEffect(() => {
     const localPageSize = parseInt(localStorage.getItem('task-page-size')) || ITEMS_PER_PAGE;
@@ -569,21 +599,18 @@ const LogsTable = () => {
             <Button
               theme="light"
               onClick={() => initDefaultColumns()}
-              className="!rounded-full"
             >
               {t('重置')}
             </Button>
             <Button
               theme="light"
               onClick={() => setShowColumnSelector(false)}
-              className="!rounded-full"
             >
               {t('取消')}
             </Button>
             <Button
               type='primary'
               onClick={() => setShowColumnSelector(false)}
-              className="!rounded-full"
             >
               {t('确定')}
             </Button>
@@ -635,7 +662,7 @@ const LogsTable = () => {
           className="!rounded-2xl mb-4"
           title={
             <div className="flex flex-col w-full">
-              <div className="flex flex-col md:flex-row justify-between items-center">
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-2 w-full">
                 <div className="flex items-center text-orange-500 mb-2 md:mb-0">
                   <IconEyeOpened className="mr-2" />
                   {loading ? (
@@ -650,6 +677,14 @@ const LogsTable = () => {
                     <Text>{t('任务记录')}</Text>
                   )}
                 </div>
+                <Button
+                  theme='light'
+                  type='secondary'
+                  className="w-full md:w-auto"
+                  onClick={() => setCompactMode(!compactMode)}
+                >
+                  {compactMode ? t('自适应列表') : t('紧凑列表')}
+                </Button>
               </div>
 
               <Divider margin="12px" />
@@ -684,7 +719,6 @@ const LogsTable = () => {
                       field='task_id'
                       prefix={<IconSearch />}
                       placeholder={t('任务 ID')}
-                      className="!rounded-full"
                       showClear
                       pure
                     />
@@ -695,7 +729,6 @@ const LogsTable = () => {
                         field='channel_id'
                         prefix={<IconSearch />}
                         placeholder={t('渠道 ID')}
-                        className="!rounded-full"
                         showClear
                         pure
                       />
@@ -710,7 +743,6 @@ const LogsTable = () => {
                         type='primary'
                         htmlType='submit'
                         loading={loading}
-                        className="!rounded-full"
                       >
                         {t('查询')}
                       </Button>
@@ -725,16 +757,13 @@ const LogsTable = () => {
                             }, 100);
                           }
                         }}
-                        className="!rounded-full"
                       >
                         {t('重置')}
                       </Button>
                       <Button
                         theme='light'
                         type='tertiary'
-                        icon={<IconSetting />}
                         onClick={() => setShowColumnSelector(true)}
-                        className="!rounded-full"
                       >
                         {t('列设置')}
                       </Button>
@@ -748,11 +777,11 @@ const LogsTable = () => {
           bordered={false}
         >
           <Table
-            columns={getVisibleColumns()}
+            columns={compactMode ? getVisibleColumns().map(({ fixed, ...rest }) => rest) : getVisibleColumns()}
             dataSource={logs}
             rowKey='key'
             loading={loading}
-            scroll={{ x: 'max-content' }}
+            scroll={compactMode ? undefined : { x: 'max-content' }}
             className="rounded-xl overflow-hidden"
             size="middle"
             empty={

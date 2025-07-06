@@ -15,7 +15,7 @@ import (
 )
 
 func getEmbeddingPromptToken(embeddingRequest dto.EmbeddingRequest) int {
-	token, _ := service.CountTokenInput(embeddingRequest.Input, embeddingRequest.Model)
+	token := service.CountTokenInput(embeddingRequest.Input, embeddingRequest.Model)
 	return token
 }
 
@@ -33,7 +33,7 @@ func validateEmbeddingRequest(c *gin.Context, info *relaycommon.RelayInfo, embed
 }
 
 func EmbeddingHelper(c *gin.Context) (openaiErr *dto.OpenAIErrorWithStatusCode) {
-	relayInfo := relaycommon.GenRelayInfo(c)
+	relayInfo := relaycommon.GenRelayInfoEmbedding(c)
 
 	var embeddingRequest *dto.EmbeddingRequest
 	err := common.UnmarshalBodyReusable(c, &embeddingRequest)
@@ -47,12 +47,10 @@ func EmbeddingHelper(c *gin.Context) (openaiErr *dto.OpenAIErrorWithStatusCode) 
 		return service.OpenAIErrorWrapperLocal(err, "invalid_embedding_request", http.StatusBadRequest)
 	}
 
-	err = helper.ModelMappedHelper(c, relayInfo)
+	err = helper.ModelMappedHelper(c, relayInfo, embeddingRequest)
 	if err != nil {
 		return service.OpenAIErrorWrapperLocal(err, "model_mapped_error", http.StatusInternalServerError)
 	}
-
-	embeddingRequest.Model = relayInfo.UpstreamModelName
 
 	promptToken := getEmbeddingPromptToken(*embeddingRequest)
 	relayInfo.PromptTokens = promptToken

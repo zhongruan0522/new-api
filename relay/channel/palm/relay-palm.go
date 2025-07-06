@@ -2,7 +2,6 @@ package palm
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/gin-gonic/gin"
 	"io"
 	"net/http"
@@ -73,7 +72,7 @@ func streamResponsePaLM2OpenAI(palmResponse *PaLMChatResponse) *dto.ChatCompleti
 
 func palmStreamHandler(c *gin.Context, resp *http.Response) (*dto.OpenAIErrorWithStatusCode, string) {
 	responseText := ""
-	responseId := fmt.Sprintf("chatcmpl-%s", common.GetUUID())
+	responseId := helper.GetResponseID(c)
 	createdTime := common.GetTimestamp()
 	dataChan := make(chan string)
 	stopChan := make(chan bool)
@@ -84,12 +83,7 @@ func palmStreamHandler(c *gin.Context, resp *http.Response) (*dto.OpenAIErrorWit
 			stopChan <- true
 			return
 		}
-		err = resp.Body.Close()
-		if err != nil {
-			common.SysError("error closing stream response: " + err.Error())
-			stopChan <- true
-			return
-		}
+		common.CloseResponseBodyGracefully(resp)
 		var palmResponse PaLMChatResponse
 		err = json.Unmarshal(responseBody, &palmResponse)
 		if err != nil {
@@ -123,10 +117,7 @@ func palmStreamHandler(c *gin.Context, resp *http.Response) (*dto.OpenAIErrorWit
 			return false
 		}
 	})
-	err := resp.Body.Close()
-	if err != nil {
-		return service.OpenAIErrorWrapper(err, "close_response_body_failed", http.StatusInternalServerError), ""
-	}
+	common.CloseResponseBodyGracefully(resp)
 	return nil, responseText
 }
 
@@ -135,10 +126,7 @@ func palmHandler(c *gin.Context, resp *http.Response, promptTokens int, model st
 	if err != nil {
 		return service.OpenAIErrorWrapper(err, "read_response_body_failed", http.StatusInternalServerError), nil
 	}
-	err = resp.Body.Close()
-	if err != nil {
-		return service.OpenAIErrorWrapper(err, "close_response_body_failed", http.StatusInternalServerError), nil
-	}
+	common.CloseResponseBodyGracefully(resp)
 	var palmResponse PaLMChatResponse
 	err = json.Unmarshal(responseBody, &palmResponse)
 	if err != nil {
@@ -156,7 +144,7 @@ func palmHandler(c *gin.Context, resp *http.Response, promptTokens int, model st
 		}, nil
 	}
 	fullTextResponse := responsePaLM2OpenAI(&palmResponse)
-	completionTokens, _ := service.CountTextToken(palmResponse.Candidates[0].Content, model)
+	completionTokens := service.CountTextToken(palmResponse.Candidates[0].Content, model)
 	usage := dto.Usage{
 		PromptTokens:     promptTokens,
 		CompletionTokens: completionTokens,

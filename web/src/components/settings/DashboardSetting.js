@@ -5,6 +5,7 @@ import SettingsAPIInfo from '../../pages/Setting/Dashboard/SettingsAPIInfo.js';
 import SettingsAnnouncements from '../../pages/Setting/Dashboard/SettingsAnnouncements.js';
 import SettingsFAQ from '../../pages/Setting/Dashboard/SettingsFAQ.js';
 import SettingsUptimeKuma from '../../pages/Setting/Dashboard/SettingsUptimeKuma.js';
+import SettingsDataDashboard from '../../pages/Setting/Dashboard/SettingsDataDashboard.js';
 
 const DashboardSetting = () => {
   let [inputs, setInputs] = useState({
@@ -23,6 +24,11 @@ const DashboardSetting = () => {
     FAQ: '',
     UptimeKumaUrl: '',
     UptimeKumaSlug: '',
+
+    /* 数据看板 */
+    DataExportEnabled: false,
+    DataExportDefaultTime: 'hour',
+    DataExportInterval: 5,
   });
 
   let [loading, setLoading] = useState(false);
@@ -36,6 +42,10 @@ const DashboardSetting = () => {
       data.forEach((item) => {
         if (item.key in inputs) {
           newInputs[item.key] = item.value;
+        }
+        if (item.key.endsWith('Enabled') &&
+          (item.key === 'DataExportEnabled')) {
+          newInputs[item.key] = item.value === 'true' ? true : false;
         }
       });
       setInputs(newInputs);
@@ -106,14 +116,19 @@ const DashboardSetting = () => {
           </p>
         </Modal>
 
-        {/* API信息管理 */}
+        {/* 数据看板设置 */}
         <Card style={{ marginTop: '10px' }}>
-          <SettingsAPIInfo options={inputs} refresh={onRefresh} />
+          <SettingsDataDashboard options={inputs} refresh={onRefresh} />
         </Card>
 
         {/* 系统公告管理 */}
         <Card style={{ marginTop: '10px' }}>
           <SettingsAnnouncements options={inputs} refresh={onRefresh} />
+        </Card>
+
+        {/* API信息管理 */}
+        <Card style={{ marginTop: '10px' }}>
+          <SettingsAPIInfo options={inputs} refresh={onRefresh} />
         </Card>
 
         {/* 常见问答管理 */}

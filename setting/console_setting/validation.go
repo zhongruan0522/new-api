@@ -7,6 +7,7 @@ import (
     "regexp"
     "strings"
     "time"
+    "sort"
 )
 
 var (
@@ -210,8 +211,23 @@ func validateFAQ(faqStr string) error {
     return nil
 }
 
+func getPublishTime(item map[string]interface{}) time.Time {
+    if v, ok := item["publishDate"]; ok {
+        if s, ok2 := v.(string); ok2 {
+            if t, err := time.Parse(time.RFC3339, s); err == nil {
+                return t
+            }
+        }
+    }
+    return time.Time{}
+}
+
 func GetAnnouncements() []map[string]interface{} {
-    return getJSONList(GetConsoleSetting().Announcements)
+    list := getJSONList(GetConsoleSetting().Announcements)
+    sort.SliceStable(list, func(i, j int) bool {
+        return getPublishTime(list[i]).After(getPublishTime(list[j]))
+    })
+    return list
 }
 
 func GetFAQ() []map[string]interface{} {

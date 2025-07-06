@@ -125,4 +125,16 @@ export const CHANNEL_OPTIONS = [
     color: 'blue',
     label: 'Coze',
   },
+  {
+    value: 50,
+    color: 'green',
+    label: '可灵',
+  },
+  {
+    value: 51,
+    color: 'blue',
+    label: '即梦',
+  },
 ];
+
+export const MODEL_TABLE_PAGE_SIZE = 10;

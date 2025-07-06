@@ -226,6 +226,9 @@ func Register(c *gin.Context) {
 			UnlimitedQuota:     true,
 			ModelLimitsEnabled: false,
 		}
+		if setting.DefaultUseAutoGroup {
+			token.Group = "auto"
+		}
 		if err := token.Insert(); err != nil {
 			c.JSON(http.StatusOK, gin.H{
 				"success": false,
@@ -243,15 +246,15 @@ func Register(c *gin.Context) {
 }
 
 func GetAllUsers(c *gin.Context) {
-	p, _ := strconv.Atoi(c.Query("p"))
-	pageSize, _ := strconv.Atoi(c.Query("page_size"))
-	if p < 1 {
-		p = 1
+	pageInfo, err := common.GetPageQuery(c)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": "parse page query failed",
+		})
+		return
 	}
-	if pageSize < 0 {
-		pageSize = common.ItemsPerPage
-	}
-	users, total, err := model.GetAllUsers((p-1)*pageSize, pageSize)
+	users, total, err := model.GetAllUsers(pageInfo)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,
@@ -259,15 +262,13 @@ func GetAllUsers(c *gin.Context) {
 		})
 		return
 	}
+
+	pageInfo.SetTotal(int(total))
+	pageInfo.SetItems(users)
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
-		"data": gin.H{
-			"items":     users,
-			"total":     total,
-			"page":      p,
-			"page_size": pageSize,
-		},
+		"data":    pageInfo,
 	})
 	return
 }
@@ -459,6 +460,9 @@ func GetSelf(c *gin.Context) {
 		})
 		return
 	}
+	// Hide admin remarks: set to empty to trigger omitempty tag, ensuring the remark field is not included in JSON returned to regular users
+	user.Remark = ""
+
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
@@ -483,7 +487,7 @@ func GetUserModels(c *gin.Context) {
 	groups := setting.GetUserUsableGroups(user.Group)
 	var models []string
 	for group := range groups {
-		for _, g := range model.GetGroupModels(group) {
+		for _, g := range model.GetGroupEnabledModels(group) {
 			if !common.StringsContains(models, g) {
 				models = append(models, g)
 			}

@@ -178,7 +178,14 @@ type ClaudeRequest struct {
 
 type Thinking struct {
 	Type         string `json:"type"`
-	BudgetTokens int    `json:"budget_tokens"`
+	BudgetTokens *int   `json:"budget_tokens,omitempty"`
+}
+
+func (c *Thinking) GetBudgetTokens() int {
+	if c.BudgetTokens == nil {
+		return 0
+	}
+	return *c.BudgetTokens
 }
 
 func (c *ClaudeRequest) IsStringSystem() bool {

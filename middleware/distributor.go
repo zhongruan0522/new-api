@@ -11,6 +11,7 @@ import (
 	relayconstant "one-api/relay/constant"
 	"one-api/service"
 	"one-api/setting"
+	"one-api/setting/ratio_setting"
 	"strconv"
 	"strings"
 	"time"
@@ -24,7 +25,7 @@ type ModelRequest struct {
 
 func Distribute() func(c *gin.Context) {
 	return func(c *gin.Context) {
-		allowIpsMap := c.GetStringMap("allow_ips")
+		allowIpsMap := common.GetContextKeyStringMap(c, constant.ContextKeyTokenAllowIps)
 		if len(allowIpsMap) != 0 {
 			clientIp := c.ClientIP()
 			if _, ok := allowIpsMap[clientIp]; !ok {
@@ -33,14 +34,14 @@ func Distribute() func(c *gin.Context) {
 			}
 		}
 		var channel *model.Channel
-		channelId, ok := c.Get("specific_channel_id")
+		channelId, ok := common.GetContextKey(c, constant.ContextKeyTokenSpecificChannelId)
 		modelRequest, shouldSelectChannel, err := getModelRequest(c)
 		if err != nil {
 			abortWithOpenAiMessage(c, http.StatusBadRequest, "Invalid request, "+err.Error())
 			return
 		}
-		userGroup := c.GetString(constant.ContextKeyUserGroup)
-		tokenGroup := c.GetString("token_group")
+		userGroup := common.GetContextKeyString(c, constant.ContextKeyUserGroup)
+		tokenGroup := common.GetContextKeyString(c, constant.ContextKeyTokenGroup)
 		if tokenGroup != "" {
 			// check common.UserUsableGroups[userGroup]
 			if _, ok := setting.GetUserUsableGroups(userGroup)[tokenGroup]; !ok {
@@ -48,13 +49,15 @@ func Distribute() func(c *gin.Context) {
 				return
 			}
 			// check group in common.GroupRatio
-			if !setting.ContainsGroupRatio(tokenGroup) {
-				abortWithOpenAiMessage(c, http.StatusForbidden, fmt.Sprintf("分组 %s 已被弃用", tokenGroup))
-				return
+			if !ratio_setting.ContainsGroupRatio(tokenGroup) {
+				if tokenGroup != "auto" {
+					abortWithOpenAiMessage(c, http.StatusForbidden, fmt.Sprintf("分组 %s 已被弃用", tokenGroup))
+					return
+				}
 			}
 			userGroup = tokenGroup
 		}
-		c.Set("group", userGroup)
+		common.SetContextKey(c, constant.ContextKeyUsingGroup, userGroup)
 		if ok {
 			id, err := strconv.Atoi(channelId.(string))
 			if err != nil {
@@ -73,9 +76,9 @@ func Distribute() func(c *gin.Context) {
 		} else {
 			// Select a channel for the user
 			// check token model mapping
-			modelLimitEnable := c.GetBool("token_model_limit_enabled")
+			modelLimitEnable := common.GetContextKeyBool(c, constant.ContextKeyTokenModelLimitEnabled)
 			if modelLimitEnable {
-				s, ok := c.Get("token_model_limit")
+				s, ok := common.GetContextKey(c, constant.ContextKeyTokenModelLimit)
 				var tokenModelLimit map[string]bool
 				if ok {
 					tokenModelLimit = s.(map[string]bool)
@@ -95,9 +98,14 @@ func Distribute() func(c *gin.Context) {
 			}
 
 			if shouldSelectChannel {
-				channel, err = model.CacheGetRandomSatisfiedChannel(userGroup, modelRequest.Model, 0)
+				var selectGroup string
+				channel, selectGroup, err = model.CacheGetRandomSatisfiedChannel(c, userGroup, modelRequest.Model, 0)
 				if err != nil {
-					message := fmt.Sprintf("当前分组 %s 下对于模型 %s 无可用渠道", userGroup, modelRequest.Model)
+					showGroup := userGroup
+					if userGroup == "auto" {
+						showGroup = fmt.Sprintf("auto(%s)", selectGroup)
+					}
+					message := fmt.Sprintf("当前分组 %s 下对于模型 %s 无可用渠道", showGroup, modelRequest.Model)
 					// 如果错误，但是渠道不为空，说明是数据库一致性问题
 					if channel != nil {
 						common.SysError(fmt.Sprintf("渠道不存在：%d", channel.Id))
@@ -113,7 +121,7 @@ func Distribute() func(c *gin.Context) {
 				}
 			}
 		}
-		c.Set(constant.ContextKeyRequestStartTime, time.Now())
+		common.SetContextKey(c, constant.ContextKeyRequestStartTime, time.Now())
 		SetupContextForSelectedChannel(c, channel, modelRequest.Model)
 		c.Next()
 	}
@@ -162,7 +170,26 @@ func getModelRequest(c *gin.Context) (*ModelRequest, bool, error) {
 		}
 		c.Set("platform", string(constant.TaskPlatformSuno))
 		c.Set("relay_mode", relayMode)
-	} else if strings.HasPrefix(c.Request.URL.Path, "/v1beta/models/") {
+	} else if strings.Contains(c.Request.URL.Path, "/v1/video/generations") {
+		err = common.UnmarshalBodyReusable(c, &modelRequest)
+		var platform string
+		var relayMode int
+		if strings.HasPrefix(modelRequest.Model, "jimeng") {
+			platform = string(constant.TaskPlatformJimeng)
+			relayMode = relayconstant.Path2RelayJimeng(c.Request.Method, c.Request.URL.Path)
+			if relayMode == relayconstant.RelayModeJimengFetchByID {
+				shouldSelectChannel = false
+			}
+		} else {
+			platform = string(constant.TaskPlatformKling)
+			relayMode = relayconstant.Path2RelayKling(c.Request.Method, c.Request.URL.Path)
+			if relayMode == relayconstant.RelayModeKlingFetchByID {
+				shouldSelectChannel = false
+			}
+		}
+		c.Set("platform", platform)
+		c.Set("relay_mode", relayMode)
+	} else if strings.HasPrefix(c.Request.URL.Path, "/v1beta/models/") || strings.HasPrefix(c.Request.URL.Path, "/v1/models/") {
 		// Gemini API 路径处理: /v1beta/models/gemini-2.0-flash:generateContent
 		relayMode := relayconstant.RelayModeGemini
 		modelName := extractModelNameFromGeminiPath(c.Request.URL.Path)
@@ -234,21 +261,21 @@ func SetupContextForSelectedChannel(c *gin.Context, channel *model.Channel, mode
 	c.Set("base_url", channel.GetBaseURL())
 	// TODO: api_version统一
 	switch channel.Type {
-	case common.ChannelTypeAzure:
+	case constant.ChannelTypeAzure:
 		c.Set("api_version", channel.Other)
-	case common.ChannelTypeVertexAi:
+	case constant.ChannelTypeVertexAi:
 		c.Set("region", channel.Other)
-	case common.ChannelTypeXunfei:
+	case constant.ChannelTypeXunfei:
 		c.Set("api_version", channel.Other)
-	case common.ChannelTypeGemini:
+	case constant.ChannelTypeGemini:
 		c.Set("api_version", channel.Other)
-	case common.ChannelTypeAli:
+	case constant.ChannelTypeAli:
 		c.Set("plugin", channel.Other)
-	case common.ChannelCloudflare:
+	case constant.ChannelCloudflare:
 		c.Set("api_version", channel.Other)
-	case common.ChannelTypeMokaAI:
+	case constant.ChannelTypeMokaAI:
 		c.Set("api_version", channel.Other)
-	case common.ChannelTypeCoze:
+	case constant.ChannelTypeCoze:
 		c.Set("bot_id", channel.Other)
 	}
 }

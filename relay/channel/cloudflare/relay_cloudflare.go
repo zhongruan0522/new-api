@@ -71,7 +71,7 @@ func cfStreamHandler(c *gin.Context, resp *http.Response, info *relaycommon.Rela
 	if err := scanner.Err(); err != nil {
 		common.LogError(c, "error_scanning_stream_response: "+err.Error())
 	}
-	usage, _ := service.ResponseText2Usage(responseText, info.UpstreamModelName, info.PromptTokens)
+	usage := service.ResponseText2Usage(responseText, info.UpstreamModelName, info.PromptTokens)
 	if info.ShouldIncludeUsage {
 		response := helper.GenerateFinalUsageResponse(id, info.StartTime.Unix(), info.UpstreamModelName, *usage)
 		err := helper.ObjectData(c, response)
@@ -81,10 +81,7 @@ func cfStreamHandler(c *gin.Context, resp *http.Response, info *relaycommon.Rela
 	}
 	helper.Done(c)
 
-	err := resp.Body.Close()
-	if err != nil {
-		common.LogError(c, "close_response_body_failed: "+err.Error())
-	}
+	common.CloseResponseBodyGracefully(resp)
 
 	return nil, usage
 }
@@ -94,10 +91,7 @@ func cfHandler(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo)
 	if err != nil {
 		return service.OpenAIErrorWrapper(err, "read_response_body_failed", http.StatusInternalServerError), nil
 	}
-	err = resp.Body.Close()
-	if err != nil {
-		return service.OpenAIErrorWrapperLocal(err, "close_response_body_failed", http.StatusInternalServerError), nil
-	}
+	common.CloseResponseBodyGracefully(resp)
 	var response dto.TextResponse
 	err = json.Unmarshal(responseBody, &response)
 	if err != nil {
@@ -108,7 +102,7 @@ func cfHandler(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo)
 	for _, choice := range response.Choices {
 		responseText += choice.Message.StringContent()
 	}
-	usage, _ := service.ResponseText2Usage(responseText, info.UpstreamModelName, info.PromptTokens)
+	usage := service.ResponseText2Usage(responseText, info.UpstreamModelName, info.PromptTokens)
 	response.Usage = *usage
 	response.Id = helper.GetResponseID(c)
 	jsonResponse, err := json.Marshal(response)
@@ -127,10 +121,7 @@ func cfSTTHandler(c *gin.Context, resp *http.Response, info *relaycommon.RelayIn
 	if err != nil {
 		return service.OpenAIErrorWrapper(err, "read_response_body_failed", http.StatusInternalServerError), nil
 	}
-	err = resp.Body.Close()
-	if err != nil {
-		return service.OpenAIErrorWrapper(err, "close_response_body_failed", http.StatusInternalServerError), nil
-	}
+	common.CloseResponseBodyGracefully(resp)
 	err = json.Unmarshal(responseBody, &cfResp)
 	if err != nil {
 		return service.OpenAIErrorWrapper(err, "unmarshal_response_body_failed", http.StatusInternalServerError), nil
@@ -150,7 +141,7 @@ func cfSTTHandler(c *gin.Context, resp *http.Response, info *relaycommon.RelayIn
 
 	usage := &dto.Usage{}
 	usage.PromptTokens = info.PromptTokens
-	usage.CompletionTokens, _ = service.CountTextToken(cfResp.Result.Text, info.UpstreamModelName)
+	usage.CompletionTokens = service.CountTextToken(cfResp.Result.Text, info.UpstreamModelName)
 	usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
 
 	return nil, usage

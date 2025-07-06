@@ -13,6 +13,7 @@ import (
 	"one-api/relay/helper"
 	"one-api/service"
 	"one-api/setting"
+	"one-api/setting/model_setting"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -59,7 +60,7 @@ func checkGeminiInputSensitive(textRequest *gemini.GeminiChatRequest) ([]string,
 	return sensitiveWords, err
 }
 
-func getGeminiInputTokens(req *gemini.GeminiChatRequest, info *relaycommon.RelayInfo) (int, error) {
+func getGeminiInputTokens(req *gemini.GeminiChatRequest, info *relaycommon.RelayInfo) int {
 	// 计算输入 token 数量
 	var inputTexts []string
 	for _, content := range req.Contents {
@@ -71,9 +72,36 @@ func getGeminiInputTokens(req *gemini.GeminiChatRequest, info *relaycommon.Relay
 	}
 
 	inputText := strings.Join(inputTexts, "\n")
-	inputTokens, err := service.CountTokenInput(inputText, info.UpstreamModelName)
+	inputTokens := service.CountTokenInput(inputText, info.UpstreamModelName)
 	info.PromptTokens = inputTokens
-	return inputTokens, err
+	return inputTokens
+}
+
+func isNoThinkingRequest(req *gemini.GeminiChatRequest) bool {
+	if req.GenerationConfig.ThinkingConfig != nil && req.GenerationConfig.ThinkingConfig.ThinkingBudget != nil {
+		return *req.GenerationConfig.ThinkingConfig.ThinkingBudget <= 0
+	}
+	return false
+}
+
+func trimModelThinking(modelName string) string {
+	// 去除模型名称中的 -nothinking 后缀
+	if strings.HasSuffix(modelName, "-nothinking") {
+		return strings.TrimSuffix(modelName, "-nothinking")
+	}
+	// 去除模型名称中的 -thinking 后缀
+	if strings.HasSuffix(modelName, "-thinking") {
+		return strings.TrimSuffix(modelName, "-thinking")
+	}
+
+	// 去除模型名称中的 -thinking-number
+	if strings.Contains(modelName, "-thinking-") {
+		parts := strings.Split(modelName, "-thinking-")
+		if len(parts) > 1 {
+			return parts[0] + "-thinking"
+		}
+	}
+	return modelName
 }
 
 func GeminiHelper(c *gin.Context) (openaiErr *dto.OpenAIErrorWithStatusCode) {
@@ -83,7 +111,7 @@ func GeminiHelper(c *gin.Context) (openaiErr *dto.OpenAIErrorWithStatusCode) {
 		return service.OpenAIErrorWrapperLocal(err, "invalid_gemini_request", http.StatusBadRequest)
 	}
 
-	relayInfo := relaycommon.GenRelayInfo(c)
+	relayInfo := relaycommon.GenRelayInfoGemini(c)
 
 	// 检查 Gemini 流式模式
 	checkGeminiStreamMode(c, relayInfo)
@@ -97,7 +125,7 @@ func GeminiHelper(c *gin.Context) (openaiErr *dto.OpenAIErrorWithStatusCode) {
 	}
 
 	// model mapped 模型映射
-	err = helper.ModelMappedHelper(c, relayInfo)
+	err = helper.ModelMappedHelper(c, relayInfo, req)
 	if err != nil {
 		return service.OpenAIErrorWrapperLocal(err, "model_mapped_error", http.StatusBadRequest)
 	}
@@ -106,11 +134,26 @@ func GeminiHelper(c *gin.Context) (openaiErr *dto.OpenAIErrorWithStatusCode) {
 		promptTokens := value.(int)
 		relayInfo.SetPromptTokens(promptTokens)
 	} else {
-		promptTokens, err := getGeminiInputTokens(req, relayInfo)
-		if err != nil {
-			return service.OpenAIErrorWrapperLocal(err, "count_input_tokens_error", http.StatusBadRequest)
-		}
+		promptTokens := getGeminiInputTokens(req, relayInfo)
 		c.Set("prompt_tokens", promptTokens)
+	}
+
+	if model_setting.GetGeminiSettings().ThinkingAdapterEnabled {
+		if isNoThinkingRequest(req) {
+			// check is thinking
+			if !strings.Contains(relayInfo.OriginModelName, "-nothinking") {
+				// try to get no thinking model price
+				noThinkingModelName := relayInfo.OriginModelName + "-nothinking"
+				containPrice := helper.ContainPriceOrRatio(noThinkingModelName)
+				if containPrice {
+					relayInfo.OriginModelName = noThinkingModelName
+					relayInfo.UpstreamModelName = noThinkingModelName
+				}
+			}
+		}
+		if req.GenerationConfig.ThinkingConfig == nil {
+			gemini.ThinkingAdaptor(req, relayInfo)
+		}
 	}
 
 	priceData, err := helper.ModelPriceHelper(c, relayInfo, relayInfo.PromptTokens, int(req.GenerationConfig.MaxOutputTokens))
@@ -155,14 +198,33 @@ func GeminiHelper(c *gin.Context) (openaiErr *dto.OpenAIErrorWithStatusCode) {
 		return service.OpenAIErrorWrapperLocal(err, "marshal_text_request_failed", http.StatusInternalServerError)
 	}
 
+	if common.DebugEnabled {
+		println("Gemini request body: %s", string(requestBody))
+	}
+
 	resp, err := adaptor.DoRequest(c, relayInfo, bytes.NewReader(requestBody))
 	if err != nil {
 		common.LogError(c, "Do gemini request failed: "+err.Error())
-		return service.OpenAIErrorWrapperLocal(err, "do_request_failed", http.StatusInternalServerError)
+		return service.OpenAIErrorWrapper(err, "do_request_failed", http.StatusInternalServerError)
+	}
+
+	statusCodeMappingStr := c.GetString("status_code_mapping")
+
+	var httpResp *http.Response
+	if resp != nil {
+		httpResp = resp.(*http.Response)
+		relayInfo.IsStream = relayInfo.IsStream || strings.HasPrefix(httpResp.Header.Get("Content-Type"), "text/event-stream")
+		if httpResp.StatusCode != http.StatusOK {
+			openaiErr = service.RelayErrorHandler(httpResp, false)
+			// reset status code 重置状态码
+			service.ResetStatusCode(openaiErr, statusCodeMappingStr)
+			return openaiErr
+		}
 	}
 
 	usage, openaiErr := adaptor.DoResponse(c, resp.(*http.Response), relayInfo)
 	if openaiErr != nil {
+		service.ResetStatusCode(openaiErr, statusCodeMappingStr)
 		return openaiErr
 	}
 

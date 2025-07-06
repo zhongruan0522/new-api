@@ -1,4 +1,4 @@
-package operation_setting
+package ratio_setting
 
 import (
 	"encoding/json"
@@ -85,7 +85,11 @@ func UpdateCacheRatioByJSONString(jsonStr string) error {
 	cacheRatioMapMutex.Lock()
 	defer cacheRatioMapMutex.Unlock()
 	cacheRatioMap = make(map[string]float64)
-	return json.Unmarshal([]byte(jsonStr), &cacheRatioMap)
+	err := json.Unmarshal([]byte(jsonStr), &cacheRatioMap)
+	if err == nil {
+		InvalidateExposedDataCache()
+	}
+	return err
 }
 
 // GetCacheRatio returns the cache ratio for a model
@@ -105,4 +109,14 @@ func GetCreateCacheRatio(name string) (float64, bool) {
 		return 1.25, false // Default to 1.25 if not found
 	}
 	return ratio, true
+}
+
+func GetCacheRatioCopy() map[string]float64 {
+	cacheRatioMapMutex.RLock()
+	defer cacheRatioMapMutex.RUnlock()
+	copyMap := make(map[string]float64, len(cacheRatioMap))
+	for k, v := range cacheRatioMap {
+		copyMap[k] = v
+	}
+	return copyMap
 }

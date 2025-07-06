@@ -39,34 +39,18 @@ func embeddingRequestOpenAI2Ali(request dto.EmbeddingRequest) *AliEmbeddingReque
 }
 
 func aliEmbeddingHandler(c *gin.Context, resp *http.Response) (*dto.OpenAIErrorWithStatusCode, *dto.Usage) {
-	var aliResponse AliEmbeddingResponse
-	err := json.NewDecoder(resp.Body).Decode(&aliResponse)
+	var fullTextResponse dto.OpenAIEmbeddingResponse
+	err := json.NewDecoder(resp.Body).Decode(&fullTextResponse)
 	if err != nil {
 		return service.OpenAIErrorWrapper(err, "unmarshal_response_body_failed", http.StatusInternalServerError), nil
 	}
 
-	err = resp.Body.Close()
-	if err != nil {
-		return service.OpenAIErrorWrapper(err, "close_response_body_failed", http.StatusInternalServerError), nil
-	}
-
-	if aliResponse.Code != "" {
-		return &dto.OpenAIErrorWithStatusCode{
-			Error: dto.OpenAIError{
-				Message: aliResponse.Message,
-				Type:    aliResponse.Code,
-				Param:   aliResponse.RequestId,
-				Code:    aliResponse.Code,
-			},
-			StatusCode: resp.StatusCode,
-		}, nil
-	}
+	common.CloseResponseBodyGracefully(resp)
 
 	model := c.GetString("model")
 	if model == "" {
 		model = "text-embedding-v4"
 	}
-	fullTextResponse := embeddingResponseAli2OpenAI(&aliResponse, model)
 	jsonResponse, err := json.Marshal(fullTextResponse)
 	if err != nil {
 		return service.OpenAIErrorWrapper(err, "marshal_response_body_failed", http.StatusInternalServerError), nil
@@ -186,10 +170,7 @@ func aliStreamHandler(c *gin.Context, resp *http.Response) (*dto.OpenAIErrorWith
 			return false
 		}
 	})
-	err := resp.Body.Close()
-	if err != nil {
-		return service.OpenAIErrorWrapper(err, "close_response_body_failed", http.StatusInternalServerError), nil
-	}
+	common.CloseResponseBodyGracefully(resp)
 	return nil, &usage
 }
 
@@ -199,10 +180,7 @@ func aliHandler(c *gin.Context, resp *http.Response) (*dto.OpenAIErrorWithStatus
 	if err != nil {
 		return service.OpenAIErrorWrapper(err, "read_response_body_failed", http.StatusInternalServerError), nil
 	}
-	err = resp.Body.Close()
-	if err != nil {
-		return service.OpenAIErrorWrapper(err, "close_response_body_failed", http.StatusInternalServerError), nil
-	}
+	common.CloseResponseBodyGracefully(resp)
 	err = json.Unmarshal(responseBody, &aliResponse)
 	if err != nil {
 		return service.OpenAIErrorWrapper(err, "unmarshal_response_body_failed", http.StatusInternalServerError), nil

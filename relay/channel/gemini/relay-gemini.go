@@ -12,6 +12,7 @@ import (
 	"one-api/relay/helper"
 	"one-api/service"
 	"one-api/setting/model_setting"
+	"strconv"
 	"strings"
 	"unicode/utf8"
 
@@ -36,6 +37,102 @@ var geminiSupportedMimeTypes = map[string]bool{
 	"video/flv":       true,
 }
 
+// Gemini 允许的思考预算范围
+const (
+	pro25MinBudget       = 128
+	pro25MaxBudget       = 32768
+	flash25MaxBudget     = 24576
+	flash25LiteMinBudget = 512
+	flash25LiteMaxBudget = 24576
+)
+
+// clampThinkingBudget 根据模型名称将预算限制在允许的范围内
+func clampThinkingBudget(modelName string, budget int) int {
+	isNew25Pro := strings.HasPrefix(modelName, "gemini-2.5-pro") &&
+		!strings.HasPrefix(modelName, "gemini-2.5-pro-preview-05-06") &&
+		!strings.HasPrefix(modelName, "gemini-2.5-pro-preview-03-25")
+	is25FlashLite := strings.HasPrefix(modelName, "gemini-2.5-flash-lite")
+
+	if is25FlashLite {
+		if budget < flash25LiteMinBudget {
+			return flash25LiteMinBudget
+		}
+		if budget > flash25LiteMaxBudget {
+			return flash25LiteMaxBudget
+		}
+	} else if isNew25Pro {
+		if budget < pro25MinBudget {
+			return pro25MinBudget
+		}
+		if budget > pro25MaxBudget {
+			return pro25MaxBudget
+		}
+	} else { // 其他模型
+		if budget < 0 {
+			return 0
+		}
+		if budget > flash25MaxBudget {
+			return flash25MaxBudget
+		}
+	}
+	return budget
+}
+
+func ThinkingAdaptor(geminiRequest *GeminiChatRequest, info *relaycommon.RelayInfo) {
+	if model_setting.GetGeminiSettings().ThinkingAdapterEnabled {
+		modelName := info.UpstreamModelName
+		isNew25Pro := strings.HasPrefix(modelName, "gemini-2.5-pro") &&
+			!strings.HasPrefix(modelName, "gemini-2.5-pro-preview-05-06") &&
+			!strings.HasPrefix(modelName, "gemini-2.5-pro-preview-03-25")
+
+		if strings.Contains(modelName, "-thinking-") {
+			parts := strings.SplitN(modelName, "-thinking-", 2)
+			if len(parts) == 2 && parts[1] != "" {
+				if budgetTokens, err := strconv.Atoi(parts[1]); err == nil {
+					clampedBudget := clampThinkingBudget(modelName, budgetTokens)
+					geminiRequest.GenerationConfig.ThinkingConfig = &GeminiThinkingConfig{
+						ThinkingBudget:  common.GetPointer(clampedBudget),
+						IncludeThoughts: true,
+					}
+				}
+			}
+		} else if strings.HasSuffix(modelName, "-thinking") {
+			unsupportedModels := []string{
+				"gemini-2.5-pro-preview-05-06",
+				"gemini-2.5-pro-preview-03-25",
+			}
+			isUnsupported := false
+			for _, unsupportedModel := range unsupportedModels {
+				if strings.HasPrefix(modelName, unsupportedModel) {
+					isUnsupported = true
+					break
+				}
+			}
+
+			if isUnsupported {
+				geminiRequest.GenerationConfig.ThinkingConfig = &GeminiThinkingConfig{
+					IncludeThoughts: true,
+				}
+			} else {
+				geminiRequest.GenerationConfig.ThinkingConfig = &GeminiThinkingConfig{
+					IncludeThoughts: true,
+				}
+				if geminiRequest.GenerationConfig.MaxOutputTokens > 0 {
+					budgetTokens := model_setting.GetGeminiSettings().ThinkingAdapterBudgetTokensPercentage * float64(geminiRequest.GenerationConfig.MaxOutputTokens)
+					clampedBudget := clampThinkingBudget(modelName, int(budgetTokens))
+					geminiRequest.GenerationConfig.ThinkingConfig.ThinkingBudget = common.GetPointer(clampedBudget)
+				}
+			}
+		} else if strings.HasSuffix(modelName, "-nothinking") {
+			if !isNew25Pro {
+				geminiRequest.GenerationConfig.ThinkingConfig = &GeminiThinkingConfig{
+					ThinkingBudget: common.GetPointer(0),
+				}
+			}
+		}
+	}
+}
+
 // Setting safety to the lowest possible values since Gemini is already powerless enough
 func CovertGemini2OpenAI(textRequest dto.GeneralOpenAIRequest, info *relaycommon.RelayInfo) (*GeminiChatRequest, error) {
 
@@ -56,67 +153,7 @@ func CovertGemini2OpenAI(textRequest dto.GeneralOpenAIRequest, info *relaycommon
 		}
 	}
 
-	if model_setting.GetGeminiSettings().ThinkingAdapterEnabled {
-		if strings.HasSuffix(info.OriginModelName, "-thinking") {
-			// 硬编码不支持 ThinkingBudget 的旧模型
-			unsupportedModels := []string{
-				"gemini-2.5-pro-preview-05-06",
-				"gemini-2.5-pro-preview-03-25",
-			}
-
-			isUnsupported := false
-			for _, unsupportedModel := range unsupportedModels {
-				if strings.HasPrefix(info.OriginModelName, unsupportedModel) {
-					isUnsupported = true
-					break
-				}
-			}
-
-			if isUnsupported {
-				geminiRequest.GenerationConfig.ThinkingConfig = &GeminiThinkingConfig{
-					IncludeThoughts: true,
-				}
-			} else {
-				budgetTokens := model_setting.GetGeminiSettings().ThinkingAdapterBudgetTokensPercentage * float64(geminiRequest.GenerationConfig.MaxOutputTokens)
-
-				// 检查是否为新的2.5pro模型（支持ThinkingBudget但有特殊范围）
-				isNew25Pro := strings.HasPrefix(info.OriginModelName, "gemini-2.5-pro") &&
-					!strings.HasPrefix(info.OriginModelName, "gemini-2.5-pro-preview-05-06") &&
-					!strings.HasPrefix(info.OriginModelName, "gemini-2.5-pro-preview-03-25")
-
-				if isNew25Pro {
-					// 新的2.5pro模型：ThinkingBudget范围为128-32768
-					if budgetTokens == 0 || budgetTokens < 128 {
-						budgetTokens = 128
-					} else if budgetTokens > 32768 {
-						budgetTokens = 32768
-					}
-				} else {
-					// 其他模型：ThinkingBudget范围为0-24576
-					if budgetTokens == 0 || budgetTokens > 24576 {
-						budgetTokens = 24576
-					}
-				}
-
-				geminiRequest.GenerationConfig.ThinkingConfig = &GeminiThinkingConfig{
-					ThinkingBudget:  common.GetPointer(int(budgetTokens)),
-					IncludeThoughts: true,
-				}
-			}
-		} else if strings.HasSuffix(info.OriginModelName, "-nothinking") {
-			// 检查是否为新的2.5pro模型（不支持-nothinking，因为最低值只能为128）
-			isNew25Pro := strings.HasPrefix(info.OriginModelName, "gemini-2.5-pro") &&
-				!strings.HasPrefix(info.OriginModelName, "gemini-2.5-pro-preview-05-06") &&
-				!strings.HasPrefix(info.OriginModelName, "gemini-2.5-pro-preview-03-25")
-
-			if !isNew25Pro {
-				// 只有非新2.5pro模型才支持-nothinking
-				geminiRequest.GenerationConfig.ThinkingConfig = &GeminiThinkingConfig{
-					ThinkingBudget: common.GetPointer(0),
-				}
-			}
-		}
-	}
+	ThinkingAdaptor(&geminiRequest, info)
 
 	safetySettings := make([]GeminiChatSafetySettings, 0, len(SafetySettingList))
 	for _, category := range SafetySettingList {
@@ -283,7 +320,8 @@ func CovertGemini2OpenAI(textRequest dto.GeneralOpenAIRequest, info *relaycommon
 
 					// 校验 MimeType 是否在 Gemini 支持的白名单中
 					if _, ok := geminiSupportedMimeTypes[strings.ToLower(fileData.MimeType)]; !ok {
-						return nil, fmt.Errorf("MIME type '%s' from URL '%s' is not supported by Gemini. Supported types are: %v", fileData.MimeType, part.GetImageMedia().Url, getSupportedMimeTypesList())
+						url := part.GetImageMedia().Url
+						return nil, fmt.Errorf("mime type is not supported by Gemini: '%s', url: '%s', supported types are: %v", fileData.MimeType, url, getSupportedMimeTypesList())
 					}
 
 					parts = append(parts, GeminiPart{
@@ -341,7 +379,9 @@ func CovertGemini2OpenAI(textRequest dto.GeneralOpenAIRequest, info *relaycommon
 		if content.Role == "assistant" {
 			content.Role = "model"
 		}
-		geminiRequest.Contents = append(geminiRequest.Contents, content)
+		if len(content.Parts) > 0 {
+			geminiRequest.Contents = append(geminiRequest.Contents, content)
+		}
 	}
 
 	if len(system_content) > 0 {
@@ -611,9 +651,9 @@ func getResponseToolCall(item *GeminiPart) *dto.ToolCallResponse {
 	}
 }
 
-func responseGeminiChat2OpenAI(response *GeminiChatResponse) *dto.OpenAITextResponse {
+func responseGeminiChat2OpenAI(c *gin.Context, response *GeminiChatResponse) *dto.OpenAITextResponse {
 	fullTextResponse := dto.OpenAITextResponse{
-		Id:      fmt.Sprintf("chatcmpl-%s", common.GetUUID()),
+		Id:      helper.GetResponseID(c),
 		Object:  "chat.completion",
 		Created: common.GetTimestamp(),
 		Choices: make([]dto.OpenAITextResponseChoice, 0, len(response.Candidates)),
@@ -754,14 +794,14 @@ func streamResponseGeminiChat2OpenAI(geminiResponse *GeminiChatResponse) (*dto.C
 
 func GeminiChatStreamHandler(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (*dto.OpenAIErrorWithStatusCode, *dto.Usage) {
 	// responseText := ""
-	id := fmt.Sprintf("chatcmpl-%s", common.GetUUID())
+	id := helper.GetResponseID(c)
 	createAt := common.GetTimestamp()
 	var usage = &dto.Usage{}
 	var imageCount int
 
 	helper.StreamScannerHandler(c, resp, info, func(data string) bool {
 		var geminiResponse GeminiChatResponse
-		err := common.DecodeJsonStr(data, &geminiResponse)
+		err := common.UnmarshalJsonStr(data, &geminiResponse)
 		if err != nil {
 			common.LogError(c, "error unmarshalling stream response: "+err.Error())
 			return false
@@ -826,15 +866,12 @@ func GeminiChatHandler(c *gin.Context, resp *http.Response, info *relaycommon.Re
 	if err != nil {
 		return service.OpenAIErrorWrapper(err, "read_response_body_failed", http.StatusInternalServerError), nil
 	}
-	err = resp.Body.Close()
-	if err != nil {
-		return service.OpenAIErrorWrapper(err, "close_response_body_failed", http.StatusInternalServerError), nil
-	}
+	common.CloseResponseBodyGracefully(resp)
 	if common.DebugEnabled {
 		println(string(responseBody))
 	}
 	var geminiResponse GeminiChatResponse
-	err = common.DecodeJson(responseBody, &geminiResponse)
+	err = common.UnmarshalJson(responseBody, &geminiResponse)
 	if err != nil {
 		return service.OpenAIErrorWrapper(err, "unmarshal_response_body_failed", http.StatusInternalServerError), nil
 	}
@@ -849,7 +886,7 @@ func GeminiChatHandler(c *gin.Context, resp *http.Response, info *relaycommon.Re
 			StatusCode: resp.StatusCode,
 		}, nil
 	}
-	fullTextResponse := responseGeminiChat2OpenAI(&geminiResponse)
+	fullTextResponse := responseGeminiChat2OpenAI(c, &geminiResponse)
 	fullTextResponse.Model = info.UpstreamModelName
 	usage := dto.Usage{
 		PromptTokens:     geminiResponse.UsageMetadata.PromptTokenCount,
@@ -880,11 +917,12 @@ func GeminiChatHandler(c *gin.Context, resp *http.Response, info *relaycommon.Re
 }
 
 func GeminiEmbeddingHandler(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (usage any, err *dto.OpenAIErrorWithStatusCode) {
+	defer common.CloseResponseBodyGracefully(resp)
+
 	responseBody, readErr := io.ReadAll(resp.Body)
 	if readErr != nil {
 		return nil, service.OpenAIErrorWrapper(readErr, "read_response_body_failed", http.StatusInternalServerError)
 	}
-	_ = resp.Body.Close()
 
 	var geminiResponse GeminiEmbeddingResponse
 	if jsonErr := json.Unmarshal(responseBody, &geminiResponse); jsonErr != nil {
@@ -916,14 +954,11 @@ func GeminiEmbeddingHandler(c *gin.Context, resp *http.Response, info *relaycomm
 	}
 	openAIResponse.Usage = *usage.(*dto.Usage)
 
-	jsonResponse, jsonErr := json.Marshal(openAIResponse)
+	jsonResponse, jsonErr := common.EncodeJson(openAIResponse)
 	if jsonErr != nil {
 		return nil, service.OpenAIErrorWrapper(jsonErr, "marshal_response_failed", http.StatusInternalServerError)
 	}
 
-	c.Writer.Header().Set("Content-Type", "application/json")
-	c.Writer.WriteHeader(resp.StatusCode)
-	_, _ = c.Writer.Write(jsonResponse)
-
+	common.IOCopyBytesGracefully(c, resp, jsonResponse)
 	return usage, nil
 }

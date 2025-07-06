@@ -90,13 +90,14 @@ func TextHelper(c *gin.Context) (openaiErr *dto.OpenAIErrorWithStatusCode) {
 
 	// get & validate textRequest 获取并验证文本请求
 	textRequest, err := getAndValidateTextRequest(c, relayInfo)
-	if textRequest.WebSearchOptions != nil {
-		c.Set("chat_completion_web_search_context_size", textRequest.WebSearchOptions.SearchContextSize)
-	}
 
 	if err != nil {
 		common.LogError(c, fmt.Sprintf("getAndValidateTextRequest failed: %s", err.Error()))
 		return service.OpenAIErrorWrapperLocal(err, "invalid_text_request", http.StatusBadRequest)
+	}
+
+	if textRequest.WebSearchOptions != nil {
+		c.Set("chat_completion_web_search_context_size", textRequest.WebSearchOptions.SearchContextSize)
 	}
 
 	if setting.ShouldCheckPromptSensitive() {
@@ -107,12 +108,10 @@ func TextHelper(c *gin.Context) (openaiErr *dto.OpenAIErrorWithStatusCode) {
 		}
 	}
 
-	err = helper.ModelMappedHelper(c, relayInfo)
+	err = helper.ModelMappedHelper(c, relayInfo, textRequest)
 	if err != nil {
 		return service.OpenAIErrorWrapperLocal(err, "model_mapped_error", http.StatusInternalServerError)
 	}
-
-	textRequest.Model = relayInfo.UpstreamModelName
 
 	// 获取 promptTokens，如果上下文中已经存在，则直接使用
 	var promptTokens int
@@ -252,11 +251,11 @@ func getPromptTokens(textRequest *dto.GeneralOpenAIRequest, info *relaycommon.Re
 	case relayconstant.RelayModeChatCompletions:
 		promptTokens, err = service.CountTokenChatRequest(info, *textRequest)
 	case relayconstant.RelayModeCompletions:
-		promptTokens, err = service.CountTokenInput(textRequest.Prompt, textRequest.Model)
+		promptTokens = service.CountTokenInput(textRequest.Prompt, textRequest.Model)
 	case relayconstant.RelayModeModerations:
-		promptTokens, err = service.CountTokenInput(textRequest.Input, textRequest.Model)
+		promptTokens = service.CountTokenInput(textRequest.Input, textRequest.Model)
 	case relayconstant.RelayModeEmbeddings:
-		promptTokens, err = service.CountTokenInput(textRequest.Input, textRequest.Model)
+		promptTokens = service.CountTokenInput(textRequest.Input, textRequest.Model)
 	default:
 		err = errors.New("unknown relay mode")
 		promptTokens = 0
@@ -361,9 +360,8 @@ func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo,
 	cacheRatio := priceData.CacheRatio
 	imageRatio := priceData.ImageRatio
 	modelRatio := priceData.ModelRatio
-	groupRatio := priceData.GroupRatio
+	groupRatio := priceData.GroupRatioInfo.GroupRatio
 	modelPrice := priceData.ModelPrice
-	userGroupRatio := priceData.UserGroupRatio
 
 	// Convert values to decimal for precise calculation
 	dPromptTokens := decimal.NewFromInt(int64(promptTokens))
@@ -511,7 +509,7 @@ func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo,
 	if extraContent != "" {
 		logContent += ", " + extraContent
 	}
-	other := service.GenerateTextOtherInfo(ctx, relayInfo, modelRatio, groupRatio, completionRatio, cacheTokens, cacheRatio, modelPrice, userGroupRatio)
+	other := service.GenerateTextOtherInfo(ctx, relayInfo, modelRatio, groupRatio, completionRatio, cacheTokens, cacheRatio, modelPrice, priceData.GroupRatioInfo.GroupSpecialRatio)
 	if imageTokens != 0 {
 		other["image"] = true
 		other["image_ratio"] = imageRatio
@@ -543,5 +541,5 @@ func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo,
 		other["audio_input_price"] = audioInputPrice
 	}
 	model.RecordConsumeLog(ctx, relayInfo.UserId, relayInfo.ChannelId, promptTokens, completionTokens, logModel,
-		tokenName, quota, logContent, relayInfo.TokenId, userQuota, int(useTimeSeconds), relayInfo.IsStream, relayInfo.Group, other)
+		tokenName, quota, logContent, relayInfo.TokenId, userQuota, int(useTimeSeconds), relayInfo.IsStream, relayInfo.UsingGroup, other)
 }

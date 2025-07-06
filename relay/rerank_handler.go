@@ -14,12 +14,10 @@ import (
 )
 
 func getRerankPromptToken(rerankRequest dto.RerankRequest) int {
-	token, _ := service.CountTokenInput(rerankRequest.Query, rerankRequest.Model)
+	token := service.CountTokenInput(rerankRequest.Query, rerankRequest.Model)
 	for _, document := range rerankRequest.Documents {
-		tkm, err := service.CountTokenInput(document, rerankRequest.Model)
-		if err == nil {
-			token += tkm
-		}
+		tkm := service.CountTokenInput(document, rerankRequest.Model)
+		token += tkm
 	}
 	return token
 }
@@ -42,12 +40,10 @@ func RerankHelper(c *gin.Context, relayMode int) (openaiErr *dto.OpenAIErrorWith
 		return service.OpenAIErrorWrapperLocal(fmt.Errorf("documents is empty"), "invalid_documents", http.StatusBadRequest)
 	}
 
-	err = helper.ModelMappedHelper(c, relayInfo)
+	err = helper.ModelMappedHelper(c, relayInfo, rerankRequest)
 	if err != nil {
 		return service.OpenAIErrorWrapperLocal(err, "model_mapped_error", http.StatusInternalServerError)
 	}
-
-	rerankRequest.Model = relayInfo.UpstreamModelName
 
 	promptToken := getRerankPromptToken(*rerankRequest)
 	relayInfo.PromptTokens = promptToken
@@ -82,12 +78,15 @@ func RerankHelper(c *gin.Context, relayMode int) (openaiErr *dto.OpenAIErrorWith
 		return service.OpenAIErrorWrapperLocal(err, "json_marshal_failed", http.StatusInternalServerError)
 	}
 	requestBody := bytes.NewBuffer(jsonData)
-	statusCodeMappingStr := c.GetString("status_code_mapping")
+	if common.DebugEnabled {
+		println(fmt.Sprintf("Rerank request body: %s", requestBody.String()))
+	}
 	resp, err := adaptor.DoRequest(c, relayInfo, requestBody)
 	if err != nil {
 		return service.OpenAIErrorWrapper(err, "do_request_failed", http.StatusInternalServerError)
 	}
 
+	statusCodeMappingStr := c.GetString("status_code_mapping")
 	var httpResp *http.Response
 	if resp != nil {
 		httpResp = resp.(*http.Response)

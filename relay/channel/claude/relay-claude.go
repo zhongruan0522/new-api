@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"one-api/common"
 	"one-api/dto"
+	"one-api/relay/channel/openrouter"
 	relaycommon "one-api/relay/common"
 	"one-api/relay/helper"
 	"one-api/service"
@@ -113,13 +114,28 @@ func RequestOpenAI2ClaudeMessage(textRequest dto.GeneralOpenAIRequest) (*dto.Cla
 		// BudgetTokens 为 max_tokens 的 80%
 		claudeRequest.Thinking = &dto.Thinking{
 			Type:         "enabled",
-			BudgetTokens: int(float64(claudeRequest.MaxTokens) * model_setting.GetClaudeSettings().ThinkingAdapterBudgetTokensPercentage),
+			BudgetTokens: common.GetPointer[int](int(float64(claudeRequest.MaxTokens) * model_setting.GetClaudeSettings().ThinkingAdapterBudgetTokensPercentage)),
 		}
 		// TODO: 临时处理
 		// https://docs.anthropic.com/en/docs/build-with-claude/extended-thinking#important-considerations-when-using-extended-thinking
 		claudeRequest.TopP = 0
 		claudeRequest.Temperature = common.GetPointer[float64](1.0)
 		claudeRequest.Model = strings.TrimSuffix(textRequest.Model, "-thinking")
+	}
+
+	if textRequest.Reasoning != nil {
+		var reasoning openrouter.RequestReasoning
+		if err := common.UnmarshalJson(textRequest.Reasoning, &reasoning); err != nil {
+			return nil, err
+		}
+
+		budgetTokens := reasoning.MaxTokens
+		if budgetTokens > 0 {
+			claudeRequest.Thinking = &dto.Thinking{
+				Type:         "enabled",
+				BudgetTokens: &budgetTokens,
+			}
+		}
 	}
 
 	if textRequest.Stop != nil {
@@ -454,6 +470,7 @@ type ClaudeResponseInfo struct {
 	Model        string
 	ResponseText strings.Builder
 	Usage        *dto.Usage
+	Done         bool
 }
 
 func FormatClaudeResponseInfo(requestMode int, claudeResponse *dto.ClaudeResponse, oaiResponse *dto.ChatCompletionsStreamResponse, claudeInfo *ClaudeResponseInfo) bool {
@@ -461,20 +478,32 @@ func FormatClaudeResponseInfo(requestMode int, claudeResponse *dto.ClaudeRespons
 		claudeInfo.ResponseText.WriteString(claudeResponse.Completion)
 	} else {
 		if claudeResponse.Type == "message_start" {
-			// message_start, 获取usage
 			claudeInfo.ResponseId = claudeResponse.Message.Id
 			claudeInfo.Model = claudeResponse.Message.Model
+
+			// message_start, 获取usage
 			claudeInfo.Usage.PromptTokens = claudeResponse.Message.Usage.InputTokens
+			claudeInfo.Usage.PromptTokensDetails.CachedTokens = claudeResponse.Message.Usage.CacheReadInputTokens
+			claudeInfo.Usage.PromptTokensDetails.CachedCreationTokens = claudeResponse.Message.Usage.CacheCreationInputTokens
+			claudeInfo.Usage.CompletionTokens = claudeResponse.Message.Usage.OutputTokens
 		} else if claudeResponse.Type == "content_block_delta" {
 			if claudeResponse.Delta.Text != nil {
 				claudeInfo.ResponseText.WriteString(*claudeResponse.Delta.Text)
 			}
+			if claudeResponse.Delta.Thinking != "" {
+				claudeInfo.ResponseText.WriteString(claudeResponse.Delta.Thinking)
+			}
 		} else if claudeResponse.Type == "message_delta" {
-			claudeInfo.Usage.CompletionTokens = claudeResponse.Usage.OutputTokens
+			// 最终的usage获取
 			if claudeResponse.Usage.InputTokens > 0 {
+				// 不叠加，只取最新的
 				claudeInfo.Usage.PromptTokens = claudeResponse.Usage.InputTokens
 			}
-			claudeInfo.Usage.TotalTokens = claudeInfo.Usage.PromptTokens + claudeResponse.Usage.OutputTokens
+			claudeInfo.Usage.CompletionTokens = claudeResponse.Usage.OutputTokens
+			claudeInfo.Usage.TotalTokens = claudeInfo.Usage.PromptTokens + claudeInfo.Usage.CompletionTokens
+
+			// 判断是否完整
+			claudeInfo.Done = true
 		} else if claudeResponse.Type == "content_block_start" {
 		} else {
 			return false
@@ -490,7 +519,7 @@ func FormatClaudeResponseInfo(requestMode int, claudeResponse *dto.ClaudeRespons
 
 func HandleStreamResponseData(c *gin.Context, info *relaycommon.RelayInfo, claudeInfo *ClaudeResponseInfo, data string, requestMode int) *dto.OpenAIErrorWithStatusCode {
 	var claudeResponse dto.ClaudeResponse
-	err := common.DecodeJsonStr(data, &claudeResponse)
+	err := common.UnmarshalJsonStr(data, &claudeResponse)
 	if err != nil {
 		common.SysError("error unmarshalling stream response: " + err.Error())
 		return service.OpenAIErrorWrapper(err, "stream_response_error", http.StatusInternalServerError)
@@ -506,25 +535,15 @@ func HandleStreamResponseData(c *gin.Context, info *relaycommon.RelayInfo, claud
 		}
 	}
 	if info.RelayFormat == relaycommon.RelayFormatClaude {
+		FormatClaudeResponseInfo(requestMode, &claudeResponse, nil, claudeInfo)
+
 		if requestMode == RequestModeCompletion {
-			claudeInfo.ResponseText.WriteString(claudeResponse.Completion)
 		} else {
 			if claudeResponse.Type == "message_start" {
 				// message_start, 获取usage
 				info.UpstreamModelName = claudeResponse.Message.Model
-				claudeInfo.Usage.PromptTokens = claudeResponse.Message.Usage.InputTokens
-				claudeInfo.Usage.PromptTokensDetails.CachedTokens = claudeResponse.Message.Usage.CacheReadInputTokens
-				claudeInfo.Usage.PromptTokensDetails.CachedCreationTokens = claudeResponse.Message.Usage.CacheCreationInputTokens
-				claudeInfo.Usage.CompletionTokens = claudeResponse.Message.Usage.OutputTokens
 			} else if claudeResponse.Type == "content_block_delta" {
-				claudeInfo.ResponseText.WriteString(claudeResponse.Delta.GetText())
 			} else if claudeResponse.Type == "message_delta" {
-				if claudeResponse.Usage.InputTokens > 0 {
-					// 不叠加，只取最新的
-					claudeInfo.Usage.PromptTokens = claudeResponse.Usage.InputTokens
-				}
-				claudeInfo.Usage.CompletionTokens = claudeResponse.Usage.OutputTokens
-				claudeInfo.Usage.TotalTokens = claudeInfo.Usage.PromptTokens + claudeInfo.Usage.CompletionTokens
 			}
 		}
 		helper.ClaudeChunkData(c, claudeResponse, data)
@@ -544,29 +563,25 @@ func HandleStreamResponseData(c *gin.Context, info *relaycommon.RelayInfo, claud
 }
 
 func HandleStreamFinalResponse(c *gin.Context, info *relaycommon.RelayInfo, claudeInfo *ClaudeResponseInfo, requestMode int) {
+
+	if requestMode == RequestModeCompletion {
+		claudeInfo.Usage = service.ResponseText2Usage(claudeInfo.ResponseText.String(), info.UpstreamModelName, info.PromptTokens)
+	} else {
+		if claudeInfo.Usage.PromptTokens == 0 {
+			//上游出错
+		}
+		if claudeInfo.Usage.CompletionTokens == 0 || !claudeInfo.Done {
+			if common.DebugEnabled {
+				common.SysError("claude response usage is not complete, maybe upstream error")
+			}
+			claudeInfo.Usage = service.ResponseText2Usage(claudeInfo.ResponseText.String(), info.UpstreamModelName, claudeInfo.Usage.PromptTokens)
+		}
+	}
+
 	if info.RelayFormat == relaycommon.RelayFormatClaude {
-		if requestMode == RequestModeCompletion {
-			claudeInfo.Usage, _ = service.ResponseText2Usage(claudeInfo.ResponseText.String(), info.UpstreamModelName, info.PromptTokens)
-		} else {
-			// 说明流模式建立失败，可能为官方出错
-			if claudeInfo.Usage.PromptTokens == 0 {
-				//usage.PromptTokens = info.PromptTokens
-			}
-			if claudeInfo.Usage.CompletionTokens == 0 {
-				claudeInfo.Usage, _ = service.ResponseText2Usage(claudeInfo.ResponseText.String(), info.UpstreamModelName, claudeInfo.Usage.PromptTokens)
-			}
-		}
+		//
 	} else if info.RelayFormat == relaycommon.RelayFormatOpenAI {
-		if requestMode == RequestModeCompletion {
-			claudeInfo.Usage, _ = service.ResponseText2Usage(claudeInfo.ResponseText.String(), info.UpstreamModelName, info.PromptTokens)
-		} else {
-			if claudeInfo.Usage.PromptTokens == 0 {
-				//上游出错
-			}
-			if claudeInfo.Usage.CompletionTokens == 0 {
-				claudeInfo.Usage, _ = service.ResponseText2Usage(claudeInfo.ResponseText.String(), info.UpstreamModelName, claudeInfo.Usage.PromptTokens)
-			}
-		}
+
 		if info.ShouldIncludeUsage {
 			response := helper.GenerateFinalUsageResponse(claudeInfo.ResponseId, claudeInfo.Created, info.UpstreamModelName, *claudeInfo.Usage)
 			err := helper.ObjectData(c, response)
@@ -604,7 +619,7 @@ func ClaudeStreamHandler(c *gin.Context, resp *http.Response, info *relaycommon.
 
 func HandleClaudeResponseData(c *gin.Context, info *relaycommon.RelayInfo, claudeInfo *ClaudeResponseInfo, data []byte, requestMode int) *dto.OpenAIErrorWithStatusCode {
 	var claudeResponse dto.ClaudeResponse
-	err := common.DecodeJson(data, &claudeResponse)
+	err := common.UnmarshalJson(data, &claudeResponse)
 	if err != nil {
 		return service.OpenAIErrorWrapper(err, "unmarshal_claude_response_failed", http.StatusInternalServerError)
 	}
@@ -619,10 +634,7 @@ func HandleClaudeResponseData(c *gin.Context, info *relaycommon.RelayInfo, claud
 		}
 	}
 	if requestMode == RequestModeCompletion {
-		completionTokens, err := service.CountTextToken(claudeResponse.Completion, info.OriginModelName)
-		if err != nil {
-			return service.OpenAIErrorWrapper(err, "count_token_text_failed", http.StatusInternalServerError)
-		}
+		completionTokens := service.CountTextToken(claudeResponse.Completion, info.OriginModelName)
 		claudeInfo.Usage.PromptTokens = info.PromptTokens
 		claudeInfo.Usage.CompletionTokens = completionTokens
 		claudeInfo.Usage.TotalTokens = info.PromptTokens + completionTokens
@@ -645,13 +657,14 @@ func HandleClaudeResponseData(c *gin.Context, info *relaycommon.RelayInfo, claud
 	case relaycommon.RelayFormatClaude:
 		responseData = data
 	}
-	c.Writer.Header().Set("Content-Type", "application/json")
-	c.Writer.WriteHeader(http.StatusOK)
-	_, err = c.Writer.Write(responseData)
+
+	common.IOCopyBytesGracefully(c, nil, responseData)
 	return nil
 }
 
 func ClaudeHandler(c *gin.Context, resp *http.Response, requestMode int, info *relaycommon.RelayInfo) (*dto.OpenAIErrorWithStatusCode, *dto.Usage) {
+	defer common.CloseResponseBodyGracefully(resp)
+
 	claudeInfo := &ClaudeResponseInfo{
 		ResponseId:   fmt.Sprintf("chatcmpl-%s", common.GetUUID()),
 		Created:      common.GetTimestamp(),
@@ -663,7 +676,6 @@ func ClaudeHandler(c *gin.Context, resp *http.Response, requestMode int, info *r
 	if err != nil {
 		return service.OpenAIErrorWrapper(err, "read_response_body_failed", http.StatusInternalServerError), nil
 	}
-	resp.Body.Close()
 	if common.DebugEnabled {
 		println("responseBody: ", string(responseBody))
 	}

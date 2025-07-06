@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"one-api/common"
+	"one-api/constant"
 	"one-api/dto"
 	"one-api/relay/channel/xinference"
 	relaycommon "one-api/relay/common"
@@ -16,17 +17,14 @@ func RerankHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Respo
 	if err != nil {
 		return service.OpenAIErrorWrapper(err, "read_response_body_failed", http.StatusInternalServerError), nil
 	}
-	err = resp.Body.Close()
-	if err != nil {
-		return service.OpenAIErrorWrapper(err, "close_response_body_failed", http.StatusInternalServerError), nil
-	}
+	common.CloseResponseBodyGracefully(resp)
 	if common.DebugEnabled {
 		println("reranker response body: ", string(responseBody))
 	}
 	var jinaResp dto.RerankResponse
-	if info.ChannelType == common.ChannelTypeXinference {
+	if info.ChannelType == constant.ChannelTypeXinference {
 		var xinRerankResponse xinference.XinRerankResponse
-		err = common.DecodeJson(responseBody, &xinRerankResponse)
+		err = common.UnmarshalJson(responseBody, &xinRerankResponse)
 		if err != nil {
 			return service.OpenAIErrorWrapper(err, "unmarshal_response_body_failed", http.StatusInternalServerError), nil
 		}
@@ -38,10 +36,16 @@ func RerankHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Respo
 			}
 			if info.ReturnDocuments {
 				var document any
-				if result.Document == "" {
-					document = info.Documents[result.Index]
-				} else {
-					document = result.Document
+				if result.Document != nil {
+					if doc, ok := result.Document.(string); ok {
+						if doc == "" {
+							document = info.Documents[result.Index]
+						} else {
+							document = doc
+						}
+					} else {
+						document = result.Document
+					}
 				}
 				respResult.Document = document
 			}
@@ -55,7 +59,7 @@ func RerankHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Respo
 			},
 		}
 	} else {
-		err = common.DecodeJson(responseBody, &jinaResp)
+		err = common.UnmarshalJson(responseBody, &jinaResp)
 		if err != nil {
 			return service.OpenAIErrorWrapper(err, "unmarshal_response_body_failed", http.StatusInternalServerError), nil
 		}

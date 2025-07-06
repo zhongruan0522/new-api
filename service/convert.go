@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"one-api/common"
+	"one-api/constant"
 	"one-api/dto"
 	"one-api/relay/channel/openrouter"
 	relaycommon "one-api/relay/common"
@@ -19,12 +20,12 @@ func ClaudeToOpenAIRequest(claudeRequest dto.ClaudeRequest, info *relaycommon.Re
 		Stream:      claudeRequest.Stream,
 	}
 
-	isOpenRouter := info.ChannelType == common.ChannelTypeOpenRouter
+	isOpenRouter := info.ChannelType == constant.ChannelTypeOpenRouter
 
-	if claudeRequest.Thinking != nil {
+	if claudeRequest.Thinking != nil && claudeRequest.Thinking.Type == "enabled" {
 		if isOpenRouter {
 			reasoning := openrouter.RequestReasoning{
-				MaxTokens: claudeRequest.Thinking.BudgetTokens,
+				MaxTokens: claudeRequest.Thinking.GetBudgetTokens(),
 			}
 			reasoningJSON, err := json.Marshal(reasoning)
 			if err != nil {
@@ -276,12 +277,15 @@ func StreamResponseOpenAI2Claude(openAIResponse *dto.ChatCompletionsStreamRespon
 		}
 		if info.Done {
 			claudeResponses = append(claudeResponses, generateStopBlock(info.ClaudeConvertInfo.Index))
-			if info.ClaudeConvertInfo.Usage != nil {
+			oaiUsage := info.ClaudeConvertInfo.Usage
+			if oaiUsage != nil {
 				claudeResponses = append(claudeResponses, &dto.ClaudeResponse{
 					Type: "message_delta",
 					Usage: &dto.ClaudeUsage{
-						InputTokens:  info.ClaudeConvertInfo.Usage.PromptTokens,
-						OutputTokens: info.ClaudeConvertInfo.Usage.CompletionTokens,
+						InputTokens:              oaiUsage.PromptTokens,
+						OutputTokens:             oaiUsage.CompletionTokens,
+						CacheCreationInputTokens: oaiUsage.PromptTokensDetails.CachedCreationTokens,
+						CacheReadInputTokens:     oaiUsage.PromptTokensDetails.CachedTokens,
 					},
 					Delta: &dto.ClaudeMediaMessage{
 						StopReason: common.GetPointer[string](stopReasonOpenAI2Claude(info.FinishReason)),

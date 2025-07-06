@@ -83,10 +83,13 @@ func (a *Adaptor) GetRequestURL(info *relaycommon.RelayInfo) (string, error) {
 	suffix := ""
 	if a.RequestMode == RequestModeGemini {
 		if model_setting.GetGeminiSettings().ThinkingAdapterEnabled {
-			// suffix -thinking and -nothinking
-			if strings.HasSuffix(info.OriginModelName, "-thinking") {
+			// 新增逻辑：处理 -thinking-<budget> 格式
+			if strings.Contains(info.UpstreamModelName, "-thinking-") {
+				parts := strings.Split(info.UpstreamModelName, "-thinking-")
+				info.UpstreamModelName = parts[0]
+			} else if strings.HasSuffix(info.UpstreamModelName, "-thinking") { // 旧的适配
 				info.UpstreamModelName = strings.TrimSuffix(info.UpstreamModelName, "-thinking")
-			} else if strings.HasSuffix(info.OriginModelName, "-nothinking") {
+			} else if strings.HasSuffix(info.UpstreamModelName, "-nothinking") {
 				info.UpstreamModelName = strings.TrimSuffix(info.UpstreamModelName, "-nothinking")
 			}
 		}
@@ -123,14 +126,23 @@ func (a *Adaptor) GetRequestURL(info *relaycommon.RelayInfo) (string, error) {
 		if v, ok := claudeModelMap[info.UpstreamModelName]; ok {
 			model = v
 		}
-		return fmt.Sprintf(
-			"https://%s-aiplatform.googleapis.com/v1/projects/%s/locations/%s/publishers/anthropic/models/%s:%s",
-			region,
-			adc.ProjectID,
-			region,
-			model,
-			suffix,
-		), nil
+		if region == "global" {
+			return fmt.Sprintf(
+				"https://aiplatform.googleapis.com/v1/projects/%s/locations/global/publishers/anthropic/models/%s:%s",
+				adc.ProjectID,
+				model,
+				suffix,
+			), nil
+		} else {
+			return fmt.Sprintf(
+				"https://%s-aiplatform.googleapis.com/v1/projects/%s/locations/%s/publishers/anthropic/models/%s:%s",
+				region,
+				adc.ProjectID,
+				region,
+				model,
+				suffix,
+			), nil
+		}
 	} else if a.RequestMode == RequestModeLlama {
 		return fmt.Sprintf(
 			"https://%s-aiplatform.googleapis.com/v1beta1/projects/%s/locations/%s/endpoints/openapi/chat/completions",

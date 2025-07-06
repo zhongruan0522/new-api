@@ -8,12 +8,12 @@ import (
 	"log"
 	"net/http"
 	"one-api/common"
+	"one-api/constant"
 	constant2 "one-api/constant"
 	"one-api/dto"
 	"one-api/middleware"
 	"one-api/model"
 	"one-api/relay"
-	"one-api/relay/constant"
 	relayconstant "one-api/relay/constant"
 	"one-api/relay/helper"
 	"one-api/service"
@@ -69,7 +69,7 @@ func relayHandler(c *gin.Context, relayMode int) *dto.OpenAIErrorWithStatusCode 
 }
 
 func Relay(c *gin.Context) {
-	relayMode := constant.Path2RelayMode(c.Request.URL.Path)
+	relayMode := relayconstant.Path2RelayMode(c.Request.URL.Path)
 	requestId := c.GetString(common.RequestIdKey)
 	group := c.GetString("group")
 	originalModel := c.GetString("original_model")
@@ -132,7 +132,7 @@ func WssRelay(c *gin.Context) {
 		return
 	}
 
-	relayMode := constant.Path2RelayMode(c.Request.URL.Path)
+	relayMode := relayconstant.Path2RelayMode(c.Request.URL.Path)
 	requestId := c.GetString(common.RequestIdKey)
 	group := c.GetString("group")
 	//wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-10-01
@@ -259,7 +259,7 @@ func getChannel(c *gin.Context, group, originalModel string, retryCount int) (*m
 			AutoBan: &autoBanInt,
 		}, nil
 	}
-	channel, err := model.CacheGetRandomSatisfiedChannel(group, originalModel, retryCount)
+	channel, _, err := model.CacheGetRandomSatisfiedChannel(c, group, originalModel, retryCount)
 	if err != nil {
 		return nil, errors.New(fmt.Sprintf("获取重试渠道失败: %s", err.Error()))
 	}
@@ -295,7 +295,7 @@ func shouldRetry(c *gin.Context, openaiErr *dto.OpenAIErrorWithStatusCode, retry
 	}
 	if openaiErr.StatusCode == http.StatusBadRequest {
 		channelType := c.GetInt("channel_type")
-		if channelType == common.ChannelTypeAnthropic {
+		if channelType == constant.ChannelTypeAnthropic {
 			return true
 		}
 		return false
@@ -388,7 +388,7 @@ func RelayTask(c *gin.Context) {
 		retryTimes = 0
 	}
 	for i := 0; shouldRetryTaskRelay(c, channelId, taskErr, retryTimes) && i < retryTimes; i++ {
-		channel, err := model.CacheGetRandomSatisfiedChannel(group, originalModel, i)
+		channel, _, err := model.CacheGetRandomSatisfiedChannel(c, group, originalModel, i)
 		if err != nil {
 			common.LogError(c, fmt.Sprintf("CacheGetRandomSatisfiedChannel failed: %s", err.Error()))
 			break
@@ -420,7 +420,7 @@ func RelayTask(c *gin.Context) {
 func taskRelayHandler(c *gin.Context, relayMode int) *dto.TaskError {
 	var err *dto.TaskError
 	switch relayMode {
-	case relayconstant.RelayModeSunoFetch, relayconstant.RelayModeSunoFetchByID:
+	case relayconstant.RelayModeSunoFetch, relayconstant.RelayModeSunoFetchByID, relayconstant.RelayModeKlingFetchByID:
 		err = relay.RelayTaskFetch(c, relayMode)
 	default:
 		err = relay.RelayTaskSubmit(c, relayMode)

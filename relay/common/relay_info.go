@@ -34,9 +34,14 @@ type ClaudeConvertInfo struct {
 }
 
 const (
-	RelayFormatOpenAI = "openai"
-	RelayFormatClaude = "claude"
-	RelayFormatGemini = "gemini"
+	RelayFormatOpenAI          = "openai"
+	RelayFormatClaude          = "claude"
+	RelayFormatGemini          = "gemini"
+	RelayFormatOpenAIResponses = "openai_responses"
+	RelayFormatOpenAIAudio     = "openai_audio"
+	RelayFormatOpenAIImage     = "openai_image"
+	RelayFormatRerank          = "rerank"
+	RelayFormatEmbedding       = "embedding"
 )
 
 type RerankerInfo struct {
@@ -60,8 +65,8 @@ type RelayInfo struct {
 	TokenId           int
 	TokenKey          string
 	UserId            int
-	Group             string
-	UserGroup         string
+	UsingGroup        string // 使用的分组
+	UserGroup         string // 用户所在分组
 	TokenUnlimited    bool
 	StartTime         time.Time
 	FirstResponseTime time.Time
@@ -108,17 +113,17 @@ type RelayInfo struct {
 
 // 定义支持流式选项的通道类型
 var streamSupportedChannels = map[int]bool{
-	common.ChannelTypeOpenAI:     true,
-	common.ChannelTypeAnthropic:  true,
-	common.ChannelTypeAws:        true,
-	common.ChannelTypeGemini:     true,
-	common.ChannelCloudflare:     true,
-	common.ChannelTypeAzure:      true,
-	common.ChannelTypeVolcEngine: true,
-	common.ChannelTypeOllama:     true,
-	common.ChannelTypeXai:        true,
-	common.ChannelTypeDeepSeek:   true,
-	common.ChannelTypeBaiduV2:    true,
+	constant.ChannelTypeOpenAI:     true,
+	constant.ChannelTypeAnthropic:  true,
+	constant.ChannelTypeAws:        true,
+	constant.ChannelTypeGemini:     true,
+	constant.ChannelCloudflare:     true,
+	constant.ChannelTypeAzure:      true,
+	constant.ChannelTypeVolcEngine: true,
+	constant.ChannelTypeOllama:     true,
+	constant.ChannelTypeXai:        true,
+	constant.ChannelTypeDeepSeek:   true,
+	constant.ChannelTypeBaiduV2:    true,
 }
 
 func GenRelayInfoWs(c *gin.Context, ws *websocket.Conn) *RelayInfo {
@@ -143,6 +148,7 @@ func GenRelayInfoClaude(c *gin.Context) *RelayInfo {
 func GenRelayInfoRerank(c *gin.Context, req *dto.RerankRequest) *RelayInfo {
 	info := GenRelayInfo(c)
 	info.RelayMode = relayconstant.RelayModeRerank
+	info.RelayFormat = RelayFormatRerank
 	info.RerankerInfo = &RerankerInfo{
 		Documents:       req.Documents,
 		ReturnDocuments: req.GetReturnDocuments(),
@@ -150,9 +156,25 @@ func GenRelayInfoRerank(c *gin.Context, req *dto.RerankRequest) *RelayInfo {
 	return info
 }
 
+func GenRelayInfoOpenAIAudio(c *gin.Context) *RelayInfo {
+	info := GenRelayInfo(c)
+	info.RelayFormat = RelayFormatOpenAIAudio
+	return info
+}
+
+func GenRelayInfoEmbedding(c *gin.Context) *RelayInfo {
+	info := GenRelayInfo(c)
+	info.RelayFormat = RelayFormatEmbedding
+	return info
+}
+
 func GenRelayInfoResponses(c *gin.Context, req *dto.OpenAIResponsesRequest) *RelayInfo {
 	info := GenRelayInfo(c)
 	info.RelayMode = relayconstant.RelayModeResponses
+	info.RelayFormat = RelayFormatOpenAIResponses
+
+	info.SupportStreamOptions = false
+
 	info.ResponsesUsageInfo = &ResponsesUsageInfo{
 		BuiltInTools: make(map[string]*BuildInToolInfo),
 	}
@@ -175,42 +197,54 @@ func GenRelayInfoResponses(c *gin.Context, req *dto.OpenAIResponsesRequest) *Rel
 	return info
 }
 
-func GenRelayInfo(c *gin.Context) *RelayInfo {
-	channelType := c.GetInt("channel_type")
-	channelId := c.GetInt("channel_id")
-	channelSetting := c.GetStringMap("channel_setting")
-	paramOverride := c.GetStringMap("param_override")
+func GenRelayInfoGemini(c *gin.Context) *RelayInfo {
+	info := GenRelayInfo(c)
+	info.RelayFormat = RelayFormatGemini
+	info.ShouldIncludeUsage = false
+	return info
+}
 
-	tokenId := c.GetInt("token_id")
-	tokenKey := c.GetString("token_key")
-	userId := c.GetInt("id")
-	group := c.GetString("group")
-	tokenUnlimited := c.GetBool("token_unlimited_quota")
-	startTime := c.GetTime(constant.ContextKeyRequestStartTime)
+func GenRelayInfoImage(c *gin.Context) *RelayInfo {
+	info := GenRelayInfo(c)
+	info.RelayFormat = RelayFormatOpenAIImage
+	return info
+}
+
+func GenRelayInfo(c *gin.Context) *RelayInfo {
+	channelType := common.GetContextKeyInt(c, constant.ContextKeyChannelType)
+	channelId := common.GetContextKeyInt(c, constant.ContextKeyChannelId)
+	channelSetting := common.GetContextKeyStringMap(c, constant.ContextKeyChannelSetting)
+	paramOverride := common.GetContextKeyStringMap(c, constant.ContextKeyParamOverride)
+
+	tokenId := common.GetContextKeyInt(c, constant.ContextKeyTokenId)
+	tokenKey := common.GetContextKeyString(c, constant.ContextKeyTokenKey)
+	userId := common.GetContextKeyInt(c, constant.ContextKeyUserId)
+	tokenUnlimited := common.GetContextKeyBool(c, constant.ContextKeyTokenUnlimited)
+	startTime := common.GetContextKeyTime(c, constant.ContextKeyRequestStartTime)
 	// firstResponseTime = time.Now() - 1 second
 
-	apiType, _ := relayconstant.ChannelType2APIType(channelType)
+	apiType, _ := common.ChannelType2APIType(channelType)
 
 	info := &RelayInfo{
-		UserQuota:         c.GetInt(constant.ContextKeyUserQuota),
-		UserSetting:       c.GetStringMap(constant.ContextKeyUserSetting),
-		UserEmail:         c.GetString(constant.ContextKeyUserEmail),
+		UserQuota:         common.GetContextKeyInt(c, constant.ContextKeyUserQuota),
+		UserSetting:       common.GetContextKeyStringMap(c, constant.ContextKeyUserSetting),
+		UserEmail:         common.GetContextKeyString(c, constant.ContextKeyUserEmail),
 		isFirstResponse:   true,
 		RelayMode:         relayconstant.Path2RelayMode(c.Request.URL.Path),
-		BaseUrl:           c.GetString("base_url"),
+		BaseUrl:           common.GetContextKeyString(c, constant.ContextKeyBaseUrl),
 		RequestURLPath:    c.Request.URL.String(),
 		ChannelType:       channelType,
 		ChannelId:         channelId,
 		TokenId:           tokenId,
 		TokenKey:          tokenKey,
 		UserId:            userId,
-		Group:             group,
-		UserGroup:         c.GetString(constant.ContextKeyUserGroup),
+		UsingGroup:        common.GetContextKeyString(c, constant.ContextKeyUsingGroup),
+		UserGroup:         common.GetContextKeyString(c, constant.ContextKeyUserGroup),
 		TokenUnlimited:    tokenUnlimited,
 		StartTime:         startTime,
 		FirstResponseTime: startTime.Add(-time.Second),
-		OriginModelName:   c.GetString("original_model"),
-		UpstreamModelName: c.GetString("original_model"),
+		OriginModelName:   common.GetContextKeyString(c, constant.ContextKeyOriginalModel),
+		UpstreamModelName: common.GetContextKeyString(c, constant.ContextKeyOriginalModel),
 		//RecodeModelName:   c.GetString("original_model"),
 		IsModelMapped:     false,
 		ApiType:           apiType,
@@ -232,20 +266,16 @@ func GenRelayInfo(c *gin.Context) *RelayInfo {
 		info.RequestURLPath = "/v1" + info.RequestURLPath
 	}
 	if info.BaseUrl == "" {
-		info.BaseUrl = common.ChannelBaseURLs[channelType]
+		info.BaseUrl = constant.ChannelBaseURLs[channelType]
 	}
-	if info.ChannelType == common.ChannelTypeAzure {
+	if info.ChannelType == constant.ChannelTypeAzure {
 		info.ApiVersion = GetAPIVersion(c)
 	}
-	if info.ChannelType == common.ChannelTypeVertexAi {
+	if info.ChannelType == constant.ChannelTypeVertexAi {
 		info.ApiVersion = c.GetString("region")
 	}
 	if streamSupportedChannels[info.ChannelType] {
 		info.SupportStreamOptions = true
-	}
-	// responses 模式不支持 StreamOptions
-	if relayconstant.RelayModeResponses == info.RelayMode {
-		info.SupportStreamOptions = false
 	}
 	return info
 }
@@ -282,4 +312,23 @@ func GenTaskRelayInfo(c *gin.Context) *TaskRelayInfo {
 		RelayInfo: GenRelayInfo(c),
 	}
 	return info
+}
+
+type TaskSubmitReq struct {
+	Prompt   string                 `json:"prompt"`
+	Model    string                 `json:"model,omitempty"`
+	Mode     string                 `json:"mode,omitempty"`
+	Image    string                 `json:"image,omitempty"`
+	Size     string                 `json:"size,omitempty"`
+	Duration int                    `json:"duration,omitempty"`
+	Metadata map[string]interface{} `json:"metadata,omitempty"`
+}
+
+type TaskInfo struct {
+	Code     int    `json:"code"`
+	TaskID   string `json:"task_id"`
+	Status   string `json:"status"`
+	Reason   string `json:"reason,omitempty"`
+	Url      string `json:"url,omitempty"`
+	Progress string `json:"progress,omitempty"`
 }

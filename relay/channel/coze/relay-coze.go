@@ -48,10 +48,7 @@ func cozeChatHandler(c *gin.Context, resp *http.Response, info *relaycommon.Rela
 	if err != nil {
 		return service.OpenAIErrorWrapper(err, "read_response_body_failed", http.StatusInternalServerError), nil
 	}
-	err = resp.Body.Close()
-	if err != nil {
-		return service.OpenAIErrorWrapperLocal(err, "close_response_body_failed", http.StatusInternalServerError), nil
-	}
+	common.CloseResponseBodyGracefully(resp)
 	// convert coze response to openai response
 	var response dto.TextResponse
 	var cozeResponse CozeChatDetailResponse
@@ -106,7 +103,7 @@ func cozeChatStreamHandler(c *gin.Context, resp *http.Response, info *relaycommo
 
 	var currentEvent string
 	var currentData string
-	var usage dto.Usage
+	var usage = &dto.Usage{}
 
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -114,7 +111,7 @@ func cozeChatStreamHandler(c *gin.Context, resp *http.Response, info *relaycommo
 		if line == "" {
 			if currentEvent != "" && currentData != "" {
 				// handle last event
-				handleCozeEvent(c, currentEvent, currentData, &responseText, &usage, id, info)
+				handleCozeEvent(c, currentEvent, currentData, &responseText, usage, id, info)
 				currentEvent = ""
 				currentData = ""
 			}
@@ -134,7 +131,7 @@ func cozeChatStreamHandler(c *gin.Context, resp *http.Response, info *relaycommo
 
 	// Last event
 	if currentEvent != "" && currentData != "" {
-		handleCozeEvent(c, currentEvent, currentData, &responseText, &usage, id, info)
+		handleCozeEvent(c, currentEvent, currentData, &responseText, usage, id, info)
 	}
 
 	if err := scanner.Err(); err != nil {
@@ -143,12 +140,10 @@ func cozeChatStreamHandler(c *gin.Context, resp *http.Response, info *relaycommo
 	helper.Done(c)
 
 	if usage.TotalTokens == 0 {
-		usage.PromptTokens = info.PromptTokens
-		usage.CompletionTokens, _ = service.CountTextToken("gpt-3.5-turbo", responseText)
-		usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
+		usage = service.ResponseText2Usage(responseText, info.UpstreamModelName, c.GetInt("coze_input_count"))
 	}
 
-	return nil, &usage
+	return nil, usage
 }
 
 func handleCozeEvent(c *gin.Context, event string, data string, responseText *string, usage *dto.Usage, id string, info *relaycommon.RelayInfo) {

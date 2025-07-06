@@ -29,9 +29,11 @@ func MidjourneyErrorWithStatusCodeWrapper(code int, desc string, statusCode int)
 func OpenAIErrorWrapper(err error, code string, statusCode int) *dto.OpenAIErrorWithStatusCode {
 	text := err.Error()
 	lowerText := strings.ToLower(text)
-	if strings.Contains(lowerText, "post") || strings.Contains(lowerText, "dial") || strings.Contains(lowerText, "http") {
-		common.SysLog(fmt.Sprintf("error: %s", text))
-		text = "请求上游地址失败"
+	if !strings.HasPrefix(lowerText, "get file base64 from url") && !strings.HasPrefix(lowerText, "mime type is not supported") {
+		if strings.Contains(lowerText, "post") || strings.Contains(lowerText, "dial") || strings.Contains(lowerText, "http") {
+			common.SysLog(fmt.Sprintf("error: %s", text))
+			text = "请求上游地址失败"
+		}
 	}
 	openAIError := dto.OpenAIError{
 		Message: text,
@@ -53,9 +55,11 @@ func OpenAIErrorWrapperLocal(err error, code string, statusCode int) *dto.OpenAI
 func ClaudeErrorWrapper(err error, code string, statusCode int) *dto.ClaudeErrorWithStatusCode {
 	text := err.Error()
 	lowerText := strings.ToLower(text)
-	if strings.Contains(lowerText, "post") || strings.Contains(lowerText, "dial") || strings.Contains(lowerText, "http") {
-		common.SysLog(fmt.Sprintf("error: %s", text))
-		text = "请求上游地址失败"
+	if !strings.HasPrefix(lowerText, "get file base64 from url") {
+		if strings.Contains(lowerText, "post") || strings.Contains(lowerText, "dial") || strings.Contains(lowerText, "http") {
+			common.SysLog(fmt.Sprintf("error: %s", text))
+			text = "请求上游地址失败"
+		}
 	}
 	claudeError := dto.ClaudeError{
 		Message: text,
@@ -86,10 +90,7 @@ func RelayErrorHandler(resp *http.Response, showBodyWhenFail bool) (errWithStatu
 	if err != nil {
 		return
 	}
-	err = resp.Body.Close()
-	if err != nil {
-		return
-	}
+	common.CloseResponseBodyGracefully(resp)
 	var errResponse dto.GeneralErrorResponse
 	err = json.Unmarshal(responseBody, &errResponse)
 	if err != nil {

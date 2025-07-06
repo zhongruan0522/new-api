@@ -2,10 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import {
   Banner,
   Button,
-  Col,
   Form,
-  Popconfirm,
-  Row,
   Space,
   Spin,
 } from '@douyinfe/semi-ui';
@@ -16,7 +13,6 @@ import {
   showSuccess,
   showWarning,
   verifyJSON,
-  verifyJSONPromise,
 } from '../../../helpers';
 import { useTranslation } from 'react-i18next';
 
@@ -80,21 +76,6 @@ export default function SettingsChats(props) {
     }
   }
 
-  async function resetModelRatio() {
-    try {
-      let res = await API.post(`/api/option/rest_model_ratio`);
-      // return {success, message}
-      if (res.data.success) {
-        showSuccess(res.data.message);
-        props.refresh();
-      } else {
-        showError(res.data.message);
-      }
-    } catch (error) {
-      showError(error);
-    }
-  }
-
   useEffect(() => {
     const currentInputs = {};
     for (let key in props.options) {
@@ -119,13 +100,7 @@ export default function SettingsChats(props) {
         getFormApi={(formAPI) => (refForm.current = formAPI)}
         style={{ marginBottom: 15 }}
       >
-        <Form.Section text={t('令牌聊天设置')}>
-          <Banner
-            type='warning'
-            description={t(
-              '必须将上方聊天链接全部设置为空，才能使用下方聊天设置功能',
-            )}
-          />
+        <Form.Section text={t('聊天设置')}>
           <Banner
             type='info'
             description={t(

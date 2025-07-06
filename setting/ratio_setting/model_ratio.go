@@ -1,8 +1,9 @@
-package operation_setting
+package ratio_setting
 
 import (
 	"encoding/json"
 	"one-api/common"
+	"one-api/setting/operation_setting"
 	"strings"
 	"sync"
 )
@@ -139,9 +140,17 @@ var defaultModelRatio = map[string]float64{
 	"gemini-2.0-flash":                          0.05,
 	"gemini-2.5-pro-exp-03-25":                  0.625,
 	"gemini-2.5-pro-preview-03-25":              0.625,
+	"gemini-2.5-pro":                            0.625,
 	"gemini-2.5-flash-preview-04-17":            0.075,
 	"gemini-2.5-flash-preview-04-17-thinking":   0.075,
 	"gemini-2.5-flash-preview-04-17-nothinking": 0.075,
+	"gemini-2.5-flash-preview-05-20":            0.075,
+	"gemini-2.5-flash-preview-05-20-thinking":   0.075,
+	"gemini-2.5-flash-preview-05-20-nothinking": 0.075,
+	"gemini-2.5-flash-thinking-*":               0.075, // 用于为后续所有2.5 flash thinking budget 模型设置默认倍率
+	"gemini-2.5-pro-thinking-*":                 0.625, // 用于为后续所有2.5 pro thinking budget 模型设置默认倍率
+	"gemini-2.5-flash-lite-preview-06-17":       0.05,
+	"gemini-2.5-flash":                          0.15,
 	"text-embedding-004":                        0.001,
 	"chatglm_turbo":                             0.3572,     // ￥0.005 / 1k tokens
 	"chatglm_pro":                               0.7143,     // ￥0.01 / 1k tokens
@@ -222,7 +231,9 @@ var defaultModelPrice = map[string]float64{
 	"dall-e-3":                0.04,
 	"imagen-3.0-generate-002": 0.03,
 	"gpt-4-gizmo-*":           0.1,
+	"mj_video":                0.8,
 	"mj_imagine":              0.1,
+	"mj_edits":                0.1,
 	"mj_variation":            0.1,
 	"mj_reroll":               0.1,
 	"mj_blend":                0.1,
@@ -311,7 +322,11 @@ func UpdateModelPriceByJSONString(jsonStr string) error {
 	modelPriceMapMutex.Lock()
 	defer modelPriceMapMutex.Unlock()
 	modelPriceMap = make(map[string]float64)
-	return json.Unmarshal([]byte(jsonStr), &modelPriceMap)
+	err := json.Unmarshal([]byte(jsonStr), &modelPriceMap)
+	if err == nil {
+		InvalidateExposedDataCache()
+	}
+	return err
 }
 
 // GetModelPrice 返回模型的价格，如果模型不存在则返回-1，false
@@ -339,19 +354,33 @@ func UpdateModelRatioByJSONString(jsonStr string) error {
 	modelRatioMapMutex.Lock()
 	defer modelRatioMapMutex.Unlock()
 	modelRatioMap = make(map[string]float64)
-	return json.Unmarshal([]byte(jsonStr), &modelRatioMap)
+	err := json.Unmarshal([]byte(jsonStr), &modelRatioMap)
+	if err == nil {
+		InvalidateExposedDataCache()
+	}
+	return err
+}
+
+// 处理带有思考预算的模型名称，方便统一定价
+func handleThinkingBudgetModel(name, prefix, wildcard string) string {
+	if strings.HasPrefix(name, prefix) && strings.Contains(name, "-thinking-") {
+		return wildcard
+	}
+	return name
 }
 
 func GetModelRatio(name string) (float64, bool) {
 	modelRatioMapMutex.RLock()
 	defer modelRatioMapMutex.RUnlock()
 
+	name = handleThinkingBudgetModel(name, "gemini-2.5-flash", "gemini-2.5-flash-thinking-*")
+	name = handleThinkingBudgetModel(name, "gemini-2.5-pro", "gemini-2.5-pro-thinking-*")
 	if strings.HasPrefix(name, "gpt-4-gizmo") {
 		name = "gpt-4-gizmo-*"
 	}
 	ratio, ok := modelRatioMap[name]
 	if !ok {
-		return 37.5, SelfUseModeEnabled
+		return 37.5, operation_setting.SelfUseModeEnabled
 	}
 	return ratio, true
 }
@@ -389,13 +418,22 @@ func UpdateCompletionRatioByJSONString(jsonStr string) error {
 	CompletionRatioMutex.Lock()
 	defer CompletionRatioMutex.Unlock()
 	CompletionRatio = make(map[string]float64)
-	return json.Unmarshal([]byte(jsonStr), &CompletionRatio)
+	err := json.Unmarshal([]byte(jsonStr), &CompletionRatio)
+	if err == nil {
+		InvalidateExposedDataCache()
+	}
+	return err
 }
 
 func GetCompletionRatio(name string) float64 {
 	CompletionRatioMutex.RLock()
 	defer CompletionRatioMutex.RUnlock()
-
+	if strings.HasPrefix(name, "gpt-4-gizmo") {
+		name = "gpt-4-gizmo-*"
+	}
+	if strings.HasPrefix(name, "gpt-4o-gizmo") {
+		name = "gpt-4o-gizmo-*"
+	}
 	if strings.Contains(name, "/") {
 		if ratio, ok := CompletionRatio[name]; ok {
 			return ratio
@@ -413,12 +451,6 @@ func GetCompletionRatio(name string) float64 {
 
 func getHardcodedCompletionModelRatio(name string) (float64, bool) {
 	lowercaseName := strings.ToLower(name)
-	if strings.HasPrefix(name, "gpt-4-gizmo") {
-		name = "gpt-4-gizmo-*"
-	}
-	if strings.HasPrefix(name, "gpt-4o-gizmo") {
-		name = "gpt-4o-gizmo-*"
-	}
 	if strings.HasPrefix(name, "gpt-4") && !strings.HasSuffix(name, "-all") && !strings.HasSuffix(name, "-gizmo-*") {
 		if strings.HasPrefix(name, "gpt-4o") {
 			if name == "gpt-4o-2024-05-13" {
@@ -470,14 +502,22 @@ func getHardcodedCompletionModelRatio(name string) (float64, bool) {
 			return 4, true
 		} else if strings.HasPrefix(name, "gemini-2.0") {
 			return 4, true
-		} else if strings.HasPrefix(name, "gemini-2.5-pro-preview") {
-			return 8, true
-		} else if strings.HasPrefix(name, "gemini-2.5-flash-preview") {
-			if strings.HasSuffix(name, "-nothinking") {
-				return 4, false
-			} else {
-				return 3.5 / 0.6, false
+		} else if strings.HasPrefix(name, "gemini-2.5-pro") { // 移除preview来增加兼容性，这里假设正式版的倍率和preview一致
+			return 8, false
+		} else if strings.HasPrefix(name, "gemini-2.5-flash") { // 处理不同的flash模型倍率
+			if strings.HasPrefix(name, "gemini-2.5-flash-preview") {
+				if strings.HasSuffix(name, "-nothinking") {
+					return 4, false
+				}
+				return 3.5 / 0.15, false
 			}
+			if strings.HasPrefix(name, "gemini-2.5-flash-lite") {
+				if strings.HasPrefix(name, "gemini-2.5-flash-lite-preview") {
+					return 4, false
+				}
+				return 4, false
+			}
+			return 2.5 / 0.3, true
 		}
 		return 4, false
 	}
@@ -592,4 +632,34 @@ func GetImageRatio(name string) (float64, bool) {
 		return 1, false // Default to 1 if not found
 	}
 	return ratio, true
+}
+
+func GetModelRatioCopy() map[string]float64 {
+	modelRatioMapMutex.RLock()
+	defer modelRatioMapMutex.RUnlock()
+	copyMap := make(map[string]float64, len(modelRatioMap))
+	for k, v := range modelRatioMap {
+		copyMap[k] = v
+	}
+	return copyMap
+}
+
+func GetModelPriceCopy() map[string]float64 {
+	modelPriceMapMutex.RLock()
+	defer modelPriceMapMutex.RUnlock()
+	copyMap := make(map[string]float64, len(modelPriceMap))
+	for k, v := range modelPriceMap {
+		copyMap[k] = v
+	}
+	return copyMap
+}
+
+func GetCompletionRatioCopy() map[string]float64 {
+	CompletionRatioMutex.RLock()
+	defer CompletionRatioMutex.RUnlock()
+	copyMap := make(map[string]float64, len(CompletionRatio))
+	for k, v := range CompletionRatio {
+		copyMap[k] = v
+	}
+	return copyMap
 }

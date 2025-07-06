@@ -84,6 +84,7 @@ export const buildApiPayload = (messages, systemPrompt, inputs, parameterEnabled
     model: inputs.model,
     group: inputs.group,
     messages: processedMessages,
+    group: inputs.group, 
     stream: inputs.stream,
   };
 
