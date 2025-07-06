@@ -437,7 +437,7 @@ func AddChannel(c *gin.Context) {
 	switch addChannelRequest.Mode {
 	case "multi_to_single":
 		addChannelRequest.Channel.ChannelInfo.MultiKeyMode = true
-		if addChannelRequest.Channel.Type == common.ChannelTypeVertexAi {
+		if addChannelRequest.Channel.Type == constant.ChannelTypeVertexAi {
 			if !common.IsJsonStr(addChannelRequest.Channel.Key) {
 				c.JSON(http.StatusOK, gin.H{
 					"success": false,
@@ -464,15 +464,8 @@ func AddChannel(c *gin.Context) {
 		}
 		keys = []string{addChannelRequest.Channel.Key}
 	case "batch":
-		if addChannelRequest.Channel.Type == common.ChannelTypeVertexAi {
+		if addChannelRequest.Channel.Type == constant.ChannelTypeVertexAi {
 			// multi json
-			if !common.IsJsonStr(addChannelRequest.Channel.Key) {
-				c.JSON(http.StatusOK, gin.H{
-					"success": false,
-					"message": "Vertex AI 批量添加模式必须使用标准的JsonArray格式，例如[{key1}, {key2}...]，请检查输入",
-				})
-				return
-			}
 			toMap := common.StrToMap(addChannelRequest.Channel.Key)
 			if toMap == nil {
 				c.JSON(http.StatusOK, gin.H{
