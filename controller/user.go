@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"one-api/common"
+	"one-api/dto"
 	"one-api/model"
 	"one-api/setting"
 	"strconv"
@@ -961,7 +962,7 @@ func UpdateUserSetting(c *gin.Context) {
 	}
 
 	// 验证预警类型
-	if req.QuotaWarningType != constant.NotifyTypeEmail && req.QuotaWarningType != constant.NotifyTypeWebhook {
+	if req.QuotaWarningType != dto.NotifyTypeEmail && req.QuotaWarningType != dto.NotifyTypeWebhook {
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,
 			"message": "无效的预警类型",
@@ -979,7 +980,7 @@ func UpdateUserSetting(c *gin.Context) {
 	}
 
 	// 如果是webhook类型,验证webhook地址
-	if req.QuotaWarningType == constant.NotifyTypeWebhook {
+	if req.QuotaWarningType == dto.NotifyTypeWebhook {
 		if req.WebhookUrl == "" {
 			c.JSON(http.StatusOK, gin.H{
 				"success": false,
@@ -998,7 +999,7 @@ func UpdateUserSetting(c *gin.Context) {
 	}
 
 	// 如果是邮件类型，验证邮箱地址
-	if req.QuotaWarningType == constant.NotifyTypeEmail && req.NotificationEmail != "" {
+	if req.QuotaWarningType == dto.NotifyTypeEmail && req.NotificationEmail != "" {
 		// 验证邮箱格式
 		if !strings.Contains(req.NotificationEmail, "@") {
 			c.JSON(http.StatusOK, gin.H{
@@ -1020,24 +1021,24 @@ func UpdateUserSetting(c *gin.Context) {
 	}
 
 	// 构建设置
-	settings := map[string]interface{}{
-		constant.UserSettingNotifyType:            req.QuotaWarningType,
-		constant.UserSettingQuotaWarningThreshold: req.QuotaWarningThreshold,
-		"accept_unset_model_ratio_model":          req.AcceptUnsetModelRatioModel,
-		constant.UserSettingRecordIpLog:           req.RecordIpLog,
+	settings := dto.UserSetting{
+		NotifyType:            req.QuotaWarningType,
+		QuotaWarningThreshold: req.QuotaWarningThreshold,
+		AcceptUnsetRatioModel: req.AcceptUnsetModelRatioModel,
+		RecordIpLog:           req.RecordIpLog,
 	}
 
 	// 如果是webhook类型,添加webhook相关设置
-	if req.QuotaWarningType == constant.NotifyTypeWebhook {
-		settings[constant.UserSettingWebhookUrl] = req.WebhookUrl
+	if req.QuotaWarningType == dto.NotifyTypeWebhook {
+		settings.WebhookUrl = req.WebhookUrl
 		if req.WebhookSecret != "" {
-			settings[constant.UserSettingWebhookSecret] = req.WebhookSecret
+			settings.WebhookSecret = req.WebhookSecret
 		}
 	}
 
 	// 如果提供了通知邮箱，添加到设置中
-	if req.QuotaWarningType == constant.NotifyTypeEmail && req.NotificationEmail != "" {
-		settings[constant.UserSettingNotificationEmail] = req.NotificationEmail
+	if req.QuotaWarningType == dto.NotifyTypeEmail && req.NotificationEmail != "" {
+		settings.NotificationEmail = req.NotificationEmail
 	}
 
 	// 更新用户设置
