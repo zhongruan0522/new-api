@@ -42,12 +42,16 @@ func (a *Adaptor) GetRequestURL(info *relaycommon.RelayInfo) (string, error) {
 
 func (a *Adaptor) SetupRequestHeader(c *gin.Context, req *http.Header, info *relaycommon.RelayInfo) error {
 	channel.SetupApiRequestHeader(info, c, req)
-        infos := strings.Split(info.ApiKey, "|")
-	if len(infos) > 1 {
-		req.Set("appid", infos[1])
-	}
-
-	req.Set("Authorization", "Bearer "+infos[0])
+        keyParts := strings.Split(info.ApiKey, "|")
+	if len(keyParts) == 0 || keyParts[0] == "" {
+        	return errors.New("invalid API key: authorization token is required")
+        }
+	 if len(keyParts) > 1 {
+               if keyParts[1] != "" {
+                       req.Set("appid", keyParts[1])
+               }
+        }
+	req.Set("Authorization", "Bearer "+keyParts[0])
 	return nil
 }
 
