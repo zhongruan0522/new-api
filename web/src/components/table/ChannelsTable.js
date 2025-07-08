@@ -1461,9 +1461,9 @@ const ChannelsTable = () => {
 
   const fixChannelsAbilities = async () => {
     const res = await API.post(`/api/channel/fix`);
-    const { success, message, data } = res.data;
+    const { success, message, data  } = res.data;
     if (success) {
-      showSuccess(t('已修复 ${data} 个通道！').replace('${data}', data));
+      showSuccess(t('已修复 ${success} 个通道，失败 ${fails} 个通道。').replace('${success}', data.success).replace('${fails}', data.fails));
       await refresh();
     } else {
       showError(message);
