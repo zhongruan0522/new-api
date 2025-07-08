@@ -240,7 +240,7 @@ const EditChannel = (props) => {
     if (isEdit) {
       // 如果是编辑模式，使用已有的channel id获取模型列表
       const res = await API.get('/api/channel/fetch_models/' + channelId);
-      if (res.data && res.data?.success) {
+      if (res.data && res.data.success) {
         models.push(...res.data.data);
       } else {
         err = true;
