@@ -432,9 +432,22 @@ const TokensTable = () => {
     if (serverAddress === '') {
       serverAddress = window.location.origin;
     }
-    let encodedServerAddress = encodeURIComponent(serverAddress);
-    url = url.replaceAll('{address}', encodedServerAddress);
-    url = url.replaceAll('{key}', 'sk-' + record.key);
+    if (url.includes('{cherryConfig}') === true) {
+      let cherryConfig = {
+        id: 'new-api',
+        baseUrl: serverAddress,
+        apiKey: 'sk-' + record.key,
+      }
+      // 替换 {cherryConfig} 为base64编码的JSON字符串
+      let encodedConfig = encodeURIComponent(
+        btoa(JSON.stringify(cherryConfig))
+      );
+      url = url.replaceAll('{cherryConfig}', encodedConfig);
+    } else {
+      let encodedServerAddress = encodeURIComponent(serverAddress);
+      url = url.replaceAll('{address}', encodedServerAddress);
+      url = url.replaceAll('{key}', 'sk-' + record.key);
+    }
 
     window.open(url, '_blank');
   };

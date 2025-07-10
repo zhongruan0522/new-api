@@ -228,7 +228,7 @@ func FetchUpstreamModels(c *gin.Context) {
 }
 
 func FixChannelsAbilities(c *gin.Context) {
-	count, err := model.FixAbility()
+	success, fails, err := model.FixAbility()
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,
@@ -239,7 +239,10 @@ func FixChannelsAbilities(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
-		"data":    count,
+		"data": gin.H{
+			"success": success,
+			"fails":   fails,
+		},
 	})
 }
 
@@ -425,6 +428,16 @@ func AddChannel(c *gin.Context) {
 		})
 		return
 	}
+
+	err = addChannelRequest.Channel.ValidateSettings()
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": "channel setting 格式错误：" + err.Error(),
+		})
+		return
+	}
+
 	if addChannelRequest.Channel == nil || addChannelRequest.Channel.Key == "" {
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,
@@ -710,6 +723,14 @@ func UpdateChannel(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,
 			"message": err.Error(),
+		})
+		return
+	}
+	err = channel.ValidateSettings()
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": "channel setting 格式错误：" + err.Error(),
 		})
 		return
 	}

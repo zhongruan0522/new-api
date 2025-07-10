@@ -7,6 +7,7 @@ import (
 	"math/rand"
 	"one-api/common"
 	"one-api/constant"
+	"one-api/dto"
 	"strings"
 	"sync"
 
@@ -610,8 +611,19 @@ func SearchTags(keyword string, group string, model string, idSort bool) ([]*str
 	return tags, nil
 }
 
-func (channel *Channel) GetSetting() map[string]interface{} {
-	setting := make(map[string]interface{})
+func (channel *Channel) ValidateSettings() error {
+	channelParams := &dto.ChannelSettings{}
+	if channel.Setting != nil && *channel.Setting != "" {
+		err := json.Unmarshal([]byte(*channel.Setting), channelParams)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (channel *Channel) GetSetting() dto.ChannelSettings {
+	setting := dto.ChannelSettings{}
 	if channel.Setting != nil && *channel.Setting != "" {
 		err := json.Unmarshal([]byte(*channel.Setting), &setting)
 		if err != nil {
@@ -621,7 +633,7 @@ func (channel *Channel) GetSetting() map[string]interface{} {
 	return setting
 }
 
-func (channel *Channel) SetSetting(setting map[string]interface{}) {
+func (channel *Channel) SetSetting(setting dto.ChannelSettings) {
 	settingBytes, err := json.Marshal(setting)
 	if err != nil {
 		common.SysError("failed to marshal setting: " + err.Error())

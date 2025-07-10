@@ -54,7 +54,7 @@ func (a *Adaptor) Init(info *relaycommon.RelayInfo) {
 	a.ChannelType = info.ChannelType
 
 	// initialize ThinkingContentInfo when thinking_to_content is enabled
-	if think2Content, ok := info.ChannelSetting[constant.ChannelSettingThinkingToContent].(bool); ok && think2Content {
+	if info.ChannelSetting.ThinkingToContent {
 		info.ThinkingContentInfo = relaycommon.ThinkingContentInfo{
 			IsFirstThinkingContent:  true,
 			SendLastThinkingContent: false,
@@ -146,7 +146,7 @@ func (a *Adaptor) SetupRequestHeader(c *gin.Context, header *http.Header, info *
 		header.Set("Authorization", "Bearer "+info.ApiKey)
 	}
 	if info.ChannelType == constant.ChannelTypeOpenRouter {
-		header.Set("HTTP-Referer", "https://github.com/Calcium-Ion/new-api")
+		header.Set("HTTP-Referer", "https://www.newapi.ai")
 		header.Set("X-Title", "New API")
 	}
 	return nil
