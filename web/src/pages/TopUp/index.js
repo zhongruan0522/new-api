@@ -438,6 +438,7 @@ const TopUp = () => {
     if (value === undefined) {
       value = stripeTopUpCount
     }
+    setAmountLoading(true);
     try {
       const res = await API.post('/api/user/stripe/amount', {
         amount: parseFloat(value),
@@ -446,9 +447,9 @@ const TopUp = () => {
         const { message, data } = res.data;
         // showInfo(message);
         if (message === 'success') {
-          setStripeAmount(parseFloat(data))
+          setStripeAmount(parseFloat(data));
         } else {
-          setStripeAmount( 0)
+          setStripeAmount(0);
           Toast.error({ content: '错误：' + data, id: 'getAmount' });
         }
       } else {
@@ -457,6 +458,7 @@ const TopUp = () => {
     } catch (err) {
       console.log(err);
     } finally {
+      setAmountLoading(false);
     }
   }
 
