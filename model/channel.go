@@ -54,13 +54,13 @@ type ChannelInfo struct {
 
 // Value implements driver.Valuer interface
 func (c ChannelInfo) Value() (driver.Value, error) {
-	return common.EncodeJson(&c)
+	return common.Marshal(&c)
 }
 
 // Scan implements sql.Scanner interface
 func (c *ChannelInfo) Scan(value interface{}) error {
 	bytesValue, _ := value.([]byte)
-	return common.UnmarshalJson(bytesValue, c)
+	return common.Unmarshal(bytesValue, c)
 }
 
 func (channel *Channel) getKeys() []string {

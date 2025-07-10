@@ -388,7 +388,7 @@ func getVertexArrayKeys(keys string) ([]string, error) {
 		return nil, nil
 	}
 	var keyArray []interface{}
-	err := common.UnmarshalJson([]byte(keys), &keyArray)
+	err := common.Unmarshal([]byte(keys), &keyArray)
 	if err != nil {
 		return nil, fmt.Errorf("批量添加 Vertex AI 必须使用标准的JsonArray格式，例如[{key1}, {key2}...]，请检查输入: %w", err)
 	}

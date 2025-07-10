@@ -3,45 +3,44 @@ package controller
 import (
 	"errors"
 	"fmt"
-	"net/http"
 	"one-api/common"
 	"one-api/constant"
 	"one-api/dto"
 	"one-api/middleware"
 	"one-api/model"
-	"one-api/service"
 	"one-api/setting"
+	"one-api/types"
 	"time"
 
 	"github.com/gin-gonic/gin"
 )
 
 func Playground(c *gin.Context) {
-	var openaiErr *dto.OpenAIErrorWithStatusCode
+	var newAPIError *types.NewAPIError
 
 	defer func() {
-		if openaiErr != nil {
-			c.JSON(openaiErr.StatusCode, gin.H{
-				"error": openaiErr.Error,
+		if newAPIError != nil {
+			c.JSON(newAPIError.StatusCode, gin.H{
+				"error": newAPIError.ToOpenAIError(),
 			})
 		}
 	}()
 
 	useAccessToken := c.GetBool("use_access_token")
 	if useAccessToken {
-		openaiErr = service.OpenAIErrorWrapperLocal(errors.New("暂不支持使用 access token"), "access_token_not_supported", http.StatusBadRequest)
+		newAPIError = types.NewError(errors.New("暂不支持使用 access token"), types.ErrorCodeAccessDenied)
 		return
 	}
 
 	playgroundRequest := &dto.PlayGroundRequest{}
 	err := common.UnmarshalBodyReusable(c, playgroundRequest)
 	if err != nil {
-		openaiErr = service.OpenAIErrorWrapperLocal(err, "unmarshal_request_failed", http.StatusBadRequest)
+		newAPIError = types.NewError(err, types.ErrorCodeInvalidRequest)
 		return
 	}
 
 	if playgroundRequest.Model == "" {
-		openaiErr = service.OpenAIErrorWrapperLocal(errors.New("请选择模型"), "model_required", http.StatusBadRequest)
+		newAPIError = types.NewError(errors.New("请选择模型"), types.ErrorCodeInvalidRequest)
 		return
 	}
 	c.Set("original_model", playgroundRequest.Model)
@@ -52,7 +51,7 @@ func Playground(c *gin.Context) {
 		group = userGroup
 	} else {
 		if !setting.GroupInUserUsableGroups(group) && group != userGroup {
-			openaiErr = service.OpenAIErrorWrapperLocal(errors.New("无权访问该分组"), "group_not_allowed", http.StatusForbidden)
+			newAPIError = types.NewError(errors.New("无权访问该分组"), types.ErrorCodeAccessDenied)
 			return
 		}
 		c.Set("group", group)
@@ -68,7 +67,7 @@ func Playground(c *gin.Context) {
 	_ = middleware.SetupContextForToken(c, tempToken)
 	_, err = getChannel(c, group, playgroundRequest.Model, 0)
 	if err != nil {
-		openaiErr = service.OpenAIErrorWrapperLocal(err, "get_playground_channel_failed", http.StatusInternalServerError)
+		newAPIError = types.NewError(err, types.ErrorCodeGetChannelFailed)
 		return
 	}
 	//middleware.SetupContextForSelectedChannel(c, channel, playgroundRequest.Model)
@@ -77,7 +76,7 @@ func Playground(c *gin.Context) {
 	// Write user context to ensure acceptUnsetRatio is available
 	userCache, err := model.GetUserCache(userId)
 	if err != nil {
-		openaiErr = service.OpenAIErrorWrapperLocal(err, "get_user_cache_failed", http.StatusInternalServerError)
+		newAPIError = types.NewError(err, types.ErrorCodeQueryDataError)
 		return
 	}
 	userCache.WriteContext(c)

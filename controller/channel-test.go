@@ -19,6 +19,7 @@ import (
 	relaycommon "one-api/relay/common"
 	"one-api/relay/helper"
 	"one-api/service"
+	"one-api/types"
 	"strconv"
 	"strings"
 	"sync"
@@ -29,7 +30,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func testChannel(channel *model.Channel, testModel string) (err error, openAIErrorWithStatusCode *dto.OpenAIErrorWithStatusCode) {
+func testChannel(channel *model.Channel, testModel string) (err error, newAPIError *types.NewAPIError) {
 	tik := time.Now()
 	if channel.Type == constant.ChannelTypeMidjourney {
 		return errors.New("midjourney channel test is not supported"), nil
@@ -98,14 +99,14 @@ func testChannel(channel *model.Channel, testModel string) (err error, openAIErr
 
 	err = helper.ModelMappedHelper(c, info, nil)
 	if err != nil {
-		return err, nil
+		return err, types.NewError(err, types.ErrorCodeChannelModelMappedError)
 	}
 	testModel = info.UpstreamModelName
 
 	apiType, _ := common.ChannelType2APIType(channel.Type)
 	adaptor := relay.GetAdaptor(apiType)
 	if adaptor == nil {
-		return fmt.Errorf("invalid api type: %d, adaptor is nil", apiType), nil
+		return fmt.Errorf("invalid api type: %d, adaptor is nil", apiType), types.NewError(fmt.Errorf("invalid api type: %d, adaptor is nil", apiType), types.ErrorCodeInvalidApiType)
 	}
 
 	request := buildTestRequest(testModel)
@@ -116,45 +117,45 @@ func testChannel(channel *model.Channel, testModel string) (err error, openAIErr
 
 	priceData, err := helper.ModelPriceHelper(c, info, 0, int(request.MaxTokens))
 	if err != nil {
-		return err, nil
+		return err, types.NewError(err, types.ErrorCodeModelPriceError)
 	}
 
 	adaptor.Init(info)
 
 	convertedRequest, err := adaptor.ConvertOpenAIRequest(c, info, request)
 	if err != nil {
-		return err, nil
+		return err, types.NewError(err, types.ErrorCodeConvertRequestFailed)
 	}
 	jsonData, err := json.Marshal(convertedRequest)
 	if err != nil {
-		return err, nil
+		return err, types.NewError(err, types.ErrorCodeJsonMarshalFailed)
 	}
 	requestBody := bytes.NewBuffer(jsonData)
 	c.Request.Body = io.NopCloser(requestBody)
 	resp, err := adaptor.DoRequest(c, info, requestBody)
 	if err != nil {
-		return err, nil
+		return err, types.NewError(err, types.ErrorCodeDoRequestFailed)
 	}
 	var httpResp *http.Response
 	if resp != nil {
 		httpResp = resp.(*http.Response)
 		if httpResp.StatusCode != http.StatusOK {
 			err := service.RelayErrorHandler(httpResp, true)
-			return fmt.Errorf("status code %d: %s", httpResp.StatusCode, err.Error.Message), err
+			return err, types.NewError(err, types.ErrorCodeBadResponse)
 		}
 	}
 	usageA, respErr := adaptor.DoResponse(c, httpResp, info)
 	if respErr != nil {
-		return fmt.Errorf("%s", respErr.Error.Message), respErr
+		return respErr, respErr
 	}
 	if usageA == nil {
-		return errors.New("usage is nil"), nil
+		return errors.New("usage is nil"), types.NewError(errors.New("usage is nil"), types.ErrorCodeBadResponseBody)
 	}
 	usage := usageA.(*dto.Usage)
 	result := w.Result()
 	respBody, err := io.ReadAll(result.Body)
 	if err != nil {
-		return err, nil
+		return err, types.NewError(err, types.ErrorCodeReadResponseBodyFailed)
 	}
 	info.PromptTokens = usage.PromptTokens
 
@@ -235,15 +236,15 @@ func TestChannel(c *gin.Context) {
 	}
 	testModel := c.Query("model")
 	tik := time.Now()
-	err, _ = testChannel(channel, testModel)
+	_, newAPIError := testChannel(channel, testModel)
 	tok := time.Now()
 	milliseconds := tok.Sub(tik).Milliseconds()
 	go channel.UpdateResponseTime(milliseconds)
 	consumedTime := float64(milliseconds) / 1000.0
-	if err != nil {
+	if newAPIError != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,
-			"message": err.Error(),
+			"message": newAPIError.Error(),
 			"time":    consumedTime,
 		})
 		return
@@ -287,17 +288,15 @@ func testAllChannels(notify bool) error {
 		for _, channel := range channels {
 			isChannelEnabled := channel.Status == common.ChannelStatusEnabled
 			tik := time.Now()
-			err, openaiWithStatusErr := testChannel(channel, "")
+			err, newAPIError := testChannel(channel, "")
 			tok := time.Now()
 			milliseconds := tok.Sub(tik).Milliseconds()
 
 			shouldBanChannel := false
 
 			// request error disables the channel
-			if openaiWithStatusErr != nil {
-				oaiErr := openaiWithStatusErr.Error
-				err = errors.New(fmt.Sprintf("type %s, httpCode %d, code %v, message %s", oaiErr.Type, openaiWithStatusErr.StatusCode, oaiErr.Code, oaiErr.Message))
-				shouldBanChannel = service.ShouldDisableChannel(channel.Type, openaiWithStatusErr)
+			if err != nil {
+				shouldBanChannel = service.ShouldDisableChannel(channel.Type, newAPIError)
 			}
 
 			if milliseconds > disableThreshold {
@@ -311,7 +310,7 @@ func testAllChannels(notify bool) error {
 			}
 
 			// enable channel
-			if !isChannelEnabled && service.ShouldEnableChannel(err, openaiWithStatusErr, channel.Status) {
+			if !isChannelEnabled && service.ShouldEnableChannel(err, newAPIError, channel.Status) {
 				service.EnableChannel(channel.Id, channel.Name)
 			}
 

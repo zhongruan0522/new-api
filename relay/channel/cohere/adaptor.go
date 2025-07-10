@@ -9,6 +9,7 @@ import (
 	"one-api/relay/channel"
 	relaycommon "one-api/relay/common"
 	"one-api/relay/constant"
+	"one-api/types"
 
 	"github.com/gin-gonic/gin"
 )
@@ -71,14 +72,14 @@ func (a *Adaptor) ConvertEmbeddingRequest(c *gin.Context, info *relaycommon.Rela
 	return nil, errors.New("not implemented")
 }
 
-func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (usage any, err *dto.OpenAIErrorWithStatusCode) {
+func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (usage any, err *types.NewAPIError) {
 	if info.RelayMode == constant.RelayModeRerank {
 		err, usage = cohereRerankHandler(c, resp, info)
 	} else {
 		if info.IsStream {
-			err, usage = cohereStreamHandler(c, resp, info)
+			err, usage = cohereStreamHandler(c, info, resp)
 		} else {
-			err, usage = cohereHandler(c, resp, info.UpstreamModelName, info.PromptTokens)
+			err, usage = cohereHandler(c, info, resp)
 		}
 	}
 	return

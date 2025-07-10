@@ -32,7 +32,7 @@ func UnmarshalBodyReusable(c *gin.Context, v any) error {
 	}
 	contentType := c.Request.Header.Get("Content-Type")
 	if strings.HasPrefix(contentType, "application/json") {
-		err = UnmarshalJson(requestBody, &v)
+		err = Unmarshal(requestBody, &v)
 	} else {
 		// skip for now
 		// TODO: someday non json request have variant model, we will need to implementation this

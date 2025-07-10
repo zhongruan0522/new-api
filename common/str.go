@@ -33,7 +33,7 @@ func MapToJsonStr(m map[string]interface{}) string {
 
 func StrToMap(str string) (map[string]interface{}, error) {
 	m := make(map[string]interface{})
-	err := UnmarshalJson([]byte(str), &m)
+	err := Unmarshal([]byte(str), &m)
 	if err != nil {
 		return nil, err
 	}
