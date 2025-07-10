@@ -168,6 +168,7 @@ const TopUp = () => {
       showError(t('管理员未开启在线充值！'));
       return;
     }
+    setPayWay(payment);
     setPaymentLoading(true);
     try {
       await getAmount();
@@ -175,7 +176,6 @@ const TopUp = () => {
         showError(t('充值数量不能小于') + minTopUp);
         return;
       }
-      setPayWay(payment);
       setOpen(true);
     } catch (error) {
       showError(t('获取金额失败'));
@@ -193,7 +193,6 @@ const TopUp = () => {
       return;
     }
     setConfirmLoading(true);
-    setOpen(false);
     try {
       const res = await API.post('/api/user/pay', {
         amount: parseInt(topUpCount),
@@ -234,6 +233,7 @@ const TopUp = () => {
       console.log(err);
       showError(t('支付请求失败'));
     } finally {
+      setOpen(false);
       setConfirmLoading(false);
     }
   };
@@ -255,7 +255,6 @@ const TopUp = () => {
     } catch (error) {
       showError(t('获取金额失败'));
     } finally {
-      setPayWay('')
       setPaymentLoading(false);
     }
   };
