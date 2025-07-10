@@ -247,7 +247,7 @@ func GenRelayInfo(c *gin.Context) *RelayInfo {
 		IsModelMapped: false,
 		ApiType:       apiType,
 		ApiVersion:    c.GetString("api_version"),
-		ApiKey:        strings.TrimPrefix(c.Request.Header.Get("Authorization"), "Bearer "),
+		ApiKey:        common.GetContextKeyString(c, constant.ContextKeyChannelKey),
 		Organization:  c.GetString("channel_organization"),
 
 		ChannelCreateTime: c.GetInt64("channel_create_time"),

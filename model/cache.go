@@ -203,3 +203,16 @@ func CacheUpdateChannelStatus(id int, status int) {
 		channel.Status = status
 	}
 }
+
+func CacheUpdateChannel(channel *Channel) {
+	if !common.MemoryCacheEnabled {
+		return
+	}
+	channelSyncLock.Lock()
+	defer channelSyncLock.Unlock()
+
+	if channel == nil {
+		return
+	}
+	channelsIDM[channel.Id] = channel
+}

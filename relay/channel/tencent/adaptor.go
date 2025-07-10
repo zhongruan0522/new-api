@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"one-api/common"
+	"one-api/constant"
 	"one-api/dto"
 	"one-api/relay/channel"
 	relaycommon "one-api/relay/common"
@@ -63,7 +64,7 @@ func (a *Adaptor) ConvertOpenAIRequest(c *gin.Context, info *relaycommon.RelayIn
 	if request == nil {
 		return nil, errors.New("request is nil")
 	}
-	apiKey := c.Request.Header.Get("Authorization")
+	apiKey := common.GetContextKeyString(c, constant.ContextKeyChannelKey)
 	apiKey = strings.TrimPrefix(apiKey, "Bearer ")
 	appId, secretId, secretKey, err := parseTencentConfig(apiKey)
 	a.AppID = appId

@@ -80,7 +80,7 @@ func Relay(c *gin.Context) {
 		channel, err := getChannel(c, group, originalModel, i)
 		if err != nil {
 			common.LogError(c, err.Error())
-			newAPIError = types.NewError(err, types.ErrorCodeGetChannelFailed)
+			newAPIError = err
 			break
 		}
 
@@ -90,7 +90,7 @@ func Relay(c *gin.Context) {
 			return // 成功处理请求，直接返回
 		}
 
-		go processChannelError(c, channel.Id, channel.Type, channel.Name, channel.GetAutoBan(), newAPIError)
+		go processChannelError(c, *types.NewChannelError(channel.Id, channel.Type, channel.Name, channel.ChannelInfo.IsMultiKey, common.GetContextKeyString(c, constant.ContextKeyChannelKey), channel.GetAutoBan()), newAPIError)
 
 		if !shouldRetry(c, newAPIError, common.RetryTimes-i) {
 			break
@@ -103,10 +103,10 @@ func Relay(c *gin.Context) {
 	}
 
 	if newAPIError != nil {
-		if newAPIError.StatusCode == http.StatusTooManyRequests {
-			common.LogError(c, fmt.Sprintf("origin 429 error: %s", newAPIError.Error()))
-			newAPIError.SetMessage("当前分组上游负载已饱和，请稍后再试")
-		}
+		//if newAPIError.StatusCode == http.StatusTooManyRequests {
+		//	common.LogError(c, fmt.Sprintf("origin 429 error: %s", newAPIError.Error()))
+		//	newAPIError.SetMessage("当前分组上游负载已饱和，请稍后再试")
+		//}
 		newAPIError.SetMessage(common.MessageWithRequestId(newAPIError.Error(), requestId))
 		c.JSON(newAPIError.StatusCode, gin.H{
 			"error": newAPIError.ToOpenAIError(),
@@ -143,7 +143,7 @@ func WssRelay(c *gin.Context) {
 		channel, err := getChannel(c, group, originalModel, i)
 		if err != nil {
 			common.LogError(c, err.Error())
-			newAPIError = types.NewError(err, types.ErrorCodeGetChannelFailed)
+			newAPIError = err
 			break
 		}
 
@@ -153,7 +153,7 @@ func WssRelay(c *gin.Context) {
 			return // 成功处理请求，直接返回
 		}
 
-		go processChannelError(c, channel.Id, channel.Type, channel.Name, channel.GetAutoBan(), newAPIError)
+		go processChannelError(c, *types.NewChannelError(channel.Id, channel.Type, channel.Name, channel.ChannelInfo.IsMultiKey, common.GetContextKeyString(c, constant.ContextKeyChannelKey), channel.GetAutoBan()), newAPIError)
 
 		if !shouldRetry(c, newAPIError, common.RetryTimes-i) {
 			break
@@ -166,9 +166,9 @@ func WssRelay(c *gin.Context) {
 	}
 
 	if newAPIError != nil {
-		if newAPIError.StatusCode == http.StatusTooManyRequests {
-			newAPIError.SetMessage("当前分组上游负载已饱和，请稍后再试")
-		}
+		//if newAPIError.StatusCode == http.StatusTooManyRequests {
+		//	newAPIError.SetMessage("当前分组上游负载已饱和，请稍后再试")
+		//}
 		newAPIError.SetMessage(common.MessageWithRequestId(newAPIError.Error(), requestId))
 		helper.WssError(c, ws, newAPIError.ToOpenAIError())
 	}
@@ -185,7 +185,7 @@ func RelayClaude(c *gin.Context) {
 		channel, err := getChannel(c, group, originalModel, i)
 		if err != nil {
 			common.LogError(c, err.Error())
-			newAPIError = types.NewError(err, types.ErrorCodeGetChannelFailed)
+			newAPIError = err
 			break
 		}
 
@@ -195,7 +195,7 @@ func RelayClaude(c *gin.Context) {
 			return // 成功处理请求，直接返回
 		}
 
-		go processChannelError(c, channel.Id, channel.Type, channel.Name, channel.GetAutoBan(), newAPIError)
+		go processChannelError(c, *types.NewChannelError(channel.Id, channel.Type, channel.Name, channel.ChannelInfo.IsMultiKey, common.GetContextKeyString(c, constant.ContextKeyChannelKey), channel.GetAutoBan()), newAPIError)
 
 		if !shouldRetry(c, newAPIError, common.RetryTimes-i) {
 			break
@@ -243,7 +243,7 @@ func addUsedChannel(c *gin.Context, channelId int) {
 	c.Set("use_channel", useChannel)
 }
 
-func getChannel(c *gin.Context, group, originalModel string, retryCount int) (*model.Channel, error) {
+func getChannel(c *gin.Context, group, originalModel string, retryCount int) (*model.Channel, *types.NewAPIError) {
 	if retryCount == 0 {
 		autoBan := c.GetBool("auto_ban")
 		autoBanInt := 1
@@ -260,11 +260,14 @@ func getChannel(c *gin.Context, group, originalModel string, retryCount int) (*m
 	channel, selectGroup, err := model.CacheGetRandomSatisfiedChannel(c, group, originalModel, retryCount)
 	if err != nil {
 		if group == "auto" {
-			return nil, errors.New(fmt.Sprintf("获取自动分组下模型 %s 的可用渠道失败: %s", originalModel, err.Error()))
+			return nil, types.NewError(errors.New(fmt.Sprintf("获取自动分组下模型 %s 的可用渠道失败: %s", originalModel, err.Error())), types.ErrorCodeGetChannelFailed)
 		}
-		return nil, errors.New(fmt.Sprintf("获取分组 %s 下模型 %s 的可用渠道失败: %s", selectGroup, originalModel, err.Error()))
+		return nil, types.NewError(errors.New(fmt.Sprintf("获取分组 %s 下模型 %s 的可用渠道失败: %s", selectGroup, originalModel, err.Error())), types.ErrorCodeGetChannelFailed)
 	}
-	middleware.SetupContextForSelectedChannel(c, channel, originalModel)
+	newAPIError := middleware.SetupContextForSelectedChannel(c, channel, originalModel)
+	if newAPIError != nil {
+		return nil, newAPIError
+	}
 	return channel, nil
 }
 
@@ -314,12 +317,12 @@ func shouldRetry(c *gin.Context, openaiErr *types.NewAPIError, retryTimes int) b
 	return true
 }
 
-func processChannelError(c *gin.Context, channelId int, channelType int, channelName string, autoBan bool, err *types.NewAPIError) {
+func processChannelError(c *gin.Context, channelError types.ChannelError, err *types.NewAPIError) {
 	// 不要使用context获取渠道信息，异步处理时可能会出现渠道信息不一致的情况
 	// do not use context to get channel info, there may be inconsistent channel info when processing asynchronously
-	common.LogError(c, fmt.Sprintf("relay error (channel #%d, status code: %d): %s", channelId, err.StatusCode, err.Error()))
-	if service.ShouldDisableChannel(channelType, err) && autoBan {
-		service.DisableChannel(channelId, channelName, err.Error())
+	common.LogError(c, fmt.Sprintf("relay error (channel #%d, status code: %d): %s", channelError.ChannelId, err.StatusCode, err.Error()))
+	if service.ShouldDisableChannel(channelError.ChannelId, err) && channelError.AutoBan {
+		service.DisableChannel(channelError, err.Error())
 	}
 }
 
@@ -392,10 +395,10 @@ func RelayTask(c *gin.Context) {
 		retryTimes = 0
 	}
 	for i := 0; shouldRetryTaskRelay(c, channelId, taskErr, retryTimes) && i < retryTimes; i++ {
-		channel, err := getChannel(c, group, originalModel, i)
-		if err != nil {
-			common.LogError(c, fmt.Sprintf("CacheGetRandomSatisfiedChannel failed: %s", err.Error()))
-			taskErr = service.TaskErrorWrapperLocal(err, "get_channel_failed", http.StatusInternalServerError)
+		channel, newAPIError := getChannel(c, group, originalModel, i)
+		if newAPIError != nil {
+			common.LogError(c, fmt.Sprintf("CacheGetRandomSatisfiedChannel failed: %s", newAPIError.Error()))
+			taskErr = service.TaskErrorWrapperLocal(newAPIError.Err, "get_channel_failed", http.StatusInternalServerError)
 			break
 		}
 		channelId = channel.Id
@@ -405,7 +408,7 @@ func RelayTask(c *gin.Context) {
 		common.LogInfo(c, fmt.Sprintf("using channel #%d to retry (remain times %d)", channel.Id, i))
 		//middleware.SetupContextForSelectedChannel(c, channel, originalModel)
 
-		requestBody, err := common.GetRequestBody(c)
+		requestBody, _ := common.GetRequestBody(c)
 		c.Request.Body = io.NopCloser(bytes.NewBuffer(requestBody))
 		taskErr = taskRelayHandler(c, relayMode)
 	}

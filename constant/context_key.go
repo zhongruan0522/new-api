@@ -29,6 +29,7 @@ const (
 	ContextKeyChannelModelMapping      ContextKey = "model_mapping"
 	ContextKeyChannelStatusCodeMapping ContextKey = "status_code_mapping"
 	ContextKeyChannelIsMultiKey        ContextKey = "channel_is_multi_key"
+	ContextKeyChannelKey               ContextKey = "channel_key"
 
 	/* user related keys */
 	ContextKeyUserId      ContextKey = "id"

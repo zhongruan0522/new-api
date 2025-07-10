@@ -497,6 +497,7 @@ func AddChannel(c *gin.Context) {
 				})
 				return
 			}
+			addChannelRequest.Channel.ChannelInfo.MultiKeySize = len(array)
 			addChannelRequest.Channel.Key = strings.Join(array, "\n")
 		} else {
 			cleanKeys := make([]string, 0)
@@ -507,6 +508,7 @@ func AddChannel(c *gin.Context) {
 				key = strings.TrimSpace(key)
 				cleanKeys = append(cleanKeys, key)
 			}
+			addChannelRequest.Channel.ChannelInfo.MultiKeySize = len(cleanKeys)
 			addChannelRequest.Channel.Key = strings.Join(cleanKeys, "\n")
 		}
 		keys = []string{addChannelRequest.Channel.Key}

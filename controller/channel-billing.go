@@ -452,14 +452,14 @@ func updateAllChannelsBalance() error {
 		//if channel.Type != common.ChannelTypeOpenAI && channel.Type != common.ChannelTypeCustom {
 		//	continue
 		//}
-		balance, err := updateChannelBalance(channel)
+		_, err := updateChannelBalance(channel)
 		if err != nil {
 			continue
 		} else {
 			// err is nil & balance <= 0 means quota is used up
-			if balance <= 0 {
-				service.DisableChannel(channel.Id, channel.Name, "余额不足")
-			}
+			//if balance <= 0 {
+			//	service.DisableChannel(channel.Id, channel.Name, "余额不足")
+			//}
 		}
 		time.Sleep(common.RequestInterval)
 	}
