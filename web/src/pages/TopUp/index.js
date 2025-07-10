@@ -243,7 +243,7 @@ const TopUp = () => {
       showError(t('管理员未开启在线充值！'));
       return;
     }
-    setPayWay('stripe')
+    setPayWay('stripe');
     setPaymentLoading(true);
     try {
       await getStripeAmount();
@@ -276,7 +276,7 @@ const TopUp = () => {
       if (res !== undefined) {
         const { message, data } = res.data;
         if (message === 'success') {
-          processStripeCallback(data)
+          processStripeCallback(data);
         } else {
           showError(data);
         }
