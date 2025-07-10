@@ -354,6 +354,10 @@ func TestAllChannels(c *gin.Context) {
 }
 
 func AutomaticallyTestChannels(frequency int) {
+	if frequency <= 0 {
+		common.SysLog("CHANNEL_TEST_FREQUENCY is not set or invalid, skipping automatic channel test")
+		return
+	}
 	for {
 		time.Sleep(time.Duration(frequency) * time.Minute)
 		common.SysLog("testing all channels")
