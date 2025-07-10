@@ -57,8 +57,8 @@ func (*StripeAdaptor) RequestPay(c *gin.Context, req *StripePayRequest) {
 		c.JSON(200, gin.H{"message": "error", "data": "不支持的支付渠道"})
 		return
 	}
-	if req.Amount < int64(setting.StripeMinTopUp) {
-		c.JSON(200, gin.H{"message": fmt.Sprintf("充值数量不能小于 %d", setting.StripeMinTopUp), "data": 10})
+	if req.Amount < getStripeMinTopup() {
+		c.JSON(200, gin.H{"message": fmt.Sprintf("充值数量不能小于 %d", getStripeMinTopup()), "data": 10})
 		return
 	}
 	if req.Amount > 10000 {
@@ -71,7 +71,7 @@ func (*StripeAdaptor) RequestPay(c *gin.Context, req *StripePayRequest) {
 	chargedMoney := GetChargedAmount(float64(req.Amount), *user)
 
 	reference := fmt.Sprintf("new-api-ref-%d-%d-%s", user.Id, time.Now().UnixMilli(), randstr.String(4))
-	referenceId := "ref_" + common.Sha1(reference)
+	referenceId := "ref_" + common.Sha1([]byte(reference))
 
 	payLink, err := genStripeLink(referenceId, user.StripeCustomer, user.Email, req.Amount)
 	if err != nil {
@@ -181,7 +181,7 @@ func sessionExpired(event stripe.Event) {
 		return
 	}
 
-	if "" == referenceId {
+	if len(referenceId) == 0 {
 		log.Println("未提供支付单号")
 		return
 	}
@@ -257,7 +257,7 @@ func getStripePayMoney(amount float64, group string) float64 {
 	if !common.DisplayInCurrencyEnabled {
 		amount = amount / common.QuotaPerUnit
 	}
-	// 别问为什么用float64，问就是这么点钱没必要
+	// Using float64 for monetary calculations is acceptable here due to the small amounts involved
 	topupGroupRatio := common.GetTopupGroupRatio(group)
 	if topupGroupRatio == 0 {
 		topupGroupRatio = 1

@@ -14,7 +14,6 @@ import {
   removeTrailingSlash,
   showError,
   showSuccess,
-  verifyJSON,
 } from '../../../helpers';
 import { useTranslation } from 'react-i18next';
 
@@ -60,19 +59,19 @@ export default function SettingsPaymentGateway(props) {
     try {
       const options = []
 
-      if (inputs.StripeApiSecret !== undefined && inputs.StripeApiSecret !== '') {
+      if (inputs.StripeApiSecret && inputs.StripeApiSecret !== '') {
         options.push({ key: 'StripeApiSecret', value: inputs.StripeApiSecret });
       }
-      if (inputs.StripeWebhookSecret !== undefined && inputs.StripeWebhookSecret !== '') {
+      if (inputs.StripeWebhookSecret && inputs.StripeWebhookSecret !== '') {
         options.push({ key: 'StripeWebhookSecret', value: inputs.StripeWebhookSecret });
       }
       if (inputs.StripePriceId !== '') {
         options.push({key: 'StripePriceId', value: inputs.StripePriceId,});
       }
-      if (inputs.StripeUnitPrice !== '') {
+      if (inputs.StripeUnitPrice !== undefined && inputs.StripeUnitPrice !== null) {
         options.push({ key: 'StripeUnitPrice', value: inputs.StripeUnitPrice.toString() });
       }
-      if (inputs.StripeMinTopUp !== '') {
+      if (inputs.StripeMinTopUp !== undefined && inputs.StripeMinTopUp !== null) {
         options.push({ key: 'StripeMinTopUp', value: inputs.StripeMinTopUp.toString() });
       }
 
@@ -96,7 +95,7 @@ export default function SettingsPaymentGateway(props) {
         showSuccess(t('更新成功'));
         // 更新本地存储的原始值
         setOriginInputs({ ...inputs });
-        props.refresh && props.refresh();
+        props.refresh?.();
       }
     } catch (error) {
       showError(t('更新失败'));
@@ -135,7 +134,7 @@ export default function SettingsPaymentGateway(props) {
           </Text>
           <Banner
               type='info'
-              description={`Webhook 填：${props.options.ServerAddress ? props.options.ServerAddress : '网站地址'}/api/stripe/webhook`}
+              description={`Webhook 填：${props.options.ServerAddress ? removeTrailingSlash(props.options.ServerAddress) : t('网站地址')}/api/stripe/webhook`}
           />
           <Banner
               type='warning'

@@ -7,20 +7,20 @@ import (
 	"encoding/hex"
 )
 
-func Sha256Raw(data string) []byte {
+func Sha256Raw(data []byte) []byte {
 	h := sha256.New()
-	h.Write([]byte(data))
+	h.Write(data)
 	return h.Sum(nil)
 }
 
 func Sha1Raw(data []byte) []byte {
 	h := sha1.New()
-	h.Write([]byte(data))
+	h.Write(data)
 	return h.Sum(nil)
 }
 
-func Sha1(data string) string {
-	return hex.EncodeToString(Sha1Raw([]byte(data)))
+func Sha1(data []byte) string {
+	return hex.EncodeToString(Sha1Raw(data))
 }
 
 func HmacSha256Raw(message, key []byte) []byte {

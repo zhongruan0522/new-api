@@ -293,7 +293,7 @@ const TopUp = () => {
   }
 
   const processStripeCallback = (data) => {
-    location.href = data.pay_link;
+    window.open(data.pay_link, '_blank');
   };
 
   const getUserQuota = async () => {
@@ -938,21 +938,11 @@ const TopUp = () => {
                   <>
                     {/* 桌面端显示的自定义金额和支付按钮 */}
                     <div className='hidden md:block space-y-4'>
-                      {!enableOnlineTopUp?(
-                          <Divider style={{ margin: '24px 0' }}>
-                            <Text className='text-sm font-medium'>
-                              {t('或输入自定义金额')}
-                            </Text>
-                          </Divider>
-                      ) : (
-                          <Divider style={{ margin: '24px 0' }}>
-                            <Text className='text-sm font-medium'>
-                              {t('Stripe')}
-                            </Text>
-                          </Divider>
-                      )
-                      }
-
+                      <Divider style={{ margin: '24px 0' }}>
+                        <Text className='text-sm font-medium'>
+                          {t(!enableOnlineTopUp ? '或输入自定义金额' : 'Stripe')}
+                        </Text>
+                      </Divider>
 
                       <div>
                         <div className='flex justify-between mb-2'>
@@ -968,7 +958,7 @@ const TopUp = () => {
                           )}
                         </div>
                         <InputNumber
-                            disabled={!enableOnlineTopUp}
+                            disabled={!enableStripeTopUp}
                             placeholder={
                                 t('充值数量，最低 ') + renderQuotaWithAmount(stripeMinTopUp)
                             }
