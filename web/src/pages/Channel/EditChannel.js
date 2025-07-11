@@ -607,6 +607,77 @@ const EditChannel = (props) => {
                       )}
                     </>
                   )}
+
+                  {inputs.type === 18 && (
+                    <Form.Input
+                      field='other'
+                      label={t('模型版本')}
+                      placeholder={'请输入星火大模型版本，注意是接口地址中的版本号，例如：v2.1'}
+                      onChange={(value) => handleInputChange('other', value)}
+                      showClear
+                    />
+                  )}
+
+                  {inputs.type === 41 && (
+                    <Form.TextArea
+                      field='other'
+                      label={t('部署地区')}
+                      placeholder={t(
+                        '请输入部署地区，例如：us-central1\n支持使用模型映射格式\n{\n    "default": "us-central1",\n    "claude-3-5-sonnet-20240620": "europe-west1"\n}'
+                      )}
+                      autosize={{ minRows: 2 }}
+                      onChange={(value) => handleInputChange('other', value)}
+                      extraText={
+                        <Text
+                          className="!text-semi-color-primary cursor-pointer"
+                          onClick={() => handleInputChange('other', JSON.stringify(REGION_EXAMPLE, null, 2))}
+                        >
+                          {t('填入模板')}
+                        </Text>
+                      }
+                    />
+                  )}
+
+                  {inputs.type === 21 && (
+                    <Form.Input
+                      field='other'
+                      label={t('知识库 ID')}
+                      placeholder={'请输入知识库 ID，例如：123456'}
+                      onChange={(value) => handleInputChange('other', value)}
+                      showClear
+                    />
+                  )}
+
+                  {inputs.type === 39 && (
+                    <Form.Input
+                      field='other'
+                      label='Account ID'
+                      placeholder={'请输入Account ID，例如：d6b5da8hk1awo8nap34ube6gh'}
+                      onChange={(value) => handleInputChange('other', value)}
+                      showClear
+                    />
+                  )}
+
+                  {inputs.type === 49 && (
+                    <Form.Input
+                      field='other'
+                      label={t('智能体ID')}
+                      placeholder={'请输入智能体ID，例如：7342866812345'}
+                      onChange={(value) => handleInputChange('other', value)}
+                      showClear
+                    />
+                  )}
+
+                  {inputs.type === 1 && (
+                    <Form.Input
+                      field='openai_organization'
+                      label={t('组织')}
+                      placeholder={t('请输入组织org-xxx')}
+                      showClear
+                      helpText={t('组织，不填则为默认组织')}
+                      onChange={(value) => handleInputChange('openai_organization', value)}
+                    />
+                  )}
                 </Card>
 
                 {/* API Configuration Card */}
@@ -861,77 +932,6 @@ const EditChannel = (props) => {
                     style={{ width: '100%' }}
                     onChange={(value) => handleInputChange('groups', value)}
                   />
-
-                  {inputs.type === 18 && (
-                    <Form.Input
-                      field='other'
-                      label={t('模型版本')}
-                      placeholder={'请输入星火大模型版本，注意是接口地址中的版本号，例如：v2.1'}
-                      onChange={(value) => handleInputChange('other', value)}
-                      showClear
-                    />
-                  )}
-
-                  {inputs.type === 41 && (
-                    <Form.TextArea
-                      field='other'
-                      label={t('部署地区')}
-                      placeholder={t(
-                        '请输入部署地区，例如：us-central1\n支持使用模型映射格式\n{\n    "default": "us-central1",\n    "claude-3-5-sonnet-20240620": "europe-west1"\n}'
-                      )}
-                      autosize={{ minRows: 2 }}
-                      onChange={(value) => handleInputChange('other', value)}
-                      extraText={
-                        <Text
-                          className="!text-semi-color-primary cursor-pointer"
-                          onClick={() => handleInputChange('other', JSON.stringify(REGION_EXAMPLE, null, 2))}
-                        >
-                          {t('填入模板')}
-                        </Text>
-                      }
-                    />
-                  )}
-
-                  {inputs.type === 21 && (
-                    <Form.Input
-                      field='other'
-                      label={t('知识库 ID')}
-                      placeholder={'请输入知识库 ID，例如：123456'}
-                      onChange={(value) => handleInputChange('other', value)}
-                      showClear
-                    />
-                  )}
-
-                  {inputs.type === 39 && (
-                    <Form.Input
-                      field='other'
-                      label='Account ID'
-                      placeholder={'请输入Account ID，例如：d6b5da8hk1awo8nap34ube6gh'}
-                      onChange={(value) => handleInputChange('other', value)}
-                      showClear
-                    />
-                  )}
-
-                  {inputs.type === 49 && (
-                    <Form.Input
-                      field='other'
-                      label={t('智能体ID')}
-                      placeholder={'请输入智能体ID，例如：7342866812345'}
-                      onChange={(value) => handleInputChange('other', value)}
-                      showClear
-                    />
-                  )}
-
-                  {inputs.type === 1 && (
-                    <Form.Input
-                      field='openai_organization'
-                      label={t('组织')}
-                      placeholder={t('请输入组织org-xxx')}
-                      showClear
-                      helpText={t('组织，可选，不填则为默认组织')}
-                      onChange={(value) => handleInputChange('openai_organization', value)}
-                    />
-                  )}
 
                   <Form.Input
                     field='tag'

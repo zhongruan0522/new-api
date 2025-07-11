@@ -1144,7 +1144,7 @@
   "鉴权json": "Authentication JSON",
   "请输入鉴权json": "Please enter authentication JSON",
   "组织": "Organization",
-  "组织，可选，不填则为默认组织": "Organization (optional), default if empty",
+  "组织，不填则为默认组织": "Organization, default if empty",
   "请输入组织org-xxx": "Please enter organization org-xxx",
   "默认测试模型": "Default Test Model",
   "不填则为模型列表第一个": "First model in list if empty",
