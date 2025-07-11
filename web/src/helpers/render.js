@@ -31,6 +31,8 @@ import {
   Coze,
   SiliconCloud,
   FastGPT,
+  Kling,
+  Jimeng,
 } from '@lobehub/icons';
 
 import {
@@ -386,6 +388,10 @@ export function getChannelIcon(channelType) {
       return <XAI size={iconSize} />;
     case 49: // Coze
       return <Coze size={iconSize} />;
+    case 50: // 可灵 Kling
+      return <Kling.Color size={iconSize} />;
+    case 51: // 即梦 Jimeng
+      return <Jimeng.Color size={iconSize} />;
     case 8: // 自定义渠道
     case 22: // 知识库：FastGPT
       return <FastGPT.Color size={iconSize} />;

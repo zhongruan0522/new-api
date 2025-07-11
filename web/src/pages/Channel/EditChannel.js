@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
@@ -27,7 +27,7 @@ import {
   Row,
   Col,
 } from '@douyinfe/semi-ui';
-import { getChannelModels, copy } from '../../helpers';
+import { getChannelModels, copy, getChannelIcon } from '../../helpers';
 import {
   IconSave,
   IconClose,
@@ -474,6 +474,20 @@ const EditChannel = (props) => {
     <Checkbox checked={batch} onChange={() => setBatch(!batch)}>{t('批量创建')}</Checkbox>
   ) : null;
 
+  const channelOptionList = useMemo(
+    () =>
+      CHANNEL_OPTIONS.map((opt) => ({
+        ...opt,
+        label: (
+          <span className="flex items-center gap-2">
+            {getChannelIcon(opt.value)}
+            {opt.label}
+          </span>
+        ),
+      })),
+    [],
+  );
+
   return (
     <>
       <SideSheet
@@ -539,7 +553,7 @@ const EditChannel = (props) => {
                     label={t('类型')}
                     placeholder={t('请选择渠道类型')}
                     rules={[{ required: true, message: t('请选择渠道类型') }]}
-                    optionList={CHANNEL_OPTIONS}
+                    optionList={channelOptionList}
                     style={{ width: '100%' }}
                     filter
                     searchPosition='dropdown'
