@@ -117,7 +117,15 @@ func (channel *Channel) GetNextEnabledKey() (string, *types.NewAPIError) {
 		// Randomly pick one enabled key
 		return keys[enabledIdx[rand.Intn(len(enabledIdx))]], nil
 	case constant.MultiKeyModePolling:
+		defer func() {
+			if !common.MemoryCacheEnabled {
+				_ = channel.Save()
+			} else {
+				CacheUpdateChannel(channel)
+			}
+		}()
 		// Start from the saved polling index and look for the next enabled key
+		println(channel.ChannelInfo.MultiKeyPollingIndex)
 		start := channel.ChannelInfo.MultiKeyPollingIndex
 		if start < 0 || start >= len(keys) {
 			start = 0
@@ -127,6 +135,7 @@ func (channel *Channel) GetNextEnabledKey() (string, *types.NewAPIError) {
 			if getStatus(idx) == common.ChannelStatusEnabled {
 				// update polling index for next call (point to the next position)
 				channel.ChannelInfo.MultiKeyPollingIndex = (idx + 1) % len(keys)
+				println(channel.ChannelInfo.MultiKeyPollingIndex)
 				return keys[idx], nil
 			}
 		}
@@ -273,14 +282,20 @@ func SearchChannels(keyword string, group string, model string, idSort bool) ([]
 }
 
 func GetChannelById(id int, selectAll bool) (*Channel, error) {
-	channel := Channel{Id: id}
+	channel := &Channel{Id: id}
 	var err error = nil
 	if selectAll {
-		err = DB.First(&channel, "id = ?", id).Error
+		err = DB.First(channel, "id = ?", id).Error
 	} else {
-		err = DB.Omit("key").First(&channel, "id = ?", id).Error
+		err = DB.Omit("key").First(channel, "id = ?", id).Error
 	}
-	return &channel, err
+	if err != nil {
+		return nil, err
+	}
+	if channel == nil {
+		return nil, errors.New("channel not found")
+	}
+	return channel, nil
 }
 
 func BatchInsertChannels(channels []Channel) error {

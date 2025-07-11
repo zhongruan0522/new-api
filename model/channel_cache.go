@@ -14,7 +14,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-var group2model2channels map[string]map[string][]*Channel
+var group2model2channels map[string]map[string][]int
 var channelsIDM map[int]*Channel
 var channelSyncLock sync.RWMutex
 
@@ -34,10 +34,10 @@ func InitChannelCache() {
 	for _, ability := range abilities {
 		groups[ability.Group] = true
 	}
-	newGroup2model2channels := make(map[string]map[string][]*Channel)
+	newGroup2model2channels := make(map[string]map[string][]int)
 	newChannelsIDM := make(map[int]*Channel)
 	for group := range groups {
-		newGroup2model2channels[group] = make(map[string][]*Channel)
+		newGroup2model2channels[group] = make(map[string][]int)
 	}
 	for _, channel := range channels {
 		newChannelsIDM[channel.Id] = channel
@@ -46,9 +46,9 @@ func InitChannelCache() {
 			models := strings.Split(channel.Models, ",")
 			for _, model := range models {
 				if _, ok := newGroup2model2channels[group][model]; !ok {
-					newGroup2model2channels[group][model] = make([]*Channel, 0)
+					newGroup2model2channels[group][model] = make([]int, 0)
 				}
-				newGroup2model2channels[group][model] = append(newGroup2model2channels[group][model], channel)
+				newGroup2model2channels[group][model] = append(newGroup2model2channels[group][model], channel.Id)
 			}
 		}
 	}
@@ -57,7 +57,7 @@ func InitChannelCache() {
 	for group, model2channels := range newGroup2model2channels {
 		for model, channels := range model2channels {
 			sort.Slice(channels, func(i, j int) bool {
-				return channels[i].GetPriority() > channels[j].GetPriority()
+				return newChannelsIDM[channels[i]].GetPriority() > newChannelsIDM[channels[j]].GetPriority()
 			})
 			newGroup2model2channels[group][model] = channels
 		}
@@ -136,8 +136,12 @@ func getRandomSatisfiedChannel(group string, model string, retry int) (*Channel,
 	}
 
 	uniquePriorities := make(map[int]bool)
-	for _, channel := range channels {
-		uniquePriorities[int(channel.GetPriority())] = true
+	for _, channelId := range channels {
+		if channel, ok := channelsIDM[channelId]; ok {
+			uniquePriorities[int(channel.GetPriority())] = true
+		} else {
+			return nil, fmt.Errorf("数据库一致性错误，渠道# %d 不存在，请联系管理员修复", channelId)
+		}
 	}
 	var sortedUniquePriorities []int
 	for priority := range uniquePriorities {
@@ -152,9 +156,13 @@ func getRandomSatisfiedChannel(group string, model string, retry int) (*Channel,
 
 	// get the priority for the given retry number
 	var targetChannels []*Channel
-	for _, channel := range channels {
-		if channel.GetPriority() == targetPriority {
-			targetChannels = append(targetChannels, channel)
+	for _, channelId := range channels {
+		if channel, ok := channelsIDM[channelId]; ok {
+			if channel.GetPriority() == targetPriority {
+				targetChannels = append(targetChannels, channel)
+			}
+		} else {
+			return nil, fmt.Errorf("数据库一致性错误，渠道# %d 不存在，请联系管理员修复", channelId)
 		}
 	}
 
@@ -210,9 +218,11 @@ func CacheUpdateChannel(channel *Channel) {
 	}
 	channelSyncLock.Lock()
 	defer channelSyncLock.Unlock()
-
 	if channel == nil {
 		return
 	}
+
+	println("CacheUpdateChannel:", channel.Id, channel.Name, channel.Status, channel.ChannelInfo.MultiKeyPollingIndex)
+
 	channelsIDM[channel.Id] = channel
 }

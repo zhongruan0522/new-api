@@ -435,7 +435,7 @@ const EditChannel = (props) => {
     const formValues = formApiRef.current ? formApiRef.current.getValues() : {};
     let localInputs = { ...formValues };
 
-    if (localInputs.type === 41 && batch) {
+    if (localInputs.type === 41) {
       let keys = vertexKeys;
       if (keys.length === 0) {
         // 确保提交时也能解析，避免因异步延迟导致 keys 为空
@@ -460,7 +460,11 @@ const EditChannel = (props) => {
         return;
       }
 
-      localInputs.key = JSON.stringify(keys);
+      if (batch) {
+        localInputs.key = JSON.stringify(keys);
+      } else {
+        localInputs.key = JSON.stringify(keys[0]);
+      }
     }
     delete localInputs.vertex_files;
 
@@ -561,7 +565,7 @@ const EditChannel = (props) => {
   const batchAllowed = !isEdit || isMultiKeyChannel;
   const batchExtra = batchAllowed ? (
     <Space>
-      <Checkbox checked={batch} onChange={() => {
+      <Checkbox disabled={isEdit} checked={batch} onChange={() => {
         setBatch(!batch);
         if (batch) {
           setMultiToSingle(false);
@@ -569,7 +573,7 @@ const EditChannel = (props) => {
         }
       }}>{t('批量创建')}</Checkbox>
       {batch && (
-        <Checkbox checked={multiToSingle} onChange={() => {
+        <Checkbox disabled={isEdit} checked={multiToSingle} onChange={() => {
           setMultiToSingle(prev => !prev);
           setInputs(prev => {
             const newInputs = { ...prev };
@@ -702,35 +706,26 @@ const EditChannel = (props) => {
                   ) : (
                     <>
                       {inputs.type === 41 ? (
-                        <Form.TextArea
-                          field='key'
-                          label={t('密钥')}
-                          placeholder={
-                            '{\n' +
-                            '  "type": "service_account",\n' +
-                            '  "project_id": "abc-bcd-123-456",\n' +
-                            '  "private_key_id": "123xxxxx456",\n' +
-                            '  "private_key": "-----BEGIN PRIVATE KEY-----xxxx\n' +
-                            '  "client_email": "xxx@developer.gserviceaccount.com",\n' +
-                            '  "client_id": "111222333",\n' +
-                            '  "auth_uri": "https://accounts.google.com/o/oauth2/auth",\n' +
-                            '  "token_uri": "https://oauth2.googleapis.com/token",\n' +
-                            '  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",\n' +
-                            '  "client_x509_cert_url": "https://xxxxx.gserviceaccount.com",\n' +
-                            '  "universe_domain": "googleapis.com"\n' +
-                            '}'
-                          }
-                          rules={isEdit ? [] : [{ required: true, message: t('请输入密钥') }]}
-                          autosize
-                          autoComplete='new-password'
-                          onChange={(value) => handleInputChange('key', value)}
-                          extraText={batchExtra}
-                          showClear
-                        />
+                        <Form.Upload
+                        field='vertex_files'
+                        label={t('密钥文件 (.json)')}
+                        accept='.json'
+                        draggable
+                        dragIcon={<IconBolt />}
+                        dragMainText={t('点击上传文件或拖拽文件到这里')}
+                        dragSubText={t('仅支持 JSON 文件')}
+                        style={{ marginTop: 10 }}
+                        uploadTrigger='custom'
+                        beforeUpload={() => false}
+                        onChange={handleVertexUploadChange}
+                        fileList={vertexFileList}
+                        rules={isEdit ? [] : [{ required: true, message: t('请上传密钥文件') }]}
+                        extraText={batchExtra}
+                      />
                       ) : (
                         <Form.Input
                           field='key'
-                          label={t('密钥')}
+                          label={isEdit ? t('密钥（编辑模式下，保存的密钥不会显示）') : t('密钥')}
                           placeholder={t(type2secretPrompt(inputs.type))}
                           rules={isEdit ? [] : [{ required: true, message: t('请输入密钥') }]}
                           autoComplete='new-password'
@@ -743,21 +738,30 @@ const EditChannel = (props) => {
                   )}
 
                   {batch && multiToSingle && (
-                    <Form.Select
-                      field='multi_key_mode'
-                      label={t('密钥聚合模式')}
-                      placeholder={t('请选择多密钥使用策略')}
-                      optionList={[
-                        { label: t('随机'), value: 'random' },
-                        { label: t('轮询'), value: 'polling' },
-                      ]}
-                      style={{ width: '100%' }}
-                      value={inputs.multi_key_mode || 'random'}
-                      onChange={(value) => {
-                        setMultiKeyMode(value);
-                        handleInputChange('multi_key_mode', value);
-                      }}
-                    />
+                    <>
+                      <Form.Select
+                        field='multi_key_mode'
+                        label={t('密钥聚合模式')}
+                        placeholder={t('请选择多密钥使用策略')}
+                        optionList={[
+                          { label: t('随机'), value: 'random' },
+                          { label: t('轮询'), value: 'polling' },
+                        ]}
+                        style={{ width: '100%' }}
+                        value={inputs.multi_key_mode || 'random'}
+                        onChange={(value) => {
+                          setMultiKeyMode(value);
+                          handleInputChange('multi_key_mode', value);
+                        }}
+                      />
+                      {inputs.multi_key_mode === 'polling' && (
+                        <Banner
+                          type='warning'
+                          description={t('轮询模式必须搭配Redis和内存缓存功能使用，否则性能将大幅降低，并且无法实现轮询功能')}
+                          className='!rounded-lg mt-2'
+                        />
+                      )}
+                    </>
                   )}
 
                   {inputs.type === 18 && (

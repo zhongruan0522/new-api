@@ -718,8 +718,13 @@ func DeleteChannelBatch(c *gin.Context) {
 	return
 }
 
+type PatchChannel struct {
+	model.Channel
+	MultiKeyMode *string `json:"multi_key_mode"`
+}
+
 func UpdateChannel(c *gin.Context) {
-	channel := model.Channel{}
+	channel := PatchChannel{}
 	err := c.ShouldBindJSON(&channel)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
@@ -759,6 +764,19 @@ func UpdateChannel(c *gin.Context) {
 				})
 				return
 			}
+		}
+	}
+	if channel.MultiKeyMode != nil && *channel.MultiKeyMode != "" {
+		originChannel, err := model.GetChannelById(channel.Id, false)
+		if err != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": err.Error(),
+			})
+		}
+		if originChannel.ChannelInfo.IsMultiKey {
+			channel.ChannelInfo = originChannel.ChannelInfo
+			channel.ChannelInfo.MultiKeyMode = constant.MultiKeyMode(*channel.MultiKeyMode)
 		}
 	}
 	err = channel.Update()

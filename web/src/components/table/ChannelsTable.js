@@ -42,19 +42,20 @@ import {
   IconTreeTriangleDown,
   IconSearch,
   IconMore,
-  IconList
+  IconList, IconDescend2
 } from '@douyinfe/semi-icons';
 import { loadChannelModels, isMobile, copy } from '../../helpers';
 import EditTagModal from '../../pages/Channel/EditTagModal.js';
 import { useTranslation } from 'react-i18next';
 import { useTableCompactMode } from '../../hooks/useTableCompactMode';
+import { FaRandom } from 'react-icons/fa';
 
 const ChannelsTable = () => {
   const { t } = useTranslation();
 
   let type2label = undefined;
 
-  const renderType = (type, multiKey = false) => {
+  const renderType = (type, channelInfo = undefined) => {
     if (!type2label) {
       type2label = new Map();
       for (let i = 0; i < CHANNEL_OPTIONS.length; i++) {
@@ -65,13 +66,20 @@ const ChannelsTable = () => {
     
     let icon = getChannelIcon(type);
     
-    if (multiKey) {
+    if (channelInfo?.is_multi_key) {
       icon = (
-        <div className="flex items-center gap-1">
-          <IconList className="text-blue-500" />
-          {icon}
-        </div>
-      );
+        channelInfo?.multi_key_mode === 'random' ? (
+          <div className="flex items-center gap-1">
+            <FaRandom className="text-blue-500" />
+            {icon}
+          </div>
+        ) : (
+          <div className="flex items-center gap-1">
+            <IconDescend2 className="text-blue-500" />
+            {icon}
+          </div>
+        )
+      )
     }
     
     return (
@@ -587,24 +595,70 @@ const ChannelsTable = () => {
                 />
               </SplitButtonGroup>
 
-              {record.status === 1 ? (
-                <Button
-                  theme='light'
-                  type='warning'
-                  size="small"
-                  onClick={() => manageChannel(record.id, 'disable', record)}
+              {record.channel_info?.is_multi_key ? (
+                <SplitButtonGroup
+                  aria-label={t('多密钥渠道操作项目组')}
                 >
-                  {t('禁用')}
-                </Button>
+                  {
+                    record.status === 1 ? (
+                      <Button
+                        theme='light'
+                        type='warning'
+                        size="small"
+                        onClick={() => manageChannel(record.id, 'disable', record)}
+                      >
+                        {t('禁用')}
+                      </Button>
+                    ) : (
+                      <Button
+                        theme='light'
+                        type='secondary'
+                        size="small"
+                        onClick={() => manageChannel(record.id, 'enable', record)}
+                      >
+                        {t('启用')}
+                      </Button>
+                    )
+                  }
+                  <Dropdown
+                    trigger='click'
+                    position='bottomRight'
+                    menu={[
+                      {
+                        node: 'item',
+                        name: t('启用全部密钥'),
+                        onClick: () => manageChannel(record.id, 'enable_all', record),
+                      }
+                    ]}
+                  >
+                    <Button
+                      theme='light'
+                      type='secondary'
+                      size="small"
+                      icon={<IconTreeTriangleDown />}
+                    />
+                  </Dropdown>
+                </SplitButtonGroup>
               ) : (
-                <Button
-                  theme='light'
-                  type='secondary'
-                  size="small"
-                  onClick={() => manageChannel(record.id, 'enable', record)}
-                >
-                  {t('启用')}
-                </Button>
+                record.status === 1 ? (
+                  <Button
+                    theme='light'
+                    type='warning'
+                    size="small"
+                    onClick={() => manageChannel(record.id, 'disable', record)}
+                  >
+                    {t('禁用')}
+                  </Button>
+                ) : (
+                  <Button
+                    theme='light'
+                    type='secondary'
+                    size="small"
+                    onClick={() => manageChannel(record.id, 'enable', record)}
+                  >
+                    {t('启用')}
+                  </Button>
+                )
               )}
 
               <Button
@@ -1012,6 +1066,11 @@ const ChannelsTable = () => {
         if (data.weight < 0) {
           data.weight = 0;
         }
+        res = await API.put('/api/channel/', data);
+        break;
+      case 'enable_all':
+        data.channel_info = record.channel_info;
+        data.channel_info.multi_key_status_list = {};
         res = await API.put('/api/channel/', data);
         break;
     }
