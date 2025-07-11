@@ -421,6 +421,8 @@
   "微信身份验证": "WeChat Authentication",
   "Turnstile 用户校验": "Turnstile User Verification",
   "创建新的渠道": "Create New Channel",
+  "是否自动禁用": "Whether to automatically disable",
+  "仅当自动禁用开启时有效，关闭后不会自动禁用该渠道": "Only effective when automatic disabling is enabled, after closing, the channel will not be automatically disabled",
   "镜像": "Mirror",
   "请输入镜像站地址，格式为：https://domain.com，可不填，不填则使用渠道默认值": "Please enter the mirror site address, the format is: https://domain.com, it can be left blank, if left blank, the default value of the channel will be used",
   "模型": "Model",
