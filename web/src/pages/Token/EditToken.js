@@ -345,7 +345,23 @@ const EditToken = (props) => {
                       label={t('过期时间')}
                       type='dateTime'
                       placeholder={t('请选择过期时间')}
-                      rules={[{ required: true, message: t('请选择过期时间') }]}
+                      rules={[
+                        { required: true, message: t('请选择过期时间') },
+                        {
+                          validator: (rule, value) => {
+                            // 允许 -1 表示永不过期，也允许空值在必填校验时被拦截
+                            if (value === -1 || !value) return Promise.resolve();
+                            const time = Date.parse(value);
+                            if (isNaN(time)) {
+                              return Promise.reject(t('过期时间格式错误！'));
+                            }
+                            if (time <= Date.now()) {
+                              return Promise.reject(t('过期时间不能早于当前时间！'));
+                            }
+                            return Promise.resolve();
+                          },
+                        },
+                      ]}
                       showClear
                       style={{ width: '100%' }}
                     />

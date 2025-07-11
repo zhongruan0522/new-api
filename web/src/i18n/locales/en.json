@@ -512,6 +512,7 @@
   "创建新的兑换码": "Create a new redemption code",
   "未找到所请求的页面": "The requested page was not found",
   "过期时间格式错误！": "Expiration time format error!",
+  "过期时间不能早于当前时间！": "Expiration time cannot be earlier than the current time!",
   "请输入过期时间，格式为 yyyy-MM-dd HH:mm:ss，-1 表示无限制": "Please enter the expiration time, the format is yyyy-MM-dd HH:mm:ss, -1 means no limit",
   "此项可选，为一个 JSON 文本，键为用户请求的模型名称，值为要替换的模型名称，例如：": "This is optional, it's a JSON text, the key is the model name requested by the user, and the value is the model name to be replaced, for example:",
   "此项可选，输入镜像站地址，格式为：": "This is optional, enter the mirror site address, the format is:",
