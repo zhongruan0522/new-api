@@ -53,31 +53,31 @@ const RedemptionsTable = () => {
   const renderStatus = (status, record) => {
     if (isExpired(record)) {
       return (
-        <Tag color='orange' size='large' shape='circle'>{t('已过期')}</Tag>
+        <Tag color='orange' shape='circle'>{t('已过期')}</Tag>
       );
     }
     switch (status) {
       case 1:
         return (
-          <Tag color='green' size='large' shape='circle'>
+          <Tag color='green' shape='circle'>
             {t('未使用')}
           </Tag>
         );
       case 2:
         return (
-          <Tag color='red' size='large' shape='circle'>
+          <Tag color='red' shape='circle'>
             {t('已禁用')}
           </Tag>
         );
       case 3:
         return (
-          <Tag color='grey' size='large' shape='circle'>
+          <Tag color='grey' shape='circle'>
             {t('已使用')}
           </Tag>
         );
       default:
         return (
-          <Tag color='black' size='large' shape='circle'>
+          <Tag color='black' shape='circle'>
             {t('未知状态')}
           </Tag>
         );
@@ -107,7 +107,7 @@ const RedemptionsTable = () => {
       render: (text, record, index) => {
         return (
           <div>
-            <Tag size={'large'} color={'grey'} shape='circle'>
+            <Tag color='grey' shape='circle'>
               {renderQuota(parseInt(text))}
             </Tag>
           </div>

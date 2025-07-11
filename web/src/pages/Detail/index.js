@@ -1381,7 +1381,7 @@ const Detail = (props) => {
                       <div className="flex items-center gap-2">
                         <Bell size={16} />
                         {t('系统公告')}
-                        <Tag size="small" color="grey" shape="circle">
+                        <Tag color="grey" shape="circle">
                           {t('显示最新20条')}
                         </Tag>
                       </div>

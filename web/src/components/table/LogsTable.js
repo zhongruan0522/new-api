@@ -78,37 +78,37 @@ const LogsTable = () => {
     switch (type) {
       case 1:
         return (
-          <Tag color='cyan' size='large' shape='circle'>
+          <Tag color='cyan' shape='circle'>
             {t('充值')}
           </Tag>
         );
       case 2:
         return (
-          <Tag color='lime' size='large' shape='circle'>
+          <Tag color='lime' shape='circle'>
             {t('消费')}
           </Tag>
         );
       case 3:
         return (
-          <Tag color='orange' size='large' shape='circle'>
+          <Tag color='orange' shape='circle'>
             {t('管理')}
           </Tag>
         );
       case 4:
         return (
-          <Tag color='purple' size='large' shape='circle'>
+          <Tag color='purple' shape='circle'>
             {t('系统')}
           </Tag>
         );
       case 5:
         return (
-          <Tag color='red' size='large' shape='circle'>
+          <Tag color='red' shape='circle'>
             {t('错误')}
           </Tag>
         );
       default:
         return (
-          <Tag color='grey' size='large' shape='circle'>
+          <Tag color='grey' shape='circle'>
             {t('未知')}
           </Tag>
         );
@@ -118,13 +118,13 @@ const LogsTable = () => {
   function renderIsStream(bool) {
     if (bool) {
       return (
-        <Tag color='blue' size='large' shape='circle'>
+        <Tag color='blue' shape='circle'>
           {t('流')}
         </Tag>
       );
     } else {
       return (
-        <Tag color='purple' size='large' shape='circle'>
+        <Tag color='purple' shape='circle'>
           {t('非流')}
         </Tag>
       );
@@ -135,21 +135,21 @@ const LogsTable = () => {
     const time = parseInt(type);
     if (time < 101) {
       return (
-        <Tag color='green' size='large' shape='circle'>
+        <Tag color='green' shape='circle'>
           {' '}
           {time} s{' '}
         </Tag>
       );
     } else if (time < 300) {
       return (
-        <Tag color='orange' size='large' shape='circle'>
+        <Tag color='orange' shape='circle'>
           {' '}
           {time} s{' '}
         </Tag>
       );
     } else {
       return (
-        <Tag color='red' size='large' shape='circle'>
+        <Tag color='red' shape='circle'>
           {' '}
           {time} s{' '}
         </Tag>
@@ -162,21 +162,21 @@ const LogsTable = () => {
     time = time.toFixed(1);
     if (time < 3) {
       return (
-        <Tag color='green' size='large' shape='circle'>
+        <Tag color='green' shape='circle'>
           {' '}
           {time} s{' '}
         </Tag>
       );
     } else if (time < 10) {
       return (
-        <Tag color='orange' size='large' shape='circle'>
+        <Tag color='orange' shape='circle'>
           {' '}
           {time} s{' '}
         </Tag>
       );
     } else {
       return (
-        <Tag color='red' size='large' shape='circle'>
+        <Tag color='red' shape='circle'>
           {' '}
           {time} s{' '}
         </Tag>
@@ -363,7 +363,6 @@ const LogsTable = () => {
                 <Tooltip content={record.channel_name || '[未知]'}>
                   <Tag
                     color={colors[parseInt(text) % colors.length]}
-                    size='large'
                     shape='circle'
                   >
                     {' '}
@@ -415,7 +414,6 @@ const LogsTable = () => {
           <div>
             <Tag
               color='grey'
-              size='large'
               shape='circle'
               onClick={(event) => {
                 //cancel the row click event
@@ -567,7 +565,6 @@ const LogsTable = () => {
           <Tooltip content={text}>
             <Tag
               color='orange'
-              size='large'
               shape='circle'
               onClick={(event) => {
                 copyText(event, text);

@@ -106,7 +106,7 @@ function renderDuration(submit_time, finishTime) {
 
   // 返回带有样式的颜色标签
   return (
-    <Tag color={color} size='large' prefixIcon={<Clock size={14} />}>
+    <Tag color={color} prefixIcon={<Clock size={14} />}>
       {durationSec} 秒
     </Tag>
   );
@@ -198,31 +198,31 @@ const LogsTable = () => {
     switch (type) {
       case 'MUSIC':
         return (
-          <Tag color='grey' size='large' shape='circle' prefixIcon={<Music size={14} />}>
+          <Tag color='grey' shape='circle' prefixIcon={<Music size={14} />}>
             {t('生成音乐')}
           </Tag>
         );
       case 'LYRICS':
         return (
-          <Tag color='pink' size='large' shape='circle' prefixIcon={<FileText size={14} />}>
+          <Tag color='pink' shape='circle' prefixIcon={<FileText size={14} />}>
             {t('生成歌词')}
           </Tag>
         );
       case TASK_ACTION_GENERATE:
         return (
-          <Tag color='blue' size='large' shape='circle' prefixIcon={<Sparkles size={14} />}>
+          <Tag color='blue' shape='circle' prefixIcon={<Sparkles size={14} />}>
             {t('图生视频')}
           </Tag>
         );
       case TASK_ACTION_TEXT_GENERATE:
         return (
-          <Tag color='blue' size='large' shape='circle' prefixIcon={<Sparkles size={14} />}>
+          <Tag color='blue' shape='circle' prefixIcon={<Sparkles size={14} />}>
             {t('文生视频')}
           </Tag>
         );
       default:
         return (
-          <Tag color='white' size='large' shape='circle' prefixIcon={<HelpCircle size={14} />}>
+          <Tag color='white' shape='circle' prefixIcon={<HelpCircle size={14} />}>
             {t('未知')}
           </Tag>
         );
@@ -233,25 +233,25 @@ const LogsTable = () => {
     switch (platform) {
       case 'suno':
         return (
-          <Tag color='green' size='large' shape='circle' prefixIcon={<Music size={14} />}>
+          <Tag color='green' shape='circle' prefixIcon={<Music size={14} />}>
             Suno
           </Tag>
         );
       case 'kling':
         return (
-          <Tag color='orange' size='large' shape='circle' prefixIcon={<Video size={14} />}>
+          <Tag color='orange' shape='circle' prefixIcon={<Video size={14} />}>
             Kling
           </Tag>
         );
       case 'jimeng':
         return (
-          <Tag color='purple' size='large' shape='circle' prefixIcon={<Video size={14} />}>
+          <Tag color='purple' shape='circle' prefixIcon={<Video size={14} />}>
             Jimeng
           </Tag>
         );
       default:
         return (
-          <Tag color='white' size='large' shape='circle' prefixIcon={<HelpCircle size={14} />}>
+          <Tag color='white' shape='circle' prefixIcon={<HelpCircle size={14} />}>
             {t('未知')}
           </Tag>
         );
@@ -262,55 +262,55 @@ const LogsTable = () => {
     switch (type) {
       case 'SUCCESS':
         return (
-          <Tag color='green' size='large' shape='circle' prefixIcon={<CheckCircle size={14} />}>
+          <Tag color='green' shape='circle' prefixIcon={<CheckCircle size={14} />}>
             {t('成功')}
           </Tag>
         );
       case 'NOT_START':
         return (
-          <Tag color='grey' size='large' shape='circle' prefixIcon={<Pause size={14} />}>
+          <Tag color='grey' shape='circle' prefixIcon={<Pause size={14} />}>
             {t('未启动')}
           </Tag>
         );
       case 'SUBMITTED':
         return (
-          <Tag color='yellow' size='large' shape='circle' prefixIcon={<Clock size={14} />}>
+          <Tag color='yellow' shape='circle' prefixIcon={<Clock size={14} />}>
             {t('队列中')}
           </Tag>
         );
       case 'IN_PROGRESS':
         return (
-          <Tag color='blue' size='large' shape='circle' prefixIcon={<Play size={14} />}>
+          <Tag color='blue' shape='circle' prefixIcon={<Play size={14} />}>
             {t('执行中')}
           </Tag>
         );
       case 'FAILURE':
         return (
-          <Tag color='red' size='large' shape='circle' prefixIcon={<XCircle size={14} />}>
+          <Tag color='red' shape='circle' prefixIcon={<XCircle size={14} />}>
             {t('失败')}
           </Tag>
         );
       case 'QUEUED':
         return (
-          <Tag color='orange' size='large' shape='circle' prefixIcon={<List size={14} />}>
+          <Tag color='orange' shape='circle' prefixIcon={<List size={14} />}>
             {t('排队中')}
           </Tag>
         );
       case 'UNKNOWN':
         return (
-          <Tag color='white' size='large' shape='circle' prefixIcon={<HelpCircle size={14} />}>
+          <Tag color='white' shape='circle' prefixIcon={<HelpCircle size={14} />}>
             {t('未知')}
           </Tag>
         );
       case '':
         return (
-          <Tag color='grey' size='large' shape='circle' prefixIcon={<Loader size={14} />}>
+          <Tag color='grey' shape='circle' prefixIcon={<Loader size={14} />}>
             {t('正在提交')}
           </Tag>
         );
       default:
         return (
-          <Tag color='white' size='large' shape='circle' prefixIcon={<HelpCircle size={14} />}>
+          <Tag color='white' shape='circle' prefixIcon={<HelpCircle size={14} />}>
             {t('未知')}
           </Tag>
         );

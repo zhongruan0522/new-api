@@ -63,7 +63,6 @@ const ChannelsTable = () => {
     }
     return (
       <Tag
-        size='large'
         color={type2label[type]?.color}
         shape='circle'
         prefixIcon={getChannelIcon(type)}
@@ -77,7 +76,6 @@ const ChannelsTable = () => {
     return (
       <Tag
         color='light-blue'
-        size='large'
         shape='circle'
         type='light'
       >
@@ -90,25 +88,25 @@ const ChannelsTable = () => {
     switch (status) {
       case 1:
         return (
-          <Tag size='large' color='green' shape='circle'>
+          <Tag color='green' shape='circle'>
             {t('已启用')}
           </Tag>
         );
       case 2:
         return (
-          <Tag size='large' color='red' shape='circle'>
+          <Tag color='red' shape='circle'>
             {t('已禁用')}
           </Tag>
         );
       case 3:
         return (
-          <Tag size='large' color='yellow' shape='circle'>
+          <Tag color='yellow' shape='circle'>
             {t('自动禁用')}
           </Tag>
         );
       default:
         return (
-          <Tag size='large' color='grey' shape='circle'>
+          <Tag color='grey' shape='circle'>
             {t('未知状态')}
           </Tag>
         );
@@ -120,31 +118,31 @@ const ChannelsTable = () => {
     time = time.toFixed(2) + t(' 秒');
     if (responseTime === 0) {
       return (
-        <Tag size='large' color='grey' shape='circle'>
+        <Tag color='grey' shape='circle'>
           {t('未测试')}
         </Tag>
       );
     } else if (responseTime <= 1000) {
       return (
-        <Tag size='large' color='green' shape='circle'>
+        <Tag color='green' shape='circle'>
           {time}
         </Tag>
       );
     } else if (responseTime <= 3000) {
       return (
-        <Tag size='large' color='lime' shape='circle'>
+        <Tag color='lime' shape='circle'>
           {time}
         </Tag>
       );
     } else if (responseTime <= 5000) {
       return (
-        <Tag size='large' color='yellow' shape='circle'>
+        <Tag color='yellow' shape='circle'>
           {time}
         </Tag>
       );
     } else {
       return (
-        <Tag size='large' color='red' shape='circle'>
+        <Tag color='red' shape='circle'>
           {time}
         </Tag>
       );
@@ -331,7 +329,7 @@ const ChannelsTable = () => {
             <div>
               <Space spacing={1}>
                 <Tooltip content={t('已用额度')}>
-                  <Tag color='white' type='ghost' size='large' shape='circle'>
+                  <Tag color='white' type='ghost' shape='circle'>
                     {renderQuota(record.used_quota)}
                   </Tag>
                 </Tooltip>
@@ -339,7 +337,6 @@ const ChannelsTable = () => {
                   <Tag
                     color='white'
                     type='ghost'
-                    size='large'
                     shape='circle'
                     onClick={() => updateChannelBalance(record)}
                   >
@@ -352,7 +349,7 @@ const ChannelsTable = () => {
         } else {
           return (
             <Tooltip content={t('已用额度')}>
-              <Tag color='white' type='ghost' size='large' shape='circle'>
+              <Tag color='white' type='ghost' shape='circle'>
                 {renderQuota(record.used_quota)}
               </Tag>
             </Tooltip>
@@ -1240,7 +1237,7 @@ const ChannelsTable = () => {
           tab={
             <span className="flex items-center gap-2">
               {t('全部')}
-              <Tag color={activeTypeKey === 'all' ? 'red' : 'grey'} size='small' shape='circle'>
+              <Tag color={activeTypeKey === 'all' ? 'red' : 'grey'} shape='circle'>
                 {channelTypeCounts['all'] || 0}
               </Tag>
             </span>
@@ -1258,7 +1255,7 @@ const ChannelsTable = () => {
                 <span className="flex items-center gap-2">
                   {getChannelIcon(option.value)}
                   {option.label}
-                  <Tag color={activeTypeKey === key ? 'red' : 'grey'} size='small' shape='circle'>
+                  <Tag color={activeTypeKey === key ? 'red' : 'grey'} shape='circle'>
                     {count}
                   </Tag>
                 </span>
@@ -1461,7 +1458,7 @@ const ChannelsTable = () => {
 
   const fixChannelsAbilities = async () => {
     const res = await API.post(`/api/channel/fix`);
-    const { success, message, data  } = res.data;
+    const { success, message, data } = res.data;
     if (success) {
       showSuccess(t('已修复 ${success} 个通道，失败 ${fails} 个通道。').replace('${success}', data.success).replace('${fails}', data.fails));
       await refresh();
@@ -2033,7 +2030,7 @@ const ChannelsTable = () => {
 
                       if (isTesting) {
                         return (
-                          <Tag size='large' color='blue' shape='circle'>
+                          <Tag color='blue' shape='circle'>
                             {t('测试中')}
                           </Tag>
                         );
@@ -2041,7 +2038,7 @@ const ChannelsTable = () => {
 
                       if (!testResult) {
                         return (
-                          <Tag size='large' color='grey' shape='circle'>
+                          <Tag color='grey' shape='circle'>
                             {t('未开始')}
                           </Tag>
                         );
@@ -2050,7 +2047,6 @@ const ChannelsTable = () => {
                       return (
                         <div className="flex items-center gap-2">
                           <Tag
-                            size='large'
                             color={testResult.success ? 'green' : 'red'}
                             shape='circle'
                           >

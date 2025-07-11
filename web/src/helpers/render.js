@@ -539,7 +539,7 @@ export function stringToColor(str) {
 export function renderModelTag(modelName, options = {}) {
   const {
     color,
-    size = 'large',
+    size = 'default',
     shape = 'circle',
     onClick,
     suffixIcon,
@@ -584,7 +584,7 @@ export function renderText(text, limit) {
 export function renderGroup(group) {
   if (group === '') {
     return (
-      <Tag size='large' key='default' color='orange' shape='circle'>
+      <Tag key='default' color='orange' shape='circle'>
         {i18next.t('用户分组')}
       </Tag>
     );
@@ -603,7 +603,6 @@ export function renderGroup(group) {
     <span key={group}>
       {groups.map((group) => (
         <Tag
-          size='large'
           color={tagColors[group] || stringToColor(group)}
           key={group}
           shape='circle'

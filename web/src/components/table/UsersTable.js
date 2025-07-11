@@ -54,25 +54,25 @@ const UsersTable = () => {
     switch (role) {
       case 1:
         return (
-          <Tag size='large' color='blue' shape='circle' prefixIcon={<User size={14} />}>
+          <Tag color='blue' shape='circle' prefixIcon={<User size={14} />}>
             {t('普通用户')}
           </Tag>
         );
       case 10:
         return (
-          <Tag color='yellow' size='large' shape='circle' prefixIcon={<Shield size={14} />}>
+          <Tag color='yellow' shape='circle' prefixIcon={<Shield size={14} />}>
             {t('管理员')}
           </Tag>
         );
       case 100:
         return (
-          <Tag color='orange' size='large' shape='circle' prefixIcon={<Crown size={14} />}>
+          <Tag color='orange' shape='circle' prefixIcon={<Crown size={14} />}>
             {t('超级管理员')}
           </Tag>
         );
       default:
         return (
-          <Tag color='red' size='large' shape='circle' prefixIcon={<HelpCircle size={14} />}>
+          <Tag color='red' shape='circle' prefixIcon={<HelpCircle size={14} />}>
             {t('未知身份')}
           </Tag>
         );
@@ -82,16 +82,16 @@ const UsersTable = () => {
   const renderStatus = (status) => {
     switch (status) {
       case 1:
-        return <Tag size='large' color='green' shape='circle' prefixIcon={<CheckCircle size={14} />}>{t('已激活')}</Tag>;
+        return <Tag color='green' shape='circle' prefixIcon={<CheckCircle size={14} />}>{t('已激活')}</Tag>;
       case 2:
         return (
-          <Tag size='large' color='red' shape='circle' prefixIcon={<XCircle size={14} />}>
+          <Tag color='red' shape='circle' prefixIcon={<XCircle size={14} />}>
             {t('已封禁')}
           </Tag>
         );
       default:
         return (
-          <Tag size='large' color='grey' shape='circle' prefixIcon={<HelpCircle size={14} />}>
+          <Tag color='grey' shape='circle' prefixIcon={<HelpCircle size={14} />}>
             {t('未知状态')}
           </Tag>
         );
@@ -117,7 +117,7 @@ const UsersTable = () => {
           <Space spacing={2}>
             <span>{text}</span>
             <Tooltip content={remark} position="top" showArrow>
-              <Tag color='white' size='large' shape='circle' className="!text-xs">
+              <Tag color='white' shape='circle' className="!text-xs">
                 <div className="flex items-center gap-1">
                   <div className="w-2 h-2 flex-shrink-0 rounded-full" style={{ backgroundColor: '#10b981' }} />
                   {displayRemark}
@@ -142,13 +142,13 @@ const UsersTable = () => {
         return (
           <div>
             <Space spacing={1}>
-              <Tag color='white' size='large' shape='circle' className="!text-xs" prefixIcon={<Coins size={14} />}>
+              <Tag color='white' shape='circle' className="!text-xs" prefixIcon={<Coins size={14} />}>
                 {t('剩余')}: {renderQuota(record.quota)}
               </Tag>
-              <Tag color='white' size='large' shape='circle' className="!text-xs" prefixIcon={<Coins size={14} />}>
+              <Tag color='white' shape='circle' className="!text-xs" prefixIcon={<Coins size={14} />}>
                 {t('已用')}: {renderQuota(record.used_quota)}
               </Tag>
-              <Tag color='white' size='large' shape='circle' className="!text-xs" prefixIcon={<Activity size={14} />}>
+              <Tag color='white' shape='circle' className="!text-xs" prefixIcon={<Activity size={14} />}>
                 {t('调用')}: {renderNumber(record.request_count)}
               </Tag>
             </Space>
@@ -163,13 +163,13 @@ const UsersTable = () => {
         return (
           <div>
             <Space spacing={1}>
-              <Tag color='white' size='large' shape='circle' className="!text-xs" prefixIcon={<Users size={14} />}>
+              <Tag color='white' shape='circle' className="!text-xs" prefixIcon={<Users size={14} />}>
                 {t('邀请')}: {renderNumber(record.aff_count)}
               </Tag>
-              <Tag color='white' size='large' shape='circle' className="!text-xs" prefixIcon={<DollarSign size={14} />}>
+              <Tag color='white' shape='circle' className="!text-xs" prefixIcon={<DollarSign size={14} />}>
                 {t('收益')}: {renderQuota(record.aff_history_quota)}
               </Tag>
-              <Tag color='white' size='large' shape='circle' className="!text-xs" prefixIcon={<UserPlus size={14} />}>
+              <Tag color='white' shape='circle' className="!text-xs" prefixIcon={<UserPlus size={14} />}>
                 {record.inviter_id === 0 ? t('无邀请人') : `邀请人: ${record.inviter_id}`}
               </Tag>
             </Space>

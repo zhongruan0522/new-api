@@ -7,7 +7,7 @@ import {
   timestamp2string,
   renderGroup,
   renderQuota,
-  getQuotaPerUnit
+  getModelCategories
 } from '../../helpers';
 import { ITEMS_PER_PAGE } from '../../constants';
 import {
@@ -22,6 +22,12 @@ import {
   SplitButtonGroup,
   Table,
   Tag,
+  AvatarGroup,
+  Avatar,
+  Tooltip,
+  Progress,
+  Switch,
+  Input,
   Typography
 } from '@douyinfe/semi-ui';
 import {
@@ -31,7 +37,10 @@ import {
 import {
   IconSearch,
   IconTreeTriangleDown,
-  IconMore,
+  IconCopy,
+  IconEyeOpened,
+  IconEyeClosed,
+  IconBolt,
 } from '@douyinfe/semi-icons';
 import { Key } from 'lucide-react';
 import EditToken from '../../pages/Token/EditToken';
@@ -47,49 +56,6 @@ function renderTimestamp(timestamp) {
 const TokensTable = () => {
   const { t } = useTranslation();
 
-  const renderStatus = (status, model_limits_enabled = false) => {
-    switch (status) {
-      case 1:
-        if (model_limits_enabled) {
-          return (
-            <Tag color='green' size='large' shape='circle' >
-              {t('已启用：限制模型')}
-            </Tag>
-          );
-        } else {
-          return (
-            <Tag color='green' size='large' shape='circle' >
-              {t('已启用')}
-            </Tag>
-          );
-        }
-      case 2:
-        return (
-          <Tag color='red' size='large' shape='circle' >
-            {t('已禁用')}
-          </Tag>
-        );
-      case 3:
-        return (
-          <Tag color='yellow' size='large' shape='circle' >
-            {t('已过期')}
-          </Tag>
-        );
-      case 4:
-        return (
-          <Tag color='grey' size='large' shape='circle' >
-            {t('已耗尽')}
-          </Tag>
-        );
-      default:
-        return (
-          <Tag color='black' size='large' shape='circle' >
-            {t('未知状态')}
-          </Tag>
-        );
-    }
-  };
-
   const columns = [
     {
       title: t('名称'),
@@ -99,64 +65,247 @@ const TokensTable = () => {
       title: t('状态'),
       dataIndex: 'status',
       key: 'status',
-      render: (text, record, index) => {
-        return (
-          <div>
-            <Space>
-              {renderStatus(text, record.model_limits_enabled)}
-              {renderGroup(record.group)}
-            </Space>
-          </div>
-        );
-      },
-    },
-    {
-      title: t('已用额度'),
-      dataIndex: 'used_quota',
-      render: (text, record, index) => {
-        return (
-          <div>
-            <Tag size={'large'} color={'grey'} shape='circle' >
-              {renderQuota(parseInt(text))}
-            </Tag>
-          </div>
-        );
-      },
-    },
-    {
-      title: t('剩余额度'),
-      dataIndex: 'remain_quota',
-      render: (text, record, index) => {
-        const getQuotaColor = (quotaValue) => {
-          const quotaPerUnit = getQuotaPerUnit();
-          const dollarAmount = quotaValue / quotaPerUnit;
-
-          if (dollarAmount <= 0) {
-            return 'red';
-          } else if (dollarAmount <= 100) {
-            return 'yellow';
+      render: (text, record) => {
+        const enabled = text === 1;
+        const handleToggle = (checked) => {
+          if (checked) {
+            manageToken(record.id, 'enable', record);
           } else {
-            return 'green';
+            manageToken(record.id, 'disable', record);
           }
         };
 
+        let tagColor = 'black';
+        let tagText = t('未知状态');
+        if (enabled) {
+          tagColor = 'green';
+          tagText = t('已启用');
+        } else if (text === 2) {
+          tagColor = 'red';
+          tagText = t('已禁用');
+        } else if (text === 3) {
+          tagColor = 'yellow';
+          tagText = t('已过期');
+        } else if (text === 4) {
+          tagColor = 'grey';
+          tagText = t('已耗尽');
+        }
+
         return (
-          <div>
-            {record.unlimited_quota ? (
-              <Tag size={'large'} color={'white'} shape='circle' >
-                {t('无限制')}
-              </Tag>
-            ) : (
-              <Tag
-                size={'large'}
-                color={getQuotaColor(parseInt(text))}
-                shape='circle'
-              >
-                {renderQuota(parseInt(text))}
-              </Tag>
-            )}
+          <Tag
+            color={tagColor}
+            shape='circle'
+            prefixIcon={
+              <Switch
+                size='small'
+                checked={enabled}
+                onChange={handleToggle}
+                aria-label='token status switch'
+              />
+            }
+          >
+            {tagText}
+          </Tag>
+        );
+      },
+    },
+    {
+      title: t('分组'),
+      dataIndex: 'group',
+      key: 'group',
+      render: (text) => {
+        if (text === 'auto') {
+          return (
+            <Tooltip
+              content={t('当前分组为 auto，会自动选择最优分组，当一个组不可用时自动降级到下一个组（熔断机制）')}
+              position='top'
+            >
+              <Tag color='blue' shape='circle' prefixIcon={<IconBolt />}> {t('智能熔断')} </Tag>
+            </Tooltip>
+          );
+        }
+        return renderGroup(text);
+      },
+    },
+    {
+      title: t('密钥'),
+      key: 'token_key',
+      render: (text, record) => {
+        const fullKey = 'sk-' + record.key;
+        const maskedKey = 'sk-' + record.key.slice(0, 3) + '********' + record.key.slice(-3);
+        const revealed = !!showKeys[record.id];
+
+        return (
+          <div className='w-[200px]'>
+            <Input
+              readOnly
+              value={revealed ? fullKey : maskedKey}
+              size='small'
+              suffix={
+                <div className='flex items-center'>
+                  <Button
+                    theme='borderless'
+                    size='small'
+                    type='tertiary'
+                    icon={revealed ? <IconEyeClosed /> : <IconEyeOpened />}
+                    aria-label='toggle token visibility'
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowKeys(prev => ({ ...prev, [record.id]: !revealed }));
+                    }}
+                  />
+                  <Button
+                    theme='borderless'
+                    size='small'
+                    type='tertiary'
+                    icon={<IconCopy />}
+                    aria-label='copy token key'
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      await copyText(fullKey);
+                    }}
+                  />
+                </div>
+              }
+            />
           </div>
         );
+      },
+    },
+    {
+      title: t('额度'),
+      key: 'quota',
+      render: (text, record) => {
+        if (record.unlimited_quota) {
+          return <Tag color='white' shape='circle'>{t('无限制')}</Tag>;
+        }
+
+        const used = parseInt(record.used_quota) || 0;
+        const remain = parseInt(record.remain_quota) || 0;
+        const total = used + remain;
+        const percent = total > 0 ? (used / total) * 100 : 0;
+
+        const getProgressColor = (pct) => {
+          if (pct >= 90) return 'var(--semi-color-danger)';
+          if (pct >= 70) return 'var(--semi-color-warning)';
+          return undefined; // default color
+        };
+
+        return (
+          <Tooltip
+            content={
+              <div className='text-xs'>
+                <div>{t('已用额度')}: {renderQuota(used)}</div>
+                <div>{t('剩余额度')}: {renderQuota(remain)}</div>
+                <div>{t('总额度')}: {renderQuota(total)}</div>
+              </div>
+            }
+          >
+            <div className='w-[30px]'>
+              <Progress
+                percent={percent}
+                stroke={getProgressColor(percent)}
+                showInfo
+                aria-label='quota usage'
+                format={percent => <span className="text-xs">{percent.toFixed(0)}%</span>}
+                type="circle"
+                width={30}
+              />
+            </div>
+          </Tooltip>
+        );
+      },
+    },
+    {
+      title: t('可用模型'),
+      dataIndex: 'model_limits',
+      render: (text, record) => {
+        if (record.model_limits_enabled && text) {
+          const models = text.split(',').filter(Boolean);
+          const categories = getModelCategories(t);
+
+          const vendorAvatars = [];
+          Object.entries(categories).forEach(([key, category]) => {
+            if (key === 'all') return;
+            if (!category.icon || !category.filter) return;
+            const vendorModels = models.filter((m) => category.filter({ model_name: m }));
+            if (vendorModels.length > 0) {
+              vendorAvatars.push(
+                <Tooltip key={key} content={vendorModels.join(', ')} position='top' showArrow>
+                  <Avatar size='extra-extra-small' alt={category.label} color='transparent'>
+                    {category.icon}
+                  </Avatar>
+                </Tooltip>
+              );
+            }
+          });
+
+          if (vendorAvatars.length === 0) {
+            vendorAvatars.push(
+              <Tooltip key='default' content={models.join(', ')} position='top' showArrow>
+                <Avatar size='extra-extra-small' alt='models'>
+                  {models[0].slice(0, 2).toUpperCase()}
+                </Avatar>
+              </Tooltip>
+            );
+          }
+
+          return (
+            <AvatarGroup size='extra-extra-small'>
+              {vendorAvatars}
+            </AvatarGroup>
+          );
+        } else {
+          return (
+            <Tag color='white' shape='circle'>
+              {t('无限制')}
+            </Tag>
+          );
+        }
+      },
+    },
+    {
+      title: t('IP限制'),
+      dataIndex: 'allow_ips',
+      render: (text) => {
+        if (!text || text.trim() === '') {
+          return (
+            <Tag color='white' shape='circle'>
+              {t('无限制')}
+            </Tag>
+          );
+        }
+
+        const ips = text
+          .split('\n')
+          .map((ip) => ip.trim())
+          .filter(Boolean);
+
+        const displayIps = ips.slice(0, 1);
+        const extraCount = ips.length - displayIps.length;
+
+        const ipTags = displayIps.map((ip, idx) => (
+          <Tag key={idx} shape='circle'>
+            {ip}
+          </Tag>
+        ));
+
+        if (extraCount > 0) {
+          ipTags.push(
+            <Tooltip
+              key='extra'
+              content={ips.slice(2).join(', ')}
+              position='top'
+              showArrow
+            >
+              <Tag shape='circle'>
+                {'+' + extraCount}
+              </Tag>
+            </Tooltip>
+          );
+        }
+
+        return <Space wrap>{ipTags}</Space>;
       },
     },
     {
@@ -211,58 +360,6 @@ const TokensTable = () => {
           }
         }
 
-        // 创建更多操作的下拉菜单项
-        const moreMenuItems = [
-          {
-            node: 'item',
-            name: t('查看'),
-            onClick: () => {
-              Modal.info({
-                title: t('令牌详情'),
-                content: 'sk-' + record.key,
-                size: 'large',
-              });
-            },
-          },
-          {
-            node: 'item',
-            name: t('删除'),
-            type: 'danger',
-            onClick: () => {
-              Modal.confirm({
-                title: t('确定是否要删除此令牌？'),
-                content: t('此修改将不可逆'),
-                onOk: () => {
-                  manageToken(record.id, 'delete', record).then(() => {
-                    removeRecord(record.key);
-                  });
-                },
-              });
-            },
-          }
-        ];
-
-        // 动态添加启用/禁用按钮
-        if (record.status === 1) {
-          moreMenuItems.push({
-            node: 'item',
-            name: t('禁用'),
-            type: 'warning',
-            onClick: () => {
-              manageToken(record.id, 'disable', record);
-            },
-          });
-        } else {
-          moreMenuItems.push({
-            node: 'item',
-            name: t('启用'),
-            type: 'secondary',
-            onClick: () => {
-              manageToken(record.id, 'enable', record);
-            },
-          });
-        }
-
         return (
           <Space wrap>
             <SplitButtonGroup
@@ -306,17 +403,6 @@ const TokensTable = () => {
 
             <Button
               theme='light'
-              type='secondary'
-              size="small"
-              onClick={async (text) => {
-                await copyText('sk-' + record.key);
-              }}
-            >
-              {t('复制')}
-            </Button>
-
-            <Button
-              theme='light'
               type='tertiary'
               size="small"
               onClick={() => {
@@ -327,18 +413,24 @@ const TokensTable = () => {
               {t('编辑')}
             </Button>
 
-            <Dropdown
-              trigger='click'
-              position='bottomRight'
-              menu={moreMenuItems}
+            <Button
+              theme='light'
+              type='danger'
+              size="small"
+              onClick={() => {
+                Modal.confirm({
+                  title: t('确定是否要删除此令牌？'),
+                  content: t('此修改将不可逆'),
+                  onOk: () => {
+                    manageToken(record.id, 'delete', record).then(() => {
+                      removeRecord(record.key);
+                    });
+                  },
+                });
+              }}
             >
-              <Button
-                icon={<IconMore />}
-                theme='light'
-                type='tertiary'
-                size="small"
-              />
-            </Dropdown>
+              {t('删除')}
+            </Button>
           </Space>
         );
       },
@@ -357,6 +449,7 @@ const TokensTable = () => {
     id: undefined,
   });
   const [compactMode, setCompactMode] = useTableCompactMode('tokens');
+  const [showKeys, setShowKeys] = useState({});
 
   // Form 初始值
   const formInitValues = {

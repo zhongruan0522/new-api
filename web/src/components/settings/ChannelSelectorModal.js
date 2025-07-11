@@ -118,25 +118,25 @@ const ChannelSelectorModal = forwardRef(({
     switch (status) {
       case 1:
         return (
-          <Tag size='large' color='green' shape='circle' prefixIcon={<CheckCircle size={14} />}>
+          <Tag color='green' shape='circle' prefixIcon={<CheckCircle size={14} />}>
             {t('已启用')}
           </Tag>
         );
       case 2:
         return (
-          <Tag size='large' color='red' shape='circle' prefixIcon={<XCircle size={14} />}>
+          <Tag color='red' shape='circle' prefixIcon={<XCircle size={14} />}>
             {t('已禁用')}
           </Tag>
         );
       case 3:
         return (
-          <Tag size='large' color='yellow' shape='circle' prefixIcon={<AlertCircle size={14} />}>
+          <Tag color='yellow' shape='circle' prefixIcon={<AlertCircle size={14} />}>
             {t('自动禁用')}
           </Tag>
         );
       default:
         return (
-          <Tag size='large' color='grey' shape='circle' prefixIcon={<HelpCircle size={14} />}>
+          <Tag color='grey' shape='circle' prefixIcon={<HelpCircle size={14} />}>
             {t('未知状态')}
           </Tag>
         );
