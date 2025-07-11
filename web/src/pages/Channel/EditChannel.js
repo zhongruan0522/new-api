@@ -238,9 +238,9 @@ const EditChannel = (props) => {
     let err = false;
 
     if (isEdit) {
-      // 如果是编辑模式，使用已有的channel id获取模型列表
-      const res = await API.get('/api/channel/fetch_models/' + channelId);
-      if (res.data && res.data.success) {
+      // 如果是编辑模式，使用已有的 channelId 获取模型列表
+      const res = await API.get('/api/channel/fetch_models/' + channelId, { skipErrorHandler: true });
+      if (res && res.data && res.data.success) {
         models.push(...res.data.data);
       } else {
         err = true;
@@ -252,13 +252,17 @@ const EditChannel = (props) => {
         err = true;
       } else {
         try {
-          const res = await API.post('/api/channel/fetch_models', {
-            base_url: inputs['base_url'],
-            type: inputs['type'],
-            key: inputs['key'],
-          });
+          const res = await API.post(
+            '/api/channel/fetch_models',
+            {
+              base_url: inputs['base_url'],
+              type: inputs['type'],
+              key: inputs['key'],
+            },
+            { skipErrorHandler: true },
+          );
 
-          if (res.data && res.data.success) {
+          if (res && res.data && res.data.success) {
             models.push(...res.data.data);
           } else {
             err = true;
@@ -747,7 +751,7 @@ const EditChannel = (props) => {
                   <Form.Select
                     field='models'
                     label={t('模型')}
-                    placeholder={isEdit ? t('请选择该渠道所支持的模型') : t('创建后可在编辑渠道时获取上游模型列表')}
+                    placeholder={t('请选择该渠道所支持的模型')}
                     rules={[{ required: true, message: t('请选择模型') }]}
                     multiple
                     filter
@@ -763,11 +767,9 @@ const EditChannel = (props) => {
                         <Button size='small' type='secondary' onClick={() => handleInputChange('models', fullModels)}>
                           {t('填入所有模型')}
                         </Button>
-                        {isEdit && (
-                          <Button size='small' type='tertiary' onClick={() => fetchUpstreamModelList('models')}>
-                            {t('获取模型列表')}
-                          </Button>
-                        )}
+                        <Button size='small' type='tertiary' onClick={() => fetchUpstreamModelList('models')}>
+                          {t('获取模型列表')}
+                        </Button>
                         <Button size='small' type='warning' onClick={() => handleInputChange('models', [])}>
                           {t('清除所有模型')}
                         </Button>
