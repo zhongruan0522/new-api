@@ -55,6 +55,7 @@ type GeneralOpenAIRequest struct {
 	EnableThinking      any               `json:"enable_thinking,omitempty"` // ali
 	THINKING            json.RawMessage   `json:"thinking,omitempty"`        // doubao
 	ExtraBody           json.RawMessage   `json:"extra_body,omitempty"`
+	SearchParameters    any               `json:"search_parameters,omitempty"` //xai
 	WebSearchOptions    *WebSearchOptions `json:"web_search_options,omitempty"`
 	// OpenRouter Params
 	Usage     json.RawMessage `json:"usage,omitempty"`
