@@ -294,7 +294,7 @@ const TokensTable = () => {
           ipTags.push(
             <Tooltip
               key='extra'
-              content={ips.slice(2).join(', ')}
+              content={ips.slice(1).join(', ')}
               position='top'
               showArrow
             >
