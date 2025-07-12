@@ -524,6 +524,7 @@ const UsersTable = () => {
             type='secondary'
             className="w-full md:w-auto"
             onClick={() => setCompactMode(!compactMode)}
+            size="small"
           >
             {compactMode ? t('自适应列表') : t('紧凑列表')}
           </Button>
@@ -541,6 +542,7 @@ const UsersTable = () => {
             onClick={() => {
               setShowAddUser(true);
             }}
+            size="small"
           >
             {t('添加用户')}
           </Button>
@@ -568,6 +570,7 @@ const UsersTable = () => {
                 placeholder={t('支持搜索用户的 ID、用户名、显示名称和邮箱地址')}
                 showClear
                 pure
+                size="small"
               />
             </div>
             <div className="w-full md:w-48">
@@ -585,6 +588,7 @@ const UsersTable = () => {
                 className="w-full"
                 showClear
                 pure
+                size="small"
               />
             </div>
             <div className="flex gap-2 w-full md:w-auto">
@@ -593,6 +597,7 @@ const UsersTable = () => {
                 htmlType="submit"
                 loading={loading || searching}
                 className="flex-1 md:flex-initial md:w-auto"
+                size="small"
               >
                 {t('查询')}
               </Button>
@@ -609,6 +614,7 @@ const UsersTable = () => {
                   }
                 }}
                 className="flex-1 md:flex-initial md:w-auto"
+                size="small"
               >
                 {t('重置')}
               </Button>

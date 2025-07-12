@@ -682,6 +682,7 @@ const LogsTable = () => {
                   type='secondary'
                   className="w-full md:w-auto"
                   onClick={() => setCompactMode(!compactMode)}
+                  size="small"
                 >
                   {compactMode ? t('自适应列表') : t('紧凑列表')}
                 </Button>
@@ -711,6 +712,7 @@ const LogsTable = () => {
                         placeholder={[t('开始时间'), t('结束时间')]}
                         showClear
                         pure
+                        size="small"
                       />
                     </div>
 
@@ -721,6 +723,7 @@ const LogsTable = () => {
                       placeholder={t('任务 ID')}
                       showClear
                       pure
+                      size="small"
                     />
 
                     {/* 渠道 ID - 仅管理员可见 */}
@@ -731,6 +734,7 @@ const LogsTable = () => {
                         placeholder={t('渠道 ID')}
                         showClear
                         pure
+                        size="small"
                       />
                     )}
                   </div>
@@ -743,6 +747,7 @@ const LogsTable = () => {
                         type='primary'
                         htmlType='submit'
                         loading={loading}
+                        size="small"
                       >
                         {t('查询')}
                       </Button>
@@ -757,6 +762,7 @@ const LogsTable = () => {
                             }, 100);
                           }
                         }}
+                        size="small"
                       >
                         {t('重置')}
                       </Button>
@@ -764,6 +770,7 @@ const LogsTable = () => {
                         theme='light'
                         type='tertiary'
                         onClick={() => setShowColumnSelector(true)}
+                        size="small"
                       >
                         {t('列设置')}
                       </Button>

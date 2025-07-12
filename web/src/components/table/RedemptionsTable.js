@@ -428,6 +428,7 @@ const RedemptionsTable = () => {
             type='secondary'
             className="w-full md:w-auto"
             onClick={() => setCompactMode(!compactMode)}
+            size="small"
           >
             {compactMode ? t('自适应列表') : t('紧凑列表')}
           </Button>
@@ -449,6 +450,7 @@ const RedemptionsTable = () => {
                 });
                 setShowEdit(true);
               }}
+              size="small"
             >
               {t('添加兑换码')}
             </Button>
@@ -467,6 +469,7 @@ const RedemptionsTable = () => {
                 }
                 await copyText(keys);
               }}
+              size="small"
             >
               {t('复制所选兑换码到剪贴板')}
             </Button>
@@ -492,6 +495,7 @@ const RedemptionsTable = () => {
                 },
               });
             }}
+            size="small"
           >
             {t('清除失效兑换码')}
           </Button>
@@ -519,6 +523,7 @@ const RedemptionsTable = () => {
                 placeholder={t('关键字(id或者名称)')}
                 showClear
                 pure
+                size="small"
               />
             </div>
             <div className="flex gap-2 w-full md:w-auto">
@@ -527,6 +532,7 @@ const RedemptionsTable = () => {
                 htmlType="submit"
                 loading={loading || searching}
                 className="flex-1 md:flex-initial md:w-auto"
+                size="small"
               >
                 {t('查询')}
               </Button>
@@ -543,6 +549,7 @@ const RedemptionsTable = () => {
                   }
                 }}
                 className="flex-1 md:flex-initial md:w-auto"
+                size="small"
               >
                 {t('重置')}
               </Button>

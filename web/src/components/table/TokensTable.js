@@ -132,7 +132,7 @@ const TokensTable = () => {
       key: 'token_key',
       render: (text, record) => {
         const fullKey = 'sk-' + record.key;
-        const maskedKey = 'sk-' + record.key.slice(0, 3) + '********' + record.key.slice(-3);
+        const maskedKey = 'sk-' + record.key.slice(0, 4) + '**********' + record.key.slice(-4);
         const revealed = !!showKeys[record.id];
 
         return (
@@ -173,7 +173,7 @@ const TokensTable = () => {
       },
     },
     {
-      title: t('额度'),
+      title: t('剩余额度'),
       key: 'quota',
       render: (text, record) => {
         if (record.unlimited_quota) {
@@ -183,12 +183,15 @@ const TokensTable = () => {
         const used = parseInt(record.used_quota) || 0;
         const remain = parseInt(record.remain_quota) || 0;
         const total = used + remain;
-        const percent = total > 0 ? (used / total) * 100 : 0;
+        // 计算剩余额度百分比，100% 表示额度未使用
+        const percent = total > 0 ? (remain / total) * 100 : 0;
 
+        // 根据剩余百分比动态设置颜色，100% 绿色，<=10% 红色，<=30% 黄色，其余默认
         const getProgressColor = (pct) => {
-          if (pct >= 90) return 'var(--semi-color-danger)';
-          if (pct >= 70) return 'var(--semi-color-warning)';
-          return undefined; // default color
+          if (pct === 100) return 'var(--semi-color-success)';
+          if (pct <= 10) return 'var(--semi-color-danger)';
+          if (pct <= 30) return 'var(--semi-color-warning)';
+          return undefined; // 默认颜色
         };
 
         return (
@@ -196,7 +199,7 @@ const TokensTable = () => {
             content={
               <div className='text-xs'>
                 <div>{t('已用额度')}: {renderQuota(used)}</div>
-                <div>{t('剩余额度')}: {renderQuota(remain)}</div>
+                <div>{t('剩余额度')}: {renderQuota(remain)} ({percent.toFixed(0)}%)</div>
                 <div>{t('总额度')}: {renderQuota(total)}</div>
               </div>
             }
@@ -205,11 +208,10 @@ const TokensTable = () => {
               <Progress
                 percent={percent}
                 stroke={getProgressColor(percent)}
-                showInfo
+                showInfo={false}
                 aria-label='quota usage'
-                format={percent => <span className="text-xs">{percent.toFixed(0)}%</span>}
                 type="circle"
-                width={30}
+                size='small'
               />
             </div>
           </Tooltip>
@@ -698,6 +700,7 @@ const TokensTable = () => {
             type="secondary"
             className="w-full md:w-auto"
             onClick={() => setCompactMode(!compactMode)}
+            size="small"
           >
             {compactMode ? t('自适应列表') : t('紧凑列表')}
           </Button>
@@ -718,6 +721,7 @@ const TokensTable = () => {
               });
               setShowEdit(true);
             }}
+            size="small"
           >
             {t('添加令牌')}
           </Button>
@@ -768,6 +772,7 @@ const TokensTable = () => {
                 ),
               });
             }}
+            size="small"
           >
             {t('复制所选令牌')}
           </Button>
@@ -790,6 +795,7 @@ const TokensTable = () => {
                 onOk: () => batchDeleteTokens(),
               });
             }}
+            size="small"
           >
             {t('删除所选令牌')}
           </Button>
@@ -814,6 +820,7 @@ const TokensTable = () => {
                 placeholder={t('搜索关键字')}
                 showClear
                 pure
+                size="small"
               />
             </div>
             <div className="relative w-full md:w-56">
@@ -823,6 +830,7 @@ const TokensTable = () => {
                 placeholder={t('密钥')}
                 showClear
                 pure
+                size="small"
               />
             </div>
             <div className="flex gap-2 w-full md:w-auto">
@@ -831,6 +839,7 @@ const TokensTable = () => {
                 htmlType="submit"
                 loading={loading || searching}
                 className="flex-1 md:flex-initial md:w-auto"
+                size="small"
               >
                 {t('查询')}
               </Button>
@@ -846,6 +855,7 @@ const TokensTable = () => {
                   }
                 }}
                 className="flex-1 md:flex-initial md:w-auto"
+                size="small"
               >
                 {t('重置')}
               </Button>

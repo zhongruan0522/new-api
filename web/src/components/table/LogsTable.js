@@ -1234,9 +1234,7 @@ const LogsTable = () => {
                 <Space>
                   <Tag
                     color='blue'
-                    size='large'
                     style={{
-                      padding: 15,
                       fontWeight: 500,
                       boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
                     }}
@@ -1246,9 +1244,7 @@ const LogsTable = () => {
                   </Tag>
                   <Tag
                     color='pink'
-                    size='large'
                     style={{
-                      padding: 15,
                       fontWeight: 500,
                       boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
                     }}
@@ -1258,9 +1254,7 @@ const LogsTable = () => {
                   </Tag>
                   <Tag
                     color='white'
-                    size='large'
                     style={{
-                      padding: 15,
                       border: 'none',
                       boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
                       fontWeight: 500,
@@ -1276,6 +1270,7 @@ const LogsTable = () => {
                   type='secondary'
                   className="w-full md:w-auto"
                   onClick={() => setCompactMode(!compactMode)}
+                  size="small"
                 >
                   {compactMode ? t('自适应列表') : t('紧凑列表')}
                 </Button>
@@ -1306,6 +1301,7 @@ const LogsTable = () => {
                       placeholder={[t('开始时间'), t('结束时间')]}
                       showClear
                       pure
+                      size="small"
                     />
                   </div>
 
@@ -1316,6 +1312,7 @@ const LogsTable = () => {
                     placeholder={t('令牌名称')}
                     showClear
                     pure
+                    size="small"
                   />
 
                   <Form.Input
@@ -1324,6 +1321,7 @@ const LogsTable = () => {
                     placeholder={t('模型名称')}
                     showClear
                     pure
+                    size="small"
                   />
 
                   <Form.Input
@@ -1332,6 +1330,7 @@ const LogsTable = () => {
                     placeholder={t('分组')}
                     showClear
                     pure
+                    size="small"
                   />
 
                   {isAdminUser && (
@@ -1342,6 +1341,7 @@ const LogsTable = () => {
                         placeholder={t('渠道 ID')}
                         showClear
                         pure
+                        size="small"
                       />
                       <Form.Input
                         field='username'
@@ -1349,6 +1349,7 @@ const LogsTable = () => {
                         placeholder={t('用户名称')}
                         showClear
                         pure
+                        size="small"
                       />
                     </>
                   )}
@@ -1370,6 +1371,7 @@ const LogsTable = () => {
                           refresh();
                         }, 0);
                       }}
+                      size="small"
                     >
                       <Form.Select.Option value='0'>
                         {t('全部')}
@@ -1397,6 +1399,7 @@ const LogsTable = () => {
                       type='primary'
                       htmlType='submit'
                       loading={loading}
+                      size="small"
                     >
                       {t('查询')}
                     </Button>
@@ -1411,6 +1414,7 @@ const LogsTable = () => {
                           }, 100);
                         }
                       }}
+                      size="small"
                     >
                       {t('重置')}
                     </Button>
@@ -1418,6 +1422,7 @@ const LogsTable = () => {
                       theme='light'
                       type='tertiary'
                       onClick={() => setShowColumnSelector(true)}
+                      size="small"
                     >
                       {t('列设置')}
                     </Button>
