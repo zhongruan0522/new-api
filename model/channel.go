@@ -76,17 +76,17 @@ func (channel *Channel) getKeys() []string {
 	return keys
 }
 
-func (channel *Channel) GetNextEnabledKey() (string, *types.NewAPIError) {
+func (channel *Channel) GetNextEnabledKey() (string, int, *types.NewAPIError) {
 	// If not in multi-key mode, return the original key string directly.
 	if !channel.ChannelInfo.IsMultiKey {
-		return channel.Key, nil
+		return channel.Key, 0, nil
 	}
 
 	// Obtain all keys (split by \n)
 	keys := channel.getKeys()
 	if len(keys) == 0 {
 		// No keys available, return error, should disable the channel
-		return "", types.NewError(errors.New("no keys available"), types.ErrorCodeChannelNoAvailableKey)
+		return "", 0, types.NewError(errors.New("no keys available"), types.ErrorCodeChannelNoAvailableKey)
 	}
 
 	statusList := channel.ChannelInfo.MultiKeyStatusList
@@ -110,13 +110,14 @@ func (channel *Channel) GetNextEnabledKey() (string, *types.NewAPIError) {
 	}
 	// If no specific status list or none enabled, fall back to first key
 	if len(enabledIdx) == 0 {
-		return keys[0], nil
+		return keys[0], 0, nil
 	}
 
 	switch channel.ChannelInfo.MultiKeyMode {
 	case constant.MultiKeyModeRandom:
 		// Randomly pick one enabled key
-		return keys[enabledIdx[rand.Intn(len(enabledIdx))]], nil
+		selectedIdx := enabledIdx[rand.Intn(len(enabledIdx))]
+		return keys[selectedIdx], selectedIdx, nil
 	case constant.MultiKeyModePolling:
 		// Use channel-specific lock to ensure thread-safe polling
 		lock := getChannelPollingLock(channel.Id)
@@ -125,7 +126,7 @@ func (channel *Channel) GetNextEnabledKey() (string, *types.NewAPIError) {
 
 		channelInfo, err := CacheGetChannelInfo(channel.Id)
 		if err != nil {
-			return "", types.NewError(err, types.ErrorCodeGetChannelFailed)
+			return "", 0, types.NewError(err, types.ErrorCodeGetChannelFailed)
 		}
 		//println("before polling index:", channel.ChannelInfo.MultiKeyPollingIndex)
 		defer func() {
@@ -148,14 +149,14 @@ func (channel *Channel) GetNextEnabledKey() (string, *types.NewAPIError) {
 			if getStatus(idx) == common.ChannelStatusEnabled {
 				// update polling index for next call (point to the next position)
 				channel.ChannelInfo.MultiKeyPollingIndex = (idx + 1) % len(keys)
-				return keys[idx], nil
+				return keys[idx], idx, nil
 			}
 		}
 		// Fallback – should not happen, but return first enabled key
-		return keys[enabledIdx[0]], nil
+		return keys[enabledIdx[0]], enabledIdx[0], nil
 	default:
 		// Unknown mode, default to first enabled key (or original key string)
-		return keys[enabledIdx[0]], nil
+		return keys[enabledIdx[0]], enabledIdx[0], nil
 	}
 }
 

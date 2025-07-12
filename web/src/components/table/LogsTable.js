@@ -20,7 +20,7 @@ import {
   renderQuota,
   stringToColor,
   getLogOther,
-  renderModelTag,
+  renderModelTag
 } from '../../helpers';
 
 import {
@@ -356,22 +356,46 @@ const LogsTable = () => {
       dataIndex: 'channel',
       className: isAdmin() ? 'tableShow' : 'tableHiddle',
       render: (text, record, index) => {
+        let isMultiKey = false
+        let multiKeyIndex = -1;
+        let other = getLogOther(record.other);
+        if (other?.admin_info) {
+          let adminInfo = other.admin_info;
+          if (adminInfo?.is_multi_key) {
+            isMultiKey = true;
+            multiKeyIndex = adminInfo.multi_key_index;
+          }
+        }
+
         return isAdminUser ? (
           record.type === 0 || record.type === 2 || record.type === 5 ? (
-            <div>
+            <>
               {
                 <Tooltip content={record.channel_name || '[未知]'}>
-                  <Tag
-                    color={colors[parseInt(text) % colors.length]}
-                    size='large'
-                    shape='circle'
-                  >
-                    {' '}
-                    {text}{' '}
-                  </Tag>
+                  <Space>
+                    <Tag
+                      color={colors[parseInt(text) % colors.length]}
+                      size='large'
+                      shape='circle'
+                    >
+                      {text}
+                    </Tag>
+                    {
+                      isMultiKey && (
+                        <Tag
+                          color={'white'}
+                          size='large'
+                          shape='circle'
+                        >
+                          {multiKeyIndex}
+                        </Tag>
+                      )
+                    }
+                  </Space>
+
                 </Tooltip>
               }
-            </div>
+            </>
           ) : (
             <></>
           )
