@@ -380,9 +380,47 @@ func GetChannel(c *gin.Context) {
 	return
 }
 
+type AddChannelRequest struct {
+	Mode         string                `json:"mode"`
+	MultiKeyMode constant.MultiKeyMode `json:"multi_key_mode"`
+	Channel      *model.Channel        `json:"channel"`
+}
+
+func getVertexArrayKeys(keys string) ([]string, error) {
+	if keys == "" {
+		return nil, nil
+	}
+	var keyArray []interface{}
+	err := common.Unmarshal([]byte(keys), &keyArray)
+	if err != nil {
+		return nil, fmt.Errorf("批量添加 Vertex AI 必须使用标准的JsonArray格式，例如[{key1}, {key2}...]，请检查输入: %w", err)
+	}
+	cleanKeys := make([]string, 0, len(keyArray))
+	for _, key := range keyArray {
+		var keyStr string
+		switch v := key.(type) {
+		case string:
+			keyStr = strings.TrimSpace(v)
+		default:
+			bytes, err := json.Marshal(v)
+			if err != nil {
+				return nil, fmt.Errorf("Vertex AI key JSON 编码失败: %w", err)
+			}
+			keyStr = string(bytes)
+		}
+		if keyStr != "" {
+			cleanKeys = append(cleanKeys, keyStr)
+		}
+	}
+	if len(cleanKeys) == 0 {
+		return nil, fmt.Errorf("批量添加 Vertex AI 的 keys 不能为空")
+	}
+	return cleanKeys, nil
+}
+
 func AddChannel(c *gin.Context) {
-	channel := model.Channel{}
-	err := c.ShouldBindJSON(&channel)
+	addChannelRequest := AddChannelRequest{}
+	err := c.ShouldBindJSON(&addChannelRequest)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,
@@ -390,7 +428,8 @@ func AddChannel(c *gin.Context) {
 		})
 		return
 	}
-	err = channel.ValidateSettings()
+
+	err = addChannelRequest.Channel.ValidateSettings()
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,
@@ -398,49 +437,113 @@ func AddChannel(c *gin.Context) {
 		})
 		return
 	}
-	channel.CreatedTime = common.GetTimestamp()
-	keys := strings.Split(channel.Key, "\n")
-	if channel.Type == constant.ChannelTypeVertexAi {
-		if channel.Other == "" {
+
+	if addChannelRequest.Channel == nil || addChannelRequest.Channel.Key == "" {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": "channel cannot be empty",
+		})
+		return
+	}
+
+	// Validate the length of the model name
+	for _, m := range addChannelRequest.Channel.GetModels() {
+		if len(m) > 255 {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": fmt.Sprintf("模型名称过长: %s", m),
+			})
+			return
+		}
+	}
+	if addChannelRequest.Channel.Type == constant.ChannelTypeVertexAi {
+		if addChannelRequest.Channel.Other == "" {
 			c.JSON(http.StatusOK, gin.H{
 				"success": false,
 				"message": "部署地区不能为空",
 			})
 			return
 		} else {
-			if common.IsJsonStr(channel.Other) {
-				// must have default
-				regionMap := common.StrToMap(channel.Other)
-				if regionMap["default"] == nil {
-					c.JSON(http.StatusOK, gin.H{
-						"success": false,
-						"message": "部署地区必须包含default字段",
-					})
-					return
-				}
+			regionMap, err := common.StrToMap(addChannelRequest.Channel.Other)
+			if err != nil {
+				c.JSON(http.StatusOK, gin.H{
+					"success": false,
+					"message": "部署地区必须是标准的Json格式，例如{\"default\": \"us-central1\", \"region2\": \"us-east1\"}",
+				})
+				return
+			}
+			if regionMap["default"] == nil {
+				c.JSON(http.StatusOK, gin.H{
+					"success": false,
+					"message": "部署地区必须包含default字段",
+				})
+				return
 			}
 		}
-		keys = []string{channel.Key}
 	}
+
+	addChannelRequest.Channel.CreatedTime = common.GetTimestamp()
+	keys := make([]string, 0)
+	switch addChannelRequest.Mode {
+	case "multi_to_single":
+		addChannelRequest.Channel.ChannelInfo.IsMultiKey = true
+		addChannelRequest.Channel.ChannelInfo.MultiKeyMode = addChannelRequest.MultiKeyMode
+		if addChannelRequest.Channel.Type == constant.ChannelTypeVertexAi {
+			array, err := getVertexArrayKeys(addChannelRequest.Channel.Key)
+			if err != nil {
+				c.JSON(http.StatusOK, gin.H{
+					"success": false,
+					"message": err.Error(),
+				})
+				return
+			}
+			addChannelRequest.Channel.ChannelInfo.MultiKeySize = len(array)
+			addChannelRequest.Channel.Key = strings.Join(array, "\n")
+		} else {
+			cleanKeys := make([]string, 0)
+			for _, key := range strings.Split(addChannelRequest.Channel.Key, "\n") {
+				if key == "" {
+					continue
+				}
+				key = strings.TrimSpace(key)
+				cleanKeys = append(cleanKeys, key)
+			}
+			addChannelRequest.Channel.ChannelInfo.MultiKeySize = len(cleanKeys)
+			addChannelRequest.Channel.Key = strings.Join(cleanKeys, "\n")
+		}
+		keys = []string{addChannelRequest.Channel.Key}
+	case "batch":
+		if addChannelRequest.Channel.Type == constant.ChannelTypeVertexAi {
+			// multi json
+			keys, err = getVertexArrayKeys(addChannelRequest.Channel.Key)
+			if err != nil {
+				c.JSON(http.StatusOK, gin.H{
+					"success": false,
+					"message": err.Error(),
+				})
+				return
+			}
+		} else {
+			keys = strings.Split(addChannelRequest.Channel.Key, "\n")
+		}
+	case "single":
+		keys = []string{addChannelRequest.Channel.Key}
+	default:
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": "不支持的添加模式",
+		})
+		return
+	}
+
 	channels := make([]model.Channel, 0, len(keys))
 	for _, key := range keys {
 		if key == "" {
 			continue
 		}
-		localChannel := channel
+		localChannel := addChannelRequest.Channel
 		localChannel.Key = key
-		// Validate the length of the model name
-		models := strings.Split(localChannel.Models, ",")
-		for _, model := range models {
-			if len(model) > 255 {
-				c.JSON(http.StatusOK, gin.H{
-					"success": false,
-					"message": fmt.Sprintf("模型名称过长: %s", model),
-				})
-				return
-			}
-		}
-		channels = append(channels, localChannel)
+		channels = append(channels, *localChannel)
 	}
 	err = model.BatchInsertChannels(channels)
 	if err != nil {
@@ -615,8 +718,13 @@ func DeleteChannelBatch(c *gin.Context) {
 	return
 }
 
+type PatchChannel struct {
+	model.Channel
+	MultiKeyMode *string `json:"multi_key_mode"`
+}
+
 func UpdateChannel(c *gin.Context) {
-	channel := model.Channel{}
+	channel := PatchChannel{}
 	err := c.ShouldBindJSON(&channel)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
@@ -641,17 +749,34 @@ func UpdateChannel(c *gin.Context) {
 			})
 			return
 		} else {
-			if common.IsJsonStr(channel.Other) {
-				// must have default
-				regionMap := common.StrToMap(channel.Other)
-				if regionMap["default"] == nil {
-					c.JSON(http.StatusOK, gin.H{
-						"success": false,
-						"message": "部署地区必须包含default字段",
-					})
-					return
-				}
+			regionMap, err := common.StrToMap(channel.Other)
+			if err != nil {
+				c.JSON(http.StatusOK, gin.H{
+					"success": false,
+					"message": "部署地区必须是标准的Json格式，例如{\"default\": \"us-central1\", \"region2\": \"us-east1\"}",
+				})
+				return
 			}
+			if regionMap["default"] == nil {
+				c.JSON(http.StatusOK, gin.H{
+					"success": false,
+					"message": "部署地区必须包含default字段",
+				})
+				return
+			}
+		}
+	}
+	if channel.MultiKeyMode != nil && *channel.MultiKeyMode != "" {
+		originChannel, err := model.GetChannelById(channel.Id, false)
+		if err != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": err.Error(),
+			})
+		}
+		if originChannel.ChannelInfo.IsMultiKey {
+			channel.ChannelInfo = originChannel.ChannelInfo
+			channel.ChannelInfo.MultiKeyMode = constant.MultiKeyMode(*channel.MultiKeyMode)
 		}
 	}
 	err = channel.Update()

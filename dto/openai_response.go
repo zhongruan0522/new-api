@@ -1,6 +1,9 @@
 package dto
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"one-api/types"
+)
 
 type SimpleResponse struct {
 	Usage `json:"usage"`
@@ -28,7 +31,7 @@ type OpenAITextResponse struct {
 	Object  string                     `json:"object"`
 	Created any                        `json:"created"`
 	Choices []OpenAITextResponseChoice `json:"choices"`
-	Error   *OpenAIError               `json:"error,omitempty"`
+	Error   *types.OpenAIError         `json:"error,omitempty"`
 	Usage   `json:"usage"`
 }
 
@@ -201,7 +204,7 @@ type OpenAIResponsesResponse struct {
 	Object             string               `json:"object"`
 	CreatedAt          int                  `json:"created_at"`
 	Status             string               `json:"status"`
-	Error              *OpenAIError         `json:"error,omitempty"`
+	Error              *types.OpenAIError   `json:"error,omitempty"`
 	IncompleteDetails  *IncompleteDetails   `json:"incomplete_details,omitempty"`
 	Instructions       string               `json:"instructions"`
 	MaxOutputTokens    int                  `json:"max_output_tokens"`

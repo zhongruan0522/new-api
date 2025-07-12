@@ -22,6 +22,7 @@ import (
 	"one-api/relay/common_handler"
 	relayconstant "one-api/relay/constant"
 	"one-api/service"
+	"one-api/types"
 	"path/filepath"
 	"strings"
 
@@ -421,31 +422,31 @@ func (a *Adaptor) DoRequest(c *gin.Context, info *relaycommon.RelayInfo, request
 	}
 }
 
-func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (usage any, err *dto.OpenAIErrorWithStatusCode) {
+func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (usage any, err *types.NewAPIError) {
 	switch info.RelayMode {
 	case relayconstant.RelayModeRealtime:
 		err, usage = OpenaiRealtimeHandler(c, info)
 	case relayconstant.RelayModeAudioSpeech:
-		err, usage = OpenaiTTSHandler(c, resp, info)
+		usage = OpenaiTTSHandler(c, resp, info)
 	case relayconstant.RelayModeAudioTranslation:
 		fallthrough
 	case relayconstant.RelayModeAudioTranscription:
 		err, usage = OpenaiSTTHandler(c, resp, info, a.ResponseFormat)
 	case relayconstant.RelayModeImagesGenerations, relayconstant.RelayModeImagesEdits:
-		err, usage = OpenaiHandlerWithUsage(c, resp, info)
+		usage, err = OpenaiHandlerWithUsage(c, info, resp)
 	case relayconstant.RelayModeRerank:
-		err, usage = common_handler.RerankHandler(c, info, resp)
+		usage, err = common_handler.RerankHandler(c, info, resp)
 	case relayconstant.RelayModeResponses:
 		if info.IsStream {
-			err, usage = OaiResponsesStreamHandler(c, resp, info)
+			usage, err = OaiResponsesStreamHandler(c, info, resp)
 		} else {
-			err, usage = OaiResponsesHandler(c, resp, info)
+			usage, err = OaiResponsesHandler(c, info, resp)
 		}
 	default:
 		if info.IsStream {
-			err, usage = OaiStreamHandler(c, resp, info)
+			usage, err = OaiStreamHandler(c, info, resp)
 		} else {
-			err, usage = OpenaiHandler(c, resp, info)
+			usage, err = OpenaiHandler(c, info, resp)
 		}
 	}
 	return

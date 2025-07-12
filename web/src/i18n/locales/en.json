@@ -1763,5 +1763,14 @@
   "生成数量必须大于0": "Generation quantity must be greater than 0",
   "可用端点类型": "Supported endpoint types",
   "未登录，使用默认分组倍率：": "Not logged in, using default group ratio: ",
-  "该服务器地址将影响支付回调地址以及默认首页展示的地址，请确保正确配置": "This server address will affect the payment callback address and the address displayed on the default homepage, please ensure correct configuration"
+  "该服务器地址将影响支付回调地址以及默认首页展示的地址，请确保正确配置": "This server address will affect the payment callback address and the address displayed on the default homepage, please ensure correct configuration",
+  "密钥聚合模式": "Key aggregation mode",
+  "随机": "Random",
+  "轮询": "Polling",
+  "密钥文件 (.json)": "Key file (.json)",
+  "点击上传文件或拖拽文件到这里": "Click to upload file or drag and drop file here",
+  "仅支持 JSON 文件，支持多文件": "Only JSON files are supported, multiple files are supported",
+  "请上传密钥文件": "Please upload the key file",
+  "请填写部署地区": "Please fill in the deployment region",
+  "请输入部署地区，例如：us-central1\n支持使用模型映射格式\n{\n    \"default\": \"us-central1\",\n    \"claude-3-5-sonnet-20240620\": \"europe-west1\"\n}": "Please enter the deployment region, for example: us-central1\nSupports using model mapping format\n{\n    \"default\": \"us-central1\",\n    \"claude-3-5-sonnet-20240620\": \"europe-west1\"\n}"
 }

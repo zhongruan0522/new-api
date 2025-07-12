@@ -19,6 +19,7 @@ import (
 	relaycommon "one-api/relay/common"
 	"one-api/relay/helper"
 	"one-api/service"
+	"one-api/types"
 	"strconv"
 	"strings"
 	"sync"
@@ -29,22 +30,43 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func testChannel(channel *model.Channel, testModel string) (err error, openAIErrorWithStatusCode *dto.OpenAIErrorWithStatusCode) {
+type testResult struct {
+	context     *gin.Context
+	localErr    error
+	newAPIError *types.NewAPIError
+}
+
+func testChannel(channel *model.Channel, testModel string) testResult {
 	tik := time.Now()
 	if channel.Type == constant.ChannelTypeMidjourney {
-		return errors.New("midjourney channel test is not supported"), nil
+		return testResult{
+			localErr:    errors.New("midjourney channel test is not supported"),
+			newAPIError: nil,
+		}
 	}
 	if channel.Type == constant.ChannelTypeMidjourneyPlus {
-		return errors.New("midjourney plus channel test is not supported"), nil
+		return testResult{
+			localErr:    errors.New("midjourney plus channel test is not supported"),
+			newAPIError: nil,
+		}
 	}
 	if channel.Type == constant.ChannelTypeSunoAPI {
-		return errors.New("suno channel test is not supported"), nil
+		return testResult{
+			localErr:    errors.New("suno channel test is not supported"),
+			newAPIError: nil,
+		}
 	}
 	if channel.Type == constant.ChannelTypeKling {
-		return errors.New("kling channel test is not supported"), nil
+		return testResult{
+			localErr:    errors.New("kling channel test is not supported"),
+			newAPIError: nil,
+		}
 	}
 	if channel.Type == constant.ChannelTypeJimeng {
-		return errors.New("jimeng channel test is not supported"), nil
+		return testResult{
+			localErr:    errors.New("jimeng channel test is not supported"),
+			newAPIError: nil,
+		}
 	}
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
@@ -81,31 +103,49 @@ func testChannel(channel *model.Channel, testModel string) (err error, openAIErr
 
 	cache, err := model.GetUserCache(1)
 	if err != nil {
-		return err, nil
+		return testResult{
+			localErr:    err,
+			newAPIError: nil,
+		}
 	}
 	cache.WriteContext(c)
 
-	c.Request.Header.Set("Authorization", "Bearer "+channel.Key)
+	//c.Request.Header.Set("Authorization", "Bearer "+channel.Key)
 	c.Request.Header.Set("Content-Type", "application/json")
 	c.Set("channel", channel.Type)
 	c.Set("base_url", channel.GetBaseURL())
 	group, _ := model.GetUserGroup(1, false)
 	c.Set("group", group)
 
-	middleware.SetupContextForSelectedChannel(c, channel, testModel)
+	newAPIError := middleware.SetupContextForSelectedChannel(c, channel, testModel)
+	if newAPIError != nil {
+		return testResult{
+			context:     c,
+			localErr:    newAPIError,
+			newAPIError: newAPIError,
+		}
+	}
 
 	info := relaycommon.GenRelayInfo(c)
 
 	err = helper.ModelMappedHelper(c, info, nil)
 	if err != nil {
-		return err, nil
+		return testResult{
+			context:     c,
+			localErr:    err,
+			newAPIError: types.NewError(err, types.ErrorCodeChannelModelMappedError),
+		}
 	}
 	testModel = info.UpstreamModelName
 
 	apiType, _ := common.ChannelType2APIType(channel.Type)
 	adaptor := relay.GetAdaptor(apiType)
 	if adaptor == nil {
-		return fmt.Errorf("invalid api type: %d, adaptor is nil", apiType), nil
+		return testResult{
+			context:     c,
+			localErr:    fmt.Errorf("invalid api type: %d, adaptor is nil", apiType),
+			newAPIError: types.NewError(fmt.Errorf("invalid api type: %d, adaptor is nil", apiType), types.ErrorCodeInvalidApiType),
+		}
 	}
 
 	request := buildTestRequest(testModel)
@@ -116,45 +156,77 @@ func testChannel(channel *model.Channel, testModel string) (err error, openAIErr
 
 	priceData, err := helper.ModelPriceHelper(c, info, 0, int(request.MaxTokens))
 	if err != nil {
-		return err, nil
+		return testResult{
+			context:     c,
+			localErr:    err,
+			newAPIError: types.NewError(err, types.ErrorCodeModelPriceError),
+		}
 	}
 
 	adaptor.Init(info)
 
 	convertedRequest, err := adaptor.ConvertOpenAIRequest(c, info, request)
 	if err != nil {
-		return err, nil
+		return testResult{
+			context:     c,
+			localErr:    err,
+			newAPIError: types.NewError(err, types.ErrorCodeConvertRequestFailed),
+		}
 	}
 	jsonData, err := json.Marshal(convertedRequest)
 	if err != nil {
-		return err, nil
+		return testResult{
+			context:     c,
+			localErr:    err,
+			newAPIError: types.NewError(err, types.ErrorCodeJsonMarshalFailed),
+		}
 	}
 	requestBody := bytes.NewBuffer(jsonData)
 	c.Request.Body = io.NopCloser(requestBody)
 	resp, err := adaptor.DoRequest(c, info, requestBody)
 	if err != nil {
-		return err, nil
+		return testResult{
+			context:     c,
+			localErr:    err,
+			newAPIError: types.NewError(err, types.ErrorCodeDoRequestFailed),
+		}
 	}
 	var httpResp *http.Response
 	if resp != nil {
 		httpResp = resp.(*http.Response)
 		if httpResp.StatusCode != http.StatusOK {
 			err := service.RelayErrorHandler(httpResp, true)
-			return fmt.Errorf("status code %d: %s", httpResp.StatusCode, err.Error.Message), err
+			return testResult{
+				context:     c,
+				localErr:    err,
+				newAPIError: types.NewError(err, types.ErrorCodeBadResponse),
+			}
 		}
 	}
 	usageA, respErr := adaptor.DoResponse(c, httpResp, info)
 	if respErr != nil {
-		return fmt.Errorf("%s", respErr.Error.Message), respErr
+		return testResult{
+			context:     c,
+			localErr:    respErr,
+			newAPIError: respErr,
+		}
 	}
 	if usageA == nil {
-		return errors.New("usage is nil"), nil
+		return testResult{
+			context:     c,
+			localErr:    errors.New("usage is nil"),
+			newAPIError: types.NewError(errors.New("usage is nil"), types.ErrorCodeBadResponseBody),
+		}
 	}
 	usage := usageA.(*dto.Usage)
 	result := w.Result()
 	respBody, err := io.ReadAll(result.Body)
 	if err != nil {
-		return err, nil
+		return testResult{
+			context:     c,
+			localErr:    err,
+			newAPIError: types.NewError(err, types.ErrorCodeReadResponseBodyFailed),
+		}
 	}
 	info.PromptTokens = usage.PromptTokens
 
@@ -187,7 +259,11 @@ func testChannel(channel *model.Channel, testModel string) (err error, openAIErr
 		Other:            other,
 	})
 	common.SysLog(fmt.Sprintf("testing channel #%d, response: \n%s", channel.Id, string(respBody)))
-	return nil, nil
+	return testResult{
+		context:     c,
+		localErr:    nil,
+		newAPIError: nil,
+	}
 }
 
 func buildTestRequest(model string) *dto.GeneralOpenAIRequest {
@@ -236,7 +312,7 @@ func TestChannel(c *gin.Context) {
 		})
 		return
 	}
-	channel, err := model.GetChannelById(channelId, true)
+	channel, err := model.CacheGetChannel(channelId)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,
@@ -244,17 +320,30 @@ func TestChannel(c *gin.Context) {
 		})
 		return
 	}
+	//defer func() {
+	//	if channel.ChannelInfo.IsMultiKey {
+	//		go func() { _ = channel.SaveChannelInfo() }()
+	//	}
+	//}()
 	testModel := c.Query("model")
 	tik := time.Now()
-	err, _ = testChannel(channel, testModel)
+	result := testChannel(channel, testModel)
+	if result.localErr != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": result.localErr.Error(),
+			"time":    0.0,
+		})
+		return
+	}
 	tok := time.Now()
 	milliseconds := tok.Sub(tik).Milliseconds()
 	go channel.UpdateResponseTime(milliseconds)
 	consumedTime := float64(milliseconds) / 1000.0
-	if err != nil {
+	if result.newAPIError != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,
-			"message": err.Error(),
+			"message": result.newAPIError.Error(),
 			"time":    consumedTime,
 		})
 		return
@@ -279,9 +368,9 @@ func testAllChannels(notify bool) error {
 	}
 	testAllChannelsRunning = true
 	testAllChannelsLock.Unlock()
-	channels, err := model.GetAllChannels(0, 0, true, false)
-	if err != nil {
-		return err
+	channels, getChannelErr := model.GetAllChannels(0, 0, true, false)
+	if getChannelErr != nil {
+		return getChannelErr
 	}
 	var disableThreshold = int64(common.ChannelDisableThreshold * 1000)
 	if disableThreshold == 0 {
@@ -298,32 +387,34 @@ func testAllChannels(notify bool) error {
 		for _, channel := range channels {
 			isChannelEnabled := channel.Status == common.ChannelStatusEnabled
 			tik := time.Now()
-			err, openaiWithStatusErr := testChannel(channel, "")
+			result := testChannel(channel, "")
 			tok := time.Now()
 			milliseconds := tok.Sub(tik).Milliseconds()
 
 			shouldBanChannel := false
-
+			newAPIError := result.newAPIError
 			// request error disables the channel
-			if openaiWithStatusErr != nil {
-				oaiErr := openaiWithStatusErr.Error
-				err = errors.New(fmt.Sprintf("type %s, httpCode %d, code %v, message %s", oaiErr.Type, openaiWithStatusErr.StatusCode, oaiErr.Code, oaiErr.Message))
-				shouldBanChannel = service.ShouldDisableChannel(channel.Type, openaiWithStatusErr)
+			if newAPIError != nil {
+				shouldBanChannel = service.ShouldDisableChannel(channel.Type, result.newAPIError)
 			}
 
-			if milliseconds > disableThreshold {
-				err = errors.New(fmt.Sprintf("响应时间 %.2fs 超过阈值 %.2fs", float64(milliseconds)/1000.0, float64(disableThreshold)/1000.0))
-				shouldBanChannel = true
+			// 当错误检查通过，才检查响应时间
+			if common.AutomaticDisableChannelEnabled && !shouldBanChannel {
+				if milliseconds > disableThreshold {
+					err := errors.New(fmt.Sprintf("响应时间 %.2fs 超过阈值 %.2fs", float64(milliseconds)/1000.0, float64(disableThreshold)/1000.0))
+					newAPIError = types.NewError(err, types.ErrorCodeChannelResponseTimeExceeded)
+					shouldBanChannel = true
+				}
 			}
 
 			// disable channel
 			if isChannelEnabled && shouldBanChannel && channel.GetAutoBan() {
-				service.DisableChannel(channel.Id, channel.Name, err.Error())
+				go processChannelError(result.context, *types.NewChannelError(channel.Id, channel.Type, channel.Name, channel.ChannelInfo.IsMultiKey, common.GetContextKeyString(result.context, constant.ContextKeyChannelKey), channel.GetAutoBan()), newAPIError)
 			}
 
 			// enable channel
-			if !isChannelEnabled && service.ShouldEnableChannel(err, openaiWithStatusErr, channel.Status) {
-				service.EnableChannel(channel.Id, channel.Name)
+			if !isChannelEnabled && service.ShouldEnableChannel(newAPIError, channel.Status) {
+				service.EnableChannel(channel.Id, common.GetContextKeyString(result.context, constant.ContextKeyChannelKey), channel.Name)
 			}
 
 			channel.UpdateResponseTime(milliseconds)
