@@ -74,12 +74,12 @@ func (a *Adaptor) ConvertEmbeddingRequest(c *gin.Context, info *relaycommon.Rela
 
 func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (usage any, err *types.NewAPIError) {
 	if info.RelayMode == constant.RelayModeRerank {
-		err, usage = cohereRerankHandler(c, resp, info)
+		usage, err = cohereRerankHandler(c, resp, info)
 	} else {
 		if info.IsStream {
-			err, usage = cohereStreamHandler(c, info, resp)
+			usage, err = cohereStreamHandler(c, info, resp) // TODO: fix this
 		} else {
-			err, usage = cohereHandler(c, info, resp)
+			usage, err = cohereHandler(c, info, resp)
 		}
 	}
 	return

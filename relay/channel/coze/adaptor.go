@@ -98,9 +98,9 @@ func (a *Adaptor) DoRequest(c *gin.Context, info *common.RelayInfo, requestBody 
 // DoResponse implements channel.Adaptor.
 func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, info *common.RelayInfo) (usage any, err *types.NewAPIError) {
 	if info.IsStream {
-		err, usage = cozeChatStreamHandler(c, info, resp)
+		usage, err = cozeChatStreamHandler(c, info, resp)
 	} else {
-		err, usage = cozeChatHandler(c, info, resp)
+		usage, err = cozeChatHandler(c, info, resp)
 	}
 	return
 }
