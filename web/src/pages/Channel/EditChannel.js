@@ -441,8 +441,9 @@ const EditChannel = (props) => {
 
     if (localInputs.type === 41) {
       let keys = vertexKeys;
-      if (keys.length === 0) {
-        // 确保提交时也能解析，避免因异步延迟导致 keys 为空
+
+      // 若当前未选择文件，尝试从已上传文件列表解析（异步读取）
+      if (keys.length === 0 && vertexFileList.length > 0) {
         try {
           const parsed = await Promise.all(
             vertexFileList.map(async (item) => {
@@ -459,16 +460,28 @@ const EditChannel = (props) => {
         }
       }
 
+      // 创建模式必须上传密钥；编辑模式可选
       if (keys.length === 0) {
-        showInfo(t('请上传密钥文件！'));
-        return;
-      }
-
-      if (batch) {
-        localInputs.key = JSON.stringify(keys);
+        if (!isEdit) {
+          showInfo(t('请上传密钥文件！'));
+          return;
+        } else {
+          // 编辑模式且未上传新密钥，不修改 key
+          delete localInputs.key;
+        }
       } else {
-        localInputs.key = JSON.stringify(keys[0]);
+        // 有新密钥，则覆盖
+        if (batch) {
+          localInputs.key = JSON.stringify(keys);
+        } else {
+          localInputs.key = JSON.stringify(keys[0]);
+        }
       }
+    }
+
+    // 如果是编辑模式且 key 为空字符串，避免提交空值覆盖旧密钥
+    if (isEdit && (!localInputs.key || localInputs.key.trim() === '')) {
+      delete localInputs.key;
     }
     delete localInputs.vertex_files;
 

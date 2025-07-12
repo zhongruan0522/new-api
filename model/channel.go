@@ -398,7 +398,19 @@ func (channel *Channel) Insert() error {
 func (channel *Channel) Update() error {
 	// 如果是多密钥渠道，则根据当前 key 列表重新计算 MultiKeySize，避免编辑密钥后数量未同步
 	if channel.ChannelInfo.IsMultiKey {
-		keys := channel.getKeys()
+		var keyStr string
+		if channel.Key != "" {
+			keyStr = channel.Key
+		} else {
+			// 如果当前未提供 key，读取数据库中的现有 key
+			if existing, err := GetChannelById(channel.Id, true); err == nil {
+				keyStr = existing.Key
+			}
+		}
+		keys := []string{}
+		if keyStr != "" {
+			keys = strings.Split(strings.Trim(keyStr, "\n"), "\n")
+		}
 		channel.ChannelInfo.MultiKeySize = len(keys)
 		// 清理超过新 key 数量范围的状态数据，防止索引越界
 		if channel.ChannelInfo.MultiKeyStatusList != nil {
