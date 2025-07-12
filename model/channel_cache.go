@@ -128,11 +128,18 @@ func getRandomSatisfiedChannel(group string, model string, retry int) (*Channel,
 	}
 
 	channelSyncLock.RLock()
+	defer channelSyncLock.RUnlock()
 	channels := group2model2channels[group][model]
-	channelSyncLock.RUnlock()
 
 	if len(channels) == 0 {
 		return nil, errors.New("channel not found")
+	}
+
+	if len(channels) == 1 {
+		if channel, ok := channelsIDM[channels[0]]; ok {
+			return channel, nil
+		}
+		return nil, fmt.Errorf("数据库一致性错误，渠道# %d 不存在，请联系管理员修复", channels[0])
 	}
 
 	uniquePriorities := make(map[int]bool)
@@ -196,7 +203,7 @@ func CacheGetChannel(id int) (*Channel, error) {
 
 	c, ok := channelsIDM[id]
 	if !ok {
-		return nil, errors.New(fmt.Sprintf("当前渠道# %d，已不存在", id))
+		return nil, fmt.Errorf("当前渠道# %d，已不存在", id)
 	}
 	return c, nil
 }
@@ -224,5 +231,7 @@ func CacheUpdateChannel(channel *Channel) {
 
 	println("CacheUpdateChannel:", channel.Id, channel.Name, channel.Status, channel.ChannelInfo.MultiKeyPollingIndex)
 
+	println("before:", channelsIDM[channel.Id].ChannelInfo.MultiKeyPollingIndex)
 	channelsIDM[channel.Id] = channel
+	println("after :", channelsIDM[channel.Id].ChannelInfo.MultiKeyPollingIndex)
 }

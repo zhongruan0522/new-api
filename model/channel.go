@@ -117,15 +117,19 @@ func (channel *Channel) GetNextEnabledKey() (string, *types.NewAPIError) {
 		// Randomly pick one enabled key
 		return keys[enabledIdx[rand.Intn(len(enabledIdx))]], nil
 	case constant.MultiKeyModePolling:
+		// Use channel-specific lock to ensure thread-safe polling
+		lock := getChannelPollingLock(channel.Id)
+		lock.Lock()
+		defer lock.Unlock()
+
 		defer func() {
 			if !common.MemoryCacheEnabled {
 				_ = channel.Save()
 			} else {
-				CacheUpdateChannel(channel)
+				// CacheUpdateChannel(channel)
 			}
 		}()
 		// Start from the saved polling index and look for the next enabled key
-		println(channel.ChannelInfo.MultiKeyPollingIndex)
 		start := channel.ChannelInfo.MultiKeyPollingIndex
 		if start < 0 || start >= len(keys) {
 			start = 0
@@ -135,7 +139,6 @@ func (channel *Channel) GetNextEnabledKey() (string, *types.NewAPIError) {
 			if getStatus(idx) == common.ChannelStatusEnabled {
 				// update polling index for next call (point to the next position)
 				channel.ChannelInfo.MultiKeyPollingIndex = (idx + 1) % len(keys)
-				println(channel.ChannelInfo.MultiKeyPollingIndex)
 				return keys[idx], nil
 			}
 		}
@@ -420,6 +423,40 @@ func (channel *Channel) Delete() error {
 }
 
 var channelStatusLock sync.Mutex
+
+// channelPollingLocks stores locks for each channel.id to ensure thread-safe polling
+var channelPollingLocks sync.Map
+
+// getChannelPollingLock returns or creates a mutex for the given channel ID
+func getChannelPollingLock(channelId int) *sync.Mutex {
+	if lock, exists := channelPollingLocks.Load(channelId); exists {
+		return lock.(*sync.Mutex)
+	}
+	// Create new lock for this channel
+	newLock := &sync.Mutex{}
+	actual, _ := channelPollingLocks.LoadOrStore(channelId, newLock)
+	return actual.(*sync.Mutex)
+}
+
+// CleanupChannelPollingLocks removes locks for channels that no longer exist
+// This is optional and can be called periodically to prevent memory leaks
+func CleanupChannelPollingLocks() {
+	var activeChannelIds []int
+	DB.Model(&Channel{}).Pluck("id", &activeChannelIds)
+
+	activeChannelSet := make(map[int]bool)
+	for _, id := range activeChannelIds {
+		activeChannelSet[id] = true
+	}
+
+	channelPollingLocks.Range(func(key, value interface{}) bool {
+		channelId := key.(int)
+		if !activeChannelSet[channelId] {
+			channelPollingLocks.Delete(channelId)
+		}
+		return true
+	})
+}
 
 func handlerMultiKeyUpdate(channel *Channel, usingKey string, status int) {
 	keys := channel.getKeys()
