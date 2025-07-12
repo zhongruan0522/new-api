@@ -110,7 +110,7 @@ func testChannel(channel *model.Channel, testModel string) testResult {
 	}
 	cache.WriteContext(c)
 
-	c.Request.Header.Set("Authorization", "Bearer "+channel.Key)
+	//c.Request.Header.Set("Authorization", "Bearer "+channel.Key)
 	c.Request.Header.Set("Content-Type", "application/json")
 	c.Set("channel", channel.Type)
 	c.Set("base_url", channel.GetBaseURL())
@@ -320,6 +320,11 @@ func TestChannel(c *gin.Context) {
 		})
 		return
 	}
+	//defer func() {
+	//	if channel.ChannelInfo.IsMultiKey {
+	//		go func() { _ = channel.SaveChannelInfo() }()
+	//	}
+	//}()
 	testModel := c.Query("model")
 	tik := time.Now()
 	result := testChannel(channel, testModel)

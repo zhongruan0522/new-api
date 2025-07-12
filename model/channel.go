@@ -4,6 +4,7 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"math/rand"
 	"one-api/common"
 	"one-api/constant"
@@ -122,15 +123,23 @@ func (channel *Channel) GetNextEnabledKey() (string, *types.NewAPIError) {
 		lock.Lock()
 		defer lock.Unlock()
 
+		channelInfo, err := CacheGetChannelInfo(channel.Id)
+		if err != nil {
+			return "", types.NewError(err, types.ErrorCodeGetChannelFailed)
+		}
+		//println("before polling index:", channel.ChannelInfo.MultiKeyPollingIndex)
 		defer func() {
+			if common.DebugEnabled {
+				println(fmt.Sprintf("channel %d polling index: %d", channel.Id, channel.ChannelInfo.MultiKeyPollingIndex))
+			}
 			if !common.MemoryCacheEnabled {
-				_ = channel.Save()
+				_ = channel.SaveChannelInfo()
 			} else {
 				// CacheUpdateChannel(channel)
 			}
 		}()
 		// Start from the saved polling index and look for the next enabled key
-		start := channel.ChannelInfo.MultiKeyPollingIndex
+		start := channelInfo.MultiKeyPollingIndex
 		if start < 0 || start >= len(keys) {
 			start = 0
 		}
@@ -148,6 +157,10 @@ func (channel *Channel) GetNextEnabledKey() (string, *types.NewAPIError) {
 		// Unknown mode, default to first enabled key (or original key string)
 		return keys[enabledIdx[0]], nil
 	}
+}
+
+func (channel *Channel) SaveChannelInfo() error {
+	return DB.Model(channel).Update("channel_info", channel.ChannelInfo).Error
 }
 
 func (channel *Channel) GetModels() []string {
@@ -500,7 +513,7 @@ func UpdateChannelStatus(channelId int, usingKey string, status int, reason stri
 		if channelCache.ChannelInfo.IsMultiKey {
 			// 如果是多Key模式，更新缓存中的状态
 			handlerMultiKeyUpdate(channelCache, usingKey, status)
-			CacheUpdateChannel(channelCache)
+			//CacheUpdateChannel(channelCache)
 			//return true
 		} else {
 			// 如果缓存渠道存在，且状态已是目标状态，直接返回
