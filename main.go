@@ -168,10 +168,10 @@ func InitResources() error {
 		common.SysLog("No .env file found, using default environment variables. If needed, please create a .env file and set the relevant variables.")
 	}
 
-	common.SetupLogger()
-
 	// 加载环境变量
 	common.InitEnv()
+
+	common.SetupLogger()
 
 	// Initialize model settings
 	ratio_setting.InitRatioSettings()
