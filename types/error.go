@@ -88,6 +88,13 @@ func (e *NewAPIError) GetErrorCode() ErrorCode {
 }
 
 func (e *NewAPIError) Error() string {
+	if e == nil {
+		return ""
+	}
+	if e.Err == nil {
+		// fallback message when underlying error is missing
+		return string(e.errorCode)
+	}
 	return e.Err.Error()
 }
 

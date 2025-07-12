@@ -42,7 +42,7 @@ import {
   IconTreeTriangleDown,
   IconSearch,
   IconMore,
-  IconList, IconDescend2
+  IconDescend2
 } from '@douyinfe/semi-icons';
 import { loadChannelModels, isMobile, copy } from '../../helpers';
 import EditTagModal from '../../pages/Channel/EditTagModal.js';
@@ -630,7 +630,7 @@ const ChannelsTable = () => {
                   >
                     <Button
                       theme='light'
-                      type='secondary'
+                      type='tertiary'
                       size="small"
                       icon={<IconTreeTriangleDown />}
                     />

@@ -410,7 +410,7 @@ const LogsTable = () => {
         return isAdminUser ? (
           <div>
             <Avatar
-              size='small'
+              size='extra-small'
               color={stringToColor(text)}
               style={{ marginRight: 4 }}
               onClick={(event) => {
