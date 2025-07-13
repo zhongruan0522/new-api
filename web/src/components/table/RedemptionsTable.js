@@ -151,9 +151,15 @@ const RedemptionsTable = () => {
                 title: t('确定是否要删除此兑换码？'),
                 content: t('此修改将不可逆'),
                 onOk: () => {
-                  manageRedemption(record.id, 'delete', record).then(() => {
-                    removeRecord(record.key);
-                  });
+                  (async () => {
+                    await manageRedemption(record.id, 'delete', record);
+                    await refresh();
+                    setTimeout(() => {
+                      if (redemptions.length === 0 && activePage > 1) {
+                        refresh(activePage - 1);
+                      }
+                    }, 100);
+                  })();
                 },
               });
             },
@@ -320,8 +326,13 @@ const RedemptionsTable = () => {
       });
   }, [pageSize]);
 
-  const refresh = async () => {
-    await loadRedemptions(activePage - 1, pageSize);
+  const refresh = async (page = activePage) => {
+    const { searchKeyword } = getFormValues();
+    if (searchKeyword === '') {
+      await loadRedemptions(page, pageSize);
+    } else {
+      await searchRedemptions(searchKeyword, page, pageSize);
+    }
   };
 
   const manageRedemption = async (id, action, record) => {
@@ -541,7 +552,6 @@ const RedemptionsTable = () => {
                 onClick={() => {
                   if (formApi) {
                     formApi.reset();
-                    // 重置后立即查询，使用setTimeout确保表单重置完成
                     setTimeout(() => {
                       setActivePage(1);
                       loadRedemptions(1, pageSize);

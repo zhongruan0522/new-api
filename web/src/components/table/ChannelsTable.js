@@ -547,9 +547,15 @@ const ChannelsTable = () => {
                   title: t('确定是否要删除此渠道？'),
                   content: t('此修改将不可逆'),
                   onOk: () => {
-                    manageChannel(record.id, 'delete', record).then(() => {
-                      removeRecord(record);
-                    });
+                    (async () => {
+                      await manageChannel(record.id, 'delete', record);
+                      await refresh();
+                      setTimeout(() => {
+                        if (channels.length === 0 && activePage > 1) {
+                          refresh(activePage - 1);
+                        }
+                      }, 100);
+                    })();
                   },
                 });
               },
@@ -1004,12 +1010,12 @@ const ChannelsTable = () => {
     }
   };
 
-  const refresh = async () => {
+  const refresh = async (page = activePage) => {
     const { searchKeyword, searchGroup, searchModel } = getFormValues();
     if (searchKeyword === '' && searchGroup === '' && searchModel === '') {
-      await loadChannels(activePage, pageSize, idSort, enableTagMode);
+      await loadChannels(page, pageSize, idSort, enableTagMode);
     } else {
-      await searchChannels(enableTagMode, activeTypeKey, statusFilter, activePage, pageSize, idSort);
+      await searchChannels(enableTagMode, activeTypeKey, statusFilter, page, pageSize, idSort);
     }
   };
 
@@ -1569,6 +1575,11 @@ const ChannelsTable = () => {
     if (success) {
       showSuccess(t('已删除 ${data} 个通道！').replace('${data}', data));
       await refresh();
+      setTimeout(() => {
+        if (channels.length === 0 && activePage > 1) {
+          refresh(activePage - 1);
+        }
+      }, 100);
     } else {
       showError(message);
     }

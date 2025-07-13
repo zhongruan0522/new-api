@@ -62,6 +62,52 @@ const TokensTable = () => {
       dataIndex: 'name',
     },
     {
+      title: t('剩余'),
+      key: 'quota',
+      render: (text, record) => {
+        if (record.unlimited_quota) {
+          return <Tag color='white' shape='circle'>{t('无限制')}</Tag>;
+        }
+
+        const used = parseInt(record.used_quota) || 0;
+        const remain = parseInt(record.remain_quota) || 0;
+        const total = used + remain;
+        // 计算剩余额度百分比，100% 表示额度未使用
+        const percent = total > 0 ? (remain / total) * 100 : 0;
+
+        // 根据剩余百分比动态设置颜色，100% 绿色，<=10% 红色，<=30% 黄色，其余默认
+        const getProgressColor = (pct) => {
+          if (pct === 100) return 'var(--semi-color-success)';
+          if (pct <= 10) return 'var(--semi-color-danger)';
+          if (pct <= 30) return 'var(--semi-color-warning)';
+          return undefined; // 默认颜色
+        };
+
+        return (
+          <Tooltip
+            content={
+              <div className='text-xs'>
+                <div>{t('已用额度')}: {renderQuota(used)}</div>
+                <div>{t('剩余额度')}: {renderQuota(remain)} ({percent.toFixed(0)}%)</div>
+                <div>{t('总额度')}: {renderQuota(total)}</div>
+              </div>
+            }
+          >
+            <div className='w-[30px]'>
+              <Progress
+                percent={percent}
+                stroke={getProgressColor(percent)}
+                showInfo={false}
+                aria-label='quota usage'
+                type="circle"
+                size='small'
+              />
+            </div>
+          </Tooltip>
+        );
+      },
+    },
+    {
       title: t('状态'),
       dataIndex: 'status',
       key: 'status',
@@ -169,52 +215,6 @@ const TokensTable = () => {
               }
             />
           </div>
-        );
-      },
-    },
-    {
-      title: t('剩余额度'),
-      key: 'quota',
-      render: (text, record) => {
-        if (record.unlimited_quota) {
-          return <Tag color='white' shape='circle'>{t('无限制')}</Tag>;
-        }
-
-        const used = parseInt(record.used_quota) || 0;
-        const remain = parseInt(record.remain_quota) || 0;
-        const total = used + remain;
-        // 计算剩余额度百分比，100% 表示额度未使用
-        const percent = total > 0 ? (remain / total) * 100 : 0;
-
-        // 根据剩余百分比动态设置颜色，100% 绿色，<=10% 红色，<=30% 黄色，其余默认
-        const getProgressColor = (pct) => {
-          if (pct === 100) return 'var(--semi-color-success)';
-          if (pct <= 10) return 'var(--semi-color-danger)';
-          if (pct <= 30) return 'var(--semi-color-warning)';
-          return undefined; // 默认颜色
-        };
-
-        return (
-          <Tooltip
-            content={
-              <div className='text-xs'>
-                <div>{t('已用额度')}: {renderQuota(used)}</div>
-                <div>{t('剩余额度')}: {renderQuota(remain)} ({percent.toFixed(0)}%)</div>
-                <div>{t('总额度')}: {renderQuota(total)}</div>
-              </div>
-            }
-          >
-            <div className='w-[30px]'>
-              <Progress
-                percent={percent}
-                stroke={getProgressColor(percent)}
-                showInfo={false}
-                aria-label='quota usage'
-                type="circle"
-                size='small'
-              />
-            </div>
-          </Tooltip>
         );
       },
     },
@@ -427,9 +427,10 @@ const TokensTable = () => {
                   title: t('确定是否要删除此令牌？'),
                   content: t('此修改将不可逆'),
                   onOk: () => {
-                    manageToken(record.id, 'delete', record).then(() => {
-                      removeRecord(record.key);
-                    });
+                    (async () => {
+                      await manageToken(record.id, 'delete', record);
+                      await refresh();
+                    })();
                   },
                 });
               }}
@@ -503,8 +504,8 @@ const TokensTable = () => {
     setLoading(false);
   };
 
-  const refresh = async () => {
-    await loadTokens(1);
+  const refresh = async (page = activePage) => {
+    await loadTokens(page);
     setSelectedKeys([]);
   };
 
@@ -680,6 +681,11 @@ const TokensTable = () => {
         const count = res.data.data || 0;
         showSuccess(t('已删除 {{count}} 个令牌！', { count }));
         await refresh();
+        setTimeout(() => {
+          if (tokens.length === 0 && activePage > 1) {
+            refresh(activePage - 1);
+          }
+        }, 100);
       } else {
         showError(res?.data?.message || t('删除失败'));
       }

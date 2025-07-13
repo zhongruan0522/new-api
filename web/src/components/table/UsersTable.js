@@ -247,9 +247,15 @@ const UsersTable = () => {
                 title: t('确定是否要注销此用户？'),
                 content: t('相当于删除用户，此修改将不可逆'),
                 onOk: () => {
-                  manageUser(record.id, 'delete', record).then(() => {
-                    removeRecord(record.id);
-                  });
+                  (async () => {
+                    await manageUser(record.id, 'delete', record);
+                    await refresh();
+                    setTimeout(() => {
+                      if (users.length === 0 && activePage > 1) {
+                        refresh(activePage - 1);
+                      }
+                    }, 100);
+                  })();
                 },
               });
             },
@@ -459,13 +465,12 @@ const UsersTable = () => {
     });
   };
 
-  const refresh = async () => {
-    setActivePage(1);
+  const refresh = async (page = activePage) => {
     const { searchKeyword, searchGroup } = getFormValues();
     if (searchKeyword === '' && searchGroup === '') {
-      await loadUsers(1, pageSize);
+      await loadUsers(page, pageSize);
     } else {
-      await searchUsers(1, pageSize, searchKeyword, searchGroup);
+      await searchUsers(page, pageSize, searchKeyword, searchGroup);
     }
   };
 
@@ -606,7 +611,6 @@ const UsersTable = () => {
                 onClick={() => {
                   if (formApi) {
                     formApi.reset();
-                    // 重置后立即查询，使用setTimeout确保表单重置完成
                     setTimeout(() => {
                       setActivePage(1);
                       loadUsers(1, pageSize);
