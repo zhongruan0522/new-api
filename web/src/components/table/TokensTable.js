@@ -227,6 +227,7 @@ const TokensTable = () => {
           const categories = getModelCategories(t);
 
           const vendorAvatars = [];
+          const matchedModels = new Set();
           Object.entries(categories).forEach(([key, category]) => {
             if (key === 'all') return;
             if (!category.icon || !category.filter) return;
@@ -239,14 +240,16 @@ const TokensTable = () => {
                   </Avatar>
                 </Tooltip>
               );
+              vendorModels.forEach((m) => matchedModels.add(m));
             }
           });
 
-          if (vendorAvatars.length === 0) {
+          const unmatchedModels = models.filter((m) => !matchedModels.has(m));
+          if (unmatchedModels.length > 0) {
             vendorAvatars.push(
-              <Tooltip key='default' content={models.join(', ')} position='top' showArrow>
-                <Avatar size='extra-extra-small' alt='models'>
-                  {models[0].slice(0, 2).toUpperCase()}
+              <Tooltip key='unknown' content={unmatchedModels.join(', ')} position='top' showArrow>
+                <Avatar size='extra-extra-small' alt='unknown'>
+                  {t('其他')}
                 </Avatar>
               </Tooltip>
             );
