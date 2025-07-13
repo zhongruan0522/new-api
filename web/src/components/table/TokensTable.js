@@ -40,7 +40,6 @@ import {
   IconCopy,
   IconEyeOpened,
   IconEyeClosed,
-  IconBolt,
 } from '@douyinfe/semi-icons';
 import { Key } from 'lucide-react';
 import EditToken from '../../pages/Token/EditToken';
@@ -62,7 +61,7 @@ const TokensTable = () => {
       dataIndex: 'name',
     },
     {
-      title: t('剩余'),
+      title: t('余额'),
       key: 'quota',
       render: (text, record) => {
         if (record.unlimited_quota) {
@@ -72,15 +71,13 @@ const TokensTable = () => {
         const used = parseInt(record.used_quota) || 0;
         const remain = parseInt(record.remain_quota) || 0;
         const total = used + remain;
-        // 计算剩余额度百分比，100% 表示额度未使用
         const percent = total > 0 ? (remain / total) * 100 : 0;
 
-        // 根据剩余百分比动态设置颜色，100% 绿色，<=10% 红色，<=30% 黄色，其余默认
         const getProgressColor = (pct) => {
           if (pct === 100) return 'var(--semi-color-success)';
           if (pct <= 10) return 'var(--semi-color-danger)';
           if (pct <= 30) return 'var(--semi-color-warning)';
-          return undefined; // 默认颜色
+          return undefined;
         };
 
         return (
@@ -93,13 +90,13 @@ const TokensTable = () => {
               </div>
             }
           >
-            <div className='w-[30px]'>
+            <div className='w-[140px]'>
               <Progress
                 percent={percent}
                 stroke={getProgressColor(percent)}
-                showInfo={false}
+                showInfo
                 aria-label='quota usage'
-                type="circle"
+                format={() => `${percent.toFixed(0)}%`}
                 size='small'
               />
             </div>
@@ -141,7 +138,7 @@ const TokensTable = () => {
           <Tag
             color={tagColor}
             shape='circle'
-            prefixIcon={
+            suffixIcon={
               <Switch
                 size='small'
                 checked={enabled}
@@ -166,7 +163,7 @@ const TokensTable = () => {
               content={t('当前分组为 auto，会自动选择最优分组，当一个组不可用时自动降级到下一个组（熔断机制）')}
               position='top'
             >
-              <Tag color='blue' shape='circle' prefixIcon={<IconBolt />}> {t('智能熔断')} </Tag>
+              <Tag color='white' shape='circle'> {t('智能熔断')} </Tag>
             </Tooltip>
           );
         }

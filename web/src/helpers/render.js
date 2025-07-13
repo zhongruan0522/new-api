@@ -584,7 +584,7 @@ export function renderText(text, limit) {
 export function renderGroup(group) {
   if (group === '') {
     return (
-      <Tag key='default' color='orange' shape='circle'>
+      <Tag key='default' color='white' shape='circle'>
         {i18next.t('用户分组')}
       </Tag>
     );
