@@ -470,6 +470,20 @@ const EditToken = (props) => {
                 </div>
                 <Row gutter={12}>
                   <Col span={24}>
+                    <Form.Select
+                      field='model_limits'
+                      label={t('模型限制列表')}
+                      placeholder={t('请选择该令牌支持的模型，留空支持所有模型')}
+                      multiple
+                      optionList={models}
+                      extraText={t('非必要，不建议启用模型限制')}
+                      filter
+                      searchPosition='dropdown'
+                      showClear
+                      style={{ width: '100%' }}
+                    />
+                  </Col>
+                  <Col span={24}>
                     <Form.TextArea
                       field='allow_ips'
                       label={t('IP白名单')}
@@ -477,19 +491,6 @@ const EditToken = (props) => {
                       autosize
                       rows={1}
                       extraText={t('请勿过度信任此功能，IP可能被伪造')}
-                      showClear
-                      style={{ width: '100%' }}
-                    />
-                  </Col>
-                  <Col span={24}>
-                    <Form.Select
-                      field='model_limits'
-                      label={t('模型限制列表')}
-                      placeholder={t('请选择该令牌支持的模型，留空支持所有模型')}
-                      multiple
-                      optionList={models}
-                      maxTagCount={3}
-                      extraText={t('非必要，不建议启用模型限制')}
                       showClear
                       style={{ width: '100%' }}
                     />

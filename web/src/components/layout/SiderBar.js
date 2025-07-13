@@ -326,7 +326,7 @@ const SiderBar = () => {
       style={{ width: isCollapsed ? '60px' : '180px' }}
     >
       <Nav
-        className="sidebar-nav custom-sidebar-nav"
+        className="sidebar-nav"
         defaultIsCollapsed={styleState.siderCollapsed}
         isCollapsed={isCollapsed}
         onCollapseChange={(collapsed) => {
