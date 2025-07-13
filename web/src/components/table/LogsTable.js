@@ -1237,6 +1237,7 @@ const LogsTable = () => {
                     style={{
                       fontWeight: 500,
                       boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+                      padding: 15,
                     }}
                     className='!rounded-lg'
                   >
@@ -1247,6 +1248,7 @@ const LogsTable = () => {
                     style={{
                       fontWeight: 500,
                       boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+                      padding: 15,
                     }}
                     className='!rounded-lg'
                   >
@@ -1258,6 +1260,7 @@ const LogsTable = () => {
                       border: 'none',
                       boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
                       fontWeight: 500,
+                      padding: 15,
                     }}
                     className='!rounded-lg'
                   >
