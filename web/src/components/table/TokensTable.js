@@ -61,50 +61,6 @@ const TokensTable = () => {
       dataIndex: 'name',
     },
     {
-      title: t('余额'),
-      key: 'quota',
-      render: (text, record) => {
-        if (record.unlimited_quota) {
-          return <Tag color='white' shape='circle'>{t('无限制')}</Tag>;
-        }
-
-        const used = parseInt(record.used_quota) || 0;
-        const remain = parseInt(record.remain_quota) || 0;
-        const total = used + remain;
-        const percent = total > 0 ? (remain / total) * 100 : 0;
-
-        const getProgressColor = (pct) => {
-          if (pct === 100) return 'var(--semi-color-success)';
-          if (pct <= 10) return 'var(--semi-color-danger)';
-          if (pct <= 30) return 'var(--semi-color-warning)';
-          return undefined;
-        };
-
-        return (
-          <Tooltip
-            content={
-              <div className='text-xs'>
-                <div>{t('已用额度')}: {renderQuota(used)}</div>
-                <div>{t('剩余额度')}: {renderQuota(remain)} ({percent.toFixed(0)}%)</div>
-                <div>{t('总额度')}: {renderQuota(total)}</div>
-              </div>
-            }
-          >
-            <div className='w-[140px]'>
-              <Progress
-                percent={percent}
-                stroke={getProgressColor(percent)}
-                showInfo
-                aria-label='quota usage'
-                format={() => `${percent.toFixed(0)}%`}
-                size='small'
-              />
-            </div>
-          </Tooltip>
-        );
-      },
-    },
-    {
       title: t('状态'),
       dataIndex: 'status',
       key: 'status',
@@ -134,11 +90,39 @@ const TokensTable = () => {
           tagText = t('已耗尽');
         }
 
-        return (
+        const used = parseInt(record.used_quota) || 0;
+        const remain = parseInt(record.remain_quota) || 0;
+        const total = used + remain;
+        const percent = total > 0 ? (remain / total) * 100 : 0;
+
+        const getProgressColor = (pct) => {
+          if (pct === 100) return 'var(--semi-color-success)';
+          if (pct <= 10) return 'var(--semi-color-danger)';
+          if (pct <= 30) return 'var(--semi-color-warning)';
+          return undefined;
+        };
+
+        const quotaSuffix = record.unlimited_quota ? (
+          <div className='text-xs'>{t('无限额度')}</div>
+        ) : (
+          <div className='flex flex-col items-end'>
+            <span className='text-xs leading-none'>{`${renderQuota(remain)} / ${renderQuota(total)}`}</span>
+            <Progress
+              percent={percent}
+              stroke={getProgressColor(percent)}
+              aria-label='quota usage'
+              format={() => `${percent.toFixed(0)}%`}
+              style={{ width: '100%', marginTop: 0, marginBottom: 0 }}
+            />
+          </div>
+        );
+
+        const content = (
           <Tag
             color={tagColor}
             shape='circle'
-            suffixIcon={
+            size='large'
+            prefixIcon={
               <Switch
                 size='small'
                 checked={enabled}
@@ -146,9 +130,28 @@ const TokensTable = () => {
                 aria-label='token status switch'
               />
             }
+            suffixIcon={quotaSuffix}
           >
             {tagText}
           </Tag>
+        );
+
+        if (record.unlimited_quota) {
+          return content;
+        }
+
+        return (
+          <Tooltip
+            content={
+              <div className='text-xs'>
+                <div>{t('已用额度')}: {renderQuota(used)}</div>
+                <div>{t('剩余额度')}: {renderQuota(remain)} ({percent.toFixed(0)}%)</div>
+                <div>{t('总额度')}: {renderQuota(total)}</div>
+              </div>
+            }
+          >
+            {content}
+          </Tooltip>
         );
       },
     },
