@@ -112,7 +112,7 @@ const TokensTable = () => {
               stroke={getProgressColor(percent)}
               aria-label='quota usage'
               format={() => `${percent.toFixed(0)}%`}
-              style={{ width: '100%', marginTop: 0, marginBottom: 0 }}
+              style={{ width: '100%', marginTop: '1px', marginBottom: 0 }}
             />
           </div>
         );
