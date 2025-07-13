@@ -28,7 +28,7 @@ import {
   Col,
   Upload,
 } from '@douyinfe/semi-ui';
-import { getChannelModels, copy, getChannelIcon } from '../../helpers';
+import { getChannelModels, copy, getChannelIcon, getModelCategories } from '../../helpers';
 import {
   IconSave,
   IconClose,
@@ -349,14 +349,14 @@ const EditChannel = (props) => {
   useEffect(() => {
     const modelMap = new Map();
 
-    originModelOptions.forEach(option => {
+    originModelOptions.forEach((option) => {
       const v = (option.value || '').trim();
       if (!modelMap.has(v)) {
         modelMap.set(v, option);
       }
     });
 
-    inputs.models.forEach(model => {
+    inputs.models.forEach((model) => {
       const v = (model || '').trim();
       if (!modelMap.has(v)) {
         modelMap.set(v, {
@@ -367,8 +367,29 @@ const EditChannel = (props) => {
       }
     });
 
-    setModelOptions(Array.from(modelMap.values()));
-  }, [originModelOptions, inputs.models]);
+    const categories = getModelCategories(t);
+    const optionsWithIcon = Array.from(modelMap.values()).map((opt) => {
+      const modelName = opt.value;
+      let icon = null;
+      for (const [key, category] of Object.entries(categories)) {
+        if (key !== 'all' && category.filter({ model_name: modelName })) {
+          icon = category.icon;
+          break;
+        }
+      }
+      return {
+        ...opt,
+        label: (
+          <span className="flex items-center gap-1">
+            {icon}
+            {modelName}
+          </span>
+        ),
+      };
+    });
+
+    setModelOptions(optionsWithIcon);
+  }, [originModelOptions, inputs.models, t]);
 
   useEffect(() => {
     fetchModels().then();

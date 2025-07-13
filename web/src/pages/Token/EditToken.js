@@ -7,6 +7,7 @@ import {
   timestamp2string,
   renderGroupOption,
   renderQuotaWithPrompt,
+  getModelCategories,
 } from '../../helpers';
 import {
   Button,
@@ -78,10 +79,25 @@ const EditToken = (props) => {
     let res = await API.get(`/api/user/models`);
     const { success, message, data } = res.data;
     if (success) {
-      let localModelOptions = data.map((model) => ({
-        label: model,
-        value: model,
-      }));
+      const categories = getModelCategories(t);
+      let localModelOptions = data.map((model) => {
+        let icon = null;
+        for (const [key, category] of Object.entries(categories)) {
+          if (key !== 'all' && category.filter({ model_name: model })) {
+            icon = category.icon;
+            break;
+          }
+        }
+        return {
+          label: (
+            <span className="flex items-center gap-1">
+              {icon}
+              {model}
+            </span>
+          ),
+          value: model,
+        };
+      });
       setModels(localModelOptions);
     } else {
       showError(t(message));
