@@ -221,7 +221,16 @@ const HeaderBar = () => {
         .fill(null)
         .map((_, index) => (
           <div key={index} className={skeletonLinkClasses}>
-            <Skeleton.Title style={{ width: isMobileView ? 100 : 60, height: 16 }} />
+            <Skeleton
+              loading={true}
+              active
+              placeholder={
+                <Skeleton.Title
+                  active
+                  style={{ width: isMobileView ? 100 : 60, height: 16 }}
+                />
+              }
+            />
           </div>
         ));
     }
@@ -272,9 +281,22 @@ const HeaderBar = () => {
     if (isLoading) {
       return (
         <div className="flex items-center p-1 rounded-full bg-semi-color-fill-0 dark:bg-semi-color-fill-1">
-          <Skeleton.Avatar size="extra-small" className="shadow-sm" />
+          <Skeleton
+            loading={true}
+            active
+            placeholder={<Skeleton.Avatar active size="extra-small" className="shadow-sm" />}
+          />
           <div className="ml-1.5 mr-1">
-            <Skeleton.Title style={{ width: styleState.isMobile ? 15 : 50, height: 12 }} />
+            <Skeleton
+              loading={true}
+              active
+              placeholder={
+                <Skeleton.Title
+                  active
+                  style={{ width: styleState.isMobile ? 15 : 50, height: 12 }}
+                />
+              }
+            />
           </div>
         </div>
       );
@@ -448,22 +470,35 @@ const HeaderBar = () => {
               />
             </div>
             <Link to="/" onClick={() => handleNavLinkClick('home')} className="flex items-center gap-2 group ml-2">
-              {isLoading ? (
-                <Skeleton.Image className="h-7 md:h-8 !rounded-full" style={{ width: 32, height: 32 }} />
-              ) : (
+              <Skeleton
+                loading={isLoading}
+                active
+                placeholder={
+                  <Skeleton.Image
+                    active
+                    className="h-7 md:h-8 !rounded-full"
+                    style={{ width: 32, height: 32 }}
+                  />
+                }
+              >
                 <img src={logo} alt="logo" className="h-7 md:h-8 transition-transform duration-300 ease-in-out group-hover:scale-105 rounded-full" />
-              )}
+              </Skeleton>
               <div className="hidden md:flex items-center gap-2">
                 <div className="flex items-center gap-2">
-                  {isLoading ? (
-                    <Skeleton.Title style={{ width: 120, height: 24 }} />
-                  ) : (
-                    <Typography.Title heading={4} className="!text-lg !font-semibold !mb-0 
-                                                          bg-gradient-to-r from-blue-500 to-purple-500 dark:from-blue-400 dark:to-purple-400
-                                                          bg-clip-text text-transparent">
+                  <Skeleton
+                    loading={isLoading}
+                    active
+                    placeholder={
+                      <Skeleton.Title
+                        active
+                        style={{ width: 120, height: 24 }}
+                      />
+                    }
+                  >
+                    <Typography.Title heading={4} className="!text-lg !font-semibold !mb-0">
                       {systemName}
                     </Typography.Title>
-                  )}
+                  </Skeleton>
                   {(isSelfUseMode || isDemoSiteMode) && !isLoading && (
                     <Tag
                       color={isSelfUseMode ? 'purple' : 'blue'}

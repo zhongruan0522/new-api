@@ -18,7 +18,8 @@ import {
   Timeline,
   Collapse,
   Progress,
-  Divider
+  Divider,
+  Skeleton
 } from '@douyinfe/semi-ui';
 import {
   IconRefresh,
@@ -449,7 +450,7 @@ const Detail = (props) => {
   // ========== Hooks - Memoized Values ==========
   const performanceMetrics = useMemo(() => {
     const timeDiff = (Date.parse(end_timestamp) - Date.parse(start_timestamp)) / 60000;
-    const avgRPM = (times / timeDiff).toFixed(3);
+    const avgRPM = isNaN(times / timeDiff) ? '0' : (times / timeDiff).toFixed(3);
     const avgTPM = isNaN(consumeTokens / timeDiff) ? '0' : (consumeTokens / timeDiff).toFixed(3);
 
     return { avgRPM, avgTPM, timeDiff };
@@ -627,6 +628,7 @@ const Detail = (props) => {
 
   const loadQuotaData = useCallback(async () => {
     setLoading(true);
+    const startTime = Date.now();
     try {
       let url = '';
       let localStartTimestamp = Date.parse(start_timestamp) / 1000;
@@ -654,7 +656,11 @@ const Detail = (props) => {
         showError(message);
       }
     } finally {
-      setLoading(false);
+      const elapsed = Date.now() - startTime;
+      const remainingTime = Math.max(0, 500 - elapsed);
+      setTimeout(() => {
+        setLoading(false);
+      }, remainingTime);
     }
   }, [start_timestamp, end_timestamp, username, dataExportDefaultTime, isAdminUser]);
 
@@ -1202,10 +1208,24 @@ const Detail = (props) => {
                       </Avatar>
                       <div>
                         <div className="text-xs text-gray-500">{item.title}</div>
-                        <div className="text-lg font-semibold">{item.value}</div>
+                        <div className="text-lg font-semibold">
+                          <Skeleton
+                            loading={loading}
+                            active
+                            placeholder={
+                              <Skeleton.Paragraph
+                                active
+                                rows={1}
+                                style={{ width: '65px', height: '24px', marginTop: '4px' }}
+                              />
+                            }
+                          >
+                            {item.value}
+                          </Skeleton>
+                        </div>
                       </div>
                     </div>
-                    {item.trendData && item.trendData.length > 0 && (
+                    {(loading || (item.trendData && item.trendData.length > 0)) && (
                       <div className="w-24 h-10">
                         <VChart
                           spec={getTrendSpec(item.trendData, item.trendColor)}
