@@ -367,38 +367,23 @@ const LogsTable = () => {
           }
         }
 
-        return isAdminUser ? (
-          record.type === 0 || record.type === 2 || record.type === 5 ? (
-            <>
-              {
-                <Tooltip content={record.channel_name || '[未知]'}>
-                  <Space>
-                    <Tag
-                      color={colors[parseInt(text) % colors.length]}
-                      shape='circle'
-                    >
-                      {text}
-                    </Tag>
-                    {
-                      isMultiKey && (
-                        <Tag
-                          color={'white'}
-                          shape='circle'
-                        >
-                          {multiKeyIndex}
-                        </Tag>
-                      )
-                    }
-                  </Space>
-                </Tooltip>
-              }
-            </>
-          ) : (
-            <></>
-          )
-        ) : (
-          <></>
-        );
+        return isAdminUser && (record.type === 0 || record.type === 2 || record.type === 5) ? (
+          <Space>
+            <Tooltip content={record.channel_name || t('未知渠道')}>
+              <Tag
+                color={colors[parseInt(text) % colors.length]}
+                shape='circle'
+              >
+                {text}
+              </Tag>
+            </Tooltip>
+            {isMultiKey && (
+              <Tag color='white' shape='circle'>
+                {multiKeyIndex}
+              </Tag>
+            )}
+          </Space>
+        ) : null;
       },
     },
     {

@@ -1773,5 +1773,6 @@
   "请上传密钥文件": "Please upload the key file",
   "请填写部署地区": "Please fill in the deployment region",
   "请输入部署地区，例如：us-central1\n支持使用模型映射格式\n{\n    \"default\": \"us-central1\",\n    \"claude-3-5-sonnet-20240620\": \"europe-west1\"\n}": "Please enter the deployment region, for example: us-central1\nSupports using model mapping format\n{\n    \"default\": \"us-central1\",\n    \"claude-3-5-sonnet-20240620\": \"europe-west1\"\n}",
-  "其他": "Other"
+  "其他": "Other",
+  "未知渠道": "Unknown channel"
 }
