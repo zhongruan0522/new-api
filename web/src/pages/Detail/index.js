@@ -193,6 +193,7 @@ const Detail = (props) => {
   const [dataExportDefaultTime, setDataExportDefaultTime] = useState(getDefaultTime());
 
   const [loading, setLoading] = useState(false);
+  const [greetingVisible, setGreetingVisible] = useState(false);
   const [quotaData, setQuotaData] = useState([]);
   const [consumeQuota, setConsumeQuota] = useState(0);
   const [consumeTokens, setConsumeTokens] = useState(0);
@@ -752,6 +753,13 @@ const Detail = (props) => {
     return () => clearTimeout(timer);
   }, [uptimeData, activeUptimeTab]);
 
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setGreetingVisible(true);
+    }, 100);
+    return () => clearTimeout(timer);
+  }, []);
+
   const getUserData = async () => {
     let res = await API.get(`/api/user/self`);
     const { success, message, data } = res.data;
@@ -1112,7 +1120,12 @@ const Detail = (props) => {
   return (
     <div className="bg-gray-50 h-full mt-[64px]">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-2xl font-semibold text-gray-800">{getGreeting}</h2>
+        <h2
+          className="text-2xl font-semibold text-gray-800 transition-opacity duration-1000 ease-in-out"
+          style={{ opacity: greetingVisible ? 1 : 0 }}
+        >
+          {getGreeting}
+        </h2>
         <div className="flex gap-3">
           <Button
             type='tertiary'
