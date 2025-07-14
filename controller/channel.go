@@ -943,3 +943,52 @@ func GetTagModels(c *gin.Context) {
 	})
 	return
 }
+
+// CopyChannel handles cloning an existing channel with its key.
+// POST /api/channel/copy/:id
+// Optional query params:
+//   suffix         - string appended to the original name (default "_复制")
+//   reset_balance  - bool, when true will reset balance & used_quota to 0 (default true)
+func CopyChannel(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{"success": false, "message": "invalid id"})
+		return
+	}
+
+	suffix := c.DefaultQuery("suffix", "_复制")
+	resetBalance := true
+	if rbStr := c.DefaultQuery("reset_balance", "true"); rbStr != "" {
+		if v, err := strconv.ParseBool(rbStr); err == nil {
+			resetBalance = v
+		}
+	}
+
+	// fetch original channel with key
+	origin, err := model.GetChannelById(id, true)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
+		return
+	}
+
+	// clone channel
+	clone := *origin // shallow copy is sufficient as we will overwrite primitives
+	clone.Id = 0      // let DB auto-generate
+	clone.CreatedTime = common.GetTimestamp()
+	clone.Name = origin.Name + suffix
+	clone.TestTime = 0
+	clone.ResponseTime = 0
+	if resetBalance {
+		clone.Balance = 0
+		clone.UsedQuota = 0
+	}
+
+	// insert
+	if err := model.BatchInsertChannels([]model.Channel{clone}); err != nil {
+		c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
+		return
+	}
+
+	// success
+	c.JSON(http.StatusOK, gin.H{"success": true, "message": "", "data": gin.H{"id": clone.Id}})
+}

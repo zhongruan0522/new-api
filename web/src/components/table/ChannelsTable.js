@@ -964,28 +964,16 @@ const ChannelsTable = () => {
   };
 
   const copySelectedChannel = async (record) => {
-    const channelToCopy = { ...record };
-    channelToCopy.name += t('_复制');
-    channelToCopy.created_time = null;
-    channelToCopy.balance = 0;
-    channelToCopy.used_quota = 0;
-    delete channelToCopy.test_time;
-    delete channelToCopy.response_time;
-    if (!channelToCopy) {
-      showError(t('渠道未找到，请刷新页面后重试。'));
-      return;
-    }
     try {
-      const newChannel = { ...channelToCopy, id: undefined };
-      const response = await API.post('/api/channel/', newChannel);
-      if (response.data.success) {
+      const res = await API.post(`/api/channel/copy/${record.id}`);
+      if (res?.data?.success) {
         showSuccess(t('渠道复制成功'));
         await refresh();
       } else {
-        showError(response.data.message);
+        showError(res?.data?.message || t('渠道复制失败'));
       }
     } catch (error) {
-      showError(t('渠道复制失败: ') + error.message);
+      showError(t('渠道复制失败: ') + (error?.response?.data?.message || error?.message || error));
     }
   };
 
