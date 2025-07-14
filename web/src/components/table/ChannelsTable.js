@@ -563,7 +563,7 @@ const ChannelsTable = () => {
             {
               node: 'item',
               name: t('复制'),
-              type: 'primary',
+              type: 'tertiary',
               onClick: () => {
                 Modal.confirm({
                   title: t('确定是否要复制此渠道？'),
@@ -581,15 +581,15 @@ const ChannelsTable = () => {
                 aria-label={t('测试单个渠道操作项目组')}
               >
                 <Button
-                  theme='light'
                   size="small"
+                  type='tertiary'
                   onClick={() => testChannel(record, '')}
                 >
                   {t('测试')}
                 </Button>
                 <Button
-                  theme='light'
                   size="small"
+                  type='tertiary'
                   icon={<IconTreeTriangleDown />}
                   onClick={() => {
                     setCurrentTestChannel(record);
@@ -605,8 +605,7 @@ const ChannelsTable = () => {
                   {
                     record.status === 1 ? (
                       <Button
-                        theme='light'
-                        type='warning'
+                        type='danger'
                         size="small"
                         onClick={() => manageChannel(record.id, 'disable', record)}
                       >
@@ -614,8 +613,6 @@ const ChannelsTable = () => {
                       </Button>
                     ) : (
                       <Button
-                        theme='light'
-                        type='secondary'
                         size="small"
                         onClick={() => manageChannel(record.id, 'enable', record)}
                       >
@@ -635,7 +632,6 @@ const ChannelsTable = () => {
                     ]}
                   >
                     <Button
-                      theme='light'
                       type='tertiary'
                       size="small"
                       icon={<IconTreeTriangleDown />}
@@ -645,8 +641,7 @@ const ChannelsTable = () => {
               ) : (
                 record.status === 1 ? (
                   <Button
-                    theme='light'
-                    type='warning'
+                    type='danger'
                     size="small"
                     onClick={() => manageChannel(record.id, 'disable', record)}
                   >
@@ -654,8 +649,6 @@ const ChannelsTable = () => {
                   </Button>
                 ) : (
                   <Button
-                    theme='light'
-                    type='secondary'
                     size="small"
                     onClick={() => manageChannel(record.id, 'enable', record)}
                   >
@@ -665,7 +658,6 @@ const ChannelsTable = () => {
               )}
 
               <Button
-                theme='light'
                 type='tertiary'
                 size="small"
                 onClick={() => {
@@ -683,7 +675,6 @@ const ChannelsTable = () => {
               >
                 <Button
                   icon={<IconMore />}
-                  theme='light'
                   type='tertiary'
                   size="small"
                 />
@@ -695,23 +686,20 @@ const ChannelsTable = () => {
           return (
             <Space wrap>
               <Button
-                theme='light'
-                type='secondary'
+                type='tertiary'
                 size="small"
                 onClick={() => manageTag(record.key, 'enable')}
               >
                 {t('启用全部')}
               </Button>
               <Button
-                theme='light'
-                type='warning'
+                type='tertiary'
                 size="small"
                 onClick={() => manageTag(record.key, 'disable')}
               >
                 {t('禁用全部')}
               </Button>
               <Button
-                theme='light'
                 type='tertiary'
                 size="small"
                 onClick={() => {
@@ -783,22 +771,13 @@ const ChannelsTable = () => {
         onCancel={() => setShowColumnSelector(false)}
         footer={
           <div className="flex justify-end">
-            <Button
-              theme="light"
-              onClick={() => initDefaultColumns()}
-            >
+            <Button onClick={() => initDefaultColumns()}>
               {t('重置')}
             </Button>
-            <Button
-              theme="light"
-              onClick={() => setShowColumnSelector(false)}
-            >
+            <Button onClick={() => setShowColumnSelector(false)}>
               {t('取消')}
             </Button>
-            <Button
-              type='primary'
-              onClick={() => setShowColumnSelector(false)}
-            >
+            <Button onClick={() => setShowColumnSelector(false)}>
               {t('确定')}
             </Button>
           </div>
@@ -1605,7 +1584,6 @@ const ChannelsTable = () => {
           <Button
             size='small'
             disabled={!enableBatchDelete}
-            theme='light'
             type='danger'
             className="w-full md:w-auto"
             onClick={() => {
@@ -1622,8 +1600,7 @@ const ChannelsTable = () => {
           <Button
             size='small'
             disabled={!enableBatchDelete}
-            theme='light'
-            type='primary'
+            type='tertiary'
             onClick={() => setShowBatchSetTag(true)}
             className="w-full md:w-auto"
           >
@@ -1638,8 +1615,7 @@ const ChannelsTable = () => {
                 <Dropdown.Item>
                   <Button
                     size='small'
-                    theme='light'
-                    type='warning'
+                    type='tertiary'
                     className="w-full"
                     onClick={() => {
                       Modal.confirm({
@@ -1657,7 +1633,23 @@ const ChannelsTable = () => {
                 <Dropdown.Item>
                   <Button
                     size='small'
-                    theme='light'
+                    className="w-full"
+                    onClick={() => {
+                      Modal.confirm({
+                        title: t('确定是否要修复数据库一致性？'),
+                        content: t('进行该操作时，可能导致渠道访问错误，请仅在数据库出现问题时使用'),
+                        onOk: () => fixChannelsAbilities(),
+                        size: 'sm',
+                        centered: true,
+                      });
+                    }}
+                  >
+                    {t('修复数据库一致性')}
+                  </Button>
+                </Dropdown.Item>
+                <Dropdown.Item>
+                  <Button
+                    size='small'
                     type='secondary'
                     className="w-full"
                     onClick={() => {
@@ -1676,7 +1668,6 @@ const ChannelsTable = () => {
                 <Dropdown.Item>
                   <Button
                     size='small'
-                    theme='light'
                     type='danger'
                     className="w-full"
                     onClick={() => {
@@ -1692,25 +1683,6 @@ const ChannelsTable = () => {
                     {t('删除禁用通道')}
                   </Button>
                 </Dropdown.Item>
-                <Dropdown.Item>
-                  <Button
-                    size='small'
-                    theme='light'
-                    type='tertiary'
-                    className="w-full"
-                    onClick={() => {
-                      Modal.confirm({
-                        title: t('确定是否要修复数据库一致性？'),
-                        content: t('进行该操作时，可能导致渠道访问错误，请仅在数据库出现问题时使用'),
-                        onOk: () => fixChannelsAbilities(),
-                        size: 'sm',
-                        centered: true,
-                      });
-                    }}
-                  >
-                    {t('修复数据库一致性')}
-                  </Button>
-                </Dropdown.Item>
               </Dropdown.Menu>
             }
           >
@@ -1721,8 +1693,7 @@ const ChannelsTable = () => {
 
           <Button
             size='small'
-            theme='light'
-            type='secondary'
+            type='tertiary'
             className="w-full md:w-auto"
             onClick={() => setCompactMode(!compactMode)}
           >
@@ -1825,8 +1796,7 @@ const ChannelsTable = () => {
 
           <Button
             size='small'
-            theme='light'
-            type='primary'
+            type='tertiary'
             className="w-full md:w-auto"
             onClick={refresh}
           >
@@ -1835,7 +1805,6 @@ const ChannelsTable = () => {
 
           <Button
             size='small'
-            theme='light'
             type='tertiary'
             onClick={() => setShowColumnSelector(true)}
             className="w-full md:w-auto"
@@ -1898,7 +1867,7 @@ const ChannelsTable = () => {
             </div>
             <Button
               size='small'
-              type="primary"
+              type="tertiary"
               htmlType="submit"
               loading={loading || searching}
               className="w-full md:w-auto"
@@ -1907,7 +1876,7 @@ const ChannelsTable = () => {
             </Button>
             <Button
               size='small'
-              theme='light'
+              type='tertiary'
               onClick={() => {
                 if (formApi) {
                   formApi.reset();
@@ -2033,61 +2002,6 @@ const ChannelsTable = () => {
                   {t('共')} {currentTestChannel.models.split(',').length} {t('个模型')}
                 </Typography.Text>
               </div>
-
-              {/* 搜索与操作按钮 */}
-              <div className="flex items-center justify-end gap-2 w-full">
-                <Input
-                  placeholder={t('搜索模型...')}
-                  value={modelSearchKeyword}
-                  onChange={(v) => {
-                    setModelSearchKeyword(v);
-                    setModelTablePage(1);
-                  }}
-                  className="!w-full"
-                  prefix={<IconSearch />}
-                  showClear
-                />
-
-                <Button
-                  theme='light'
-                  onClick={() => {
-                    if (selectedModelKeys.length === 0) {
-                      showError(t('请先选择模型！'));
-                      return;
-                    }
-                    copy(selectedModelKeys.join(',')).then((ok) => {
-                      if (ok) {
-                        showSuccess(t('已复制 ${count} 个模型').replace('${count}', selectedModelKeys.length));
-                      } else {
-                        showError(t('复制失败，请手动复制'));
-                      }
-                    });
-                  }}
-                >
-                  {t('复制已选')}
-                </Button>
-
-                <Button
-                  theme='light'
-                  type='primary'
-                  onClick={() => {
-                    if (!currentTestChannel) return;
-                    const successKeys = currentTestChannel.models
-                      .split(',')
-                      .filter((m) => m.toLowerCase().includes(modelSearchKeyword.toLowerCase()))
-                      .filter((m) => {
-                        const result = modelTestResults[`${currentTestChannel.id}-${m}`];
-                        return result && result.success;
-                      });
-                    if (successKeys.length === 0) {
-                      showInfo(t('暂无成功模型'));
-                    }
-                    setSelectedModelKeys(successKeys);
-                  }}
-                >
-                  {t('选择成功')}
-                </Button>
-              </div>
             </div>
           )
         }
@@ -2097,15 +2011,13 @@ const ChannelsTable = () => {
           <div className="flex justify-end">
             {isBatchTesting ? (
               <Button
-                theme='light'
-                type='warning'
+                type='danger'
                 onClick={handleCloseModal}
               >
                 {t('停止测试')}
               </Button>
             ) : (
               <Button
-                theme='light'
                 type='tertiary'
                 onClick={handleCloseModal}
               >
@@ -2113,8 +2025,6 @@ const ChannelsTable = () => {
               </Button>
             )}
             <Button
-              theme='light'
-              type='primary'
               onClick={batchTestModels}
               loading={isBatchTesting}
               disabled={isBatchTesting}
@@ -2139,6 +2049,58 @@ const ChannelsTable = () => {
         <div className="model-test-scroll">
           {currentTestChannel && (
             <div>
+              {/* 搜索与操作按钮 */}
+              <div className="flex items-center justify-end gap-2 w-full mb-2">
+                <Input
+                  placeholder={t('搜索模型...')}
+                  value={modelSearchKeyword}
+                  onChange={(v) => {
+                    setModelSearchKeyword(v);
+                    setModelTablePage(1);
+                  }}
+                  className="!w-full"
+                  prefix={<IconSearch />}
+                  showClear
+                />
+
+                <Button
+                  onClick={() => {
+                    if (selectedModelKeys.length === 0) {
+                      showError(t('请先选择模型！'));
+                      return;
+                    }
+                    copy(selectedModelKeys.join(',')).then((ok) => {
+                      if (ok) {
+                        showSuccess(t('已复制 ${count} 个模型').replace('${count}', selectedModelKeys.length));
+                      } else {
+                        showError(t('复制失败，请手动复制'));
+                      }
+                    });
+                  }}
+                >
+                  {t('复制已选')}
+                </Button>
+
+                <Button
+                  type='tertiary'
+                  onClick={() => {
+                    if (!currentTestChannel) return;
+                    const successKeys = currentTestChannel.models
+                      .split(',')
+                      .filter((m) => m.toLowerCase().includes(modelSearchKeyword.toLowerCase()))
+                      .filter((m) => {
+                        const result = modelTestResults[`${currentTestChannel.id}-${m}`];
+                        return result && result.success;
+                      });
+                    if (successKeys.length === 0) {
+                      showInfo(t('暂无成功模型'));
+                    }
+                    setSelectedModelKeys(successKeys);
+                  }}
+                >
+                  {t('选择成功')}
+                </Button>
+              </div>
               <Table
                 columns={[
                   {
@@ -2197,8 +2159,7 @@ const ChannelsTable = () => {
                       const isTesting = testingModels.has(record.model);
                       return (
                         <Button
-                          theme='light'
-                          type='primary'
+                          type='tertiary'
                           onClick={() => testChannel(currentTestChannel, record.model)}
                           loading={isTesting}
                           size='small'

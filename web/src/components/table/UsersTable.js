@@ -287,7 +287,6 @@ const UsersTable = () => {
         return (
           <Space>
             <Button
-              theme='light'
               type='tertiary'
               size="small"
               onClick={() => {
@@ -303,7 +302,6 @@ const UsersTable = () => {
               menu={moreMenuItems}
             >
               <Button
-                theme='light'
                 type='tertiary'
                 size="small"
                 icon={<IconMore />}
@@ -525,8 +523,7 @@ const UsersTable = () => {
             <Text>{t('用户管理页面，可以查看和管理所有注册用户的信息、权限和状态。')}</Text>
           </div>
           <Button
-            theme='light'
-            type='secondary'
+            type='tertiary'
             className="w-full md:w-auto"
             onClick={() => setCompactMode(!compactMode)}
             size="small"
@@ -541,8 +538,6 @@ const UsersTable = () => {
       <div className="flex flex-col md:flex-row justify-between items-center gap-4 w-full">
         <div className="flex gap-2 w-full md:w-auto order-2 md:order-1">
           <Button
-            theme='light'
-            type='primary'
             className="w-full md:w-auto"
             onClick={() => {
               setShowAddUser(true);
@@ -598,7 +593,7 @@ const UsersTable = () => {
             </div>
             <div className="flex gap-2 w-full md:w-auto">
               <Button
-                type="primary"
+                type="tertiary"
                 htmlType="submit"
                 loading={loading || searching}
                 className="flex-1 md:flex-initial md:w-auto"
@@ -607,7 +602,7 @@ const UsersTable = () => {
                 {t('查询')}
               </Button>
               <Button
-                theme="light"
+                type='tertiary'
                 onClick={() => {
                   if (formApi) {
                     formApi.reset();

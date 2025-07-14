@@ -53,18 +53,18 @@ import {
 
 // 侧边栏图标颜色映射
 export const sidebarIconColors = {
-  dashboard: '#4F46E5', // 紫蓝色
+  dashboard: '#10B981', // 绿色
   terminal: '#10B981', // 绿色
   message: '#06B6D4', // 青色
   key: '#3B82F6', // 蓝色
-  chart: '#8B5CF6', // 紫色
+  chart: '#F59E0B', // 琥珀色
   image: '#EC4899', // 粉色
   check: '#F59E0B', // 琥珀色
   credit: '#F97316', // 橙色
   layers: '#EF4444', // 红色
   gift: '#F43F5E', // 玫红色
-  user: '#6366F1', // 靛蓝色
-  settings: '#6B7280', // 灰色
+  user: '#10B981', // 绿色
+  settings: '#F97316', // 橙色
 };
 
 // 获取侧边栏Lucide图标组件

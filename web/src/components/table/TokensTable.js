@@ -372,9 +372,8 @@ const TokensTable = () => {
               aria-label={t('项目操作按钮组')}
             >
               <Button
-                theme='light'
                 size="small"
-                style={{ color: 'rgba(var(--semi-teal-7), 1)' }}
+                type='tertiary'
                 onClick={() => {
                   if (chatsArray.length === 0) {
                     showError(t('请联系管理员配置聊天链接'));
@@ -395,11 +394,7 @@ const TokensTable = () => {
                 menu={chatsArray}
               >
                 <Button
-                  style={{
-                    padding: '4px 4px',
-                    color: 'rgba(var(--semi-teal-7), 1)',
-                  }}
-                  type='primary'
+                  type='tertiary'
                   icon={<IconTreeTriangleDown />}
                   size="small"
                 ></Button>
@@ -407,7 +402,6 @@ const TokensTable = () => {
             </SplitButtonGroup>
 
             <Button
-              theme='light'
               type='tertiary'
               size="small"
               onClick={() => {
@@ -419,7 +413,6 @@ const TokensTable = () => {
             </Button>
 
             <Button
-              theme='light'
               type='danger'
               size="small"
               onClick={() => {
@@ -705,8 +698,7 @@ const TokensTable = () => {
             <Text>{t('令牌用于API访问认证，可以设置额度限制和模型权限。')}</Text>
           </div>
           <Button
-            theme="light"
-            type="secondary"
+            type="tertiary"
             className="w-full md:w-auto"
             onClick={() => setCompactMode(!compactMode)}
             size="small"
@@ -721,7 +713,6 @@ const TokensTable = () => {
       <div className="flex flex-col md:flex-row justify-between items-center gap-4 w-full">
         <div className="flex flex-wrap gap-2 w-full md:w-auto order-2 md:order-1">
           <Button
-            theme="light"
             type="primary"
             className="flex-1 md:flex-initial"
             onClick={() => {
@@ -735,8 +726,7 @@ const TokensTable = () => {
             {t('添加令牌')}
           </Button>
           <Button
-            theme="light"
-            type="warning"
+            type='tertiary'
             className="flex-1 md:flex-initial"
             onClick={() => {
               if (selectedKeys.length === 0) {
@@ -750,8 +740,7 @@ const TokensTable = () => {
                 footer: (
                   <Space>
                     <Button
-                      type="primary"
-                      theme="solid"
+                      type='tertiary'
                       onClick={async () => {
                         let content = '';
                         for (let i = 0; i < selectedKeys.length; i++) {
@@ -765,7 +754,6 @@ const TokensTable = () => {
                       {t('名称+密钥')}
                     </Button>
                     <Button
-                      theme="light"
                       onClick={async () => {
                         let content = '';
                         for (let i = 0; i < selectedKeys.length; i++) {
@@ -786,8 +774,7 @@ const TokensTable = () => {
             {t('复制所选令牌')}
           </Button>
           <Button
-            theme="light"
-            type="danger"
+            type='danger'
             className="w-full md:w-auto"
             onClick={() => {
               if (selectedKeys.length === 0) {
@@ -844,7 +831,7 @@ const TokensTable = () => {
             </div>
             <div className="flex gap-2 w-full md:w-auto">
               <Button
-                type="primary"
+                type="tertiary"
                 htmlType="submit"
                 loading={loading || searching}
                 className="flex-1 md:flex-initial md:w-auto"
@@ -853,7 +840,7 @@ const TokensTable = () => {
                 {t('查询')}
               </Button>
               <Button
-                theme="light"
+                type='tertiary'
                 onClick={() => {
                   if (formApi) {
                     formApi.reset();

@@ -595,22 +595,13 @@ const LogsTable = () => {
         onCancel={() => setShowColumnSelector(false)}
         footer={
           <div className="flex justify-end">
-            <Button
-              theme="light"
-              onClick={() => initDefaultColumns()}
-            >
+            <Button onClick={() => initDefaultColumns()}>
               {t('重置')}
             </Button>
-            <Button
-              theme="light"
-              onClick={() => setShowColumnSelector(false)}
-            >
+            <Button onClick={() => setShowColumnSelector(false)}>
               {t('取消')}
             </Button>
-            <Button
-              type='primary'
-              onClick={() => setShowColumnSelector(false)}
-            >
+            <Button onClick={() => setShowColumnSelector(false)}>
               {t('确定')}
             </Button>
           </div>
@@ -667,8 +658,7 @@ const LogsTable = () => {
                   <Text>{t('任务记录')}</Text>
                 </div>
                 <Button
-                  theme='light'
-                  type='secondary'
+                  type='tertiary'
                   className="w-full md:w-auto"
                   onClick={() => setCompactMode(!compactMode)}
                   size="small"
@@ -733,7 +723,7 @@ const LogsTable = () => {
                     <div></div>
                     <div className="flex gap-2">
                       <Button
-                        type='primary'
+                        type='tertiary'
                         htmlType='submit'
                         loading={loading}
                         size="small"
@@ -741,7 +731,7 @@ const LogsTable = () => {
                         {t('查询')}
                       </Button>
                       <Button
-                        theme='light'
+                        type='tertiary'
                         onClick={() => {
                           if (formApi) {
                             formApi.reset();
@@ -756,7 +746,6 @@ const LogsTable = () => {
                         {t('重置')}
                       </Button>
                       <Button
-                        theme='light'
                         type='tertiary'
                         onClick={() => setShowColumnSelector(true)}
                         size="small"
