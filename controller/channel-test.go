@@ -306,18 +306,12 @@ func buildTestRequest(model string) *dto.GeneralOpenAIRequest {
 func TestChannel(c *gin.Context) {
 	channelId, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.ApiError(c, err)
 		return
 	}
 	channel, err := model.CacheGetChannel(channelId)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.ApiError(c, err)
 		return
 	}
 	//defer func() {
@@ -431,10 +425,7 @@ func testAllChannels(notify bool) error {
 func TestAllChannels(c *gin.Context) {
 	err := testAllChannels(true)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.ApiError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
