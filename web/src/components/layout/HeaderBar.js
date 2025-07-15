@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { UserContext } from '../../context/User/index.js';
 import { useSetTheme, useTheme } from '../../context/Theme/index.js';
@@ -47,6 +47,7 @@ const HeaderBar = ({ onMobileMenuToggle, drawerOpen }) => {
   const location = useLocation();
   const [noticeVisible, setNoticeVisible] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const loadingStartRef = useRef(Date.now());
 
   const systemName = getSystemName();
   const logo = getLogo();
@@ -196,11 +197,15 @@ const HeaderBar = ({ onMobileMenuToggle, drawerOpen }) => {
   }, [i18n]);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 500);
-    return () => clearTimeout(timer);
-  }, []);
+    if (statusState?.status !== undefined) {
+      const elapsed = Date.now() - loadingStartRef.current;
+      const remaining = Math.max(0, 500 - elapsed);
+      const timer = setTimeout(() => {
+        setIsLoading(false);
+      }, remaining);
+      return () => clearTimeout(timer);
+    }
+  }, [statusState?.status]);
 
   const handleLanguageChange = (lang) => {
     i18n.changeLanguage(lang);
