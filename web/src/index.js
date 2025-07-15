@@ -11,6 +11,7 @@ import './i18n/i18n.js';
 import './index.css';
 
 // 欢迎信息（二次开发者不准将此移除）
+// Welcome message (Secondary developers are not allowed to remove this)
 if (typeof window !== 'undefined') {
   console.log('%cWe ❤ NewAPI%c Github: https://github.com/QuantumNous/new-api',
     'color: #10b981; font-weight: bold; font-size: 24px;',
