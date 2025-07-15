@@ -17,6 +17,7 @@ import {
   removeTrailingSlash,
   showError,
   showSuccess,
+  toBoolean,
 } from '../../helpers';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
@@ -106,7 +107,7 @@ const SystemSetting = () => {
           case 'LinuxDOOAuthEnabled':
           case 'oidc.enabled':
           case 'WorkerAllowHttpImageRequestEnabled':
-            item.value = item.value === 'true';
+            item.value = toBoolean(item.value);
             break;
           case 'Price':
           case 'MinTopUp':
