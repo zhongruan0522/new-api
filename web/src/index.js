@@ -6,7 +6,6 @@ import { UserProvider } from './context/User';
 import 'react-toastify/dist/ReactToastify.css';
 import { StatusProvider } from './context/Status';
 import { ThemeProvider } from './context/Theme';
-import { StyleProvider } from './context/Style/index.js';
 import PageLayout from './components/layout/PageLayout.js';
 import './i18n/i18n.js';
 import './index.css';
@@ -20,9 +19,7 @@ root.render(
       <UserProvider>
         <BrowserRouter>
           <ThemeProvider>
-            <StyleProvider>
-              <PageLayout />
-            </StyleProvider>
+            <PageLayout />
           </ThemeProvider>
         </BrowserRouter>
       </UserProvider>

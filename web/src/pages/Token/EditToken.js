@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useContext, useRef } from 'react';
 import {
   API,
-  isMobile,
   showError,
   showSuccess,
   timestamp2string,
@@ -9,6 +8,7 @@ import {
   renderQuotaWithPrompt,
   getModelCategories,
 } from '../../helpers';
+import { useIsMobile } from '../../hooks/useIsMobile.js';
 import {
   Button,
   SideSheet,
@@ -38,6 +38,7 @@ const EditToken = (props) => {
   const { t } = useTranslation();
   const [statusState, statusDispatch] = useContext(StatusContext);
   const [loading, setLoading] = useState(false);
+  const isMobile = useIsMobile();
   const formApiRef = useRef(null);
   const [models, setModels] = useState([]);
   const [groups, setGroups] = useState([]);
@@ -277,7 +278,7 @@ const EditToken = (props) => {
       }
       bodyStyle={{ padding: '0' }}
       visible={props.visiable}
-      width={isMobile() ? '100%' : 600}
+      width={isMobile ? '100%' : 600}
       footer={
         <div className='flex justify-end bg-white'>
           <Space>

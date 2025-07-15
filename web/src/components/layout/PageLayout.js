@@ -4,8 +4,9 @@ import SiderBar from './SiderBar.js';
 import App from '../../App.js';
 import FooterBar from './Footer.js';
 import { ToastContainer } from 'react-toastify';
-import React, { useContext, useEffect } from 'react';
-import { useStyle } from '../../context/Style/index.js';
+import React, { useContext, useEffect, useState } from 'react';
+import { useIsMobile } from '../../hooks/useIsMobile.js';
+import { useSidebarCollapsed } from '../../hooks/useSidebarCollapsed.js';
 import { useTranslation } from 'react-i18next';
 import { API, getLogo, getSystemName, showError, setStatusData } from '../../helpers/index.js';
 import { UserContext } from '../../context/User/index.js';
@@ -16,7 +17,9 @@ const { Sider, Content, Header } = Layout;
 const PageLayout = () => {
   const [userState, userDispatch] = useContext(UserContext);
   const [statusState, statusDispatch] = useContext(StatusContext);
-  const { state: styleState } = useStyle();
+  const isMobile = useIsMobile();
+  const [collapsed, , setCollapsed] = useSidebarCollapsed();
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const { i18n } = useTranslation();
   const location = useLocation();
 
@@ -25,6 +28,16 @@ const PageLayout = () => {
   const shouldInnerPadding = location.pathname.includes('/console') &&
     !location.pathname.startsWith('/console/chat') &&
     location.pathname !== '/console/playground';
+
+  const isConsoleRoute = location.pathname.startsWith('/console');
+  const showSider = isConsoleRoute && (!isMobile || drawerOpen);
+
+  // Ensure sidebar not collapsed when opening drawer on mobile
+  useEffect(() => {
+    if (isMobile && drawerOpen && collapsed) {
+      setCollapsed(false);
+    }
+  }, [isMobile, drawerOpen, collapsed, setCollapsed]);
 
   const loadUser = () => {
     let user = localStorage.getItem('user');
@@ -76,7 +89,7 @@ const PageLayout = () => {
         height: '100vh',
         display: 'flex',
         flexDirection: 'column',
-        overflow: styleState.isMobile ? 'visible' : 'hidden',
+        overflow: isMobile ? 'visible' : 'hidden',
       }}
     >
       <Header
@@ -90,25 +103,26 @@ const PageLayout = () => {
           zIndex: 100,
         }}
       >
-        <HeaderBar />
+        <HeaderBar onMobileMenuToggle={() => setDrawerOpen(prev => !prev)} drawerOpen={drawerOpen} />
       </Header>
       <Layout
         style={{
-          overflow: styleState.isMobile ? 'visible' : 'auto',
+          overflow: isMobile ? 'visible' : 'auto',
           display: 'flex',
           flexDirection: 'column',
         }}
       >
-        {styleState.showSider && (
+        {showSider && (
           <Sider
             style={{
-              position: 'fixed',
+              position: isMobile ? 'fixed' : 'fixed',
               left: 0,
               top: '64px',
               zIndex: 99,
               border: 'none',
               paddingRight: '0',
               height: 'calc(100vh - 64px)',
+              width: 'var(--sidebar-current-width)',
             }}
           >
             <SiderBar />
@@ -116,14 +130,7 @@ const PageLayout = () => {
         )}
         <Layout
           style={{
-            marginLeft: styleState.isMobile
-              ? '0'
-              : styleState.showSider
-                ? styleState.siderCollapsed
-                  ? '60px'
-                  : '180px'
-                : '0',
-            transition: 'margin-left 0.3s ease',
+            marginLeft: isMobile ? '0' : showSider ? 'var(--sidebar-current-width)' : '0',
             flex: '1 1 auto',
             display: 'flex',
             flexDirection: 'column',
@@ -132,9 +139,9 @@ const PageLayout = () => {
           <Content
             style={{
               flex: '1 0 auto',
-              overflowY: styleState.isMobile ? 'visible' : 'hidden',
+              overflowY: isMobile ? 'visible' : 'hidden',
               WebkitOverflowScrolling: 'touch',
-              padding: shouldInnerPadding ? (styleState.isMobile ? '5px' : '24px') : '0',
+              padding: shouldInnerPadding ? (isMobile ? '5px' : '24px') : '0',
               position: 'relative',
             }}
           >
