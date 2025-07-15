@@ -44,7 +44,8 @@ import {
   IconMore,
   IconDescend2
 } from '@douyinfe/semi-icons';
-import { loadChannelModels, isMobile, copy } from '../../helpers';
+import { loadChannelModels, copy } from '../../helpers';
+import { useIsMobile } from '../../hooks/useIsMobile.js';
 import EditTagModal from '../../pages/Channel/EditTagModal.js';
 import { useTranslation } from 'react-i18next';
 import { useTableCompactMode } from '../../hooks/useTableCompactMode';
@@ -52,6 +53,7 @@ import { FaRandom } from 'react-icons/fa';
 
 const ChannelsTable = () => {
   const { t } = useTranslation();
+  const isMobile = useIsMobile();
 
   let type2label = undefined;
 
@@ -2031,7 +2033,7 @@ const ChannelsTable = () => {
         }
         maskClosable={!isBatchTesting}
         className="!rounded-lg"
-        size={isMobile() ? 'full-width' : 'large'}
+        size={isMobile ? 'full-width' : 'large'}
       >
         <div className="model-test-scroll">
           {currentTestChannel && (

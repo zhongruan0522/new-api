@@ -41,8 +41,9 @@ import { VChart } from '@visactor/react-vchart';
 import {
   API,
   isAdmin,
-  isMobile,
   showError,
+  showSuccess,
+  showWarning,
   timestamp2string,
   timestamp2string1,
   getQuotaWithUnit,
@@ -51,9 +52,9 @@ import {
   renderQuota,
   modelToColor,
   copy,
-  showSuccess,
   getRelativeTime
 } from '../../helpers';
+import { useIsMobile } from '../../hooks/useIsMobile.js';
 import { UserContext } from '../../context/User/index.js';
 import { StatusContext } from '../../context/Status/index.js';
 import { useTranslation } from 'react-i18next';
@@ -66,6 +67,7 @@ const Detail = (props) => {
   // ========== Hooks - Navigation & Translation ==========
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
 
   // ========== Hooks - Refs ==========
   const formRef = useRef();
@@ -1118,7 +1120,7 @@ const Detail = (props) => {
   }, []);
 
   return (
-    <div className="bg-gray-50 h-full mt-[64px]">
+    <div className="bg-gray-50 h-full mt-[64px] px-2">
       <div className="flex items-center justify-between mb-4">
         <h2
           className="text-2xl font-semibold text-gray-800 transition-opacity duration-1000 ease-in-out"
@@ -1150,7 +1152,7 @@ const Detail = (props) => {
         onOk={handleSearchConfirm}
         onCancel={handleCloseModal}
         closeOnEsc={true}
-        size={isMobile() ? 'full-width' : 'small'}
+        size={isMobile ? 'full-width' : 'small'}
         centered
       >
         <Form ref={formRef} layout='vertical' className="w-full">

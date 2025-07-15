@@ -1,6 +1,7 @@
 import i18next from 'i18next';
 import { Modal, Tag, Typography } from '@douyinfe/semi-ui';
-import { copy, isMobile, showSuccess } from './utils';
+import { copy, showSuccess } from './utils';
+import { MOBILE_BREAKPOINT } from '../hooks/useIsMobile.js';
 import { visit } from 'unist-util-visit';
 import {
   OpenAI,
@@ -669,7 +670,8 @@ const measureTextWidth = (
 };
 
 export function truncateText(text, maxWidth = 200) {
-  if (!isMobile()) {
+  const isMobileScreen = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`).matches;
+  if (!isMobileScreen) {
     return text;
   }
   if (!text) return text;

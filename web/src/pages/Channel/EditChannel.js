@@ -3,12 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   API,
-  isMobile,
   showError,
   showInfo,
   showSuccess,
   verifyJSON,
 } from '../../helpers';
+import { useIsMobile } from '../../hooks/useIsMobile.js';
 import { CHANNEL_OPTIONS } from '../../constants';
 import {
   SideSheet,
@@ -81,6 +81,7 @@ const EditChannel = (props) => {
   const channelId = props.editingChannel.id;
   const isEdit = channelId !== undefined;
   const [loading, setLoading] = useState(isEdit);
+  const isMobile = useIsMobile();
   const handleCancel = () => {
     props.handleClose();
   };
@@ -693,7 +694,7 @@ const EditChannel = (props) => {
         }
         bodyStyle={{ padding: '0' }}
         visible={props.visible}
-        width={isMobile() ? '100%' : 600}
+        width={isMobile ? '100%' : 600}
         footer={
           <div className="flex justify-end bg-white">
             <Space>

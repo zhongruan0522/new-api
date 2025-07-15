@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { UserContext } from '../../context/User/index.js';
 import { useSetTheme, useTheme } from '../../context/Theme/index.js';
@@ -31,13 +31,15 @@ import {
   Badge,
 } from '@douyinfe/semi-ui';
 import { StatusContext } from '../../context/Status/index.js';
-import { useStyle, styleActions } from '../../context/Style/index.js';
+import { useIsMobile } from '../../hooks/useIsMobile.js';
+import { useSidebarCollapsed } from '../../hooks/useSidebarCollapsed.js';
 
-const HeaderBar = () => {
+const HeaderBar = ({ onMobileMenuToggle, drawerOpen }) => {
   const { t, i18n } = useTranslation();
   const [userState, userDispatch] = useContext(UserContext);
   const [statusState, statusDispatch] = useContext(StatusContext);
-  const { state: styleState, dispatch: styleDispatch } = useStyle();
+  const isMobile = useIsMobile();
+  const [collapsed, toggleCollapsed] = useSidebarCollapsed();
   const [isLoading, setIsLoading] = useState(true);
   let navigate = useNavigate();
   const [currentLang, setCurrentLang] = useState(i18n.language);
@@ -45,6 +47,7 @@ const HeaderBar = () => {
   const location = useLocation();
   const [noticeVisible, setNoticeVisible] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const loadingStartRef = useRef(Date.now());
 
   const systemName = getSystemName();
   const logo = getLogo();
@@ -194,11 +197,15 @@ const HeaderBar = () => {
   }, [i18n]);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 500);
-    return () => clearTimeout(timer);
-  }, []);
+    if (statusState?.status !== undefined) {
+      const elapsed = Date.now() - loadingStartRef.current;
+      const remaining = Math.max(0, 500 - elapsed);
+      const timer = setTimeout(() => {
+        setIsLoading(false);
+      }, remaining);
+      return () => clearTimeout(timer);
+    }
+  }, [statusState?.status]);
 
   const handleLanguageChange = (lang) => {
     i18n.changeLanguage(lang);
@@ -207,7 +214,7 @@ const HeaderBar = () => {
 
   const handleNavLinkClick = (itemKey) => {
     if (itemKey === 'home') {
-      styleDispatch(styleActions.setSider(false));
+      // styleDispatch(styleActions.setSider(false)); // This line is removed
     }
     setMobileMenuOpen(false);
   };
@@ -293,7 +300,7 @@ const HeaderBar = () => {
               placeholder={
                 <Skeleton.Title
                   active
-                  style={{ width: styleState.isMobile ? 15 : 50, height: 12 }}
+                  style={{ width: isMobile ? 15 : 50, height: 12 }}
                 />
               }
             />
@@ -388,7 +395,7 @@ const HeaderBar = () => {
       const registerButtonTextSpanClass = "!text-xs !text-white !p-1.5";
 
       if (showRegisterButton) {
-        if (styleState.isMobile) {
+        if (isMobile) {
           loginButtonClasses += " !rounded-full";
         } else {
           loginButtonClasses += " !rounded-l-full !rounded-r-none";
@@ -436,7 +443,7 @@ const HeaderBar = () => {
       <NoticeModal
         visible={noticeVisible}
         onClose={handleNoticeClose}
-        isMobile={styleState.isMobile}
+        isMobile={isMobile}
         defaultTab={unreadCount > 0 ? 'system' : 'inApp'}
         unreadKeys={getUnreadKeys()}
       />
@@ -447,18 +454,18 @@ const HeaderBar = () => {
               <Button
                 icon={
                   isConsoleRoute
-                    ? (styleState.showSider ? <IconClose className="text-lg" /> : <IconMenu className="text-lg" />)
+                    ? ((isMobile ? drawerOpen : collapsed) ? <IconClose className="text-lg" /> : <IconMenu className="text-lg" />)
                     : (mobileMenuOpen ? <IconClose className="text-lg" /> : <IconMenu className="text-lg" />)
                 }
                 aria-label={
                   isConsoleRoute
-                    ? (styleState.showSider ? t('关闭侧边栏') : t('打开侧边栏'))
+                    ? ((isMobile ? drawerOpen : collapsed) ? t('关闭侧边栏') : t('打开侧边栏'))
                     : (mobileMenuOpen ? t('关闭菜单') : t('打开菜单'))
                 }
                 onClick={() => {
                   if (isConsoleRoute) {
                     // 控制侧边栏的显示/隐藏，无论是否移动设备
-                    styleDispatch(styleActions.toggleSider());
+                    isMobile ? onMobileMenuToggle() : toggleCollapsed();
                   } else {
                     // 控制HeaderBar自己的移动菜单
                     setMobileMenuOpen(!mobileMenuOpen);
