@@ -11,5 +11,6 @@ export const useIsMobile = () => {
       return () => mql.removeEventListener('change', callback);
     },
     () => window.matchMedia(query).matches,
+    () => false,
   );
 }; 

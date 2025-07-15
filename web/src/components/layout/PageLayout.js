@@ -115,7 +115,7 @@ const PageLayout = () => {
         {showSider && (
           <Sider
             style={{
-              position: isMobile ? 'fixed' : 'fixed',
+              position: 'fixed',
               left: 0,
               top: '64px',
               zIndex: 99,
