@@ -1770,10 +1770,15 @@
   "轮询": "Polling",
   "密钥文件 (.json)": "Key file (.json)",
   "点击上传文件或拖拽文件到这里": "Click to upload file or drag and drop file here",
+  "仅支持 JSON 文件": "Only JSON files are supported",
   "仅支持 JSON 文件，支持多文件": "Only JSON files are supported, multiple files are supported",
   "请上传密钥文件": "Please upload the key file",
   "请填写部署地区": "Please fill in the deployment region",
   "请输入部署地区，例如：us-central1\n支持使用模型映射格式\n{\n    \"default\": \"us-central1\",\n    \"claude-3-5-sonnet-20240620\": \"europe-west1\"\n}": "Please enter the deployment region, for example: us-central1\nSupports using model mapping format\n{\n    \"default\": \"us-central1\",\n    \"claude-3-5-sonnet-20240620\": \"europe-west1\"\n}",
   "其他": "Other",
-  "未知渠道": "Unknown channel"
+  "未知渠道": "Unknown channel",
+  "切换为单密钥模式": "Switch to single key mode",
+  "将仅保留第一个密钥文件，其余文件将被移除，是否继续？": "Only the first key file will be retained, and the remaining files will be removed. Continue?",
+  "自定义模型名称": "Custom model name",
+  "启用全部密钥": "Enable all keys"
 }

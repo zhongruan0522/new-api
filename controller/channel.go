@@ -709,18 +709,22 @@ func UpdateChannel(c *gin.Context) {
 			}
 		}
 	}
+	// Preserve existing ChannelInfo to ensure multi-key channels keep correct state even if the client does not send ChannelInfo in the request.
+	originChannel, err := model.GetChannelById(channel.Id, false)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": err.Error(),
+		})
+		return
+	}
+
+	// Always copy the original ChannelInfo so that fields like IsMultiKey and MultiKeySize are retained.
+	channel.ChannelInfo = originChannel.ChannelInfo
+
+	// If the request explicitly specifies a new MultiKeyMode, apply it on top of the original info.
 	if channel.MultiKeyMode != nil && *channel.MultiKeyMode != "" {
-		originChannel, err := model.GetChannelById(channel.Id, false)
-		if err != nil {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": err.Error(),
-			})
-		}
-		if originChannel.ChannelInfo.IsMultiKey {
-			channel.ChannelInfo = originChannel.ChannelInfo
-			channel.ChannelInfo.MultiKeyMode = constant.MultiKeyMode(*channel.MultiKeyMode)
-		}
+		channel.ChannelInfo.MultiKeyMode = constant.MultiKeyMode(*channel.MultiKeyMode)
 	}
 	err = channel.Update()
 	if err != nil {

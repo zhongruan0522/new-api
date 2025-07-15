@@ -26,7 +26,6 @@ import {
   Form,
   Row,
   Col,
-  Upload,
 } from '@douyinfe/semi-ui';
 import { getChannelModels, copy, getChannelIcon, getModelCategories } from '../../helpers';
 import {
@@ -424,9 +423,10 @@ const EditChannel = (props) => {
   }, [props.visible, channelId]);
 
   const handleVertexUploadChange = ({ fileList }) => {
+    vertexErroredNames.current.clear();
     (async () => {
-      const validFiles = [];
-      const keys = [];
+      let validFiles = [];
+      let keys = [];
       const errorNames = [];
       for (const item of fileList) {
         const fileObj = item.fileInstance;
@@ -434,13 +434,19 @@ const EditChannel = (props) => {
         try {
           const txt = await fileObj.text();
           keys.push(JSON.parse(txt));
-          validFiles.push(item); // 仅合法文件加入列表
+          validFiles.push(item);
         } catch (err) {
           if (!vertexErroredNames.current.has(item.name)) {
             errorNames.push(item.name);
             vertexErroredNames.current.add(item.name);
           }
         }
+      }
+
+      // 非批量模式下只保留一个文件（最新选择的），避免重复叠加
+      if (!batch && validFiles.length > 1) {
+        validFiles = [validFiles[validFiles.length - 1]];
+        keys = [keys[keys.length - 1]];
       }
 
       setVertexKeys(keys);
@@ -603,13 +609,45 @@ const EditChannel = (props) => {
   const batchAllowed = !isEdit || isMultiKeyChannel;
   const batchExtra = batchAllowed ? (
     <Space>
-      <Checkbox disabled={isEdit} checked={batch} onChange={() => {
-        setBatch(!batch);
-        if (batch) {
-          setMultiToSingle(false);
-          setMultiKeyMode('random');
-        }
-      }}>{t('批量创建')}</Checkbox>
+      <Checkbox
+        disabled={isEdit}
+        checked={batch}
+        onChange={(e) => {
+          const checked = e.target.checked;
+
+          if (!checked && vertexFileList.length > 1) {
+            Modal.confirm({
+              title: t('切换为单密钥模式'),
+              content: t('将仅保留第一个密钥文件，其余文件将被移除，是否继续？'),
+              onOk: () => {
+                const firstFile = vertexFileList[0];
+                const firstKey = vertexKeys[0] ? [vertexKeys[0]] : [];
+
+                setVertexFileList([firstFile]);
+                setVertexKeys(firstKey);
+
+                formApiRef.current?.setValue('vertex_files', [firstFile]);
+                setInputs((prev) => ({ ...prev, vertex_files: [firstFile] }));
+
+                setBatch(false);
+                setMultiToSingle(false);
+                setMultiKeyMode('random');
+              },
+              onCancel: () => {
+                setBatch(true);
+              },
+              centered: true,
+            });
+            return;
+          }
+
+          setBatch(checked);
+          if (!checked) {
+            setMultiToSingle(false);
+            setMultiKeyMode('random');
+          }
+        }}
+      >{t('批量创建')}</Checkbox>
       {batch && (
         <Checkbox disabled={isEdit} checked={multiToSingle} onChange={() => {
           setMultiToSingle(prev => !prev);
