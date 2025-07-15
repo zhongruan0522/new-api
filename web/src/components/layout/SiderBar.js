@@ -13,7 +13,7 @@ import {
 import {
   Nav,
   Divider,
-  Tooltip,
+  Button,
 } from '@douyinfe/semi-ui';
 
 const routerMap = {
@@ -407,22 +407,25 @@ const SiderBar = ({ onNavigate = () => { } }) => {
       </Nav>
 
       {/* 底部折叠按钮 */}
-      <div
-        className="sidebar-collapse-button"
-        onClick={() => {
-          toggleCollapsed();
-        }}
-      >
-        <Tooltip content={collapsed ? t('展开侧边栏') : t('收起侧边栏')} position="right">
-          <div className="sidebar-collapse-button-inner">
-            <span
-              className="sidebar-collapse-icon-container"
+      <div className="sidebar-collapse-button">
+        <Button
+          theme="outline"
+          type="tertiary"
+          size="small"
+          icon={
+            <ChevronLeft
+              size={16}
+              strokeWidth={2.5}
+              color="var(--semi-color-text-2)"
               style={{ transform: collapsed ? 'rotate(180deg)' : 'rotate(0deg)' }}
-            >
-              <ChevronLeft size={16} strokeWidth={2.5} color="var(--semi-color-text-2)" />
-            </span>
-          </div>
-        </Tooltip>
+            />
+          }
+          onClick={toggleCollapsed}
+          iconOnly={collapsed}
+          style={collapsed ? { padding: '4px', width: '100%' } : { padding: '4px 12px', width: '100%' }}
+        >
+          {!collapsed ? t('收起侧边栏') : null}
+        </Button>
       </div>
     </div>
   );
