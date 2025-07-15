@@ -125,7 +125,8 @@ const PageLayout = () => {
               width: 'var(--sidebar-current-width)',
             }}
           >
-            <SiderBar />
+            {/* 在移动端点击菜单后关闭侧边栏 */}
+            <SiderBar onNavigate={() => { if (isMobile) setDrawerOpen(false); }} />
           </Sider>
         )}
         <Layout

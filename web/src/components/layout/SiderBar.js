@@ -3,7 +3,6 @@ import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { getLucideIcon, sidebarIconColors } from '../../helpers/render.js';
 import { ChevronLeft } from 'lucide-react';
-import { useIsMobile } from '../../hooks/useIsMobile.js';
 import { useSidebarCollapsed } from '../../hooks/useSidebarCollapsed.js';
 import {
   isAdmin,
@@ -35,9 +34,8 @@ const routerMap = {
   personal: '/console/personal',
 };
 
-const SiderBar = () => {
+const SiderBar = ({ onNavigate = () => { } }) => {
   const { t } = useTranslation();
-  const isMobile = useIsMobile();
   const [collapsed, toggleCollapsed] = useSidebarCollapsed();
 
   const [selectedKeys, setSelectedKeys] = useState(['home']);
@@ -349,6 +347,7 @@ const SiderBar = () => {
             <Link
               style={{ textDecoration: 'none' }}
               to={to}
+              onClick={onNavigate}
             >
               {itemElement}
             </Link>
