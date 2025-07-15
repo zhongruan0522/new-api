@@ -17,7 +17,12 @@ root.render(
   <React.StrictMode>
     <StatusProvider>
       <UserProvider>
-        <BrowserRouter>
+        <BrowserRouter
+          future={{
+            v7_startTransition: true,
+            v7_relativeSplatPath: true,
+          }}
+        >
           <ThemeProvider>
             <PageLayout />
           </ThemeProvider>
