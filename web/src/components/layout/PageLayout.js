@@ -15,8 +15,8 @@ import { useLocation } from 'react-router-dom';
 const { Sider, Content, Header } = Layout;
 
 const PageLayout = () => {
-  const [userState, userDispatch] = useContext(UserContext);
-  const [statusState, statusDispatch] = useContext(StatusContext);
+  const [, userDispatch] = useContext(UserContext);
+  const [, statusDispatch] = useContext(StatusContext);
   const isMobile = useIsMobile();
   const [collapsed, , setCollapsed] = useSidebarCollapsed();
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -32,7 +32,6 @@ const PageLayout = () => {
   const isConsoleRoute = location.pathname.startsWith('/console');
   const showSider = isConsoleRoute && (!isMobile || drawerOpen);
 
-  // Ensure sidebar not collapsed when opening drawer on mobile
   useEffect(() => {
     if (isMobile && drawerOpen && collapsed) {
       setCollapsed(false);
@@ -76,7 +75,6 @@ const PageLayout = () => {
         linkElement.href = logo;
       }
     }
-    // 从localStorage获取上次使用的语言
     const savedLang = localStorage.getItem('i18nextLng');
     if (savedLang) {
       i18n.changeLanguage(savedLang);
@@ -125,7 +123,6 @@ const PageLayout = () => {
               width: 'var(--sidebar-current-width)',
             }}
           >
-            {/* 在移动端点击菜单后关闭侧边栏 */}
             <SiderBar onNavigate={() => { if (isMobile) setDrawerOpen(false); }} />
           </Sider>
         )}
