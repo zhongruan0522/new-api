@@ -76,13 +76,13 @@ const ModelPricing = () => {
     switch (type) {
       case 1:
         return (
-          <Tag color='teal' size='large' shape='circle'>
+          <Tag color='teal' shape='circle'>
             {t('按次计费')}
           </Tag>
         );
       case 0:
         return (
-          <Tag color='violet' size='large' shape='circle'>
+          <Tag color='violet' shape='circle'>
             {t('按量计费')}
           </Tag>
         );
@@ -116,7 +116,6 @@ const ModelPricing = () => {
           <Tag
             key={endpoint}
             color={stringToColor(endpoint)}
-            size='large'
             shape='circle'
           >
             {endpoint}
@@ -179,7 +178,7 @@ const ModelPricing = () => {
               if (usableGroup[group]) {
                 if (group === selectedGroup) {
                   return (
-                    <Tag color='blue' size='large' shape='circle' prefixIcon={<IconVerify />}>
+                    <Tag color='blue' shape='circle' prefixIcon={<IconVerify />}>
                       {group}
                     </Tag>
                   );
@@ -187,7 +186,6 @@ const ModelPricing = () => {
                   return (
                     <Tag
                       color='blue'
-                      size='large'
                       shape='circle'
                       onClick={() => {
                         setSelectedGroup(group);
@@ -392,7 +390,6 @@ const ModelPricing = () => {
                     {category.label}
                     <Tag
                       color={activeKey === key ? 'red' : 'grey'}
-                      size='small'
                       shape='circle'
                     >
                       {modelCount}
@@ -436,7 +433,6 @@ const ModelPricing = () => {
             onCompositionEnd={handleCompositionEnd}
             onChange={handleChange}
             showClear
-            size="large"
           />
         </div>
         <Button
@@ -446,7 +442,6 @@ const ModelPricing = () => {
           onClick={() => copyText(selectedRowKeys)}
           disabled={selectedRowKeys.length === 0}
           className="!bg-blue-500 hover:!bg-blue-600 text-white"
-          size="large"
         >
           {t('复制选中模型')}
         </Button>

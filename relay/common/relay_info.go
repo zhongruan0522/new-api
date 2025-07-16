@@ -213,7 +213,7 @@ func GenRelayInfoImage(c *gin.Context) *RelayInfo {
 func GenRelayInfo(c *gin.Context) *RelayInfo {
 	channelType := common.GetContextKeyInt(c, constant.ContextKeyChannelType)
 	channelId := common.GetContextKeyInt(c, constant.ContextKeyChannelId)
-	paramOverride := common.GetContextKeyStringMap(c, constant.ContextKeyParamOverride)
+	paramOverride := common.GetContextKeyStringMap(c, constant.ContextKeyChannelParamOverride)
 
 	tokenId := common.GetContextKeyInt(c, constant.ContextKeyTokenId)
 	tokenKey := common.GetContextKeyString(c, constant.ContextKeyTokenKey)
@@ -229,7 +229,7 @@ func GenRelayInfo(c *gin.Context) *RelayInfo {
 		UserEmail:         common.GetContextKeyString(c, constant.ContextKeyUserEmail),
 		isFirstResponse:   true,
 		RelayMode:         relayconstant.Path2RelayMode(c.Request.URL.Path),
-		BaseUrl:           common.GetContextKeyString(c, constant.ContextKeyBaseUrl),
+		BaseUrl:           common.GetContextKeyString(c, constant.ContextKeyChannelBaseUrl),
 		RequestURLPath:    c.Request.URL.String(),
 		ChannelType:       channelType,
 		ChannelId:         channelId,
@@ -247,7 +247,7 @@ func GenRelayInfo(c *gin.Context) *RelayInfo {
 		IsModelMapped: false,
 		ApiType:       apiType,
 		ApiVersion:    c.GetString("api_version"),
-		ApiKey:        strings.TrimPrefix(c.Request.Header.Get("Authorization"), "Bearer "),
+		ApiKey:        common.GetContextKeyString(c, constant.ContextKeyChannelKey),
 		Organization:  c.GetString("channel_organization"),
 
 		ChannelCreateTime: c.GetInt64("channel_create_time"),

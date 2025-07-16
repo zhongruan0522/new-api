@@ -3,7 +3,7 @@ import { Card, Spin } from '@douyinfe/semi-ui';
 import SettingsGeneralPayment from '../../pages/Setting/Payment/SettingsGeneralPayment.js';
 import SettingsPaymentGateway from '../../pages/Setting/Payment/SettingsPaymentGateway.js';
 import SettingsPaymentGatewayStripe from '../../pages/Setting/Payment/SettingsPaymentGatewayStripe.js';
-import { API, showError } from '../../helpers';
+import { API, showError, toBoolean } from '../../helpers';
 import { useTranslation } from 'react-i18next';
 
 const PaymentSetting = () => {
@@ -51,7 +51,7 @@ const PaymentSetting = () => {
             break;
           default:
             if (item.key.endsWith('Enabled')) {
-              newInputs[item.key] = item.value === 'true' ? true : false;
+              newInputs[item.key] = toBoolean(item.value);
             } else {
               newInputs[item.key] = item.value;
             }

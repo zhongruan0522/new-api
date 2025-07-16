@@ -1,14 +1,14 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   API,
-  isMobile,
   showError,
   showInfo,
   showSuccess,
   verifyJSON,
 } from '../../helpers';
+import { useIsMobile } from '../../hooks/useIsMobile.js';
 import { CHANNEL_OPTIONS } from '../../constants';
 import {
   SideSheet,
@@ -27,7 +27,7 @@ import {
   Row,
   Col,
 } from '@douyinfe/semi-ui';
-import { getChannelModels, copy } from '../../helpers';
+import { getChannelModels, copy, getChannelIcon, getModelCategories } from '../../helpers';
 import {
   IconSave,
   IconClose,
@@ -35,6 +35,7 @@ import {
   IconSetting,
   IconCode,
   IconGlobe,
+  IconBolt,
 } from '@douyinfe/semi-icons';
 
 const { Text, Title } = Typography;
@@ -80,6 +81,7 @@ const EditChannel = (props) => {
   const channelId = props.editingChannel.id;
   const isEdit = channelId !== undefined;
   const [loading, setLoading] = useState(isEdit);
+  const isMobile = useIsMobile();
   const handleCancel = () => {
     props.handleClose();
   };
@@ -100,10 +102,12 @@ const EditChannel = (props) => {
     priority: 0,
     weight: 0,
     tag: '',
+    multi_key_mode: 'random',
   };
   const [batch, setBatch] = useState(false);
+  const [multiToSingle, setMultiToSingle] = useState(false);
+  const [multiKeyMode, setMultiKeyMode] = useState('random');
   const [autoBan, setAutoBan] = useState(true);
-  // const [autoBan, setAutoBan] = useState(true);
   const [inputs, setInputs] = useState(originInputs);
   const [originModelOptions, setOriginModelOptions] = useState([]);
   const [modelOptions, setModelOptions] = useState([]);
@@ -114,6 +118,10 @@ const EditChannel = (props) => {
   const [modalImageUrl, setModalImageUrl] = useState('');
   const [isModalOpenurl, setIsModalOpenurl] = useState(false);
   const formApiRef = useRef(null);
+  const [vertexKeys, setVertexKeys] = useState([]);
+  const [vertexFileList, setVertexFileList] = useState([]);
+  const vertexErroredNames = useRef(new Set()); // 避免重复报错
+  const [isMultiKeyChannel, setIsMultiKeyChannel] = useState(false);
   const getInitValues = () => ({ ...originInputs });
   const handleInputChange = (name, value) => {
     if (formApiRef.current) {
@@ -211,6 +219,19 @@ const EditChannel = (props) => {
           2,
         );
       }
+      const chInfo = data.channel_info || {};
+      const isMulti = chInfo.is_multi_key === true;
+      setIsMultiKeyChannel(isMulti);
+      if (isMulti) {
+        setBatch(true);
+        setMultiToSingle(true);
+        const modeVal = chInfo.multi_key_mode || 'random';
+        setMultiKeyMode(modeVal);
+        data.multi_key_mode = modeVal;
+      } else {
+        setBatch(false);
+        setMultiToSingle(false);
+      }
       setInputs(data);
       if (formApiRef.current) {
         formApiRef.current.setValues(data);
@@ -238,9 +259,9 @@ const EditChannel = (props) => {
     let err = false;
 
     if (isEdit) {
-      // 如果是编辑模式，使用已有的channel id获取模型列表
-      const res = await API.get('/api/channel/fetch_models/' + channelId);
-      if (res.data && res.data.success) {
+      // 如果是编辑模式，使用已有的 channelId 获取模型列表
+      const res = await API.get('/api/channel/fetch_models/' + channelId, { skipErrorHandler: true });
+      if (res && res.data && res.data.success) {
         models.push(...res.data.data);
       } else {
         err = true;
@@ -252,13 +273,17 @@ const EditChannel = (props) => {
         err = true;
       } else {
         try {
-          const res = await API.post('/api/channel/fetch_models', {
-            base_url: inputs['base_url'],
-            type: inputs['type'],
-            key: inputs['key'],
-          });
+          const res = await API.post(
+            '/api/channel/fetch_models',
+            {
+              base_url: inputs['base_url'],
+              type: inputs['type'],
+              key: inputs['key'],
+            },
+            { skipErrorHandler: true },
+          );
 
-          if (res.data && res.data.success) {
+          if (res && res.data && res.data.success) {
             models.push(...res.data.data);
           } else {
             err = true;
@@ -324,14 +349,14 @@ const EditChannel = (props) => {
   useEffect(() => {
     const modelMap = new Map();
 
-    originModelOptions.forEach(option => {
+    originModelOptions.forEach((option) => {
       const v = (option.value || '').trim();
       if (!modelMap.has(v)) {
         modelMap.set(v, option);
       }
     });
 
-    inputs.models.forEach(model => {
+    inputs.models.forEach((model) => {
       const v = (model || '').trim();
       if (!modelMap.has(v)) {
         modelMap.set(v, {
@@ -342,8 +367,29 @@ const EditChannel = (props) => {
       }
     });
 
-    setModelOptions(Array.from(modelMap.values()));
-  }, [originModelOptions, inputs.models]);
+    const categories = getModelCategories(t);
+    const optionsWithIcon = Array.from(modelMap.values()).map((opt) => {
+      const modelName = opt.value;
+      let icon = null;
+      for (const [key, category] of Object.entries(categories)) {
+        if (key !== 'all' && category.filter({ model_name: modelName })) {
+          icon = category.icon;
+          break;
+        }
+      }
+      return {
+        ...opt,
+        label: (
+          <span className="flex items-center gap-1">
+            {icon}
+            {modelName}
+          </span>
+        ),
+      };
+    });
+
+    setModelOptions(optionsWithIcon);
+  }, [originModelOptions, inputs.models, t]);
 
   useEffect(() => {
     fetchModels().then();
@@ -377,9 +423,95 @@ const EditChannel = (props) => {
     }
   }, [props.visible, channelId]);
 
+  const handleVertexUploadChange = ({ fileList }) => {
+    vertexErroredNames.current.clear();
+    (async () => {
+      let validFiles = [];
+      let keys = [];
+      const errorNames = [];
+      for (const item of fileList) {
+        const fileObj = item.fileInstance;
+        if (!fileObj) continue;
+        try {
+          const txt = await fileObj.text();
+          keys.push(JSON.parse(txt));
+          validFiles.push(item);
+        } catch (err) {
+          if (!vertexErroredNames.current.has(item.name)) {
+            errorNames.push(item.name);
+            vertexErroredNames.current.add(item.name);
+          }
+        }
+      }
+
+      // 非批量模式下只保留一个文件（最新选择的），避免重复叠加
+      if (!batch && validFiles.length > 1) {
+        validFiles = [validFiles[validFiles.length - 1]];
+        keys = [keys[keys.length - 1]];
+      }
+
+      setVertexKeys(keys);
+      setVertexFileList(validFiles);
+      if (formApiRef.current) {
+        formApiRef.current.setValue('vertex_files', validFiles);
+      }
+      setInputs((prev) => ({ ...prev, vertex_files: validFiles }));
+
+      if (errorNames.length > 0) {
+        showError(t('以下文件解析失败，已忽略：{{list}}', { list: errorNames.join(', ') }));
+      }
+    })();
+  };
+
   const submit = async () => {
     const formValues = formApiRef.current ? formApiRef.current.getValues() : {};
     let localInputs = { ...formValues };
+
+    if (localInputs.type === 41) {
+      let keys = vertexKeys;
+
+      // 若当前未选择文件，尝试从已上传文件列表解析（异步读取）
+      if (keys.length === 0 && vertexFileList.length > 0) {
+        try {
+          const parsed = await Promise.all(
+            vertexFileList.map(async (item) => {
+              const fileObj = item.fileInstance;
+              if (!fileObj) return null;
+              const txt = await fileObj.text();
+              return JSON.parse(txt);
+            })
+          );
+          keys = parsed.filter(Boolean);
+        } catch (err) {
+          showError(t('解析密钥文件失败: {{msg}}', { msg: err.message }));
+          return;
+        }
+      }
+
+      // 创建模式必须上传密钥；编辑模式可选
+      if (keys.length === 0) {
+        if (!isEdit) {
+          showInfo(t('请上传密钥文件！'));
+          return;
+        } else {
+          // 编辑模式且未上传新密钥，不修改 key
+          delete localInputs.key;
+        }
+      } else {
+        // 有新密钥，则覆盖
+        if (batch) {
+          localInputs.key = JSON.stringify(keys);
+        } else {
+          localInputs.key = JSON.stringify(keys[0]);
+        }
+      }
+    }
+
+    // 如果是编辑模式且 key 为空字符串，避免提交空值覆盖旧密钥
+    if (isEdit && (!localInputs.key || localInputs.key.trim() === '')) {
+      delete localInputs.key;
+    }
+    delete localInputs.vertex_files;
 
     if (!isEdit && (!localInputs.name || !localInputs.key)) {
       showInfo(t('请填写渠道名称和渠道密钥！'));
@@ -406,13 +538,23 @@ const EditChannel = (props) => {
     localInputs.auto_ban = localInputs.auto_ban ? 1 : 0;
     localInputs.models = localInputs.models.join(',');
     localInputs.group = (localInputs.groups || []).join(',');
+
+    let mode = 'single';
+    if (batch) {
+      mode = multiToSingle ? 'multi_to_single' : 'batch';
+    }
+
     if (isEdit) {
       res = await API.put(`/api/channel/`, {
         ...localInputs,
         id: parseInt(channelId),
       });
     } else {
-      res = await API.post(`/api/channel/`, localInputs);
+      res = await API.post(`/api/channel/`, {
+        mode: mode,
+        multi_key_mode: mode === 'multi_to_single' ? multiKeyMode : undefined,
+        channel: localInputs,
+      });
     }
     const { success, message } = res.data;
     if (success) {
@@ -465,10 +607,78 @@ const EditChannel = (props) => {
     }
   };
 
-  const batchAllowed = !isEdit && inputs.type !== 41;
+  const batchAllowed = !isEdit || isMultiKeyChannel;
   const batchExtra = batchAllowed ? (
-    <Checkbox checked={batch} onChange={() => setBatch(!batch)}>{t('批量创建')}</Checkbox>
+    <Space>
+      <Checkbox
+        disabled={isEdit}
+        checked={batch}
+        onChange={(e) => {
+          const checked = e.target.checked;
+
+          if (!checked && vertexFileList.length > 1) {
+            Modal.confirm({
+              title: t('切换为单密钥模式'),
+              content: t('将仅保留第一个密钥文件，其余文件将被移除，是否继续？'),
+              onOk: () => {
+                const firstFile = vertexFileList[0];
+                const firstKey = vertexKeys[0] ? [vertexKeys[0]] : [];
+
+                setVertexFileList([firstFile]);
+                setVertexKeys(firstKey);
+
+                formApiRef.current?.setValue('vertex_files', [firstFile]);
+                setInputs((prev) => ({ ...prev, vertex_files: [firstFile] }));
+
+                setBatch(false);
+                setMultiToSingle(false);
+                setMultiKeyMode('random');
+              },
+              onCancel: () => {
+                setBatch(true);
+              },
+              centered: true,
+            });
+            return;
+          }
+
+          setBatch(checked);
+          if (!checked) {
+            setMultiToSingle(false);
+            setMultiKeyMode('random');
+          }
+        }}
+      >{t('批量创建')}</Checkbox>
+      {batch && (
+        <Checkbox disabled={isEdit} checked={multiToSingle} onChange={() => {
+          setMultiToSingle(prev => !prev);
+          setInputs(prev => {
+            const newInputs = { ...prev };
+            if (!multiToSingle) {
+              newInputs.multi_key_mode = multiKeyMode;
+            } else {
+              delete newInputs.multi_key_mode;
+            }
+            return newInputs;
+          });
+        }}>{t('密钥聚合模式')}</Checkbox>
+      )}
+    </Space>
   ) : null;
+
+  const channelOptionList = useMemo(
+    () =>
+      CHANNEL_OPTIONS.map((opt) => ({
+        ...opt,
+        label: (
+          <span className="flex items-center gap-2">
+            {getChannelIcon(opt.value)}
+            {opt.label}
+          </span>
+        ),
+      })),
+    [],
+  );
 
   return (
     <>
@@ -484,7 +694,7 @@ const EditChannel = (props) => {
         }
         bodyStyle={{ padding: '0' }}
         visible={props.visible}
-        width={isMobile() ? '100%' : 600}
+        width={isMobile ? '100%' : 600}
         footer={
           <div className="flex justify-end bg-white">
             <Space>
@@ -535,7 +745,7 @@ const EditChannel = (props) => {
                     label={t('类型')}
                     placeholder={t('请选择渠道类型')}
                     rules={[{ required: true, message: t('请选择渠道类型') }]}
-                    optionList={CHANNEL_OPTIONS}
+                    optionList={channelOptionList}
                     style={{ width: '100%' }}
                     filter
                     searchPosition='dropdown'
@@ -553,55 +763,169 @@ const EditChannel = (props) => {
                   />
 
                   {batch ? (
-                    <Form.TextArea
-                      field='key'
-                      label={t('密钥')}
-                      placeholder={t('请输入密钥，一行一个')}
-                      rules={isEdit ? [] : [{ required: true, message: t('请输入密钥') }]}
-                      autosize={{ minRows: 6, maxRows: 6 }}
-                      autoComplete='new-password'
-                      onChange={(value) => handleInputChange('key', value)}
-                      extraText={batchExtra}
-                    />
+                    inputs.type === 41 ? (
+                      <Form.Upload
+                        field='vertex_files'
+                        label={t('密钥文件 (.json)')}
+                        accept='.json'
+                        multiple
+                        draggable
+                        dragIcon={<IconBolt />}
+                        dragMainText={t('点击上传文件或拖拽文件到这里')}
+                        dragSubText={t('仅支持 JSON 文件，支持多文件')}
+                        style={{ marginTop: 10 }}
+                        uploadTrigger='custom'
+                        beforeUpload={() => false}
+                        onChange={handleVertexUploadChange}
+                        fileList={vertexFileList}
+                        rules={isEdit ? [] : [{ required: true, message: t('请上传密钥文件') }]}
+                        extraText={batchExtra}
+                      />
+                    ) : (
+                      <Form.TextArea
+                        field='key'
+                        label={t('密钥')}
+                        placeholder={t('请输入密钥，一行一个')}
+                        rules={isEdit ? [] : [{ required: true, message: t('请输入密钥') }]}
+                        autosize
+                        autoComplete='new-password'
+                        onChange={(value) => handleInputChange('key', value)}
+                        extraText={batchExtra}
+                        showClear
+                      />
+                    )
                   ) : (
                     <>
                       {inputs.type === 41 ? (
-                        <Form.TextArea
-                          field='key'
-                          label={t('密钥')}
-                          placeholder={
-                            '{\n' +
-                            '  "type": "service_account",\n' +
-                            '  "project_id": "abc-bcd-123-456",\n' +
-                            '  "private_key_id": "123xxxxx456",\n' +
-                            '  "private_key": "-----BEGIN PRIVATE KEY-----xxxx\n' +
-                            '  "client_email": "xxx@developer.gserviceaccount.com",\n' +
-                            '  "client_id": "111222333",\n' +
-                            '  "auth_uri": "https://accounts.google.com/o/oauth2/auth",\n' +
-                            '  "token_uri": "https://oauth2.googleapis.com/token",\n' +
-                            '  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",\n' +
-                            '  "client_x509_cert_url": "https://xxxxx.gserviceaccount.com",\n' +
-                            '  "universe_domain": "googleapis.com"\n' +
-                            '}'
-                          }
-                          rules={isEdit ? [] : [{ required: true, message: t('请输入密钥') }]}
-                          autosize={{ minRows: 10 }}
-                          autoComplete='new-password'
-                          onChange={(value) => handleInputChange('key', value)}
+                        <Form.Upload
+                          field='vertex_files'
+                          label={t('密钥文件 (.json)')}
+                          accept='.json'
+                          draggable
+                          dragIcon={<IconBolt />}
+                          dragMainText={t('点击上传文件或拖拽文件到这里')}
+                          dragSubText={t('仅支持 JSON 文件')}
+                          style={{ marginTop: 10 }}
+                          uploadTrigger='custom'
+                          beforeUpload={() => false}
+                          onChange={handleVertexUploadChange}
+                          fileList={vertexFileList}
+                          rules={isEdit ? [] : [{ required: true, message: t('请上传密钥文件') }]}
                           extraText={batchExtra}
                         />
                       ) : (
                         <Form.Input
                           field='key'
-                          label={t('密钥')}
+                          label={isEdit ? t('密钥（编辑模式下，保存的密钥不会显示）') : t('密钥')}
                           placeholder={t(type2secretPrompt(inputs.type))}
                           rules={isEdit ? [] : [{ required: true, message: t('请输入密钥') }]}
                           autoComplete='new-password'
                           onChange={(value) => handleInputChange('key', value)}
                           extraText={batchExtra}
+                          showClear
                         />
                       )}
                     </>
+                  )}
+
+                  {batch && multiToSingle && (
+                    <>
+                      <Form.Select
+                        field='multi_key_mode'
+                        label={t('密钥聚合模式')}
+                        placeholder={t('请选择多密钥使用策略')}
+                        optionList={[
+                          { label: t('随机'), value: 'random' },
+                          { label: t('轮询'), value: 'polling' },
+                        ]}
+                        style={{ width: '100%' }}
+                        value={inputs.multi_key_mode || 'random'}
+                        onChange={(value) => {
+                          setMultiKeyMode(value);
+                          handleInputChange('multi_key_mode', value);
+                        }}
+                      />
+                      {inputs.multi_key_mode === 'polling' && (
+                        <Banner
+                          type='warning'
+                          description={t('轮询模式必须搭配Redis和内存缓存功能使用，否则性能将大幅降低，并且无法实现轮询功能')}
+                          className='!rounded-lg mt-2'
+                        />
+                      )}
+                    </>
+                  )}
+
+                  {inputs.type === 18 && (
+                    <Form.Input
+                      field='other'
+                      label={t('模型版本')}
+                      placeholder={'请输入星火大模型版本，注意是接口地址中的版本号，例如：v2.1'}
+                      onChange={(value) => handleInputChange('other', value)}
+                      showClear
+                    />
+                  )}
+
+                  {inputs.type === 41 && (
+                    <Form.TextArea
+                      field='other'
+                      label={t('部署地区')}
+                      placeholder={t(
+                        '请输入部署地区，例如：us-central1\n支持使用模型映射格式\n{\n    "default": "us-central1",\n    "claude-3-5-sonnet-20240620": "europe-west1"\n}'
+                      )}
+                      autosize
+                      onChange={(value) => handleInputChange('other', value)}
+                      rules={[{ required: true, message: t('请填写部署地区') }]}
+                      extraText={
+                        <Text
+                          className="!text-semi-color-primary cursor-pointer"
+                          onClick={() => handleInputChange('other', JSON.stringify(REGION_EXAMPLE, null, 2))}
+                        >
+                          {t('填入模板')}
+                        </Text>
+                      }
+                      showClear
+                    />
+                  )}
+
+                  {inputs.type === 21 && (
+                    <Form.Input
+                      field='other'
+                      label={t('知识库 ID')}
+                      placeholder={'请输入知识库 ID，例如：123456'}
+                      onChange={(value) => handleInputChange('other', value)}
+                      showClear
+                    />
+                  )}
+
+                  {inputs.type === 39 && (
+                    <Form.Input
+                      field='other'
+                      label='Account ID'
+                      placeholder={'请输入Account ID，例如：d6b5da8hk1awo8nap34ube6gh'}
+                      onChange={(value) => handleInputChange('other', value)}
+                      showClear
+                    />
+                  )}
+
+                  {inputs.type === 49 && (
+                    <Form.Input
+                      field='other'
+                      label={t('智能体ID')}
+                      placeholder={'请输入智能体ID，例如：7342866812345'}
+                      onChange={(value) => handleInputChange('other', value)}
+                      showClear
+                    />
+                  )}
+
+                  {inputs.type === 1 && (
+                    <Form.Input
+                      field='openai_organization'
+                      label={t('组织')}
+                      placeholder={t('请输入组织org-xxx')}
+                      showClear
+                      helpText={t('组织，不填则为默认组织')}
+                      onChange={(value) => handleInputChange('openai_organization', value)}
+                    />
                   )}
                 </Card>
 
@@ -747,7 +1071,7 @@ const EditChannel = (props) => {
                   <Form.Select
                     field='models'
                     label={t('模型')}
-                    placeholder={isEdit ? t('请选择该渠道所支持的模型') : t('创建后可在编辑渠道时获取上游模型列表')}
+                    placeholder={t('请选择该渠道所支持的模型')}
                     rules={[{ required: true, message: t('请选择模型') }]}
                     multiple
                     filter
@@ -763,11 +1087,9 @@ const EditChannel = (props) => {
                         <Button size='small' type='secondary' onClick={() => handleInputChange('models', fullModels)}>
                           {t('填入所有模型')}
                         </Button>
-                        {isEdit && (
-                          <Button size='small' type='tertiary' onClick={() => fetchUpstreamModelList('models')}>
-                            {t('获取模型列表')}
-                          </Button>
-                        )}
+                        <Button size='small' type='tertiary' onClick={() => fetchUpstreamModelList('models')}>
+                          {t('获取模型列表')}
+                        </Button>
                         <Button size='small' type='warning' onClick={() => handleInputChange('models', [])}>
                           {t('清除所有模型')}
                         </Button>
@@ -859,77 +1181,6 @@ const EditChannel = (props) => {
                     style={{ width: '100%' }}
                     onChange={(value) => handleInputChange('groups', value)}
                   />
-
-                  {inputs.type === 18 && (
-                    <Form.Input
-                      field='other'
-                      label={t('模型版本')}
-                      placeholder={'请输入星火大模型版本，注意是接口地址中的版本号，例如：v2.1'}
-                      onChange={(value) => handleInputChange('other', value)}
-                      showClear
-                    />
-                  )}
-
-                  {inputs.type === 41 && (
-                    <Form.TextArea
-                      field='other'
-                      label={t('部署地区')}
-                      placeholder={t(
-                        '请输入部署地区，例如：us-central1\n支持使用模型映射格式\n{\n    "default": "us-central1",\n    "claude-3-5-sonnet-20240620": "europe-west1"\n}'
-                      )}
-                      autosize={{ minRows: 2 }}
-                      onChange={(value) => handleInputChange('other', value)}
-                      extraText={
-                        <Text
-                          className="!text-semi-color-primary cursor-pointer"
-                          onClick={() => handleInputChange('other', JSON.stringify(REGION_EXAMPLE, null, 2))}
-                        >
-                          {t('填入模板')}
-                        </Text>
-                      }
-                    />
-                  )}
-
-                  {inputs.type === 21 && (
-                    <Form.Input
-                      field='other'
-                      label={t('知识库 ID')}
-                      placeholder={'请输入知识库 ID，例如：123456'}
-                      onChange={(value) => handleInputChange('other', value)}
-                      showClear
-                    />
-                  )}
-
-                  {inputs.type === 39 && (
-                    <Form.Input
-                      field='other'
-                      label='Account ID'
-                      placeholder={'请输入Account ID，例如：d6b5da8hk1awo8nap34ube6gh'}
-                      onChange={(value) => handleInputChange('other', value)}
-                      showClear
-                    />
-                  )}
-
-                  {inputs.type === 49 && (
-                    <Form.Input
-                      field='other'
-                      label={t('智能体ID')}
-                      placeholder={'请输入智能体ID，例如：7342866812345'}
-                      onChange={(value) => handleInputChange('other', value)}
-                      showClear
-                    />
-                  )}
-
-                  {inputs.type === 1 && (
-                    <Form.Input
-                      field='openai_organization'
-                      label={t('组织')}
-                      placeholder={t('请输入组织org-xxx')}
-                      showClear
-                      helpText={t('组织，可选，不填则为默认组织')}
-                      onChange={(value) => handleInputChange('openai_organization', value)}
-                    />
-                  )}
 
                   <Form.Input
                     field='tag'

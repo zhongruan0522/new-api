@@ -3,6 +3,7 @@ package dto
 import (
 	"encoding/json"
 	"one-api/common"
+	"one-api/types"
 )
 
 type ClaudeMetadata struct {
@@ -228,7 +229,7 @@ type ClaudeResponse struct {
 	Completion   string               `json:"completion,omitempty"`
 	StopReason   string               `json:"stop_reason,omitempty"`
 	Model        string               `json:"model,omitempty"`
-	Error        *ClaudeError         `json:"error,omitempty"`
+	Error        *types.ClaudeError   `json:"error,omitempty"`
 	Usage        *ClaudeUsage         `json:"usage,omitempty"`
 	Index        *int                 `json:"index,omitempty"`
 	ContentBlock *ClaudeMediaMessage  `json:"content_block,omitempty"`
