@@ -3,13 +3,14 @@ package jimeng
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"io"
 	"net/http"
 	"one-api/common"
 	"one-api/dto"
 	relaycommon "one-api/relay/common"
-	"one-api/service"
+	"one-api/types"
+
+	"github.com/gin-gonic/gin"
 )
 
 type ImageResponse struct {
@@ -47,45 +48,42 @@ func responseJimeng2OpenAIImage(_ *gin.Context, response *ImageResponse, info *r
 }
 
 // jimengImageHandler handles the Jimeng image generation response
-func jimengImageHandler(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (*dto.OpenAIErrorWithStatusCode, *dto.Usage) {
+func jimengImageHandler(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (*dto.Usage, *types.NewAPIError) {
 	var jimengResponse ImageResponse
 	responseBody, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return service.OpenAIErrorWrapper(err, "read_response_body_failed", http.StatusInternalServerError), nil
+		return nil, types.NewError(err, types.ErrorCodeReadResponseBodyFailed)
 	}
 	common.CloseResponseBodyGracefully(resp)
 
 	err = json.Unmarshal(responseBody, &jimengResponse)
 	if err != nil {
-		return service.OpenAIErrorWrapper(err, "unmarshal_response_body_failed", http.StatusInternalServerError), nil
+		return nil, types.NewError(err, types.ErrorCodeBadResponseBody)
 	}
 
 	// Check if the response indicates an error
 	if jimengResponse.Code != 10000 {
-		return &dto.OpenAIErrorWithStatusCode{
-			Error: dto.OpenAIError{
-				Message: jimengResponse.Message,
-				Type:    "jimeng_error",
-				Param:   "",
-				Code:    fmt.Sprintf("%d", jimengResponse.Code),
-			},
-			StatusCode: resp.StatusCode,
-		}, nil
+		return nil, types.WithOpenAIError(types.OpenAIError{
+			Message: jimengResponse.Message,
+			Type:    "jimeng_error",
+			Param:   "",
+			Code:    fmt.Sprintf("%d", jimengResponse.Code),
+		}, resp.StatusCode)
 	}
 
 	// Convert Jimeng response to OpenAI format
 	fullTextResponse := responseJimeng2OpenAIImage(c, &jimengResponse, info)
 	jsonResponse, err := json.Marshal(fullTextResponse)
 	if err != nil {
-		return service.OpenAIErrorWrapper(err, "marshal_response_body_failed", http.StatusInternalServerError), nil
+		return nil, types.NewError(err, types.ErrorCodeBadResponseBody)
 	}
 
 	c.Writer.Header().Set("Content-Type", "application/json")
 	c.Writer.WriteHeader(resp.StatusCode)
 	_, err = c.Writer.Write(jsonResponse)
 	if err != nil {
-		return service.OpenAIErrorWrapper(err, "write_response_body_failed", http.StatusInternalServerError), nil
+		return nil, types.NewError(err, types.ErrorCodeBadResponseBody)
 	}
 
-	return nil, &dto.Usage{}
+	return &dto.Usage{}, nil
 }

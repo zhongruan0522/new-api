@@ -12,6 +12,7 @@ import (
 	"one-api/relay/channel/openai"
 	relaycommon "one-api/relay/common"
 	relayconstant "one-api/relay/constant"
+	"one-api/types"
 )
 
 type Adaptor struct {
@@ -115,13 +116,13 @@ func (a *Adaptor) DoRequest(c *gin.Context, info *relaycommon.RelayInfo, request
 	return resp, nil
 }
 
-func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (usage any, err *dto.OpenAIErrorWithStatusCode) {
+func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (usage any, err *types.NewAPIError) {
 	if info.RelayMode == relayconstant.RelayModeImagesGenerations {
-		err, usage = jimengImageHandler(c, resp, info)
+		usage, err = jimengImageHandler(c, resp, info)
 	} else if info.IsStream {
-		err, usage = openai.OaiStreamHandler(c, resp, info)
+		usage, err = openai.OaiStreamHandler(c, info, resp)
 	} else {
-		err, usage = openai.OpenaiHandler(c, resp, info)
+		usage, err = openai.OpenaiHandler(c, info, resp)
 	}
 	return
 }
