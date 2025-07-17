@@ -16,7 +16,8 @@ import {
   Card,
   Tabs,
   TabPane,
-  Empty
+  Empty,
+  Switch
 } from '@douyinfe/semi-ui';
 import {
   IllustrationNoResult,
@@ -32,6 +33,7 @@ import {
 } from '@douyinfe/semi-icons';
 import { UserContext } from '../../context/User/index.js';
 import { AlertCircle } from 'lucide-react';
+import { StatusContext } from '../../context/Status/index.js';
 
 const ModelPricing = () => {
   const { t } = useTranslation();
@@ -43,6 +45,13 @@ const ModelPricing = () => {
   const [selectedGroup, setSelectedGroup] = useState('default');
   const [activeKey, setActiveKey] = useState('all');
   const [pageSize, setPageSize] = useState(10);
+
+  const [currency, setCurrency] = useState('USD');
+  const [tokenUnit, setTokenUnit] = useState('M');
+  const [statusState] = useContext(StatusContext);
+  const priceRate = useMemo(() => {
+    return statusState?.status?.price || 1;
+  }, [statusState]);
 
   const rowSelection = useMemo(
     () => ({
@@ -245,33 +254,61 @@ const ModelPricing = () => {
       },
     },
     {
-      title: t('模型价格'),
+      title: (
+        <div className="flex items-center space-x-2">
+          <span>{t('模型价格')}</span>
+          {/* 货币切换 */}
+          <Switch
+            checked={currency === 'RMB'}
+            onChange={(checked) => setCurrency(checked ? 'RMB' : 'USD')}
+            checkedText="¥"
+            uncheckedText="$"
+          />
+          {/* 计费单位切换 */}
+          <Switch
+            checked={tokenUnit === 'K'}
+            onChange={(checked) => setTokenUnit(checked ? 'K' : 'M')}
+            checkedText="K"
+            uncheckedText="M"
+          />
+        </div>
+      ),
       dataIndex: 'model_price',
       render: (text, record, index) => {
         let content = text;
         if (record.quota_type === 0) {
-          let inputRatioPrice =
-            record.model_ratio * 2 * groupRatio[selectedGroup];
+          let inputRatioPrice = record.model_ratio * 2 * groupRatio[selectedGroup];
           let completionRatioPrice =
-            record.model_ratio *
-            record.completion_ratio *
-            2 *
-            groupRatio[selectedGroup];
+            record.model_ratio * record.completion_ratio * 2 * groupRatio[selectedGroup];
+
+          if (currency === 'RMB') {
+            inputRatioPrice = inputRatioPrice * priceRate;
+            completionRatioPrice = completionRatioPrice * priceRate;
+          }
+
+          const unitDivisor = tokenUnit === 'K' ? 1000 : 1;
+          const unitLabel = tokenUnit === 'K' ? 'K' : 'M';
+          inputRatioPrice = inputRatioPrice / unitDivisor;
+          completionRatioPrice = completionRatioPrice / unitDivisor;
           content = (
             <div className="space-y-1">
               <div className="text-gray-700">
-                {t('提示')} ${inputRatioPrice.toFixed(3)} / 1M tokens
+                {t('提示')} {currency === 'USD' ? '$' : '¥'}{inputRatioPrice.toFixed(3)} / 1{unitLabel} tokens
               </div>
               <div className="text-gray-700">
-                {t('补全')} ${completionRatioPrice.toFixed(3)} / 1M tokens
+                {t('补全')} {currency === 'USD' ? '$' : '¥'}{completionRatioPrice.toFixed(3)} / 1{unitLabel} tokens
               </div>
             </div>
           );
         } else {
           let price = parseFloat(text) * groupRatio[selectedGroup];
+
+          if (currency === 'RMB') {
+            price = price * priceRate;
+          }
           content = (
             <div className="text-gray-700">
-              {t('模型价格')}：${price.toFixed(3)}
+              {t('模型价格')}：{currency === 'USD' ? '$' : '¥'}{price.toFixed(3)}
             </div>
           );
         }
