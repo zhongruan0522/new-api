@@ -1120,7 +1120,7 @@ const Detail = (props) => {
   }, []);
 
   return (
-    <div className="bg-gray-50 h-full mt-[64px] px-2">
+    <div className="bg-gray-50 h-full mt-[60px] px-2">
       <div className="flex items-center justify-between mb-4">
         <h2
           className="text-2xl font-semibold text-gray-800 transition-opacity duration-1000 ease-in-out"

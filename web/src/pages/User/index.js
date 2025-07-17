@@ -3,7 +3,7 @@ import UsersTable from '../../components/table/UsersTable';
 
 const User = () => {
   return (
-    <div className="mt-[64px] px-2">
+    <div className="mt-[60px] px-2">
       <UsersTable />
     </div>
   );

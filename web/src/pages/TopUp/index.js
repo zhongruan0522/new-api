@@ -382,7 +382,7 @@ const TopUp = () => {
   };
 
   return (
-    <div className='mx-auto relative min-h-screen lg:min-h-0 mt-[64px]'>
+    <div className='mx-auto relative min-h-screen lg:min-h-0 mt-[60px]'>
       {/* 划转模态框 */}
       <Modal
         title={

@@ -872,7 +872,7 @@ const TokensTable = () => {
       ></EditToken>
 
       <Card
-        className="!rounded-2xl"
+        className="table-scroll-card !rounded-2xl"
         title={renderHeader()}
         shadows='always'
         bordered={false}

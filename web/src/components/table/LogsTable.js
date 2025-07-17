@@ -1202,7 +1202,7 @@ const LogsTable = () => {
     <>
       {renderColumnSelector()}
       <Card
-        className='!rounded-2xl mb-4'
+        className='table-scroll-card !rounded-2xl mb-4'
         title={
           <div className='flex flex-col w-full'>
             <Spin spinning={loadingStat}>

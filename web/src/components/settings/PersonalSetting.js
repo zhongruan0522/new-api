@@ -379,7 +379,7 @@ const PersonalSetting = () => {
   };
 
   return (
-    <div className="bg-gray-50 mt-[64px]">
+    <div className="bg-gray-50 mt-[60px]">
       <div className="flex justify-center">
         <div className="w-full">
           {/* 主卡片容器 */}

@@ -82,7 +82,7 @@ const PasswordResetConfirm = () => {
       {/* 背景模糊晕染球 */}
       <div className="blur-ball blur-ball-indigo" style={{ top: '-80px', right: '-80px', transform: 'none' }} />
       <div className="blur-ball blur-ball-teal" style={{ top: '50%', left: '-120px' }} />
-      <div className="w-full max-w-sm mt-[64px]">
+      <div className="w-full max-w-sm mt-[60px]">
         <div className="flex flex-col items-center">
           <div className="w-full max-w-md">
             <div className="flex items-center justify-center mb-6 gap-2">

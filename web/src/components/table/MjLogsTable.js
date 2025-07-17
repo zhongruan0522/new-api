@@ -799,7 +799,7 @@ const LogsTable = () => {
       {renderColumnSelector()}
       <Layout>
         <Card
-          className="!rounded-2xl mb-4"
+          className="table-scroll-card !rounded-2xl mb-4"
           title={
             <div className="flex flex-col w-full">
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-2 w-full">
