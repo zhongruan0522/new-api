@@ -17,7 +17,8 @@ import {
   Tabs,
   TabPane,
   Empty,
-  Switch
+  Switch,
+  Select
 } from '@douyinfe/semi-ui';
 import {
   IllustrationNoResult,
@@ -47,11 +48,12 @@ const ModelPricing = () => {
   const [pageSize, setPageSize] = useState(10);
 
   const [currency, setCurrency] = useState('USD');
+  const [showWithRecharge, setShowWithRecharge] = useState(false);
   const [tokenUnit, setTokenUnit] = useState('M');
   const [statusState] = useContext(StatusContext);
-  const priceRate = useMemo(() => {
-    return statusState?.status?.price || 1;
-  }, [statusState]);
+  // 充值汇率（price）与美元兑人民币汇率（usd_exchange_rate）
+  const priceRate = useMemo(() => statusState?.status?.price ?? 1, [statusState]);
+  const usdExchangeRate = useMemo(() => statusState?.status?.usd_exchange_rate ?? priceRate, [statusState, priceRate]);
 
   const rowSelection = useMemo(
     () => ({
@@ -133,6 +135,18 @@ const ModelPricing = () => {
       </Space>
     );
   }
+
+  const displayPrice = (usdPrice) => {
+    let priceInUSD = usdPrice;
+    if (showWithRecharge) {
+      priceInUSD = usdPrice * priceRate / usdExchangeRate;
+    }
+
+    if (currency === 'CNY') {
+      return `¥${(priceInUSD * usdExchangeRate).toFixed(3)}`;
+    }
+    return `$${priceInUSD.toFixed(3)}`;
+  };
 
   const columns = [
     {
@@ -257,13 +271,6 @@ const ModelPricing = () => {
       title: (
         <div className="flex items-center space-x-2">
           <span>{t('模型价格')}</span>
-          {/* 货币切换 */}
-          <Switch
-            checked={currency === 'RMB'}
-            onChange={(checked) => setCurrency(checked ? 'RMB' : 'USD')}
-            checkedText="¥"
-            uncheckedText="$"
-          />
           {/* 计费单位切换 */}
           <Switch
             checked={tokenUnit === 'K'}
@@ -277,38 +284,38 @@ const ModelPricing = () => {
       render: (text, record, index) => {
         let content = text;
         if (record.quota_type === 0) {
-          let inputRatioPrice = record.model_ratio * 2 * groupRatio[selectedGroup];
-          let completionRatioPrice =
+          let inputRatioPriceUSD = record.model_ratio * 2 * groupRatio[selectedGroup];
+          let completionRatioPriceUSD =
             record.model_ratio * record.completion_ratio * 2 * groupRatio[selectedGroup];
-
-          if (currency === 'RMB') {
-            inputRatioPrice = inputRatioPrice * priceRate;
-            completionRatioPrice = completionRatioPrice * priceRate;
-          }
 
           const unitDivisor = tokenUnit === 'K' ? 1000 : 1;
           const unitLabel = tokenUnit === 'K' ? 'K' : 'M';
-          inputRatioPrice = inputRatioPrice / unitDivisor;
-          completionRatioPrice = completionRatioPrice / unitDivisor;
+
+          let displayInput = displayPrice(inputRatioPriceUSD);
+          let displayCompletion = displayPrice(completionRatioPriceUSD);
+
+          const divisor = unitDivisor;
+          const numInput = parseFloat(displayInput.replace(/[^0-9.]/g, '')) / divisor;
+          const numCompletion = parseFloat(displayCompletion.replace(/[^0-9.]/g, '')) / divisor;
+
+          displayInput = `${currency === 'CNY' ? '¥' : '$'}${numInput.toFixed(3)}`;
+          displayCompletion = `${currency === 'CNY' ? '¥' : '$'}${numCompletion.toFixed(3)}`;
           content = (
             <div className="space-y-1">
               <div className="text-gray-700">
-                {t('提示')} {currency === 'USD' ? '$' : '¥'}{inputRatioPrice.toFixed(3)} / 1{unitLabel} tokens
+                {t('提示')} {displayInput} / 1{unitLabel} tokens
               </div>
               <div className="text-gray-700">
-                {t('补全')} {currency === 'USD' ? '$' : '¥'}{completionRatioPrice.toFixed(3)} / 1{unitLabel} tokens
+                {t('补全')} {displayCompletion} / 1{unitLabel} tokens
               </div>
             </div>
           );
         } else {
-          let price = parseFloat(text) * groupRatio[selectedGroup];
-
-          if (currency === 'RMB') {
-            price = price * priceRate;
-          }
+          let priceUSD = parseFloat(text) * groupRatio[selectedGroup];
+          let displayVal = displayPrice(priceUSD);
           content = (
             <div className="text-gray-700">
-              {t('模型价格')}：{currency === 'USD' ? '$' : '¥'}{price.toFixed(3)}
+              {t('模型价格')}：{displayVal}
             </div>
           );
         }
@@ -482,9 +489,30 @@ const ModelPricing = () => {
         >
           {t('复制选中模型')}
         </Button>
+
+        {/* 充值价格显示开关 */}
+        <Space align="center">
+          <span>{t('以充值价格显示')}</span>
+          <Switch
+            checked={showWithRecharge}
+            onChange={setShowWithRecharge}
+            size="small"
+          />
+          {showWithRecharge && (
+            <Select
+              value={currency}
+              onChange={setCurrency}
+              size="small"
+              style={{ width: 100 }}
+            >
+              <Select.Option value="USD">USD ($)</Select.Option>
+              <Select.Option value="CNY">CNY (¥)</Select.Option>
+            </Select>
+          )}
+        </Space>
       </div>
     </Card>
-  ), [selectedRowKeys, t]);
+  ), [selectedRowKeys, t, showWithRecharge, currency]);
 
   const ModelTable = useMemo(() => (
     <Card className="!rounded-xl overflow-hidden" bordered={false}>
