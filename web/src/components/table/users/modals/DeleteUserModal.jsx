@@ -1,16 +1,16 @@
 import React from 'react';
 import { Modal } from '@douyinfe/semi-ui';
 
-const DeleteUserModal = ({ 
-  visible, 
-  onCancel, 
-  onConfirm, 
+const DeleteUserModal = ({
+  visible,
+  onCancel,
+  onConfirm,
   user,
   users,
   activePage,
   refresh,
   manageUser,
-  t 
+  t
 }) => {
   const handleConfirm = async () => {
     await manageUser(user.id, 'delete', user);

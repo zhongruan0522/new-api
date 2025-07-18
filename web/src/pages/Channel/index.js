@@ -1,5 +1,5 @@
 import React from 'react';
-import ChannelsTable from '../../components/table/ChannelsTable';
+import ChannelsTable from '../../components/table/channels';
 
 const File = () => {
   return (

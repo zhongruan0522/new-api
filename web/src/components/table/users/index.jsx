@@ -47,7 +47,7 @@ const UsersPage = () => {
         visible={showAddUser}
         handleClose={closeAddUser}
       />
-      
+
       <EditUserModal
         refresh={refresh}
         visible={showEditUser}

@@ -1,16 +1,16 @@
 import React from 'react';
 import { Modal } from '@douyinfe/semi-ui';
 
-const EnableDisableUserModal = ({ 
-  visible, 
-  onCancel, 
-  onConfirm, 
-  user, 
+const EnableDisableUserModal = ({
+  visible,
+  onCancel,
+  onConfirm,
+  user,
   action,
-  t 
+  t
 }) => {
   const isDisable = action === 'disable';
-  
+
   return (
     <Modal
       title={isDisable ? t('确定要禁用此用户吗？') : t('确定要启用此用户吗？')}
