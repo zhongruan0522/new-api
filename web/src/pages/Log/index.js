@@ -1,9 +1,9 @@
 import React from 'react';
-import LogsTable from '../../components/table/LogsTable';
+import UsageLogsTable from '../../components/table/UsageLogsTable';
 
 const Token = () => (
   <div className="mt-[60px] px-2">
-    <LogsTable />
+    <UsageLogsTable />
   </div>
 );
 
