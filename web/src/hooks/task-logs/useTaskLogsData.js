@@ -14,7 +14,7 @@ import { useTableCompactMode } from '../common/useTableCompactMode';
 
 export const useTaskLogsData = () => {
   const { t } = useTranslation();
-  
+
   // Define column keys for selection
   const COLUMN_KEYS = {
     SUBMIT_TIME: 'submit_time',
@@ -36,10 +36,10 @@ export const useTaskLogsData = () => {
   const [activePage, setActivePage] = useState(1);
   const [logCount, setLogCount] = useState(0);
   const [pageSize, setPageSize] = useState(ITEMS_PER_PAGE);
-  
+
   // User and admin
   const isAdminUser = isAdmin();
-  
+
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalContent, setModalContent] = useState('');
@@ -48,7 +48,7 @@ export const useTaskLogsData = () => {
   const [formApi, setFormApi] = useState(null);
   let now = new Date();
   let zeroNow = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  
+
   const formInitValues = {
     channel_id: '',
     task_id: '',
@@ -239,7 +239,7 @@ export const useTaskLogsData = () => {
     logCount,
     pageSize,
     isAdminUser,
-    
+
     // Modal state
     isModalOpen,
     setIsModalOpen,
