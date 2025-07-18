@@ -336,7 +336,7 @@ const HeaderBar = ({ onMobileMenuToggle, drawerOpen }) => {
               >
                 <div className="flex items-center gap-2">
                   <IconKey size="small" className="text-gray-500 dark:text-gray-400" />
-                  <span>{t('API令牌')}</span>
+                  <span>{t('令牌管理')}</span>
                 </div>
               </Dropdown.Item>
               <Dropdown.Item

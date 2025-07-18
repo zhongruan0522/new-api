@@ -10,7 +10,7 @@ const UsersDescription = ({ compactMode, setCompactMode, t }) => {
     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-2 w-full">
       <div className="flex items-center text-blue-500">
         <IconUserAdd className="mr-2" />
-        <Text>{t('用户管理页面，可以查看和管理所有注册用户的信息、权限和状态。')}</Text>
+        <Text>{t('用户管理')}</Text>
       </div>
       <CompactModeToggle
         compactMode={compactMode}

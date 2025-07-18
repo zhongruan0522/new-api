@@ -10,7 +10,7 @@ const RedemptionsDescription = ({ compactMode, setCompactMode, t }) => {
     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-2 w-full">
       <div className="flex items-center text-orange-500">
         <Ticket size={16} className="mr-2" />
-        <Text>{t('兑换码可以批量生成和分发，适合用于推广活动或批量充值。')}</Text>
+        <Text>{t('兑换码管理')}</Text>
       </div>
 
       <CompactModeToggle

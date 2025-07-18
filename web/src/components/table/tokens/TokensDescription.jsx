@@ -10,7 +10,7 @@ const TokensDescription = ({ compactMode, setCompactMode, t }) => {
     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-2 w-full">
       <div className="flex items-center text-blue-500">
         <Key size={16} className="mr-2" />
-        <Text>{t('令牌用于API访问认证，可以设置额度限制和模型权限。')}</Text>
+        <Text>{t('令牌管理')}</Text>
       </div>
 
       <CompactModeToggle
