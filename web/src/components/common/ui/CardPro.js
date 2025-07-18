@@ -122,24 +122,24 @@ const CardPro = ({
         )}
 
         {/* 操作按钮和搜索表单的容器 */}
-        {/* 在移动端时根据showMobileActions状态控制显示，在桌面端时始终显示 */}
-        {(!isMobile || showMobileActions) && (
-          <div className="flex flex-col gap-2">
-            {/* 操作按钮区域 - 用于type1和type3 */}
-            {(type === 'type1' || type === 'type3') && actionsArea && (
-              <div className="w-full">
-                {actionsArea}
-              </div>
-            )}
+        <div
+          className={`flex flex-col gap-2 ${isMobile && !showMobileActions ? 'hidden' : ''}`}
+        >
+          {/* 操作按钮区域 - 用于type1和type3 */}
+          {(type === 'type1' || type === 'type3') && actionsArea && (
+            <div className="w-full">
+              {actionsArea}
+            </div>
+          )}
 
-            {/* 搜索表单区域 - 所有类型都可能有 */}
-            {searchArea && (
-              <div className="w-full">
-                {searchArea}
-              </div>
-            )}
-          </div>
-        )}
+          {/* 搜索表单区域 - 所有类型都可能有 */}
+          {searchArea && (
+            <div className="w-full">
+              {searchArea}
+            </div>
+          )}
+        </div>
+
       </div>
     );
   };
