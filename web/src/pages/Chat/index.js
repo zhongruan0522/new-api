@@ -1,5 +1,5 @@
 import React from 'react';
-import { useTokenKeys } from '../../hooks/useTokenKeys';
+import { useTokenKeys } from '../../hooks/chat/useTokenKeys';
 import { Spin } from '@douyinfe/semi-ui';
 import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';

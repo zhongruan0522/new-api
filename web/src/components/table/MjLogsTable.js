@@ -37,9 +37,7 @@ import {
 
 import {
   Button,
-  Card,
   Checkbox,
-  Divider,
   Empty,
   Form,
   ImagePreview,
@@ -51,6 +49,7 @@ import {
   Tag,
   Typography
 } from '@douyinfe/semi-ui';
+import CardPro from '../common/ui/CardPro';
 import {
   IllustrationNoResult,
   IllustrationNoResultDark
@@ -60,7 +59,7 @@ import {
   IconEyeOpened,
   IconSearch,
 } from '@douyinfe/semi-icons';
-import { useTableCompactMode } from '../../hooks/useTableCompactMode';
+import { useTableCompactMode } from '../../hooks/common/useTableCompactMode';
 
 const { Text } = Typography;
 
@@ -798,42 +797,40 @@ const LogsTable = () => {
     <>
       {renderColumnSelector()}
       <Layout>
-        <Card
-          className="table-scroll-card !rounded-2xl mb-4"
-          title={
-            <div className="flex flex-col w-full">
-              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-2 w-full">
-                <div className="flex items-center text-orange-500 mb-2 md:mb-0">
-                  <IconEyeOpened className="mr-2" />
-                  {loading ? (
-                    <Skeleton.Title
-                      style={{
-                        width: 300,
-                        marginBottom: 0,
-                        marginTop: 0
-                      }}
-                    />
-                  ) : (
-                    <Text>
-                      {isAdminUser && showBanner
-                        ? t('当前未开启Midjourney回调，部分项目可能无法获得绘图结果，可在运营设置中开启。')
-                        : t('Midjourney 任务记录')}
-                    </Text>
-                  )}
-                </div>
-                <Button
-                  type='tertiary'
-                  className="w-full md:w-auto"
-                  onClick={() => setCompactMode(!compactMode)}
-                  size="small"
-                >
-                  {compactMode ? t('自适应列表') : t('紧凑列表')}
-                </Button>
+        <CardPro
+          type="type2"
+          className="mb-4"
+          statsArea={
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-2 w-full">
+              <div className="flex items-center text-orange-500 mb-2 md:mb-0">
+                <IconEyeOpened className="mr-2" />
+                {loading ? (
+                  <Skeleton.Title
+                    style={{
+                      width: 300,
+                      marginBottom: 0,
+                      marginTop: 0
+                    }}
+                  />
+                ) : (
+                  <Text>
+                    {isAdminUser && showBanner
+                      ? t('当前未开启Midjourney回调，部分项目可能无法获得绘图结果，可在运营设置中开启。')
+                      : t('Midjourney 任务记录')}
+                  </Text>
+                )}
               </div>
-
-              <Divider margin="12px" />
-
-              {/* 搜索表单区域 */}
+              <Button
+                type='tertiary'
+                className="w-full md:w-auto"
+                onClick={() => setCompactMode(!compactMode)}
+                size="small"
+              >
+                {compactMode ? t('自适应列表') : t('紧凑列表')}
+              </Button>
+            </div>
+          }
+          searchArea={
               <Form
                 initValues={formInitValues}
                 getFormApi={(api) => setFormApi(api)}
@@ -920,10 +917,7 @@ const LogsTable = () => {
                   </div>
                 </div>
               </Form>
-            </div>
           }
-          shadows='always'
-          bordered={false}
         >
           <Table
             columns={compactMode ? getVisibleColumns().map(({ fixed, ...rest }) => rest) : getVisibleColumns()}
@@ -950,8 +944,8 @@ const LogsTable = () => {
               onPageSizeChange: handlePageSizeChange,
               onPageChange: handlePageChange,
             }}
-          />
-        </Card>
+                  />
+      </CardPro>
 
         <Modal
           visible={isModalOpen}

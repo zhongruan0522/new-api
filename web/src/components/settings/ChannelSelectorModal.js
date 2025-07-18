@@ -1,5 +1,5 @@
 import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
-import { useIsMobile } from '../../hooks/useIsMobile.js';
+import { useIsMobile } from '../../hooks/common/useIsMobile.js';
 import {
   Modal,
   Table,

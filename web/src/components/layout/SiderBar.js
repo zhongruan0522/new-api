@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { getLucideIcon, sidebarIconColors } from '../../helpers/render.js';
 import { ChevronLeft } from 'lucide-react';
-import { useSidebarCollapsed } from '../../hooks/useSidebarCollapsed.js';
+import { useSidebarCollapsed } from '../../hooks/common/useSidebarCollapsed.js';
 import {
   isAdmin,
   isRoot,

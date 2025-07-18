@@ -26,9 +26,7 @@ import {
 
 import {
   Button,
-  Card,
   Checkbox,
-  Divider,
   Empty,
   Form,
   Layout,
@@ -38,6 +36,7 @@ import {
   Tag,
   Typography
 } from '@douyinfe/semi-ui';
+import CardPro from '../common/ui/CardPro';
 import {
   IllustrationNoResult,
   IllustrationNoResultDark
@@ -47,7 +46,7 @@ import {
   IconEyeOpened,
   IconSearch,
 } from '@douyinfe/semi-icons';
-import { useTableCompactMode } from '../../hooks/useTableCompactMode';
+import { useTableCompactMode } from '../../hooks/common/useTableCompactMode';
 import { TASK_ACTION_GENERATE, TASK_ACTION_TEXT_GENERATE } from '../../constants/common.constant';
 
 const { Text } = Typography;
@@ -648,118 +647,113 @@ const LogsTable = () => {
     <>
       {renderColumnSelector()}
       <Layout>
-        <Card
-          className="table-scroll-card !rounded-2xl mb-4"
-          title={
-            <div className="flex flex-col w-full">
-              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-2 w-full">
-                <div className="flex items-center text-orange-500 mb-2 md:mb-0">
-                  <IconEyeOpened className="mr-2" />
-                  <Text>{t('任务记录')}</Text>
-                </div>
-                <Button
-                  type='tertiary'
-                  className="w-full md:w-auto"
-                  onClick={() => setCompactMode(!compactMode)}
-                  size="small"
-                >
-                  {compactMode ? t('自适应列表') : t('紧凑列表')}
-                </Button>
+        <CardPro
+          type="type2"
+          className="mb-4"
+          statsArea={
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-2 w-full">
+              <div className="flex items-center text-orange-500 mb-2 md:mb-0">
+                <IconEyeOpened className="mr-2" />
+                <Text>{t('任务记录')}</Text>
               </div>
-
-              <Divider margin="12px" />
-
-              {/* 搜索表单区域 */}
-              <Form
-                initValues={formInitValues}
-                getFormApi={(api) => setFormApi(api)}
-                onSubmit={refresh}
-                allowEmpty={true}
-                autoComplete="off"
-                layout="vertical"
-                trigger="change"
-                stopValidateWithError={false}
+              <Button
+                type='tertiary'
+                className="w-full md:w-auto"
+                onClick={() => setCompactMode(!compactMode)}
+                size="small"
               >
-                <div className="flex flex-col gap-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    {/* 时间选择器 */}
-                    <div className="col-span-1 lg:col-span-2">
-                      <Form.DatePicker
-                        field='dateRange'
-                        className="w-full"
-                        type='dateTimeRange'
-                        placeholder={[t('开始时间'), t('结束时间')]}
-                        showClear
-                        pure
-                        size="small"
-                      />
-                    </div>
-
-                    {/* 任务 ID */}
-                    <Form.Input
-                      field='task_id'
-                      prefix={<IconSearch />}
-                      placeholder={t('任务 ID')}
+                {compactMode ? t('自适应列表') : t('紧凑列表')}
+              </Button>
+            </div>
+          }
+          searchArea={
+            <Form
+              initValues={formInitValues}
+              getFormApi={(api) => setFormApi(api)}
+              onSubmit={refresh}
+              allowEmpty={true}
+              autoComplete="off"
+              layout="vertical"
+              trigger="change"
+              stopValidateWithError={false}
+            >
+              <div className="flex flex-col gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {/* 时间选择器 */}
+                  <div className="col-span-1 lg:col-span-2">
+                    <Form.DatePicker
+                      field='dateRange'
+                      className="w-full"
+                      type='dateTimeRange'
+                      placeholder={[t('开始时间'), t('结束时间')]}
                       showClear
                       pure
                       size="small"
                     />
-
-                    {/* 渠道 ID - 仅管理员可见 */}
-                    {isAdminUser && (
-                      <Form.Input
-                        field='channel_id'
-                        prefix={<IconSearch />}
-                        placeholder={t('渠道 ID')}
-                        showClear
-                        pure
-                        size="small"
-                      />
-                    )}
                   </div>
 
-                  {/* 操作按钮区域 */}
-                  <div className="flex justify-between items-center">
-                    <div></div>
-                    <div className="flex gap-2">
-                      <Button
-                        type='tertiary'
-                        htmlType='submit'
-                        loading={loading}
-                        size="small"
-                      >
-                        {t('查询')}
-                      </Button>
-                      <Button
-                        type='tertiary'
-                        onClick={() => {
-                          if (formApi) {
-                            formApi.reset();
-                            // 重置后立即查询，使用setTimeout确保表单重置完成
-                            setTimeout(() => {
-                              refresh();
-                            }, 100);
-                          }
-                        }}
-                        size="small"
-                      >
-                        {t('重置')}
-                      </Button>
-                      <Button
-                        type='tertiary'
-                        onClick={() => setShowColumnSelector(true)}
-                        size="small"
-                      >
-                        {t('列设置')}
-                      </Button>
-                    </div>
+                  {/* 任务 ID */}
+                  <Form.Input
+                    field='task_id'
+                    prefix={<IconSearch />}
+                    placeholder={t('任务 ID')}
+                    showClear
+                    pure
+                    size="small"
+                  />
+
+                  {/* 渠道 ID - 仅管理员可见 */}
+                  {isAdminUser && (
+                    <Form.Input
+                      field='channel_id'
+                      prefix={<IconSearch />}
+                      placeholder={t('渠道 ID')}
+                      showClear
+                      pure
+                      size="small"
+                    />
+                  )}
+                </div>
+
+                {/* 操作按钮区域 */}
+                <div className="flex justify-between items-center">
+                  <div></div>
+                  <div className="flex gap-2">
+                    <Button
+                      type='tertiary'
+                      htmlType='submit'
+                      loading={loading}
+                      size="small"
+                    >
+                      {t('查询')}
+                    </Button>
+                    <Button
+                      type='tertiary'
+                      onClick={() => {
+                        if (formApi) {
+                          formApi.reset();
+                          // 重置后立即查询，使用setTimeout确保表单重置完成
+                          setTimeout(() => {
+                            refresh();
+                          }, 100);
+                        }
+                      }}
+                      size="small"
+                    >
+                      {t('重置')}
+                    </Button>
+                    <Button
+                      type='tertiary'
+                      onClick={() => setShowColumnSelector(true)}
+                      size="small"
+                    >
+                      {t('列设置')}
+                    </Button>
                   </div>
                 </div>
-              </Form>
-            </div>
+              </div>
+            </Form>
           }
-          shadows='always'
-          bordered={false}
         >
           <Table
             columns={compactMode ? getVisibleColumns().map(({ fixed, ...rest }) => rest) : getVisibleColumns()}
@@ -787,7 +781,7 @@ const LogsTable = () => {
               onPageChange: handlePageChange,
             }}
           />
-        </Card>
+        </CardPro>
 
         <Modal
           visible={isModalOpen}

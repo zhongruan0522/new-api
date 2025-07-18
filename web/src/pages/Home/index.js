@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { Button, Typography, Tag, Input, ScrollList, ScrollItem } from '@douyinfe/semi-ui';
 import { API, showError, copy, showSuccess } from '../../helpers';
-import { useIsMobile } from '../../hooks/useIsMobile.js';
+import { useIsMobile } from '../../hooks/common/useIsMobile.js';
 import { API_ENDPOINTS } from '../../constants/common.constant';
 import { StatusContext } from '../../context/Status';
 import { marked } from 'marked';

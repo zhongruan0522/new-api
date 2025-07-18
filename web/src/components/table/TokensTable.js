@@ -12,8 +12,6 @@ import {
 import { ITEMS_PER_PAGE } from '../../constants';
 import {
   Button,
-  Card,
-  Divider,
   Dropdown,
   Empty,
   Form,
@@ -30,6 +28,7 @@ import {
   Input,
   Typography
 } from '@douyinfe/semi-ui';
+import CardPro from '../common/ui/CardPro';
 import {
   IllustrationNoResult,
   IllustrationNoResultDark
@@ -44,7 +43,7 @@ import {
 import { Key } from 'lucide-react';
 import EditToken from '../../pages/Token/EditToken';
 import { useTranslation } from 'react-i18next';
-import { useTableCompactMode } from '../../hooks/useTableCompactMode';
+import { useTableCompactMode } from '../../hooks/common/useTableCompactMode';
 
 const { Text } = Typography;
 
@@ -689,177 +688,173 @@ const TokensTable = () => {
     }
   };
 
-  const renderHeader = () => (
-    <div className="flex flex-col w-full">
-      <div className="mb-2">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-2 w-full">
-          <div className="flex items-center text-blue-500">
-            <Key size={16} className="mr-2" />
-            <Text>{t('令牌用于API访问认证，可以设置额度限制和模型权限。')}</Text>
-          </div>
+  const renderDescriptionArea = () => (
+    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-2 w-full">
+      <div className="flex items-center text-blue-500">
+        <Key size={16} className="mr-2" />
+        <Text>{t('令牌用于API访问认证，可以设置额度限制和模型权限。')}</Text>
+      </div>
+      <Button
+        type="tertiary"
+        className="w-full md:w-auto"
+        onClick={() => setCompactMode(!compactMode)}
+        size="small"
+      >
+        {compactMode ? t('自适应列表') : t('紧凑列表')}
+      </Button>
+    </div>
+  );
+
+  const renderActionsArea = () => (
+    <div className="flex flex-wrap gap-2 w-full md:w-auto order-2 md:order-1">
+      <Button
+        type="primary"
+        className="flex-1 md:flex-initial"
+        onClick={() => {
+          setEditingToken({
+            id: undefined,
+          });
+          setShowEdit(true);
+        }}
+        size="small"
+      >
+        {t('添加令牌')}
+      </Button>
+      <Button
+        type='tertiary'
+        className="flex-1 md:flex-initial"
+        onClick={() => {
+          if (selectedKeys.length === 0) {
+            showError(t('请至少选择一个令牌！'));
+            return;
+          }
+          Modal.info({
+            title: t('复制令牌'),
+            icon: null,
+            content: t('请选择你的复制方式'),
+            footer: (
+              <Space>
+                <Button
+                  type='tertiary'
+                  onClick={async () => {
+                    let content = '';
+                    for (let i = 0; i < selectedKeys.length; i++) {
+                      content +=
+                        selectedKeys[i].name + '    sk-' + selectedKeys[i].key + '\n';
+                    }
+                    await copyText(content);
+                    Modal.destroyAll();
+                  }}
+                >
+                  {t('名称+密钥')}
+                </Button>
+                <Button
+                  onClick={async () => {
+                    let content = '';
+                    for (let i = 0; i < selectedKeys.length; i++) {
+                      content += 'sk-' + selectedKeys[i].key + '\n';
+                    }
+                    await copyText(content);
+                    Modal.destroyAll();
+                  }}
+                >
+                  {t('仅密钥')}
+                </Button>
+              </Space>
+            ),
+          });
+        }}
+        size="small"
+      >
+        {t('复制所选令牌')}
+      </Button>
+      <Button
+        type='danger'
+        className="w-full md:w-auto"
+        onClick={() => {
+          if (selectedKeys.length === 0) {
+            showError(t('请至少选择一个令牌！'));
+            return;
+          }
+          Modal.confirm({
+            title: t('批量删除令牌'),
+            content: (
+              <div>
+                {t('确定要删除所选的 {{count}} 个令牌吗？', { count: selectedKeys.length })}
+              </div>
+            ),
+            onOk: () => batchDeleteTokens(),
+          });
+        }}
+        size="small"
+      >
+        {t('删除所选令牌')}
+      </Button>
+    </div>
+  );
+
+  const renderSearchArea = () => (
+    <Form
+      initValues={formInitValues}
+      getFormApi={(api) => setFormApi(api)}
+      onSubmit={searchTokens}
+      allowEmpty={true}
+      autoComplete="off"
+      layout="horizontal"
+      trigger="change"
+      stopValidateWithError={false}
+      className="w-full md:w-auto order-1 md:order-2"
+    >
+      <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
+        <div className="relative w-full md:w-56">
+          <Form.Input
+            field="searchKeyword"
+            prefix={<IconSearch />}
+            placeholder={t('搜索关键字')}
+            showClear
+            pure
+            size="small"
+          />
+        </div>
+        <div className="relative w-full md:w-56">
+          <Form.Input
+            field="searchToken"
+            prefix={<IconSearch />}
+            placeholder={t('密钥')}
+            showClear
+            pure
+            size="small"
+          />
+        </div>
+        <div className="flex gap-2 w-full md:w-auto">
           <Button
             type="tertiary"
-            className="w-full md:w-auto"
-            onClick={() => setCompactMode(!compactMode)}
+            htmlType="submit"
+            loading={loading || searching}
+            className="flex-1 md:flex-initial md:w-auto"
             size="small"
           >
-            {compactMode ? t('自适应列表') : t('紧凑列表')}
-          </Button>
-        </div>
-      </div>
-
-      <Divider margin="12px" />
-
-      <div className="flex flex-col md:flex-row justify-between items-center gap-4 w-full">
-        <div className="flex flex-wrap gap-2 w-full md:w-auto order-2 md:order-1">
-          <Button
-            type="primary"
-            className="flex-1 md:flex-initial"
-            onClick={() => {
-              setEditingToken({
-                id: undefined,
-              });
-              setShowEdit(true);
-            }}
-            size="small"
-          >
-            {t('添加令牌')}
+            {t('查询')}
           </Button>
           <Button
             type='tertiary'
-            className="flex-1 md:flex-initial"
             onClick={() => {
-              if (selectedKeys.length === 0) {
-                showError(t('请至少选择一个令牌！'));
-                return;
+              if (formApi) {
+                formApi.reset();
+                // 重置后立即查询，使用setTimeout确保表单重置完成
+                setTimeout(() => {
+                  searchTokens();
+                }, 100);
               }
-              Modal.info({
-                title: t('复制令牌'),
-                icon: null,
-                content: t('请选择你的复制方式'),
-                footer: (
-                  <Space>
-                    <Button
-                      type='tertiary'
-                      onClick={async () => {
-                        let content = '';
-                        for (let i = 0; i < selectedKeys.length; i++) {
-                          content +=
-                            selectedKeys[i].name + '    sk-' + selectedKeys[i].key + '\n';
-                        }
-                        await copyText(content);
-                        Modal.destroyAll();
-                      }}
-                    >
-                      {t('名称+密钥')}
-                    </Button>
-                    <Button
-                      onClick={async () => {
-                        let content = '';
-                        for (let i = 0; i < selectedKeys.length; i++) {
-                          content += 'sk-' + selectedKeys[i].key + '\n';
-                        }
-                        await copyText(content);
-                        Modal.destroyAll();
-                      }}
-                    >
-                      {t('仅密钥')}
-                    </Button>
-                  </Space>
-                ),
-              });
             }}
+            className="flex-1 md:flex-initial md:w-auto"
             size="small"
           >
-            {t('复制所选令牌')}
-          </Button>
-          <Button
-            type='danger'
-            className="w-full md:w-auto"
-            onClick={() => {
-              if (selectedKeys.length === 0) {
-                showError(t('请至少选择一个令牌！'));
-                return;
-              }
-              Modal.confirm({
-                title: t('批量删除令牌'),
-                content: (
-                  <div>
-                    {t('确定要删除所选的 {{count}} 个令牌吗？', { count: selectedKeys.length })}
-                  </div>
-                ),
-                onOk: () => batchDeleteTokens(),
-              });
-            }}
-            size="small"
-          >
-            {t('删除所选令牌')}
+            {t('重置')}
           </Button>
         </div>
-
-        <Form
-          initValues={formInitValues}
-          getFormApi={(api) => setFormApi(api)}
-          onSubmit={searchTokens}
-          allowEmpty={true}
-          autoComplete="off"
-          layout="horizontal"
-          trigger="change"
-          stopValidateWithError={false}
-          className="w-full md:w-auto order-1 md:order-2"
-        >
-          <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
-            <div className="relative w-full md:w-56">
-              <Form.Input
-                field="searchKeyword"
-                prefix={<IconSearch />}
-                placeholder={t('搜索关键字')}
-                showClear
-                pure
-                size="small"
-              />
-            </div>
-            <div className="relative w-full md:w-56">
-              <Form.Input
-                field="searchToken"
-                prefix={<IconSearch />}
-                placeholder={t('密钥')}
-                showClear
-                pure
-                size="small"
-              />
-            </div>
-            <div className="flex gap-2 w-full md:w-auto">
-              <Button
-                type="tertiary"
-                htmlType="submit"
-                loading={loading || searching}
-                className="flex-1 md:flex-initial md:w-auto"
-                size="small"
-              >
-                {t('查询')}
-              </Button>
-              <Button
-                type='tertiary'
-                onClick={() => {
-                  if (formApi) {
-                    formApi.reset();
-                    // 重置后立即查询，使用setTimeout确保表单重置完成
-                    setTimeout(() => {
-                      searchTokens();
-                    }, 100);
-                  }
-                }}
-                className="flex-1 md:flex-initial md:w-auto"
-                size="small"
-              >
-                {t('重置')}
-              </Button>
-            </div>
-          </div>
-        </Form>
       </div>
-    </div>
+    </Form>
   );
 
   return (
@@ -871,11 +866,19 @@ const TokensTable = () => {
         handleClose={closeEdit}
       ></EditToken>
 
-      <Card
-        className="table-scroll-card !rounded-2xl"
-        title={renderHeader()}
-        shadows='always'
-        bordered={false}
+      <CardPro
+        type="type1"
+        descriptionArea={renderDescriptionArea()}
+        actionsArea={
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4 w-full">
+            <div className="flex flex-wrap gap-2 w-full md:w-auto order-2 md:order-1">
+              {renderActionsArea()}
+            </div>
+            <div className="flex-1 md:flex-initial order-1 md:order-2">
+              {renderSearchArea()}
+            </div>
+          </div>
+        }
       >
         <Table
           columns={compactMode ? columns.map(col => {
@@ -910,7 +913,7 @@ const TokensTable = () => {
           className="rounded-xl overflow-hidden"
           size="middle"
         ></Table>
-      </Card>
+      </CardPro>
     </>
   );
 };

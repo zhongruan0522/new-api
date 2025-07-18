@@ -1,8 +1,8 @@
 import { useCallback, useState, useRef } from 'react';
 import { Toast, Modal } from '@douyinfe/semi-ui';
 import { useTranslation } from 'react-i18next';
-import { getTextContent, buildApiPayload, createLoadingAssistantMessage } from '../helpers';
-import { MESSAGE_ROLES } from '../constants/playground.constants';
+import { getTextContent, buildApiPayload, createLoadingAssistantMessage } from '../../helpers';
+import { MESSAGE_ROLES } from '../../constants/playground.constants';
 
 export const useMessageEdit = (
   setMessage,

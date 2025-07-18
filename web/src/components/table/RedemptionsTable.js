@@ -13,8 +13,6 @@ import { Ticket } from 'lucide-react';
 import { ITEMS_PER_PAGE } from '../../constants';
 import {
   Button,
-  Card,
-  Divider,
   Dropdown,
   Empty,
   Form,
@@ -25,6 +23,7 @@ import {
   Tag,
   Typography
 } from '@douyinfe/semi-ui';
+import CardPro from '../common/ui/CardPro';
 import {
   IllustrationNoResult,
   IllustrationNoResultDark
@@ -35,7 +34,7 @@ import {
 } from '@douyinfe/semi-icons';
 import EditRedemption from '../../pages/Redemption/EditRedemption';
 import { useTranslation } from 'react-i18next';
-import { useTableCompactMode } from '../../hooks/useTableCompactMode';
+import { useTableCompactMode } from '../../hooks/common/useTableCompactMode';
 
 const { Text } = Typography;
 
@@ -422,148 +421,6 @@ const RedemptionsTable = () => {
     }
   };
 
-  const renderHeader = () => (
-    <div className="flex flex-col w-full">
-      <div className="mb-2">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-2 w-full">
-          <div className="flex items-center text-orange-500">
-            <Ticket size={16} className="mr-2" />
-            <Text>{t('兑换码可以批量生成和分发，适合用于推广活动或批量充值。')}</Text>
-          </div>
-          <Button
-            type='tertiary'
-            className="w-full md:w-auto"
-            onClick={() => setCompactMode(!compactMode)}
-            size="small"
-          >
-            {compactMode ? t('自适应列表') : t('紧凑列表')}
-          </Button>
-        </div>
-      </div>
-
-      <Divider margin="12px" />
-
-      <div className="flex flex-col md:flex-row justify-between items-center gap-4 w-full">
-        <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto order-2 md:order-1">
-          <div className="flex gap-2 w-full sm:w-auto">
-            <Button
-              type='primary'
-              className="w-full sm:w-auto"
-              onClick={() => {
-                setEditingRedemption({
-                  id: undefined,
-                });
-                setShowEdit(true);
-              }}
-              size="small"
-            >
-              {t('添加兑换码')}
-            </Button>
-            <Button
-              type='tertiary'
-              className="w-full sm:w-auto"
-              onClick={async () => {
-                if (selectedKeys.length === 0) {
-                  showError(t('请至少选择一个兑换码！'));
-                  return;
-                }
-                let keys = '';
-                for (let i = 0; i < selectedKeys.length; i++) {
-                  keys +=
-                    selectedKeys[i].name + '    ' + selectedKeys[i].key + '\n';
-                }
-                await copyText(keys);
-              }}
-              size="small"
-            >
-              {t('复制所选兑换码到剪贴板')}
-            </Button>
-          </div>
-          <Button
-            type='danger'
-            className="w-full sm:w-auto"
-            onClick={() => {
-              Modal.confirm({
-                title: t('确定清除所有失效兑换码？'),
-                content: t('将删除已使用、已禁用及过期的兑换码，此操作不可撤销。'),
-                onOk: async () => {
-                  setLoading(true);
-                  const res = await API.delete('/api/redemption/invalid');
-                  const { success, message, data } = res.data;
-                  if (success) {
-                    showSuccess(t('已删除 {{count}} 条失效兑换码', { count: data }));
-                    await refresh();
-                  } else {
-                    showError(message);
-                  }
-                  setLoading(false);
-                },
-              });
-            }}
-            size="small"
-          >
-            {t('清除失效兑换码')}
-          </Button>
-        </div>
-
-        <Form
-          initValues={formInitValues}
-          getFormApi={(api) => setFormApi(api)}
-          onSubmit={() => {
-            setActivePage(1);
-            searchRedemptions(null, 1, pageSize);
-          }}
-          allowEmpty={true}
-          autoComplete="off"
-          layout="horizontal"
-          trigger="change"
-          stopValidateWithError={false}
-          className="w-full md:w-auto order-1 md:order-2"
-        >
-          <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
-            <div className="relative w-full md:w-64">
-              <Form.Input
-                field="searchKeyword"
-                prefix={<IconSearch />}
-                placeholder={t('关键字(id或者名称)')}
-                showClear
-                pure
-                size="small"
-              />
-            </div>
-            <div className="flex gap-2 w-full md:w-auto">
-              <Button
-                type="tertiary"
-                htmlType="submit"
-                loading={loading || searching}
-                className="flex-1 md:flex-initial md:w-auto"
-                size="small"
-              >
-                {t('查询')}
-              </Button>
-              <Button
-                type="tertiary"
-                onClick={() => {
-                  if (formApi) {
-                    formApi.reset();
-                    setTimeout(() => {
-                      setActivePage(1);
-                      loadRedemptions(1, pageSize);
-                    }, 100);
-                  }
-                }}
-                className="flex-1 md:flex-initial md:w-auto"
-                size="small"
-              >
-                {t('重置')}
-              </Button>
-            </div>
-          </div>
-        </Form>
-      </div>
-    </div>
-  );
-
   return (
     <>
       <EditRedemption
@@ -573,11 +430,144 @@ const RedemptionsTable = () => {
         handleClose={closeEdit}
       ></EditRedemption>
 
-      <Card
-        className="table-scroll-card !rounded-2xl"
-        title={renderHeader()}
-        shadows='always'
-        bordered={false}
+      <CardPro
+        type="type1"
+        descriptionArea={
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-2 w-full">
+            <div className="flex items-center text-orange-500">
+              <Ticket size={16} className="mr-2" />
+              <Text>{t('兑换码可以批量生成和分发，适合用于推广活动或批量充值。')}</Text>
+            </div>
+            <Button
+              type='tertiary'
+              className="w-full md:w-auto"
+              onClick={() => setCompactMode(!compactMode)}
+              size="small"
+            >
+              {compactMode ? t('自适应列表') : t('紧凑列表')}
+            </Button>
+          </div>
+        }
+        actionsArea={
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4 w-full">
+            <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto order-2 md:order-1">
+              <div className="flex gap-2 w-full sm:w-auto">
+                <Button
+                  type='primary'
+                  className="w-full sm:w-auto"
+                  onClick={() => {
+                    setEditingRedemption({
+                      id: undefined,
+                    });
+                    setShowEdit(true);
+                  }}
+                  size="small"
+                >
+                  {t('添加兑换码')}
+                </Button>
+                <Button
+                  type='tertiary'
+                  className="w-full sm:w-auto"
+                  onClick={async () => {
+                    if (selectedKeys.length === 0) {
+                      showError(t('请至少选择一个兑换码！'));
+                      return;
+                    }
+                    let keys = '';
+                    for (let i = 0; i < selectedKeys.length; i++) {
+                      keys +=
+                        selectedKeys[i].name + '    ' + selectedKeys[i].key + '\n';
+                    }
+                    await copyText(keys);
+                  }}
+                  size="small"
+                >
+                  {t('复制所选兑换码到剪贴板')}
+                </Button>
+              </div>
+              <Button
+                type='danger'
+                className="w-full sm:w-auto"
+                onClick={() => {
+                  Modal.confirm({
+                    title: t('确定清除所有失效兑换码？'),
+                    content: t('将删除已使用、已禁用及过期的兑换码，此操作不可撤销。'),
+                    onOk: async () => {
+                      setLoading(true);
+                      const res = await API.delete('/api/redemption/invalid');
+                      const { success, message, data } = res.data;
+                      if (success) {
+                        showSuccess(t('已删除 {{count}} 条失效兑换码', { count: data }));
+                        await refresh();
+                      } else {
+                        showError(message);
+                      }
+                      setLoading(false);
+                    },
+                  });
+                }}
+                size="small"
+              >
+                {t('清除失效兑换码')}
+              </Button>
+            </div>
+
+            <Form
+              initValues={formInitValues}
+              getFormApi={(api) => setFormApi(api)}
+              onSubmit={() => {
+                setActivePage(1);
+                searchRedemptions(null, 1, pageSize);
+              }}
+              allowEmpty={true}
+              autoComplete="off"
+              layout="horizontal"
+              trigger="change"
+              stopValidateWithError={false}
+              className="w-full md:w-auto order-1 md:order-2"
+            >
+              <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
+                <div className="relative w-full md:w-64">
+                  <Form.Input
+                    field="searchKeyword"
+                    prefix={<IconSearch />}
+                    placeholder={t('关键字(id或者名称)')}
+                    showClear
+                    pure
+                    size="small"
+                  />
+                </div>
+                <div className="flex gap-2 w-full md:w-auto">
+                  <Button
+                    type="tertiary"
+                    htmlType="submit"
+                    loading={loading || searching}
+                    className="flex-1 md:flex-initial md:w-auto"
+                    size="small"
+                  >
+                    {t('查询')}
+                  </Button>
+                  <Button
+                    type="tertiary"
+                    onClick={() => {
+                      if (formApi) {
+                        formApi.reset();
+                        setTimeout(() => {
+                          setActivePage(1);
+                          loadRedemptions(1, pageSize);
+                        }, 100);
+                      }
+                    }}
+                    className="flex-1 md:flex-initial md:w-auto"
+                    size="small"
+                  >
+                    {t('重置')}
+                  </Button>
+                </div>
+              </div>
+            </Form>
+          </div>
+        }
       >
         <Table
           columns={compactMode ? columns.map(({ fixed, ...rest }) => rest) : columns}
@@ -615,7 +605,7 @@ const RedemptionsTable = () => {
           className="rounded-xl overflow-hidden"
           size="middle"
         ></Table>
-      </Card>
+      </CardPro>
     </>
   );
 };

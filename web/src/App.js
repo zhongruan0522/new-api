@@ -1,6 +1,6 @@
 import React, { lazy, Suspense } from 'react';
 import { Route, Routes, useLocation } from 'react-router-dom';
-import Loading from './components/common/Loading.js';
+import Loading from './components/common/ui/Loading.js';
 import User from './pages/User';
 import { AuthRedirect, PrivateRoute } from './helpers';
 import RegisterForm from './components/auth/RegisterForm.js';

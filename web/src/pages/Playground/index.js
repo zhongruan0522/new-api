@@ -5,15 +5,15 @@ import { Layout, Toast, Modal } from '@douyinfe/semi-ui';
 
 // Context
 import { UserContext } from '../../context/User/index.js';
-import { useIsMobile } from '../../hooks/useIsMobile.js';
+import { useIsMobile } from '../../hooks/common/useIsMobile.js';
 
 // hooks
-import { usePlaygroundState } from '../../hooks/usePlaygroundState.js';
-import { useMessageActions } from '../../hooks/useMessageActions.js';
-import { useApiRequest } from '../../hooks/useApiRequest.js';
-import { useSyncMessageAndCustomBody } from '../../hooks/useSyncMessageAndCustomBody.js';
-import { useMessageEdit } from '../../hooks/useMessageEdit.js';
-import { useDataLoader } from '../../hooks/useDataLoader.js';
+import { usePlaygroundState } from '../../hooks/playground/usePlaygroundState.js';
+import { useMessageActions } from '../../hooks/playground/useMessageActions.js';
+import { useApiRequest } from '../../hooks/playground/useApiRequest.js';
+import { useSyncMessageAndCustomBody } from '../../hooks/playground/useSyncMessageAndCustomBody.js';
+import { useMessageEdit } from '../../hooks/playground/useMessageEdit.js';
+import { useDataLoader } from '../../hooks/playground/useDataLoader.js';
 
 // Constants and utils
 import {

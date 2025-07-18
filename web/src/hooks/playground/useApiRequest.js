@@ -5,13 +5,13 @@ import {
   API_ENDPOINTS,
   MESSAGE_STATUS,
   DEBUG_TABS
-} from '../constants/playground.constants';
+} from '../../constants/playground.constants';
 import {
   getUserIdFromLocalStorage,
   handleApiError,
   processThinkTags,
   processIncompleteThinkTags
-} from '../helpers';
+} from '../../helpers';
 
 export const useApiRequest = (
   setMessage,

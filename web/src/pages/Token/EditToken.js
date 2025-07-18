@@ -8,7 +8,7 @@ import {
   renderQuotaWithPrompt,
   getModelCategories,
 } from '../../helpers';
-import { useIsMobile } from '../../hooks/useIsMobile.js';
+import { useIsMobile } from '../../hooks/common/useIsMobile.js';
 import {
   Button,
   SideSheet,

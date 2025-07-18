@@ -17,8 +17,6 @@ import {
 } from 'lucide-react';
 import {
   Button,
-  Card,
-  Divider,
   Dropdown,
   Empty,
   Form,
@@ -29,6 +27,7 @@ import {
   Tooltip,
   Typography
 } from '@douyinfe/semi-ui';
+import CardPro from '../common/ui/CardPro';
 import {
   IllustrationNoResult,
   IllustrationNoResultDark
@@ -42,7 +41,7 @@ import { ITEMS_PER_PAGE } from '../../constants';
 import AddUser from '../../pages/User/AddUser';
 import EditUser from '../../pages/User/EditUser';
 import { useTranslation } from 'react-i18next';
-import { useTableCompactMode } from '../../hooks/useTableCompactMode';
+import { useTableCompactMode } from '../../hooks/common/useTableCompactMode';
 
 const { Text } = Typography;
 
@@ -514,115 +513,7 @@ const UsersTable = () => {
     }
   };
 
-  const renderHeader = () => (
-    <div className="flex flex-col w-full">
-      <div className="mb-2">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-2 w-full">
-          <div className="flex items-center text-blue-500">
-            <IconUserAdd className="mr-2" />
-            <Text>{t('用户管理页面，可以查看和管理所有注册用户的信息、权限和状态。')}</Text>
-          </div>
-          <Button
-            type='tertiary'
-            className="w-full md:w-auto"
-            onClick={() => setCompactMode(!compactMode)}
-            size="small"
-          >
-            {compactMode ? t('自适应列表') : t('紧凑列表')}
-          </Button>
-        </div>
-      </div>
 
-      <Divider margin="12px" />
-
-      <div className="flex flex-col md:flex-row justify-between items-center gap-4 w-full">
-        <div className="flex gap-2 w-full md:w-auto order-2 md:order-1">
-          <Button
-            className="w-full md:w-auto"
-            onClick={() => {
-              setShowAddUser(true);
-            }}
-            size="small"
-          >
-            {t('添加用户')}
-          </Button>
-        </div>
-
-        <Form
-          initValues={formInitValues}
-          getFormApi={(api) => setFormApi(api)}
-          onSubmit={() => {
-            setActivePage(1);
-            searchUsers(1, pageSize);
-          }}
-          allowEmpty={true}
-          autoComplete="off"
-          layout="horizontal"
-          trigger="change"
-          stopValidateWithError={false}
-          className="w-full md:w-auto order-1 md:order-2"
-        >
-          <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
-            <div className="relative w-full md:w-64">
-              <Form.Input
-                field="searchKeyword"
-                prefix={<IconSearch />}
-                placeholder={t('支持搜索用户的 ID、用户名、显示名称和邮箱地址')}
-                showClear
-                pure
-                size="small"
-              />
-            </div>
-            <div className="w-full md:w-48">
-              <Form.Select
-                field="searchGroup"
-                placeholder={t('选择分组')}
-                optionList={groupOptions}
-                onChange={(value) => {
-                  // 分组变化时自动搜索
-                  setTimeout(() => {
-                    setActivePage(1);
-                    searchUsers(1, pageSize);
-                  }, 100);
-                }}
-                className="w-full"
-                showClear
-                pure
-                size="small"
-              />
-            </div>
-            <div className="flex gap-2 w-full md:w-auto">
-              <Button
-                type="tertiary"
-                htmlType="submit"
-                loading={loading || searching}
-                className="flex-1 md:flex-initial md:w-auto"
-                size="small"
-              >
-                {t('查询')}
-              </Button>
-              <Button
-                type='tertiary'
-                onClick={() => {
-                  if (formApi) {
-                    formApi.reset();
-                    setTimeout(() => {
-                      setActivePage(1);
-                      loadUsers(1, pageSize);
-                    }, 100);
-                  }
-                }}
-                className="flex-1 md:flex-initial md:w-auto"
-                size="small"
-              >
-                {t('重置')}
-              </Button>
-            </div>
-          </div>
-        </Form>
-      </div>
-    </div>
-  );
 
   return (
     <>
@@ -638,11 +529,112 @@ const UsersTable = () => {
         editingUser={editingUser}
       ></EditUser>
 
-      <Card
-        className="table-scroll-card !rounded-2xl"
-        title={renderHeader()}
-        shadows='always'
-        bordered={false}
+      <CardPro
+        type="type1"
+        descriptionArea={
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-2 w-full">
+            <div className="flex items-center text-blue-500">
+              <IconUserAdd className="mr-2" />
+              <Text>{t('用户管理页面，可以查看和管理所有注册用户的信息、权限和状态。')}</Text>
+            </div>
+            <Button
+              type='tertiary'
+              className="w-full md:w-auto"
+              onClick={() => setCompactMode(!compactMode)}
+              size="small"
+            >
+              {compactMode ? t('自适应列表') : t('紧凑列表')}
+            </Button>
+          </div>
+        }
+        actionsArea={
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4 w-full">
+            <div className="flex gap-2 w-full md:w-auto order-2 md:order-1">
+              <Button
+                className="w-full md:w-auto"
+                onClick={() => {
+                  setShowAddUser(true);
+                }}
+                size="small"
+              >
+                {t('添加用户')}
+              </Button>
+            </div>
+
+            <Form
+              initValues={formInitValues}
+              getFormApi={(api) => setFormApi(api)}
+              onSubmit={() => {
+                setActivePage(1);
+                searchUsers(1, pageSize);
+              }}
+              allowEmpty={true}
+              autoComplete="off"
+              layout="horizontal"
+              trigger="change"
+              stopValidateWithError={false}
+              className="w-full md:w-auto order-1 md:order-2"
+            >
+              <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
+                <div className="relative w-full md:w-64">
+                  <Form.Input
+                    field="searchKeyword"
+                    prefix={<IconSearch />}
+                    placeholder={t('支持搜索用户的 ID、用户名、显示名称和邮箱地址')}
+                    showClear
+                    pure
+                    size="small"
+                  />
+                </div>
+                <div className="w-full md:w-48">
+                  <Form.Select
+                    field="searchGroup"
+                    placeholder={t('选择分组')}
+                    optionList={groupOptions}
+                    onChange={(value) => {
+                      // 分组变化时自动搜索
+                      setTimeout(() => {
+                        setActivePage(1);
+                        searchUsers(1, pageSize);
+                      }, 100);
+                    }}
+                    className="w-full"
+                    showClear
+                    pure
+                    size="small"
+                  />
+                </div>
+                <div className="flex gap-2 w-full md:w-auto">
+                  <Button
+                    type="tertiary"
+                    htmlType="submit"
+                    loading={loading || searching}
+                    className="flex-1 md:flex-initial md:w-auto"
+                    size="small"
+                  >
+                    {t('查询')}
+                  </Button>
+                  <Button
+                    type='tertiary'
+                    onClick={() => {
+                      if (formApi) {
+                        formApi.reset();
+                        setTimeout(() => {
+                          setActivePage(1);
+                          loadUsers(1, pageSize);
+                        }, 100);
+                      }
+                    }}
+                    className="flex-1 md:flex-initial md:w-auto"
+                    size="small"
+                  >
+                    {t('重置')}
+                  </Button>
+                </div>
+              </div>
+            </Form>
+          </div>
+        }
       >
         <Table
           columns={compactMode ? columns.map(({ fixed, ...rest }) => rest) : columns}
@@ -672,7 +664,7 @@ const UsersTable = () => {
           className="overflow-hidden"
           size="middle"
         />
-      </Card>
+      </CardPro>
     </>
   );
 };

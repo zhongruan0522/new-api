@@ -36,11 +36,10 @@ import {
   Tag,
   Tooltip,
   Checkbox,
-  Card,
   Typography,
-  Divider,
   Form,
 } from '@douyinfe/semi-ui';
+import CardPro from '../common/ui/CardPro';
 import {
   IllustrationNoResult,
   IllustrationNoResultDark,
@@ -49,7 +48,7 @@ import { ITEMS_PER_PAGE } from '../../constants';
 import Paragraph from '@douyinfe/semi-ui/lib/es/typography/paragraph';
 import { IconSearch, IconHelpCircle } from '@douyinfe/semi-icons';
 import { Route } from 'lucide-react';
-import { useTableCompactMode } from '../../hooks/useTableCompactMode';
+import { useTableCompactMode } from '../../hooks/common/useTableCompactMode';
 
 const { Text } = Typography;
 
@@ -1201,216 +1200,211 @@ const LogsTable = () => {
   return (
     <>
       {renderColumnSelector()}
-      <Card
-        className='table-scroll-card !rounded-2xl mb-4'
-        title={
-          <div className='flex flex-col w-full'>
-            <Spin spinning={loadingStat}>
-              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-2 w-full">
-                <Space>
-                  <Tag
-                    color='blue'
-                    style={{
-                      fontWeight: 500,
-                      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
-                      padding: 13,
-                    }}
-                    className='!rounded-lg'
-                  >
-                    {t('消耗额度')}: {renderQuota(stat.quota)}
-                  </Tag>
-                  <Tag
-                    color='pink'
-                    style={{
-                      fontWeight: 500,
-                      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
-                      padding: 13,
-                    }}
-                    className='!rounded-lg'
-                  >
-                    RPM: {stat.rpm}
-                  </Tag>
-                  <Tag
-                    color='white'
-                    style={{
-                      border: 'none',
-                      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
-                      fontWeight: 500,
-                      padding: 13,
-                    }}
-                    className='!rounded-lg'
-                  >
-                    TPM: {stat.tpm}
-                  </Tag>
-                </Space>
-
-                <Button
-                  type='tertiary'
-                  className="w-full md:w-auto"
-                  onClick={() => setCompactMode(!compactMode)}
-                  size="small"
+      <CardPro
+        type="type2"
+        className='mb-4'
+        statsArea={
+          <Spin spinning={loadingStat}>
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-2 w-full">
+              <Space>
+                <Tag
+                  color='blue'
+                  style={{
+                    fontWeight: 500,
+                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+                    padding: 13,
+                  }}
+                  className='!rounded-lg'
                 >
-                  {compactMode ? t('自适应列表') : t('紧凑列表')}
-                </Button>
-              </div>
-            </Spin>
+                  {t('消耗额度')}: {renderQuota(stat.quota)}
+                </Tag>
+                <Tag
+                  color='pink'
+                  style={{
+                    fontWeight: 500,
+                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+                    padding: 13,
+                  }}
+                  className='!rounded-lg'
+                >
+                  RPM: {stat.rpm}
+                </Tag>
+                <Tag
+                  color='white'
+                  style={{
+                    border: 'none',
+                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+                    fontWeight: 500,
+                    padding: 13,
+                  }}
+                  className='!rounded-lg'
+                >
+                  TPM: {stat.tpm}
+                </Tag>
+              </Space>
 
-            <Divider margin='12px' />
+              <Button
+                type='tertiary'
+                className="w-full md:w-auto"
+                onClick={() => setCompactMode(!compactMode)}
+                size="small"
+              >
+                {compactMode ? t('自适应列表') : t('紧凑列表')}
+              </Button>
+            </div>
+          </Spin>
+        }
+        searchArea={
+          <Form
+            initValues={formInitValues}
+            getFormApi={(api) => setFormApi(api)}
+            onSubmit={refresh}
+            allowEmpty={true}
+            autoComplete='off'
+            layout='vertical'
+            trigger='change'
+            stopValidateWithError={false}
+          >
+            <div className='flex flex-col gap-4'>
+              <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4'>
+                {/* 时间选择器 */}
+                <div className='col-span-1 lg:col-span-2'>
+                  <Form.DatePicker
+                    field='dateRange'
+                    className='w-full'
+                    type='dateTimeRange'
+                    placeholder={[t('开始时间'), t('结束时间')]}
+                    showClear
+                    pure
+                    size="small"
+                  />
+                </div>
 
-            {/* 搜索表单区域 */}
-            <Form
-              initValues={formInitValues}
-              getFormApi={(api) => setFormApi(api)}
-              onSubmit={refresh}
-              allowEmpty={true}
-              autoComplete='off'
-              layout='vertical'
-              trigger='change'
-              stopValidateWithError={false}
-            >
-              <div className='flex flex-col gap-4'>
-                <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4'>
-                  {/* 时间选择器 */}
-                  <div className='col-span-1 lg:col-span-2'>
-                    <Form.DatePicker
-                      field='dateRange'
-                      className='w-full'
-                      type='dateTimeRange'
-                      placeholder={[t('开始时间'), t('结束时间')]}
+                {/* 其他搜索字段 */}
+                <Form.Input
+                  field='token_name'
+                  prefix={<IconSearch />}
+                  placeholder={t('令牌名称')}
+                  showClear
+                  pure
+                  size="small"
+                />
+
+                <Form.Input
+                  field='model_name'
+                  prefix={<IconSearch />}
+                  placeholder={t('模型名称')}
+                  showClear
+                  pure
+                  size="small"
+                />
+
+                <Form.Input
+                  field='group'
+                  prefix={<IconSearch />}
+                  placeholder={t('分组')}
+                  showClear
+                  pure
+                  size="small"
+                />
+
+                {isAdminUser && (
+                  <>
+                    <Form.Input
+                      field='channel'
+                      prefix={<IconSearch />}
+                      placeholder={t('渠道 ID')}
                       showClear
                       pure
                       size="small"
                     />
-                  </div>
-
-                  {/* 其他搜索字段 */}
-                  <Form.Input
-                    field='token_name'
-                    prefix={<IconSearch />}
-                    placeholder={t('令牌名称')}
-                    showClear
-                    pure
-                    size="small"
-                  />
-
-                  <Form.Input
-                    field='model_name'
-                    prefix={<IconSearch />}
-                    placeholder={t('模型名称')}
-                    showClear
-                    pure
-                    size="small"
-                  />
-
-                  <Form.Input
-                    field='group'
-                    prefix={<IconSearch />}
-                    placeholder={t('分组')}
-                    showClear
-                    pure
-                    size="small"
-                  />
-
-                  {isAdminUser && (
-                    <>
-                      <Form.Input
-                        field='channel'
-                        prefix={<IconSearch />}
-                        placeholder={t('渠道 ID')}
-                        showClear
-                        pure
-                        size="small"
-                      />
-                      <Form.Input
-                        field='username'
-                        prefix={<IconSearch />}
-                        placeholder={t('用户名称')}
-                        showClear
-                        pure
-                        size="small"
-                      />
-                    </>
-                  )}
-                </div>
-
-                {/* 操作按钮区域 */}
-                <div className='flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3'>
-                  {/* 日志类型选择器 */}
-                  <div className='w-full sm:w-auto'>
-                    <Form.Select
-                      field='logType'
-                      placeholder={t('日志类型')}
-                      className='w-full sm:w-auto min-w-[120px]'
+                    <Form.Input
+                      field='username'
+                      prefix={<IconSearch />}
+                      placeholder={t('用户名称')}
                       showClear
                       pure
-                      onChange={() => {
-                        // 延迟执行搜索，让表单值先更新
+                      size="small"
+                    />
+                  </>
+                )}
+              </div>
+
+              {/* 操作按钮区域 */}
+              <div className='flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3'>
+                {/* 日志类型选择器 */}
+                <div className='w-full sm:w-auto'>
+                  <Form.Select
+                    field='logType'
+                    placeholder={t('日志类型')}
+                    className='w-full sm:w-auto min-w-[120px]'
+                    showClear
+                    pure
+                    onChange={() => {
+                      // 延迟执行搜索，让表单值先更新
+                      setTimeout(() => {
+                        refresh();
+                      }, 0);
+                    }}
+                    size="small"
+                  >
+                    <Form.Select.Option value='0'>
+                      {t('全部')}
+                    </Form.Select.Option>
+                    <Form.Select.Option value='1'>
+                      {t('充值')}
+                    </Form.Select.Option>
+                    <Form.Select.Option value='2'>
+                      {t('消费')}
+                    </Form.Select.Option>
+                    <Form.Select.Option value='3'>
+                      {t('管理')}
+                    </Form.Select.Option>
+                    <Form.Select.Option value='4'>
+                      {t('系统')}
+                    </Form.Select.Option>
+                    <Form.Select.Option value='5'>
+                      {t('错误')}
+                    </Form.Select.Option>
+                  </Form.Select>
+                </div>
+
+                <div className='flex gap-2 w-full sm:w-auto justify-end'>
+                  <Button
+                    type='tertiary'
+                    htmlType='submit'
+                    loading={loading}
+                    size="small"
+                  >
+                    {t('查询')}
+                  </Button>
+                  <Button
+                    type='tertiary'
+                    onClick={() => {
+                      if (formApi) {
+                        formApi.reset();
+                        setLogType(0);
                         setTimeout(() => {
                           refresh();
-                        }, 0);
-                      }}
-                      size="small"
-                    >
-                      <Form.Select.Option value='0'>
-                        {t('全部')}
-                      </Form.Select.Option>
-                      <Form.Select.Option value='1'>
-                        {t('充值')}
-                      </Form.Select.Option>
-                      <Form.Select.Option value='2'>
-                        {t('消费')}
-                      </Form.Select.Option>
-                      <Form.Select.Option value='3'>
-                        {t('管理')}
-                      </Form.Select.Option>
-                      <Form.Select.Option value='4'>
-                        {t('系统')}
-                      </Form.Select.Option>
-                      <Form.Select.Option value='5'>
-                        {t('错误')}
-                      </Form.Select.Option>
-                    </Form.Select>
-                  </div>
-
-                  <div className='flex gap-2 w-full sm:w-auto justify-end'>
-                    <Button
-                      type='tertiary'
-                      htmlType='submit'
-                      loading={loading}
-                      size="small"
-                    >
-                      {t('查询')}
-                    </Button>
-                    <Button
-                      type='tertiary'
-                      onClick={() => {
-                        if (formApi) {
-                          formApi.reset();
-                          setLogType(0);
-                          setTimeout(() => {
-                            refresh();
-                          }, 100);
-                        }
-                      }}
-                      size="small"
-                    >
-                      {t('重置')}
-                    </Button>
-                    <Button
-                      type='tertiary'
-                      onClick={() => setShowColumnSelector(true)}
-                      size="small"
-                    >
-                      {t('列设置')}
-                    </Button>
-                  </div>
+                        }, 100);
+                      }
+                    }}
+                    size="small"
+                  >
+                    {t('重置')}
+                  </Button>
+                  <Button
+                    type='tertiary'
+                    onClick={() => setShowColumnSelector(true)}
+                    size="small"
+                  >
+                    {t('列设置')}
+                  </Button>
                 </div>
               </div>
-            </Form>
-          </div>
+            </div>
+          </Form>
         }
-        shadows='always'
-        bordered={false}
       >
         <Table
           columns={compactMode ? getVisibleColumns().map(({ fixed, ...rest }) => rest) : getVisibleColumns()}
@@ -1450,7 +1444,7 @@ const LogsTable = () => {
             onPageChange: handlePageChange,
           }}
         />
-      </Card>
+      </CardPro>
     </>
   );
 };

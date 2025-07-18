@@ -54,7 +54,7 @@ import {
   copy,
   getRelativeTime
 } from '../../helpers';
-import { useIsMobile } from '../../hooks/useIsMobile.js';
+import { useIsMobile } from '../../hooks/common/useIsMobile.js';
 import { UserContext } from '../../context/User/index.js';
 import { StatusContext } from '../../context/Status/index.js';
 import { useTranslation } from 'react-i18next';

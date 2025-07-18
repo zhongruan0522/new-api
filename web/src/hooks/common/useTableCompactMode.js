@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { getTableCompactMode, setTableCompactMode } from '../helpers';
-import { TABLE_COMPACT_MODES_KEY } from '../constants';
+import { getTableCompactMode, setTableCompactMode } from '../../helpers';
+import { TABLE_COMPACT_MODES_KEY } from '../../constants';
 
 /**
  * 自定义 Hook：管理表格紧凑/自适应模式

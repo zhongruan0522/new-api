@@ -31,8 +31,8 @@ import {
   Badge,
 } from '@douyinfe/semi-ui';
 import { StatusContext } from '../../context/Status/index.js';
-import { useIsMobile } from '../../hooks/useIsMobile.js';
-import { useSidebarCollapsed } from '../../hooks/useSidebarCollapsed.js';
+import { useIsMobile } from '../../hooks/common/useIsMobile.js';
+import { useSidebarCollapsed } from '../../hooks/common/useSidebarCollapsed.js';
 
 const HeaderBar = ({ onMobileMenuToggle, drawerOpen }) => {
   const { t, i18n } = useTranslation();
