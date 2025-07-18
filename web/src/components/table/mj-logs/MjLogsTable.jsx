@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
-import { Table, Empty } from '@douyinfe/semi-ui';
+import { Empty } from '@douyinfe/semi-ui';
+import CardTable from '../../common/ui/CardTable.js';
 import {
   IllustrationNoResult,
   IllustrationNoResultDark,
@@ -60,7 +61,7 @@ const MjLogsTable = (mjLogsData) => {
   }, [compactMode, visibleColumnsList]);
 
   return (
-    <Table
+    <CardTable
       columns={tableColumns}
       dataSource={logs}
       rowKey='key'

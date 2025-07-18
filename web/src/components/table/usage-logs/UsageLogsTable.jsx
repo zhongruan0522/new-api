@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
-import { Table, Empty, Descriptions } from '@douyinfe/semi-ui';
+import { Empty, Descriptions } from '@douyinfe/semi-ui';
+import CardTable from '../../common/ui/CardTable.js';
 import {
   IllustrationNoResult,
   IllustrationNoResultDark,
@@ -63,7 +64,7 @@ const LogsTable = (logsData) => {
   };
 
   return (
-    <Table
+    <CardTable
       columns={tableColumns}
       {...(hasExpandableRows() && {
         expandedRowRender: expandRowRender,

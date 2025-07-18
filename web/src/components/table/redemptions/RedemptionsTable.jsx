@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
-import { Table, Empty } from '@douyinfe/semi-ui';
+import { Empty } from '@douyinfe/semi-ui';
+import CardTable from '../../common/ui/CardTable.js';
 import {
   IllustrationNoResult,
   IllustrationNoResultDark
@@ -74,7 +75,7 @@ const RedemptionsTable = (redemptionsData) => {
 
   return (
     <>
-      <Table
+      <CardTable
         columns={tableColumns}
         dataSource={redemptions}
         scroll={compactMode ? undefined : { x: 'max-content' }}
