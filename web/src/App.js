@@ -7,7 +7,7 @@ import RegisterForm from './components/auth/RegisterForm.js';
 import LoginForm from './components/auth/LoginForm.js';
 import NotFound from './pages/NotFound';
 import Setting from './pages/Setting';
-import EditUser from './pages/User/EditUser';
+
 import PasswordResetForm from './components/auth/PasswordResetForm.js';
 import PasswordResetConfirm from './components/auth/PasswordResetConfirm.js';
 import Channel from './pages/Channel';
@@ -107,22 +107,6 @@ function App() {
             <PrivateRoute>
               <User />
             </PrivateRoute>
-          }
-        />
-        <Route
-          path='/console/user/edit/:id'
-          element={
-            <Suspense fallback={<Loading></Loading>} key={location.pathname}>
-              <EditUser />
-            </Suspense>
-          }
-        />
-        <Route
-          path='/console/user/edit'
-          element={
-            <Suspense fallback={<Loading></Loading>} key={location.pathname}>
-              <EditUser />
-            </Suspense>
           }
         />
         <Route

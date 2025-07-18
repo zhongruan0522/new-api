@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
-import { API, showError, showSuccess } from '../../helpers';
-import { useIsMobile } from '../../hooks/common/useIsMobile.js';
+import { API, showError, showSuccess } from '../../../../helpers';
+import { useIsMobile } from '../../../../hooks/common/useIsMobile.js';
 import {
   Button,
   SideSheet,
@@ -23,7 +23,7 @@ import { useTranslation } from 'react-i18next';
 
 const { Text, Title } = Typography;
 
-const AddUser = (props) => {
+const AddUserModal = (props) => {
   const { t } = useTranslation();
   const formApiRef = useRef(null);
   const [loading, setLoading] = useState(false);
@@ -164,4 +164,4 @@ const AddUser = (props) => {
   );
 };
 
-export default AddUser;
+export default AddUserModal; 

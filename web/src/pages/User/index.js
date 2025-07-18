@@ -1,10 +1,10 @@
 import React from 'react';
-import UsersTable from '../../components/table/UsersTable';
+import UsersPage from '../../components/table/users';
 
 const User = () => {
   return (
     <div className="mt-[60px] px-2">
-      <UsersTable />
+      <UsersPage />
     </div>
   );
 };

@@ -6,8 +6,8 @@ import {
   showSuccess,
   renderQuota,
   renderQuotaWithPrompt,
-} from '../../helpers';
-import { useIsMobile } from '../../hooks/common/useIsMobile.js';
+} from '../../../../helpers';
+import { useIsMobile } from '../../../../hooks/common/useIsMobile.js';
 import {
   Button,
   Modal,
@@ -35,7 +35,7 @@ import {
 
 const { Text, Title } = Typography;
 
-const EditUser = (props) => {
+const EditUserModal = (props) => {
   const { t } = useTranslation();
   const userId = props.editingUser.id;
   const [loading, setLoading] = useState(true);
@@ -348,4 +348,4 @@ const EditUser = (props) => {
   );
 };
 
-export default EditUser;
+export default EditUserModal; 
