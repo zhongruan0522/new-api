@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Table, Card, Skeleton, Pagination } from '@douyinfe/semi-ui';
+import { Table, Card, Skeleton, Pagination, Empty } from '@douyinfe/semi-ui';
 import PropTypes from 'prop-types';
 import { useIsMobile } from '../../../hooks/common/useIsMobile';
 
@@ -97,6 +97,18 @@ const CardTable = ({ columns = [], dataSource = [], loading = false, rowKey = 'k
   }
 
   // 渲染移动端卡片
+  const isEmpty = !showSkeleton && (!dataSource || dataSource.length === 0);
+
+  if (isEmpty) {
+    // 若传入 empty 属性则使用之，否则使用默认 Empty
+    if (tableProps.empty) return tableProps.empty;
+    return (
+      <div className="flex justify-center p-4">
+        <Empty description="No Data" />
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-2">
       {dataSource.map((record, index) => {
@@ -145,7 +157,7 @@ const CardTable = ({ columns = [], dataSource = [], loading = false, rowKey = 'k
         );
       })}
       {/* 分页组件 */}
-      {tableProps.pagination && (
+      {tableProps.pagination && dataSource.length > 0 && (
         <div className="mt-2 flex justify-center">
           <Pagination {...tableProps.pagination} />
         </div>
