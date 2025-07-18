@@ -649,12 +649,6 @@ const UsersTable = () => {
           dataSource={users}
           scroll={compactMode ? undefined : { x: 'max-content' }}
           pagination={{
-            formatPageText: (page) =>
-              t('第 {{start}} - {{end}} 条，共 {{total}} 条', {
-                start: page.currentStart,
-                end: page.currentEnd,
-                total: userCount,
-              }),
             currentPage: activePage,
             pageSize: pageSize,
             total: userCount,

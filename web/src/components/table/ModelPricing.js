@@ -535,12 +535,6 @@ const ModelPricing = () => {
           pageSize: pageSize,
           showSizeChanger: true,
           pageSizeOptions: [10, 20, 50, 100],
-          formatPageText: (page) =>
-            t('第 {{start}} - {{end}} 条，共 {{total}} 条', {
-              start: page.currentStart,
-              end: page.currentEnd,
-              total: filteredModels.length,
-            }),
           onPageSizeChange: (size) => setPageSize(size),
         }}
       />

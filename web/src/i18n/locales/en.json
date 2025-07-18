@@ -1189,7 +1189,6 @@
   "令牌无法精确控制使用额度，只允许自用，请勿直接将令牌分发给他人。": "Tokens cannot accurately control usage, only for self-use, please do not distribute tokens directly to others.",
   "添加兑换码": "Add redemption code",
   "复制所选兑换码到剪贴板": "Copy selected redemption codes to clipboard",
-  "第 {{start}} - {{end}} 条，共 {{total}} 条": "Items {{start}} - {{end}} of {{total}}",
   "新建兑换码": "Code",
   "兑换码更新成功！": "Redemption code updated successfully!",
   "兑换码创建成功！": "Redemption code created successfully!",

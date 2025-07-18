@@ -1917,11 +1917,6 @@ const ChannelsTable = () => {
             total: channelCount,
             pageSizeOpts: [10, 20, 50, 100],
             showSizeChanger: true,
-            formatPageText: (page) => t('第 {{start}} - {{end}} 条，共 {{total}} 条', {
-              start: page.currentStart,
-              end: page.currentEnd,
-              total: channelCount,
-            }),
             onPageSizeChange: (size) => {
               handlePageSizeChange(size);
             },
