@@ -1,5 +1,4 @@
 import React, { useEffect, useState, useRef, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   API,
@@ -7,9 +6,9 @@ import {
   showInfo,
   showSuccess,
   verifyJSON,
-} from '../../helpers';
-import { useIsMobile } from '../../hooks/common/useIsMobile.js';
-import { CHANNEL_OPTIONS } from '../../constants';
+} from '../../../../helpers';
+import { useIsMobile } from '../../../../hooks/common/useIsMobile.js';
+import { CHANNEL_OPTIONS } from '../../../../constants';
 import {
   SideSheet,
   Space,
@@ -28,7 +27,7 @@ import {
   Col,
   Highlight,
 } from '@douyinfe/semi-ui';
-import { getChannelModels, copy, getChannelIcon, getModelCategories } from '../../helpers';
+import { getChannelModels, copy, getChannelIcon, getModelCategories } from '../../../../helpers';
 import {
   IconSave,
   IconClose,
@@ -76,9 +75,8 @@ function type2secretPrompt(type) {
   }
 }
 
-const EditChannel = (props) => {
+const EditChannelModal = (props) => {
   const { t } = useTranslation();
-  const navigate = useNavigate();
   const channelId = props.editingChannel.id;
   const isEdit = channelId !== undefined;
   const [loading, setLoading] = useState(isEdit);
@@ -193,7 +191,7 @@ const EditChannel = (props) => {
         setInputs((inputs) => ({ ...inputs, models: localModels }));
       }
       setBasicModels(localModels);
-      
+
       // 重置手动输入模式状态
       setUseManualInput(false);
     }
@@ -726,9 +724,9 @@ const EditChannel = (props) => {
       onClick,
       ...rest
     } = renderProps;
-    
+
     const searchWords = channelSearchValue ? [channelSearchValue] : [];
-    
+
     // 构建样式类名
     const optionClassName = [
       'flex items-center gap-3 px-3 py-2 transition-all duration-200 rounded-lg mx-2 my-1',
@@ -738,12 +736,12 @@ const EditChannel = (props) => {
       !disabled && 'hover:bg-gray-50 hover:shadow-md cursor-pointer',
       className
     ].filter(Boolean).join(' ');
-    
+
     return (
-      <div 
-        style={style} 
+      <div
+        style={style}
         className={optionClassName}
-        onClick={() => !disabled && onClick()} 
+        onClick={() => !disabled && onClick()}
         onMouseEnter={e => onMouseEnter()}
       >
         <div className="flex items-center gap-3 w-full">
@@ -751,8 +749,8 @@ const EditChannel = (props) => {
             {getChannelIcon(value)}
           </div>
           <div className="flex-1 min-w-0">
-            <Highlight 
-              sourceString={label} 
+            <Highlight
+              sourceString={label}
               searchWords={searchWords}
               className="text-sm font-medium truncate"
             />
@@ -760,7 +758,7 @@ const EditChannel = (props) => {
           {selected && (
             <div className="flex-shrink-0 text-blue-600">
               <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                <path d="M13.78 4.22a.75.75 0 010 1.06l-7.25 7.25a.75.75 0 01-1.06 0L2.22 9.28a.75.75 0 011.06-1.06L6 10.94l6.72-6.72a.75.75 0 011.06 0z"/>
+                <path d="M13.78 4.22a.75.75 0 010 1.06l-7.25 7.25a.75.75 0 01-1.06 0L2.22 9.28a.75.75 0 011.06-1.06L6 10.94l6.72-6.72a.75.75 0 011.06 0z" />
               </svg>
             </div>
           )}
@@ -926,7 +924,7 @@ const EditChannel = (props) => {
                               </Space>
                             </div>
                           )}
-                          
+
                           {batch && (
                             <Banner
                               type='info'
@@ -934,7 +932,7 @@ const EditChannel = (props) => {
                               className='!rounded-lg mb-3'
                             />
                           )}
-                          
+
                           {useManualInput && !batch ? (
                             <Form.TextArea
                               field='key'
@@ -1466,4 +1464,4 @@ const EditChannel = (props) => {
   );
 };
 
-export default EditChannel;
+export default EditChannelModal; 

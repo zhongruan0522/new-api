@@ -6,7 +6,7 @@ import {
   showSuccess,
   showWarning,
   verifyJSON,
-} from '../../helpers';
+} from '../../../../helpers';
 import {
   SideSheet,
   Space,
@@ -26,7 +26,7 @@ import {
   IconUser,
   IconCode,
 } from '@douyinfe/semi-icons';
-import { getChannelModels } from '../../helpers';
+import { getChannelModels } from '../../../../helpers';
 import { useTranslation } from 'react-i18next';
 
 const { Text, Title } = Typography;
@@ -441,4 +441,4 @@ const EditTagModal = (props) => {
   );
 };
 
-export default EditTagModal;
+export default EditTagModal; 

@@ -8,8 +8,8 @@ import { useChannelsData } from '../../../hooks/channels/useChannelsData.js';
 import BatchTagModal from './modals/BatchTagModal.jsx';
 import ModelTestModal from './modals/ModelTestModal.jsx';
 import ColumnSelectorModal from './modals/ColumnSelectorModal.jsx';
-import EditChannel from '../../../pages/Channel/EditChannel.js';
-import EditTagModal from '../../../pages/Channel/EditTagModal.js';
+import EditChannelModal from './modals/EditChannelModal.jsx';
+import EditTagModal from './modals/EditTagModal.jsx';
 
 const ChannelsPage = () => {
   const channelsData = useChannelsData();
@@ -24,7 +24,7 @@ const ChannelsPage = () => {
         handleClose={() => channelsData.setShowEditTag(false)}
         refresh={channelsData.refresh}
       />
-      <EditChannel
+      <EditChannelModal
         refresh={channelsData.refresh}
         visible={channelsData.showEdit}
         handleClose={channelsData.closeEdit}

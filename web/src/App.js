@@ -12,7 +12,6 @@ import PasswordResetForm from './components/auth/PasswordResetForm.js';
 import PasswordResetConfirm from './components/auth/PasswordResetConfirm.js';
 import Channel from './pages/Channel';
 import Token from './pages/Token';
-import EditChannel from './pages/Channel/EditChannel';
 import Redemption from './pages/Redemption';
 import TopUp from './pages/TopUp';
 import Log from './pages/Log';
@@ -59,22 +58,6 @@ function App() {
             <PrivateRoute>
               <Channel />
             </PrivateRoute>
-          }
-        />
-        <Route
-          path='/console/channel/edit/:id'
-          element={
-            <Suspense fallback={<Loading></Loading>} key={location.pathname}>
-              <EditChannel />
-            </Suspense>
-          }
-        />
-        <Route
-          path='/console/channel/add'
-          element={
-            <Suspense fallback={<Loading></Loading>} key={location.pathname}>
-              <EditChannel />
-            </Suspense>
           }
         />
         <Route
