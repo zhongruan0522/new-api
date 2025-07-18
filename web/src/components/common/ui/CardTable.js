@@ -73,7 +73,7 @@ const CardTable = ({ columns = [], dataSource = [], loading = false, rowKey = 'k
             }
 
             return (
-              <div key={idx} className="flex justify-between items-center py-1 border-b last:border-b-0 border-dashed border-gray-200">
+              <div key={idx} className="flex justify-between items-center py-1 border-b last:border-b-0 border-dashed" style={{ borderColor: 'var(--semi-color-border)' }}>
                 <Skeleton.Title active style={{ width: 80, height: 14 }} />
                 <Skeleton.Title active style={{ width: `${50 + (idx % 3) * 10}%`, maxWidth: 180, height: 14 }} />
               </div>
@@ -142,7 +142,8 @@ const CardTable = ({ columns = [], dataSource = [], loading = false, rowKey = 'k
               return (
                 <div
                   key={col.key || colIdx}
-                  className="flex justify-between items-start py-1 border-b last:border-b-0 border-dashed border-gray-200"
+                  className="flex justify-between items-start py-1 border-b last:border-b-0 border-dashed"
+                  style={{ borderColor: 'var(--semi-color-border)' }}
                 >
                   <span className="font-medium text-gray-600 mr-2 whitespace-nowrap select-none">
                     {title}
