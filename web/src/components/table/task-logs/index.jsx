@@ -22,6 +22,7 @@ const TaskLogsPage = () => {
           type="type2"
           statsArea={<TaskLogsActions {...taskLogsData} />}
           searchArea={<TaskLogsFilters {...taskLogsData} />}
+          t={taskLogsData.t}
         >
           <TaskLogsTable {...taskLogsData} />
         </CardPro>

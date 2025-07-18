@@ -80,6 +80,7 @@ const RedemptionsPage = () => {
             </div>
           </div>
         }
+        t={t}
       >
         <RedemptionsTable {...redemptionsData} />
       </CardPro>

@@ -1,6 +1,8 @@
-import React from 'react';
-import { Card, Divider, Typography } from '@douyinfe/semi-ui';
+import React, { useState } from 'react';
+import { Card, Divider, Typography, Button } from '@douyinfe/semi-ui';
 import PropTypes from 'prop-types';
+import { useIsMobile } from '../../../hooks/common/useIsMobile';
+import { IconEyeOpened, IconEyeClosed } from '@douyinfe/semi-icons';
 
 const { Text } = Typography;
 
@@ -34,8 +36,21 @@ const CardPro = ({
   bordered = false,
   // 自定义样式
   style,
+  // 国际化函数
+  t = (key) => key, // 默认函数，直接返回key
   ...props
 }) => {
+  const isMobile = useIsMobile();
+  const [showMobileActions, setShowMobileActions] = useState(false);
+
+  // 切换移动端操作项显示状态
+  const toggleMobileActions = () => {
+    setShowMobileActions(!showMobileActions);
+  };
+
+  // 检查是否有需要在移动端隐藏的内容
+  const hasMobileHideableContent = actionsArea || searchArea;
+
   // 渲染头部内容
   const renderHeader = () => {
     const hasContent = statsArea || descriptionArea || tabsArea || actionsArea || searchArea;
@@ -70,22 +85,42 @@ const CardPro = ({
           </>
         )}
 
-        {/* 操作按钮和搜索表单的容器 */}
-        <div className="flex flex-col gap-2">
-          {/* 操作按钮区域 - 用于type1和type3 */}
-          {(type === 'type1' || type === 'type3') && actionsArea && (
-            <div className="w-full">
-              {actionsArea}
+        {/* 移动端操作切换按钮 */}
+        {isMobile && hasMobileHideableContent && (
+          <>
+            <div className="w-full mb-2">
+              <Button
+                onClick={toggleMobileActions}
+                icon={showMobileActions ? <IconEyeClosed /> : <IconEyeOpened />}
+                type="tertiary"
+                size="small"
+                block
+              >
+                {showMobileActions ? t('隐藏操作项') : t('显示操作项')}
+              </Button>
             </div>
-          )}
+          </>
+        )}
 
-          {/* 搜索表单区域 - 所有类型都可能有 */}
-          {searchArea && (
-            <div className="w-full">
-              {searchArea}
-            </div>
-          )}
-        </div>
+        {/* 操作按钮和搜索表单的容器 */}
+        {/* 在移动端时根据showMobileActions状态控制显示，在桌面端时始终显示 */}
+        {(!isMobile || showMobileActions) && (
+          <div className="flex flex-col gap-2">
+            {/* 操作按钮区域 - 用于type1和type3 */}
+            {(type === 'type1' || type === 'type3') && actionsArea && (
+              <div className="w-full">
+                {actionsArea}
+              </div>
+            )}
+
+            {/* 搜索表单区域 - 所有类型都可能有 */}
+            {searchArea && (
+              <div className="w-full">
+                {searchArea}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     );
   };
@@ -122,6 +157,8 @@ CardPro.propTypes = {
   searchArea: PropTypes.node,
   // 表格内容
   children: PropTypes.node,
+  // 国际化函数
+  t: PropTypes.func,
 };
 
 export default CardPro; 

@@ -85,6 +85,7 @@ const UsersPage = () => {
             />
           </div>
         }
+        t={t}
       >
         <UsersTable {...usersData} />
       </CardPro>

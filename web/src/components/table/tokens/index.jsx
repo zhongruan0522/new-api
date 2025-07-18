@@ -82,6 +82,7 @@ const TokensPage = () => {
             </div>
           </div>
         }
+        t={t}
       >
         <TokensTable {...tokensData} />
       </CardPro>

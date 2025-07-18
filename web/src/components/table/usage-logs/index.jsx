@@ -21,6 +21,7 @@ const LogsPage = () => {
         type="type2"
         statsArea={<LogsActions {...logsData} />}
         searchArea={<LogsFilters {...logsData} />}
+        t={logsData.t}
       >
         <LogsTable {...logsData} />
       </CardPro>

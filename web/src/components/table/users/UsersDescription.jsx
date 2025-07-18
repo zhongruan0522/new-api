@@ -1,6 +1,7 @@
 import React from 'react';
-import { Button, Typography } from '@douyinfe/semi-ui';
+import { Typography } from '@douyinfe/semi-ui';
 import { IconUserAdd } from '@douyinfe/semi-icons';
+import CompactModeToggle from '../../common/ui/CompactModeToggle';
 
 const { Text } = Typography;
 
@@ -11,14 +12,11 @@ const UsersDescription = ({ compactMode, setCompactMode, t }) => {
         <IconUserAdd className="mr-2" />
         <Text>{t('用户管理页面，可以查看和管理所有注册用户的信息、权限和状态。')}</Text>
       </div>
-      <Button
-        type='tertiary'
-        className="w-full md:w-auto"
-        onClick={() => setCompactMode(!compactMode)}
-        size="small"
-      >
-        {compactMode ? t('自适应列表') : t('紧凑列表')}
-      </Button>
+      <CompactModeToggle
+        compactMode={compactMode}
+        setCompactMode={setCompactMode}
+        t={t}
+      />
     </div>
   );
 };

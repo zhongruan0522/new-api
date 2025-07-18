@@ -1,6 +1,7 @@
 import React from 'react';
-import { Button, Typography } from '@douyinfe/semi-ui';
+import { Typography } from '@douyinfe/semi-ui';
 import { Key } from 'lucide-react';
+import CompactModeToggle from '../../common/ui/CompactModeToggle';
 
 const { Text } = Typography;
 
@@ -12,14 +13,11 @@ const TokensDescription = ({ compactMode, setCompactMode, t }) => {
         <Text>{t('令牌用于API访问认证，可以设置额度限制和模型权限。')}</Text>
       </div>
 
-      <Button
-        type="tertiary"
-        className="w-full md:w-auto"
-        onClick={() => setCompactMode(!compactMode)}
-        size="small"
-      >
-        {compactMode ? t('自适应列表') : t('紧凑列表')}
-      </Button>
+      <CompactModeToggle
+        compactMode={compactMode}
+        setCompactMode={setCompactMode}
+        t={t}
+      />
     </div>
   );
 };

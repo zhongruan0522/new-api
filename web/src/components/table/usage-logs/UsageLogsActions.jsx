@@ -1,6 +1,7 @@
 import React from 'react';
-import { Button, Tag, Space, Spin } from '@douyinfe/semi-ui';
+import { Tag, Space, Spin } from '@douyinfe/semi-ui';
 import { renderQuota } from '../../../helpers';
+import CompactModeToggle from '../../common/ui/CompactModeToggle';
 
 const LogsActions = ({
   stat,
@@ -49,14 +50,11 @@ const LogsActions = ({
           </Tag>
         </Space>
 
-        <Button
-          type='tertiary'
-          className="w-full md:w-auto"
-          onClick={() => setCompactMode(!compactMode)}
-          size="small"
-        >
-          {compactMode ? t('自适应列表') : t('紧凑列表')}
-        </Button>
+        <CompactModeToggle
+          compactMode={compactMode}
+          setCompactMode={setCompactMode}
+          t={t}
+        />
       </div>
     </Spin>
   );

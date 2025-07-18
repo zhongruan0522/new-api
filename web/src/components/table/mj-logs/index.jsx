@@ -22,6 +22,7 @@ const MjLogsPage = () => {
           type="type2"
           statsArea={<MjLogsActions {...mjLogsData} />}
           searchArea={<MjLogsFilters {...mjLogsData} />}
+          t={mjLogsData.t}
         >
           <MjLogsTable {...mjLogsData} />
         </CardPro>

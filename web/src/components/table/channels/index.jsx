@@ -39,6 +39,7 @@ const ChannelsPage = () => {
         tabsArea={<ChannelsTabs {...channelsData} />}
         actionsArea={<ChannelsActions {...channelsData} />}
         searchArea={<ChannelsFilters {...channelsData} />}
+        t={channelsData.t}
       >
         <ChannelsTable {...channelsData} />
       </CardPro>

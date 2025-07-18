@@ -1,6 +1,7 @@
 import React from 'react';
-import { Button, Typography } from '@douyinfe/semi-ui';
+import { Typography } from '@douyinfe/semi-ui';
 import { IconEyeOpened } from '@douyinfe/semi-icons';
+import CompactModeToggle from '../../common/ui/CompactModeToggle';
 
 const { Text } = Typography;
 
@@ -15,14 +16,11 @@ const TaskLogsActions = ({
         <IconEyeOpened className="mr-2" />
         <Text>{t('任务记录')}</Text>
       </div>
-      <Button
-        type='tertiary'
-        className="w-full md:w-auto"
-        onClick={() => setCompactMode(!compactMode)}
-        size="small"
-      >
-        {compactMode ? t('自适应列表') : t('紧凑列表')}
-      </Button>
+      <CompactModeToggle
+        compactMode={compactMode}
+        setCompactMode={setCompactMode}
+        t={t}
+      />
     </div>
   );
 };
