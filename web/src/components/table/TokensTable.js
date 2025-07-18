@@ -1,7 +1,2 @@
-// Import the new modular tokens table
-import TokensPage from './tokens';
-
-// Export the new component for backward compatibility
-const TokensTable = TokensPage;
-
-export default TokensTable;
+// 重构后的 TokensTable - 使用新的模块化架构
+export { default } from './tokens/index.jsx';

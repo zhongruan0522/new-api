@@ -1,50 +1,49 @@
 import React from 'react';
 import CardPro from '../../common/ui/CardPro';
-import TokensTable from './TokensTable.jsx';
-import TokensActions from './TokensActions.jsx';
-import TokensFilters from './TokensFilters.jsx';
-import TokensDescription from './TokensDescription.jsx';
-import EditTokenModal from './modals/EditTokenModal';
-import { useTokensData } from '../../../hooks/tokens/useTokensData';
+import RedemptionsTable from './RedemptionsTable.jsx';
+import RedemptionsActions from './RedemptionsActions.jsx';
+import RedemptionsFilters from './RedemptionsFilters.jsx';
+import RedemptionsDescription from './RedemptionsDescription.jsx';
+import EditRedemptionModal from './modals/EditRedemptionModal';
+import { useRedemptionsData } from '../../../hooks/redemptions/useRedemptionsData';
 
-const TokensPage = () => {
-  const tokensData = useTokensData();
+const RedemptionsPage = () => {
+  const redemptionsData = useRedemptionsData();
 
   const {
     // Edit state
     showEdit,
-    editingToken,
+    editingRedemption,
     closeEdit,
     refresh,
 
     // Actions state
     selectedKeys,
-    setEditingToken,
+    setEditingRedemption,
     setShowEdit,
-    batchCopyTokens,
-    batchDeleteTokens,
-    copyText,
+    batchCopyRedemptions,
+    batchDeleteRedemptions,
 
     // Filters state
     formInitValues,
     setFormApi,
-    searchTokens,
+    searchRedemptions,
     loading,
     searching,
 
-    // Description state
+    // UI state
     compactMode,
     setCompactMode,
 
     // Translation
     t,
-  } = tokensData;
+  } = redemptionsData;
 
   return (
     <>
-      <EditTokenModal
+      <EditRedemptionModal
         refresh={refresh}
-        editingToken={editingToken}
+        editingRedemption={editingRedemption}
         visiable={showEdit}
         handleClose={closeEdit}
       />
@@ -52,7 +51,7 @@ const TokensPage = () => {
       <CardPro
         type="type1"
         descriptionArea={
-          <TokensDescription
+          <RedemptionsDescription
             compactMode={compactMode}
             setCompactMode={setCompactMode}
             t={t}
@@ -60,21 +59,20 @@ const TokensPage = () => {
         }
         actionsArea={
           <div className="flex flex-col md:flex-row justify-between items-center gap-2 w-full">
-            <TokensActions
+            <RedemptionsActions
               selectedKeys={selectedKeys}
-              setEditingToken={setEditingToken}
+              setEditingRedemption={setEditingRedemption}
               setShowEdit={setShowEdit}
-              batchCopyTokens={batchCopyTokens}
-              batchDeleteTokens={batchDeleteTokens}
-              copyText={copyText}
+              batchCopyRedemptions={batchCopyRedemptions}
+              batchDeleteRedemptions={batchDeleteRedemptions}
               t={t}
             />
 
             <div className="w-full md:w-full lg:w-auto order-1 md:order-2">
-              <TokensFilters
+              <RedemptionsFilters
                 formInitValues={formInitValues}
                 setFormApi={setFormApi}
-                searchTokens={searchTokens}
+                searchRedemptions={searchRedemptions}
                 loading={loading}
                 searching={searching}
                 t={t}
@@ -83,10 +81,10 @@ const TokensPage = () => {
           </div>
         }
       >
-        <TokensTable {...tokensData} />
+        <RedemptionsTable {...redemptionsData} />
       </CardPro>
     </>
   );
 };
 
-export default TokensPage; 
+export default RedemptionsPage; 

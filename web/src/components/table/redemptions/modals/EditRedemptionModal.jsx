@@ -7,8 +7,8 @@ import {
   showSuccess,
   renderQuota,
   renderQuotaWithPrompt,
-} from '../../helpers';
-import { useIsMobile } from '../../hooks/common/useIsMobile.js';
+} from '../../../../helpers';
+import { useIsMobile } from '../../../../hooks/common/useIsMobile.js';
 import {
   Button,
   Modal,
@@ -32,7 +32,7 @@ import {
 
 const { Text, Title } = Typography;
 
-const EditRedemption = (props) => {
+const EditRedemptionModal = (props) => {
   const { t } = useTranslation();
   const isEdit = props.editingRedemption.id !== undefined;
   const [loading, setLoading] = useState(isEdit);
@@ -302,4 +302,4 @@ const EditRedemption = (props) => {
   );
 };
 
-export default EditRedemption;
+export default EditRedemptionModal; 

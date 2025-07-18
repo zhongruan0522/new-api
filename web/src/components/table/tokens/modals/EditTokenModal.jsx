@@ -7,8 +7,8 @@ import {
   renderGroupOption,
   renderQuotaWithPrompt,
   getModelCategories,
-} from '../../helpers';
-import { useIsMobile } from '../../hooks/common/useIsMobile.js';
+} from '../../../../helpers';
+import { useIsMobile } from '../../../../hooks/common/useIsMobile.js';
 import {
   Button,
   SideSheet,
@@ -30,11 +30,11 @@ import {
   IconKey,
 } from '@douyinfe/semi-icons';
 import { useTranslation } from 'react-i18next';
-import { StatusContext } from '../../context/Status';
+import { StatusContext } from '../../../../context/Status';
 
 const { Text, Title } = Typography;
 
-const EditToken = (props) => {
+const EditTokenModal = (props) => {
   const { t } = useTranslation();
   const [statusState, statusDispatch] = useContext(StatusContext);
   const [loading, setLoading] = useState(false);
@@ -522,4 +522,4 @@ const EditToken = (props) => {
   );
 };
 
-export default EditToken;
+export default EditTokenModal; 

@@ -432,27 +432,6 @@ code {
   background: transparent;
 }
 
-/* ==================== 响应式/移动端样式 ==================== */
-@media only screen and (max-width: 767px) {
-
-  /* 移动端表格样式调整 */
-  .semi-table-tbody,
-  .semi-table-row,
-  .semi-table-row-cell {
-    display: block !important;
-    width: auto !important;
-    padding: 2px !important;
-  }
-
-  .semi-table-row-cell {
-    border-bottom: 0 !important;
-  }
-
-  .semi-table-tbody>.semi-table-row {
-    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-  }
-}
-
 /* ==================== 同步倍率 - 渠道选择器 ==================== */
 
 .components-transfer-source-item,
