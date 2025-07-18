@@ -1,0 +1,104 @@
+import React from 'react';
+import { Button, Form } from '@douyinfe/semi-ui';
+import { IconSearch } from '@douyinfe/semi-icons';
+
+const MjLogsFilters = ({
+  formInitValues,
+  setFormApi,
+  refresh,
+  setShowColumnSelector,
+  formApi,
+  loading,
+  isAdminUser,
+  t,
+}) => {
+  return (
+    <Form
+      initValues={formInitValues}
+      getFormApi={(api) => setFormApi(api)}
+      onSubmit={refresh}
+      allowEmpty={true}
+      autoComplete="off"
+      layout="vertical"
+      trigger="change"
+      stopValidateWithError={false}
+    >
+      <div className="flex flex-col gap-2">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
+          {/* 时间选择器 */}
+          <div className="col-span-1 lg:col-span-2">
+            <Form.DatePicker
+              field='dateRange'
+              className="w-full"
+              type='dateTimeRange'
+              placeholder={[t('开始时间'), t('结束时间')]}
+              showClear
+              pure
+              size="small"
+            />
+          </div>
+
+          {/* 任务 ID */}
+          <Form.Input
+            field='mj_id'
+            prefix={<IconSearch />}
+            placeholder={t('任务 ID')}
+            showClear
+            pure
+            size="small"
+          />
+
+          {/* 渠道 ID - 仅管理员可见 */}
+          {isAdminUser && (
+            <Form.Input
+              field='channel_id'
+              prefix={<IconSearch />}
+              placeholder={t('渠道 ID')}
+              showClear
+              pure
+              size="small"
+            />
+          )}
+        </div>
+
+        {/* 操作按钮区域 */}
+        <div className="flex justify-between items-center">
+          <div></div>
+          <div className="flex gap-2">
+            <Button
+              type='tertiary'
+              htmlType='submit'
+              loading={loading}
+              size="small"
+            >
+              {t('查询')}
+            </Button>
+            <Button
+              type='tertiary'
+              onClick={() => {
+                if (formApi) {
+                  formApi.reset();
+                  setTimeout(() => {
+                    refresh();
+                  }, 100);
+                }
+              }}
+              size="small"
+            >
+              {t('重置')}
+            </Button>
+            <Button
+              type='tertiary'
+              onClick={() => setShowColumnSelector(true)}
+              size="small"
+            >
+              {t('列设置')}
+            </Button>
+          </div>
+        </div>
+      </div>
+    </Form>
+  );
+};
+
+export default MjLogsFilters; 
