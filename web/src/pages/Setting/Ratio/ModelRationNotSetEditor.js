@@ -420,12 +420,6 @@ export default function ModelRatioNotSetEditor(props) {
             onPageChange: (page) => setCurrentPage(page),
             onPageSizeChange: handlePageSizeChange,
             pageSizeOptions: pageSizeOptions,
-            formatPageText: (page) =>
-              t('第 {{start}} - {{end}} 条，共 {{total}} 条', {
-                start: page.currentStart,
-                end: page.currentEnd,
-                total: filteredModels.length,
-              }),
             showTotal: true,
             showSizeChanger: true,
           }}

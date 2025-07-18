@@ -475,12 +475,6 @@ export default function ModelSettingsVisualEditor(props) {
             pageSize: pageSize,
             total: filteredModels.length,
             onPageChange: (page) => setCurrentPage(page),
-            formatPageText: (page) =>
-              t('第 {{start}} - {{end}} 条，共 {{total}} 条', {
-                start: page.currentStart,
-                end: page.currentEnd,
-                total: filteredModels.length,
-              }),
             showTotal: true,
             showSizeChanger: false,
           }}
