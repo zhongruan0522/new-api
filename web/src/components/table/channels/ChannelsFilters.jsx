@@ -18,7 +18,7 @@ const ChannelsFilters = ({
   t
 }) => {
   return (
-    <div className="flex flex-col md:flex-row justify-between items-center gap-4 w-full">
+    <div className="flex flex-col md:flex-row justify-between items-center gap-2 w-full">
       <div className="flex gap-2 w-full md:w-auto order-2 md:order-1">
         <Button
           size='small'
@@ -54,7 +54,7 @@ const ChannelsFilters = ({
         </Button>
       </div>
 
-      <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto order-1 md:order-2">
+      <div className="flex flex-col md:flex-row items-center gap-2 w-full md:w-auto order-1 md:order-2">
         <Form
           initValues={formInitValues}
           getFormApi={(api) => setFormApi(api)}
@@ -64,7 +64,7 @@ const ChannelsFilters = ({
           layout="horizontal"
           trigger="change"
           stopValidateWithError={false}
-          className="flex flex-col md:flex-row items-center gap-4 w-full"
+          className="flex flex-col md:flex-row items-center gap-2 w-full"
         >
           <div className="relative w-full md:w-64">
             <Form.Input

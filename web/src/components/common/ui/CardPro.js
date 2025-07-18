@@ -45,33 +45,33 @@ const CardPro = ({
       <div className="flex flex-col w-full">
         {/* 统计信息区域 - 用于type2 */}
         {type === 'type2' && statsArea && (
-          <div className="mb-4">
+          <>
             {statsArea}
-          </div>
+          </>
         )}
 
         {/* 描述信息区域 - 用于type1和type3 */}
         {(type === 'type1' || type === 'type3') && descriptionArea && (
-          <div className="mb-2">
+          <>
             {descriptionArea}
-          </div>
+          </>
         )}
 
         {/* 第一个分隔线 - 在描述信息或统计信息后面 */}
-        {((type === 'type1' || type === 'type3') && descriptionArea) || 
-         (type === 'type2' && statsArea) ? (
+        {((type === 'type1' || type === 'type3') && descriptionArea) ||
+          (type === 'type2' && statsArea) ? (
           <Divider margin="12px" />
         ) : null}
 
         {/* 类型切换/标签区域 - 主要用于type3 */}
         {type === 'type3' && tabsArea && (
-          <div className="mb-4">
+          <>
             {tabsArea}
-          </div>
+          </>
         )}
 
         {/* 操作按钮和搜索表单的容器 */}
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-2">
           {/* 操作按钮区域 - 用于type1和type3 */}
           {(type === 'type1' || type === 'type3') && actionsArea && (
             <div className="w-full">

@@ -30,7 +30,7 @@ const ChannelsTabs = ({
       type="card"
       collapsible
       onChange={handleTabChange}
-      className="mb-4"
+      className="mb-2"
     >
       <TabPane
         itemKey="all"
