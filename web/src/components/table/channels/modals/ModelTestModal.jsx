@@ -49,15 +49,15 @@ const ModelTestModal = ({
   isMobile,
   t
 }) => {
-  if (!showModelTestModal || !currentTestChannel) {
-    return null;
-  }
+  const hasChannel = Boolean(currentTestChannel);
 
-  const filteredModels = currentTestChannel.models
-    .split(',')
-    .filter((model) =>
-      model.toLowerCase().includes(modelSearchKeyword.toLowerCase())
-    );
+  const filteredModels = hasChannel
+    ? currentTestChannel.models
+      .split(',')
+      .filter((model) =>
+        model.toLowerCase().includes(modelSearchKeyword.toLowerCase())
+      )
+    : [];
 
   const handleCopySelected = () => {
     if (selectedModelKeys.length === 0) {
@@ -158,6 +158,7 @@ const ModelTestModal = ({
   ];
 
   const dataSource = (() => {
+    if (!hasChannel) return [];
     const start = (modelTablePage - 1) * MODEL_TABLE_PAGE_SIZE;
     const end = start + MODEL_TABLE_PAGE_SIZE;
     return filteredModels.slice(start, end).map((model) => ({
@@ -168,7 +169,7 @@ const ModelTestModal = ({
 
   return (
     <Modal
-      title={
+      title={hasChannel ? (
         <div className="flex flex-col gap-2 w-full">
           <div className="flex items-center gap-2">
             <Typography.Text strong className="!text-[var(--semi-color-text-0)] !text-base">
@@ -179,10 +180,10 @@ const ModelTestModal = ({
             </Typography.Text>
           </div>
         </div>
-      }
+      ) : null}
       visible={showModelTestModal}
       onCancel={handleCloseModal}
-      footer={
+      footer={hasChannel ? (
         <div className="flex justify-end">
           {isBatchTesting ? (
             <Button
@@ -210,12 +211,12 @@ const ModelTestModal = ({
             )}
           </Button>
         </div>
-      }
+      ) : null}
       maskClosable={!isBatchTesting}
       className="!rounded-lg"
       size={isMobile ? 'full-width' : 'large'}
     >
-      <div className="model-test-scroll">
+      {hasChannel && (<div className="model-test-scroll">
         {/* 搜索与操作按钮 */}
         <div className="flex items-center justify-end gap-2 w-full mb-2">
           <Input
@@ -267,7 +268,7 @@ const ModelTestModal = ({
             onPageChange: (page) => setModelTablePage(page),
           }}
         />
-      </div>
+      </div>)}
     </Modal>
   );
 };

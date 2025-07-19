@@ -139,7 +139,6 @@ const CardPro = ({
             </div>
           )}
         </div>
-
       </div>
     );
   };
