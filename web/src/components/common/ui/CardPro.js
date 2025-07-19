@@ -127,10 +127,24 @@ const CardPro = ({
         >
           {/* 操作按钮区域 - 用于type1和type3 */}
           {(type === 'type1' || type === 'type3') && actionsArea && (
-            <div className="w-full">
-              {actionsArea}
-            </div>
+            Array.isArray(actionsArea) ? (
+              actionsArea.map((area, idx) => (
+                <React.Fragment key={idx}>
+                  {idx !== 0 && <Divider />}
+                  <div className="w-full">
+                    {area}
+                  </div>
+                </React.Fragment>
+              ))
+            ) : (
+              <div className="w-full">
+                {actionsArea}
+              </div>
+            )
           )}
+
+          {/* 当同时存在操作区和搜索区时，插入分隔线 */}
+          {(actionsArea && searchArea) && <Divider />}
 
           {/* 搜索表单区域 - 所有类型都可能有 */}
           {searchArea && (
@@ -171,7 +185,10 @@ CardPro.propTypes = {
   statsArea: PropTypes.node,
   descriptionArea: PropTypes.node,
   tabsArea: PropTypes.node,
-  actionsArea: PropTypes.node,
+  actionsArea: PropTypes.oneOfType([
+    PropTypes.node,
+    PropTypes.arrayOf(PropTypes.node),
+  ]),
   searchArea: PropTypes.node,
   // 表格内容
   children: PropTypes.node,
