@@ -152,6 +152,14 @@ func NewError(err error, errorCode ErrorCode) *NewAPIError {
 	}
 }
 
+func NewOpenAIError(err error, errorCode ErrorCode, statusCode int) *NewAPIError {
+	openaiError := OpenAIError{
+		Message: err.Error(),
+		Type:    string(errorCode),
+	}
+	return WithOpenAIError(openaiError, statusCode)
+}
+
 func NewErrorWithStatusCode(err error, errorCode ErrorCode, statusCode int) *NewAPIError {
 	return &NewAPIError{
 		Err:        err,
