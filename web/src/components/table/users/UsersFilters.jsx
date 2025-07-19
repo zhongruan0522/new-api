@@ -17,7 +17,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 
-import React from 'react';
+import React, { useRef } from 'react';
 import { Form, Button } from '@douyinfe/semi-ui';
 import { IconSearch } from '@douyinfe/semi-icons';
 
@@ -34,21 +34,23 @@ const UsersFilters = ({
   t
 }) => {
 
-  // Handle form reset and immediate search
-  const handleReset = (formApi) => {
-    if (formApi) {
-      formApi.reset();
-      // Reset and search immediately
-      setTimeout(() => {
-        loadUsers(1, pageSize);
-      }, 100);
-    }
+  const formApiRef = useRef(null);
+
+  const handleReset = () => {
+    if (!formApiRef.current) return;
+    formApiRef.current.reset();
+    setTimeout(() => {
+      loadUsers(1, pageSize);
+    }, 100);
   };
 
   return (
     <Form
       initValues={formInitValues}
-      getFormApi={(api) => setFormApi(api)}
+      getFormApi={(api) => {
+        setFormApi(api);
+        formApiRef.current = api;
+      }}
       onSubmit={() => {
         searchUsers(1, pageSize);
       }}
@@ -99,7 +101,7 @@ const UsersFilters = ({
           </Button>
           <Button
             type='tertiary'
-            onClick={(_, formApi) => handleReset(formApi)}
+            onClick={handleReset}
             className="flex-1 md:flex-initial md:w-auto"
             size="small"
           >

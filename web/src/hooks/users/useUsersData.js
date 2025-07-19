@@ -71,6 +71,7 @@ export const useUsersData = () => {
 
   // Load users data
   const loadUsers = async (startIdx, pageSize) => {
+    setLoading(true);
     const res = await API.get(`/api/user/?p=${startIdx}&page_size=${pageSize}`);
     const { success, message, data } = res.data;
     if (success) {
