@@ -1780,5 +1780,7 @@
   "美元汇率（非充值汇率，仅用于定价页面换算）": "USD exchange rate (not recharge rate, only used for pricing page conversion)",
   "美元汇率": "USD exchange rate",
   "隐藏操作项": "Hide actions",
-  "显示操作项": "Show actions"
+  "显示操作项": "Show actions",
+  "用户组": "User group",
+  "邀请获得额度": "Invitation quota"
 }
