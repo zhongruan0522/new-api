@@ -124,20 +124,20 @@ const renderStatus = (text, record, manageToken, t) => {
     </Tag>
   );
 
-  if (record.unlimited_quota) {
-    return content;
-  }
+  const tooltipContent = record.unlimited_quota ? (
+    <div className='text-xs'>
+      <div>{t('已用额度')}: {renderQuota(used)}</div>
+    </div>
+  ) : (
+    <div className='text-xs'>
+      <div>{t('已用额度')}: {renderQuota(used)}</div>
+      <div>{t('剩余额度')}: {renderQuota(remain)} ({percent.toFixed(0)}%)</div>
+      <div>{t('总额度')}: {renderQuota(total)}</div>
+    </div>
+  );
 
   return (
-    <Tooltip
-      content={
-        <div className='text-xs'>
-          <div>{t('已用额度')}: {renderQuota(used)}</div>
-          <div>{t('剩余额度')}: {renderQuota(remain)} ({percent.toFixed(0)}%)</div>
-          <div>{t('总额度')}: {renderQuota(total)}</div>
-        </div>
-      }
-    >
+    <Tooltip content={tooltipContent}>
       {content}
     </Tooltip>
   );
