@@ -121,30 +121,36 @@ export const useUsersData = () => {
 
   // Manage user operations (promote, demote, enable, disable, delete)
   const manageUser = async (userId, action, record) => {
+    // Trigger loading state to force table re-render
+    setLoading(true);
+
     const res = await API.post('/api/user/manage', {
       id: userId,
       action,
     });
+
     const { success, message } = res.data;
     if (success) {
       showSuccess('操作成功完成！');
-      let user = res.data.data;
-      let newUsers = [...users];
-      if (action === 'delete') {
-        // Mark as deleted
-        const index = newUsers.findIndex(u => u.id === userId);
-        if (index > -1) {
-          newUsers[index].DeletedAt = new Date();
+      const user = res.data.data;
+
+      // Create a new array and new object to ensure React detects changes
+      const newUsers = users.map((u) => {
+        if (u.id === userId) {
+          if (action === 'delete') {
+            return { ...u, DeletedAt: new Date() };
+          }
+          return { ...u, status: user.status, role: user.role };
         }
-      } else {
-        // Update status and role
-        record.status = user.status;
-        record.role = user.role;
-      }
+        return u;
+      });
+
       setUsers(newUsers);
     } else {
       showError(message);
     }
+
+    setLoading(false);
   };
 
   // Handle page change
