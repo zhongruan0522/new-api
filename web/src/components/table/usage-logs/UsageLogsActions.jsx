@@ -53,9 +53,9 @@ const LogsActions = ({
   // Skeleton placeholder layout (three tag-size blocks)
   const placeholder = (
     <Space>
-      <Skeleton.Title style={{ width: 108, height: 26, borderRadius: 6 }} />
-      <Skeleton.Title style={{ width: 65, height: 26, borderRadius: 6 }} />
-      <Skeleton.Title style={{ width: 64, height: 26, borderRadius: 6 }} />
+      <Skeleton.Title style={{ width: 108, height: 21, borderRadius: 6 }} />
+      <Skeleton.Title style={{ width: 65, height: 21, borderRadius: 6 }} />
+      <Skeleton.Title style={{ width: 64, height: 21, borderRadius: 6 }} />
     </Space>
   );
 
