@@ -28,12 +28,13 @@ const { Text } = Typography;
 /**
  * CardPro 高级卡片组件
  * 
- * 布局分为5个区域：
+ * 布局分为6个区域：
  * 1. 统计信息区域 (statsArea)
  * 2. 描述信息区域 (descriptionArea) 
  * 3. 类型切换/标签区域 (tabsArea)
  * 4. 操作按钮区域 (actionsArea)
  * 5. 搜索表单区域 (searchArea)
+ * 6. 分页区域 (paginationArea) - 固定在卡片底部
  * 
  * 支持三种布局类型：
  * - type1: 操作型 (如TokensTable) - 描述信息 + 操作按钮 + 搜索表单
@@ -50,6 +51,7 @@ const CardPro = ({
   tabsArea,
   actionsArea,
   searchArea,
+  paginationArea, // 新增分页区域
   // 卡片属性
   shadows = 'always',
   bordered = false,
@@ -159,10 +161,24 @@ const CardPro = ({
 
   const headerContent = renderHeader();
 
+  // 渲染分页区域
+  const renderFooter = () => {
+    if (!paginationArea) return null;
+
+    return (
+      <div className="flex justify-center w-full pt-4 border-t" style={{ borderColor: 'var(--semi-color-border)' }}>
+        {paginationArea}
+      </div>
+    );
+  };
+
+  const footerContent = renderFooter();
+
   return (
     <Card
       className={`table-scroll-card !rounded-2xl ${className}`}
       title={headerContent}
+      footer={footerContent}
       shadows={shadows}
       bordered={bordered}
       style={style}
@@ -190,6 +206,7 @@ CardPro.propTypes = {
     PropTypes.arrayOf(PropTypes.node),
   ]),
   searchArea: PropTypes.node,
+  paginationArea: PropTypes.node, // 新增分页区域
   // 表格内容
   children: PropTypes.node,
   // 国际化函数

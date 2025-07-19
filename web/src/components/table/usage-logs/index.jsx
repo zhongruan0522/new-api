@@ -25,6 +25,7 @@ import LogsFilters from './UsageLogsFilters.jsx';
 import ColumnSelectorModal from './modals/ColumnSelectorModal.jsx';
 import UserInfoModal from './modals/UserInfoModal.jsx';
 import { useLogsData } from '../../../hooks/usage-logs/useUsageLogsData.js';
+import { createCardProPagination } from '../../../helpers/utils';
 
 const LogsPage = () => {
   const logsData = useLogsData();
@@ -40,6 +41,13 @@ const LogsPage = () => {
         type="type2"
         statsArea={<LogsActions {...logsData} />}
         searchArea={<LogsFilters {...logsData} />}
+        paginationArea={createCardProPagination({
+          currentPage: logsData.activePage,
+          pageSize: logsData.pageSize,
+          total: logsData.logCount,
+          onPageChange: logsData.handlePageChange,
+          onPageSizeChange: logsData.handlePageSizeChange,
+        })}
         t={logsData.t}
       >
         <LogsTable {...logsData} />

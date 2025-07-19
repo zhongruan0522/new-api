@@ -25,6 +25,7 @@ import TokensFilters from './TokensFilters.jsx';
 import TokensDescription from './TokensDescription.jsx';
 import EditTokenModal from './modals/EditTokenModal';
 import { useTokensData } from '../../../hooks/tokens/useTokensData';
+import { createCardProPagination } from '../../../helpers/utils';
 
 const TokensPage = () => {
   const tokensData = useTokensData();
@@ -101,6 +102,13 @@ const TokensPage = () => {
             </div>
           </div>
         }
+        paginationArea={createCardProPagination({
+          currentPage: tokensData.activePage,
+          pageSize: tokensData.pageSize,
+          total: tokensData.tokenCount,
+          onPageChange: tokensData.handlePageChange,
+          onPageSizeChange: tokensData.handlePageSizeChange,
+        })}
         t={t}
       >
         <TokensTable {...tokensData} />

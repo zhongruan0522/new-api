@@ -107,6 +107,7 @@ const RedemptionsTable = (redemptionsData) => {
           onPageSizeChange: redemptionsData.handlePageSizeChange,
           onPageChange: handlePageChange,
         }}
+        hidePagination={true}
         loading={loading}
         rowSelection={rowSelection}
         onRow={handleRow}

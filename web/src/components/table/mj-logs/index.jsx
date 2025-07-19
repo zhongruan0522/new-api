@@ -26,6 +26,7 @@ import MjLogsFilters from './MjLogsFilters.jsx';
 import ColumnSelectorModal from './modals/ColumnSelectorModal.jsx';
 import ContentModal from './modals/ContentModal.jsx';
 import { useMjLogsData } from '../../../hooks/mj-logs/useMjLogsData.js';
+import { createCardProPagination } from '../../../helpers/utils';
 
 const MjLogsPage = () => {
   const mjLogsData = useMjLogsData();
@@ -41,6 +42,13 @@ const MjLogsPage = () => {
           type="type2"
           statsArea={<MjLogsActions {...mjLogsData} />}
           searchArea={<MjLogsFilters {...mjLogsData} />}
+          paginationArea={createCardProPagination({
+            currentPage: mjLogsData.activePage,
+            pageSize: mjLogsData.pageSize,
+            total: mjLogsData.logCount,
+            onPageChange: mjLogsData.handlePageChange,
+            onPageSizeChange: mjLogsData.handlePageSizeChange,
+          })}
           t={mjLogsData.t}
         >
           <MjLogsTable {...mjLogsData} />

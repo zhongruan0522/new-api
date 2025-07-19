@@ -137,6 +137,7 @@ const UsersTable = (usersData) => {
           onPageSizeChange: handlePageSizeChange,
           onPageChange: handlePageChange,
         }}
+        hidePagination={true}
         loading={loading}
         onRow={handleRow}
         empty={

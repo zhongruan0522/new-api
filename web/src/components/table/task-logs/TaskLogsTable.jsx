@@ -106,6 +106,7 @@ const TaskLogsTable = (taskLogsData) => {
         onPageSizeChange: handlePageSizeChange,
         onPageChange: handlePageChange,
       }}
+      hidePagination={true}
     />
   );
 };

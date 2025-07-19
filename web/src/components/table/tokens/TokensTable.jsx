@@ -99,6 +99,7 @@ const TokensTable = (tokensData) => {
         onPageSizeChange: handlePageSizeChange,
         onPageChange: handlePageChange,
       }}
+      hidePagination={true}
       loading={loading}
       rowSelection={rowSelection}
       onRow={handleRow}

@@ -26,6 +26,7 @@ import TaskLogsFilters from './TaskLogsFilters.jsx';
 import ColumnSelectorModal from './modals/ColumnSelectorModal.jsx';
 import ContentModal from './modals/ContentModal.jsx';
 import { useTaskLogsData } from '../../../hooks/task-logs/useTaskLogsData.js';
+import { createCardProPagination } from '../../../helpers/utils';
 
 const TaskLogsPage = () => {
   const taskLogsData = useTaskLogsData();
@@ -41,6 +42,13 @@ const TaskLogsPage = () => {
           type="type2"
           statsArea={<TaskLogsActions {...taskLogsData} />}
           searchArea={<TaskLogsFilters {...taskLogsData} />}
+          paginationArea={createCardProPagination({
+            currentPage: taskLogsData.activePage,
+            pageSize: taskLogsData.pageSize,
+            total: taskLogsData.logCount,
+            onPageChange: taskLogsData.handlePageChange,
+            onPageSizeChange: taskLogsData.handlePageSizeChange,
+          })}
           t={taskLogsData.t}
         >
           <TaskLogsTable {...taskLogsData} />

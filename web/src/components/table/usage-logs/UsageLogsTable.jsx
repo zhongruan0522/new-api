@@ -120,6 +120,7 @@ const LogsTable = (logsData) => {
         },
         onPageChange: handlePageChange,
       }}
+      hidePagination={true}
     />
   );
 };

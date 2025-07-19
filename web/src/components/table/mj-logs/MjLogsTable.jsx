@@ -109,6 +109,7 @@ const MjLogsTable = (mjLogsData) => {
         onPageSizeChange: handlePageSizeChange,
         onPageChange: handlePageChange,
       }}
+      hidePagination={true}
     />
   );
 };

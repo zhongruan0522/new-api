@@ -25,6 +25,7 @@ import RedemptionsFilters from './RedemptionsFilters.jsx';
 import RedemptionsDescription from './RedemptionsDescription.jsx';
 import EditRedemptionModal from './modals/EditRedemptionModal';
 import { useRedemptionsData } from '../../../hooks/redemptions/useRedemptionsData';
+import { createCardProPagination } from '../../../helpers/utils';
 
 const RedemptionsPage = () => {
   const redemptionsData = useRedemptionsData();
@@ -99,6 +100,13 @@ const RedemptionsPage = () => {
             </div>
           </div>
         }
+        paginationArea={createCardProPagination({
+          currentPage: redemptionsData.activePage,
+          pageSize: redemptionsData.pageSize,
+          total: redemptionsData.tokenCount,
+          onPageChange: redemptionsData.handlePageChange,
+          onPageSizeChange: redemptionsData.handlePageSizeChange,
+        })}
         t={t}
       >
         <RedemptionsTable {...redemptionsData} />

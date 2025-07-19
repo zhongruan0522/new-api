@@ -129,6 +129,7 @@ const ChannelsTable = (channelsData) => {
         onPageSizeChange: handlePageSizeChange,
         onPageChange: handlePageChange,
       }}
+      hidePagination={true}
       expandAllRows={false}
       onRow={handleRow}
       rowSelection={

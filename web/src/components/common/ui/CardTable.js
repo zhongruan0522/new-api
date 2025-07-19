@@ -30,7 +30,14 @@ import { useIsMobile } from '../../../hooks/common/useIsMobile';
  * 在桌面端渲染 Semi-UI 的 Table 组件，在移动端则将每一行数据渲染成 Card 形式。
  * 该组件与 Table 组件的大部分 API 保持一致，只需将原 Table 换成 CardTable 即可。
  */
-const CardTable = ({ columns = [], dataSource = [], loading = false, rowKey = 'key', ...tableProps }) => {
+const CardTable = ({
+  columns = [],
+  dataSource = [],
+  loading = false,
+  rowKey = 'key',
+  hidePagination = false, // 新增参数，控制是否隐藏内部分页
+  ...tableProps
+}) => {
   const isMobile = useIsMobile();
   const { t } = useTranslation();
 
@@ -62,13 +69,18 @@ const CardTable = ({ columns = [], dataSource = [], loading = false, rowKey = 'k
 
   // 如果不是移动端，直接渲染原 Table
   if (!isMobile) {
+    // 如果要隐藏分页，则从tableProps中移除pagination
+    const finalTableProps = hidePagination
+      ? { ...tableProps, pagination: false }
+      : tableProps;
+
     return (
       <Table
         columns={columns}
         dataSource={dataSource}
         loading={loading}
         rowKey={rowKey}
-        {...tableProps}
+        {...finalTableProps}
       />
     );
   }
@@ -215,8 +227,8 @@ const CardTable = ({ columns = [], dataSource = [], loading = false, rowKey = 'k
       {dataSource.map((record, index) => (
         <MobileRowCard key={getRowKey(record, index)} record={record} index={index} />
       ))}
-      {/* 分页组件 */}
-      {tableProps.pagination && dataSource.length > 0 && (
+      {/* 分页组件 - 只在不隐藏分页且有pagination配置时显示 */}
+      {!hidePagination && tableProps.pagination && dataSource.length > 0 && (
         <div className="mt-2 flex justify-center">
           <Pagination {...tableProps.pagination} />
         </div>
@@ -230,6 +242,7 @@ CardTable.propTypes = {
   dataSource: PropTypes.array,
   loading: PropTypes.bool,
   rowKey: PropTypes.oneOfType([PropTypes.string, PropTypes.func]),
+  hidePagination: PropTypes.bool, // 控制是否隐藏内部分页
 };
 
 export default CardTable; 

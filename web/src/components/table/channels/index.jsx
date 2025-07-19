@@ -29,6 +29,7 @@ import ModelTestModal from './modals/ModelTestModal.jsx';
 import ColumnSelectorModal from './modals/ColumnSelectorModal.jsx';
 import EditChannelModal from './modals/EditChannelModal.jsx';
 import EditTagModal from './modals/EditTagModal.jsx';
+import { createCardProPagination } from '../../../helpers/utils';
 
 const ChannelsPage = () => {
   const channelsData = useChannelsData();
@@ -58,6 +59,13 @@ const ChannelsPage = () => {
         tabsArea={<ChannelsTabs {...channelsData} />}
         actionsArea={<ChannelsActions {...channelsData} />}
         searchArea={<ChannelsFilters {...channelsData} />}
+        paginationArea={createCardProPagination({
+          currentPage: channelsData.activePage,
+          pageSize: channelsData.pageSize,
+          total: channelsData.channelCount,
+          onPageChange: channelsData.handlePageChange,
+          onPageSizeChange: channelsData.handlePageSizeChange,
+        })}
         t={channelsData.t}
       >
         <ChannelsTable {...channelsData} />
