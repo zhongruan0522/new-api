@@ -18,7 +18,9 @@ For commercial licensing, please contact support@quantumnous.com
 */
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Table, Card, Skeleton, Pagination, Empty } from '@douyinfe/semi-ui';
+import { useTranslation } from 'react-i18next';
+import { Table, Card, Skeleton, Pagination, Empty, Button, Collapsible } from '@douyinfe/semi-ui';
+import { IconChevronDown, IconChevronUp } from '@douyinfe/semi-icons';
 import PropTypes from 'prop-types';
 import { useIsMobile } from '../../../hooks/common/useIsMobile';
 
@@ -30,6 +32,7 @@ import { useIsMobile } from '../../../hooks/common/useIsMobile';
  */
 const CardTable = ({ columns = [], dataSource = [], loading = false, rowKey = 'key', ...tableProps }) => {
   const isMobile = useIsMobile();
+  const { t } = useTranslation();
 
   // Skeleton 显示控制，确保至少展示 500ms 动效
   const [showSkeleton, setShowSkeleton] = useState(loading);
@@ -94,7 +97,14 @@ const CardTable = ({ columns = [], dataSource = [], loading = false, rowKey = 'k
             return (
               <div key={idx} className="flex justify-between items-center py-1 border-b last:border-b-0 border-dashed" style={{ borderColor: 'var(--semi-color-border)' }}>
                 <Skeleton.Title active style={{ width: 80, height: 14 }} />
-                <Skeleton.Title active style={{ width: `${50 + (idx % 3) * 10}%`, maxWidth: 180, height: 14 }} />
+                <Skeleton.Title
+                  active
+                  style={{
+                    width: `${50 + (idx % 3) * 10}%`,
+                    maxWidth: 180,
+                    height: 14,
+                  }}
+                />
               </div>
             );
           })}
@@ -118,6 +128,78 @@ const CardTable = ({ columns = [], dataSource = [], loading = false, rowKey = 'k
   // 渲染移动端卡片
   const isEmpty = !showSkeleton && (!dataSource || dataSource.length === 0);
 
+  // 移动端行卡片组件（含可折叠详情）
+  const MobileRowCard = ({ record, index }) => {
+    const [showDetails, setShowDetails] = useState(false);
+    const rowKeyVal = getRowKey(record, index);
+
+    const hasDetails =
+      tableProps.expandedRowRender &&
+      (!tableProps.rowExpandable || tableProps.rowExpandable(record));
+
+    return (
+      <Card key={rowKeyVal} className="!rounded-2xl shadow-sm">
+        {columns.map((col, colIdx) => {
+          // 忽略隐藏列
+          if (tableProps?.visibleColumns && !tableProps.visibleColumns[col.key]) {
+            return null;
+          }
+
+          const title = col.title;
+          const cellContent = col.render
+            ? col.render(record[col.dataIndex], record, index)
+            : record[col.dataIndex];
+
+          // 空标题列（通常为操作按钮）单独渲染
+          if (!title) {
+            return (
+              <div key={col.key || colIdx} className="mt-2 flex justify-end">
+                {cellContent}
+              </div>
+            );
+          }
+
+          return (
+            <div
+              key={col.key || colIdx}
+              className="flex justify-between items-start py-1 border-b last:border-b-0 border-dashed"
+              style={{ borderColor: 'var(--semi-color-border)' }}
+            >
+              <span className="font-medium text-gray-600 mr-2 whitespace-nowrap select-none">
+                {title}
+              </span>
+              <div className="flex-1 break-all flex justify-end items-center gap-1">
+                {cellContent !== undefined && cellContent !== null ? cellContent : '-'}
+              </div>
+            </div>
+          );
+        })}
+
+        {hasDetails && (
+          <>
+            <Button
+              theme='borderless'
+              size='small'
+              className='w-full flex justify-center mt-2'
+              icon={showDetails ? <IconChevronUp /> : <IconChevronDown />}
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowDetails(!showDetails);
+              }}
+            >
+              {showDetails ? t('收起') : t('详情')}
+            </Button>
+            <Collapsible isOpen={showDetails} keepDOM>
+              <div className="pt-2">
+                {tableProps.expandedRowRender(record, index)}
+              </div>
+            </Collapsible>
+          </>
+        )}
+      </Card>
+    );
+  };
+
   if (isEmpty) {
     // 若传入 empty 属性则使用之，否则使用默认 Empty
     if (tableProps.empty) return tableProps.empty;
@@ -130,52 +212,9 @@ const CardTable = ({ columns = [], dataSource = [], loading = false, rowKey = 'k
 
   return (
     <div className="flex flex-col gap-2">
-      {dataSource.map((record, index) => {
-        const rowKeyVal = getRowKey(record, index);
-        return (
-          <Card key={rowKeyVal} className="!rounded-2xl shadow-sm">
-            {columns.map((col, colIdx) => {
-              // 忽略隐藏列
-              if (tableProps?.visibleColumns && !tableProps.visibleColumns[col.key]) {
-                return null;
-              }
-
-              const title = col.title;
-              // 计算单元格内容
-              const cellContent = col.render
-                ? col.render(record[col.dataIndex], record, index)
-                : record[col.dataIndex];
-
-              // 空标题列（通常为操作按钮）单独渲染
-              if (!title) {
-                return (
-                  <div
-                    key={col.key || colIdx}
-                    className="mt-2 flex justify-end"
-                  >
-                    {cellContent}
-                  </div>
-                );
-              }
-
-              return (
-                <div
-                  key={col.key || colIdx}
-                  className="flex justify-between items-start py-1 border-b last:border-b-0 border-dashed"
-                  style={{ borderColor: 'var(--semi-color-border)' }}
-                >
-                  <span className="font-medium text-gray-600 mr-2 whitespace-nowrap select-none">
-                    {title}
-                  </span>
-                  <div className="flex-1 break-all flex justify-end items-center gap-1">
-                    {cellContent !== undefined && cellContent !== null ? cellContent : '-'}
-                  </div>
-                </div>
-              );
-            })}
-          </Card>
-        );
-      })}
+      {dataSource.map((record, index) => (
+        <MobileRowCard key={getRowKey(record, index)} record={record} index={index} />
+      ))}
       {/* 分页组件 */}
       {tableProps.pagination && dataSource.length > 0 && (
         <div className="mt-2 flex justify-center">

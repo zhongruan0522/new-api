@@ -268,12 +268,14 @@ export const getLogsColumns = ({
         return isAdminUser && (record.type === 0 || record.type === 2 || record.type === 5) ? (
           <Space>
             <Tooltip content={record.channel_name || t('未知渠道')}>
-              <Tag
-                color={colors[parseInt(text) % colors.length]}
-                shape='circle'
-              >
-                {text}
-              </Tag>
+              <span>
+                <Tag
+                  color={colors[parseInt(text) % colors.length]}
+                  shape='circle'
+                >
+                  {text}
+                </Tag>
+              </span>
             </Tooltip>
             {isMultiKey && (
               <Tag color='white' shape='circle'>
@@ -466,15 +468,17 @@ export const getLogsColumns = ({
       render: (text, record, index) => {
         return (record.type === 2 || record.type === 5) && text ? (
           <Tooltip content={text}>
-            <Tag
-              color='orange'
-              shape='circle'
-              onClick={(event) => {
-                copyText(event, text);
-              }}
-            >
-              {text}
-            </Tag>
+            <span>
+              <Tag
+                color='orange'
+                shape='circle'
+                onClick={(event) => {
+                  copyText(event, text);
+                }}
+              >
+                {text}
+              </Tag>
+            </span>
           </Tooltip>
         ) : (
           <></>
