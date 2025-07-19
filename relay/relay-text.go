@@ -210,7 +210,7 @@ func TextHelper(c *gin.Context) (newAPIError *types.NewAPIError) {
 	resp, err := adaptor.DoRequest(c, relayInfo, requestBody)
 
 	if err != nil {
-		return types.NewError(err, types.ErrorCodeDoRequestFailed)
+		return types.NewOpenAIError(err, types.ErrorCodeDoRequestFailed, http.StatusInternalServerError)
 	}
 
 	statusCodeMappingStr := c.GetString("status_code_mapping")
