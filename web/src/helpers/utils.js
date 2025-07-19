@@ -557,3 +557,13 @@ export function setTableCompactMode(compact, tableKey = 'global') {
   modes[tableKey] = compact;
   writeTableCompactModes(modes);
 }
+
+// -------------------------------
+// Select 组件统一过滤逻辑
+// 解决 label 为 ReactNode（带图标等）时无法用内置 filter 搜索的问题。
+// 使用方式： <Select filter={modelSelectFilter} ... />
+export const modelSelectFilter = (input, option) => {
+  if (!input) return true;
+  const val = (option?.value || '').toString().toLowerCase();
+  return val.includes(input.trim().toLowerCase());
+};

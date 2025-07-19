@@ -26,6 +26,7 @@ import {
   renderGroupOption,
   renderQuotaWithPrompt,
   getModelCategories,
+  modelSelectFilter,
 } from '../../../../helpers';
 import { useIsMobile } from '../../../../hooks/common/useIsMobile.js';
 import {
@@ -513,7 +514,8 @@ const EditTokenModal = (props) => {
                       multiple
                       optionList={models}
                       extraText={t('非必要，不建议启用模型限制')}
-                      filter
+                      filter={modelSelectFilter}
+                      autoClearSearchValue={false}
                       searchPosition='dropdown'
                       showClear
                       style={{ width: '100%' }}

@@ -25,6 +25,7 @@ import {
   showSuccess,
   showWarning,
   verifyJSON,
+  modelSelectFilter,
 } from '../../../../helpers';
 import {
   SideSheet,
@@ -394,7 +395,8 @@ const EditTagModal = (props) => {
                     label={t('模型')}
                     placeholder={t('请选择该渠道所支持的模型，留空则不更改')}
                     multiple
-                    filter
+                    filter={modelSelectFilter}
+                    autoClearSearchValue={false}
                     searchPosition='dropdown'
                     optionList={modelOptions}
                     style={{ width: '100%' }}

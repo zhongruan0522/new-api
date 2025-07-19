@@ -33,7 +33,7 @@ import {
   Settings,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { renderGroupOption } from '../../helpers';
+import { renderGroupOption, modelSelectFilter } from '../../helpers';
 import ParameterControl from './ParameterControl';
 import ImageUrlInput from './ImageUrlInput';
 import ConfigManager from './ConfigManager';
@@ -173,8 +173,8 @@ const SettingsPanel = ({
             name='model'
             required
             selection
-            searchPosition='dropdown'
-            filter
+            filter={modelSelectFilter}
+            autoClearSearchValue={false}
             onChange={(value) => onInputChange('model', value)}
             value={inputs.model}
             autoComplete='new-password'
