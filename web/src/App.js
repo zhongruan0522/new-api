@@ -46,7 +46,7 @@ import Setup from './pages/Setup/index.js';
 import SetupCheck from './components/layout/SetupCheck.js';
 
 const Home = lazy(() => import('./pages/Home'));
-const Detail = lazy(() => import('./pages/Detail'));
+const Dashboard = lazy(() => import('./pages/Dashboard'));
 const About = lazy(() => import('./pages/About'));
 
 function App() {
@@ -214,7 +214,7 @@ function App() {
           element={
             <PrivateRoute>
               <Suspense fallback={<Loading></Loading>} key={location.pathname}>
-                <Detail />
+                <Dashboard />
               </Suspense>
             </PrivateRoute>
           }

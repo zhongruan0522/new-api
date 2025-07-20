@@ -17,10 +17,13 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 
-export * from './channel.constants';
-export * from './user.constants';
-export * from './toast.constants';
-export * from './common.constant';
-export * from './dashboard.constants';
-export * from './playground.constants';
-export * from './redemption.constants';
+import React from 'react';
+import Dashboard from '../../components/dashboard';
+
+const Detail = () => (
+  <div className="mt-[60px] px-2">
+    <Dashboard />
+  </div>
+);
+
+export default Detail;
