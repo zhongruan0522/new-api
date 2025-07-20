@@ -24,6 +24,7 @@ import ChannelsActions from './ChannelsActions.jsx';
 import ChannelsFilters from './ChannelsFilters.jsx';
 import ChannelsTabs from './ChannelsTabs.jsx';
 import { useChannelsData } from '../../../hooks/channels/useChannelsData.js';
+import { useIsMobile } from '../../../hooks/common/useIsMobile.js';
 import BatchTagModal from './modals/BatchTagModal.jsx';
 import ModelTestModal from './modals/ModelTestModal.jsx';
 import ColumnSelectorModal from './modals/ColumnSelectorModal.jsx';
@@ -33,6 +34,7 @@ import { createCardProPagination } from '../../../helpers/utils';
 
 const ChannelsPage = () => {
   const channelsData = useChannelsData();
+  const isMobile = useIsMobile();
 
   return (
     <>
@@ -65,6 +67,7 @@ const ChannelsPage = () => {
           total: channelsData.channelCount,
           onPageChange: channelsData.handlePageChange,
           onPageSizeChange: channelsData.handlePageSizeChange,
+          isMobile: isMobile,
         })}
         t={channelsData.t}
       >

@@ -24,7 +24,6 @@ import { toast } from 'react-toastify';
 import { THINK_TAG_REGEX, MESSAGE_ROLES } from '../constants/playground.constants';
 import { TABLE_COMPACT_MODES_KEY } from '../constants';
 import { MOBILE_BREAKPOINT } from '../hooks/common/useIsMobile.js';
-import { useIsMobile } from '../hooks/common/useIsMobile.js';
 
 const HTMLToastContent = ({ htmlContent }) => {
   return <div dangerouslySetInnerHTML={{ __html: htmlContent }} />;
@@ -570,7 +569,7 @@ export const modelSelectFilter = (input, option) => {
 };
 
 // -------------------------------
-// CardPro 分页配置组件
+// CardPro 分页配置函数
 // 用于创建 CardPro 的 paginationArea 配置
 export const createCardProPagination = ({
   currentPage,
@@ -578,11 +577,10 @@ export const createCardProPagination = ({
   total,
   onPageChange,
   onPageSizeChange,
+  isMobile = false,
   pageSizeOpts = [10, 20, 50, 100],
   showSizeChanger = true,
 }) => {
-  const isMobile = useIsMobile();
-
   if (!total || total <= 0) return null;
 
   return (

@@ -25,10 +25,12 @@ import LogsFilters from './UsageLogsFilters.jsx';
 import ColumnSelectorModal from './modals/ColumnSelectorModal.jsx';
 import UserInfoModal from './modals/UserInfoModal.jsx';
 import { useLogsData } from '../../../hooks/usage-logs/useUsageLogsData.js';
+import { useIsMobile } from '../../../hooks/common/useIsMobile.js';
 import { createCardProPagination } from '../../../helpers/utils';
 
 const LogsPage = () => {
   const logsData = useLogsData();
+  const isMobile = useIsMobile();
 
   return (
     <>
@@ -47,6 +49,7 @@ const LogsPage = () => {
           total: logsData.logCount,
           onPageChange: logsData.handlePageChange,
           onPageSizeChange: logsData.handlePageSizeChange,
+          isMobile: isMobile,
         })}
         t={logsData.t}
       >

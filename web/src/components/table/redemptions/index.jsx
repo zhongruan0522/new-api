@@ -25,10 +25,12 @@ import RedemptionsFilters from './RedemptionsFilters.jsx';
 import RedemptionsDescription from './RedemptionsDescription.jsx';
 import EditRedemptionModal from './modals/EditRedemptionModal';
 import { useRedemptionsData } from '../../../hooks/redemptions/useRedemptionsData';
+import { useIsMobile } from '../../../hooks/common/useIsMobile';
 import { createCardProPagination } from '../../../helpers/utils';
 
 const RedemptionsPage = () => {
   const redemptionsData = useRedemptionsData();
+  const isMobile = useIsMobile();
 
   const {
     // Edit state
@@ -106,6 +108,7 @@ const RedemptionsPage = () => {
           total: redemptionsData.tokenCount,
           onPageChange: redemptionsData.handlePageChange,
           onPageSizeChange: redemptionsData.handlePageSizeChange,
+          isMobile: isMobile,
         })}
         t={t}
       >

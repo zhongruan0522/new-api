@@ -26,10 +26,12 @@ import UsersDescription from './UsersDescription.jsx';
 import AddUserModal from './modals/AddUserModal.jsx';
 import EditUserModal from './modals/EditUserModal.jsx';
 import { useUsersData } from '../../../hooks/users/useUsersData';
+import { useIsMobile } from '../../../hooks/common/useIsMobile';
 import { createCardProPagination } from '../../../helpers/utils';
 
 const UsersPage = () => {
   const usersData = useUsersData();
+  const isMobile = useIsMobile();
 
   const {
     // Modal state
@@ -111,6 +113,7 @@ const UsersPage = () => {
           total: usersData.userCount,
           onPageChange: usersData.handlePageChange,
           onPageSizeChange: usersData.handlePageSizeChange,
+          isMobile: isMobile,
         })}
         t={t}
       >

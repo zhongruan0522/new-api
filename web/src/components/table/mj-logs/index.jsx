@@ -26,10 +26,12 @@ import MjLogsFilters from './MjLogsFilters.jsx';
 import ColumnSelectorModal from './modals/ColumnSelectorModal.jsx';
 import ContentModal from './modals/ContentModal.jsx';
 import { useMjLogsData } from '../../../hooks/mj-logs/useMjLogsData.js';
+import { useIsMobile } from '../../../hooks/common/useIsMobile.js';
 import { createCardProPagination } from '../../../helpers/utils';
 
 const MjLogsPage = () => {
   const mjLogsData = useMjLogsData();
+  const isMobile = useIsMobile();
 
   return (
     <>
@@ -48,6 +50,7 @@ const MjLogsPage = () => {
             total: mjLogsData.logCount,
             onPageChange: mjLogsData.handlePageChange,
             onPageSizeChange: mjLogsData.handlePageSizeChange,
+            isMobile: isMobile,
           })}
           t={mjLogsData.t}
         >

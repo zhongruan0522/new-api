@@ -25,10 +25,12 @@ import TokensFilters from './TokensFilters.jsx';
 import TokensDescription from './TokensDescription.jsx';
 import EditTokenModal from './modals/EditTokenModal';
 import { useTokensData } from '../../../hooks/tokens/useTokensData';
+import { useIsMobile } from '../../../hooks/common/useIsMobile';
 import { createCardProPagination } from '../../../helpers/utils';
 
 const TokensPage = () => {
   const tokensData = useTokensData();
+  const isMobile = useIsMobile();
 
   const {
     // Edit state
@@ -108,6 +110,7 @@ const TokensPage = () => {
           total: tokensData.tokenCount,
           onPageChange: tokensData.handlePageChange,
           onPageSizeChange: tokensData.handlePageSizeChange,
+          isMobile: isMobile,
         })}
         t={t}
       >

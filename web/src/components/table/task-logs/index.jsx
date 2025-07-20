@@ -26,10 +26,12 @@ import TaskLogsFilters from './TaskLogsFilters.jsx';
 import ColumnSelectorModal from './modals/ColumnSelectorModal.jsx';
 import ContentModal from './modals/ContentModal.jsx';
 import { useTaskLogsData } from '../../../hooks/task-logs/useTaskLogsData.js';
+import { useIsMobile } from '../../../hooks/common/useIsMobile.js';
 import { createCardProPagination } from '../../../helpers/utils';
 
 const TaskLogsPage = () => {
   const taskLogsData = useTaskLogsData();
+  const isMobile = useIsMobile();
 
   return (
     <>
@@ -48,6 +50,7 @@ const TaskLogsPage = () => {
             total: taskLogsData.logCount,
             onPageChange: taskLogsData.handlePageChange,
             onPageSizeChange: taskLogsData.handlePageSizeChange,
+            isMobile: isMobile,
           })}
           t={taskLogsData.t}
         >
