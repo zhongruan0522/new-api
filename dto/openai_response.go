@@ -200,28 +200,28 @@ type OutputTokenDetails struct {
 }
 
 type OpenAIResponsesResponse struct {
-	ID                 string               `json:"id"`
-	Object             string               `json:"object"`
-	CreatedAt          int                  `json:"created_at"`
-	Status             string               `json:"status"`
-	Error              *types.OpenAIError   `json:"error,omitempty"`
-	IncompleteDetails  *IncompleteDetails   `json:"incomplete_details,omitempty"`
-	Instructions       string               `json:"instructions"`
-	MaxOutputTokens    int                  `json:"max_output_tokens"`
-	Model              string               `json:"model"`
-	Output             []ResponsesOutput    `json:"output"`
-	ParallelToolCalls  bool                 `json:"parallel_tool_calls"`
-	PreviousResponseID string               `json:"previous_response_id"`
-	Reasoning          *Reasoning           `json:"reasoning"`
-	Store              bool                 `json:"store"`
-	Temperature        float64              `json:"temperature"`
-	ToolChoice         string               `json:"tool_choice"`
-	Tools              []ResponsesToolsCall `json:"tools"`
-	TopP               float64              `json:"top_p"`
-	Truncation         string               `json:"truncation"`
-	Usage              *Usage               `json:"usage"`
-	User               json.RawMessage      `json:"user"`
-	Metadata           json.RawMessage      `json:"metadata"`
+	ID                 string             `json:"id"`
+	Object             string             `json:"object"`
+	CreatedAt          int                `json:"created_at"`
+	Status             string             `json:"status"`
+	Error              *types.OpenAIError `json:"error,omitempty"`
+	IncompleteDetails  *IncompleteDetails `json:"incomplete_details,omitempty"`
+	Instructions       string             `json:"instructions"`
+	MaxOutputTokens    int                `json:"max_output_tokens"`
+	Model              string             `json:"model"`
+	Output             []ResponsesOutput  `json:"output"`
+	ParallelToolCalls  bool               `json:"parallel_tool_calls"`
+	PreviousResponseID string             `json:"previous_response_id"`
+	Reasoning          *Reasoning         `json:"reasoning"`
+	Store              bool               `json:"store"`
+	Temperature        float64            `json:"temperature"`
+	ToolChoice         string             `json:"tool_choice"`
+	Tools              []map[string]any   `json:"tools"`
+	TopP               float64            `json:"top_p"`
+	Truncation         string             `json:"truncation"`
+	Usage              *Usage             `json:"usage"`
+	User               json.RawMessage    `json:"user"`
+	Metadata           json.RawMessage    `json:"metadata"`
 }
 
 type IncompleteDetails struct {
