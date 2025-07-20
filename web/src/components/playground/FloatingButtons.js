@@ -80,7 +80,7 @@ const FloatingButtons = ({
               ? 'linear-gradient(to right, #e11d48, #be123c)'
               : 'linear-gradient(to right, #4f46e5, #6366f1)',
           }}
-          className="lg:hidden !rounded-full !p-0"
+          className="lg:hidden"
         />
       )}
     </>
