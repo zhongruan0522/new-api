@@ -58,21 +58,18 @@ const CardPro = ({
   // 自定义样式
   style,
   // 国际化函数
-  t = (key) => key, // 默认函数，直接返回key
+  t = (key) => key,
   ...props
 }) => {
   const isMobile = useIsMobile();
   const [showMobileActions, setShowMobileActions] = useState(false);
 
-  // 切换移动端操作项显示状态
   const toggleMobileActions = () => {
     setShowMobileActions(!showMobileActions);
   };
 
-  // 检查是否有需要在移动端隐藏的内容
   const hasMobileHideableContent = actionsArea || searchArea;
 
-  // 渲染头部内容
   const renderHeader = () => {
     const hasContent = statsArea || descriptionArea || tabsArea || actionsArea || searchArea;
     if (!hasContent) return null;
@@ -206,7 +203,7 @@ CardPro.propTypes = {
     PropTypes.arrayOf(PropTypes.node),
   ]),
   searchArea: PropTypes.node,
-  paginationArea: PropTypes.node, // 新增分页区域
+  paginationArea: PropTypes.node,
   // 表格内容
   children: PropTypes.node,
   // 国际化函数

@@ -35,13 +35,12 @@ const CardTable = ({
   dataSource = [],
   loading = false,
   rowKey = 'key',
-  hidePagination = false, // 新增参数，控制是否隐藏内部分页
+  hidePagination = false,
   ...tableProps
 }) => {
   const isMobile = useIsMobile();
   const { t } = useTranslation();
 
-  // Skeleton 显示控制，确保至少展示 500ms 动效
   const [showSkeleton, setShowSkeleton] = useState(loading);
   const loadingStartRef = useRef(Date.now());
 
@@ -61,15 +60,12 @@ const CardTable = ({
     }
   }, [loading]);
 
-  // 解析行主键
   const getRowKey = (record, index) => {
     if (typeof rowKey === 'function') return rowKey(record);
     return record[rowKey] !== undefined ? record[rowKey] : index;
   };
 
-  // 如果不是移动端，直接渲染原 Table
   if (!isMobile) {
-    // 如果要隐藏分页，则从tableProps中移除pagination
     const finalTableProps = hidePagination
       ? { ...tableProps, pagination: false }
       : tableProps;
@@ -85,7 +81,6 @@ const CardTable = ({
     );
   }
 
-  // 加载中占位：根据列信息动态模拟真实布局
   if (showSkeleton) {
     const visibleCols = columns.filter((col) => {
       if (tableProps?.visibleColumns && col.key) {
@@ -137,10 +132,8 @@ const CardTable = ({
     );
   }
 
-  // 渲染移动端卡片
   const isEmpty = !showSkeleton && (!dataSource || dataSource.length === 0);
 
-  // 移动端行卡片组件（含可折叠详情）
   const MobileRowCard = ({ record, index }) => {
     const [showDetails, setShowDetails] = useState(false);
     const rowKeyVal = getRowKey(record, index);
@@ -152,7 +145,6 @@ const CardTable = ({
     return (
       <Card key={rowKeyVal} className="!rounded-2xl shadow-sm">
         {columns.map((col, colIdx) => {
-          // 忽略隐藏列
           if (tableProps?.visibleColumns && !tableProps.visibleColumns[col.key]) {
             return null;
           }
@@ -162,7 +154,6 @@ const CardTable = ({
             ? col.render(record[col.dataIndex], record, index)
             : record[col.dataIndex];
 
-          // 空标题列（通常为操作按钮）单独渲染
           if (!title) {
             return (
               <div key={col.key || colIdx} className="mt-2 flex justify-end">
@@ -213,7 +204,6 @@ const CardTable = ({
   };
 
   if (isEmpty) {
-    // 若传入 empty 属性则使用之，否则使用默认 Empty
     if (tableProps.empty) return tableProps.empty;
     return (
       <div className="flex justify-center p-4">
@@ -227,7 +217,6 @@ const CardTable = ({
       {dataSource.map((record, index) => (
         <MobileRowCard key={getRowKey(record, index)} record={record} index={index} />
       ))}
-      {/* 分页组件 - 只在不隐藏分页且有pagination配置时显示 */}
       {!hidePagination && tableProps.pagination && dataSource.length > 0 && (
         <div className="mt-2 flex justify-center">
           <Pagination {...tableProps.pagination} />
@@ -242,7 +231,7 @@ CardTable.propTypes = {
   dataSource: PropTypes.array,
   loading: PropTypes.bool,
   rowKey: PropTypes.oneOfType([PropTypes.string, PropTypes.func]),
-  hidePagination: PropTypes.bool, // 控制是否隐藏内部分页
+  hidePagination: PropTypes.bool,
 };
 
 export default CardTable; 
