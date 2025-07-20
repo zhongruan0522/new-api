@@ -111,12 +111,12 @@ const About = () => {
         </a>
         {t('授权，需在遵守')}
         <a
-          href="https://github.com/QuantumNous/new-api/blob/main/LICENSE"
+          href="https://www.gnu.org/licenses/agpl-3.0.html"
           target="_blank"
           rel="noopener noreferrer"
           className="!text-semi-color-primary"
         >
-          {t('Apache-2.0协议')}
+          {t('AGPL v3.0协议')}
         </a>
         {t('的前提下使用。')}
       </p>
