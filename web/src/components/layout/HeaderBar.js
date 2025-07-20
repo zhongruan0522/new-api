@@ -60,6 +60,7 @@ const HeaderBar = ({ onMobileMenuToggle, drawerOpen }) => {
   const isMobile = useIsMobile();
   const [collapsed, toggleCollapsed] = useSidebarCollapsed();
   const [isLoading, setIsLoading] = useState(true);
+  const [logoLoaded, setLogoLoaded] = useState(false);
   let navigate = useNavigate();
   const [currentLang, setCurrentLang] = useState(i18n.language);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -225,6 +226,14 @@ const HeaderBar = ({ onMobileMenuToggle, drawerOpen }) => {
       return () => clearTimeout(timer);
     }
   }, [statusState?.status]);
+
+  useEffect(() => {
+    setLogoLoaded(false);
+    if (!logo) return;
+    const img = new Image();
+    img.src = logo;
+    img.onload = () => setLogoLoaded(true);
+  }, [logo]);
 
   const handleLanguageChange = (lang) => {
     i18n.changeLanguage(lang);
@@ -496,19 +505,20 @@ const HeaderBar = ({ onMobileMenuToggle, drawerOpen }) => {
               />
             </div>
             <Link to="/" onClick={() => handleNavLinkClick('home')} className="flex items-center gap-2 group ml-2">
-              <Skeleton
-                loading={isLoading}
-                active
-                placeholder={
+              <div className="relative w-8 h-8 md:w-8 md:h-8">
+                {(isLoading || !logoLoaded) && (
                   <Skeleton.Image
                     active
-                    className="h-7 md:h-8 !rounded-full"
-                    style={{ width: 32, height: 32 }}
+                    className="absolute inset-0 !rounded-full"
+                    style={{ width: '100%', height: '100%' }}
                   />
-                }
-              >
-                <img src={logo} alt="logo" className="h-7 md:h-8 transition-transform duration-300 ease-in-out group-hover:scale-105 rounded-full" />
-              </Skeleton>
+                )}
+                <img
+                  src={logo}
+                  alt="logo"
+                  className={`absolute inset-0 w-full h-full transition-opacity duration-200 group-hover:scale-105 rounded-full ${(!isLoading && logoLoaded) ? 'opacity-100' : 'opacity-0'}`}
+                />
+              </div>
               <div className="hidden md:flex items-center gap-2">
                 <div className="flex items-center gap-2">
                   <Skeleton
