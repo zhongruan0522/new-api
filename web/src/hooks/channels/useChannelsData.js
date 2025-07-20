@@ -43,7 +43,7 @@ export const useChannelsData = () => {
   const [idSort, setIdSort] = useState(false);
   const [searching, setSearching] = useState(false);
   const [pageSize, setPageSize] = useState(ITEMS_PER_PAGE);
-  const [channelCount, setChannelCount] = useState(ITEMS_PER_PAGE);
+  const [channelCount, setChannelCount] = useState(0);
   const [groupOptions, setGroupOptions] = useState([]);
 
   // UI states

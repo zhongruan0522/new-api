@@ -68,7 +68,7 @@ export const useLogsData = () => {
   const [loading, setLoading] = useState(false);
   const [loadingStat, setLoadingStat] = useState(false);
   const [activePage, setActivePage] = useState(1);
-  const [logCount, setLogCount] = useState(ITEMS_PER_PAGE);
+  const [logCount, setLogCount] = useState(0);
   const [pageSize, setPageSize] = useState(ITEMS_PER_PAGE);
   const [logType, setLogType] = useState(0);
 

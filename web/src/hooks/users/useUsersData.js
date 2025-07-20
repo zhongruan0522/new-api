@@ -34,7 +34,7 @@ export const useUsersData = () => {
   const [pageSize, setPageSize] = useState(ITEMS_PER_PAGE);
   const [searching, setSearching] = useState(false);
   const [groupOptions, setGroupOptions] = useState([]);
-  const [userCount, setUserCount] = useState(ITEMS_PER_PAGE);
+  const [userCount, setUserCount] = useState(0);
 
   // Modal states
   const [showAddUser, setShowAddUser] = useState(false);

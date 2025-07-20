@@ -34,7 +34,7 @@ export const useRedemptionsData = () => {
   const [searching, setSearching] = useState(false);
   const [activePage, setActivePage] = useState(1);
   const [pageSize, setPageSize] = useState(ITEMS_PER_PAGE);
-  const [tokenCount, setTokenCount] = useState(ITEMS_PER_PAGE);
+  const [tokenCount, setTokenCount] = useState(0);
   const [selectedKeys, setSelectedKeys] = useState([]);
 
   // Edit state
@@ -337,18 +337,18 @@ export const useRedemptionsData = () => {
     setFormApi,
     setLoading,
 
-        // Event handlers
+    // Event handlers
     handlePageChange,
     handlePageSizeChange,
     rowSelection,
     handleRow,
     closeEdit,
     getFormValues,
-    
+
     // Batch operations
     batchCopyRedemptions,
     batchDeleteRedemptions,
-    
+
     // Translation function
     t,
   };

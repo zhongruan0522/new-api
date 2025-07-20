@@ -36,7 +36,7 @@ export const useTokensData = () => {
   const [tokens, setTokens] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activePage, setActivePage] = useState(1);
-  const [tokenCount, setTokenCount] = useState(ITEMS_PER_PAGE);
+  const [tokenCount, setTokenCount] = useState(0);
   const [pageSize, setPageSize] = useState(ITEMS_PER_PAGE);
   const [searching, setSearching] = useState(false);
 
