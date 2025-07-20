@@ -3,8 +3,9 @@ package model
 import (
 	"errors"
 	"fmt"
-	"gorm.io/gorm"
 	"one-api/common"
+
+	"gorm.io/gorm"
 )
 
 type TopUp struct {
@@ -12,7 +13,7 @@ type TopUp struct {
 	UserId       int     `json:"user_id" gorm:"index"`
 	Amount       int64   `json:"amount"`
 	Money        float64 `json:"money"`
-	TradeNo      string  `json:"trade_no" gorm:"unique"`
+	TradeNo      string  `json:"trade_no" gorm:"unique;type:varchar(255);index"`
 	CreateTime   int64   `json:"create_time"`
 	CompleteTime int64   `json:"complete_time"`
 	Status       string  `json:"status"`
