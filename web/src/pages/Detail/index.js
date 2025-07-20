@@ -40,6 +40,7 @@ import {
   Divider,
   Skeleton
 } from '@douyinfe/semi-ui';
+import ScrollableContainer from '../../components/common/ui/ScrollableContainer';
 import {
   IconRefresh,
   IconSearch,
@@ -91,7 +92,6 @@ const Detail = (props) => {
   // ========== Hooks - Refs ==========
   const formRef = useRef();
   const initialized = useRef(false);
-  const apiScrollRef = useRef(null);
 
   // ========== Constants & Shared Configurations ==========
   const CHART_CONFIG = { mode: 'desktop-browser' };
@@ -224,7 +224,6 @@ const Detail = (props) => {
 
   const [modelColors, setModelColors] = useState({});
   const [activeChartTab, setActiveChartTab] = useState('1');
-  const [showApiScrollHint, setShowApiScrollHint] = useState(false);
   const [searchModalVisible, setSearchModalVisible] = useState(false);
 
   const [trendData, setTrendData] = useState({
@@ -238,16 +237,7 @@ const Detail = (props) => {
     tpm: []
   });
 
-  // ========== Additional Refs for new cards ==========
-  const announcementScrollRef = useRef(null);
-  const faqScrollRef = useRef(null);
-  const uptimeScrollRef = useRef(null);
-  const uptimeTabScrollRefs = useRef({});
 
-  // ========== Additional State for scroll hints ==========
-  const [showAnnouncementScrollHint, setShowAnnouncementScrollHint] = useState(false);
-  const [showFaqScrollHint, setShowFaqScrollHint] = useState(false);
-  const [showUptimeScrollHint, setShowUptimeScrollHint] = useState(false);
 
   // ========== Uptime data ==========
   const [uptimeData, setUptimeData] = useState([]);
@@ -728,51 +718,9 @@ const Detail = (props) => {
     setSearchModalVisible(false);
   }, []);
 
-  // ========== Regular Functions ==========
-  const checkApiScrollable = () => {
-    if (apiScrollRef.current) {
-      const element = apiScrollRef.current;
-      const isScrollable = element.scrollHeight > element.clientHeight;
-      const isAtBottom = element.scrollTop + element.clientHeight >= element.scrollHeight - 5;
-      setShowApiScrollHint(isScrollable && !isAtBottom);
-    }
-  };
 
-  const handleApiScroll = () => {
-    checkApiScrollable();
-  };
 
-  const checkCardScrollable = (ref, setHintFunction) => {
-    if (ref.current) {
-      const element = ref.current;
-      const isScrollable = element.scrollHeight > element.clientHeight;
-      const isAtBottom = element.scrollTop + element.clientHeight >= element.scrollHeight - 5;
-      setHintFunction(isScrollable && !isAtBottom);
-    }
-  };
 
-  const handleCardScroll = (ref, setHintFunction) => {
-    checkCardScrollable(ref, setHintFunction);
-  };
-
-  // ========== Effects for scroll detection ==========
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      checkApiScrollable();
-      checkCardScrollable(announcementScrollRef, setShowAnnouncementScrollHint);
-      checkCardScrollable(faqScrollRef, setShowFaqScrollHint);
-
-      if (uptimeData.length === 1) {
-        checkCardScrollable(uptimeScrollRef, setShowUptimeScrollHint);
-      } else if (uptimeData.length > 1 && activeUptimeTab) {
-        const activeTabRef = uptimeTabScrollRefs.current[activeUptimeTab];
-        if (activeTabRef) {
-          checkCardScrollable(activeTabRef, setShowUptimeScrollHint);
-        }
-      }
-    }, 100);
-    return () => clearTimeout(timer);
-  }, [uptimeData, activeUptimeTab]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -1360,82 +1308,72 @@ const Detail = (props) => {
               }
               bodyStyle={{ padding: 0 }}
             >
-              <div className="card-content-container">
-                <div
-                  ref={apiScrollRef}
-                  className="p-2 max-h-96 overflow-y-auto card-content-scroll"
-                  onScroll={handleApiScroll}
-                >
-                  {apiInfoData.length > 0 ? (
-                    apiInfoData.map((api) => (
-                      <>
-                        <div key={api.id} className="flex p-2 hover:bg-white rounded-lg transition-colors cursor-pointer">
-                          <div className="flex-shrink-0 mr-3">
-                            <Avatar
-                              size="extra-small"
-                              color={api.color}
-                            >
-                              {api.route.substring(0, 2)}
-                            </Avatar>
+              <ScrollableContainer maxHeight="24rem">
+                {apiInfoData.length > 0 ? (
+                  apiInfoData.map((api) => (
+                    <>
+                      <div key={api.id} className="flex p-2 hover:bg-white rounded-lg transition-colors cursor-pointer">
+                        <div className="flex-shrink-0 mr-3">
+                          <Avatar
+                            size="extra-small"
+                            color={api.color}
+                          >
+                            {api.route.substring(0, 2)}
+                          </Avatar>
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex flex-wrap items-center justify-between mb-1 w-full gap-2">
+                            <span className="text-sm font-medium text-gray-900 !font-bold break-all">
+                              {api.route}
+                            </span>
+                            <div className="flex items-center gap-1 mt-1 lg:mt-0">
+                              <Tag
+                                prefixIcon={<Gauge size={12} />}
+                                size="small"
+                                color="white"
+                                shape='circle'
+                                onClick={() => handleSpeedTest(api.url)}
+                                className="cursor-pointer hover:opacity-80 text-xs"
+                              >
+                                {t('测速')}
+                              </Tag>
+                              <Tag
+                                prefixIcon={<ExternalLink size={12} />}
+                                size="small"
+                                color="white"
+                                shape='circle'
+                                onClick={() => window.open(api.url, '_blank', 'noopener,noreferrer')}
+                                className="cursor-pointer hover:opacity-80 text-xs"
+                              >
+                                {t('跳转')}
+                              </Tag>
+                            </div>
                           </div>
-                          <div className="flex-1">
-                            <div className="flex flex-wrap items-center justify-between mb-1 w-full gap-2">
-                              <span className="text-sm font-medium text-gray-900 !font-bold break-all">
-                                {api.route}
-                              </span>
-                              <div className="flex items-center gap-1 mt-1 lg:mt-0">
-                                <Tag
-                                  prefixIcon={<Gauge size={12} />}
-                                  size="small"
-                                  color="white"
-                                  shape='circle'
-                                  onClick={() => handleSpeedTest(api.url)}
-                                  className="cursor-pointer hover:opacity-80 text-xs"
-                                >
-                                  {t('测速')}
-                                </Tag>
-                                <Tag
-                                  prefixIcon={<ExternalLink size={12} />}
-                                  size="small"
-                                  color="white"
-                                  shape='circle'
-                                  onClick={() => window.open(api.url, '_blank', 'noopener,noreferrer')}
-                                  className="cursor-pointer hover:opacity-80 text-xs"
-                                >
-                                  {t('跳转')}
-                                </Tag>
-                              </div>
-                            </div>
-                            <div
-                              className="!text-semi-color-primary break-all cursor-pointer hover:underline mb-1"
-                              onClick={() => handleCopyUrl(api.url)}
-                            >
-                              {api.url}
-                            </div>
-                            <div className="text-gray-500">
-                              {api.description}
-                            </div>
+                          <div
+                            className="!text-semi-color-primary break-all cursor-pointer hover:underline mb-1"
+                            onClick={() => handleCopyUrl(api.url)}
+                          >
+                            {api.url}
+                          </div>
+                          <div className="text-gray-500">
+                            {api.description}
                           </div>
                         </div>
-                        <Divider />
-                      </>
-                    ))
-                  ) : (
-                    <div className="flex justify-center items-center py-8">
-                      <Empty
-                        image={<IllustrationConstruction style={ILLUSTRATION_SIZE} />}
-                        darkModeImage={<IllustrationConstructionDark style={ILLUSTRATION_SIZE} />}
-                        title={t('暂无API信息')}
-                        description={t('请联系管理员在系统设置中配置API信息')}
-                      />
-                    </div>
-                  )}
-                </div>
-                <div
-                  className="card-content-fade-indicator"
-                  style={{ opacity: showApiScrollHint ? 1 : 0 }}
-                />
-              </div>
+                      </div>
+                      <Divider />
+                    </>
+                  ))
+                ) : (
+                  <div className="flex justify-center items-center py-8">
+                    <Empty
+                      image={<IllustrationConstruction style={ILLUSTRATION_SIZE} />}
+                      darkModeImage={<IllustrationConstructionDark style={ILLUSTRATION_SIZE} />}
+                      title={t('暂无API信息')}
+                      description={t('请联系管理员在系统设置中配置API信息')}
+                    />
+                  </div>
+                )}
+              </ScrollableContainer>
             </Card>
           )}
         </div>
@@ -1482,50 +1420,40 @@ const Detail = (props) => {
                   }
                   bodyStyle={{ padding: 0 }}
                 >
-                  <div className="card-content-container">
-                    <div
-                      ref={announcementScrollRef}
-                      className="p-2 max-h-96 overflow-y-auto card-content-scroll"
-                      onScroll={() => handleCardScroll(announcementScrollRef, setShowAnnouncementScrollHint)}
-                    >
-                      {announcementData.length > 0 ? (
-                        <Timeline mode="alternate">
-                          {announcementData.map((item, idx) => (
-                            <Timeline.Item
-                              key={idx}
-                              type={item.type || 'default'}
-                              time={item.time}
-                            >
-                              <div>
+                  <ScrollableContainer maxHeight="24rem">
+                    {announcementData.length > 0 ? (
+                      <Timeline mode="alternate">
+                        {announcementData.map((item, idx) => (
+                          <Timeline.Item
+                            key={idx}
+                            type={item.type || 'default'}
+                            time={item.time}
+                          >
+                            <div>
+                              <div
+                                dangerouslySetInnerHTML={{ __html: marked.parse(item.content || '') }}
+                              />
+                              {item.extra && (
                                 <div
-                                  dangerouslySetInnerHTML={{ __html: marked.parse(item.content || '') }}
+                                  className="text-xs text-gray-500"
+                                  dangerouslySetInnerHTML={{ __html: marked.parse(item.extra) }}
                                 />
-                                {item.extra && (
-                                  <div
-                                    className="text-xs text-gray-500"
-                                    dangerouslySetInnerHTML={{ __html: marked.parse(item.extra) }}
-                                  />
-                                )}
-                              </div>
-                            </Timeline.Item>
-                          ))}
-                        </Timeline>
-                      ) : (
-                        <div className="flex justify-center items-center py-8">
-                          <Empty
-                            image={<IllustrationConstruction style={ILLUSTRATION_SIZE} />}
-                            darkModeImage={<IllustrationConstructionDark style={ILLUSTRATION_SIZE} />}
-                            title={t('暂无系统公告')}
-                            description={t('请联系管理员在系统设置中配置公告信息')}
-                          />
-                        </div>
-                      )}
-                    </div>
-                    <div
-                      className="card-content-fade-indicator"
-                      style={{ opacity: showAnnouncementScrollHint ? 1 : 0 }}
-                    />
-                  </div>
+                              )}
+                            </div>
+                          </Timeline.Item>
+                        ))}
+                      </Timeline>
+                    ) : (
+                      <div className="flex justify-center items-center py-8">
+                        <Empty
+                          image={<IllustrationConstruction style={ILLUSTRATION_SIZE} />}
+                          darkModeImage={<IllustrationConstructionDark style={ILLUSTRATION_SIZE} />}
+                          title={t('暂无系统公告')}
+                          description={t('请联系管理员在系统设置中配置公告信息')}
+                        />
+                      </div>
+                    )}
+                  </ScrollableContainer>
                 </Card>
               )}
 
@@ -1542,46 +1470,36 @@ const Detail = (props) => {
                   }
                   bodyStyle={{ padding: 0 }}
                 >
-                  <div className="card-content-container">
-                    <div
-                      ref={faqScrollRef}
-                      className="p-2 max-h-96 overflow-y-auto card-content-scroll"
-                      onScroll={() => handleCardScroll(faqScrollRef, setShowFaqScrollHint)}
-                    >
-                      {faqData.length > 0 ? (
-                        <Collapse
-                          accordion
-                          expandIcon={<IconPlus />}
-                          collapseIcon={<IconMinus />}
-                        >
-                          {faqData.map((item, index) => (
-                            <Collapse.Panel
-                              key={index}
-                              header={item.question}
-                              itemKey={index.toString()}
-                            >
-                              <div
-                                dangerouslySetInnerHTML={{ __html: marked.parse(item.answer || '') }}
-                              />
-                            </Collapse.Panel>
-                          ))}
-                        </Collapse>
-                      ) : (
-                        <div className="flex justify-center items-center py-8">
-                          <Empty
-                            image={<IllustrationConstruction style={ILLUSTRATION_SIZE} />}
-                            darkModeImage={<IllustrationConstructionDark style={ILLUSTRATION_SIZE} />}
-                            title={t('暂无常见问答')}
-                            description={t('请联系管理员在系统设置中配置常见问答')}
-                          />
-                        </div>
-                      )}
-                    </div>
-                    <div
-                      className="card-content-fade-indicator"
-                      style={{ opacity: showFaqScrollHint ? 1 : 0 }}
-                    />
-                  </div>
+                  <ScrollableContainer maxHeight="24rem">
+                    {faqData.length > 0 ? (
+                      <Collapse
+                        accordion
+                        expandIcon={<IconPlus />}
+                        collapseIcon={<IconMinus />}
+                      >
+                        {faqData.map((item, index) => (
+                          <Collapse.Panel
+                            key={index}
+                            header={item.question}
+                            itemKey={index.toString()}
+                          >
+                            <div
+                              dangerouslySetInnerHTML={{ __html: marked.parse(item.answer || '') }}
+                            />
+                          </Collapse.Panel>
+                        ))}
+                      </Collapse>
+                    ) : (
+                      <div className="flex justify-center items-center py-8">
+                        <Empty
+                          image={<IllustrationConstruction style={ILLUSTRATION_SIZE} />}
+                          darkModeImage={<IllustrationConstructionDark style={ILLUSTRATION_SIZE} />}
+                          title={t('暂无常见问答')}
+                          description={t('请联系管理员在系统设置中配置常见问答')}
+                        />
+                      </div>
+                    )}
+                  </ScrollableContainer>
                 </Card>
               )}
 
@@ -1614,19 +1532,9 @@ const Detail = (props) => {
                     <Spin spinning={uptimeLoading}>
                       {uptimeData.length > 0 ? (
                         uptimeData.length === 1 ? (
-                          <div className="card-content-container">
-                            <div
-                              ref={uptimeScrollRef}
-                              className="p-2 max-h-[24rem] overflow-y-auto card-content-scroll"
-                              onScroll={() => handleCardScroll(uptimeScrollRef, setShowUptimeScrollHint)}
-                            >
-                              {renderMonitorList(uptimeData[0].monitors)}
-                            </div>
-                            <div
-                              className="card-content-fade-indicator"
-                              style={{ opacity: showUptimeScrollHint ? 1 : 0 }}
-                            />
-                          </div>
+                          <ScrollableContainer maxHeight="24rem">
+                            {renderMonitorList(uptimeData[0].monitors)}
+                          </ScrollableContainer>
                         ) : (
                           <Tabs
                             type="card"
@@ -1635,46 +1543,29 @@ const Detail = (props) => {
                             onChange={setActiveUptimeTab}
                             size="small"
                           >
-                            {uptimeData.map((group, groupIdx) => {
-                              if (!uptimeTabScrollRefs.current[group.categoryName]) {
-                                uptimeTabScrollRefs.current[group.categoryName] = React.createRef();
-                              }
-                              const tabScrollRef = uptimeTabScrollRefs.current[group.categoryName];
-
-                              return (
-                                <TabPane
-                                  tab={
-                                    <span className="flex items-center gap-2">
-                                      <Gauge size={14} />
-                                      {group.categoryName}
-                                      <Tag
-                                        color={activeUptimeTab === group.categoryName ? 'red' : 'grey'}
-                                        size='small'
-                                        shape='circle'
-                                      >
-                                        {group.monitors ? group.monitors.length : 0}
-                                      </Tag>
-                                    </span>
-                                  }
-                                  itemKey={group.categoryName}
-                                  key={groupIdx}
-                                >
-                                  <div className="card-content-container">
-                                    <div
-                                      ref={tabScrollRef}
-                                      className="p-2 max-h-[21.5rem] overflow-y-auto card-content-scroll"
-                                      onScroll={() => handleCardScroll(tabScrollRef, setShowUptimeScrollHint)}
+                            {uptimeData.map((group, groupIdx) => (
+                              <TabPane
+                                tab={
+                                  <span className="flex items-center gap-2">
+                                    <Gauge size={14} />
+                                    {group.categoryName}
+                                    <Tag
+                                      color={activeUptimeTab === group.categoryName ? 'red' : 'grey'}
+                                      size='small'
+                                      shape='circle'
                                     >
-                                      {renderMonitorList(group.monitors)}
-                                    </div>
-                                    <div
-                                      className="card-content-fade-indicator"
-                                      style={{ opacity: activeUptimeTab === group.categoryName ? showUptimeScrollHint ? 1 : 0 : 0 }}
-                                    />
-                                  </div>
-                                </TabPane>
-                              );
-                            })}
+                                      {group.monitors ? group.monitors.length : 0}
+                                    </Tag>
+                                  </span>
+                                }
+                                itemKey={group.categoryName}
+                                key={groupIdx}
+                              >
+                                <ScrollableContainer maxHeight="21.5rem">
+                                  {renderMonitorList(group.monitors)}
+                                </ScrollableContainer>
+                              </TabPane>
+                            ))}
                           </Tabs>
                         )
                       ) : (
