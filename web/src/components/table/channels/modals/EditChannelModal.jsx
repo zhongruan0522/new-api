@@ -86,7 +86,7 @@ function type2secretPrompt(type) {
     case 33:
       return '按照如下格式输入：Ak|Sk|Region';
     case 50:
-      return '按照如下格式输入: AccessKey|SecretKey';
+      return '按照如下格式输入: AccessKey|SecretKey, 如果上游是New API，则直接输ApiKey';
     case 51:
       return '按照如下格式输入: Access Key ID|Secret Access Key';
     default:
