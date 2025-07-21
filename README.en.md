@@ -191,22 +191,30 @@ If you have any questions, please refer to [Help and Support](https://docs.newap
 
 ## 🤝 Trusted Partners
 
-<div align="center" style="margin: 40px 0;">
-  <h3 style="color: #333; font-weight: 600; margin-bottom: 20px;">Trusted Partners</h3>
-  <div style="display: flex; justify-content: center; align-items: center; gap: 40px; flex-wrap: wrap; padding: 20px; background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
-    <div style="display: flex; align-items: center; justify-content: center; padding: 15px; background: white; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); transition: transform 0.3s ease;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
-      <img src="./docs/images/cherry-studio.svg" alt="Cherry Studio" style="height: 60px; max-width: 180px; object-fit: contain;">
-    </div>
-    <div style="display: flex; align-items: center; justify-content: center; padding: 15px; background: white; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); transition: transform 0.3s ease;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
-      <img src="./docs/images/pku.png" alt="Peking University" style="height: 60px; max-width: 180px; object-fit: contain;">
-    </div>
-    <div style="display: flex; align-items: center; justify-content: center; padding: 15px; background: white; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); transition: transform 0.3s ease;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
-      <a href="https://www.compshare.cn/?ytag=GPU_yy_gh_newapi" target="_blank" rel="noopener noreferrer">
-        <img src="./docs/images/ucloud.svg" alt="UCloud" style="height: 60px; max-width: 180px; object-fit: contain;">
-      </a>
-    </div>
-  </div>
-  <p style="margin-top: 15px; color: #666; font-size: 14px; font-style: italic;">Thanks to the above partners for their support and trust in the New API project</p>
+<div align="center">
+<table>
+<tr>
+<td align="center">
+<img src="./docs/images/cherry-studio.svg" alt="Cherry Studio" height="60">
+<br>
+<strong>Cherry Studio</strong>
+</td>
+<td align="center">
+<img src="./docs/images/pku.png" alt="Peking University" height="60">
+<br>
+<strong>Peking University</strong>
+</td>
+<td align="center">
+<a href="https://www.compshare.cn/?ytag=GPU_yy_gh_newapi" target="_blank">
+<img src="./docs/images/ucloud.svg" alt="UCloud" height="60">
+</a>
+<br>
+<strong>UCloud</strong>
+</td>
+</tr>
+</table>
+
+*No particular order*
 </div>
 
 ## 🌟 Star History
