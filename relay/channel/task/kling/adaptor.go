@@ -44,6 +44,7 @@ type requestPayload struct {
 	Duration    string  `json:"duration,omitempty"`
 	AspectRatio string  `json:"aspect_ratio,omitempty"`
 	ModelName   string  `json:"model_name,omitempty"`
+	Model       string  `json:"model,omitempty"` // Compatible with upstreams that only recognize "model"
 	CfgScale    float64 `json:"cfg_scale,omitempty"`
 }
 
@@ -227,6 +228,7 @@ func (a *TaskAdaptor) convertToRequestPayload(req *SubmitReq) (*requestPayload, 
 		Duration:    fmt.Sprintf("%d", defaultInt(req.Duration, 5)),
 		AspectRatio: a.getAspectRatio(req.Size),
 		ModelName:   req.Model,
+		Model:       req.Model, // Keep consistent with model_name, double writing improves compatibility
 		CfgScale:    0.5,
 	}
 	if r.ModelName == "" {

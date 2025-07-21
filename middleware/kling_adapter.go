@@ -18,7 +18,7 @@ func KlingRequestConvert() func(c *gin.Context) {
 			return
 		}
 
-		// 支持 model_name 和 model 两个字段
+		// Support both model_name and model fields
 		model, _ := originalReq["model_name"].(string)
 		if model == "" {
 			model, _ = originalReq["model"].(string)
