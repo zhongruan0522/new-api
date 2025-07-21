@@ -202,7 +202,7 @@ If you have any questions, please refer to [Help and Support](https://docs.newap
     src="./docs/images/ucloud.svg" alt="UCloud" height="58"
   /></a>
   <a href="https://bailian.console.aliyun.com/" target="_blank"><img
-    src="./docs/images/aliyun.svg" alt="Alibaba Cloud" height="58"
+    src="./docs/images/aliyun.png" alt="Alibaba Cloud" height="58"
   /></a>
 </p>
 

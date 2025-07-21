@@ -201,7 +201,7 @@ docker run --name new-api -d --restart always -p 3000:3000 -e SQL_DSN="root:1234
     src="./docs/images/ucloud.svg" alt="UCloud 优刻得" height="58"
   /></a>
   <a href="https://bailian.console.aliyun.com/" target="_blank"><img
-    src="./docs/images/aliyun.svg" alt="阿里云" height="58"
+    src="./docs/images/aliyun.png" alt="阿里云" height="58"
   /></a>
 </p>
 
