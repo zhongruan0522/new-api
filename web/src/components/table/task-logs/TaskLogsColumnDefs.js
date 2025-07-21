@@ -79,7 +79,7 @@ function renderDuration(submit_time, finishTime) {
 
   // 返回带有样式的颜色标签
   return (
-    <Tag color={color} prefixIcon={<Clock size={14} />}>
+    <Tag color={color} shape='circle' prefixIcon={<Clock size={14} />}>
       {durationSec} 秒
     </Tag>
   );
