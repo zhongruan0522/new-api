@@ -202,10 +202,6 @@ docker run --name new-api -d --restart always -p 3000:3000 -e SQL_DSN="root:1234
   <a href="https://www.compshare.cn/?ytag=GPU_yy_gh_newapi" target="_blank"><img
     src="./docs/images/ucloud.svg" alt="UCloud 优刻得" height="58"
   /></a>
-  &nbsp;&nbsp;&nbsp;&nbsp;
-  <a href="https://bailian.console.aliyun.com/" target="_blank"><img
-    src="./docs/images/aliyun.png" alt="阿里云" height="58"
-  /></a>
 </p>
 
 <p align="center"><em>排名不分先后</em></p>
