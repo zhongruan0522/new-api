@@ -195,21 +195,24 @@ If you have any questions, please refer to [Help and Support](https://docs.newap
 <table>
 <tr>
 <td align="center">
+<a href="https://www.cherry-ai.com/" target="_blank">
 <img src="./docs/images/cherry-studio.svg" alt="Cherry Studio" height="60">
-<br>
-<strong>Cherry Studio</strong>
+</a>
 </td>
 <td align="center">
+<a href="https://bda.pku.edu.cn/" target="_blank">
 <img src="./docs/images/pku.png" alt="Peking University" height="60">
-<br>
-<strong>Peking University</strong>
+</a>
 </td>
 <td align="center">
 <a href="https://www.compshare.cn/?ytag=GPU_yy_gh_newapi" target="_blank">
 <img src="./docs/images/ucloud.svg" alt="UCloud" height="60">
 </a>
-<br>
-<strong>UCloud</strong>
+</td>
+<td align="center">
+<a href="https://bailian.console.aliyun.com/" target="_blank">
+<img src="./docs/images/aliyun.svg" alt="Alibaba Cloud" height="60">
+</a>
 </td>
 </tr>
 </table>
