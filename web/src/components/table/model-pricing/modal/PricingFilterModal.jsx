@@ -17,5 +17,32 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 
-// 为了向后兼容，这里重新导出新的 PricingPage 组件
-export { default } from './PricingPage'; 
+import React from 'react';
+import { Modal } from '@douyinfe/semi-ui';
+import PricingSidebar from '../PricingSidebar';
+
+const PricingFilterModal = ({
+  visible,
+  onClose,
+  sidebarProps,
+  t
+}) => {
+  return (
+    <Modal
+      title={t('筛选')}
+      visible={visible}
+      onCancel={onClose}
+      footer={null}
+      style={{ width: '100%', height: '100%', margin: 0 }}
+      bodyStyle={{ 
+        padding: 0, 
+        height: 'calc(100vh - 110px)', 
+        overflow: 'auto' 
+      }}
+    >
+      <PricingSidebar {...sidebarProps} />
+    </Modal>
+  );
+};
+
+export default PricingFilterModal; 

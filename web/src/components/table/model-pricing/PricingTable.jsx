@@ -23,7 +23,7 @@ import {
   IllustrationNoResult,
   IllustrationNoResultDark
 } from '@douyinfe/semi-illustrations';
-import { getPricingTableColumns } from './PricingTableColumns.js';
+import { getPricingTableColumns } from './PricingTableColumns';
 
 const PricingTable = ({
   filteredModels,

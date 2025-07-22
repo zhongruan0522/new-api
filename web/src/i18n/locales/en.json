@@ -699,7 +699,6 @@
   "个": "indivual",
   "倍率是本站的计算方式，不同模型有着不同的倍率，并非官方价格的多少倍，请务必知晓。": "The magnification is the calculation method of this website. Different models have different magnifications, which are not multiples of the official price. Please be sure to know.",
   "所有各厂聊天模型请统一使用OpenAI方式请求，支持OpenAI官方库<br/>Claude()Claude官方格式请求": "Please use the OpenAI method to request all chat models from each factory, and support the OpenAI official library<br/>Claude()Claude official format request",
-  "复制选中模型": "Copy selected model",
   "分组说明": "Group description",
   "倍率是为了方便换算不同价格的模型": "The magnification is to facilitate the conversion of models with different prices.",
   "点击查看倍率说明": "Click to view the magnification description",

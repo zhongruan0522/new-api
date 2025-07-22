@@ -17,9 +17,10 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Input, Button } from '@douyinfe/semi-ui';
-import { IconSearch, IconCopy } from '@douyinfe/semi-icons';
+import { IconSearch, IconCopy, IconFilter } from '@douyinfe/semi-icons';
+import PricingFilterModal from './modal/PricingFilterModal';
 
 const PricingSearchBar = ({
   selectedRowKeys,
@@ -27,8 +28,12 @@ const PricingSearchBar = ({
   handleChange,
   handleCompositionStart,
   handleCompositionEnd,
+  isMobile,
+  sidebarProps,
   t
 }) => {
+  const [showFilterModal, setShowFilterModal] = useState(false);
+
   const SearchAndActions = useMemo(() => (
     <div className="flex items-center gap-4 w-full">
       {/* 搜索框 */}
@@ -45,19 +50,45 @@ const PricingSearchBar = ({
 
       {/* 操作按钮 */}
       <Button
-        theme='light'
+        theme='outline'
         type='primary'
         icon={<IconCopy />}
         onClick={() => copyText(selectedRowKeys)}
         disabled={selectedRowKeys.length === 0}
         className="!bg-blue-500 hover:!bg-blue-600 text-white"
       >
-        {t('复制选中模型')}
+        {t('复制')}
       </Button>
-    </div>
-  ), [selectedRowKeys, t, handleCompositionStart, handleCompositionEnd, handleChange, copyText]);
 
-  return SearchAndActions;
+      {/* 移动端筛选按钮 */}
+      {isMobile && (
+        <Button
+          theme="outline"
+          type='tertiary'
+          icon={<IconFilter />}
+          onClick={() => setShowFilterModal(true)}
+        >
+          {t('筛选')}
+        </Button>
+      )}
+    </div>
+  ), [selectedRowKeys, t, handleCompositionStart, handleCompositionEnd, handleChange, copyText, isMobile]);
+
+  return (
+    <>
+      {SearchAndActions}
+
+      {/* 移动端筛选Modal */}
+      {isMobile && (
+        <PricingFilterModal
+          visible={showFilterModal}
+          onClose={() => setShowFilterModal(false)}
+          sidebarProps={sidebarProps}
+          t={t}
+        />
+      )}
+    </>
+  );
 };
 
 export default PricingSearchBar; 

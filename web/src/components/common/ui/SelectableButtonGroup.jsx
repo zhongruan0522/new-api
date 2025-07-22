@@ -18,6 +18,7 @@ For commercial licensing, please contact support@quantumnous.com
 */
 
 import React, { useState, useRef } from 'react';
+import { useIsMobile } from '../../../hooks/common/useIsMobile';
 import { Divider, Button, Tag, Row, Col, Collapsible } from '@douyinfe/semi-ui';
 import { IconChevronDown, IconChevronUp } from '@douyinfe/semi-icons';
 
@@ -44,6 +45,7 @@ const SelectableButtonGroup = ({
   collapseHeight = 200
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const isMobile = useIsMobile();
   const perRow = 3;
   const maxVisibleRows = Math.max(1, Math.floor(collapseHeight / 32)); // Approx row height 32
   const needCollapse = collapsible && items.length > perRow * maxVisibleRows;
@@ -82,10 +84,16 @@ const SelectableButtonGroup = ({
       {items.map((item) => {
         const isActive = activeValue === item.value;
         return (
-          <Col xs={24} sm={24} md={24} lg={12} xl={8} key={item.value}>
+          <Col
+            {...(isMobile
+              ? { span: 12 }
+              : { xs: 24, sm: 24, md: 24, lg: 12, xl: 8 }
+            )}
+            key={item.value}
+          >
             <Button
               onClick={() => onChange(item.value)}
-              theme={isActive ? 'solid' : 'outline'}
+              theme={isActive ? 'light' : 'outline'}
               type={isActive ? 'primary' : 'tertiary'}
               icon={item.icon}
               style={{ width: '100%' }}

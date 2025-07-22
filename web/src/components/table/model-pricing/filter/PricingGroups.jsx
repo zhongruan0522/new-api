@@ -18,7 +18,7 @@ For commercial licensing, please contact support@quantumnous.com
 */
 
 import React from 'react';
-import SelectableButtonGroup from '../../../common/ui/SelectableButtonGroup.jsx';
+import SelectableButtonGroup from '../../../common/ui/SelectableButtonGroup';
 
 /**
  * 分组筛选组件

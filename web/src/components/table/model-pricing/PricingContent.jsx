@@ -18,12 +18,20 @@ For commercial licensing, please contact support@quantumnous.com
 */
 
 import React from 'react';
-import PricingSearchBar from './PricingSearchBar.jsx';
-import PricingTable from './PricingTable.jsx';
+import PricingSearchBar from './PricingSearchBar';
+import PricingTable from './PricingTable';
 
-const PricingContent = (props) => {
+const PricingContent = ({ isMobile, sidebarProps, ...props }) => {
   return (
-    <div className="pricing-scroll-hide">
+    <div
+      className={isMobile ? "" : "pricing-scroll-hide"}
+      style={isMobile ? {
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'auto'
+      } : {}}
+    >
       {/* 固定的搜索和操作区域 */}
       <div
         style={{
@@ -36,14 +44,15 @@ const PricingContent = (props) => {
           zIndex: 5,
         }}
       >
-        <PricingSearchBar {...props} />
+        <PricingSearchBar {...props} isMobile={isMobile} sidebarProps={sidebarProps} />
       </div>
 
       {/* 可滚动的内容区域 */}
       <div
         style={{
           flex: 1,
-          overflow: 'auto'
+          overflow: 'auto',
+          ...(isMobile && { minHeight: 0 })
         }}
       >
         <PricingTable {...props} />

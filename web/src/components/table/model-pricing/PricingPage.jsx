@@ -19,13 +19,15 @@ For commercial licensing, please contact support@quantumnous.com
 
 import React from 'react';
 import { Layout, ImagePreview } from '@douyinfe/semi-ui';
-import PricingSidebar from './PricingSidebar.jsx';
-import PricingContent from './PricingContent.jsx';
-import { useModelPricingData } from '../../../hooks/model-pricing/useModelPricingData.js';
+import PricingSidebar from './PricingSidebar';
+import PricingContent from './PricingContent';
+import { useModelPricingData } from '../../../hooks/model-pricing/useModelPricingData';
+import { useIsMobile } from '../../../hooks/common/useIsMobile';
 
 const PricingPage = () => {
   const pricingData = useModelPricingData();
   const { Sider, Content } = Layout;
+  const isMobile = useIsMobile();
 
   // 显示倍率状态
   const [showRatio, setShowRatio] = React.useState(false);
@@ -33,19 +35,21 @@ const PricingPage = () => {
   return (
     <div className="bg-white">
       <Layout style={{ height: 'calc(100vh - 60px)', overflow: 'hidden', marginTop: '60px' }}>
-        {/* 左侧边栏 */}
-        <Sider
-          className="pricing-scroll-hide"
-          style={{
-            width: 460,
-            height: 'calc(100vh - 60px)',
-            backgroundColor: 'var(--semi-color-bg-0)',
-            borderRight: '1px solid var(--semi-color-border)',
-            overflow: 'auto'
-          }}
-        >
-          <PricingSidebar {...pricingData} showRatio={showRatio} setShowRatio={setShowRatio} />
-        </Sider>
+        {/* 左侧边栏 - 只在桌面端显示 */}
+        {!isMobile && (
+          <Sider
+            className="pricing-scroll-hide"
+            style={{
+              width: 460,
+              height: 'calc(100vh - 60px)',
+              backgroundColor: 'var(--semi-color-bg-0)',
+              borderRight: '1px solid var(--semi-color-border)',
+              overflow: 'auto'
+            }}
+          >
+            <PricingSidebar {...pricingData} showRatio={showRatio} setShowRatio={setShowRatio} />
+          </Sider>
+        )}
 
         {/* 右侧内容区 */}
         <Content
@@ -57,7 +61,12 @@ const PricingPage = () => {
             flexDirection: 'column'
           }}
         >
-          <PricingContent {...pricingData} showRatio={showRatio} />
+          <PricingContent 
+            {...pricingData} 
+            showRatio={showRatio} 
+            isMobile={isMobile}
+            sidebarProps={{ ...pricingData, showRatio, setShowRatio }}
+          />
         </Content>
       </Layout>
 
