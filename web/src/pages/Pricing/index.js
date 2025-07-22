@@ -18,11 +18,11 @@ For commercial licensing, please contact support@quantumnous.com
 */
 
 import React from 'react';
-import ModelPricing from '../../components/table/ModelPricing.js';
+import ModelPricingPage from '../../components/table/model-pricing';
 
 const Pricing = () => (
   <div className="mt-[60px] px-2">
-    <ModelPricing />
+    <ModelPricingPage />
   </div>
 );
 
