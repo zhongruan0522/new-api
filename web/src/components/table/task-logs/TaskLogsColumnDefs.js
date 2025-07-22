@@ -39,6 +39,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import { TASK_ACTION_GENERATE, TASK_ACTION_TEXT_GENERATE } from '../../../constants/common.constant';
+import { CHANNEL_OPTIONS } from '../../../constants/channel.constants';
 
 const colors = [
   'amber',
@@ -121,23 +122,19 @@ const renderType = (type, t) => {
 };
 
 const renderPlatform = (platform, t) => {
+  let option = CHANNEL_OPTIONS.find(opt => String(opt.value) === String(platform));
+  if (option) {
+    return (
+      <Tag color={option.color} shape='circle' prefixIcon={<Video size={14} />}>
+        {option.label}
+      </Tag>
+    );
+  }
   switch (platform) {
     case 'suno':
       return (
         <Tag color='green' shape='circle' prefixIcon={<Music size={14} />}>
           Suno
-        </Tag>
-      );
-    case 'kling':
-      return (
-        <Tag color='orange' shape='circle' prefixIcon={<Video size={14} />}>
-          Kling
-        </Tag>
-      );
-    case 'jimeng':
-      return (
-        <Tag color='purple' shape='circle' prefixIcon={<Video size={14} />}>
-          Jimeng
         </Tag>
       );
     default:
