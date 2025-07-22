@@ -142,6 +142,7 @@ const EditChannelModal = (props) => {
   const [isMultiKeyChannel, setIsMultiKeyChannel] = useState(false);
   const [channelSearchValue, setChannelSearchValue] = useState('');
   const [useManualInput, setUseManualInput] = useState(false); // 是否使用手动输入模式
+  const showApiConfigCard = inputs.type !== 45;  // 控制是否显示 API 配置卡片（仅当渠道类型不是 豆包 时显示）
   const getInitValues = () => ({ ...originInputs });
   const handleInputChange = (name, value) => {
     if (formApiRef.current) {
@@ -1108,130 +1109,132 @@ const EditChannelModal = (props) => {
                 </Card>
 
                 {/* API Configuration Card */}
-                <Card className="!rounded-2xl shadow-sm border-0 mb-6">
-                  {/* Header: API Config */}
-                  <div className="flex items-center mb-2">
-                    <Avatar size="small" color="green" className="mr-2 shadow-md">
-                      <IconGlobe size={16} />
-                    </Avatar>
-                    <div>
-                      <Text className="text-lg font-medium">{t('API 配置')}</Text>
-                      <div className="text-xs text-gray-600">{t('API 地址和相关配置')}</div>
+                {showApiConfigCard && (
+                  <Card className="!rounded-2xl shadow-sm border-0 mb-6">
+                    {/* Header: API Config */}
+                    <div className="flex items-center mb-2">
+                      <Avatar size="small" color="green" className="mr-2 shadow-md">
+                        <IconGlobe size={16} />
+                      </Avatar>
+                      <div>
+                        <Text className="text-lg font-medium">{t('API 配置')}</Text>
+                        <div className="text-xs text-gray-600">{t('API 地址和相关配置')}</div>
+                      </div>
                     </div>
-                  </div>
 
-                  {inputs.type === 40 && (
-                    <Banner
-                      type='info'
-                      description={
+                    {inputs.type === 40 && (
+                      <Banner
+                        type='info'
+                        description={
+                          <div>
+                            <Text strong>{t('邀请链接')}:</Text>
+                            <Text
+                              link
+                              underline
+                              className="ml-2 cursor-pointer"
+                              onClick={() => window.open('https://cloud.siliconflow.cn/i/hij0YNTZ')}
+                            >
+                              https://cloud.siliconflow.cn/i/hij0YNTZ
+                            </Text>
+                          </div>
+                        }
+                        className='!rounded-lg'
+                      />
+                    )}
+
+                    {inputs.type === 3 && (
+                      <>
+                        <Banner
+                          type='warning'
+                          description={t('2025年5月10日后添加的渠道，不需要再在部署的时候移除模型名称中的"."')}
+                          className='!rounded-lg'
+                        />
                         <div>
-                          <Text strong>{t('邀请链接')}:</Text>
-                          <Text
-                            link
-                            underline
-                            className="ml-2 cursor-pointer"
-                            onClick={() => window.open('https://cloud.siliconflow.cn/i/hij0YNTZ')}
-                          >
-                            https://cloud.siliconflow.cn/i/hij0YNTZ
-                          </Text>
+                          <Form.Input
+                            field='base_url'
+                            label='AZURE_OPENAI_ENDPOINT'
+                            placeholder={t('请输入 AZURE_OPENAI_ENDPOINT，例如：https://docs-test-001.openai.azure.com')}
+                            onChange={(value) => handleInputChange('base_url', value)}
+                            showClear
+                          />
                         </div>
-                      }
-                      className='!rounded-lg'
-                    />
-                  )}
+                        <div>
+                          <Form.Input
+                            field='other'
+                            label={t('默认 API 版本')}
+                            placeholder={t('请输入默认 API 版本，例如：2025-04-01-preview')}
+                            onChange={(value) => handleInputChange('other', value)}
+                            showClear
+                          />
+                        </div>
+                      </>
+                    )}
 
-                  {inputs.type === 3 && (
-                    <>
+                    {inputs.type === 8 && (
+                      <>
+                        <Banner
+                          type='warning'
+                          description={t('如果你对接的是上游One API或者New API等转发项目，请使用OpenAI类型，不要使用此类型，除非你知道你在做什么。')}
+                          className='!rounded-lg'
+                        />
+                        <div>
+                          <Form.Input
+                            field='base_url'
+                            label={t('完整的 Base URL，支持变量{model}')}
+                            placeholder={t('请输入完整的URL，例如：https://api.openai.com/v1/chat/completions')}
+                            onChange={(value) => handleInputChange('base_url', value)}
+                            showClear
+                          />
+                        </div>
+                      </>
+                    )}
+
+                    {inputs.type === 37 && (
                       <Banner
                         type='warning'
-                        description={t('2025年5月10日后添加的渠道，不需要再在部署的时候移除模型名称中的"."')}
+                        description={t('Dify渠道只适配chatflow和agent，并且agent不支持图片！')}
                         className='!rounded-lg'
                       />
+                    )}
+
+                    {inputs.type !== 3 && inputs.type !== 8 && inputs.type !== 22 && inputs.type !== 36 && inputs.type !== 45 && (
                       <div>
                         <Form.Input
                           field='base_url'
-                          label='AZURE_OPENAI_ENDPOINT'
-                          placeholder={t('请输入 AZURE_OPENAI_ENDPOINT，例如：https://docs-test-001.openai.azure.com')}
+                          label={t('API地址')}
+                          placeholder={t('此项可选，用于通过自定义API地址来进行 API 调用，末尾不要带/v1和/')}
+                          onChange={(value) => handleInputChange('base_url', value)}
+                          showClear
+                          extraText={t('对于官方渠道，new-api已经内置地址，除非是第三方代理站点或者Azure的特殊接入地址，否则不需要填写')}
+                        />
+                      </div>
+                    )}
+
+                    {inputs.type === 22 && (
+                      <div>
+                        <Form.Input
+                          field='base_url'
+                          label={t('私有部署地址')}
+                          placeholder={t('请输入私有部署地址，格式为：https://fastgpt.run/api/openapi')}
                           onChange={(value) => handleInputChange('base_url', value)}
                           showClear
                         />
                       </div>
-                      <div>
-                        <Form.Input
-                          field='other'
-                          label={t('默认 API 版本')}
-                          placeholder={t('请输入默认 API 版本，例如：2025-04-01-preview')}
-                          onChange={(value) => handleInputChange('other', value)}
-                          showClear
-                        />
-                      </div>
-                    </>
-                  )}
+                    )}
 
-                  {inputs.type === 8 && (
-                    <>
-                      <Banner
-                        type='warning'
-                        description={t('如果你对接的是上游One API或者New API等转发项目，请使用OpenAI类型，不要使用此类型，除非你知道你在做什么。')}
-                        className='!rounded-lg'
-                      />
+                    {inputs.type === 36 && (
                       <div>
                         <Form.Input
                           field='base_url'
-                          label={t('完整的 Base URL，支持变量{model}')}
-                          placeholder={t('请输入完整的URL，例如：https://api.openai.com/v1/chat/completions')}
+                          label={t('注意非Chat API，请务必填写正确的API地址，否则可能导致无法使用')}
+                          placeholder={t('请输入到 /suno 前的路径，通常就是域名，例如：https://api.example.com')}
                           onChange={(value) => handleInputChange('base_url', value)}
                           showClear
                         />
                       </div>
-                    </>
-                  )}
-
-                  {inputs.type === 37 && (
-                    <Banner
-                      type='warning'
-                      description={t('Dify渠道只适配chatflow和agent，并且agent不支持图片！')}
-                      className='!rounded-lg'
-                    />
-                  )}
-
-                  {inputs.type !== 3 && inputs.type !== 8 && inputs.type !== 22 && inputs.type !== 36 && inputs.type !== 45 && (
-                    <div>
-                      <Form.Input
-                        field='base_url'
-                        label={t('API地址')}
-                        placeholder={t('此项可选，用于通过自定义API地址来进行 API 调用，末尾不要带/v1和/')}
-                        onChange={(value) => handleInputChange('base_url', value)}
-                        showClear
-                        extraText={t('对于官方渠道，new-api已经内置地址，除非是第三方代理站点或者Azure的特殊接入地址，否则不需要填写')}
-                      />
-                    </div>
-                  )}
-
-                  {inputs.type === 22 && (
-                    <div>
-                      <Form.Input
-                        field='base_url'
-                        label={t('私有部署地址')}
-                        placeholder={t('请输入私有部署地址，格式为：https://fastgpt.run/api/openapi')}
-                        onChange={(value) => handleInputChange('base_url', value)}
-                        showClear
-                      />
-                    </div>
-                  )}
-
-                  {inputs.type === 36 && (
-                    <div>
-                      <Form.Input
-                        field='base_url'
-                        label={t('注意非Chat API，请务必填写正确的API地址，否则可能导致无法使用')}
-                        placeholder={t('请输入到 /suno 前的路径，通常就是域名，例如：https://api.example.com')}
-                        onChange={(value) => handleInputChange('base_url', value)}
-                        showClear
-                      />
-                    </div>
-                  )}
-                </Card>
+                    )}
+                  </Card>
+                )}
 
                 {/* Model Configuration Card */}
                 <Card className="!rounded-2xl shadow-sm border-0 mb-6">
