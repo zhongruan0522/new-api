@@ -45,6 +45,7 @@ const PricingTable = ({
   filteredValue,
   handleGroupClick,
   showRatio,
+  compactMode = false,
   t
 }) => {
 
@@ -83,8 +84,8 @@ const PricingTable = ({
   ]);
 
   // 更新列定义中的 filteredValue
-  const tableColumns = useMemo(() => {
-    return columns.map(column => {
+  const processedColumns = useMemo(() => {
+    const cols = columns.map(column => {
       if (column.dataIndex === 'model_name') {
         return {
           ...column,
@@ -93,16 +94,23 @@ const PricingTable = ({
       }
       return column;
     });
-  }, [columns, filteredValue]);
+
+    // Remove fixed property when in compact mode (mobile view)
+    if (compactMode) {
+      return cols.map(({ fixed, ...rest }) => rest);
+    }
+    return cols;
+  }, [columns, filteredValue, compactMode]);
 
   const ModelTable = useMemo(() => (
     <Card className="!rounded-xl overflow-hidden" bordered={false}>
       <Table
-        columns={tableColumns}
+        columns={processedColumns}
         dataSource={filteredModels}
         loading={loading}
         rowSelection={rowSelection}
         className="custom-table"
+        scroll={compactMode ? undefined : { x: 'max-content' }}
         empty={
           <Empty
             image={<IllustrationNoResult style={{ width: 150, height: 150 }} />}
@@ -120,7 +128,7 @@ const PricingTable = ({
         }}
       />
     </Card>
-  ), [filteredModels, loading, tableColumns, rowSelection, pageSize, setPageSize, t]);
+  ), [filteredModels, loading, processedColumns, rowSelection, pageSize, setPageSize, t, compactMode]);
 
   return ModelTable;
 };

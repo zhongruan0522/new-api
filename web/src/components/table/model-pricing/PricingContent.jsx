@@ -23,7 +23,7 @@ import PricingTable from './PricingTable.jsx';
 
 const PricingContent = (props) => {
   return (
-    <>
+    <div className="pricing-scroll-hide">
       {/* 固定的搜索和操作区域 */}
       <div
         style={{
@@ -45,7 +45,7 @@ const PricingContent = (props) => {
       >
         <PricingTable {...props} />
       </div>
-    </>
+    </div>
   );
 };
 

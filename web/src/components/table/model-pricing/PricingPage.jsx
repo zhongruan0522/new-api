@@ -35,6 +35,7 @@ const PricingPage = () => {
       <Layout style={{ height: 'calc(100vh - 60px)', overflow: 'hidden', marginTop: '60px' }}>
         {/* 左侧边栏 */}
         <Sider
+          className="pricing-scroll-hide"
           style={{
             width: 460,
             height: 'calc(100vh - 60px)',
@@ -48,6 +49,7 @@ const PricingPage = () => {
 
         {/* 右侧内容区 */}
         <Content
+          className="pricing-scroll-hide"
           style={{
             height: 'calc(100vh - 60px)',
             backgroundColor: 'var(--semi-color-bg-0)',

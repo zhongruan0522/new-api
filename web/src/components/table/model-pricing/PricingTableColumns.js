@@ -92,84 +92,88 @@ export const getPricingTableColumns = ({
   handleGroupClick,
   showRatio,
 }) => {
-  const baseColumns = [
-    {
-      title: t('可用性'),
-      dataIndex: 'available',
-      render: (text, record, index) => {
-        return renderAvailable(record.enable_groups.includes(selectedGroup), t);
-      },
-      sorter: (a, b) => {
-        const aAvailable = a.enable_groups.includes(selectedGroup);
-        const bAvailable = b.enable_groups.includes(selectedGroup);
-        return Number(aAvailable) - Number(bAvailable);
-      },
-      defaultSortOrder: 'descend',
+  const endpointColumn = {
+    title: t('可用端点类型'),
+    dataIndex: 'supported_endpoint_types',
+    render: (text, record, index) => {
+      return renderSupportedEndpoints(text);
     },
-    {
-      title: t('可用端点类型'),
-      dataIndex: 'supported_endpoint_types',
-      render: (text, record, index) => {
-        return renderSupportedEndpoints(text);
-      },
-    },
-    {
-      title: t('模型名称'),
-      dataIndex: 'model_name',
-      render: (text, record, index) => {
-        return renderModelTag(text, {
-          onClick: () => {
-            copyText(text);
-          }
-        });
-      },
-      onFilter: (value, record) =>
-        record.model_name.toLowerCase().includes(value.toLowerCase()),
-    },
-    {
-      title: t('计费类型'),
-      dataIndex: 'quota_type',
-      render: (text, record, index) => {
-        return renderQuotaType(parseInt(text), t);
-      },
-      sorter: (a, b) => a.quota_type - b.quota_type,
-    },
-    {
-      title: t('可用分组'),
-      dataIndex: 'enable_groups',
-      render: (text, record, index) => {
-        return (
-          <Space wrap>
-            {text.map((group) => {
-              if (usableGroup[group]) {
-                if (group === selectedGroup) {
-                  return (
-                    <Tag key={group} color='blue' shape='circle' prefixIcon={<IconVerify />}>
-                      {group}
-                    </Tag>
-                  );
-                } else {
-                  return (
-                    <Tag
-                      key={group}
-                      color='blue'
-                      shape='circle'
-                      onClick={() => handleGroupClick(group)}
-                      className="cursor-pointer hover:opacity-80 transition-opacity"
-                    >
-                      {group}
-                    </Tag>
-                  );
-                }
-              }
-            })}
-          </Space>
-        );
-      },
-    },
-  ];
+  };
 
-  // 倍率列 - 只有在showRatio为true时才包含
+  const modelNameColumn = {
+    title: t('模型名称'),
+    dataIndex: 'model_name',
+    render: (text, record, index) => {
+      return renderModelTag(text, {
+        onClick: () => {
+          copyText(text);
+        }
+      });
+    },
+    onFilter: (value, record) =>
+      record.model_name.toLowerCase().includes(value.toLowerCase()),
+  };
+
+  const quotaColumn = {
+    title: t('计费类型'),
+    dataIndex: 'quota_type',
+    render: (text, record, index) => {
+      return renderQuotaType(parseInt(text), t);
+    },
+    sorter: (a, b) => a.quota_type - b.quota_type,
+  };
+
+  const enableGroupColumn = {
+    title: t('可用分组'),
+    dataIndex: 'enable_groups',
+    render: (text, record, index) => {
+      return (
+        <Space wrap>
+          {text.map((group) => {
+            if (usableGroup[group]) {
+              if (group === selectedGroup) {
+                return (
+                  <Tag key={group} color='blue' shape='circle' prefixIcon={<IconVerify />}>
+                    {group}
+                  </Tag>
+                );
+              } else {
+                return (
+                  <Tag
+                    key={group}
+                    color='blue'
+                    shape='circle'
+                    onClick={() => handleGroupClick(group)}
+                    className="cursor-pointer hover:opacity-80 transition-opacity"
+                  >
+                    {group}
+                  </Tag>
+                );
+              }
+            }
+          })}
+        </Space>
+      );
+    },
+  };
+
+  const baseColumns = [endpointColumn, modelNameColumn, quotaColumn, enableGroupColumn];
+
+  const availabilityColumn = {
+    title: t('可用性'),
+    dataIndex: 'available',
+    fixed: 'right',
+    render: (text, record, index) => {
+      return renderAvailable(record.enable_groups.includes(selectedGroup), t);
+    },
+    sorter: (a, b) => {
+      const aAvailable = a.enable_groups.includes(selectedGroup);
+      const bAvailable = b.enable_groups.includes(selectedGroup);
+      return Number(aAvailable) - Number(bAvailable);
+    },
+    defaultSortOrder: 'descend',
+  };
+
   const ratioColumn = {
     title: () => (
       <div className="flex items-center space-x-1">
@@ -207,7 +211,6 @@ export const getPricingTableColumns = ({
     },
   };
 
-  // 价格列
   const priceColumn = {
     title: (
       <div className="flex items-center space-x-2">
@@ -264,12 +267,11 @@ export const getPricingTableColumns = ({
     },
   };
 
-  // 根据showRatio决定是否包含倍率列
   const columns = [...baseColumns];
   if (showRatio) {
     columns.push(ratioColumn);
   }
   columns.push(priceColumn);
-
+  columns.push(availabilityColumn);
   return columns;
 }; 

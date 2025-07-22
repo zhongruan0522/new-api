@@ -82,7 +82,7 @@ const SelectableButtonGroup = ({
       {items.map((item) => {
         const isActive = activeValue === item.value;
         return (
-          <Col span={8} key={item.value}>
+          <Col xs={24} sm={24} md={24} lg={12} xl={8} key={item.value}>
             <Button
               onClick={() => onChange(item.value)}
               theme={isActive ? 'solid' : 'outline'}

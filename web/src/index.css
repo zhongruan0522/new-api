@@ -391,7 +391,8 @@ code {
   background: transparent;
 }
 
-/* 隐藏卡片内容区域的滚动条 */
+/* 隐藏内容区域滚动条 */
+.pricing-scroll-hide,
 .model-test-scroll,
 .card-content-scroll,
 .model-settings-scroll,
@@ -403,6 +404,7 @@ code {
   scrollbar-width: none;
 }
 
+.pricing-scroll-hide::-webkit-scrollbar,
 .model-test-scroll::-webkit-scrollbar,
 .card-content-scroll::-webkit-scrollbar,
 .model-settings-scroll::-webkit-scrollbar,
