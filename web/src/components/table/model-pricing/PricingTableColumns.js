@@ -19,7 +19,7 @@ For commercial licensing, please contact support@quantumnous.com
 
 import React from 'react';
 import { Tag, Space, Tooltip, Switch } from '@douyinfe/semi-ui';
-import { IconVerify, IconHelpCircle } from '@douyinfe/semi-icons';
+import { IconHelpCircle, IconCheckCircleStroked, IconClose } from '@douyinfe/semi-icons';
 import { Popover } from '@douyinfe/semi-ui';
 import { renderModelTag, stringToColor } from '../../../helpers';
 
@@ -43,18 +43,30 @@ function renderQuotaType(type, t) {
 }
 
 function renderAvailable(available, t) {
-  return available ? (
+  if (available) {
+    return (
+      <Popover
+        content={<div style={{ padding: 8 }}>{t('您的分组可以使用该模型')}</div>}
+        position='top'
+        key={String(available)}
+        className="bg-green-50"
+      >
+        <IconCheckCircleStroked style={{ color: 'rgb(22 163 74)' }} size='large' />
+      </Popover>
+    );
+  }
+
+  // 分组不可用时显示红色关闭图标
+  return (
     <Popover
-      content={
-        <div style={{ padding: 8 }}>{t('您的分组可以使用该模型')}</div>
-      }
+      content={<div style={{ padding: 8 }}>{t('你的分组无权使用该模型')}</div>}
       position='top'
-      key={available}
-      className="bg-green-50"
+      key="not-available"
+      className="bg-red-50"
     >
-      <IconVerify style={{ color: 'rgb(22 163 74)' }} size='large' />
+      <IconClose style={{ color: 'rgb(239 68 68)' }} size='large' />
     </Popover>
-  ) : null;
+  );
 }
 
 function renderSupportedEndpoints(endpoints) {
@@ -133,7 +145,7 @@ export const getPricingTableColumns = ({
             if (usableGroup[group]) {
               if (group === selectedGroup) {
                 return (
-                  <Tag key={group} color='blue' shape='circle' prefixIcon={<IconVerify />}>
+                  <Tag key={group} color='blue' shape='circle' prefixIcon={<IconCheckCircleStroked />}>
                     {group}
                   </Tag>
                 );
