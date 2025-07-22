@@ -111,8 +111,9 @@ const TokensPage = () => {
           onPageChange: tokensData.handlePageChange,
           onPageSizeChange: tokensData.handlePageSizeChange,
           isMobile: isMobile,
+          t: tokensData.t,
         })}
-        t={t}
+        t={tokensData.t}
       >
         <TokensTable {...tokensData} />
       </CardPro>

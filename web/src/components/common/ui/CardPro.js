@@ -163,7 +163,10 @@ const CardPro = ({
     if (!paginationArea) return null;
 
     return (
-      <div className="flex justify-center w-full pt-4 border-t" style={{ borderColor: 'var(--semi-color-border)' }}>
+      <div
+        className={`flex w-full pt-4 border-t ${isMobile ? 'justify-center' : 'justify-between items-center'}`}
+        style={{ borderColor: 'var(--semi-color-border)' }}
+      >
         {paginationArea}
       </div>
     );

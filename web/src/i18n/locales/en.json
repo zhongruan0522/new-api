@@ -1783,5 +1783,9 @@
   "隐藏操作项": "Hide actions",
   "显示操作项": "Show actions",
   "用户组": "User group",
-  "邀请获得额度": "Invitation quota"
+  "邀请获得额度": "Invitation quota",
+  "显示第": "Showing",
+  "条 - 第": "to",
+  "条，共": "of",
+  "条": "items"
 }

@@ -51,6 +51,7 @@ const TaskLogsPage = () => {
             onPageChange: taskLogsData.handlePageChange,
             onPageSizeChange: taskLogsData.handlePageSizeChange,
             isMobile: isMobile,
+            t: taskLogsData.t,
           })}
           t={taskLogsData.t}
         >

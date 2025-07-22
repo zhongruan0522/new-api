@@ -109,8 +109,9 @@ const RedemptionsPage = () => {
           onPageChange: redemptionsData.handlePageChange,
           onPageSizeChange: redemptionsData.handlePageSizeChange,
           isMobile: isMobile,
+          t: redemptionsData.t,
         })}
-        t={t}
+        t={redemptionsData.t}
       >
         <RedemptionsTable {...redemptionsData} />
       </CardPro>

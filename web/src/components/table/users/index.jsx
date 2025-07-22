@@ -114,8 +114,9 @@ const UsersPage = () => {
           onPageChange: usersData.handlePageChange,
           onPageSizeChange: usersData.handlePageSizeChange,
           isMobile: isMobile,
+          t: usersData.t,
         })}
-        t={t}
+        t={usersData.t}
       >
         <UsersTable {...usersData} />
       </CardPro>
