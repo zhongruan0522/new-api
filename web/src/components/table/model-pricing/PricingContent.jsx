@@ -18,12 +18,35 @@ For commercial licensing, please contact support@quantumnous.com
 */
 
 import React from 'react';
-import ModelPricingPage from '../../components/table/model-pricing';
+import PricingSearchBar from './PricingSearchBar.jsx';
+import PricingTable from './PricingTable.jsx';
 
-const Pricing = () => (
-  <>
-    <ModelPricingPage />
-  </>
-);
+const PricingContent = (props) => {
+  return (
+    <>
+      {/* 固定的搜索和操作区域 */}
+      <div
+        style={{
+          padding: '16px 24px',
+          borderBottom: '1px solid var(--semi-color-border)',
+          backgroundColor: 'var(--semi-color-bg-0)',
+          flexShrink: 0
+        }}
+      >
+        <PricingSearchBar {...props} />
+      </div>
 
-export default Pricing;
+      {/* 可滚动的内容区域 */}
+      <div
+        style={{
+          flex: 1,
+          overflow: 'auto'
+        }}
+      >
+        <PricingTable {...props} />
+      </div>
+    </>
+  );
+};
+
+export default PricingContent; 

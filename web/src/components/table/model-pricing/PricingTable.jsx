@@ -23,9 +23,9 @@ import {
   IllustrationNoResult,
   IllustrationNoResultDark
 } from '@douyinfe/semi-illustrations';
-import { getModelPricingColumns } from './ModelPricingColumnDefs.js';
+import { getPricingTableColumns } from './PricingTableColumns.js';
 
-const ModelPricingTable = ({
+const PricingTable = ({
   filteredModels,
   loading,
   rowSelection,
@@ -44,10 +44,12 @@ const ModelPricingTable = ({
   displayPrice,
   filteredValue,
   handleGroupClick,
+  showRatio,
   t
 }) => {
+
   const columns = useMemo(() => {
-    return getModelPricingColumns({
+    return getPricingTableColumns({
       t,
       selectedGroup,
       usableGroup,
@@ -61,6 +63,7 @@ const ModelPricingTable = ({
       setTokenUnit,
       displayPrice,
       handleGroupClick,
+      showRatio,
     });
   }, [
     t,
@@ -76,6 +79,7 @@ const ModelPricingTable = ({
     setTokenUnit,
     displayPrice,
     handleGroupClick,
+    showRatio,
   ]);
 
   // 更新列定义中的 filteredValue
@@ -121,4 +125,4 @@ const ModelPricingTable = ({
   return ModelTable;
 };
 
-export default ModelPricingTable; 
+export default PricingTable; 

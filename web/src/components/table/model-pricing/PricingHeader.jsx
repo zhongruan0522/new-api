@@ -22,7 +22,7 @@ import { Card } from '@douyinfe/semi-ui';
 import { IconVerify, IconLayers, IconInfoCircle } from '@douyinfe/semi-icons';
 import { AlertCircle } from 'lucide-react';
 
-const ModelPricingHeader = ({
+const PricingHeader = ({
   userState,
   groupRatio,
   selectedGroup,
@@ -120,4 +120,4 @@ const ModelPricingHeader = ({
   );
 };
 
-export default ModelPricingHeader; 
+export default PricingHeader; 

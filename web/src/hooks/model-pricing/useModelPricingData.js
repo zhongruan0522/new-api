@@ -32,6 +32,10 @@ export const useModelPricingData = () => {
   const [modalImageUrl, setModalImageUrl] = useState('');
   const [isModalOpenurl, setIsModalOpenurl] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState('default');
+  // 用于 Table 的可用分组筛选，“all” 表示不过滤
+  const [filterGroup, setFilterGroup] = useState('all');
+  // 计费类型筛选: 'all' | 0 | 1
+  const [filterQuotaType, setFilterQuotaType] = useState('all');
   const [activeKey, setActiveKey] = useState('all');
   const [pageSize, setPageSize] = useState(10);
   const [currency, setCurrency] = useState('USD');
@@ -75,10 +79,22 @@ export const useModelPricingData = () => {
   const filteredModels = useMemo(() => {
     let result = models;
 
+    // 分类筛选
     if (activeKey !== 'all') {
       result = result.filter(model => modelCategories[activeKey].filter(model));
     }
 
+    // 分组筛选
+    if (filterGroup !== 'all') {
+      result = result.filter(model => model.enable_groups.includes(filterGroup));
+    }
+
+    // 计费类型筛选
+    if (filterQuotaType !== 'all') {
+      result = result.filter(model => model.quota_type === filterQuotaType);
+    }
+
+    // 搜索筛选
     if (filteredValue.length > 0) {
       const searchTerm = filteredValue[0].toLowerCase();
       result = result.filter(model =>
@@ -87,7 +103,7 @@ export const useModelPricingData = () => {
     }
 
     return result;
-  }, [activeKey, models, filteredValue]);
+  }, [activeKey, models, filteredValue, filterGroup, filterQuotaType]);
 
   const rowSelection = useMemo(
     () => ({
@@ -184,6 +200,8 @@ export const useModelPricingData = () => {
 
   const handleGroupClick = (group) => {
     setSelectedGroup(group);
+    // 同时将分组过滤设置为该分组
+    setFilterGroup(group);
     showInfo(
       t('当前查看的分组为：{{group}}，倍率为：{{ratio}}', {
         group: group,
@@ -208,6 +226,10 @@ export const useModelPricingData = () => {
     setIsModalOpenurl,
     selectedGroup,
     setSelectedGroup,
+    filterGroup,
+    setFilterGroup,
+    filterQuotaType,
+    setFilterQuotaType,
     activeKey,
     setActiveKey,
     pageSize,

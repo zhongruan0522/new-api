@@ -18,12 +18,27 @@ For commercial licensing, please contact support@quantumnous.com
 */
 
 import React from 'react';
-import ModelPricingPage from '../../components/table/model-pricing';
+import SelectableButtonGroup from '../../../common/ui/SelectableButtonGroup.jsx';
 
-const Pricing = () => (
-  <>
-    <ModelPricingPage />
-  </>
-);
+const PricingCategories = ({ activeKey, setActiveKey, modelCategories, categoryCounts, availableCategories, t }) => {
+  const items = Object.entries(modelCategories)
+    .filter(([key]) => availableCategories.includes(key))
+    .map(([key, category]) => ({
+      value: key,
+      label: category.label,
+      icon: category.icon,
+      tagCount: categoryCounts[key] || 0,
+    }));
 
-export default Pricing;
+  return (
+    <SelectableButtonGroup
+      title={t('模型分类')}
+      items={items}
+      activeValue={activeKey}
+      onChange={setActiveKey}
+      t={t}
+    />
+  );
+};
+
+export default PricingCategories; 

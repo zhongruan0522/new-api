@@ -76,7 +76,7 @@ function renderSupportedEndpoints(endpoints) {
   );
 }
 
-export const getModelPricingColumns = ({
+export const getPricingTableColumns = ({
   t,
   selectedGroup,
   usableGroup,
@@ -90,8 +90,9 @@ export const getModelPricingColumns = ({
   setTokenUnit,
   displayPrice,
   handleGroupClick,
+  showRatio,
 }) => {
-  return [
+  const baseColumns = [
     {
       title: t('可用性'),
       dataIndex: 'available',
@@ -166,96 +167,109 @@ export const getModelPricingColumns = ({
         );
       },
     },
-    {
-      title: () => (
-        <div className="flex items-center space-x-1">
-          <span>{t('倍率')}</span>
-          <Tooltip content={t('倍率是为了方便换算不同价格的模型')}>
-            <IconHelpCircle
-              className="text-blue-500 cursor-pointer"
-              onClick={() => {
-                setModalImageUrl('/ratio.png');
-                setIsModalOpenurl(true);
-              }}
-            />
-          </Tooltip>
+  ];
+
+  // 倍率列 - 只有在showRatio为true时才包含
+  const ratioColumn = {
+    title: () => (
+      <div className="flex items-center space-x-1">
+        <span>{t('倍率')}</span>
+        <Tooltip content={t('倍率是为了方便换算不同价格的模型')}>
+          <IconHelpCircle
+            className="text-blue-500 cursor-pointer"
+            onClick={() => {
+              setModalImageUrl('/ratio.png');
+              setIsModalOpenurl(true);
+            }}
+          />
+        </Tooltip>
+      </div>
+    ),
+    dataIndex: 'model_ratio',
+    render: (text, record, index) => {
+      let content = text;
+      let completionRatio = parseFloat(record.completion_ratio.toFixed(3));
+      content = (
+        <div className="space-y-1">
+          <div className="text-gray-700">
+            {t('模型倍率')}：{record.quota_type === 0 ? text : t('无')}
+          </div>
+          <div className="text-gray-700">
+            {t('补全倍率')}：
+            {record.quota_type === 0 ? completionRatio : t('无')}
+          </div>
+          <div className="text-gray-700">
+            {t('分组倍率')}：{groupRatio[selectedGroup]}
+          </div>
         </div>
-      ),
-      dataIndex: 'model_ratio',
-      render: (text, record, index) => {
-        let content = text;
-        let completionRatio = parseFloat(record.completion_ratio.toFixed(3));
+      );
+      return content;
+    },
+  };
+
+  // 价格列
+  const priceColumn = {
+    title: (
+      <div className="flex items-center space-x-2">
+        <span>{t('模型价格')}</span>
+        {/* 计费单位切换 */}
+        <Switch
+          checked={tokenUnit === 'K'}
+          onChange={(checked) => setTokenUnit(checked ? 'K' : 'M')}
+          checkedText="K"
+          uncheckedText="M"
+        />
+      </div>
+    ),
+    dataIndex: 'model_price',
+    render: (text, record, index) => {
+      let content = text;
+      if (record.quota_type === 0) {
+        let inputRatioPriceUSD = record.model_ratio * 2 * groupRatio[selectedGroup];
+        let completionRatioPriceUSD =
+          record.model_ratio * record.completion_ratio * 2 * groupRatio[selectedGroup];
+
+        const unitDivisor = tokenUnit === 'K' ? 1000 : 1;
+        const unitLabel = tokenUnit === 'K' ? 'K' : 'M';
+
+        let displayInput = displayPrice(inputRatioPriceUSD);
+        let displayCompletion = displayPrice(completionRatioPriceUSD);
+
+        const divisor = unitDivisor;
+        const numInput = parseFloat(displayInput.replace(/[^0-9.]/g, '')) / divisor;
+        const numCompletion = parseFloat(displayCompletion.replace(/[^0-9.]/g, '')) / divisor;
+
+        displayInput = `${currency === 'CNY' ? '¥' : '$'}${numInput.toFixed(3)}`;
+        displayCompletion = `${currency === 'CNY' ? '¥' : '$'}${numCompletion.toFixed(3)}`;
         content = (
           <div className="space-y-1">
             <div className="text-gray-700">
-              {t('模型倍率')}：{record.quota_type === 0 ? text : t('无')}
+              {t('提示')} {displayInput} / 1{unitLabel} tokens
             </div>
             <div className="text-gray-700">
-              {t('补全倍率')}：
-              {record.quota_type === 0 ? completionRatio : t('无')}
-            </div>
-            <div className="text-gray-700">
-              {t('分组倍率')}：{groupRatio[selectedGroup]}
+              {t('补全')} {displayCompletion} / 1{unitLabel} tokens
             </div>
           </div>
         );
-        return content;
-      },
+      } else {
+        let priceUSD = parseFloat(text) * groupRatio[selectedGroup];
+        let displayVal = displayPrice(priceUSD);
+        content = (
+          <div className="text-gray-700">
+            {t('模型价格')}：{displayVal}
+          </div>
+        );
+      }
+      return content;
     },
-    {
-      title: (
-        <div className="flex items-center space-x-2">
-          <span>{t('模型价格')}</span>
-          {/* 计费单位切换 */}
-          <Switch
-            checked={tokenUnit === 'K'}
-            onChange={(checked) => setTokenUnit(checked ? 'K' : 'M')}
-            checkedText="K"
-            uncheckedText="M"
-          />
-        </div>
-      ),
-      dataIndex: 'model_price',
-      render: (text, record, index) => {
-        let content = text;
-        if (record.quota_type === 0) {
-          let inputRatioPriceUSD = record.model_ratio * 2 * groupRatio[selectedGroup];
-          let completionRatioPriceUSD =
-            record.model_ratio * record.completion_ratio * 2 * groupRatio[selectedGroup];
+  };
 
-          const unitDivisor = tokenUnit === 'K' ? 1000 : 1;
-          const unitLabel = tokenUnit === 'K' ? 'K' : 'M';
+  // 根据showRatio决定是否包含倍率列
+  const columns = [...baseColumns];
+  if (showRatio) {
+    columns.push(ratioColumn);
+  }
+  columns.push(priceColumn);
 
-          let displayInput = displayPrice(inputRatioPriceUSD);
-          let displayCompletion = displayPrice(completionRatioPriceUSD);
-
-          const divisor = unitDivisor;
-          const numInput = parseFloat(displayInput.replace(/[^0-9.]/g, '')) / divisor;
-          const numCompletion = parseFloat(displayCompletion.replace(/[^0-9.]/g, '')) / divisor;
-
-          displayInput = `${currency === 'CNY' ? '¥' : '$'}${numInput.toFixed(3)}`;
-          displayCompletion = `${currency === 'CNY' ? '¥' : '$'}${numCompletion.toFixed(3)}`;
-          content = (
-            <div className="space-y-1">
-              <div className="text-gray-700">
-                {t('提示')} {displayInput} / 1{unitLabel} tokens
-              </div>
-              <div className="text-gray-700">
-                {t('补全')} {displayCompletion} / 1{unitLabel} tokens
-              </div>
-            </div>
-          );
-        } else {
-          let priceUSD = parseFloat(text) * groupRatio[selectedGroup];
-          let displayVal = displayPrice(priceUSD);
-          content = (
-            <div className="text-gray-700">
-              {t('模型价格')}：{displayVal}
-            </div>
-          );
-        }
-        return content;
-      },
-    },
-  ];
+  return columns;
 }; 

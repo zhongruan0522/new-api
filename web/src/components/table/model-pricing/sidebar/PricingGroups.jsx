@@ -1,0 +1,58 @@
+/*
+Copyright (C) 2025 QuantumNous
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as
+published by the Free Software Foundation, either version 3 of the
+License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+For commercial licensing, please contact support@quantumnous.com
+*/
+
+import React from 'react';
+import SelectableButtonGroup from '../../../common/ui/SelectableButtonGroup.jsx';
+
+/**
+ * 分组筛选组件
+ * @param {string} filterGroup 当前选中的分组，'all' 表示不过滤
+ * @param {Function} setFilterGroup 设置选中分组
+ * @param {Record<string, any>} usableGroup 后端返回的可用分组对象
+ * @param {Function} t i18n
+ */
+const PricingGroups = ({ filterGroup, setFilterGroup, usableGroup = {}, models = [], t }) => {
+  const groups = ['all', ...Object.keys(usableGroup)];
+
+  const items = groups.map((g) => {
+    let count = 0;
+    if (g === 'all') {
+      count = models.length;
+    } else {
+      count = models.filter(m => m.enable_groups && m.enable_groups.includes(g)).length;
+    }
+    return {
+      value: g,
+      label: g === 'all' ? t('全部分组') : g,
+      tagCount: count,
+    };
+  });
+
+  return (
+    <SelectableButtonGroup
+      title={t('可用令牌分组')}
+      items={items}
+      activeValue={filterGroup}
+      onChange={setFilterGroup}
+      t={t}
+    />
+  );
+};
+
+export default PricingGroups; 
