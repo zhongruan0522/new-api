@@ -18,8 +18,12 @@ For commercial licensing, please contact support@quantumnous.com
 */
 
 import React from 'react';
-import { Modal } from '@douyinfe/semi-ui';
-import PricingSidebar from '../PricingSidebar';
+import { Modal, Button } from '@douyinfe/semi-ui';
+import PricingCategories from '../filter/PricingCategories';
+import PricingGroups from '../filter/PricingGroups';
+import PricingQuotaTypes from '../filter/PricingQuotaTypes';
+import PricingDisplaySettings from '../filter/PricingDisplaySettings';
+import { resetPricingFilters } from '../../../../helpers/utils';
 
 const PricingFilterModal = ({
   visible,
@@ -27,20 +31,100 @@ const PricingFilterModal = ({
   sidebarProps,
   t
 }) => {
+  const {
+    showWithRecharge,
+    setShowWithRecharge,
+    currency,
+    setCurrency,
+    handleChange,
+    setActiveKey,
+    showRatio,
+    setShowRatio,
+    filterGroup,
+    setFilterGroup,
+    filterQuotaType,
+    setFilterQuotaType,
+    ...categoryProps
+  } = sidebarProps;
+
+  const handleResetFilters = () =>
+    resetPricingFilters({
+      handleChange,
+      setActiveKey,
+      availableCategories: categoryProps.availableCategories,
+      setShowWithRecharge,
+      setCurrency,
+      setShowRatio,
+      setFilterGroup,
+      setFilterQuotaType,
+    });
+
+  const handleConfirm = () => {
+    onClose();
+  };
+
+  const footer = (
+    <div className="flex justify-end">
+      <Button
+        theme="outline"
+        type='tertiary'
+        onClick={handleResetFilters}
+      >
+        {t('重置')}
+      </Button>
+      <Button
+        theme="solid"
+        type="primary"
+        onClick={handleConfirm}
+      >
+        {t('确定')}
+      </Button>
+    </div>
+  );
+
   return (
     <Modal
       title={t('筛选')}
       visible={visible}
       onCancel={onClose}
-      footer={null}
+      footer={footer}
       style={{ width: '100%', height: '100%', margin: 0 }}
-      bodyStyle={{ 
-        padding: 0, 
-        height: 'calc(100vh - 110px)', 
-        overflow: 'auto' 
+      bodyStyle={{
+        padding: 0,
+        height: 'calc(100vh - 160px)',
+        overflowY: 'auto',
+        scrollbarWidth: 'none',
+        msOverflowStyle: 'none'
       }}
     >
-      <PricingSidebar {...sidebarProps} />
+      <div className="p-2">
+        <PricingDisplaySettings
+          showWithRecharge={showWithRecharge}
+          setShowWithRecharge={setShowWithRecharge}
+          currency={currency}
+          setCurrency={setCurrency}
+          showRatio={showRatio}
+          setShowRatio={setShowRatio}
+          t={t}
+        />
+
+        <PricingCategories {...categoryProps} setActiveKey={setActiveKey} t={t} />
+
+        <PricingGroups
+          filterGroup={filterGroup}
+          setFilterGroup={setFilterGroup}
+          usableGroup={categoryProps.usableGroup}
+          models={categoryProps.models}
+          t={t}
+        />
+
+        <PricingQuotaTypes
+          filterQuotaType={filterQuotaType}
+          setFilterQuotaType={setFilterQuotaType}
+          models={categoryProps.models}
+          t={t}
+        />
+      </div>
     </Modal>
   );
 };

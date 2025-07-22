@@ -616,3 +616,55 @@ export const createCardProPagination = ({
     </>
   );
 };
+
+// -------------------------------
+// 重置模型定价筛选条件
+export const resetPricingFilters = ({
+  handleChange,
+  setActiveKey,
+  availableCategories,
+  setShowWithRecharge,
+  setCurrency,
+  setShowRatio,
+  setFilterGroup,
+  setFilterQuotaType,
+}) => {
+  // 重置搜索
+  if (typeof handleChange === 'function') {
+    handleChange('');
+  }
+
+  // 重置模型分类到默认
+  if (
+    typeof setActiveKey === 'function' &&
+    Array.isArray(availableCategories) &&
+    availableCategories.length > 0
+  ) {
+    setActiveKey(availableCategories[0]);
+  }
+
+  // 重置充值价格显示
+  if (typeof setShowWithRecharge === 'function') {
+    setShowWithRecharge(false);
+  }
+
+  // 重置货币
+  if (typeof setCurrency === 'function') {
+    setCurrency('USD');
+  }
+
+  // 重置显示倍率
+  if (typeof setShowRatio === 'function') {
+    setShowRatio(false);
+  }
+
+  // 重置分组筛选
+  if (typeof setFilterGroup === 'function') {
+    setFilterGroup('all');
+  }
+
+  // 重置计费类型筛选
+  if (typeof setFilterQuotaType === 'function') {
+    setFilterQuotaType('all');
+  }
+};

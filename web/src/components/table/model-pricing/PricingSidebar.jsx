@@ -23,6 +23,7 @@ import PricingCategories from './filter/PricingCategories';
 import PricingGroups from './filter/PricingGroups';
 import PricingQuotaTypes from './filter/PricingQuotaTypes';
 import PricingDisplaySettings from './filter/PricingDisplaySettings';
+import { resetPricingFilters } from '../../../helpers/utils';
 
 const PricingSidebar = ({
   showWithRecharge,
@@ -41,41 +42,17 @@ const PricingSidebar = ({
   ...categoryProps
 }) => {
 
-  // 重置所有筛选条件
-  const handleResetFilters = () => {
-    // 重置搜索
-    if (handleChange) {
-      handleChange('');
-    }
-
-    // 重置模型分类到默认
-    if (setActiveKey && categoryProps.availableCategories?.length > 0) {
-      setActiveKey(categoryProps.availableCategories[0]);
-    }
-
-    // 重置充值价格显示
-    if (setShowWithRecharge) {
-      setShowWithRecharge(false);
-    }
-
-    // 重置货币
-    if (setCurrency) {
-      setCurrency('USD');
-    }
-
-    // 重置显示倍率
-    setShowRatio(false);
-
-    // 重置分组筛选
-    if (setFilterGroup) {
-      setFilterGroup('all');
-    }
-
-    // 重置计费类型筛选
-    if (setFilterQuotaType) {
-      setFilterQuotaType('all');
-    }
-  };
+  const handleResetFilters = () =>
+    resetPricingFilters({
+      handleChange,
+      setActiveKey,
+      availableCategories: categoryProps.availableCategories,
+      setShowWithRecharge,
+      setCurrency,
+      setShowRatio,
+      setFilterGroup,
+      setFilterQuotaType,
+    });
 
   return (
     <div className="p-4">
