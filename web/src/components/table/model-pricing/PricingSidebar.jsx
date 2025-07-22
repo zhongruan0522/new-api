@@ -38,6 +38,7 @@ const PricingSidebar = ({
   setFilterGroup,
   filterQuotaType,
   setFilterQuotaType,
+  loading,
   t,
   ...categoryProps
 }) => {
@@ -77,14 +78,15 @@ const PricingSidebar = ({
         setCurrency={setCurrency}
         showRatio={showRatio}
         setShowRatio={setShowRatio}
+        loading={loading}
         t={t}
       />
 
-      <PricingCategories {...categoryProps} setActiveKey={setActiveKey} t={t} />
+      <PricingCategories {...categoryProps} setActiveKey={setActiveKey} loading={loading} t={t} />
 
-      <PricingGroups filterGroup={filterGroup} setFilterGroup={setFilterGroup} usableGroup={categoryProps.usableGroup} models={categoryProps.models} t={t} />
+      <PricingGroups filterGroup={filterGroup} setFilterGroup={setFilterGroup} usableGroup={categoryProps.usableGroup} models={categoryProps.models} loading={loading} t={t} />
 
-      <PricingQuotaTypes filterQuotaType={filterQuotaType} setFilterQuotaType={setFilterQuotaType} models={categoryProps.models} t={t} />
+      <PricingQuotaTypes filterQuotaType={filterQuotaType} setFilterQuotaType={setFilterQuotaType} models={categoryProps.models} loading={loading} t={t} />
     </div>
   );
 };

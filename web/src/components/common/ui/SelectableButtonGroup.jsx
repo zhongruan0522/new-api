@@ -17,9 +17,9 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useIsMobile } from '../../../hooks/common/useIsMobile';
-import { Divider, Button, Tag, Row, Col, Collapsible, Checkbox } from '@douyinfe/semi-ui';
+import { Divider, Button, Tag, Row, Col, Collapsible, Checkbox, Skeleton } from '@douyinfe/semi-ui';
 import { IconChevronDown, IconChevronUp } from '@douyinfe/semi-icons';
 
 /**
@@ -34,6 +34,7 @@ import { IconChevronDown, IconChevronUp } from '@douyinfe/semi-icons';
  * @param {boolean} collapsible 是否支持折叠，默认true
  * @param {number} collapseHeight 折叠时的高度，默认200
  * @param {boolean} withCheckbox 是否启用前缀 Checkbox 来控制激活状态
+ * @param {boolean} loading 是否处于加载状态
  */
 const SelectableButtonGroup = ({
   title,
@@ -44,15 +45,35 @@ const SelectableButtonGroup = ({
   style = {},
   collapsible = true,
   collapseHeight = 200,
-  withCheckbox = false
+  withCheckbox = false,
+  loading = false
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [showSkeleton, setShowSkeleton] = useState(loading);
+  const [skeletonCount] = useState(6);
   const isMobile = useIsMobile();
   const perRow = 3;
   const maxVisibleRows = Math.max(1, Math.floor(collapseHeight / 32)); // Approx row height 32
   const needCollapse = collapsible && items.length > perRow * maxVisibleRows;
+  const loadingStartRef = useRef(Date.now());
 
   const contentRef = useRef(null);
+
+  useEffect(() => {
+    if (loading) {
+      loadingStartRef.current = Date.now();
+      setShowSkeleton(true);
+    } else {
+      const elapsed = Date.now() - loadingStartRef.current;
+      const remaining = Math.max(0, 500 - elapsed);
+      if (remaining === 0) {
+        setShowSkeleton(false);
+      } else {
+        const timer = setTimeout(() => setShowSkeleton(false), remaining);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [loading]);
 
   const maskStyle = isOpen
     ? {}
@@ -81,14 +102,57 @@ const SelectableButtonGroup = ({
     gap: 4,
   };
 
-  const contentElement = (
+  const renderSkeletonButtons = () => {
+
+    const placeholder = (
+      <Row gutter={[8, 8]} style={{ lineHeight: '32px', ...style }}>
+        {Array.from({ length: skeletonCount }).map((_, index) => (
+          <Col
+            {...(isMobile
+              ? { span: 12 }
+              : { xs: 24, sm: 24, md: 24, lg: 12, xl: 8 }
+            )}
+            key={index}
+          >
+            <div style={{
+              width: '100%',
+              height: '32px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'flex-start',
+              border: '1px solid var(--semi-color-border)',
+              borderRadius: 'var(--semi-border-radius-medium)',
+              padding: '0 12px',
+              gap: '8px'
+            }}>
+              {withCheckbox && (
+                <Skeleton.Title active style={{ width: 14, height: 14 }} />
+              )}
+              <Skeleton.Title
+                active
+                style={{
+                  width: `${60 + (index % 3) * 20}px`,
+                  height: 14
+                }}
+              />
+            </div>
+          </Col>
+        ))}
+      </Row>
+    );
+
+    return (
+      <Skeleton loading={true} active placeholder={placeholder}></Skeleton>
+    );
+  };
+
+  const contentElement = showSkeleton ? renderSkeletonButtons() : (
     <Row gutter={[8, 8]} style={{ lineHeight: '32px', ...style }} ref={contentRef}>
       {items.map((item) => {
         const isActive = Array.isArray(activeValue)
           ? activeValue.includes(item.value)
           : activeValue === item.value;
 
-        // 当启用前缀 Checkbox 时，按钮本身不可点击，仅 Checkbox 可控制状态切换
         if (withCheckbox) {
           return (
             <Col
@@ -129,7 +193,6 @@ const SelectableButtonGroup = ({
           );
         }
 
-        // 默认行为
         return (
           <Col
             {...(isMobile
@@ -166,10 +229,14 @@ const SelectableButtonGroup = ({
     <div className="mb-8">
       {title && (
         <Divider margin="12px" align="left">
-          {title}
+          {showSkeleton ? (
+            <Skeleton.Title active style={{ width: 80, height: 14 }} />
+          ) : (
+            title
+          )}
         </Divider>
       )}
-      {needCollapse ? (
+      {needCollapse && !showSkeleton ? (
         <div style={{ position: 'relative' }}>
           <Collapsible isOpen={isOpen} collapseHeight={collapseHeight} style={{ ...maskStyle }}>
             {contentElement}

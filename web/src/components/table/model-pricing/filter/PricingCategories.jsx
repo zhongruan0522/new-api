@@ -20,7 +20,7 @@ For commercial licensing, please contact support@quantumnous.com
 import React from 'react';
 import SelectableButtonGroup from '../../../common/ui/SelectableButtonGroup';
 
-const PricingCategories = ({ activeKey, setActiveKey, modelCategories, categoryCounts, availableCategories, t }) => {
+const PricingCategories = ({ activeKey, setActiveKey, modelCategories, categoryCounts, availableCategories, loading = false, t }) => {
   const items = Object.entries(modelCategories)
     .filter(([key]) => availableCategories.includes(key))
     .map(([key, category]) => ({
@@ -36,6 +36,7 @@ const PricingCategories = ({ activeKey, setActiveKey, modelCategories, categoryC
       items={items}
       activeValue={activeKey}
       onChange={setActiveKey}
+      loading={loading}
       t={t}
     />
   );

@@ -29,6 +29,7 @@ const PricingDisplaySettings = ({
   setCurrency,
   showRatio,
   setShowRatio,
+  loading = false,
   t
 }) => {
   const items = [
@@ -81,6 +82,7 @@ const PricingDisplaySettings = ({
         onChange={handleChange}
         withCheckbox
         collapsible={false}
+        loading={loading}
         t={t}
       />
 
@@ -91,6 +93,7 @@ const PricingDisplaySettings = ({
           activeValue={currency}
           onChange={setCurrency}
           collapsible={false}
+          loading={loading}
           t={t}
         />
       )}

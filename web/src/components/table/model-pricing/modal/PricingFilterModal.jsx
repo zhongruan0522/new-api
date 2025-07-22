@@ -44,6 +44,7 @@ const PricingFilterModal = ({
     setFilterGroup,
     filterQuotaType,
     setFilterQuotaType,
+    loading,
     ...categoryProps
   } = sidebarProps;
 
@@ -105,16 +106,18 @@ const PricingFilterModal = ({
           setCurrency={setCurrency}
           showRatio={showRatio}
           setShowRatio={setShowRatio}
+          loading={loading}
           t={t}
         />
 
-        <PricingCategories {...categoryProps} setActiveKey={setActiveKey} t={t} />
+        <PricingCategories {...categoryProps} setActiveKey={setActiveKey} loading={loading} t={t} />
 
         <PricingGroups
           filterGroup={filterGroup}
           setFilterGroup={setFilterGroup}
           usableGroup={categoryProps.usableGroup}
           models={categoryProps.models}
+          loading={loading}
           t={t}
         />
 
@@ -122,6 +125,7 @@ const PricingFilterModal = ({
           filterQuotaType={filterQuotaType}
           setFilterQuotaType={setFilterQuotaType}
           models={categoryProps.models}
+          loading={loading}
           t={t}
         />
       </div>
