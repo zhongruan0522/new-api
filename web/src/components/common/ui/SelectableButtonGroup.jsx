@@ -19,7 +19,7 @@ For commercial licensing, please contact support@quantumnous.com
 
 import React, { useState, useRef } from 'react';
 import { useIsMobile } from '../../../hooks/common/useIsMobile';
-import { Divider, Button, Tag, Row, Col, Collapsible } from '@douyinfe/semi-ui';
+import { Divider, Button, Tag, Row, Col, Collapsible, Checkbox } from '@douyinfe/semi-ui';
 import { IconChevronDown, IconChevronUp } from '@douyinfe/semi-icons';
 
 /**
@@ -27,12 +27,13 @@ import { IconChevronDown, IconChevronUp } from '@douyinfe/semi-icons';
  *
  * @param {string} title 标题
  * @param {Array<{value:any,label:string,icon?:React.ReactNode,tagCount?:number}>} items 按钮项
- * @param {*} activeValue 当前激活的值
+ * @param {*|Array} activeValue 当前激活的值，可以是单个值或数组（多选）
  * @param {(value:any)=>void} onChange 选择改变回调
  * @param {function} t i18n
  * @param {object} style 额外样式
  * @param {boolean} collapsible 是否支持折叠，默认true
  * @param {number} collapseHeight 折叠时的高度，默认200
+ * @param {boolean} withCheckbox 是否启用前缀 Checkbox 来控制激活状态
  */
 const SelectableButtonGroup = ({
   title,
@@ -42,7 +43,8 @@ const SelectableButtonGroup = ({
   t = (v) => v,
   style = {},
   collapsible = true,
-  collapseHeight = 200
+  collapseHeight = 200,
+  withCheckbox = false
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const isMobile = useIsMobile();
@@ -82,7 +84,52 @@ const SelectableButtonGroup = ({
   const contentElement = (
     <Row gutter={[8, 8]} style={{ lineHeight: '32px', ...style }} ref={contentRef}>
       {items.map((item) => {
-        const isActive = activeValue === item.value;
+        const isActive = Array.isArray(activeValue)
+          ? activeValue.includes(item.value)
+          : activeValue === item.value;
+
+        // 当启用前缀 Checkbox 时，按钮本身不可点击，仅 Checkbox 可控制状态切换
+        if (withCheckbox) {
+          return (
+            <Col
+              {...(isMobile
+                ? { span: 12 }
+                : { xs: 24, sm: 24, md: 24, lg: 12, xl: 8 }
+              )}
+              key={item.value}
+            >
+              <Button
+                onClick={() => { /* disabled */ }}
+                theme={isActive ? 'light' : 'outline'}
+                type={isActive ? 'primary' : 'tertiary'}
+                icon={
+                  <Checkbox
+                    checked={isActive}
+                    onChange={() => onChange(item.value)}
+                    style={{ pointerEvents: 'auto' }}
+                  />
+                }
+                style={{ width: '100%', cursor: 'default' }}
+              >
+                {item.icon && (
+                  <span style={{ marginRight: 4 }}>{item.icon}</span>
+                )}
+                <span style={{ marginRight: item.tagCount !== undefined ? 4 : 0 }}>{item.label}</span>
+                {item.tagCount !== undefined && (
+                  <Tag
+                    color='white'
+                    shape="circle"
+                    size="small"
+                  >
+                    {item.tagCount}
+                  </Tag>
+                )}
+              </Button>
+            </Col>
+          );
+        }
+
+        // 默认行为
         return (
           <Col
             {...(isMobile
