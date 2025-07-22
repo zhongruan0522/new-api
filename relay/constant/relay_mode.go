@@ -150,7 +150,7 @@ func Path2RelayKling(method, path string) int {
 	relayMode := RelayModeUnknown
 	if method == http.MethodPost && strings.HasSuffix(path, "/video/generations") {
 		relayMode = RelayModeKlingSubmit
-	} else if method == http.MethodGet && strings.Contains(path, "/video/generations/") {
+	} else if method == http.MethodGet && (strings.Contains(path, "/video/generations")) {
 		relayMode = RelayModeKlingFetchByID
 	}
 	return relayMode

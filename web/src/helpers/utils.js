@@ -1,10 +1,29 @@
-import { Toast } from '@douyinfe/semi-ui';
+/*
+Copyright (C) 2025 QuantumNous
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as
+published by the Free Software Foundation, either version 3 of the
+License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+For commercial licensing, please contact support@quantumnous.com
+*/
+
+import { Toast, Pagination } from '@douyinfe/semi-ui';
 import { toastConstants } from '../constants';
 import React from 'react';
 import { toast } from 'react-toastify';
 import { THINK_TAG_REGEX, MESSAGE_ROLES } from '../constants/playground.constants';
 import { TABLE_COMPACT_MODES_KEY } from '../constants';
-import { MOBILE_BREAKPOINT } from '../hooks/useIsMobile.js';
+import { MOBILE_BREAKPOINT } from '../hooks/common/useIsMobile.js';
 
 const HTMLToastContent = ({ htmlContent }) => {
   return <div dangerouslySetInnerHTML={{ __html: htmlContent }} />;
@@ -538,3 +557,44 @@ export function setTableCompactMode(compact, tableKey = 'global') {
   modes[tableKey] = compact;
   writeTableCompactModes(modes);
 }
+
+// -------------------------------
+// Select 组件统一过滤逻辑
+// 解决 label 为 ReactNode（带图标等）时无法用内置 filter 搜索的问题。
+// 使用方式： <Select filter={modelSelectFilter} ... />
+export const modelSelectFilter = (input, option) => {
+  if (!input) return true;
+  const val = (option?.value || '').toString().toLowerCase();
+  return val.includes(input.trim().toLowerCase());
+};
+
+// -------------------------------
+// CardPro 分页配置函数
+// 用于创建 CardPro 的 paginationArea 配置
+export const createCardProPagination = ({
+  currentPage,
+  pageSize,
+  total,
+  onPageChange,
+  onPageSizeChange,
+  isMobile = false,
+  pageSizeOpts = [10, 20, 50, 100],
+  showSizeChanger = true,
+}) => {
+  if (!total || total <= 0) return null;
+
+  return (
+    <Pagination
+      currentPage={currentPage}
+      pageSize={pageSize}
+      total={total}
+      pageSizeOpts={pageSizeOpts}
+      showSizeChanger={showSizeChanger}
+      onPageSizeChange={onPageSizeChange}
+      onPageChange={onPageChange}
+      size={isMobile ? "small" : "default"}
+      showQuickJumper={isMobile}
+      showTotal
+    />
+  );
+};
