@@ -4,12 +4,12 @@ import "strings"
 
 const (
 	// Web search
-	WebSearchHighTierModelPriceLow    = 30.00
-	WebSearchHighTierModelPriceMedium = 35.00
-	WebSearchHighTierModelPriceHigh   = 50.00
+	WebSearchHighTierModelPriceLow    = 10.00
+	WebSearchHighTierModelPriceMedium = 10.00
+	WebSearchHighTierModelPriceHigh   = 10.00
 	WebSearchPriceLow                 = 25.00
-	WebSearchPriceMedium              = 27.50
-	WebSearchPriceHigh                = 30.00
+	WebSearchPriceMedium              = 25.00
+	WebSearchPriceHigh                = 25.00
 	// File search
 	FileSearchPrice = 2.5
 )
@@ -35,9 +35,12 @@ func GetClaudeWebSearchPricePerThousand() float64 {
 func GetWebSearchPricePerThousand(modelName string, contextSize string) float64 {
 	// 确定模型类型
 	// https://platform.openai.com/docs/pricing Web search 价格按模型类型和 search context size 收费
-	// gpt-4.1, gpt-4o, or gpt-4o-search-preview 更贵，gpt-4.1-mini, gpt-4o-mini, gpt-4o-mini-search-preview 更便宜
-	isHighTierModel := (strings.HasPrefix(modelName, "gpt-4.1") || strings.HasPrefix(modelName, "gpt-4o")) &&
-		!strings.Contains(modelName, "mini")
+	// 新版计费规则不再关联 search context size，故在const区域将各size的价格设为一致。
+	// gpt-4o and gpt-4.1 models (including mini models) 等普通模型更贵，o3, o4-mini, o3-pro, and deep research models 等高级模型更便宜
+	isHighTierModel := 
+		strings.HasPrefix(modelName, "o3") ||
+		strings.HasPrefix(modelName, "o4") ||
+		strings.Contains(modelName, "deep-research")
 	// 确定 search context size 对应的价格
 	var priceWebSearchPerThousandCalls float64
 	switch contextSize {
