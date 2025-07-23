@@ -65,7 +65,7 @@ const SelectableButtonGroup = ({
       setShowSkeleton(true);
     } else {
       const elapsed = Date.now() - loadingStartRef.current;
-      const remaining = Math.max(0, 500 - elapsed);
+      const remaining = Math.max(0, 1000 - elapsed);
       if (remaining === 0) {
         setShowSkeleton(false);
       } else {

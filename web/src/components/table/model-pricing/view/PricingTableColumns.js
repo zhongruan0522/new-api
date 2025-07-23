@@ -20,7 +20,7 @@ For commercial licensing, please contact support@quantumnous.com
 import React from 'react';
 import { Tag, Space, Tooltip, Switch } from '@douyinfe/semi-ui';
 import { IconHelpCircle } from '@douyinfe/semi-icons';
-import { renderModelTag, stringToColor } from '../../../helpers';
+import { renderModelTag, stringToColor, calculateModelPrice } from '../../../../helpers';
 
 function renderQuotaType(type, t) {
   switch (type) {
@@ -158,38 +158,30 @@ export const getPricingTableColumns = ({
     ),
     dataIndex: 'model_price',
     render: (text, record, index) => {
-      if (record.quota_type === 0) {
-        const inputRatioPriceUSD = record.model_ratio * 2 * groupRatio[selectedGroup];
-        const completionRatioPriceUSD =
-          record.model_ratio * record.completion_ratio * 2 * groupRatio[selectedGroup];
+      const priceData = calculateModelPrice({
+        record,
+        selectedGroup,
+        groupRatio,
+        tokenUnit,
+        displayPrice,
+        currency
+      });
 
-        const unitDivisor = tokenUnit === 'K' ? 1000 : 1;
-        const unitLabel = tokenUnit === 'K' ? 'K' : 'M';
-
-        const rawDisplayInput = displayPrice(inputRatioPriceUSD);
-        const rawDisplayCompletion = displayPrice(completionRatioPriceUSD);
-
-        const numInput = parseFloat(rawDisplayInput.replace(/[^0-9.]/g, '')) / unitDivisor;
-        const numCompletion = parseFloat(rawDisplayCompletion.replace(/[^0-9.]/g, '')) / unitDivisor;
-
-        const displayInput = `${currency === 'CNY' ? '¥' : '$'}${numInput.toFixed(3)}`;
-        const displayCompletion = `${currency === 'CNY' ? '¥' : '$'}${numCompletion.toFixed(3)}`;
+      if (priceData.isPerToken) {
         return (
           <div className="space-y-1">
             <div className="text-gray-700">
-              {t('提示')} {displayInput} / 1{unitLabel} tokens
+              {t('提示')} {priceData.inputPrice} / 1{priceData.unitLabel} tokens
             </div>
             <div className="text-gray-700">
-              {t('补全')} {displayCompletion} / 1{unitLabel} tokens
+              {t('补全')} {priceData.completionPrice} / 1{priceData.unitLabel} tokens
             </div>
           </div>
         );
       } else {
-        const priceUSD = parseFloat(text) * groupRatio[selectedGroup];
-        const displayVal = displayPrice(priceUSD);
         return (
           <div className="text-gray-700">
-            {t('模型价格')}：{displayVal}
+            {t('模型价格')}：{priceData.price}
           </div>
         );
       }

@@ -21,56 +21,46 @@ import React from 'react';
 import { Layout, ImagePreview } from '@douyinfe/semi-ui';
 import PricingSidebar from './PricingSidebar';
 import PricingContent from './PricingContent';
-import { useModelPricingData } from '../../../hooks/model-pricing/useModelPricingData';
-import { useIsMobile } from '../../../hooks/common/useIsMobile';
+import { useModelPricingData } from '../../../../hooks/model-pricing/useModelPricingData';
+import { useIsMobile } from '../../../../hooks/common/useIsMobile';
 
 const PricingPage = () => {
   const pricingData = useModelPricingData();
   const { Sider, Content } = Layout;
   const isMobile = useIsMobile();
-
-  // 显示倍率状态
   const [showRatio, setShowRatio] = React.useState(false);
+  const [viewMode, setViewMode] = React.useState('card');
+  const allProps = {
+    ...pricingData,
+    showRatio,
+    setShowRatio,
+    viewMode,
+    setViewMode
+  };
 
   return (
     <div className="bg-white">
-      <Layout style={{ height: 'calc(100vh - 60px)', overflow: 'hidden', marginTop: '60px' }}>
-        {/* 左侧边栏 - 只在桌面端显示 */}
+      <Layout className="pricing-layout">
         {!isMobile && (
           <Sider
-            className="pricing-scroll-hide"
-            style={{
-              width: 460,
-              height: 'calc(100vh - 60px)',
-              backgroundColor: 'var(--semi-color-bg-0)',
-              borderRight: '1px solid var(--semi-color-border)',
-              overflow: 'auto'
-            }}
+            className="pricing-scroll-hide pricing-sidebar"
+            width={460}
           >
-            <PricingSidebar {...pricingData} showRatio={showRatio} setShowRatio={setShowRatio} />
+            <PricingSidebar {...allProps} />
           </Sider>
         )}
 
-        {/* 右侧内容区 */}
         <Content
-          className="pricing-scroll-hide"
-          style={{
-            height: 'calc(100vh - 60px)',
-            backgroundColor: 'var(--semi-color-bg-0)',
-            display: 'flex',
-            flexDirection: 'column'
-          }}
+          className="pricing-scroll-hide pricing-content"
         >
-          <PricingContent 
-            {...pricingData} 
-            showRatio={showRatio} 
+          <PricingContent
+            {...allProps}
             isMobile={isMobile}
-            sidebarProps={{ ...pricingData, showRatio, setShowRatio }}
+            sidebarProps={allProps}
           />
         </Content>
       </Layout>
 
-      {/* 倍率说明图预览 */}
       <ImagePreview
         src={pricingData.modalImageUrl}
         visible={pricingData.isModalOpenurl}

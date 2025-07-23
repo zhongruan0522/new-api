@@ -19,43 +19,19 @@ For commercial licensing, please contact support@quantumnous.com
 
 import React from 'react';
 import PricingSearchBar from './PricingSearchBar';
-import PricingTable from './PricingTable';
+import PricingView from './PricingView';
 
 const PricingContent = ({ isMobile, sidebarProps, ...props }) => {
   return (
-    <div
-      className={isMobile ? "" : "pricing-scroll-hide"}
-      style={isMobile ? {
-        height: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-        overflow: 'auto'
-      } : {}}
-    >
+    <div className={isMobile ? "pricing-content-mobile" : "pricing-scroll-hide"}>
       {/* 固定的搜索和操作区域 */}
-      <div
-        style={{
-          padding: '16px 24px',
-          borderBottom: '1px solid var(--semi-color-border)',
-          backgroundColor: 'var(--semi-color-bg-0)',
-          flexShrink: 0,
-          position: 'sticky',
-          top: 0,
-          zIndex: 5,
-        }}
-      >
+      <div className="pricing-search-header">
         <PricingSearchBar {...props} isMobile={isMobile} sidebarProps={sidebarProps} />
       </div>
 
       {/* 可滚动的内容区域 */}
-      <div
-        style={{
-          flex: 1,
-          overflow: 'auto',
-          ...(isMobile && { minHeight: 0 })
-        }}
-      >
-        <PricingTable {...props} />
+      <div className={isMobile ? "pricing-view-container-mobile" : "pricing-view-container"}>
+        <PricingView {...props} viewMode={sidebarProps.viewMode} />
       </div>
     </div>
   );

@@ -19,11 +19,11 @@ For commercial licensing, please contact support@quantumnous.com
 
 import React from 'react';
 import { Button } from '@douyinfe/semi-ui';
-import PricingCategories from './filter/PricingCategories';
-import PricingGroups from './filter/PricingGroups';
-import PricingQuotaTypes from './filter/PricingQuotaTypes';
-import PricingDisplaySettings from './filter/PricingDisplaySettings';
-import { resetPricingFilters } from '../../../helpers/utils';
+import PricingCategories from '../filter/PricingCategories';
+import PricingGroups from '../filter/PricingGroups';
+import PricingQuotaTypes from '../filter/PricingQuotaTypes';
+import PricingDisplaySettings from '../filter/PricingDisplaySettings';
+import { resetPricingFilters } from '../../../../helpers/utils';
 
 const PricingSidebar = ({
   showWithRecharge,
@@ -34,10 +34,14 @@ const PricingSidebar = ({
   setActiveKey,
   showRatio,
   setShowRatio,
+  viewMode,
+  setViewMode,
   filterGroup,
   setFilterGroup,
   filterQuotaType,
   setFilterQuotaType,
+  currentPage,
+  setCurrentPage,
   loading,
   t,
   ...categoryProps
@@ -51,8 +55,10 @@ const PricingSidebar = ({
       setShowWithRecharge,
       setCurrency,
       setShowRatio,
+      setViewMode,
       setFilterGroup,
       setFilterQuotaType,
+      setCurrentPage,
     });
 
   return (
@@ -78,15 +84,36 @@ const PricingSidebar = ({
         setCurrency={setCurrency}
         showRatio={showRatio}
         setShowRatio={setShowRatio}
+        viewMode={viewMode}
+        setViewMode={setViewMode}
         loading={loading}
         t={t}
       />
 
-      <PricingCategories {...categoryProps} setActiveKey={setActiveKey} loading={loading} t={t} />
+      <PricingCategories
+        {...categoryProps}
+        setActiveKey={setActiveKey}
+        loading={loading}
+        t={t}
+      />
 
-      <PricingGroups filterGroup={filterGroup} setFilterGroup={setFilterGroup} usableGroup={categoryProps.usableGroup} groupRatio={categoryProps.groupRatio} models={categoryProps.models} loading={loading} t={t} />
+      <PricingGroups
+        filterGroup={filterGroup}
+        setFilterGroup={setFilterGroup}
+        usableGroup={categoryProps.usableGroup}
+        groupRatio={categoryProps.groupRatio}
+        models={categoryProps.models}
+        loading={loading}
+        t={t}
+      />
 
-      <PricingQuotaTypes filterQuotaType={filterQuotaType} setFilterQuotaType={setFilterQuotaType} models={categoryProps.models} loading={loading} t={t} />
+      <PricingQuotaTypes
+        filterQuotaType={filterQuotaType}
+        setFilterQuotaType={setFilterQuotaType}
+        models={categoryProps.models}
+        loading={loading}
+        t={t}
+      />
     </div>
   );
 };

@@ -569,6 +569,59 @@ export const modelSelectFilter = (input, option) => {
 };
 
 // -------------------------------
+// 模型定价计算工具函数
+export const calculateModelPrice = ({
+  record,
+  selectedGroup,
+  groupRatio,
+  tokenUnit,
+  displayPrice,
+  currency,
+  precision = 3
+}) => {
+  if (record.quota_type === 0) {
+    // 按量计费
+    const inputRatioPriceUSD = record.model_ratio * 2 * groupRatio[selectedGroup];
+    const completionRatioPriceUSD =
+      record.model_ratio * record.completion_ratio * 2 * groupRatio[selectedGroup];
+
+    const unitDivisor = tokenUnit === 'K' ? 1000 : 1;
+    const unitLabel = tokenUnit === 'K' ? 'K' : 'M';
+
+    const rawDisplayInput = displayPrice(inputRatioPriceUSD);
+    const rawDisplayCompletion = displayPrice(completionRatioPriceUSD);
+
+    const numInput = parseFloat(rawDisplayInput.replace(/[^0-9.]/g, '')) / unitDivisor;
+    const numCompletion = parseFloat(rawDisplayCompletion.replace(/[^0-9.]/g, '')) / unitDivisor;
+
+    return {
+      inputPrice: `${currency === 'CNY' ? '¥' : '$'}${numInput.toFixed(precision)}`,
+      completionPrice: `${currency === 'CNY' ? '¥' : '$'}${numCompletion.toFixed(precision)}`,
+      unitLabel,
+      isPerToken: true
+    };
+  } else {
+    // 按次计费
+    const priceUSD = parseFloat(record.model_price) * groupRatio[selectedGroup];
+    const displayVal = displayPrice(priceUSD);
+
+    return {
+      price: displayVal,
+      isPerToken: false
+    };
+  }
+};
+
+// 格式化价格信息为字符串（用于卡片视图）
+export const formatPriceInfo = (priceData, t) => {
+  if (priceData.isPerToken) {
+    return `${t('输入')} ${priceData.inputPrice}/${priceData.unitLabel} ${t('输出')} ${priceData.completionPrice}/${priceData.unitLabel}`;
+  } else {
+    return `${t('模型价格')} ${priceData.price}`;
+  }
+};
+
+// -------------------------------
 // CardPro 分页配置函数
 // 用于创建 CardPro 的 paginationArea 配置
 export const createCardProPagination = ({
@@ -626,8 +679,10 @@ export const resetPricingFilters = ({
   setShowWithRecharge,
   setCurrency,
   setShowRatio,
+  setViewMode,
   setFilterGroup,
   setFilterQuotaType,
+  setCurrentPage,
 }) => {
   // 重置搜索
   if (typeof handleChange === 'function') {
@@ -658,6 +713,11 @@ export const resetPricingFilters = ({
     setShowRatio(false);
   }
 
+  // 重置视图模式
+  if (typeof setViewMode === 'function') {
+    setViewMode('card');
+  }
+
   // 重置分组筛选
   if (typeof setFilterGroup === 'function') {
     setFilterGroup('all');
@@ -666,5 +726,10 @@ export const resetPricingFilters = ({
   // 重置计费类型筛选
   if (typeof setFilterQuotaType === 'function') {
     setFilterQuotaType('all');
+  }
+
+  // 重置当前页面
+  if (typeof setCurrentPage === 'function') {
+    setCurrentPage(1);
   }
 };

@@ -219,7 +219,7 @@ const HeaderBar = ({ onMobileMenuToggle, drawerOpen }) => {
   useEffect(() => {
     if (statusState?.status !== undefined) {
       const elapsed = Date.now() - loadingStartRef.current;
-      const remaining = Math.max(0, 500 - elapsed);
+      const remaining = Math.max(0, 1000 - elapsed);
       const timer = setTimeout(() => {
         setIsLoading(false);
       }, remaining);

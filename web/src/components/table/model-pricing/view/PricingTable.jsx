@@ -32,18 +32,15 @@ const PricingTable = ({
   pageSize,
   setPageSize,
   selectedGroup,
-  usableGroup,
   groupRatio,
   copyText,
   setModalImageUrl,
   setIsModalOpenurl,
   currency,
-  showWithRecharge,
   tokenUnit,
   setTokenUnit,
   displayPrice,
-  filteredValue,
-  handleGroupClick,
+  searchValue,
   showRatio,
   compactMode = false,
   t
@@ -53,43 +50,37 @@ const PricingTable = ({
     return getPricingTableColumns({
       t,
       selectedGroup,
-      usableGroup,
       groupRatio,
       copyText,
       setModalImageUrl,
       setIsModalOpenurl,
       currency,
-      showWithRecharge,
       tokenUnit,
       setTokenUnit,
       displayPrice,
-      handleGroupClick,
       showRatio,
     });
   }, [
     t,
     selectedGroup,
-    usableGroup,
     groupRatio,
     copyText,
     setModalImageUrl,
     setIsModalOpenurl,
     currency,
-    showWithRecharge,
     tokenUnit,
     setTokenUnit,
     displayPrice,
-    handleGroupClick,
     showRatio,
   ]);
 
-  // 更新列定义中的 filteredValue
+  // 更新列定义中的 searchValue
   const processedColumns = useMemo(() => {
     const cols = columns.map(column => {
       if (column.dataIndex === 'model_name') {
         return {
           ...column,
-          filteredValue
+          filteredValue: searchValue ? [searchValue] : []
         };
       }
       return column;
@@ -100,7 +91,7 @@ const PricingTable = ({
       return cols.map(({ fixed, ...rest }) => rest);
     }
     return cols;
-  }, [columns, filteredValue, compactMode]);
+  }, [columns, searchValue, compactMode]);
 
   const ModelTable = useMemo(() => (
     <Card className="!rounded-xl overflow-hidden" bordered={false}>

@@ -26,18 +26,17 @@ import { StatusContext } from '../../context/Status/index.js';
 
 export const useModelPricingData = () => {
   const { t } = useTranslation();
-  const [filteredValue, setFilteredValue] = useState([]);
+  const [searchValue, setSearchValue] = useState('');
   const compositionRef = useRef({ isComposition: false });
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
   const [modalImageUrl, setModalImageUrl] = useState('');
   const [isModalOpenurl, setIsModalOpenurl] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState('default');
-  // 用于 Table 的可用分组筛选，“all” 表示不过滤
-  const [filterGroup, setFilterGroup] = useState('all');
-  // 计费类型筛选: 'all' | 0 | 1
-  const [filterQuotaType, setFilterQuotaType] = useState('all');
+  const [filterGroup, setFilterGroup] = useState('all'); // 用于 Table 的可用分组筛选，“all” 表示不过滤
+  const [filterQuotaType, setFilterQuotaType] = useState('all'); // 计费类型筛选: 'all' | 0 | 1
   const [activeKey, setActiveKey] = useState('all');
   const [pageSize, setPageSize] = useState(10);
+  const [currentPage, setCurrentPage] = useState(1);
   const [currency, setCurrency] = useState('USD');
   const [showWithRecharge, setShowWithRecharge] = useState(false);
   const [tokenUnit, setTokenUnit] = useState('M');
@@ -95,15 +94,15 @@ export const useModelPricingData = () => {
     }
 
     // 搜索筛选
-    if (filteredValue.length > 0) {
-      const searchTerm = filteredValue[0].toLowerCase();
+    if (searchValue.length > 0) {
+      const searchTerm = searchValue.toLowerCase();
       result = result.filter(model =>
         model.model_name.toLowerCase().includes(searchTerm)
       );
     }
 
     return result;
-  }, [activeKey, models, filteredValue, filterGroup, filterQuotaType]);
+  }, [activeKey, models, searchValue, filterGroup, filterQuotaType]);
 
   const rowSelection = useMemo(
     () => ({
@@ -183,8 +182,8 @@ export const useModelPricingData = () => {
     if (compositionRef.current.isComposition) {
       return;
     }
-    const newFilteredValue = value ? [value] : [];
-    setFilteredValue(newFilteredValue);
+    const newSearchValue = value ? value : '';
+    setSearchValue(newSearchValue);
   };
 
   const handleCompositionStart = () => {
@@ -194,8 +193,8 @@ export const useModelPricingData = () => {
   const handleCompositionEnd = (event) => {
     compositionRef.current.isComposition = false;
     const value = event.target.value;
-    const newFilteredValue = value ? [value] : [];
-    setFilteredValue(newFilteredValue);
+    const newSearchValue = value ? value : '';
+    setSearchValue(newSearchValue);
   };
 
   const handleGroupClick = (group) => {
@@ -214,10 +213,15 @@ export const useModelPricingData = () => {
     refresh().then();
   }, []);
 
+  // 当筛选条件变化时重置到第一页
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeKey, filterGroup, filterQuotaType, searchValue]);
+
   return {
     // 状态
-    filteredValue,
-    setFilteredValue,
+    searchValue,
+    setSearchValue,
     selectedRowKeys,
     setSelectedRowKeys,
     modalImageUrl,
@@ -234,6 +238,8 @@ export const useModelPricingData = () => {
     setActiveKey,
     pageSize,
     setPageSize,
+    currentPage,
+    setCurrentPage,
     currency,
     setCurrency,
     showWithRecharge,

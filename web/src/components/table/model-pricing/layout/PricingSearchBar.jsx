@@ -20,7 +20,7 @@ For commercial licensing, please contact support@quantumnous.com
 import React, { useMemo, useState } from 'react';
 import { Input, Button } from '@douyinfe/semi-ui';
 import { IconSearch, IconCopy, IconFilter } from '@douyinfe/semi-icons';
-import PricingFilterModal from './modal/PricingFilterModal';
+import PricingFilterModal from '../modal/PricingFilterModal';
 
 const PricingSearchBar = ({
   selectedRowKeys,

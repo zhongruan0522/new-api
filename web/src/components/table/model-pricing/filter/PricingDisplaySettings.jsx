@@ -29,6 +29,8 @@ const PricingDisplaySettings = ({
   setCurrency,
   showRatio,
   setShowRatio,
+  viewMode,
+  setViewMode,
   loading = false,
   t
 }) => {
@@ -50,6 +52,10 @@ const PricingDisplaySettings = ({
           </Tooltip>
         </span>
       ),
+    },
+    {
+      value: 'tableView',
+      label: t('表格视图')
     }
   ];
 
@@ -59,10 +65,16 @@ const PricingDisplaySettings = ({
   ];
 
   const handleChange = (value) => {
-    if (value === 'recharge') {
-      setShowWithRecharge(!showWithRecharge);
-    } else if (value === 'ratio') {
-      setShowRatio(!showRatio);
+    switch (value) {
+      case 'recharge':
+        setShowWithRecharge(!showWithRecharge);
+        break;
+      case 'ratio':
+        setShowRatio(!showRatio);
+        break;
+      case 'tableView':
+        setViewMode(viewMode === 'table' ? 'card' : 'table');
+        break;
     }
   };
 
@@ -70,6 +82,7 @@ const PricingDisplaySettings = ({
     const activeValues = [];
     if (showWithRecharge) activeValues.push('recharge');
     if (showRatio) activeValues.push('ratio');
+    if (viewMode === 'table') activeValues.push('tableView');
     return activeValues;
   };
 

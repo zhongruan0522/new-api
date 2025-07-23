@@ -178,7 +178,7 @@ export const useDashboardData = (userState, userDispatch, statusState) => {
       }
     } finally {
       const elapsed = Date.now() - startTime;
-      const remainingTime = Math.max(0, 500 - elapsed);
+      const remainingTime = Math.max(0, 1000 - elapsed);
       setTimeout(() => {
         setLoading(false);
       }, remainingTime);

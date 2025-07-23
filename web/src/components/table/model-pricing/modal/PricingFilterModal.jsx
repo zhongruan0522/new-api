@@ -40,10 +40,14 @@ const PricingFilterModal = ({
     setActiveKey,
     showRatio,
     setShowRatio,
+    viewMode,
+    setViewMode,
     filterGroup,
     setFilterGroup,
     filterQuotaType,
     setFilterQuotaType,
+    currentPage,
+    setCurrentPage,
     loading,
     ...categoryProps
   } = sidebarProps;
@@ -56,13 +60,11 @@ const PricingFilterModal = ({
       setShowWithRecharge,
       setCurrency,
       setShowRatio,
+      setViewMode,
       setFilterGroup,
       setFilterQuotaType,
+      setCurrentPage,
     });
-
-  const handleConfirm = () => {
-    onClose();
-  };
 
   const footer = (
     <div className="flex justify-end">
@@ -76,7 +78,7 @@ const PricingFilterModal = ({
       <Button
         theme="solid"
         type="primary"
-        onClick={handleConfirm}
+        onClick={onClose}
       >
         {t('确定')}
       </Button>
@@ -106,6 +108,8 @@ const PricingFilterModal = ({
           setCurrency={setCurrency}
           showRatio={showRatio}
           setShowRatio={setShowRatio}
+          viewMode={viewMode}
+          setViewMode={setViewMode}
           loading={loading}
           t={t}
         />

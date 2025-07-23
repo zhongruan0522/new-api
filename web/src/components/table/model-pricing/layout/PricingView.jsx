@@ -17,5 +17,17 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 
-// 为了向后兼容，这里重新导出新的 PricingPage 组件
-export { default } from './PricingPage'; 
+import React from 'react';
+import PricingTable from '../view/PricingTable';
+import PricingCardView from '../view/PricingCardView';
+
+const PricingView = ({
+  viewMode = 'table',
+  ...props
+}) => {
+  return viewMode === 'card' ?
+    <PricingCardView {...props} /> :
+    <PricingTable {...props} />;
+};
+
+export default PricingView; 
