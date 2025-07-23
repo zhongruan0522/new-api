@@ -23,6 +23,9 @@ func (a *Adaptor) ConvertClaudeRequest(c *gin.Context, info *relaycommon.RelayIn
 	if err != nil {
 		return nil, err
 	}
+	openaiRequest.(*dto.GeneralOpenAIRequest).StreamOptions = &dto.StreamOptions{
+		IncludeUsage: true,
+	}
 	return requestOpenAI2Ollama(openaiRequest.(*dto.GeneralOpenAIRequest))
 }
 
@@ -82,15 +85,6 @@ func (a *Adaptor) DoRequest(c *gin.Context, info *relaycommon.RelayInfo, request
 }
 
 func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (usage any, err *types.NewAPIError) {
-	if info.IsStream {
-		usage, err = openai.OaiStreamHandler(c, info, resp)
-	} else {
-		if info.RelayMode == relayconstant.RelayModeEmbeddings {
-			usage, err = ollamaEmbeddingHandler(c, info, resp)
-		} else {
-			usage, err = openai.OpenaiHandler(c, info, resp)
-		}
-	}
 	switch info.RelayMode {
 	case relayconstant.RelayModeEmbeddings:
 		usage, err = ollamaEmbeddingHandler(c, info, resp)
