@@ -30,7 +30,7 @@ import SelectableButtonGroup from '../../../common/ui/SelectableButtonGroup';
  * @param {Function} t i18n
  */
 const PricingGroups = ({ filterGroup, setFilterGroup, usableGroup = {}, models = [], loading = false, t }) => {
-  const groups = ['all', ...Object.keys(usableGroup)];
+  const groups = ['all', ...Object.keys(usableGroup).filter(key => key !== '')];
 
   const items = groups.map((g) => {
     let count = 0;
