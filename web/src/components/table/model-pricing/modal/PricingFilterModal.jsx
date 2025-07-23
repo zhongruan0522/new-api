@@ -116,6 +116,7 @@ const PricingFilterModal = ({
           filterGroup={filterGroup}
           setFilterGroup={setFilterGroup}
           usableGroup={categoryProps.usableGroup}
+          groupRatio={categoryProps.groupRatio}
           models={categoryProps.models}
           loading={loading}
           t={t}

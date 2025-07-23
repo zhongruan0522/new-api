@@ -25,24 +25,30 @@ import SelectableButtonGroup from '../../../common/ui/SelectableButtonGroup';
  * @param {string} filterGroup 当前选中的分组，'all' 表示不过滤
  * @param {Function} setFilterGroup 设置选中分组
  * @param {Record<string, any>} usableGroup 后端返回的可用分组对象
+ * @param {Record<string, number>} groupRatio 分组倍率对象
  * @param {Array} models 模型列表
  * @param {boolean} loading 是否加载中
  * @param {Function} t i18n
  */
-const PricingGroups = ({ filterGroup, setFilterGroup, usableGroup = {}, models = [], loading = false, t }) => {
+const PricingGroups = ({ filterGroup, setFilterGroup, usableGroup = {}, groupRatio = {}, models = [], loading = false, t }) => {
   const groups = ['all', ...Object.keys(usableGroup).filter(key => key !== '')];
 
   const items = groups.map((g) => {
-    let count = 0;
+    let ratioDisplay = '';
     if (g === 'all') {
-      count = models.length;
+      ratioDisplay = t('全部');
     } else {
-      count = models.filter(m => m.enable_groups && m.enable_groups.includes(g)).length;
+      const ratio = groupRatio[g];
+      if (ratio !== undefined && ratio !== null) {
+        ratioDisplay = `x${ratio}`;
+      } else {
+        ratioDisplay = 'x1';
+      }
     }
     return {
       value: g,
       label: g === 'all' ? t('全部分组') : g,
-      tagCount: count,
+      tagCount: ratioDisplay,
     };
   });
 

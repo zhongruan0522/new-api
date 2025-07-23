@@ -19,8 +19,7 @@ For commercial licensing, please contact support@quantumnous.com
 
 import React from 'react';
 import { Tag, Space, Tooltip, Switch } from '@douyinfe/semi-ui';
-import { IconHelpCircle, IconCheckCircleStroked, IconClose } from '@douyinfe/semi-icons';
-import { Popover } from '@douyinfe/semi-ui';
+import { IconHelpCircle } from '@douyinfe/semi-icons';
 import { renderModelTag, stringToColor } from '../../../helpers';
 
 function renderQuotaType(type, t) {
@@ -40,33 +39,6 @@ function renderQuotaType(type, t) {
     default:
       return t('未知');
   }
-}
-
-function renderAvailable(available, t) {
-  if (available) {
-    return (
-      <Popover
-        content={<div style={{ padding: 8 }}>{t('您的分组可以使用该模型')}</div>}
-        position='top'
-        key={String(available)}
-        className="bg-green-50"
-      >
-        <IconCheckCircleStroked style={{ color: 'rgb(22 163 74)' }} size='large' />
-      </Popover>
-    );
-  }
-
-  // 分组不可用时显示红色关闭图标
-  return (
-    <Popover
-      content={<div style={{ padding: 8 }}>{t('你的分组无权使用该模型')}</div>}
-      position='top'
-      key="not-available"
-      className="bg-red-50"
-    >
-      <IconClose style={{ color: 'rgb(239 68 68)' }} size='large' />
-    </Popover>
-  );
 }
 
 function renderSupportedEndpoints(endpoints) {
@@ -91,22 +63,20 @@ function renderSupportedEndpoints(endpoints) {
 export const getPricingTableColumns = ({
   t,
   selectedGroup,
-  usableGroup,
   groupRatio,
   copyText,
   setModalImageUrl,
   setIsModalOpenurl,
   currency,
-  showWithRecharge,
   tokenUnit,
   setTokenUnit,
   displayPrice,
-  handleGroupClick,
   showRatio,
 }) => {
   const endpointColumn = {
     title: t('可用端点类型'),
     dataIndex: 'supported_endpoint_types',
+    fixed: 'right',
     render: (text, record, index) => {
       return renderSupportedEndpoints(text);
     },
@@ -135,56 +105,7 @@ export const getPricingTableColumns = ({
     sorter: (a, b) => a.quota_type - b.quota_type,
   };
 
-  const enableGroupColumn = {
-    title: t('可用分组'),
-    dataIndex: 'enable_groups',
-    render: (text, record, index) => {
-      return (
-        <Space wrap>
-          {text.map((group) => {
-            if (usableGroup[group]) {
-              if (group === selectedGroup) {
-                return (
-                  <Tag key={group} color='blue' shape='circle' prefixIcon={<IconCheckCircleStroked />}>
-                    {group}
-                  </Tag>
-                );
-              } else {
-                return (
-                  <Tag
-                    key={group}
-                    color='blue'
-                    shape='circle'
-                    onClick={() => handleGroupClick(group)}
-                    className="cursor-pointer hover:opacity-80 transition-opacity"
-                  >
-                    {group}
-                  </Tag>
-                );
-              }
-            }
-          })}
-        </Space>
-      );
-    },
-  };
-
-  const baseColumns = [endpointColumn, modelNameColumn, quotaColumn, enableGroupColumn];
-
-  const availabilityColumn = {
-    title: t('可用性'),
-    dataIndex: 'available',
-    fixed: 'right',
-    render: (text, record, index) => {
-      return renderAvailable(record.enable_groups.includes(selectedGroup), t);
-    },
-    sorter: (a, b) => {
-      const aAvailable = a.enable_groups.includes(selectedGroup);
-      const bAvailable = b.enable_groups.includes(selectedGroup);
-      return Number(aAvailable) - Number(bAvailable);
-    },
-    defaultSortOrder: 'descend',
-  };
+  const baseColumns = [modelNameColumn, quotaColumn];
 
   const ratioColumn = {
     title: () => (
@@ -203,9 +124,8 @@ export const getPricingTableColumns = ({
     ),
     dataIndex: 'model_ratio',
     render: (text, record, index) => {
-      let content = text;
-      let completionRatio = parseFloat(record.completion_ratio.toFixed(3));
-      content = (
+      const completionRatio = parseFloat(record.completion_ratio.toFixed(3));
+      const content = (
         <div className="space-y-1">
           <div className="text-gray-700">
             {t('模型倍率')}：{record.quota_type === 0 ? text : t('无')}
@@ -238,25 +158,23 @@ export const getPricingTableColumns = ({
     ),
     dataIndex: 'model_price',
     render: (text, record, index) => {
-      let content = text;
       if (record.quota_type === 0) {
-        let inputRatioPriceUSD = record.model_ratio * 2 * groupRatio[selectedGroup];
-        let completionRatioPriceUSD =
+        const inputRatioPriceUSD = record.model_ratio * 2 * groupRatio[selectedGroup];
+        const completionRatioPriceUSD =
           record.model_ratio * record.completion_ratio * 2 * groupRatio[selectedGroup];
 
         const unitDivisor = tokenUnit === 'K' ? 1000 : 1;
         const unitLabel = tokenUnit === 'K' ? 'K' : 'M';
 
-        let displayInput = displayPrice(inputRatioPriceUSD);
-        let displayCompletion = displayPrice(completionRatioPriceUSD);
+        const rawDisplayInput = displayPrice(inputRatioPriceUSD);
+        const rawDisplayCompletion = displayPrice(completionRatioPriceUSD);
 
-        const divisor = unitDivisor;
-        const numInput = parseFloat(displayInput.replace(/[^0-9.]/g, '')) / divisor;
-        const numCompletion = parseFloat(displayCompletion.replace(/[^0-9.]/g, '')) / divisor;
+        const numInput = parseFloat(rawDisplayInput.replace(/[^0-9.]/g, '')) / unitDivisor;
+        const numCompletion = parseFloat(rawDisplayCompletion.replace(/[^0-9.]/g, '')) / unitDivisor;
 
-        displayInput = `${currency === 'CNY' ? '¥' : '$'}${numInput.toFixed(3)}`;
-        displayCompletion = `${currency === 'CNY' ? '¥' : '$'}${numCompletion.toFixed(3)}`;
-        content = (
+        const displayInput = `${currency === 'CNY' ? '¥' : '$'}${numInput.toFixed(3)}`;
+        const displayCompletion = `${currency === 'CNY' ? '¥' : '$'}${numCompletion.toFixed(3)}`;
+        return (
           <div className="space-y-1">
             <div className="text-gray-700">
               {t('提示')} {displayInput} / 1{unitLabel} tokens
@@ -267,15 +185,14 @@ export const getPricingTableColumns = ({
           </div>
         );
       } else {
-        let priceUSD = parseFloat(text) * groupRatio[selectedGroup];
-        let displayVal = displayPrice(priceUSD);
-        content = (
+        const priceUSD = parseFloat(text) * groupRatio[selectedGroup];
+        const displayVal = displayPrice(priceUSD);
+        return (
           <div className="text-gray-700">
             {t('模型价格')}：{displayVal}
           </div>
         );
       }
-      return content;
     },
   };
 
@@ -284,6 +201,6 @@ export const getPricingTableColumns = ({
     columns.push(ratioColumn);
   }
   columns.push(priceColumn);
-  columns.push(availabilityColumn);
+  columns.push(endpointColumn);
   return columns;
 }; 
