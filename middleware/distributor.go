@@ -100,6 +100,10 @@ func Distribute() func(c *gin.Context) {
 			}
 
 			if shouldSelectChannel {
+				if modelRequest.Model == "" {
+					abortWithOpenAiMessage(c, http.StatusBadRequest, "未指定模型名称，模型名称不能为空")
+					return
+				}
 				var selectGroup string
 				channel, selectGroup, err = model.CacheGetRandomSatisfiedChannel(c, userGroup, modelRequest.Model, 0)
 				if err != nil {
