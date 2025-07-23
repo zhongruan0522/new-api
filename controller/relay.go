@@ -56,7 +56,7 @@ func relayHandler(c *gin.Context, relayMode int) *types.NewAPIError {
 		userGroup := c.GetString("group")
 		channelId := c.GetInt("channel_id")
 		other := make(map[string]interface{})
-		other["error_type"] = err.ErrorType
+		other["error_type"] = err.GetErrorType()
 		other["error_code"] = err.GetErrorCode()
 		other["status_code"] = err.StatusCode
 		other["channel_id"] = channelId
