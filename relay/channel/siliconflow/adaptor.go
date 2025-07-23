@@ -18,20 +18,19 @@ import (
 type Adaptor struct {
 }
 
-func (a *Adaptor) ConvertClaudeRequest(*gin.Context, *relaycommon.RelayInfo, *dto.ClaudeRequest) (any, error) {
-	//TODO implement me
-	panic("implement me")
-	return nil, nil
+func (a *Adaptor) ConvertClaudeRequest(c *gin.Context, info *relaycommon.RelayInfo, req *dto.ClaudeRequest) (any, error) {
+	adaptor := openai.Adaptor{}
+	return adaptor.ConvertClaudeRequest(c, info, req)
 }
 
 func (a *Adaptor) ConvertAudioRequest(c *gin.Context, info *relaycommon.RelayInfo, request dto.AudioRequest) (io.Reader, error) {
 	//TODO implement me
-	return nil, errors.New("not implemented")
+	return nil, errors.New("not supported")
 }
 
 func (a *Adaptor) ConvertImageRequest(c *gin.Context, info *relaycommon.RelayInfo, request dto.ImageRequest) (any, error) {
-	//TODO implement me
-	return nil, errors.New("not implemented")
+	adaptor := openai.Adaptor{}
+	return adaptor.ConvertImageRequest(c, info, request)
 }
 
 func (a *Adaptor) Init(info *relaycommon.RelayInfo) {
