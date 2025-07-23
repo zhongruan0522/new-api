@@ -103,7 +103,7 @@ const PricingCardView = ({
 
                 <div className="flex items-center space-x-2 ml-3">
                   {/* 操作按钮骨架 */}
-                  <Skeleton.Button size="small" style={{ width: 32, height: 32 }} />
+                  <Skeleton.Button size="small" style={{ width: 16, height: 16 }} />
                   {rowSelection && (
                     <Skeleton.Button size="small" style={{ width: 16, height: 16 }} />
                   )}
