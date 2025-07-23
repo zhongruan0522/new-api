@@ -259,10 +259,10 @@ func getChannel(c *gin.Context, group, originalModel string, retryCount int) (*m
 	}
 	channel, selectGroup, err := model.CacheGetRandomSatisfiedChannel(c, group, originalModel, retryCount)
 	if err != nil {
-		if group == "auto" {
-			return nil, types.NewError(errors.New(fmt.Sprintf("获取自动分组下模型 %s 的可用渠道失败: %s", originalModel, err.Error())), types.ErrorCodeGetChannelFailed)
-		}
-		return nil, types.NewError(errors.New(fmt.Sprintf("获取分组 %s 下模型 %s 的可用渠道失败: %s", selectGroup, originalModel, err.Error())), types.ErrorCodeGetChannelFailed)
+		return nil, types.NewError(errors.New(fmt.Sprintf("获取分组 %s 下模型 %s 的可用渠道失败（retry）: %s", selectGroup, originalModel, err.Error())), types.ErrorCodeGetChannelFailed)
+	}
+	if channel == nil {
+		return nil, types.NewError(errors.New(fmt.Sprintf("分组 %s 下模型 %s 的可用渠道不存在（数据库一致性已被破坏，retry）", selectGroup, originalModel)), types.ErrorCodeGetChannelFailed)
 	}
 	newAPIError := middleware.SetupContextForSelectedChannel(c, channel, originalModel)
 	if newAPIError != nil {
