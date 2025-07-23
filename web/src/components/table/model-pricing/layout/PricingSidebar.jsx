@@ -22,6 +22,7 @@ import { Button } from '@douyinfe/semi-ui';
 import PricingCategories from '../filter/PricingCategories';
 import PricingGroups from '../filter/PricingGroups';
 import PricingQuotaTypes from '../filter/PricingQuotaTypes';
+import PricingEndpointTypes from '../filter/PricingEndpointTypes';
 import PricingDisplaySettings from '../filter/PricingDisplaySettings';
 import { resetPricingFilters } from '../../../../helpers/utils';
 
@@ -40,6 +41,8 @@ const PricingSidebar = ({
   setFilterGroup,
   filterQuotaType,
   setFilterQuotaType,
+  filterEndpointType,
+  setFilterEndpointType,
   currentPage,
   setCurrentPage,
   loading,
@@ -58,6 +61,7 @@ const PricingSidebar = ({
       setViewMode,
       setFilterGroup,
       setFilterQuotaType,
+      setFilterEndpointType,
       setCurrentPage,
     });
 
@@ -110,6 +114,14 @@ const PricingSidebar = ({
       <PricingQuotaTypes
         filterQuotaType={filterQuotaType}
         setFilterQuotaType={setFilterQuotaType}
+        models={categoryProps.models}
+        loading={loading}
+        t={t}
+      />
+
+      <PricingEndpointTypes
+        filterEndpointType={filterEndpointType}
+        setFilterEndpointType={setFilterEndpointType}
         models={categoryProps.models}
         loading={loading}
         t={t}

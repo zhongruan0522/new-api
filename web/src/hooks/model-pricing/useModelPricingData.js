@@ -35,6 +35,7 @@ export const useModelPricingData = () => {
   const [filterGroup, setFilterGroup] = useState('all'); // 用于 Table 的可用分组筛选，“all” 表示不过滤
   const [filterQuotaType, setFilterQuotaType] = useState('all'); // 计费类型筛选: 'all' | 0 | 1
   const [activeKey, setActiveKey] = useState('all');
+  const [filterEndpointType, setFilterEndpointType] = useState('all'); // 端点类型筛选: 'all' | string
   const [pageSize, setPageSize] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
   const [currency, setCurrency] = useState('USD');
@@ -93,6 +94,14 @@ export const useModelPricingData = () => {
       result = result.filter(model => model.quota_type === filterQuotaType);
     }
 
+    // 端点类型筛选
+    if (filterEndpointType !== 'all') {
+      result = result.filter(model =>
+        model.supported_endpoint_types &&
+        model.supported_endpoint_types.includes(filterEndpointType)
+      );
+    }
+
     // 搜索筛选
     if (searchValue.length > 0) {
       const searchTerm = searchValue.toLowerCase();
@@ -102,7 +111,7 @@ export const useModelPricingData = () => {
     }
 
     return result;
-  }, [activeKey, models, searchValue, filterGroup, filterQuotaType]);
+  }, [activeKey, models, searchValue, filterGroup, filterQuotaType, filterEndpointType]);
 
   const rowSelection = useMemo(
     () => ({
@@ -216,7 +225,7 @@ export const useModelPricingData = () => {
   // 当筛选条件变化时重置到第一页
   useEffect(() => {
     setCurrentPage(1);
-  }, [activeKey, filterGroup, filterQuotaType, searchValue]);
+  }, [activeKey, filterGroup, filterQuotaType, filterEndpointType, searchValue]);
 
   return {
     // 状态
@@ -234,6 +243,8 @@ export const useModelPricingData = () => {
     setFilterGroup,
     filterQuotaType,
     setFilterQuotaType,
+    filterEndpointType,
+    setFilterEndpointType,
     activeKey,
     setActiveKey,
     pageSize,

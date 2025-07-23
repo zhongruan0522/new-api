@@ -682,6 +682,7 @@ export const resetPricingFilters = ({
   setViewMode,
   setFilterGroup,
   setFilterQuotaType,
+  setFilterEndpointType,
   setCurrentPage,
 }) => {
   // 重置搜索
@@ -726,6 +727,11 @@ export const resetPricingFilters = ({
   // 重置计费类型筛选
   if (typeof setFilterQuotaType === 'function') {
     setFilterQuotaType('all');
+  }
+
+  // 重置端点类型筛选
+  if (typeof setFilterEndpointType === 'function') {
+    setFilterEndpointType('all');
   }
 
   // 重置当前页面
