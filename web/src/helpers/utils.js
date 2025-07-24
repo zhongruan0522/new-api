@@ -577,7 +577,7 @@ export const calculateModelPrice = ({
   tokenUnit,
   displayPrice,
   currency,
-  precision = 3
+  precision = 4
 }) => {
   if (record.quota_type === 0) {
     // 按量计费
