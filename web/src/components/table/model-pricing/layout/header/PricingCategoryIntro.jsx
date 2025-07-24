@@ -104,7 +104,7 @@ const PricingCategoryIntro = ({
         }));
 
       return (
-        <div className="min-w-16 h-16 rounded-2xl bg-white shadow-sm flex items-center justify-center px-2">
+        <div className="min-w-16 h-16 rounded-2xl bg-white shadow-md flex items-center justify-center px-2">
           <AvatarGroup size="default" overlapFrom='end'>
             {fallbackCategories.map((item) => (
               <Avatar
@@ -122,7 +122,7 @@ const PricingCategoryIntro = ({
     }
 
     return (
-      <div className="min-w-16 h-16 rounded-2xl bg-white shadow-sm flex items-center justify-center px-2">
+      <div className="min-w-16 h-16 rounded-2xl bg-white shadow-md flex items-center justify-center px-2">
         <AvatarGroup
           maxCount={4}
           size="default"
@@ -162,7 +162,7 @@ const PricingCategoryIntro = ({
 
   // 为具体分类渲染单个图标
   const renderCategoryAvatar = (category) => (
-    <div className="w-16 h-16 rounded-2xl bg-white shadow-sm flex items-center justify-center">
+    <div className="w-16 h-16 rounded-2xl bg-white shadow-md flex items-center justify-center">
       {category.icon && React.cloneElement(category.icon, { size: 40 })}
     </div>
   );
@@ -171,20 +171,22 @@ const PricingCategoryIntro = ({
   if (activeKey === 'all') {
     return (
       <div className='mb-4'>
-        <Card className="!rounded-2xl" bodyStyle={{ padding: '24px' }}>
-          <div className="flex items-start space-x-4">
+        <Card className="!rounded-2xl" bodyStyle={{ padding: '16px' }}>
+          <div className="flex items-start space-x-3 md:space-x-4">
             {/* 全部模型的头像组合 */}
-            {renderAllModelsAvatar()}
+            <div className="flex-shrink-0">
+              {renderAllModelsAvatar()}
+            </div>
 
             {/* 分类信息 */}
-            <div className="flex-1">
-              <div className="flex items-center space-x-3 mb-2">
-                <h2 className="text-xl font-bold text-gray-900">{modelCategories.all.label}</h2>
-                <Tag color="white" shape="circle" size="small">
+            <div className="flex-1 min-w-0">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-2">
+                <h2 className="text-lg sm:text-xl font-bold text-gray-900 truncate">{modelCategories.all.label}</h2>
+                <Tag color="white" shape="circle" size="small" className="self-start sm:self-center">
                   {t('共 {{count}} 个模型', { count: modelCount })}
                 </Tag>
               </div>
-              <p className="text-sm text-gray-600 leading-relaxed">
+              <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">
                 {getCategoryDescription(activeKey)}
               </p>
             </div>
@@ -202,20 +204,22 @@ const PricingCategoryIntro = ({
 
   return (
     <div className='mb-4'>
-      <Card className="!rounded-2xl" bodyStyle={{ padding: '24px' }}>
-        <div className="flex items-start space-x-4">
+      <Card className="!rounded-2xl" bodyStyle={{ padding: '16px' }}>
+        <div className="flex items-start space-x-3 md:space-x-4">
           {/* 分类图标 */}
-          {renderCategoryAvatar(currentCategory)}
+          <div className="flex-shrink-0">
+            {renderCategoryAvatar(currentCategory)}
+          </div>
 
           {/* 分类信息 */}
-          <div className="flex-1">
-            <div className="flex items-center space-x-3 mb-2">
-              <h2 className="text-xl font-bold text-gray-900">{currentCategory.label}</h2>
-              <Tag color="white" shape="circle" size="small">
+          <div className="flex-1 min-w-0">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-2">
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900 truncate">{currentCategory.label}</h2>
+              <Tag color="white" shape="circle" size="small" className="self-start sm:self-center">
                 {t('共 {{count}} 个模型', { count: modelCount })}
               </Tag>
             </div>
-            <p className="text-sm text-gray-600 leading-relaxed">
+            <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">
               {getCategoryDescription(activeKey)}
             </p>
           </div>

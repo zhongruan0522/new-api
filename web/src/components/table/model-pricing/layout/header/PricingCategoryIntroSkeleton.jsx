@@ -25,10 +25,10 @@ const PricingCategoryIntroSkeleton = ({
 }) => {
   const placeholder = (
     <div className='mb-4'>
-      <Card className="!rounded-2xl" bodyStyle={{ padding: '24px' }}>
-        <div className="flex items-start space-x-4">
+      <Card className="!rounded-2xl" bodyStyle={{ padding: '16px' }}>
+        <div className="flex items-start space-x-3 md:space-x-4">
           {/* 分类图标骨架 */}
-          <div className="min-w-16 h-16 rounded-2xl bg-white shadow-sm flex items-center justify-center px-2">
+          <div className="flex-shrink-0 min-w-16 h-16 rounded-2xl bg-white shadow-md flex items-center justify-center px-2">
             {isAllModels ? (
               <div className="flex items-center">
                 {Array.from({ length: 5 }).map((_, index) => (
@@ -50,8 +50,8 @@ const PricingCategoryIntroSkeleton = ({
           </div>
 
           {/* 分类信息骨架 */}
-          <div className="flex-1">
-            <div className="flex items-center space-x-3 mb-2">
+          <div className="flex-1 min-w-0">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-2">
               <Skeleton.Title active style={{ width: 120, height: 24, marginBottom: 0 }} />
               <Skeleton.Button active size="small" style={{ width: 80, height: 20, borderRadius: 12 }} />
             </div>
