@@ -18,23 +18,16 @@ For commercial licensing, please contact support@quantumnous.com
 */
 
 import React from 'react';
-import PricingSearchBar from './PricingSearchBar';
-import PricingView from './PricingView';
+import PricingTable from '../../view/table/PricingTable';
+import PricingCardView from '../../view/card/PricingCardView';
 
-const PricingContent = ({ isMobile, sidebarProps, ...props }) => {
-  return (
-    <div className={isMobile ? "pricing-content-mobile" : "pricing-scroll-hide"}>
-      {/* 固定的搜索和操作区域 */}
-      <div className="pricing-search-header">
-        <PricingSearchBar {...props} isMobile={isMobile} sidebarProps={sidebarProps} />
-      </div>
-
-      {/* 可滚动的内容区域 */}
-      <div className={isMobile ? "pricing-view-container-mobile" : "pricing-view-container"}>
-        <PricingView {...props} viewMode={sidebarProps.viewMode} />
-      </div>
-    </div>
-  );
+const PricingView = ({
+  viewMode = 'table',
+  ...props
+}) => {
+  return viewMode === 'card' ?
+    <PricingCardView {...props} /> :
+    <PricingTable {...props} />;
 };
 
-export default PricingContent; 
+export default PricingView; 

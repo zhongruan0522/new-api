@@ -20,9 +20,10 @@ For commercial licensing, please contact support@quantumnous.com
 import React, { useMemo, useState } from 'react';
 import { Input, Button } from '@douyinfe/semi-ui';
 import { IconSearch, IconCopy, IconFilter } from '@douyinfe/semi-icons';
-import PricingFilterModal from '../modal/PricingFilterModal';
+import PricingFilterModal from '../../modal/PricingFilterModal';
+import PricingCategoryIntroWithSkeleton from './PricingCategoryIntroWithSkeleton';
 
-const PricingSearchBar = ({
+const PricingTopSection = ({
   selectedRowKeys,
   copyText,
   handleChange,
@@ -30,6 +31,11 @@ const PricingSearchBar = ({
   handleCompositionEnd,
   isMobile,
   sidebarProps,
+  activeKey,
+  modelCategories,
+  categoryCounts,
+  availableCategories,
+  loading,
   t
 }) => {
   const [showFilterModal, setShowFilterModal] = useState(false);
@@ -76,6 +82,17 @@ const PricingSearchBar = ({
 
   return (
     <>
+      {/* 分类介绍区域（含骨架屏） */}
+      <PricingCategoryIntroWithSkeleton
+        loading={loading}
+        activeKey={activeKey}
+        modelCategories={modelCategories}
+        categoryCounts={categoryCounts}
+        availableCategories={availableCategories}
+        t={t}
+      />
+
+      {/* 搜索和操作区域 */}
       {SearchAndActions}
 
       {/* 移动端筛选Modal */}
@@ -91,4 +108,4 @@ const PricingSearchBar = ({
   );
 };
 
-export default PricingSearchBar; 
+export default PricingTopSection; 

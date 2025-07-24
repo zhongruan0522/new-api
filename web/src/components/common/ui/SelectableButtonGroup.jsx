@@ -17,8 +17,9 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { useIsMobile } from '../../../hooks/common/useIsMobile';
+import { useMinimumLoadingTime } from '../../../hooks/common/useMinimumLoadingTime';
 import { Divider, Button, Tag, Row, Col, Collapsible, Checkbox, Skeleton } from '@douyinfe/semi-ui';
 import { IconChevronDown, IconChevronUp } from '@douyinfe/semi-icons';
 
@@ -49,31 +50,14 @@ const SelectableButtonGroup = ({
   loading = false
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [showSkeleton, setShowSkeleton] = useState(loading);
   const [skeletonCount] = useState(6);
   const isMobile = useIsMobile();
   const perRow = 3;
   const maxVisibleRows = Math.max(1, Math.floor(collapseHeight / 32)); // Approx row height 32
   const needCollapse = collapsible && items.length > perRow * maxVisibleRows;
-  const loadingStartRef = useRef(Date.now());
+  const showSkeleton = useMinimumLoadingTime(loading);
 
   const contentRef = useRef(null);
-
-  useEffect(() => {
-    if (loading) {
-      loadingStartRef.current = Date.now();
-      setShowSkeleton(true);
-    } else {
-      const elapsed = Date.now() - loadingStartRef.current;
-      const remaining = Math.max(0, 1000 - elapsed);
-      if (remaining === 0) {
-        setShowSkeleton(false);
-      } else {
-        const timer = setTimeout(() => setShowSkeleton(false), remaining);
-        return () => clearTimeout(timer);
-      }
-    }
-  }, [loading]);
 
   const maskStyle = isOpen
     ? {}
@@ -110,7 +94,7 @@ const SelectableButtonGroup = ({
           <Col
             {...(isMobile
               ? { span: 12 }
-              : { xs: 24, sm: 24, md: 24, lg: 12, xl: 8 }
+              : { span: 8 }
             )}
             key={index}
           >
@@ -158,7 +142,7 @@ const SelectableButtonGroup = ({
             <Col
               {...(isMobile
                 ? { span: 12 }
-                : { xs: 24, sm: 24, md: 24, lg: 12, xl: 8 }
+                : { span: 8 }
               )}
               key={item.value}
             >
@@ -197,7 +181,7 @@ const SelectableButtonGroup = ({
           <Col
             {...(isMobile
               ? { span: 12 }
-              : { xs: 24, sm: 24, md: 24, lg: 12, xl: 8 }
+              : { span: 8 }
             )}
             key={item.value}
           >

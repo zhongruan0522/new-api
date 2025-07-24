@@ -115,11 +115,12 @@ export const useModelPricingData = () => {
 
   const rowSelection = useMemo(
     () => ({
-      onChange: (selectedRowKeys, selectedRows) => {
-        setSelectedRowKeys(selectedRowKeys);
+      selectedRowKeys,
+      onChange: (keys) => {
+        setSelectedRowKeys(keys);
       },
     }),
-    [],
+    [selectedRowKeys],
   );
 
   const displayPrice = (usdPrice) => {

@@ -51,6 +51,8 @@ const PricingFilterModal = ({
     setFilterEndpointType,
     currentPage,
     setCurrentPage,
+    tokenUnit,
+    setTokenUnit,
     loading,
     ...categoryProps
   } = sidebarProps;
@@ -68,6 +70,7 @@ const PricingFilterModal = ({
       setFilterQuotaType,
       setFilterEndpointType,
       setCurrentPage,
+      setTokenUnit,
     });
 
   const footer = (
@@ -114,6 +117,8 @@ const PricingFilterModal = ({
           setShowRatio={setShowRatio}
           viewMode={viewMode}
           setViewMode={setViewMode}
+          tokenUnit={tokenUnit}
+          setTokenUnit={setTokenUnit}
           loading={loading}
           t={t}
         />

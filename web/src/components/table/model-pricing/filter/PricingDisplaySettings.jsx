@@ -31,6 +31,8 @@ const PricingDisplaySettings = ({
   setShowRatio,
   viewMode,
   setViewMode,
+  tokenUnit,
+  setTokenUnit,
   loading = false,
   t
 }) => {
@@ -56,6 +58,10 @@ const PricingDisplaySettings = ({
     {
       value: 'tableView',
       label: t('表格视图')
+    },
+    {
+      value: 'tokenUnit',
+      label: t('按K显示单位')
     }
   ];
 
@@ -75,6 +81,9 @@ const PricingDisplaySettings = ({
       case 'tableView':
         setViewMode(viewMode === 'table' ? 'card' : 'table');
         break;
+      case 'tokenUnit':
+        setTokenUnit(tokenUnit === 'K' ? 'M' : 'K');
+        break;
     }
   };
 
@@ -83,6 +92,7 @@ const PricingDisplaySettings = ({
     if (showWithRecharge) activeValues.push('recharge');
     if (showRatio) activeValues.push('ratio');
     if (viewMode === 'table') activeValues.push('tableView');
+    if (tokenUnit === 'K') activeValues.push('tokenUnit');
     return activeValues;
   };
 

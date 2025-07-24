@@ -18,9 +18,9 @@ For commercial licensing, please contact support@quantumnous.com
 */
 
 import React from 'react';
-import { Tag, Space, Tooltip, Switch } from '@douyinfe/semi-ui';
+import { Tag, Space, Tooltip } from '@douyinfe/semi-ui';
 import { IconHelpCircle } from '@douyinfe/semi-icons';
-import { renderModelTag, stringToColor, calculateModelPrice } from '../../../../helpers';
+import { renderModelTag, stringToColor, calculateModelPrice } from '../../../../../helpers';
 
 function renderQuotaType(type, t) {
   switch (type) {
@@ -69,7 +69,6 @@ export const getPricingTableColumns = ({
   setIsModalOpenurl,
   currency,
   tokenUnit,
-  setTokenUnit,
   displayPrice,
   showRatio,
 }) => {
@@ -144,18 +143,7 @@ export const getPricingTableColumns = ({
   };
 
   const priceColumn = {
-    title: (
-      <div className="flex items-center space-x-2">
-        <span>{t('模型价格')}</span>
-        {/* 计费单位切换 */}
-        <Switch
-          checked={tokenUnit === 'K'}
-          onChange={(checked) => setTokenUnit(checked ? 'K' : 'M')}
-          checkedText="K"
-          uncheckedText="M"
-        />
-      </div>
-    ),
+    title: t('模型价格'),
     dataIndex: 'model_price',
     render: (text, record, index) => {
       const priceData = calculateModelPrice({

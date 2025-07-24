@@ -612,12 +612,25 @@ export const calculateModelPrice = ({
   }
 };
 
-// 格式化价格信息为字符串（用于卡片视图）
+// 格式化价格信息（用于卡片视图）
 export const formatPriceInfo = (priceData, t) => {
   if (priceData.isPerToken) {
-    return `${t('输入')} ${priceData.inputPrice}/${priceData.unitLabel} ${t('输出')} ${priceData.completionPrice}/${priceData.unitLabel}`;
+    return (
+      <>
+        <span style={{ color: 'var(--semi-color-text-1)' }}>
+          {t('提示')} {priceData.inputPrice}/{priceData.unitLabel}
+        </span>
+        <span style={{ color: 'var(--semi-color-text-1)' }}>
+          {t('补全')} {priceData.completionPrice}/{priceData.unitLabel}
+        </span>
+      </>
+    );
   } else {
-    return `${t('模型价格')} ${priceData.price}`;
+    return (
+      <span style={{ color: 'var(--semi-color-text-1)' }}>
+        {t('模型价格')} {priceData.price}
+      </span>
+    );
   }
 };
 
@@ -684,6 +697,7 @@ export const resetPricingFilters = ({
   setFilterQuotaType,
   setFilterEndpointType,
   setCurrentPage,
+  setTokenUnit,
 }) => {
   // 重置搜索
   if (typeof handleChange === 'function') {
@@ -717,6 +731,11 @@ export const resetPricingFilters = ({
   // 重置视图模式
   if (typeof setViewMode === 'function') {
     setViewMode('card');
+  }
+
+  // 重置token单位
+  if (typeof setTokenUnit === 'function') {
+    setTokenUnit('M');
   }
 
   // 重置分组筛选

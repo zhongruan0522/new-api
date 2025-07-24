@@ -45,6 +45,8 @@ const PricingSidebar = ({
   setFilterEndpointType,
   currentPage,
   setCurrentPage,
+  tokenUnit,
+  setTokenUnit,
   loading,
   t,
   ...categoryProps
@@ -63,6 +65,7 @@ const PricingSidebar = ({
       setFilterQuotaType,
       setFilterEndpointType,
       setCurrentPage,
+      setTokenUnit,
     });
 
   return (
@@ -90,6 +93,8 @@ const PricingSidebar = ({
         setShowRatio={setShowRatio}
         viewMode={viewMode}
         setViewMode={setViewMode}
+        tokenUnit={tokenUnit}
+        setTokenUnit={setTokenUnit}
         loading={loading}
         t={t}
       />

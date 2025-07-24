@@ -56,7 +56,6 @@ const PricingTable = ({
       setIsModalOpenurl,
       currency,
       tokenUnit,
-      setTokenUnit,
       displayPrice,
       showRatio,
     });
@@ -69,7 +68,6 @@ const PricingTable = ({
     setIsModalOpenurl,
     currency,
     tokenUnit,
-    setTokenUnit,
     displayPrice,
     showRatio,
   ]);
