@@ -154,6 +154,11 @@ export const CHANNEL_OPTIONS = [
     color: 'blue',
     label: '即梦',
   },
+  {
+    value: 52,
+    color: 'purple',
+    label: 'Vidu',
+  },
 ];
 
 export const MODEL_TABLE_PAGE_SIZE = 10;
