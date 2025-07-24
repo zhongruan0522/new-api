@@ -683,7 +683,20 @@ export const createCardProPagination = ({
   );
 };
 
-// -------------------------------
+// 模型定价筛选条件默认值
+const DEFAULT_PRICING_FILTERS = {
+  search: '',
+  showWithRecharge: false,
+  currency: 'USD',
+  showRatio: false,
+  viewMode: 'card',
+  tokenUnit: 'M',
+  filterGroup: 'all',
+  filterQuotaType: 'all',
+  filterEndpointType: 'all',
+  currentPage: 1,
+};
+
 // 重置模型定价筛选条件
 export const resetPricingFilters = ({
   handleChange,
@@ -699,62 +712,15 @@ export const resetPricingFilters = ({
   setCurrentPage,
   setTokenUnit,
 }) => {
-  // 重置搜索
-  if (typeof handleChange === 'function') {
-    handleChange('');
-  }
-
-  // 重置模型分类到默认
-  if (
-    typeof setActiveKey === 'function' &&
-    Array.isArray(availableCategories) &&
-    availableCategories.length > 0
-  ) {
-    setActiveKey(availableCategories[0]);
-  }
-
-  // 重置充值价格显示
-  if (typeof setShowWithRecharge === 'function') {
-    setShowWithRecharge(false);
-  }
-
-  // 重置货币
-  if (typeof setCurrency === 'function') {
-    setCurrency('USD');
-  }
-
-  // 重置显示倍率
-  if (typeof setShowRatio === 'function') {
-    setShowRatio(false);
-  }
-
-  // 重置视图模式
-  if (typeof setViewMode === 'function') {
-    setViewMode('card');
-  }
-
-  // 重置token单位
-  if (typeof setTokenUnit === 'function') {
-    setTokenUnit('M');
-  }
-
-  // 重置分组筛选
-  if (typeof setFilterGroup === 'function') {
-    setFilterGroup('all');
-  }
-
-  // 重置计费类型筛选
-  if (typeof setFilterQuotaType === 'function') {
-    setFilterQuotaType('all');
-  }
-
-  // 重置端点类型筛选
-  if (typeof setFilterEndpointType === 'function') {
-    setFilterEndpointType('all');
-  }
-
-  // 重置当前页面
-  if (typeof setCurrentPage === 'function') {
-    setCurrentPage(1);
-  }
+  handleChange?.(DEFAULT_PRICING_FILTERS.search);
+  availableCategories?.length > 0 && setActiveKey?.(availableCategories[0]);
+  setShowWithRecharge?.(DEFAULT_PRICING_FILTERS.showWithRecharge);
+  setCurrency?.(DEFAULT_PRICING_FILTERS.currency);
+  setShowRatio?.(DEFAULT_PRICING_FILTERS.showRatio);
+  setViewMode?.(DEFAULT_PRICING_FILTERS.viewMode);
+  setTokenUnit?.(DEFAULT_PRICING_FILTERS.tokenUnit);
+  setFilterGroup?.(DEFAULT_PRICING_FILTERS.filterGroup);
+  setFilterQuotaType?.(DEFAULT_PRICING_FILTERS.filterQuotaType);
+  setFilterEndpointType?.(DEFAULT_PRICING_FILTERS.filterEndpointType);
+  setCurrentPage?.(DEFAULT_PRICING_FILTERS.currentPage);
 };
