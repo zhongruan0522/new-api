@@ -28,6 +28,7 @@ const (
 	ErrorTypeMidjourneyError ErrorType = "midjourney_error"
 	ErrorTypeGeminiError     ErrorType = "gemini_error"
 	ErrorTypeRerankError     ErrorType = "rerank_error"
+	ErrorTypeUpstreamError   ErrorType = "upstream_error"
 )
 
 type ErrorCode string
@@ -194,6 +195,9 @@ func WithOpenAIError(openAIError OpenAIError, statusCode int) *NewAPIError {
 	if !ok {
 		code = fmt.Sprintf("%v", openAIError.Code)
 	}
+	if openAIError.Type == "" {
+		openAIError.Type = "upstream_error"
+	}
 	return &NewAPIError{
 		RelayError: openAIError,
 		errorType:  ErrorTypeOpenAIError,
@@ -204,6 +208,9 @@ func WithOpenAIError(openAIError OpenAIError, statusCode int) *NewAPIError {
 }
 
 func WithClaudeError(claudeError ClaudeError, statusCode int) *NewAPIError {
+	if claudeError.Type == "" {
+		claudeError.Type = "upstream_error"
+	}
 	return &NewAPIError{
 		RelayError: claudeError,
 		errorType:  ErrorTypeClaudeError,
