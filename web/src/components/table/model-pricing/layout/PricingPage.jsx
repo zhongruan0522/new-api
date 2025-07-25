@@ -21,6 +21,7 @@ import React from 'react';
 import { Layout, ImagePreview } from '@douyinfe/semi-ui';
 import PricingSidebar from './PricingSidebar';
 import PricingContent from './content/PricingContent';
+import ModelDetailSideSheet from '../modal/ModelDetailSideSheet';
 import { useModelPricingData } from '../../../../hooks/model-pricing/useModelPricingData';
 import { useIsMobile } from '../../../../hooks/common/useIsMobile';
 
@@ -65,6 +66,20 @@ const PricingPage = () => {
         src={pricingData.modalImageUrl}
         visible={pricingData.isModalOpenurl}
         onVisibleChange={(visible) => pricingData.setIsModalOpenurl(visible)}
+      />
+
+      <ModelDetailSideSheet
+        visible={pricingData.showModelDetail}
+        onClose={pricingData.closeModelDetail}
+        modelData={pricingData.selectedModel}
+        selectedGroup={pricingData.selectedGroup}
+        groupRatio={pricingData.groupRatio}
+        usableGroup={pricingData.usableGroup}
+        currency={pricingData.currency}
+        tokenUnit={pricingData.tokenUnit}
+        displayPrice={pricingData.displayPrice}
+        showRatio={allProps.showRatio}
+        t={pricingData.t}
       />
     </div>
   );

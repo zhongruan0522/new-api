@@ -32,6 +32,8 @@ export const useModelPricingData = () => {
   const [modalImageUrl, setModalImageUrl] = useState('');
   const [isModalOpenurl, setIsModalOpenurl] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState('default');
+  const [showModelDetail, setShowModelDetail] = useState(false);
+  const [selectedModel, setSelectedModel] = useState(null);
   const [filterGroup, setFilterGroup] = useState('all'); // 用于 Table 的可用分组筛选，“all” 表示不过滤
   const [filterQuotaType, setFilterQuotaType] = useState('all'); // 计费类型筛选: 'all' | 0 | 1
   const [activeKey, setActiveKey] = useState('all');
@@ -219,6 +221,16 @@ export const useModelPricingData = () => {
     );
   };
 
+  const openModelDetail = (model) => {
+    setSelectedModel(model);
+    setShowModelDetail(true);
+  };
+
+  const closeModelDetail = () => {
+    setShowModelDetail(false);
+    setSelectedModel(null);
+  };
+
   useEffect(() => {
     refresh().then();
   }, []);
@@ -240,6 +252,10 @@ export const useModelPricingData = () => {
     setIsModalOpenurl,
     selectedGroup,
     setSelectedGroup,
+    showModelDetail,
+    setShowModelDetail,
+    selectedModel,
+    setSelectedModel,
     filterGroup,
     setFilterGroup,
     filterQuotaType,
@@ -284,6 +300,8 @@ export const useModelPricingData = () => {
     handleCompositionStart,
     handleCompositionEnd,
     handleGroupClick,
+    openModelDetail,
+    closeModelDetail,
 
     // 引用
     compositionRef,

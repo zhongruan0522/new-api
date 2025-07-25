@@ -18,13 +18,10 @@ For commercial licensing, please contact support@quantumnous.com
 */
 
 import React from 'react';
-import { Modal, Button } from '@douyinfe/semi-ui';
-import PricingCategories from '../filter/PricingCategories';
-import PricingGroups from '../filter/PricingGroups';
-import PricingQuotaTypes from '../filter/PricingQuotaTypes';
-import PricingEndpointTypes from '../filter/PricingEndpointTypes';
-import PricingDisplaySettings from '../filter/PricingDisplaySettings';
+import { Modal } from '@douyinfe/semi-ui';
 import { resetPricingFilters } from '../../../../helpers/utils';
+import FilterModalContent from './components/FilterModalContent';
+import FilterModalFooter from './components/FilterModalFooter';
 
 const PricingFilterModal = ({
   visible,
@@ -32,64 +29,28 @@ const PricingFilterModal = ({
   sidebarProps,
   t
 }) => {
-  const {
-    showWithRecharge,
-    setShowWithRecharge,
-    currency,
-    setCurrency,
-    handleChange,
-    setActiveKey,
-    showRatio,
-    setShowRatio,
-    viewMode,
-    setViewMode,
-    filterGroup,
-    setFilterGroup,
-    filterQuotaType,
-    setFilterQuotaType,
-    filterEndpointType,
-    setFilterEndpointType,
-    currentPage,
-    setCurrentPage,
-    tokenUnit,
-    setTokenUnit,
-    loading,
-    ...categoryProps
-  } = sidebarProps;
-
   const handleResetFilters = () =>
     resetPricingFilters({
-      handleChange,
-      setActiveKey,
-      availableCategories: categoryProps.availableCategories,
-      setShowWithRecharge,
-      setCurrency,
-      setShowRatio,
-      setViewMode,
-      setFilterGroup,
-      setFilterQuotaType,
-      setFilterEndpointType,
-      setCurrentPage,
-      setTokenUnit,
+      handleChange: sidebarProps.handleChange,
+      setActiveKey: sidebarProps.setActiveKey,
+      availableCategories: sidebarProps.availableCategories,
+      setShowWithRecharge: sidebarProps.setShowWithRecharge,
+      setCurrency: sidebarProps.setCurrency,
+      setShowRatio: sidebarProps.setShowRatio,
+      setViewMode: sidebarProps.setViewMode,
+      setFilterGroup: sidebarProps.setFilterGroup,
+      setFilterQuotaType: sidebarProps.setFilterQuotaType,
+      setFilterEndpointType: sidebarProps.setFilterEndpointType,
+      setCurrentPage: sidebarProps.setCurrentPage,
+      setTokenUnit: sidebarProps.setTokenUnit,
     });
 
   const footer = (
-    <div className="flex justify-end">
-      <Button
-        theme="outline"
-        type='tertiary'
-        onClick={handleResetFilters}
-      >
-        {t('重置')}
-      </Button>
-      <Button
-        theme="solid"
-        type="primary"
-        onClick={onClose}
-      >
-        {t('确定')}
-      </Button>
-    </div>
+    <FilterModalFooter
+      onReset={handleResetFilters}
+      onConfirm={onClose}
+      t={t}
+    />
   );
 
   return (
@@ -107,50 +68,7 @@ const PricingFilterModal = ({
         msOverflowStyle: 'none'
       }}
     >
-      <div className="p-2">
-        <PricingDisplaySettings
-          showWithRecharge={showWithRecharge}
-          setShowWithRecharge={setShowWithRecharge}
-          currency={currency}
-          setCurrency={setCurrency}
-          showRatio={showRatio}
-          setShowRatio={setShowRatio}
-          viewMode={viewMode}
-          setViewMode={setViewMode}
-          tokenUnit={tokenUnit}
-          setTokenUnit={setTokenUnit}
-          loading={loading}
-          t={t}
-        />
-
-        <PricingCategories {...categoryProps} setActiveKey={setActiveKey} loading={loading} t={t} />
-
-        <PricingGroups
-          filterGroup={filterGroup}
-          setFilterGroup={setFilterGroup}
-          usableGroup={categoryProps.usableGroup}
-          groupRatio={categoryProps.groupRatio}
-          models={categoryProps.models}
-          loading={loading}
-          t={t}
-        />
-
-        <PricingQuotaTypes
-          filterQuotaType={filterQuotaType}
-          setFilterQuotaType={setFilterQuotaType}
-          models={categoryProps.models}
-          loading={loading}
-          t={t}
-        />
-
-        <PricingEndpointTypes
-          filterEndpointType={filterEndpointType}
-          setFilterEndpointType={setFilterEndpointType}
-          models={categoryProps.models}
-          loading={loading}
-          t={t}
-        />
-      </div>
+      <FilterModalContent sidebarProps={sidebarProps} t={t} />
     </Modal>
   );
 };

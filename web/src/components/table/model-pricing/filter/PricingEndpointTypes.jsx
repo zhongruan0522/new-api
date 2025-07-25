@@ -55,15 +55,7 @@ const PricingEndpointTypes = ({ filterEndpointType, setFilterEndpointType, model
 
   // 端点类型显示名称映射
   const getEndpointTypeLabel = (endpointType) => {
-    const labelMap = {
-      'openai': 'OpenAI',
-      'openai-response': 'OpenAI Response',
-      'anthropic': 'Anthropic',
-      'gemini': 'Gemini',
-      'jina-rerank': 'Jina Rerank',
-      'image-generation': t('图像生成'),
-    };
-    return labelMap[endpointType] || endpointType;
+    return endpointType;
   };
 
   const availableEndpointTypes = getAllEndpointTypes();

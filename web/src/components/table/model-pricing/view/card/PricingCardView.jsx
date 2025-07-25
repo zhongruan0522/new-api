@@ -54,6 +54,7 @@ const PricingCardView = ({
   setSelectedRowKeys,
   activeKey,
   availableCategories,
+  openModelDetail,
 }) => {
   const showSkeleton = useMinimumLoadingTime(loading);
 
@@ -138,7 +139,7 @@ const PricingCardView = ({
   const renderTags = (record) => {
     const tags = [];
 
-    // 计费类型标签
+    // 计费类型标签  
     const billingType = record.quota_type === 1 ? 'teal' : 'violet';
     const billingText = record.quota_type === 1 ? t('按次计费') : t('按量计费');
     tags.push(
@@ -211,9 +212,10 @@ const PricingCardView = ({
           return (
             <Card
               key={modelKey || index}
-              className={`!rounded-2xl transition-all duration-200 hover:shadow-lg border ${isSelected ? CARD_STYLES.selected : CARD_STYLES.default
+              className={`!rounded-2xl transition-all duration-200 hover:shadow-lg border cursor-pointer ${isSelected ? CARD_STYLES.selected : CARD_STYLES.default
                 }`}
               bodyStyle={{ padding: '24px' }}
+              onClick={() => openModelDetail && openModelDetail(model)}
             >
               {/* 头部：图标 + 模型名称 + 操作按钮 */}
               <div className="flex items-start justify-between mb-3">
@@ -235,14 +237,20 @@ const PricingCardView = ({
                     size="small"
                     type="tertiary"
                     icon={<IconCopy />}
-                    onClick={() => copyText(model.model_name)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      copyText(model.model_name);
+                    }}
                   />
 
                   {/* 选择框 */}
                   {rowSelection && (
                     <Checkbox
                       checked={isSelected}
-                      onChange={(e) => handleCheckboxChange(model, e.target.checked)}
+                      onChange={(e) => {
+                        e.stopPropagation();
+                        handleCheckboxChange(model, e.target.checked);
+                      }}
                     />
                   )}
                 </div>
@@ -265,14 +273,18 @@ const PricingCardView = ({
 
               {/* 倍率信息（可选） */}
               {showRatio && (
-                <div className="mt-4 pt-3 border-t border-gray-100">
+                <div
+                  className="mt-4 pt-3 border-t border-dashed"
+                  style={{ borderColor: 'var(--semi-color-border)' }}
+                >
                   <div className="flex items-center space-x-1 mb-2">
                     <span className="text-xs font-medium text-gray-700">{t('倍率信息')}</span>
                     <Tooltip content={t('倍率是为了方便换算不同价格的模型')}>
                       <IconHelpCircle
                         className="text-blue-500 cursor-pointer"
                         size="small"
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.stopPropagation();
                           setModalImageUrl('/ratio.png');
                           setIsModalOpenurl(true);
                         }}

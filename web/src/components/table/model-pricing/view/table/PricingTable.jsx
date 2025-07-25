@@ -43,6 +43,7 @@ const PricingTable = ({
   searchValue,
   showRatio,
   compactMode = false,
+  openModelDetail,
   t
 }) => {
 
@@ -100,6 +101,10 @@ const PricingTable = ({
         rowSelection={rowSelection}
         className="custom-table"
         scroll={compactMode ? undefined : { x: 'max-content' }}
+        onRow={(record) => ({
+          onClick: () => openModelDetail && openModelDetail(record),
+          style: { cursor: 'pointer' }
+        })}
         empty={
           <Empty
             image={<IllustrationNoResult style={{ width: 150, height: 150 }} />}
@@ -117,7 +122,7 @@ const PricingTable = ({
         }}
       />
     </Card>
-  ), [filteredModels, loading, processedColumns, rowSelection, pageSize, setPageSize, t, compactMode]);
+  ), [filteredModels, loading, processedColumns, rowSelection, pageSize, setPageSize, openModelDetail, t, compactMode]);
 
   return ModelTable;
 };
