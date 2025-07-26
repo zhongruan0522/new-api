@@ -46,7 +46,7 @@ import {
   Col,
   Highlight,
 } from '@douyinfe/semi-ui';
-import { getChannelModels, copy, getChannelIcon, getModelCategories, modelSelectFilter } from '../../../../helpers';
+import { getChannelModels, copy, getChannelIcon, getModelCategories, selectFilter } from '../../../../helpers';
 import {
   IconSave,
   IconClose,
@@ -979,7 +979,7 @@ const EditChannelModal = (props) => {
                     rules={[{ required: true, message: t('请选择渠道类型') }]}
                     optionList={channelOptionList}
                     style={{ width: '100%' }}
-                    filter={modelSelectFilter}
+                    filter={selectFilter}
                     autoClearSearchValue={false}
                     searchPosition='dropdown'
                     onSearch={(value) => setChannelSearchValue(value)}
@@ -1380,7 +1380,7 @@ const EditChannelModal = (props) => {
                     placeholder={t('请选择该渠道所支持的模型')}
                     rules={[{ required: true, message: t('请选择模型') }]}
                     multiple
-                    filter={modelSelectFilter}
+                    filter={selectFilter}
                     autoClearSearchValue={false}
                     searchPosition='dropdown'
                     optionList={modelOptions}
