@@ -73,6 +73,15 @@ func (r *GeneralOpenAIRequest) ToMap() map[string]any {
 	return result
 }
 
+func (r *GeneralOpenAIRequest) GetSystemRoleName() string {
+	if strings.HasPrefix(r.Model, "o") {
+		if !strings.HasPrefix(r.Model, "o1-mini") && !strings.HasPrefix(r.Model, "o1-preview") {
+			return "developer"
+		}
+	}
+	return "system"
+}
+
 type ToolCallRequest struct {
 	ID       string          `json:"id,omitempty"`
 	Type     string          `json:"type"`
