@@ -116,6 +116,12 @@ export const useLogsData = () => {
         const parsed = JSON.parse(savedColumns);
         const defaults = getDefaultColumnVisibility();
         const merged = { ...defaults, ...parsed };
+        // If not admin, force hide columns only visible to admins
+        if (!isAdminUser) {
+          merged[COLUMN_KEYS.CHANNEL] = false;
+          merged[COLUMN_KEYS.USERNAME] = false;
+          merged[COLUMN_KEYS.RETRY] = false;
+        }
         setVisibleColumns(merged);
       } catch (e) {
         console.error('Failed to parse saved column preferences', e);

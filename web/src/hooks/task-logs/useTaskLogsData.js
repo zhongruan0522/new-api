@@ -92,6 +92,10 @@ export const useTaskLogsData = () => {
         const parsed = JSON.parse(savedColumns);
         const defaults = getDefaultColumnVisibility();
         const merged = { ...defaults, ...parsed };
+        // If not admin, force hide columns only visible to admins
+        if (!isAdminUser) {
+          merged[COLUMN_KEYS.CHANNEL] = false;
+        }
         setVisibleColumns(merged);
       } catch (e) {
         console.error('Failed to parse saved column preferences', e);
