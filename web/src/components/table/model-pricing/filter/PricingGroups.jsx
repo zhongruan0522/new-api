@@ -34,6 +34,9 @@ const PricingGroups = ({ filterGroup, setFilterGroup, usableGroup = {}, groupRat
   const groups = ['all', ...Object.keys(usableGroup).filter(key => key !== '')];
 
   const items = groups.map((g) => {
+    const modelCount = g === 'all'
+      ? models.length
+      : models.filter(m => m.enable_groups && m.enable_groups.includes(g)).length;
     let ratioDisplay = '';
     if (g === 'all') {
       ratioDisplay = t('全部');
@@ -49,6 +52,7 @@ const PricingGroups = ({ filterGroup, setFilterGroup, usableGroup = {}, groupRat
       value: g,
       label: g === 'all' ? t('全部分组') : g,
       tagCount: ratioDisplay,
+      disabled: modelCount === 0
     };
   });
 

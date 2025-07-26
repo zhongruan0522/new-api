@@ -25,6 +25,7 @@ import PricingQuotaTypes from '../filter/PricingQuotaTypes';
 import PricingEndpointTypes from '../filter/PricingEndpointTypes';
 import PricingDisplaySettings from '../filter/PricingDisplaySettings';
 import { resetPricingFilters } from '../../../../helpers/utils';
+import { usePricingFilterCounts } from '../../../../hooks/model-pricing/usePricingFilterCounts';
 
 const PricingSidebar = ({
   showWithRecharge,
@@ -51,6 +52,21 @@ const PricingSidebar = ({
   t,
   ...categoryProps
 }) => {
+
+  const {
+    quotaTypeModels,
+    endpointTypeModels,
+    dynamicCategoryCounts,
+    groupCountModels,
+  } = usePricingFilterCounts({
+    models: categoryProps.models,
+    modelCategories: categoryProps.modelCategories,
+    activeKey: categoryProps.activeKey,
+    filterGroup,
+    filterQuotaType,
+    filterEndpointType,
+    searchValue: categoryProps.searchValue,
+  });
 
   const handleResetFilters = () =>
     resetPricingFilters({
@@ -101,6 +117,7 @@ const PricingSidebar = ({
 
       <PricingCategories
         {...categoryProps}
+        categoryCounts={dynamicCategoryCounts}
         setActiveKey={setActiveKey}
         loading={loading}
         t={t}
@@ -111,7 +128,7 @@ const PricingSidebar = ({
         setFilterGroup={setFilterGroup}
         usableGroup={categoryProps.usableGroup}
         groupRatio={categoryProps.groupRatio}
-        models={categoryProps.models}
+        models={groupCountModels}
         loading={loading}
         t={t}
       />
@@ -119,7 +136,7 @@ const PricingSidebar = ({
       <PricingQuotaTypes
         filterQuotaType={filterQuotaType}
         setFilterQuotaType={setFilterQuotaType}
-        models={categoryProps.models}
+        models={quotaTypeModels}
         loading={loading}
         t={t}
       />
@@ -127,7 +144,8 @@ const PricingSidebar = ({
       <PricingEndpointTypes
         filterEndpointType={filterEndpointType}
         setFilterEndpointType={setFilterEndpointType}
-        models={categoryProps.models}
+        models={endpointTypeModels}
+        allModels={categoryProps.models}
         loading={loading}
         t={t}
       />

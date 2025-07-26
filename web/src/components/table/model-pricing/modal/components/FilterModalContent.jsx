@@ -23,6 +23,7 @@ import PricingCategories from '../../filter/PricingCategories';
 import PricingGroups from '../../filter/PricingGroups';
 import PricingQuotaTypes from '../../filter/PricingQuotaTypes';
 import PricingEndpointTypes from '../../filter/PricingEndpointTypes';
+import { usePricingFilterCounts } from '../../../../../hooks/model-pricing/usePricingFilterCounts';
 
 const FilterModalContent = ({ sidebarProps, t }) => {
   const {
@@ -48,6 +49,21 @@ const FilterModalContent = ({ sidebarProps, t }) => {
     ...categoryProps
   } = sidebarProps;
 
+  const {
+    quotaTypeModels,
+    endpointTypeModels,
+    dynamicCategoryCounts,
+    groupCountModels,
+  } = usePricingFilterCounts({
+    models: categoryProps.models,
+    modelCategories: categoryProps.modelCategories,
+    activeKey: categoryProps.activeKey,
+    filterGroup,
+    filterQuotaType,
+    filterEndpointType,
+    searchValue: sidebarProps.searchValue,
+  });
+
   return (
     <div className="p-2">
       <PricingDisplaySettings
@@ -65,14 +81,20 @@ const FilterModalContent = ({ sidebarProps, t }) => {
         t={t}
       />
 
-      <PricingCategories {...categoryProps} setActiveKey={setActiveKey} loading={loading} t={t} />
+      <PricingCategories
+        {...categoryProps}
+        categoryCounts={dynamicCategoryCounts}
+        setActiveKey={setActiveKey}
+        loading={loading}
+        t={t}
+      />
 
       <PricingGroups
         filterGroup={filterGroup}
         setFilterGroup={setFilterGroup}
         usableGroup={categoryProps.usableGroup}
         groupRatio={categoryProps.groupRatio}
-        models={categoryProps.models}
+        models={groupCountModels}
         loading={loading}
         t={t}
       />
@@ -80,7 +102,7 @@ const FilterModalContent = ({ sidebarProps, t }) => {
       <PricingQuotaTypes
         filterQuotaType={filterQuotaType}
         setFilterQuotaType={setFilterQuotaType}
-        models={categoryProps.models}
+        models={quotaTypeModels}
         loading={loading}
         t={t}
       />
@@ -88,7 +110,8 @@ const FilterModalContent = ({ sidebarProps, t }) => {
       <PricingEndpointTypes
         filterEndpointType={filterEndpointType}
         setFilterEndpointType={setFilterEndpointType}
-        models={categoryProps.models}
+        models={endpointTypeModels}
+        allModels={categoryProps.models}
         loading={loading}
         t={t}
       />

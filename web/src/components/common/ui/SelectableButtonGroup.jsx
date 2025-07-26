@@ -133,6 +133,7 @@ const SelectableButtonGroup = ({
   const contentElement = showSkeleton ? renderSkeletonButtons() : (
     <Row gutter={[8, 8]} style={{ lineHeight: '32px', ...style }} ref={contentRef}>
       {items.map((item) => {
+        const isDisabled = item.disabled || (typeof item.tagCount === 'number' && item.tagCount === 0);
         const isActive = Array.isArray(activeValue)
           ? activeValue.includes(item.value)
           : activeValue === item.value;
@@ -150,10 +151,12 @@ const SelectableButtonGroup = ({
                 onClick={() => { /* disabled */ }}
                 theme={isActive ? 'light' : 'outline'}
                 type={isActive ? 'primary' : 'tertiary'}
+                disabled={isDisabled}
                 icon={
                   <Checkbox
                     checked={isActive}
                     onChange={() => onChange(item.value)}
+                    disabled={isDisabled}
                     style={{ pointerEvents: 'auto' }}
                   />
                 }
@@ -190,6 +193,7 @@ const SelectableButtonGroup = ({
               theme={isActive ? 'light' : 'outline'}
               type={isActive ? 'primary' : 'tertiary'}
               icon={item.icon}
+              disabled={isDisabled}
               style={{ width: '100%' }}
             >
               <span style={{ marginRight: item.tagCount !== undefined ? 4 : 0 }}>{item.label}</span>

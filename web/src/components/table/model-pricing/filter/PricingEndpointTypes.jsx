@@ -28,11 +28,11 @@ import SelectableButtonGroup from '../../../common/ui/SelectableButtonGroup';
  * @param {boolean} loading 是否加载中
  * @param {Function} t i18n
  */
-const PricingEndpointTypes = ({ filterEndpointType, setFilterEndpointType, models = [], loading = false, t }) => {
-  // 获取所有可用的端点类型
+const PricingEndpointTypes = ({ filterEndpointType, setFilterEndpointType, models = [], allModels = [], loading = false, t }) => {
+  // 获取系统中所有端点类型（基于 allModels，如果未提供则退化为 models）
   const getAllEndpointTypes = () => {
     const endpointTypes = new Set();
-    models.forEach(model => {
+    (allModels.length > 0 ? allModels : models).forEach(model => {
       if (model.supported_endpoint_types && Array.isArray(model.supported_endpoint_types)) {
         model.supported_endpoint_types.forEach(endpoint => {
           endpointTypes.add(endpoint);
@@ -61,12 +61,16 @@ const PricingEndpointTypes = ({ filterEndpointType, setFilterEndpointType, model
   const availableEndpointTypes = getAllEndpointTypes();
 
   const items = [
-    { value: 'all', label: t('全部端点'), tagCount: getEndpointTypeCount('all') },
-    ...availableEndpointTypes.map(endpointType => ({
-      value: endpointType,
-      label: getEndpointTypeLabel(endpointType),
-      tagCount: getEndpointTypeCount(endpointType)
-    }))
+    { value: 'all', label: t('全部端点'), tagCount: getEndpointTypeCount('all'), disabled: models.length === 0 },
+    ...availableEndpointTypes.map(endpointType => {
+      const count = getEndpointTypeCount(endpointType);
+      return ({
+        value: endpointType,
+        label: getEndpointTypeLabel(endpointType),
+        tagCount: count,
+        disabled: count === 0
+      });
+    })
   ];
 
   return (
