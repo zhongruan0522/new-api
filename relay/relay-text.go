@@ -175,6 +175,9 @@ func TextHelper(c *gin.Context) (newAPIError *types.NewAPIError) {
 		if err != nil {
 			return types.NewErrorWithStatusCode(err, types.ErrorCodeReadRequestBodyFailed, http.StatusBadRequest)
 		}
+		if common.DebugEnabled {
+			println("requestBody: ", string(body))
+		}
 		requestBody = bytes.NewBuffer(body)
 	} else {
 		convertedRequest, err := adaptor.ConvertOpenAIRequest(c, relayInfo, textRequest)

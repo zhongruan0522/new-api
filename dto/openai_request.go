@@ -7,15 +7,15 @@ import (
 )
 
 type ResponseFormat struct {
-	Type       string            `json:"type,omitempty"`
-	JsonSchema *FormatJsonSchema `json:"json_schema,omitempty"`
+	Type       string          `json:"type,omitempty"`
+	JsonSchema json.RawMessage `json:"json_schema,omitempty"`
 }
 
 type FormatJsonSchema struct {
-	Description string `json:"description,omitempty"`
-	Name        string `json:"name"`
-	Schema      any    `json:"schema,omitempty"`
-	Strict      any    `json:"strict,omitempty"`
+	Description string          `json:"description,omitempty"`
+	Name        string          `json:"name"`
+	Schema      any             `json:"schema,omitempty"`
+	Strict      json.RawMessage `json:"strict,omitempty"`
 }
 
 type GeneralOpenAIRequest struct {

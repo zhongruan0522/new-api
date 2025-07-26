@@ -219,9 +219,13 @@ func CovertGemini2OpenAI(textRequest dto.GeneralOpenAIRequest, info *relaycommon
 	if textRequest.ResponseFormat != nil && (textRequest.ResponseFormat.Type == "json_schema" || textRequest.ResponseFormat.Type == "json_object") {
 		geminiRequest.GenerationConfig.ResponseMimeType = "application/json"
 
-		if textRequest.ResponseFormat.JsonSchema != nil && textRequest.ResponseFormat.JsonSchema.Schema != nil {
-			cleanedSchema := removeAdditionalPropertiesWithDepth(textRequest.ResponseFormat.JsonSchema.Schema, 0)
-			geminiRequest.GenerationConfig.ResponseSchema = cleanedSchema
+		if len(textRequest.ResponseFormat.JsonSchema) > 0 {
+			// 先将json.RawMessage解析
+			var jsonSchema dto.FormatJsonSchema
+			if err := common.Unmarshal(textRequest.ResponseFormat.JsonSchema, &jsonSchema); err == nil {
+				cleanedSchema := removeAdditionalPropertiesWithDepth(jsonSchema.Schema, 0)
+				geminiRequest.GenerationConfig.ResponseSchema = cleanedSchema
+			}
 		}
 	}
 	tool_call_ids := make(map[string]string)
