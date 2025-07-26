@@ -1592,14 +1592,16 @@ const EditChannelModal = (props) => {
                     </div>
                   </div>
 
-                  <Form.Switch
-                    field='force_format'
-                    label={t('强制格式化')}
-                    checkedText={t('开')}
-                    uncheckedText={t('关')}
-                    onChange={(value) => handleChannelSettingsChange('force_format', value)}
-                    extraText={t('强制将响应格式化为 OpenAI 标准格式（只适用于OpenAI渠道类型）')}
-                  />
+                  {inputs.type === 1 && (
+                    <Form.Switch
+                      field='force_format'
+                      label={t('强制格式化')}
+                      checkedText={t('开')}
+                      uncheckedText={t('关')}
+                      onChange={(value) => handleChannelSettingsChange('force_format', value)}
+                      extraText={t('强制将响应格式化为 OpenAI 标准格式（只适用于OpenAI渠道类型）')}
+                    />
+                  )}
 
                   <Form.Switch
                     field='thinking_to_content'
