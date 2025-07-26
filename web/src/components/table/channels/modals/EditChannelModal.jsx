@@ -158,20 +158,20 @@ const EditChannelModal = (props) => {
   });
   const showApiConfigCard = inputs.type !== 45;  // 控制是否显示 API 配置卡片（仅当渠道类型不是 豆包 时显示）
   const getInitValues = () => ({ ...originInputs });
-  
+
   // 处理渠道额外设置的更新
   const handleChannelSettingsChange = (key, value) => {
     // 更新内部状态
     setChannelSettings(prev => ({ ...prev, [key]: value }));
-    
+
     // 同步更新到表单字段
     if (formApiRef.current) {
       formApiRef.current.setValue(key, value);
     }
-    
+
     // 同步更新inputs状态
     setInputs(prev => ({ ...prev, [key]: value }));
-    
+
     // 生成setting JSON并更新
     const newSettings = { ...channelSettings, [key]: value };
     const settingsJson = JSON.stringify(newSettings);
@@ -686,7 +686,7 @@ const EditChannelModal = (props) => {
     if (localInputs.type === 18 && localInputs.other === '') {
       localInputs.other = 'v2.1';
     }
-    
+
     // 生成渠道额外设置JSON
     const channelExtraSettings = {
       force_format: localInputs.force_format || false,
@@ -696,14 +696,14 @@ const EditChannelModal = (props) => {
       system_prompt: localInputs.system_prompt || '',
     };
     localInputs.setting = JSON.stringify(channelExtraSettings);
-    
+
     // 清理不需要发送到后端的字段
     delete localInputs.force_format;
     delete localInputs.thinking_to_content;
     delete localInputs.proxy;
     delete localInputs.pass_through_body_enabled;
     delete localInputs.system_prompt;
-    
+
     let res;
     localInputs.auto_ban = localInputs.auto_ban ? 1 : 0;
     localInputs.models = localInputs.models.join(',');
@@ -1525,7 +1525,7 @@ const EditChannelModal = (props) => {
                     label={t('是否自动禁用')}
                     checkedText={t('开')}
                     uncheckedText={t('关')}
-                    onChange={(val) => setAutoBan(val)}
+                    onChange={(value) => setAutoBan(value)}
                     extraText={t('仅当自动禁用开启时有效，关闭后不会自动禁用该渠道')}
                     initValue={autoBan}
                   />
@@ -1570,95 +1570,20 @@ const EditChannelModal = (props) => {
                     }
                     showClear
                   />
+                </Card>
 
-                  <div className="mb-6">
-                    <Text className="text-sm font-medium mb-3 block">
-                      {t('渠道额外设置')}
-                    </Text>
-                    <div className="space-y-6 p-4 bg-gray-50 rounded-lg">
-                      <Row gutter={16}>
-                        <Col span={16}>
-                          <div>
-                            <Text className="font-medium block mb-1">{t('强制格式化（只适用于OpenAI渠道类型）')}</Text>
-                            <Text type="tertiary" size="small">
-                              {t('强制将响应格式化为 OpenAI 标准格式')}
-                            </Text>
-                          </div>
-                        </Col>
-                        <Col span={8} className="flex items-center justify-end">
-                          <Form.Switch
-                            field='force_format'
-                            checkedText={t('开')}
-                            uncheckedText={t('关')}
-                            onChange={(val) => handleChannelSettingsChange('force_format', val)}
-                          />
-                        </Col>
-                      </Row>
-
-                      <Row gutter={16}>
-                        <Col span={16}>
-                          <div>
-                            <Text className="font-medium block mb-1">{t('思考内容转换')}</Text>
-                            <Text type="tertiary" size="small">
-                              {t('将 reasoning_content 转换为 <think> 标签拼接到内容中')}
-                            </Text>
-                          </div>
-                        </Col>
-                        <Col span={8} className="flex items-center justify-end">
-                          <Form.Switch
-                            field='thinking_to_content'
-                            checkedText={t('开')}
-                            uncheckedText={t('关')}
-                            onChange={(val) => handleChannelSettingsChange('thinking_to_content', val)}
-                          />
-                        </Col>
-                      </Row>
-
-                      <Row gutter={16}>
-                        <Col span={16}>
-                          <div>
-                            <Text className="font-medium block mb-1">{t('透传请求体')}</Text>
-                            <Text type="tertiary" size="small">
-                              {t('启用请求体透传功能')}
-                            </Text>
-                          </div>
-                        </Col>
-                        <Col span={8} className="flex items-center justify-end">
-                          <Form.Switch
-                            field='pass_through_body_enabled'
-                            checkedText={t('开')}
-                            uncheckedText={t('关')}
-                            onChange={(val) => handleChannelSettingsChange('pass_through_body_enabled', val)}
-                          />
-                        </Col>
-                      </Row>
-
-                      <div>
-                        <Form.Input
-                          field='proxy'
-                          label={t('代理地址')}
-                          placeholder={t('例如: socks5://user:pass@host:port')}
-                          onChange={(val) => handleChannelSettingsChange('proxy', val)}
-                          showClear
-                          helpText={t('用于配置网络代理')}
-                        />
-                      </div>
-
-                      <div>
-                        <Form.TextArea
-                          field='system_prompt'
-                          label={t('系统提示词')}
-                          placeholder={t('输入系统提示词，用户的系统提示词将优先于此设置')}
-                          onChange={(val) => handleChannelSettingsChange('system_prompt', val)}
-                          autosize
-                          showClear
-                          helpText={t('用户优先：如果用户在请求中指定了系统提示词，将优先使用用户的设置')}
-                        />
-                      </div>
-
-                      <div className="text-right pt-2 border-t border-gray-200">
+                {/* Channel Extra Settings Card */}
+                <Card className="!rounded-2xl shadow-sm border-0 mb-6">
+                  {/* Header: Channel Extra Settings */}
+                  <div className="flex items-center mb-2">
+                    <Avatar size="small" color="violet" className="mr-2 shadow-md">
+                      <IconBolt size={16} />
+                    </Avatar>
+                    <div>
+                      <Text className="text-lg font-medium">{t('渠道额外设置')}</Text>
+                      <div className="text-xs text-gray-600">
                         <Text
-                          className="!text-semi-color-primary cursor-pointer text-sm"
+                          className="!text-semi-color-primary cursor-pointer"
                           onClick={() => window.open('https://github.com/QuantumNous/new-api/blob/main/docs/channel/other_setting.md')}
                         >
                           {t('设置说明')}
@@ -1667,7 +1592,51 @@ const EditChannelModal = (props) => {
                     </div>
                   </div>
 
+                  <Form.Switch
+                    field='force_format'
+                    label={t('强制格式化')}
+                    checkedText={t('开')}
+                    uncheckedText={t('关')}
+                    onChange={(value) => handleChannelSettingsChange('force_format', value)}
+                    extraText={t('强制将响应格式化为 OpenAI 标准格式（只适用于OpenAI渠道类型）')}
+                  />
 
+                  <Form.Switch
+                    field='thinking_to_content'
+                    label={t('思考内容转换')}
+                    checkedText={t('开')}
+                    uncheckedText={t('关')}
+                    onChange={(value) => handleChannelSettingsChange('thinking_to_content', value)}
+                    extraText={t('将 reasoning_content 转换为 <think> 标签拼接到内容中')}
+                  />
+
+                  <Form.Switch
+                    field='pass_through_body_enabled'
+                    label={t('透传请求体')}
+                    checkedText={t('开')}
+                    uncheckedText={t('关')}
+                    onChange={(value) => handleChannelSettingsChange('pass_through_body_enabled', value)}
+                    extraText={t('启用请求体透传功能')}
+                  />
+
+                  <Form.Input
+                    field='proxy'
+                    label={t('代理地址')}
+                    placeholder={t('例如: socks5://user:pass@host:port')}
+                    onChange={(value) => handleChannelSettingsChange('proxy', value)}
+                    showClear
+                    extraText={t('用于配置网络代理，支持 socks5 协议')}
+                  />
+
+                  <Form.TextArea
+                    field='system_prompt'
+                    label={t('系统提示词')}
+                    placeholder={t('输入系统提示词，用户的系统提示词将优先于此设置')}
+                    onChange={(value) => handleChannelSettingsChange('system_prompt', value)}
+                    autosize
+                    showClear
+                    extraText={t('用户优先：如果用户在请求中指定了系统提示词，将优先使用用户的设置')}
+                  />
                 </Card>
               </div>
             </Spin>
