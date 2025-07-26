@@ -111,18 +111,17 @@ func Distribute() func(c *gin.Context) {
 					if userGroup == "auto" {
 						showGroup = fmt.Sprintf("auto(%s)", selectGroup)
 					}
-					message := fmt.Sprintf("获取分组 %s 下模型 %s 的可用渠道失败（distributor）: %s", showGroup, modelRequest.Model, err.Error())
+					message := fmt.Sprintf("获取分组 %s 下模型 %s 的可用渠道失败（数据库一致性已被破坏，distributor）: %s", showGroup, modelRequest.Model, err.Error())
 					// 如果错误，但是渠道不为空，说明是数据库一致性问题
-					if channel != nil {
-						common.SysError(fmt.Sprintf("渠道不存在：%d", channel.Id))
-						message = "数据库一致性已被破坏，请联系管理员"
-					}
-					// 如果错误，而且渠道为空，说明是没有可用渠道
+					//if channel != nil {
+					//	common.SysError(fmt.Sprintf("渠道不存在：%d", channel.Id))
+					//	message = "数据库一致性已被破坏，请联系管理员"
+					//}
 					abortWithOpenAiMessage(c, http.StatusServiceUnavailable, message)
 					return
 				}
 				if channel == nil {
-					abortWithOpenAiMessage(c, http.StatusServiceUnavailable, fmt.Sprintf("分组 %s 下模型 %s 的可用渠道不存在（数据库一致性已被破坏，distributor）", userGroup, modelRequest.Model))
+					abortWithOpenAiMessage(c, http.StatusServiceUnavailable, fmt.Sprintf("分组 %s 下模型 %s 无可用渠道（distributor）", userGroup, modelRequest.Model))
 					return
 				}
 			}

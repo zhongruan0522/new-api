@@ -121,6 +121,12 @@ const EditChannelModal = (props) => {
     weight: 0,
     tag: '',
     multi_key_mode: 'random',
+    // 渠道额外设置的默认值
+    force_format: false,
+    thinking_to_content: false,
+    proxy: '',
+    pass_through_body_enabled: false,
+    system_prompt: '',
   };
   const [batch, setBatch] = useState(false);
   const [multiToSingle, setMultiToSingle] = useState(false);
@@ -142,8 +148,69 @@ const EditChannelModal = (props) => {
   const [isMultiKeyChannel, setIsMultiKeyChannel] = useState(false);
   const [channelSearchValue, setChannelSearchValue] = useState('');
   const [useManualInput, setUseManualInput] = useState(false); // 是否使用手动输入模式
+  // 渠道额外设置状态
+  const [channelSettings, setChannelSettings] = useState({
+    force_format: false,
+    thinking_to_content: false,
+    proxy: '',
+    pass_through_body_enabled: false,
+    system_prompt: '',
+  });
   const showApiConfigCard = inputs.type !== 45;  // 控制是否显示 API 配置卡片（仅当渠道类型不是 豆包 时显示）
   const getInitValues = () => ({ ...originInputs });
+
+  // 处理渠道额外设置的更新
+  const handleChannelSettingsChange = (key, value) => {
+    // 更新内部状态
+    setChannelSettings(prev => ({ ...prev, [key]: value }));
+
+    // 同步更新到表单字段
+    if (formApiRef.current) {
+      formApiRef.current.setValue(key, value);
+    }
+
+    // 同步更新inputs状态
+    setInputs(prev => ({ ...prev, [key]: value }));
+
+    // 生成setting JSON并更新
+    const newSettings = { ...channelSettings, [key]: value };
+    const settingsJson = JSON.stringify(newSettings);
+    handleInputChange('setting', settingsJson);
+  };
+
+  // 解析渠道设置JSON为单独的状态
+  const parseChannelSettings = (settingJson) => {
+    try {
+      if (settingJson && settingJson.trim()) {
+        const parsed = JSON.parse(settingJson);
+        setChannelSettings({
+          force_format: parsed.force_format || false,
+          thinking_to_content: parsed.thinking_to_content || false,
+          proxy: parsed.proxy || '',
+          pass_through_body_enabled: parsed.pass_through_body_enabled || false,
+          system_prompt: parsed.system_prompt || '',
+        });
+      } else {
+        setChannelSettings({
+          force_format: false,
+          thinking_to_content: false,
+          proxy: '',
+          pass_through_body_enabled: false,
+          system_prompt: '',
+        });
+      }
+    } catch (error) {
+      console.error('解析渠道设置失败:', error);
+      setChannelSettings({
+        force_format: false,
+        thinking_to_content: false,
+        proxy: '',
+        pass_through_body_enabled: false,
+        system_prompt: '',
+      });
+    }
+  };
+
   const handleInputChange = (name, value) => {
     if (formApiRef.current) {
       formApiRef.current.setValue(name, value);
@@ -256,6 +323,30 @@ const EditChannelModal = (props) => {
         setBatch(false);
         setMultiToSingle(false);
       }
+      // 解析渠道额外设置并合并到data中
+      if (data.setting) {
+        try {
+          const parsedSettings = JSON.parse(data.setting);
+          data.force_format = parsedSettings.force_format || false;
+          data.thinking_to_content = parsedSettings.thinking_to_content || false;
+          data.proxy = parsedSettings.proxy || '';
+          data.pass_through_body_enabled = parsedSettings.pass_through_body_enabled || false;
+          data.system_prompt = parsedSettings.system_prompt || '';
+        } catch (error) {
+          console.error('解析渠道设置失败:', error);
+          data.force_format = false;
+          data.thinking_to_content = false;
+          data.proxy = '';
+          data.pass_through_body_enabled = false;
+        }
+      } else {
+        data.force_format = false;
+        data.thinking_to_content = false;
+        data.proxy = '';
+        data.pass_through_body_enabled = false;
+        data.system_prompt = '';
+      }
+
       setInputs(data);
       if (formApiRef.current) {
         formApiRef.current.setValues(data);
@@ -266,6 +357,14 @@ const EditChannelModal = (props) => {
         setAutoBan(true);
       }
       setBasicModels(getChannelModels(data.type));
+      // 同步更新channelSettings状态显示
+      setChannelSettings({
+        force_format: data.force_format,
+        thinking_to_content: data.thinking_to_content,
+        proxy: data.proxy,
+        pass_through_body_enabled: data.pass_through_body_enabled,
+        system_prompt: data.system_prompt,
+      });
       // console.log(data);
     } else {
       showError(message);
@@ -446,6 +545,14 @@ const EditChannelModal = (props) => {
       setUseManualInput(false);
     } else {
       formApiRef.current?.reset();
+      // 重置渠道设置状态
+      setChannelSettings({
+        force_format: false,
+        thinking_to_content: false,
+        proxy: '',
+        pass_through_body_enabled: false,
+        system_prompt: '',
+      });
     }
   }, [props.visible, channelId]);
 
@@ -579,6 +686,24 @@ const EditChannelModal = (props) => {
     if (localInputs.type === 18 && localInputs.other === '') {
       localInputs.other = 'v2.1';
     }
+
+    // 生成渠道额外设置JSON
+    const channelExtraSettings = {
+      force_format: localInputs.force_format || false,
+      thinking_to_content: localInputs.thinking_to_content || false,
+      proxy: localInputs.proxy || '',
+      pass_through_body_enabled: localInputs.pass_through_body_enabled || false,
+      system_prompt: localInputs.system_prompt || '',
+    };
+    localInputs.setting = JSON.stringify(channelExtraSettings);
+
+    // 清理不需要发送到后端的字段
+    delete localInputs.force_format;
+    delete localInputs.thinking_to_content;
+    delete localInputs.proxy;
+    delete localInputs.pass_through_body_enabled;
+    delete localInputs.system_prompt;
+
     let res;
     localInputs.auto_ban = localInputs.auto_ban ? 1 : 0;
     localInputs.models = localInputs.models.join(',');
@@ -1400,7 +1525,7 @@ const EditChannelModal = (props) => {
                     label={t('是否自动禁用')}
                     checkedText={t('开')}
                     uncheckedText={t('关')}
-                    onChange={(val) => setAutoBan(val)}
+                    onChange={(value) => setAutoBan(value)}
                     extraText={t('仅当自动禁用开启时有效，关闭后不会自动禁用该渠道')}
                     initValue={autoBan}
                   />
@@ -1445,33 +1570,74 @@ const EditChannelModal = (props) => {
                     }
                     showClear
                   />
+                </Card>
 
-                  <Form.TextArea
-                    field='setting'
-                    label={t('渠道额外设置')}
-                    placeholder={
-                      t('此项可选，用于配置渠道特定设置，为一个 JSON 字符串，例如：') +
-                      '\n{\n  "force_format": true\n}'
-                    }
-                    autosize
-                    onChange={(value) => handleInputChange('setting', value)}
-                    extraText={(
-                      <Space wrap>
-                        <Text
-                          className="!text-semi-color-primary cursor-pointer"
-                          onClick={() => handleInputChange('setting', JSON.stringify({ force_format: true }, null, 2))}
-                        >
-                          {t('填入模板')}
-                        </Text>
+                {/* Channel Extra Settings Card */}
+                <Card className="!rounded-2xl shadow-sm border-0 mb-6">
+                  {/* Header: Channel Extra Settings */}
+                  <div className="flex items-center mb-2">
+                    <Avatar size="small" color="violet" className="mr-2 shadow-md">
+                      <IconBolt size={16} />
+                    </Avatar>
+                    <div>
+                      <Text className="text-lg font-medium">{t('渠道额外设置')}</Text>
+                      <div className="text-xs text-gray-600">
                         <Text
                           className="!text-semi-color-primary cursor-pointer"
                           onClick={() => window.open('https://github.com/QuantumNous/new-api/blob/main/docs/channel/other_setting.md')}
                         >
                           {t('设置说明')}
                         </Text>
-                      </Space>
-                    )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {inputs.type === 1 && (
+                    <Form.Switch
+                      field='force_format'
+                      label={t('强制格式化')}
+                      checkedText={t('开')}
+                      uncheckedText={t('关')}
+                      onChange={(value) => handleChannelSettingsChange('force_format', value)}
+                      extraText={t('强制将响应格式化为 OpenAI 标准格式（只适用于OpenAI渠道类型）')}
+                    />
+                  )}
+
+                  <Form.Switch
+                    field='thinking_to_content'
+                    label={t('思考内容转换')}
+                    checkedText={t('开')}
+                    uncheckedText={t('关')}
+                    onChange={(value) => handleChannelSettingsChange('thinking_to_content', value)}
+                    extraText={t('将 reasoning_content 转换为 <think> 标签拼接到内容中')}
+                  />
+
+                  <Form.Switch
+                    field='pass_through_body_enabled'
+                    label={t('透传请求体')}
+                    checkedText={t('开')}
+                    uncheckedText={t('关')}
+                    onChange={(value) => handleChannelSettingsChange('pass_through_body_enabled', value)}
+                    extraText={t('启用请求体透传功能')}
+                  />
+
+                  <Form.Input
+                    field='proxy'
+                    label={t('代理地址')}
+                    placeholder={t('例如: socks5://user:pass@host:port')}
+                    onChange={(value) => handleChannelSettingsChange('proxy', value)}
                     showClear
+                    extraText={t('用于配置网络代理，支持 socks5 协议')}
+                  />
+
+                  <Form.TextArea
+                    field='system_prompt'
+                    label={t('系统提示词')}
+                    placeholder={t('输入系统提示词，用户的系统提示词将优先于此设置')}
+                    onChange={(value) => handleChannelSettingsChange('system_prompt', value)}
+                    autosize
+                    showClear
+                    extraText={t('用户优先：如果用户在请求中指定了系统提示词，将优先使用用户的设置')}
                   />
                 </Card>
               </div>

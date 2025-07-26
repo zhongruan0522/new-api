@@ -123,24 +123,11 @@ func OaiStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Re
 	var toolCount int
 	var usage = &dto.Usage{}
 	var streamItems []string // store stream items
-	var forceFormat bool
-	var thinkToContent bool
-
-	if info.ChannelSetting.ForceFormat {
-		forceFormat = true
-	}
-
-	if info.ChannelSetting.ThinkingToContent {
-		thinkToContent = true
-	}
-
-	var (
-		lastStreamData string
-	)
+	var lastStreamData string
 
 	helper.StreamScannerHandler(c, resp, info, func(data string) bool {
 		if lastStreamData != "" {
-			err := handleStreamFormat(c, info, lastStreamData, forceFormat, thinkToContent)
+			err := HandleStreamFormat(c, info, lastStreamData, info.ChannelSetting.ForceFormat, info.ChannelSetting.ThinkingToContent)
 			if err != nil {
 				common.SysError("error handling stream format: " + err.Error())
 			}
@@ -161,7 +148,7 @@ func OaiStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Re
 
 	if info.RelayFormat == relaycommon.RelayFormatOpenAI {
 		if shouldSendLastResp {
-			_ = sendStreamData(c, info, lastStreamData, forceFormat, thinkToContent)
+			_ = sendStreamData(c, info, lastStreamData, info.ChannelSetting.ForceFormat, info.ChannelSetting.ThinkingToContent)
 		}
 	}
 
@@ -180,7 +167,7 @@ func OaiStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Re
 			}
 		}
 	}
-	handleFinalResponse(c, info, lastStreamData, responseId, createAt, model, systemFingerprint, usage, containStreamUsage)
+	HandleFinalResponse(c, info, lastStreamData, responseId, createAt, model, systemFingerprint, usage, containStreamUsage)
 
 	return usage, nil
 }
