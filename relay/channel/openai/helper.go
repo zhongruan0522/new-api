@@ -14,7 +14,7 @@ import (
 )
 
 // 辅助函数
-func handleStreamFormat(c *gin.Context, info *relaycommon.RelayInfo, data string, forceFormat bool, thinkToContent bool) error {
+func HandleStreamFormat(c *gin.Context, info *relaycommon.RelayInfo, data string, forceFormat bool, thinkToContent bool) error {
 	info.SendResponseCount++
 	switch info.RelayFormat {
 	case relaycommon.RelayFormatOpenAI:
@@ -158,7 +158,7 @@ func handleLastResponse(lastStreamData string, responseId *string, createAt *int
 	return nil
 }
 
-func handleFinalResponse(c *gin.Context, info *relaycommon.RelayInfo, lastStreamData string,
+func HandleFinalResponse(c *gin.Context, info *relaycommon.RelayInfo, lastStreamData string,
 	responseId string, createAt int64, model string, systemFingerprint string,
 	usage *dto.Usage, containStreamUsage bool) {
 
