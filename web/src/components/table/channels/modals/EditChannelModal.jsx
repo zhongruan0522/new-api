@@ -47,6 +47,7 @@ import {
   Highlight,
 } from '@douyinfe/semi-ui';
 import { getChannelModels, copy, getChannelIcon, getModelCategories, selectFilter } from '../../../../helpers';
+import ModelSelectModal from './ModelSelectModal';
 import {
   IconSave,
   IconClose,
@@ -141,6 +142,8 @@ const EditChannelModal = (props) => {
   const [customModel, setCustomModel] = useState('');
   const [modalImageUrl, setModalImageUrl] = useState('');
   const [isModalOpenurl, setIsModalOpenurl] = useState(false);
+  const [modelModalVisible, setModelModalVisible] = useState(false);
+  const [fetchedModels, setFetchedModels] = useState([]);
   const formApiRef = useRef(null);
   const [vertexKeys, setVertexKeys] = useState([]);
   const [vertexFileList, setVertexFileList] = useState([]);
@@ -378,7 +381,7 @@ const EditChannelModal = (props) => {
     //   return;
     // }
     setLoading(true);
-    const models = inputs['models'] || [];
+    const models = [];
     let err = false;
 
     if (isEdit) {
@@ -419,8 +422,9 @@ const EditChannelModal = (props) => {
     }
 
     if (!err) {
-      handleInputChange(name, Array.from(new Set(models)));
-      showSuccess(t('获取模型列表成功'));
+      const uniqueModels = Array.from(new Set(models));
+      setFetchedModels(uniqueModels);
+      setModelModalVisible(true);
     } else {
       showError(t('获取模型列表失败'));
     }
@@ -1650,6 +1654,17 @@ const EditChannelModal = (props) => {
           onVisibleChange={(visible) => setIsModalOpenurl(visible)}
         />
       </SideSheet>
+      <ModelSelectModal
+        visible={modelModalVisible}
+        models={fetchedModels}
+        selected={inputs.models}
+        onConfirm={(selectedModels) => {
+          handleInputChange('models', selectedModels);
+          showSuccess(t('模型列表已更新'));
+          setModelModalVisible(false);
+        }}
+        onCancel={() => setModelModalVisible(false)}
+      />
     </>
   );
 };
