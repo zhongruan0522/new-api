@@ -147,7 +147,7 @@ export default function RequestRateLimit(props) {
                   label={t('用户每周期最多请求次数')}
                   step={1}
                   min={0}
-                  max={100000}
+                  max={100000000}
                   suffix={t('次')}
                   extraText={t('包括失败请求的次数，0代表不限制')}
                   field={'ModelRequestRateLimitCount'}
@@ -164,7 +164,7 @@ export default function RequestRateLimit(props) {
                   label={t('用户每周期最多请求完成次数')}
                   step={1}
                   min={1}
-                  max={100000}
+                  max={100000000}
                   suffix={t('次')}
                   extraText={t('只包括请求成功的次数')}
                   field={'ModelRequestRateLimitSuccessCount'}
