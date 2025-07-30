@@ -109,7 +109,7 @@ func GeminiHelper(c *gin.Context) (newAPIError *types.NewAPIError) {
 	req, err := getAndValidateGeminiRequest(c)
 	if err != nil {
 		common.LogError(c, fmt.Sprintf("getAndValidateGeminiRequest error: %s", err.Error()))
-		return types.NewError(err, types.ErrorCodeInvalidRequest)
+		return types.NewError(err, types.ErrorCodeInvalidRequest, types.ErrOptionWithSkipRetry())
 	}
 
 	relayInfo := relaycommon.GenRelayInfoGemini(c)
@@ -121,14 +121,14 @@ func GeminiHelper(c *gin.Context) (newAPIError *types.NewAPIError) {
 		sensitiveWords, err := checkGeminiInputSensitive(req)
 		if err != nil {
 			common.LogWarn(c, fmt.Sprintf("user sensitive words detected: %s", strings.Join(sensitiveWords, ", ")))
-			return types.NewError(err, types.ErrorCodeSensitiveWordsDetected)
+			return types.NewError(err, types.ErrorCodeSensitiveWordsDetected, types.ErrOptionWithSkipRetry())
 		}
 	}
 
 	// model mapped 模型映射
 	err = helper.ModelMappedHelper(c, relayInfo, req)
 	if err != nil {
-		return types.NewError(err, types.ErrorCodeChannelModelMappedError)
+		return types.NewError(err, types.ErrorCodeChannelModelMappedError, types.ErrOptionWithSkipRetry())
 	}
 
 	if value, exists := c.Get("prompt_tokens"); exists {
@@ -159,7 +159,7 @@ func GeminiHelper(c *gin.Context) (newAPIError *types.NewAPIError) {
 
 	priceData, err := helper.ModelPriceHelper(c, relayInfo, relayInfo.PromptTokens, int(req.GenerationConfig.MaxOutputTokens))
 	if err != nil {
-		return types.NewError(err, types.ErrorCodeModelPriceError)
+		return types.NewError(err, types.ErrorCodeModelPriceError, types.ErrOptionWithSkipRetry())
 	}
 
 	// pre consume quota
@@ -175,7 +175,7 @@ func GeminiHelper(c *gin.Context) (newAPIError *types.NewAPIError) {
 
 	adaptor := GetAdaptor(relayInfo.ApiType)
 	if adaptor == nil {
-		return types.NewError(fmt.Errorf("invalid api type: %d", relayInfo.ApiType), types.ErrorCodeInvalidApiType)
+		return types.NewError(fmt.Errorf("invalid api type: %d", relayInfo.ApiType), types.ErrorCodeInvalidApiType, types.ErrOptionWithSkipRetry())
 	}
 
 	adaptor.Init(relayInfo)
@@ -198,13 +198,13 @@ func GeminiHelper(c *gin.Context) (newAPIError *types.NewAPIError) {
 	if model_setting.GetGlobalSettings().PassThroughRequestEnabled || relayInfo.ChannelSetting.PassThroughBodyEnabled {
 		body, err := common.GetRequestBody(c)
 		if err != nil {
-			return types.NewErrorWithStatusCode(err, types.ErrorCodeReadRequestBodyFailed, http.StatusBadRequest)
+			return types.NewErrorWithStatusCode(err, types.ErrorCodeReadRequestBodyFailed, http.StatusBadRequest, types.ErrOptionWithSkipRetry())
 		}
 		requestBody = bytes.NewReader(body)
 	} else {
 		jsonData, err := common.Marshal(req)
 		if err != nil {
-			return types.NewError(err, types.ErrorCodeConvertRequestFailed)
+			return types.NewError(err, types.ErrorCodeConvertRequestFailed, types.ErrOptionWithSkipRetry())
 		}
 
 		// apply param override
@@ -216,7 +216,7 @@ func GeminiHelper(c *gin.Context) (newAPIError *types.NewAPIError) {
 			}
 			jsonData, err = common.Marshal(reqMap)
 			if err != nil {
-				return types.NewError(err, types.ErrorCodeChannelParamOverrideInvalid)
+				return types.NewError(err, types.ErrorCodeChannelParamOverrideInvalid, types.ErrOptionWithSkipRetry())
 			}
 		}
 
