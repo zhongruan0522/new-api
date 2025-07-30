@@ -69,8 +69,9 @@ func (a *Adaptor) Init(info *relaycommon.RelayInfo) {
 		a.RequestMode = RequestModeClaude
 	} else if strings.Contains(info.UpstreamModelName, "llama") {
 		a.RequestMode = RequestModeLlama
+	} else {
+		a.RequestMode = RequestModeGemini
 	}
-	a.RequestMode = RequestModeGemini
 }
 
 func (a *Adaptor) GetRequestURL(info *relaycommon.RelayInfo) (string, error) {
