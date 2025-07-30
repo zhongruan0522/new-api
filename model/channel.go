@@ -553,7 +553,6 @@ func handlerMultiKeyUpdate(channel *Channel, usingKey string, status int) {
 }
 
 func UpdateChannelStatus(channelId int, usingKey string, status int, reason string) bool {
-	println("UpdateChannelStatus called with channelId:", channelId, "usingKey:", usingKey, "status:", status, "reason:", reason)
 	if common.MemoryCacheEnabled {
 		channelStatusLock.Lock()
 		defer channelStatusLock.Unlock()
