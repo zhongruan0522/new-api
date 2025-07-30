@@ -40,7 +40,7 @@ func ClaudeHelper(c *gin.Context) (newAPIError *types.NewAPIError) {
 	// get & validate textRequest 获取并验证文本请求
 	textRequest, err := getAndValidateClaudeRequest(c)
 	if err != nil {
-		return types.NewError(err, types.ErrorCodeInvalidRequest)
+		return types.NewError(err, types.ErrorCodeInvalidRequest, types.ErrOptionWithSkipRetry())
 	}
 
 	if textRequest.Stream {
@@ -49,18 +49,18 @@ func ClaudeHelper(c *gin.Context) (newAPIError *types.NewAPIError) {
 
 	err = helper.ModelMappedHelper(c, relayInfo, textRequest)
 	if err != nil {
-		return types.NewError(err, types.ErrorCodeChannelModelMappedError)
+		return types.NewError(err, types.ErrorCodeChannelModelMappedError, types.ErrOptionWithSkipRetry())
 	}
 
 	promptTokens, err := getClaudePromptTokens(textRequest, relayInfo)
 	// count messages token error 计算promptTokens错误
 	if err != nil {
-		return types.NewError(err, types.ErrorCodeCountTokenFailed)
+		return types.NewError(err, types.ErrorCodeCountTokenFailed, types.ErrOptionWithSkipRetry())
 	}
 
 	priceData, err := helper.ModelPriceHelper(c, relayInfo, promptTokens, int(textRequest.MaxTokens))
 	if err != nil {
-		return types.NewError(err, types.ErrorCodeModelPriceError)
+		return types.NewError(err, types.ErrorCodeModelPriceError, types.ErrOptionWithSkipRetry())
 	}
 
 	// pre-consume quota 预消耗配额
@@ -77,7 +77,7 @@ func ClaudeHelper(c *gin.Context) (newAPIError *types.NewAPIError) {
 
 	adaptor := GetAdaptor(relayInfo.ApiType)
 	if adaptor == nil {
-		return types.NewError(fmt.Errorf("invalid api type: %d", relayInfo.ApiType), types.ErrorCodeInvalidApiType)
+		return types.NewError(fmt.Errorf("invalid api type: %d", relayInfo.ApiType), types.ErrorCodeInvalidApiType, types.ErrOptionWithSkipRetry())
 	}
 	adaptor.Init(relayInfo)
 
@@ -111,17 +111,17 @@ func ClaudeHelper(c *gin.Context) (newAPIError *types.NewAPIError) {
 	if model_setting.GetGlobalSettings().PassThroughRequestEnabled || relayInfo.ChannelSetting.PassThroughBodyEnabled {
 		body, err := common.GetRequestBody(c)
 		if err != nil {
-			return types.NewErrorWithStatusCode(err, types.ErrorCodeReadRequestBodyFailed, http.StatusBadRequest)
+			return types.NewErrorWithStatusCode(err, types.ErrorCodeReadRequestBodyFailed, http.StatusBadRequest, types.ErrOptionWithSkipRetry())
 		}
 		requestBody = bytes.NewBuffer(body)
 	} else {
 		convertedRequest, err := adaptor.ConvertClaudeRequest(c, relayInfo, textRequest)
 		if err != nil {
-			return types.NewError(err, types.ErrorCodeConvertRequestFailed)
+			return types.NewError(err, types.ErrorCodeConvertRequestFailed, types.ErrOptionWithSkipRetry())
 		}
 		jsonData, err := common.Marshal(convertedRequest)
 		if err != nil {
-			return types.NewError(err, types.ErrorCodeConvertRequestFailed)
+			return types.NewError(err, types.ErrorCodeConvertRequestFailed, types.ErrOptionWithSkipRetry())
 		}
 
 		// apply param override
@@ -133,7 +133,7 @@ func ClaudeHelper(c *gin.Context) (newAPIError *types.NewAPIError) {
 			}
 			jsonData, err = common.Marshal(reqMap)
 			if err != nil {
-				return types.NewError(err, types.ErrorCodeChannelParamOverrideInvalid)
+				return types.NewError(err, types.ErrorCodeChannelParamOverrideInvalid, types.ErrOptionWithSkipRetry())
 			}
 		}
 

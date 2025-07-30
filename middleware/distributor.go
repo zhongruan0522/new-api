@@ -247,7 +247,7 @@ func getModelRequest(c *gin.Context) (*ModelRequest, bool, error) {
 func SetupContextForSelectedChannel(c *gin.Context, channel *model.Channel, modelName string) *types.NewAPIError {
 	c.Set("original_model", modelName) // for retry
 	if channel == nil {
-		return types.NewError(errors.New("channel is nil"), types.ErrorCodeGetChannelFailed)
+		return types.NewError(errors.New("channel is nil"), types.ErrorCodeGetChannelFailed, types.ErrOptionWithSkipRetry())
 	}
 	common.SetContextKey(c, constant.ContextKeyChannelId, channel.Id)
 	common.SetContextKey(c, constant.ContextKeyChannelName, channel.Name)

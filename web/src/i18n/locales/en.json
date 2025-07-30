@@ -1799,5 +1799,10 @@
   "显示第": "Showing",
   "条 - 第": "to",
   "条，共": "of",
-  "条": "items"
+  "条": "items",
+  "选择模型": "Select model",
+  "已选择 {{selected}} / {{total}}": "Selected {{selected}} / {{total}}",
+  "新获取的模型": "New models",
+  "已有的模型": "Existing models",
+  "搜索模型": "Search models"
 }

@@ -1,7 +1,6 @@
 package service
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -112,7 +111,7 @@ func ResetStatusCode(newApiErr *types.NewAPIError, statusCodeMappingStr string) 
 		return
 	}
 	statusCodeMapping := make(map[string]string)
-	err := json.Unmarshal([]byte(statusCodeMappingStr), &statusCodeMapping)
+	err := common.Unmarshal([]byte(statusCodeMappingStr), &statusCodeMapping)
 	if err != nil {
 		return
 	}
