@@ -2,7 +2,6 @@ package relay
 
 import (
 	"bytes"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -203,7 +202,7 @@ func GeminiHelper(c *gin.Context) (newAPIError *types.NewAPIError) {
 		}
 		requestBody = bytes.NewReader(body)
 	} else {
-		jsonData, err := json.Marshal(req)
+		jsonData, err := common.Marshal(req)
 		if err != nil {
 			return types.NewError(err, types.ErrorCodeConvertRequestFailed)
 		}
