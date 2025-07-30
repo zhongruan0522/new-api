@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"one-api/common"
 	"strings"
 )
 
@@ -107,19 +108,30 @@ func (e *NewAPIError) Error() string {
 	return e.Err.Error()
 }
 
+func (e *NewAPIError) MaskSensitiveError() string {
+	if e == nil {
+		return ""
+	}
+	if e.Err == nil {
+		return string(e.errorCode)
+	}
+	return common.MaskSensitiveInfo(e.Err.Error())
+}
+
 func (e *NewAPIError) SetMessage(message string) {
 	e.Err = errors.New(message)
 }
 
 func (e *NewAPIError) ToOpenAIError() OpenAIError {
+	var result OpenAIError
 	switch e.errorType {
 	case ErrorTypeOpenAIError:
 		if openAIError, ok := e.RelayError.(OpenAIError); ok {
-			return openAIError
+			result = openAIError
 		}
 	case ErrorTypeClaudeError:
 		if claudeError, ok := e.RelayError.(ClaudeError); ok {
-			return OpenAIError{
+			result = OpenAIError{
 				Message: e.Error(),
 				Type:    claudeError.Type,
 				Param:   "",
@@ -127,30 +139,35 @@ func (e *NewAPIError) ToOpenAIError() OpenAIError {
 			}
 		}
 	}
-	return OpenAIError{
+	result = OpenAIError{
 		Message: e.Error(),
 		Type:    string(e.errorType),
 		Param:   "",
 		Code:    e.errorCode,
 	}
+	result.Message = common.MaskSensitiveInfo(result.Message)
+	return result
 }
 
 func (e *NewAPIError) ToClaudeError() ClaudeError {
+	var result ClaudeError
 	switch e.errorType {
 	case ErrorTypeOpenAIError:
 		openAIError := e.RelayError.(OpenAIError)
-		return ClaudeError{
+		result = ClaudeError{
 			Message: e.Error(),
 			Type:    fmt.Sprintf("%v", openAIError.Code),
 		}
 	case ErrorTypeClaudeError:
-		return e.RelayError.(ClaudeError)
+		result = e.RelayError.(ClaudeError)
 	default:
-		return ClaudeError{
+		result = ClaudeError{
 			Message: e.Error(),
 			Type:    string(e.errorType),
 		}
 	}
+	result.Message = common.MaskSensitiveInfo(result.Message)
+	return result
 }
 
 func NewError(err error, errorCode ErrorCode) *NewAPIError {
