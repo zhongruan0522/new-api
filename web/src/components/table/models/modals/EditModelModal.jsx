@@ -285,10 +285,19 @@ const EditModelModal = (props) => {
                     <Form.TagInput
                       field='tags'
                       label={t('标签')}
-                      placeholder={t('输入标签后按回车添加')}
+                      placeholder={t('输入标签或使用","分隔多个标签')}
                       addOnBlur
                       showClear
                       style={{ width: '100%' }}
+                      onChange={(newTags) => {
+                        if (!formApiRef.current) return;
+                        const normalize = (tags) => {
+                          if (!Array.isArray(tags)) return [];
+                          return [...new Set(tags.flatMap(tag => tag.split(',').map(t => t.trim()).filter(Boolean)))];
+                        };
+                        const normalized = normalize(newTags);
+                        formApiRef.current.setValue('tags', normalized);
+                      }}
                     />
                   </Col>
                 </Row>
