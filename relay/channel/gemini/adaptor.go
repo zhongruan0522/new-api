@@ -1,12 +1,10 @@
 package gemini
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
-	"one-api/common"
 	"one-api/dto"
 	"one-api/relay/channel"
 	"one-api/relay/channel/openai"
@@ -175,6 +173,7 @@ func (a *Adaptor) DoRequest(c *gin.Context, info *relaycommon.RelayInfo, request
 func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (usage any, err *types.NewAPIError) {
 	if info.RelayMode == constant.RelayModeGemini {
 		if info.IsStream {
+			info.DisablePing = true
 			return GeminiTextGenerationStreamHandler(c, info, resp)
 		} else {
 			return GeminiTextGenerationHandler(c, info, resp)
@@ -210,60 +209,6 @@ func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, info *relaycom
 	//}
 
 	return nil, types.NewError(errors.New("not implemented"), types.ErrorCodeBadResponseBody)
-}
-
-func GeminiImageHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Response) (*dto.Usage, *types.NewAPIError) {
-	responseBody, readErr := io.ReadAll(resp.Body)
-	if readErr != nil {
-		return nil, types.NewError(readErr, types.ErrorCodeBadResponseBody)
-	}
-	_ = resp.Body.Close()
-
-	var geminiResponse GeminiImageResponse
-	if jsonErr := json.Unmarshal(responseBody, &geminiResponse); jsonErr != nil {
-		return nil, types.NewError(jsonErr, types.ErrorCodeBadResponseBody)
-	}
-
-	if len(geminiResponse.Predictions) == 0 {
-		return nil, types.NewError(errors.New("no images generated"), types.ErrorCodeBadResponseBody)
-	}
-
-	// convert to openai format response
-	openAIResponse := dto.ImageResponse{
-		Created: common.GetTimestamp(),
-		Data:    make([]dto.ImageData, 0, len(geminiResponse.Predictions)),
-	}
-
-	for _, prediction := range geminiResponse.Predictions {
-		if prediction.RaiFilteredReason != "" {
-			continue // skip filtered image
-		}
-		openAIResponse.Data = append(openAIResponse.Data, dto.ImageData{
-			B64Json: prediction.BytesBase64Encoded,
-		})
-	}
-
-	jsonResponse, jsonErr := json.Marshal(openAIResponse)
-	if jsonErr != nil {
-		return nil, types.NewError(jsonErr, types.ErrorCodeBadResponseBody)
-	}
-
-	c.Writer.Header().Set("Content-Type", "application/json")
-	c.Writer.WriteHeader(resp.StatusCode)
-	_, _ = c.Writer.Write(jsonResponse)
-
-	// https://github.com/google-gemini/cookbook/blob/719a27d752aac33f39de18a8d3cb42a70874917e/quickstarts/Counting_Tokens.ipynb
-	// each image has fixed 258 tokens
-	const imageTokens = 258
-	generatedImages := len(openAIResponse.Data)
-
-	usage := &dto.Usage{
-		PromptTokens:     imageTokens * generatedImages, // each generated image has fixed 258 tokens
-		CompletionTokens: 0,                             // image generation does not calculate completion tokens
-		TotalTokens:      imageTokens * generatedImages,
-	}
-
-	return usage, nil
 }
 
 func (a *Adaptor) GetModelList() []string {
