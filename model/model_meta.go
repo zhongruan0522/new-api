@@ -50,8 +50,11 @@ func (mi *Model) Insert() error {
 
 // Update 更新现有模型记录
 func (mi *Model) Update() error {
+    // 仅更新需要变更的字段，避免覆盖 CreatedTime
     mi.UpdatedTime = common.GetTimestamp()
-    return DB.Save(mi).Error
+
+    // 排除 created_time，其余字段自动更新，避免新增字段时需要维护列表
+    return DB.Model(&Model{}).Where("id = ?", mi.Id).Omit("created_time").Updates(mi).Error
 }
 
 // Delete 软删除模型记录
