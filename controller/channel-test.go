@@ -332,8 +332,11 @@ func TestChannel(c *gin.Context) {
 	}
 	channel, err := model.CacheGetChannel(channelId)
 	if err != nil {
-		common.ApiError(c, err)
-		return
+		channel, err = model.GetChannelById(channelId, true)
+		if err != nil {
+			common.ApiError(c, err)
+			return
+		}
 	}
 	//defer func() {
 	//	if channel.ChannelInfo.IsMultiKey {
