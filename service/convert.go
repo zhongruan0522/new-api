@@ -188,28 +188,6 @@ func ClaudeToOpenAIRequest(claudeRequest dto.ClaudeRequest, info *relaycommon.Re
 	return &openAIRequest, nil
 }
 
-func OpenAIErrorToClaudeError(openAIError *dto.OpenAIErrorWithStatusCode) *dto.ClaudeErrorWithStatusCode {
-	claudeError := dto.ClaudeError{
-		Type:    "new_api_error",
-		Message: openAIError.Error.Message,
-	}
-	return &dto.ClaudeErrorWithStatusCode{
-		Error:      claudeError,
-		StatusCode: openAIError.StatusCode,
-	}
-}
-
-func ClaudeErrorToOpenAIError(claudeError *dto.ClaudeErrorWithStatusCode) *dto.OpenAIErrorWithStatusCode {
-	openAIError := dto.OpenAIError{
-		Message: claudeError.Error.Message,
-		Type:    "new_api_error",
-	}
-	return &dto.OpenAIErrorWithStatusCode{
-		Error:      openAIError,
-		StatusCode: claudeError.StatusCode,
-	}
-}
-
 func generateStopBlock(index int) *dto.ClaudeResponse {
 	return &dto.ClaudeResponse{
 		Type:  "content_block_stop",

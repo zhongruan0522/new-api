@@ -17,8 +17,6 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 
-import React, { useEffect, useState, useRef, useMemo } from 'react';
-import { useTranslation } from 'react-i18next';
 import {
   API,
   showError,
@@ -26,37 +24,42 @@ import {
   showSuccess,
   verifyJSON,
 } from '../../../../helpers';
-import { useIsMobile } from '../../../../hooks/common/useIsMobile.js';
-import { CHANNEL_OPTIONS } from '../../../../constants';
 import {
+  Avatar,
+  Banner,
+  Button,
+  Card,
+  Checkbox,
+  Col,
+  Form,
+  Highlight,
+  ImagePreview,
+  Input,
+  Modal,
+  Row,
   SideSheet,
   Space,
   Spin,
-  Button,
-  Typography,
-  Checkbox,
-  Banner,
-  Modal,
-  ImagePreview,
-  Card,
   Tag,
-  Avatar,
-  Form,
-  Row,
-  Col,
-  Highlight,
+  Typography,
 } from '@douyinfe/semi-ui';
 import { getChannelModels, copy, getChannelIcon, getModelCategories, selectFilter } from '../../../../helpers';
 import ModelSelectModal from './ModelSelectModal';
+import JSONEditor from '../../../common/JSONEditor';
+import { CHANNEL_OPTIONS, CLAUDE_CODE_DEFAULT_SYSTEM_PROMPT } from '../../../../constants';
 import {
-  IconSave,
+  IconBolt,
   IconClose,
-  IconServer,
-  IconSetting,
   IconCode,
   IconGlobe,
-  IconBolt,
+  IconSave,
+  IconServer,
+  IconSetting,
 } from '@douyinfe/semi-icons';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+
+import { useIsMobile } from '../../../../hooks/common/useIsMobile.js';
+import { useTranslation } from 'react-i18next';
 
 const { Text, Title } = Typography;
 
@@ -69,7 +72,9 @@ const STATUS_CODE_MAPPING_EXAMPLE = {
 };
 
 const REGION_EXAMPLE = {
-  default: 'us-central1',
+  "default": 'global',
+  "gemini-1.5-pro-002": "europe-west2",
+  "gemini-1.5-flash-002": "europe-west2",
   'claude-3-5-sonnet-20240620': 'europe-west1',
 };
 
@@ -90,6 +95,8 @@ function type2secretPrompt(type) {
       return '按照如下格式输入: AccessKey|SecretKey, 如果上游是New API，则直接输ApiKey';
     case 51:
       return '按照如下格式输入: Access Key ID|Secret Access Key';
+    case 53:
+      return '按照如下格式输入：AccessToken|RefreshToken';
     default:
       return '请输入渠道对应的鉴权密钥';
   }
@@ -142,6 +149,10 @@ const EditChannelModal = (props) => {
   const [customModel, setCustomModel] = useState('');
   const [modalImageUrl, setModalImageUrl] = useState('');
   const [isModalOpenurl, setIsModalOpenurl] = useState(false);
+  const [showOAuthModal, setShowOAuthModal] = useState(false);
+  const [authorizationCode, setAuthorizationCode] = useState('');
+  const [oauthParams, setOauthParams] = useState(null);
+  const [isExchangingCode, setIsExchangingCode] = useState(false);
   const [modelModalVisible, setModelModalVisible] = useState(false);
   const [fetchedModels, setFetchedModels] = useState([]);
   const formApiRef = useRef(null);
@@ -350,6 +361,24 @@ const EditChannelModal = (props) => {
         data.system_prompt = '';
       }
 
+      // 特殊处理Claude Code渠道的密钥拆分和系统提示词
+      if (data.type === 53) {
+        // 拆分密钥
+        if (data.key) {
+          const keyParts = data.key.split('|');
+          if (keyParts.length === 2) {
+            data.access_token = keyParts[0];
+            data.refresh_token = keyParts[1];
+          } else {
+            // 如果没有 | 分隔符，表示只有access token
+            data.access_token = data.key;
+            data.refresh_token = '';
+          }
+        }
+        // 强制设置固定系统提示词
+        data.system_prompt = CLAUDE_CODE_DEFAULT_SYSTEM_PROMPT;
+      }
+
       setInputs(data);
       if (formApiRef.current) {
         formApiRef.current.setValues(data);
@@ -470,6 +499,72 @@ const EditChannelModal = (props) => {
       );
     } catch (error) {
       showError(error.message);
+    }
+  };
+
+  // 生成OAuth授权URL
+  const handleGenerateOAuth = async () => {
+    try {
+      setLoading(true);
+      const res = await API.get('/api/channel/claude/oauth/url');
+      if (res.data.success) {
+        setOauthParams(res.data.data);
+        setShowOAuthModal(true);
+        showSuccess(t('OAuth授权URL生成成功'));
+      } else {
+        showError(res.data.message || t('生成OAuth授权URL失败'));
+      }
+    } catch (error) {
+      showError(t('生成OAuth授权URL失败：') + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 交换授权码
+  const handleExchangeCode = async () => {
+    if (!authorizationCode.trim()) {
+      showError(t('请输入授权码'));
+      return;
+    }
+
+    if (!oauthParams) {
+      showError(t('OAuth参数丢失，请重新生成'));
+      return;
+    }
+
+    try {
+      setIsExchangingCode(true);
+      const res = await API.post('/api/channel/claude/oauth/exchange', {
+        authorization_code: authorizationCode,
+        code_verifier: oauthParams.code_verifier,
+        state: oauthParams.state,
+      });
+
+      if (res.data.success) {
+        const tokenData = res.data.data;
+        // 自动填充access token和refresh token
+        handleInputChange('access_token', tokenData.access_token);
+        handleInputChange('refresh_token', tokenData.refresh_token);
+        handleInputChange('key', `${tokenData.access_token}|${tokenData.refresh_token}`);
+
+        // 更新表单字段
+        if (formApiRef.current) {
+          formApiRef.current.setValue('access_token', tokenData.access_token);
+          formApiRef.current.setValue('refresh_token', tokenData.refresh_token);
+        }
+
+        setShowOAuthModal(false);
+        setAuthorizationCode('');
+        setOauthParams(null);
+        showSuccess(t('授权码交换成功，已自动填充tokens'));
+      } else {
+        showError(res.data.message || t('授权码交换失败'));
+      }
+    } catch (error) {
+      showError(t('授权码交换失败：') + error.message);
+    } finally {
+      setIsExchangingCode(false);
     }
   };
 
@@ -785,7 +880,7 @@ const EditChannelModal = (props) => {
   const batchExtra = batchAllowed ? (
     <Space>
       <Checkbox
-        disabled={isEdit}
+        disabled={isEdit || inputs.type === 53}
         checked={batch}
         onChange={(e) => {
           const checked = e.target.checked;
@@ -1121,6 +1216,49 @@ const EditChannelModal = (props) => {
                             />
                           )}
                         </>
+                      ) : inputs.type === 53 ? (
+                        <>
+                          <Form.Input
+                            field='access_token'
+                            label={isEdit ? t('Access Token（编辑模式下，保存的密钥不会显示）') : t('Access Token')}
+                            placeholder={t('sk-ant-xxx')}
+                            rules={isEdit ? [] : [{ required: true, message: t('请输入Access Token') }]}
+                            autoComplete='new-password'
+                            onChange={(value) => {
+                              handleInputChange('access_token', value);
+                              // 同时更新key字段，格式为access_token|refresh_token
+                              const refreshToken = inputs.refresh_token || '';
+                              handleInputChange('key', `${value}|${refreshToken}`);
+                            }}
+                            suffix={
+                              <Button
+                                size="small"
+                                type="primary"
+                                theme="light"
+                                onClick={handleGenerateOAuth}
+                              >
+                                {t('生成OAuth授权码')}
+                              </Button>
+                            }
+                            extraText={batchExtra}
+                            showClear
+                          />
+                          <Form.Input
+                            field='refresh_token'
+                            label={isEdit ? t('Refresh Token（编辑模式下，保存的密钥不会显示）') : t('Refresh Token')}
+                            placeholder={t('sk-ant-xxx（可选）')}
+                            rules={[]}
+                            autoComplete='new-password'
+                            onChange={(value) => {
+                              handleInputChange('refresh_token', value);
+                              // 同时更新key字段，格式为access_token|refresh_token
+                              const accessToken = inputs.access_token || '';
+                              handleInputChange('key', `${accessToken}|${value}`);
+                            }}
+                            extraText={batchExtra}
+                            showClear
+                          />
+                        </>
                       ) : (
                         <Form.Input
                           field='key'
@@ -1174,24 +1312,24 @@ const EditChannelModal = (props) => {
                   )}
 
                   {inputs.type === 41 && (
-                    <Form.TextArea
+                    <JSONEditor
                       field='other'
                       label={t('部署地区')}
                       placeholder={t(
                         '请输入部署地区，例如：us-central1\n支持使用模型映射格式\n{\n    "default": "us-central1",\n    "claude-3-5-sonnet-20240620": "europe-west1"\n}'
                       )}
-                      autosize
+                      value={inputs.other || ''}
                       onChange={(value) => handleInputChange('other', value)}
                       rules={[{ required: true, message: t('请填写部署地区') }]}
+                      template={REGION_EXAMPLE}
+                      templateLabel={t('填入模板')}
+                      editorType="region"
+                      formApi={formApiRef.current}
                       extraText={
-                        <Text
-                          className="!text-semi-color-primary cursor-pointer"
-                          onClick={() => handleInputChange('other', JSON.stringify(REGION_EXAMPLE, null, 2))}
-                        >
-                          {t('填入模板')}
+                        <Text type="tertiary" size="small">
+                          {t('设置默认地区和特定模型的专用地区')}
                         </Text>
                       }
-                      showClear
                     />
                   )}
 
@@ -1447,24 +1585,24 @@ const EditChannelModal = (props) => {
                     showClear
                   />
 
-                  <Form.TextArea
+                  <JSONEditor
                     field='model_mapping'
                     label={t('模型重定向')}
                     placeholder={
                       t('此项可选，用于修改请求体中的模型名称，为一个 JSON 字符串，键为请求中模型名称，值为要替换的模型名称，例如：') +
                       `\n${JSON.stringify(MODEL_MAPPING_EXAMPLE, null, 2)}`
                     }
-                    autosize
+                    value={inputs.model_mapping || ''}
                     onChange={(value) => handleInputChange('model_mapping', value)}
+                    template={MODEL_MAPPING_EXAMPLE}
+                    templateLabel={t('填入模板')}
+                    editorType="keyValue"
+                    formApi={formApiRef.current}
                     extraText={
-                      <Text
-                        className="!text-semi-color-primary cursor-pointer"
-                        onClick={() => handleInputChange('model_mapping', JSON.stringify(MODEL_MAPPING_EXAMPLE, null, 2))}
-                      >
-                        {t('填入模板')}
+                      <Text type="tertiary" size="small">
+                        {t('键为请求中的模型名称，值为要替换的模型名称')}
                       </Text>
                     }
-                    showClear
                   />
                 </Card>
 
@@ -1554,7 +1692,7 @@ const EditChannelModal = (props) => {
                     showClear
                   />
 
-                  <Form.TextArea
+                  <JSONEditor
                     field='status_code_mapping'
                     label={t('状态码复写')}
                     placeholder={
@@ -1562,17 +1700,17 @@ const EditChannelModal = (props) => {
                       '\n' +
                       JSON.stringify(STATUS_CODE_MAPPING_EXAMPLE, null, 2)
                     }
-                    autosize
+                    value={inputs.status_code_mapping || ''}
                     onChange={(value) => handleInputChange('status_code_mapping', value)}
+                    template={STATUS_CODE_MAPPING_EXAMPLE}
+                    templateLabel={t('填入模板')}
+                    editorType="keyValue"
+                    formApi={formApiRef.current}
                     extraText={
-                      <Text
-                        className="!text-semi-color-primary cursor-pointer"
-                        onClick={() => handleInputChange('status_code_mapping', JSON.stringify(STATUS_CODE_MAPPING_EXAMPLE, null, 2))}
-                      >
-                        {t('填入模板')}
+                      <Text type="tertiary" size="small">
+                        {t('键为原状态码，值为要复写的状态码，仅影响本地判断')}
                       </Text>
                     }
-                    showClear
                   />
                 </Card>
 
@@ -1585,14 +1723,6 @@ const EditChannelModal = (props) => {
                     </Avatar>
                     <div>
                       <Text className="text-lg font-medium">{t('渠道额外设置')}</Text>
-                      <div className="text-xs text-gray-600">
-                        <Text
-                          className="!text-semi-color-primary cursor-pointer"
-                          onClick={() => window.open('https://github.com/QuantumNous/new-api/blob/main/docs/channel/other_setting.md')}
-                        >
-                          {t('设置说明')}
-                        </Text>
-                      </div>
                     </div>
                   </div>
 
@@ -1637,11 +1767,19 @@ const EditChannelModal = (props) => {
                   <Form.TextArea
                     field='system_prompt'
                     label={t('系统提示词')}
-                    placeholder={t('输入系统提示词，用户的系统提示词将优先于此设置')}
-                    onChange={(value) => handleChannelSettingsChange('system_prompt', value)}
+                    placeholder={inputs.type === 53 ? CLAUDE_CODE_DEFAULT_SYSTEM_PROMPT : t('输入系统提示词，用户的系统提示词将优先于此设置')}
+                    onChange={(value) => {
+                      if (inputs.type === 53) {
+                        // Claude Code渠道系统提示词固定，不允许修改
+                        return;
+                      }
+                      handleChannelSettingsChange('system_prompt', value);
+                    }}
+                    disabled={inputs.type === 53}
+                    value={inputs.type === 53 ? CLAUDE_CODE_DEFAULT_SYSTEM_PROMPT : undefined}
                     autosize
-                    showClear
-                    extraText={t('用户优先：如果用户在请求中指定了系统提示词，将优先使用用户的设置')}
+                    showClear={inputs.type !== 53}
+                    extraText={inputs.type === 53 ? t('Claude Code渠道系统提示词固定为官方CLI身份，不可修改') : t('用户优先：如果用户在请求中指定了系统提示词，将优先使用用户的设置')}
                   />
                 </Card>
               </div>
@@ -1665,8 +1803,70 @@ const EditChannelModal = (props) => {
         }}
         onCancel={() => setModelModalVisible(false)}
       />
+
+      {/* OAuth Authorization Modal */}
+      <Modal
+        title={t('生成Claude Code OAuth授权码')}
+        visible={showOAuthModal}
+        onCancel={() => {
+          setShowOAuthModal(false);
+          setAuthorizationCode('');
+          setOauthParams(null);
+        }}
+        onOk={handleExchangeCode}
+        okText={isExchangingCode ? t('交换中...') : t('确认')}
+        cancelText={t('取消')}
+        confirmLoading={isExchangingCode}
+        width={600}
+      >
+        <div className="space-y-4">
+          <div>
+            <Text className="text-sm font-medium mb-2 block">{t('请访问以下授权地址：')}</Text>
+            <div className="p-3 bg-gray-50 rounded-lg border">
+              <Text
+                link
+                underline
+                className="text-sm font-mono break-all cursor-pointer text-blue-600 hover:text-blue-800"
+                onClick={() => {
+                  if (oauthParams?.auth_url) {
+                    window.open(oauthParams.auth_url, '_blank');
+                  }
+                }}
+              >
+                {oauthParams?.auth_url || t('正在生成授权地址...')}
+              </Text>
+              <div className="mt-2">
+                <Text
+                  copyable={{ content: oauthParams?.auth_url }}
+                  type="tertiary"
+                  size="small"
+                >
+                  {t('复制链接')}
+                </Text>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <Text className="text-sm font-medium mb-2 block">{t('授权后，请将获得的授权码粘贴到下方：')}</Text>
+            <Input
+              value={authorizationCode}
+              onChange={setAuthorizationCode}
+              placeholder={t('请输入授权码')}
+              showClear
+              style={{ width: '100%' }}
+            />
+          </div>
+
+          <Banner
+            type="info"
+            description={t('获得授权码后，系统将自动换取access token和refresh token并填充到表单中。')}
+            className="!rounded-lg"
+          />
+        </div>
+      </Modal>
     </>
   );
 };
 
-export default EditChannelModal; 
+export default EditChannelModal;
