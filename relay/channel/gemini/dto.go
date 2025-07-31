@@ -1,6 +1,9 @@
 package gemini
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"one-api/common"
+)
 
 type GeminiChatRequest struct {
 	Contents           []GeminiChatContent        `json:"contents"`
@@ -32,7 +35,7 @@ func (g *GeminiInlineData) UnmarshalJSON(data []byte) error {
 		MimeTypeSnake string `json:"mime_type"`
 	}
 
-	if err := json.Unmarshal(data, &aux); err != nil {
+	if err := common.Unmarshal(data, &aux); err != nil {
 		return err
 	}
 
@@ -93,7 +96,7 @@ func (p *GeminiPart) UnmarshalJSON(data []byte) error {
 		InlineDataSnake *GeminiInlineData `json:"inline_data,omitempty"` // snake_case variant
 	}
 
-	if err := json.Unmarshal(data, &aux); err != nil {
+	if err := common.Unmarshal(data, &aux); err != nil {
 		return err
 	}
 

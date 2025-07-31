@@ -16,8 +16,8 @@ type OpenAIError struct {
 }
 
 type ClaudeError struct {
-	Message string `json:"message,omitempty"`
 	Type    string `json:"type,omitempty"`
+	Message string `json:"message,omitempty"`
 }
 
 type ErrorType string
