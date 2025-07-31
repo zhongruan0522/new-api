@@ -60,7 +60,7 @@ type OAuth2Credentials struct {
 // GetClaudeOAuthConfig returns the Claude OAuth2 configuration
 func GetClaudeOAuthConfig() *oauth2.Config {
 	authorizeURL, tokenURL, clientID, redirectURI, scopes := getOAuthValues()
-	
+
 	return &oauth2.Config{
 		ClientID:    clientID,
 		RedirectURL: redirectURI,
@@ -103,6 +103,13 @@ func GenerateOAuthParams() (*OAuth2Credentials, error) {
 func ExchangeCode(authorizationCode, codeVerifier, state string, client *http.Client) (*oauth2.Token, error) {
 	config := getOAuthConfig()
 
+	if strings.Contains(authorizationCode, "#") {
+		parts := strings.Split(authorizationCode, "#")
+		if len(parts) > 0 {
+			authorizationCode = parts[0]
+		}
+	}
+
 	ctx := context.Background()
 	if client != nil {
 		ctx = context.WithValue(ctx, oauth2.HTTPClient, client)
@@ -141,7 +148,7 @@ func GetClaudeHTTPClient() *http.Client {
 // RefreshClaudeToken refreshes a Claude OAuth token using the refresh token
 func RefreshClaudeToken(accessToken, refreshToken string) (*oauth2.Token, error) {
 	config := GetClaudeOAuthConfig()
-	
+
 	// Create token from current values
 	currentToken := &oauth2.Token{
 		AccessToken:  accessToken,

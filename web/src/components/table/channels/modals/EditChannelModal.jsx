@@ -57,7 +57,6 @@ import {
   IconSetting,
 } from '@douyinfe/semi-icons';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { copy, getChannelIcon, getChannelModels, getModelCategories, modelSelectFilter } from '../../../../helpers';
 
 import { useIsMobile } from '../../../../hooks/common/useIsMobile.js';
 import { useTranslation } from 'react-i18next';
@@ -1853,7 +1852,7 @@ const EditChannelModal = (props) => {
             <Input
               value={authorizationCode}
               onChange={setAuthorizationCode}
-              placeholder={t('请输入授权码或回调URL')}
+              placeholder={t('请输入授权码')}
               showClear
               style={{ width: '100%' }}
             />
