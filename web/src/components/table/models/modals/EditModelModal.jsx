@@ -75,9 +75,10 @@ const EditModelModal = (props) => {
   };
 
   useEffect(() => {
-    fetchVendors();
-  }, []);
-
+    if (props.visiable) {
+      fetchVendors();
+    }
+  }, [props.visiable]);
 
   const getInitValues = () => ({
     model_name: '',

@@ -87,7 +87,7 @@ export const useModelsData = () => {
     setModels(models);
   };
 
-  // 获取供应商列表
+  // Vendor list
   const [vendors, setVendors] = useState([]);
   const [vendorCounts, setVendorCounts] = useState({});
   const [activeVendorKey, setActiveVendorKey] = useState('all');
@@ -103,7 +103,7 @@ export const useModelsData = () => {
     return map;
   }, [vendors]);
 
-  // 加载供应商列表
+  // Load vendor list
   const loadVendors = async () => {
     try {
       const res = await API.get('/api/vendors/?page_size=1000');
@@ -122,11 +122,8 @@ export const useModelsData = () => {
     try {
       let url = `/api/models/?p=${page}&page_size=${size}`;
       if (vendorKey && vendorKey !== 'all') {
-        // 按供应商筛选，通过vendor搜索接口
-        const vendor = vendors.find(v => String(v.id) === vendorKey);
-        if (vendor) {
-          url = `/api/models/search?vendor=${vendor.name}&p=${page}&page_size=${size}`;
-        }
+        // Filter by vendor ID
+        url = `/api/models/search?vendor=${vendorKey}&p=${page}&page_size=${size}`;
       }
 
       const res = await API.get(url);
@@ -138,8 +135,10 @@ export const useModelsData = () => {
         setModelCount(data.total || newPageData.length);
         setModelFormat(newPageData);
 
-        // 更新供应商统计
-        updateVendorCounts(newPageData);
+        // Refresh vendor counts only when viewing 'all' to preserve other counts
+        if (vendorKey === 'all') {
+          updateVendorCounts(newPageData);
+        }
       } else {
         showError(message);
         setModels([]);
@@ -227,7 +226,7 @@ export const useModelsData = () => {
     }
   };
 
-  // 更新供应商统计
+  // Update vendor counts
   const updateVendorCounts = (models) => {
     const counts = { all: models.length };
     models.forEach(model => {
@@ -243,6 +242,11 @@ export const useModelsData = () => {
     setActivePage(page);
     loadModels(page, pageSize, activeVendorKey);
   };
+
+  // Reload models when activeVendorKey changes
+  useEffect(() => {
+    loadModels(1, pageSize, activeVendorKey);
+  }, [activeVendorKey]);
 
   // Handle page size change
   const handlePageSizeChange = async (size) => {

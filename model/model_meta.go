@@ -2,6 +2,7 @@ package model
 
 import (
     "one-api/common"
+    "strconv"
 
     "gorm.io/gorm"
 )
@@ -96,13 +97,18 @@ func SearchModels(keyword string, vendor string, offset int, limit int) ([]*Mode
         db = db.Where("model_name LIKE ? OR description LIKE ? OR tags LIKE ?", like, like, like)
     }
     if vendor != "" {
-        db = db.Joins("JOIN vendors ON vendors.id = models.vendor_id").Where("vendors.name LIKE ?", "%"+vendor+"%")
+        // 如果是数字，按供应商 ID 精确匹配；否则按名称模糊匹配
+        if vid, err := strconv.Atoi(vendor); err == nil {
+            db = db.Where("models.vendor_id = ?", vid)
+        } else {
+            db = db.Joins("JOIN vendors ON vendors.id = models.vendor_id").Where("vendors.name LIKE ?", "%"+vendor+"%")
+        }
     }
     var total int64
     err := db.Count(&total).Error
     if err != nil {
         return nil, 0, err
     }
-    err = db.Offset(offset).Limit(limit).Order("id DESC").Find(&models).Error
+    err = db.Offset(offset).Limit(limit).Order("models.id DESC").Find(&models).Error
     return models, total, err
 }
