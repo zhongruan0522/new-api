@@ -70,29 +70,15 @@ import {
   User,
   Settings,
   CircleUser,
+  Package,
 } from 'lucide-react';
-
-// 侧边栏图标颜色映射
-export const sidebarIconColors = {
-  dashboard: '#10B981', // 绿色
-  terminal: '#10B981', // 绿色
-  message: '#06B6D4', // 青色
-  key: '#3B82F6', // 蓝色
-  chart: '#F59E0B', // 琥珀色
-  image: '#EC4899', // 粉色
-  check: '#F59E0B', // 琥珀色
-  credit: '#F97316', // 橙色
-  layers: '#EF4444', // 红色
-  gift: '#F43F5E', // 玫红色
-  user: '#10B981', // 绿色
-  settings: '#F97316', // 橙色
-  models: '#10B981', // 绿色
-};
 
 // 获取侧边栏Lucide图标组件
 export function getLucideIcon(key, selected = false) {
   const size = 16;
   const strokeWidth = 2;
+  const SELECTED_COLOR = 'var(--semi-color-primary)';
+  const iconColor = selected ? SELECTED_COLOR : 'currentColor';
   const commonProps = {
     size,
     strokeWidth,
@@ -105,70 +91,70 @@ export function getLucideIcon(key, selected = false) {
       return (
         <LayoutDashboard
           {...commonProps}
-          color={selected ? sidebarIconColors.dashboard : 'currentColor'}
+          color={iconColor}
         />
       );
     case 'playground':
       return (
         <TerminalSquare
           {...commonProps}
-          color={selected ? sidebarIconColors.terminal : 'currentColor'}
+          color={iconColor}
         />
       );
     case 'chat':
       return (
         <MessageSquare
           {...commonProps}
-          color={selected ? sidebarIconColors.message : 'currentColor'}
+          color={iconColor}
         />
       );
     case 'token':
       return (
         <Key
           {...commonProps}
-          color={selected ? sidebarIconColors.key : 'currentColor'}
+          color={iconColor}
         />
       );
     case 'log':
       return (
         <BarChart3
           {...commonProps}
-          color={selected ? sidebarIconColors.chart : 'currentColor'}
+          color={iconColor}
         />
       );
     case 'midjourney':
       return (
         <ImageIcon
           {...commonProps}
-          color={selected ? sidebarIconColors.image : 'currentColor'}
+          color={iconColor}
         />
       );
     case 'task':
       return (
         <CheckSquare
           {...commonProps}
-          color={selected ? sidebarIconColors.check : 'currentColor'}
+          color={iconColor}
         />
       );
     case 'topup':
       return (
         <CreditCard
           {...commonProps}
-          color={selected ? sidebarIconColors.credit : 'currentColor'}
+          color={iconColor}
         />
       );
     case 'channel':
       return (
         <Layers
           {...commonProps}
-          color={selected ? sidebarIconColors.layers : 'currentColor'}
+          color={iconColor}
         />
       );
     case 'redemption':
       return (
         <Gift
           {...commonProps}
-          color={selected ? sidebarIconColors.gift : 'currentColor'}
+          color={iconColor}
         />
       );
     case 'user':
@@ -176,28 +162,28 @@ export function getLucideIcon(key, selected = false) {
       return (
         <User
           {...commonProps}
-          color={selected ? sidebarIconColors.user : 'currentColor'}
+          color={iconColor}
         />
       );
     case 'models':
       return (
-        <Layers
+        <Package
           {...commonProps}
-          color={selected ? sidebarIconColors.models : 'currentColor'}
+          color={iconColor}
         />
       );
     case 'setting':
       return (
         <Settings
           {...commonProps}
-          color={selected ? sidebarIconColors.settings : 'currentColor'}
+          color={iconColor}
         />
       );
     default:
       return (
         <CircleUser
           {...commonProps}
-          color={selected ? sidebarIconColors.user : 'currentColor'}
+          color={iconColor}
         />
       );
   }
