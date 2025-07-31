@@ -18,10 +18,11 @@ For commercial licensing, please contact support@quantumnous.com
 */
 
 import i18next from 'i18next';
-import { Modal, Tag, Typography } from '@douyinfe/semi-ui';
+import { Modal, Tag, Typography, Avatar } from '@douyinfe/semi-ui';
 import { copy, showSuccess } from './utils';
 import { MOBILE_BREAKPOINT } from '../hooks/common/useIsMobile.js';
 import { visit } from 'unist-util-visit';
+import * as LobeIcons from '@lobehub/icons';
 import {
   OpenAI,
   Claude,
@@ -85,6 +86,7 @@ export const sidebarIconColors = {
   gift: '#F43F5E', // 玫红色
   user: '#10B981', // 绿色
   settings: '#F97316', // 橙色
+  models: '#10B981', // 绿色
 };
 
 // 获取侧边栏Lucide图标组件
@@ -175,6 +177,13 @@ export function getLucideIcon(key, selected = false) {
         <User
           {...commonProps}
           color={selected ? sidebarIconColors.user : 'currentColor'}
+        />
+      );
+    case 'models':
+      return (
+        <Layers
+          {...commonProps}
+          color={selected ? sidebarIconColors.models : 'currentColor'}
         />
       );
     case 'setting':
@@ -420,6 +429,37 @@ export function getChannelIcon(channelType) {
     default:
       return null; // 未知类型或自定义渠道不显示图标
   }
+}
+
+/**
+ * 根据图标名称动态获取 LobeHub 图标组件
+ * @param {string} iconName - 图标名称
+ * @param {number} size - 图标大小，默认为 14
+ * @returns {JSX.Element} - 对应的图标组件或 Avatar
+ */
+export function getLobeHubIcon(iconName, size = 14) {
+  if (typeof iconName === 'string') iconName = iconName.trim();
+  // 如果没有图标名称，返回 Avatar
+  if (!iconName) {
+    return <Avatar size="extra-extra-small">?</Avatar>;
+  }
+
+  let IconComponent;
+
+  if (iconName.includes('.')) {
+    const [base, variant] = iconName.split('.');
+    const BaseIcon = LobeIcons[base];
+    IconComponent = BaseIcon ? BaseIcon[variant] : undefined;
+  } else {
+    IconComponent = LobeIcons[iconName];
+  }
+
+  if (IconComponent && (typeof IconComponent === 'function' || typeof IconComponent === 'object')) {
+    return <IconComponent size={size} />;
+  }
+
+  const firstLetter = iconName.charAt(0).toUpperCase();
+  return <Avatar size="extra-extra-small">{firstLetter}</Avatar>;
 }
 
 // 颜色列表
@@ -891,13 +931,13 @@ export function renderQuota(quota, digits = 2) {
   if (displayInCurrency) {
     const result = quota / quotaPerUnit;
     const fixedResult = result.toFixed(digits);
-    
+
     // 如果 toFixed 后结果为 0 但原始值不为 0，显示最小值
     if (parseFloat(fixedResult) === 0 && quota > 0 && result > 0) {
       const minValue = Math.pow(10, -digits);
       return '$' + minValue.toFixed(digits);
     }
-    
+
     return '$' + fixedResult;
   }
   return renderNumber(quota);

@@ -250,6 +250,8 @@ func migrateDB() error {
 		&TopUp{},
 		&QuotaData{},
 		&Task{},
+		&Model{},
+		&Vendor{},
 		&Setup{},
 	)
 	if err != nil {
@@ -276,6 +278,8 @@ func migrateDBFast() error {
 		{&TopUp{}, "TopUp"},
 		{&QuotaData{}, "QuotaData"},
 		{&Task{}, "Task"},
+		{&Model{}, "Model"},
+        {&Vendor{}, "Vendor"},
 		{&Setup{}, "Setup"},
 	}
 	// 动态计算migration数量，确保errChan缓冲区足够大

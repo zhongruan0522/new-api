@@ -53,6 +53,7 @@ code {
 
 /* ==================== 导航和侧边栏样式 ==================== */
 /* 导航项样式 */
+.semi-tagInput,
 .semi-input-textarea-wrapper,
 .semi-navigation-sub-title,
 .semi-chat-inputBox-sendButton,

@@ -49,6 +49,7 @@ const routerMap = {
   detail: '/console',
   pricing: '/pricing',
   task: '/console/task',
+  models: '/console/models',
   playground: '/console/playground',
   personal: '/console/personal',
 };
@@ -127,6 +128,12 @@ const SiderBar = ({ onNavigate = () => { } }) => {
 
   const adminItems = useMemo(
     () => [
+      {
+        text: t('模型管理'),
+        itemKey: 'models',
+        to: '/console/models',
+        className: isAdmin() ? '' : 'tableHiddle',
+      },
       {
         text: t('渠道管理'),
         itemKey: 'channel',

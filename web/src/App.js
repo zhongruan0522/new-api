@@ -39,6 +39,7 @@ import Chat2Link from './pages/Chat2Link';
 import Midjourney from './pages/Midjourney';
 import Pricing from './pages/Pricing/index.js';
 import Task from './pages/Task/index.js';
+import ModelPage from './pages/Model/index.js';
 import Playground from './pages/Playground/index.js';
 import OAuth2Callback from './components/auth/OAuth2Callback.js';
 import PersonalSetting from './components/settings/PersonalSetting.js';
@@ -69,6 +70,14 @@ function App() {
             <Suspense fallback={<Loading></Loading>} key={location.pathname}>
               <Setup />
             </Suspense>
+          }
+        />
+        <Route
+          path='/console/models'
+          element={
+            <PrivateRoute>
+              <ModelPage />
+            </PrivateRoute>
           }
         />
         <Route

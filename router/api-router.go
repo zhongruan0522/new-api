@@ -175,5 +175,27 @@ func SetApiRouter(router *gin.Engine) {
 			taskRoute.GET("/self", middleware.UserAuth(), controller.GetUserTask)
 			taskRoute.GET("/", middleware.AdminAuth(), controller.GetAllTask)
 		}
+
+		vendorRoute := apiRouter.Group("/vendors")
+        vendorRoute.Use(middleware.AdminAuth())
+        {
+            vendorRoute.GET("/", controller.GetAllVendors)
+            vendorRoute.GET("/search", controller.SearchVendors)
+            vendorRoute.GET("/:id", controller.GetVendorMeta)
+            vendorRoute.POST("/", controller.CreateVendorMeta)
+            vendorRoute.PUT("/", controller.UpdateVendorMeta)
+            vendorRoute.DELETE("/:id", controller.DeleteVendorMeta)
+        }
+
+        modelsRoute := apiRouter.Group("/models")
+		modelsRoute.Use(middleware.AdminAuth())
+		{
+			modelsRoute.GET("/", controller.GetAllModelsMeta)
+            modelsRoute.GET("/search", controller.SearchModelsMeta)
+			modelsRoute.GET("/:id", controller.GetModelMeta)
+			modelsRoute.POST("/", controller.CreateModelMeta)
+			modelsRoute.PUT("/", controller.UpdateModelMeta)
+			modelsRoute.DELETE("/:id", controller.DeleteModelMeta)
+		}
 	}
 }
