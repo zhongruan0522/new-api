@@ -48,6 +48,7 @@ import {
 } from '@douyinfe/semi-ui';
 import { getChannelModels, copy, getChannelIcon, getModelCategories, selectFilter } from '../../../../helpers';
 import ModelSelectModal from './ModelSelectModal';
+import JSONEditor from '../../../common/JSONEditor';
 import {
   IconSave,
   IconClose,
@@ -69,7 +70,9 @@ const STATUS_CODE_MAPPING_EXAMPLE = {
 };
 
 const REGION_EXAMPLE = {
-  default: 'us-central1',
+  "default": 'global',
+  "gemini-1.5-pro-002": "europe-west2",
+  "gemini-1.5-flash-002": "europe-west2",
   'claude-3-5-sonnet-20240620': 'europe-west1',
 };
 
@@ -1174,24 +1177,24 @@ const EditChannelModal = (props) => {
                   )}
 
                   {inputs.type === 41 && (
-                    <Form.TextArea
+                    <JSONEditor
                       field='other'
                       label={t('部署地区')}
                       placeholder={t(
                         '请输入部署地区，例如：us-central1\n支持使用模型映射格式\n{\n    "default": "us-central1",\n    "claude-3-5-sonnet-20240620": "europe-west1"\n}'
                       )}
-                      autosize
+                      value={inputs.other || ''}
                       onChange={(value) => handleInputChange('other', value)}
                       rules={[{ required: true, message: t('请填写部署地区') }]}
+                      template={REGION_EXAMPLE}
+                      templateLabel={t('填入模板')}
+                      editorType="region"
+                      formApi={formApiRef.current}
                       extraText={
-                        <Text
-                          className="!text-semi-color-primary cursor-pointer"
-                          onClick={() => handleInputChange('other', JSON.stringify(REGION_EXAMPLE, null, 2))}
-                        >
-                          {t('填入模板')}
+                        <Text type="tertiary" size="small">
+                          {t('设置默认地区和特定模型的专用地区')}
                         </Text>
                       }
-                      showClear
                     />
                   )}
 
@@ -1447,24 +1450,24 @@ const EditChannelModal = (props) => {
                     showClear
                   />
 
-                  <Form.TextArea
+                  <JSONEditor
                     field='model_mapping'
                     label={t('模型重定向')}
                     placeholder={
                       t('此项可选，用于修改请求体中的模型名称，为一个 JSON 字符串，键为请求中模型名称，值为要替换的模型名称，例如：') +
                       `\n${JSON.stringify(MODEL_MAPPING_EXAMPLE, null, 2)}`
                     }
-                    autosize
+                    value={inputs.model_mapping || ''}
                     onChange={(value) => handleInputChange('model_mapping', value)}
+                    template={MODEL_MAPPING_EXAMPLE}
+                    templateLabel={t('填入模板')}
+                    editorType="keyValue"
+                    formApi={formApiRef.current}
                     extraText={
-                      <Text
-                        className="!text-semi-color-primary cursor-pointer"
-                        onClick={() => handleInputChange('model_mapping', JSON.stringify(MODEL_MAPPING_EXAMPLE, null, 2))}
-                      >
-                        {t('填入模板')}
+                      <Text type="tertiary" size="small">
+                        {t('键为请求中的模型名称，值为要替换的模型名称')}
                       </Text>
                     }
-                    showClear
                   />
                 </Card>
 
@@ -1554,7 +1557,7 @@ const EditChannelModal = (props) => {
                     showClear
                   />
 
-                  <Form.TextArea
+                  <JSONEditor
                     field='status_code_mapping'
                     label={t('状态码复写')}
                     placeholder={
@@ -1562,17 +1565,17 @@ const EditChannelModal = (props) => {
                       '\n' +
                       JSON.stringify(STATUS_CODE_MAPPING_EXAMPLE, null, 2)
                     }
-                    autosize
+                    value={inputs.status_code_mapping || ''}
                     onChange={(value) => handleInputChange('status_code_mapping', value)}
+                    template={STATUS_CODE_MAPPING_EXAMPLE}
+                    templateLabel={t('填入模板')}
+                    editorType="keyValue"
+                    formApi={formApiRef.current}
                     extraText={
-                      <Text
-                        className="!text-semi-color-primary cursor-pointer"
-                        onClick={() => handleInputChange('status_code_mapping', JSON.stringify(STATUS_CODE_MAPPING_EXAMPLE, null, 2))}
-                      >
-                        {t('填入模板')}
+                      <Text type="tertiary" size="small">
+                        {t('键为原状态码，值为要复写的状态码，仅影响本地判断')}
                       </Text>
                     }
-                    showClear
                   />
                 </Card>
 
@@ -1585,14 +1588,6 @@ const EditChannelModal = (props) => {
                     </Avatar>
                     <div>
                       <Text className="text-lg font-medium">{t('渠道额外设置')}</Text>
-                      <div className="text-xs text-gray-600">
-                        <Text
-                          className="!text-semi-color-primary cursor-pointer"
-                          onClick={() => window.open('https://github.com/QuantumNous/new-api/blob/main/docs/channel/other_setting.md')}
-                        >
-                          {t('设置说明')}
-                        </Text>
-                      </div>
                     </div>
                   </div>
 
