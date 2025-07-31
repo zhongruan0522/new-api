@@ -59,17 +59,18 @@ export const useModelsData = () => {
     searchVendor: '',
   };
 
+  // ---------- helpers ----------
+  // Safely extract array items from API payload
+  const extractItems = (payload) => {
+    const items = payload?.items || payload || [];
+    return Array.isArray(items) ? items : [];
+  };
+
   // Form API reference
   const [formApi, setFormApi] = useState(null);
 
   // Get form values helper function
-  const getFormValues = () => {
-    const formValues = formApi ? formApi.getValues() : {};
-    return {
-      searchKeyword: formValues.searchKeyword || '',
-      searchVendor: formValues.searchVendor || '',
-    };
-  };
+  const getFormValues = () => formApi?.getValues() || formInitValues;
 
   // Close edit modal
   const closeEdit = () => {
@@ -129,8 +130,7 @@ export const useModelsData = () => {
       const res = await API.get(url);
       const { success, message, data } = res.data;
       if (success) {
-        const items = data.items || data || [];
-        const newPageData = Array.isArray(items) ? items : [];
+        const newPageData = extractItems(data);
         setActivePage(data.page || page);
         setModelCount(data.total || newPageData.length);
         setModelFormat(newPageData);
@@ -151,15 +151,32 @@ export const useModelsData = () => {
     setLoading(false);
   };
 
+  // Fetch vendor counts separately to keep tab numbers accurate
+  const refreshVendorCounts = async () => {
+    try {
+      // Load all models (large page_size) to compute counts for every vendor
+      const res = await API.get('/api/models/?p=1&page_size=100000');
+      if (res.data.success) {
+        const newItems = extractItems(res.data.data);
+        updateVendorCounts(newItems);
+      }
+    } catch (_) {
+      // ignore count refresh errors
+    }
+  };
+
   // Refresh data
   const refresh = async (page = activePage) => {
     await loadModels(page, pageSize);
+    // When not viewing 'all', tab counts need a separate refresh
+    if (activeVendorKey !== 'all') {
+      await refreshVendorCounts();
+    }
   };
 
   // Search models with keyword and vendor
   const searchModels = async () => {
-    const formValues = getFormValues();
-    const { searchKeyword, searchVendor } = formValues;
+    const { searchKeyword = '', searchVendor = '' } = getFormValues();
 
     if (searchKeyword === '' && searchVendor === '') {
       // If keyword is blank, load models instead
@@ -174,8 +191,7 @@ export const useModelsData = () => {
       );
       const { success, message, data } = res.data;
       if (success) {
-        const items = data.items || data || [];
-        const newPageData = Array.isArray(items) ? items : [];
+        const newPageData = extractItems(data);
         setActivePage(data.page || 1);
         setModelCount(data.total || newPageData.length);
         setModelFormat(newPageData);
