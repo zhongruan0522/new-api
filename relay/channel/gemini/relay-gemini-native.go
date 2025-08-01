@@ -108,11 +108,10 @@ func GeminiTextGenerationStreamHandler(c *gin.Context, info *relaycommon.RelayIn
 
 		// 直接发送 GeminiChatResponse 响应
 		err = helper.StringData(c, data)
-		info.SendResponseCount++
 		if err != nil {
 			common.LogError(c, err.Error())
 		}
-
+		info.SendResponseCount++
 		return true
 	})
 
