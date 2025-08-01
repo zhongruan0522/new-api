@@ -827,8 +827,6 @@ func GeminiChatStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *
 	var usage = &dto.Usage{}
 	var imageCount int
 
-	respCount := 0
-
 	helper.StreamScannerHandler(c, resp, info, func(data string) bool {
 		var geminiResponse GeminiChatResponse
 		err := common.UnmarshalJsonStr(data, &geminiResponse)
@@ -858,7 +856,7 @@ func GeminiChatStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *
 			}
 		}
 
-		if respCount == 0 {
+		if info.SendResponseCount == 0 {
 			// send first response
 			err = handleStream(c, info, helper.GenerateStartEmptyResponse(id, createAt, info.UpstreamModelName, nil))
 			if err != nil {
@@ -873,11 +871,10 @@ func GeminiChatStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *
 		if isStop {
 			_ = handleStream(c, info, helper.GenerateStopResponse(id, createAt, info.UpstreamModelName, constant.FinishReasonStop))
 		}
-		respCount++
 		return true
 	})
 
-	if respCount == 0 {
+	if info.SendResponseCount == 0 {
 		// 空补全，报错不计费
 		// empty response, throw an error
 		return nil, types.NewOpenAIError(errors.New("no response received from Gemini API"), types.ErrorCodeEmptyResponse, http.StatusInternalServerError)
