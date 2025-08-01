@@ -47,25 +47,16 @@ func handleClaudeFormat(c *gin.Context, data string, info *relaycommon.RelayInfo
 }
 
 func handleGeminiFormat(c *gin.Context, data string, info *relaycommon.RelayInfo) error {
-	// 截取前50个字符用于调试
-	debugData := data
-	if len(data) > 50 {
-		debugData = data[:50] + "..."
-	}
-	common.LogInfo(c, "handleGeminiFormat called with data: "+debugData)
-
 	var streamResponse dto.ChatCompletionsStreamResponse
 	if err := common.Unmarshal(common.StringToByteSlice(data), &streamResponse); err != nil {
 		common.LogError(c, "failed to unmarshal stream response: "+err.Error())
 		return err
 	}
 
-	common.LogInfo(c, "successfully unmarshaled stream response")
 	geminiResponse := service.StreamResponseOpenAI2Gemini(&streamResponse, info)
 
 	// 如果返回 nil，表示没有实际内容，跳过发送
 	if geminiResponse == nil {
-		common.LogInfo(c, "handleGeminiFormat: no content to send, skipping")
 		return nil
 	}
 
@@ -75,7 +66,6 @@ func handleGeminiFormat(c *gin.Context, data string, info *relaycommon.RelayInfo
 		return err
 	}
 
-	common.LogInfo(c, "sending gemini format response")
 	// send gemini format response
 	c.Render(-1, common.CustomEvent{Data: "data: " + string(geminiResponseStr)})
 	if flusher, ok := c.Writer.(http.Flusher); ok {
