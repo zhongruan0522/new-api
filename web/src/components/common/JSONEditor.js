@@ -65,7 +65,8 @@ const JSONEditor = ({
         const keyCount = Object.keys(parsed).length;
         return keyCount > 10 ? 'manual' : 'visual';
       } catch (error) {
-        return 'visual';
+        // JSON无效时默认显示手动编辑模式
+        return 'manual';
       }
     }
     return 'visual';
@@ -201,6 +202,18 @@ const JSONEditor = ({
 
   // 渲染键值对编辑器
   const renderKeyValueEditor = () => {
+    if (typeof jsonData !== 'object' || jsonData === null) {
+      return (
+        <div className="text-center py-6 px-4">
+          <div className="text-gray-400 mb-2">
+            <IconCode size={32} />
+          </div>
+          <Text type="tertiary" className="text-gray-500 text-sm">
+            {t('无效的JSON数据，请检查格式')}
+          </Text>
+        </div>
+      );
+    }
     const entries = Object.entries(jsonData);
     
     return (

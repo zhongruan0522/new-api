@@ -1,6 +1,7 @@
 package gemini
 
 import (
+	"github.com/pkg/errors"
 	"io"
 	"net/http"
 	"one-api/common"
@@ -110,9 +111,13 @@ func GeminiTextGenerationStreamHandler(c *gin.Context, info *relaycommon.RelayIn
 		if err != nil {
 			common.LogError(c, err.Error())
 		}
-
+		info.SendResponseCount++
 		return true
 	})
+
+	if info.SendResponseCount == 0 {
+		return nil, types.NewOpenAIError(errors.New("no response received from Gemini API"), types.ErrorCodeEmptyResponse, http.StatusInternalServerError)
+	}
 
 	if imageCount != 0 {
 		if usage.CompletionTokens == 0 {
