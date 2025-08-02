@@ -76,12 +76,13 @@ const (
 )
 
 type NewAPIError struct {
-	Err        error
-	RelayError any
-	skipRetry  bool
-	errorType  ErrorType
-	errorCode  ErrorCode
-	StatusCode int
+	Err            error
+	RelayError     any
+	skipRetry      bool
+	recordErrorLog *bool
+	errorType      ErrorType
+	errorCode      ErrorCode
+	StatusCode     int
 }
 
 func (e *NewAPIError) GetErrorCode() ErrorCode {
@@ -277,4 +278,21 @@ func ErrOptionWithSkipRetry() NewAPIErrorOptions {
 	return func(e *NewAPIError) {
 		e.skipRetry = true
 	}
+}
+
+func ErrOptionWithNoRecordErrorLog() NewAPIErrorOptions {
+	return func(e *NewAPIError) {
+		e.recordErrorLog = common.GetPointer(false)
+	}
+}
+
+func IsRecordErrorLog(e *NewAPIError) bool {
+	if e == nil {
+		return false
+	}
+	if e.recordErrorLog == nil {
+		// default to true if not set
+		return true
+	}
+	return *e.recordErrorLog
 }
