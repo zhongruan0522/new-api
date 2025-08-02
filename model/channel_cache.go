@@ -69,10 +69,15 @@ func InitChannelCache() {
 	group2model2channels = newGroup2model2channels
 	//channelsIDM = newChannelId2channel
 	for i, channel := range newChannelId2channel {
-		if oldChannel, ok := channelsIDM[i]; ok {
-			// 存在旧的渠道，如果是多key且轮询，保留轮询索引信息
-			if oldChannel.ChannelInfo.IsMultiKey && oldChannel.ChannelInfo.MultiKeyMode == constant.MultiKeyModePolling {
-				channel.ChannelInfo.MultiKeyPollingIndex = oldChannel.ChannelInfo.MultiKeyPollingIndex
+		if channel.ChannelInfo.IsMultiKey {
+			channel.Keys = channel.getKeys()
+			if channel.ChannelInfo.MultiKeyMode == constant.MultiKeyModePolling {
+				if oldChannel, ok := channelsIDM[i]; ok {
+					// 存在旧的渠道，如果是多key且轮询，保留轮询索引信息
+					if oldChannel.ChannelInfo.IsMultiKey && oldChannel.ChannelInfo.MultiKeyMode == constant.MultiKeyModePolling {
+						channel.ChannelInfo.MultiKeyPollingIndex = oldChannel.ChannelInfo.MultiKeyPollingIndex
+					}
+				}
 			}
 		}
 	}
