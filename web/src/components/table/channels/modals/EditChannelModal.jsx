@@ -154,6 +154,7 @@ const EditChannelModal = (props) => {
   const [isMultiKeyChannel, setIsMultiKeyChannel] = useState(false);
   const [channelSearchValue, setChannelSearchValue] = useState('');
   const [useManualInput, setUseManualInput] = useState(false); // 是否使用手动输入模式
+  const [keyMode, setKeyMode] = useState('append'); // 密钥模式：replace（覆盖）或 append（追加）
   // 渠道额外设置状态
   const [channelSettings, setChannelSettings] = useState({
     force_format: false,
@@ -560,6 +561,12 @@ const EditChannelModal = (props) => {
         pass_through_body_enabled: false,
         system_prompt: '',
       });
+      // 重置密钥模式状态
+      setKeyMode('append');
+      // 清空表单中的key_mode字段
+      if (formApiRef.current) {
+        formApiRef.current.setValue('key_mode', undefined);
+      }
     }
   }, [props.visible, channelId]);
 
@@ -725,6 +732,7 @@ const EditChannelModal = (props) => {
       res = await API.put(`/api/channel/`, {
         ...localInputs,
         id: parseInt(channelId),
+        key_mode: isMultiKeyChannel ? keyMode : undefined, // 只在多key模式下传递
       });
     } else {
       res = await API.post(`/api/channel/`, {
@@ -787,55 +795,59 @@ const EditChannelModal = (props) => {
   const batchAllowed = !isEdit || isMultiKeyChannel;
   const batchExtra = batchAllowed ? (
     <Space>
-      <Checkbox
-        disabled={isEdit}
-        checked={batch}
-        onChange={(e) => {
-          const checked = e.target.checked;
+      {!isEdit && (
+        <Checkbox
+          disabled={isEdit}
+          checked={batch}
+          onChange={(e) => {
+            const checked = e.target.checked;
 
-          if (!checked && vertexFileList.length > 1) {
-            Modal.confirm({
-              title: t('切换为单密钥模式'),
-              content: t('将仅保留第一个密钥文件，其余文件将被移除，是否继续？'),
-              onOk: () => {
-                const firstFile = vertexFileList[0];
-                const firstKey = vertexKeys[0] ? [vertexKeys[0]] : [];
+            if (!checked && vertexFileList.length > 1) {
+              Modal.confirm({
+                title: t('切换为单密钥模式'),
+                content: t('将仅保留第一个密钥文件，其余文件将被移除，是否继续？'),
+                onOk: () => {
+                  const firstFile = vertexFileList[0];
+                  const firstKey = vertexKeys[0] ? [vertexKeys[0]] : [];
 
-                setVertexFileList([firstFile]);
-                setVertexKeys(firstKey);
+                  setVertexFileList([firstFile]);
+                  setVertexKeys(firstKey);
 
-                formApiRef.current?.setValue('vertex_files', [firstFile]);
-                setInputs((prev) => ({ ...prev, vertex_files: [firstFile] }));
+                  formApiRef.current?.setValue('vertex_files', [firstFile]);
+                  setInputs((prev) => ({ ...prev, vertex_files: [firstFile] }));
 
-                setBatch(false);
-                setMultiToSingle(false);
-                setMultiKeyMode('random');
-              },
-              onCancel: () => {
-                setBatch(true);
-              },
-              centered: true,
-            });
-            return;
-          }
-
-          setBatch(checked);
-          if (!checked) {
-            setMultiToSingle(false);
-            setMultiKeyMode('random');
-          } else {
-            // 批量模式下禁用手动输入，并清空手动输入的内容
-            setUseManualInput(false);
-            if (inputs.type === 41) {
-              // 清空手动输入的密钥内容
-              if (formApiRef.current) {
-                formApiRef.current.setValue('key', '');
-              }
-              handleInputChange('key', '');
+                  setBatch(false);
+                  setMultiToSingle(false);
+                  setMultiKeyMode('random');
+                },
+                onCancel: () => {
+                  setBatch(true);
+                },
+                centered: true,
+              });
+              return;
             }
-          }
-        }}
-      >{t('批量创建')}</Checkbox>
+
+            setBatch(checked);
+            if (!checked) {
+              setMultiToSingle(false);
+              setMultiKeyMode('random');
+            } else {
+              // 批量模式下禁用手动输入，并清空手动输入的内容
+              setUseManualInput(false);
+              if (inputs.type === 41) {
+                // 清空手动输入的密钥内容
+                if (formApiRef.current) {
+                  formApiRef.current.setValue('key', '');
+                }
+                handleInputChange('key', '');
+              }
+            }
+          }}
+        >
+          {t('批量创建')}
+        </Checkbox>
+      )}
       {batch && (
         <Checkbox disabled={isEdit} checked={multiToSingle} onChange={() => {
           setMultiToSingle(prev => !prev);
@@ -1032,7 +1044,16 @@ const EditChannelModal = (props) => {
                         autosize
                         autoComplete='new-password'
                         onChange={(value) => handleInputChange('key', value)}
-                        extraText={batchExtra}
+                        extraText={
+                          <div className="flex items-center gap-2">
+                            {isEdit && isMultiKeyChannel && keyMode === 'append' && (
+                              <Text type="warning" size="small">
+                                {t('追加模式：新密钥将添加到现有密钥列表的末尾')}
+                              </Text>
+                            )}
+                            {batchExtra}
+                          </div>
+                        }
                         showClear
                       />
                     )
@@ -1099,6 +1120,11 @@ const EditChannelModal = (props) => {
                                   <Text type="tertiary" size="small">
                                     {t('请输入完整的 JSON 格式密钥内容')}
                                   </Text>
+                                  {isEdit && isMultiKeyChannel && keyMode === 'append' && (
+                                    <Text type="warning" size="small">
+                                      {t('追加模式：新密钥将添加到现有密钥列表的末尾')}
+                                    </Text>
+                                  )}
                                   {batchExtra}
                                 </div>
                               }
@@ -1132,13 +1158,44 @@ const EditChannelModal = (props) => {
                           rules={isEdit ? [] : [{ required: true, message: t('请输入密钥') }]}
                           autoComplete='new-password'
                           onChange={(value) => handleInputChange('key', value)}
-                          extraText={batchExtra}
+                          extraText={
+                            <div className="flex items-center gap-2">
+                              {isEdit && isMultiKeyChannel && keyMode === 'append' && (
+                                <Text type="warning" size="small">
+                                  {t('追加模式：新密钥将添加到现有密钥列表的末尾')}
+                                </Text>
+                              )}
+                              {batchExtra}
+                            </div>
+                          }
                           showClear
                         />
                       )}
                     </>
                   )}
 
+                {isEdit && isMultiKeyChannel && (
+                        <Form.Select
+                          field='key_mode'
+                          label={t('密钥更新模式')}
+                          placeholder={t('请选择密钥更新模式')}
+                          optionList={[
+                            { label: t('追加到现有密钥'), value: 'append' },
+                            { label: t('覆盖现有密钥'), value: 'replace' },
+                          ]}
+                          style={{ width: '100%' }}
+                          value={keyMode}
+                          onChange={(value) => setKeyMode(value)}
+                          extraText={
+                            <Text type="tertiary" size="small">
+                              {keyMode === 'replace' 
+                                ? t('覆盖模式：将完全替换现有的所有密钥') 
+                                : t('追加模式：将新密钥添加到现有密钥列表末尾')
+                              }
+                            </Text>
+                          }
+                        />
+                  )}
                   {batch && multiToSingle && (
                     <>
                       <Form.Select
