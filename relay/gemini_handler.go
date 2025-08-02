@@ -20,8 +20,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func getAndValidateGeminiRequest(c *gin.Context) (*gemini.GeminiChatRequest, error) {
-	request := &gemini.GeminiChatRequest{}
+func getAndValidateGeminiRequest(c *gin.Context) (*dto.GeminiChatRequest, error) {
+	request := &dto.GeminiChatRequest{}
 	err := common.UnmarshalBodyReusable(c, request)
 	if err != nil {
 		return nil, err
@@ -44,7 +44,7 @@ func checkGeminiStreamMode(c *gin.Context, relayInfo *relaycommon.RelayInfo) {
 	// }
 }
 
-func checkGeminiInputSensitive(textRequest *gemini.GeminiChatRequest) ([]string, error) {
+func checkGeminiInputSensitive(textRequest *dto.GeminiChatRequest) ([]string, error) {
 	var inputTexts []string
 	for _, content := range textRequest.Contents {
 		for _, part := range content.Parts {
@@ -61,7 +61,7 @@ func checkGeminiInputSensitive(textRequest *gemini.GeminiChatRequest) ([]string,
 	return sensitiveWords, err
 }
 
-func getGeminiInputTokens(req *gemini.GeminiChatRequest, info *relaycommon.RelayInfo) int {
+func getGeminiInputTokens(req *dto.GeminiChatRequest, info *relaycommon.RelayInfo) int {
 	// 计算输入 token 数量
 	var inputTexts []string
 	for _, content := range req.Contents {
@@ -78,9 +78,13 @@ func getGeminiInputTokens(req *gemini.GeminiChatRequest, info *relaycommon.Relay
 	return inputTokens
 }
 
-func isNoThinkingRequest(req *gemini.GeminiChatRequest) bool {
+func isNoThinkingRequest(req *dto.GeminiChatRequest) bool {
 	if req.GenerationConfig.ThinkingConfig != nil && req.GenerationConfig.ThinkingConfig.ThinkingBudget != nil {
-		return *req.GenerationConfig.ThinkingConfig.ThinkingBudget == 0
+		configBudget := req.GenerationConfig.ThinkingConfig.ThinkingBudget
+		if configBudget != nil && *configBudget == 0 {
+			// 如果思考预算为 0，则认为是非思考请求
+			return true
+		}
 	}
 	return false
 }
@@ -202,7 +206,12 @@ func GeminiHelper(c *gin.Context) (newAPIError *types.NewAPIError) {
 		}
 		requestBody = bytes.NewReader(body)
 	} else {
-		jsonData, err := common.Marshal(req)
+		// 使用 ConvertGeminiRequest 转换请求格式
+		convertedRequest, err := adaptor.ConvertGeminiRequest(c, relayInfo, req)
+		if err != nil {
+			return types.NewError(err, types.ErrorCodeConvertRequestFailed, types.ErrOptionWithSkipRetry())
+		}
+		jsonData, err := common.Marshal(convertedRequest)
 		if err != nil {
 			return types.NewError(err, types.ErrorCodeConvertRequestFailed, types.ErrOptionWithSkipRetry())
 		}

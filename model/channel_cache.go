@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/rand"
 	"one-api/common"
+	"one-api/constant"
 	"one-api/setting"
 	"sort"
 	"strings"
@@ -66,6 +67,20 @@ func InitChannelCache() {
 
 	channelSyncLock.Lock()
 	group2model2channels = newGroup2model2channels
+	//channelsIDM = newChannelId2channel
+	for i, channel := range newChannelId2channel {
+		if channel.ChannelInfo.IsMultiKey {
+			channel.Keys = channel.getKeys()
+			if channel.ChannelInfo.MultiKeyMode == constant.MultiKeyModePolling {
+				if oldChannel, ok := channelsIDM[i]; ok {
+					// 存在旧的渠道，如果是多key且轮询，保留轮询索引信息
+					if oldChannel.ChannelInfo.IsMultiKey && oldChannel.ChannelInfo.MultiKeyMode == constant.MultiKeyModePolling {
+						channel.ChannelInfo.MultiKeyPollingIndex = oldChannel.ChannelInfo.MultiKeyPollingIndex
+					}
+				}
+			}
+		}
+	}
 	channelsIDM = newChannelId2channel
 	channelSyncLock.Unlock()
 	common.SysLog("channels synced from database")
@@ -203,9 +218,6 @@ func CacheGetChannel(id int) (*Channel, error) {
 	if !ok {
 		return nil, fmt.Errorf("渠道# %d，已不存在", id)
 	}
-	if c.Status != common.ChannelStatusEnabled {
-		return nil, fmt.Errorf("渠道# %d，已被禁用", id)
-	}
 	return c, nil
 }
 
@@ -223,9 +235,6 @@ func CacheGetChannelInfo(id int) (*ChannelInfo, error) {
 	c, ok := channelsIDM[id]
 	if !ok {
 		return nil, fmt.Errorf("渠道# %d，已不存在", id)
-	}
-	if c.Status != common.ChannelStatusEnabled {
-		return nil, fmt.Errorf("渠道# %d，已被禁用", id)
 	}
 	return &c.ChannelInfo, nil
 }

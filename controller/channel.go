@@ -36,9 +36,28 @@ type OpenAIModel struct {
 	Parent string `json:"parent"`
 }
 
+type GoogleOpenAICompatibleModels []struct {
+	Name                       string   `json:"name"`
+	Version                    string   `json:"version"`
+	DisplayName                string   `json:"displayName"`
+	Description                string   `json:"description,omitempty"`
+	InputTokenLimit            int      `json:"inputTokenLimit"`
+	OutputTokenLimit           int      `json:"outputTokenLimit"`
+	SupportedGenerationMethods []string `json:"supportedGenerationMethods"`
+	Temperature                float64  `json:"temperature,omitempty"`
+	TopP                       float64  `json:"topP,omitempty"`
+	TopK                       int      `json:"topK,omitempty"`
+	MaxTemperature             int      `json:"maxTemperature,omitempty"`
+}
+
 type OpenAIModelsResponse struct {
 	Data    []OpenAIModel `json:"data"`
 	Success bool          `json:"success"`
+}
+
+type GoogleOpenAICompatibleResponse struct {
+	Models        []GoogleOpenAICompatibleModels `json:"models"`
+	NextPageToken string                         `json:"nextPageToken"`
 }
 
 func parseStatusFilter(statusParam string) int {
@@ -168,26 +187,59 @@ func FetchUpstreamModels(c *gin.Context) {
 	if channel.GetBaseURL() != "" {
 		baseURL = channel.GetBaseURL()
 	}
-	url := fmt.Sprintf("%s/v1/models", baseURL)
+
+	var url string
 	switch channel.Type {
 	case constant.ChannelTypeGemini:
-		url = fmt.Sprintf("%s/v1beta/openai/models", baseURL)
+		// curl https://example.com/v1beta/models?key=$GEMINI_API_KEY
+		url = fmt.Sprintf("%s/v1beta/openai/models?key=%s", baseURL, channel.Key)
 	case constant.ChannelTypeAli:
 		url = fmt.Sprintf("%s/compatible-mode/v1/models", baseURL)
+	default:
+		url = fmt.Sprintf("%s/v1/models", baseURL)
 	}
-	body, err := GetResponseBody("GET", url, channel, GetAuthHeader(channel.Key))
+
+	// 获取响应体 - 根据渠道类型决定是否添加 AuthHeader
+	var body []byte
+	if channel.Type == constant.ChannelTypeGemini {
+		body, err = GetResponseBody("GET", url, channel, nil) // I don't know why, but Gemini requires no AuthHeader
+	} else {
+		body, err = GetResponseBody("GET", url, channel, GetAuthHeader(channel.Key))
+	}
 	if err != nil {
 		common.ApiError(c, err)
 		return
 	}
 
 	var result OpenAIModelsResponse
-	if err = json.Unmarshal(body, &result); err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": fmt.Sprintf("解析响应失败: %s", err.Error()),
-		})
-		return
+	var parseSuccess bool
+
+	// 适配特殊格式
+	switch channel.Type {
+	case constant.ChannelTypeGemini:
+		var googleResult GoogleOpenAICompatibleResponse
+		if err = json.Unmarshal(body, &googleResult); err == nil {
+			// 转换Google格式到OpenAI格式
+			for _, model := range googleResult.Models {
+				for _, gModel := range model {
+					result.Data = append(result.Data, OpenAIModel{
+						ID: gModel.Name,
+					})
+				}
+			}
+			parseSuccess = true
+		}
+	}
+
+	// 如果解析失败，尝试OpenAI格式
+	if !parseSuccess {
+		if err = json.Unmarshal(body, &result); err != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": fmt.Sprintf("解析响应失败: %s", err.Error()),
+			})
+			return
+		}
 	}
 
 	var ids []string
@@ -669,6 +721,7 @@ func DeleteChannelBatch(c *gin.Context) {
 type PatchChannel struct {
 	model.Channel
 	MultiKeyMode *string `json:"multi_key_mode"`
+	KeyMode      *string `json:"key_mode"` // 多key模式下密钥覆盖或者追加
 }
 
 func UpdateChannel(c *gin.Context) {
@@ -688,7 +741,7 @@ func UpdateChannel(c *gin.Context) {
 		return
 	}
 	// Preserve existing ChannelInfo to ensure multi-key channels keep correct state even if the client does not send ChannelInfo in the request.
-	originChannel, err := model.GetChannelById(channel.Id, false)
+	originChannel, err := model.GetChannelById(channel.Id, true)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,
@@ -703,6 +756,69 @@ func UpdateChannel(c *gin.Context) {
 	// If the request explicitly specifies a new MultiKeyMode, apply it on top of the original info.
 	if channel.MultiKeyMode != nil && *channel.MultiKeyMode != "" {
 		channel.ChannelInfo.MultiKeyMode = constant.MultiKeyMode(*channel.MultiKeyMode)
+	}
+
+	// 处理多key模式下的密钥追加/覆盖逻辑
+	if channel.KeyMode != nil && channel.ChannelInfo.IsMultiKey {
+		switch *channel.KeyMode {
+		case "append":
+			// 追加模式：将新密钥添加到现有密钥列表
+			if originChannel.Key != "" {
+				var newKeys []string
+				var existingKeys []string
+
+				// 解析现有密钥
+				if strings.HasPrefix(strings.TrimSpace(originChannel.Key), "[") {
+					// JSON数组格式
+					var arr []json.RawMessage
+					if err := json.Unmarshal([]byte(strings.TrimSpace(originChannel.Key)), &arr); err == nil {
+						existingKeys = make([]string, len(arr))
+						for i, v := range arr {
+							existingKeys[i] = string(v)
+						}
+					}
+				} else {
+					// 换行分隔格式
+					existingKeys = strings.Split(strings.Trim(originChannel.Key, "\n"), "\n")
+				}
+
+				// 处理 Vertex AI 的特殊情况
+				if channel.Type == constant.ChannelTypeVertexAi {
+					// 尝试解析新密钥为JSON数组
+					if strings.HasPrefix(strings.TrimSpace(channel.Key), "[") {
+						array, err := getVertexArrayKeys(channel.Key)
+						if err != nil {
+							c.JSON(http.StatusOK, gin.H{
+								"success": false,
+								"message": "追加密钥解析失败: " + err.Error(),
+							})
+							return
+						}
+						newKeys = array
+					} else {
+						// 单个JSON密钥
+						newKeys = []string{channel.Key}
+					}
+					// 合并密钥
+					allKeys := append(existingKeys, newKeys...)
+					channel.Key = strings.Join(allKeys, "\n")
+				} else {
+					// 普通渠道的处理
+					inputKeys := strings.Split(channel.Key, "\n")
+					for _, key := range inputKeys {
+						key = strings.TrimSpace(key)
+						if key != "" {
+							newKeys = append(newKeys, key)
+						}
+					}
+					// 合并密钥
+					allKeys := append(existingKeys, newKeys...)
+					channel.Key = strings.Join(allKeys, "\n")
+				}
+			}
+		case "replace":
+			// 覆盖模式：直接使用新密钥（默认行为，不需要特殊处理）
+		}
 	}
 	err = channel.Update()
 	if err != nil {

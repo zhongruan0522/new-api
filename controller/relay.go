@@ -47,7 +47,7 @@ func relayHandler(c *gin.Context, relayMode int) *types.NewAPIError {
 		err = relay.TextHelper(c)
 	}
 
-	if constant2.ErrorLogEnabled && err != nil {
+	if constant2.ErrorLogEnabled && err != nil && types.IsRecordErrorLog(err) {
 		// 保存错误日志到mysql中
 		userId := c.GetInt("id")
 		tokenName := c.GetString("token_name")
@@ -62,6 +62,14 @@ func relayHandler(c *gin.Context, relayMode int) *types.NewAPIError {
 		other["channel_id"] = channelId
 		other["channel_name"] = c.GetString("channel_name")
 		other["channel_type"] = c.GetInt("channel_type")
+		adminInfo := make(map[string]interface{})
+		adminInfo["use_channel"] = c.GetStringSlice("use_channel")
+		isMultiKey := common.GetContextKeyBool(c, constant.ContextKeyChannelIsMultiKey)
+		if isMultiKey {
+			adminInfo["is_multi_key"] = true
+			adminInfo["multi_key_index"] = common.GetContextKeyInt(c, constant.ContextKeyChannelMultiKeyIndex)
+		}
+		other["admin_info"] = adminInfo
 		model.RecordErrorLog(c, userId, channelId, modelName, tokenName, err.MaskSensitiveError(), tokenId, 0, false, userGroup, other)
 	}
 

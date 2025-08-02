@@ -1,4 +1,4 @@
-package gemini
+package dto
 
 import (
 	"encoding/json"
@@ -56,7 +56,7 @@ type FunctionCall struct {
 	Arguments    any    `json:"args"`
 }
 
-type FunctionResponse struct {
+type GeminiFunctionResponse struct {
 	Name     string                 `json:"name"`
 	Response map[string]interface{} `json:"response"`
 }
@@ -81,7 +81,7 @@ type GeminiPart struct {
 	Thought             bool                           `json:"thought,omitempty"`
 	InlineData          *GeminiInlineData              `json:"inlineData,omitempty"`
 	FunctionCall        *FunctionCall                  `json:"functionCall,omitempty"`
-	FunctionResponse    *FunctionResponse              `json:"functionResponse,omitempty"`
+	FunctionResponse    *GeminiFunctionResponse        `json:"functionResponse,omitempty"`
 	FileData            *GeminiFileData                `json:"fileData,omitempty"`
 	ExecutableCode      *GeminiPartExecutableCode      `json:"executableCode,omitempty"`
 	CodeExecutionResult *GeminiPartCodeExecutionResult `json:"codeExecutionResult,omitempty"`

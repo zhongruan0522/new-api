@@ -20,6 +20,26 @@ import (
 type Adaptor struct {
 }
 
+func (a *Adaptor) ConvertGeminiRequest(c *gin.Context, info *relaycommon.RelayInfo, request *dto.GeminiChatRequest) (any, error) {
+	if len(request.Contents) > 0 {
+		for i, content := range request.Contents {
+			if i == 0 {
+				if request.Contents[0].Role == "" {
+					request.Contents[0].Role = "user"
+				}
+			}
+			for _, part := range content.Parts {
+				if part.FileData != nil {
+					if part.FileData.MimeType == "" && strings.Contains(part.FileData.FileUri, "www.youtube.com") {
+						part.FileData.MimeType = "video/webm"
+					}
+				}
+			}
+		}
+	}
+	return request, nil
+}
+
 func (a *Adaptor) ConvertClaudeRequest(c *gin.Context, info *relaycommon.RelayInfo, req *dto.ClaudeRequest) (any, error) {
 	adaptor := openai.Adaptor{}
 	oaiReq, err := adaptor.ConvertClaudeRequest(c, info, req)
@@ -51,13 +71,13 @@ func (a *Adaptor) ConvertImageRequest(c *gin.Context, info *relaycommon.RelayInf
 	}
 
 	// build gemini imagen request
-	geminiRequest := GeminiImageRequest{
-		Instances: []GeminiImageInstance{
+	geminiRequest := dto.GeminiImageRequest{
+		Instances: []dto.GeminiImageInstance{
 			{
 				Prompt: request.Prompt,
 			},
 		},
-		Parameters: GeminiImageParameters{
+		Parameters: dto.GeminiImageParameters{
 			SampleCount:      request.N,
 			AspectRatio:      aspectRatio,
 			PersonGeneration: "allow_adult", // default allow adult
@@ -138,9 +158,9 @@ func (a *Adaptor) ConvertEmbeddingRequest(c *gin.Context, info *relaycommon.Rela
 	}
 
 	// only process the first input
-	geminiRequest := GeminiEmbeddingRequest{
-		Content: GeminiChatContent{
-			Parts: []GeminiPart{
+	geminiRequest := dto.GeminiEmbeddingRequest{
+		Content: dto.GeminiChatContent{
+			Parts: []dto.GeminiPart{
 				{
 					Text: inputs[0],
 				},

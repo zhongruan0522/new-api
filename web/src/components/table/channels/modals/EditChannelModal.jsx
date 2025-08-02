@@ -17,6 +17,8 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 
+import React, { useEffect, useState, useRef, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   API,
   showError,
@@ -24,42 +26,38 @@ import {
   showSuccess,
   verifyJSON,
 } from '../../../../helpers';
+import { useIsMobile } from '../../../../hooks/common/useIsMobile.js';
+import { CHANNEL_OPTIONS } from '../../../../constants';
 import {
-  Avatar,
-  Banner,
-  Button,
-  Card,
-  Checkbox,
-  Col,
-  Form,
-  Highlight,
-  ImagePreview,
-  Input,
-  Modal,
-  Row,
   SideSheet,
   Space,
   Spin,
-  Tag,
+  Button,
   Typography,
+  Checkbox,
+  Banner,
+  Modal,
+  ImagePreview,
+  Card,
+  Tag,
+  Avatar,
+  Form,
+  Row,
+  Col,
+  Highlight,
 } from '@douyinfe/semi-ui';
 import { getChannelModels, copy, getChannelIcon, getModelCategories, selectFilter } from '../../../../helpers';
 import ModelSelectModal from './ModelSelectModal';
 import JSONEditor from '../../../common/JSONEditor';
-import { CHANNEL_OPTIONS, CLAUDE_CODE_DEFAULT_SYSTEM_PROMPT } from '../../../../constants';
 import {
-  IconBolt,
-  IconClose,
-  IconCode,
-  IconGlobe,
   IconSave,
+  IconClose,
   IconServer,
   IconSetting,
+  IconCode,
+  IconGlobe,
+  IconBolt,
 } from '@douyinfe/semi-icons';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-
-import { useIsMobile } from '../../../../hooks/common/useIsMobile.js';
-import { useTranslation } from 'react-i18next';
 
 const { Text, Title } = Typography;
 
@@ -95,8 +93,6 @@ function type2secretPrompt(type) {
       return '按照如下格式输入: AccessKey|SecretKey, 如果上游是New API，则直接输ApiKey';
     case 51:
       return '按照如下格式输入: Access Key ID|Secret Access Key';
-    case 53:
-      return '按照如下格式输入：AccessToken|RefreshToken';
     default:
       return '请输入渠道对应的鉴权密钥';
   }
@@ -149,10 +145,6 @@ const EditChannelModal = (props) => {
   const [customModel, setCustomModel] = useState('');
   const [modalImageUrl, setModalImageUrl] = useState('');
   const [isModalOpenurl, setIsModalOpenurl] = useState(false);
-  const [showOAuthModal, setShowOAuthModal] = useState(false);
-  const [authorizationCode, setAuthorizationCode] = useState('');
-  const [oauthParams, setOauthParams] = useState(null);
-  const [isExchangingCode, setIsExchangingCode] = useState(false);
   const [modelModalVisible, setModelModalVisible] = useState(false);
   const [fetchedModels, setFetchedModels] = useState([]);
   const formApiRef = useRef(null);
@@ -162,6 +154,7 @@ const EditChannelModal = (props) => {
   const [isMultiKeyChannel, setIsMultiKeyChannel] = useState(false);
   const [channelSearchValue, setChannelSearchValue] = useState('');
   const [useManualInput, setUseManualInput] = useState(false); // 是否使用手动输入模式
+  const [keyMode, setKeyMode] = useState('append'); // 密钥模式：replace（覆盖）或 append（追加）
   // 渠道额外设置状态
   const [channelSettings, setChannelSettings] = useState({
     force_format: false,
@@ -361,24 +354,6 @@ const EditChannelModal = (props) => {
         data.system_prompt = '';
       }
 
-      // 特殊处理Claude Code渠道的密钥拆分和系统提示词
-      if (data.type === 53) {
-        // 拆分密钥
-        if (data.key) {
-          const keyParts = data.key.split('|');
-          if (keyParts.length === 2) {
-            data.access_token = keyParts[0];
-            data.refresh_token = keyParts[1];
-          } else {
-            // 如果没有 | 分隔符，表示只有access token
-            data.access_token = data.key;
-            data.refresh_token = '';
-          }
-        }
-        // 强制设置固定系统提示词
-        data.system_prompt = CLAUDE_CODE_DEFAULT_SYSTEM_PROMPT;
-      }
-
       setInputs(data);
       if (formApiRef.current) {
         formApiRef.current.setValues(data);
@@ -502,72 +477,6 @@ const EditChannelModal = (props) => {
     }
   };
 
-  // 生成OAuth授权URL
-  const handleGenerateOAuth = async () => {
-    try {
-      setLoading(true);
-      const res = await API.get('/api/channel/claude/oauth/url');
-      if (res.data.success) {
-        setOauthParams(res.data.data);
-        setShowOAuthModal(true);
-        showSuccess(t('OAuth授权URL生成成功'));
-      } else {
-        showError(res.data.message || t('生成OAuth授权URL失败'));
-      }
-    } catch (error) {
-      showError(t('生成OAuth授权URL失败：') + error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // 交换授权码
-  const handleExchangeCode = async () => {
-    if (!authorizationCode.trim()) {
-      showError(t('请输入授权码'));
-      return;
-    }
-
-    if (!oauthParams) {
-      showError(t('OAuth参数丢失，请重新生成'));
-      return;
-    }
-
-    try {
-      setIsExchangingCode(true);
-      const res = await API.post('/api/channel/claude/oauth/exchange', {
-        authorization_code: authorizationCode,
-        code_verifier: oauthParams.code_verifier,
-        state: oauthParams.state,
-      });
-
-      if (res.data.success) {
-        const tokenData = res.data.data;
-        // 自动填充access token和refresh token
-        handleInputChange('access_token', tokenData.access_token);
-        handleInputChange('refresh_token', tokenData.refresh_token);
-        handleInputChange('key', `${tokenData.access_token}|${tokenData.refresh_token}`);
-
-        // 更新表单字段
-        if (formApiRef.current) {
-          formApiRef.current.setValue('access_token', tokenData.access_token);
-          formApiRef.current.setValue('refresh_token', tokenData.refresh_token);
-        }
-
-        setShowOAuthModal(false);
-        setAuthorizationCode('');
-        setOauthParams(null);
-        showSuccess(t('授权码交换成功，已自动填充tokens'));
-      } else {
-        showError(res.data.message || t('授权码交换失败'));
-      }
-    } catch (error) {
-      showError(t('授权码交换失败：') + error.message);
-    } finally {
-      setIsExchangingCode(false);
-    }
-  };
-
   useEffect(() => {
     const modelMap = new Map();
 
@@ -652,6 +561,12 @@ const EditChannelModal = (props) => {
         pass_through_body_enabled: false,
         system_prompt: '',
       });
+      // 重置密钥模式状态
+      setKeyMode('append');
+      // 清空表单中的key_mode字段
+      if (formApiRef.current) {
+        formApiRef.current.setValue('key_mode', undefined);
+      }
     }
   }, [props.visible, channelId]);
 
@@ -817,6 +732,7 @@ const EditChannelModal = (props) => {
       res = await API.put(`/api/channel/`, {
         ...localInputs,
         id: parseInt(channelId),
+        key_mode: isMultiKeyChannel ? keyMode : undefined, // 只在多key模式下传递
       });
     } else {
       res = await API.post(`/api/channel/`, {
@@ -879,55 +795,59 @@ const EditChannelModal = (props) => {
   const batchAllowed = !isEdit || isMultiKeyChannel;
   const batchExtra = batchAllowed ? (
     <Space>
-      <Checkbox
-        disabled={isEdit || inputs.type === 53}
-        checked={batch}
-        onChange={(e) => {
-          const checked = e.target.checked;
+      {!isEdit && (
+        <Checkbox
+          disabled={isEdit}
+          checked={batch}
+          onChange={(e) => {
+            const checked = e.target.checked;
 
-          if (!checked && vertexFileList.length > 1) {
-            Modal.confirm({
-              title: t('切换为单密钥模式'),
-              content: t('将仅保留第一个密钥文件，其余文件将被移除，是否继续？'),
-              onOk: () => {
-                const firstFile = vertexFileList[0];
-                const firstKey = vertexKeys[0] ? [vertexKeys[0]] : [];
+            if (!checked && vertexFileList.length > 1) {
+              Modal.confirm({
+                title: t('切换为单密钥模式'),
+                content: t('将仅保留第一个密钥文件，其余文件将被移除，是否继续？'),
+                onOk: () => {
+                  const firstFile = vertexFileList[0];
+                  const firstKey = vertexKeys[0] ? [vertexKeys[0]] : [];
 
-                setVertexFileList([firstFile]);
-                setVertexKeys(firstKey);
+                  setVertexFileList([firstFile]);
+                  setVertexKeys(firstKey);
 
-                formApiRef.current?.setValue('vertex_files', [firstFile]);
-                setInputs((prev) => ({ ...prev, vertex_files: [firstFile] }));
+                  formApiRef.current?.setValue('vertex_files', [firstFile]);
+                  setInputs((prev) => ({ ...prev, vertex_files: [firstFile] }));
 
-                setBatch(false);
-                setMultiToSingle(false);
-                setMultiKeyMode('random');
-              },
-              onCancel: () => {
-                setBatch(true);
-              },
-              centered: true,
-            });
-            return;
-          }
-
-          setBatch(checked);
-          if (!checked) {
-            setMultiToSingle(false);
-            setMultiKeyMode('random');
-          } else {
-            // 批量模式下禁用手动输入，并清空手动输入的内容
-            setUseManualInput(false);
-            if (inputs.type === 41) {
-              // 清空手动输入的密钥内容
-              if (formApiRef.current) {
-                formApiRef.current.setValue('key', '');
-              }
-              handleInputChange('key', '');
+                  setBatch(false);
+                  setMultiToSingle(false);
+                  setMultiKeyMode('random');
+                },
+                onCancel: () => {
+                  setBatch(true);
+                },
+                centered: true,
+              });
+              return;
             }
-          }
-        }}
-      >{t('批量创建')}</Checkbox>
+
+            setBatch(checked);
+            if (!checked) {
+              setMultiToSingle(false);
+              setMultiKeyMode('random');
+            } else {
+              // 批量模式下禁用手动输入，并清空手动输入的内容
+              setUseManualInput(false);
+              if (inputs.type === 41) {
+                // 清空手动输入的密钥内容
+                if (formApiRef.current) {
+                  formApiRef.current.setValue('key', '');
+                }
+                handleInputChange('key', '');
+              }
+            }
+          }}
+        >
+          {t('批量创建')}
+        </Checkbox>
+      )}
       {batch && (
         <Checkbox disabled={isEdit} checked={multiToSingle} onChange={() => {
           setMultiToSingle(prev => !prev);
@@ -1124,7 +1044,16 @@ const EditChannelModal = (props) => {
                         autosize
                         autoComplete='new-password'
                         onChange={(value) => handleInputChange('key', value)}
-                        extraText={batchExtra}
+                        extraText={
+                          <div className="flex items-center gap-2">
+                            {isEdit && isMultiKeyChannel && keyMode === 'append' && (
+                              <Text type="warning" size="small">
+                                {t('追加模式：新密钥将添加到现有密钥列表的末尾')}
+                              </Text>
+                            )}
+                            {batchExtra}
+                          </div>
+                        }
                         showClear
                       />
                     )
@@ -1191,6 +1120,11 @@ const EditChannelModal = (props) => {
                                   <Text type="tertiary" size="small">
                                     {t('请输入完整的 JSON 格式密钥内容')}
                                   </Text>
+                                  {isEdit && isMultiKeyChannel && keyMode === 'append' && (
+                                    <Text type="warning" size="small">
+                                      {t('追加模式：新密钥将添加到现有密钥列表的末尾')}
+                                    </Text>
+                                  )}
                                   {batchExtra}
                                 </div>
                               }
@@ -1216,49 +1150,6 @@ const EditChannelModal = (props) => {
                             />
                           )}
                         </>
-                      ) : inputs.type === 53 ? (
-                        <>
-                          <Form.Input
-                            field='access_token'
-                            label={isEdit ? t('Access Token（编辑模式下，保存的密钥不会显示）') : t('Access Token')}
-                            placeholder={t('sk-ant-xxx')}
-                            rules={isEdit ? [] : [{ required: true, message: t('请输入Access Token') }]}
-                            autoComplete='new-password'
-                            onChange={(value) => {
-                              handleInputChange('access_token', value);
-                              // 同时更新key字段，格式为access_token|refresh_token
-                              const refreshToken = inputs.refresh_token || '';
-                              handleInputChange('key', `${value}|${refreshToken}`);
-                            }}
-                            suffix={
-                              <Button
-                                size="small"
-                                type="primary"
-                                theme="light"
-                                onClick={handleGenerateOAuth}
-                              >
-                                {t('生成OAuth授权码')}
-                              </Button>
-                            }
-                            extraText={batchExtra}
-                            showClear
-                          />
-                          <Form.Input
-                            field='refresh_token'
-                            label={isEdit ? t('Refresh Token（编辑模式下，保存的密钥不会显示）') : t('Refresh Token')}
-                            placeholder={t('sk-ant-xxx（可选）')}
-                            rules={[]}
-                            autoComplete='new-password'
-                            onChange={(value) => {
-                              handleInputChange('refresh_token', value);
-                              // 同时更新key字段，格式为access_token|refresh_token
-                              const accessToken = inputs.access_token || '';
-                              handleInputChange('key', `${accessToken}|${value}`);
-                            }}
-                            extraText={batchExtra}
-                            showClear
-                          />
-                        </>
                       ) : (
                         <Form.Input
                           field='key'
@@ -1267,13 +1158,44 @@ const EditChannelModal = (props) => {
                           rules={isEdit ? [] : [{ required: true, message: t('请输入密钥') }]}
                           autoComplete='new-password'
                           onChange={(value) => handleInputChange('key', value)}
-                          extraText={batchExtra}
+                          extraText={
+                            <div className="flex items-center gap-2">
+                              {isEdit && isMultiKeyChannel && keyMode === 'append' && (
+                                <Text type="warning" size="small">
+                                  {t('追加模式：新密钥将添加到现有密钥列表的末尾')}
+                                </Text>
+                              )}
+                              {batchExtra}
+                            </div>
+                          }
                           showClear
                         />
                       )}
                     </>
                   )}
 
+                {isEdit && isMultiKeyChannel && (
+                        <Form.Select
+                          field='key_mode'
+                          label={t('密钥更新模式')}
+                          placeholder={t('请选择密钥更新模式')}
+                          optionList={[
+                            { label: t('追加到现有密钥'), value: 'append' },
+                            { label: t('覆盖现有密钥'), value: 'replace' },
+                          ]}
+                          style={{ width: '100%' }}
+                          value={keyMode}
+                          onChange={(value) => setKeyMode(value)}
+                          extraText={
+                            <Text type="tertiary" size="small">
+                              {keyMode === 'replace' 
+                                ? t('覆盖模式：将完全替换现有的所有密钥') 
+                                : t('追加模式：将新密钥添加到现有密钥列表末尾')
+                              }
+                            </Text>
+                          }
+                        />
+                  )}
                   {batch && multiToSingle && (
                     <>
                       <Form.Select
@@ -1767,19 +1689,11 @@ const EditChannelModal = (props) => {
                   <Form.TextArea
                     field='system_prompt'
                     label={t('系统提示词')}
-                    placeholder={inputs.type === 53 ? CLAUDE_CODE_DEFAULT_SYSTEM_PROMPT : t('输入系统提示词，用户的系统提示词将优先于此设置')}
-                    onChange={(value) => {
-                      if (inputs.type === 53) {
-                        // Claude Code渠道系统提示词固定，不允许修改
-                        return;
-                      }
-                      handleChannelSettingsChange('system_prompt', value);
-                    }}
-                    disabled={inputs.type === 53}
-                    value={inputs.type === 53 ? CLAUDE_CODE_DEFAULT_SYSTEM_PROMPT : undefined}
+                    placeholder={t('输入系统提示词，用户的系统提示词将优先于此设置')}
+                    onChange={(value) => handleChannelSettingsChange('system_prompt', value)}
                     autosize
-                    showClear={inputs.type !== 53}
-                    extraText={inputs.type === 53 ? t('Claude Code渠道系统提示词固定为官方CLI身份，不可修改') : t('用户优先：如果用户在请求中指定了系统提示词，将优先使用用户的设置')}
+                    showClear
+                    extraText={t('用户优先：如果用户在请求中指定了系统提示词，将优先使用用户的设置')}
                   />
                 </Card>
               </div>
@@ -1803,70 +1717,8 @@ const EditChannelModal = (props) => {
         }}
         onCancel={() => setModelModalVisible(false)}
       />
-
-      {/* OAuth Authorization Modal */}
-      <Modal
-        title={t('生成Claude Code OAuth授权码')}
-        visible={showOAuthModal}
-        onCancel={() => {
-          setShowOAuthModal(false);
-          setAuthorizationCode('');
-          setOauthParams(null);
-        }}
-        onOk={handleExchangeCode}
-        okText={isExchangingCode ? t('交换中...') : t('确认')}
-        cancelText={t('取消')}
-        confirmLoading={isExchangingCode}
-        width={600}
-      >
-        <div className="space-y-4">
-          <div>
-            <Text className="text-sm font-medium mb-2 block">{t('请访问以下授权地址：')}</Text>
-            <div className="p-3 bg-gray-50 rounded-lg border">
-              <Text
-                link
-                underline
-                className="text-sm font-mono break-all cursor-pointer text-blue-600 hover:text-blue-800"
-                onClick={() => {
-                  if (oauthParams?.auth_url) {
-                    window.open(oauthParams.auth_url, '_blank');
-                  }
-                }}
-              >
-                {oauthParams?.auth_url || t('正在生成授权地址...')}
-              </Text>
-              <div className="mt-2">
-                <Text
-                  copyable={{ content: oauthParams?.auth_url }}
-                  type="tertiary"
-                  size="small"
-                >
-                  {t('复制链接')}
-                </Text>
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <Text className="text-sm font-medium mb-2 block">{t('授权后，请将获得的授权码粘贴到下方：')}</Text>
-            <Input
-              value={authorizationCode}
-              onChange={setAuthorizationCode}
-              placeholder={t('请输入授权码')}
-              showClear
-              style={{ width: '100%' }}
-            />
-          </div>
-
-          <Banner
-            type="info"
-            description={t('获得授权码后，系统将自动换取access token和refresh token并填充到表单中。')}
-            className="!rounded-lg"
-          />
-        </div>
-      </Modal>
     </>
   );
 };
 
-export default EditChannelModal;
+export default EditChannelModal; 

@@ -46,6 +46,9 @@ type Channel struct {
 	ParamOverride     *string `json:"param_override" gorm:"type:text"`
 	// add after v0.8.5
 	ChannelInfo ChannelInfo `json:"channel_info" gorm:"type:json"`
+
+	// cache info
+	Keys []string `json:"-" gorm:"-"`
 }
 
 type ChannelInfo struct {
@@ -70,6 +73,9 @@ func (c *ChannelInfo) Scan(value interface{}) error {
 func (channel *Channel) getKeys() []string {
 	if channel.Key == "" {
 		return []string{}
+	}
+	if len(channel.Keys) > 0 {
+		return channel.Keys
 	}
 	trimmed := strings.TrimSpace(channel.Key)
 	// If the key starts with '[', try to parse it as a JSON array (e.g., for Vertex AI scenarios)
