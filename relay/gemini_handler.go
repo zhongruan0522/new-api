@@ -80,7 +80,11 @@ func getGeminiInputTokens(req *dto.GeminiChatRequest, info *relaycommon.RelayInf
 
 func isNoThinkingRequest(req *dto.GeminiChatRequest) bool {
 	if req.GenerationConfig.ThinkingConfig != nil && req.GenerationConfig.ThinkingConfig.ThinkingBudget != nil {
-		return *req.GenerationConfig.ThinkingConfig.ThinkingBudget == 0
+		configBudget := req.GenerationConfig.ThinkingConfig.ThinkingBudget
+		if configBudget != nil && *configBudget == 0 {
+			// 如果思考预算为 0，则认为是非思考请求
+			return true
+		}
 	}
 	return false
 }

@@ -301,7 +301,7 @@ func FixAbility() (int, int, error) {
 	}
 	var channels []*Channel
 	// Find all channels
-	err = DB.Model(&Channel{}).Find(&channels).Error
+	err := DB.Model(&Channel{}).Find(&channels).Error
 	if err != nil {
 		return 0, 0, err
 	}
