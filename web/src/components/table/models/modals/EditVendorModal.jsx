@@ -25,6 +25,8 @@ import {
   Row,
 } from '@douyinfe/semi-ui';
 import { API, showError, showSuccess } from '../../../../helpers';
+import { Typography } from '@douyinfe/semi-ui';
+import { IconLink } from '@douyinfe/semi-icons';
 import { useTranslation } from 'react-i18next';
 import { useIsMobile } from '../../../../hooks/common/useIsMobile';
 
@@ -157,6 +159,18 @@ const EditVendorModal = ({ visible, handleClose, refresh, editingVendor }) => {
               field="icon"
               label={t('供应商图标')}
               placeholder={t('请输入图标名称，如：OpenAI、Claude.Color')}
+              extraText={
+                <span>
+                  {t('图标使用@lobehub/icons库，查询所有可用图标 ')}
+                  <Typography.Text
+                    link={{ href: 'https://icons.lobehub.com/components/lobe-hub', target: '_blank' }}
+                    icon={<IconLink />}
+                    underline
+                  >
+                    {t('请点击我')}
+                  </Typography.Text>
+                </span>
+              }
               showClear
             />
           </Col>
@@ -164,7 +178,6 @@ const EditVendorModal = ({ visible, handleClose, refresh, editingVendor }) => {
             <Form.Switch
               field="status"
               label={t('状态')}
-              size="large"
               initValue={true}
             />
           </Col>

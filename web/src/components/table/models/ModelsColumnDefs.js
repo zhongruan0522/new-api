@@ -115,7 +115,7 @@ const renderEndpoints = (text) => {
   return renderLimitedItems({
     items: arr,
     renderItem: (ep, idx) => (
-      <Tag key={idx} color="blue" size="small" shape='circle'>
+      <Tag key={idx} color="white" size="small" shape='circle'>
         {ep}
       </Tag>
     ),
@@ -128,7 +128,7 @@ const renderBoundChannels = (channels) => {
   return renderLimitedItems({
     items: channels,
     renderItem: (c, idx) => (
-      <Tag key={idx} color="purple" size="small" shape='circle'>
+      <Tag key={idx} color="white" size="small" shape='circle'>
         {c.name}({c.type})
       </Tag>
     ),
