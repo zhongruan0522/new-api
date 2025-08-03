@@ -39,6 +39,34 @@ function renderTimestamp(timestamp) {
   return <>{timestamp2string(timestamp)}</>;
 }
 
+// Generic renderer for list-style tags with limit and popover
+function renderLimitedItems({ items, renderItem, maxDisplay = 3 }) {
+  if (!items || items.length === 0) return '-';
+  const displayItems = items.slice(0, maxDisplay);
+  const remainingItems = items.slice(maxDisplay);
+  return (
+    <Space spacing={1} wrap>
+      {displayItems.map((item, idx) => renderItem(item, idx))}
+      {remainingItems.length > 0 && (
+        <Popover
+          content={
+            <div className='p-2'>
+              <Space spacing={1} wrap>
+                {remainingItems.map((item, idx) => renderItem(item, idx))}
+              </Space>
+            </div>
+          }
+          position='top'
+        >
+          <Tag size='small' shape='circle' color='grey'>
+            +{remainingItems.length}
+          </Tag>
+        </Popover>
+      )}
+    </Space>
+  );
+}
+
 // Render vendor column with icon
 const renderVendorTag = (vendorId, vendorMap, t) => {
   if (!vendorId || !vendorMap[vendorId]) return '-';
@@ -67,72 +95,44 @@ const renderDescription = (text) => {
 const renderTags = (text) => {
   if (!text) return '-';
   const tagsArr = text.split(',').filter(Boolean);
-  const maxDisplayTags = 3;
-  const displayTags = tagsArr.slice(0, maxDisplayTags);
-  const remainingTags = tagsArr.slice(maxDisplayTags);
-
-  return (
-    <Space spacing={1} wrap>
-      {displayTags.map((tag, index) => (
-        <Tag key={index} size="small" shape='circle' color={stringToColor(tag)}>
-          {tag}
-        </Tag>
-      ))}
-      {remainingTags.length > 0 && (
-        <Popover
-          content={
-            <div className='p-2'>
-              <Space spacing={1} wrap>
-                {remainingTags.map((tag, index) => (
-                  <Tag key={index} size="small" shape='circle' color={stringToColor(tag)}>
-                    {tag}
-                  </Tag>
-                ))}
-              </Space>
-            </div>
-          }
-          position="top"
-        >
-          <Tag size="small" shape='circle' color="grey">
-            +{remainingTags.length}
-          </Tag>
-        </Popover>
-      )}
-    </Space>
-  );
+  return renderLimitedItems({
+    items: tagsArr,
+    renderItem: (tag, idx) => (
+      <Tag key={idx} size="small" shape='circle' color={stringToColor(tag)}>
+        {tag}
+      </Tag>
+    ),
+  });
 };
 
 // Render endpoints
 const renderEndpoints = (text) => {
+  let arr;
   try {
-    const arr = JSON.parse(text);
-    if (Array.isArray(arr)) {
-      return (
-        <Space spacing={1} wrap>
-          {arr.map((ep) => (
-            <Tag key={ep} color="blue" size="small" shape='circle'>
-              {ep}
-            </Tag>
-          ))}
-        </Space>
-      );
-    }
+    arr = JSON.parse(text);
   } catch (_) { }
-  return text || '-';
+  if (!Array.isArray(arr)) return text || '-';
+  return renderLimitedItems({
+    items: arr,
+    renderItem: (ep, idx) => (
+      <Tag key={idx} color="blue" size="small" shape='circle'>
+        {ep}
+      </Tag>
+    ),
+  });
 };
 
 // Render bound channels
 const renderBoundChannels = (channels) => {
   if (!channels || channels.length === 0) return '-';
-  return (
-    <Space spacing={1} wrap>
-      {channels.map((c, idx) => (
-        <Tag key={idx} color="purple" size="small" shape='circle'>
-          {c.name}({c.type})
-        </Tag>
-      ))}
-    </Space>
-  );
+  return renderLimitedItems({
+    items: channels,
+    renderItem: (c, idx) => (
+      <Tag key={idx} color="purple" size="small" shape='circle'>
+        {c.name}({c.type})
+      </Tag>
+    ),
+  });
 };
 
 // Render operations column
