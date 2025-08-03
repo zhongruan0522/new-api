@@ -19,6 +19,7 @@ For commercial licensing, please contact support@quantumnous.com
 
 import React, { useState } from 'react';
 import MissingModelsModal from './modals/MissingModelsModal.jsx';
+import PrefillGroupManagement from './modals/PrefillGroupManagement.jsx';
 import { Button, Space, Modal } from '@douyinfe/semi-ui';
 import CompactModeToggle from '../../common/ui/CompactModeToggle';
 import { showError } from '../../../helpers';
@@ -35,6 +36,7 @@ const ModelsActions = ({
   // Modal states
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showMissingModal, setShowMissingModal] = useState(false);
+  const [showGroupManagement, setShowGroupManagement] = useState(false);
 
   // Handle delete selected models with confirmation
   const handleDeleteSelectedModels = () => {
@@ -86,6 +88,15 @@ const ModelsActions = ({
           {t('未配置模型')}
         </Button>
 
+        <Button
+          type="secondary"
+          className="flex-1 md:flex-initial"
+          size="small"
+          onClick={() => setShowGroupManagement(true)}
+        >
+          {t('预填组管理')}
+        </Button>
+
         <CompactModeToggle
           compactMode={compactMode}
           setCompactMode={setCompactMode}
@@ -114,6 +125,11 @@ const ModelsActions = ({
           setShowMissingModal(false);
         }}
         t={t}
+      />
+
+      <PrefillGroupManagement
+        visible={showGroupManagement}
+        onClose={() => setShowGroupManagement(false)}
       />
     </>
   );

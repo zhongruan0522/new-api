@@ -22,7 +22,8 @@ import { Modal, Table, Spin, Button, Typography, Empty, Input } from '@douyinfe/
 import { IllustrationNoResult, IllustrationNoResultDark } from '@douyinfe/semi-illustrations';
 import { IconSearch } from '@douyinfe/semi-icons';
 import { API, showError } from '../../../../helpers';
-import { MODEL_TABLE_PAGE_SIZE } from '../../../../constants/index.js';
+import { MODEL_TABLE_PAGE_SIZE } from '../../../../constants';
+import { useIsMobile } from '../../../../hooks/common/useIsMobile';
 
 const MissingModelsModal = ({
   visible,
@@ -34,6 +35,7 @@ const MissingModelsModal = ({
   const [missingModels, setMissingModels] = useState([]);
   const [searchKeyword, setSearchKeyword] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const isMobile = useIsMobile();
 
   const fetchMissing = async () => {
     setLoading(true);
@@ -87,6 +89,8 @@ const MissingModelsModal = ({
     {
       title: '',
       dataIndex: 'operate',
+      fixed: 'right',
+      width: 100,
       render: (text, record) => (
         <Button
           type="primary"
@@ -116,7 +120,7 @@ const MissingModelsModal = ({
       visible={visible}
       onCancel={onClose}
       footer={null}
-      width={700}
+      size={isMobile ? 'full-width' : 'medium'}
       className="!rounded-lg"
     >
       <Spin spinning={loading}>

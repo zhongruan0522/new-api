@@ -23,48 +23,20 @@ import {
   Space,
   Tag,
   Typography,
-  Modal,
-  Popover
+  Modal
 } from '@douyinfe/semi-ui';
 import {
   timestamp2string,
   getLobeHubIcon,
   stringToColor
 } from '../../../helpers';
+import { renderLimitedItems, renderDescription } from './ui/RenderUtils.jsx';
 
 const { Text } = Typography;
 
 // Render timestamp
 function renderTimestamp(timestamp) {
   return <>{timestamp2string(timestamp)}</>;
-}
-
-// Generic renderer for list-style tags with limit and popover
-function renderLimitedItems({ items, renderItem, maxDisplay = 3 }) {
-  if (!items || items.length === 0) return '-';
-  const displayItems = items.slice(0, maxDisplay);
-  const remainingItems = items.slice(maxDisplay);
-  return (
-    <Space spacing={1} wrap>
-      {displayItems.map((item, idx) => renderItem(item, idx))}
-      {remainingItems.length > 0 && (
-        <Popover
-          content={
-            <div className='p-2'>
-              <Space spacing={1} wrap>
-                {remainingItems.map((item, idx) => renderItem(item, idx))}
-              </Space>
-            </div>
-          }
-          position='top'
-        >
-          <Tag size='small' shape='circle' color='grey'>
-            +{remainingItems.length}
-          </Tag>
-        </Popover>
-      )}
-    </Space>
-  );
 }
 
 // Render vendor column with icon
@@ -79,15 +51,6 @@ const renderVendorTag = (vendorId, vendorMap, t) => {
     >
       {v.name}
     </Tag>
-  );
-};
-
-// Render description with ellipsis
-const renderDescription = (text) => {
-  return (
-    <Text ellipsis={{ showTooltip: true }} style={{ maxWidth: 200 }}>
-      {text || '-'}
-    </Text>
   );
 };
 
@@ -223,7 +186,7 @@ export const getModelsColumns = ({
     {
       title: t('描述'),
       dataIndex: 'description',
-      render: renderDescription,
+      render: (text) => renderDescription(text, 200),
     },
     {
       title: t('供应商'),

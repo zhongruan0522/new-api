@@ -61,6 +61,10 @@ const EditModelModal = (props) => {
   // 供应商列表
   const [vendors, setVendors] = useState([]);
 
+  // 预填组（标签、端点）
+  const [tagGroups, setTagGroups] = useState([]);
+  const [endpointGroups, setEndpointGroups] = useState([]);
+
   // 获取供应商列表
   const fetchVendors = async () => {
     try {
@@ -74,9 +78,28 @@ const EditModelModal = (props) => {
     }
   };
 
+  // 获取预填组（标签、端点）
+  const fetchPrefillGroups = async () => {
+    try {
+      const [tagRes, endpointRes] = await Promise.all([
+        API.get('/api/prefill_group?type=tag'),
+        API.get('/api/prefill_group?type=endpoint'),
+      ]);
+      if (tagRes?.data?.success) {
+        setTagGroups(tagRes.data.data || []);
+      }
+      if (endpointRes?.data?.success) {
+        setEndpointGroups(endpointRes.data.data || []);
+      }
+    } catch (error) {
+      // ignore
+    }
+  };
+
   useEffect(() => {
     if (props.visiable) {
       fetchVendors();
+      fetchPrefillGroups();
     }
   }, [props.visiable]);
 
@@ -288,6 +311,23 @@ const EditModelModal = (props) => {
                     />
                   </Col>
                   <Col span={24}>
+                    <Form.Select
+                      field='tag_group'
+                      label={t('标签组')}
+                      placeholder={t('选择标签组后将自动填充标签')}
+                      optionList={tagGroups.map(g => ({ label: g.name, value: g.id }))}
+                      showClear
+                      style={{ width: '100%' }}
+                      onChange={(value) => {
+                        const g = tagGroups.find(item => item.id === value);
+                        if (g && formApiRef.current) {
+                          formApiRef.current.setValue('tags', g.items || []);
+                        }
+                      }}
+                    />
+                  </Col>
+
+                  <Col span={24}>
                     <Form.TagInput
                       field='tags'
                       label={t('标签')}
@@ -353,6 +393,23 @@ const EditModelModal = (props) => {
                   </div>
                 </div>
                 <Row gutter={12}>
+                  <Col span={24}>
+                    <Form.Select
+                      field='endpoint_group'
+                      label={t('端点组')}
+                      placeholder={t('选择端点组后将自动填充端点')}
+                      optionList={endpointGroups.map(g => ({ label: g.name, value: g.id }))}
+                      showClear
+                      style={{ width: '100%' }}
+                      onChange={(value) => {
+                        const g = endpointGroups.find(item => item.id === value);
+                        if (g && formApiRef.current) {
+                          formApiRef.current.setValue('endpoints', g.items || []);
+                        }
+                      }}
+                    />
+                  </Col>
+
                   <Col span={24}>
                     <Form.Select
                       field='endpoints'

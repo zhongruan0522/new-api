@@ -252,6 +252,7 @@ func migrateDB() error {
 		&Task{},
 		&Model{},
 		&Vendor{},
+		&PrefillGroup{},
 		&Setup{},
 	)
 	if err != nil {
@@ -280,6 +281,7 @@ func migrateDBFast() error {
 		{&Task{}, "Task"},
 		{&Model{}, "Model"},
         {&Vendor{}, "Vendor"},
+		{&PrefillGroup{}, "PrefillGroup"},
 		{&Setup{}, "Setup"},
 	}
 	// 动态计算migration数量，确保errChan缓冲区足够大
