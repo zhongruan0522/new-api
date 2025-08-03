@@ -100,13 +100,16 @@ func (t *TwoFA) Delete() error {
 		return errors.New("2FA记录ID不能为空")
 	}
 
-	// 同时删除相关的备用码记录（硬删除）
-	if err := DB.Unscoped().Where("user_id = ?", t.UserId).Delete(&TwoFABackupCode{}).Error; err != nil {
-		return err
-	}
+	// 使用事务确保原子性
+	return DB.Transaction(func(tx *gorm.DB) error {
+		// 同时删除相关的备用码记录（硬删除）
+		if err := tx.Unscoped().Where("user_id = ?", t.UserId).Delete(&TwoFABackupCode{}).Error; err != nil {
+			return err
+		}
 
-	// 硬删除2FA记录
-	return DB.Unscoped().Delete(t).Error
+		// 硬删除2FA记录
+		return tx.Unscoped().Delete(t).Error
+	})
 }
 
 // ResetFailedAttempts 重置失败尝试次数
@@ -139,30 +142,32 @@ func (t *TwoFA) IsLocked() bool {
 
 // CreateBackupCodes 创建备用码
 func CreateBackupCodes(userId int, codes []string) error {
-	// 先删除现有的备用码
-	if err := DB.Where("user_id = ?", userId).Delete(&TwoFABackupCode{}).Error; err != nil {
-		return err
-	}
-
-	// 创建新的备用码记录
-	for _, code := range codes {
-		hashedCode, err := common.HashBackupCode(code)
-		if err != nil {
+	return DB.Transaction(func(tx *gorm.DB) error {
+		// 先删除现有的备用码
+		if err := tx.Where("user_id = ?", userId).Delete(&TwoFABackupCode{}).Error; err != nil {
 			return err
 		}
 
-		backupCode := TwoFABackupCode{
-			UserId:   userId,
-			CodeHash: hashedCode,
-			IsUsed:   false,
+		// 创建新的备用码记录
+		for _, code := range codes {
+			hashedCode, err := common.HashBackupCode(code)
+			if err != nil {
+				return err
+			}
+
+			backupCode := TwoFABackupCode{
+				UserId:   userId,
+				CodeHash: hashedCode,
+				IsUsed:   false,
+			}
+
+			if err := tx.Create(&backupCode).Error; err != nil {
+				return err
+			}
 		}
 
-		if err := DB.Create(&backupCode).Error; err != nil {
-			return err
-		}
-	}
-
-	return nil
+		return nil
+	})
 }
 
 // ValidateBackupCode 验证并使用备用码

@@ -1,12 +1,12 @@
 package controller
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"one-api/common"
 	"one-api/model"
 	"strconv"
-	"strings"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
@@ -530,7 +530,7 @@ func AdminDisable2FA(c *gin.Context) {
 
 	// 禁用2FA
 	if err := model.DisableTwoFA(userId); err != nil {
-		if strings.Contains(err.Error(), "未启用2FA") {
+		if errors.Is(err, model.ErrTwoFANotEnabled) {
 			c.JSON(http.StatusOK, gin.H{
 				"success": false,
 				"message": "用户未启用2FA",
