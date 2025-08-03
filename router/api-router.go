@@ -190,7 +190,8 @@ func SetApiRouter(router *gin.Engine) {
         modelsRoute := apiRouter.Group("/models")
 		modelsRoute.Use(middleware.AdminAuth())
 		{
-			modelsRoute.GET("/", controller.GetAllModelsMeta)
+			modelsRoute.GET("/missing", controller.GetMissingModels)
+            modelsRoute.GET("/", controller.GetAllModelsMeta)
             modelsRoute.GET("/search", controller.SearchModelsMeta)
 			modelsRoute.GET("/:id", controller.GetModelMeta)
 			modelsRoute.POST("/", controller.CreateModelMeta)

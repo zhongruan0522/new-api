@@ -81,7 +81,7 @@ const EditModelModal = (props) => {
   }, [props.visiable]);
 
   const getInitValues = () => ({
-    model_name: '',
+    model_name: props.editingModel?.model_name || '',
     description: '',
     tags: [],
     vendor_id: undefined,
@@ -136,22 +136,28 @@ const EditModelModal = (props) => {
   useEffect(() => {
     if (formApiRef.current) {
       if (!isEdit) {
-        formApiRef.current.setValues(getInitValues());
+        formApiRef.current.setValues({
+          ...getInitValues(),
+          model_name: props.editingModel?.model_name || '',
+        });
       }
     }
-  }, [props.editingModel?.id]);
+  }, [props.editingModel?.id, props.editingModel?.model_name]);
 
   useEffect(() => {
     if (props.visiable) {
       if (isEdit) {
         loadModel();
       } else {
-        formApiRef.current?.setValues(getInitValues());
+        formApiRef.current?.setValues({
+          ...getInitValues(),
+          model_name: props.editingModel?.model_name || '',
+        });
       }
     } else {
       formApiRef.current?.reset();
     }
-  }, [props.visiable, props.editingModel?.id]);
+  }, [props.visiable, props.editingModel?.id, props.editingModel?.model_name]);
 
   const submit = async (values) => {
     setLoading(true);
@@ -268,7 +274,7 @@ const EditModelModal = (props) => {
                       label={t('模型名称')}
                       placeholder={t('请输入模型名称，如：gpt-4')}
                       rules={[{ required: true, message: t('请输入模型名称') }]}
-                      disabled={isEdit}
+                      disabled={isEdit || !!props.editingModel?.model_name}
                       showClear
                     />
                   </Col>

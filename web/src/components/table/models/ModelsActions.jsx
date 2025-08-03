@@ -18,6 +18,7 @@ For commercial licensing, please contact support@quantumnous.com
 */
 
 import React, { useState } from 'react';
+import MissingModelsModal from './modals/MissingModelsModal.jsx';
 import { Button, Space, Modal } from '@douyinfe/semi-ui';
 import CompactModeToggle from '../../common/ui/CompactModeToggle';
 import { showError } from '../../../helpers';
@@ -33,6 +34,7 @@ const ModelsActions = ({
 }) => {
   // Modal states
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showMissingModal, setShowMissingModal] = useState(false);
 
   // Handle delete selected models with confirmation
   const handleDeleteSelectedModels = () => {
@@ -68,11 +70,20 @@ const ModelsActions = ({
 
         <Button
           type='danger'
-          className="w-full md:w-auto"
+          className="flex-1 md:flex-initial"
           onClick={handleDeleteSelectedModels}
           size="small"
         >
           {t('删除所选模型')}
+        </Button>
+
+        <Button
+          type="secondary"
+          className="flex-1 md:flex-initial"
+          size="small"
+          onClick={() => setShowMissingModal(true)}
+        >
+          {t('未配置模型')}
         </Button>
 
         <CompactModeToggle
@@ -93,6 +104,17 @@ const ModelsActions = ({
           {t('确定要删除所选的 {{count}} 个模型吗？', { count: selectedKeys.length })}
         </div>
       </Modal>
+
+      <MissingModelsModal
+        visible={showMissingModal}
+        onClose={() => setShowMissingModal(false)}
+        onConfigureModel={(name) => {
+          setEditingModel({ id: undefined, model_name: name });
+          setShowEdit(true);
+          setShowMissingModal(false);
+        }}
+        t={t}
+      />
     </>
   );
 };
