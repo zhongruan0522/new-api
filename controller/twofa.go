@@ -46,7 +46,7 @@ func Setup2FA(c *gin.Context) {
 		})
 		return
 	}
-	
+
 	// 如果存在已禁用的2FA记录，先删除它
 	if existing != nil && !existing.IsEnabled {
 		if err := existing.Delete(); err != nil {
@@ -415,8 +415,14 @@ func Verify2FALogin(c *gin.Context) {
 		})
 		return
 	}
-	userId := pendingUserId.(int)
-
+	userId, ok := pendingUserId.(int)
+	if !ok {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": "会话数据无效，请重新登录",
+		})
+		return
+	}
 	// 获取用户信息
 	user, err := model.GetUserById(userId, false)
 	if err != nil {

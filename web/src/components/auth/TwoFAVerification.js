@@ -16,9 +16,9 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
+import { API, showError, showSuccess } from '../../helpers';
 import { Button, Card, Divider, Form, Input, Typography } from '@douyinfe/semi-ui';
 import React, { useState } from 'react';
-import { showError, showSuccess, API } from '../../helpers';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -30,6 +30,14 @@ const TwoFAVerification = ({ onSuccess, onBack, isModal = false }) => {
   const handleSubmit = async () => {
     if (!verificationCode) {
       showError('请输入验证码');
+      return;
+    }
+    // Validate code format
+    if (useBackupCode && verificationCode.length !== 8) {
+      showError('备用码必须是8位');
+      return;
+    } else if (!useBackupCode && !/^\d{6}$/.test(verificationCode)) {
+      showError('验证码必须是6位数字');
       return;
     }
 

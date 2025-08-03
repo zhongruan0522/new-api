@@ -9,6 +9,8 @@ import (
 	"gorm.io/gorm"
 )
 
+var ErrTwoFANotEnabled = errors.New("用户未启用2FA")
+
 // TwoFA 用户2FA设置表
 type TwoFA struct {
 	Id             int            `json:"id" gorm:"primaryKey"`
@@ -210,7 +212,7 @@ func DisableTwoFA(userId int) error {
 		return err
 	}
 	if twoFA == nil {
-		return errors.New("用户未启用2FA")
+		return ErrTwoFANotEnabled
 	}
 
 	// 删除2FA设置和备用码
