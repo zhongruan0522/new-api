@@ -38,6 +38,7 @@ type Model struct {
     DeletedAt   gorm.DeletedAt `json:"-" gorm:"index"`
 
     BoundChannels []BoundChannel `json:"bound_channels,omitempty" gorm:"-"`
+    EnableGroups []string       `json:"enable_groups,omitempty" gorm:"-"`
 }
 
 // Insert 创建新的模型元数据记录

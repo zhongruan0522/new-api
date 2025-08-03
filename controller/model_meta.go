@@ -12,6 +12,9 @@ import (
 
 // GetAllModelsMeta 获取模型列表（分页）
 func GetAllModelsMeta(c *gin.Context) {
+
+    model.RefreshPricing()
+
     pageInfo := common.GetPageQuery(c)
     modelsMeta, err := model.GetAllModels(pageInfo.GetStartIdx(), pageInfo.GetPageSize())
     if err != nil {
@@ -31,6 +34,9 @@ func GetAllModelsMeta(c *gin.Context) {
 
 // SearchModelsMeta 搜索模型列表
 func SearchModelsMeta(c *gin.Context) {
+
+    model.RefreshPricing()
+
     keyword := c.Query("keyword")
     vendor := c.Query("vendor")
     pageInfo := common.GetPageQuery(c)
@@ -128,7 +134,7 @@ func DeleteModelMeta(c *gin.Context) {
     common.ApiSuccess(c, nil)
 }
 
-// 辅助函数：填充 Endpoints 和 BoundChannels
+// 辅助函数：填充 Endpoints 和 BoundChannels 和 EnableGroups
 func fillModelExtra(m *model.Model) {
     if m.Endpoints == "" {
         eps := model.GetModelSupportEndpointTypes(m.ModelName)
@@ -139,5 +145,7 @@ func fillModelExtra(m *model.Model) {
     if channels, err := model.GetBoundChannels(m.ModelName); err == nil {
         m.BoundChannels = channels
     }
+    // 填充启用分组
+    m.EnableGroups = model.GetModelEnableGroups(m.ModelName)
 
 }
