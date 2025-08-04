@@ -98,6 +98,25 @@ const renderEndpoints = (text) => {
   });
 };
 
+// Render quota type
+const renderQuotaType = (qt, t) => {
+  if (qt === 1) {
+    return (
+      <Tag color='teal' size='small' shape='circle'>
+        {t('按次计费')}
+      </Tag>
+    );
+  }
+  if (qt === 0) {
+    return (
+      <Tag color='violet' size='small' shape='circle'>
+        {t('按量计费')}
+      </Tag>
+    );
+  }
+  return qt ?? '-';
+};
+
 // Render bound channels
 const renderBoundChannels = (channels) => {
   if (!channels || channels.length === 0) return '-';
@@ -212,6 +231,11 @@ export const getModelsColumns = ({
       title: t('可用分组'),
       dataIndex: 'enable_groups',
       render: renderGroups,
+    },
+    {
+      title: t('计费类型'),
+      dataIndex: 'quota_type',
+      render: (qt) => renderQuotaType(qt, t),
     },
     {
       title: t('创建时间'),

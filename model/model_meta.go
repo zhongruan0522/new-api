@@ -39,6 +39,7 @@ type Model struct {
 
     BoundChannels []BoundChannel `json:"bound_channels,omitempty" gorm:"-"`
     EnableGroups []string       `json:"enable_groups,omitempty" gorm:"-"`
+    QuotaType    int            `json:"quota_type" gorm:"-"`
 }
 
 // Insert 创建新的模型元数据记录

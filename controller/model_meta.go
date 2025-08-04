@@ -147,5 +147,7 @@ func fillModelExtra(m *model.Model) {
     }
     // 填充启用分组
     m.EnableGroups = model.GetModelEnableGroups(m.ModelName)
+    // 填充计费类型
+    m.QuotaType = model.GetModelQuotaType(m.ModelName)
 
 }
