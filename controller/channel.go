@@ -1057,6 +1057,7 @@ type MultiKeyManageRequest struct {
 	KeyIndex  *int   `json:"key_index,omitempty"` // for disable_key and enable_key actions
 	Page      int    `json:"page,omitempty"`      // for get_key_status pagination
 	PageSize  int    `json:"page_size,omitempty"` // for get_key_status pagination
+	Status    *int   `json:"status,omitempty"`    // for get_key_status filtering: 1=enabled, 2=manual_disabled, 3=auto_disabled, nil=all
 }
 
 // MultiKeyStatusResponse represents the response for key status query
@@ -1109,7 +1110,6 @@ func ManageMultiKeys(c *gin.Context) {
 	switch request.Action {
 	case "get_key_status":
 		keys := channel.GetKeys()
-		total := len(keys)
 
 		// Default pagination parameters
 		page := request.Page
@@ -1121,23 +1121,11 @@ func ManageMultiKeys(c *gin.Context) {
 			pageSize = 50 // Default page size
 		}
 
-		// Calculate pagination
-		totalPages := (total + pageSize - 1) / pageSize
-		if page > totalPages && totalPages > 0 {
-			page = totalPages
-		}
-
-		// Calculate range
-		start := (page - 1) * pageSize
-		end := start + pageSize
-		if end > total {
-			end = total
-		}
-
-		// Statistics for all keys
+		// Statistics for all keys (unchanged by filtering)
 		var enabledCount, manualDisabledCount, autoDisabledCount int
 
-		var keyStatusList []KeyStatus
+		// Build all key status data first
+		var allKeyStatusList []KeyStatus
 		for i, key := range keys {
 			status := 1 // default enabled
 			var disabledTime int64
@@ -1149,7 +1137,7 @@ func ManageMultiKeys(c *gin.Context) {
 				}
 			}
 
-			// Count for statistics
+			// Count for statistics (all keys)
 			switch status {
 			case 1:
 				enabledCount++
@@ -1159,45 +1147,77 @@ func ManageMultiKeys(c *gin.Context) {
 				autoDisabledCount++
 			}
 
-			// Only include keys in current page
-			if i >= start && i < end {
-				if status != 1 {
-					if channel.ChannelInfo.MultiKeyDisabledTime != nil {
-						disabledTime = channel.ChannelInfo.MultiKeyDisabledTime[i]
-					}
-					if channel.ChannelInfo.MultiKeyDisabledReason != nil {
-						reason = channel.ChannelInfo.MultiKeyDisabledReason[i]
-					}
+			if status != 1 {
+				if channel.ChannelInfo.MultiKeyDisabledTime != nil {
+					disabledTime = channel.ChannelInfo.MultiKeyDisabledTime[i]
 				}
-
-				// Create key preview (first 10 chars)
-				keyPreview := key
-				if len(key) > 10 {
-					keyPreview = key[:10] + "..."
+				if channel.ChannelInfo.MultiKeyDisabledReason != nil {
+					reason = channel.ChannelInfo.MultiKeyDisabledReason[i]
 				}
-
-				keyStatusList = append(keyStatusList, KeyStatus{
-					Index:        i,
-					Status:       status,
-					DisabledTime: disabledTime,
-					Reason:       reason,
-					KeyPreview:   keyPreview,
-				})
 			}
+
+			// Create key preview (first 10 chars)
+			keyPreview := key
+			if len(key) > 10 {
+				keyPreview = key[:10] + "..."
+			}
+
+			allKeyStatusList = append(allKeyStatusList, KeyStatus{
+				Index:        i,
+				Status:       status,
+				DisabledTime: disabledTime,
+				Reason:       reason,
+				KeyPreview:   keyPreview,
+			})
+		}
+
+		// Apply status filter if specified
+		var filteredKeyStatusList []KeyStatus
+		if request.Status != nil {
+			for _, keyStatus := range allKeyStatusList {
+				if keyStatus.Status == *request.Status {
+					filteredKeyStatusList = append(filteredKeyStatusList, keyStatus)
+				}
+			}
+		} else {
+			filteredKeyStatusList = allKeyStatusList
+		}
+
+		// Calculate pagination based on filtered results
+		filteredTotal := len(filteredKeyStatusList)
+		totalPages := (filteredTotal + pageSize - 1) / pageSize
+		if totalPages == 0 {
+			totalPages = 1
+		}
+		if page > totalPages {
+			page = totalPages
+		}
+
+		// Calculate range for current page
+		start := (page - 1) * pageSize
+		end := start + pageSize
+		if end > filteredTotal {
+			end = filteredTotal
+		}
+
+		// Get the page data
+		var pageKeyStatusList []KeyStatus
+		if start < filteredTotal {
+			pageKeyStatusList = filteredKeyStatusList[start:end]
 		}
 
 		c.JSON(http.StatusOK, gin.H{
 			"success": true,
 			"message": "",
 			"data": MultiKeyStatusResponse{
-				Keys:                keyStatusList,
-				Total:               total,
+				Keys:                pageKeyStatusList,
+				Total:               filteredTotal, // Total of filtered results
 				Page:                page,
 				PageSize:            pageSize,
 				TotalPages:          totalPages,
-				EnabledCount:        enabledCount,
-				ManualDisabledCount: manualDisabledCount,
-				AutoDisabledCount:   autoDisabledCount,
+				EnabledCount:        enabledCount,        // Overall statistics
+				ManualDisabledCount: manualDisabledCount, // Overall statistics
+				AutoDisabledCount:   autoDisabledCount,   // Overall statistics
 			},
 		})
 		return
@@ -1231,8 +1251,6 @@ func ManageMultiKeys(c *gin.Context) {
 		}
 
 		channel.ChannelInfo.MultiKeyStatusList[keyIndex] = 2 // disabled
-		channel.ChannelInfo.MultiKeyDisabledTime[keyIndex] = common.GetTimestamp()
-		channel.ChannelInfo.MultiKeyDisabledReason[keyIndex] = "手动禁用"
 
 		err = channel.Update()
 		if err != nil {
@@ -1286,6 +1304,77 @@ func ManageMultiKeys(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"success": true,
 			"message": "密钥已启用",
+		})
+		return
+
+	case "enable_all_keys":
+		// 清空所有禁用状态，使所有密钥回到默认启用状态
+		var enabledCount int
+		if channel.ChannelInfo.MultiKeyStatusList != nil {
+			enabledCount = len(channel.ChannelInfo.MultiKeyStatusList)
+		}
+
+		channel.ChannelInfo.MultiKeyStatusList = make(map[int]int)
+		channel.ChannelInfo.MultiKeyDisabledTime = make(map[int]int64)
+		channel.ChannelInfo.MultiKeyDisabledReason = make(map[int]string)
+
+		err = channel.Update()
+		if err != nil {
+			common.ApiError(c, err)
+			return
+		}
+
+		model.InitChannelCache()
+		c.JSON(http.StatusOK, gin.H{
+			"success": true,
+			"message": fmt.Sprintf("已启用 %d 个密钥", enabledCount),
+		})
+		return
+
+	case "disable_all_keys":
+		// 禁用所有启用的密钥
+		if channel.ChannelInfo.MultiKeyStatusList == nil {
+			channel.ChannelInfo.MultiKeyStatusList = make(map[int]int)
+		}
+		if channel.ChannelInfo.MultiKeyDisabledTime == nil {
+			channel.ChannelInfo.MultiKeyDisabledTime = make(map[int]int64)
+		}
+		if channel.ChannelInfo.MultiKeyDisabledReason == nil {
+			channel.ChannelInfo.MultiKeyDisabledReason = make(map[int]string)
+		}
+
+		var disabledCount int
+		for i := 0; i < channel.ChannelInfo.MultiKeySize; i++ {
+			status := 1 // default enabled
+			if s, exists := channel.ChannelInfo.MultiKeyStatusList[i]; exists {
+				status = s
+			}
+
+			// 只禁用当前启用的密钥
+			if status == 1 {
+				channel.ChannelInfo.MultiKeyStatusList[i] = 2 // disabled
+				disabledCount++
+			}
+		}
+
+		if disabledCount == 0 {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": "没有可禁用的密钥",
+			})
+			return
+		}
+
+		err = channel.Update()
+		if err != nil {
+			common.ApiError(c, err)
+			return
+		}
+
+		model.InitChannelCache()
+		c.JSON(http.StatusOK, gin.H{
+			"success": true,
+			"message": fmt.Sprintf("已禁用 %d 个密钥", disabledCount),
 		})
 		return
 
