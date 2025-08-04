@@ -333,8 +333,11 @@ export const useModelsData = () => {
 
   // Initial load
   useEffect(() => {
-    loadVendors();
-    loadModels();
+    (async () => {
+      await loadVendors();
+      await loadModels();
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return {
