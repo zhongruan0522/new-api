@@ -395,8 +395,7 @@ const MultiKeyManageModal = ({
       }
       visible={visible}
       onCancel={onCancel}
-      width={800}
-      height={600}
+      width={900}
       footer={
         <Space>
           <Button onClick={onCancel}>{t('关闭')}</Button>
@@ -452,11 +451,11 @@ const MultiKeyManageModal = ({
         </Space>
       }
     >
-      <div style={{ padding: '16px 0' }}>
+      <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
         {/* Statistics Banner */}
         <Banner
           type='info'
-          style={{ marginBottom: '16px' }}
+          style={{ marginBottom: '16px', flexShrink: 0 }}
           description={
             <div>
               <Text>
@@ -479,7 +478,7 @@ const MultiKeyManageModal = ({
         />
 
         {/* Filter Controls */}
-        <div style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <div style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0 }}>
           <Text style={{ fontSize: '14px', fontWeight: '500' }}>{t('状态筛选')}:</Text>
           <Select
             value={statusFilter}
@@ -501,75 +500,87 @@ const MultiKeyManageModal = ({
         </div>
 
         {/* Key Status Table */}
-        <Spin spinning={loading}>
-          {keyStatusList.length > 0 ? (
-            <>
-              <Table
-                columns={columns}
-                dataSource={keyStatusList}
-                pagination={false}
-                size='small'
-                bordered
-                rowKey='index'
-                style={{ marginBottom: '16px' }}
-              />
-              
-              {/* Pagination */}
-              {total > 0 && (
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Text type='quaternary' style={{ fontSize: '12px' }}>
-                    {t('显示第 {{start}}-{{end}} 条，共 {{total}} 条', {
-                      start: (currentPage - 1) * pageSize + 1,
-                      end: Math.min(currentPage * pageSize, total),
-                      total: total
-                    })}
-                  </Text>
-                  
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <Text type='quaternary' style={{ fontSize: '12px' }}>
-                      {t('每页显示')}:
-                    </Text>
-                    <Select
-                      value={pageSize}
-                      onChange={handlePageSizeChange}
-                      size='small'
-                      style={{ width: '80px' }}
-                    >
-                      <Select.Option value={50}>50</Select.Option>
-                      <Select.Option value={100}>100</Select.Option>
-                      <Select.Option value={500}>500</Select.Option>
-                      <Select.Option value={1000}>1000</Select.Option>
-                    </Select>
-                    
-                    <Pagination
-                      current={currentPage}
-                      total={total}
-                      pageSize={pageSize}
-                      showSizeChanger={false}
-                      showQuickJumper
-                      size='small'
-                      onChange={handlePageChange}
-                      showTotal={(total, range) => 
-                        t('第 {{current}} / {{total}} 页', {
-                          current: currentPage,
-                          total: totalPages
-                        })
-                      }
-                    />
-                  </div>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+          <Spin spinning={loading}>
+            {keyStatusList.length > 0 ? (
+              <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                <div style={{ flex: 1, overflow: 'auto', marginBottom: '16px' }}>
+                  <Table
+                    columns={columns}
+                    dataSource={keyStatusList}
+                    pagination={false}
+                    size='small'
+                    bordered
+                    rowKey='index'
+                    scroll={{ y: 'calc(100vh - 400px)' }}
+                  />
                 </div>
-              )}
-            </>
-          ) : (
-            !loading && (
-              <Empty
-                image={Empty.PRESENTED_IMAGE_SIMPLE}
-                title={t('暂无密钥数据')}
-                description={t('请检查渠道配置或刷新重试')}
-              />
-            )
-          )}
-        </Spin>
+                
+                {/* Pagination */}
+                {total > 0 && (
+                  <div style={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'center',
+                    flexShrink: 0,
+                    padding: '12px 0',
+                    borderTop: '1px solid var(--semi-color-border)',
+                    backgroundColor: 'var(--semi-color-bg-1)'
+                  }}>
+                    <Text type='quaternary' style={{ fontSize: '12px' }}>
+                      {t('显示第 {{start}}-{{end}} 条，共 {{total}} 条', {
+                        start: (currentPage - 1) * pageSize + 1,
+                        end: Math.min(currentPage * pageSize, total),
+                        total: total
+                      })}
+                    </Text>
+                    
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <Text type='quaternary' style={{ fontSize: '12px' }}>
+                        {t('每页显示')}:
+                      </Text>
+                      <Select
+                        value={pageSize}
+                        onChange={handlePageSizeChange}
+                        size='small'
+                        style={{ width: '80px' }}
+                      >
+                        <Select.Option value={50}>50</Select.Option>
+                        <Select.Option value={100}>100</Select.Option>
+                        <Select.Option value={500}>500</Select.Option>
+                        <Select.Option value={1000}>1000</Select.Option>
+                      </Select>
+                      
+                      <Pagination
+                        current={currentPage}
+                        total={total}
+                        pageSize={pageSize}
+                        showSizeChanger={false}
+                        showQuickJumper
+                        size='small'
+                        onChange={handlePageChange}
+                        showTotal={(total, range) => 
+                          t('第 {{current}} / {{total}} 页', {
+                            current: currentPage,
+                            total: totalPages
+                          })
+                        }
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              !loading && (
+                <Empty
+                  image={Empty.PRESENTED_IMAGE_SIMPLE}
+                  title={t('暂无密钥数据')}
+                  description={t('请检查渠道配置或刷新重试')}
+                />
+              )
+            )}
+          </Spin>
+        </div>
       </div>
     </Modal>
   );
