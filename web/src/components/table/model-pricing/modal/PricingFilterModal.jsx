@@ -32,8 +32,6 @@ const PricingFilterModal = ({
   const handleResetFilters = () =>
     resetPricingFilters({
       handleChange: sidebarProps.handleChange,
-      setActiveKey: sidebarProps.setActiveKey,
-      availableCategories: sidebarProps.availableCategories,
       setShowWithRecharge: sidebarProps.setShowWithRecharge,
       setCurrency: sidebarProps.setCurrency,
       setShowRatio: sidebarProps.setShowRatio,
@@ -41,6 +39,7 @@ const PricingFilterModal = ({
       setFilterGroup: sidebarProps.setFilterGroup,
       setFilterQuotaType: sidebarProps.setFilterQuotaType,
       setFilterEndpointType: sidebarProps.setFilterEndpointType,
+      setFilterVendor: sidebarProps.setFilterVendor,
       setCurrentPage: sidebarProps.setCurrentPage,
       setTokenUnit: sidebarProps.setTokenUnit,
     });

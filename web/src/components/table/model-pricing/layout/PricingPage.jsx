@@ -79,6 +79,7 @@ const PricingPage = () => {
         tokenUnit={pricingData.tokenUnit}
         displayPrice={pricingData.displayPrice}
         showRatio={allProps.showRatio}
+        vendorsMap={pricingData.vendorsMap}
         t={pricingData.t}
       />
     </div>

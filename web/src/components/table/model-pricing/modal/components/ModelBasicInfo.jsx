@@ -18,20 +18,43 @@ For commercial licensing, please contact support@quantumnous.com
 */
 
 import React from 'react';
-import { Card, Avatar, Typography } from '@douyinfe/semi-ui';
+import { Card, Avatar, Typography, Tag, Space } from '@douyinfe/semi-ui';
 import { IconInfoCircle } from '@douyinfe/semi-icons';
+import { stringToColor } from '../../../../../helpers';
 
 const { Text } = Typography;
 
-const ModelBasicInfo = ({ modelData, t }) => {
-  // 获取模型描述
+const ModelBasicInfo = ({ modelData, vendorsMap = {}, t }) => {
+  // 获取模型描述（使用后端真实数据）
   const getModelDescription = () => {
     if (!modelData) return t('暂无模型描述');
-    // 这里可以根据模型名称返回不同的描述
-    if (modelData.model_name?.includes('gpt-4o-image')) {
-      return t('逆向plus账号的可绘图的gpt-4o模型，由于OpenAI限制绘图数量，并非每次都能绘图成功，由于是逆向模型，只要请求成功，即使绘图失败也会扣费，请谨慎使用。推荐使用正式版的 gpt-image-1模型。');
+
+    // 优先使用后端提供的描述
+    if (modelData.description) {
+      return modelData.description;
     }
-    return modelData.description || t('暂无模型描述');
+
+    // 如果没有描述但有供应商描述，显示供应商信息
+    if (modelData.vendor_description) {
+      return t('供应商信息：') + modelData.vendor_description;
+    }
+
+    return t('暂无模型描述');
+  };
+
+  // 获取模型标签
+  const getModelTags = () => {
+    const tags = [];
+
+    if (modelData?.tags) {
+      const customTags = modelData.tags.split(',').filter(tag => tag.trim());
+      customTags.forEach(tag => {
+        const tagText = tag.trim();
+        tags.push({ text: tagText, color: stringToColor(tagText) });
+      });
+    }
+
+    return tags;
   };
 
   return (
@@ -46,7 +69,24 @@ const ModelBasicInfo = ({ modelData, t }) => {
         </div>
       </div>
       <div className="text-gray-600">
-        <p>{getModelDescription()}</p>
+        <p className="mb-4">{getModelDescription()}</p>
+        {getModelTags().length > 0 && (
+          <div>
+            <Text className="text-sm font-medium text-gray-700 mb-2 block">{t('模型标签')}</Text>
+            <Space wrap>
+              {getModelTags().map((tag, index) => (
+                <Tag
+                  key={index}
+                  color={tag.color}
+                  shape="circle"
+                  size="small"
+                >
+                  {tag.text}
+                </Tag>
+              ))}
+            </Space>
+          </div>
+        )}
       </div>
     </Card>
   );

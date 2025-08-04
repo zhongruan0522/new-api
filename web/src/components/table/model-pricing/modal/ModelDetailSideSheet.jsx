@@ -46,6 +46,7 @@ const ModelDetailSideSheet = ({
   displayPrice,
   showRatio,
   usableGroup,
+  vendorsMap,
   t,
 }) => {
   const isMobile = useIsMobile();
@@ -53,7 +54,7 @@ const ModelDetailSideSheet = ({
   return (
     <SideSheet
       placement="right"
-      title={<ModelHeader modelData={modelData} t={t} />}
+      title={<ModelHeader modelData={modelData} vendorsMap={vendorsMap} t={t} />}
       bodyStyle={{
         padding: '0',
         display: 'flex',
@@ -80,7 +81,7 @@ const ModelDetailSideSheet = ({
         )}
         {modelData && (
           <>
-            <ModelBasicInfo modelData={modelData} t={t} />
+            <ModelBasicInfo modelData={modelData} vendorsMap={vendorsMap} t={t} />
             <ModelEndpoints modelData={modelData} t={t} />
             <ModelPricingTable
               modelData={modelData}

@@ -20,7 +20,8 @@ For commercial licensing, please contact support@quantumnous.com
 import React from 'react';
 import { Tag, Space, Tooltip } from '@douyinfe/semi-ui';
 import { IconHelpCircle } from '@douyinfe/semi-icons';
-import { renderModelTag, stringToColor, calculateModelPrice } from '../../../../../helpers';
+import { renderModelTag, stringToColor, calculateModelPrice, getLobeHubIcon } from '../../../../../helpers';
+import { renderLimitedItems, renderDescription } from '../../../../common/ui/RenderUtils';
 
 function renderQuotaType(type, t) {
   switch (type) {
@@ -40,6 +41,31 @@ function renderQuotaType(type, t) {
       return t('未知');
   }
 }
+
+// Render vendor name
+const renderVendor = (vendorName, vendorIcon, t) => {
+  if (!vendorName) return '-';
+  return (
+    <Tag color='white' shape='circle' prefixIcon={getLobeHubIcon(vendorIcon || 'Layers', 14)}>
+      {vendorName}
+    </Tag>
+  );
+};
+
+// Render tags list using RenderUtils
+const renderTags = (text) => {
+  if (!text) return '-';
+  const tagsArr = text.split(',').filter(tag => tag.trim());
+  return renderLimitedItems({
+    items: tagsArr,
+    renderItem: (tag, idx) => (
+      <Tag key={idx} color={stringToColor(tag.trim())} shape='circle' size='small'>
+        {tag.trim()}
+      </Tag>
+    ),
+    maxDisplay: 3
+  });
+};
 
 function renderSupportedEndpoints(endpoints) {
   if (!endpoints || endpoints.length === 0) {
@@ -104,7 +130,25 @@ export const getPricingTableColumns = ({
     sorter: (a, b) => a.quota_type - b.quota_type,
   };
 
-  const baseColumns = [modelNameColumn, quotaColumn];
+  const descriptionColumn = {
+    title: t('描述'),
+    dataIndex: 'description',
+    render: (text) => renderDescription(text, 200),
+  };
+
+  const tagsColumn = {
+    title: t('标签'),
+    dataIndex: 'tags',
+    render: renderTags,
+  };
+
+  const vendorColumn = {
+    title: t('供应商'),
+    dataIndex: 'vendor_name',
+    render: (text, record) => renderVendor(text, record.vendor_icon, t),
+  };
+
+  const baseColumns = [modelNameColumn, vendorColumn, descriptionColumn, tagsColumn, quotaColumn];
 
   const ratioColumn = {
     title: () => (

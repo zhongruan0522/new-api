@@ -19,10 +19,10 @@ For commercial licensing, please contact support@quantumnous.com
 
 import React from 'react';
 import PricingDisplaySettings from '../../filter/PricingDisplaySettings';
-import PricingCategories from '../../filter/PricingCategories';
 import PricingGroups from '../../filter/PricingGroups';
 import PricingQuotaTypes from '../../filter/PricingQuotaTypes';
 import PricingEndpointTypes from '../../filter/PricingEndpointTypes';
+import PricingVendors from '../../filter/PricingVendors';
 import { usePricingFilterCounts } from '../../../../../hooks/model-pricing/usePricingFilterCounts';
 
 const FilterModalContent = ({ sidebarProps, t }) => {
@@ -43,6 +43,8 @@ const FilterModalContent = ({ sidebarProps, t }) => {
     setFilterQuotaType,
     filterEndpointType,
     setFilterEndpointType,
+    filterVendor,
+    setFilterVendor,
     tokenUnit,
     setTokenUnit,
     loading,
@@ -52,15 +54,14 @@ const FilterModalContent = ({ sidebarProps, t }) => {
   const {
     quotaTypeModels,
     endpointTypeModels,
-    dynamicCategoryCounts,
+    vendorModels,
     groupCountModels,
   } = usePricingFilterCounts({
     models: categoryProps.models,
-    modelCategories: categoryProps.modelCategories,
-    activeKey: categoryProps.activeKey,
     filterGroup,
     filterQuotaType,
     filterEndpointType,
+    filterVendor,
     searchValue: sidebarProps.searchValue,
   });
 
@@ -81,10 +82,11 @@ const FilterModalContent = ({ sidebarProps, t }) => {
         t={t}
       />
 
-      <PricingCategories
-        {...categoryProps}
-        categoryCounts={dynamicCategoryCounts}
-        setActiveKey={setActiveKey}
+      <PricingVendors
+        filterVendor={filterVendor}
+        setFilterVendor={setFilterVendor}
+        models={vendorModels}
+        allModels={categoryProps.models}
         loading={loading}
         t={t}
       />

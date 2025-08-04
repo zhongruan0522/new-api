@@ -698,14 +698,13 @@ const DEFAULT_PRICING_FILTERS = {
   filterGroup: 'all',
   filterQuotaType: 'all',
   filterEndpointType: 'all',
+  filterVendor: 'all',
   currentPage: 1,
 };
 
 // 重置模型定价筛选条件
 export const resetPricingFilters = ({
   handleChange,
-  setActiveKey,
-  availableCategories,
   setShowWithRecharge,
   setCurrency,
   setShowRatio,
@@ -713,11 +712,11 @@ export const resetPricingFilters = ({
   setFilterGroup,
   setFilterQuotaType,
   setFilterEndpointType,
+  setFilterVendor,
   setCurrentPage,
   setTokenUnit,
 }) => {
   handleChange?.(DEFAULT_PRICING_FILTERS.search);
-  availableCategories?.length > 0 && setActiveKey?.(availableCategories[0]);
   setShowWithRecharge?.(DEFAULT_PRICING_FILTERS.showWithRecharge);
   setCurrency?.(DEFAULT_PRICING_FILTERS.currency);
   setShowRatio?.(DEFAULT_PRICING_FILTERS.showRatio);
@@ -726,5 +725,6 @@ export const resetPricingFilters = ({
   setFilterGroup?.(DEFAULT_PRICING_FILTERS.filterGroup);
   setFilterQuotaType?.(DEFAULT_PRICING_FILTERS.filterQuotaType);
   setFilterEndpointType?.(DEFAULT_PRICING_FILTERS.filterEndpointType);
+  setFilterVendor?.(DEFAULT_PRICING_FILTERS.filterVendor);
   setCurrentPage?.(DEFAULT_PRICING_FILTERS.currentPage);
 };

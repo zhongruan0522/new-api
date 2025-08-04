@@ -19,10 +19,10 @@ For commercial licensing, please contact support@quantumnous.com
 
 import React from 'react';
 import { Button } from '@douyinfe/semi-ui';
-import PricingCategories from '../filter/PricingCategories';
 import PricingGroups from '../filter/PricingGroups';
 import PricingQuotaTypes from '../filter/PricingQuotaTypes';
 import PricingEndpointTypes from '../filter/PricingEndpointTypes';
+import PricingVendors from '../filter/PricingVendors';
 import PricingDisplaySettings from '../filter/PricingDisplaySettings';
 import { resetPricingFilters } from '../../../../helpers/utils';
 import { usePricingFilterCounts } from '../../../../hooks/model-pricing/usePricingFilterCounts';
@@ -44,6 +44,8 @@ const PricingSidebar = ({
   setFilterQuotaType,
   filterEndpointType,
   setFilterEndpointType,
+  filterVendor,
+  setFilterVendor,
   currentPage,
   setCurrentPage,
   tokenUnit,
@@ -56,23 +58,20 @@ const PricingSidebar = ({
   const {
     quotaTypeModels,
     endpointTypeModels,
-    dynamicCategoryCounts,
+    vendorModels,
     groupCountModels,
   } = usePricingFilterCounts({
     models: categoryProps.models,
-    modelCategories: categoryProps.modelCategories,
-    activeKey: categoryProps.activeKey,
     filterGroup,
     filterQuotaType,
     filterEndpointType,
+    filterVendor,
     searchValue: categoryProps.searchValue,
   });
 
   const handleResetFilters = () =>
     resetPricingFilters({
       handleChange,
-      setActiveKey,
-      availableCategories: categoryProps.availableCategories,
       setShowWithRecharge,
       setCurrency,
       setShowRatio,
@@ -80,6 +79,7 @@ const PricingSidebar = ({
       setFilterGroup,
       setFilterQuotaType,
       setFilterEndpointType,
+      setFilterVendor,
       setCurrentPage,
       setTokenUnit,
     });
@@ -115,10 +115,11 @@ const PricingSidebar = ({
         t={t}
       />
 
-      <PricingCategories
-        {...categoryProps}
-        categoryCounts={dynamicCategoryCounts}
-        setActiveKey={setActiveKey}
+      <PricingVendors
+        filterVendor={filterVendor}
+        setFilterVendor={setFilterVendor}
+        models={vendorModels}
+        allModels={categoryProps.models}
         loading={loading}
         t={t}
       />

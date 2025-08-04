@@ -18,28 +18,35 @@ For commercial licensing, please contact support@quantumnous.com
 */
 
 import React from 'react';
-import SelectableButtonGroup from '../../../common/ui/SelectableButtonGroup';
+import PricingVendorIntro from './PricingVendorIntro';
+import PricingVendorIntroSkeleton from './PricingVendorIntroSkeleton';
+import { useMinimumLoadingTime } from '../../../../../hooks/common/useMinimumLoadingTime';
 
-const PricingCategories = ({ activeKey, setActiveKey, modelCategories, categoryCounts, availableCategories, loading = false, t }) => {
-  const items = Object.entries(modelCategories)
-    .filter(([key]) => availableCategories.includes(key))
-    .map(([key, category]) => ({
-      value: key,
-      label: category.label,
-      icon: category.icon,
-      tagCount: categoryCounts[key] || 0,
-    }));
+const PricingVendorIntroWithSkeleton = ({
+  loading = false,
+  filterVendor,
+  models,
+  allModels,
+  t
+}) => {
+  const showSkeleton = useMinimumLoadingTime(loading);
+
+  if (showSkeleton) {
+    return (
+      <PricingVendorIntroSkeleton
+        isAllVendors={filterVendor === 'all'}
+      />
+    );
+  }
 
   return (
-    <SelectableButtonGroup
-      title={t('模型分类')}
-      items={items}
-      activeValue={activeKey}
-      onChange={setActiveKey}
-      loading={loading}
+    <PricingVendorIntro
+      filterVendor={filterVendor}
+      models={models}
+      allModels={allModels}
       t={t}
     />
   );
 };
 
-export default PricingCategories; 
+export default PricingVendorIntroWithSkeleton;

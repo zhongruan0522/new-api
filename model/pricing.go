@@ -2,6 +2,7 @@ package model
 
 import (
 	"fmt"
+	"strings"
 	"one-api/common"
 	"one-api/constant"
 	"one-api/setting/ratio_setting"
@@ -12,6 +13,9 @@ import (
 
 type Pricing struct {
 	ModelName              string                  `json:"model_name"`
+	Description            string                  `json:"description,omitempty"`
+	Tags                   string                  `json:"tags,omitempty"`
+	VendorID               int                     `json:"vendor_id,omitempty"`
 	QuotaType              int                     `json:"quota_type"`
 	ModelRatio             float64                 `json:"model_ratio"`
 	ModelPrice             float64                 `json:"model_price"`
@@ -21,8 +25,16 @@ type Pricing struct {
 	SupportedEndpointTypes []constant.EndpointType `json:"supported_endpoint_types"`
 }
 
+type PricingVendor struct {
+	ID          int    `json:"id"`
+	Name        string `json:"name"`
+	Description string `json:"description,omitempty"`
+	Icon        string `json:"icon,omitempty"`
+}
+
 var (
 	pricingMap         []Pricing
+	vendorsList        []PricingVendor
 	lastGetPricingTime time.Time
 	updatePricingLock  sync.Mutex
 )
@@ -46,6 +58,15 @@ func GetPricing() []Pricing {
 	return pricingMap
 }
 
+// GetVendors 返回当前定价接口使用到的供应商信息
+func GetVendors() []PricingVendor {
+	if time.Since(lastGetPricingTime) > time.Minute*1 || len(pricingMap) == 0 {
+		// 保证先刷新一次
+		GetPricing()
+	}
+	return vendorsList
+}
+
 func GetModelSupportEndpointTypes(model string) []constant.EndpointType {
 	if model == "" {
 		return make([]constant.EndpointType, 0)
@@ -65,6 +86,73 @@ func updatePricing() {
 		common.SysError(fmt.Sprintf("GetAllEnableAbilityWithChannels error: %v", err))
 		return
 	}
+	// 预加载模型元数据与供应商一次，避免循环查询
+	var allMeta []Model
+	_ = DB.Find(&allMeta).Error
+	metaMap := make(map[string]*Model)
+	prefixList := make([]*Model, 0)
+	suffixList := make([]*Model, 0)
+	containsList := make([]*Model, 0)
+	for i := range allMeta {
+		m := &allMeta[i]
+		if m.NameRule == NameRuleExact {
+			metaMap[m.ModelName] = m
+		} else {
+			switch m.NameRule {
+			case NameRulePrefix:
+				prefixList = append(prefixList, m)
+			case NameRuleSuffix:
+				suffixList = append(suffixList, m)
+			case NameRuleContains:
+				containsList = append(containsList, m)
+			}
+		}
+	}
+
+	// 将非精确规则模型匹配到 metaMap
+	for _, m := range prefixList {
+		for _, pricingModel := range enableAbilities {
+			if strings.HasPrefix(pricingModel.Model, m.ModelName) {
+				metaMap[pricingModel.Model] = m
+			}
+		}
+	}
+	for _, m := range suffixList {
+		for _, pricingModel := range enableAbilities {
+			if strings.HasSuffix(pricingModel.Model, m.ModelName) {
+				metaMap[pricingModel.Model] = m
+			}
+		}
+	}
+	for _, m := range containsList {
+		for _, pricingModel := range enableAbilities {
+			if strings.Contains(pricingModel.Model, m.ModelName) {
+				if _, exists := metaMap[pricingModel.Model]; !exists {
+					metaMap[pricingModel.Model] = m
+				}
+			}
+		}
+	}
+
+	// 预加载供应商
+	var vendors []Vendor
+	_ = DB.Find(&vendors).Error
+	vendorMap := make(map[int]*Vendor)
+	for i := range vendors {
+		vendorMap[vendors[i].Id] = &vendors[i]
+	}
+
+	// 构建对前端友好的供应商列表
+	vendorsList = make([]PricingVendor, 0, len(vendors))
+	for _, v := range vendors {
+		vendorsList = append(vendorsList, PricingVendor{
+			ID:          v.Id,
+			Name:        v.Name,
+			Description: v.Description,
+			Icon:        v.Icon,
+		})
+	}
+
 	modelGroupsMap := make(map[string]*types.Set[string])
 
 	for _, ability := range enableAbilities {
@@ -110,6 +198,13 @@ func updatePricing() {
 			ModelName:              model,
 			EnableGroup:            groups.Items(),
 			SupportedEndpointTypes: modelSupportEndpointTypes[model],
+		}
+
+		// 补充模型元数据（描述、标签、供应商等）
+		if meta, ok := metaMap[model]; ok {
+			pricing.Description = meta.Description
+			pricing.Tags = meta.Tags
+			pricing.VendorID = meta.VendorID
 		}
 		modelPrice, findPrice := ratio_setting.GetModelPrice(model, false)
 		if findPrice {

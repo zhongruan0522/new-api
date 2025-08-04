@@ -21,7 +21,7 @@ import React, { useMemo, useState } from 'react';
 import { Input, Button } from '@douyinfe/semi-ui';
 import { IconSearch, IconCopy, IconFilter } from '@douyinfe/semi-icons';
 import PricingFilterModal from '../../modal/PricingFilterModal';
-import PricingCategoryIntroWithSkeleton from './PricingCategoryIntroWithSkeleton';
+import PricingVendorIntroWithSkeleton from './PricingVendorIntroWithSkeleton';
 
 const PricingTopSection = ({
   selectedRowKeys,
@@ -31,10 +31,9 @@ const PricingTopSection = ({
   handleCompositionEnd,
   isMobile,
   sidebarProps,
-  activeKey,
-  modelCategories,
-  categoryCounts,
-  availableCategories,
+  filterVendor,
+  models,
+  filteredModels,
   loading,
   t
 }) => {
@@ -82,13 +81,12 @@ const PricingTopSection = ({
 
   return (
     <>
-      {/* 分类介绍区域（含骨架屏） */}
-      <PricingCategoryIntroWithSkeleton
+      {/* 供应商介绍区域（含骨架屏） */}
+      <PricingVendorIntroWithSkeleton
         loading={loading}
-        activeKey={activeKey}
-        modelCategories={modelCategories}
-        categoryCounts={categoryCounts}
-        availableCategories={availableCategories}
+        filterVendor={filterVendor}
+        models={filteredModels}
+        allModels={models}
         t={t}
       />
 

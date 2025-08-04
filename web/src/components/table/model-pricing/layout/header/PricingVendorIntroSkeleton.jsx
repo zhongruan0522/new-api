@@ -20,26 +20,26 @@ For commercial licensing, please contact support@quantumnous.com
 import React from 'react';
 import { Card, Skeleton } from '@douyinfe/semi-ui';
 
-const PricingCategoryIntroSkeleton = ({
-  isAllModels = false
+const PricingVendorIntroSkeleton = ({
+  isAllVendors = false
 }) => {
   const placeholder = (
     <div className='mb-4'>
       <Card className="!rounded-2xl" bodyStyle={{ padding: '16px' }}>
         <div className="flex items-start space-x-3 md:space-x-4">
-          {/* 分类图标骨架 */}
+          {/* 供应商图标骨架 */}
           <div className="flex-shrink-0 min-w-16 h-16 rounded-2xl bg-white shadow-md flex items-center justify-center px-2">
-            {isAllModels ? (
+            {isAllVendors ? (
               <div className="flex items-center">
-                {Array.from({ length: 5 }).map((_, index) => (
+                {Array.from({ length: 4 }).map((_, index) => (
                   <Skeleton.Avatar
                     key={index}
                     active
                     size="default"
                     style={{
-                      width: 40,
-                      height: 40,
-                      marginRight: index < 4 ? -10 : 0,
+                      width: 32,
+                      height: 32,
+                      marginRight: index < 3 ? -8 : 0,
                     }}
                   />
                 ))}
@@ -49,7 +49,7 @@ const PricingCategoryIntroSkeleton = ({
             )}
           </div>
 
-          {/* 分类信息骨架 */}
+          {/* 供应商信息骨架 */}
           <div className="flex-1 min-w-0">
             <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-2">
               <Skeleton.Title active style={{ width: 120, height: 24, marginBottom: 0 }} />
@@ -72,4 +72,4 @@ const PricingCategoryIntroSkeleton = ({
   );
 };
 
-export default PricingCategoryIntroSkeleton; 
+export default PricingVendorIntroSkeleton;

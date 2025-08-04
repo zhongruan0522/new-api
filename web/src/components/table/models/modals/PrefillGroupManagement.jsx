@@ -41,9 +41,9 @@ import {
 import { API, showError, showSuccess, stringToColor } from '../../../../helpers';
 import { useTranslation } from 'react-i18next';
 import { useIsMobile } from '../../../../hooks/common/useIsMobile';
-import CardTable from '../../../common/ui/CardTable.js';
-import EditPrefillGroupModal from './EditPrefillGroupModal.jsx';
-import { renderLimitedItems, renderDescription } from '../ui/RenderUtils.jsx';
+import CardTable from '../../../common/ui/CardTable';
+import EditPrefillGroupModal from './EditPrefillGroupModal';
+import { renderLimitedItems, renderDescription } from '../../../common/ui/RenderUtils';
 
 const { Text, Title } = Typography;
 

@@ -21,9 +21,10 @@ import React from 'react';
 import { Card, Tag, Tooltip, Checkbox, Empty, Pagination, Button, Avatar } from '@douyinfe/semi-ui';
 import { IconHelpCircle, IconCopy } from '@douyinfe/semi-icons';
 import { IllustrationNoResult, IllustrationNoResultDark } from '@douyinfe/semi-illustrations';
-import { stringToColor, getModelCategories, calculateModelPrice, formatPriceInfo } from '../../../../../helpers';
+import { stringToColor, calculateModelPrice, formatPriceInfo, getLobeHubIcon } from '../../../../../helpers';
 import PricingCardSkeleton from './PricingCardSkeleton';
 import { useMinimumLoadingTime } from '../../../../../hooks/common/useMinimumLoadingTime';
+import { renderLimitedItems } from '../../../../common/ui/RenderUtils';
 
 const CARD_STYLES = {
   container: "w-12 h-12 rounded-2xl flex items-center justify-center relative shadow-md",
@@ -52,16 +53,11 @@ const PricingCardView = ({
   t,
   selectedRowKeys = [],
   setSelectedRowKeys,
-  activeKey,
-  availableCategories,
   openModelDetail,
 }) => {
   const showSkeleton = useMinimumLoadingTime(loading);
-
   const startIndex = (currentPage - 1) * pageSize;
-  const endIndex = startIndex + pageSize;
-  const paginatedModels = filteredModels.slice(startIndex, endIndex);
-
+  const paginatedModels = filteredModels.slice(startIndex, startIndex + pageSize);
   const getModelKey = (model) => model.key ?? model.model_name ?? model.id;
 
   const handleCheckboxChange = (model, checked) => {
@@ -75,30 +71,28 @@ const PricingCardView = ({
   };
 
   // 获取模型图标
-  const getModelIcon = (modelName) => {
-    const categories = getModelCategories(t);
-    let icon = null;
-
-    // 遍历分类，找到匹配的模型图标
-    for (const [key, category] of Object.entries(categories)) {
-      if (key !== 'all' && category.filter({ model_name: modelName })) {
-        icon = category.icon;
-        break;
-      }
+  const getModelIcon = (model) => {
+    if (!model || !model.model_name) {
+      return (
+        <div className={CARD_STYLES.container}>
+          <Avatar size='large'>?</Avatar>
+        </div>
+      );
     }
-
-    // 如果找到了匹配的图标，返回包装后的图标
-    if (icon) {
+    // 优先使用供应商图标
+    if (model.vendor_icon) {
       return (
         <div className={CARD_STYLES.container}>
           <div className={CARD_STYLES.icon}>
-            {React.cloneElement(icon, { size: 32 })}
+            {getLobeHubIcon(model.vendor_icon, 32)}
           </div>
         </div>
       );
     }
 
-    const avatarText = modelName.slice(0, 2).toUpperCase();
+    // 如果没有供应商图标，使用模型名称生成头像
+
+    const avatarText = model.model_name.slice(0, 2).toUpperCase();
     return (
       <div className={CARD_STYLES.container}>
         <Avatar
@@ -118,8 +112,8 @@ const PricingCardView = ({
   };
 
   // 获取模型描述
-  const getModelDescription = (modelName) => {
-    return t('高性能AI模型，适用于各种文本生成和理解任务。');
+  const getModelDescription = (record) => {
+    return record.description || '';
   };
 
   // 渲染价格信息
@@ -137,47 +131,41 @@ const PricingCardView = ({
 
   // 渲染标签
   const renderTags = (record) => {
-    const tags = [];
+    const allTags = [];
 
     // 计费类型标签  
     const billingType = record.quota_type === 1 ? 'teal' : 'violet';
     const billingText = record.quota_type === 1 ? t('按次计费') : t('按量计费');
-    tags.push(
-      <Tag shape='circle' key="billing" color={billingType} size='small'>
-        {billingText}
-      </Tag>
-    );
-
-    // 热门模型标签
-    if (record.model_name.includes('gpt')) {
-      tags.push(
-        <Tag shape='circle' key="hot" color='red' size='small'>
-          {t('热')}
+    allTags.push({
+      key: "billing",
+      element: (
+        <Tag shape='circle' color={billingType} size='small'>
+          {billingText}
         </Tag>
-      );
-    }
+      )
+    });
 
-    // 端点类型标签
-    if (record.supported_endpoint_types?.length > 0) {
-      record.supported_endpoint_types.slice(0, 2).forEach((endpoint, index) => {
-        tags.push(
-          <Tag shape='circle' key={`endpoint-${index}`} color={stringToColor(endpoint)} size='small'>
-            {endpoint}
-          </Tag>
-        );
+    // 自定义标签
+    if (record.tags) {
+      const tagArr = record.tags.split(',').filter(Boolean);
+      tagArr.forEach((tg, idx) => {
+        allTags.push({
+          key: `custom-${idx}`,
+          element: (
+            <Tag shape='circle' color={stringToColor(tg)} size='small'>
+              {tg}
+            </Tag>
+          )
+        });
       });
     }
 
-    // 上下文长度标签
-    const contextMatch = record.model_name.match(/(\d+)k/i);
-    const contextSize = contextMatch ? contextMatch[1] + 'K' : '4K';
-    tags.push(
-      <Tag shape='circle' key="context" color='blue' size='small'>
-        {contextSize}
-      </Tag>
-    );
-
-    return tags;
+    // 使用 renderLimitedItems 渲染标签
+    return renderLimitedItems({
+      items: allTags,
+      renderItem: (item, idx) => React.cloneElement(item.element, { key: item.key }),
+      maxDisplay: 3
+    });
   };
 
   // 显示骨架屏
@@ -212,15 +200,14 @@ const PricingCardView = ({
           return (
             <Card
               key={modelKey || index}
-              className={`!rounded-2xl transition-all duration-200 hover:shadow-lg border cursor-pointer ${isSelected ? CARD_STYLES.selected : CARD_STYLES.default
-                }`}
+              className={`!rounded-2xl transition-all duration-200 hover:shadow-lg border cursor-pointer ${isSelected ? CARD_STYLES.selected : CARD_STYLES.default}`}
               bodyStyle={{ padding: '24px' }}
               onClick={() => openModelDetail && openModelDetail(model)}
             >
               {/* 头部：图标 + 模型名称 + 操作按钮 */}
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-start space-x-3 flex-1 min-w-0">
-                  {getModelIcon(model.model_name)}
+                  {getModelIcon(model)}
                   <div className="flex-1 min-w-0">
                     <h3 className="text-lg font-bold text-gray-900 truncate">
                       {model.model_name}
@@ -262,12 +249,12 @@ const PricingCardView = ({
                   className="text-xs line-clamp-2 leading-relaxed"
                   style={{ color: 'var(--semi-color-text-2)' }}
                 >
-                  {getModelDescription(model.model_name)}
+                  {getModelDescription(model)}
                 </p>
               </div>
 
               {/* 标签区域 */}
-              <div className="flex flex-wrap gap-2">
+              <div>
                 {renderTags(model)}
               </div>
 
