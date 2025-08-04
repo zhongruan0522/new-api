@@ -30,7 +30,9 @@ import {
   Popconfirm,
   Empty,
   Spin,
-  Banner
+  Banner,
+  Select,
+  Pagination
 } from '@douyinfe/semi-ui';
 import { 
   IconRefresh,
@@ -53,24 +55,48 @@ const MultiKeyManageModal = ({
   const [loading, setLoading] = useState(false);
   const [keyStatusList, setKeyStatusList] = useState([]);
   const [operationLoading, setOperationLoading] = useState({});
+  
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(50);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  
+  // Statistics states
+  const [enabledCount, setEnabledCount] = useState(0);
+  const [manualDisabledCount, setManualDisabledCount] = useState(0);
+  const [autoDisabledCount, setAutoDisabledCount] = useState(0);
 
   // Load key status data
-  const loadKeyStatus = async () => {
+  const loadKeyStatus = async (page = currentPage, size = pageSize) => {
     if (!channel?.id) return;
     
     setLoading(true);
     try {
       const res = await API.post('/api/channel/multi_key/manage', {
         channel_id: channel.id,
-        action: 'get_key_status'
+        action: 'get_key_status',
+        page: page,
+        page_size: size
       });
       
       if (res.data.success) {
-        setKeyStatusList(res.data.data.keys || []);
+        const data = res.data.data;
+        setKeyStatusList(data.keys || []);
+        setTotal(data.total || 0);
+        setCurrentPage(data.page || 1);
+        setPageSize(data.page_size || 50);
+        setTotalPages(data.total_pages || 0);
+        
+        // Update statistics
+        setEnabledCount(data.enabled_count || 0);
+        setManualDisabledCount(data.manual_disabled_count || 0);
+        setAutoDisabledCount(data.auto_disabled_count || 0);
       } else {
         showError(res.data.message);
       }
     } catch (error) {
+      console.error(error);
       showError(t('获取密钥状态失败'));
     } finally {
       setLoading(false);
@@ -91,7 +117,7 @@ const MultiKeyManageModal = ({
       
       if (res.data.success) {
         showSuccess(t('密钥已禁用'));
-        await loadKeyStatus(); // Reload data
+        await loadKeyStatus(currentPage, pageSize); // Reload current page
         onRefresh && onRefresh(); // Refresh parent component
       } else {
         showError(res.data.message);
@@ -117,7 +143,7 @@ const MultiKeyManageModal = ({
       
       if (res.data.success) {
         showSuccess(t('密钥已启用'));
-        await loadKeyStatus(); // Reload data
+        await loadKeyStatus(currentPage, pageSize); // Reload current page
         onRefresh && onRefresh(); // Refresh parent component
       } else {
         showError(res.data.message);
@@ -141,7 +167,9 @@ const MultiKeyManageModal = ({
       
       if (res.data.success) {
         showSuccess(res.data.message);
-        await loadKeyStatus(); // Reload data
+        // Reset to first page after deletion as data structure might change
+        setCurrentPage(1);
+        await loadKeyStatus(1, pageSize);
         onRefresh && onRefresh(); // Refresh parent component
       } else {
         showError(res.data.message);
@@ -153,12 +181,39 @@ const MultiKeyManageModal = ({
     }
   };
 
+  // Handle page change
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+    loadKeyStatus(page, pageSize);
+  };
+
+  // Handle page size change  
+  const handlePageSizeChange = (size) => {
+    setPageSize(size);
+    setCurrentPage(1); // Reset to first page
+    loadKeyStatus(1, size);
+  };
+
   // Effect to load data when modal opens
   useEffect(() => {
     if (visible && channel?.id) {
-      loadKeyStatus();
+      setCurrentPage(1); // Reset to first page when opening
+      loadKeyStatus(1, pageSize);
     }
   }, [visible, channel?.id]);
+
+  // Reset pagination when modal closes
+  useEffect(() => {
+    if (!visible) {
+      setCurrentPage(1);
+      setKeyStatusList([]);
+      setTotal(0);
+      setTotalPages(0);
+      setEnabledCount(0);
+      setManualDisabledCount(0);
+      setAutoDisabledCount(0);
+    }
+  }, [visible]);
 
   // Get status tag component
   const renderStatusTag = (status) => {
@@ -270,12 +325,6 @@ const MultiKeyManageModal = ({
     },
   ];
 
-  // Calculate statistics
-  const enabledCount = keyStatusList.filter(key => key.status === 1).length;
-  const manualDisabledCount = keyStatusList.filter(key => key.status === 2).length;
-  const autoDisabledCount = keyStatusList.filter(key => key.status === 3).length;
-  const totalCount = keyStatusList.length;
-
   return (
     <Modal
       title={
@@ -293,7 +342,7 @@ const MultiKeyManageModal = ({
           <Button onClick={onCancel}>{t('关闭')}</Button>
           <Button
             icon={<IconRefresh />}
-            onClick={loadKeyStatus}
+            onClick={() => loadKeyStatus(currentPage, pageSize)}
             loading={loading}
           >
             {t('刷新')}
@@ -325,7 +374,7 @@ const MultiKeyManageModal = ({
             <div>
               <Text>
                 {t('总共 {{total}} 个密钥，{{enabled}} 个已启用，{{manual}} 个手动禁用，{{auto}} 个自动禁用', {
-                  total: totalCount,
+                  total: total,
                   enabled: enabledCount,
                   manual: manualDisabledCount,
                   auto: autoDisabledCount
@@ -345,15 +394,63 @@ const MultiKeyManageModal = ({
         {/* Key Status Table */}
         <Spin spinning={loading}>
           {keyStatusList.length > 0 ? (
-            <Table
-              columns={columns}
-              dataSource={keyStatusList}
-              pagination={false}
-              size='small'
-              bordered
-              rowKey='index'
-              style={{ maxHeight: '400px', overflow: 'auto' }}
-            />
+            <>
+              <Table
+                columns={columns}
+                dataSource={keyStatusList}
+                pagination={false}
+                size='small'
+                bordered
+                rowKey='index'
+                style={{ marginBottom: '16px' }}
+              />
+              
+              {/* Pagination */}
+              {total > 0 && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Text type='quaternary' style={{ fontSize: '12px' }}>
+                    {t('显示第 {{start}}-{{end}} 条，共 {{total}} 条', {
+                      start: (currentPage - 1) * pageSize + 1,
+                      end: Math.min(currentPage * pageSize, total),
+                      total: total
+                    })}
+                  </Text>
+                  
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <Text type='quaternary' style={{ fontSize: '12px' }}>
+                      {t('每页显示')}:
+                    </Text>
+                    <Select
+                      value={pageSize}
+                      onChange={handlePageSizeChange}
+                      size='small'
+                      style={{ width: '80px' }}
+                    >
+                      <Select.Option value={50}>50</Select.Option>
+                      <Select.Option value={100}>100</Select.Option>
+                      <Select.Option value={200}>500</Select.Option>
+                      <Select.Option value={1000}>1000</Select.Option>
+                    </Select>
+                    
+                    <Pagination
+                      current={currentPage}
+                      total={total}
+                      pageSize={pageSize}
+                      showSizeChanger={false}
+                      showQuickJumper
+                      size='small'
+                      onChange={handlePageChange}
+                      showTotal={(total, range) => 
+                        t('第 {{current}} / {{total}} 页', {
+                          current: currentPage,
+                          total: totalPages
+                        })
+                      }
+                    />
+                  </div>
+                </div>
+              )}
+            </>
           ) : (
             !loading && (
               <Empty
