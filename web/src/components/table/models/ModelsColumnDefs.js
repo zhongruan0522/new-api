@@ -184,6 +184,23 @@ const renderOperations = (text, record, setEditingModel, setShowEdit, manageMode
   );
 };
 
+// 名称匹配类型渲染
+const renderNameRule = (rule, t) => {
+  const map = {
+    0: { color: 'green', label: t('精确') },
+    1: { color: 'blue', label: t('前缀') },
+    2: { color: 'orange', label: t('包含') },
+    3: { color: 'purple', label: t('后缀') },
+  };
+  const cfg = map[rule];
+  if (!cfg) return '-';
+  return (
+    <Tag color={cfg.color} size="small" shape='circle'>
+      {cfg.label}
+    </Tag>
+  );
+};
+
 export const getModelsColumns = ({
   t,
   manageModel,
@@ -201,6 +218,11 @@ export const getModelsColumns = ({
           {text}
         </Text>
       ),
+    },
+    {
+      title: t('匹配类型'),
+      dataIndex: 'name_rule',
+      render: (val) => renderNameRule(val, t),
     },
     {
       title: t('描述'),

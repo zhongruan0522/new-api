@@ -40,6 +40,13 @@ import { API, showError, showSuccess } from '../../../../helpers';
 import { useTranslation } from 'react-i18next';
 import { useIsMobile } from '../../../../hooks/common/useIsMobile';
 
+const nameRuleOptions = [
+  { label: '精确名称匹配', value: 0 },
+  { label: '前缀名称匹配', value: 1 },
+  { label: '包含名称匹配', value: 2 },
+  { label: '后缀名称匹配', value: 3 },
+];
+
 const endpointOptions = [
   { label: 'OpenAI', value: 'openai' },
   { label: 'Anthropic', value: 'anthropic' },
@@ -111,6 +118,7 @@ const EditModelModal = (props) => {
     vendor: '',
     vendor_icon: '',
     endpoints: [],
+    name_rule: props.editingModel?.model_name ? 0 : undefined, // 通过未配置模型过来的固定为精确匹配
     status: true,
   });
 
@@ -301,6 +309,20 @@ const EditModelModal = (props) => {
                       showClear
                     />
                   </Col>
+
+                  <Col span={24}>
+                    <Form.Select
+                      field='name_rule'
+                      label={t('名称匹配类型')}
+                      placeholder={t('请选择名称匹配类型')}
+                      optionList={nameRuleOptions.map(o => ({ label: t(o.label), value: o.value }))}
+                      rules={[{ required: true, message: t('请选择名称匹配类型') }]}
+                      disabled={!!props.editingModel?.model_name} // 通过未配置模型过来的禁用选择
+                      style={{ width: '100%' }}
+                      extraText={t('根据模型名称和匹配规则查找模型元数据，优先级：精确 > 前缀 > 后缀 > 包含')}
+                    />
+                  </Col>
+
                   <Col span={24}>
                     <Form.TextArea
                       field='description'

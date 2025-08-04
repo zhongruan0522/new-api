@@ -3,6 +3,7 @@ package model
 import (
     "one-api/common"
     "strconv"
+    "strings"
 
     "gorm.io/gorm"
 )
@@ -19,6 +20,14 @@ import (
 // 2. 不存在部分依赖（ModelName 是唯一键）
 // 3. 不存在传递依赖（描述、标签等都依赖于 ModelName，而非依赖于其他非主键列）
 // 这样既保证了数据一致性，也方便后期扩展
+
+// 模型名称匹配规则
+const (
+    NameRuleExact = iota // 0 精确匹配
+    NameRulePrefix       // 1 前缀匹配
+    NameRuleContains     // 2 包含匹配
+    NameRuleSuffix       // 3 后缀匹配
+)
 
 type BoundChannel struct {
     Name string `json:"name"`
@@ -40,6 +49,7 @@ type Model struct {
     BoundChannels []BoundChannel `json:"bound_channels,omitempty" gorm:"-"`
     EnableGroups []string       `json:"enable_groups,omitempty" gorm:"-"`
     QuotaType    int            `json:"quota_type" gorm:"-"`
+    NameRule     int            `json:"name_rule" gorm:"default:0"`
 }
 
 // Insert 创建新的模型元数据记录
@@ -91,6 +101,52 @@ func GetBoundChannels(modelName string) ([]BoundChannel, error) {
         Group("channels.id").
         Scan(&channels).Error
     return channels, err
+}
+
+// FindModelByNameWithRule 根据模型名称和匹配规则查找模型元数据，优先级：精确 > 前缀 > 后缀 > 包含
+func FindModelByNameWithRule(name string) (*Model, error) {
+    // 1. 精确匹配
+    if m, err := GetModelByName(name); err == nil {
+        return m, nil
+    }
+    // 2. 规则匹配
+    var models []*Model
+    if err := DB.Where("name_rule <> ?", NameRuleExact).Find(&models).Error; err != nil {
+        return nil, err
+    }
+    var prefixMatch, suffixMatch, containsMatch *Model
+    for _, m := range models {
+        switch m.NameRule {
+        case NameRulePrefix:
+            if strings.HasPrefix(name, m.ModelName) {
+                if prefixMatch == nil || len(m.ModelName) > len(prefixMatch.ModelName) {
+                    prefixMatch = m
+                }
+            }
+        case NameRuleSuffix:
+            if strings.HasSuffix(name, m.ModelName) {
+                if suffixMatch == nil || len(m.ModelName) > len(suffixMatch.ModelName) {
+                    suffixMatch = m
+                }
+            }
+        case NameRuleContains:
+            if strings.Contains(name, m.ModelName) {
+                if containsMatch == nil || len(m.ModelName) > len(containsMatch.ModelName) {
+                    containsMatch = m
+                }
+            }
+        }
+    }
+    if prefixMatch != nil {
+        return prefixMatch, nil
+    }
+    if suffixMatch != nil {
+        return suffixMatch, nil
+    }
+    if containsMatch != nil {
+        return containsMatch, nil
+    }
+    return nil, gorm.ErrRecordNotFound
 }
 
 // SearchModels 根据关键词和供应商搜索模型，支持分页
