@@ -1030,3 +1030,261 @@ func CopyChannel(c *gin.Context) {
 	// success
 	c.JSON(http.StatusOK, gin.H{"success": true, "message": "", "data": gin.H{"id": clone.Id}})
 }
+
+// MultiKeyManageRequest represents the request for multi-key management operations
+type MultiKeyManageRequest struct {
+	ChannelId int    `json:"channel_id"`
+	Action    string `json:"action"`              // "disable_key", "enable_key", "delete_disabled_keys", "get_key_status"
+	KeyIndex  *int   `json:"key_index,omitempty"` // for disable_key and enable_key actions
+}
+
+// MultiKeyStatusResponse represents the response for key status query
+type MultiKeyStatusResponse struct {
+	Keys []KeyStatus `json:"keys"`
+}
+
+type KeyStatus struct {
+	Index        int    `json:"index"`
+	Status       int    `json:"status"` // 1: enabled, 2: disabled
+	DisabledTime int64  `json:"disabled_time,omitempty"`
+	Reason       string `json:"reason,omitempty"`
+	KeyPreview   string `json:"key_preview"` // first 10 chars of key for identification
+}
+
+// ManageMultiKeys handles multi-key management operations
+func ManageMultiKeys(c *gin.Context) {
+	request := MultiKeyManageRequest{}
+	err := c.ShouldBindJSON(&request)
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+
+	channel, err := model.GetChannelById(request.ChannelId, true)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": "渠道不存在",
+		})
+		return
+	}
+
+	if !channel.ChannelInfo.IsMultiKey {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": "该渠道不是多密钥模式",
+		})
+		return
+	}
+
+	switch request.Action {
+	case "get_key_status":
+		keys := channel.GetKeys()
+		var keyStatusList []KeyStatus
+
+		for i, key := range keys {
+			status := 1 // default enabled
+			var disabledTime int64
+			var reason string
+
+			if channel.ChannelInfo.MultiKeyStatusList != nil {
+				if s, exists := channel.ChannelInfo.MultiKeyStatusList[i]; exists {
+					status = s
+				}
+			}
+
+			if status != 1 {
+				if channel.ChannelInfo.MultiKeyDisabledTime != nil {
+					disabledTime = channel.ChannelInfo.MultiKeyDisabledTime[i]
+				}
+				if channel.ChannelInfo.MultiKeyDisabledReason != nil {
+					reason = channel.ChannelInfo.MultiKeyDisabledReason[i]
+				}
+			}
+
+			// Create key preview (first 10 chars)
+			keyPreview := key
+			if len(key) > 10 {
+				keyPreview = key[:10] + "..."
+			}
+
+			keyStatusList = append(keyStatusList, KeyStatus{
+				Index:        i,
+				Status:       status,
+				DisabledTime: disabledTime,
+				Reason:       reason,
+				KeyPreview:   keyPreview,
+			})
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"success": true,
+			"message": "",
+			"data":    MultiKeyStatusResponse{Keys: keyStatusList},
+		})
+		return
+
+	case "disable_key":
+		if request.KeyIndex == nil {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": "未指定要禁用的密钥索引",
+			})
+			return
+		}
+
+		keyIndex := *request.KeyIndex
+		if keyIndex < 0 || keyIndex >= channel.ChannelInfo.MultiKeySize {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": "密钥索引超出范围",
+			})
+			return
+		}
+
+		if channel.ChannelInfo.MultiKeyStatusList == nil {
+			channel.ChannelInfo.MultiKeyStatusList = make(map[int]int)
+		}
+		if channel.ChannelInfo.MultiKeyDisabledTime == nil {
+			channel.ChannelInfo.MultiKeyDisabledTime = make(map[int]int64)
+		}
+		if channel.ChannelInfo.MultiKeyDisabledReason == nil {
+			channel.ChannelInfo.MultiKeyDisabledReason = make(map[int]string)
+		}
+
+		channel.ChannelInfo.MultiKeyStatusList[keyIndex] = 2 // disabled
+		channel.ChannelInfo.MultiKeyDisabledTime[keyIndex] = common.GetTimestamp()
+		channel.ChannelInfo.MultiKeyDisabledReason[keyIndex] = "手动禁用"
+
+		err = channel.Update()
+		if err != nil {
+			common.ApiError(c, err)
+			return
+		}
+
+		model.InitChannelCache()
+		c.JSON(http.StatusOK, gin.H{
+			"success": true,
+			"message": "密钥已禁用",
+		})
+		return
+
+	case "enable_key":
+		if request.KeyIndex == nil {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": "未指定要启用的密钥索引",
+			})
+			return
+		}
+
+		keyIndex := *request.KeyIndex
+		if keyIndex < 0 || keyIndex >= channel.ChannelInfo.MultiKeySize {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": "密钥索引超出范围",
+			})
+			return
+		}
+
+		// 从状态列表中删除该密钥的记录，使其回到默认启用状态
+		if channel.ChannelInfo.MultiKeyStatusList != nil {
+			delete(channel.ChannelInfo.MultiKeyStatusList, keyIndex)
+		}
+		if channel.ChannelInfo.MultiKeyDisabledTime != nil {
+			delete(channel.ChannelInfo.MultiKeyDisabledTime, keyIndex)
+		}
+		if channel.ChannelInfo.MultiKeyDisabledReason != nil {
+			delete(channel.ChannelInfo.MultiKeyDisabledReason, keyIndex)
+		}
+
+		err = channel.Update()
+		if err != nil {
+			common.ApiError(c, err)
+			return
+		}
+
+		model.InitChannelCache()
+		c.JSON(http.StatusOK, gin.H{
+			"success": true,
+			"message": "密钥已启用",
+		})
+		return
+
+	case "delete_disabled_keys":
+		keys := channel.GetKeys()
+		var remainingKeys []string
+		var deletedCount int
+		var newStatusList = make(map[int]int)
+		var newDisabledTime = make(map[int]int64)
+		var newDisabledReason = make(map[int]string)
+
+		newIndex := 0
+		for i, key := range keys {
+			status := 1 // default enabled
+			if channel.ChannelInfo.MultiKeyStatusList != nil {
+				if s, exists := channel.ChannelInfo.MultiKeyStatusList[i]; exists {
+					status = s
+				}
+			}
+
+			// 只删除自动禁用（status == 3）的密钥，保留启用（status == 1）和手动禁用（status == 2）的密钥
+			if status == 3 {
+				deletedCount++
+			} else {
+				remainingKeys = append(remainingKeys, key)
+				// 保留非自动禁用密钥的状态信息，重新索引
+				if status != 1 {
+					newStatusList[newIndex] = status
+					if channel.ChannelInfo.MultiKeyDisabledTime != nil {
+						if t, exists := channel.ChannelInfo.MultiKeyDisabledTime[i]; exists {
+							newDisabledTime[newIndex] = t
+						}
+					}
+					if channel.ChannelInfo.MultiKeyDisabledReason != nil {
+						if r, exists := channel.ChannelInfo.MultiKeyDisabledReason[i]; exists {
+							newDisabledReason[newIndex] = r
+						}
+					}
+				}
+				newIndex++
+			}
+		}
+
+		if deletedCount == 0 {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": "没有需要删除的自动禁用密钥",
+			})
+			return
+		}
+
+		// Update channel with remaining keys
+		channel.Key = strings.Join(remainingKeys, "\n")
+		channel.ChannelInfo.MultiKeySize = len(remainingKeys)
+		channel.ChannelInfo.MultiKeyStatusList = newStatusList
+		channel.ChannelInfo.MultiKeyDisabledTime = newDisabledTime
+		channel.ChannelInfo.MultiKeyDisabledReason = newDisabledReason
+
+		err = channel.Update()
+		if err != nil {
+			common.ApiError(c, err)
+			return
+		}
+
+		model.InitChannelCache()
+		c.JSON(http.StatusOK, gin.H{
+			"success": true,
+			"message": fmt.Sprintf("已删除 %d 个自动禁用的密钥", deletedCount),
+			"data":    deletedCount,
+		})
+		return
+
+	default:
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": "不支持的操作",
+		})
+		return
+	}
+}

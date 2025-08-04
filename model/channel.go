@@ -41,6 +41,7 @@ type Channel struct {
 	Priority          *int64  `json:"priority" gorm:"bigint;default:0"`
 	AutoBan           *int    `json:"auto_ban" gorm:"default:1"`
 	OtherInfo         string  `json:"other_info"`
+	Settings          string  `json:"settings"`
 	Tag               *string `json:"tag" gorm:"index"`
 	Setting           *string `json:"setting" gorm:"type:text"` // 渠道额外设置
 	ParamOverride     *string `json:"param_override" gorm:"type:text"`
@@ -52,11 +53,13 @@ type Channel struct {
 }
 
 type ChannelInfo struct {
-	IsMultiKey           bool                  `json:"is_multi_key"`            // 是否多Key模式
-	MultiKeySize         int                   `json:"multi_key_size"`          // 多Key模式下的Key数量
-	MultiKeyStatusList   map[int]int           `json:"multi_key_status_list"`   // key状态列表，key index -> status
-	MultiKeyPollingIndex int                   `json:"multi_key_polling_index"` // 多Key模式下轮询的key索引
-	MultiKeyMode         constant.MultiKeyMode `json:"multi_key_mode"`
+	IsMultiKey             bool                  `json:"is_multi_key"`              // 是否多Key模式
+	MultiKeySize           int                   `json:"multi_key_size"`            // 多Key模式下的Key数量
+	MultiKeyStatusList     map[int]int           `json:"multi_key_status_list"`     // key状态列表，key index -> status
+	MultiKeyDisabledReason map[int]string        `json:"multi_key_disabled_reason"` // key禁用原因列表，key index -> reason
+	MultiKeyDisabledTime   map[int]int64         `json:"multi_key_disabled_time"`   // key禁用时间列表，key index -> time
+	MultiKeyPollingIndex   int                   `json:"multi_key_polling_index"`   // 多Key模式下轮询的key索引
+	MultiKeyMode           constant.MultiKeyMode `json:"multi_key_mode"`
 }
 
 // Value implements driver.Valuer interface
@@ -70,7 +73,7 @@ func (c *ChannelInfo) Scan(value interface{}) error {
 	return common.Unmarshal(bytesValue, c)
 }
 
-func (channel *Channel) getKeys() []string {
+func (channel *Channel) GetKeys() []string {
 	if channel.Key == "" {
 		return []string{}
 	}
@@ -101,7 +104,7 @@ func (channel *Channel) GetNextEnabledKey() (string, int, *types.NewAPIError) {
 	}
 
 	// Obtain all keys (split by \n)
-	keys := channel.getKeys()
+	keys := channel.GetKeys()
 	if len(keys) == 0 {
 		// No keys available, return error, should disable the channel
 		return "", 0, types.NewError(errors.New("no keys available"), types.ErrorCodeChannelNoAvailableKey)
@@ -528,8 +531,8 @@ func CleanupChannelPollingLocks() {
 	})
 }
 
-func handlerMultiKeyUpdate(channel *Channel, usingKey string, status int) {
-	keys := channel.getKeys()
+func handlerMultiKeyUpdate(channel *Channel, usingKey string, status int, reason string) {
+	keys := channel.GetKeys()
 	if len(keys) == 0 {
 		channel.Status = status
 	} else {
@@ -547,6 +550,14 @@ func handlerMultiKeyUpdate(channel *Channel, usingKey string, status int) {
 			delete(channel.ChannelInfo.MultiKeyStatusList, keyIndex)
 		} else {
 			channel.ChannelInfo.MultiKeyStatusList[keyIndex] = status
+			if channel.ChannelInfo.MultiKeyDisabledReason == nil {
+				channel.ChannelInfo.MultiKeyDisabledReason = make(map[int]string)
+			}
+			if channel.ChannelInfo.MultiKeyDisabledTime == nil {
+				channel.ChannelInfo.MultiKeyDisabledTime = make(map[int]int64)
+			}
+			channel.ChannelInfo.MultiKeyDisabledReason[keyIndex] = reason
+			channel.ChannelInfo.MultiKeyDisabledTime[keyIndex] = common.GetTimestamp()
 		}
 		if len(channel.ChannelInfo.MultiKeyStatusList) >= channel.ChannelInfo.MultiKeySize {
 			channel.Status = common.ChannelStatusAutoDisabled
@@ -569,7 +580,7 @@ func UpdateChannelStatus(channelId int, usingKey string, status int, reason stri
 		}
 		if channelCache.ChannelInfo.IsMultiKey {
 			// 如果是多Key模式，更新缓存中的状态
-			handlerMultiKeyUpdate(channelCache, usingKey, status)
+			handlerMultiKeyUpdate(channelCache, usingKey, status, reason)
 			//CacheUpdateChannel(channelCache)
 			//return true
 		} else {
@@ -600,7 +611,7 @@ func UpdateChannelStatus(channelId int, usingKey string, status int, reason stri
 
 		if channel.ChannelInfo.IsMultiKey {
 			beforeStatus := channel.Status
-			handlerMultiKeyUpdate(channel, usingKey, status)
+			handlerMultiKeyUpdate(channel, usingKey, status, reason)
 			if beforeStatus != channel.Status {
 				shouldUpdateAbilities = true
 			}

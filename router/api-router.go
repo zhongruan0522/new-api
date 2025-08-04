@@ -120,6 +120,7 @@ func SetApiRouter(router *gin.Engine) {
 			channelRoute.POST("/batch/tag", controller.BatchSetChannelTag)
 			channelRoute.GET("/tag/models", controller.GetTagModels)
 			channelRoute.POST("/copy/:id", controller.CopyChannel)
+			channelRoute.POST("/multi_key/manage", controller.ManageMultiKeys)
 		}
 		tokenRoute := apiRouter.Group("/token")
 		tokenRoute.Use(middleware.UserAuth())
