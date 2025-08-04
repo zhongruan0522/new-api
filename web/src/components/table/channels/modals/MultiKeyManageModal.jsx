@@ -428,7 +428,7 @@ const MultiKeyManageModal = ({
                     >
                       <Select.Option value={50}>50</Select.Option>
                       <Select.Option value={100}>100</Select.Option>
-                      <Select.Option value={200}>500</Select.Option>
+                      <Select.Option value={500}>500</Select.Option>
                       <Select.Option value={1000}>1000</Select.Option>
                     </Select>
                     
