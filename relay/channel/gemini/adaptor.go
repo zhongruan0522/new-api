@@ -173,8 +173,8 @@ func (a *Adaptor) ConvertEmbeddingRequest(c *gin.Context, info *relaycommon.Rela
 		// set specific parameters for different models
 		// https://ai.google.dev/api/embeddings?hl=zh-cn#method:-models.embedcontent
 		switch info.UpstreamModelName {
-		case "text-embedding-004":
-			// except embedding-001 supports setting `OutputDimensionality`
+		case "text-embedding-004","gemini-embedding-exp-03-07","gemini-embedding-001":
+			// Only newer models introduced after 2024 support OutputDimensionality
 			if request.Dimensions > 0 {
 				geminiRequest["outputDimensionality"] = request.Dimensions
 			}
