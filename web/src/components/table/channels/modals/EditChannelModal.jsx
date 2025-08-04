@@ -48,7 +48,7 @@ import {
 } from '@douyinfe/semi-ui';
 import { getChannelModels, copy, getChannelIcon, getModelCategories, selectFilter } from '../../../../helpers';
 import ModelSelectModal from './ModelSelectModal';
-import JSONEditor from '../../../common/JSONEditor';
+import JSONEditor from '../../../common/ui/JSONEditor';
 import {
   IconSave,
   IconClose,
