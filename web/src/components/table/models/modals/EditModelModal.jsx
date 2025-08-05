@@ -305,7 +305,6 @@ const EditModelModal = (props) => {
                       label={t('模型名称')}
                       placeholder={t('请输入模型名称，如：gpt-4')}
                       rules={[{ required: true, message: t('请输入模型名称') }]}
-                      disabled={isEdit || !!props.editingModel?.model_name}
                       showClear
                     />
                   </Col>
@@ -317,9 +316,8 @@ const EditModelModal = (props) => {
                       placeholder={t('请选择名称匹配类型')}
                       optionList={nameRuleOptions.map(o => ({ label: t(o.label), value: o.value }))}
                       rules={[{ required: true, message: t('请选择名称匹配类型') }]}
-                      disabled={!!props.editingModel?.model_name} // 通过未配置模型过来的禁用选择
-                      style={{ width: '100%' }}
                       extraText={t('根据模型名称和匹配规则查找模型元数据，优先级：精确 > 前缀 > 后缀 > 包含')}
+                      style={{ width: '100%' }}
                     />
                   </Col>
 
@@ -339,13 +337,13 @@ const EditModelModal = (props) => {
                       placeholder={t('选择标签组后将自动填充标签')}
                       optionList={tagGroups.map(g => ({ label: g.name, value: g.id }))}
                       showClear
-                      style={{ width: '100%' }}
                       onChange={(value) => {
                         const g = tagGroups.find(item => item.id === value);
                         if (g && formApiRef.current) {
                           formApiRef.current.setValue('tags', g.items || []);
                         }
                       }}
+                      style={{ width: '100%' }}
                     />
                   </Col>
 
@@ -356,7 +354,6 @@ const EditModelModal = (props) => {
                       placeholder={t('输入标签或使用","分隔多个标签')}
                       addOnBlur
                       showClear
-                      style={{ width: '100%' }}
                       onChange={(newTags) => {
                         if (!formApiRef.current) return;
                         const normalize = (tags) => {
@@ -366,6 +363,7 @@ const EditModelModal = (props) => {
                         const normalized = normalize(newTags);
                         formApiRef.current.setValue('tags', normalized);
                       }}
+                      style={{ width: '100%' }}
                     />
                   </Col>
                 </Row>
@@ -391,13 +389,13 @@ const EditModelModal = (props) => {
                       optionList={vendors.map(v => ({ label: v.name, value: v.id }))}
                       filter
                       showClear
-                      style={{ width: '100%' }}
                       onChange={(value) => {
                         const vendorInfo = vendors.find(v => v.id === value);
                         if (vendorInfo && formApiRef.current) {
                           formApiRef.current.setValue('vendor', vendorInfo.name);
                         }
                       }}
+                      style={{ width: '100%' }}
                     />
                   </Col>
                 </Row>

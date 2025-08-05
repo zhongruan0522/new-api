@@ -13,8 +13,6 @@ import (
 // GetAllModelsMeta 获取模型列表（分页）
 func GetAllModelsMeta(c *gin.Context) {
 
-    model.RefreshPricing()
-
     pageInfo := common.GetPageQuery(c)
     modelsMeta, err := model.GetAllModels(pageInfo.GetStartIdx(), pageInfo.GetPageSize())
     if err != nil {
@@ -34,8 +32,6 @@ func GetAllModelsMeta(c *gin.Context) {
 
 // SearchModelsMeta 搜索模型列表
 func SearchModelsMeta(c *gin.Context) {
-
-    model.RefreshPricing()
 
     keyword := c.Query("keyword")
     vendor := c.Query("vendor")
@@ -87,6 +83,7 @@ func CreateModelMeta(c *gin.Context) {
         common.ApiError(c, err)
         return
     }
+    model.RefreshPricing()
     common.ApiSuccess(c, &m)
 }
 
@@ -116,6 +113,7 @@ func UpdateModelMeta(c *gin.Context) {
             return
         }
     }
+    model.RefreshPricing()
     common.ApiSuccess(c, &m)
 }
 
@@ -131,6 +129,7 @@ func DeleteModelMeta(c *gin.Context) {
         common.ApiError(c, err)
         return
     }
+    model.RefreshPricing()
     common.ApiSuccess(c, nil)
 }
 
@@ -149,5 +148,4 @@ func fillModelExtra(m *model.Model) {
     m.EnableGroups = model.GetModelEnableGroups(m.ModelName)
     // 填充计费类型
     m.QuotaType = model.GetModelQuotaType(m.ModelName)
-
 }

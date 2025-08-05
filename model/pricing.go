@@ -118,15 +118,19 @@ func updatePricing() {
 	for _, m := range prefixList {
 		for _, pricingModel := range enableAbilities {
 			if strings.HasPrefix(pricingModel.Model, m.ModelName) {
-				metaMap[pricingModel.Model] = m
-			}
+                if _, exists := metaMap[pricingModel.Model]; !exists {
+                    metaMap[pricingModel.Model] = m
+                }
+            }
 		}
 	}
 	for _, m := range suffixList {
 		for _, pricingModel := range enableAbilities {
 			if strings.HasSuffix(pricingModel.Model, m.ModelName) {
-				metaMap[pricingModel.Model] = m
-			}
+                if _, exists := metaMap[pricingModel.Model]; !exists {
+                    metaMap[pricingModel.Model] = m
+                }
+            }
 		}
 	}
 	for _, m := range containsList {
@@ -205,8 +209,12 @@ func updatePricing() {
             SupportedEndpointTypes: modelSupportEndpointTypes[model],
         }
 
-        // 补充模型元数据（描述、标签、供应商等）
+        // 补充模型元数据（描述、标签、供应商、状态）
         if meta, ok := metaMap[model]; ok {
+            // 若模型被禁用(status!=1)，则直接跳过，不返回给前端
+            if meta.Status != 1 {
+                continue
+            }
             pricing.Description = meta.Description
             pricing.Tags = meta.Tags
             pricing.VendorID = meta.VendorID
