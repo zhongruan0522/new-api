@@ -131,41 +131,42 @@ const PricingCardView = ({
 
   // 渲染标签
   const renderTags = (record) => {
-    const allTags = [];
-
-    // 计费类型标签  
+    // 计费类型标签（左边）
     const billingType = record.quota_type === 1 ? 'teal' : 'violet';
     const billingText = record.quota_type === 1 ? t('按次计费') : t('按量计费');
-    allTags.push({
-      key: "billing",
-      element: (
-        <Tag shape='circle' color={billingType} size='small'>
-          {billingText}
-        </Tag>
-      )
-    });
+    const billingTag = (
+      <Tag key="billing" shape='circle' color={billingType} size='small'>
+        {billingText}
+      </Tag>
+    );
 
-    // 自定义标签
+    // 自定义标签（右边）
+    const customTags = [];
     if (record.tags) {
       const tagArr = record.tags.split(',').filter(Boolean);
       tagArr.forEach((tg, idx) => {
-        allTags.push({
-          key: `custom-${idx}`,
-          element: (
-            <Tag shape='circle' color={stringToColor(tg)} size='small'>
-              {tg}
-            </Tag>
-          )
-        });
+        customTags.push(
+          <Tag key={`custom-${idx}`} shape='circle' color={stringToColor(tg)} size='small'>
+            {tg}
+          </Tag>
+        );
       });
     }
 
-    // 使用 renderLimitedItems 渲染标签
-    return renderLimitedItems({
-      items: allTags,
-      renderItem: (item, idx) => React.cloneElement(item.element, { key: item.key }),
-      maxDisplay: 3
-    });
+    return (
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          {billingTag}
+        </div>
+        <div className="flex items-center gap-1">
+          {renderLimitedItems({
+            items: customTags.map((tag, idx) => ({ key: `custom-${idx}`, element: tag })),
+            renderItem: (item, idx) => item.element,
+            maxDisplay: 3
+          })}
+        </div>
+      </div>
+    );
   };
 
   // 显示骨架屏
@@ -201,96 +202,101 @@ const PricingCardView = ({
             <Card
               key={modelKey || index}
               className={`!rounded-2xl transition-all duration-200 hover:shadow-lg border cursor-pointer ${isSelected ? CARD_STYLES.selected : CARD_STYLES.default}`}
-              bodyStyle={{ padding: '24px' }}
+              bodyStyle={{ height: '100%' }}
               onClick={() => openModelDetail && openModelDetail(model)}
             >
-              {/* 头部：图标 + 模型名称 + 操作按钮 */}
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex items-start space-x-3 flex-1 min-w-0">
-                  {getModelIcon(model)}
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-lg font-bold text-gray-900 truncate">
-                      {model.model_name}
-                    </h3>
-                    <div className="flex items-center gap-3 text-xs mt-1">
-                      {renderPriceInfo(model)}
+              <div className="flex flex-col h-full">
+                {/* 头部：图标 + 模型名称 + 操作按钮 */}
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-start space-x-3 flex-1 min-w-0">
+                    {getModelIcon(model)}
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-lg font-bold text-gray-900 truncate">
+                        {model.model_name}
+                      </h3>
+                      <div className="flex items-center gap-3 text-xs mt-1">
+                        {renderPriceInfo(model)}
+                      </div>
                     </div>
+                  </div>
+
+                  <div className="flex items-center space-x-2 ml-3">
+                    {/* 复制按钮 */}
+                    <Button
+                      size="small"
+                      type="tertiary"
+                      icon={<IconCopy />}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        copyText(model.model_name);
+                      }}
+                    />
+
+                    {/* 选择框 */}
+                    {rowSelection && (
+                      <Checkbox
+                        checked={isSelected}
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          handleCheckboxChange(model, e.target.checked);
+                        }}
+                      />
+                    )}
                   </div>
                 </div>
 
-                <div className="flex items-center space-x-2 ml-3">
-                  {/* 复制按钮 */}
-                  <Button
-                    size="small"
-                    type="tertiary"
-                    icon={<IconCopy />}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      copyText(model.model_name);
-                    }}
-                  />
+                {/* 模型描述 - 占据剩余空间 */}
+                <div className="flex-1 mb-4">
+                  <p
+                    className="text-xs line-clamp-2 leading-relaxed"
+                    style={{ color: 'var(--semi-color-text-2)' }}
+                  >
+                    {getModelDescription(model)}
+                  </p>
+                </div>
 
-                  {/* 选择框 */}
-                  {rowSelection && (
-                    <Checkbox
-                      checked={isSelected}
-                      onChange={(e) => {
-                        e.stopPropagation();
-                        handleCheckboxChange(model, e.target.checked);
-                      }}
-                    />
+                {/* 底部区域 */}
+                <div className="mt-auto">
+                  {/* 标签区域 */}
+                  <div className="mb-3">
+                    {renderTags(model)}
+                  </div>
+
+                  {/* 倍率信息（可选） */}
+                  {showRatio && (
+                    <div
+                      className="pt-3 border-t border-dashed"
+                      style={{ borderColor: 'var(--semi-color-border)' }}
+                    >
+                      <div className="flex items-center space-x-1 mb-2">
+                        <span className="text-xs font-medium text-gray-700">{t('倍率信息')}</span>
+                        <Tooltip content={t('倍率是为了方便换算不同价格的模型')}>
+                          <IconHelpCircle
+                            className="text-blue-500 cursor-pointer"
+                            size="small"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setModalImageUrl('/ratio.png');
+                              setIsModalOpenurl(true);
+                            }}
+                          />
+                        </Tooltip>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 text-xs text-gray-600">
+                        <div>
+                          {t('模型')}: {model.quota_type === 0 ? model.model_ratio : t('无')}
+                        </div>
+                        <div>
+                          {t('补全')}: {model.quota_type === 0 ? parseFloat(model.completion_ratio.toFixed(3)) : t('无')}
+                        </div>
+                        <div>
+                          {t('分组')}: {groupRatio[selectedGroup]}
+                        </div>
+                      </div>
+                    </div>
                   )}
                 </div>
               </div>
-
-              {/* 模型描述 */}
-              <div className="mb-4">
-                <p
-                  className="text-xs line-clamp-2 leading-relaxed"
-                  style={{ color: 'var(--semi-color-text-2)' }}
-                >
-                  {getModelDescription(model)}
-                </p>
-              </div>
-
-              {/* 标签区域 */}
-              <div>
-                {renderTags(model)}
-              </div>
-
-              {/* 倍率信息（可选） */}
-              {showRatio && (
-                <div
-                  className="mt-4 pt-3 border-t border-dashed"
-                  style={{ borderColor: 'var(--semi-color-border)' }}
-                >
-                  <div className="flex items-center space-x-1 mb-2">
-                    <span className="text-xs font-medium text-gray-700">{t('倍率信息')}</span>
-                    <Tooltip content={t('倍率是为了方便换算不同价格的模型')}>
-                      <IconHelpCircle
-                        className="text-blue-500 cursor-pointer"
-                        size="small"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setModalImageUrl('/ratio.png');
-                          setIsModalOpenurl(true);
-                        }}
-                      />
-                    </Tooltip>
-                  </div>
-                  <div className="grid grid-cols-3 gap-2 text-xs text-gray-600">
-                    <div>
-                      {t('模型')}: {model.quota_type === 0 ? model.model_ratio : t('无')}
-                    </div>
-                    <div>
-                      {t('补全')}: {model.quota_type === 0 ? parseFloat(model.completion_ratio.toFixed(3)) : t('无')}
-                    </div>
-                    <div>
-                      {t('分组')}: {groupRatio[selectedGroup]}
-                    </div>
-                  </div>
-                </div>
-              )}
             </Card>
           );
         })}

@@ -135,9 +135,9 @@ export const useModelsData = () => {
         setModelCount(data.total || newPageData.length);
         setModelFormat(newPageData);
 
-        // Refresh vendor counts only when viewing 'all' to preserve other counts
-        if (vendorKey === 'all') {
-          updateVendorCounts(newPageData);
+        if (data.vendor_counts) {
+          const sumAll = Object.values(data.vendor_counts).reduce((acc, v) => acc + v, 0);
+          setVendorCounts({ ...data.vendor_counts, all: sumAll });
         }
       } else {
         showError(message);
@@ -151,27 +151,9 @@ export const useModelsData = () => {
     setLoading(false);
   };
 
-  // Fetch vendor counts separately to keep tab numbers accurate
-  const refreshVendorCounts = async () => {
-    try {
-      // Load all models (large page_size) to compute counts for every vendor
-      const res = await API.get('/api/models/?p=1&page_size=100000');
-      if (res.data.success) {
-        const newItems = extractItems(res.data.data);
-        updateVendorCounts(newItems);
-      }
-    } catch (_) {
-      // ignore count refresh errors
-    }
-  };
-
   // Refresh data
   const refresh = async (page = activePage) => {
     await loadModels(page, pageSize);
-    // When not viewing 'all', tab counts need a separate refresh
-    if (activeVendorKey !== 'all') {
-      await refreshVendorCounts();
-    }
   };
 
   // Search models with keyword and vendor
@@ -195,6 +177,10 @@ export const useModelsData = () => {
         setActivePage(data.page || 1);
         setModelCount(data.total || newPageData.length);
         setModelFormat(newPageData);
+        if (data.vendor_counts) {
+          const sumAll = Object.values(data.vendor_counts).reduce((acc, v) => acc + v, 0);
+          setVendorCounts({ ...data.vendor_counts, all: sumAll });
+        }
       } else {
         showError(message);
         setModels([]);
@@ -242,16 +228,6 @@ export const useModelsData = () => {
     }
   };
 
-  // Update vendor counts
-  const updateVendorCounts = (models) => {
-    const counts = { all: models.length };
-    models.forEach(model => {
-      if (model.vendor_id) {
-        counts[model.vendor_id] = (counts[model.vendor_id] || 0) + 1;
-      }
-    });
-    setVendorCounts(counts);
-  };
 
   // Handle page change
   const handlePageChange = (page) => {
@@ -335,7 +311,6 @@ export const useModelsData = () => {
   useEffect(() => {
     (async () => {
       await loadVendors();
-      await loadModels();
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

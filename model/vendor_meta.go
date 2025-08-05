@@ -31,6 +31,16 @@ func (v *Vendor) Insert() error {
     return DB.Create(v).Error
 }
 
+// IsVendorNameDuplicated 检查供应商名称是否重复（排除自身 ID）
+func IsVendorNameDuplicated(id int, name string) (bool, error) {
+    if name == "" {
+        return false, nil
+    }
+    var cnt int64
+    err := DB.Model(&Vendor{}).Where("name = ? AND id <> ?", name, id).Count(&cnt).Error
+    return cnt > 0, err
+}
+
 // Update 更新供应商记录
 func (v *Vendor) Update() error {
     v.UpdatedTime = common.GetTimestamp()

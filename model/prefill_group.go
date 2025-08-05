@@ -33,6 +33,16 @@ func (g *PrefillGroup) Insert() error {
     return DB.Create(g).Error
 }
 
+// IsPrefillGroupNameDuplicated 检查组名称是否重复（排除自身 ID）
+func IsPrefillGroupNameDuplicated(id int, name string) (bool, error) {
+    if name == "" {
+        return false, nil
+    }
+    var cnt int64
+    err := DB.Model(&PrefillGroup{}).Where("name = ? AND id <> ?", name, id).Count(&cnt).Error
+    return cnt > 0, err
+}
+
 // Update 更新组
 func (g *PrefillGroup) Update() error {
     g.UpdatedTime = common.GetTimestamp()

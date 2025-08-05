@@ -32,10 +32,12 @@ import {
   Row,
 } from '@douyinfe/semi-ui';
 import {
-  IconSave,
-  IconClose,
-  IconLayers,
-} from '@douyinfe/semi-icons';
+  Save,
+  X,
+  FileText,
+  Building,
+  Settings,
+} from 'lucide-react';
 import { API, showError, showSuccess } from '../../../../helpers';
 import { useTranslation } from 'react-i18next';
 import { useIsMobile } from '../../../../hooks/common/useIsMobile';
@@ -258,7 +260,7 @@ const EditModelModal = (props) => {
               theme='solid'
               className='!rounded-lg'
               onClick={() => formApiRef.current?.submitForm()}
-              icon={<IconSave />}
+              icon={<Save size={16} />}
               loading={loading}
             >
               {t('提交')}
@@ -268,7 +270,7 @@ const EditModelModal = (props) => {
               className='!rounded-lg'
               type='primary'
               onClick={handleCancel}
-              icon={<IconClose />}
+              icon={<X size={16} />}
             >
               {t('取消')}
             </Button>
@@ -291,7 +293,7 @@ const EditModelModal = (props) => {
               <Card className='!rounded-2xl shadow-sm border-0'>
                 <div className='flex items-center mb-2'>
                   <Avatar size='small' color='green' className='mr-2 shadow-md'>
-                    <IconLayers size={16} />
+                    <FileText size={16} />
                   </Avatar>
                   <div>
                     <Text className='text-lg font-medium'>{t('基本信息')}</Text>
@@ -373,7 +375,7 @@ const EditModelModal = (props) => {
               <Card className='!rounded-2xl shadow-sm border-0'>
                 <div className='flex items-center mb-2'>
                   <Avatar size='small' color='blue' className='mr-2 shadow-md'>
-                    <IconLayers size={16} />
+                    <Building size={16} />
                   </Avatar>
                   <div>
                     <Text className='text-lg font-medium'>{t('供应商信息')}</Text>
@@ -405,7 +407,7 @@ const EditModelModal = (props) => {
               <Card className='!rounded-2xl shadow-sm border-0'>
                 <div className='flex items-center mb-2'>
                   <Avatar size='small' color='purple' className='mr-2 shadow-md'>
-                    <IconLayers size={16} />
+                    <Settings size={16} />
                   </Avatar>
                   <div>
                     <Text className='text-lg font-medium'>{t('功能配置')}</Text>

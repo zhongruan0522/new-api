@@ -23,6 +23,7 @@ import PrefillGroupManagement from './modals/PrefillGroupManagement.jsx';
 import { Button, Space, Modal } from '@douyinfe/semi-ui';
 import CompactModeToggle from '../../common/ui/CompactModeToggle';
 import { showError } from '../../../helpers';
+import SelectionNotification from './components/SelectionNotification.jsx';
 
 const ModelsActions = ({
   selectedKeys,
@@ -70,14 +71,6 @@ const ModelsActions = ({
           {t('添加模型')}
         </Button>
 
-        <Button
-          type='danger'
-          className="flex-1 md:flex-initial"
-          onClick={handleDeleteSelectedModels}
-          size="small"
-        >
-          {t('删除所选模型')}
-        </Button>
 
         <Button
           type="secondary"
@@ -103,6 +96,12 @@ const ModelsActions = ({
           t={t}
         />
       </div>
+
+      <SelectionNotification
+        selectedKeys={selectedKeys}
+        t={t}
+        onDelete={handleDeleteSelectedModels}
+      />
 
       <Modal
         title={t('批量删除模型')}

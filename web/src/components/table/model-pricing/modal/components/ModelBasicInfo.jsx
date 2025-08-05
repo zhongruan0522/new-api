@@ -71,21 +71,18 @@ const ModelBasicInfo = ({ modelData, vendorsMap = {}, t }) => {
       <div className="text-gray-600">
         <p className="mb-4">{getModelDescription()}</p>
         {getModelTags().length > 0 && (
-          <div>
-            <Text className="text-sm font-medium text-gray-700 mb-2 block">{t('模型标签')}</Text>
-            <Space wrap>
-              {getModelTags().map((tag, index) => (
-                <Tag
-                  key={index}
-                  color={tag.color}
-                  shape="circle"
-                  size="small"
-                >
-                  {tag.text}
-                </Tag>
-              ))}
-            </Space>
-          </div>
+          <Space wrap>
+            {getModelTags().map((tag, index) => (
+              <Tag
+                key={index}
+                color={tag.color}
+                shape="circle"
+                size="small"
+              >
+                {tag.text}
+              </Tag>
+            ))}
+          </Space>
         )}
       </div>
     </Card>

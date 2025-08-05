@@ -25,9 +25,19 @@ func GetAllModelsMeta(c *gin.Context) {
     }
     var total int64
     model.DB.Model(&model.Model{}).Count(&total)
+
+    // 统计供应商计数（全部数据，不受分页影响）
+    vendorCounts, _ := model.GetVendorModelCounts()
+
     pageInfo.SetTotal(int(total))
     pageInfo.SetItems(modelsMeta)
-    common.ApiSuccess(c, pageInfo)
+    common.ApiSuccess(c, gin.H{
+        "items":         modelsMeta,
+        "total":         total,
+        "page":          pageInfo.GetPage(),
+        "page_size":     pageInfo.GetPageSize(),
+        "vendor_counts": vendorCounts,
+    })
 }
 
 // SearchModelsMeta 搜索模型列表
@@ -78,6 +88,14 @@ func CreateModelMeta(c *gin.Context) {
         common.ApiErrorMsg(c, "模型名称不能为空")
         return
     }
+    // 名称冲突检查
+    if dup, err := model.IsModelNameDuplicated(0, m.ModelName); err != nil {
+        common.ApiError(c, err)
+        return
+    } else if dup {
+        common.ApiErrorMsg(c, "模型名称已存在")
+        return
+    }
 
     if err := m.Insert(); err != nil {
         common.ApiError(c, err)
@@ -108,6 +126,15 @@ func UpdateModelMeta(c *gin.Context) {
             return
         }
     } else {
+        // 名称冲突检查
+        if dup, err := model.IsModelNameDuplicated(m.Id, m.ModelName); err != nil {
+            common.ApiError(c, err)
+            return
+        } else if dup {
+            common.ApiErrorMsg(c, "模型名称已存在")
+            return
+        }
+
         if err := m.Update(); err != nil {
             common.ApiError(c, err)
             return

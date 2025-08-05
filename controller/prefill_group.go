@@ -31,6 +31,15 @@ func CreatePrefillGroup(c *gin.Context) {
         common.ApiErrorMsg(c, "组名称和类型不能为空")
         return
     }
+    // 创建前检查名称
+    if dup, err := model.IsPrefillGroupNameDuplicated(0, g.Name); err != nil {
+        common.ApiError(c, err)
+        return
+    } else if dup {
+        common.ApiErrorMsg(c, "组名称已存在")
+        return
+    }
+
     if err := g.Insert(); err != nil {
         common.ApiError(c, err)
         return
@@ -49,6 +58,15 @@ func UpdatePrefillGroup(c *gin.Context) {
         common.ApiErrorMsg(c, "缺少组 ID")
         return
     }
+    // 名称冲突检查
+    if dup, err := model.IsPrefillGroupNameDuplicated(g.Id, g.Name); err != nil {
+        common.ApiError(c, err)
+        return
+    } else if dup {
+        common.ApiErrorMsg(c, "组名称已存在")
+        return
+    }
+
     if err := g.Update(); err != nil {
         common.ApiError(c, err)
         return

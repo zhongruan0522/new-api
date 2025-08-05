@@ -65,6 +65,15 @@ func CreateVendorMeta(c *gin.Context) {
         common.ApiErrorMsg(c, "供应商名称不能为空")
         return
     }
+    // 创建前先检查名称
+    if dup, err := model.IsVendorNameDuplicated(0, v.Name); err != nil {
+        common.ApiError(c, err)
+        return
+    } else if dup {
+        common.ApiErrorMsg(c, "供应商名称已存在")
+        return
+    }
+
     if err := v.Insert(); err != nil {
         common.ApiError(c, err)
         return
@@ -83,10 +92,11 @@ func UpdateVendorMeta(c *gin.Context) {
         common.ApiErrorMsg(c, "缺少供应商 ID")
         return
     }
-    // 检查名称冲突
-    var dup int64
-    _ = model.DB.Model(&model.Vendor{}).Where("name = ? AND id <> ?", v.Name, v.Id).Count(&dup).Error
-    if dup > 0 {
+    // 名称冲突检查
+    if dup, err := model.IsVendorNameDuplicated(v.Id, v.Name); err != nil {
+        common.ApiError(c, err)
+        return
+    } else if dup {
         common.ApiErrorMsg(c, "供应商名称已存在")
         return
     }

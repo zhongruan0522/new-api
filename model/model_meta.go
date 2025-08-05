@@ -60,6 +60,16 @@ func (mi *Model) Insert() error {
     return DB.Create(mi).Error
 }
 
+// IsModelNameDuplicated 检查模型名称是否重复（排除自身 ID）
+func IsModelNameDuplicated(id int, name string) (bool, error) {
+    if name == "" {
+        return false, nil
+    }
+    var cnt int64
+    err := DB.Model(&Model{}).Where("model_name = ? AND id <> ?", name, id).Count(&cnt).Error
+    return cnt > 0, err
+}
+
 // Update 更新现有模型记录
 func (mi *Model) Update() error {
     // 仅更新需要变更的字段，避免覆盖 CreatedTime
@@ -82,6 +92,25 @@ func GetModelByName(name string) (*Model, error) {
         return nil, err
     }
     return &mi, nil
+}
+
+// GetVendorModelCounts 统计每个供应商下模型数量（不受分页影响）
+func GetVendorModelCounts() (map[int64]int64, error) {
+    var stats []struct {
+        VendorID int64
+        Count    int64
+    }
+    if err := DB.Model(&Model{}).
+        Select("vendor_id as vendor_id, count(*) as count").
+        Group("vendor_id").
+        Scan(&stats).Error; err != nil {
+        return nil, err
+    }
+    m := make(map[int64]int64, len(stats))
+    for _, s := range stats {
+        m[s.VendorID] = s.Count
+    }
+    return m, nil
 }
 
 // GetAllModels 分页获取所有模型元数据
