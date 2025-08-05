@@ -40,6 +40,7 @@ func OaiResponsesHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http
 	usage.PromptTokens = responsesResponse.Usage.InputTokens
 	usage.CompletionTokens = responsesResponse.Usage.OutputTokens
 	usage.TotalTokens = responsesResponse.Usage.TotalTokens
+	usage.PromptTokensDetails.CachedTokens = responsesResponse.Usage.InputTokensDetails.CachedTokens
 	// 解析 Tools 用量
 	for _, tool := range responsesResponse.Tools {
 		info.ResponsesUsageInfo.BuiltInTools[common.Interface2String(tool["type"])].CallCount++
