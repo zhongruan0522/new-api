@@ -73,9 +73,6 @@ func (a *Adaptor) Init(info *relaycommon.RelayInfo) {
 }
 
 func (a *Adaptor) GetRequestURL(info *relaycommon.RelayInfo) (string, error) {
-	if info.RelayFormat == relaycommon.RelayFormatClaude || info.RelayFormat == relaycommon.RelayFormatGemini {
-		return fmt.Sprintf("%s/v1/chat/completions", info.BaseUrl), nil
-	}
 	if info.RelayMode == relayconstant.RelayModeRealtime {
 		if strings.HasPrefix(info.BaseUrl, "https://") {
 			baseUrl := strings.TrimPrefix(info.BaseUrl, "https://")
@@ -122,6 +119,9 @@ func (a *Adaptor) GetRequestURL(info *relaycommon.RelayInfo) (string, error) {
 		url = strings.Replace(url, "{model}", info.UpstreamModelName, -1)
 		return url, nil
 	default:
+		if info.RelayFormat == relaycommon.RelayFormatClaude || info.RelayFormat == relaycommon.RelayFormatGemini {
+			return fmt.Sprintf("%s/v1/chat/completions", info.BaseUrl), nil
+		}
 		return relaycommon.GetFullRequestURL(info.BaseUrl, info.RequestURLPath, info.ChannelType), nil
 	}
 }
