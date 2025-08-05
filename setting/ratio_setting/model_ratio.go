@@ -118,6 +118,7 @@ var defaultModelRatio = map[string]float64{
 	"claude-sonnet-4-20250514":                  1.5,
 	"claude-3-opus-20240229":                    7.5, // $15 / 1M tokens
 	"claude-opus-4-20250514":                    7.5,
+	"claude-opus-4-1-20250805":                  7.5,
 	"ERNIE-4.0-8K":                              0.120 * RMB,
 	"ERNIE-3.5-8K":                              0.012 * RMB,
 	"ERNIE-3.5-8K-0205":                         0.024 * RMB,
