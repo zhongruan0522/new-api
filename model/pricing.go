@@ -37,6 +37,11 @@ var (
 	vendorsList        []PricingVendor
 	lastGetPricingTime time.Time
 	updatePricingLock  sync.Mutex
+
+	// 缓存映射：模型名 -> 启用分组 / 计费类型
+	modelEnableGroups     = make(map[string][]string)
+	modelQuotaTypeMap     = make(map[string]int)
+	modelEnableGroupsLock = sync.RWMutex{}
 )
 
 var (
@@ -193,30 +198,41 @@ func updatePricing() {
 	}
 
 	pricingMap = make([]Pricing, 0)
-	for model, groups := range modelGroupsMap {
-		pricing := Pricing{
-			ModelName:              model,
-			EnableGroup:            groups.Items(),
-			SupportedEndpointTypes: modelSupportEndpointTypes[model],
-		}
+    for model, groups := range modelGroupsMap {
+        pricing := Pricing{
+            ModelName:              model,
+            EnableGroup:            groups.Items(),
+            SupportedEndpointTypes: modelSupportEndpointTypes[model],
+        }
 
-		// 补充模型元数据（描述、标签、供应商等）
-		if meta, ok := metaMap[model]; ok {
-			pricing.Description = meta.Description
-			pricing.Tags = meta.Tags
-			pricing.VendorID = meta.VendorID
-		}
-		modelPrice, findPrice := ratio_setting.GetModelPrice(model, false)
-		if findPrice {
-			pricing.ModelPrice = modelPrice
-			pricing.QuotaType = 1
-		} else {
-			modelRatio, _, _ := ratio_setting.GetModelRatio(model)
-			pricing.ModelRatio = modelRatio
-			pricing.CompletionRatio = ratio_setting.GetCompletionRatio(model)
-			pricing.QuotaType = 0
-		}
-		pricingMap = append(pricingMap, pricing)
-	}
-	lastGetPricingTime = time.Now()
+        // 补充模型元数据（描述、标签、供应商等）
+        if meta, ok := metaMap[model]; ok {
+            pricing.Description = meta.Description
+            pricing.Tags = meta.Tags
+            pricing.VendorID = meta.VendorID
+        }
+        modelPrice, findPrice := ratio_setting.GetModelPrice(model, false)
+        if findPrice {
+            pricing.ModelPrice = modelPrice
+            pricing.QuotaType = 1
+        } else {
+            modelRatio, _, _ := ratio_setting.GetModelRatio(model)
+            pricing.ModelRatio = modelRatio
+            pricing.CompletionRatio = ratio_setting.GetCompletionRatio(model)
+            pricing.QuotaType = 0
+        }
+        pricingMap = append(pricingMap, pricing)
+    }
+
+    // 刷新缓存映射，供高并发快速查询
+    modelEnableGroupsLock.Lock()
+    modelEnableGroups = make(map[string][]string)
+    modelQuotaTypeMap = make(map[string]int)
+    for _, p := range pricingMap {
+        modelEnableGroups[p.ModelName] = p.EnableGroup
+        modelQuotaTypeMap[p.ModelName] = p.QuotaType
+    }
+    modelEnableGroupsLock.Unlock()
+
+    lastGetPricingTime = time.Now()
 }

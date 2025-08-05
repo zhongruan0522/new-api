@@ -4,6 +4,7 @@ import (
     "one-api/common"
 
     "gorm.io/datatypes"
+    "gorm.io/gorm"
 )
 
 // PrefillGroup 用于存储可复用的“组”信息，例如模型组、标签组、端点组等。
@@ -15,12 +16,13 @@ import (
 
 type PrefillGroup struct {
     Id          int            `json:"id"`
-    Name        string         `json:"name" gorm:"uniqueIndex;size:64;not null"`
+    Name        string         `json:"name" gorm:"size:64;not null;uniqueIndex:uk_prefill_name,where:deleted_at IS NULL"`
     Type        string         `json:"type" gorm:"size:32;index;not null"`
     Items       datatypes.JSON `json:"items" gorm:"type:json"`
     Description string         `json:"description,omitempty" gorm:"type:varchar(255)"`
     CreatedTime int64          `json:"created_time" gorm:"bigint"`
     UpdatedTime int64          `json:"updated_time" gorm:"bigint"`
+    DeletedAt   gorm.DeletedAt `json:"-" gorm:"index"`
 }
 
 // Insert 新建组

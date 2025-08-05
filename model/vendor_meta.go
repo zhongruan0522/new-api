@@ -14,7 +14,7 @@ import (
 
 type Vendor struct {
     Id          int            `json:"id"`
-    Name        string         `json:"name" gorm:"uniqueIndex;size:128;not null"`
+    Name        string         `json:"name" gorm:"size:128;not null;uniqueIndex:uk_vendor_name,where:deleted_at IS NULL"`
     Description string         `json:"description,omitempty" gorm:"type:text"`
     Icon        string         `json:"icon,omitempty" gorm:"type:varchar(128)"`
     Status      int            `json:"status" gorm:"default:1"`

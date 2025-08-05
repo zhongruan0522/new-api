@@ -36,7 +36,7 @@ type BoundChannel struct {
 
 type Model struct {
     Id          int            `json:"id"`
-    ModelName   string         `json:"model_name" gorm:"uniqueIndex;size:128;not null"`
+    ModelName   string         `json:"model_name" gorm:"size:128;not null;uniqueIndex:uk_model_name,where:deleted_at IS NULL"`
     Description string         `json:"description,omitempty" gorm:"type:text"`
     Tags        string         `json:"tags,omitempty" gorm:"type:varchar(255)"`
     VendorID    int            `json:"vendor_id,omitempty" gorm:"index"`
