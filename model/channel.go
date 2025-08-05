@@ -141,7 +141,7 @@ func (channel *Channel) GetNextEnabledKey() (string, int, *types.NewAPIError) {
 		return keys[selectedIdx], selectedIdx, nil
 	case constant.MultiKeyModePolling:
 		// Use channel-specific lock to ensure thread-safe polling
-		lock := getChannelPollingLock(channel.Id)
+		lock := GetChannelPollingLock(channel.Id)
 		lock.Lock()
 		defer lock.Unlock()
 
@@ -500,8 +500,8 @@ var channelStatusLock sync.Mutex
 // channelPollingLocks stores locks for each channel.id to ensure thread-safe polling
 var channelPollingLocks sync.Map
 
-// getChannelPollingLock returns or creates a mutex for the given channel ID
-func getChannelPollingLock(channelId int) *sync.Mutex {
+// GetChannelPollingLock returns or creates a mutex for the given channel ID
+func GetChannelPollingLock(channelId int) *sync.Mutex {
 	if lock, exists := channelPollingLocks.Load(channelId); exists {
 		return lock.(*sync.Mutex)
 	}

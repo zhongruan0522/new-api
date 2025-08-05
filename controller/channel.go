@@ -1107,6 +1107,10 @@ func ManageMultiKeys(c *gin.Context) {
 		return
 	}
 
+	lock := model.GetChannelPollingLock(channel.Id)
+	lock.Lock()
+	defer lock.Unlock()
+
 	switch request.Action {
 	case "get_key_status":
 		keys := channel.GetKeys()
