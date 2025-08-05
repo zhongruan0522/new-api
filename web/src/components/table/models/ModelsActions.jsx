@@ -20,13 +20,15 @@ For commercial licensing, please contact support@quantumnous.com
 import React, { useState } from 'react';
 import MissingModelsModal from './modals/MissingModelsModal.jsx';
 import PrefillGroupManagement from './modals/PrefillGroupManagement.jsx';
-import { Button, Space, Modal } from '@douyinfe/semi-ui';
+import EditPrefillGroupModal from './modals/EditPrefillGroupModal.jsx';
+import { Button, Modal } from '@douyinfe/semi-ui';
+import { showSuccess, showError, copy } from '../../../helpers';
 import CompactModeToggle from '../../common/ui/CompactModeToggle';
-import { showError } from '../../../helpers';
 import SelectionNotification from './components/SelectionNotification.jsx';
 
 const ModelsActions = ({
   selectedKeys,
+  setSelectedKeys,
   setEditingModel,
   setShowEdit,
   batchDeleteModels,
@@ -38,13 +40,11 @@ const ModelsActions = ({
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showMissingModal, setShowMissingModal] = useState(false);
   const [showGroupManagement, setShowGroupManagement] = useState(false);
+  const [showAddPrefill, setShowAddPrefill] = useState(false);
+  const [prefillInit, setPrefillInit] = useState({ id: undefined });
 
   // Handle delete selected models with confirmation
   const handleDeleteSelectedModels = () => {
-    if (selectedKeys.length === 0) {
-      showError(t('请至少选择一个模型！'));
-      return;
-    }
     setShowDeleteModal(true);
   };
 
@@ -52,6 +52,30 @@ const ModelsActions = ({
   const handleConfirmDelete = () => {
     batchDeleteModels();
     setShowDeleteModal(false);
+  };
+
+  // Handle clear selection
+  const handleClearSelected = () => {
+    setSelectedKeys([]);
+  };
+
+  // Handle add selected models to prefill group
+  const handleCopyNames = async () => {
+    const text = selectedKeys.map(m => m.model_name).join(',');
+    if (!text) return;
+    const ok = await copy(text);
+    if (ok) {
+      showSuccess(t('已复制模型名称'));
+    } else {
+      showError(t('复制失败'));
+    }
+  };
+
+  const handleAddToPrefill = () => {
+    // Prepare initial data
+    const items = selectedKeys.map((m) => m.model_name);
+    setPrefillInit({ id: undefined, type: 'model', items });
+    setShowAddPrefill(true);
   };
 
   return (
@@ -70,7 +94,6 @@ const ModelsActions = ({
         >
           {t('添加模型')}
         </Button>
-
 
         <Button
           type="secondary"
@@ -101,6 +124,9 @@ const ModelsActions = ({
         selectedKeys={selectedKeys}
         t={t}
         onDelete={handleDeleteSelectedModels}
+        onAddPrefill={handleAddToPrefill}
+        onClear={handleClearSelected}
+        onCopy={handleCopyNames}
       />
 
       <Modal
@@ -129,6 +155,13 @@ const ModelsActions = ({
       <PrefillGroupManagement
         visible={showGroupManagement}
         onClose={() => setShowGroupManagement(false)}
+      />
+
+      <EditPrefillGroupModal
+        visible={showAddPrefill}
+        onClose={() => setShowAddPrefill(false)}
+        editingGroup={prefillInit}
+        onSuccess={() => setShowAddPrefill(false)}
       />
     </>
   );

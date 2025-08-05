@@ -42,6 +42,7 @@ const ModelsPage = () => {
 
     // Actions state
     selectedKeys,
+    setSelectedKeys,
     setEditingModel,
     setShowEdit,
     batchDeleteModels,
@@ -100,6 +101,7 @@ const ModelsPage = () => {
           <div className="flex flex-col md:flex-row justify-between items-center gap-2 w-full">
             <ModelsActions
               selectedKeys={selectedKeys}
+              setSelectedKeys={setSelectedKeys}
               setEditingModel={setEditingModel}
               setShowEdit={setShowEdit}
               batchDeleteModels={batchDeleteModels}

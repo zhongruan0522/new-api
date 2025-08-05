@@ -18,7 +18,7 @@ For commercial licensing, please contact support@quantumnous.com
 */
 
 import React, { useEffect } from 'react';
-import { Notification, Button, Space } from '@douyinfe/semi-ui';
+import { Notification, Button, Space, Typography } from '@douyinfe/semi-ui';
 
 // 固定通知 ID，保持同一个实例即可避免闪烁
 const NOTICE_ID = 'models-batch-actions';
@@ -28,22 +28,52 @@ const NOTICE_ID = 'models-batch-actions';
  * 1. 当 selectedKeys.length > 0 时，使用固定 id 创建/更新通知
  * 2. 当 selectedKeys 清空时关闭通知
  */
-const SelectionNotification = ({ selectedKeys = [], t, onDelete }) => {
+const SelectionNotification = ({ selectedKeys = [], t, onDelete, onAddPrefill, onClear, onCopy }) => {
   // 根据选中数量决定显示/隐藏或更新通知
   useEffect(() => {
     const selectedCount = selectedKeys.length;
 
     if (selectedCount > 0) {
+      const titleNode = (
+        <Space wrap>
+          <span>{t('批量操作')}</span>
+          <Typography.Text type="tertiary" size="small">{t('已选择 {{count}} 个模型', { count: selectedCount })}</Typography.Text>
+        </Space>
+      );
+
       const content = (
-        <Space>
-          <span>{t('已选择 {{count}} 个模型', { count: selectedCount })}</span>
+        <Space wrap>
+          <Button
+            size="small"
+            type="secondary"
+            theme="solid"
+            onClick={onClear}
+          >
+            {t('取消全选')}
+          </Button>
+          <Button
+            size="small"
+            type="primary"
+            theme="solid"
+            onClick={onAddPrefill}
+          >
+            {t('加入预填组')}
+          </Button>
+          <Button
+            size="small"
+            type="tertiary"
+            theme="solid"
+            onClick={onCopy}
+          >
+            {t('复制名称')}
+          </Button>
           <Button
             size="small"
             type="danger"
             theme="solid"
             onClick={onDelete}
           >
-            {t('删除所选模型')}
+            {t('删除所选')}
           </Button>
         </Space>
       );
@@ -51,7 +81,7 @@ const SelectionNotification = ({ selectedKeys = [], t, onDelete }) => {
       // 使用相同 id 更新通知（若已存在则就地更新，不存在则创建）
       Notification.info({
         id: NOTICE_ID,
-        title: t('批量操作'),
+        title: titleNode,
         content,
         duration: 0, // 不自动关闭
         position: 'bottom',
@@ -61,7 +91,7 @@ const SelectionNotification = ({ selectedKeys = [], t, onDelete }) => {
       // 取消全部勾选时关闭通知
       Notification.close(NOTICE_ID);
     }
-  }, [selectedKeys, t, onDelete]);
+  }, [selectedKeys, t, onDelete, onAddPrefill, onClear, onCopy]);
 
   // 卸载时确保关闭通知
   useEffect(() => {

@@ -1174,27 +1174,27 @@ const EditChannelModal = (props) => {
                     </>
                   )}
 
-                {isEdit && isMultiKeyChannel && (
-                        <Form.Select
-                          field='key_mode'
-                          label={t('密钥更新模式')}
-                          placeholder={t('请选择密钥更新模式')}
-                          optionList={[
-                            { label: t('追加到现有密钥'), value: 'append' },
-                            { label: t('覆盖现有密钥'), value: 'replace' },
-                          ]}
-                          style={{ width: '100%' }}
-                          value={keyMode}
-                          onChange={(value) => setKeyMode(value)}
-                          extraText={
-                            <Text type="tertiary" size="small">
-                              {keyMode === 'replace' 
-                                ? t('覆盖模式：将完全替换现有的所有密钥') 
-                                : t('追加模式：将新密钥添加到现有密钥列表末尾')
-                              }
-                            </Text>
+                  {isEdit && isMultiKeyChannel && (
+                    <Form.Select
+                      field='key_mode'
+                      label={t('密钥更新模式')}
+                      placeholder={t('请选择密钥更新模式')}
+                      optionList={[
+                        { label: t('追加到现有密钥'), value: 'append' },
+                        { label: t('覆盖现有密钥'), value: 'replace' },
+                      ]}
+                      style={{ width: '100%' }}
+                      value={keyMode}
+                      onChange={(value) => setKeyMode(value)}
+                      extraText={
+                        <Text type="tertiary" size="small">
+                          {keyMode === 'replace'
+                            ? t('覆盖模式：将完全替换现有的所有密钥')
+                            : t('追加模式：将新密钥添加到现有密钥列表末尾')
                           }
-                        />
+                        </Text>
+                      }
+                    />
                   )}
                   {batch && multiToSingle && (
                     <>

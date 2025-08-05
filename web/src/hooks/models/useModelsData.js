@@ -328,6 +328,7 @@ export const useModelsData = () => {
     selectedKeys,
     rowSelection,
     handleRow,
+    setSelectedKeys,
 
     // Modal state
     showEdit,

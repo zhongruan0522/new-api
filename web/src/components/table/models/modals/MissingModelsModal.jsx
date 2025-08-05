@@ -111,7 +111,7 @@ const MissingModelsModal = ({
             <Typography.Text strong className="!text-[var(--semi-color-text-0)] !text-base">
               {t('未配置的模型列表')}
             </Typography.Text>
-            <Typography.Text type="tertiary" className="!text-xs flex items-center">
+            <Typography.Text type="tertiary" size="small">
               {t('共')} {missingModels.length} {t('个未配置模型')}
             </Typography.Text>
           </div>

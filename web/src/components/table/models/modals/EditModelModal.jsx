@@ -35,12 +35,12 @@ import {
   Save,
   X,
   FileText,
-  Building,
-  Settings,
 } from 'lucide-react';
 import { API, showError, showSuccess } from '../../../../helpers';
 import { useTranslation } from 'react-i18next';
 import { useIsMobile } from '../../../../hooks/common/useIsMobile';
+
+const { Text, Title } = Typography;
 
 const nameRuleOptions = [
   { label: '精确名称匹配', value: 0 },
@@ -48,16 +48,6 @@ const nameRuleOptions = [
   { label: '包含名称匹配', value: 2 },
   { label: '后缀名称匹配', value: 3 },
 ];
-
-const endpointOptions = [
-  { label: 'OpenAI', value: 'openai' },
-  { label: 'Anthropic', value: 'anthropic' },
-  { label: 'Gemini', value: 'gemini' },
-  { label: 'Image Generation', value: 'image-generation' },
-  { label: 'Jina Rerank', value: 'jina-rerank' },
-];
-
-const { Text, Title } = Typography;
 
 const EditModelModal = (props) => {
   const { t } = useTranslation();
@@ -333,23 +323,6 @@ const EditModelModal = (props) => {
                     />
                   </Col>
                   <Col span={24}>
-                    <Form.Select
-                      field='tag_group'
-                      label={t('标签组')}
-                      placeholder={t('选择标签组后将自动填充标签')}
-                      optionList={tagGroups.map(g => ({ label: g.name, value: g.id }))}
-                      showClear
-                      onChange={(value) => {
-                        const g = tagGroups.find(item => item.id === value);
-                        if (g && formApiRef.current) {
-                          formApiRef.current.setValue('tags', g.items || []);
-                        }
-                      }}
-                      style={{ width: '100%' }}
-                    />
-                  </Col>
-
-                  <Col span={24}>
                     <Form.TagInput
                       field='tags'
                       label={t('标签')}
@@ -366,23 +339,40 @@ const EditModelModal = (props) => {
                         formApiRef.current.setValue('tags', normalized);
                       }}
                       style={{ width: '100%' }}
+                      extraText={(
+                        <Space wrap>
+                          {tagGroups.map(group => (
+                            <Button
+                              key={group.id}
+                              size='small'
+                              type='primary'
+                              onClick={() => {
+                                if (formApiRef.current) {
+                                  const currentTags = formApiRef.current.getValue('tags') || [];
+                                  const newTags = [...currentTags, ...(group.items || [])];
+                                  const uniqueTags = [...new Set(newTags)];
+                                  formApiRef.current.setValue('tags', uniqueTags);
+                                }
+                              }}
+                            >
+                              {group.name}
+                            </Button>
+                          ))}
+                          <Button
+                            size='small'
+                            type='warning'
+                            onClick={() => {
+                              if (formApiRef.current) {
+                                formApiRef.current.setValue('tags', []);
+                              }
+                            }}
+                          >
+                            {t('清除标签')}
+                          </Button>
+                        </Space>
+                      )}
                     />
                   </Col>
-                </Row>
-              </Card>
-
-              {/* 供应商信息 */}
-              <Card className='!rounded-2xl shadow-sm border-0'>
-                <div className='flex items-center mb-2'>
-                  <Avatar size='small' color='blue' className='mr-2 shadow-md'>
-                    <Building size={16} />
-                  </Avatar>
-                  <div>
-                    <Text className='text-lg font-medium'>{t('供应商信息')}</Text>
-                    <div className='text-xs text-gray-600'>{t('设置模型的供应商相关信息')}</div>
-                  </div>
-                </div>
-                <Row gutter={12}>
                   <Col span={24}>
                     <Form.Select
                       field='vendor_id'
@@ -400,47 +390,46 @@ const EditModelModal = (props) => {
                       style={{ width: '100%' }}
                     />
                   </Col>
-                </Row>
-              </Card>
-
-              {/* 功能配置 */}
-              <Card className='!rounded-2xl shadow-sm border-0'>
-                <div className='flex items-center mb-2'>
-                  <Avatar size='small' color='purple' className='mr-2 shadow-md'>
-                    <Settings size={16} />
-                  </Avatar>
-                  <div>
-                    <Text className='text-lg font-medium'>{t('功能配置')}</Text>
-                    <div className='text-xs text-gray-600'>{t('设置模型的功能和状态')}</div>
-                  </div>
-                </div>
-                <Row gutter={12}>
                   <Col span={24}>
-                    <Form.Select
-                      field='endpoint_group'
-                      label={t('端点组')}
-                      placeholder={t('选择端点组后将自动填充端点')}
-                      optionList={endpointGroups.map(g => ({ label: g.name, value: g.id }))}
-                      showClear
-                      style={{ width: '100%' }}
-                      onChange={(value) => {
-                        const g = endpointGroups.find(item => item.id === value);
-                        if (g && formApiRef.current) {
-                          formApiRef.current.setValue('endpoints', g.items || []);
-                        }
-                      }}
-                    />
-                  </Col>
-
-                  <Col span={24}>
-                    <Form.Select
+                    <Form.TagInput
                       field='endpoints'
                       label={t('支持端点')}
-                      placeholder={t('选择模型支持的端点类型')}
-                      optionList={endpointOptions}
-                      multiple
+                      placeholder={t('输入端点名称，按回车添加')}
+                      addOnBlur
                       showClear
                       style={{ width: '100%' }}
+                      extraText={(
+                        <Space wrap>
+                          {endpointGroups.map(group => (
+                            <Button
+                              key={group.id}
+                              size='small'
+                              type='primary'
+                              onClick={() => {
+                                if (formApiRef.current) {
+                                  const currentEndpoints = formApiRef.current.getValue('endpoints') || [];
+                                  const newEndpoints = [...currentEndpoints, ...(group.items || [])];
+                                  const uniqueEndpoints = [...new Set(newEndpoints)];
+                                  formApiRef.current.setValue('endpoints', uniqueEndpoints);
+                                }
+                              }}
+                            >
+                              {group.name}
+                            </Button>
+                          ))}
+                          <Button
+                            size='small'
+                            type='warning'
+                            onClick={() => {
+                              if (formApiRef.current) {
+                                formApiRef.current.setValue('endpoints', []);
+                              }
+                            }}
+                          >
+                            {t('清除端点')}
+                          </Button>
+                        </Space>
+                      )}
                     />
                   </Col>
                   <Col span={24}>
