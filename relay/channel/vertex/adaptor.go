@@ -35,6 +35,7 @@ var claudeModelMap = map[string]string{
 	"claude-3-7-sonnet-20250219": "claude-3-7-sonnet@20250219",
 	"claude-sonnet-4-20250514":   "claude-sonnet-4@20250514",
 	"claude-opus-4-20250514":     "claude-opus-4@20250514",
+	"claude-opus-4-1-20250805":   "claude-opus-4-1@20250805",
 }
 
 const anthropicVersion = "vertex-2023-10-16"
