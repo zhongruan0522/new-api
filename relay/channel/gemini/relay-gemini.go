@@ -107,13 +107,13 @@ func clampThinkingBudgetByEffort(modelName string, effort string) int {
 	}
 	switch effort {
 	case "high":
-		return maxBudget * 80 / 100
+		maxBudget = maxBudget * 80 / 100
 	case "medium":
-		return maxBudget * 50 / 100
+		maxBudget = maxBudget * 50 / 100
 	case "low":
-		return maxBudget * 20 / 100
+		maxBudget = maxBudget * 20 / 100
 	}
-	return maxBudget * 50 / 100 // 默认medium
+	return clampThinkingBudget(modelName, maxBudget)
 }
 
 func ThinkingAdaptor(geminiRequest *dto.GeminiChatRequest, info *relaycommon.RelayInfo, oaiRequest ...dto.GeneralOpenAIRequest) {
