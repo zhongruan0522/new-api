@@ -193,10 +193,11 @@ func FetchUpstreamModels(c *gin.Context) {
 
 	// 获取响应体 - 根据渠道类型决定是否添加 AuthHeader
 	var body []byte
+	key := strings.Split(channel.Key, "\n")[0]
 	if channel.Type == constant.ChannelTypeGemini {
-		body, err = GetResponseBody("GET", url, channel, GetAuthHeader(channel.Key)) // Use AuthHeader since Gemini now forces it
+		body, err = GetResponseBody("GET", url, channel, GetAuthHeader(key)) // Use AuthHeader since Gemini now forces it
 	} else {
-		body, err = GetResponseBody("GET", url, channel, GetAuthHeader(channel.Key))
+		body, err = GetResponseBody("GET", url, channel, GetAuthHeader(key))
 	}
 	if err != nil {
 		common.ApiError(c, err)
