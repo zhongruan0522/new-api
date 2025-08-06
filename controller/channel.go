@@ -184,7 +184,7 @@ func FetchUpstreamModels(c *gin.Context) {
 	switch channel.Type {
 	case constant.ChannelTypeGemini:
 		// curl https://example.com/v1beta/models?key=$GEMINI_API_KEY
-		url = fmt.Sprintf("%s/v1beta/openai/models", baseURL) // Remember key in url since we need to use AuthHeader
+		url = fmt.Sprintf("%s/v1beta/openai/models", baseURL) // Remove key in url since we need to use AuthHeader
 	case constant.ChannelTypeAli:
 		url = fmt.Sprintf("%s/compatible-mode/v1/models", baseURL)
 	default:
