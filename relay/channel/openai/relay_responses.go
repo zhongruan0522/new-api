@@ -38,8 +38,8 @@ func OaiResponsesHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http
 	// compute usage
 	usage := dto.Usage{}
 	if responsesResponse.Usage != nil {
-		usage.PromptTokens = responsesResponse.Usage.GetInputTokens()
-		usage.CompletionTokens = responsesResponse.Usage.GetOutputTokens()
+		usage.PromptTokens = responsesResponse.Usage.InputTokens
+		usage.CompletionTokens = responsesResponse.Usage.OutputTokens
 		usage.TotalTokens = responsesResponse.Usage.TotalTokens
 		if responsesResponse.Usage.InputTokensDetails != nil {
 			usage.PromptTokensDetails.CachedTokens = responsesResponse.Usage.InputTokensDetails.CachedTokens
@@ -70,8 +70,8 @@ func OaiResponsesStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp
 			switch streamResponse.Type {
 			case "response.completed":
 				if streamResponse.Response.Usage != nil {
-					usage.PromptTokens = streamResponse.Response.Usage.GetInputTokens()
-					usage.CompletionTokens = streamResponse.Response.Usage.GetOutputTokens()
+					usage.PromptTokens = streamResponse.Response.Usage.InputTokens
+					usage.CompletionTokens = streamResponse.Response.Usage.OutputTokens
 					usage.TotalTokens = streamResponse.Response.Usage.TotalTokens
 					if streamResponse.Response.Usage.InputTokensDetails != nil {
 						usage.PromptTokensDetails.CachedTokens = streamResponse.Response.Usage.InputTokensDetails.CachedTokens

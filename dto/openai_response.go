@@ -3,8 +3,6 @@ package dto
 import (
 	"encoding/json"
 	"fmt"
-	"math"
-	"one-api/common"
 	"one-api/types"
 )
 
@@ -204,123 +202,12 @@ type Usage struct {
 
 	PromptTokensDetails    InputTokenDetails  `json:"prompt_tokens_details"`
 	CompletionTokenDetails OutputTokenDetails `json:"completion_tokens_details"`
-	InputTokens            any                `json:"input_tokens"`
-	OutputTokens           any                `json:"output_tokens"`
-	//CacheReadInputTokens   any                `json:"cache_read_input_tokens,omitempty"`
-	InputTokensDetails *InputTokenDetails `json:"input_tokens_details"`
+	InputTokens            int                `json:"input_tokens"`
+	OutputTokens           int                `json:"output_tokens"`
+	InputTokensDetails     *InputTokenDetails `json:"input_tokens_details"`
 	// OpenRouter Params
 	Cost any `json:"cost,omitempty"`
 }
-
-func (u *Usage) UnmarshalJSON(data []byte) error {
-	// first normal unmarshal
-	if err := common.Unmarshal(data, u); err != nil {
-		return fmt.Errorf("unmarshal Usage failed: %w", err)
-	}
-
-	// then ceil the input and output tokens
-	ceil := func(val any) int {
-		switch v := val.(type) {
-		case float64:
-			return int(math.Ceil(v))
-		case int:
-			return v
-		case string:
-			var intVal int
-			_, err := fmt.Sscanf(v, "%d", &intVal)
-			if err != nil {
-				return 0 // or handle error appropriately
-			}
-			return intVal
-		default:
-			return 0 // or handle error appropriately
-		}
-	}
-
-	// input_tokens must be int
-	if u.InputTokens != nil {
-		u.InputTokens = ceil(u.InputTokens)
-	}
-	if u.OutputTokens != nil {
-		u.OutputTokens = ceil(u.OutputTokens)
-	}
-	return nil
-}
-
-func (u *Usage) GetInputTokens() int {
-	if u.InputTokens == nil {
-		return 0
-	}
-
-	switch v := u.InputTokens.(type) {
-	case int:
-		return v
-	case float64:
-		return int(math.Ceil(v))
-	case string:
-		var intVal int
-		_, err := fmt.Sscanf(v, "%d", &intVal)
-		if err != nil {
-			return 0 // or handle error appropriately
-		}
-		return intVal
-	default:
-		return 0 // or handle error appropriately
-	}
-}
-
-func (u *Usage) GetOutputTokens() int {
-	if u.OutputTokens == nil {
-		return 0
-	}
-
-	switch v := u.OutputTokens.(type) {
-	case int:
-		return v
-	case float64:
-		return int(math.Ceil(v))
-	case string:
-		var intVal int
-		_, err := fmt.Sscanf(v, "%d", &intVal)
-		if err != nil {
-			return 0 // or handle error appropriately
-		}
-		return intVal
-	default:
-		return 0 // or handle error appropriately
-	}
-}
-
-//func (u *Usage) MarshalJSON() ([]byte, error) {
-//	ceil := func(val any) int {
-//		switch v := val.(type) {
-//		case float64:
-//			return int(math.Ceil(v))
-//		case int:
-//			return v
-//		case string:
-//			var intVal int
-//			_, err := fmt.Sscanf(v, "%d", &intVal)
-//			if err != nil {
-//				return 0 // or handle error appropriately
-//			}
-//			return intVal
-//		default:
-//			return 0 // or handle error appropriately
-//		}
-//	}
-//
-//	// input_tokens must be int
-//	if u.InputTokens != nil {
-//		u.InputTokens = ceil(u.InputTokens)
-//	}
-//	if u.OutputTokens != nil {
-//		u.OutputTokens = ceil(u.OutputTokens)
-//	}
-//
-//	// done
-//	return common.Marshal(u)
-//}
 
 type InputTokenDetails struct {
 	CachedTokens         int `json:"cached_tokens"`
