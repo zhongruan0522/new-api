@@ -60,6 +60,13 @@ const JSONEditor = ({
     return {};
   });
 
+  // 手动模式下的本地文本缓冲，避免无效 JSON 时被外部值重置
+  const [manualText, setManualText] = useState(() => {
+    if (typeof value === 'string') return value;
+    if (value && typeof value === 'object') return JSON.stringify(value, null, 2);
+    return '';
+  });
+
   // 根据键数量决定默认编辑模式
   const [editMode, setEditMode] = useState(() => {
     // 如果初始JSON数据的键数量大于10个，则默认使用手动模式
@@ -95,6 +102,15 @@ const JSONEditor = ({
     }
   }, [value]);
 
+  // 外部 value 变化时，若不在手动模式，则同步手动文本；在手动模式下不打断用户输入
+  useEffect(() => {
+    if (editMode !== 'manual') {
+      if (typeof value === 'string') setManualText(value);
+      else if (value && typeof value === 'object') setManualText(JSON.stringify(value, null, 2));
+      else setManualText('');
+    }
+  }, [value, editMode]);
+
   // 处理可视化编辑的数据变化
   const handleVisualChange = useCallback((newData) => {
     setJsonData(newData);
@@ -109,21 +125,21 @@ const JSONEditor = ({
     onChange?.(jsonString);
   }, [onChange, formApi, field]);
 
-  // 处理手动编辑的数据变化
+  // 处理手动编辑的数据变化（无效 JSON 不阻断输入，也不立刻回传上游）
   const handleManualChange = useCallback((newValue) => {
-    onChange?.(newValue);
-    // 验证JSON格式
+    setManualText(newValue);
     if (newValue && newValue.trim()) {
       try {
-        const parsed = JSON.parse(newValue);
+        JSON.parse(newValue);
         setJsonError('');
-        // 预先准备可视化数据，但不立即应用
-        // 这样切换到可视化模式时数据已经准备好了
+        onChange?.(newValue);
       } catch (error) {
         setJsonError(error.message);
+        // 无效 JSON 时不回传，避免外部值把输入重置
       }
     } else {
       setJsonError('');
+      onChange?.('');
     }
   }, [onChange]);
 
@@ -131,12 +147,15 @@ const JSONEditor = ({
   const toggleEditMode = useCallback(() => {
     if (editMode === 'visual') {
       // 从可视化模式切换到手动模式
+      setManualText(Object.keys(jsonData).length === 0 ? '' : JSON.stringify(jsonData, null, 2));
       setEditMode('manual');
     } else {
       // 从手动模式切换到可视化模式，需要验证JSON
       try {
         let parsed = {};
-        if (typeof value === 'string' && value.trim()) {
+        if (manualText && manualText.trim()) {
+          parsed = JSON.parse(manualText);
+        } else if (typeof value === 'string' && value.trim()) {
           parsed = JSON.parse(value);
         } else if (typeof value === 'object' && value !== null) {
           parsed = value;
@@ -150,7 +169,7 @@ const JSONEditor = ({
         return;
       }
     }
-  }, [editMode, value]);
+  }, [editMode, value, manualText, jsonData]);
 
   // 添加键值对
   const addKeyValue = useCallback(() => {
@@ -204,13 +223,10 @@ const JSONEditor = ({
         formApi.setValue(field, templateString);
       }
 
-      // 无论哪种模式都要更新值
+      // 同步内部与外部值，避免出现杂字符
+      setManualText(templateString);
+      setJsonData(template);
       onChange?.(templateString);
-
-      // 如果是可视化模式，同时更新jsonData
-      if (editMode === 'visual') {
-        setJsonData(template);
-      }
 
       // 清除错误状态
       setJsonError('');
@@ -617,10 +633,10 @@ const JSONEditor = ({
           <div>
             <TextArea
               placeholder={placeholder}
-              value={value}
+              value={manualText}
               onChange={handleManualChange}
               showClear={showClear}
-              rows={Math.max(8, value ? value.split('\n').length : 8)}
+              rows={Math.max(8, manualText ? manualText.split('\n').length : 8)}
             />
             {/* 隐藏的Form字段用于验证和数据绑定 */}
             <Form.Input
