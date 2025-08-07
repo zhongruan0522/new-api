@@ -247,9 +247,16 @@ export const useModelsData = () => {
     await loadModels(1, size, activeVendorKey);
   };
 
-  // Handle row click
+  // Handle row click and styling
   const handleRow = (record, index) => {
+    const rowStyle = record.status !== 1 ? {
+      style: {
+        background: 'var(--semi-color-disabled-border)',
+      },
+    } : {};
+
     return {
+      ...rowStyle,
       onClick: (event) => {
         // Don't trigger row selection when clicking on buttons
         if (event.target.closest('button, .semi-button')) {

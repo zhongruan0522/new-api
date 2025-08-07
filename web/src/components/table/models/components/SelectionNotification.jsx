@@ -45,7 +45,7 @@ const SelectionNotification = ({ selectedKeys = [], t, onDelete, onAddPrefill, o
         <Space wrap>
           <Button
             size="small"
-            type="secondary"
+            type="tertiary"
             theme="solid"
             onClick={onClear}
           >
@@ -61,7 +61,7 @@ const SelectionNotification = ({ selectedKeys = [], t, onDelete, onAddPrefill, o
           </Button>
           <Button
             size="small"
-            type="tertiary"
+            type="secondary"
             theme="solid"
             onClick={onCopy}
           >

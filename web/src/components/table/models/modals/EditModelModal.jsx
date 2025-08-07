@@ -339,38 +339,29 @@ const EditModelModal = (props) => {
                         formApiRef.current.setValue('tags', normalized);
                       }}
                       style={{ width: '100%' }}
-                      extraText={(
-                        <Space wrap>
-                          {tagGroups.map(group => (
-                            <Button
-                              key={group.id}
-                              size='small'
-                              type='primary'
-                              onClick={() => {
-                                if (formApiRef.current) {
-                                  const currentTags = formApiRef.current.getValue('tags') || [];
-                                  const newTags = [...currentTags, ...(group.items || [])];
-                                  const uniqueTags = [...new Set(newTags)];
-                                  formApiRef.current.setValue('tags', uniqueTags);
-                                }
-                              }}
-                            >
-                              {group.name}
-                            </Button>
-                          ))}
-                          <Button
-                            size='small'
-                            type='warning'
-                            onClick={() => {
-                              if (formApiRef.current) {
-                                formApiRef.current.setValue('tags', []);
-                              }
-                            }}
-                          >
-                            {t('清除标签')}
-                          </Button>
-                        </Space>
-                      )}
+                      {...(tagGroups.length > 0 && {
+                        extraText: (
+                          <Space wrap>
+                            {tagGroups.map(group => (
+                              <Button
+                                key={group.id}
+                                size='small'
+                                type='primary'
+                                onClick={() => {
+                                  if (formApiRef.current) {
+                                    const currentTags = formApiRef.current.getValue('tags') || [];
+                                    const newTags = [...currentTags, ...(group.items || [])];
+                                    const uniqueTags = [...new Set(newTags)];
+                                    formApiRef.current.setValue('tags', uniqueTags);
+                                  }
+                                }}
+                              >
+                                {group.name}
+                              </Button>
+                            ))}
+                          </Space>
+                        )
+                      })}
                     />
                   </Col>
                   <Col span={24}>
@@ -398,38 +389,29 @@ const EditModelModal = (props) => {
                       addOnBlur
                       showClear
                       style={{ width: '100%' }}
-                      extraText={(
-                        <Space wrap>
-                          {endpointGroups.map(group => (
-                            <Button
-                              key={group.id}
-                              size='small'
-                              type='primary'
-                              onClick={() => {
-                                if (formApiRef.current) {
-                                  const currentEndpoints = formApiRef.current.getValue('endpoints') || [];
-                                  const newEndpoints = [...currentEndpoints, ...(group.items || [])];
-                                  const uniqueEndpoints = [...new Set(newEndpoints)];
-                                  formApiRef.current.setValue('endpoints', uniqueEndpoints);
-                                }
-                              }}
-                            >
-                              {group.name}
-                            </Button>
-                          ))}
-                          <Button
-                            size='small'
-                            type='warning'
-                            onClick={() => {
-                              if (formApiRef.current) {
-                                formApiRef.current.setValue('endpoints', []);
-                              }
-                            }}
-                          >
-                            {t('清除端点')}
-                          </Button>
-                        </Space>
-                      )}
+                      {...(endpointGroups.length > 0 && {
+                        extraText: (
+                          <Space wrap>
+                            {endpointGroups.map(group => (
+                              <Button
+                                key={group.id}
+                                size='small'
+                                type='primary'
+                                onClick={() => {
+                                  if (formApiRef.current) {
+                                    const currentEndpoints = formApiRef.current.getValue('endpoints') || [];
+                                    const newEndpoints = [...currentEndpoints, ...(group.items || [])];
+                                    const uniqueEndpoints = [...new Set(newEndpoints)];
+                                    formApiRef.current.setValue('endpoints', uniqueEndpoints);
+                                  }
+                                }}
+                              >
+                                {group.name}
+                              </Button>
+                            ))}
+                          </Space>
+                        )
+                      })}
                     />
                   </Col>
                   <Col span={24}>
