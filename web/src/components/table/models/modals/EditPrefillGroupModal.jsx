@@ -17,7 +17,8 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import JSONEditor from '../../../common/ui/JSONEditor';
 import {
   SideSheet,
   Button,
@@ -49,6 +50,13 @@ const EditPrefillGroupModal = ({ visible, onClose, editingGroup, onSuccess }) =>
   const formRef = useRef(null);
   const isEdit = editingGroup && editingGroup.id !== undefined;
 
+  const [selectedType, setSelectedType] = useState(editingGroup?.type || 'tag');
+
+  // 当外部传入的编辑组类型变化时同步 selectedType
+  useEffect(() => {
+    setSelectedType(editingGroup?.type || 'tag');
+  }, [editingGroup?.type]);
+
   const typeOptions = [
     { label: t('模型组'), value: 'model' },
     { label: t('标签组'), value: 'tag' },
@@ -61,8 +69,12 @@ const EditPrefillGroupModal = ({ visible, onClose, editingGroup, onSuccess }) =>
     try {
       const submitData = {
         ...values,
-        items: Array.isArray(values.items) ? values.items : [],
       };
+      if (values.type === 'endpoint') {
+        submitData.items = values.items || '';
+      } else {
+        submitData.items = Array.isArray(values.items) ? values.items : [];
+      }
 
       if (editingGroup.id) {
         submitData.id = editingGroup.id;
@@ -146,11 +158,17 @@ const EditPrefillGroupModal = ({ visible, onClose, editingGroup, onSuccess }) =>
             description: editingGroup?.description || '',
             items: (() => {
               try {
-                return typeof editingGroup?.items === 'string'
-                  ? JSON.parse(editingGroup.items)
-                  : editingGroup?.items || [];
+                if (editingGroup?.type === 'endpoint') {
+                  // 保持原始字符串
+                  return typeof editingGroup?.items === 'string'
+                    ? editingGroup.items
+                    : JSON.stringify(editingGroup.items || {}, null, 2);
+                }
+                return Array.isArray(editingGroup?.items)
+                  ? editingGroup.items
+                  : [];
               } catch {
-                return [];
+                return editingGroup?.type === 'endpoint' ? '' : [];
               }
             })(),
           }}
@@ -186,6 +204,7 @@ const EditPrefillGroupModal = ({ visible, onClose, editingGroup, onSuccess }) =>
                     optionList={typeOptions}
                     rules={[{ required: true, message: t('请选择组类型') }]}
                     style={{ width: '100%' }}
+                    onChange={(val) => setSelectedType(val)}
                   />
                 </Col>
                 <Col span={24}>
@@ -213,14 +232,26 @@ const EditPrefillGroupModal = ({ visible, onClose, editingGroup, onSuccess }) =>
               </div>
               <Row gutter={12}>
                 <Col span={24}>
-                  <Form.TagInput
-                    field="items"
-                    label={t('项目')}
-                    placeholder={t('输入项目名称，按回车添加')}
-                    addOnBlur
-                    showClear
-                    style={{ width: '100%' }}
-                  />
+                  {selectedType === 'endpoint' ? (
+                    <JSONEditor
+                      field="items"
+                      label={t('端点映射')}
+                      value={formRef.current?.getValue('items') ?? (typeof editingGroup?.items === 'string' ? editingGroup.items : JSON.stringify(editingGroup.items || {}, null, 2))}
+                      onChange={(val) => formRef.current?.setValue('items', val)}
+                      editorType='object'
+                      placeholder={'{\n  "openai": {"path": "/v1/chat/completions", "method": "POST"}\n}'}
+                      extraText={t('键为端点类型，值为路径和方法对象')}
+                    />
+                  ) : (
+                    <Form.TagInput
+                      field="items"
+                      label={t('项目')}
+                      placeholder={t('输入项目名称，按回车添加')}
+                      addOnBlur
+                      showClear
+                      style={{ width: '100%' }}
+                    />
+                  )}
                 </Col>
               </Row>
             </Card>

@@ -47,6 +47,7 @@ const ModelDetailSideSheet = ({
   showRatio,
   usableGroup,
   vendorsMap,
+  endpointMap,
   t,
 }) => {
   const isMobile = useIsMobile();
@@ -82,7 +83,7 @@ const ModelDetailSideSheet = ({
         {modelData && (
           <>
             <ModelBasicInfo modelData={modelData} vendorsMap={vendorsMap} t={t} />
-            <ModelEndpoints modelData={modelData} t={t} />
+            <ModelEndpoints modelData={modelData} endpointMap={endpointMap} t={t} />
             <ModelPricingTable
               modelData={modelData}
               selectedGroup={selectedGroup}

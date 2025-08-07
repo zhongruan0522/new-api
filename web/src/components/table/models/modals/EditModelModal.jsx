@@ -18,6 +18,7 @@ For commercial licensing, please contact support@quantumnous.com
 */
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import JSONEditor from '../../../common/ui/JSONEditor';
 import {
   SideSheet,
   Form,
@@ -109,7 +110,7 @@ const EditModelModal = (props) => {
     vendor_id: undefined,
     vendor: '',
     vendor_icon: '',
-    endpoints: [],
+    endpoints: '',
     name_rule: props.editingModel?.model_name ? 0 : undefined, // 通过未配置模型过来的固定为精确匹配
     status: true,
   });
@@ -132,15 +133,9 @@ const EditModelModal = (props) => {
         } else {
           data.tags = [];
         }
-        // 处理endpoints
-        if (data.endpoints) {
-          try {
-            data.endpoints = JSON.parse(data.endpoints);
-          } catch (e) {
-            data.endpoints = [];
-          }
-        } else {
-          data.endpoints = [];
+        // endpoints 保持原始 JSON 字符串，若为空设为空串
+        if (!data.endpoints) {
+          data.endpoints = '';
         }
         // 处理status，将数字转为布尔值
         data.status = data.status === 1;
@@ -188,7 +183,7 @@ const EditModelModal = (props) => {
       const submitData = {
         ...values,
         tags: Array.isArray(values.tags) ? values.tags.join(',') : values.tags,
-        endpoints: JSON.stringify(values.endpoints || []),
+        endpoints: values.endpoints || '',
         status: values.status ? 1 : 0,
       };
 
@@ -382,36 +377,15 @@ const EditModelModal = (props) => {
                     />
                   </Col>
                   <Col span={24}>
-                    <Form.TagInput
+                    <JSONEditor
                       field='endpoints'
-                      label={t('支持端点')}
-                      placeholder={t('输入端点名称，按回车添加')}
-                      addOnBlur
-                      showClear
-                      style={{ width: '100%' }}
-                      {...(endpointGroups.length > 0 && {
-                        extraText: (
-                          <Space wrap>
-                            {endpointGroups.map(group => (
-                              <Button
-                                key={group.id}
-                                size='small'
-                                type='primary'
-                                onClick={() => {
-                                  if (formApiRef.current) {
-                                    const currentEndpoints = formApiRef.current.getValue('endpoints') || [];
-                                    const newEndpoints = [...currentEndpoints, ...(group.items || [])];
-                                    const uniqueEndpoints = [...new Set(newEndpoints)];
-                                    formApiRef.current.setValue('endpoints', uniqueEndpoints);
-                                  }
-                                }}
-                              >
-                                {group.name}
-                              </Button>
-                            ))}
-                          </Space>
-                        )
-                      })}
+                      label={t('端点映射')}
+                      placeholder={'{\n  "openai": {"path": "/v1/chat/completions", "method": "POST"}\n}'}
+                      value={values.endpoints}
+                      onChange={(val) => formApiRef.current?.setValue('endpoints', val)}
+                      formApi={formApiRef.current}
+                      editorType='object'
+                      extraText={t('留空则使用默认端点；支持 {path, method}')}
                     />
                   </Col>
                   <Col span={24}>

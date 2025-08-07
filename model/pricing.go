@@ -1,28 +1,30 @@
 package model
 
 import (
-	"fmt"
-	"strings"
-	"one-api/common"
-	"one-api/constant"
-	"one-api/setting/ratio_setting"
-	"one-api/types"
-	"sync"
-	"time"
+    "encoding/json"
+    "fmt"
+    "strings"
+
+    "one-api/common"
+    "one-api/constant"
+    "one-api/setting/ratio_setting"
+    "one-api/types"
+    "sync"
+    "time"
 )
 
 type Pricing struct {
-	ModelName              string                  `json:"model_name"`
-	Description            string                  `json:"description,omitempty"`
-	Tags                   string                  `json:"tags,omitempty"`
-	VendorID               int                     `json:"vendor_id,omitempty"`
-	QuotaType              int                     `json:"quota_type"`
-	ModelRatio             float64                 `json:"model_ratio"`
-	ModelPrice             float64                 `json:"model_price"`
-	OwnerBy                string                  `json:"owner_by"`
-	CompletionRatio        float64                 `json:"completion_ratio"`
-	EnableGroup            []string                `json:"enable_groups"`
-	SupportedEndpointTypes []constant.EndpointType `json:"supported_endpoint_types"`
+    ModelName              string                  `json:"model_name"`
+    Description            string                  `json:"description,omitempty"`
+    Tags                   string                  `json:"tags,omitempty"`
+    VendorID               int                     `json:"vendor_id,omitempty"`
+    QuotaType              int                     `json:"quota_type"`
+    ModelRatio             float64                 `json:"model_ratio"`
+    ModelPrice             float64                 `json:"model_price"`
+    OwnerBy                string                  `json:"owner_by"`
+    CompletionRatio        float64                 `json:"completion_ratio"`
+    EnableGroup            []string                `json:"enable_groups"`
+    SupportedEndpointTypes []constant.EndpointType `json:"supported_endpoint_types"`
 }
 
 type PricingVendor struct {
@@ -33,10 +35,11 @@ type PricingVendor struct {
 }
 
 var (
-	pricingMap         []Pricing
-	vendorsList        []PricingVendor
-	lastGetPricingTime time.Time
-	updatePricingLock  sync.Mutex
+    pricingMap         []Pricing
+    vendorsList        []PricingVendor
+    supportedEndpointMap map[string]common.EndpointInfo
+    lastGetPricingTime time.Time
+    updatePricingLock  sync.Mutex
 
 	// 缓存映射：模型名 -> 启用分组 / 计费类型
 	modelEnableGroups     = make(map[string][]string)
@@ -176,20 +179,34 @@ func updatePricing() {
 	//这里使用切片而不是Set，因为一个模型可能支持多个端点类型，并且第一个端点是优先使用端点
 	modelSupportEndpointsStr := make(map[string][]string)
 
-	for _, ability := range enableAbilities {
-		endpoints, ok := modelSupportEndpointsStr[ability.Model]
-		if !ok {
-			endpoints = make([]string, 0)
-			modelSupportEndpointsStr[ability.Model] = endpoints
-		}
-		channelTypes := common.GetEndpointTypesByChannelType(ability.ChannelType, ability.Model)
-		for _, channelType := range channelTypes {
-			if !common.StringsContains(endpoints, string(channelType)) {
-				endpoints = append(endpoints, string(channelType))
-			}
-		}
-		modelSupportEndpointsStr[ability.Model] = endpoints
-	}
+    // 先根据已有能力填充原生端点
+    for _, ability := range enableAbilities {
+        endpoints := modelSupportEndpointsStr[ability.Model]
+        channelTypes := common.GetEndpointTypesByChannelType(ability.ChannelType, ability.Model)
+        for _, channelType := range channelTypes {
+            if !common.StringsContains(endpoints, string(channelType)) {
+                endpoints = append(endpoints, string(channelType))
+            }
+        }
+        modelSupportEndpointsStr[ability.Model] = endpoints
+    }
+
+    // 再补充模型自定义端点
+    for modelName, meta := range metaMap {
+        if strings.TrimSpace(meta.Endpoints) == "" {
+            continue
+        }
+        var raw map[string]interface{}
+        if err := json.Unmarshal([]byte(meta.Endpoints), &raw); err == nil {
+            endpoints := modelSupportEndpointsStr[modelName]
+            for k := range raw {
+                if !common.StringsContains(endpoints, k) {
+                    endpoints = append(endpoints, k)
+                }
+            }
+            modelSupportEndpointsStr[modelName] = endpoints
+        }
+    }
 
 	modelSupportEndpointTypes = make(map[string][]constant.EndpointType)
 	for model, endpoints := range modelSupportEndpointsStr {
@@ -199,9 +216,48 @@ func updatePricing() {
 			supportedEndpoints = append(supportedEndpoints, endpointType)
 		}
 		modelSupportEndpointTypes[model] = supportedEndpoints
-	}
+    }
 
-	pricingMap = make([]Pricing, 0)
+    // 构建全局 supportedEndpointMap（默认 + 自定义覆盖）
+    supportedEndpointMap = make(map[string]common.EndpointInfo)
+    // 1. 默认端点
+    for _, endpoints := range modelSupportEndpointTypes {
+        for _, et := range endpoints {
+            if info, ok := common.GetDefaultEndpointInfo(et); ok {
+                if _, exists := supportedEndpointMap[string(et)]; !exists {
+                    supportedEndpointMap[string(et)] = info
+                }
+            }
+        }
+    }
+    // 2. 自定义端点（models 表）覆盖默认
+    for _, meta := range metaMap {
+        if strings.TrimSpace(meta.Endpoints) == "" {
+            continue
+        }
+        var raw map[string]interface{}
+        if err := json.Unmarshal([]byte(meta.Endpoints), &raw); err == nil {
+            for k, v := range raw {
+                switch val := v.(type) {
+                case string:
+                    supportedEndpointMap[k] = common.EndpointInfo{Path: val, Method: "POST"}
+                case map[string]interface{}:
+                    ep := common.EndpointInfo{Method: "POST"}
+                    if p, ok := val["path"].(string); ok {
+                        ep.Path = p
+                    }
+                    if m, ok := val["method"].(string); ok {
+                        ep.Method = strings.ToUpper(m)
+                    }
+                    supportedEndpointMap[k] = ep
+                default:
+                    // ignore unsupported types
+                }
+            }
+        }
+    }
+
+    pricingMap = make([]Pricing, 0)
     for model, groups := range modelGroupsMap {
         pricing := Pricing{
             ModelName:              model,
@@ -243,4 +299,9 @@ func updatePricing() {
     modelEnableGroupsLock.Unlock()
 
     lastGetPricingTime = time.Now()
+}
+
+// GetSupportedEndpointMap 返回全局端点到路径的映射
+func GetSupportedEndpointMap() map[string]common.EndpointInfo {
+    return supportedEndpointMap
 }

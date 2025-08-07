@@ -23,31 +23,45 @@ import { IconLink } from '@douyinfe/semi-icons';
 
 const { Text } = Typography;
 
-const ModelEndpoints = ({ modelData, t }) => {
+const ModelEndpoints = ({ modelData, endpointMap = {}, t }) => {
   const renderAPIEndpoints = () => {
-    const endpoints = [];
+    if (!modelData) return null;
 
-    if (modelData?.supported_endpoint_types) {
-      modelData.supported_endpoint_types.forEach(endpoint => {
-        endpoints.push({ name: endpoint, type: endpoint });
-      });
-    }
+    const mapping = endpointMap;
+    const types = modelData.supported_endpoint_types || [];
 
-    return endpoints.map((endpoint, index) => (
-      <div
-        key={index}
-        className="flex justify-between border-b border-dashed last:border-0 py-2 last:pb-0"
-        style={{ borderColor: 'var(--semi-color-border)' }}
-      >
-        <span className="flex items-center pr-5">
-          <Badge dot type="success" className="mr-2" />
-          {endpoint.name}：
-          <span className="text-gray-500 hidden md:inline">https://api.newapi.pro</span>
-          /v1/chat/completions
-        </span>
-        <span className="text-gray-500 text-xs hidden md:inline">POST</span>
-      </div>
-    ));
+    return types.map(type => {
+      const info = mapping[type] || {};
+      let path = info.path || '';
+      // 如果路径中包含 {model} 占位符，替换为真实模型名称
+      if (path.includes('{model}')) {
+        const modelName = modelData.model_name || modelData.modelName || '';
+        path = path.replaceAll('{model}', modelName);
+      }
+      const method = info.method || 'POST';
+      return (
+        <div
+          key={type}
+          className="flex justify-between border-b border-dashed last:border-0 py-2 last:pb-0"
+          style={{ borderColor: 'var(--semi-color-border)' }}
+        >
+          <span className="flex items-center pr-5">
+            <Badge dot type="success" className="mr-2" />
+            {type}{path && '：'}
+            {path && (
+              <span className="text-gray-500 md:ml-1 break-all">
+                {path}
+              </span>
+            )}
+          </span>
+          {path && (
+            <span className="text-gray-500 text-xs md:ml-1">
+              {method}
+            </span>
+          )}
+        </div>
+      );
+    });
   };
 
   return (

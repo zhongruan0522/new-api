@@ -137,8 +137,22 @@ const PrefillGroupManagement = ({ visible, onClose }) => {
       title: t('项目内容'),
       dataIndex: 'items',
       key: 'items',
-      render: (items) => {
+      render: (items, record) => {
         try {
+          if (record.type === 'endpoint') {
+            const obj = typeof items === 'string' ? JSON.parse(items || '{}') : (items || {});
+            const keys = Object.keys(obj);
+            if (keys.length === 0) return <Text type="tertiary">{t('暂无项目')}</Text>;
+            return renderLimitedItems({
+              items: keys,
+              renderItem: (key, idx) => (
+                <Tag key={idx} size="small" shape='circle' color={stringToColor(key)}>
+                  {key}
+                </Tag>
+              ),
+              maxDisplay: 3,
+            });
+          }
           const itemsArray = typeof items === 'string' ? JSON.parse(items) : items;
           if (!Array.isArray(itemsArray) || itemsArray.length === 0) {
             return <Text type="tertiary">{t('暂无项目')}</Text>;
