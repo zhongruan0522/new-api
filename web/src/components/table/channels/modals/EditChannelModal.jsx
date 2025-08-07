@@ -142,6 +142,7 @@ const EditChannelModal = (props) => {
   const [groupOptions, setGroupOptions] = useState([]);
   const [basicModels, setBasicModels] = useState([]);
   const [fullModels, setFullModels] = useState([]);
+  const [modelGroups, setModelGroups] = useState([]);
   const [customModel, setCustomModel] = useState('');
   const [modalImageUrl, setModalImageUrl] = useState('');
   const [isModalOpenurl, setIsModalOpenurl] = useState(false);
@@ -477,6 +478,17 @@ const EditChannelModal = (props) => {
     }
   };
 
+  const fetchModelGroups = async () => {
+    try {
+      const res = await API.get('/api/prefill_group?type=model');
+      if (res?.data?.success) {
+        setModelGroups(res.data.data || []);
+      }
+    } catch (error) {
+      // ignore
+    }
+  };
+
   useEffect(() => {
     const modelMap = new Map();
 
@@ -549,6 +561,7 @@ const EditChannelModal = (props) => {
       } else {
         formApiRef.current?.setValues(getInitValues());
       }
+      fetchModelGroups();
       // 重置手动输入模式状态
       setUseManualInput(false);
     } else {
@@ -1478,6 +1491,32 @@ const EditChannelModal = (props) => {
                         >
                           {t('复制所有模型')}
                         </Button>
+                        {modelGroups && modelGroups.length > 0 && modelGroups.map(group => (
+                          <Button
+                            key={group.id}
+                            size='small'
+                            type='primary'
+                            onClick={() => {
+                              let items = [];
+                              try {
+                                if (Array.isArray(group.items)) {
+                                  items = group.items;
+                                } else if (typeof group.items === 'string') {
+                                  const parsed = JSON.parse(group.items || '[]');
+                                  if (Array.isArray(parsed)) items = parsed;
+                                }
+                              } catch { }
+                              const current = formApiRef.current?.getValue('models') || inputs.models || [];
+                              const merged = Array.from(new Set([...
+                                current,
+                              ...items
+                              ].map(m => (m || '').trim()).filter(Boolean)));
+                              handleInputChange('models', merged);
+                            }}
+                          >
+                            {group.name}
+                          </Button>
+                        ))}
                       </Space>
                     )}
                   />
