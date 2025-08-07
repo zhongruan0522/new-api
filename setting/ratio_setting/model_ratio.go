@@ -150,6 +150,7 @@ var defaultModelRatio = map[string]float64{
 	"gemini-2.5-flash-preview-05-20-nothinking": 0.075,
 	"gemini-2.5-flash-thinking-*":               0.075, // 用于为后续所有2.5 flash thinking budget 模型设置默认倍率
 	"gemini-2.5-pro-thinking-*":                 0.625, // 用于为后续所有2.5 pro thinking budget 模型设置默认倍率
+	"gemini-2.5-flash-lite-preview-thinking-*":  0.05,
 	"gemini-2.5-flash-lite-preview-06-17":       0.05,
 	"gemini-2.5-flash":                          0.15,
 	"text-embedding-004":                        0.001,
@@ -503,9 +504,6 @@ func getHardcodedCompletionModelRatio(name string) (float64, bool) {
 				return 3.5 / 0.15, false
 			}
 			if strings.HasPrefix(name, "gemini-2.5-flash-lite") {
-				if strings.HasPrefix(name, "gemini-2.5-flash-lite-preview") {
-					return 4, false
-				}
 				return 4, false
 			}
 			return 2.5 / 0.3, true
