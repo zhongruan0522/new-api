@@ -223,21 +223,6 @@ const EditPrefillGroupModal = ({ visible, onClose, editingGroup, onSuccess }) =>
                     showClear
                   />
                 </Col>
-              </Row>
-            </Card>
-
-            {/* 内容配置 */}
-            <Card className='!rounded-2xl shadow-sm border-0'>
-              <div className='flex items-center mb-2'>
-                <Avatar size='small' color='purple' className='mr-2 shadow-md'>
-                  <IconLayers size={16} />
-                </Avatar>
-                <div>
-                  <Text className='text-lg font-medium'>{t('内容配置')}</Text>
-                  <div className='text-xs text-gray-600'>{t('配置组内包含的项目')}</div>
-                </div>
-              </div>
-              <Row gutter={12}>
                 <Col span={24}>
                   {selectedType === 'endpoint' ? (
                     <JSONEditor
