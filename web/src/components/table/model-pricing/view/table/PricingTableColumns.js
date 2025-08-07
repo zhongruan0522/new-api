@@ -101,7 +101,6 @@ export const getPricingTableColumns = ({
   const endpointColumn = {
     title: t('可用端点类型'),
     dataIndex: 'supported_endpoint_types',
-    fixed: 'right',
     render: (text, record, index) => {
       return renderSupportedEndpoints(text);
     },
@@ -189,6 +188,7 @@ export const getPricingTableColumns = ({
   const priceColumn = {
     title: t('模型价格'),
     dataIndex: 'model_price',
+    fixed: 'right',
     render: (text, record, index) => {
       const priceData = calculateModelPrice({
         record,
@@ -221,10 +221,10 @@ export const getPricingTableColumns = ({
   };
 
   const columns = [...baseColumns];
+  columns.push(endpointColumn);
   if (showRatio) {
     columns.push(ratioColumn);
   }
   columns.push(priceColumn);
-  columns.push(endpointColumn);
   return columns;
 }; 
