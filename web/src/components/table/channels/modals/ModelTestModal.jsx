@@ -175,7 +175,7 @@ const ModelTestModal = ({
             <Typography.Text strong className="!text-[var(--semi-color-text-0)] !text-base">
               {currentTestChannel.name} {t('渠道的模型测试')}
             </Typography.Text>
-            <Typography.Text type="tertiary" className="!text-xs flex items-center">
+            <Typography.Text type="tertiary" size="small">
               {t('共')} {currentTestChannel.models.split(',').length} {t('个模型')}
             </Typography.Text>
           </div>

@@ -179,6 +179,16 @@ func SetApiRouter(router *gin.Engine) {
 		{
 			groupRoute.GET("/", controller.GetGroups)
 		}
+
+		prefillGroupRoute := apiRouter.Group("/prefill_group")
+		prefillGroupRoute.Use(middleware.AdminAuth())
+		{
+			prefillGroupRoute.GET("/", controller.GetPrefillGroups)
+			prefillGroupRoute.POST("/", controller.CreatePrefillGroup)
+			prefillGroupRoute.PUT("/", controller.UpdatePrefillGroup)
+			prefillGroupRoute.DELETE("/:id", controller.DeletePrefillGroup)
+		}
+
 		mjRoute := apiRouter.Group("/mj")
 		mjRoute.GET("/self", middleware.UserAuth(), controller.GetUserMidjourney)
 		mjRoute.GET("/", middleware.AdminAuth(), controller.GetAllMidjourney)
@@ -187,6 +197,29 @@ func SetApiRouter(router *gin.Engine) {
 		{
 			taskRoute.GET("/self", middleware.UserAuth(), controller.GetUserTask)
 			taskRoute.GET("/", middleware.AdminAuth(), controller.GetAllTask)
+		}
+
+		vendorRoute := apiRouter.Group("/vendors")
+        vendorRoute.Use(middleware.AdminAuth())
+        {
+            vendorRoute.GET("/", controller.GetAllVendors)
+            vendorRoute.GET("/search", controller.SearchVendors)
+            vendorRoute.GET("/:id", controller.GetVendorMeta)
+            vendorRoute.POST("/", controller.CreateVendorMeta)
+            vendorRoute.PUT("/", controller.UpdateVendorMeta)
+            vendorRoute.DELETE("/:id", controller.DeleteVendorMeta)
+        }
+
+        modelsRoute := apiRouter.Group("/models")
+		modelsRoute.Use(middleware.AdminAuth())
+		{
+			modelsRoute.GET("/missing", controller.GetMissingModels)
+            modelsRoute.GET("/", controller.GetAllModelsMeta)
+            modelsRoute.GET("/search", controller.SearchModelsMeta)
+			modelsRoute.GET("/:id", controller.GetModelMeta)
+			modelsRoute.POST("/", controller.CreateModelMeta)
+			modelsRoute.PUT("/", controller.UpdateModelMeta)
+			modelsRoute.DELETE("/:id", controller.DeleteModelMeta)
 		}
 	}
 }

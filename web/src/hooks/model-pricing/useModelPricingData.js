@@ -19,28 +19,36 @@ For commercial licensing, please contact support@quantumnous.com
 
 import { useState, useEffect, useContext, useRef, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { API, copy, showError, showInfo, showSuccess, getModelCategories } from '../../helpers';
+import { API, copy, showError, showInfo, showSuccess } from '../../helpers';
 import { Modal } from '@douyinfe/semi-ui';
 import { UserContext } from '../../context/User/index.js';
 import { StatusContext } from '../../context/Status/index.js';
 
 export const useModelPricingData = () => {
   const { t } = useTranslation();
-  const [filteredValue, setFilteredValue] = useState([]);
+  const [searchValue, setSearchValue] = useState('');
   const compositionRef = useRef({ isComposition: false });
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
   const [modalImageUrl, setModalImageUrl] = useState('');
   const [isModalOpenurl, setIsModalOpenurl] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState('default');
-  const [activeKey, setActiveKey] = useState('all');
+  const [showModelDetail, setShowModelDetail] = useState(false);
+  const [selectedModel, setSelectedModel] = useState(null);
+  const [filterGroup, setFilterGroup] = useState('all'); // 用于 Table 的可用分组筛选，"all" 表示不过滤
+  const [filterQuotaType, setFilterQuotaType] = useState('all'); // 计费类型筛选: 'all' | 0 | 1
+  const [filterEndpointType, setFilterEndpointType] = useState('all'); // 端点类型筛选: 'all' | string
+  const [filterVendor, setFilterVendor] = useState('all'); // 供应商筛选: 'all' | 'unknown' | string
   const [pageSize, setPageSize] = useState(10);
+  const [currentPage, setCurrentPage] = useState(1);
   const [currency, setCurrency] = useState('USD');
   const [showWithRecharge, setShowWithRecharge] = useState(false);
   const [tokenUnit, setTokenUnit] = useState('M');
   const [models, setModels] = useState([]);
+  const [vendorsMap, setVendorsMap] = useState({});
   const [loading, setLoading] = useState(true);
   const [groupRatio, setGroupRatio] = useState({});
   const [usableGroup, setUsableGroup] = useState({});
+  const [endpointMap, setEndpointMap] = useState({});
 
   const [statusState] = useContext(StatusContext);
   const [userState] = useContext(UserContext);
@@ -49,53 +57,58 @@ export const useModelPricingData = () => {
   const priceRate = useMemo(() => statusState?.status?.price ?? 1, [statusState]);
   const usdExchangeRate = useMemo(() => statusState?.status?.usd_exchange_rate ?? priceRate, [statusState, priceRate]);
 
-  const modelCategories = getModelCategories(t);
-
-  const categoryCounts = useMemo(() => {
-    const counts = {};
-    if (models.length > 0) {
-      counts['all'] = models.length;
-      Object.entries(modelCategories).forEach(([key, category]) => {
-        if (key !== 'all') {
-          counts[key] = models.filter(model => category.filter(model)).length;
-        }
-      });
-    }
-    return counts;
-  }, [models, modelCategories]);
-
-  const availableCategories = useMemo(() => {
-    if (!models.length) return ['all'];
-    return Object.entries(modelCategories).filter(([key, category]) => {
-      if (key === 'all') return true;
-      return models.some(model => category.filter(model));
-    }).map(([key]) => key);
-  }, [models]);
-
   const filteredModels = useMemo(() => {
     let result = models;
 
-    if (activeKey !== 'all') {
-      result = result.filter(model => modelCategories[activeKey].filter(model));
+    // 分组筛选
+    if (filterGroup !== 'all') {
+      result = result.filter(model => model.enable_groups.includes(filterGroup));
     }
 
-    if (filteredValue.length > 0) {
-      const searchTerm = filteredValue[0].toLowerCase();
+    // 计费类型筛选
+    if (filterQuotaType !== 'all') {
+      result = result.filter(model => model.quota_type === filterQuotaType);
+    }
+
+    // 端点类型筛选
+    if (filterEndpointType !== 'all') {
       result = result.filter(model =>
-        model.model_name.toLowerCase().includes(searchTerm)
+        model.supported_endpoint_types &&
+        model.supported_endpoint_types.includes(filterEndpointType)
+      );
+    }
+
+    // 供应商筛选
+    if (filterVendor !== 'all') {
+      if (filterVendor === 'unknown') {
+        result = result.filter(model => !model.vendor_name);
+      } else {
+        result = result.filter(model => model.vendor_name === filterVendor);
+      }
+    }
+
+    // 搜索筛选
+    if (searchValue.length > 0) {
+      const searchTerm = searchValue.toLowerCase();
+      result = result.filter(model =>
+        (model.model_name && model.model_name.toLowerCase().includes(searchTerm)) ||
+        (model.description && model.description.toLowerCase().includes(searchTerm)) ||
+        (model.tags && model.tags.toLowerCase().includes(searchTerm)) ||
+        (model.vendor_name && model.vendor_name.toLowerCase().includes(searchTerm))
       );
     }
 
     return result;
-  }, [activeKey, models, filteredValue]);
+  }, [models, searchValue, filterGroup, filterQuotaType, filterEndpointType, filterVendor]);
 
   const rowSelection = useMemo(
     () => ({
-      onChange: (selectedRowKeys, selectedRows) => {
-        setSelectedRowKeys(selectedRowKeys);
+      selectedRowKeys,
+      onChange: (keys) => {
+        setSelectedRowKeys(keys);
       },
     }),
-    [],
+    [selectedRowKeys],
   );
 
   const displayPrice = (usdPrice) => {
@@ -110,10 +123,18 @@ export const useModelPricingData = () => {
     return `$${priceInUSD.toFixed(3)}`;
   };
 
-  const setModelsFormat = (models, groupRatio) => {
+  const setModelsFormat = (models, groupRatio, vendorMap) => {
     for (let i = 0; i < models.length; i++) {
-      models[i].key = models[i].model_name;
-      models[i].group_ratio = groupRatio[models[i].model_name];
+      const m = models[i];
+      m.key = m.model_name;
+      m.group_ratio = groupRatio[m.model_name];
+
+      if (m.vendor_id && vendorMap[m.vendor_id]) {
+        const vendor = vendorMap[m.vendor_id];
+        m.vendor_name = vendor.name;
+        m.vendor_icon = vendor.icon;
+        m.vendor_description = vendor.description;
+      }
     }
     models.sort((a, b) => {
       return a.quota_type - b.quota_type;
@@ -139,12 +160,21 @@ export const useModelPricingData = () => {
     setLoading(true);
     let url = '/api/pricing';
     const res = await API.get(url);
-    const { success, message, data, group_ratio, usable_group } = res.data;
+    const { success, message, data, vendors, group_ratio, usable_group, supported_endpoint } = res.data;
     if (success) {
       setGroupRatio(group_ratio);
       setUsableGroup(usable_group);
       setSelectedGroup(userState.user ? userState.user.group : 'default');
-      setModelsFormat(data, group_ratio);
+      // 构建供应商 Map 方便查找
+      const vendorMap = {};
+      if (Array.isArray(vendors)) {
+        vendors.forEach(v => {
+          vendorMap[v.id] = v;
+        });
+      }
+      setVendorsMap(vendorMap);
+      setEndpointMap(supported_endpoint || {});
+      setModelsFormat(data, group_ratio, vendorMap);
     } else {
       showError(message);
     }
@@ -167,8 +197,8 @@ export const useModelPricingData = () => {
     if (compositionRef.current.isComposition) {
       return;
     }
-    const newFilteredValue = value ? [value] : [];
-    setFilteredValue(newFilteredValue);
+    const newSearchValue = value ? value : '';
+    setSearchValue(newSearchValue);
   };
 
   const handleCompositionStart = () => {
@@ -178,12 +208,14 @@ export const useModelPricingData = () => {
   const handleCompositionEnd = (event) => {
     compositionRef.current.isComposition = false;
     const value = event.target.value;
-    const newFilteredValue = value ? [value] : [];
-    setFilteredValue(newFilteredValue);
+    const newSearchValue = value ? value : '';
+    setSearchValue(newSearchValue);
   };
 
   const handleGroupClick = (group) => {
     setSelectedGroup(group);
+    // 同时将分组过滤设置为该分组
+    setFilterGroup(group);
     showInfo(
       t('当前查看的分组为：{{group}}，倍率为：{{ratio}}', {
         group: group,
@@ -192,14 +224,29 @@ export const useModelPricingData = () => {
     );
   };
 
+  const openModelDetail = (model) => {
+    setSelectedModel(model);
+    setShowModelDetail(true);
+  };
+
+  const closeModelDetail = () => {
+    setShowModelDetail(false);
+    setSelectedModel(null);
+  };
+
   useEffect(() => {
     refresh().then();
   }, []);
 
+  // 当筛选条件变化时重置到第一页
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filterGroup, filterQuotaType, filterEndpointType, filterVendor, searchValue]);
+
   return {
     // 状态
-    filteredValue,
-    setFilteredValue,
+    searchValue,
+    setSearchValue,
     selectedRowKeys,
     setSelectedRowKeys,
     modalImageUrl,
@@ -208,10 +255,22 @@ export const useModelPricingData = () => {
     setIsModalOpenurl,
     selectedGroup,
     setSelectedGroup,
-    activeKey,
-    setActiveKey,
+    showModelDetail,
+    setShowModelDetail,
+    selectedModel,
+    setSelectedModel,
+    filterGroup,
+    setFilterGroup,
+    filterQuotaType,
+    setFilterQuotaType,
+    filterEndpointType,
+    setFilterEndpointType,
+    filterVendor,
+    setFilterVendor,
     pageSize,
     setPageSize,
+    currentPage,
+    setCurrentPage,
     currency,
     setCurrency,
     showWithRecharge,
@@ -222,15 +281,16 @@ export const useModelPricingData = () => {
     loading,
     groupRatio,
     usableGroup,
+    endpointMap,
 
     // 计算属性
     priceRate,
     usdExchangeRate,
-    modelCategories,
-    categoryCounts,
-    availableCategories,
     filteredModels,
     rowSelection,
+
+    // 供应商
+    vendorsMap,
 
     // 用户和状态
     userState,
@@ -244,6 +304,8 @@ export const useModelPricingData = () => {
     handleCompositionStart,
     handleCompositionEnd,
     handleGroupClick,
+    openModelDetail,
+    closeModelDetail,
 
     // 引用
     compositionRef,

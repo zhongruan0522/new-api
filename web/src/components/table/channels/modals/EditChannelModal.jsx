@@ -48,7 +48,7 @@ import {
 } from '@douyinfe/semi-ui';
 import { getChannelModels, copy, getChannelIcon, getModelCategories, selectFilter } from '../../../../helpers';
 import ModelSelectModal from './ModelSelectModal';
-import JSONEditor from '../../../common/JSONEditor';
+import JSONEditor from '../../../common/ui/JSONEditor';
 import {
   IconSave,
   IconClose,
@@ -1174,27 +1174,27 @@ const EditChannelModal = (props) => {
                     </>
                   )}
 
-                {isEdit && isMultiKeyChannel && (
-                        <Form.Select
-                          field='key_mode'
-                          label={t('密钥更新模式')}
-                          placeholder={t('请选择密钥更新模式')}
-                          optionList={[
-                            { label: t('追加到现有密钥'), value: 'append' },
-                            { label: t('覆盖现有密钥'), value: 'replace' },
-                          ]}
-                          style={{ width: '100%' }}
-                          value={keyMode}
-                          onChange={(value) => setKeyMode(value)}
-                          extraText={
-                            <Text type="tertiary" size="small">
-                              {keyMode === 'replace' 
-                                ? t('覆盖模式：将完全替换现有的所有密钥') 
-                                : t('追加模式：将新密钥添加到现有密钥列表末尾')
-                              }
-                            </Text>
+                  {isEdit && isMultiKeyChannel && (
+                    <Form.Select
+                      field='key_mode'
+                      label={t('密钥更新模式')}
+                      placeholder={t('请选择密钥更新模式')}
+                      optionList={[
+                        { label: t('追加到现有密钥'), value: 'append' },
+                        { label: t('覆盖现有密钥'), value: 'replace' },
+                      ]}
+                      style={{ width: '100%' }}
+                      value={keyMode}
+                      onChange={(value) => setKeyMode(value)}
+                      extraText={
+                        <Text type="tertiary" size="small">
+                          {keyMode === 'replace'
+                            ? t('覆盖模式：将完全替换现有的所有密钥')
+                            : t('追加模式：将新密钥添加到现有密钥列表末尾')
                           }
-                        />
+                        </Text>
+                      }
+                    />
                   )}
                   {batch && multiToSingle && (
                     <>
@@ -1247,11 +1247,7 @@ const EditChannelModal = (props) => {
                       templateLabel={t('填入模板')}
                       editorType="region"
                       formApi={formApiRef.current}
-                      extraText={
-                        <Text type="tertiary" size="small">
-                          {t('设置默认地区和特定模型的专用地区')}
-                        </Text>
-                      }
+                      extraText={t('设置默认地区和特定模型的专用地区')}
                     />
                   )}
 
@@ -1520,11 +1516,7 @@ const EditChannelModal = (props) => {
                     templateLabel={t('填入模板')}
                     editorType="keyValue"
                     formApi={formApiRef.current}
-                    extraText={
-                      <Text type="tertiary" size="small">
-                        {t('键为请求中的模型名称，值为要替换的模型名称')}
-                      </Text>
-                    }
+                    extraText={t('键为请求中的模型名称，值为要替换的模型名称')}
                   />
                 </Card>
 
@@ -1628,11 +1620,7 @@ const EditChannelModal = (props) => {
                     templateLabel={t('填入模板')}
                     editorType="keyValue"
                     formApi={formApiRef.current}
-                    extraText={
-                      <Text type="tertiary" size="small">
-                        {t('键为原状态码，值为要复写的状态码，仅影响本地判断')}
-                      </Text>
-                    }
+                    extraText={t('键为原状态码，值为要复写的状态码，仅影响本地判断')}
                   />
                 </Card>
 

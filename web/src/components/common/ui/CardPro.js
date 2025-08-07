@@ -112,6 +112,7 @@ const CardPro = ({
                 icon={showMobileActions ? <IconEyeClosed /> : <IconEyeOpened />}
                 type="tertiary"
                 size="small"
+                theme='outline'
                 block
               >
                 {showMobileActions ? t('隐藏操作项') : t('显示操作项')}
