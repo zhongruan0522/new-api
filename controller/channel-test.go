@@ -161,7 +161,7 @@ func testChannel(channel *model.Channel, testModel string) testResult {
 	logInfo.ApiKey = ""
 	common.SysLog(fmt.Sprintf("testing channel %d with model %s , info %+v ", channel.Id, testModel, logInfo))
 
-	priceData, err := helper.ModelPriceHelper(c, info, 0, int(request.MaxTokens))
+	priceData, err := helper.ModelPriceHelper(c, info, 0, int(request.GetMaxTokens()))
 	if err != nil {
 		return testResult{
 			context:     c,
