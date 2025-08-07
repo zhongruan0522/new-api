@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"one-api/dto"
 	"one-api/relay/channel"
+	"one-api/relay/channel/claude"
 	"one-api/relay/channel/openai"
 	relaycommon "one-api/relay/common"
 	"one-api/relay/constant"
@@ -23,10 +24,8 @@ func (a *Adaptor) ConvertGeminiRequest(*gin.Context, *relaycommon.RelayInfo, *dt
 	return nil, errors.New("not implemented")
 }
 
-func (a *Adaptor) ConvertClaudeRequest(*gin.Context, *relaycommon.RelayInfo, *dto.ClaudeRequest) (any, error) {
-	//TODO implement me
-	panic("implement me")
-	return nil, nil
+func (a *Adaptor) ConvertClaudeRequest(c *gin.Context, info *relaycommon.RelayInfo, req *dto.ClaudeRequest) (any, error) {
+	return req, nil
 }
 
 func (a *Adaptor) Init(info *relaycommon.RelayInfo) {
@@ -34,18 +33,24 @@ func (a *Adaptor) Init(info *relaycommon.RelayInfo) {
 
 func (a *Adaptor) GetRequestURL(info *relaycommon.RelayInfo) (string, error) {
 	var fullRequestURL string
-	switch info.RelayMode {
-	case constant.RelayModeEmbeddings:
-		fullRequestURL = fmt.Sprintf("%s/compatible-mode/v1/embeddings", info.BaseUrl)
-	case constant.RelayModeRerank:
-		fullRequestURL = fmt.Sprintf("%s/api/v1/services/rerank/text-rerank/text-rerank", info.BaseUrl)
-	case constant.RelayModeImagesGenerations:
-		fullRequestURL = fmt.Sprintf("%s/api/v1/services/aigc/text2image/image-synthesis", info.BaseUrl)
-	case constant.RelayModeCompletions:
-		fullRequestURL = fmt.Sprintf("%s/compatible-mode/v1/completions", info.BaseUrl)
+	switch info.RelayFormat {
+	case relaycommon.RelayFormatClaude:
+		fullRequestURL = fmt.Sprintf("%s/api/v2/apps/claude-code-proxy/v1/messages", info.BaseUrl)
 	default:
-		fullRequestURL = fmt.Sprintf("%s/compatible-mode/v1/chat/completions", info.BaseUrl)
+		switch info.RelayMode {
+		case constant.RelayModeEmbeddings:
+			fullRequestURL = fmt.Sprintf("%s/compatible-mode/v1/embeddings", info.BaseUrl)
+		case constant.RelayModeRerank:
+			fullRequestURL = fmt.Sprintf("%s/api/v1/services/rerank/text-rerank/text-rerank", info.BaseUrl)
+		case constant.RelayModeImagesGenerations:
+			fullRequestURL = fmt.Sprintf("%s/api/v1/services/aigc/text2image/image-synthesis", info.BaseUrl)
+		case constant.RelayModeCompletions:
+			fullRequestURL = fmt.Sprintf("%s/compatible-mode/v1/completions", info.BaseUrl)
+		default:
+			fullRequestURL = fmt.Sprintf("%s/compatible-mode/v1/chat/completions", info.BaseUrl)
+		}
 	}
+
 	return fullRequestURL, nil
 }
 
@@ -112,18 +117,27 @@ func (a *Adaptor) DoRequest(c *gin.Context, info *relaycommon.RelayInfo, request
 }
 
 func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (usage any, err *types.NewAPIError) {
-	switch info.RelayMode {
-	case constant.RelayModeImagesGenerations:
-		err, usage = aliImageHandler(c, resp, info)
-	case constant.RelayModeEmbeddings:
-		err, usage = aliEmbeddingHandler(c, resp)
-	case constant.RelayModeRerank:
-		err, usage = RerankHandler(c, resp, info)
-	default:
+	switch info.RelayFormat {
+	case relaycommon.RelayFormatClaude:
 		if info.IsStream {
-			usage, err = openai.OaiStreamHandler(c, info, resp)
+			err, usage = claude.ClaudeStreamHandler(c, resp, info, claude.RequestModeMessage)
 		} else {
-			usage, err = openai.OpenaiHandler(c, info, resp)
+			err, usage = claude.ClaudeHandler(c, resp, info, claude.RequestModeMessage)
+		}
+	default:
+		switch info.RelayMode {
+		case constant.RelayModeImagesGenerations:
+			err, usage = aliImageHandler(c, resp, info)
+		case constant.RelayModeEmbeddings:
+			err, usage = aliEmbeddingHandler(c, resp)
+		case constant.RelayModeRerank:
+			err, usage = RerankHandler(c, resp, info)
+		default:
+			if info.IsStream {
+				usage, err = openai.OaiStreamHandler(c, info, resp)
+			} else {
+				usage, err = openai.OpenaiHandler(c, info, resp)
+			}
 		}
 	}
 	return
