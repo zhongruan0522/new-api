@@ -390,7 +390,7 @@ const EditModelModal = (props) => {
                       editorType='object'
                       template={ENDPOINT_TEMPLATE}
                       templateLabel={t('填入模板')}
-                      extraText={(<Text type="tertiary" size="small">{t('留空则使用默认端点；支持 {path, method}')}</Text>)}
+                      extraText={t('留空则使用默认端点；支持 {path, method}')}
                       extraFooter={endpointGroups.length > 0 && (
                         <Space wrap>
                           {endpointGroups.map(group => (

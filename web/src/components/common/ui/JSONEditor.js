@@ -637,7 +637,7 @@ const JSONEditor = ({
         {/* 额外文本显示在卡片底部 */}
         {extraText && (
           <Divider margin='12px' align='center'>
-            {extraText}
+            <Text type="tertiary" size="small">{extraText}</Text>
           </Divider>
         )}
         {extraFooter && (
