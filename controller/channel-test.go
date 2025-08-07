@@ -275,7 +275,7 @@ func testChannel(channel *model.Channel, testModel string) testResult {
 		Quota:            quota,
 		Content:          "模型测试",
 		UseTimeSeconds:   int(consumedTime),
-		IsStream:         false,
+		IsStream:         info.IsStream,
 		Group:            info.UsingGroup,
 		Other:            other,
 	})

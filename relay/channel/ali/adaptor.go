@@ -3,6 +3,7 @@ package ali
 import (
 	"errors"
 	"fmt"
+	"github.com/gin-gonic/gin"
 	"io"
 	"net/http"
 	"one-api/dto"
@@ -11,8 +12,7 @@ import (
 	relaycommon "one-api/relay/common"
 	"one-api/relay/constant"
 	"one-api/types"
-
-	"github.com/gin-gonic/gin"
+	"strings"
 )
 
 type Adaptor struct {
@@ -65,7 +65,13 @@ func (a *Adaptor) ConvertOpenAIRequest(c *gin.Context, info *relaycommon.RelayIn
 	if request == nil {
 		return nil, errors.New("request is nil")
 	}
-
+	// docs: https://bailian.console.aliyun.com/?tab=api#/api/?type=model&url=2712216
+	// fix: InternalError.Algo.InvalidParameter: The value of the enable_thinking parameter is restricted to True.
+	if strings.Contains(request.Model, "thinking") {
+		request.EnableThinking = true
+		request.Stream = true
+		info.IsStream = true
+	}
 	// fix: ali parameter.enable_thinking must be set to false for non-streaming calls
 	if !info.IsStream {
 		request.EnableThinking = false
