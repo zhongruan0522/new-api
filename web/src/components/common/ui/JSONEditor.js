@@ -14,6 +14,7 @@ import {
   TextArea,
   Row,
   Col,
+  Divider,
 } from '@douyinfe/semi-ui';
 import {
   IconCode,
@@ -31,6 +32,7 @@ const JSONEditor = ({
   label,
   placeholder,
   extraText,
+  extraFooter,
   showClear = true,
   template,
   templateLabel,
@@ -634,8 +636,13 @@ const JSONEditor = ({
 
         {/* 额外文本显示在卡片底部 */}
         {extraText && (
-          <div className="text-gray-600 mt-3 pt-3">
+          <Divider margin='12px' align='center'>
             {extraText}
+          </Divider>
+        )}
+        {extraFooter && (
+          <div className="mt-1">
+            {extraFooter}
           </div>
         )}
       </Card>

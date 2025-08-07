@@ -32,16 +32,19 @@ import {
   Col,
   Row,
 } from '@douyinfe/semi-ui';
-import {
-  Save,
-  X,
-  FileText,
-} from 'lucide-react';
+import { Save, X, FileText } from 'lucide-react';
 import { API, showError, showSuccess } from '../../../../helpers';
 import { useTranslation } from 'react-i18next';
 import { useIsMobile } from '../../../../hooks/common/useIsMobile';
 
 const { Text, Title } = Typography;
+
+// Example endpoint template for quick fill
+const ENDPOINT_TEMPLATE = {
+  openai: { path: '/v1/chat/completions', method: 'POST' },
+  anthropic: { path: '/v1/messages', method: 'POST' },
+  'image-generation': { path: '/v1/images/generations', method: 'POST' },
+};
 
 const nameRuleOptions = [
   { label: '精确名称匹配', value: 0 },
@@ -385,7 +388,37 @@ const EditModelModal = (props) => {
                       onChange={(val) => formApiRef.current?.setValue('endpoints', val)}
                       formApi={formApiRef.current}
                       editorType='object'
-                      extraText={t('留空则使用默认端点；支持 {path, method}')}
+                      template={ENDPOINT_TEMPLATE}
+                      templateLabel={t('填入模板')}
+                      extraText={(<Text type="tertiary" size="small">{t('留空则使用默认端点；支持 {path, method}')}</Text>)}
+                      extraFooter={endpointGroups.length > 0 && (
+                        <Space wrap>
+                          {endpointGroups.map(group => (
+                            <Button
+                              key={group.id}
+                              size='small'
+                              type='primary'
+                              onClick={() => {
+                                try {
+                                  const current = formApiRef.current?.getValue('endpoints') || '';
+                                  let base = {};
+                                  if (current && current.trim()) base = JSON.parse(current);
+                                  const groupObj = typeof group.items === 'string' ? JSON.parse(group.items || '{}') : (group.items || {});
+                                  const merged = { ...base, ...groupObj };
+                                  formApiRef.current?.setValue('endpoints', JSON.stringify(merged, null, 2));
+                                } catch (e) {
+                                  try {
+                                    const groupObj = typeof group.items === 'string' ? JSON.parse(group.items || '{}') : (group.items || {});
+                                    formApiRef.current?.setValue('endpoints', JSON.stringify(groupObj, null, 2));
+                                  } catch { }
+                                }
+                              }}
+                            >
+                              {group.name}
+                            </Button>
+                          ))}
+                        </Space>
+                      )}
                     />
                   </Col>
                   <Col span={24}>

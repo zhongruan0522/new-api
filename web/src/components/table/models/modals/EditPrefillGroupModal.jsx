@@ -43,6 +43,13 @@ import { useIsMobile } from '../../../../hooks/common/useIsMobile';
 
 const { Text, Title } = Typography;
 
+// Example endpoint template for quick fill
+const ENDPOINT_TEMPLATE = {
+  openai: { path: '/v1/chat/completions', method: 'POST' },
+  anthropic: { path: '/v1/messages', method: 'POST' },
+  'image-generation': { path: '/v1/images/generations', method: 'POST' },
+};
+
 const EditPrefillGroupModal = ({ visible, onClose, editingGroup, onSuccess }) => {
   const { t } = useTranslation();
   const isMobile = useIsMobile();
@@ -240,6 +247,8 @@ const EditPrefillGroupModal = ({ visible, onClose, editingGroup, onSuccess }) =>
                       onChange={(val) => formRef.current?.setValue('items', val)}
                       editorType='object'
                       placeholder={'{\n  "openai": {"path": "/v1/chat/completions", "method": "POST"}\n}'}
+                      template={ENDPOINT_TEMPLATE}
+                      templateLabel={t('填入模板')}
                       extraText={t('键为端点类型，值为路径和方法对象')}
                     />
                   ) : (

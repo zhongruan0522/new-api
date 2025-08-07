@@ -18,13 +18,7 @@ For commercial licensing, please contact support@quantumnous.com
 */
 
 import React from 'react';
-import {
-  Button,
-  Space,
-  Tag,
-  Typography,
-  Modal
-} from '@douyinfe/semi-ui';
+import { Button, Space, Tag, Typography, Modal } from '@douyinfe/semi-ui';
 import {
   timestamp2string,
   getLobeHubIcon,
@@ -81,21 +75,39 @@ const renderTags = (text) => {
   });
 };
 
-// Render endpoints
-const renderEndpoints = (text) => {
-  let arr;
+// Render endpoints (supports object map or legacy array)
+const renderEndpoints = (value) => {
   try {
-    arr = JSON.parse(text);
-  } catch (_) { }
-  if (!Array.isArray(arr)) return text || '-';
-  return renderLimitedItems({
-    items: arr,
-    renderItem: (ep, idx) => (
-      <Tag key={idx} color="white" size="small" shape='circle'>
-        {ep}
-      </Tag>
-    ),
-  });
+    const parsed = typeof value === 'string' ? JSON.parse(value) : value;
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      const keys = Object.keys(parsed || {});
+      if (keys.length === 0) return '-';
+      return renderLimitedItems({
+        items: keys,
+        renderItem: (key, idx) => (
+          <Tag key={idx} size="small" shape='circle' color={stringToColor(key)}>
+            {key}
+          </Tag>
+        ),
+        maxDisplay: 3,
+      });
+    }
+    if (Array.isArray(parsed)) {
+      if (parsed.length === 0) return '-';
+      return renderLimitedItems({
+        items: parsed,
+        renderItem: (ep, idx) => (
+          <Tag key={idx} color="white" size="small" shape='circle'>
+            {ep}
+          </Tag>
+        ),
+        maxDisplay: 3,
+      });
+    }
+    return value || '-';
+  } catch (_) {
+    return value || '-';
+  }
 };
 
 // Render quota type
