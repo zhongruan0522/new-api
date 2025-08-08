@@ -180,6 +180,9 @@ func OpenaiHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Respo
 	if err != nil {
 		return nil, types.NewOpenAIError(err, types.ErrorCodeReadResponseBodyFailed, http.StatusInternalServerError)
 	}
+	if common.DebugEnabled {
+		println("upstream response body:", string(responseBody))
+	}
 	err = common.Unmarshal(responseBody, &simpleResponse)
 	if err != nil {
 		return nil, types.NewOpenAIError(err, types.ErrorCodeBadResponseBody, http.StatusInternalServerError)

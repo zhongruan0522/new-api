@@ -67,7 +67,7 @@ func (a *Adaptor) ConvertClaudeRequest(c *gin.Context, info *relaycommon.RelayIn
 	if err != nil {
 		return nil, err
 	}
-	if info.SupportStreamOptions {
+	if info.SupportStreamOptions && info.IsStream {
 		aiRequest.StreamOptions = &dto.StreamOptions{
 			IncludeUsage: true,
 		}
