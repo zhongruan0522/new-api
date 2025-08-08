@@ -114,7 +114,11 @@ func (a *Adaptor) GetRequestURL(info *relaycommon.RelayInfo) (string, error) {
 	if strings.HasPrefix(info.UpstreamModelName, "text-embedding") ||
 		strings.HasPrefix(info.UpstreamModelName, "embedding") ||
 		strings.HasPrefix(info.UpstreamModelName, "gemini-embedding") {
-		return fmt.Sprintf("%s/%s/models/%s:embedContent", info.BaseUrl, version, info.UpstreamModelName), nil
+		action := "embedContent"
+		if info.IsGeminiBatchEmbdding {
+			action = "batchEmbedContents"
+		}
+		return fmt.Sprintf("%s/%s/models/%s:%s", info.BaseUrl, version, info.UpstreamModelName, action), nil
 	}
 
 	action := "generateContent"
@@ -195,6 +199,9 @@ func (a *Adaptor) DoRequest(c *gin.Context, info *relaycommon.RelayInfo, request
 
 func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (usage any, err *types.NewAPIError) {
 	if info.RelayMode == constant.RelayModeGemini {
+		if strings.Contains(info.RequestURLPath, "embed") {
+			return NativeGeminiEmbeddingHandler(c, resp, info)
+		}
 		if info.IsStream {
 			return GeminiTextGenerationStreamHandler(c, info, resp)
 		} else {

@@ -74,13 +74,14 @@ type RelayInfo struct {
 	FirstResponseTime    time.Time
 	isFirstResponse      bool
 	//SendLastReasoningResponse bool
-	ApiType           int
-	IsStream          bool
-	IsPlayground      bool
-	UsePrice          bool
-	RelayMode         int
-	UpstreamModelName string
-	OriginModelName   string
+	ApiType               int
+	IsStream              bool
+	IsGeminiBatchEmbdding bool
+	IsPlayground          bool
+	UsePrice              bool
+	RelayMode             int
+	UpstreamModelName     string
+	OriginModelName       string
 	//RecodeModelName      string
 	RequestURLPath       string
 	ApiVersion           string

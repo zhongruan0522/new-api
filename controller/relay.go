@@ -42,7 +42,11 @@ func relayHandler(c *gin.Context, relayMode int) *types.NewAPIError {
 	case relayconstant.RelayModeResponses:
 		err = relay.ResponsesHelper(c)
 	case relayconstant.RelayModeGemini:
-		err = relay.GeminiHelper(c)
+		if strings.Contains(c.Request.URL.Path, "embed") {
+			err = relay.GeminiEmbeddingHandler(c)
+		} else {
+			err = relay.GeminiHelper(c)
+		}
 	default:
 		err = relay.TextHelper(c)
 	}
