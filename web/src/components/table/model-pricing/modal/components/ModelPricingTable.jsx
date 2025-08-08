@@ -35,11 +35,11 @@ const ModelPricingTable = ({
   autoGroups = [],
   t,
 }) => {
+  const modelEnableGroups = Array.isArray(modelData?.enable_groups) ? modelData.enable_groups : [];
+  const autoChain = autoGroups.filter(g => modelEnableGroups.includes(g));
   const renderGroupPriceTable = () => {
     // 仅展示模型可用的分组：模型 enable_groups 与用户可用分组的交集
-    const modelEnableGroups = Array.isArray(modelData?.enable_groups)
-      ? modelData.enable_groups
-      : [];
+
     const availableGroups = Object.keys(usableGroup || {})
       .filter(g => g !== '')
       .filter(g => g !== 'auto')
@@ -169,14 +169,14 @@ const ModelPricingTable = ({
           <div className="text-xs text-gray-600">{t('不同用户分组的价格信息')}</div>
         </div>
       </div>
-      {autoGroups && autoGroups.length > 0 && (
+      {autoChain.length > 0 && (
         <div className="flex flex-wrap items-center gap-1 mb-4">
           <span className="text-sm text-gray-600">{t('auto分组调用链路')}</span>
           <span className="text-sm">→</span>
-          {autoGroups.map((g, idx) => (
+          {autoChain.map((g, idx) => (
             <React.Fragment key={g}>
               <Tag color="white" size="small" shape="circle">{g}{t('分组')}</Tag>
-              {idx < autoGroups.length - 1 && <span className="text-sm">→</span>}
+              {idx < autoChain.length - 1 && <span className="text-sm">→</span>}
             </React.Fragment>
           ))}
         </div>
