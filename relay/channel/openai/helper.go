@@ -3,6 +3,7 @@ package openai
 import (
 	"encoding/json"
 	"errors"
+	"github.com/samber/lo"
 	"net/http"
 	"one-api/common"
 	"one-api/dto"
@@ -186,7 +187,9 @@ func handleLastResponse(lastStreamData string, responseId *string, createAt *int
 		*containStreamUsage = true
 		*usage = lastStreamResponse.Usage
 		if !info.ShouldIncludeUsage {
-			*shouldSendLastResp = false
+			*shouldSendLastResp = lo.SomeBy(lastStreamResponse.Choices, func(choice dto.ChatCompletionsStreamResponseChoice) bool {
+				return choice.Delta.GetContentString() != "" || choice.Delta.GetReasoningContent() != ""
+			})
 		}
 	}
 
