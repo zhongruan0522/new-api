@@ -49,6 +49,7 @@ export const useModelPricingData = () => {
   const [groupRatio, setGroupRatio] = useState({});
   const [usableGroup, setUsableGroup] = useState({});
   const [endpointMap, setEndpointMap] = useState({});
+  const [autoGroups, setAutoGroups] = useState([]);
 
   const [statusState] = useContext(StatusContext);
   const [userState] = useContext(UserContext);
@@ -160,7 +161,7 @@ export const useModelPricingData = () => {
     setLoading(true);
     let url = '/api/pricing';
     const res = await API.get(url);
-    const { success, message, data, vendors, group_ratio, usable_group, supported_endpoint } = res.data;
+    const { success, message, data, vendors, group_ratio, usable_group, supported_endpoint, auto_groups } = res.data;
     if (success) {
       setGroupRatio(group_ratio);
       setUsableGroup(usable_group);
@@ -174,6 +175,7 @@ export const useModelPricingData = () => {
       }
       setVendorsMap(vendorMap);
       setEndpointMap(supported_endpoint || {});
+      setAutoGroups(auto_groups || []);
       setModelsFormat(data, group_ratio, vendorMap);
     } else {
       showError(message);
@@ -282,6 +284,7 @@ export const useModelPricingData = () => {
     groupRatio,
     usableGroup,
     endpointMap,
+    autoGroups,
 
     // 计算属性
     priceRate,

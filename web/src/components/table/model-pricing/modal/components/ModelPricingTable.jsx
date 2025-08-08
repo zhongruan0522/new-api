@@ -18,7 +18,7 @@ For commercial licensing, please contact support@quantumnous.com
 */
 
 import React from 'react';
-import { Card, Avatar, Typography, Table, Tag, Tooltip } from '@douyinfe/semi-ui';
+import { Card, Avatar, Typography, Table, Tag } from '@douyinfe/semi-ui';
 import { IconCoinMoneyStroked } from '@douyinfe/semi-icons';
 import { calculateModelPrice } from '../../../../../helpers';
 
@@ -26,34 +26,24 @@ const { Text } = Typography;
 
 const ModelPricingTable = ({
   modelData,
-  selectedGroup,
   groupRatio,
   currency,
   tokenUnit,
   displayPrice,
   showRatio,
   usableGroup,
+  autoGroups = [],
   t,
 }) => {
-  // 获取分组介绍
-  const getGroupDescription = (groupName) => {
-    const descriptions = {
-      'default': t('默认分组，适用于普通用户'),
-      'ssvip': t('超级VIP分组，享受最优惠价格'),
-      'openai官-优质': t('OpenAI官方优质分组，最快最稳，支持o1、realtime等'),
-      'origin': t('企业分组，OpenAI&Claude官方原价，不升价本分组稳定性可用性'),
-      'vip': t('VIP分组，享受优惠价格'),
-      'premium': t('高级分组，稳定可靠'),
-      'enterprise': t('企业级分组，专业服务'),
-    };
-    return descriptions[groupName] || t('用户分组');
-  };
-
   const renderGroupPriceTable = () => {
-    const availableGroups = Object.keys(usableGroup || {}).filter(g => g !== '');
-    if (availableGroups.length === 0) {
-      availableGroups.push('default');
-    }
+    // 仅展示模型可用的分组：模型 enable_groups 与用户可用分组的交集
+    const modelEnableGroups = Array.isArray(modelData?.enable_groups)
+      ? modelData.enable_groups
+      : [];
+    const availableGroups = Object.keys(usableGroup || {})
+      .filter(g => g !== '')
+      .filter(g => g !== 'auto')
+      .filter(g => modelEnableGroups.includes(g));
 
     // 准备表格数据
     const tableData = availableGroups.map(group => {
@@ -72,7 +62,6 @@ const ModelPricingTable = ({
       return {
         key: group,
         group: group,
-        description: getGroupDescription(group),
         ratio: groupRatioValue,
         billingType: modelData?.quota_type === 0 ? t('按量计费') : t('按次计费'),
         inputPrice: modelData?.quota_type === 0 ? priceData.inputPrice : '-',
@@ -86,12 +75,10 @@ const ModelPricingTable = ({
       {
         title: t('分组'),
         dataIndex: 'group',
-        render: (text, record) => (
-          <Tooltip content={record.description} position="top">
-            <Tag color="white" size="small" shape="circle" className="cursor-help">
-              {text}{t('分组')}
-            </Tag>
-          </Tooltip>
+        render: (text) => (
+          <Tag color="white" size="small" shape="circle">
+            {text}{t('分组')}
+          </Tag>
         ),
       },
     ];
@@ -182,6 +169,18 @@ const ModelPricingTable = ({
           <div className="text-xs text-gray-600">{t('不同用户分组的价格信息')}</div>
         </div>
       </div>
+      {autoGroups && autoGroups.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1 mb-4">
+          <span className="text-sm text-gray-600">{t('auto分组调用链路')}</span>
+          <span className="text-sm">→</span>
+          {autoGroups.map((g, idx) => (
+            <React.Fragment key={g}>
+              <Tag color="white" size="small" shape="circle">{g}{t('分组')}</Tag>
+              {idx < autoGroups.length - 1 && <span className="text-sm">→</span>}
+            </React.Fragment>
+          ))}
+        </div>
+      )}
       {renderGroupPriceTable()}
     </Card>
   );
