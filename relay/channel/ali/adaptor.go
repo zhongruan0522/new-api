@@ -125,20 +125,8 @@ func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, info *relaycom
 			err, usage = claude.ClaudeHandler(c, resp, info, claude.RequestModeMessage)
 		}
 	default:
-		switch info.RelayMode {
-		case constant.RelayModeImagesGenerations:
-			err, usage = aliImageHandler(c, resp, info)
-		case constant.RelayModeEmbeddings:
-			err, usage = aliEmbeddingHandler(c, resp)
-		case constant.RelayModeRerank:
-			err, usage = RerankHandler(c, resp, info)
-		default:
-			if info.IsStream {
-				usage, err = openai.OaiStreamHandler(c, info, resp)
-			} else {
-				usage, err = openai.OpenaiHandler(c, info, resp)
-			}
-		}
+		adaptor := openai.Adaptor{}
+		return adaptor.DoResponse(c, resp, info)
 	}
 	return
 }

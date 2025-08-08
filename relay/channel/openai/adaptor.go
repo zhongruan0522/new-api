@@ -16,7 +16,6 @@ import (
 	"one-api/relay/channel/ai360"
 	"one-api/relay/channel/lingyiwanwu"
 	"one-api/relay/channel/minimax"
-	"one-api/relay/channel/moonshot"
 	"one-api/relay/channel/openrouter"
 	"one-api/relay/channel/xinference"
 	relaycommon "one-api/relay/common"
@@ -534,8 +533,6 @@ func (a *Adaptor) GetModelList() []string {
 	switch a.ChannelType {
 	case constant.ChannelType360:
 		return ai360.ModelList
-	case constant.ChannelTypeMoonshot:
-		return moonshot.ModelList
 	case constant.ChannelTypeLingYiWanWu:
 		return lingyiwanwu.ModelList
 	case constant.ChannelTypeMiniMax:
@@ -553,8 +550,6 @@ func (a *Adaptor) GetChannelName() string {
 	switch a.ChannelType {
 	case constant.ChannelType360:
 		return ai360.ChannelName
-	case constant.ChannelTypeMoonshot:
-		return moonshot.ChannelName
 	case constant.ChannelTypeLingYiWanWu:
 		return lingyiwanwu.ChannelName
 	case constant.ChannelTypeMiniMax:
