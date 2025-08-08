@@ -269,7 +269,7 @@ func GeminiEmbeddingHandler(c *gin.Context) (newAPIError *types.NewAPIError) {
 	relayInfo := relaycommon.GenRelayInfoGemini(c)
 
 	isBatch := strings.HasSuffix(c.Request.URL.Path, "batchEmbedContents")
-	relayInfo.IsGeminiBatchEmbdding = isBatch
+	relayInfo.IsGeminiBatchEmbedding = isBatch
 
 	var promptTokens int
 	var req any
@@ -337,6 +337,19 @@ func GeminiEmbeddingHandler(c *gin.Context) (newAPIError *types.NewAPIError) {
 	jsonData, err := common.Marshal(req)
 	if err != nil {
 		return types.NewError(err, types.ErrorCodeConvertRequestFailed, types.ErrOptionWithSkipRetry())
+	}
+
+	// apply param override
+	if len(relayInfo.ParamOverride) > 0 {
+		reqMap := make(map[string]interface{})
+		_ = common.Unmarshal(jsonData, &reqMap)
+		for key, value := range relayInfo.ParamOverride {
+			reqMap[key] = value
+		}
+		jsonData, err = common.Marshal(reqMap)
+		if err != nil {
+			return types.NewError(err, types.ErrorCodeChannelParamOverrideInvalid, types.ErrOptionWithSkipRetry())
+		}
 	}
 	requestBody = bytes.NewReader(jsonData)
 

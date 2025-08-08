@@ -81,7 +81,7 @@ func NativeGeminiEmbeddingHandler(c *gin.Context, resp *http.Response, info *rel
 		TotalTokens:  info.PromptTokens,
 	}
 
-	if info.IsGeminiBatchEmbdding {
+	if info.IsGeminiBatchEmbedding {
 		var geminiResponse dto.GeminiBatchEmbeddingResponse
 		err = common.Unmarshal(responseBody, &geminiResponse)
 		if err != nil {
