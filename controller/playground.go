@@ -5,10 +5,8 @@ import (
 	"fmt"
 	"one-api/common"
 	"one-api/constant"
-	"one-api/dto"
 	"one-api/middleware"
 	"one-api/model"
-	"one-api/setting"
 	"one-api/types"
 	"time"
 
@@ -32,30 +30,8 @@ func Playground(c *gin.Context) {
 		return
 	}
 
-	playgroundRequest := &dto.PlayGroundRequest{}
-	err := common.UnmarshalBodyReusable(c, playgroundRequest)
-	if err != nil {
-		newAPIError = types.NewError(err, types.ErrorCodeInvalidRequest, types.ErrOptionWithSkipRetry())
-		return
-	}
-
-	if playgroundRequest.Model == "" {
-		newAPIError = types.NewError(errors.New("请选择模型"), types.ErrorCodeInvalidRequest, types.ErrOptionWithSkipRetry())
-		return
-	}
-	c.Set("original_model", playgroundRequest.Model)
-	group := playgroundRequest.Group
-	userGroup := c.GetString("group")
-
-	if group == "" {
-		group = userGroup
-	} else {
-		if !setting.GroupInUserUsableGroups(group) && group != userGroup {
-			newAPIError = types.NewError(errors.New("无权访问该分组"), types.ErrorCodeAccessDenied, types.ErrOptionWithSkipRetry())
-			return
-		}
-		c.Set("group", group)
-	}
+	group := c.GetString("group")
+	modelName := c.GetString("original_model")
 
 	userId := c.GetInt("id")
 
@@ -73,7 +49,7 @@ func Playground(c *gin.Context) {
 		Group:  group,
 	}
 	_ = middleware.SetupContextForToken(c, tempToken)
-	_, newAPIError = getChannel(c, group, playgroundRequest.Model, 0)
+	_, newAPIError = getChannel(c, group, modelName, 0)
 	if newAPIError != nil {
 		return
 	}
