@@ -142,7 +142,7 @@ func GetRandomSatisfiedChannel(group string, model string, retry int) (*Channel,
 	return &channel, err
 }
 
-func (channel *Channel) AddAbilities() error {
+func (channel *Channel) AddAbilities(tx *gorm.DB) error {
 	models_ := strings.Split(channel.Models, ",")
 	groups_ := strings.Split(channel.Group, ",")
 	abilitySet := make(map[string]struct{})
@@ -169,8 +169,13 @@ func (channel *Channel) AddAbilities() error {
 	if len(abilities) == 0 {
 		return nil
 	}
+	// choose DB or provided tx
+	useDB := DB
+	if tx != nil {
+		useDB = tx
+	}
 	for _, chunk := range lo.Chunk(abilities, 50) {
-		err := DB.Clauses(clause.OnConflict{DoNothing: true}).Create(&chunk).Error
+		err := useDB.Clauses(clause.OnConflict{DoNothing: true}).Create(&chunk).Error
 		if err != nil {
 			return err
 		}
@@ -321,7 +326,7 @@ func FixAbility() (int, int, error) {
 		}
 		// Then add new abilities
 		for _, channel := range chunk {
-			err = channel.AddAbilities()
+			err = channel.AddAbilities(nil)
 			if err != nil {
 				common.SysError(fmt.Sprintf("Add abilities for channel %d failed: %s", channel.Id, err.Error()))
 				failCount++
