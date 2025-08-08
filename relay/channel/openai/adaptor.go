@@ -35,6 +35,21 @@ type Adaptor struct {
 	ResponseFormat string
 }
 
+// parseReasoningEffortFromModelSuffix 从模型名称中解析推理级别
+// support OAI models: o1-mini/o3-mini/o4-mini/o1/o3 etc...
+// minimal effort only available in gpt-5
+func parseReasoningEffortFromModelSuffix(model string) (string, string) {
+	effortSuffixes := []string{"-high", "-minimal", "-low", "-medium"}
+	for _, suffix := range effortSuffixes {
+		if strings.HasSuffix(model, suffix) {
+			effort := strings.TrimPrefix(suffix, "-")
+			originModel := strings.TrimSuffix(model, suffix)
+			return effort, originModel
+		}
+	}
+	return "", model
+}
+
 func (a *Adaptor) ConvertGeminiRequest(c *gin.Context, info *relaycommon.RelayInfo, request *dto.GeminiChatRequest) (any, error) {
 	// 使用 service.GeminiToOpenAIRequest 转换请求格式
 	openaiRequest, err := service.GeminiToOpenAIRequest(request, info)
@@ -197,16 +212,14 @@ func (a *Adaptor) ConvertOpenAIRequest(c *gin.Context, info *relaycommon.RelayIn
 			request.MaxTokens = 0
 		}
 		request.Temperature = nil
-		if strings.HasSuffix(request.Model, "-high") {
-			request.ReasoningEffort = "high"
-			request.Model = strings.TrimSuffix(request.Model, "-high")
-		} else if strings.HasSuffix(request.Model, "-low") {
-			request.ReasoningEffort = "low"
-			request.Model = strings.TrimSuffix(request.Model, "-low")
-		} else if strings.HasSuffix(request.Model, "-medium") {
-			request.ReasoningEffort = "medium"
-			request.Model = strings.TrimSuffix(request.Model, "-medium")
+
+		// 转换模型推理力度后缀
+		effort, originModel := parseReasoningEffortFromModelSuffix(request.Model)
+		if effort != "" {
+			request.ReasoningEffort = effort
+			request.Model = originModel
 		}
+
 		info.ReasoningEffort = request.ReasoningEffort
 		info.UpstreamModelName = request.Model
 
@@ -423,16 +436,11 @@ func detectImageMimeType(filename string) string {
 }
 
 func (a *Adaptor) ConvertOpenAIResponsesRequest(c *gin.Context, info *relaycommon.RelayInfo, request dto.OpenAIResponsesRequest) (any, error) {
-	// 模型后缀转换 reasoning effort
-	if strings.HasSuffix(request.Model, "-high") {
-		request.Reasoning.Effort = "high"
-		request.Model = strings.TrimSuffix(request.Model, "-high")
-	} else if strings.HasSuffix(request.Model, "-low") {
-		request.Reasoning.Effort = "low"
-		request.Model = strings.TrimSuffix(request.Model, "-low")
-	} else if strings.HasSuffix(request.Model, "-medium") {
-		request.Reasoning.Effort = "medium"
-		request.Model = strings.TrimSuffix(request.Model, "-medium")
+	//  转换模型推理力度后缀
+	effort, originModel := parseReasoningEffortFromModelSuffix(request.Model)
+	if effort != "" {
+		request.Reasoning.Effort = effort
+		request.Model = originModel
 	}
 	return request, nil
 }
