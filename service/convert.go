@@ -401,22 +401,26 @@ func ResponseOpenAI2Claude(openAIResponse *dto.OpenAITextResponse, info *relayco
 	}
 	for _, choice := range openAIResponse.Choices {
 		stopReason = stopReasonOpenAI2Claude(choice.FinishReason)
-		claudeContent := dto.ClaudeMediaMessage{}
 		if choice.FinishReason == "tool_calls" {
-			claudeContent.Type = "tool_use"
-			claudeContent.Id = choice.Message.ToolCallId
-			claudeContent.Name = choice.Message.ParseToolCalls()[0].Function.Name
-			var mapParams map[string]interface{}
-			if err := json.Unmarshal([]byte(choice.Message.ParseToolCalls()[0].Function.Arguments), &mapParams); err == nil {
-				claudeContent.Input = mapParams
-			} else {
-				claudeContent.Input = choice.Message.ParseToolCalls()[0].Function.Arguments
+			for _, toolUse := range choice.Message.ParseToolCalls() {
+				claudeContent := dto.ClaudeMediaMessage{}
+				claudeContent.Type = "tool_use"
+				claudeContent.Id = toolUse.ID
+				claudeContent.Name = toolUse.Function.Name
+				var mapParams map[string]interface{}
+				if err := common.Unmarshal([]byte(toolUse.Function.Arguments), &mapParams); err == nil {
+					claudeContent.Input = mapParams
+				} else {
+					claudeContent.Input = toolUse.Function.Arguments
+				}
+				contents = append(contents, claudeContent)
 			}
 		} else {
+			claudeContent := dto.ClaudeMediaMessage{}
 			claudeContent.Type = "text"
 			claudeContent.SetText(choice.Message.StringContent())
+			contents = append(contents, claudeContent)
 		}
-		contents = append(contents, claudeContent)
 	}
 	claudeResponse.Content = contents
 	claudeResponse.StopReason = stopReason

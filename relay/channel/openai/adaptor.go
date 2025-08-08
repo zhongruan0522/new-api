@@ -67,7 +67,7 @@ func (a *Adaptor) ConvertClaudeRequest(c *gin.Context, info *relaycommon.RelayIn
 	if err != nil {
 		return nil, err
 	}
-	if info.SupportStreamOptions {
+	if info.SupportStreamOptions && info.IsStream {
 		aiRequest.StreamOptions = &dto.StreamOptions{
 			IncludeUsage: true,
 		}
@@ -188,6 +188,7 @@ func (a *Adaptor) ConvertOpenAIRequest(c *gin.Context, info *relaycommon.RelayIn
 		if len(request.Usage) == 0 {
 			request.Usage = json.RawMessage(`{"include":true}`)
 		}
+		// 适配 OpenRouter 的 thinking 后缀
 		if strings.HasSuffix(info.UpstreamModelName, "-thinking") {
 			info.UpstreamModelName = strings.TrimSuffix(info.UpstreamModelName, "-thinking")
 			request.Model = info.UpstreamModelName
@@ -195,7 +196,7 @@ func (a *Adaptor) ConvertOpenAIRequest(c *gin.Context, info *relaycommon.RelayIn
 				reasoning := map[string]any{
 					"enabled": true,
 				}
-				if request.ReasoningEffort != "" {
+				if request.ReasoningEffort != "" && request.ReasoningEffort != "none" {
 					reasoning["effort"] = request.ReasoningEffort
 				}
 				marshal, err := common.Marshal(reasoning)
@@ -203,6 +204,23 @@ func (a *Adaptor) ConvertOpenAIRequest(c *gin.Context, info *relaycommon.RelayIn
 					return nil, fmt.Errorf("error marshalling reasoning: %w", err)
 				}
 				request.Reasoning = marshal
+			}
+		} else {
+			if len(request.Reasoning) == 0 {
+				// 适配 OpenAI 的 ReasoningEffort 格式
+				if request.ReasoningEffort != "" {
+					reasoning := map[string]any{
+						"enabled": true,
+					}
+					if request.ReasoningEffort != "none" {
+						reasoning["effort"] = request.ReasoningEffort
+						marshal, err := common.Marshal(reasoning)
+						if err != nil {
+							return nil, fmt.Errorf("error marshalling reasoning: %w", err)
+						}
+						request.Reasoning = marshal
+					}
+				}
 			}
 		}
 	}
