@@ -206,12 +206,21 @@ func (a *Adaptor) ConvertOpenAIRequest(c *gin.Context, info *relaycommon.RelayIn
 			}
 		}
 	}
-	if strings.HasPrefix(request.Model, "o") {
+	if strings.HasPrefix(request.Model, "o") || strings.HasPrefix(request.Model, "gpt-5") {
 		if request.MaxCompletionTokens == 0 && request.MaxTokens != 0 {
 			request.MaxCompletionTokens = request.MaxTokens
 			request.MaxTokens = 0
 		}
-		request.Temperature = nil
+
+		if strings.HasPrefix(request.Model, "o") {
+			request.Temperature = nil
+		}
+
+		if strings.HasPrefix(request.Model, "gpt-5") {
+			if request.Model != "gpt-5-chat-latest" {
+				request.Temperature = nil
+			}
+		}
 
 		// 转换模型推理力度后缀
 		effort, originModel := parseReasoningEffortFromModelSuffix(request.Model)
