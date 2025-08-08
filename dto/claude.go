@@ -199,6 +199,18 @@ type ClaudeRequest struct {
 	Thinking   *Thinking `json:"thinking,omitempty"`
 }
 
+func (c *ClaudeRequest) SearchToolNameByToolCallId(toolCallId string) string {
+	for _, message := range c.Messages {
+		content, _ := message.ParseContent()
+		for _, mediaMessage := range content {
+			if mediaMessage.Id == toolCallId {
+				return mediaMessage.Name
+			}
+		}
+	}
+	return ""
+}
+
 // AddTool 添加工具到请求中
 func (c *ClaudeRequest) AddTool(tool any) {
 	if c.Tools == nil {

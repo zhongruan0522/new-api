@@ -153,9 +153,13 @@ func ClaudeToOpenAIRequest(claudeRequest dto.ClaudeRequest, info *relaycommon.Re
 					toolCalls = append(toolCalls, toolCall)
 				case "tool_result":
 					// Add tool result as a separate message
+					toolName := mediaMsg.Name
+					if toolName == "" {
+						toolName = claudeRequest.SearchToolNameByToolCallId(mediaMsg.ToolUseId)
+					}
 					oaiToolMessage := dto.Message{
 						Role:       "tool",
-						Name:       &mediaMsg.Name,
+						Name:       &toolName,
 						ToolCallId: mediaMsg.ToolUseId,
 					}
 					//oaiToolMessage.SetStringContent(*mediaMsg.GetMediaContent().Text)
@@ -218,12 +222,14 @@ func StreamResponseOpenAI2Claude(openAIResponse *dto.ChatCompletionsStreamRespon
 		//	Type: "ping",
 		//})
 		if openAIResponse.IsToolCall() {
+			info.ClaudeConvertInfo.LastMessagesType = relaycommon.LastMessageTypeTools
 			resp := &dto.ClaudeResponse{
 				Type: "content_block_start",
 				ContentBlock: &dto.ClaudeMediaMessage{
-					Id:   openAIResponse.GetFirstToolCall().ID,
-					Type: "tool_use",
-					Name: openAIResponse.GetFirstToolCall().Function.Name,
+					Id:    openAIResponse.GetFirstToolCall().ID,
+					Type:  "tool_use",
+					Name:  openAIResponse.GetFirstToolCall().Function.Name,
+					Input: map[string]interface{}{},
 				},
 			}
 			resp.SetIndex(0)

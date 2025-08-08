@@ -143,6 +143,13 @@ type ChatCompletionsStreamResponse struct {
 	Usage             *Usage                                `json:"usage"`
 }
 
+func (c *ChatCompletionsStreamResponse) IsFinished() bool {
+	if len(c.Choices) == 0 {
+		return false
+	}
+	return c.Choices[0].FinishReason != nil && *c.Choices[0].FinishReason != ""
+}
+
 func (c *ChatCompletionsStreamResponse) IsToolCall() bool {
 	if len(c.Choices) == 0 {
 		return false
@@ -155,6 +162,19 @@ func (c *ChatCompletionsStreamResponse) GetFirstToolCall() *ToolCallResponse {
 		return &c.Choices[0].Delta.ToolCalls[0]
 	}
 	return nil
+}
+
+func (c *ChatCompletionsStreamResponse) ClearToolCalls() {
+	if !c.IsToolCall() {
+		return
+	}
+	for choiceIdx := range c.Choices {
+		for callIdx := range c.Choices[choiceIdx].Delta.ToolCalls {
+			c.Choices[choiceIdx].Delta.ToolCalls[callIdx].ID = ""
+			c.Choices[choiceIdx].Delta.ToolCalls[callIdx].Type = nil
+			c.Choices[choiceIdx].Delta.ToolCalls[callIdx].Function.Name = ""
+		}
+	}
 }
 
 func (c *ChatCompletionsStreamResponse) Copy() *ChatCompletionsStreamResponse {
