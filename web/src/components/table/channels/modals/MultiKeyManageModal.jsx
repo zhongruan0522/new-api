@@ -554,7 +554,7 @@ const MultiKeyManageModal = ({
                   total: total,
                   showSizeChanger: true,
                   showQuickJumper: true,
-                  pageSizeOptions: ['10', '20', '50', '100'],
+                  pageSizeOpts: [10, 20, 50, 100],
                   onChange: (page, size) => {
                     setCurrentPage(page);
                     loadKeyStatus(page, size);
