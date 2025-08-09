@@ -29,7 +29,7 @@ import {
 import { ITEMS_PER_PAGE } from '../../constants';
 import { useTableCompactMode } from '../common/useTableCompactMode';
 
-export const useTokensData = () => {
+export const useTokensData = (openFluentNotification) => {
   const { t } = useTranslation();
 
   // Basic state
@@ -121,6 +121,10 @@ export const useTokensData = () => {
 
   // Open link function for chat integrations
   const onOpenLink = async (type, url, record) => {
+    if (url && url.startsWith('fluent')) {
+      openFluentNotification(record.key);
+      return;
+    }
     let status = localStorage.getItem('status');
     let serverAddress = '';
     if (status) {
