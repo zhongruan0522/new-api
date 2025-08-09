@@ -216,10 +216,14 @@ type GeminiEmbeddingRequest struct {
 	OutputDimensionality int               `json:"outputDimensionality,omitempty"`
 }
 
-type GeminiEmbeddingResponse struct {
-	Embedding ContentEmbedding `json:"embedding"`
+type GeminiBatchEmbeddingRequest struct {
+	Requests []*GeminiEmbeddingRequest `json:"requests"`
 }
 
-type ContentEmbedding struct {
+type GeminiEmbedding struct {
 	Values []float64 `json:"values"`
+}
+
+type GeminiBatchEmbeddingResponse struct {
+	Embeddings []*GeminiEmbedding `json:"embeddings"`
 }

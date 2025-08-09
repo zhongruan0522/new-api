@@ -1804,5 +1804,11 @@
   "已选择 {{selected}} / {{total}}": "Selected {{selected}} / {{total}}",
   "新获取的模型": "New models",
   "已有的模型": "Existing models",
-  "搜索模型": "Search models"
+  "搜索模型": "Search models",
+  "缓存: {{cacheRatio}}": "Cache: {{cacheRatio}}",
+  "缓存创建: {{cacheCreationRatio}}": "Cache creation: {{cacheCreationRatio}}",
+  "图片输入: {{imageRatio}}": "Image input: {{imageRatio}}",
+  "系统提示覆盖": "System prompt override",
+  "模型: {{ratio}}": "Model: {{ratio}}",
+  "专属倍率": "Exclusive group ratio"
 }
