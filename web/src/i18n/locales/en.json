@@ -1862,7 +1862,7 @@
   "请输入供应商描述": "Please enter the vendor description",
   "供应商图标": "Vendor icon",
   "请输入图标名称，如：OpenAI、Claude.Color": "Please enter the icon name, such as: OpenAI, Claude.Color",
-  "图标使用@lobehub/icons库，查询所有可用图标 ": "The icon uses the @lobehub/icons library, query all available icons ",
+  "图标使用@lobehub/icons库，如：OpenAI、Claude.Color，支持链式参数：OpenAI.Avatar.type={'platform'}、OpenRouter.Avatar.shape={'square'}，查询所有可用图标请 ": "The icon uses the @lobehub/icons library, such as: OpenAI, Claude.Color, supports chain parameters: OpenAI.Avatar.type={'platform'}, OpenRouter.Avatar.shape={'square'}, query all available icons please ",
   "请点击我": "Please click me",
   "精确": "Exact",
   "前缀": "Prefix",

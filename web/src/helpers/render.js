@@ -419,7 +419,11 @@ export function getChannelIcon(channelType) {
 
 /**
  * 根据图标名称动态获取 LobeHub 图标组件
- * @param {string} iconName - 图标名称
+ * 支持：
+ * - 基础："OpenAI"、"OpenAI.Color" 等
+ * - 额外属性（点号链式）："OpenAI.Avatar.type={'platform'}"、"OpenRouter.Avatar.shape={'square'}"
+ * - 继续兼容第二参数 size；若字符串里有 size=，以字符串为准
+ * @param {string} iconName - 图标名称/描述
  * @param {number} size - 图标大小，默认为 14
  * @returns {JSX.Element} - 对应的图标组件或 Avatar
  */
@@ -430,22 +434,68 @@ export function getLobeHubIcon(iconName, size = 14) {
     return <Avatar size="extra-extra-small">?</Avatar>;
   }
 
-  let IconComponent;
+  // 解析组件路径与点号链式属性
+  const segments = String(iconName).split('.');
+  const baseKey = segments[0];
+  const BaseIcon = LobeIcons[baseKey];
 
-  if (iconName.includes('.')) {
-    const [base, variant] = iconName.split('.');
-    const BaseIcon = LobeIcons[base];
-    IconComponent = BaseIcon ? BaseIcon[variant] : undefined;
+  let IconComponent = undefined;
+  let propStartIndex = 1;
+
+  if (BaseIcon && segments.length > 1 && BaseIcon[segments[1]]) {
+    IconComponent = BaseIcon[segments[1]];
+    propStartIndex = 2;
   } else {
-    IconComponent = LobeIcons[iconName];
+    IconComponent = LobeIcons[baseKey];
+    propStartIndex = 1;
   }
 
-  if (IconComponent && (typeof IconComponent === 'function' || typeof IconComponent === 'object')) {
-    return <IconComponent size={size} />;
+  // 失败兜底
+  if (!IconComponent || (typeof IconComponent !== 'function' && typeof IconComponent !== 'object')) {
+    const firstLetter = String(iconName).charAt(0).toUpperCase();
+    return <Avatar size="extra-extra-small">{firstLetter}</Avatar>;
   }
 
-  const firstLetter = iconName.charAt(0).toUpperCase();
-  return <Avatar size="extra-extra-small">{firstLetter}</Avatar>;
+  // 解析点号链式属性，形如：key={...}、key='...'、key="..."、key=123、key、key=true/false
+  const props = {};
+
+  const parseValue = (raw) => {
+    if (raw == null) return true;
+    let v = String(raw).trim();
+    // 去除一层花括号包裹
+    if (v.startsWith('{') && v.endsWith('}')) {
+      v = v.slice(1, -1).trim();
+    }
+    // 去除引号
+    if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) {
+      return v.slice(1, -1);
+    }
+    // 布尔
+    if (v === 'true') return true;
+    if (v === 'false') return false;
+    // 数字
+    if (/^-?\d+(?:\.\d+)?$/.test(v)) return Number(v);
+    // 其他原样返回字符串
+    return v;
+  };
+
+  for (let i = propStartIndex; i < segments.length; i++) {
+    const seg = segments[i];
+    if (!seg) continue;
+    const eqIdx = seg.indexOf('=');
+    if (eqIdx === -1) {
+      props[seg.trim()] = true;
+      continue;
+    }
+    const key = seg.slice(0, eqIdx).trim();
+    const valRaw = seg.slice(eqIdx + 1).trim();
+    props[key] = parseValue(valRaw);
+  }
+
+  // 兼容第二参数 size，若字符串中未显式指定 size，则使用函数入参
+  if (props.size == null && size != null) props.size = size;
+
+  return <IconComponent {...props} />;
 }
 
 // 颜色列表
