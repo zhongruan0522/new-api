@@ -24,7 +24,8 @@ import {
   Tag,
   Tooltip,
   Progress,
-  Switch,
+  Popover,
+  Typography,
 } from '@douyinfe/semi-ui';
 import { renderGroup, renderNumber, renderQuota } from '../../../helpers';
 
@@ -89,7 +90,6 @@ const renderUsername = (text, record) => {
  * Render user statistics
  */
 const renderStatistics = (text, record, showEnableDisableModal, t) => {
-  const enabled = record.status === 1;
   const isDeleted = record.DeletedAt !== null;
 
   // Determine tag text & color like original status column
@@ -100,60 +100,17 @@ const renderStatistics = (text, record, showEnableDisableModal, t) => {
     tagText = t('已注销');
   } else if (record.status === 1) {
     tagColor = 'green';
-    tagText = t('已激活');
+    tagText = t('已启用');
   } else if (record.status === 2) {
     tagColor = 'red';
-    tagText = t('已封禁');
+    tagText = t('已禁用');
   }
-
-  const handleToggle = (checked) => {
-    if (checked) {
-      showEnableDisableModal(record, 'enable');
-    } else {
-      showEnableDisableModal(record, 'disable');
-    }
-  };
-
-  const used = parseInt(record.used_quota) || 0;
-  const remain = parseInt(record.quota) || 0;
-  const total = used + remain;
-  const percent = total > 0 ? (remain / total) * 100 : 0;
-
-  const getProgressColor = (pct) => {
-    if (pct === 100) return 'var(--semi-color-success)';
-    if (pct <= 10) return 'var(--semi-color-danger)';
-    if (pct <= 30) return 'var(--semi-color-warning)';
-    return undefined;
-  };
-
-  const quotaSuffix = (
-    <div className='flex flex-col items-end'>
-      <span className='text-xs leading-none'>{`${renderQuota(remain)} / ${renderQuota(total)}`}</span>
-      <Progress
-        percent={percent}
-        stroke={getProgressColor(percent)}
-        aria-label='quota usage'
-        format={() => `${percent.toFixed(0)}%`}
-        style={{ width: '100%', marginTop: '1px', marginBottom: 0 }}
-      />
-    </div>
-  );
 
   const content = (
     <Tag
       color={tagColor}
       shape='circle'
-      size='large'
-      prefixIcon={
-        <Switch
-          size='small'
-          checked={enabled}
-          onChange={handleToggle}
-          disabled={isDeleted}
-          aria-label='user status switch'
-        />
-      }
-      suffixIcon={quotaSuffix}
+      size='small'
     >
       {tagText}
     </Tag>
@@ -161,9 +118,6 @@ const renderStatistics = (text, record, showEnableDisableModal, t) => {
 
   const tooltipContent = (
     <div className='text-xs'>
-      <div>{t('已用额度')}: {renderQuota(used)}</div>
-      <div>{t('剩余额度')}: {renderQuota(remain)} ({percent.toFixed(0)}%)</div>
-      <div>{t('总额度')}: {renderQuota(total)}</div>
       <div>{t('调用次数')}: {renderNumber(record.request_count)}</div>
     </div>
   );
@@ -172,6 +126,43 @@ const renderStatistics = (text, record, showEnableDisableModal, t) => {
     <Tooltip content={tooltipContent} position='top'>
       {content}
     </Tooltip>
+  );
+};
+
+// Render separate quota usage column
+const renderQuotaUsage = (text, record, t) => {
+  const { Paragraph } = Typography;
+  const used = parseInt(record.used_quota) || 0;
+  const remain = parseInt(record.quota) || 0;
+  const total = used + remain;
+  const percent = total > 0 ? (remain / total) * 100 : 0;
+  const popoverContent = (
+    <div className='text-xs p-2'>
+      <Paragraph copyable={{ content: renderQuota(used) }}>
+        {t('已用额度')}: {renderQuota(used)}
+      </Paragraph>
+      <Paragraph copyable={{ content: renderQuota(remain) }}>
+        {t('剩余额度')}: {renderQuota(remain)} ({percent.toFixed(0)}%)
+      </Paragraph>
+      <Paragraph copyable={{ content: renderQuota(total) }}>
+        {t('总额度')}: {renderQuota(total)}
+      </Paragraph>
+    </div>
+  );
+  return (
+    <Popover content={popoverContent} position='top'>
+      <Tag color='white' shape='circle'>
+        <div className='flex flex-col items-end'>
+          <span className='text-xs leading-none'>{`${renderQuota(remain)} / ${renderQuota(total)}`}</span>
+          <Progress
+            percent={percent}
+            aria-label='quota usage'
+            format={() => `${percent.toFixed(0)}%`}
+            style={{ width: '100%', marginTop: '1px', marginBottom: 0 }}
+          />
+        </div>
+      </Tag>
+    </Popover>
   );
 };
 
@@ -204,6 +195,7 @@ const renderOperations = (text, record, {
   setShowEditUser,
   showPromoteModal,
   showDemoteModal,
+  showEnableDisableModal,
   showDeleteModal,
   t
 }) => {
@@ -213,6 +205,22 @@ const renderOperations = (text, record, {
 
   return (
     <Space>
+      {record.status === 1 ? (
+        <Button
+          type='danger'
+          size="small"
+          onClick={() => showEnableDisableModal(record, 'disable')}
+        >
+          {t('禁用')}
+        </Button>
+      ) : (
+        <Button
+          size="small"
+          onClick={() => showEnableDisableModal(record, 'enable')}
+        >
+          {t('启用')}
+        </Button>
+      )}
       <Button
         type='tertiary'
         size="small"
@@ -271,6 +279,16 @@ export const getUsersColumns = ({
       render: (text, record) => renderUsername(text, record),
     },
     {
+      title: t('状态'),
+      dataIndex: 'info',
+      render: (text, record, index) => renderStatistics(text, record, showEnableDisableModal, t),
+    },
+    {
+      title: t('剩余额度/总额度'),
+      key: 'quota_usage',
+      render: (text, record) => renderQuotaUsage(text, record, t),
+    },
+    {
       title: t('分组'),
       dataIndex: 'group',
       render: (text, record, index) => {
@@ -283,11 +301,6 @@ export const getUsersColumns = ({
       render: (text, record, index) => {
         return <div>{renderRole(text, t)}</div>;
       },
-    },
-    {
-      title: t('状态'),
-      dataIndex: 'info',
-      render: (text, record, index) => renderStatistics(text, record, showEnableDisableModal, t),
     },
     {
       title: t('邀请信息'),
