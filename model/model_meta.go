@@ -36,7 +36,7 @@ type BoundChannel struct {
 
 type Model struct {
     Id          int            `json:"id"`
-    ModelName   string         `json:"model_name" gorm:"size:128;not null;uniqueIndex:uk_model_name,where:deleted_at IS NULL"`
+    ModelName   string         `json:"model_name" gorm:"size:128;not null;uniqueIndex:uk_model_name,priority:1"`
     Description string         `json:"description,omitempty" gorm:"type:text"`
     Tags        string         `json:"tags,omitempty" gorm:"type:varchar(255)"`
     VendorID    int            `json:"vendor_id,omitempty" gorm:"index"`
@@ -44,7 +44,7 @@ type Model struct {
     Status      int            `json:"status" gorm:"default:1"`
     CreatedTime int64          `json:"created_time" gorm:"bigint"`
     UpdatedTime int64          `json:"updated_time" gorm:"bigint"`
-    DeletedAt   gorm.DeletedAt `json:"-" gorm:"index"`
+    DeletedAt   gorm.DeletedAt `json:"-" gorm:"index;uniqueIndex:uk_model_name,priority:2"`
 
     BoundChannels []BoundChannel `json:"bound_channels,omitempty" gorm:"-"`
     EnableGroups []string       `json:"enable_groups,omitempty" gorm:"-"`
