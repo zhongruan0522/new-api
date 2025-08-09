@@ -28,7 +28,8 @@ import {
   Avatar,
   Tooltip,
   Progress,
-  Switch,
+  Popover,
+  Typography,
   Input,
   Modal
 } from '@douyinfe/semi-ui';
@@ -46,21 +47,22 @@ import {
   IconEyeClosed,
 } from '@douyinfe/semi-icons';
 
+// progress color helper
+const getProgressColor = (pct) => {
+  if (pct === 100) return 'var(--semi-color-success)';
+  if (pct <= 10) return 'var(--semi-color-danger)';
+  if (pct <= 30) return 'var(--semi-color-warning)';
+  return undefined;
+};
+
 // Render functions
 function renderTimestamp(timestamp) {
   return <>{timestamp2string(timestamp)}</>;
 }
 
-// Render status column with switch and progress bar
-const renderStatus = (text, record, manageToken, t) => {
+// Render status column only (no usage)
+const renderStatus = (text, record, t) => {
   const enabled = text === 1;
-  const handleToggle = (checked) => {
-    if (checked) {
-      manageToken(record.id, 'enable', record);
-    } else {
-      manageToken(record.id, 'disable', record);
-    }
-  };
 
   let tagColor = 'black';
   let tagText = t('未知状态');
@@ -78,68 +80,10 @@ const renderStatus = (text, record, manageToken, t) => {
     tagText = t('已耗尽');
   }
 
-  const used = parseInt(record.used_quota) || 0;
-  const remain = parseInt(record.remain_quota) || 0;
-  const total = used + remain;
-  const percent = total > 0 ? (remain / total) * 100 : 0;
-
-  const getProgressColor = (pct) => {
-    if (pct === 100) return 'var(--semi-color-success)';
-    if (pct <= 10) return 'var(--semi-color-danger)';
-    if (pct <= 30) return 'var(--semi-color-warning)';
-    return undefined;
-  };
-
-  const quotaSuffix = record.unlimited_quota ? (
-    <div className='text-xs'>{t('无限额度')}</div>
-  ) : (
-    <div className='flex flex-col items-end'>
-      <span className='text-xs leading-none'>{`${renderQuota(remain)} / ${renderQuota(total)}`}</span>
-      <Progress
-        percent={percent}
-        stroke={getProgressColor(percent)}
-        aria-label='quota usage'
-        format={() => `${percent.toFixed(0)}%`}
-        style={{ width: '100%', marginTop: '1px', marginBottom: 0 }}
-      />
-    </div>
-  );
-
-  const content = (
-    <Tag
-      color={tagColor}
-      shape='circle'
-      size='large'
-      prefixIcon={
-        <Switch
-          size='small'
-          checked={enabled}
-          onChange={handleToggle}
-          aria-label='token status switch'
-        />
-      }
-      suffixIcon={quotaSuffix}
-    >
+  return (
+    <Tag color={tagColor} shape='circle' size='small'>
       {tagText}
     </Tag>
-  );
-
-  const tooltipContent = record.unlimited_quota ? (
-    <div className='text-xs'>
-      <div>{t('已用额度')}: {renderQuota(used)}</div>
-    </div>
-  ) : (
-    <div className='text-xs'>
-      <div>{t('已用额度')}: {renderQuota(used)}</div>
-      <div>{t('剩余额度')}: {renderQuota(remain)} ({percent.toFixed(0)}%)</div>
-      <div>{t('总额度')}: {renderQuota(total)}</div>
-    </div>
-  );
-
-  return (
-    <Tooltip content={tooltipContent}>
-      {content}
-    </Tooltip>
   );
 };
 
@@ -292,35 +236,81 @@ const renderAllowIps = (text, t) => {
   return <Space wrap>{ipTags}</Space>;
 };
 
+// Render separate quota usage column
+const renderQuotaUsage = (text, record, t) => {
+  const { Paragraph } = Typography;
+  const used = parseInt(record.used_quota) || 0;
+  const remain = parseInt(record.remain_quota) || 0;
+  const total = used + remain;
+  if (record.unlimited_quota) {
+    const popoverContent = (
+      <div className='text-xs p-2'>
+        <Paragraph copyable={{ content: renderQuota(used) }}>
+          {t('已用额度')}: {renderQuota(used)}
+        </Paragraph>
+      </div>
+    );
+    return (
+      <Popover content={popoverContent} position='top'>
+        <Tag color='white' shape='circle'>
+          {t('无限额度')}
+        </Tag>
+      </Popover>
+    );
+  }
+  const percent = total > 0 ? (remain / total) * 100 : 0;
+  const popoverContent = (
+    <div className='text-xs p-2'>
+      <Paragraph copyable={{ content: renderQuota(used) }}>
+        {t('已用额度')}: {renderQuota(used)}
+      </Paragraph>
+      <Paragraph copyable={{ content: renderQuota(remain) }}>
+        {t('剩余额度')}: {renderQuota(remain)} ({percent.toFixed(0)}%)
+      </Paragraph>
+      <Paragraph copyable={{ content: renderQuota(total) }}>
+        {t('总额度')}: {renderQuota(total)}
+      </Paragraph>
+    </div>
+  );
+  return (
+    <Popover content={popoverContent} position='top'>
+      <Tag color='white' shape='circle'>
+        <div className='flex flex-col items-end'>
+          <span className='text-xs leading-none'>{`${renderQuota(remain)} / ${renderQuota(total)}`}</span>
+          <Progress
+            percent={percent}
+            stroke={getProgressColor(percent)}
+            aria-label='quota usage'
+            format={() => `${percent.toFixed(0)}%`}
+            style={{ width: '100%', marginTop: '1px', marginBottom: 0 }}
+          />
+        </div>
+      </Tag>
+    </Popover>
+  );
+};
+
 // Render operations column
 const renderOperations = (text, record, onOpenLink, setEditingToken, setShowEdit, manageToken, refresh, t) => {
-  let chats = localStorage.getItem('chats');
   let chatsArray = [];
-  let shouldUseCustom = true;
-
-  if (shouldUseCustom) {
-    try {
-      chats = JSON.parse(chats);
-      if (Array.isArray(chats)) {
-        for (let i = 0; i < chats.length; i++) {
-          let chat = {};
-          chat.node = 'item';
-          for (let key in chats[i]) {
-            if (chats[i].hasOwnProperty(key)) {
-              chat.key = i;
-              chat.name = key;
-              chat.onClick = () => {
-                onOpenLink(key, chats[i][key], record);
-              };
-            }
-          }
-          chatsArray.push(chat);
-        }
+  try {
+    const raw = localStorage.getItem('chats');
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) {
+      for (let i = 0; i < parsed.length; i++) {
+        const item = parsed[i];
+        const name = Object.keys(item)[0];
+        if (!name) continue;
+        chatsArray.push({
+          node: 'item',
+          key: i,
+          name,
+          onClick: () => onOpenLink(name, item[name], record),
+        });
       }
-    } catch (e) {
-      console.log(e);
-      showError(t('聊天链接配置错误，请联系管理员'));
     }
+  } catch (_) {
+    showError(t('聊天链接配置错误，请联系管理员'));
   }
 
   return (
@@ -338,7 +328,7 @@ const renderOperations = (text, record, onOpenLink, setEditingToken, setShowEdit
             } else {
               onOpenLink(
                 'default',
-                chats[0][Object.keys(chats[0])[0]],
+                chatsArray[0].name ? (parsed => parsed)(localStorage.getItem('chats')) : '',
                 record,
               );
             }
@@ -358,6 +348,29 @@ const renderOperations = (text, record, onOpenLink, setEditingToken, setShowEdit
           ></Button>
         </Dropdown>
       </SplitButtonGroup>
+
+      {record.status === 1 ? (
+        <Button
+          type='danger'
+          size="small"
+          onClick={async () => {
+            await manageToken(record.id, 'disable', record);
+            await refresh();
+          }}
+        >
+          {t('禁用')}
+        </Button>
+      ) : (
+        <Button
+          size="small"
+          onClick={async () => {
+            await manageToken(record.id, 'enable', record);
+            await refresh();
+          }}
+        >
+          {t('启用')}
+        </Button>
+      )}
 
       <Button
         type='tertiary'
@@ -412,7 +425,12 @@ export const getTokensColumns = ({
       title: t('状态'),
       dataIndex: 'status',
       key: 'status',
-      render: (text, record) => renderStatus(text, record, manageToken, t),
+      render: (text, record) => renderStatus(text, record, t),
+    },
+    {
+      title: t('剩余额度/总额度'),
+      key: 'quota_usage',
+      render: (text, record) => renderQuotaUsage(text, record, t),
     },
     {
       title: t('分组'),
