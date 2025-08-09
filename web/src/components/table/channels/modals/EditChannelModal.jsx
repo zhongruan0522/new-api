@@ -131,6 +131,7 @@ const EditChannelModal = (props) => {
     proxy: '',
     pass_through_body_enabled: false,
     system_prompt: '',
+    system_prompt_override: false,
   };
   const [batch, setBatch] = useState(false);
   const [multiToSingle, setMultiToSingle] = useState(false);
@@ -340,12 +341,15 @@ const EditChannelModal = (props) => {
           data.proxy = parsedSettings.proxy || '';
           data.pass_through_body_enabled = parsedSettings.pass_through_body_enabled || false;
           data.system_prompt = parsedSettings.system_prompt || '';
+          data.system_prompt_override = parsedSettings.system_prompt_override || false;
         } catch (error) {
           console.error('解析渠道设置失败:', error);
           data.force_format = false;
           data.thinking_to_content = false;
           data.proxy = '';
           data.pass_through_body_enabled = false;
+          data.system_prompt = '';
+          data.system_prompt_override = false;
         }
       } else {
         data.force_format = false;
@@ -353,6 +357,7 @@ const EditChannelModal = (props) => {
         data.proxy = '';
         data.pass_through_body_enabled = false;
         data.system_prompt = '';
+        data.system_prompt_override = false;
       }
 
       setInputs(data);
@@ -372,6 +377,7 @@ const EditChannelModal = (props) => {
         proxy: data.proxy,
         pass_through_body_enabled: data.pass_through_body_enabled,
         system_prompt: data.system_prompt,
+        system_prompt_override: data.system_prompt_override || false,
       });
       // console.log(data);
     } else {
@@ -573,6 +579,7 @@ const EditChannelModal = (props) => {
         proxy: '',
         pass_through_body_enabled: false,
         system_prompt: '',
+        system_prompt_override: false,
       });
       // 重置密钥模式状态
       setKeyMode('append');
@@ -721,6 +728,7 @@ const EditChannelModal = (props) => {
       proxy: localInputs.proxy || '',
       pass_through_body_enabled: localInputs.pass_through_body_enabled || false,
       system_prompt: localInputs.system_prompt || '',
+      system_prompt_override: localInputs.system_prompt_override || false,
     };
     localInputs.setting = JSON.stringify(channelExtraSettings);
 
@@ -730,6 +738,7 @@ const EditChannelModal = (props) => {
     delete localInputs.proxy;
     delete localInputs.pass_through_body_enabled;
     delete localInputs.system_prompt;
+    delete localInputs.system_prompt_override;
 
     let res;
     localInputs.auto_ban = localInputs.auto_ban ? 1 : 0;
@@ -1721,6 +1730,14 @@ const EditChannelModal = (props) => {
                     autosize
                     showClear
                     extraText={t('用户优先：如果用户在请求中指定了系统提示词，将优先使用用户的设置')}
+                  />
+                  <Form.Switch
+                    field='system_prompt_override'
+                    label={t('系统提示词拼接')}
+                    checkedText={t('开')}
+                    uncheckedText={t('关')}
+                    onChange={(value) => handleChannelSettingsChange('system_prompt_override', value)}
+                    extraText={t('如果用户请求中包含系统提示词，则使用此设置拼接到用户的系统提示词前面')}
                   />
                 </Card>
               </div>

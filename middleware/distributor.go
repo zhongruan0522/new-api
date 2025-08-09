@@ -267,6 +267,8 @@ func SetupContextForSelectedChannel(c *gin.Context, channel *model.Channel, mode
 	common.SetContextKey(c, constant.ContextKeyChannelKey, key)
 	common.SetContextKey(c, constant.ContextKeyChannelBaseUrl, channel.GetBaseURL())
 
+	common.SetContextKey(c, constant.ContextKeySystemPromptOverride, false)
+
 	// TODO: api_version统一
 	switch channel.Type {
 	case constant.ChannelTypeAzure:

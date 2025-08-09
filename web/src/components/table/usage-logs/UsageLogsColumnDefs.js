@@ -34,7 +34,6 @@ import {
   getLogOther,
   renderModelTag,
   renderClaudeLogContent,
-  renderClaudeModelPriceSimple,
   renderLogContent,
   renderModelPriceSimple,
   renderAudioModelPrice,
@@ -538,7 +537,7 @@ export const getLogsColumns = ({
           );
         }
         let content = other?.claude
-          ? renderClaudeModelPriceSimple(
+          ? renderModelPriceSimple(
             other.model_ratio,
             other.model_price,
             other.group_ratio,
@@ -547,6 +546,10 @@ export const getLogsColumns = ({
             other.cache_ratio || 1.0,
             other.cache_creation_tokens || 0,
             other.cache_creation_ratio || 1.0,
+            false,
+            1.0,
+            other?.is_system_prompt_overwritten,
+            'claude'
           )
           : renderModelPriceSimple(
             other.model_ratio,
@@ -555,13 +558,19 @@ export const getLogsColumns = ({
             other?.user_group_ratio,
             other.cache_tokens || 0,
             other.cache_ratio || 1.0,
+            0,
+            1.0,
+            false,
+            1.0,
+            other?.is_system_prompt_overwritten,
+            'openai'
           );
         return (
           <Typography.Paragraph
             ellipsis={{
-              rows: 2,
+              rows: 3,
             }}
-            style={{ maxWidth: 240 }}
+            style={{ maxWidth: 240, whiteSpace: 'pre-line' }}
           >
             {content}
           </Typography.Paragraph>
