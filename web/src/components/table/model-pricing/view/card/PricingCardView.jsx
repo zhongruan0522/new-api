@@ -25,6 +25,7 @@ import { stringToColor, calculateModelPrice, formatPriceInfo, getLobeHubIcon } f
 import PricingCardSkeleton from './PricingCardSkeleton';
 import { useMinimumLoadingTime } from '../../../../../hooks/common/useMinimumLoadingTime';
 import { renderLimitedItems } from '../../../../common/ui/RenderUtils';
+import { useIsMobile } from '../../../../../hooks/common/useIsMobile';
 
 const CARD_STYLES = {
   container: "w-12 h-12 rounded-2xl flex items-center justify-center relative shadow-md",
@@ -59,6 +60,7 @@ const PricingCardView = ({
   const startIndex = (currentPage - 1) * pageSize;
   const paginatedModels = filteredModels.slice(startIndex, startIndex + pageSize);
   const getModelKey = (model) => model.key ?? model.model_name ?? model.id;
+  const isMobile = useIsMobile();
 
   const handleCheckboxChange = (model, checked) => {
     if (!setSelectedRowKeys) return;
@@ -311,6 +313,8 @@ const PricingCardView = ({
             total={filteredModels.length}
             showSizeChanger={true}
             pageSizeOptions={[10, 20, 50, 100]}
+            size={isMobile ? 'small' : 'default'}
+            showQuickJumper={isMobile}
             onPageChange={(page) => setCurrentPage(page)}
             onPageSizeChange={(size) => {
               setPageSize(size);
