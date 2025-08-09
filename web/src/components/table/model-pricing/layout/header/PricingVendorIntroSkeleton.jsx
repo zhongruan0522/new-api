@@ -25,7 +25,7 @@ const PricingVendorIntroSkeleton = ({
 }) => {
   const placeholder = (
     <div className='mb-4'>
-      <Card className="!rounded-2xl" bodyStyle={{ padding: '16px' }}>
+      <Card className="!rounded-2xl with-pastel-balls" bodyStyle={{ padding: '16px' }}>
         <div className="flex items-start space-x-3 md:space-x-4">
           {/* 供应商图标骨架 */}
           <div className="flex-shrink-0 min-w-16 h-16 rounded-2xl bg-white shadow-md flex items-center justify-center px-2">

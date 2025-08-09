@@ -166,7 +166,7 @@ const PricingVendorIntro = ({
   if (filterVendor === 'all') {
     return (
       <div className='mb-4'>
-        <Card className="!rounded-2xl" bodyStyle={{ padding: '16px' }}>
+        <Card className="!rounded-2xl with-pastel-balls" bodyStyle={{ padding: '16px' }}>
           <div className="flex items-start space-x-3 md:space-x-4">
             {/* 全部供应商的头像组合 */}
             <div className="flex-shrink-0">
@@ -210,7 +210,7 @@ const PricingVendorIntro = ({
 
   return (
     <div className='mb-4'>
-      <Card className="!rounded-2xl" bodyStyle={{ padding: '16px' }}>
+      <Card className="!rounded-2xl with-pastel-balls" bodyStyle={{ padding: '16px' }}>
         <div className="flex items-start space-x-3 md:space-x-4">
           {/* 供应商图标 */}
           <div className="flex-shrink-0">
