@@ -544,7 +544,7 @@ export const getChannelsColumns = ({
                     menu={[
                       {
                         node: 'item',
-                        name: t('多key管理'),
+                        name: t('多密钥管理'),
                         onClick: () => {
                           setCurrentMultiKeyChannel(record);
                           setShowMultiKeyManageModal(true);

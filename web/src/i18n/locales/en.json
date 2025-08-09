@@ -1890,5 +1890,22 @@
   "未知供应商": "Unknown",
   "共 {{count}} 个模型": "{{count}} models",
   "倍率信息": "Ratio information",
-  "倍率是用于系统计算不同模型的最终价格用的，如果您不理解倍率，请忽略": "The ratio is used to calculate the final price of different models in the system. If you do not understand the ratio, please ignore it."
+  "倍率是用于系统计算不同模型的最终价格用的，如果您不理解倍率，请忽略": "The ratio is used to calculate the final price of different models in the system. If you do not understand the ratio, please ignore it.",
+  "多密钥管理": "Multi-key management",
+  "总密钥数": "Total key count",
+  "随机模式": "Random mode",
+  "轮询模式": "Polling mode",
+  "手动禁用": "Manually disabled",
+  "自动禁用": "Auto disabled",
+  "暂无密钥数据": "No key data",
+  "请检查渠道配置或刷新重试": "Please check the channel configuration or refresh and try again",
+  "全部状态": "All status",
+  "索引": "Index",
+  "禁用原因": "Disable reason",
+  "禁用时间": "Disable time",
+  "确定要启用所有密钥吗？": "Are you sure you want to enable all keys?",
+  "确定要禁用所有的密钥吗？": "Are you sure you want to disable all keys?",
+  "确定要删除所有已自动禁用的密钥吗？": "Are you sure you want to delete all automatically disabled keys?",
+  "此操作不可撤销，将永久删除已自动禁用的密钥": "This operation cannot be undone, and all automatically disabled keys will be permanently deleted.",
+  "删除自动禁用密钥": "Delete auto disabled keys"
 }
