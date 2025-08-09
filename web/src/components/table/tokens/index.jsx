@@ -91,7 +91,7 @@ function TokensPage() {
     if (localStorage.getItem(SUPPRESS_KEY) === '1') return;
     const container = document.getElementById('fluent-new-api-container');
     if (!container) {
-      Toast.warning(t('未检测到 Fluent 容器，请确认扩展已启用'));
+      Toast.warning(t('未检测到 FluentRead（流畅阅读），请确认扩展已启用'));
       return;
     }
     setPrefillKey(key || '');
@@ -102,13 +102,13 @@ function TokensPage() {
     }
     Notification.info({
       id: 'fluent-detected',
-      title: t('检测到 Fluent（流畅阅读）'),
+      title: t('检测到 FluentRead（流畅阅读）'),
       content: (
         <div>
           <div style={{ marginBottom: 8 }}>
             {prefillKey
-              ? t('已检测到 Fluent 扩展，已从操作中指定密钥，将使用该密钥进行填充。请选择模型后继续。')
-              : t('已检测到 Fluent 扩展，请选择模型后可一键填充当前选中令牌（或本页第一个令牌）。')}
+              ? t('已检测到 FluentRead 扩展，已从操作中指定密钥，将使用该密钥进行填充。请选择模型后继续。')
+              : t('已检测到 FluentRead 扩展，请选择模型后可一键填充当前选中令牌（或本页第一个令牌）。')}
           </div>
           <div style={{ marginBottom: 8 }}>
             <Select
@@ -124,7 +124,7 @@ function TokensPage() {
           </div>
           <Space>
             <Button theme="solid" type="primary" onClick={handlePrefillToFluent}>
-              {t('一键填充到 Fluent')}
+              {t('一键填充到 FluentRead')}
             </Button>
             <Button type="warning" onClick={() => {
               localStorage.setItem(SUPPRESS_KEY, '1');
