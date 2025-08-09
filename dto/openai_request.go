@@ -140,6 +140,14 @@ type Message struct {
 	//parsedStringContent *string
 }
 
+func (m *Message) MarshalJSON() ([]byte, error) {
+	if m.Content == nil {
+		m.Content = ""
+	}
+	type Alias Message
+	return json.Marshal((*Alias)(m))
+}
+
 type MediaContent struct {
 	Type       string `json:"type"`
 	Text       string `json:"text,omitempty"`
