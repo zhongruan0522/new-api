@@ -208,13 +208,13 @@ const SiderBar = ({ onNavigate = () => { } }) => {
               if (typeof link !== 'string') continue; // 确保链接是字符串
               if (link.startsWith('fluent')) {
                 shouldSkip = true;
-                continue; // 跳过 Fluent Read
+                break; // 跳过 Fluent Read
               }
               chat.text = key;
               chat.itemKey = 'chat' + i;
               chat.to = '/console/chat/' + i;
             }
-            if (shouldSkip) continue;
+            if (shouldSkip || !chat.text) continue; // 避免推入空项
             chatItems.push(chat);
           }
           setChatItems(chatItems);
