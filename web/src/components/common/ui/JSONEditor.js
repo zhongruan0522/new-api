@@ -1,3 +1,22 @@
+/*
+Copyright (C) 2025 QuantumNous
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as
+published by the Free Software Foundation, either version 3 of the
+License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+For commercial licensing, please contact support@quantumnous.com
+*/
+
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -18,14 +37,18 @@ import {
   Tooltip,
 } from '@douyinfe/semi-ui';
 import {
-  IconCode,
   IconPlus,
   IconDelete,
-  IconRefresh,
   IconAlertTriangle,
 } from '@douyinfe/semi-icons';
 
 const { Text } = Typography;
+
+// 唯一 ID 生成器，确保在组件生命周期内稳定且递增
+const generateUniqueId = (() => {
+  let counter = 0;
+  return () => `kv_${counter++}`;
+})();
 
 const JSONEditor = ({
   value = '',
@@ -46,13 +69,20 @@ const JSONEditor = ({
   const { t } = useTranslation();
 
   // 将对象转换为键值对数组（包含唯一ID）
-  const objectToKeyValueArray = useCallback((obj) => {
+  const objectToKeyValueArray = useCallback((obj, prevPairs = []) => {
     if (!obj || typeof obj !== 'object') return [];
-    return Object.entries(obj).map(([key, value], index) => ({
-      id: `${Date.now()}_${index}_${Math.random()}`, // 唯一ID
-      key,
-      value
-    }));
+
+    const entries = Object.entries(obj);
+    return entries.map(([key, value], index) => {
+      // 如果上一次转换后同位置的键一致，则沿用其 id，保持 React key 稳定
+      const prev = prevPairs[index];
+      const shouldReuseId = prev && prev.key === key;
+      return {
+        id: shouldReuseId ? prev.id : generateUniqueId(),
+        key,
+        value,
+      };
+    });
   }, []);
 
   // 将键值对数组转换为对象（重复键时后面的会覆盖前面的）
@@ -102,14 +132,14 @@ const JSONEditor = ({
     }
     return 'visual';
   });
-  
+
   const [jsonError, setJsonError] = useState('');
 
   // 计算重复的键
   const duplicateKeys = useMemo(() => {
     const keyCount = {};
     const duplicates = new Set();
-    
+
     keyValuePairs.forEach(pair => {
       if (pair.key) {
         keyCount[pair.key] = (keyCount[pair.key] || 0) + 1;
@@ -118,7 +148,7 @@ const JSONEditor = ({
         }
       }
     });
-    
+
     return duplicates;
   }, [keyValuePairs]);
 
@@ -131,11 +161,11 @@ const JSONEditor = ({
       } else if (typeof value === 'object' && value !== null) {
         parsed = value;
       }
-      
+
       // 只在外部值真正改变时更新，避免循环更新
       const currentObj = keyValueArrayToObject(keyValuePairs);
       if (JSON.stringify(parsed) !== JSON.stringify(currentObj)) {
-        setKeyValuePairs(objectToKeyValueArray(parsed));
+        setKeyValuePairs(objectToKeyValueArray(parsed, keyValuePairs));
       }
       setJsonError('');
     } catch (error) {
@@ -158,7 +188,7 @@ const JSONEditor = ({
     setKeyValuePairs(newPairs);
     const jsonObject = keyValueArrayToObject(newPairs);
     const jsonString = Object.keys(jsonObject).length === 0 ? '' : JSON.stringify(jsonObject, null, 2);
-    
+
     setJsonError('');
 
     // 通过formApi设置值
@@ -175,7 +205,7 @@ const JSONEditor = ({
     if (newValue && newValue.trim()) {
       try {
         const parsed = JSON.parse(newValue);
-        setKeyValuePairs(objectToKeyValueArray(parsed));
+        setKeyValuePairs(objectToKeyValueArray(parsed, keyValuePairs));
         setJsonError('');
         onChange?.(newValue);
       } catch (error) {
@@ -186,7 +216,7 @@ const JSONEditor = ({
       setJsonError('');
       onChange?.('');
     }
-  }, [onChange, objectToKeyValueArray]);
+  }, [onChange, objectToKeyValueArray, keyValuePairs]);
 
   // 切换编辑模式
   const toggleEditMode = useCallback(() => {
@@ -204,7 +234,7 @@ const JSONEditor = ({
         } else if (typeof value === 'object' && value !== null) {
           parsed = value;
         }
-        setKeyValuePairs(objectToKeyValueArray(parsed));
+        setKeyValuePairs(objectToKeyValueArray(parsed, keyValuePairs));
         setJsonError('');
         setEditMode('visual');
       } catch (error) {
@@ -225,7 +255,7 @@ const JSONEditor = ({
       newKey = `field_${counter}`;
     }
     newPairs.push({
-      id: `${Date.now()}_${Math.random()}`,
+      id: generateUniqueId(),
       key: newKey,
       value: ''
     });
@@ -240,7 +270,7 @@ const JSONEditor = ({
 
   // 更新键名
   const updateKey = useCallback((id, newKey) => {
-    const newPairs = keyValuePairs.map(pair => 
+    const newPairs = keyValuePairs.map(pair =>
       pair.id === id ? { ...pair, key: newKey } : pair
     );
     handleVisualChange(newPairs);
@@ -264,11 +294,11 @@ const JSONEditor = ({
       }
 
       setManualText(templateString);
-      setKeyValuePairs(objectToKeyValueArray(template));
+      setKeyValuePairs(objectToKeyValueArray(template, keyValuePairs));
       onChange?.(templateString);
       setJsonError('');
     }
-  }, [template, onChange, formApi, field, objectToKeyValueArray]);
+  }, [template, onChange, formApi, field, objectToKeyValueArray, keyValuePairs]);
 
   // 渲染值输入控件（支持嵌套）
   const renderValueInput = (pairId, value) => {
@@ -327,7 +357,7 @@ const JSONEditor = ({
           let convertedValue = newValue;
           if (newValue === 'true') convertedValue = true;
           else if (newValue === 'false') convertedValue = false;
-          else if (!isNaN(newValue) && newValue !== '' && newValue !== '0') {
+          else if (!isNaN(newValue) && newValue !== '') {
             const num = Number(newValue);
             // 检查是否为整数
             if (Number.isInteger(num)) {
@@ -373,9 +403,9 @@ const JSONEditor = ({
 
         {keyValuePairs.map((pair, index) => {
           const isDuplicate = duplicateKeys.has(pair.key);
-          const isLastDuplicate = isDuplicate && 
+          const isLastDuplicate = isDuplicate &&
             keyValuePairs.slice(index + 1).every(p => p.key !== pair.key);
-          
+
           return (
             <Row key={pair.id} gutter={8} align="middle">
               <Col span={6}>
@@ -389,14 +419,14 @@ const JSONEditor = ({
                   {isDuplicate && (
                     <Tooltip
                       content={
-                        isLastDuplicate 
+                        isLastDuplicate
                           ? t('这是重复键中的最后一个，其值将被使用')
                           : t('重复的键名，此值将被后面的同名键覆盖')
                       }
                     >
                       <IconAlertTriangle
                         className="absolute right-2 top-1/2 transform -translate-y-1/2"
-                        style={{ 
+                        style={{
                           color: isLastDuplicate ? '#ff7d00' : '#faad14',
                           fontSize: '14px'
                         }}
@@ -471,7 +501,7 @@ const JSONEditor = ({
                 updateValue(defaultPair.id, value);
               } else {
                 const newPairs = [...keyValuePairs, {
-                  id: `${Date.now()}_${Math.random()}`,
+                  id: generateUniqueId(),
                   key: 'default',
                   value: value
                 }];
