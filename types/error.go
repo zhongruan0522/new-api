@@ -65,6 +65,7 @@ const (
 	ErrorCodeBadResponse            ErrorCode = "bad_response"
 	ErrorCodeBadResponseBody        ErrorCode = "bad_response_body"
 	ErrorCodeEmptyResponse          ErrorCode = "empty_response"
+	ErrorCodeAwsInvokeError         ErrorCode = "aws_invoke_error"
 
 	// sql error
 	ErrorCodeQueryDataError  ErrorCode = "query_data_error"
