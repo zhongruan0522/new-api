@@ -33,6 +33,17 @@ function renderTimestamp(timestamp) {
   return <>{timestamp2string(timestamp)}</>;
 }
 
+// Render model icon column: prefer model.icon, then fallback to vendor icon
+const renderModelIconCol = (record, vendorMap) => {
+  const iconKey = record?.icon || vendorMap[record?.vendor_id]?.icon;
+  if (!iconKey) return '-';
+  return (
+    <div className="flex items-center justify-center">
+      {getLobeHubIcon(iconKey, 20)}
+    </div>
+  );
+};
+
 // Render vendor column with icon
 const renderVendorTag = (vendorId, vendorMap, t) => {
   if (!vendorId || !vendorMap[vendorId]) return '-';
@@ -222,6 +233,13 @@ export const getModelsColumns = ({
   vendorMap,
 }) => {
   return [
+    {
+      title: t('图标'),
+      dataIndex: 'icon',
+      width: 70,
+      align: 'center',
+      render: (text, record) => renderModelIconCol(record, vendorMap),
+    },
     {
       title: t('模型名称'),
       dataIndex: 'model_name',

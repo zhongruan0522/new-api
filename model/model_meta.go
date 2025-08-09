@@ -38,6 +38,7 @@ type Model struct {
     Id          int            `json:"id"`
     ModelName   string         `json:"model_name" gorm:"size:128;not null;uniqueIndex:uk_model_name,priority:1"`
     Description string         `json:"description,omitempty" gorm:"type:text"`
+    Icon        string         `json:"icon,omitempty" gorm:"type:varchar(128)"`
     Tags        string         `json:"tags,omitempty" gorm:"type:varchar(255)"`
     VendorID    int            `json:"vendor_id,omitempty" gorm:"index"`
     Endpoints   string         `json:"endpoints,omitempty" gorm:"type:text"`

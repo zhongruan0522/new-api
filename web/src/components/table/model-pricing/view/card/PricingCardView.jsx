@@ -81,7 +81,17 @@ const PricingCardView = ({
         </div>
       );
     }
-    // 优先使用供应商图标
+    // 1) 优先使用模型自定义图标
+    if (model.icon) {
+      return (
+        <div className={CARD_STYLES.container}>
+          <div className={CARD_STYLES.icon}>
+            {getLobeHubIcon(model.icon, 32)}
+          </div>
+        </div>
+      );
+    }
+    // 2) 退化为供应商图标
     if (model.vendor_icon) {
       return (
         <div className={CARD_STYLES.container}>

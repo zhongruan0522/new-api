@@ -33,6 +33,7 @@ import {
   Row,
 } from '@douyinfe/semi-ui';
 import { Save, X, FileText } from 'lucide-react';
+import { IconLink } from '@douyinfe/semi-icons';
 import { API, showError, showSuccess } from '../../../../helpers';
 import { useTranslation } from 'react-i18next';
 import { useIsMobile } from '../../../../hooks/common/useIsMobile';
@@ -112,6 +113,7 @@ const EditModelModal = (props) => {
   const getInitValues = () => ({
     model_name: props.editingModel?.model_name || '',
     description: '',
+    icon: '',
     tags: [],
     vendor_id: undefined,
     vendor: '',
@@ -311,6 +313,27 @@ const EditModelModal = (props) => {
                       rules={[{ required: true, message: t('请选择名称匹配类型') }]}
                       extraText={t('根据模型名称和匹配规则查找模型元数据，优先级：精确 > 前缀 > 后缀 > 包含')}
                       style={{ width: '100%' }}
+                    />
+                  </Col>
+
+                  <Col span={24}>
+                    <Form.Input
+                      field='icon'
+                      label={t('模型图标')}
+                      placeholder={t('请输入图标名称')}
+                      extraText={
+                        <span>
+                          {t('图标使用@lobehub/icons库，如：OpenAI、Claude.Color，支持链式参数：OpenAI.Avatar.type={\'platform\'}、OpenRouter.Avatar.shape={\'square\'}，查询所有可用图标请 ')}
+                          <Typography.Text
+                            link={{ href: 'https://icons.lobehub.com/components/lobe-hub', target: '_blank' }}
+                            icon={<IconLink />}
+                            underline
+                          >
+                            {t('请点击我')}
+                          </Typography.Text>
+                        </span>
+                      }
+                      showClear
                     />
                   </Col>
 

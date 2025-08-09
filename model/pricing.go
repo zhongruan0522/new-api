@@ -16,6 +16,7 @@ import (
 type Pricing struct {
     ModelName              string                  `json:"model_name"`
     Description            string                  `json:"description,omitempty"`
+    Icon                   string                  `json:"icon,omitempty"`
     Tags                   string                  `json:"tags,omitempty"`
     VendorID               int                     `json:"vendor_id,omitempty"`
     QuotaType              int                     `json:"quota_type"`
@@ -272,6 +273,7 @@ func updatePricing() {
                 continue
             }
             pricing.Description = meta.Description
+            pricing.Icon = meta.Icon
             pricing.Tags = meta.Tags
             pricing.VendorID = meta.VendorID
         }

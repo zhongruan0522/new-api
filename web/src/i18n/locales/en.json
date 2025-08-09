@@ -1907,5 +1907,12 @@
   "确定要禁用所有的密钥吗？": "Are you sure you want to disable all keys?",
   "确定要删除所有已自动禁用的密钥吗？": "Are you sure you want to delete all automatically disabled keys?",
   "此操作不可撤销，将永久删除已自动禁用的密钥": "This operation cannot be undone, and all automatically disabled keys will be permanently deleted.",
-  "删除自动禁用密钥": "Delete auto disabled keys"
+  "删除自动禁用密钥": "Delete auto disabled keys",
+  "图标": "Icon",
+  "模型图标": "Model icon",
+  "请输入图标名称": "Please enter the icon name",
+  "精确名称匹配": "Exact name matching",
+  "前缀名称匹配": "Prefix name matching",
+  "后缀名称匹配": "Suffix name matching",
+  "包含名称匹配": "Contains name matching"
 }
