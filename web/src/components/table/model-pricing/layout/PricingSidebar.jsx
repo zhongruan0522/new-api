@@ -40,6 +40,7 @@ const PricingSidebar = ({
   setViewMode,
   filterGroup,
   setFilterGroup,
+  handleGroupClick,
   filterQuotaType,
   setFilterQuotaType,
   filterEndpointType,
@@ -126,7 +127,7 @@ const PricingSidebar = ({
 
       <PricingGroups
         filterGroup={filterGroup}
-        setFilterGroup={setFilterGroup}
+        setFilterGroup={handleGroupClick}
         usableGroup={categoryProps.usableGroup}
         groupRatio={categoryProps.groupRatio}
         models={groupCountModels}
