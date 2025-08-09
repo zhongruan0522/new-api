@@ -292,30 +292,25 @@ const renderQuotaUsage = (text, record, t) => {
 
 // Render operations column
 const renderOperations = (text, record, onOpenLink, setEditingToken, setShowEdit, manageToken, refresh, t) => {
-  let chats = localStorage.getItem('chats');
   let chatsArray = [];
-  if (true) {
-    try {
-      chats = JSON.parse(chats);
-      if (Array.isArray(chats)) {
-        for (let i = 0; i < chats.length; i++) {
-          let chat = {};
-          chat.node = 'item';
-          for (let key in chats[i]) {
-            if (chats[i].hasOwnProperty(key)) {
-              chat.key = i;
-              chat.name = key;
-              chat.onClick = () => {
-                onOpenLink(key, chats[i][key], record);
-              };
-            }
-          }
-          chatsArray.push(chat);
-        }
+  try {
+    const raw = localStorage.getItem('chats');
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) {
+      for (let i = 0; i < parsed.length; i++) {
+        const item = parsed[i];
+        const name = Object.keys(item)[0];
+        if (!name) continue;
+        chatsArray.push({
+          node: 'item',
+          key: i,
+          name,
+          onClick: () => onOpenLink(name, item[name], record),
+        });
       }
-    } catch (e) {
-      showError(t('聊天链接配置错误，请联系管理员'));
     }
+  } catch (_) {
+    showError(t('聊天链接配置错误，请联系管理员'));
   }
 
   return (
@@ -333,7 +328,7 @@ const renderOperations = (text, record, onOpenLink, setEditingToken, setShowEdit
             } else {
               onOpenLink(
                 'default',
-                chats[0][Object.keys(chats[0])[0]],
+                chatsArray[0].name ? (parsed => parsed)(localStorage.getItem('chats')) : '',
                 record,
               );
             }
