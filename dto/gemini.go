@@ -218,7 +218,7 @@ type GeminiEmbeddingRequest struct {
 }
 
 type GeminiBatchEmbeddingRequest struct {
-	Requests []GeminiEmbeddingRequest `json:"requests"`
+	Requests []*GeminiEmbeddingRequest `json:"requests"`
 }
 
 type GeminiEmbeddingResponse struct {
@@ -226,7 +226,7 @@ type GeminiEmbeddingResponse struct {
 }
 
 type GeminiBatchEmbeddingResponse struct {
-	Embeddings []ContentEmbedding `json:"embeddings"`
+	Embeddings []*ContentEmbedding `json:"embeddings"`
 }
 
 type ContentEmbedding struct {
