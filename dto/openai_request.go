@@ -78,6 +78,8 @@ func (r *GeneralOpenAIRequest) GetSystemRoleName() string {
 		if !strings.HasPrefix(r.Model, "o1-mini") && !strings.HasPrefix(r.Model, "o1-preview") {
 			return "developer"
 		}
+	} else if strings.HasPrefix(r.Model, "gpt-5") {
+		return "developer"
 	}
 	return "system"
 }

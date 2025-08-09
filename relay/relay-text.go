@@ -140,10 +140,10 @@ func TextHelper(c *gin.Context) (newAPIError *types.NewAPIError) {
 			returnPreConsumedQuota(c, relayInfo, userQuota, preConsumedQuota)
 		}
 	}()
-	includeUsage := false
+	includeUsage := true
 	// 判断用户是否需要返回使用情况
-	if textRequest.StreamOptions != nil && textRequest.StreamOptions.IncludeUsage {
-		includeUsage = true
+	if textRequest.StreamOptions != nil {
+		includeUsage = textRequest.StreamOptions.IncludeUsage
 	}
 
 	// 如果不支持StreamOptions，将StreamOptions设置为nil
@@ -158,9 +158,7 @@ func TextHelper(c *gin.Context) (newAPIError *types.NewAPIError) {
 		}
 	}
 
-	if includeUsage {
-		relayInfo.ShouldIncludeUsage = true
-	}
+	relayInfo.ShouldIncludeUsage = includeUsage
 
 	adaptor := GetAdaptor(relayInfo.ApiType)
 	if adaptor == nil {
@@ -201,6 +199,26 @@ func TextHelper(c *gin.Context) (newAPIError *types.NewAPIError) {
 					Content: relayInfo.ChannelSetting.SystemPrompt,
 				}
 				request.Messages = append([]dto.Message{systemMessage}, request.Messages...)
+			} else if relayInfo.ChannelSetting.SystemPromptOverride {
+				common.SetContextKey(c, constant.ContextKeySystemPromptOverride, true)
+				// 如果有系统提示，且允许覆盖，则拼接到前面
+				for i, message := range request.Messages {
+					if message.Role == request.GetSystemRoleName() {
+						if message.IsStringContent() {
+							request.Messages[i].SetStringContent(relayInfo.ChannelSetting.SystemPrompt + "\n" + message.StringContent())
+						} else {
+							contents := message.ParseContent()
+							contents = append([]dto.MediaContent{
+								{
+									Type: dto.ContentTypeText,
+									Text: relayInfo.ChannelSetting.SystemPrompt,
+								},
+							}, contents...)
+							request.Messages[i].Content = contents
+						}
+						break
+					}
+				}
 			}
 		}
 
