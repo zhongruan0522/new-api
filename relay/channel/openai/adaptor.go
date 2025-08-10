@@ -128,7 +128,17 @@ func (a *Adaptor) GetRequestURL(info *relaycommon.RelayInfo) (string, error) {
 
 		// 特殊处理 responses API
 		if info.RelayMode == relayconstant.RelayModeResponses {
-			requestURL = fmt.Sprintf("/openai/v1/responses?api-version=preview")
+			responsesApiVersion := "preview"
+			if info.ChannelOtherSettings.AzureResponsesVersion != "" {
+				responsesApiVersion = info.ChannelOtherSettings.AzureResponsesVersion
+			}
+
+			subUrl := "/openai/v1/responses"
+			if strings.Contains(info.BaseUrl, "cognitiveservices.azure.com") {
+				subUrl = "/openai/responses"
+			}
+
+			requestURL = fmt.Sprintf("%s?api-version=%s", subUrl, responsesApiVersion)
 			return relaycommon.GetFullRequestURL(info.BaseUrl, requestURL, info.ChannelType), nil
 		}
 

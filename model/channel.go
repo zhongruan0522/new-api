@@ -42,7 +42,7 @@ type Channel struct {
 	Priority          *int64  `json:"priority" gorm:"bigint;default:0"`
 	AutoBan           *int    `json:"auto_ban" gorm:"default:1"`
 	OtherInfo         string  `json:"other_info"`
-	Settings          string  `json:"settings"`
+	OtherSettings     string  `json:"settings" gorm:"column:settings"` // 其他设置
 	Tag               *string `json:"tag" gorm:"index"`
 	Setting           *string `json:"setting" gorm:"type:text"` // 渠道额外设置
 	ParamOverride     *string `json:"param_override" gorm:"type:text"`
@@ -836,6 +836,28 @@ func (channel *Channel) SetSetting(setting dto.ChannelSettings) {
 		return
 	}
 	channel.Setting = common.GetPointer[string](string(settingBytes))
+}
+
+func (channel *Channel) GetOtherSettings() dto.ChannelOtherSettings {
+	setting := dto.ChannelOtherSettings{}
+	if channel.OtherSettings != "" {
+		err := common.UnmarshalJsonStr(channel.OtherSettings, &setting)
+		if err != nil {
+			common.SysError("failed to unmarshal setting: " + err.Error())
+			channel.OtherSettings = "{}" // 清空设置以避免后续错误
+			_ = channel.Save()           // 保存修改
+		}
+	}
+	return setting
+}
+
+func (channel *Channel) SetOtherSettings(setting dto.ChannelOtherSettings) {
+	settingBytes, err := common.Marshal(setting)
+	if err != nil {
+		common.SysError("failed to marshal setting: " + err.Error())
+		return
+	}
+	channel.OtherSettings = string(settingBytes)
 }
 
 func (channel *Channel) GetParamOverride() map[string]interface{} {

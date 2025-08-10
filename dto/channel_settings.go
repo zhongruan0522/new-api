@@ -8,3 +8,7 @@ type ChannelSettings struct {
 	SystemPrompt           string `json:"system_prompt,omitempty"`
 	SystemPromptOverride   bool   `json:"system_prompt_override,omitempty"`
 }
+
+type ChannelOtherSettings struct {
+	AzureResponsesVersion string `json:"azure_responses_version,omitempty"`
+}
