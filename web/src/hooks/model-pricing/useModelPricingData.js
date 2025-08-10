@@ -233,7 +233,9 @@ export const useModelPricingData = () => {
 
   const closeModelDetail = () => {
     setShowModelDetail(false);
-    setSelectedModel(null);
+    setTimeout(() => {
+      setSelectedModel(null);
+    }, 300);
   };
 
   useEffect(() => {
