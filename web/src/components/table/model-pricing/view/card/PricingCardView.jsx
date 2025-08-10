@@ -136,7 +136,7 @@ const PricingCardView = ({
       groupRatio,
       tokenUnit,
       displayPrice,
-      currency
+      currency,
     });
     return formatPriceInfo(priceData, t);
   };
@@ -302,7 +302,7 @@ const PricingCardView = ({
                           {t('补全')}: {model.quota_type === 0 ? parseFloat(model.completion_ratio.toFixed(3)) : t('无')}
                         </div>
                         <div>
-                          {t('分组')}: {groupRatio[selectedGroup]}
+                          {t('分组')}: {priceData.usedGroupRatio}
                         </div>
                       </div>
                     </div>

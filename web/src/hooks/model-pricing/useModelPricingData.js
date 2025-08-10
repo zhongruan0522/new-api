@@ -31,7 +31,7 @@ export const useModelPricingData = () => {
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
   const [modalImageUrl, setModalImageUrl] = useState('');
   const [isModalOpenurl, setIsModalOpenurl] = useState(false);
-  const [selectedGroup, setSelectedGroup] = useState('default');
+  const [selectedGroup, setSelectedGroup] = useState('all');
   const [showModelDetail, setShowModelDetail] = useState(false);
   const [selectedModel, setSelectedModel] = useState(null);
   const [filterGroup, setFilterGroup] = useState('all'); // 用于 Table 的可用分组筛选，"all" 表示不过滤
@@ -180,7 +180,7 @@ export const useModelPricingData = () => {
     if (success) {
       setGroupRatio(group_ratio);
       setUsableGroup(usable_group);
-      setSelectedGroup(userState.user ? userState.user.group : 'default');
+      setSelectedGroup('all');
       // 构建供应商 Map 方便查找
       const vendorMap = {};
       if (Array.isArray(vendors)) {
@@ -233,12 +233,17 @@ export const useModelPricingData = () => {
     setSelectedGroup(group);
     // 同时将分组过滤设置为该分组
     setFilterGroup(group);
-    showInfo(
-      t('当前查看的分组为：{{group}}，倍率为：{{ratio}}', {
-        group: group,
-        ratio: groupRatio[group],
-      }),
-    );
+
+    if (group === 'all') {
+      showInfo(t('已切换至最优倍率视图，每个模型使用其最低倍率分组'));
+    } else {
+      showInfo(
+        t('当前查看的分组为：{{group}}，倍率为：{{ratio}}', {
+          group: group,
+          ratio: groupRatio[group] ?? 1,
+        }),
+      );
+    }
   };
 
   const openModelDetail = (model) => {

@@ -581,13 +581,37 @@ export const calculateModelPrice = ({
   tokenUnit,
   displayPrice,
   currency,
-  precision = 4
+  precision = 4,
 }) => {
+  // 1. 选择实际使用的分组
+  let usedGroup = selectedGroup;
+  let usedGroupRatio = groupRatio[selectedGroup];
+
+  if (selectedGroup === 'all' || usedGroupRatio === undefined) {
+    // 在模型可用分组中选择倍率最小的分组，若无则使用 1
+    let minRatio = Number.POSITIVE_INFINITY;
+    if (Array.isArray(record.enable_groups) && record.enable_groups.length > 0) {
+      record.enable_groups.forEach((g) => {
+        const r = groupRatio[g];
+        if (r !== undefined && r < minRatio) {
+          minRatio = r;
+          usedGroup = g;
+          usedGroupRatio = r;
+        }
+      });
+    }
+
+    // 如果找不到合适分组倍率，回退为 1
+    if (usedGroupRatio === undefined) {
+      usedGroupRatio = 1;
+    }
+  }
+
+  // 2. 根据计费类型计算价格
   if (record.quota_type === 0) {
     // 按量计费
-    const inputRatioPriceUSD = record.model_ratio * 2 * groupRatio[selectedGroup];
-    const completionRatioPriceUSD =
-      record.model_ratio * record.completion_ratio * 2 * groupRatio[selectedGroup];
+    const inputRatioPriceUSD = record.model_ratio * 2 * usedGroupRatio;
+    const completionRatioPriceUSD = record.model_ratio * record.completion_ratio * 2 * usedGroupRatio;
 
     const unitDivisor = tokenUnit === 'K' ? 1000 : 1;
     const unitLabel = tokenUnit === 'K' ? 'K' : 'M';
@@ -602,22 +626,32 @@ export const calculateModelPrice = ({
       inputPrice: `${currency === 'CNY' ? '¥' : '$'}${numInput.toFixed(precision)}`,
       completionPrice: `${currency === 'CNY' ? '¥' : '$'}${numCompletion.toFixed(precision)}`,
       unitLabel,
-      isPerToken: true
-    };
-  } else {
-    // 按次计费
-    const priceUSD = parseFloat(record.model_price) * groupRatio[selectedGroup];
-    const displayVal = displayPrice(priceUSD);
-
-    return {
-      price: displayVal,
-      isPerToken: false
+      isPerToken: true,
+      usedGroup,
+      usedGroupRatio,
     };
   }
+
+  // 按次计费
+  const priceUSD = parseFloat(record.model_price) * usedGroupRatio;
+  const displayVal = displayPrice(priceUSD);
+
+  return {
+    price: displayVal,
+    isPerToken: false,
+    usedGroup,
+    usedGroupRatio,
+  };
 };
 
 // 格式化价格信息（用于卡片视图）
 export const formatPriceInfo = (priceData, t) => {
+  const groupTag = priceData.usedGroup ? (
+    <span style={{ color: 'var(--semi-color-text-1)' }} className="ml-1 text-xs">
+      {t('分组')} {priceData.usedGroup}
+    </span>
+  ) : null;
+
   if (priceData.isPerToken) {
     return (
       <>
@@ -627,15 +661,19 @@ export const formatPriceInfo = (priceData, t) => {
         <span style={{ color: 'var(--semi-color-text-1)' }}>
           {t('补全')} {priceData.completionPrice}/{priceData.unitLabel}
         </span>
+        {groupTag}
       </>
     );
-  } else {
-    return (
+  }
+
+  return (
+    <>
       <span style={{ color: 'var(--semi-color-text-1)' }}>
         {t('模型价格')} {priceData.price}
       </span>
-    );
-  }
+      {groupTag}
+    </>
+  );
 };
 
 // -------------------------------

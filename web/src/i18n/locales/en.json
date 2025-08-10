@@ -1916,5 +1916,6 @@
   "前缀名称匹配": "Prefix name matching",
   "后缀名称匹配": "Suffix name matching",
   "包含名称匹配": "Contains name matching",
-  "展开更多": "Expand more"
+  "展开更多": "Expand more",
+  "已切换至最优倍率视图，每个模型使用其最低倍率分组": "Switched to the optimal ratio view, each model uses its lowest ratio group"
 }
