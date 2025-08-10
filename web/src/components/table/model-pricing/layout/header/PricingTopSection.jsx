@@ -50,6 +50,7 @@ const PricingTopSection = ({
           onCompositionEnd={handleCompositionEnd}
           onChange={handleChange}
           showClear
+          className="!bg-transparent"
         />
       </div>
 

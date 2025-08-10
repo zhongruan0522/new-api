@@ -38,6 +38,7 @@ export const useModelPricingData = () => {
   const [filterQuotaType, setFilterQuotaType] = useState('all'); // 计费类型筛选: 'all' | 0 | 1
   const [filterEndpointType, setFilterEndpointType] = useState('all'); // 端点类型筛选: 'all' | string
   const [filterVendor, setFilterVendor] = useState('all'); // 供应商筛选: 'all' | 'unknown' | string
+  const [filterTag, setFilterTag] = useState('all'); // 模型标签筛选: 'all' | string
   const [pageSize, setPageSize] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
   const [currency, setCurrency] = useState('USD');
@@ -88,6 +89,20 @@ export const useModelPricingData = () => {
       }
     }
 
+    // 标签筛选
+    if (filterTag !== 'all') {
+      const tagLower = filterTag.toLowerCase();
+      result = result.filter(model => {
+        if (!model.tags) return false;
+        const tagsArr = model.tags
+          .toLowerCase()
+          .split(/[,;|\s]+/)
+          .map(tag => tag.trim())
+          .filter(Boolean);
+        return tagsArr.includes(tagLower);
+      });
+    }
+
     // 搜索筛选
     if (searchValue.length > 0) {
       const searchTerm = searchValue.toLowerCase();
@@ -100,7 +115,7 @@ export const useModelPricingData = () => {
     }
 
     return result;
-  }, [models, searchValue, filterGroup, filterQuotaType, filterEndpointType, filterVendor]);
+  }, [models, searchValue, filterGroup, filterQuotaType, filterEndpointType, filterVendor, filterTag]);
 
   const rowSelection = useMemo(
     () => ({
@@ -245,7 +260,7 @@ export const useModelPricingData = () => {
   // 当筛选条件变化时重置到第一页
   useEffect(() => {
     setCurrentPage(1);
-  }, [filterGroup, filterQuotaType, filterEndpointType, filterVendor, searchValue]);
+  }, [filterGroup, filterQuotaType, filterEndpointType, filterVendor, filterTag, searchValue]);
 
   return {
     // 状态
@@ -271,6 +286,8 @@ export const useModelPricingData = () => {
     setFilterEndpointType,
     filterVendor,
     setFilterVendor,
+    filterTag,
+    setFilterTag,
     pageSize,
     setPageSize,
     currentPage,
