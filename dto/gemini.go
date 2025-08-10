@@ -210,6 +210,7 @@ type GeminiImagePrediction struct {
 
 // Embedding related structs
 type GeminiEmbeddingRequest struct {
+	Model                string            `json:"model,omitempty"`
 	Content              GeminiChatContent `json:"content"`
 	TaskType             string            `json:"taskType,omitempty"`
 	Title                string            `json:"title,omitempty"`
@@ -220,10 +221,14 @@ type GeminiBatchEmbeddingRequest struct {
 	Requests []*GeminiEmbeddingRequest `json:"requests"`
 }
 
-type GeminiEmbedding struct {
-	Values []float64 `json:"values"`
+type GeminiEmbeddingResponse struct {
+	Embedding ContentEmbedding `json:"embedding"`
 }
 
 type GeminiBatchEmbeddingResponse struct {
-	Embeddings []*GeminiEmbedding `json:"embeddings"`
+	Embeddings []*ContentEmbedding `json:"embeddings"`
+}
+
+type ContentEmbedding struct {
+	Values []float64 `json:"values"`
 }

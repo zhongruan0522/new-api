@@ -114,7 +114,11 @@ func (a *Adaptor) GetRequestURL(info *relaycommon.RelayInfo) (string, error) {
 	if strings.HasPrefix(info.UpstreamModelName, "text-embedding") ||
 		strings.HasPrefix(info.UpstreamModelName, "embedding") ||
 		strings.HasPrefix(info.UpstreamModelName, "gemini-embedding") {
-		return fmt.Sprintf("%s/%s/models/%s:batchEmbedContents", info.BaseUrl, version, info.UpstreamModelName), nil
+		action := "embedContent"
+		if info.IsGeminiBatchEmbedding {
+			action = "batchEmbedContents"
+		}
+		return fmt.Sprintf("%s/%s/models/%s:%s", info.BaseUrl, version, info.UpstreamModelName, action), nil
 	}
 
 	action := "generateContent"
@@ -159,6 +163,9 @@ func (a *Adaptor) ConvertEmbeddingRequest(c *gin.Context, info *relaycommon.Rela
 	if len(inputs) == 0 {
 		return nil, errors.New("input is empty")
 	}
+	// We always build a batch-style payload with `requests`, so ensure we call the
+	// batch endpoint upstream to avoid payload/endpoint mismatches.
+	info.IsGeminiBatchEmbedding = true
 	// process all inputs
 	geminiRequests := make([]map[string]interface{}, 0, len(inputs))
 	for _, input := range inputs {
@@ -176,7 +183,7 @@ func (a *Adaptor) ConvertEmbeddingRequest(c *gin.Context, info *relaycommon.Rela
 		// set specific parameters for different models
 		// https://ai.google.dev/api/embeddings?hl=zh-cn#method:-models.embedcontent
 		switch info.UpstreamModelName {
-		case "text-embedding-004","gemini-embedding-exp-03-07","gemini-embedding-001":
+		case "text-embedding-004", "gemini-embedding-exp-03-07", "gemini-embedding-001":
 			// Only newer models introduced after 2024 support OutputDimensionality
 			if request.Dimensions > 0 {
 				geminiRequest["outputDimensionality"] = request.Dimensions
@@ -201,6 +208,10 @@ func (a *Adaptor) DoRequest(c *gin.Context, info *relaycommon.RelayInfo, request
 
 func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (usage any, err *types.NewAPIError) {
 	if info.RelayMode == constant.RelayModeGemini {
+		if strings.HasSuffix(info.RequestURLPath, ":embedContent") ||
+			strings.HasSuffix(info.RequestURLPath, ":batchEmbedContents") {
+			return NativeGeminiEmbeddingHandler(c, resp, info)
+		}
 		if info.IsStream {
 			return GeminiTextGenerationStreamHandler(c, info, resp)
 		} else {
@@ -225,18 +236,6 @@ func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, info *relaycom
 		return GeminiChatHandler(c, info, resp)
 	}
 
-	//if usage.(*dto.Usage).CompletionTokenDetails.ReasoningTokens > 100 {
-	//	// 没有请求-thinking的情况下，产生思考token，则按照思考模型计费
-	//	if !strings.HasSuffix(info.OriginModelName, "-thinking") &&
-	//		!strings.HasSuffix(info.OriginModelName, "-nothinking") {
-	//		thinkingModelName := info.OriginModelName + "-thinking"
-	//		if operation_setting.SelfUseModeEnabled || helper.ContainPriceOrRatio(thinkingModelName) {
-	//			info.OriginModelName = thinkingModelName
-	//		}
-	//	}
-	//}
-
-	return nil, types.NewError(errors.New("not implemented"), types.ErrorCodeBadResponseBody)
 }
 
 func (a *Adaptor) GetModelList() []string {

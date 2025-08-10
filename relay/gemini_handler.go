@@ -264,3 +264,118 @@ func GeminiHelper(c *gin.Context) (newAPIError *types.NewAPIError) {
 	postConsumeQuota(c, relayInfo, usage.(*dto.Usage), preConsumedQuota, userQuota, priceData, "")
 	return nil
 }
+
+func GeminiEmbeddingHandler(c *gin.Context) (newAPIError *types.NewAPIError) {
+	relayInfo := relaycommon.GenRelayInfoGemini(c)
+
+	isBatch := strings.HasSuffix(c.Request.URL.Path, "batchEmbedContents")
+	relayInfo.IsGeminiBatchEmbedding = isBatch
+
+	var promptTokens int
+	var req any
+	var err error
+	var inputTexts []string
+
+	if isBatch {
+		batchRequest := &dto.GeminiBatchEmbeddingRequest{}
+		err = common.UnmarshalBodyReusable(c, batchRequest)
+		if err != nil {
+			return types.NewError(err, types.ErrorCodeInvalidRequest, types.ErrOptionWithSkipRetry())
+		}
+		req = batchRequest
+		for _, r := range batchRequest.Requests {
+			for _, part := range r.Content.Parts {
+				if part.Text != "" {
+					inputTexts = append(inputTexts, part.Text)
+				}
+			}
+		}
+	} else {
+		singleRequest := &dto.GeminiEmbeddingRequest{}
+		err = common.UnmarshalBodyReusable(c, singleRequest)
+		if err != nil {
+			return types.NewError(err, types.ErrorCodeInvalidRequest, types.ErrOptionWithSkipRetry())
+		}
+		req = singleRequest
+		for _, part := range singleRequest.Content.Parts {
+			if part.Text != "" {
+				inputTexts = append(inputTexts, part.Text)
+			}
+		}
+	}
+	promptTokens = service.CountTokenInput(strings.Join(inputTexts, "\n"), relayInfo.UpstreamModelName)
+	relayInfo.SetPromptTokens(promptTokens)
+	c.Set("prompt_tokens", promptTokens)
+
+	err = helper.ModelMappedHelper(c, relayInfo, req)
+	if err != nil {
+		return types.NewError(err, types.ErrorCodeChannelModelMappedError, types.ErrOptionWithSkipRetry())
+	}
+
+	priceData, err := helper.ModelPriceHelper(c, relayInfo, relayInfo.PromptTokens, 0)
+	if err != nil {
+		return types.NewError(err, types.ErrorCodeModelPriceError, types.ErrOptionWithSkipRetry())
+	}
+
+	preConsumedQuota, userQuota, newAPIError := preConsumeQuota(c, priceData.ShouldPreConsumedQuota, relayInfo)
+	if newAPIError != nil {
+		return newAPIError
+	}
+	defer func() {
+		if newAPIError != nil {
+			returnPreConsumedQuota(c, relayInfo, userQuota, preConsumedQuota)
+		}
+	}()
+
+	adaptor := GetAdaptor(relayInfo.ApiType)
+	if adaptor == nil {
+		return types.NewError(fmt.Errorf("invalid api type: %d", relayInfo.ApiType), types.ErrorCodeInvalidApiType, types.ErrOptionWithSkipRetry())
+	}
+	adaptor.Init(relayInfo)
+
+	var requestBody io.Reader
+	jsonData, err := common.Marshal(req)
+	if err != nil {
+		return types.NewError(err, types.ErrorCodeConvertRequestFailed, types.ErrOptionWithSkipRetry())
+	}
+
+	// apply param override
+	if len(relayInfo.ParamOverride) > 0 {
+		reqMap := make(map[string]interface{})
+		_ = common.Unmarshal(jsonData, &reqMap)
+		for key, value := range relayInfo.ParamOverride {
+			reqMap[key] = value
+		}
+		jsonData, err = common.Marshal(reqMap)
+		if err != nil {
+			return types.NewError(err, types.ErrorCodeChannelParamOverrideInvalid, types.ErrOptionWithSkipRetry())
+		}
+	}
+	requestBody = bytes.NewReader(jsonData)
+
+	resp, err := adaptor.DoRequest(c, relayInfo, requestBody)
+	if err != nil {
+		common.LogError(c, "Do gemini request failed: "+err.Error())
+		return types.NewOpenAIError(err, types.ErrorCodeDoRequestFailed, http.StatusInternalServerError)
+	}
+
+	statusCodeMappingStr := c.GetString("status_code_mapping")
+	var httpResp *http.Response
+	if resp != nil {
+		httpResp = resp.(*http.Response)
+		if httpResp.StatusCode != http.StatusOK {
+			newAPIError = service.RelayErrorHandler(httpResp, false)
+			service.ResetStatusCode(newAPIError, statusCodeMappingStr)
+			return newAPIError
+		}
+	}
+
+	usage, openaiErr := adaptor.DoResponse(c, resp.(*http.Response), relayInfo)
+	if openaiErr != nil {
+		service.ResetStatusCode(openaiErr, statusCodeMappingStr)
+		return openaiErr
+	}
+
+	postConsumeQuota(c, relayInfo, usage.(*dto.Usage), preConsumedQuota, userQuota, priceData, "")
+	return nil
+}
