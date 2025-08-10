@@ -587,6 +587,8 @@ const EditChannelModal = (props) => {
       if (formApiRef.current) {
         formApiRef.current.setValue('key_mode', undefined);
       }
+      // 重置本地输入，避免下次打开残留上一次的 JSON 字段值
+      setInputs(getInitValues());
     }
   }, [props.visible, channelId]);
 
@@ -1257,6 +1259,7 @@ const EditChannelModal = (props) => {
 
                   {inputs.type === 41 && (
                     <JSONEditor
+                      key={`region-${isEdit ? channelId : 'new'}`}
                       field='other'
                       label={t('部署地区')}
                       placeholder={t(
@@ -1552,6 +1555,7 @@ const EditChannelModal = (props) => {
                   />
 
                   <JSONEditor
+                    key={`model_mapping-${isEdit ? channelId : 'new'}`}
                     field='model_mapping'
                     label={t('模型重定向')}
                     placeholder={
@@ -1655,6 +1659,7 @@ const EditChannelModal = (props) => {
                   />
 
                   <JSONEditor
+                    key={`status_code_mapping-${isEdit ? channelId : 'new'}`}
                     field='status_code_mapping'
                     label={t('状态码复写')}
                     placeholder={
