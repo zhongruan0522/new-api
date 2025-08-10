@@ -141,17 +141,17 @@ func GetBoundChannels(modelName string) ([]BoundChannel, error) {
 
 // GetBoundChannelsForModels 批量查询多模型的绑定渠道并去重返回
 func GetBoundChannelsForModels(modelNames []string) ([]BoundChannel, error) {
-    if len(modelNames) == 0 {
-        return make([]BoundChannel, 0), nil
-    }
-    var channels []BoundChannel
-    err := DB.Table("channels").
-        Select("channels.name, channels.type").
-        Joins("join abilities on abilities.channel_id = channels.id").
-        Where("abilities.model IN ? AND abilities.enabled = ?", modelNames, true).
-        Group("channels.id").
-        Scan(&channels).Error
-    return channels, err
+	if len(modelNames) == 0 {
+		return make([]BoundChannel, 0), nil
+	}
+	var channels []BoundChannel
+	err := DB.Table("channels").
+		Select("channels.name, channels.type").
+		Joins("join abilities on abilities.channel_id = channels.id").
+		Where("abilities.model IN ? AND abilities.enabled = ?", modelNames, true).
+		Group("channels.id").
+		Scan(&channels).Error
+	return channels, err
 }
 
 // FindModelByNameWithRule 根据模型名称和匹配规则查找模型元数据，优先级：精确 > 前缀 > 后缀 > 包含
