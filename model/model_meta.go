@@ -73,11 +73,14 @@ func IsModelNameDuplicated(id int, name string) (bool, error) {
 
 // Update 更新现有模型记录
 func (mi *Model) Update() error {
-    // 仅更新需要变更的字段，避免覆盖 CreatedTime
     mi.UpdatedTime = common.GetTimestamp()
-
-    // 排除 created_time，其余字段自动更新，避免新增字段时需要维护列表
-    return DB.Model(&Model{}).Where("id = ?", mi.Id).Omit("created_time").Updates(mi).Error
+    // 使用 Session 配置并选择所有字段，允许零值（如空字符串）也能被更新
+    return DB.Session(&gorm.Session{AllowGlobalUpdate: false, FullSaveAssociations: false}).
+        Model(&Model{}).
+        Where("id = ?", mi.Id).
+        Omit("created_time").
+        Select("*").
+        Updates(mi).Error
 }
 
 // Delete 软删除模型记录
