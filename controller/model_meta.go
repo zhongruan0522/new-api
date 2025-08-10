@@ -183,6 +183,9 @@ func fillModelExtra(m *model.Model) {
 	// 非精确匹配：计算并集
 	pricings := model.GetPricing()
 
+	// 匹配到的模型名称集合
+	matchedNames := make([]string, 0)
+
 	// 端点去重集合
 	endpointSet := make(map[constant.EndpointType]struct{})
 	// 已绑定渠道去重集合
@@ -205,6 +208,9 @@ func fillModelExtra(m *model.Model) {
 		if !matched {
 			continue
 		}
+
+		// 记录匹配到的模型名称
+		matchedNames = append(matchedNames, p.ModelName)
 
 		// 收集端点
 		for _, et := range p.SupportedEndpointTypes {
@@ -265,4 +271,8 @@ func fillModelExtra(m *model.Model) {
 	} else {
 		m.QuotaType = -1
 	}
+
+	// 设置匹配信息
+	m.MatchedModels = matchedNames
+	m.MatchedCount = len(matchedNames)
 }

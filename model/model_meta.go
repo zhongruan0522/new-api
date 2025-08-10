@@ -51,6 +51,9 @@ type Model struct {
 	EnableGroups  []string       `json:"enable_groups,omitempty" gorm:"-"`
 	QuotaType     int            `json:"quota_type" gorm:"-"`
 	NameRule      int            `json:"name_rule" gorm:"default:0"`
+
+	MatchedModels []string `json:"matched_models,omitempty" gorm:"-"`
+	MatchedCount  int      `json:"matched_count,omitempty" gorm:"-"`
 }
 
 // Insert 创建新的模型元数据记录
