@@ -137,7 +137,8 @@ const renderQuotaType = (qt, t) => {
       </Tag>
     );
   }
-  return qt ?? '-';
+  // 未知
+  return '-';
 };
 
 // Render bound channels
