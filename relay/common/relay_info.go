@@ -102,6 +102,7 @@ type RelayInfo struct {
 	AudioUsage           bool
 	ReasoningEffort      string
 	ChannelSetting       dto.ChannelSettings
+	ChannelOtherSettings dto.ChannelOtherSettings
 	ParamOverride        map[string]interface{}
 	UserSetting          dto.UserSetting
 	UserEmail            string
@@ -292,6 +293,12 @@ func GenRelayInfo(c *gin.Context) *RelayInfo {
 	if ok {
 		info.ChannelSetting = channelSetting
 	}
+
+	channelOtherSettings, ok := common.GetContextKeyType[dto.ChannelOtherSettings](c, constant.ContextKeyChannelOtherSetting)
+	if ok {
+		info.ChannelOtherSettings = channelOtherSettings
+	}
+
 	userSetting, ok := common.GetContextKeyType[dto.UserSetting](c, constant.ContextKeyUserSetting)
 	if ok {
 		info.UserSetting = userSetting
