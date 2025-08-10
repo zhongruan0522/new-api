@@ -80,6 +80,8 @@ const RegisterForm = () => {
   const [verificationCodeLoading, setVerificationCodeLoading] = useState(false);
   const [otherRegisterOptionsLoading, setOtherRegisterOptionsLoading] = useState(false);
   const [wechatCodeSubmitLoading, setWechatCodeSubmitLoading] = useState(false);
+  const [disableButton, setDisableButton] = useState(false);
+  const [countdown, setCountdown] = useState(30);
 
   const logo = getLogo();
   const systemName = getSystemName();
@@ -105,6 +107,19 @@ const RegisterForm = () => {
       setTurnstileSiteKey(status.turnstile_site_key);
     }
   }, [status]);
+
+  useEffect(() => {
+    let countdownInterval = null;
+    if (disableButton && countdown > 0) {
+      countdownInterval = setInterval(() => {
+        setCountdown(countdown - 1);
+      }, 1000);
+    } else if (countdown === 0) {
+      setDisableButton(false);
+      setCountdown(30);
+    }
+    return () => clearInterval(countdownInterval); // Clean up on unmount
+  }, [disableButton, countdown]);
 
   const onWeChatLoginClicked = () => {
     setWechatLoading(true);
@@ -198,6 +213,7 @@ const RegisterForm = () => {
       const { success, message } = res.data;
       if (success) {
         showSuccess('验证码发送成功，请检查你的邮箱！');
+        setDisableButton(true); // 发送成功后禁用按钮，开始倒计时
       } else {
         showError(message);
       }
@@ -454,9 +470,10 @@ const RegisterForm = () => {
                         <Button
                           onClick={sendVerificationCode}
                           loading={verificationCodeLoading}
+                          disabled={disableButton || verificationCodeLoading}
                           size="small"
                         >
-                          {t('获取验证码')}
+                          {disableButton ? `${t('重新发送')} (${countdown})` : t('获取验证码')}
                         </Button>
                       }
                     />
