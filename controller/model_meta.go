@@ -188,6 +188,7 @@ func fillModelExtra(m *model.Model) {
 
 	// 端点去重集合
 	endpointSet := make(map[constant.EndpointType]struct{})
+
 	// 已绑定渠道去重集合
 	channelSet := make(map[string]model.BoundChannel)
 	// 分组去重集合
@@ -224,14 +225,6 @@ func fillModelExtra(m *model.Model) {
 
 		// 收集计费类型
 		quotaTypeSet[p.QuotaType] = struct{}{}
-
-		// 收集渠道
-		if channels, err := model.GetBoundChannels(p.ModelName); err == nil {
-			for _, ch := range channels {
-				key := ch.Name + "_" + strconv.Itoa(ch.Type)
-				channelSet[key] = ch
-			}
-		}
 	}
 
 	// 序列化端点
@@ -243,15 +236,6 @@ func fillModelExtra(m *model.Model) {
 		if b, err := json.Marshal(eps); err == nil {
 			m.Endpoints = string(b)
 		}
-	}
-
-	// 序列化渠道
-	if len(channelSet) > 0 {
-		channels := make([]model.BoundChannel, 0, len(channelSet))
-		for _, ch := range channelSet {
-			channels = append(channels, ch)
-		}
-		m.BoundChannels = channels
 	}
 
 	// 序列化分组
@@ -270,6 +254,23 @@ func fillModelExtra(m *model.Model) {
 		}
 	} else {
 		m.QuotaType = -1
+	}
+
+	// 批量查询并序列化渠道
+	if len(matchedNames) > 0 {
+		if channels, err := model.GetBoundChannelsForModels(matchedNames); err == nil {
+			for _, ch := range channels {
+				key := ch.Name + "_" + strconv.Itoa(ch.Type)
+				channelSet[key] = ch
+			}
+		}
+		if len(channelSet) > 0 {
+			chs := make([]model.BoundChannel, 0, len(channelSet))
+			for _, ch := range channelSet {
+				chs = append(chs, ch)
+			}
+			m.BoundChannels = chs
+		}
 	}
 
 	// 设置匹配信息
