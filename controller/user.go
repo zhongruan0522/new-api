@@ -62,7 +62,7 @@ func Login(c *gin.Context) {
 		})
 		return
 	}
-	
+
 	// 检查是否启用2FA
 	if model.IsTwoFAEnabled(user.Id) {
 		// 设置pending session，等待2FA验证
@@ -77,7 +77,7 @@ func Login(c *gin.Context) {
 			})
 			return
 		}
-		
+
 		c.JSON(http.StatusOK, gin.H{
 			"message": "请输入两步验证码",
 			"success": true,
@@ -87,7 +87,7 @@ func Login(c *gin.Context) {
 		})
 		return
 	}
-	
+
 	setupLogin(&user, c)
 }
 
