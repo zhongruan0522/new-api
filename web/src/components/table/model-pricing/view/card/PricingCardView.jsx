@@ -171,7 +171,7 @@ const PricingCardView = ({
           {billingTag}
         </div>
         <div className="flex items-center gap-1">
-          {renderLimitedItems({
+          {customTags.length > 0 && renderLimitedItems({
             items: customTags.map((tag, idx) => ({ key: `custom-${idx}`, element: tag })),
             renderItem: (item, idx) => item.element,
             maxDisplay: 3
