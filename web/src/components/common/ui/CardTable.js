@@ -41,7 +41,7 @@ const CardTable = ({
 }) => {
   const isMobile = useIsMobile();
   const { t } = useTranslation();
-  
+
   const showSkeleton = useMinimumLoadingTime(loading);
 
   const getRowKey = (record, index) => {

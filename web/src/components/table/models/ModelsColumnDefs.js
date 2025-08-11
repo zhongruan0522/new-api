@@ -121,36 +121,34 @@ const renderEndpoints = (value) => {
   }
 };
 
-// Render quota types (array)
+// Render quota types (array) using common limited items renderer
 const renderQuotaTypes = (arr, t) => {
   if (!Array.isArray(arr) || arr.length === 0) return '-';
-  const renderOne = (qt, idx) => {
-    if (qt === 1) {
+  return renderLimitedItems({
+    items: arr,
+    renderItem: (qt, idx) => {
+      if (qt === 1) {
+        return (
+          <Tag key={`${qt}-${idx}`} color='teal' size='small' shape='circle'>
+            {t('按次计费')}
+          </Tag>
+        );
+      }
+      if (qt === 0) {
+        return (
+          <Tag key={`${qt}-${idx}`} color='violet' size='small' shape='circle'>
+            {t('按量计费')}
+          </Tag>
+        );
+      }
       return (
-        <Tag key={`${qt}-${idx}`} color='teal' size='small' shape='circle'>
-          {t('按次计费')}
+        <Tag key={`${qt}-${idx}`} color='white' size='small' shape='circle'>
+          {qt}
         </Tag>
       );
-    }
-    if (qt === 0) {
-      return (
-        <Tag key={`${qt}-${idx}`} color='violet' size='small' shape='circle'>
-          {t('按量计费')}
-        </Tag>
-      );
-    }
-    // 未来新增模式的兜底展示
-    return (
-      <Tag key={`${qt}-${idx}`} color='white' size='small' shape='circle'>
-        {qt}
-      </Tag>
-    );
-  };
-  return (
-    <Space wrap>
-      {arr.map((qt, idx) => renderOne(qt, idx))}
-    </Space>
-  );
+    },
+    maxDisplay: 3,
+  });
 };
 
 // Render bound channels
