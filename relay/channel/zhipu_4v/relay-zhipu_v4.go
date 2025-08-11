@@ -50,5 +50,6 @@ func requestOpenAI2Zhipu(request dto.GeneralOpenAIRequest) *dto.GeneralOpenAIReq
 		Stop:        Stop,
 		Tools:       request.Tools,
 		ToolChoice:  request.ToolChoice,
+		THINKING:    request.THINKING,
 	}
 }
