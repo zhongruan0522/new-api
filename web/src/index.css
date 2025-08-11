@@ -686,7 +686,6 @@ html.dark .with-pastel-balls::before {
   max-width: 460px;
   height: calc(100vh - 60px);
   background-color: var(--semi-color-bg-0);
-  border-right: 1px solid var(--semi-color-border);
   overflow: auto;
 }
 
@@ -710,7 +709,6 @@ html.dark .with-pastel-balls::before {
 
 .pricing-search-header {
   padding: 1rem;
-  border-bottom: 1px solid var(--semi-color-border);
   background-color: var(--semi-color-bg-0);
   flex-shrink: 0;
   position: sticky;
