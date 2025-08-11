@@ -17,10 +17,10 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { useIsMobile } from '../../../hooks/common/useIsMobile';
 import { useMinimumLoadingTime } from '../../../hooks/common/useMinimumLoadingTime';
-import { Divider, Button, Tag, Row, Col, Collapsible, Checkbox, Skeleton } from '@douyinfe/semi-ui';
+import { Divider, Button, Tag, Row, Col, Collapsible, Checkbox, Skeleton, Tooltip } from '@douyinfe/semi-ui';
 import { IconChevronDown, IconChevronUp } from '@douyinfe/semi-icons';
 
 /**
@@ -56,8 +56,6 @@ const SelectableButtonGroup = ({
   const maxVisibleRows = Math.max(1, Math.floor(collapseHeight / 32)); // Approx row height 32
   const needCollapse = collapsible && items.length > perRow * maxVisibleRows;
   const showSkeleton = useMinimumLoadingTime(loading);
-
-  const contentRef = useRef(null);
 
   const maskStyle = isOpen
     ? {}
@@ -131,7 +129,7 @@ const SelectableButtonGroup = ({
   };
 
   const contentElement = showSkeleton ? renderSkeletonButtons() : (
-    <Row gutter={[8, 8]} style={{ lineHeight: '32px', ...style }} ref={contentRef}>
+    <Row gutter={[8, 8]} style={{ lineHeight: '32px', ...style }}>
       {items.map((item) => {
         const isDisabled = item.disabled || (typeof item.tagCount === 'number' && item.tagCount === 0);
         const isActive = Array.isArray(activeValue)
@@ -152,6 +150,7 @@ const SelectableButtonGroup = ({
                 theme={isActive ? 'light' : 'outline'}
                 type={isActive ? 'primary' : 'tertiary'}
                 disabled={isDisabled}
+                className="sbg-button"
                 icon={
                   <Checkbox
                     checked={isActive}
@@ -162,19 +161,15 @@ const SelectableButtonGroup = ({
                 }
                 style={{ width: '100%', cursor: 'default' }}
               >
-                {item.icon && (
-                  <span style={{ marginRight: 4 }}>{item.icon}</span>
-                )}
-                <span style={{ marginRight: item.tagCount !== undefined ? 4 : 0 }}>{item.label}</span>
-                {item.tagCount !== undefined && (
-                  <Tag
-                    color='white'
-                    shape="circle"
-                    size="small"
-                  >
-                    {item.tagCount}
-                  </Tag>
-                )}
+                <div className="sbg-content">
+                  {item.icon && (<span className="sbg-icon">{item.icon}</span>)}
+                  <Tooltip content={item.label}>
+                    <span className="sbg-ellipsis">{item.label}</span>
+                  </Tooltip>
+                  {item.tagCount !== undefined && (
+                    <Tag className="sbg-tag" color='white' shape="circle" size="small">{item.tagCount}</Tag>
+                  )}
+                </div>
               </Button>
             </Col>
           );
@@ -192,20 +187,19 @@ const SelectableButtonGroup = ({
               onClick={() => onChange(item.value)}
               theme={isActive ? 'light' : 'outline'}
               type={isActive ? 'primary' : 'tertiary'}
-              icon={item.icon}
               disabled={isDisabled}
+              className="sbg-button"
               style={{ width: '100%' }}
             >
-              <span style={{ marginRight: item.tagCount !== undefined ? 4 : 0 }}>{item.label}</span>
-              {item.tagCount !== undefined && (
-                <Tag
-                  color='white'
-                  shape="circle"
-                  size="small"
-                >
-                  {item.tagCount}
-                </Tag>
-              )}
+              <div className="sbg-content">
+                {item.icon && (<span className="sbg-icon">{item.icon}</span>)}
+                <Tooltip content={item.label}>
+                  <span className="sbg-ellipsis">{item.label}</span>
+                </Tooltip>
+                {item.tagCount !== undefined && (
+                  <Tag className="sbg-tag" color='white' shape="circle" size="small">{item.tagCount}</Tag>
+                )}
+              </div>
             </Button>
           </Col>
         );
