@@ -126,16 +126,23 @@ func (a *Adaptor) GetRequestURL(info *relaycommon.RelayInfo) (string, error) {
 		requestURL = fmt.Sprintf("%s?api-version=%s", requestURL, apiVersion)
 		task := strings.TrimPrefix(requestURL, "/v1/")
 
+		if info.RelayFormat == relaycommon.RelayFormatClaude {
+			task = strings.TrimPrefix(task, "messages")
+			task = "chat/completions" + task
+		}
+
 		// 特殊处理 responses API
 		if info.RelayMode == relayconstant.RelayModeResponses {
 			responsesApiVersion := "preview"
-			if info.ChannelOtherSettings.AzureResponsesVersion != "" {
-				responsesApiVersion = info.ChannelOtherSettings.AzureResponsesVersion
-			}
 
 			subUrl := "/openai/v1/responses"
 			if strings.Contains(info.BaseUrl, "cognitiveservices.azure.com") {
 				subUrl = "/openai/responses"
+				responsesApiVersion = apiVersion
+			}
+
+			if info.ChannelOtherSettings.AzureResponsesVersion != "" {
+				responsesApiVersion = info.ChannelOtherSettings.AzureResponsesVersion
 			}
 
 			requestURL = fmt.Sprintf("%s?api-version=%s", subUrl, responsesApiVersion)
@@ -249,34 +256,34 @@ func (a *Adaptor) ConvertOpenAIRequest(c *gin.Context, info *relaycommon.RelayIn
 			}
 		}
 	}
-	if strings.HasPrefix(request.Model, "o") || strings.HasPrefix(request.Model, "gpt-5") {
+	if strings.HasPrefix(info.UpstreamModelName, "o") || strings.HasPrefix(info.UpstreamModelName, "gpt-5") {
 		if request.MaxCompletionTokens == 0 && request.MaxTokens != 0 {
 			request.MaxCompletionTokens = request.MaxTokens
 			request.MaxTokens = 0
 		}
 
-		if strings.HasPrefix(request.Model, "o") {
+		if strings.HasPrefix(info.UpstreamModelName, "o") {
 			request.Temperature = nil
 		}
 
-		if strings.HasPrefix(request.Model, "gpt-5") {
-			if request.Model != "gpt-5-chat-latest" {
+		if strings.HasPrefix(info.UpstreamModelName, "gpt-5") {
+			if info.UpstreamModelName != "gpt-5-chat-latest" {
 				request.Temperature = nil
 			}
 		}
 
 		// 转换模型推理力度后缀
-		effort, originModel := parseReasoningEffortFromModelSuffix(request.Model)
+		effort, originModel := parseReasoningEffortFromModelSuffix(info.UpstreamModelName)
 		if effort != "" {
 			request.ReasoningEffort = effort
+			info.UpstreamModelName = originModel
 			request.Model = originModel
 		}
 
 		info.ReasoningEffort = request.ReasoningEffort
-		info.UpstreamModelName = request.Model
 
 		// o系列模型developer适配（o1-mini除外）
-		if !strings.HasPrefix(request.Model, "o1-mini") && !strings.HasPrefix(request.Model, "o1-preview") {
+		if !strings.HasPrefix(info.UpstreamModelName, "o1-mini") && !strings.HasPrefix(info.UpstreamModelName, "o1-preview") {
 			//修改第一个Message的内容，将system改为developer
 			if len(request.Messages) > 0 && request.Messages[0].Role == "system" {
 				request.Messages[0].Role = "developer"
