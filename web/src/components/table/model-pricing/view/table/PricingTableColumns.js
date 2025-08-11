@@ -23,23 +23,31 @@ import { IconHelpCircle } from '@douyinfe/semi-icons';
 import { renderModelTag, stringToColor, calculateModelPrice, getLobeHubIcon } from '../../../../../helpers';
 import { renderLimitedItems, renderDescription } from '../../../../common/ui/RenderUtils';
 
-function renderQuotaType(type, t) {
-  switch (type) {
-    case 1:
-      return (
-        <Tag color='teal' shape='circle'>
-          {t('按次计费')}
-        </Tag>
-      );
-    case 0:
-      return (
-        <Tag color='violet' shape='circle'>
-          {t('按量计费')}
-        </Tag>
-      );
-    default:
-      return t('未知');
-  }
+function renderQuotaTypes(types, t) {
+  if (!Array.isArray(types) || types.length === 0) return '-';
+  const renderOne = (type, idx) => {
+    switch (type) {
+      case 1:
+        return (
+          <Tag key={`qt-${type}-${idx}`} color='teal' shape='circle'>
+            {t('按次计费')}
+          </Tag>
+        );
+      case 0:
+        return (
+          <Tag key={`qt-${type}-${idx}`} color='violet' shape='circle'>
+            {t('按量计费')}
+          </Tag>
+        );
+      default:
+        return (
+          <Tag key={`qt-${type}-${idx}`} color='white' shape='circle'>
+            {type}
+          </Tag>
+        );
+    }
+  };
+  return <Space wrap>{types.map((t0, idx) => renderOne(t0, idx))}</Space>;
 }
 
 // Render vendor name
@@ -122,11 +130,8 @@ export const getPricingTableColumns = ({
 
   const quotaColumn = {
     title: t('计费类型'),
-    dataIndex: 'quota_type',
-    render: (text, record, index) => {
-      return renderQuotaType(parseInt(text), t);
-    },
-    sorter: (a, b) => a.quota_type - b.quota_type,
+    dataIndex: 'quota_types',
+    render: (text, record, index) => renderQuotaTypes(text, t),
   };
 
   const descriptionColumn = {
@@ -170,11 +175,11 @@ export const getPricingTableColumns = ({
       const content = (
         <div className="space-y-1">
           <div className="text-gray-700">
-            {t('模型倍率')}：{record.quota_type === 0 ? text : t('无')}
+            {t('模型倍率')}：{Array.isArray(record.quota_types) && record.quota_types.includes(0) ? text : t('无')}
           </div>
           <div className="text-gray-700">
             {t('补全倍率')}：
-            {record.quota_type === 0 ? completionRatio : t('无')}
+            {Array.isArray(record.quota_types) && record.quota_types.includes(0) ? completionRatio : t('无')}
           </div>
           <div className="text-gray-700">
             {t('分组倍率')}：{groupRatio[selectedGroup]}
