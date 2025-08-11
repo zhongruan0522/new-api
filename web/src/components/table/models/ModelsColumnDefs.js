@@ -18,7 +18,7 @@ For commercial licensing, please contact support@quantumnous.com
 */
 
 import React from 'react';
-import { Button, Space, Tag, Typography, Modal } from '@douyinfe/semi-ui';
+import { Button, Space, Tag, Typography, Modal, Tooltip } from '@douyinfe/semi-ui';
 import {
   timestamp2string,
   getLobeHubIcon,
@@ -137,7 +137,8 @@ const renderQuotaType = (qt, t) => {
       </Tag>
     );
   }
-  return qt ?? '-';
+  // 未知
+  return '-';
 };
 
 // Render bound channels
@@ -207,8 +208,8 @@ const renderOperations = (text, record, setEditingModel, setShowEdit, manageMode
   );
 };
 
-// 名称匹配类型渲染
-const renderNameRule = (rule, t) => {
+// 名称匹配类型渲染（带匹配数量 Tooltip）
+const renderNameRule = (rule, record, t) => {
   const map = {
     0: { color: 'green', label: t('精确') },
     1: { color: 'blue', label: t('前缀') },
@@ -217,10 +218,26 @@ const renderNameRule = (rule, t) => {
   };
   const cfg = map[rule];
   if (!cfg) return '-';
-  return (
+
+  let label = cfg.label;
+  if (rule !== 0 && record.matched_count) {
+    label = `${cfg.label} ${record.matched_count}${t('个模型')}`;
+  }
+
+  const tagElement = (
     <Tag color={cfg.color} size="small" shape='circle'>
-      {cfg.label}
+      {label}
     </Tag>
+  );
+
+  if (rule === 0 || !record.matched_models || record.matched_models.length === 0) {
+    return tagElement;
+  }
+
+  return (
+    <Tooltip content={record.matched_models.join(', ')} showArrow>
+      {tagElement}
+    </Tooltip>
   );
 };
 
@@ -252,7 +269,7 @@ export const getModelsColumns = ({
     {
       title: t('匹配类型'),
       dataIndex: 'name_rule',
-      render: (val) => renderNameRule(val, t),
+      render: (val, record) => renderNameRule(val, record, t),
     },
     {
       title: t('描述'),

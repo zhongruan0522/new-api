@@ -51,6 +51,9 @@ type Model struct {
 	EnableGroups  []string       `json:"enable_groups,omitempty" gorm:"-"`
 	QuotaType     int            `json:"quota_type" gorm:"-"`
 	NameRule      int            `json:"name_rule" gorm:"default:0"`
+
+	MatchedModels []string `json:"matched_models,omitempty" gorm:"-"`
+	MatchedCount  int      `json:"matched_count,omitempty" gorm:"-"`
 }
 
 // Insert 创建新的模型元数据记录
@@ -131,6 +134,21 @@ func GetBoundChannels(modelName string) ([]BoundChannel, error) {
 		Select("channels.name, channels.type").
 		Joins("join abilities on abilities.channel_id = channels.id").
 		Where("abilities.model = ? AND abilities.enabled = ?", modelName, true).
+		Group("channels.id").
+		Scan(&channels).Error
+	return channels, err
+}
+
+// GetBoundChannelsForModels 批量查询多模型的绑定渠道并去重返回
+func GetBoundChannelsForModels(modelNames []string) ([]BoundChannel, error) {
+	if len(modelNames) == 0 {
+		return make([]BoundChannel, 0), nil
+	}
+	var channels []BoundChannel
+	err := DB.Table("channels").
+		Select("channels.name, channels.type").
+		Joins("join abilities on abilities.channel_id = channels.id").
+		Where("abilities.model IN ? AND abilities.enabled = ?", modelNames, true).
 		Group("channels.id").
 		Scan(&channels).Error
 	return channels, err

@@ -66,18 +66,18 @@ var LOG_DB *gorm.DB
 
 // dropIndexIfExists drops a MySQL index only if it exists to avoid noisy 1091 errors
 func dropIndexIfExists(tableName string, indexName string) {
-    if !common.UsingMySQL {
-        return
-    }
-    var count int64
-    // Check index existence via information_schema
-    err := DB.Raw(
-        "SELECT COUNT(1) FROM information_schema.statistics WHERE table_schema = DATABASE() AND table_name = ? AND index_name = ?",
-        tableName, indexName,
-    ).Scan(&count).Error
-    if err == nil && count > 0 {
-        _ = DB.Exec("ALTER TABLE " + tableName + " DROP INDEX " + indexName + ";").Error
-    }
+	if !common.UsingMySQL {
+		return
+	}
+	var count int64
+	// Check index existence via information_schema
+	err := DB.Raw(
+		"SELECT COUNT(1) FROM information_schema.statistics WHERE table_schema = DATABASE() AND table_name = ? AND index_name = ?",
+		tableName, indexName,
+	).Scan(&count).Error
+	if err == nil && count > 0 {
+		_ = DB.Exec("ALTER TABLE " + tableName + " DROP INDEX " + indexName + ";").Error
+	}
 }
 
 func createRootAccountIfNeed() error {
@@ -252,8 +252,12 @@ func InitLogDB() (err error) {
 
 func migrateDB() error {
 	// 修复旧版本留下的唯一索引，允许软删除后重新插入同名记录
-	dropIndexIfExists("models", "uk_model_name")
-	dropIndexIfExists("vendors", "uk_vendor_name")
+	// 删除单列唯一索引（列级 UNIQUE）及早期命名方式，防止与新复合唯一索引 (model_name, deleted_at) 冲突
+	dropIndexIfExists("models", "uk_model_name") // 新版复合索引名称（若已存在）
+	dropIndexIfExists("models", "model_name")    // 旧版列级唯一索引名称
+
+	dropIndexIfExists("vendors", "uk_vendor_name") // 新版复合索引名称（若已存在）
+	dropIndexIfExists("vendors", "name")           // 旧版列级唯一索引名称
 	if !common.UsingPostgreSQL {
 		return migrateDBFast()
 	}
@@ -284,8 +288,12 @@ func migrateDB() error {
 
 func migrateDBFast() error {
 	// 修复旧版本留下的唯一索引，允许软删除后重新插入同名记录
+	// 删除单列唯一索引（列级 UNIQUE）及早期命名方式，防止与新复合唯一索引冲突
 	dropIndexIfExists("models", "uk_model_name")
+	dropIndexIfExists("models", "model_name")
+
 	dropIndexIfExists("vendors", "uk_vendor_name")
+	dropIndexIfExists("vendors", "name")
 
 	var wg sync.WaitGroup
 
@@ -305,7 +313,7 @@ func migrateDBFast() error {
 		{&QuotaData{}, "QuotaData"},
 		{&Task{}, "Task"},
 		{&Model{}, "Model"},
-        {&Vendor{}, "Vendor"},
+		{&Vendor{}, "Vendor"},
 		{&PrefillGroup{}, "PrefillGroup"},
 		{&Setup{}, "Setup"},
 		{&TwoFA{}, "TwoFA"},

@@ -632,12 +632,22 @@ export const calculateModelPrice = ({
     };
   }
 
-  // 按次计费
-  const priceUSD = parseFloat(record.model_price) * usedGroupRatio;
-  const displayVal = displayPrice(priceUSD);
+  if (record.quota_type === 1) {
+    // 按次计费
+    const priceUSD = parseFloat(record.model_price) * usedGroupRatio;
+    const displayVal = displayPrice(priceUSD);
 
+    return {
+      price: displayVal,
+      isPerToken: false,
+      usedGroup,
+      usedGroupRatio,
+    };
+  }
+
+  // 未知计费类型，返回占位信息
   return {
-    price: displayVal,
+    price: '-',
     isPerToken: false,
     usedGroup,
     usedGroupRatio,

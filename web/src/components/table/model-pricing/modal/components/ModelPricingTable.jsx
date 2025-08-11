@@ -63,7 +63,7 @@ const ModelPricingTable = ({
         key: group,
         group: group,
         ratio: groupRatioValue,
-        billingType: modelData?.quota_type === 0 ? t('按量计费') : t('按次计费'),
+        billingType: modelData?.quota_type === 0 ? t('按量计费') : (modelData?.quota_type === 1 ? t('按次计费') : '-'),
         inputPrice: modelData?.quota_type === 0 ? priceData.inputPrice : '-',
         outputPrice: modelData?.quota_type === 0 ? (priceData.completionPrice || priceData.outputPrice) : '-',
         fixedPrice: modelData?.quota_type === 1 ? priceData.price : '-',
@@ -100,11 +100,16 @@ const ModelPricingTable = ({
     columns.push({
       title: t('计费类型'),
       dataIndex: 'billingType',
-      render: (text) => (
-        <Tag color={text === t('按量计费') ? 'violet' : 'teal'} size="small" shape="circle">
-          {text}
-        </Tag>
-      ),
+      render: (text) => {
+        let color = 'white';
+        if (text === t('按量计费')) color = 'violet';
+        else if (text === t('按次计费')) color = 'teal';
+        return (
+          <Tag color={color} size="small" shape="circle">
+            {text || '-'}
+          </Tag>
+        );
+      },
     });
 
     // 根据计费类型添加价格列
