@@ -126,6 +126,11 @@ func (a *Adaptor) GetRequestURL(info *relaycommon.RelayInfo) (string, error) {
 		requestURL = fmt.Sprintf("%s?api-version=%s", requestURL, apiVersion)
 		task := strings.TrimPrefix(requestURL, "/v1/")
 
+		if info.RelayFormat == relaycommon.RelayFormatClaude {
+			task = strings.TrimPrefix(task, "messages")
+			task = "chat/completions" + task
+		}
+
 		// 特殊处理 responses API
 		if info.RelayMode == relayconstant.RelayModeResponses {
 			responsesApiVersion := "preview"
