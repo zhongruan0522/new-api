@@ -327,7 +327,7 @@ const PricingCardView = ({
 
       {/* 分页 */}
       {filteredModels.length > 0 && (
-        <div className="flex justify-center mt-6 pt-4 border-t pricing-pagination-divider">
+        <div className="flex justify-center mt-6 py-4 border-t pricing-pagination-divider">
           <Pagination
             currentPage={currentPage}
             pageSize={pageSize}

@@ -123,7 +123,7 @@ const PricingCardSkeleton = ({
       </div>
 
       {/* 分页骨架 */}
-      <div className="flex justify-center mt-6 pt-4 border-t pricing-pagination-divider">
+      <div className="flex justify-center mt-6 py-4 border-t pricing-pagination-divider">
         <Skeleton.Button style={{ width: 300, height: 32 }} />
       </div>
     </div>
