@@ -21,10 +21,11 @@ import React, { lazy, Suspense } from 'react';
 import { Route, Routes, useLocation } from 'react-router-dom';
 import Loading from './components/common/ui/Loading.js';
 import User from './pages/User';
-import { AuthRedirect, PrivateRoute } from './helpers';
+import { AuthRedirect, PrivateRoute, AdminRoute } from './helpers';
 import RegisterForm from './components/auth/RegisterForm.js';
 import LoginForm from './components/auth/LoginForm.js';
 import NotFound from './pages/NotFound';
+import Forbidden from './pages/Forbidden';
 import Setting from './pages/Setting';
 
 import PasswordResetForm from './components/auth/PasswordResetForm.js';
@@ -73,19 +74,23 @@ function App() {
           }
         />
         <Route
+          path='/forbidden'
+          element={<Forbidden />}
+        />
+        <Route
           path='/console/models'
           element={
-            <PrivateRoute>
+            <AdminRoute>
               <ModelPage />
-            </PrivateRoute>
+            </AdminRoute>
           }
         />
         <Route
           path='/console/channel'
           element={
-            <PrivateRoute>
+            <AdminRoute>
               <Channel />
-            </PrivateRoute>
+            </AdminRoute>
           }
         />
         <Route
@@ -107,17 +112,17 @@ function App() {
         <Route
           path='/console/redemption'
           element={
-            <PrivateRoute>
+            <AdminRoute>
               <Redemption />
-            </PrivateRoute>
+            </AdminRoute>
           }
         />
         <Route
           path='/console/user'
           element={
-            <PrivateRoute>
+            <AdminRoute>
               <User />
-            </PrivateRoute>
+            </AdminRoute>
           }
         />
         <Route
@@ -183,11 +188,11 @@ function App() {
         <Route
           path='/console/setting'
           element={
-            <PrivateRoute>
+            <AdminRoute>
               <Suspense fallback={<Loading></Loading>} key={location.pathname}>
                 <Setting />
               </Suspense>
-            </PrivateRoute>
+            </AdminRoute>
           }
         />
         <Route
