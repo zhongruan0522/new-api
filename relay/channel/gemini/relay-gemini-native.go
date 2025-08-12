@@ -53,13 +53,7 @@ func GeminiTextGenerationHandler(c *gin.Context, info *relaycommon.RelayInfo, re
 		}
 	}
 
-	// 直接返回 Gemini 原生格式的 JSON 响应
-	jsonResponse, err := common.Marshal(geminiResponse)
-	if err != nil {
-		return nil, types.NewOpenAIError(err, types.ErrorCodeBadResponseBody, http.StatusInternalServerError)
-	}
-
-	common.IOCopyBytesGracefully(c, resp, jsonResponse)
+	common.IOCopyBytesGracefully(c, resp, responseBody)
 
 	return &usage, nil
 }
