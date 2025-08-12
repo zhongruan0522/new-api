@@ -312,10 +312,6 @@ func shouldRetry(c *gin.Context, openaiErr *types.NewAPIError, retryTimes int) b
 		return true
 	}
 	if openaiErr.StatusCode == http.StatusBadRequest {
-		channelType := c.GetInt("channel_type")
-		if channelType == constant.ChannelTypeAnthropic {
-			return true
-		}
 		return false
 	}
 	if openaiErr.StatusCode == 408 {
