@@ -1,6 +1,6 @@
-# One API – Web 界面后端接口文档
+# New API – Web 界面后端接口文档
 
-> 本文档汇总了 **One API** 后端提供给前端 Web 界面的全部 REST 接口（不含 *Relay* 相关接口）。
+> 本文档汇总了 **New API** 后端提供给前端 Web 界面的全部 REST 接口（不含 *Relay* 相关接口）。
 >
 > 接口前缀统一为 `https://<your-domain>`，以下仅列出 **路径**、**HTTP 方法**、**鉴权要求** 与 **功能简介**。
 >
