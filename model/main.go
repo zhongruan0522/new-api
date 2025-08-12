@@ -196,6 +196,12 @@ func InitDB() (err error) {
 			db = db.Debug()
 		}
 		DB = db
+		// MySQL charset/collation startup check: ensure Chinese-capable charset
+		if common.UsingMySQL {
+			if err := checkMySQLChineseSupport(DB); err != nil {
+				panic(err)
+			}
+		}
 		sqlDB, err := DB.DB()
 		if err != nil {
 			return err
@@ -230,6 +236,12 @@ func InitLogDB() (err error) {
 			db = db.Debug()
 		}
 		LOG_DB = db
+		// If log DB is MySQL, also ensure Chinese-capable charset
+		if common.LogSqlType == common.DatabaseTypeMySQL {
+			if err := checkMySQLChineseSupport(LOG_DB); err != nil {
+				panic(err)
+			}
+		}
 		sqlDB, err := LOG_DB.DB()
 		if err != nil {
 			return err
@@ -258,9 +270,9 @@ func migrateDB() error {
 
 	dropIndexIfExists("vendors", "uk_vendor_name") // 新版复合索引名称（若已存在）
 	dropIndexIfExists("vendors", "name")           // 旧版列级唯一索引名称
-	if !common.UsingPostgreSQL {
-		return migrateDBFast()
-	}
+	//if !common.UsingPostgreSQL {
+	//	return migrateDBFast()
+	//}
 	err := DB.AutoMigrate(
 		&Channel{},
 		&Token{},
@@ -371,6 +383,55 @@ func CloseDB() error {
 		}
 	}
 	return closeDB(DB)
+}
+
+// checkMySQLChineseSupport ensures the MySQL connection and current schema
+// default charset/collation can store Chinese characters. It allows common
+// Chinese-capable charsets (utf8mb4, utf8, gbk, big5, gb18030) and panics otherwise.
+func checkMySQLChineseSupport(db *gorm.DB) error {
+	// Read session/server variables
+	var charsetServer, collationServer, charsetDBVar, collationDBVar, charsetConn, collationConn string
+	row := db.Raw("SELECT @@character_set_server, @@collation_server, @@character_set_database, @@collation_database, @@character_set_connection, @@collation_connection").Row()
+	if err := row.Scan(&charsetServer, &collationServer, &charsetDBVar, &collationDBVar, &charsetConn, &collationConn); err != nil {
+		return fmt.Errorf("读取 MySQL 字符集变量失败 / Failed to read MySQL charset variables: %v", err)
+	}
+
+	// Read current schema defaults
+	var schemaCharset, schemaCollation string
+	err := db.Raw("SELECT DEFAULT_CHARACTER_SET_NAME, DEFAULT_COLLATION_NAME FROM information_schema.SCHEMATA WHERE SCHEMA_NAME = DATABASE()").Row().Scan(&schemaCharset, &schemaCollation)
+	if err != nil {
+		return fmt.Errorf("读取当前库默认字符集/排序规则失败 / Failed to read schema default charset/collation: %v", err)
+	}
+
+	toLower := func(s string) string { return strings.ToLower(s) }
+	// Allowed charsets that can store Chinese text
+	allowedCharsets := map[string]string{
+		"utf8mb4": "utf8mb4_",
+		"utf8":    "utf8_",
+		"gbk":     "gbk_",
+		"big5":    "big5_",
+		"gb18030": "gb18030_",
+	}
+	isChineseCapable := func(cs, cl string) bool {
+		csLower := toLower(cs)
+		clLower := toLower(cl)
+		if prefix, ok := allowedCharsets[csLower]; ok {
+			// collation should correspond to the charset when available
+			if clLower == "" {
+				return true
+			}
+			return strings.HasPrefix(clLower, prefix)
+		}
+		return false
+	}
+
+	// We strictly require the CONNECTION and SCHEMA defaults to be Chinese-capable.
+	// We also check database/server variables and include them in the error for visibility.
+	if !isChineseCapable(charsetConn, collationConn) || !isChineseCapable(schemaCharset, schemaCollation) || !isChineseCapable(charsetDBVar, collationDBVar) {
+		return fmt.Errorf("MySQL 字符集/排序规则必须支持中文（允许 utf8mb4/utf8/gbk/big5/gb18030），请调整服务器、数据库或连接设置。/ MySQL charset/collation must be Chinese-capable (one of utf8mb4/utf8/gbk/big5/gb18030). Details: server(%s/%s), database_var(%s/%s), connection(%s/%s), schema(%s/%s)",
+			charsetServer, collationServer, charsetDBVar, collationDBVar, charsetConn, collationConn, schemaCharset, schemaCollation)
+	}
+	return nil
 }
 
 var (
