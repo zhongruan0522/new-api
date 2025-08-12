@@ -237,6 +237,8 @@ func (a *Adaptor) ConvertOpenAIRequest(c *gin.Context, info *relaycommon.RelayIn
 				}
 				request.Reasoning = marshal
 			}
+			// 清空多余的ReasoningEffort
+			request.ReasoningEffort = ""
 		} else {
 			if len(request.Reasoning) == 0 {
 				// 适配 OpenAI 的 ReasoningEffort 格式
@@ -254,6 +256,7 @@ func (a *Adaptor) ConvertOpenAIRequest(c *gin.Context, info *relaycommon.RelayIn
 					}
 				}
 			}
+			request.ReasoningEffort = ""
 		}
 	}
 	if strings.HasPrefix(info.UpstreamModelName, "o") || strings.HasPrefix(info.UpstreamModelName, "gpt-5") {
