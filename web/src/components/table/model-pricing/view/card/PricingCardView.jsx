@@ -128,19 +128,6 @@ const PricingCardView = ({
     return record.description || '';
   };
 
-  // 渲染价格信息
-  const renderPriceInfo = (record) => {
-    const priceData = calculateModelPrice({
-      record,
-      selectedGroup,
-      groupRatio,
-      tokenUnit,
-      displayPrice,
-      currency,
-    });
-    return formatPriceInfo(priceData, t);
-  };
-
   // 渲染标签
   const renderTags = (record) => {
     // 计费类型标签（左边）
@@ -221,6 +208,15 @@ const PricingCardView = ({
           const modelKey = getModelKey(model);
           const isSelected = selectedRowKeys.includes(modelKey);
 
+          const priceData = calculateModelPrice({
+            record: model,
+            selectedGroup,
+            groupRatio,
+            tokenUnit,
+            displayPrice,
+            currency,
+          });
+
           return (
             <Card
               key={modelKey || index}
@@ -238,7 +234,7 @@ const PricingCardView = ({
                         {model.model_name}
                       </h3>
                       <div className="flex items-center gap-3 text-xs mt-1">
-                        {renderPriceInfo(model)}
+                        {formatPriceInfo(priceData, t)}
                       </div>
                     </div>
                   </div>
@@ -313,7 +309,7 @@ const PricingCardView = ({
                           {t('补全')}: {model.quota_type === 0 ? parseFloat(model.completion_ratio.toFixed(3)) : t('无')}
                         </div>
                         <div>
-                          {t('分组')}: {priceData.usedGroupRatio}
+                          {t('分组')}: {priceData?.usedGroupRatio ?? '-'}
                         </div>
                       </div>
                     </div>
