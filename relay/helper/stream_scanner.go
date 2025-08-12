@@ -39,10 +39,6 @@ func StreamScannerHandler(c *gin.Context, resp *http.Response, info *relaycommon
 	}()
 
 	streamingTimeout := time.Duration(constant.StreamingTimeout) * time.Second
-	if strings.HasPrefix(info.UpstreamModelName, "o") {
-		// twice timeout for thinking model
-		streamingTimeout *= 2
-	}
 
 	var (
 		stopChan   = make(chan bool, 3) // 增加缓冲区避免阻塞
