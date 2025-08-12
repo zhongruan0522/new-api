@@ -135,7 +135,7 @@ const ModelSelectModal = ({ visible, models = [], selected = [], onConfirm, onCa
     const allActiveKeys = categoryEntries.map((_, index) => `${categoryKeyPrefix}_${index}`);
 
     return (
-      <Collapse activeKey={allActiveKeys}>
+      <Collapse key={`${categoryKeyPrefix}_${categoryEntries.length}`} defaultActiveKey={[]}>
         {categoryEntries.map(([key, categoryData], index) => (
           <Collapse.Panel
             key={`${categoryKeyPrefix}_${index}`}
