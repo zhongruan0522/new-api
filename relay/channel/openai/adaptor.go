@@ -258,6 +258,38 @@ func (a *Adaptor) ConvertOpenAIRequest(c *gin.Context, info *relaycommon.RelayIn
 			}
 			request.ReasoningEffort = ""
 		}
+
+		// https://docs.anthropic.com/en/api/openai-sdk#extended-thinking-support
+		// 没有做排除3.5Haiku等，要出问题再加吧，最佳兼容性（不是
+		if request.THINKING != nil && strings.HasPrefix(info.UpstreamModelName, "anthropic") {
+			var thinking dto.Thinking // Claude标准Thinking格式
+			if err := json.Unmarshal(request.THINKING, &thinking); err != nil {
+				return nil, fmt.Errorf("error Unmarshal thinking: %w", err)
+			}
+
+			// 只有当 thinking.Type 是 "enabled" 时才处理
+			if thinking.Type == "enabled" {
+				// 检查 BudgetTokens 是否为 nil
+				if thinking.BudgetTokens == nil {
+					return nil, fmt.Errorf("BudgetTokens is nil when thinking is enabled")
+				}
+
+				reasoning := openrouter.RequestReasoning{
+					MaxTokens: *thinking.BudgetTokens,
+				}
+
+				marshal, err := common.Marshal(reasoning)
+				if err != nil {
+					return nil, fmt.Errorf("error marshalling reasoning: %w", err)
+				}
+
+				request.Reasoning = marshal
+			}
+
+			// 清空 THINKING
+			request.THINKING = nil
+		}
+
 	}
 	if strings.HasPrefix(info.UpstreamModelName, "o") || strings.HasPrefix(info.UpstreamModelName, "gpt-5") {
 		if request.MaxCompletionTokens == 0 && request.MaxTokens != 0 {
