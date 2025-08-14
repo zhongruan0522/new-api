@@ -994,7 +994,7 @@ func GeminiChatStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *
 	response := helper.GenerateFinalUsageResponse(id, createAt, info.UpstreamModelName, *usage)
 	err := handleFinalStream(c, info, response)
 	if err != nil {
-		logger.SysError("send final response failed: " + err.Error())
+		common.SysLog("send final response failed: " + err.Error())
 	}
 	//if info.RelayFormat == relaycommon.RelayFormatOpenAI {
 	//	helper.Done(c)
@@ -1042,19 +1042,19 @@ func GeminiChatHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.R
 	fullTextResponse.Usage = usage
 
 	switch info.RelayFormat {
-	case relaycommon.RelayFormatOpenAI:
+	case types.RelayFormatOpenAI:
 		responseBody, err = common.Marshal(fullTextResponse)
 		if err != nil {
 			return nil, types.NewError(err, types.ErrorCodeBadResponseBody)
 		}
-	case relaycommon.RelayFormatClaude:
+	case types.RelayFormatClaude:
 		claudeResp := service.ResponseOpenAI2Claude(fullTextResponse, info)
 		claudeRespStr, err := common.Marshal(claudeResp)
 		if err != nil {
 			return nil, types.NewError(err, types.ErrorCodeBadResponseBody)
 		}
 		responseBody = claudeRespStr
-	case relaycommon.RelayFormatGemini:
+	case types.RelayFormatGemini:
 		break
 	}
 

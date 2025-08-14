@@ -13,7 +13,6 @@ import (
 	"one-api/common"
 	"one-api/constant"
 	"one-api/dto"
-	"one-api/logger"
 	"one-api/middleware"
 	"one-api/model"
 	"one-api/relay"
@@ -133,8 +132,17 @@ func testChannel(channel *model.Channel, testModel string) testResult {
 			newAPIError: newAPIError,
 		}
 	}
+	request := buildTestRequest(testModel)
 
-	info := relaycommon.GenRelayInfo(c)
+	info, err := relaycommon.GenRelayInfo(c, types.RelayFormatOpenAI, request, nil)
+
+	if err != nil {
+		return testResult{
+			context:     c,
+			localErr:    err,
+			newAPIError: types.NewError(err, types.ErrorCodeGenRelayInfoFailed),
+		}
+	}
 
 	err = helper.ModelMappedHelper(c, info, nil)
 	if err != nil {
@@ -144,7 +152,9 @@ func testChannel(channel *model.Channel, testModel string) testResult {
 			newAPIError: types.NewError(err, types.ErrorCodeChannelModelMappedError),
 		}
 	}
+
 	testModel = info.UpstreamModelName
+	request.Model = testModel
 
 	apiType, _ := common.ChannelType2APIType(channel.Type)
 	adaptor := relay.GetAdaptor(apiType)
@@ -156,13 +166,12 @@ func testChannel(channel *model.Channel, testModel string) testResult {
 		}
 	}
 
-	request := buildTestRequest(testModel)
 	// 创建一个用于日志的 info 副本，移除 ApiKey
 	logInfo := *info
 	logInfo.ApiKey = ""
-	logger.SysLog(fmt.Sprintf("testing channel %d with model %s , info %+v ", channel.Id, testModel, logInfo))
+	common.SysLog(fmt.Sprintf("testing channel %d with model %s , info %+v ", channel.Id, testModel, logInfo))
 
-	priceData, err := helper.ModelPriceHelper(c, info, 0, int(request.GetMaxTokens()))
+	priceData, err := helper.ModelPriceHelper(c, info, 0, request.GetTokenCountMeta())
 	if err != nil {
 		return testResult{
 			context:     c,
@@ -280,7 +289,7 @@ func testChannel(channel *model.Channel, testModel string) testResult {
 		Group:            info.UsingGroup,
 		Other:            other,
 	})
-	logger.SysLog(fmt.Sprintf("testing channel #%d, response: \n%s", channel.Id, string(respBody)))
+	common.SysLog(fmt.Sprintf("testing channel #%d, response: \n%s", channel.Id, string(respBody)))
 	return testResult{
 		context:     c,
 		localErr:    nil,
@@ -462,13 +471,13 @@ func TestAllChannels(c *gin.Context) {
 
 func AutomaticallyTestChannels(frequency int) {
 	if frequency <= 0 {
-		logger.SysLog("CHANNEL_TEST_FREQUENCY is not set or invalid, skipping automatic channel test")
+		common.SysLog("CHANNEL_TEST_FREQUENCY is not set or invalid, skipping automatic channel test")
 		return
 	}
 	for {
 		time.Sleep(time.Duration(frequency) * time.Minute)
-		logger.SysLog("testing all channels")
+		common.SysLog("testing all channels")
 		_ = testAllChannels(false)
-		logger.SysLog("channel test finished")
+		common.SysLog("channel test finished")
 	}
 }

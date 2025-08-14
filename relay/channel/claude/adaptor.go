@@ -53,9 +53,9 @@ func (a *Adaptor) Init(info *relaycommon.RelayInfo) {
 
 func (a *Adaptor) GetRequestURL(info *relaycommon.RelayInfo) (string, error) {
 	if a.RequestMode == RequestModeMessage {
-		return fmt.Sprintf("%s/v1/messages", info.BaseUrl), nil
+		return fmt.Sprintf("%s/v1/messages", info.ChannelBaseUrl), nil
 	} else {
-		return fmt.Sprintf("%s/v1/complete", info.BaseUrl), nil
+		return fmt.Sprintf("%s/v1/complete", info.ChannelBaseUrl), nil
 	}
 }
 

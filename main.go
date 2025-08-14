@@ -36,22 +36,22 @@ func main() {
 
 	err := InitResources()
 	if err != nil {
-		logger.FatalLog("failed to initialize resources: " + err.Error())
+		common.FatalLog("failed to initialize resources: " + err.Error())
 		return
 	}
 
-	logger.SysLog("New API " + common.Version + " started")
+	common.SysLog("New API " + common.Version + " started")
 	if os.Getenv("GIN_MODE") != "debug" {
 		gin.SetMode(gin.ReleaseMode)
 	}
 	if common.DebugEnabled {
-		logger.SysLog("running in debug mode")
+		common.SysLog("running in debug mode")
 	}
 
 	defer func() {
 		err := model.CloseDB()
 		if err != nil {
-			logger.FatalLog("failed to close database: " + err.Error())
+			common.FatalLog("failed to close database: " + err.Error())
 		}
 	}()
 
@@ -60,18 +60,18 @@ func main() {
 		common.MemoryCacheEnabled = true
 	}
 	if common.MemoryCacheEnabled {
-		logger.SysLog("memory cache enabled")
-		logger.SysError(fmt.Sprintf("sync frequency: %d seconds", common.SyncFrequency))
+		common.SysLog("memory cache enabled")
+		common.SysLog(fmt.Sprintf("sync frequency: %d seconds", common.SyncFrequency))
 
 		// Add panic recovery and retry for InitChannelCache
 		func() {
 			defer func() {
 				if r := recover(); r != nil {
-					logger.SysError(fmt.Sprintf("InitChannelCache panic: %v, retrying once", r))
+					common.SysLog(fmt.Sprintf("InitChannelCache panic: %v, retrying once", r))
 					// Retry once
 					_, _, fixErr := model.FixAbility()
 					if fixErr != nil {
-						logger.FatalLog(fmt.Sprintf("InitChannelCache failed: %s", fixErr.Error()))
+						common.FatalLog(fmt.Sprintf("InitChannelCache failed: %s", fixErr.Error()))
 					}
 				}
 			}()
@@ -90,14 +90,14 @@ func main() {
 	if os.Getenv("CHANNEL_UPDATE_FREQUENCY") != "" {
 		frequency, err := strconv.Atoi(os.Getenv("CHANNEL_UPDATE_FREQUENCY"))
 		if err != nil {
-			logger.FatalLog("failed to parse CHANNEL_UPDATE_FREQUENCY: " + err.Error())
+			common.FatalLog("failed to parse CHANNEL_UPDATE_FREQUENCY: " + err.Error())
 		}
 		go controller.AutomaticallyUpdateChannels(frequency)
 	}
 	if os.Getenv("CHANNEL_TEST_FREQUENCY") != "" {
 		frequency, err := strconv.Atoi(os.Getenv("CHANNEL_TEST_FREQUENCY"))
 		if err != nil {
-			logger.FatalLog("failed to parse CHANNEL_TEST_FREQUENCY: " + err.Error())
+			common.FatalLog("failed to parse CHANNEL_TEST_FREQUENCY: " + err.Error())
 		}
 		go controller.AutomaticallyTestChannels(frequency)
 	}
@@ -111,7 +111,7 @@ func main() {
 	}
 	if os.Getenv("BATCH_UPDATE_ENABLED") == "true" {
 		common.BatchUpdateEnabled = true
-		logger.SysLog("batch update enabled with interval " + strconv.Itoa(common.BatchUpdateInterval) + "s")
+		common.SysLog("batch update enabled with interval " + strconv.Itoa(common.BatchUpdateInterval) + "s")
 		model.InitBatchUpdater()
 	}
 
@@ -120,13 +120,13 @@ func main() {
 			log.Println(http.ListenAndServe("0.0.0.0:8005", nil))
 		})
 		go common.Monitor()
-		logger.SysLog("pprof enabled")
+		common.SysLog("pprof enabled")
 	}
 
 	// Initialize HTTP server
 	server := gin.New()
 	server.Use(gin.CustomRecovery(func(c *gin.Context, err any) {
-		logger.SysError(fmt.Sprintf("panic detected: %v", err))
+		common.SysLog(fmt.Sprintf("panic detected: %v", err))
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": gin.H{
 				"message": fmt.Sprintf("Panic detected, error: %v. Please submit a issue here: https://github.com/Calcium-Ion/new-api", err),
@@ -156,7 +156,7 @@ func main() {
 	}
 	err = server.Run(":" + port)
 	if err != nil {
-		logger.FatalLog("failed to start HTTP server: " + err.Error())
+		common.FatalLog("failed to start HTTP server: " + err.Error())
 	}
 }
 
@@ -165,8 +165,8 @@ func InitResources() error {
 	// This is a placeholder function for future resource initialization
 	err := godotenv.Load(".env")
 	if err != nil {
-		logger.SysLog("未找到 .env 文件，使用默认环境变量，如果需要，请创建 .env 文件并设置相关变量")
-		logger.SysLog("No .env file found, using default environment variables. If needed, please create a .env file and set the relevant variables.")
+		common.SysLog("未找到 .env 文件，使用默认环境变量，如果需要，请创建 .env 文件并设置相关变量")
+		common.SysLog("No .env file found, using default environment variables. If needed, please create a .env file and set the relevant variables.")
 	}
 
 	// 加载环境变量
@@ -184,7 +184,7 @@ func InitResources() error {
 	// Initialize SQL Database
 	err = model.InitDB()
 	if err != nil {
-		logger.FatalLog("failed to initialize database: " + err.Error())
+		common.FatalLog("failed to initialize database: " + err.Error())
 		return err
 	}
 

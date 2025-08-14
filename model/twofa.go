@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"one-api/common"
-	"one-api/logger"
 	"time"
 
 	"gorm.io/gorm"
@@ -244,7 +243,7 @@ func (t *TwoFA) ValidateTOTPAndUpdateUsage(code string) (bool, error) {
 	if !common.ValidateTOTPCode(t.Secret, code) {
 		// 增加失败次数
 		if err := t.IncrementFailedAttempts(); err != nil {
-			logger.SysError("更新2FA失败次数失败: " + err.Error())
+			common.SysLog("更新2FA失败次数失败: " + err.Error())
 		}
 		return false, nil
 	}
@@ -256,7 +255,7 @@ func (t *TwoFA) ValidateTOTPAndUpdateUsage(code string) (bool, error) {
 	t.LastUsedAt = &now
 
 	if err := t.Update(); err != nil {
-		logger.SysError("更新2FA使用记录失败: " + err.Error())
+		common.SysLog("更新2FA使用记录失败: " + err.Error())
 	}
 
 	return true, nil
@@ -278,7 +277,7 @@ func (t *TwoFA) ValidateBackupCodeAndUpdateUsage(code string) (bool, error) {
 	if !valid {
 		// 增加失败次数
 		if err := t.IncrementFailedAttempts(); err != nil {
-			logger.SysError("更新2FA失败次数失败: " + err.Error())
+			common.SysLog("更新2FA失败次数失败: " + err.Error())
 		}
 		return false, nil
 	}
@@ -290,7 +289,7 @@ func (t *TwoFA) ValidateBackupCodeAndUpdateUsage(code string) (bool, error) {
 	t.LastUsedAt = &now
 
 	if err := t.Update(); err != nil {
-		logger.SysError("更新2FA使用记录失败: " + err.Error())
+		common.SysLog("更新2FA使用记录失败: " + err.Error())
 	}
 
 	return true, nil

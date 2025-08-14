@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"one-api/common"
 	"one-api/constant"
 	"one-api/dto"
 	"one-api/logger"
@@ -37,7 +38,7 @@ func updateVideoTaskAll(ctx context.Context, platform constant.TaskPlatform, cha
 			"progress":    "100%",
 		})
 		if errUpdate != nil {
-			logger.SysError(fmt.Sprintf("UpdateVideoTask error: %v", errUpdate))
+			common.SysLog(fmt.Sprintf("UpdateVideoTask error: %v", errUpdate))
 		}
 		return fmt.Errorf("CacheGetChannel failed: %w", err)
 	}
@@ -112,7 +113,7 @@ func updateVideoSingleTask(ctx context.Context, adaptor channel.TaskAdaptor, cha
 			task.StartTime = now
 		}
 	case model.TaskStatusSuccess:
-		task.Progress = "100%"
+		task.Progress =	 "100%"
 		if task.FinishTime == 0 {
 			task.FinishTime = now
 		}
@@ -140,7 +141,7 @@ func updateVideoSingleTask(ctx context.Context, adaptor channel.TaskAdaptor, cha
 		task.Progress = taskResult.Progress
 	}
 	if err := task.Update(); err != nil {
-		logger.SysError("UpdateVideoTask task error: " + err.Error())
+		common.SysLog("UpdateVideoTask task error: " + err.Error())
 	}
 
 	return nil

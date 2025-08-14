@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"net/url"
 	"one-api/common"
-	"one-api/logger"
 	"one-api/model"
 	"one-api/setting"
 	"one-api/setting/system_setting"
@@ -59,7 +58,7 @@ func getOidcUserInfoByCode(code string) (*OidcUser, error) {
 	}
 	res, err := client.Do(req)
 	if err != nil {
-		logger.SysLog(err.Error())
+		common.SysLog(err.Error())
 		return nil, errors.New("无法连接至 OIDC 服务器，请稍后重试！")
 	}
 	defer res.Body.Close()
@@ -70,7 +69,7 @@ func getOidcUserInfoByCode(code string) (*OidcUser, error) {
 	}
 
 	if oidcResponse.AccessToken == "" {
-		logger.SysError("OIDC 获取 Token 失败，请检查设置！")
+		common.SysLog("OIDC 获取 Token 失败，请检查设置！")
 		return nil, errors.New("OIDC 获取 Token 失败，请检查设置！")
 	}
 
@@ -81,12 +80,12 @@ func getOidcUserInfoByCode(code string) (*OidcUser, error) {
 	req.Header.Set("Authorization", "Bearer "+oidcResponse.AccessToken)
 	res2, err := client.Do(req)
 	if err != nil {
-		logger.SysLog(err.Error())
+		common.SysLog(err.Error())
 		return nil, errors.New("无法连接至 OIDC 服务器，请稍后重试！")
 	}
 	defer res2.Body.Close()
 	if res2.StatusCode != http.StatusOK {
-		logger.SysError("OIDC 获取用户信息失败！请检查设置！")
+		common.SysLog("OIDC 获取用户信息失败！请检查设置！")
 		return nil, errors.New("OIDC 获取用户信息失败！请检查设置！")
 	}
 
@@ -96,7 +95,7 @@ func getOidcUserInfoByCode(code string) (*OidcUser, error) {
 		return nil, err
 	}
 	if oidcUser.OpenID == "" || oidcUser.Email == "" {
-		logger.SysError("OIDC 获取用户信息为空！请检查设置！")
+		common.SysLog("OIDC 获取用户信息为空！请检查设置！")
 		return nil, errors.New("OIDC 获取用户信息为空！请检查设置！")
 	}
 	return &oidcUser, nil

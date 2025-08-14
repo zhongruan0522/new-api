@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"one-api/common"
-	"one-api/logger"
 	"one-api/model"
 	"strconv"
 
@@ -71,7 +70,7 @@ func Setup2FA(c *gin.Context) {
 			"success": false,
 			"message": "生成2FA密钥失败",
 		})
-		logger.SysError("生成TOTP密钥失败: " + err.Error())
+		common.SysLog("生成TOTP密钥失败: " + err.Error())
 		return
 	}
 
@@ -82,7 +81,7 @@ func Setup2FA(c *gin.Context) {
 			"success": false,
 			"message": "生成备用码失败",
 		})
-		logger.SysError("生成备用码失败: " + err.Error())
+		common.SysLog("生成备用码失败: " + err.Error())
 		return
 	}
 
@@ -116,7 +115,7 @@ func Setup2FA(c *gin.Context) {
 			"success": false,
 			"message": "保存备用码失败",
 		})
-		logger.SysError("保存备用码失败: " + err.Error())
+		common.SysLog("保存备用码失败: " + err.Error())
 		return
 	}
 
@@ -295,7 +294,7 @@ func Get2FAStatus(c *gin.Context) {
 			// 获取剩余备用码数量
 			backupCount, err := model.GetUnusedBackupCodeCount(userId)
 			if err != nil {
-				logger.SysError("获取备用码数量失败: " + err.Error())
+				common.SysLog("获取备用码数量失败: " + err.Error())
 			} else {
 				status["backup_codes_remaining"] = backupCount
 			}
@@ -369,7 +368,7 @@ func RegenerateBackupCodes(c *gin.Context) {
 			"success": false,
 			"message": "生成备用码失败",
 		})
-		logger.SysError("生成备用码失败: " + err.Error())
+		common.SysLog("生成备用码失败: " + err.Error())
 		return
 	}
 
@@ -379,7 +378,7 @@ func RegenerateBackupCodes(c *gin.Context) {
 			"success": false,
 			"message": "保存备用码失败",
 		})
-		logger.SysError("保存备用码失败: " + err.Error())
+		common.SysLog("保存备用码失败: " + err.Error())
 		return
 	}
 

@@ -4,10 +4,11 @@ package controller
 
 import (
 	"encoding/json"
-	"github.com/gin-gonic/gin"
 	"net/http"
-	"one-api/logger"
+	"one-api/common"
 	"one-api/model"
+
+	"github.com/gin-gonic/gin"
 )
 
 // MigrateConsoleSetting 迁移旧的控制台相关配置到 console_setting.*
@@ -98,6 +99,6 @@ func MigrateConsoleSetting(c *gin.Context) {
 
 	// 重新加载 OptionMap
 	model.InitOptionMap()
-	logger.SysLog("console setting migrated")
+	common.SysLog("console setting migrated")
 	c.JSON(http.StatusOK, gin.H{"success": true, "message": "migrated"})
 }

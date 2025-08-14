@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"one-api/common"
 	"one-api/dto"
-	"one-api/logger"
 	"one-api/model"
 	"strings"
 )
@@ -13,7 +12,7 @@ func NotifyRootUser(t string, subject string, content string) {
 	user := model.GetRootUser().ToBaseUser()
 	err := NotifyUser(user.Id, user.Email, user.GetSetting(), dto.NewNotify(t, subject, content, nil))
 	if err != nil {
-		logger.SysError(fmt.Sprintf("failed to notify root user: %s", err.Error()))
+		common.SysLog(fmt.Sprintf("failed to notify root user: %s", err.Error()))
 	}
 }
 
@@ -26,7 +25,7 @@ func NotifyUser(userId int, userEmail string, userSetting dto.UserSetting, data 
 	// Check notification limit
 	canSend, err := CheckNotificationLimit(userId, data.Type)
 	if err != nil {
-		logger.SysError(fmt.Sprintf("failed to check notification limit: %s", err.Error()))
+		common.SysLog(fmt.Sprintf("failed to check notification limit: %s", err.Error()))
 		return err
 	}
 	if !canSend {
@@ -38,14 +37,14 @@ func NotifyUser(userId int, userEmail string, userSetting dto.UserSetting, data 
 		// check setting email
 		userEmail = userSetting.NotificationEmail
 		if userEmail == "" {
-			logger.SysLog(fmt.Sprintf("user %d has no email, skip sending email", userId))
+			common.SysLog(fmt.Sprintf("user %d has no email, skip sending email", userId))
 			return nil
 		}
 		return sendEmailNotify(userEmail, data)
 	case dto.NotifyTypeWebhook:
 		webhookURLStr := userSetting.WebhookUrl
 		if webhookURLStr == "" {
-			logger.SysError(fmt.Sprintf("user %d has no webhook url, skip sending webhook", userId))
+			common.SysLog(fmt.Sprintf("user %d has no webhook url, skip sending webhook", userId))
 			return nil
 		}
 

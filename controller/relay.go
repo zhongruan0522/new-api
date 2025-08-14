@@ -104,26 +104,6 @@ func Relay(c *gin.Context, relayFormat types.RelayFormat) {
 		return
 	}
 
-	//includeUsage := true
-	//// 判断用户是否需要返回使用情况
-	//if textRequest.StreamOptions != nil {
-	//	includeUsage = textRequest.StreamOptions.IncludeUsage
-	//}
-	//
-	//// 如果不支持StreamOptions，将StreamOptions设置为nil
-	//if !relayInfo.SupportStreamOptions || !textRequest.Stream {
-	//	textRequest.StreamOptions = nil
-	//} else {
-	//	// 如果支持StreamOptions，且请求中没有设置StreamOptions，根据配置文件设置StreamOptions
-	//	if constant.ForceStreamOption {
-	//		textRequest.StreamOptions = &dto.StreamOptions{
-	//			IncludeUsage: true,
-	//		}
-	//	}
-	//}
-	//
-	//relayInfo.ShouldIncludeUsage = includeUsage
-
 	relayInfo, err := relaycommon.GenRelayInfo(c, relayFormat, request, ws)
 	if err != nil {
 		newAPIError = types.NewError(err, types.ErrorCodeGenRelayInfoFailed)
@@ -178,7 +158,7 @@ func Relay(c *gin.Context, relayFormat types.RelayFormat) {
 
 		switch relayFormat {
 		case types.RelayFormatOpenAIRealtime:
-			newAPIError = relay.WssHelper(c, ws)
+			newAPIError = relay.WssHelper(c, relayInfo)
 		case types.RelayFormatClaude:
 			newAPIError = relay.ClaudeHelper(c, relayInfo)
 		case types.RelayFormatGemini:
@@ -324,35 +304,45 @@ func processChannelError(c *gin.Context, channelError types.ChannelError, err *t
 }
 
 func RelayMidjourney(c *gin.Context) {
-	relayMode := c.GetInt("relay_mode")
-	var err *dto.MidjourneyResponse
-	switch relayMode {
+	relayInfo, err := relaycommon.GenRelayInfo(c, types.RelayFormatMjProxy, nil, nil)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"description": fmt.Sprintf("failed to generate relay info: %s", err.Error()),
+			"type":        "upstream_error",
+			"code":        4,
+		})
+		return
+	}
+
+	var mjErr *dto.MidjourneyResponse
+	switch relayInfo.RelayMode {
 	case relayconstant.RelayModeMidjourneyNotify:
-		err = relay.RelayMidjourneyNotify(c)
+		mjErr = relay.RelayMidjourneyNotify(c)
 	case relayconstant.RelayModeMidjourneyTaskFetch, relayconstant.RelayModeMidjourneyTaskFetchByCondition:
-		err = relay.RelayMidjourneyTask(c, relayMode)
+		mjErr = relay.RelayMidjourneyTask(c, relayInfo.RelayMode)
 	case relayconstant.RelayModeMidjourneyTaskImageSeed:
-		err = relay.RelayMidjourneyTaskImageSeed(c)
+		mjErr = relay.RelayMidjourneyTaskImageSeed(c)
 	case relayconstant.RelayModeSwapFace:
-		err = relay.RelaySwapFace(c)
+		mjErr = relay.RelaySwapFace(c, relayInfo)
 	default:
-		err = relay.RelayMidjourneySubmit(c, relayMode)
+		mjErr = relay.RelayMidjourneySubmit(c, relayInfo)
 	}
 	//err = relayMidjourneySubmit(c, relayMode)
-	log.Println(err)
-	if err != nil {
+	log.Println(mjErr)
+	if mjErr != nil {
 		statusCode := http.StatusBadRequest
-		if err.Code == 30 {
-			err.Result = "当前分组负载已饱和，请稍后再试，或升级账户以提升服务质量。"
+		if mjErr.Code == 30 {
+			mjErr.Result = "当前分组负载已饱和，请稍后再试，或升级账户以提升服务质量。"
 			statusCode = http.StatusTooManyRequests
 		}
 		c.JSON(statusCode, gin.H{
-			"description": fmt.Sprintf("%s %s", err.Description, err.Result),
+			"description": fmt.Sprintf("%s %s", mjErr.Description, mjErr.Result),
 			"type":        "upstream_error",
-			"code":        err.Code,
+			"code":        mjErr.Code,
 		})
 		channelId := c.GetInt("channel_id")
-		logger.LogError(c, fmt.Sprintf("relay error (channel #%d, status code %d): %s", channelId, statusCode, fmt.Sprintf("%s %s", err.Description, err.Result)))
+		logger.LogError(c, fmt.Sprintf("relay error (channel #%d, status code %d): %s", channelId, statusCode, fmt.Sprintf("%s %s", mjErr.Description, mjErr.Result)))
 	}
 }
 

@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
-	"one-api/logger"
+	"one-api/common"
 	"sync"
 )
 
@@ -21,7 +21,7 @@ func ModelRequestRateLimitGroup2JSONString() string {
 
 	jsonBytes, err := json.Marshal(ModelRequestRateLimitGroup)
 	if err != nil {
-		logger.SysError("error marshalling model ratio: " + err.Error())
+		common.SysLog("error marshalling model ratio: " + err.Error())
 	}
 	return string(jsonBytes)
 }

@@ -2,7 +2,7 @@ package config
 
 import (
 	"encoding/json"
-	"one-api/logger"
+	"one-api/common"
 	"reflect"
 	"strconv"
 	"strings"
@@ -57,7 +57,7 @@ func (cm *ConfigManager) LoadFromDB(options map[string]string) error {
 		// 如果找到配置项，则更新配置
 		if len(configMap) > 0 {
 			if err := updateConfigFromMap(config, configMap); err != nil {
-				logger.SysError("failed to update config " + name + ": " + err.Error())
+				common.SysError("failed to update config " + name + ": " + err.Error())
 				continue
 			}
 		}

@@ -44,6 +44,26 @@ func TextHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *types
 		return types.NewError(err, types.ErrorCodeChannelModelMappedError, types.ErrOptionWithSkipRetry())
 	}
 
+	includeUsage := true
+	// 判断用户是否需要返回使用情况
+	if textRequest.StreamOptions != nil {
+		includeUsage = textRequest.StreamOptions.IncludeUsage
+	}
+
+	// 如果不支持StreamOptions，将StreamOptions设置为nil
+	if !info.SupportStreamOptions || !textRequest.Stream {
+		textRequest.StreamOptions = nil
+	} else {
+		// 如果支持StreamOptions，且请求中没有设置StreamOptions，根据配置文件设置StreamOptions
+		if constant.ForceStreamOption {
+			textRequest.StreamOptions = &dto.StreamOptions{
+				IncludeUsage: true,
+			}
+		}
+	}
+
+	info.ShouldIncludeUsage = includeUsage
+
 	adaptor := GetAdaptor(info.ApiType)
 	if adaptor == nil {
 		return types.NewError(fmt.Errorf("invalid api type: %d", info.ApiType), types.ErrorCodeInvalidApiType, types.ErrOptionWithSkipRetry())

@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"one-api/common"
 	"one-api/dto"
-	"one-api/logger"
 	"one-api/relay/channel/openai"
 	relaycommon "one-api/relay/common"
 	"one-api/relay/helper"
@@ -48,7 +47,7 @@ func xAIStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Re
 		var xAIResp *dto.ChatCompletionsStreamResponse
 		err := json.Unmarshal([]byte(data), &xAIResp)
 		if err != nil {
-			logger.SysError("error unmarshalling stream response: " + err.Error())
+			common.SysLog("error unmarshalling stream response: " + err.Error())
 			return true
 		}
 
@@ -64,7 +63,7 @@ func xAIStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Re
 		_ = openai.ProcessStreamResponse(*openaiResponse, &responseTextBuilder, &toolCount)
 		err = helper.ObjectData(c, openaiResponse)
 		if err != nil {
-			logger.SysError(err.Error())
+			common.SysLog(err.Error())
 		}
 		return true
 	})

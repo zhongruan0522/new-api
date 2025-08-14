@@ -7,7 +7,6 @@ import (
 	"one-api/common"
 	"one-api/constant"
 	"one-api/dto"
-	"one-api/logger"
 	relaycommon "one-api/relay/common"
 	"one-api/relay/helper"
 	"one-api/service"
@@ -59,7 +58,7 @@ func palmStreamHandler(c *gin.Context, resp *http.Response) (*types.NewAPIError,
 	go func() {
 		responseBody, err := io.ReadAll(resp.Body)
 		if err != nil {
-			logger.SysError("error reading stream response: " + err.Error())
+			common.SysLog("error reading stream response: " + err.Error())
 			stopChan <- true
 			return
 		}
@@ -67,7 +66,7 @@ func palmStreamHandler(c *gin.Context, resp *http.Response) (*types.NewAPIError,
 		var palmResponse PaLMChatResponse
 		err = json.Unmarshal(responseBody, &palmResponse)
 		if err != nil {
-			logger.SysError("error unmarshalling stream response: " + err.Error())
+			common.SysLog("error unmarshalling stream response: " + err.Error())
 			stopChan <- true
 			return
 		}
@@ -79,7 +78,7 @@ func palmStreamHandler(c *gin.Context, resp *http.Response) (*types.NewAPIError,
 		}
 		jsonResponse, err := json.Marshal(fullTextResponse)
 		if err != nil {
-			logger.SysError("error marshalling stream response: " + err.Error())
+			common.SysLog("error marshalling stream response: " + err.Error())
 			stopChan <- true
 			return
 		}

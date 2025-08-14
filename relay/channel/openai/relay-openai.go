@@ -130,7 +130,7 @@ func OaiStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Re
 		if lastStreamData != "" {
 			err := HandleStreamFormat(c, info, lastStreamData, info.ChannelSetting.ForceFormat, info.ChannelSetting.ThinkingToContent)
 			if err != nil {
-				logger.SysError("error handling stream format: " + err.Error())
+				common.SysLog("error handling stream format: " + err.Error())
 			}
 		}
 		if len(data) > 0 {
@@ -147,7 +147,7 @@ func OaiStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Re
 		logger.LogError(c, fmt.Sprintf("error handling last response: %s, lastStreamData: [%s]", err.Error(), lastStreamData))
 	}
 
-	if info.RelayFormat == relaycommon.RelayFormatOpenAI {
+	if info.RelayFormat == types.RelayFormatOpenAI {
 		if shouldSendLastResp {
 			_ = sendStreamData(c, info, lastStreamData, info.ChannelSetting.ForceFormat, info.ChannelSetting.ThinkingToContent)
 		}
@@ -211,7 +211,7 @@ func OpenaiHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Respo
 	}
 
 	switch info.RelayFormat {
-	case relaycommon.RelayFormatOpenAI:
+	case types.RelayFormatOpenAI:
 		if forceFormat {
 			responseBody, err = common.Marshal(simpleResponse)
 			if err != nil {
@@ -220,14 +220,14 @@ func OpenaiHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Respo
 		} else {
 			break
 		}
-	case relaycommon.RelayFormatClaude:
+	case types.RelayFormatClaude:
 		claudeResp := service.ResponseOpenAI2Claude(&simpleResponse, info)
 		claudeRespStr, err := common.Marshal(claudeResp)
 		if err != nil {
 			return nil, types.NewError(err, types.ErrorCodeBadResponseBody)
 		}
 		responseBody = claudeRespStr
-	case relaycommon.RelayFormatGemini:
+	case types.RelayFormatGemini:
 		geminiResp := service.ResponseOpenAI2Gemini(&simpleResponse, info)
 		geminiRespStr, err := common.Marshal(geminiResp)
 		if err != nil {

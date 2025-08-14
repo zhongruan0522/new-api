@@ -10,7 +10,6 @@ import (
 	"one-api/common"
 	"one-api/constant"
 	"one-api/dto"
-	"one-api/logger"
 	relaycommon "one-api/relay/common"
 	"one-api/types"
 	"strings"
@@ -32,9 +31,9 @@ var tokenEncoderMap = make(map[string]tokenizer.Codec)
 var tokenEncoderMutex sync.RWMutex
 
 func InitTokenEncoders() {
-	logger.SysLog("initializing token encoders")
+	common.SysLog("initializing token encoders")
 	defaultTokenEncoder = codec.NewCl100kBase()
-	logger.SysLog("token encoders initialized")
+	common.SysLog("token encoders initialized")
 }
 
 func getTokenEncoder(model string) tokenizer.Codec {
@@ -158,7 +157,7 @@ func getImageToken(fileMeta *types.FileMeta, model string, stream bool) (int, er
 	if strings.HasPrefix(fileMeta.Data, "http") {
 		config, format, err = DecodeUrlImageData(fileMeta.Data)
 	} else {
-		logger.SysLog(fmt.Sprintf("decoding image"))
+		common.SysLog(fmt.Sprintf("decoding image"))
 		config, format, b64str, err = DecodeBase64ImageData(fileMeta.Data)
 	}
 	if err != nil {
@@ -248,6 +247,11 @@ func CountRequestToken(c *gin.Context, meta *types.TokenCountMeta, info *relayco
 	if meta == nil {
 		return 0, errors.New("token count meta is nil")
 	}
+
+	if info.RelayFormat == types.RelayFormatOpenAIRealtime {
+		return 0, nil
+	}
+	
 	model := common.GetContextKeyString(c, constant.ContextKeyOriginalModel)
 	tkm := CountTextToken(meta.CombineText, model)
 

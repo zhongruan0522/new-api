@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"one-api/common"
 	"one-api/dto"
-	"one-api/logger"
 	relaycommon "one-api/relay/common"
 	"one-api/relay/helper"
 	"one-api/service"
@@ -155,7 +154,7 @@ func handleCozeEvent(c *gin.Context, event string, data string, responseText *st
 		var chatData CozeChatResponseData
 		err := json.Unmarshal([]byte(data), &chatData)
 		if err != nil {
-			logger.SysError("error_unmarshalling_stream_response: " + err.Error())
+			common.SysLog("error_unmarshalling_stream_response: " + err.Error())
 			return
 		}
 
@@ -172,14 +171,14 @@ func handleCozeEvent(c *gin.Context, event string, data string, responseText *st
 		var messageData CozeChatV3MessageDetail
 		err := json.Unmarshal([]byte(data), &messageData)
 		if err != nil {
-			logger.SysError("error_unmarshalling_stream_response: " + err.Error())
+			common.SysLog("error_unmarshalling_stream_response: " + err.Error())
 			return
 		}
 
 		var content string
 		err = json.Unmarshal(messageData.Content, &content)
 		if err != nil {
-			logger.SysError("error_unmarshalling_stream_response: " + err.Error())
+			common.SysLog("error_unmarshalling_stream_response: " + err.Error())
 			return
 		}
 
@@ -204,16 +203,16 @@ func handleCozeEvent(c *gin.Context, event string, data string, responseText *st
 		var errorData CozeError
 		err := json.Unmarshal([]byte(data), &errorData)
 		if err != nil {
-			logger.SysError("error_unmarshalling_stream_response: " + err.Error())
+			common.SysLog("error_unmarshalling_stream_response: " + err.Error())
 			return
 		}
 
-		logger.SysError(fmt.Sprintf("stream event error: ", errorData.Code, errorData.Message))
+		common.SysLog(fmt.Sprintf("stream event error: ", errorData.Code, errorData.Message))
 	}
 }
 
 func checkIfChatComplete(a *Adaptor, c *gin.Context, info *relaycommon.RelayInfo) (error, bool) {
-	requestURL := fmt.Sprintf("%s/v3/chat/retrieve", info.BaseUrl)
+	requestURL := fmt.Sprintf("%s/v3/chat/retrieve", info.ChannelBaseUrl)
 
 	requestURL = requestURL + "?conversation_id=" + c.GetString("coze_conversation_id") + "&chat_id=" + c.GetString("coze_chat_id")
 	// 将 conversationId和chatId作为参数发送get请求
@@ -259,7 +258,7 @@ func checkIfChatComplete(a *Adaptor, c *gin.Context, info *relaycommon.RelayInfo
 }
 
 func getChatDetail(a *Adaptor, c *gin.Context, info *relaycommon.RelayInfo) (*http.Response, error) {
-	requestURL := fmt.Sprintf("%s/v3/chat/message/list", info.BaseUrl)
+	requestURL := fmt.Sprintf("%s/v3/chat/message/list", info.ChannelBaseUrl)
 
 	requestURL = requestURL + "?conversation_id=" + c.GetString("coze_conversation_id") + "&chat_id=" + c.GetString("coze_chat_id")
 	req, err := http.NewRequest("GET", requestURL, nil)

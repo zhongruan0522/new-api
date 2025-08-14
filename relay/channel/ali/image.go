@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"one-api/common"
 	"one-api/dto"
 	"one-api/logger"
 	relaycommon "one-api/relay/common"
@@ -22,14 +23,14 @@ func oaiImage2Ali(request dto.ImageRequest) *AliImageRequest {
 	imageRequest.Input.Prompt = request.Prompt
 	imageRequest.Model = request.Model
 	imageRequest.Parameters.Size = strings.Replace(request.Size, "x", "*", -1)
-	imageRequest.Parameters.N = request.N
+	imageRequest.Parameters.N = int(request.N)
 	imageRequest.ResponseFormat = request.ResponseFormat
 
 	return &imageRequest
 }
 
 func updateTask(info *relaycommon.RelayInfo, taskID string) (*AliResponse, error, []byte) {
-	url := fmt.Sprintf("%s/api/v1/tasks/%s", info.BaseUrl, taskID)
+	url := fmt.Sprintf("%s/api/v1/tasks/%s", info.ChannelBaseUrl, taskID)
 
 	var aliResponse AliResponse
 
@@ -43,7 +44,7 @@ func updateTask(info *relaycommon.RelayInfo, taskID string) (*AliResponse, error
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		logger.SysError("updateTask client.Do err: " + err.Error())
+		common.SysLog("updateTask client.Do err: " + err.Error())
 		return &aliResponse, err, nil
 	}
 	defer resp.Body.Close()
@@ -53,7 +54,7 @@ func updateTask(info *relaycommon.RelayInfo, taskID string) (*AliResponse, error
 	var response AliResponse
 	err = json.Unmarshal(responseBody, &response)
 	if err != nil {
-		logger.SysError("updateTask NewDecoder err: " + err.Error())
+		common.SysLog("updateTask NewDecoder err: " + err.Error())
 		return &aliResponse, err, nil
 	}
 

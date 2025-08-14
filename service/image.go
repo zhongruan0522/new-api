@@ -8,8 +8,8 @@ import (
 	"image"
 	"io"
 	"net/http"
+	"one-api/common"
 	"one-api/constant"
-	"one-api/logger"
 	"strings"
 
 	"golang.org/x/image/webp"
@@ -113,7 +113,7 @@ func GetImageFromUrl(url string) (mimeType string, data string, err error) {
 func DecodeUrlImageData(imageUrl string) (image.Config, string, error) {
 	response, err := DoDownloadRequest(imageUrl)
 	if err != nil {
-		logger.SysLog(fmt.Sprintf("fail to get image from url: %s", err.Error()))
+		common.SysLog(fmt.Sprintf("fail to get image from url: %s", err.Error()))
 		return image.Config{}, "", err
 	}
 	defer response.Body.Close()
@@ -131,7 +131,7 @@ func DecodeUrlImageData(imageUrl string) (image.Config, string, error) {
 
 	var readData []byte
 	for _, limit := range []int64{1024 * 8, 1024 * 24, 1024 * 64} {
-		logger.SysLog(fmt.Sprintf("try to decode image config with limit: %d", limit))
+		common.SysLog(fmt.Sprintf("try to decode image config with limit: %d", limit))
 
 		// 从response.Body读取更多的数据直到达到当前的限制
 		additionalData := make([]byte, limit-int64(len(readData)))
@@ -157,11 +157,11 @@ func getImageConfig(reader io.Reader) (image.Config, string, error) {
 	config, format, err := image.DecodeConfig(reader)
 	if err != nil {
 		err = errors.New(fmt.Sprintf("fail to decode image config(gif, jpg, png): %s", err.Error()))
-		logger.SysLog(err.Error())
+		common.SysLog(err.Error())
 		config, err = webp.DecodeConfig(reader)
 		if err != nil {
 			err = errors.New(fmt.Sprintf("fail to decode image config(webp): %s", err.Error()))
-			logger.SysLog(err.Error())
+			common.SysLog(err.Error())
 		}
 		format = "webp"
 	}

@@ -88,7 +88,7 @@ func RecordLog(userId int, logType int, content string) {
 	}
 	err := LOG_DB.Create(log).Error
 	if err != nil {
-		logger.SysError("failed to record log: " + err.Error())
+		common.SysLog("failed to record log: " + err.Error())
 	}
 }
 

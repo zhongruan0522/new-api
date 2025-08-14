@@ -53,9 +53,9 @@ func ModelPriceHelper(c *gin.Context, info *relaycommon.RelayInfo, promptTokens 
 	var imageRatio float64
 	var cacheCreationRatio float64
 	if !usePrice {
-		preConsumedTokens := common.PreConsumedQuota
+		preConsumedTokens := common.Max(promptTokens, common.PreConsumedQuota)
 		if meta.MaxTokens != 0 {
-			preConsumedTokens = promptTokens + meta.MaxTokens
+			preConsumedTokens += meta.MaxTokens
 		}
 		var success bool
 		var matchName string
@@ -102,27 +102,27 @@ func ModelPriceHelper(c *gin.Context, info *relaycommon.RelayInfo, promptTokens 
 }
 
 // ModelPriceHelperPerCall 按次计费的 PriceHelper (MJ、Task)
-//func ModelPriceHelperPerCall(c *gin.Context, info *relaycommon.RelayInfo) types.PerCallPriceData {
-//	groupRatioInfo := HandleGroupRatio(c, info)
-//
-//	modelPrice, success := ratio_setting.GetModelPrice(info.OriginModelName, true)
-//	// 如果没有配置价格，则使用默认价格
-//	if !success {
-//		defaultPrice, ok := ratio_setting.GetDefaultModelRatioMap()[info.OriginModelName]
-//		if !ok {
-//			modelPrice = 0.1
-//		} else {
-//			modelPrice = defaultPrice
-//		}
-//	}
-//	quota := int(modelPrice * common.QuotaPerUnit * groupRatioInfo.GroupRatio)
-//	priceData := types.PerCallPriceData{
-//		ModelPrice:     modelPrice,
-//		Quota:          quota,
-//		GroupRatioInfo: groupRatioInfo,
-//	}
-//	return priceData
-//}
+func ModelPriceHelperPerCall(c *gin.Context, info *relaycommon.RelayInfo) types.PerCallPriceData {
+	groupRatioInfo := HandleGroupRatio(c, info)
+
+	modelPrice, success := ratio_setting.GetModelPrice(info.OriginModelName, true)
+	// 如果没有配置价格，则使用默认价格
+	if !success {
+		defaultPrice, ok := ratio_setting.GetDefaultModelRatioMap()[info.OriginModelName]
+		if !ok {
+			modelPrice = 0.1
+		} else {
+			modelPrice = defaultPrice
+		}
+	}
+	quota := int(modelPrice * common.QuotaPerUnit * groupRatioInfo.GroupRatio)
+	priceData := types.PerCallPriceData{
+		ModelPrice:     modelPrice,
+		Quota:          quota,
+		GroupRatioInfo: groupRatioInfo,
+	}
+	return priceData
+}
 
 func ContainPriceOrRatio(modelName string) bool {
 	_, ok := ratio_setting.GetModelPrice(modelName, false)

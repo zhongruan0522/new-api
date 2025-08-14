@@ -76,7 +76,7 @@ func (user *User) GetSetting() dto.UserSetting {
 	if user.Setting != "" {
 		err := json.Unmarshal([]byte(user.Setting), &setting)
 		if err != nil {
-			logger.SysError("failed to unmarshal setting: " + err.Error())
+			common.SysLog("failed to unmarshal setting: " + err.Error())
 		}
 	}
 	return setting
@@ -85,7 +85,7 @@ func (user *User) GetSetting() dto.UserSetting {
 func (user *User) SetSetting(setting dto.UserSetting) {
 	settingBytes, err := json.Marshal(setting)
 	if err != nil {
-		logger.SysError("failed to marshal setting: " + err.Error())
+		common.SysLog("failed to marshal setting: " + err.Error())
 		return
 	}
 	user.Setting = string(settingBytes)
@@ -518,7 +518,7 @@ func IsAdmin(userId int) bool {
 	var user User
 	err := DB.Where("id = ?", userId).Select("role").Find(&user).Error
 	if err != nil {
-		logger.SysError("no such user " + err.Error())
+		common.SysLog("no such user " + err.Error())
 		return false
 	}
 	return user.Role >= common.RoleAdminUser
@@ -573,7 +573,7 @@ func GetUserQuota(id int, fromDB bool) (quota int, err error) {
 		if shouldUpdateRedis(fromDB, err) {
 			gopool.Go(func() {
 				if err := updateUserQuotaCache(id, quota); err != nil {
-					logger.SysError("failed to update user quota cache: " + err.Error())
+					common.SysLog("failed to update user quota cache: " + err.Error())
 				}
 			})
 		}
@@ -611,7 +611,7 @@ func GetUserGroup(id int, fromDB bool) (group string, err error) {
 		if shouldUpdateRedis(fromDB, err) {
 			gopool.Go(func() {
 				if err := updateUserGroupCache(id, group); err != nil {
-					logger.SysError("failed to update user group cache: " + err.Error())
+					common.SysLog("failed to update user group cache: " + err.Error())
 				}
 			})
 		}
@@ -640,7 +640,7 @@ func GetUserSetting(id int, fromDB bool) (settingMap dto.UserSetting, err error)
 		if shouldUpdateRedis(fromDB, err) {
 			gopool.Go(func() {
 				if err := updateUserSettingCache(id, setting); err != nil {
-					logger.SysError("failed to update user setting cache: " + err.Error())
+					common.SysLog("failed to update user setting cache: " + err.Error())
 				}
 			})
 		}
@@ -670,7 +670,7 @@ func IncreaseUserQuota(id int, quota int, db bool) (err error) {
 	gopool.Go(func() {
 		err := cacheIncrUserQuota(id, int64(quota))
 		if err != nil {
-			logger.SysError("failed to increase user quota: " + err.Error())
+			common.SysLog("failed to increase user quota: " + err.Error())
 		}
 	})
 	if !db && common.BatchUpdateEnabled {
@@ -695,7 +695,7 @@ func DecreaseUserQuota(id int, quota int) (err error) {
 	gopool.Go(func() {
 		err := cacheDecrUserQuota(id, int64(quota))
 		if err != nil {
-			logger.SysError("failed to decrease user quota: " + err.Error())
+			common.SysLog("failed to decrease user quota: " + err.Error())
 		}
 	})
 	if common.BatchUpdateEnabled {
@@ -751,7 +751,7 @@ func updateUserUsedQuotaAndRequestCount(id int, quota int, count int) {
 		},
 	).Error
 	if err != nil {
-		logger.SysError("failed to update user used quota and request count: " + err.Error())
+		common.SysLog("failed to update user used quota and request count: " + err.Error())
 		return
 	}
 
@@ -768,14 +768,14 @@ func updateUserUsedQuota(id int, quota int) {
 		},
 	).Error
 	if err != nil {
-		logger.SysError("failed to update user used quota: " + err.Error())
+		common.SysLog("failed to update user used quota: " + err.Error())
 	}
 }
 
 func updateUserRequestCount(id int, count int) {
 	err := DB.Model(&User{}).Where("id = ?", id).Update("request_count", gorm.Expr("request_count + ?", count)).Error
 	if err != nil {
-		logger.SysError("failed to update user request count: " + err.Error())
+		common.SysLog("failed to update user request count: " + err.Error())
 	}
 }
 
@@ -786,7 +786,7 @@ func GetUsernameById(id int, fromDB bool) (username string, err error) {
 		if shouldUpdateRedis(fromDB, err) {
 			gopool.Go(func() {
 				if err := updateUserNameCache(id, username); err != nil {
-					logger.SysError("failed to update user name cache: " + err.Error())
+					common.SysLog("failed to update user name cache: " + err.Error())
 				}
 			})
 		}

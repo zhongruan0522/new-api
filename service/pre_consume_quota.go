@@ -6,6 +6,7 @@ import (
 	"github.com/bytedance/gopkg/util/gopool"
 	"github.com/gin-gonic/gin"
 	"net/http"
+	"one-api/common"
 	"one-api/logger"
 	"one-api/model"
 	relaycommon "one-api/relay/common"
@@ -19,7 +20,7 @@ func ReturnPreConsumedQuota(c *gin.Context, relayInfo *relaycommon.RelayInfo, pr
 
 			err := PostConsumeQuota(&relayInfoCopy, -preConsumedQuota, 0, false)
 			if err != nil {
-				logger.SysError("error return pre-consumed quota: " + err.Error())
+				common.SysLog("error return pre-consumed quota: " + err.Error())
 			}
 		})
 	}

@@ -332,9 +332,9 @@ func (m *MediaContent) GetVideoUrl() *MessageVideoUrl {
 }
 
 type MessageImageUrl struct {
-	Url    string `json:"url"`
-	Detail string `json:"detail"`
-	//MimeType string
+	Url      string `json:"url"`
+	Detail   string `json:"detail"`
+	MimeType string
 }
 
 func (m *MessageImageUrl) IsRemoteImage() bool {

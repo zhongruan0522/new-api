@@ -3,7 +3,6 @@ package controller
 import (
 	"net/http"
 	"one-api/common"
-	"one-api/logger"
 	"one-api/model"
 	"strconv"
 
@@ -103,7 +102,7 @@ func AddToken(c *gin.Context) {
 			"success": false,
 			"message": "生成令牌失败",
 		})
-		logger.SysError("failed to generate token key: " + err.Error())
+		common.SysLog("failed to generate token key: " + err.Error())
 		return
 	}
 	cleanToken := model.Token{

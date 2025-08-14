@@ -9,7 +9,6 @@ import (
 	"one-api/common"
 	"one-api/constant"
 	"one-api/dto"
-	"one-api/logger"
 	relaycommon "one-api/relay/common"
 	"one-api/relay/helper"
 	"one-api/service"
@@ -119,7 +118,7 @@ func baiduStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.
 		var baiduResponse BaiduChatStreamResponse
 		err := common.Unmarshal([]byte(data), &baiduResponse)
 		if err != nil {
-			logger.SysError("error unmarshalling stream response: " + err.Error())
+			common.SysLog("error unmarshalling stream response: " + err.Error())
 			return true
 		}
 		if baiduResponse.Usage.TotalTokens != 0 {
@@ -130,7 +129,7 @@ func baiduStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.
 		response := streamResponseBaidu2OpenAI(&baiduResponse)
 		err = helper.ObjectData(c, response)
 		if err != nil {
-			logger.SysError("error sending stream response: " + err.Error())
+			common.SysLog("error sending stream response: " + err.Error())
 		}
 		return true
 	})

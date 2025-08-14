@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"net/url"
 	"one-api/common"
-	"one-api/logger"
 )
 
 type turnstileCheckResponse struct {
@@ -38,7 +37,7 @@ func TurnstileCheck() gin.HandlerFunc {
 				"remoteip": {c.ClientIP()},
 			})
 			if err != nil {
-				logger.SysError(err.Error())
+				common.SysLog(err.Error())
 				c.JSON(http.StatusOK, gin.H{
 					"success": false,
 					"message": err.Error(),
@@ -50,7 +49,7 @@ func TurnstileCheck() gin.HandlerFunc {
 			var res turnstileCheckResponse
 			err = json.NewDecoder(rawRes.Body).Decode(&res)
 			if err != nil {
-				logger.SysError(err.Error())
+				common.SysLog(err.Error())
 				c.JSON(http.StatusOK, gin.H{
 					"success": false,
 					"message": err.Error(),

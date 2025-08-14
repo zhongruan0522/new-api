@@ -6,7 +6,6 @@ import (
 	"math/rand"
 	"one-api/common"
 	"one-api/constant"
-	"one-api/logger"
 	"one-api/setting"
 	"one-api/setting/ratio_setting"
 	"sort"
@@ -85,13 +84,13 @@ func InitChannelCache() {
 	}
 	channelsIDM = newChannelId2channel
 	channelSyncLock.Unlock()
-	logger.SysLog("channels synced from database")
+	common.SysLog("channels synced from database")
 }
 
 func SyncChannelCache(frequency int) {
 	for {
 		time.Sleep(time.Duration(frequency) * time.Second)
-		logger.SysLog("syncing channels from database")
+		common.SysLog("syncing channels from database")
 		InitChannelCache()
 	}
 }

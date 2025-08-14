@@ -13,7 +13,6 @@ import (
 	"one-api/common"
 	"one-api/constant"
 	"one-api/dto"
-	"one-api/logger"
 	relaycommon "one-api/relay/common"
 	"one-api/relay/helper"
 	"one-api/service"
@@ -107,7 +106,7 @@ func tencentStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *htt
 		var tencentResponse TencentChatResponse
 		err := json.Unmarshal([]byte(data), &tencentResponse)
 		if err != nil {
-			logger.SysError("error unmarshalling stream response: " + err.Error())
+			common.SysLog("error unmarshalling stream response: " + err.Error())
 			continue
 		}
 
@@ -118,12 +117,12 @@ func tencentStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *htt
 
 		err = helper.ObjectData(c, response)
 		if err != nil {
-			logger.SysError(err.Error())
+			common.SysLog(err.Error())
 		}
 	}
 
 	if err := scanner.Err(); err != nil {
-		logger.SysError("error reading stream: " + err.Error())
+		common.SysLog("error reading stream: " + err.Error())
 	}
 
 	helper.Done(c)

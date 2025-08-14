@@ -9,3 +9,16 @@ type Request interface {
 	GetTokenCountMeta() *types.TokenCountMeta
 	IsStream(c *gin.Context) bool
 }
+
+type BaseRequest struct {
+}
+
+func (b *BaseRequest) GetTokenCountMeta() *types.TokenCountMeta {
+	return &types.TokenCountMeta{
+		TokenType: types.TokenTypeTokenizer,
+	}
+}
+
+func (b *BaseRequest) IsStream(c *gin.Context) bool {
+	return false
+}

@@ -48,14 +48,14 @@ func (a *Adaptor) Init(info *relaycommon.RelayInfo) {
 }
 
 func (a *Adaptor) GetRequestURL(info *relaycommon.RelayInfo) (string, error) {
-	if info.RelayFormat == relaycommon.RelayFormatClaude {
-		return info.BaseUrl + "/v1/chat/completions", nil
+	if info.RelayFormat == types.RelayFormatClaude {
+		return info.ChannelBaseUrl + "/v1/chat/completions", nil
 	}
 	switch info.RelayMode {
 	case relayconstant.RelayModeEmbeddings:
-		return info.BaseUrl + "/api/embed", nil
+		return info.ChannelBaseUrl + "/api/embed", nil
 	default:
-		return relaycommon.GetFullRequestURL(info.BaseUrl, info.RequestURLPath, info.ChannelType), nil
+		return relaycommon.GetFullRequestURL(info.ChannelBaseUrl, info.RequestURLPath, info.ChannelType), nil
 	}
 }
 

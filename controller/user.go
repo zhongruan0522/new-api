@@ -193,7 +193,7 @@ func Register(c *gin.Context) {
 			"success": false,
 			"message": "数据库错误，请稍后重试",
 		})
-		logger.SysError(fmt.Sprintf("CheckUserExistOrDeleted error: %v", err))
+		common.SysLog(fmt.Sprintf("CheckUserExistOrDeleted error: %v", err))
 		return
 	}
 	if exist {
@@ -236,7 +236,7 @@ func Register(c *gin.Context) {
 				"success": false,
 				"message": "生成默认令牌失败",
 			})
-			logger.SysError("failed to generate token key: " + err.Error())
+			common.SysLog("failed to generate token key: " + err.Error())
 			return
 		}
 		// 生成默认令牌
@@ -343,7 +343,7 @@ func GenerateAccessToken(c *gin.Context) {
 			"success": false,
 			"message": "生成失败",
 		})
-		logger.SysError("failed to generate key: " + err.Error())
+		common.SysLog("failed to generate key: " + err.Error())
 		return
 	}
 	user.SetAccessToken(key)

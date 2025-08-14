@@ -66,6 +66,7 @@ type ChannelMeta struct {
 	ChannelOtherSettings dto.ChannelOtherSettings
 	UpstreamModelName    string
 	IsModelMapped        bool
+	SupportStreamOptions bool // 是否支持流式选项
 }
 
 type RelayInfo struct {
@@ -86,9 +87,9 @@ type RelayInfo struct {
 	RelayMode              int
 	OriginModelName        string
 	//RecodeModelName      string
-	RequestURLPath        string
-	PromptTokens          int
-	SupportStreamOptions  bool
+	RequestURLPath string
+	PromptTokens   int
+	//SupportStreamOptions  bool
 	ShouldIncludeUsage    bool
 	DisablePing           bool // 是否禁止向下游发送自定义 Ping
 	ClientWs              *websocket.Conn
@@ -135,6 +136,7 @@ func (info *RelayInfo) InitChannelMeta(c *gin.Context) {
 		ParamOverride:        paramOverride,
 		UpstreamModelName:    common.GetContextKeyString(c, constant.ContextKeyOriginalModel),
 		IsModelMapped:        false,
+		SupportStreamOptions: false,
 	}
 
 	channelSetting, ok := common.GetContextKeyType[dto.ChannelSettings](c, constant.ContextKeyChannelSetting)
@@ -145,6 +147,10 @@ func (info *RelayInfo) InitChannelMeta(c *gin.Context) {
 	channelOtherSettings, ok := common.GetContextKeyType[dto.ChannelOtherSettings](c, constant.ContextKeyChannelOtherSetting)
 	if ok {
 		channelMeta.ChannelOtherSettings = channelOtherSettings
+	}
+
+	if streamSupportedChannels[channelMeta.ChannelType] {
+		channelMeta.SupportStreamOptions = true
 	}
 	info.ChannelMeta = channelMeta
 }
@@ -268,6 +274,12 @@ func genBaseRelayInfo(c *gin.Context, request dto.Request) *RelayInfo {
 		startTime = time.Now()
 	}
 
+	isStream := false
+
+	if request != nil {
+		isStream = request.IsStream(c)
+	}
+
 	// firstResponseTime = time.Now() - 1 second
 
 	info := &RelayInfo{
@@ -289,7 +301,7 @@ func genBaseRelayInfo(c *gin.Context, request dto.Request) *RelayInfo {
 		isFirstResponse: true,
 		RelayMode:       relayconstant.Path2RelayMode(c.Request.URL.Path),
 		RequestURLPath:  c.Request.URL.String(),
-		IsStream:        request.IsStream(c),
+		IsStream:        isStream,
 
 		StartTime:         startTime,
 		FirstResponseTime: startTime.Add(-time.Second),
@@ -339,6 +351,10 @@ func GenRelayInfo(c *gin.Context, relayFormat types.RelayFormat, request dto.Req
 			return GenRelayInfoResponses(c, request), nil
 		}
 		return nil, errors.New("request is not a OpenAIResponsesRequest")
+	case types.RelayFormatTask:
+		return genBaseRelayInfo(c, nil), nil
+	case types.RelayFormatMjProxy:
+		return genBaseRelayInfo(c, nil), nil
 	default:
 		return nil, errors.New("invalid relay format")
 	}
@@ -367,11 +383,15 @@ type TaskRelayInfo struct {
 	ConsumeQuota bool
 }
 
-func GenTaskRelayInfo(c *gin.Context) *TaskRelayInfo {
-	info := &TaskRelayInfo{
-		RelayInfo: GenRelayInfo(c),
+func GenTaskRelayInfo(c *gin.Context) (*TaskRelayInfo, error) {
+	relayInfo, err := GenRelayInfo(c, types.RelayFormatTask, nil, nil)
+	if err != nil {
+		return nil, err
 	}
-	return info
+	info := &TaskRelayInfo{
+		RelayInfo: relayInfo,
+	}
+	return info, nil
 }
 
 type TaskSubmitReq struct {

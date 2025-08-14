@@ -36,7 +36,7 @@ func GetAndValidateRequest(c *gin.Context, format types.RelayFormat) (request dt
 	case types.RelayFormatOpenAIAudio:
 		request, err = GetAndValidAudioRequest(c, relayMode)
 	case types.RelayFormatOpenAIRealtime:
-	// nothing to do, no request body
+		request = &dto.BaseRequest{}
 	default:
 		return nil, fmt.Errorf("unsupported relay format: %s", format)
 	}

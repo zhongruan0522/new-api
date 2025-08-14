@@ -26,7 +26,7 @@ func UpdateTaskBulk() {
 	//imageModel := "midjourney"
 	for {
 		time.Sleep(time.Duration(15) * time.Second)
-		logger.SysLog("任务进度轮询开始")
+		common.SysLog("任务进度轮询开始")
 		ctx := context.TODO()
 		allTasks := model.GetAllUnFinishSyncTasks(500)
 		platformTask := make(map[constant.TaskPlatform][]*model.Task)
@@ -66,7 +66,7 @@ func UpdateTaskBulk() {
 
 			UpdateTaskByPlatform(platform, taskChannelM, taskM)
 		}
-		logger.SysLog("任务进度轮询完成")
+		common.SysLog("任务进度轮询完成")
 	}
 }
 
@@ -78,7 +78,7 @@ func UpdateTaskByPlatform(platform constant.TaskPlatform, taskChannelM map[int][
 		_ = UpdateSunoTaskAll(context.Background(), taskChannelM, taskM)
 	default:
 		if err := UpdateVideoTaskAll(context.Background(), platform, taskChannelM, taskM); err != nil {
-			logger.SysLog(fmt.Sprintf("UpdateVideoTaskAll fail: %s", err))
+			common.SysLog(fmt.Sprintf("UpdateVideoTaskAll fail: %s", err))
 		}
 	}
 }
@@ -100,14 +100,14 @@ func updateSunoTaskAll(ctx context.Context, channelId int, taskIds []string, tas
 	}
 	channel, err := model.CacheGetChannel(channelId)
 	if err != nil {
-		logger.SysLog(fmt.Sprintf("CacheGetChannel: %v", err))
+		common.SysLog(fmt.Sprintf("CacheGetChannel: %v", err))
 		err = model.TaskBulkUpdate(taskIds, map[string]any{
 			"fail_reason": fmt.Sprintf("获取渠道信息失败，请联系管理员，渠道ID：%d", channelId),
 			"status":      "FAILURE",
 			"progress":    "100%",
 		})
 		if err != nil {
-			logger.SysError(fmt.Sprintf("UpdateMidjourneyTask error2: %v", err))
+			common.SysLog(fmt.Sprintf("UpdateMidjourneyTask error2: %v", err))
 		}
 		return err
 	}
@@ -119,7 +119,7 @@ func updateSunoTaskAll(ctx context.Context, channelId int, taskIds []string, tas
 		"ids": taskIds,
 	})
 	if err != nil {
-		logger.SysError(fmt.Sprintf("Get Task Do req error: %v", err))
+		common.SysLog(fmt.Sprintf("Get Task Do req error: %v", err))
 		return err
 	}
 	if resp.StatusCode != http.StatusOK {
@@ -129,7 +129,7 @@ func updateSunoTaskAll(ctx context.Context, channelId int, taskIds []string, tas
 	defer resp.Body.Close()
 	responseBody, err := io.ReadAll(resp.Body)
 	if err != nil {
-		logger.SysError(fmt.Sprintf("Get Task parse body error: %v", err))
+		common.SysLog(fmt.Sprintf("Get Task parse body error: %v", err))
 		return err
 	}
 	var responseItems dto.TaskResponse[[]dto.SunoDataResponse]
@@ -139,7 +139,7 @@ func updateSunoTaskAll(ctx context.Context, channelId int, taskIds []string, tas
 		return err
 	}
 	if !responseItems.IsSuccess() {
-		logger.SysLog(fmt.Sprintf("渠道 #%d 未完成的任务有: %d, 成功获取到任务数: %d", channelId, len(taskIds), string(responseBody)))
+		common.SysLog(fmt.Sprintf("渠道 #%d 未完成的任务有: %d, 成功获取到任务数: %d", channelId, len(taskIds), string(responseBody)))
 		return err
 	}
 
@@ -179,7 +179,7 @@ func updateSunoTaskAll(ctx context.Context, channelId int, taskIds []string, tas
 
 		err = task.Update()
 		if err != nil {
-			logger.SysError("UpdateMidjourneyTask task error: " + err.Error())
+			common.SysLog("UpdateMidjourneyTask task error: " + err.Error())
 		}
 	}
 	return nil
