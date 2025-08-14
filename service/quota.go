@@ -37,6 +37,14 @@ type QuotaInfo struct {
 	GroupRatio    float64
 }
 
+func hasCustomModelRatio(modelName string, currentRatio float64) bool {
+	defaultRatio, exists := ratio_setting.GetDefaultModelRatioMap()[modelName]
+	if !exists {
+		return true
+	}
+	return currentRatio != defaultRatio
+}
+
 func calculateAudioQuota(info QuotaInfo) int {
 	if info.UsePrice {
 		modelPrice := decimal.NewFromFloat(info.ModelPrice)
@@ -247,9 +255,10 @@ func PostClaudeConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo,
 
 	if relayInfo.ChannelType == constant.ChannelTypeOpenRouter {
 		promptTokens -= cacheTokens
-		if cacheCreationTokens == 0 && priceData.CacheCreationRatio != 1 && usage.Cost != 0 {
+		isUsingCustomSettings := priceData.UsePrice || hasCustomModelRatio(modelName, priceData.ModelRatio)
+		if cacheCreationTokens == 0 && priceData.CacheCreationRatio != 1 && usage.Cost != 0 && !isUsingCustomSettings {
 			maybeCacheCreationTokens := CalcOpenRouterCacheCreateTokens(*usage, priceData)
-			if promptTokens >= maybeCacheCreationTokens {
+			if maybeCacheCreationTokens >= 0 && promptTokens >= maybeCacheCreationTokens {
 				cacheCreationTokens = maybeCacheCreationTokens
 			}
 		}
