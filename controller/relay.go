@@ -133,13 +133,13 @@ func Relay(c *gin.Context, relayFormat types.RelayFormat) {
 		return
 	}
 
-	preConsumedQuota, newApiErr := service.PreConsumeQuota(c, priceData.ShouldPreConsumedQuota, relayInfo)
-	if newApiErr != nil {
+	preConsumedQuota, newAPIError := service.PreConsumeQuota(c, priceData.ShouldPreConsumedQuota, relayInfo)
+	if newAPIError != nil {
 		return
 	}
 
 	defer func() {
-		if newApiErr != nil {
+		if newAPIError != nil {
 			service.ReturnPreConsumedQuota(c, relayInfo, preConsumedQuota)
 		}
 	}()

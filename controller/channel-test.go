@@ -144,7 +144,9 @@ func testChannel(channel *model.Channel, testModel string) testResult {
 		}
 	}
 
-	err = helper.ModelMappedHelper(c, info, nil)
+	info.InitChannelMeta(c)
+
+	err = helper.ModelMappedHelper(c, info, request)
 	if err != nil {
 		return testResult{
 			context:     c,
@@ -166,10 +168,10 @@ func testChannel(channel *model.Channel, testModel string) testResult {
 		}
 	}
 
-	// 创建一个用于日志的 info 副本，移除 ApiKey
-	logInfo := *info
-	logInfo.ApiKey = ""
-	common.SysLog(fmt.Sprintf("testing channel %d with model %s , info %+v ", channel.Id, testModel, logInfo))
+	//// 创建一个用于日志的 info 副本，移除 ApiKey
+	//logInfo := info
+	//logInfo.ApiKey = ""
+	common.SysLog(fmt.Sprintf("testing channel %d with model %s , info %+v ", channel.Id, testModel, info.ToString()))
 
 	priceData, err := helper.ModelPriceHelper(c, info, 0, request.GetTokenCountMeta())
 	if err != nil {

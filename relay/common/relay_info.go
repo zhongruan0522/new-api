@@ -2,6 +2,7 @@ package common
 
 import (
 	"errors"
+	"fmt"
 	"one-api/common"
 	"one-api/constant"
 	"one-api/dto"
@@ -153,6 +154,81 @@ func (info *RelayInfo) InitChannelMeta(c *gin.Context) {
 		channelMeta.SupportStreamOptions = true
 	}
 	info.ChannelMeta = channelMeta
+}
+
+func (info *RelayInfo) ToString() string {
+	if info == nil {
+		return "RelayInfo<nil>"
+	}
+
+	// Basic info
+	b := &strings.Builder{}
+	fmt.Fprintf(b, "RelayInfo{ ")
+	fmt.Fprintf(b, "RelayFormat: %s, ", info.RelayFormat)
+	fmt.Fprintf(b, "RelayMode: %d, ", info.RelayMode)
+	fmt.Fprintf(b, "IsStream: %t, ", info.IsStream)
+	fmt.Fprintf(b, "IsPlayground: %t, ", info.IsPlayground)
+	fmt.Fprintf(b, "RequestURLPath: %q, ", info.RequestURLPath)
+	fmt.Fprintf(b, "OriginModelName: %q, ", info.OriginModelName)
+	fmt.Fprintf(b, "PromptTokens: %d, ", info.PromptTokens)
+	fmt.Fprintf(b, "ShouldIncludeUsage: %t, ", info.ShouldIncludeUsage)
+	fmt.Fprintf(b, "DisablePing: %t, ", info.DisablePing)
+	fmt.Fprintf(b, "SendResponseCount: %d, ", info.SendResponseCount)
+	fmt.Fprintf(b, "FinalPreConsumedQuota: %d, ", info.FinalPreConsumedQuota)
+
+	// User & token info (mask secrets)
+	fmt.Fprintf(b, "User{ Id: %d, Email: %q, Group: %q, UsingGroup: %q, Quota: %d }, ",
+		info.UserId, info.UserEmail, info.UserGroup, info.UsingGroup, info.UserQuota)
+	fmt.Fprintf(b, "Token{ Id: %d, Unlimited: %t, Key: ***masked*** }, ", info.TokenId, info.TokenUnlimited)
+
+	// Time info
+	latencyMs := info.FirstResponseTime.Sub(info.StartTime).Milliseconds()
+	fmt.Fprintf(b, "Timing{ Start: %s, FirstResponse: %s, LatencyMs: %d }, ",
+		info.StartTime.Format(time.RFC3339Nano), info.FirstResponseTime.Format(time.RFC3339Nano), latencyMs)
+
+	// Audio / realtime
+	if info.InputAudioFormat != "" || info.OutputAudioFormat != "" || len(info.RealtimeTools) > 0 || info.AudioUsage {
+		fmt.Fprintf(b, "Realtime{ AudioUsage: %t, InFmt: %q, OutFmt: %q, Tools: %d }, ",
+			info.AudioUsage, info.InputAudioFormat, info.OutputAudioFormat, len(info.RealtimeTools))
+	}
+
+	// Reasoning
+	if info.ReasoningEffort != "" {
+		fmt.Fprintf(b, "ReasoningEffort: %q, ", info.ReasoningEffort)
+	}
+
+	// Price data (non-sensitive)
+	if info.PriceData.UsePrice {
+		fmt.Fprintf(b, "PriceData{ %s }, ", info.PriceData.ToSetting())
+	}
+
+	// Channel metadata (mask ApiKey)
+	if info.ChannelMeta != nil {
+		cm := info.ChannelMeta
+		fmt.Fprintf(b, "ChannelMeta{ Type: %d, Id: %d, IsMultiKey: %t, MultiKeyIndex: %d, BaseURL: %q, ApiType: %d, ApiVersion: %q, Organization: %q, CreateTime: %d, UpstreamModelName: %q, IsModelMapped: %t, SupportStreamOptions: %t, ApiKey: ***masked*** }, ",
+			cm.ChannelType, cm.ChannelId, cm.ChannelIsMultiKey, cm.ChannelMultiKeyIndex, cm.ChannelBaseUrl, cm.ApiType, cm.ApiVersion, cm.Organization, cm.ChannelCreateTime, cm.UpstreamModelName, cm.IsModelMapped, cm.SupportStreamOptions)
+	}
+
+	// Responses usage info (non-sensitive)
+	if info.ResponsesUsageInfo != nil && len(info.ResponsesUsageInfo.BuiltInTools) > 0 {
+		fmt.Fprintf(b, "ResponsesTools{ ")
+		first := true
+		for name, tool := range info.ResponsesUsageInfo.BuiltInTools {
+			if !first {
+				fmt.Fprintf(b, ", ")
+			}
+			first = false
+			if tool != nil {
+				fmt.Fprintf(b, "%s: calls=%d", name, tool.CallCount)
+			} else {
+				fmt.Fprintf(b, "%s: calls=0", name)
+			}
+		}
+		fmt.Fprintf(b, " }, ")
+	}
+
+	fmt.Fprintf(b, "}")
+	return b.String()
 }
 
 // 定义支持流式选项的通道类型
