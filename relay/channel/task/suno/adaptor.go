@@ -11,6 +11,7 @@ import (
 	"one-api/common"
 	"one-api/constant"
 	"one-api/dto"
+	"one-api/logger"
 	"one-api/relay/channel"
 	relaycommon "one-api/relay/common"
 	"one-api/service"
@@ -139,7 +140,7 @@ func (a *TaskAdaptor) FetchTask(baseUrl, key string, body map[string]any) (*http
 
 	req, err := http.NewRequest("POST", requestUrl, bytes.NewBuffer(byteBody))
 	if err != nil {
-		common.SysError(fmt.Sprintf("Get Task error: %v", err))
+		logger.SysError(fmt.Sprintf("Get Task error: %v", err))
 		return nil, err
 	}
 	defer req.Body.Close()

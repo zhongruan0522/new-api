@@ -15,13 +15,6 @@ import (
 func WssHelper(c *gin.Context, ws *websocket.Conn) (newAPIError *types.NewAPIError) {
 	relayInfo := relaycommon.GenRelayInfoWs(c, ws)
 
-	// get & validate textRequest 获取并验证文本请求
-	//realtimeEvent, err := getAndValidateWssRequest(c, ws)
-	//if err != nil {
-	//	common.LogError(c, fmt.Sprintf("getAndValidateWssRequest failed: %s", err.Error()))
-	//	return service.OpenAIErrorWrapperLocal(err, "invalid_text_request", http.StatusBadRequest)
-	//}
-
 	err := helper.ModelMappedHelper(c, relayInfo, nil)
 	if err != nil {
 		return types.NewError(err, types.ErrorCodeChannelModelMappedError, types.ErrOptionWithSkipRetry())

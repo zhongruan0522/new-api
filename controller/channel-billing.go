@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"one-api/common"
 	"one-api/constant"
+	"one-api/logger"
 	"one-api/model"
 	"one-api/service"
 	"one-api/setting"
@@ -485,8 +486,8 @@ func UpdateAllChannelsBalance(c *gin.Context) {
 func AutomaticallyUpdateChannels(frequency int) {
 	for {
 		time.Sleep(time.Duration(frequency) * time.Minute)
-		common.SysLog("updating all channels")
+		logger.SysLog("updating all channels")
 		_ = updateAllChannelsBalance()
-		common.SysLog("channels update done")
+		logger.SysLog("channels update done")
 	}
 }

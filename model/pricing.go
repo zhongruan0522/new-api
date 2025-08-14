@@ -3,6 +3,7 @@ package model
 import (
 	"encoding/json"
 	"fmt"
+	"one-api/logger"
 	"strings"
 
 	"one-api/common"
@@ -92,7 +93,7 @@ func updatePricing() {
 	//modelRatios := common.GetModelRatios()
 	enableAbilities, err := GetAllEnableAbilityWithChannels()
 	if err != nil {
-		common.SysError(fmt.Sprintf("GetAllEnableAbilityWithChannels error: %v", err))
+		logger.SysError(fmt.Sprintf("GetAllEnableAbilityWithChannels error: %v", err))
 		return
 	}
 	// 预加载模型元数据与供应商一次，避免循环查询

@@ -2,7 +2,7 @@ package setting
 
 import (
 	"encoding/json"
-	"one-api/common"
+	"one-api/logger"
 	"sync"
 )
 
@@ -29,7 +29,7 @@ func UserUsableGroups2JSONString() string {
 
 	jsonBytes, err := json.Marshal(userUsableGroups)
 	if err != nil {
-		common.SysError("error marshalling user groups: " + err.Error())
+		logger.SysError("error marshalling user groups: " + err.Error())
 	}
 	return string(jsonBytes)
 }

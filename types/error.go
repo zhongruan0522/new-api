@@ -39,12 +39,13 @@ const (
 	ErrorCodeSensitiveWordsDetected ErrorCode = "sensitive_words_detected"
 
 	// new api error
-	ErrorCodeCountTokenFailed  ErrorCode = "count_token_failed"
-	ErrorCodeModelPriceError   ErrorCode = "model_price_error"
-	ErrorCodeInvalidApiType    ErrorCode = "invalid_api_type"
-	ErrorCodeJsonMarshalFailed ErrorCode = "json_marshal_failed"
-	ErrorCodeDoRequestFailed   ErrorCode = "do_request_failed"
-	ErrorCodeGetChannelFailed  ErrorCode = "get_channel_failed"
+	ErrorCodeCountTokenFailed   ErrorCode = "count_token_failed"
+	ErrorCodeModelPriceError    ErrorCode = "model_price_error"
+	ErrorCodeInvalidApiType     ErrorCode = "invalid_api_type"
+	ErrorCodeJsonMarshalFailed  ErrorCode = "json_marshal_failed"
+	ErrorCodeDoRequestFailed    ErrorCode = "do_request_failed"
+	ErrorCodeGetChannelFailed   ErrorCode = "get_channel_failed"
+	ErrorCodeGenRelayInfoFailed ErrorCode = "gen_relay_info_failed"
 
 	// channel error
 	ErrorCodeChannelNoAvailableKey       ErrorCode = "channel:no_available_key"

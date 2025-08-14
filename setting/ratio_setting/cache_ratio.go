@@ -2,7 +2,7 @@ package ratio_setting
 
 import (
 	"encoding/json"
-	"one-api/common"
+	"one-api/logger"
 	"sync"
 )
 
@@ -89,7 +89,7 @@ func CacheRatio2JSONString() string {
 	defer cacheRatioMapMutex.RUnlock()
 	jsonBytes, err := json.Marshal(cacheRatioMap)
 	if err != nil {
-		common.SysError("error marshalling cache ratio: " + err.Error())
+		logger.SysError("error marshalling cache ratio: " + err.Error())
 	}
 	return string(jsonBytes)
 }

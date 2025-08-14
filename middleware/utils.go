@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"one-api/common"
+	"one-api/logger"
 )
 
 func abortWithOpenAiMessage(c *gin.Context, statusCode int, message string) {
@@ -15,7 +16,7 @@ func abortWithOpenAiMessage(c *gin.Context, statusCode int, message string) {
 		},
 	})
 	c.Abort()
-	common.LogError(c.Request.Context(), fmt.Sprintf("user %d | %s", userId, message))
+	logger.LogError(c.Request.Context(), fmt.Sprintf("user %d | %s", userId, message))
 }
 
 func abortWithMidjourneyMessage(c *gin.Context, statusCode int, code int, description string) {
@@ -25,5 +26,5 @@ func abortWithMidjourneyMessage(c *gin.Context, statusCode int, code int, descri
 		"code":        code,
 	})
 	c.Abort()
-	common.LogError(c.Request.Context(), description)
+	logger.LogError(c.Request.Context(), description)
 }

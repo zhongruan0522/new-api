@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"one-api/common"
 	"one-api/dto"
+	"one-api/logger"
 	relaycommon "one-api/relay/common"
 	"one-api/relay/helper"
 	"one-api/service"
@@ -49,7 +50,7 @@ func cozeChatHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Res
 	if err != nil {
 		return nil, types.NewError(err, types.ErrorCodeBadResponseBody)
 	}
-	common.CloseResponseBodyGracefully(resp)
+	service.CloseResponseBodyGracefully(resp)
 	// convert coze response to openai response
 	var response dto.TextResponse
 	var cozeResponse CozeChatDetailResponse
@@ -154,7 +155,7 @@ func handleCozeEvent(c *gin.Context, event string, data string, responseText *st
 		var chatData CozeChatResponseData
 		err := json.Unmarshal([]byte(data), &chatData)
 		if err != nil {
-			common.SysError("error_unmarshalling_stream_response: " + err.Error())
+			logger.SysError("error_unmarshalling_stream_response: " + err.Error())
 			return
 		}
 
@@ -171,14 +172,14 @@ func handleCozeEvent(c *gin.Context, event string, data string, responseText *st
 		var messageData CozeChatV3MessageDetail
 		err := json.Unmarshal([]byte(data), &messageData)
 		if err != nil {
-			common.SysError("error_unmarshalling_stream_response: " + err.Error())
+			logger.SysError("error_unmarshalling_stream_response: " + err.Error())
 			return
 		}
 
 		var content string
 		err = json.Unmarshal(messageData.Content, &content)
 		if err != nil {
-			common.SysError("error_unmarshalling_stream_response: " + err.Error())
+			logger.SysError("error_unmarshalling_stream_response: " + err.Error())
 			return
 		}
 
@@ -203,11 +204,11 @@ func handleCozeEvent(c *gin.Context, event string, data string, responseText *st
 		var errorData CozeError
 		err := json.Unmarshal([]byte(data), &errorData)
 		if err != nil {
-			common.SysError("error_unmarshalling_stream_response: " + err.Error())
+			logger.SysError("error_unmarshalling_stream_response: " + err.Error())
 			return
 		}
 
-		common.SysError(fmt.Sprintf("stream event error: ", errorData.Code, errorData.Message))
+		logger.SysError(fmt.Sprintf("stream event error: ", errorData.Code, errorData.Message))
 	}
 }
 

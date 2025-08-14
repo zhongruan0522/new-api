@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"one-api/common"
 	"one-api/types"
+	"strings"
+
+	"github.com/gin-gonic/gin"
 )
 
 type ClaudeMetadata struct {
@@ -81,7 +84,7 @@ func (c *ClaudeMediaMessage) GetStringContent() string {
 }
 
 func (c *ClaudeMediaMessage) GetJsonRowString() string {
-	jsonContent, _ := json.Marshal(c)
+	jsonContent, _ := common.Marshal(c)
 	return string(jsonContent)
 }
 
@@ -197,6 +200,129 @@ type ClaudeRequest struct {
 	Tools      any       `json:"tools,omitempty"`
 	ToolChoice any       `json:"tool_choice,omitempty"`
 	Thinking   *Thinking `json:"thinking,omitempty"`
+}
+
+func (c *ClaudeRequest) GetTokenCountMeta() *types.TokenCountMeta {
+	var tokenCountMeta = types.TokenCountMeta{
+		TokenType: types.TokenTypeTextNumber,
+		MaxTokens: int(c.MaxTokens),
+	}
+
+	var texts = make([]string, 0)
+	var fileMeta = make([]*types.FileMeta, 0)
+
+	// system
+	if c.System != nil {
+		if c.IsStringSystem() {
+			sys := c.GetStringSystem()
+			if sys != "" {
+				texts = append(texts, sys)
+			}
+		} else {
+			systemMedia := c.ParseSystem()
+			for _, media := range systemMedia {
+				switch media.Type {
+				case "text":
+					texts = append(texts, media.GetText())
+				case "image":
+					if media.Source != nil {
+						data := media.Source.Url
+						if data == "" {
+							data = common.Interface2String(media.Source.Data)
+						}
+						if data != "" {
+							fileMeta = append(fileMeta, &types.FileMeta{FileType: types.FileTypeImage, Data: data})
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// messages
+	for _, message := range c.Messages {
+		tokenCountMeta.MessagesCount++
+		texts = append(texts, message.Role)
+		if message.IsStringContent() {
+			content := message.GetStringContent()
+			if content != "" {
+				texts = append(texts, content)
+			}
+			continue
+		}
+
+		content, _ := message.ParseContent()
+		for _, media := range content {
+			switch media.Type {
+			case "text":
+				texts = append(texts, media.GetText())
+			case "image":
+				if media.Source != nil {
+					data := media.Source.Url
+					if data == "" {
+						data = common.Interface2String(media.Source.Data)
+					}
+					if data != "" {
+						fileMeta = append(fileMeta, &types.FileMeta{FileType: types.FileTypeImage, Data: data})
+					}
+				}
+			case "tool_use":
+				if media.Name != "" {
+					texts = append(texts, media.Name)
+				}
+				if media.Input != nil {
+					b, _ := common.Marshal(media.Input)
+					texts = append(texts, string(b))
+				}
+			case "tool_result":
+				if media.Content != nil {
+					b, _ := common.Marshal(media.Content)
+					texts = append(texts, string(b))
+				}
+			}
+		}
+	}
+
+	// tools
+	if c.Tools != nil {
+		tools := c.GetTools()
+		normalTools, webSearchTools := ProcessTools(tools)
+		if normalTools != nil {
+			for _, t := range normalTools {
+				tokenCountMeta.ToolsCount++
+				if t.Name != "" {
+					texts = append(texts, t.Name)
+				}
+				if t.Description != "" {
+					texts = append(texts, t.Description)
+				}
+				if t.InputSchema != nil {
+					b, _ := common.Marshal(t.InputSchema)
+					texts = append(texts, string(b))
+				}
+			}
+		}
+		if webSearchTools != nil {
+			for _, t := range webSearchTools {
+				tokenCountMeta.ToolsCount++
+				if t.Name != "" {
+					texts = append(texts, t.Name)
+				}
+				if t.UserLocation != nil {
+					b, _ := common.Marshal(t.UserLocation)
+					texts = append(texts, string(b))
+				}
+			}
+		}
+	}
+
+	tokenCountMeta.CombineText = strings.Join(texts, "\n")
+	tokenCountMeta.Files = fileMeta
+	return &tokenCountMeta
+}
+
+func (claudeRequest *ClaudeRequest) IsStream(c *gin.Context) bool {
+	return claudeRequest.Stream
 }
 
 func (c *ClaudeRequest) SearchToolNameByToolCallId(toolCallId string) string {

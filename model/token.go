@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"one-api/common"
+	"one-api/logger"
 	"strings"
 
 	"github.com/bytedance/gopkg/util/gopool"
@@ -91,7 +92,7 @@ func ValidateUserToken(key string) (token *Token, err error) {
 				token.Status = common.TokenStatusExpired
 				err := token.SelectUpdate()
 				if err != nil {
-					common.SysError("failed to update token status" + err.Error())
+					logger.SysError("failed to update token status" + err.Error())
 				}
 			}
 			return token, errors.New("该令牌已过期")
@@ -102,7 +103,7 @@ func ValidateUserToken(key string) (token *Token, err error) {
 				token.Status = common.TokenStatusExhausted
 				err := token.SelectUpdate()
 				if err != nil {
-					common.SysError("failed to update token status" + err.Error())
+					logger.SysError("failed to update token status" + err.Error())
 				}
 			}
 			keyPrefix := key[:3]
@@ -134,7 +135,7 @@ func GetTokenById(id int) (*Token, error) {
 	if shouldUpdateRedis(true, err) {
 		gopool.Go(func() {
 			if err := cacheSetToken(token); err != nil {
-				common.SysError("failed to update user status cache: " + err.Error())
+				logger.SysError("failed to update user status cache: " + err.Error())
 			}
 		})
 	}
@@ -147,7 +148,7 @@ func GetTokenByKey(key string, fromDB bool) (token *Token, err error) {
 		if shouldUpdateRedis(fromDB, err) && token != nil {
 			gopool.Go(func() {
 				if err := cacheSetToken(*token); err != nil {
-					common.SysError("failed to update user status cache: " + err.Error())
+					logger.SysError("failed to update user status cache: " + err.Error())
 				}
 			})
 		}
@@ -178,7 +179,7 @@ func (token *Token) Update() (err error) {
 			gopool.Go(func() {
 				err := cacheSetToken(*token)
 				if err != nil {
-					common.SysError("failed to update token cache: " + err.Error())
+					logger.SysError("failed to update token cache: " + err.Error())
 				}
 			})
 		}
@@ -194,7 +195,7 @@ func (token *Token) SelectUpdate() (err error) {
 			gopool.Go(func() {
 				err := cacheSetToken(*token)
 				if err != nil {
-					common.SysError("failed to update token cache: " + err.Error())
+					logger.SysError("failed to update token cache: " + err.Error())
 				}
 			})
 		}
@@ -209,7 +210,7 @@ func (token *Token) Delete() (err error) {
 			gopool.Go(func() {
 				err := cacheDeleteToken(token.Key)
 				if err != nil {
-					common.SysError("failed to delete token cache: " + err.Error())
+					logger.SysError("failed to delete token cache: " + err.Error())
 				}
 			})
 		}
@@ -269,7 +270,7 @@ func IncreaseTokenQuota(id int, key string, quota int) (err error) {
 		gopool.Go(func() {
 			err := cacheIncrTokenQuota(key, int64(quota))
 			if err != nil {
-				common.SysError("failed to increase token quota: " + err.Error())
+				logger.SysError("failed to increase token quota: " + err.Error())
 			}
 		})
 	}
@@ -299,7 +300,7 @@ func DecreaseTokenQuota(id int, key string, quota int) (err error) {
 		gopool.Go(func() {
 			err := cacheDecrTokenQuota(key, int64(quota))
 			if err != nil {
-				common.SysError("failed to decrease token quota: " + err.Error())
+				logger.SysError("failed to decrease token quota: " + err.Error())
 			}
 		})
 	}

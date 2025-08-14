@@ -2,172 +2,56 @@ package relay
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"io"
-	"math"
 	"net/http"
 	"one-api/common"
 	"one-api/constant"
 	"one-api/dto"
+	"one-api/logger"
 	"one-api/model"
 	relaycommon "one-api/relay/common"
-	relayconstant "one-api/relay/constant"
 	"one-api/relay/helper"
 	"one-api/service"
-	"one-api/setting"
 	"one-api/setting/model_setting"
 	"one-api/setting/operation_setting"
 	"one-api/types"
 	"strings"
 	"time"
 
-	"github.com/bytedance/gopkg/util/gopool"
 	"github.com/shopspring/decimal"
 
 	"github.com/gin-gonic/gin"
 )
 
-func getAndValidateTextRequest(c *gin.Context, relayInfo *relaycommon.RelayInfo) (*dto.GeneralOpenAIRequest, error) {
-	textRequest := &dto.GeneralOpenAIRequest{}
-	err := common.UnmarshalBodyReusable(c, textRequest)
-	if err != nil {
-		return nil, err
-	}
-	if relayInfo.RelayMode == relayconstant.RelayModeModerations && textRequest.Model == "" {
-		textRequest.Model = "text-moderation-latest"
-	}
-	if relayInfo.RelayMode == relayconstant.RelayModeEmbeddings && textRequest.Model == "" {
-		textRequest.Model = c.Param("model")
-	}
+func TextHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *types.NewAPIError) {
 
-	if textRequest.MaxTokens > math.MaxInt32/2 {
-		return nil, errors.New("max_tokens is invalid")
-	}
-	if textRequest.Model == "" {
-		return nil, errors.New("model is required")
-	}
-	if textRequest.WebSearchOptions != nil {
-		if textRequest.WebSearchOptions.SearchContextSize != "" {
-			validSizes := map[string]bool{
-				"high":   true,
-				"medium": true,
-				"low":    true,
-			}
-			if !validSizes[textRequest.WebSearchOptions.SearchContextSize] {
-				return nil, errors.New("invalid search_context_size, must be one of: high, medium, low")
-			}
-		} else {
-			textRequest.WebSearchOptions.SearchContextSize = "medium"
-		}
-	}
-	switch relayInfo.RelayMode {
-	case relayconstant.RelayModeCompletions:
-		if textRequest.Prompt == "" {
-			return nil, errors.New("field prompt is required")
-		}
-	case relayconstant.RelayModeChatCompletions:
-		if len(textRequest.Messages) == 0 {
-			return nil, errors.New("field messages is required")
-		}
-	case relayconstant.RelayModeEmbeddings:
-	case relayconstant.RelayModeModerations:
-		if textRequest.Input == nil || textRequest.Input == "" {
-			return nil, errors.New("field input is required")
-		}
-	case relayconstant.RelayModeEdits:
-		if textRequest.Instruction == "" {
-			return nil, errors.New("field instruction is required")
-		}
-	}
-	relayInfo.IsStream = textRequest.Stream
-	return textRequest, nil
-}
+	info.InitChannelMeta(c)
 
-func TextHelper(c *gin.Context) (newAPIError *types.NewAPIError) {
+	textRequest, ok := info.Request.(*dto.GeneralOpenAIRequest)
 
-	relayInfo := relaycommon.GenRelayInfo(c)
-
-	// get & validate textRequest 获取并验证文本请求
-	textRequest, err := getAndValidateTextRequest(c, relayInfo)
-	if err != nil {
-		return types.NewError(err, types.ErrorCodeInvalidRequest, types.ErrOptionWithSkipRetry())
+	if !ok {
+		//return types.NewErrorWithStatusCode(errors.New("invalid request type"), types.ErrorCodeInvalidRequest, http.StatusBadRequest, types.ErrOptionWithSkipRetry())
+		common.FatalLog("invalid request type, expected dto.GeneralOpenAIRequest, got %T", info.Request)
 	}
 
 	if textRequest.WebSearchOptions != nil {
 		c.Set("chat_completion_web_search_context_size", textRequest.WebSearchOptions.SearchContextSize)
 	}
 
-	if setting.ShouldCheckPromptSensitive() {
-		words, err := checkRequestSensitive(textRequest, relayInfo)
-		if err != nil {
-			common.LogWarn(c, fmt.Sprintf("user sensitive words detected: %s", strings.Join(words, ", ")))
-			return types.NewError(err, types.ErrorCodeSensitiveWordsDetected, types.ErrOptionWithSkipRetry())
-		}
-	}
-
-	err = helper.ModelMappedHelper(c, relayInfo, textRequest)
+	err := helper.ModelMappedHelper(c, info, textRequest)
 	if err != nil {
 		return types.NewError(err, types.ErrorCodeChannelModelMappedError, types.ErrOptionWithSkipRetry())
 	}
 
-	// 获取 promptTokens，如果上下文中已经存在，则直接使用
-	var promptTokens int
-	if value, exists := c.Get("prompt_tokens"); exists {
-		promptTokens = value.(int)
-		relayInfo.PromptTokens = promptTokens
-	} else {
-		promptTokens, err = getPromptTokens(textRequest, relayInfo)
-		// count messages token error 计算promptTokens错误
-		if err != nil {
-			return types.NewError(err, types.ErrorCodeCountTokenFailed, types.ErrOptionWithSkipRetry())
-		}
-		c.Set("prompt_tokens", promptTokens)
-	}
-
-	priceData, err := helper.ModelPriceHelper(c, relayInfo, promptTokens, int(math.Max(float64(textRequest.MaxTokens), float64(textRequest.MaxCompletionTokens))))
-	if err != nil {
-		return types.NewError(err, types.ErrorCodeModelPriceError, types.ErrOptionWithSkipRetry())
-	}
-
-	// pre-consume quota 预消耗配额
-	preConsumedQuota, userQuota, newApiErr := preConsumeQuota(c, priceData.ShouldPreConsumedQuota, relayInfo)
-	if newApiErr != nil {
-		return newApiErr
-	}
-	defer func() {
-		if newApiErr != nil {
-			returnPreConsumedQuota(c, relayInfo, userQuota, preConsumedQuota)
-		}
-	}()
-	includeUsage := true
-	// 判断用户是否需要返回使用情况
-	if textRequest.StreamOptions != nil {
-		includeUsage = textRequest.StreamOptions.IncludeUsage
-	}
-
-	// 如果不支持StreamOptions，将StreamOptions设置为nil
-	if !relayInfo.SupportStreamOptions || !textRequest.Stream {
-		textRequest.StreamOptions = nil
-	} else {
-		// 如果支持StreamOptions，且请求中没有设置StreamOptions，根据配置文件设置StreamOptions
-		if constant.ForceStreamOption {
-			textRequest.StreamOptions = &dto.StreamOptions{
-				IncludeUsage: true,
-			}
-		}
-	}
-
-	relayInfo.ShouldIncludeUsage = includeUsage
-
-	adaptor := GetAdaptor(relayInfo.ApiType)
+	adaptor := GetAdaptor(info.ApiType)
 	if adaptor == nil {
-		return types.NewError(fmt.Errorf("invalid api type: %d", relayInfo.ApiType), types.ErrorCodeInvalidApiType, types.ErrOptionWithSkipRetry())
+		return types.NewError(fmt.Errorf("invalid api type: %d", info.ApiType), types.ErrorCodeInvalidApiType, types.ErrOptionWithSkipRetry())
 	}
-	adaptor.Init(relayInfo)
+	adaptor.Init(info)
 	var requestBody io.Reader
 
-	if model_setting.GetGlobalSettings().PassThroughRequestEnabled || relayInfo.ChannelSetting.PassThroughBodyEnabled {
+	if model_setting.GetGlobalSettings().PassThroughRequestEnabled || info.ChannelSetting.PassThroughBodyEnabled {
 		body, err := common.GetRequestBody(c)
 		if err != nil {
 			return types.NewErrorWithStatusCode(err, types.ErrorCodeReadRequestBodyFailed, http.StatusBadRequest, types.ErrOptionWithSkipRetry())
@@ -177,12 +61,12 @@ func TextHelper(c *gin.Context) (newAPIError *types.NewAPIError) {
 		}
 		requestBody = bytes.NewBuffer(body)
 	} else {
-		convertedRequest, err := adaptor.ConvertOpenAIRequest(c, relayInfo, textRequest)
+		convertedRequest, err := adaptor.ConvertOpenAIRequest(c, info, textRequest)
 		if err != nil {
 			return types.NewError(err, types.ErrorCodeConvertRequestFailed, types.ErrOptionWithSkipRetry())
 		}
 
-		if relayInfo.ChannelSetting.SystemPrompt != "" {
+		if info.ChannelSetting.SystemPrompt != "" {
 			// 如果有系统提示，则将其添加到请求中
 			request := convertedRequest.(*dto.GeneralOpenAIRequest)
 			containSystemPrompt := false
@@ -196,22 +80,22 @@ func TextHelper(c *gin.Context) (newAPIError *types.NewAPIError) {
 				// 如果没有系统提示，则添加系统提示
 				systemMessage := dto.Message{
 					Role:    request.GetSystemRoleName(),
-					Content: relayInfo.ChannelSetting.SystemPrompt,
+					Content: info.ChannelSetting.SystemPrompt,
 				}
 				request.Messages = append([]dto.Message{systemMessage}, request.Messages...)
-			} else if relayInfo.ChannelSetting.SystemPromptOverride {
+			} else if info.ChannelSetting.SystemPromptOverride {
 				common.SetContextKey(c, constant.ContextKeySystemPromptOverride, true)
 				// 如果有系统提示，且允许覆盖，则拼接到前面
 				for i, message := range request.Messages {
 					if message.Role == request.GetSystemRoleName() {
 						if message.IsStringContent() {
-							request.Messages[i].SetStringContent(relayInfo.ChannelSetting.SystemPrompt + "\n" + message.StringContent())
+							request.Messages[i].SetStringContent(info.ChannelSetting.SystemPrompt + "\n" + message.StringContent())
 						} else {
 							contents := message.ParseContent()
 							contents = append([]dto.MediaContent{
 								{
 									Type: dto.ContentTypeText,
-									Text: relayInfo.ChannelSetting.SystemPrompt,
+									Text: info.ChannelSetting.SystemPrompt,
 								},
 							}, contents...)
 							request.Messages[i].Content = contents
@@ -228,10 +112,10 @@ func TextHelper(c *gin.Context) (newAPIError *types.NewAPIError) {
 		}
 
 		// apply param override
-		if len(relayInfo.ParamOverride) > 0 {
+		if len(info.ParamOverride) > 0 {
 			reqMap := make(map[string]interface{})
 			_ = common.Unmarshal(jsonData, &reqMap)
-			for key, value := range relayInfo.ParamOverride {
+			for key, value := range info.ParamOverride {
 				reqMap[key] = value
 			}
 			jsonData, err = common.Marshal(reqMap)
@@ -240,14 +124,13 @@ func TextHelper(c *gin.Context) (newAPIError *types.NewAPIError) {
 			}
 		}
 
-		if common.DebugEnabled {
-			println("requestBody: ", string(jsonData))
-		}
+		logger.LogDebug(c, fmt.Sprintf("text request body: %s", string(jsonData)))
+
 		requestBody = bytes.NewBuffer(jsonData)
 	}
 
 	var httpResp *http.Response
-	resp, err := adaptor.DoRequest(c, relayInfo, requestBody)
+	resp, err := adaptor.DoRequest(c, info, requestBody)
 	if err != nil {
 		return types.NewOpenAIError(err, types.ErrorCodeDoRequestFailed, http.StatusInternalServerError)
 	}
@@ -256,125 +139,31 @@ func TextHelper(c *gin.Context) (newAPIError *types.NewAPIError) {
 
 	if resp != nil {
 		httpResp = resp.(*http.Response)
-		relayInfo.IsStream = relayInfo.IsStream || strings.HasPrefix(httpResp.Header.Get("Content-Type"), "text/event-stream")
+		info.IsStream = info.IsStream || strings.HasPrefix(httpResp.Header.Get("Content-Type"), "text/event-stream")
 		if httpResp.StatusCode != http.StatusOK {
-			newApiErr = service.RelayErrorHandler(httpResp, false)
+			newApiErr := service.RelayErrorHandler(httpResp, false)
 			// reset status code 重置状态码
 			service.ResetStatusCode(newApiErr, statusCodeMappingStr)
 			return newApiErr
 		}
 	}
 
-	usage, newApiErr := adaptor.DoResponse(c, httpResp, relayInfo)
+	usage, newApiErr := adaptor.DoResponse(c, httpResp, info)
 	if newApiErr != nil {
 		// reset status code 重置状态码
 		service.ResetStatusCode(newApiErr, statusCodeMappingStr)
 		return newApiErr
 	}
 
-	if strings.HasPrefix(relayInfo.OriginModelName, "gpt-4o-audio") {
-		service.PostAudioConsumeQuota(c, relayInfo, usage.(*dto.Usage), preConsumedQuota, userQuota, priceData, "")
+	if strings.HasPrefix(info.OriginModelName, "gpt-4o-audio") {
+		service.PostAudioConsumeQuota(c, info, usage.(*dto.Usage), "")
 	} else {
-		postConsumeQuota(c, relayInfo, usage.(*dto.Usage), preConsumedQuota, userQuota, priceData, "")
+		postConsumeQuota(c, info, usage.(*dto.Usage), "")
 	}
 	return nil
 }
 
-func getPromptTokens(textRequest *dto.GeneralOpenAIRequest, info *relaycommon.RelayInfo) (int, error) {
-	var promptTokens int
-	var err error
-	switch info.RelayMode {
-	case relayconstant.RelayModeChatCompletions:
-		promptTokens, err = service.CountTokenChatRequest(info, *textRequest)
-	case relayconstant.RelayModeCompletions:
-		promptTokens = service.CountTokenInput(textRequest.Prompt, textRequest.Model)
-	case relayconstant.RelayModeModerations:
-		promptTokens = service.CountTokenInput(textRequest.Input, textRequest.Model)
-	case relayconstant.RelayModeEmbeddings:
-		promptTokens = service.CountTokenInput(textRequest.Input, textRequest.Model)
-	default:
-		err = errors.New("unknown relay mode")
-		promptTokens = 0
-	}
-	info.PromptTokens = promptTokens
-	return promptTokens, err
-}
-
-func checkRequestSensitive(textRequest *dto.GeneralOpenAIRequest, info *relaycommon.RelayInfo) ([]string, error) {
-	var err error
-	var words []string
-	switch info.RelayMode {
-	case relayconstant.RelayModeChatCompletions:
-		words, err = service.CheckSensitiveMessages(textRequest.Messages)
-	case relayconstant.RelayModeCompletions:
-		words, err = service.CheckSensitiveInput(textRequest.Prompt)
-	case relayconstant.RelayModeModerations:
-		words, err = service.CheckSensitiveInput(textRequest.Input)
-	case relayconstant.RelayModeEmbeddings:
-		words, err = service.CheckSensitiveInput(textRequest.Input)
-	}
-	return words, err
-}
-
-// 预扣费并返回用户剩余配额
-func preConsumeQuota(c *gin.Context, preConsumedQuota int, relayInfo *relaycommon.RelayInfo) (int, int, *types.NewAPIError) {
-	userQuota, err := model.GetUserQuota(relayInfo.UserId, false)
-	if err != nil {
-		return 0, 0, types.NewError(err, types.ErrorCodeQueryDataError, types.ErrOptionWithSkipRetry())
-	}
-	if userQuota <= 0 {
-		return 0, 0, types.NewErrorWithStatusCode(errors.New("user quota is not enough"), types.ErrorCodeInsufficientUserQuota, http.StatusForbidden, types.ErrOptionWithSkipRetry(), types.ErrOptionWithNoRecordErrorLog())
-	}
-	if userQuota-preConsumedQuota < 0 {
-		return 0, 0, types.NewErrorWithStatusCode(fmt.Errorf("pre-consume quota failed, user quota: %s, need quota: %s", common.FormatQuota(userQuota), common.FormatQuota(preConsumedQuota)), types.ErrorCodeInsufficientUserQuota, http.StatusForbidden, types.ErrOptionWithSkipRetry(), types.ErrOptionWithNoRecordErrorLog())
-	}
-	relayInfo.UserQuota = userQuota
-	if userQuota > 100*preConsumedQuota {
-		// 用户额度充足，判断令牌额度是否充足
-		if !relayInfo.TokenUnlimited {
-			// 非无限令牌，判断令牌额度是否充足
-			tokenQuota := c.GetInt("token_quota")
-			if tokenQuota > 100*preConsumedQuota {
-				// 令牌额度充足，信任令牌
-				preConsumedQuota = 0
-				common.LogInfo(c, fmt.Sprintf("user %d quota %s and token %d quota %d are enough, trusted and no need to pre-consume", relayInfo.UserId, common.FormatQuota(userQuota), relayInfo.TokenId, tokenQuota))
-			}
-		} else {
-			// in this case, we do not pre-consume quota
-			// because the user has enough quota
-			preConsumedQuota = 0
-			common.LogInfo(c, fmt.Sprintf("user %d with unlimited token has enough quota %s, trusted and no need to pre-consume", relayInfo.UserId, common.FormatQuota(userQuota)))
-		}
-	}
-
-	if preConsumedQuota > 0 {
-		err := service.PreConsumeTokenQuota(relayInfo, preConsumedQuota)
-		if err != nil {
-			return 0, 0, types.NewErrorWithStatusCode(err, types.ErrorCodePreConsumeTokenQuotaFailed, http.StatusForbidden, types.ErrOptionWithSkipRetry(), types.ErrOptionWithNoRecordErrorLog())
-		}
-		err = model.DecreaseUserQuota(relayInfo.UserId, preConsumedQuota)
-		if err != nil {
-			return 0, 0, types.NewError(err, types.ErrorCodeUpdateDataError, types.ErrOptionWithSkipRetry())
-		}
-	}
-	return preConsumedQuota, userQuota, nil
-}
-
-func returnPreConsumedQuota(c *gin.Context, relayInfo *relaycommon.RelayInfo, userQuota int, preConsumedQuota int) {
-	if preConsumedQuota != 0 {
-		gopool.Go(func() {
-			relayInfoCopy := *relayInfo
-
-			err := service.PostConsumeQuota(&relayInfoCopy, -preConsumedQuota, 0, false)
-			if err != nil {
-				common.SysError("error return pre-consumed quota: " + err.Error())
-			}
-		})
-	}
-}
-
-func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo,
-	usage *dto.Usage, preConsumedQuota int, userQuota int, priceData helper.PriceData, extraContent string) {
+func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage *dto.Usage, extraContent string) {
 	if usage == nil {
 		usage = &dto.Usage{
 			PromptTokens:     relayInfo.PromptTokens,
@@ -392,12 +181,12 @@ func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo,
 	modelName := relayInfo.OriginModelName
 
 	tokenName := ctx.GetString("token_name")
-	completionRatio := priceData.CompletionRatio
-	cacheRatio := priceData.CacheRatio
-	imageRatio := priceData.ImageRatio
-	modelRatio := priceData.ModelRatio
-	groupRatio := priceData.GroupRatioInfo.GroupRatio
-	modelPrice := priceData.ModelPrice
+	completionRatio := relayInfo.PriceData.CompletionRatio
+	cacheRatio := relayInfo.PriceData.CacheRatio
+	imageRatio := relayInfo.PriceData.ImageRatio
+	modelRatio := relayInfo.PriceData.ModelRatio
+	groupRatio := relayInfo.PriceData.GroupRatioInfo.GroupRatio
+	modelPrice := relayInfo.PriceData.ModelPrice
 
 	// Convert values to decimal for precise calculation
 	dPromptTokens := decimal.NewFromInt(int64(promptTokens))
@@ -470,7 +259,7 @@ func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo,
 
 	var audioInputQuota decimal.Decimal
 	var audioInputPrice float64
-	if !priceData.UsePrice {
+	if !relayInfo.PriceData.UsePrice {
 		baseTokens := dPromptTokens
 		// 减去 cached tokens
 		var cachedTokensWithRatio decimal.Decimal
@@ -518,7 +307,7 @@ func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo,
 	totalTokens := promptTokens + completionTokens
 
 	var logContent string
-	if !priceData.UsePrice {
+	if !relayInfo.PriceData.UsePrice {
 		logContent = fmt.Sprintf("模型倍率 %.2f，补全倍率 %.2f，分组倍率 %.2f", modelRatio, completionRatio, groupRatio)
 	} else {
 		logContent = fmt.Sprintf("模型价格 %.2f，分组倍率 %.2f", modelPrice, groupRatio)
@@ -530,8 +319,8 @@ func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo,
 		// we cannot just return, because we may have to return the pre-consumed quota
 		quota = 0
 		logContent += fmt.Sprintf("（可能是上游超时）")
-		common.LogError(ctx, fmt.Sprintf("total tokens is 0, cannot consume quota, userId %d, channelId %d, "+
-			"tokenId %d, model %s， pre-consumed quota %d", relayInfo.UserId, relayInfo.ChannelId, relayInfo.TokenId, modelName, preConsumedQuota))
+		logger.LogError(ctx, fmt.Sprintf("total tokens is 0, cannot consume quota, userId %d, channelId %d, "+
+			"tokenId %d, model %s， pre-consumed quota %d", relayInfo.UserId, relayInfo.ChannelId, relayInfo.TokenId, modelName, relayInfo.FinalPreConsumedQuota))
 	} else {
 		if !ratio.IsZero() && quota == 0 {
 			quota = 1
@@ -540,11 +329,11 @@ func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo,
 		model.UpdateChannelUsedQuota(relayInfo.ChannelId, quota)
 	}
 
-	quotaDelta := quota - preConsumedQuota
+	quotaDelta := quota - relayInfo.FinalPreConsumedQuota
 	if quotaDelta != 0 {
-		err := service.PostConsumeQuota(relayInfo, quotaDelta, preConsumedQuota, true)
+		err := service.PostConsumeQuota(relayInfo, quotaDelta, relayInfo.FinalPreConsumedQuota, true)
 		if err != nil {
-			common.LogError(ctx, "error consuming token remain quota: "+err.Error())
+			logger.LogError(ctx, "error consuming token remain quota: "+err.Error())
 		}
 	}
 
@@ -560,7 +349,7 @@ func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo,
 	if extraContent != "" {
 		logContent += ", " + extraContent
 	}
-	other := service.GenerateTextOtherInfo(ctx, relayInfo, modelRatio, groupRatio, completionRatio, cacheTokens, cacheRatio, modelPrice, priceData.GroupRatioInfo.GroupSpecialRatio)
+	other := service.GenerateTextOtherInfo(ctx, relayInfo, modelRatio, groupRatio, completionRatio, cacheTokens, cacheRatio, modelPrice, relayInfo.PriceData.GroupRatioInfo.GroupSpecialRatio)
 	if imageTokens != 0 {
 		other["image"] = true
 		other["image_ratio"] = imageRatio
@@ -604,7 +393,6 @@ func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo,
 		Quota:            quota,
 		Content:          logContent,
 		TokenId:          relayInfo.TokenId,
-		UserQuota:        userQuota,
 		UseTimeSeconds:   int(useTimeSeconds),
 		IsStream:         relayInfo.IsStream,
 		Group:            relayInfo.UsingGroup,

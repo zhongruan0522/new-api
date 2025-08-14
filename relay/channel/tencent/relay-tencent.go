@@ -13,6 +13,7 @@ import (
 	"one-api/common"
 	"one-api/constant"
 	"one-api/dto"
+	"one-api/logger"
 	relaycommon "one-api/relay/common"
 	"one-api/relay/helper"
 	"one-api/service"
@@ -106,7 +107,7 @@ func tencentStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *htt
 		var tencentResponse TencentChatResponse
 		err := json.Unmarshal([]byte(data), &tencentResponse)
 		if err != nil {
-			common.SysError("error unmarshalling stream response: " + err.Error())
+			logger.SysError("error unmarshalling stream response: " + err.Error())
 			continue
 		}
 
@@ -117,17 +118,17 @@ func tencentStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *htt
 
 		err = helper.ObjectData(c, response)
 		if err != nil {
-			common.SysError(err.Error())
+			logger.SysError(err.Error())
 		}
 	}
 
 	if err := scanner.Err(); err != nil {
-		common.SysError("error reading stream: " + err.Error())
+		logger.SysError("error reading stream: " + err.Error())
 	}
 
 	helper.Done(c)
 
-	common.CloseResponseBodyGracefully(resp)
+	service.CloseResponseBodyGracefully(resp)
 
 	return service.ResponseText2Usage(responseText, info.UpstreamModelName, info.PromptTokens), nil
 }
@@ -138,7 +139,7 @@ func tencentHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Resp
 	if err != nil {
 		return nil, types.NewOpenAIError(err, types.ErrorCodeReadResponseBodyFailed, http.StatusInternalServerError)
 	}
-	common.CloseResponseBodyGracefully(resp)
+	service.CloseResponseBodyGracefully(resp)
 	err = json.Unmarshal(responseBody, &tencentSb)
 	if err != nil {
 		return nil, types.NewOpenAIError(err, types.ErrorCodeBadResponseBody, http.StatusInternalServerError)
@@ -156,7 +157,7 @@ func tencentHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Resp
 	}
 	c.Writer.Header().Set("Content-Type", "application/json")
 	c.Writer.WriteHeader(resp.StatusCode)
-	common.IOCopyBytesGracefully(c, resp, jsonResponse)
+	service.IOCopyBytesGracefully(c, resp, jsonResponse)
 	return &fullTextResponse.Usage, nil
 }
 

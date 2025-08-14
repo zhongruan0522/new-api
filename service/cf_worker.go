@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"one-api/common"
+	"one-api/logger"
 	"one-api/setting"
 	"strings"
 )
@@ -44,14 +44,14 @@ func DoWorkerRequest(req *WorkerRequest) (*http.Response, error) {
 
 func DoDownloadRequest(originUrl string) (resp *http.Response, err error) {
 	if setting.EnableWorker() {
-		common.SysLog(fmt.Sprintf("downloading file from worker: %s", originUrl))
+		logger.SysLog(fmt.Sprintf("downloading file from worker: %s", originUrl))
 		req := &WorkerRequest{
 			URL: originUrl,
 			Key: setting.WorkerValidKey,
 		}
 		return DoWorkerRequest(req)
 	} else {
-		common.SysLog(fmt.Sprintf("downloading from origin: %s", originUrl))
+		logger.SysLog(fmt.Sprintf("downloading from origin: %s", originUrl))
 		return http.Get(originUrl)
 	}
 }

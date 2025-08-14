@@ -2,6 +2,7 @@ package model
 
 import (
 	"one-api/common"
+	"one-api/logger"
 	"one-api/setting"
 	"one-api/setting/config"
 	"one-api/setting/operation_setting"
@@ -150,7 +151,7 @@ func loadOptionsFromDatabase() {
 	for _, option := range options {
 		err := updateOptionMap(option.Key, option.Value)
 		if err != nil {
-			common.SysError("failed to update option map: " + err.Error())
+			logger.SysError("failed to update option map: " + err.Error())
 		}
 	}
 }
@@ -158,7 +159,7 @@ func loadOptionsFromDatabase() {
 func SyncOptions(frequency int) {
 	for {
 		time.Sleep(time.Duration(frequency) * time.Second)
-		common.SysLog("syncing options from database")
+		logger.SysLog("syncing options from database")
 		loadOptionsFromDatabase()
 	}
 }

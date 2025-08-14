@@ -5,6 +5,7 @@ import (
 	"log"
 	"one-api/common"
 	"one-api/constant"
+	"one-api/logger"
 	"os"
 	"strings"
 	"sync"
@@ -84,7 +85,7 @@ func createRootAccountIfNeed() error {
 	var user User
 	//if user.Status != common.UserStatusEnabled {
 	if err := DB.First(&user).Error; err != nil {
-		common.SysLog("no user exists, create a root user for you: username is root, password is 123456")
+		logger.SysLog("no user exists, create a root user for you: username is root, password is 123456")
 		hashedPassword, err := common.Password2Hash("123456")
 		if err != nil {
 			return err
@@ -108,7 +109,7 @@ func CheckSetup() {
 	if setup == nil {
 		// No setup record exists, check if we have a root user
 		if RootUserExists() {
-			common.SysLog("system is not initialized, but root user exists")
+			logger.SysLog("system is not initialized, but root user exists")
 			// Create setup record
 			newSetup := Setup{
 				Version:       common.Version,
@@ -116,16 +117,16 @@ func CheckSetup() {
 			}
 			err := DB.Create(&newSetup).Error
 			if err != nil {
-				common.SysLog("failed to create setup record: " + err.Error())
+				logger.SysLog("failed to create setup record: " + err.Error())
 			}
 			constant.Setup = true
 		} else {
-			common.SysLog("system is not initialized and no root user exists")
+			logger.SysLog("system is not initialized and no root user exists")
 			constant.Setup = false
 		}
 	} else {
 		// Setup record exists, system is initialized
-		common.SysLog("system is already initialized at: " + time.Unix(setup.InitializedAt, 0).String())
+		logger.SysLog("system is already initialized at: " + time.Unix(setup.InitializedAt, 0).String())
 		constant.Setup = true
 	}
 }
@@ -138,7 +139,7 @@ func chooseDB(envName string, isLog bool) (*gorm.DB, error) {
 	if dsn != "" {
 		if strings.HasPrefix(dsn, "postgres://") || strings.HasPrefix(dsn, "postgresql://") {
 			// Use PostgreSQL
-			common.SysLog("using PostgreSQL as database")
+			logger.SysLog("using PostgreSQL as database")
 			if !isLog {
 				common.UsingPostgreSQL = true
 			} else {
@@ -152,7 +153,7 @@ func chooseDB(envName string, isLog bool) (*gorm.DB, error) {
 			})
 		}
 		if strings.HasPrefix(dsn, "local") {
-			common.SysLog("SQL_DSN not set, using SQLite as database")
+			logger.SysLog("SQL_DSN not set, using SQLite as database")
 			if !isLog {
 				common.UsingSQLite = true
 			} else {
@@ -163,7 +164,7 @@ func chooseDB(envName string, isLog bool) (*gorm.DB, error) {
 			})
 		}
 		// Use MySQL
-		common.SysLog("using MySQL as database")
+		logger.SysLog("using MySQL as database")
 		// check parseTime
 		if !strings.Contains(dsn, "parseTime") {
 			if strings.Contains(dsn, "?") {
@@ -182,7 +183,7 @@ func chooseDB(envName string, isLog bool) (*gorm.DB, error) {
 		})
 	}
 	// Use SQLite
-	common.SysLog("SQL_DSN not set, using SQLite as database")
+	logger.SysLog("SQL_DSN not set, using SQLite as database")
 	common.UsingSQLite = true
 	return gorm.Open(sqlite.Open(common.SQLitePath), &gorm.Config{
 		PrepareStmt: true, // precompile SQL
@@ -216,11 +217,11 @@ func InitDB() (err error) {
 		if common.UsingMySQL {
 			//_, _ = sqlDB.Exec("ALTER TABLE channels MODIFY model_mapping TEXT;") // TODO: delete this line when most users have upgraded
 		}
-		common.SysLog("database migration started")
+		logger.SysLog("database migration started")
 		err = migrateDB()
 		return err
 	} else {
-		common.FatalLog(err)
+		logger.FatalLog(err)
 	}
 	return err
 }
@@ -253,11 +254,11 @@ func InitLogDB() (err error) {
 		if !common.IsMasterNode {
 			return nil
 		}
-		common.SysLog("database migration started")
+		logger.SysLog("database migration started")
 		err = migrateLOGDB()
 		return err
 	} else {
-		common.FatalLog(err)
+		logger.FatalLog(err)
 	}
 	return err
 }
@@ -354,7 +355,7 @@ func migrateDBFast() error {
 			return err
 		}
 	}
-	common.SysLog("database migrated")
+	logger.SysLog("database migrated")
 	return nil
 }
 
@@ -503,6 +504,6 @@ func PingDB() error {
 	}
 
 	lastPingTime = time.Now()
-	common.SysLog("Database pinged successfully")
+	logger.SysLog("Database pinged successfully")
 	return nil
 }

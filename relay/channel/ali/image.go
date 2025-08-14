@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"one-api/common"
 	"one-api/dto"
+	"one-api/logger"
 	relaycommon "one-api/relay/common"
 	"one-api/service"
 	"one-api/types"
@@ -43,7 +43,7 @@ func updateTask(info *relaycommon.RelayInfo, taskID string) (*AliResponse, error
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		common.SysError("updateTask client.Do err: " + err.Error())
+		logger.SysError("updateTask client.Do err: " + err.Error())
 		return &aliResponse, err, nil
 	}
 	defer resp.Body.Close()
@@ -53,7 +53,7 @@ func updateTask(info *relaycommon.RelayInfo, taskID string) (*AliResponse, error
 	var response AliResponse
 	err = json.Unmarshal(responseBody, &response)
 	if err != nil {
-		common.SysError("updateTask NewDecoder err: " + err.Error())
+		logger.SysError("updateTask NewDecoder err: " + err.Error())
 		return &aliResponse, err, nil
 	}
 
@@ -109,7 +109,7 @@ func responseAli2OpenAIImage(c *gin.Context, response *AliResponse, info *relayc
 		if responseFormat == "b64_json" {
 			_, b64, err := service.GetImageFromUrl(data.Url)
 			if err != nil {
-				common.LogError(c, "get_image_data_failed: "+err.Error())
+				logger.LogError(c, "get_image_data_failed: "+err.Error())
 				continue
 			}
 			b64Json = b64
@@ -134,14 +134,14 @@ func aliImageHandler(c *gin.Context, resp *http.Response, info *relaycommon.Rela
 	if err != nil {
 		return types.NewOpenAIError(err, types.ErrorCodeReadResponseBodyFailed, http.StatusInternalServerError), nil
 	}
-	common.CloseResponseBodyGracefully(resp)
+	service.CloseResponseBodyGracefully(resp)
 	err = json.Unmarshal(responseBody, &aliTaskResponse)
 	if err != nil {
 		return types.NewOpenAIError(err, types.ErrorCodeBadResponseBody, http.StatusInternalServerError), nil
 	}
 
 	if aliTaskResponse.Message != "" {
-		common.LogError(c, "ali_async_task_failed: "+aliTaskResponse.Message)
+		logger.LogError(c, "ali_async_task_failed: "+aliTaskResponse.Message)
 		return types.NewError(errors.New(aliTaskResponse.Message), types.ErrorCodeBadResponse), nil
 	}
 

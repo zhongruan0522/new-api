@@ -10,6 +10,7 @@ import (
 	"one-api/common"
 	"one-api/constant"
 	"one-api/dto"
+	"one-api/logger"
 	"one-api/model"
 	relaycommon "one-api/relay/common"
 	relayconstant "one-api/relay/constant"
@@ -127,7 +128,7 @@ func RelayTaskSubmit(c *gin.Context, relayMode int) (taskErr *dto.TaskError) {
 
 			err := service.PostConsumeQuota(relayInfo.RelayInfo, quota, 0, true)
 			if err != nil {
-				common.SysError("error consuming token remain quota: " + err.Error())
+				logger.SysError("error consuming token remain quota: " + err.Error())
 			}
 			if quota != 0 {
 				tokenName := c.GetString("token_name")

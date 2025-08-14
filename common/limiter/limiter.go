@@ -5,7 +5,7 @@ import (
 	_ "embed"
 	"fmt"
 	"github.com/go-redis/redis/v8"
-	"one-api/common"
+	"one-api/logger"
 	"sync"
 )
 
@@ -27,7 +27,7 @@ func New(ctx context.Context, r *redis.Client) *RedisLimiter {
 		// 预加载脚本
 		limitSHA, err := r.ScriptLoad(ctx, rateLimitScript).Result()
 		if err != nil {
-			common.SysLog(fmt.Sprintf("Failed to load rate limit script: %v", err))
+			logger.SysLog(fmt.Sprintf("Failed to load rate limit script: %v", err))
 		}
 		instance = &RedisLimiter{
 			client:         r,
