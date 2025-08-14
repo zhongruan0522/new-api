@@ -628,7 +628,8 @@ const HeaderBar = ({ onMobileMenuToggle, drawerOpen }) => {
       <div className="md:hidden">
         <div
           className={`
-            absolute top-16 left-0 right-0 bg-semi-color-bg-0 
+            absolute top-16 left-0 right-0
+            bg-white/75 dark:bg-zinc-900/75 backdrop-blur-lg
             shadow-lg p-3
             transform transition-all duration-300 ease-in-out
             ${(!isConsoleRoute && mobileMenuOpen) ? 'translate-y-0 opacity-100 visible' : '-translate-y-4 opacity-0 invisible'}
