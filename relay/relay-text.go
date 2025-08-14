@@ -327,11 +327,6 @@ func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage 
 	totalTokens := promptTokens + completionTokens
 
 	var logContent string
-	if !relayInfo.PriceData.UsePrice {
-		logContent = fmt.Sprintf("模型倍率 %.2f，补全倍率 %.2f，分组倍率 %.2f", modelRatio, completionRatio, groupRatio)
-	} else {
-		logContent = fmt.Sprintf("模型价格 %.2f，分组倍率 %.2f", modelPrice, groupRatio)
-	}
 
 	// record all the consume log even if quota is 0
 	if totalTokens == 0 {
@@ -350,6 +345,23 @@ func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage 
 	}
 
 	quotaDelta := quota - relayInfo.FinalPreConsumedQuota
+
+	//logger.LogInfo(ctx, fmt.Sprintf("request quota delta: %s", logger.FormatQuota(quotaDelta)))
+
+	if quotaDelta > 0 {
+		logger.LogInfo(ctx, fmt.Sprintf("预扣费后补扣费：%s（实际消耗：%s，预扣费：%s）",
+			logger.FormatQuota(quotaDelta),
+			logger.FormatQuota(quota),
+			logger.FormatQuota(relayInfo.FinalPreConsumedQuota),
+		))
+	} else if quotaDelta < 0 {
+		logger.LogInfo(ctx, fmt.Sprintf("预扣费后返还扣费：%s（实际消耗：%s，预扣费：%s）",
+			logger.FormatQuota(-quotaDelta),
+			logger.FormatQuota(quota),
+			logger.FormatQuota(relayInfo.FinalPreConsumedQuota),
+		))
+	}
+
 	if quotaDelta != 0 {
 		err := service.PostConsumeQuota(relayInfo, quotaDelta, relayInfo.FinalPreConsumedQuota, true)
 		if err != nil {
