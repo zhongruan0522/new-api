@@ -251,9 +251,15 @@ func CountRequestToken(c *gin.Context, meta *types.TokenCountMeta, info *relayco
 	if info.RelayFormat == types.RelayFormatOpenAIRealtime {
 		return 0, nil
 	}
-	
+
 	model := common.GetContextKeyString(c, constant.ContextKeyOriginalModel)
-	tkm := CountTextToken(meta.CombineText, model)
+	tkm := 0
+
+	if meta.TokenType == types.TokenTypeTextNumber {
+		tkm += utf8.RuneCountInString(meta.CombineText)
+	} else {
+		tkm += CountTextToken(meta.CombineText, model)
+	}
 
 	if info.RelayFormat == types.RelayFormatOpenAI {
 		tkm += meta.ToolsCount * 8

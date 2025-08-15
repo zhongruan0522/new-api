@@ -204,7 +204,7 @@ type ClaudeRequest struct {
 
 func (c *ClaudeRequest) GetTokenCountMeta() *types.TokenCountMeta {
 	var tokenCountMeta = types.TokenCountMeta{
-		TokenType: types.TokenTypeTextNumber,
+		TokenType: types.TokenTypeTokenizer,
 		MaxTokens: int(c.MaxTokens),
 	}
 
