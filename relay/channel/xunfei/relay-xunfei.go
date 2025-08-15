@@ -206,6 +206,11 @@ func xunfeiMakeRequest(textRequest dto.GeneralOpenAIRequest, domain, authUrl, ap
 	if err != nil || resp.StatusCode != 101 {
 		return nil, nil, err
 	}
+
+	defer func() {
+		conn.Close()
+	}()
+
 	data := requestOpenAI2Xunfei(textRequest, appId, domain)
 	err = conn.WriteJSON(data)
 	if err != nil {
@@ -229,7 +234,6 @@ func xunfeiMakeRequest(textRequest dto.GeneralOpenAIRequest, domain, authUrl, ap
 			}
 			dataChan <- response
 			if response.Payload.Choices.Status == 2 {
-				err := conn.Close()
 				if err != nil {
 					common.SysLog("error closing websocket connection: " + err.Error())
 				}

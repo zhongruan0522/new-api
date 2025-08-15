@@ -121,15 +121,6 @@ func (e *NewAPIError) MaskSensitiveError() string {
 		return string(e.errorCode)
 	}
 	errStr := e.Err.Error()
-	if e.StatusCode == http.StatusServiceUnavailable {
-		if e.errorCode == ErrorCodeModelNotFound {
-			errStr = "上游分组模型服务不可用，请稍后再试"
-		} else {
-			if strings.Contains(errStr, "分组") || strings.Contains(errStr, "渠道") {
-				errStr = "上游分组模型服务不可用，请稍后再试"
-			}
-		}
-	}
 	return common.MaskSensitiveInfo(errStr)
 }
 

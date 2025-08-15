@@ -21,7 +21,7 @@ func EmbeddingHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *
 
 	embeddingRequest, ok := info.Request.(*dto.EmbeddingRequest)
 	if !ok {
-		common.FatalLog(fmt.Sprintf("invalid request type, expected dto.ClaudeRequest, got %T", info.Request))
+		common.FatalLog(fmt.Sprintf("invalid request type, expected *dto.EmbeddingRequest, got %T", info.Request))
 	}
 
 	err := helper.ModelMappedHelper(c, info, embeddingRequest)

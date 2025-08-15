@@ -87,26 +87,24 @@ type RelayInfo struct {
 	UsePrice               bool
 	RelayMode              int
 	OriginModelName        string
-	//RecodeModelName      string
-	RequestURLPath string
-	PromptTokens   int
-	//SupportStreamOptions  bool
-	ShouldIncludeUsage    bool
-	DisablePing           bool // 是否禁止向下游发送自定义 Ping
-	ClientWs              *websocket.Conn
-	TargetWs              *websocket.Conn
-	InputAudioFormat      string
-	OutputAudioFormat     string
-	RealtimeTools         []dto.RealTimeTool
-	IsFirstRequest        bool
-	AudioUsage            bool
-	ReasoningEffort       string
-	UserSetting           dto.UserSetting
-	UserEmail             string
-	UserQuota             int
-	RelayFormat           types.RelayFormat
-	SendResponseCount     int
-	FinalPreConsumedQuota int // 最终预消耗的配额
+	RequestURLPath         string
+	PromptTokens           int
+	ShouldIncludeUsage     bool
+	DisablePing            bool // 是否禁止向下游发送自定义 Ping
+	ClientWs               *websocket.Conn
+	TargetWs               *websocket.Conn
+	InputAudioFormat       string
+	OutputAudioFormat      string
+	RealtimeTools          []dto.RealTimeTool
+	IsFirstRequest         bool
+	AudioUsage             bool
+	ReasoningEffort        string
+	UserSetting            dto.UserSetting
+	UserEmail              string
+	UserQuota              int
+	RelayFormat            types.RelayFormat
+	SendResponseCount      int
+	FinalPreConsumedQuota  int // 最终预消耗的配额
 
 	PriceData types.PriceData
 

@@ -24,7 +24,7 @@ func ClaudeHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *typ
 	textRequest, ok := info.Request.(*dto.ClaudeRequest)
 
 	if !ok {
-		common.FatalLog(fmt.Sprintf("invalid request type, expected dto.ClaudeRequest, got %T", info.Request))
+		common.FatalLog(fmt.Sprintf("invalid request type, expected *dto.ClaudeRequest, got %T", info.Request))
 	}
 
 	err := helper.ModelMappedHelper(c, info, textRequest)

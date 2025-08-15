@@ -117,6 +117,48 @@ func MaskEmail(email string) string {
 	return "***@" + email[atIndex+1:]
 }
 
+// maskHostTail returns the tail parts of a domain/host that should be preserved.
+// It keeps 2 parts for likely country-code TLDs (e.g., co.uk, com.cn), otherwise keeps only the TLD.
+func maskHostTail(parts []string) []string {
+	if len(parts) < 2 {
+		return parts
+	}
+	lastPart := parts[len(parts)-1]
+	secondLastPart := parts[len(parts)-2]
+	if len(lastPart) == 2 && len(secondLastPart) <= 3 {
+		// Likely country code TLD like co.uk, com.cn
+		return []string{secondLastPart, lastPart}
+	}
+	return []string{lastPart}
+}
+
+// maskHostForURL collapses subdomains and keeps only masked prefix + preserved tail.
+// Example: api.openai.com -> ***.com, sub.domain.co.uk -> ***.co.uk
+func maskHostForURL(host string) string {
+	parts := strings.Split(host, ".")
+	if len(parts) < 2 {
+		return "***"
+	}
+	tail := maskHostTail(parts)
+	return "***." + strings.Join(tail, ".")
+}
+
+// maskHostForPlainDomain masks a plain domain and reflects subdomain depth with multiple ***.
+// Example: openai.com -> ***.com, api.openai.com -> ***.***.com, sub.domain.co.uk -> ***.***.co.uk
+func maskHostForPlainDomain(domain string) string {
+	parts := strings.Split(domain, ".")
+	if len(parts) < 2 {
+		return domain
+	}
+	tail := maskHostTail(parts)
+	numStars := len(parts) - len(tail)
+	if numStars < 1 {
+		numStars = 1
+	}
+	stars := strings.TrimSuffix(strings.Repeat("***.", numStars), ".")
+	return stars + "." + strings.Join(tail, ".")
+}
+
 // MaskSensitiveInfo masks sensitive information like URLs, IPs, and domain names in a string
 // Example:
 // http://example.com -> http://***.com
@@ -140,32 +182,8 @@ func MaskSensitiveInfo(str string) string {
 			return urlStr
 		}
 
-		// Split host by dots
-		parts := strings.Split(host, ".")
-		if len(parts) < 2 {
-			// If less than 2 parts, just mask the whole host
-			return u.Scheme + "://***" + u.Path
-		}
-
-		// Keep the TLD (Top Level Domain) and mask the rest
-		var maskedHost string
-		if len(parts) == 2 {
-			// example.com -> ***.com
-			maskedHost = "***." + parts[len(parts)-1]
-		} else {
-			// Handle cases like sub.domain.co.uk or api.example.com
-			// Keep last 2 parts if they look like country code TLD (co.uk, com.cn, etc.)
-			lastPart := parts[len(parts)-1]
-			secondLastPart := parts[len(parts)-2]
-
-			if len(lastPart) == 2 && len(secondLastPart) <= 3 {
-				// Likely country code TLD like co.uk, com.cn
-				maskedHost = "***." + secondLastPart + "." + lastPart
-			} else {
-				// Regular TLD like .com, .org
-				maskedHost = "***." + lastPart
-			}
-		}
+		// Mask host with unified logic
+		maskedHost := maskHostForURL(host)
 
 		result := u.Scheme + "://" + maskedHost
 
@@ -208,26 +226,11 @@ func MaskSensitiveInfo(str string) string {
 	// Mask domain names without protocol (like openai.com, www.openai.com)
 	domainPattern := regexp.MustCompile(`\b(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}\b`)
 	str = domainPattern.ReplaceAllStringFunc(str, func(domain string) string {
-		// Skip if it's already been processed as part of a URL
+		// Skip if it's already part of a URL to avoid partial masking
 		if strings.Contains(str, "://"+domain) {
 			return domain
 		}
-
-		parts := strings.Split(domain, ".")
-		if len(parts) < 2 {
-			return domain
-		}
-
-		// Handle different domain patterns
-		if len(parts) == 2 {
-			// openai.com -> ***.com
-			return "***." + parts[1]
-		} else {
-			// www.openai.com -> ***.***.com
-			// api.openai.com -> ***.***.com
-			lastPart := parts[len(parts)-1]
-			return "***.***." + lastPart
-		}
+		return maskHostForPlainDomain(domain)
 	})
 
 	// Mask IP addresses

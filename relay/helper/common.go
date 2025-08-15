@@ -122,6 +122,9 @@ func WssObject(c *gin.Context, ws *websocket.Conn, object interface{}) error {
 }
 
 func WssError(c *gin.Context, ws *websocket.Conn, openaiError types.OpenAIError) {
+	if ws == nil {
+		return
+	}
 	errorObj := &dto.RealtimeEvent{
 		Type:    "error",
 		EventId: GetLocalRealtimeID(c),

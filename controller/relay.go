@@ -113,8 +113,8 @@ func Relay(c *gin.Context, relayFormat types.RelayFormat) {
 	meta := request.GetTokenCountMeta()
 
 	if setting.ShouldCheckPromptSensitive() {
-		words, err := service.CheckSensitiveText(meta.CombineText)
-		if err != nil {
+		contains, words := service.CheckSensitiveText(meta.CombineText)
+		if contains {
 			logger.LogWarn(c, fmt.Sprintf("user sensitive words detected: %s", strings.Join(words, ", ")))
 			newAPIError = types.NewError(err, types.ErrorCodeSensitiveWordsDetected)
 			return
@@ -139,7 +139,8 @@ func Relay(c *gin.Context, relayFormat types.RelayFormat) {
 	}
 
 	defer func() {
-		if newAPIError != nil {
+		// Only return quota if downstream failed and quota was actually pre-consumed
+		if newAPIError != nil && preConsumedQuota != 0 {
 			service.ReturnPreConsumedQuota(c, relayInfo, preConsumedQuota)
 		}
 	}()

@@ -4,8 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/bytedance/gopkg/util/gopool"
-	"github.com/gin-gonic/gin"
 	"io"
 	"log"
 	"one-api/common"
@@ -13,6 +11,9 @@ import (
 	"path/filepath"
 	"sync"
 	"time"
+
+	"github.com/bytedance/gopkg/util/gopool"
+	"github.com/gin-gonic/gin"
 )
 
 const (
@@ -29,6 +30,9 @@ var setupLogLock sync.Mutex
 var setupLogWorking bool
 
 func SetupLogger() {
+	defer func() {
+		setupLogWorking = false
+	}()
 	if *common.LogDir != "" {
 		ok := setupLogLock.TryLock()
 		if !ok {
@@ -37,7 +41,6 @@ func SetupLogger() {
 		}
 		defer func() {
 			setupLogLock.Unlock()
-			setupLogWorking = false
 		}()
 		logPath := filepath.Join(*common.LogDir, fmt.Sprintf("oneapi-%s.log", time.Now().Format("20060102150405")))
 		fd, err := os.OpenFile(logPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
