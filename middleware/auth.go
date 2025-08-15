@@ -192,12 +192,9 @@ func TokenAuth() func(c *gin.Context) {
 			}
 			c.Request.Header.Set("Authorization", "Bearer "+key)
 		}
-		anthropicKey := c.Request.Header.Get("x-api-key")
 		// 检查path包含/v1/messages
-		// 或者是否 x-api-key 不为空且存在anthropic-version
-		// 谁知道有多少不符合规范没写anthropic-version的
-		// 所以就这样随它去吧（
 		if strings.Contains(c.Request.URL.Path, "/v1/messages") {
+			anthropicKey := c.Request.Header.Get("x-api-key")
 			if anthropicKey != "" {
 				c.Request.Header.Set("Authorization", "Bearer "+anthropicKey)
 			}
