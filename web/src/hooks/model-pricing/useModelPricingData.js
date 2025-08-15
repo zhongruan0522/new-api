@@ -211,9 +211,6 @@ export const useModelPricingData = () => {
   };
 
   const handleChange = (value) => {
-    if (compositionRef.current.isComposition) {
-      return;
-    }
     const newSearchValue = value ? value : '';
     setSearchValue(newSearchValue);
   };
@@ -231,9 +228,7 @@ export const useModelPricingData = () => {
 
   const handleGroupClick = (group) => {
     setSelectedGroup(group);
-    // 同时将分组过滤设置为该分组
     setFilterGroup(group);
-
     if (group === 'all') {
       showInfo(t('已切换至最优倍率视图，每个模型使用其最低倍率分组'));
     } else {

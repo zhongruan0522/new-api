@@ -305,6 +305,7 @@ const renderOperations = (text, record, onOpenLink, setEditingToken, setShowEdit
           node: 'item',
           key: i,
           name,
+          value: item[name],
           onClick: () => onOpenLink(name, item[name], record),
         });
       }
@@ -326,11 +327,8 @@ const renderOperations = (text, record, onOpenLink, setEditingToken, setShowEdit
             if (chatsArray.length === 0) {
               showError(t('请联系管理员配置聊天链接'));
             } else {
-              onOpenLink(
-                'default',
-                chatsArray[0].name ? (parsed => parsed)(localStorage.getItem('chats')) : '',
-                record,
-              );
+              const first = chatsArray[0];
+              onOpenLink(first.name, first.value, record);
             }
           }}
         >

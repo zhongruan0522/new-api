@@ -98,6 +98,25 @@ export const getPricingTableColumns = ({
   displayPrice,
   showRatio,
 }) => {
+
+  const priceDataCache = new WeakMap();
+
+  const getPriceData = (record) => {
+    let cache = priceDataCache.get(record);
+    if (!cache) {
+      cache = calculateModelPrice({
+        record,
+        selectedGroup,
+        groupRatio,
+        tokenUnit,
+        displayPrice,
+        currency,
+      });
+      priceDataCache.set(record, cache);
+    }
+    return cache;
+  };
+
   const endpointColumn = {
     title: t('可用端点类型'),
     dataIndex: 'supported_endpoint_types',
@@ -167,21 +186,21 @@ export const getPricingTableColumns = ({
     dataIndex: 'model_ratio',
     render: (text, record, index) => {
       const completionRatio = parseFloat(record.completion_ratio.toFixed(3));
-      const content = (
+      const priceData = getPriceData(record);
+
+      return (
         <div className="space-y-1">
           <div className="text-gray-700">
             {t('模型倍率')}：{record.quota_type === 0 ? text : t('无')}
           </div>
           <div className="text-gray-700">
-            {t('补全倍率')}：
-            {record.quota_type === 0 ? completionRatio : t('无')}
+            {t('补全倍率')}：{record.quota_type === 0 ? completionRatio : t('无')}
           </div>
           <div className="text-gray-700">
-            {t('分组倍率')}：{groupRatio[selectedGroup]}
+            {t('分组倍率')}：{priceData?.usedGroupRatio ?? '-'}
           </div>
         </div>
       );
-      return content;
     },
   };
 
@@ -190,14 +209,7 @@ export const getPricingTableColumns = ({
     dataIndex: 'model_price',
     fixed: 'right',
     render: (text, record, index) => {
-      const priceData = calculateModelPrice({
-        record,
-        selectedGroup,
-        groupRatio,
-        tokenUnit,
-        displayPrice,
-        currency
-      });
+      const priceData = getPriceData(record);
 
       if (priceData.isPerToken) {
         return (

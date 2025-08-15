@@ -104,34 +104,27 @@ export const usePricingFilterCounts = ({
   // 生成不同视图所需的模型集合
   const quotaTypeModels = useMemo(
     () => allModels.filter((m) => matchesFilters(m, ['quota'])),
-    [allModels, filterGroup, filterEndpointType, filterVendor, filterTag]
+    [allModels, filterGroup, filterEndpointType, filterVendor, filterTag, searchValue]
   );
 
   const endpointTypeModels = useMemo(
     () => allModels.filter((m) => matchesFilters(m, ['endpoint'])),
-    [allModels, filterGroup, filterQuotaType, filterVendor, filterTag]
+    [allModels, filterGroup, filterQuotaType, filterVendor, filterTag, searchValue]
   );
 
   const vendorModels = useMemo(
     () => allModels.filter((m) => matchesFilters(m, ['vendor'])),
-    [allModels, filterGroup, filterQuotaType, filterEndpointType, filterTag]
+    [allModels, filterGroup, filterQuotaType, filterEndpointType, filterTag, searchValue]
   );
 
   const tagModels = useMemo(
     () => allModels.filter((m) => matchesFilters(m, ['tag'])),
-    [allModels, filterGroup, filterQuotaType, filterEndpointType, filterVendor]
+    [allModels, filterGroup, filterQuotaType, filterEndpointType, filterVendor, searchValue]
   );
 
   const groupCountModels = useMemo(
     () => allModels.filter((m) => matchesFilters(m, ['group'])),
-    [
-      allModels,
-      filterQuotaType,
-      filterEndpointType,
-      filterVendor,
-      filterTag,
-      searchValue,
-    ]
+    [allModels, filterQuotaType, filterEndpointType, filterVendor, filterTag, searchValue]
   );
 
   return {
