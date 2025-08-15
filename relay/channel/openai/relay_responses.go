@@ -103,6 +103,10 @@ func OaiResponsesStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp
 			// 非正常结束，使用输出文本的 token 数量
 			completionTokens := service.CountTextToken(tempStr, info.UpstreamModelName)
 			usage.CompletionTokens = completionTokens
+
+			if usage.PromptTokens == 0 {
+				usage.PromptTokens = info.PromptTokens
+			}
 		}
 	}
 
