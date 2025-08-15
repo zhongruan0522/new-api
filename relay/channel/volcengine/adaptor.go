@@ -188,17 +188,17 @@ func (a *Adaptor) GetRequestURL(info *relaycommon.RelayInfo) (string, error) {
 	switch info.RelayMode {
 	case constant.RelayModeChatCompletions:
 		if strings.HasPrefix(info.UpstreamModelName, "bot") {
-			return fmt.Sprintf("%s/api/v3/bots/chat/completions", info.BaseUrl), nil
+			return fmt.Sprintf("%s/api/v3/bots/chat/completions", info.ChannelBaseUrl), nil
 		}
-		return fmt.Sprintf("%s/api/v3/chat/completions", info.BaseUrl), nil
+		return fmt.Sprintf("%s/api/v3/chat/completions", info.ChannelBaseUrl), nil
 	case constant.RelayModeEmbeddings:
-		return fmt.Sprintf("%s/api/v3/embeddings", info.BaseUrl), nil
+		return fmt.Sprintf("%s/api/v3/embeddings", info.ChannelBaseUrl), nil
 	case constant.RelayModeImagesGenerations:
-		return fmt.Sprintf("%s/api/v3/images/generations", info.BaseUrl), nil
+		return fmt.Sprintf("%s/api/v3/images/generations", info.ChannelBaseUrl), nil
 	case constant.RelayModeImagesEdits:
-		return fmt.Sprintf("%s/api/v3/images/edits", info.BaseUrl), nil
+		return fmt.Sprintf("%s/api/v3/images/edits", info.ChannelBaseUrl), nil
 	case constant.RelayModeRerank:
-		return fmt.Sprintf("%s/api/v3/rerank", info.BaseUrl), nil
+		return fmt.Sprintf("%s/api/v3/rerank", info.ChannelBaseUrl), nil
 	default:
 	}
 	return "", fmt.Errorf("unsupported relay mode: %d", info.RelayMode)

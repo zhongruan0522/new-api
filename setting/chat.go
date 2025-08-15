@@ -37,7 +37,7 @@ func UpdateChatsByJsonString(jsonString string) error {
 func Chats2JsonString() string {
 	jsonBytes, err := json.Marshal(Chats)
 	if err != nil {
-		common.SysError("error marshalling chats: " + err.Error())
+		common.SysLog("error marshalling chats: " + err.Error())
 		return "[]"
 	}
 	return string(jsonBytes)

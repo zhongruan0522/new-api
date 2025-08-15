@@ -132,10 +132,27 @@ func testChannel(channel *model.Channel, testModel string) testResult {
 			newAPIError: newAPIError,
 		}
 	}
+	request := buildTestRequest(testModel)
 
-	info := relaycommon.GenRelayInfo(c)
+	// Determine relay format based on request path
+	relayFormat := types.RelayFormatOpenAI
+	if c.Request.URL.Path == "/v1/embeddings" {
+		relayFormat = types.RelayFormatEmbedding
+	}
 
-	err = helper.ModelMappedHelper(c, info, nil)
+	info, err := relaycommon.GenRelayInfo(c, relayFormat, request, nil)
+
+	if err != nil {
+		return testResult{
+			context:     c,
+			localErr:    err,
+			newAPIError: types.NewError(err, types.ErrorCodeGenRelayInfoFailed),
+		}
+	}
+
+	info.InitChannelMeta(c)
+
+	err = helper.ModelMappedHelper(c, info, request)
 	if err != nil {
 		return testResult{
 			context:     c,
@@ -143,7 +160,9 @@ func testChannel(channel *model.Channel, testModel string) testResult {
 			newAPIError: types.NewError(err, types.ErrorCodeChannelModelMappedError),
 		}
 	}
+
 	testModel = info.UpstreamModelName
+	request.Model = testModel
 
 	apiType, _ := common.ChannelType2APIType(channel.Type)
 	adaptor := relay.GetAdaptor(apiType)
@@ -155,13 +174,12 @@ func testChannel(channel *model.Channel, testModel string) testResult {
 		}
 	}
 
-	request := buildTestRequest(testModel)
-	// 创建一个用于日志的 info 副本，移除 ApiKey
-	logInfo := *info
-	logInfo.ApiKey = ""
-	common.SysLog(fmt.Sprintf("testing channel %d with model %s , info %+v ", channel.Id, testModel, logInfo))
+	//// 创建一个用于日志的 info 副本，移除 ApiKey
+	//logInfo := info
+	//logInfo.ApiKey = ""
+	common.SysLog(fmt.Sprintf("testing channel %d with model %s , info %+v ", channel.Id, testModel, info.ToString()))
 
-	priceData, err := helper.ModelPriceHelper(c, info, 0, int(request.GetMaxTokens()))
+	priceData, err := helper.ModelPriceHelper(c, info, 0, request.GetTokenCountMeta())
 	if err != nil {
 		return testResult{
 			context:     c,

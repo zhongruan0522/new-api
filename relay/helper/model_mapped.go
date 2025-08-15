@@ -4,9 +4,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	common2 "one-api/common"
 	"one-api/dto"
+	common2 "one-api/logger"
 	"one-api/relay/common"
+	"one-api/types"
 
 	"github.com/gin-gonic/gin"
 )
@@ -54,29 +55,29 @@ func ModelMappedHelper(c *gin.Context, info *common.RelayInfo, request any) erro
 	}
 	if request != nil {
 		switch info.RelayFormat {
-		case common.RelayFormatGemini:
+		case types.RelayFormatGemini:
 			// Gemini 模型映射
-		case common.RelayFormatClaude:
+		case types.RelayFormatClaude:
 			if claudeRequest, ok := request.(*dto.ClaudeRequest); ok {
 				claudeRequest.Model = info.UpstreamModelName
 			}
-		case common.RelayFormatOpenAIResponses:
+		case types.RelayFormatOpenAIResponses:
 			if openAIResponsesRequest, ok := request.(*dto.OpenAIResponsesRequest); ok {
 				openAIResponsesRequest.Model = info.UpstreamModelName
 			}
-		case common.RelayFormatOpenAIAudio:
+		case types.RelayFormatOpenAIAudio:
 			if openAIAudioRequest, ok := request.(*dto.AudioRequest); ok {
 				openAIAudioRequest.Model = info.UpstreamModelName
 			}
-		case common.RelayFormatOpenAIImage:
+		case types.RelayFormatOpenAIImage:
 			if imageRequest, ok := request.(*dto.ImageRequest); ok {
 				imageRequest.Model = info.UpstreamModelName
 			}
-		case common.RelayFormatRerank:
+		case types.RelayFormatRerank:
 			if rerankRequest, ok := request.(*dto.RerankRequest); ok {
 				rerankRequest.Model = info.UpstreamModelName
 			}
-		case common.RelayFormatEmbedding:
+		case types.RelayFormatEmbedding:
 			if embeddingRequest, ok := request.(*dto.EmbeddingRequest); ok {
 				embeddingRequest.Model = info.UpstreamModelName
 			}

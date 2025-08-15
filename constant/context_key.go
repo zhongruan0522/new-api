@@ -3,6 +3,8 @@ package constant
 type ContextKey string
 
 const (
+	ContextKeyPromptTokens ContextKey = "prompt_tokens"
+
 	ContextKeyOriginalModel    ContextKey = "original_model"
 	ContextKeyRequestStartTime ContextKey = "request_start_time"
 

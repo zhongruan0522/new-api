@@ -81,7 +81,7 @@ type TaskAdaptor struct {
 
 func (a *TaskAdaptor) Init(info *relaycommon.TaskRelayInfo) {
 	a.ChannelType = info.ChannelType
-	a.baseURL = info.BaseUrl
+	a.baseURL = info.ChannelBaseUrl
 	a.apiKey = info.ApiKey
 
 	// apiKey format: "access_key|secret_key"

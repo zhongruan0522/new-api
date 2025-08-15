@@ -43,7 +43,7 @@ func (a *Adaptor) Init(info *relaycommon.RelayInfo) {
 }
 
 func (a *Adaptor) GetRequestURL(info *relaycommon.RelayInfo) (string, error) {
-	baseUrl := fmt.Sprintf("%s/api/paas/v4", info.BaseUrl)
+	baseUrl := fmt.Sprintf("%s/api/paas/v4", info.ChannelBaseUrl)
 	switch info.RelayMode {
 	case relayconstant.RelayModeEmbeddings:
 		return fmt.Sprintf("%s/embeddings", baseUrl), nil

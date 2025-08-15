@@ -45,15 +45,15 @@ func (a *Adaptor) Init(info *relaycommon.RelayInfo) {
 func (a *Adaptor) GetRequestURL(info *relaycommon.RelayInfo) (string, error) {
 	switch info.RelayMode {
 	case constant.RelayModeChatCompletions:
-		return fmt.Sprintf("%s/v2/chat/completions", info.BaseUrl), nil
+		return fmt.Sprintf("%s/v2/chat/completions", info.ChannelBaseUrl), nil
 	case constant.RelayModeEmbeddings:
-		return fmt.Sprintf("%s/v2/embeddings", info.BaseUrl), nil
+		return fmt.Sprintf("%s/v2/embeddings", info.ChannelBaseUrl), nil
 	case constant.RelayModeImagesGenerations:
-		return fmt.Sprintf("%s/v2/images/generations", info.BaseUrl), nil
+		return fmt.Sprintf("%s/v2/images/generations", info.ChannelBaseUrl), nil
 	case constant.RelayModeImagesEdits:
-		return fmt.Sprintf("%s/v2/images/edits", info.BaseUrl), nil
+		return fmt.Sprintf("%s/v2/images/edits", info.ChannelBaseUrl), nil
 	case constant.RelayModeRerank:
-		return fmt.Sprintf("%s/v2/rerank", info.BaseUrl), nil
+		return fmt.Sprintf("%s/v2/rerank", info.ChannelBaseUrl), nil
 	default:
 	}
 	return "", fmt.Errorf("unsupported relay mode: %d", info.RelayMode)

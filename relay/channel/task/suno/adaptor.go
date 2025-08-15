@@ -59,7 +59,7 @@ func (a *TaskAdaptor) ValidateRequestAndSetAction(c *gin.Context, info *relaycom
 }
 
 func (a *TaskAdaptor) BuildRequestURL(info *relaycommon.TaskRelayInfo) (string, error) {
-	baseURL := info.BaseUrl
+	baseURL := info.ChannelBaseUrl
 	fullRequestURL := fmt.Sprintf("%s%s", baseURL, "/suno/submit/"+info.Action)
 	return fullRequestURL, nil
 }
@@ -139,7 +139,7 @@ func (a *TaskAdaptor) FetchTask(baseUrl, key string, body map[string]any) (*http
 
 	req, err := http.NewRequest("POST", requestUrl, bytes.NewBuffer(byteBody))
 	if err != nil {
-		common.SysError(fmt.Sprintf("Get Task error: %v", err))
+		common.SysLog(fmt.Sprintf("Get Task error: %v", err))
 		return nil, err
 	}
 	defer req.Body.Close()
