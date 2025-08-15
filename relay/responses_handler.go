@@ -2,7 +2,6 @@ package relay
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -48,21 +47,21 @@ func ResponsesHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *
 		if err != nil {
 			return types.NewError(err, types.ErrorCodeConvertRequestFailed, types.ErrOptionWithSkipRetry())
 		}
-		jsonData, err := json.Marshal(convertedRequest)
+		jsonData, err := common.Marshal(convertedRequest)
 		if err != nil {
 			return types.NewError(err, types.ErrorCodeConvertRequestFailed, types.ErrOptionWithSkipRetry())
 		}
 		// apply param override
 		if len(info.ParamOverride) > 0 {
 			reqMap := make(map[string]interface{})
-			err = json.Unmarshal(jsonData, &reqMap)
+			err = common.Unmarshal(jsonData, &reqMap)
 			if err != nil {
 				return types.NewError(err, types.ErrorCodeChannelParamOverrideInvalid, types.ErrOptionWithSkipRetry())
 			}
 			for key, value := range info.ParamOverride {
 				reqMap[key] = value
 			}
-			jsonData, err = json.Marshal(reqMap)
+			jsonData, err = common.Marshal(reqMap)
 			if err != nil {
 				return types.NewError(err, types.ErrorCodeConvertRequestFailed, types.ErrOptionWithSkipRetry())
 			}
