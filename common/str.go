@@ -99,12 +99,15 @@ func GetJsonString(data any) string {
 	return string(b)
 }
 
-// MaskSensitiveInfo masks sensitive information like URLs, IPs in a string
+// MaskSensitiveInfo masks sensitive information like URLs, IPs, and domain names in a string
 // Example:
 // http://example.com -> http://***.com
 // https://api.test.org/v1/users/123?key=secret -> https://***.org/***/***/?key=***
 // https://sub.domain.co.uk/path/to/resource -> https://***.co.uk/***/***
 // 192.168.1.1 -> ***.***.***.***
+// openai.com -> ***.com
+// www.openai.com -> ***.***.com
+// api.openai.com -> ***.***.com
 func MaskSensitiveInfo(str string) string {
 	// Mask URLs
 	urlPattern := regexp.MustCompile(`(http|https)://[^\s/$.?#].[^\s]*`)
@@ -182,6 +185,31 @@ func MaskSensitiveInfo(str string) string {
 		}
 
 		return result
+	})
+
+	// Mask domain names without protocol (like openai.com, www.openai.com)
+	domainPattern := regexp.MustCompile(`\b(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}\b`)
+	str = domainPattern.ReplaceAllStringFunc(str, func(domain string) string {
+		// Skip if it's already been processed as part of a URL
+		if strings.Contains(str, "://"+domain) {
+			return domain
+		}
+
+		parts := strings.Split(domain, ".")
+		if len(parts) < 2 {
+			return domain
+		}
+
+		// Handle different domain patterns
+		if len(parts) == 2 {
+			// openai.com -> ***.com
+			return "***." + parts[1]
+		} else {
+			// www.openai.com -> ***.***.com
+			// api.openai.com -> ***.***.com
+			lastPart := parts[len(parts)-1]
+			return "***.***." + lastPart
+		}
 	})
 
 	// Mask IP addresses

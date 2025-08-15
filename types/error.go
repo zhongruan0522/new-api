@@ -67,6 +67,7 @@ const (
 	ErrorCodeBadResponseBody        ErrorCode = "bad_response_body"
 	ErrorCodeEmptyResponse          ErrorCode = "empty_response"
 	ErrorCodeAwsInvokeError         ErrorCode = "aws_invoke_error"
+	ErrorCodeModelNotFound          ErrorCode = "model_not_found"
 
 	// sql error
 	ErrorCodeQueryDataError  ErrorCode = "query_data_error"
@@ -119,7 +120,17 @@ func (e *NewAPIError) MaskSensitiveError() string {
 	if e.Err == nil {
 		return string(e.errorCode)
 	}
-	return common.MaskSensitiveInfo(e.Err.Error())
+	errStr := e.Err.Error()
+	if e.StatusCode == http.StatusServiceUnavailable {
+		if e.errorCode == ErrorCodeModelNotFound {
+			errStr = "上游分组模型服务不可用，请稍后再试"
+		} else {
+			if strings.Contains(errStr, "分组") || strings.Contains(errStr, "渠道") {
+				errStr = "上游分组模型服务不可用，请稍后再试"
+			}
+		}
+	}
+	return common.MaskSensitiveInfo(errStr)
 }
 
 func (e *NewAPIError) SetMessage(message string) {

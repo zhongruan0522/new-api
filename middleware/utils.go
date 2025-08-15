@@ -7,12 +7,17 @@ import (
 	"one-api/logger"
 )
 
-func abortWithOpenAiMessage(c *gin.Context, statusCode int, message string) {
+func abortWithOpenAiMessage(c *gin.Context, statusCode int, message string, code ...string) {
+	codeStr := ""
+	if len(code) > 0 {
+		codeStr = code[0]
+	}
 	userId := c.GetInt("id")
 	c.JSON(statusCode, gin.H{
 		"error": gin.H{
 			"message": common.MessageWithRequestId(message, c.GetString(common.RequestIdKey)),
 			"type":    "new_api_error",
+			"code":    codeStr,
 		},
 	})
 	c.Abort()
