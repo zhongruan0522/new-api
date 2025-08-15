@@ -2,7 +2,10 @@ package dto
 
 import (
 	"encoding/json"
+	"github.com/gin-gonic/gin"
 	"one-api/common"
+	"one-api/logger"
+	"one-api/types"
 	"strings"
 )
 
@@ -14,19 +17,75 @@ type GeminiChatRequest struct {
 	SystemInstructions *GeminiChatContent         `json:"systemInstruction,omitempty"`
 }
 
+func (r *GeminiChatRequest) GetTokenCountMeta() *types.TokenCountMeta {
+	var files []*types.FileMeta = make([]*types.FileMeta, 0)
+
+	var maxTokens int
+
+	if r.GenerationConfig.MaxOutputTokens > 0 {
+		maxTokens = int(r.GenerationConfig.MaxOutputTokens)
+	}
+
+	var inputTexts []string
+	for _, content := range r.Contents {
+		for _, part := range content.Parts {
+			if part.Text != "" {
+				inputTexts = append(inputTexts, part.Text)
+			}
+			if part.InlineData != nil && part.InlineData.Data != "" {
+				if strings.HasPrefix(part.InlineData.MimeType, "image/") {
+					files = append(files, &types.FileMeta{
+						FileType: types.FileTypeImage,
+						Data:     part.InlineData.Data,
+					})
+				} else if strings.HasPrefix(part.InlineData.MimeType, "audio/") {
+					files = append(files, &types.FileMeta{
+						FileType: types.FileTypeAudio,
+						Data:     part.InlineData.Data,
+					})
+				} else if strings.HasPrefix(part.InlineData.MimeType, "video/") {
+					files = append(files, &types.FileMeta{
+						FileType: types.FileTypeVideo,
+						Data:     part.InlineData.Data,
+					})
+				} else {
+					files = append(files, &types.FileMeta{
+						FileType: types.FileTypeFile,
+						Data:     part.InlineData.Data,
+					})
+				}
+			}
+		}
+	}
+
+	inputText := strings.Join(inputTexts, "\n")
+	return &types.TokenCountMeta{
+		CombineText: inputText,
+		Files:       files,
+		MaxTokens:   maxTokens,
+	}
+}
+
+func (r *GeminiChatRequest) IsStream(c *gin.Context) bool {
+	if c.Query("alt") == "sse" {
+		return true
+	}
+	return false
+}
+
 func (r *GeminiChatRequest) GetTools() []GeminiChatTool {
 	var tools []GeminiChatTool
 	if strings.HasSuffix(string(r.Tools), "[") {
 		// is array
 		if err := common.Unmarshal(r.Tools, &tools); err != nil {
-			common.LogError(nil, "error_unmarshalling_tools: "+err.Error())
+			logger.LogError(nil, "error_unmarshalling_tools: "+err.Error())
 			return nil
 		}
 	} else if strings.HasPrefix(string(r.Tools), "{") {
 		// is object
 		singleTool := GeminiChatTool{}
 		if err := common.Unmarshal(r.Tools, &singleTool); err != nil {
-			common.LogError(nil, "error_unmarshalling_single_tool: "+err.Error())
+			logger.LogError(nil, "error_unmarshalling_single_tool: "+err.Error())
 			return nil
 		}
 		tools = []GeminiChatTool{singleTool}
@@ -43,7 +102,7 @@ func (r *GeminiChatRequest) SetTools(tools []GeminiChatTool) {
 	// Marshal the tools to JSON
 	data, err := common.Marshal(tools)
 	if err != nil {
-		common.LogError(nil, "error_marshalling_tools: "+err.Error())
+		logger.LogError(nil, "error_marshalling_tools: "+err.Error())
 		return
 	}
 	r.Tools = data

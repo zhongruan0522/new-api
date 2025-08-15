@@ -39,12 +39,13 @@ const (
 	ErrorCodeSensitiveWordsDetected ErrorCode = "sensitive_words_detected"
 
 	// new api error
-	ErrorCodeCountTokenFailed  ErrorCode = "count_token_failed"
-	ErrorCodeModelPriceError   ErrorCode = "model_price_error"
-	ErrorCodeInvalidApiType    ErrorCode = "invalid_api_type"
-	ErrorCodeJsonMarshalFailed ErrorCode = "json_marshal_failed"
-	ErrorCodeDoRequestFailed   ErrorCode = "do_request_failed"
-	ErrorCodeGetChannelFailed  ErrorCode = "get_channel_failed"
+	ErrorCodeCountTokenFailed   ErrorCode = "count_token_failed"
+	ErrorCodeModelPriceError    ErrorCode = "model_price_error"
+	ErrorCodeInvalidApiType     ErrorCode = "invalid_api_type"
+	ErrorCodeJsonMarshalFailed  ErrorCode = "json_marshal_failed"
+	ErrorCodeDoRequestFailed    ErrorCode = "do_request_failed"
+	ErrorCodeGetChannelFailed   ErrorCode = "get_channel_failed"
+	ErrorCodeGenRelayInfoFailed ErrorCode = "gen_relay_info_failed"
 
 	// channel error
 	ErrorCodeChannelNoAvailableKey       ErrorCode = "channel:no_available_key"
@@ -66,6 +67,7 @@ const (
 	ErrorCodeBadResponseBody        ErrorCode = "bad_response_body"
 	ErrorCodeEmptyResponse          ErrorCode = "empty_response"
 	ErrorCodeAwsInvokeError         ErrorCode = "aws_invoke_error"
+	ErrorCodeModelNotFound          ErrorCode = "model_not_found"
 
 	// sql error
 	ErrorCodeQueryDataError  ErrorCode = "query_data_error"
@@ -118,7 +120,8 @@ func (e *NewAPIError) MaskSensitiveError() string {
 	if e.Err == nil {
 		return string(e.errorCode)
 	}
-	return common.MaskSensitiveInfo(e.Err.Error())
+	errStr := e.Err.Error()
+	return common.MaskSensitiveInfo(errStr)
 }
 
 func (e *NewAPIError) SetMessage(message string) {

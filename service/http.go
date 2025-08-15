@@ -1,10 +1,12 @@
-package common
+package service
 
 import (
 	"bytes"
 	"fmt"
 	"io"
 	"net/http"
+	"one-api/common"
+	"one-api/logger"
 
 	"github.com/gin-gonic/gin"
 )
@@ -15,7 +17,7 @@ func CloseResponseBodyGracefully(httpResponse *http.Response) {
 	}
 	err := httpResponse.Body.Close()
 	if err != nil {
-		SysError("failed to close response body: " + err.Error())
+		common.SysError("failed to close response body: " + err.Error())
 	}
 }
 
@@ -52,6 +54,6 @@ func IOCopyBytesGracefully(c *gin.Context, src *http.Response, data []byte) {
 
 	_, err := io.Copy(c.Writer, body)
 	if err != nil {
-		LogError(c, fmt.Sprintf("failed to copy response body: %s", err.Error()))
+		logger.LogError(c, fmt.Sprintf("failed to copy response body: %s", err.Error()))
 	}
 }

@@ -320,7 +320,7 @@ func ModelPrice2JSONString() string {
 	modelPriceMapMutex.RLock()
 	defer modelPriceMapMutex.RUnlock()
 
-	jsonBytes, err := json.Marshal(modelPriceMap)
+	jsonBytes, err := common.Marshal(modelPriceMap)
 	if err != nil {
 		common.SysError("error marshalling model price: " + err.Error())
 	}
@@ -359,7 +359,7 @@ func UpdateModelRatioByJSONString(jsonStr string) error {
 	modelRatioMapMutex.Lock()
 	defer modelRatioMapMutex.Unlock()
 	modelRatioMap = make(map[string]float64)
-	err := json.Unmarshal([]byte(jsonStr), &modelRatioMap)
+	err := common.Unmarshal([]byte(jsonStr), &modelRatioMap)
 	if err == nil {
 		InvalidateExposedDataCache()
 	}
@@ -388,7 +388,7 @@ func GetModelRatio(name string) (float64, bool, string) {
 }
 
 func DefaultModelRatio2JSONString() string {
-	jsonBytes, err := json.Marshal(defaultModelRatio)
+	jsonBytes, err := common.Marshal(defaultModelRatio)
 	if err != nil {
 		common.SysError("error marshalling model ratio: " + err.Error())
 	}
@@ -420,7 +420,7 @@ func UpdateCompletionRatioByJSONString(jsonStr string) error {
 	CompletionRatioMutex.Lock()
 	defer CompletionRatioMutex.Unlock()
 	CompletionRatio = make(map[string]float64)
-	err := json.Unmarshal([]byte(jsonStr), &CompletionRatio)
+	err := common.Unmarshal([]byte(jsonStr), &CompletionRatio)
 	if err == nil {
 		InvalidateExposedDataCache()
 	}
@@ -594,7 +594,7 @@ func ModelRatio2JSONString() string {
 	modelRatioMapMutex.RLock()
 	defer modelRatioMapMutex.RUnlock()
 
-	jsonBytes, err := json.Marshal(modelRatioMap)
+	jsonBytes, err := common.Marshal(modelRatioMap)
 	if err != nil {
 		common.SysError("error marshalling model ratio: " + err.Error())
 	}
@@ -610,7 +610,7 @@ var imageRatioMapMutex sync.RWMutex
 func ImageRatio2JSONString() string {
 	imageRatioMapMutex.RLock()
 	defer imageRatioMapMutex.RUnlock()
-	jsonBytes, err := json.Marshal(imageRatioMap)
+	jsonBytes, err := common.Marshal(imageRatioMap)
 	if err != nil {
 		common.SysError("error marshalling cache ratio: " + err.Error())
 	}
@@ -621,7 +621,7 @@ func UpdateImageRatioByJSONString(jsonStr string) error {
 	imageRatioMapMutex.Lock()
 	defer imageRatioMapMutex.Unlock()
 	imageRatioMap = make(map[string]float64)
-	return json.Unmarshal([]byte(jsonStr), &imageRatioMap)
+	return common.Unmarshal([]byte(jsonStr), &imageRatioMap)
 }
 
 func GetImageRatio(name string) (float64, bool) {

@@ -105,14 +105,14 @@ func (a *Adaptor) Init(info *relaycommon.RelayInfo) {
 
 func (a *Adaptor) GetRequestURL(info *relaycommon.RelayInfo) (string, error) {
 	if info.RelayMode == relayconstant.RelayModeRealtime {
-		if strings.HasPrefix(info.BaseUrl, "https://") {
-			baseUrl := strings.TrimPrefix(info.BaseUrl, "https://")
+		if strings.HasPrefix(info.ChannelBaseUrl, "https://") {
+			baseUrl := strings.TrimPrefix(info.ChannelBaseUrl, "https://")
 			baseUrl = "wss://" + baseUrl
-			info.BaseUrl = baseUrl
-		} else if strings.HasPrefix(info.BaseUrl, "http://") {
-			baseUrl := strings.TrimPrefix(info.BaseUrl, "http://")
+			info.ChannelBaseUrl = baseUrl
+		} else if strings.HasPrefix(info.ChannelBaseUrl, "http://") {
+			baseUrl := strings.TrimPrefix(info.ChannelBaseUrl, "http://")
 			baseUrl = "ws://" + baseUrl
-			info.BaseUrl = baseUrl
+			info.ChannelBaseUrl = baseUrl
 		}
 	}
 	switch info.ChannelType {
@@ -126,7 +126,7 @@ func (a *Adaptor) GetRequestURL(info *relaycommon.RelayInfo) (string, error) {
 		requestURL = fmt.Sprintf("%s?api-version=%s", requestURL, apiVersion)
 		task := strings.TrimPrefix(requestURL, "/v1/")
 
-		if info.RelayFormat == relaycommon.RelayFormatClaude {
+		if info.RelayFormat == types.RelayFormatClaude {
 			task = strings.TrimPrefix(task, "messages")
 			task = "chat/completions" + task
 		}
@@ -136,7 +136,7 @@ func (a *Adaptor) GetRequestURL(info *relaycommon.RelayInfo) (string, error) {
 			responsesApiVersion := "preview"
 
 			subUrl := "/openai/v1/responses"
-			if strings.Contains(info.BaseUrl, "cognitiveservices.azure.com") {
+			if strings.Contains(info.ChannelBaseUrl, "cognitiveservices.azure.com") {
 				subUrl = "/openai/responses"
 				responsesApiVersion = apiVersion
 			}
@@ -146,7 +146,7 @@ func (a *Adaptor) GetRequestURL(info *relaycommon.RelayInfo) (string, error) {
 			}
 
 			requestURL = fmt.Sprintf("%s?api-version=%s", subUrl, responsesApiVersion)
-			return relaycommon.GetFullRequestURL(info.BaseUrl, requestURL, info.ChannelType), nil
+			return relaycommon.GetFullRequestURL(info.ChannelBaseUrl, requestURL, info.ChannelType), nil
 		}
 
 		model_ := info.UpstreamModelName
@@ -159,18 +159,18 @@ func (a *Adaptor) GetRequestURL(info *relaycommon.RelayInfo) (string, error) {
 		if info.RelayMode == relayconstant.RelayModeRealtime {
 			requestURL = fmt.Sprintf("/openai/realtime?deployment=%s&api-version=%s", model_, apiVersion)
 		}
-		return relaycommon.GetFullRequestURL(info.BaseUrl, requestURL, info.ChannelType), nil
+		return relaycommon.GetFullRequestURL(info.ChannelBaseUrl, requestURL, info.ChannelType), nil
 	case constant.ChannelTypeMiniMax:
 		return minimax.GetRequestURL(info)
 	case constant.ChannelTypeCustom:
-		url := info.BaseUrl
+		url := info.ChannelBaseUrl
 		url = strings.Replace(url, "{model}", info.UpstreamModelName, -1)
 		return url, nil
 	default:
-		if info.RelayFormat == relaycommon.RelayFormatClaude || info.RelayFormat == relaycommon.RelayFormatGemini {
-			return fmt.Sprintf("%s/v1/chat/completions", info.BaseUrl), nil
+		if info.RelayFormat == types.RelayFormatClaude || info.RelayFormat == types.RelayFormatGemini {
+			return fmt.Sprintf("%s/v1/chat/completions", info.ChannelBaseUrl), nil
 		}
-		return relaycommon.GetFullRequestURL(info.BaseUrl, info.RequestURLPath, info.ChannelType), nil
+		return relaycommon.GetFullRequestURL(info.ChannelBaseUrl, info.RequestURLPath, info.ChannelType), nil
 	}
 }
 

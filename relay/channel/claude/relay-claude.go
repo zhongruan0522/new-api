@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"one-api/common"
 	"one-api/dto"
+	"one-api/logger"
 	"one-api/relay/channel/openrouter"
 	relaycommon "one-api/relay/common"
 	"one-api/relay/helper"
@@ -375,7 +376,7 @@ func RequestOpenAI2ClaudeMessage(textRequest dto.GeneralOpenAIRequest) (*dto.Cla
 					for _, toolCall := range message.ParseToolCalls() {
 						inputObj := make(map[string]any)
 						if err := json.Unmarshal([]byte(toolCall.Function.Arguments), &inputObj); err != nil {
-							common.SysError("tool call function arguments is not a map[string]any: " + fmt.Sprintf("%v", toolCall.Function.Arguments))
+							common.SysLog("tool call function arguments is not a map[string]any: " + fmt.Sprintf("%v", toolCall.Function.Arguments))
 							continue
 						}
 						claudeMediaMessages = append(claudeMediaMessages, dto.ClaudeMediaMessage{
@@ -609,13 +610,13 @@ func HandleStreamResponseData(c *gin.Context, info *relaycommon.RelayInfo, claud
 	var claudeResponse dto.ClaudeResponse
 	err := common.UnmarshalJsonStr(data, &claudeResponse)
 	if err != nil {
-		common.SysError("error unmarshalling stream response: " + err.Error())
+		common.SysLog("error unmarshalling stream response: " + err.Error())
 		return types.NewError(err, types.ErrorCodeBadResponseBody)
 	}
 	if claudeError := claudeResponse.GetClaudeError(); claudeError != nil && claudeError.Type != "" {
 		return types.WithClaudeError(*claudeError, http.StatusInternalServerError)
 	}
-	if info.RelayFormat == relaycommon.RelayFormatClaude {
+	if info.RelayFormat == types.RelayFormatClaude {
 		FormatClaudeResponseInfo(requestMode, &claudeResponse, nil, claudeInfo)
 
 		if requestMode == RequestModeCompletion {
@@ -628,7 +629,7 @@ func HandleStreamResponseData(c *gin.Context, info *relaycommon.RelayInfo, claud
 			}
 		}
 		helper.ClaudeChunkData(c, claudeResponse, data)
-	} else if info.RelayFormat == relaycommon.RelayFormatOpenAI {
+	} else if info.RelayFormat == types.RelayFormatOpenAI {
 		response := StreamResponseClaude2OpenAI(requestMode, &claudeResponse)
 
 		if !FormatClaudeResponseInfo(requestMode, &claudeResponse, response, claudeInfo) {
@@ -637,7 +638,7 @@ func HandleStreamResponseData(c *gin.Context, info *relaycommon.RelayInfo, claud
 
 		err = helper.ObjectData(c, response)
 		if err != nil {
-			common.LogError(c, "send_stream_response_failed: "+err.Error())
+			logger.LogError(c, "send_stream_response_failed: "+err.Error())
 		}
 	}
 	return nil
@@ -653,21 +654,20 @@ func HandleStreamFinalResponse(c *gin.Context, info *relaycommon.RelayInfo, clau
 		}
 		if claudeInfo.Usage.CompletionTokens == 0 || !claudeInfo.Done {
 			if common.DebugEnabled {
-				common.SysError("claude response usage is not complete, maybe upstream error")
+				common.SysLog("claude response usage is not complete, maybe upstream error")
 			}
 			claudeInfo.Usage = service.ResponseText2Usage(claudeInfo.ResponseText.String(), info.UpstreamModelName, claudeInfo.Usage.PromptTokens)
 		}
 	}
 
-	if info.RelayFormat == relaycommon.RelayFormatClaude {
+	if info.RelayFormat == types.RelayFormatClaude {
 		//
-	} else if info.RelayFormat == relaycommon.RelayFormatOpenAI {
-
+	} else if info.RelayFormat == types.RelayFormatOpenAI {
 		if info.ShouldIncludeUsage {
 			response := helper.GenerateFinalUsageResponse(claudeInfo.ResponseId, claudeInfo.Created, info.UpstreamModelName, *claudeInfo.Usage)
 			err := helper.ObjectData(c, response)
 			if err != nil {
-				common.SysError("send final response failed: " + err.Error())
+				common.SysLog("send final response failed: " + err.Error())
 			}
 		}
 		helper.Done(c)
@@ -721,14 +721,14 @@ func HandleClaudeResponseData(c *gin.Context, info *relaycommon.RelayInfo, claud
 	}
 	var responseData []byte
 	switch info.RelayFormat {
-	case relaycommon.RelayFormatOpenAI:
+	case types.RelayFormatOpenAI:
 		openaiResponse := ResponseClaude2OpenAI(requestMode, &claudeResponse)
 		openaiResponse.Usage = *claudeInfo.Usage
 		responseData, err = json.Marshal(openaiResponse)
 		if err != nil {
 			return types.NewError(err, types.ErrorCodeBadResponseBody)
 		}
-	case relaycommon.RelayFormatClaude:
+	case types.RelayFormatClaude:
 		responseData = data
 	}
 
@@ -736,12 +736,12 @@ func HandleClaudeResponseData(c *gin.Context, info *relaycommon.RelayInfo, claud
 		c.Set("claude_web_search_requests", claudeResponse.Usage.ServerToolUse.WebSearchRequests)
 	}
 
-	common.IOCopyBytesGracefully(c, nil, responseData)
+	service.IOCopyBytesGracefully(c, nil, responseData)
 	return nil
 }
 
 func ClaudeHandler(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo, requestMode int) (*types.NewAPIError, *dto.Usage) {
-	defer common.CloseResponseBodyGracefully(resp)
+	defer service.CloseResponseBodyGracefully(resp)
 
 	claudeInfo := &ClaudeResponseInfo{
 		ResponseId:   helper.GetResponseID(c),

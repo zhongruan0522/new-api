@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	common2 "one-api/common"
+	"one-api/logger"
 	"one-api/relay/common"
 	"one-api/relay/constant"
 	"one-api/relay/helper"
@@ -181,7 +182,7 @@ func sendPingData(c *gin.Context, mutex *sync.Mutex) error {
 
 		err := helper.PingData(c)
 		if err != nil {
-			common2.LogError(c, "SSE ping error: "+err.Error())
+			logger.LogError(c, "SSE ping error: "+err.Error())
 			done <- err
 			return
 		}
