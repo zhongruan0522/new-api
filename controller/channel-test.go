@@ -134,7 +134,13 @@ func testChannel(channel *model.Channel, testModel string) testResult {
 	}
 	request := buildTestRequest(testModel)
 
-	info, err := relaycommon.GenRelayInfo(c, types.RelayFormatOpenAI, request, nil)
+	// Determine relay format based on request path
+	relayFormat := types.RelayFormatOpenAI
+	if c.Request.URL.Path == "/v1/embeddings" {
+		relayFormat = types.RelayFormatEmbedding
+	}
+
+	info, err := relaycommon.GenRelayInfo(c, relayFormat, request, nil)
 
 	if err != nil {
 		return testResult{

@@ -99,6 +99,24 @@ func GetJsonString(data any) string {
 	return string(b)
 }
 
+// MaskEmail masks a user email to prevent PII leakage in logs
+// Returns "***masked***" if email is empty, otherwise shows only the domain part
+func MaskEmail(email string) string {
+	if email == "" {
+		return "***masked***"
+	}
+
+	// Find the @ symbol
+	atIndex := strings.Index(email, "@")
+	if atIndex == -1 {
+		// No @ symbol found, return masked
+		return "***masked***"
+	}
+
+	// Return only the domain part with @ symbol
+	return "***@" + email[atIndex+1:]
+}
+
 // MaskSensitiveInfo masks sensitive information like URLs, IPs, and domain names in a string
 // Example:
 // http://example.com -> http://***.com
