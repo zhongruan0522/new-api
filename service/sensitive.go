@@ -53,7 +53,7 @@ func SensitiveWordReplace(text string, returnImmediately bool) (bool, []string, 
 		return false, nil, text
 	}
 	checkText := strings.ToLower(text)
-	m := InitAc(setting.SensitiveWords)
+	m := getOrBuildAC(setting.SensitiveWords)
 	hits := m.MultiPatternSearch([]rune(checkText), returnImmediately)
 	if len(hits) > 0 {
 		words := make([]string, 0, len(hits))
