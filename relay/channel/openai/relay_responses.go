@@ -59,6 +59,8 @@ func OaiResponsesStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp
 		return nil, types.NewError(fmt.Errorf("invalid response"), types.ErrorCodeBadResponse)
 	}
 
+	defer service.CloseResponseBodyGracefully(resp)
+
 	var usage = &dto.Usage{}
 	var responseTextBuilder strings.Builder
 
