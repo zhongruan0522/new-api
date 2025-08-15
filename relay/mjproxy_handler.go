@@ -176,6 +176,9 @@ func RelaySwapFace(c *gin.Context, info *relaycommon.RelayInfo) *dto.MidjourneyR
 	if err != nil {
 		return service.MidjourneyErrorWrapper(constant.MjRequestError, "bind_request_body_failed")
 	}
+
+	info.InitChannelMeta(c)
+
 	if swapFaceRequest.SourceBase64 == "" || swapFaceRequest.TargetBase64 == "" {
 		return service.MidjourneyErrorWrapper(constant.MjRequestError, "sour_base64_and_target_base64_is_required")
 	}
@@ -369,6 +372,8 @@ func RelayMidjourneySubmit(c *gin.Context, relayInfo *relaycommon.RelayInfo) *dt
 	if err != nil {
 		return service.MidjourneyErrorWrapper(constant.MjRequestError, "bind_request_body_failed")
 	}
+
+	relayInfo.InitChannelMeta(c)
 
 	if relayInfo.RelayMode == relayconstant.RelayModeMidjourneyAction { // midjourney plus，需要从customId中获取任务信息
 		mjErr := service.CoverPlusActionToNormalAction(&midjRequest)

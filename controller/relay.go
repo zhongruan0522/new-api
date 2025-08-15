@@ -318,8 +318,6 @@ func RelayMidjourney(c *gin.Context) {
 		return
 	}
 
-	relayInfo.InitChannelMeta(c)
-
 	var mjErr *dto.MidjourneyResponse
 	switch relayInfo.RelayMode {
 	case relayconstant.RelayModeMidjourneyNotify:
