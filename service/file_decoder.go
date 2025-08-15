@@ -3,17 +3,29 @@ package service
 import (
 	"encoding/base64"
 	"fmt"
+	"github.com/gin-gonic/gin"
 	"io"
 	"one-api/common"
 	"one-api/constant"
-	"one-api/dto"
+	"one-api/logger"
+	"one-api/types"
 	"strings"
 )
 
-func GetFileBase64FromUrl(url string) (*dto.LocalFileData, error) {
+func GetFileBase64FromUrl(c *gin.Context, url string, reason ...string) (*types.LocalFileData, error) {
+	contextKey := fmt.Sprintf("file_download_%s", common.GenerateHMAC(url))
+
+	// Check if the file has already been downloaded in this request
+	if cachedData, exists := c.Get(contextKey); exists {
+		if common.DebugEnabled {
+			logger.LogDebug(c, fmt.Sprintf("Using cached file data for URL: %s", url))
+		}
+		return cachedData.(*types.LocalFileData), nil
+	}
+
 	var maxFileSize = constant.MaxFileDownloadMB * 1024 * 1024
 
-	resp, err := DoDownloadRequest(url)
+	resp, err := DoDownloadRequest(url, reason...)
 	if err != nil {
 		return nil, err
 	}
@@ -77,12 +89,15 @@ func GetFileBase64FromUrl(url string) (*dto.LocalFileData, error) {
 			}
 		}
 	}
-
-	return &dto.LocalFileData{
+	data := &types.LocalFileData{
 		Base64Data: base64Data,
 		MimeType:   mimeType,
 		Size:       int64(len(fileBytes)),
-	}, nil
+	}
+	// Store the file data in the context to avoid re-downloading
+	c.Set(contextKey, data)
+
+	return data, nil
 }
 
 func GetMimeTypeByExtension(ext string) string {

@@ -154,16 +154,22 @@ func getImageToken(fileMeta *types.FileMeta, model string, stream bool) (int, er
 	var err error
 	var format string
 	var b64str string
-	if strings.HasPrefix(fileMeta.Data, "http") {
-		config, format, err = DecodeUrlImageData(fileMeta.Data)
+
+	if fileMeta.ParsedData != nil {
+		config, format, b64str, err = DecodeBase64ImageData(fileMeta.ParsedData.Base64Data)
 	} else {
-		common.SysLog(fmt.Sprintf("decoding image"))
-		config, format, b64str, err = DecodeBase64ImageData(fileMeta.Data)
+		if strings.HasPrefix(fileMeta.OriginData, "http") {
+			config, format, err = DecodeUrlImageData(fileMeta.OriginData)
+		} else {
+			common.SysLog(fmt.Sprintf("decoding image"))
+			config, format, b64str, err = DecodeBase64ImageData(fileMeta.OriginData)
+		}
+		fileMeta.MimeType = format
 	}
+
 	if err != nil {
 		return 0, err
 	}
-	fileMeta.MimeType = format
 
 	if config.Width == 0 || config.Height == 0 {
 		// not an image
@@ -171,7 +177,7 @@ func getImageToken(fileMeta *types.FileMeta, model string, stream bool) (int, er
 			// file type
 			return 3 * baseTokens, nil
 		}
-		return 0, errors.New(fmt.Sprintf("fail to decode base64 config: %s", fileMeta.Data))
+		return 0, errors.New(fmt.Sprintf("fail to decode base64 config: %s", fileMeta.OriginData))
 	}
 
 	width := config.Width
@@ -266,6 +272,34 @@ func CountRequestToken(c *gin.Context, meta *types.TokenCountMeta, info *relayco
 		tkm += meta.MessagesCount * 3 // 每条消息的格式化token数量
 		tkm += meta.NameCount * 3
 		tkm += 3
+	}
+
+	shouldFetchFiles := true
+
+	if info.RelayFormat == types.RelayFormatOpenAIRealtime || info.RelayFormat == types.RelayFormatGemini {
+		shouldFetchFiles = false
+	}
+
+	if shouldFetchFiles {
+		for _, file := range meta.Files {
+			if strings.HasPrefix(file.OriginData, "http") {
+				localFileData, err := GetFileBase64FromUrl(c, file.OriginData, "token_counter")
+				if err != nil {
+					return 0, fmt.Errorf("error getting file base64 from url: %v", err)
+				}
+				if strings.HasPrefix(localFileData.MimeType, "image/") {
+					file.FileType = types.FileTypeImage
+				} else if strings.HasPrefix(localFileData.MimeType, "video/") {
+					file.FileType = types.FileTypeVideo
+				} else if strings.HasPrefix(localFileData.MimeType, "audio/") {
+					file.FileType = types.FileTypeAudio
+				} else {
+					file.FileType = types.FileTypeFile
+				}
+				file.MimeType = localFileData.MimeType
+				file.ParsedData = localFileData
+			}
+		}
 	}
 
 	for _, file := range meta.Files {

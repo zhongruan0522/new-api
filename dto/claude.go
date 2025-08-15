@@ -231,7 +231,7 @@ func (c *ClaudeRequest) GetTokenCountMeta() *types.TokenCountMeta {
 							data = common.Interface2String(media.Source.Data)
 						}
 						if data != "" {
-							fileMeta = append(fileMeta, &types.FileMeta{FileType: types.FileTypeImage, Data: data})
+							fileMeta = append(fileMeta, &types.FileMeta{FileType: types.FileTypeImage, OriginData: data})
 						}
 					}
 				}
@@ -263,7 +263,7 @@ func (c *ClaudeRequest) GetTokenCountMeta() *types.TokenCountMeta {
 						data = common.Interface2String(media.Source.Data)
 					}
 					if data != "" {
-						fileMeta = append(fileMeta, &types.FileMeta{FileType: types.FileTypeImage, Data: data})
+						fileMeta = append(fileMeta, &types.FileMeta{FileType: types.FileTypeImage, OriginData: data})
 					}
 				}
 			case "tool_use":

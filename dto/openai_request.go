@@ -118,7 +118,7 @@ func (r *GeneralOpenAIRequest) GetTokenCountMeta() *types.TokenCountMeta {
 						meta := &types.FileMeta{
 							FileType: types.FileTypeImage,
 						}
-						meta.Data = imageUrl.Url
+						meta.OriginData = imageUrl.Url
 						meta.Detail = imageUrl.Detail
 						fileMeta = append(fileMeta, meta)
 					}
@@ -128,7 +128,7 @@ func (r *GeneralOpenAIRequest) GetTokenCountMeta() *types.TokenCountMeta {
 						meta := &types.FileMeta{
 							FileType: types.FileTypeAudio,
 						}
-						meta.Data = inputAudio.Data
+						meta.OriginData = inputAudio.Data
 						fileMeta = append(fileMeta, meta)
 					}
 				} else if m.Type == ContentTypeFile {
@@ -137,7 +137,7 @@ func (r *GeneralOpenAIRequest) GetTokenCountMeta() *types.TokenCountMeta {
 						meta := &types.FileMeta{
 							FileType: types.FileTypeFile,
 						}
-						meta.Data = file.FileData
+						meta.OriginData = file.FileData
 						fileMeta = append(fileMeta, meta)
 					}
 				} else if m.Type == ContentTypeVideoUrl {
@@ -146,7 +146,7 @@ func (r *GeneralOpenAIRequest) GetTokenCountMeta() *types.TokenCountMeta {
 						meta := &types.FileMeta{
 							FileType: types.FileTypeVideo,
 						}
-						meta.Data = videoUrl.Url
+						meta.OriginData = videoUrl.Url
 						fileMeta = append(fileMeta, meta)
 					}
 				} else {
@@ -784,14 +784,14 @@ func (r *OpenAIResponsesRequest) GetTokenCountMeta() *types.TokenCountMeta {
 		for _, input := range inputs {
 			if input.Type == "input_image" {
 				fileMeta = append(fileMeta, &types.FileMeta{
-					FileType: types.FileTypeImage,
-					Data:     input.ImageUrl,
-					Detail:   input.Detail,
+					FileType:   types.FileTypeImage,
+					OriginData: input.ImageUrl,
+					Detail:     input.Detail,
 				})
 			} else if input.Type == "input_file" {
 				fileMeta = append(fileMeta, &types.FileMeta{
-					FileType: types.FileTypeFile,
-					Data:     input.FileUrl,
+					FileType:   types.FileTypeFile,
+					OriginData: input.FileUrl,
 				})
 			} else {
 				texts = append(texts, input.Text)

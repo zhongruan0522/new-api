@@ -32,9 +32,10 @@ type TokenCountMeta struct {
 
 type FileMeta struct {
 	FileType
-	MimeType string
-	Data     string
-	Detail   string
+	MimeType   string
+	OriginData string // url or base64 data
+	Detail     string
+	ParsedData *LocalFileData
 }
 
 type RequestMeta struct {

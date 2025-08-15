@@ -1,4 +1,4 @@
-package dto
+package types
 
 type LocalFileData struct {
 	MimeType   string

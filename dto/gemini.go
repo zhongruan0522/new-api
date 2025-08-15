@@ -35,23 +35,23 @@ func (r *GeminiChatRequest) GetTokenCountMeta() *types.TokenCountMeta {
 			if part.InlineData != nil && part.InlineData.Data != "" {
 				if strings.HasPrefix(part.InlineData.MimeType, "image/") {
 					files = append(files, &types.FileMeta{
-						FileType: types.FileTypeImage,
-						Data:     part.InlineData.Data,
+						FileType:   types.FileTypeImage,
+						OriginData: part.InlineData.Data,
 					})
 				} else if strings.HasPrefix(part.InlineData.MimeType, "audio/") {
 					files = append(files, &types.FileMeta{
-						FileType: types.FileTypeAudio,
-						Data:     part.InlineData.Data,
+						FileType:   types.FileTypeAudio,
+						OriginData: part.InlineData.Data,
 					})
 				} else if strings.HasPrefix(part.InlineData.MimeType, "video/") {
 					files = append(files, &types.FileMeta{
-						FileType: types.FileTypeVideo,
-						Data:     part.InlineData.Data,
+						FileType:   types.FileTypeVideo,
+						OriginData: part.InlineData.Data,
 					})
 				} else {
 					files = append(files, &types.FileMeta{
-						FileType: types.FileTypeFile,
-						Data:     part.InlineData.Data,
+						FileType:   types.FileTypeFile,
+						OriginData: part.InlineData.Data,
 					})
 				}
 			}
