@@ -226,10 +226,6 @@ func MaskSensitiveInfo(str string) string {
 	// Mask domain names without protocol (like openai.com, www.openai.com)
 	domainPattern := regexp.MustCompile(`\b(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}\b`)
 	str = domainPattern.ReplaceAllStringFunc(str, func(domain string) string {
-		// Skip if it's already part of a URL to avoid partial masking
-		if strings.Contains(str, "://"+domain) {
-			return domain
-		}
 		return maskHostForPlainDomain(domain)
 	})
 
