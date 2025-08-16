@@ -198,7 +198,7 @@ func applyOperations(jsonStr string, operations []ParamOperation) (string, error
 			}
 			result, err = sjson.Set(result, op.Path, op.Value)
 		case "move":
-			result, err = moveValue(result, op.From, op.To, op.KeepOrigin)
+			result, err = moveValue(result, op.From, op.To)
 		case "prepend":
 			result, err = modifyValue(result, op.Path, op.Value, op.KeepOrigin, true)
 		case "append":
@@ -213,13 +213,10 @@ func applyOperations(jsonStr string, operations []ParamOperation) (string, error
 	return result, nil
 }
 
-func moveValue(jsonStr, fromPath, toPath string, keepOrigin bool) (string, error) {
+func moveValue(jsonStr, fromPath, toPath string) (string, error) {
 	sourceValue := gjson.Get(jsonStr, fromPath)
 	if !sourceValue.Exists() {
 		return jsonStr, fmt.Errorf("source path does not exist: %s", fromPath)
-	}
-	if keepOrigin && gjson.Get(jsonStr, toPath).Exists() {
-		return sjson.Delete(jsonStr, fromPath)
 	}
 	result, err := sjson.Set(jsonStr, toPath, sourceValue.Value())
 	if err != nil {
