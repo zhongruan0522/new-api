@@ -53,8 +53,8 @@ const CardPro = ({
   searchArea,
   paginationArea, // 新增分页区域
   // 卡片属性
-  shadows = 'always',
-  bordered = false,
+  shadows = '',
+  bordered = true,
   // 自定义样式
   style,
   // 国际化函数

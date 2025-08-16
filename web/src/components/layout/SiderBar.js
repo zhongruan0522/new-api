@@ -113,7 +113,7 @@ const SiderBar = ({ onNavigate = () => { } }) => {
   const financeItems = useMemo(
     () => [
       {
-        text: t('钱包'),
+        text: t('钱包管理'),
         itemKey: 'topup',
         to: '/topup',
       },
@@ -397,6 +397,15 @@ const SiderBar = ({ onNavigate = () => { } }) => {
           {workspaceItems.map((item) => renderNavItem(item))}
         </div>
 
+        {/* 个人中心区域 */}
+        <Divider className="sidebar-divider" />
+        <div>
+          {!collapsed && (
+            <div className="sidebar-group-label">{t('个人中心')}</div>
+          )}
+          {financeItems.map((item) => renderNavItem(item))}
+        </div>
+
         {/* 管理员区域 - 只在管理员时显示 */}
         {isAdmin() && (
           <>
@@ -409,15 +418,6 @@ const SiderBar = ({ onNavigate = () => { } }) => {
             </div>
           </>
         )}
-
-        {/* 个人中心区域 */}
-        <Divider className="sidebar-divider" />
-        <div>
-          {!collapsed && (
-            <div className="sidebar-group-label">{t('个人中心')}</div>
-          )}
-          {financeItems.map((item) => renderNavItem(item))}
-        </div>
       </Nav>
 
       {/* 底部折叠按钮 */}

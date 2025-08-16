@@ -139,7 +139,7 @@ const CustomRequestEditor = ({
             description="启用此模式后，将使用您自定义的请求体发送API请求，模型配置面板的参数设置将被忽略。"
             icon={<AlertTriangle size={16} />}
             className="!rounded-lg"
-            closable={false}
+            closeIcon={null}
           />
 
           {/* JSON编辑器 */}

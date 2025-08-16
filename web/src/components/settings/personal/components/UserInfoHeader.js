@@ -144,7 +144,7 @@ const UserInfoHeader = ({ t, userState }) => {
 
         {/* 移动端统计信息卡片（仅 xs 可见） */}
         <div className="sm:hidden">
-          <Card size="small" className="!rounded-xl !border-0 shadow-sm" bodyStyle={{ padding: '10px 12px' }}>
+          <Card size="small" className="!rounded-xl shadow-sm" bodyStyle={{ padding: '10px 12px' }}>
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
