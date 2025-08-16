@@ -9,9 +9,11 @@ import (
 )
 
 type ConditionOperation struct {
-	Path  string `json:"path"`  // JSON路径
-	Mode  string `json:"mode"`  // full, prefix, suffix, contains
-	Value string `json:"value"` // 匹配的值
+	Path           string      `json:"path"`             // JSON路径
+	Mode           string      `json:"mode"`             // full, prefix, suffix, contains, gt, gte, lt, lte
+	Value          interface{} `json:"value"`            // 匹配的值
+	Invert         bool        `json:"invert"`           // 反选功能，true表示取反结果
+	PassMissingKey bool        `json:"pass_missing_key"` // 未获取到json key时的行为
 }
 
 type ParamOperation struct {
@@ -34,11 +36,7 @@ func ApplyParamOverride(jsonData []byte, paramOverride map[string]interface{}) (
 	if operations, ok := tryParseOperations(paramOverride); ok {
 		// 使用新方法
 		result, err := applyOperations(string(jsonData), operations)
-		if err != nil {
-			// 新方法失败，回退到旧方法
-			return applyOperationsLegacy(jsonData, paramOverride)
-		}
-		return []byte(result), nil
+		return []byte(result), err
 	}
 
 	// 直接使用旧方法
@@ -95,8 +93,14 @@ func tryParseOperations(paramOverride map[string]interface{}) ([]ParamOperation,
 									if mode, ok := condMap["mode"].(string); ok {
 										condition.Mode = mode
 									}
-									if value, ok := condMap["value"].(string); ok {
+									if value, ok := condMap["value"]; ok {
 										condition.Value = value
+									}
+									if invert, ok := condMap["invert"].(bool); ok {
+										condition.Invert = invert
+									}
+									if passMissingKey, ok := condMap["pass_missing_key"].(bool); ok {
+										condition.PassMissingKey = passMissingKey
 									}
 									operation.Conditions = append(operation.Conditions, condition)
 								}
@@ -116,52 +120,131 @@ func tryParseOperations(paramOverride map[string]interface{}) ([]ParamOperation,
 	return nil, false
 }
 
-func checkConditions(jsonStr string, conditions []ConditionOperation, logic string) bool {
+func checkConditions(jsonStr string, conditions []ConditionOperation, logic string) (bool, error) {
 	if len(conditions) == 0 {
-		return true // 没有条件，直接通过
+		return true, nil // 没有条件，直接通过
 	}
 	results := make([]bool, len(conditions))
-
 	for i, condition := range conditions {
-		results[i] = checkSingleCondition(jsonStr, condition)
+		result, err := checkSingleCondition(jsonStr, condition)
+		if err != nil {
+			return false, err
+		}
+		results[i] = result
 	}
+
 	if strings.ToUpper(logic) == "AND" {
 		for _, result := range results {
 			if !result {
-				return false
+				return false, nil
 			}
 		}
-		return true
+		return true, nil
 	} else {
 		for _, result := range results {
 			if result {
-				return true
+				return true, nil
 			}
 		}
-		return false
+		return false, nil
 	}
 }
 
-func checkSingleCondition(jsonStr string, condition ConditionOperation) bool {
+func checkSingleCondition(jsonStr string, condition ConditionOperation) (bool, error) {
 	value := gjson.Get(jsonStr, condition.Path)
 	if !value.Exists() {
-		return false
+		if condition.PassMissingKey {
+			return true, nil
+		}
+		return false, nil
 	}
 
-	valueStr := value.String()
-	targetStr := condition.Value
+	// 利用gjson的类型解析
+	targetBytes, err := json.Marshal(condition.Value)
+	if err != nil {
+		return false, fmt.Errorf("failed to marshal condition value: %v", err)
+	}
+	targetValue := gjson.ParseBytes(targetBytes)
 
-	switch strings.ToLower(condition.Mode) {
+	result, err := compareGjsonValues(value, targetValue, strings.ToLower(condition.Mode))
+	if err != nil {
+		return false, fmt.Errorf("comparison failed for path %s: %v", condition.Path, err)
+	}
+
+	if condition.Invert {
+		result = !result
+	}
+	return result, nil
+}
+
+// compareGjsonValues 直接比较两个gjson.Result，支持所有比较模式
+func compareGjsonValues(jsonValue, targetValue gjson.Result, mode string) (bool, error) {
+	switch mode {
 	case "full":
-		return valueStr == targetStr
+		return compareEqual(jsonValue, targetValue)
 	case "prefix":
-		return strings.HasPrefix(valueStr, targetStr)
+		return strings.HasPrefix(jsonValue.String(), targetValue.String()), nil
 	case "suffix":
-		return strings.HasSuffix(valueStr, targetStr)
+		return strings.HasSuffix(jsonValue.String(), targetValue.String()), nil
 	case "contains":
-		return strings.Contains(valueStr, targetStr)
+		return strings.Contains(jsonValue.String(), targetValue.String()), nil
+	case "gt":
+		return compareNumeric(jsonValue, targetValue, "gt")
+	case "gte":
+		return compareNumeric(jsonValue, targetValue, "gte")
+	case "lt":
+		return compareNumeric(jsonValue, targetValue, "lt")
+	case "lte":
+		return compareNumeric(jsonValue, targetValue, "lte")
 	default:
-		return valueStr == targetStr // 默认精准匹配
+		return false, fmt.Errorf("unsupported comparison mode: %s", mode)
+	}
+}
+
+func compareEqual(jsonValue, targetValue gjson.Result) (bool, error) {
+	// 对布尔值特殊处理
+	if (jsonValue.Type == gjson.True || jsonValue.Type == gjson.False) &&
+		(targetValue.Type == gjson.True || targetValue.Type == gjson.False) {
+		return jsonValue.Bool() == targetValue.Bool(), nil
+	}
+
+	// 如果类型不同，报错
+	if jsonValue.Type != targetValue.Type {
+		return false, fmt.Errorf("compare for different types, got %v and %v", jsonValue.Type, targetValue.Type)
+	}
+
+	switch jsonValue.Type {
+	case gjson.True, gjson.False:
+		return jsonValue.Bool() == targetValue.Bool(), nil
+	case gjson.Number:
+		return jsonValue.Num == targetValue.Num, nil
+	case gjson.String:
+		return jsonValue.String() == targetValue.String(), nil
+	default:
+		return jsonValue.String() == targetValue.String(), nil
+	}
+}
+
+func compareNumeric(jsonValue, targetValue gjson.Result, operator string) (bool, error) {
+	// 只有数字类型才支持数值比较
+	if jsonValue.Type != gjson.Number || targetValue.Type != gjson.Number {
+		return false, fmt.Errorf("numeric comparison requires both values to be numbers, got %v and %v", jsonValue.Type, targetValue.Type)
+	}
+
+	jsonNum := jsonValue.Num
+	targetNum := targetValue.Num
+
+	switch operator {
+	case "gt":
+		return jsonNum > targetNum, nil
+	case "gte":
+		return jsonNum >= targetNum, nil
+	case "lt":
+		return jsonNum < targetNum, nil
+	case "lte":
+		return jsonNum <= targetNum, nil
+	default:
+		return false, fmt.Errorf("unsupported numeric operator: %s", operator)
 	}
 }
 
@@ -184,11 +267,14 @@ func applyOperations(jsonStr string, operations []ParamOperation) (string, error
 	result := jsonStr
 	for _, op := range operations {
 		// 检查条件是否满足
-		if !checkConditions(result, op.Conditions, op.Logic) {
+		ok, err := checkConditions(result, op.Conditions, op.Logic)
+		if err != nil {
+			return "", err
+		}
+		if !ok {
 			continue // 条件不满足，跳过当前操作
 		}
 
-		var err error
 		switch op.Mode {
 		case "delete":
 			result, err = sjson.Delete(result, op.Path)

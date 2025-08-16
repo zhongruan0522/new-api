@@ -3,6 +3,7 @@ package controller
 import (
 	"bytes"
 	"fmt"
+	"github.com/bytedance/gopkg/util/gopool"
 	"io"
 	"log"
 	"net/http"
@@ -61,8 +62,8 @@ func geminiRelayHandler(c *gin.Context, info *relaycommon.RelayInfo) *types.NewA
 func Relay(c *gin.Context, relayFormat types.RelayFormat) {
 
 	requestId := c.GetString(common.RequestIdKey)
-	group := c.GetString("group")
-	originalModel := c.GetString("original_model")
+	group := common.GetContextKeyString(c, constant.ContextKeyUsingGroup)
+	originalModel := common.GetContextKeyString(c, constant.ContextKeyOriginalModel)
 
 	var (
 		newAPIError *types.NewAPIError
@@ -172,35 +173,9 @@ func Relay(c *gin.Context, relayFormat types.RelayFormat) {
 
 		if newAPIError == nil {
 			return
-		} else {
-			if constant.ErrorLogEnabled && types.IsRecordErrorLog(newAPIError) {
-				// 保存错误日志到mysql中
-				userId := c.GetInt("id")
-				tokenName := c.GetString("token_name")
-				modelName := c.GetString("original_model")
-				tokenId := c.GetInt("token_id")
-				userGroup := c.GetString("group")
-				channelId := c.GetInt("channel_id")
-				other := make(map[string]interface{})
-				other["error_type"] = newAPIError.GetErrorType()
-				other["error_code"] = newAPIError.GetErrorCode()
-				other["status_code"] = newAPIError.StatusCode
-				other["channel_id"] = channelId
-				other["channel_name"] = c.GetString("channel_name")
-				other["channel_type"] = c.GetInt("channel_type")
-				adminInfo := make(map[string]interface{})
-				adminInfo["use_channel"] = c.GetStringSlice("use_channel")
-				isMultiKey := common.GetContextKeyBool(c, constant.ContextKeyChannelIsMultiKey)
-				if isMultiKey {
-					adminInfo["is_multi_key"] = true
-					adminInfo["multi_key_index"] = common.GetContextKeyInt(c, constant.ContextKeyChannelMultiKeyIndex)
-				}
-				other["admin_info"] = adminInfo
-				model.RecordErrorLog(c, userId, channelId, modelName, tokenName, newAPIError.MaskSensitiveError(), tokenId, 0, false, userGroup, other)
-			}
 		}
 
-		go processChannelError(c, *types.NewChannelError(channel.Id, channel.Type, channel.Name, channel.ChannelInfo.IsMultiKey, common.GetContextKeyString(c, constant.ContextKeyChannelKey), channel.GetAutoBan()), newAPIError)
+		processChannelError(c, *types.NewChannelError(channel.Id, channel.Type, channel.Name, channel.ChannelInfo.IsMultiKey, common.GetContextKeyString(c, constant.ContextKeyChannelKey), channel.GetAutoBan()), newAPIError)
 
 		if !shouldRetry(c, newAPIError, common.RetryTimes-i) {
 			break
@@ -298,12 +273,42 @@ func shouldRetry(c *gin.Context, openaiErr *types.NewAPIError, retryTimes int) b
 }
 
 func processChannelError(c *gin.Context, channelError types.ChannelError, err *types.NewAPIError) {
-	// 不要使用context获取渠道信息，异步处理时可能会出现渠道信息不一致的情况
-	// do not use context to get channel info, there may be inconsistent channel info when processing asynchronously
 	logger.LogError(c, fmt.Sprintf("relay error (channel #%d, status code: %d): %s", channelError.ChannelId, err.StatusCode, err.Error()))
-	if service.ShouldDisableChannel(channelError.ChannelId, err) && channelError.AutoBan {
-		service.DisableChannel(channelError, err.Error())
+
+	gopool.Go(func() {
+		// 不要使用context获取渠道信息，异步处理时可能会出现渠道信息不一致的情况
+		// do not use context to get channel info, there may be inconsistent channel info when processing asynchronously
+		if service.ShouldDisableChannel(channelError.ChannelId, err) && channelError.AutoBan {
+			service.DisableChannel(channelError, err.Error())
+		}
+	})
+
+	if constant.ErrorLogEnabled && types.IsRecordErrorLog(err) {
+		// 保存错误日志到mysql中
+		userId := c.GetInt("id")
+		tokenName := c.GetString("token_name")
+		modelName := c.GetString("original_model")
+		tokenId := c.GetInt("token_id")
+		userGroup := c.GetString("group")
+		channelId := c.GetInt("channel_id")
+		other := make(map[string]interface{})
+		other["error_type"] = err.GetErrorType()
+		other["error_code"] = err.GetErrorCode()
+		other["status_code"] = err.StatusCode
+		other["channel_id"] = channelId
+		other["channel_name"] = c.GetString("channel_name")
+		other["channel_type"] = c.GetInt("channel_type")
+		adminInfo := make(map[string]interface{})
+		adminInfo["use_channel"] = c.GetStringSlice("use_channel")
+		isMultiKey := common.GetContextKeyBool(c, constant.ContextKeyChannelIsMultiKey)
+		if isMultiKey {
+			adminInfo["is_multi_key"] = true
+			adminInfo["multi_key_index"] = common.GetContextKeyInt(c, constant.ContextKeyChannelMultiKeyIndex)
+		}
+		other["admin_info"] = adminInfo
+		model.RecordErrorLog(c, userId, channelId, modelName, tokenName, err.MaskSensitiveError(), tokenId, 0, false, userGroup, other)
 	}
+
 }
 
 func RelayMidjourney(c *gin.Context) {
