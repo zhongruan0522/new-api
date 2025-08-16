@@ -123,12 +123,7 @@ func GeminiHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *typ
 
 		// apply param override
 		if len(info.ParamOverride) > 0 {
-			reqMap := make(map[string]interface{})
-			_ = common.Unmarshal(jsonData, &reqMap)
-			for key, value := range info.ParamOverride {
-				reqMap[key] = value
-			}
-			jsonData, err = common.Marshal(reqMap)
+			jsonData, err = relaycommon.ApplyParamOverride(jsonData, info.ParamOverride)
 			if err != nil {
 				return types.NewError(err, types.ErrorCodeChannelParamOverrideInvalid, types.ErrOptionWithSkipRetry())
 			}
