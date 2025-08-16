@@ -283,21 +283,20 @@ func CountRequestToken(c *gin.Context, meta *types.TokenCountMeta, info *relayco
 	if shouldFetchFiles {
 		for _, file := range meta.Files {
 			if strings.HasPrefix(file.OriginData, "http") {
-				localFileData, err := GetFileBase64FromUrl(c, file.OriginData, "token_counter")
+				mineType, err := GetFileTypeFromUrl(c, file.OriginData, "token_counter")
 				if err != nil {
 					return 0, fmt.Errorf("error getting file base64 from url: %v", err)
 				}
-				if strings.HasPrefix(localFileData.MimeType, "image/") {
+				if strings.HasPrefix(mineType, "image/") {
 					file.FileType = types.FileTypeImage
-				} else if strings.HasPrefix(localFileData.MimeType, "video/") {
+				} else if strings.HasPrefix(mineType, "video/") {
 					file.FileType = types.FileTypeVideo
-				} else if strings.HasPrefix(localFileData.MimeType, "audio/") {
+				} else if strings.HasPrefix(mineType, "audio/") {
 					file.FileType = types.FileTypeAudio
 				} else {
 					file.FileType = types.FileTypeFile
 				}
-				file.MimeType = localFileData.MimeType
-				file.ParsedData = localFileData
+				file.MimeType = mineType
 			}
 		}
 	}
@@ -306,7 +305,7 @@ func CountRequestToken(c *gin.Context, meta *types.TokenCountMeta, info *relayco
 		switch file.FileType {
 		case types.FileTypeImage:
 			if info.RelayFormat == types.RelayFormatGemini {
-				tkm += 240
+				tkm += 256
 			} else {
 				token, err := getImageToken(file, model, info.IsStream)
 				if err != nil {
@@ -315,11 +314,13 @@ func CountRequestToken(c *gin.Context, meta *types.TokenCountMeta, info *relayco
 				tkm += token
 			}
 		case types.FileTypeAudio:
-			tkm += 100
+			tkm += 256
 		case types.FileTypeVideo:
-			tkm += 5000
+			tkm += 4096 * 2
 		case types.FileTypeFile:
-			tkm += 5000
+			tkm += 4096
+		default:
+			tkm += 4096 // Default case for unknown file types
 		}
 	}
 
