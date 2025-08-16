@@ -138,6 +138,13 @@ func (info *RelayInfo) InitChannelMeta(c *gin.Context) {
 		SupportStreamOptions: false,
 	}
 
+	if channelType == constant.ChannelTypeAzure {
+		channelMeta.ApiVersion = GetAPIVersion(c)
+	}
+	if channelType == constant.ChannelTypeVertexAi {
+		channelMeta.ApiVersion = c.GetString("region")
+	}
+
 	channelSetting, ok := common.GetContextKeyType[dto.ChannelSettings](c, constant.ContextKeyChannelSetting)
 	if ok {
 		channelMeta.ChannelSetting = channelSetting
