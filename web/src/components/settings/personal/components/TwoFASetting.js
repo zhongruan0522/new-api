@@ -16,7 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { API, showError, showSuccess, showWarning } from '../../helpers';
+import { API, showError, showSuccess, showWarning } from '../../../../helpers';
 import { Banner, Button, Card, Checkbox, Divider, Input, Modal, Tag, Typography, Steps, Space, Badge } from '@douyinfe/semi-ui';
 import {
   IconShield,
@@ -353,11 +353,7 @@ const TwoFASetting = ({ t }) => {
 
   return (
     <>
-      <Card
-        className="!rounded-xl w-full"
-        bodyStyle={{ padding: '20px' }}
-        shadows='hover'
-      >
+      <Card className="!rounded-xl w-full">
         <div className="flex flex-col sm:flex-row items-start sm:justify-between gap-4">
           <div className="flex items-start w-full sm:w-auto">
             <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center mr-4 flex-shrink-0">
