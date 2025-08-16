@@ -1043,7 +1043,7 @@ const PersonalSetting = () => {
                         </Card>
 
                         {/* 两步验证设置 */}
-                        <TwoFASetting />
+                        <TwoFASetting t={t} />
 
                         {/* 危险区域 */}
                         <Card
