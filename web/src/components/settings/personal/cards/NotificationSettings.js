@@ -106,7 +106,7 @@ const NotificationSettings = ({
         onSubmit={handleSubmit}
       >
         {() => (
-          <Tabs type="line" defaultActiveKey="notification">
+          <Tabs type="card" defaultActiveKey="notification">
             {/* 通知配置 Tab */}
             <TabPane
               tab={

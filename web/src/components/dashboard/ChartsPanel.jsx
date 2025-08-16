@@ -17,7 +17,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 
-import React from 'react';
+import React, { Suspense } from 'react';
 import { Card, Tabs, TabPane } from '@douyinfe/semi-ui';
 import { PieChart } from 'lucide-react';
 import {
@@ -25,7 +25,9 @@ import {
   IconPulse,
   IconPieChart2Stroked
 } from '@douyinfe/semi-icons';
-import { VChart } from '@visactor/react-vchart';
+const LazyVChart = React.lazy(() =>
+  import('@visactor/react-vchart').then(m => ({ default: m.VChart }))
+);
 
 const ChartsPanel = ({
   activeChartTab,
@@ -86,28 +88,36 @@ const ChartsPanel = ({
     >
       <div className="h-96 p-2">
         {activeChartTab === '1' && (
-          <VChart
-            spec={spec_line}
-            option={CHART_CONFIG}
-          />
+          <Suspense fallback={null}>
+            <LazyVChart
+              spec={spec_line}
+              option={CHART_CONFIG}
+            />
+          </Suspense>
         )}
         {activeChartTab === '2' && (
-          <VChart
-            spec={spec_model_line}
-            option={CHART_CONFIG}
-          />
+          <Suspense fallback={null}>
+            <LazyVChart
+              spec={spec_model_line}
+              option={CHART_CONFIG}
+            />
+          </Suspense>
         )}
         {activeChartTab === '3' && (
-          <VChart
-            spec={spec_pie}
-            option={CHART_CONFIG}
-          />
+          <Suspense fallback={null}>
+            <LazyVChart
+              spec={spec_pie}
+              option={CHART_CONFIG}
+            />
+          </Suspense>
         )}
         {activeChartTab === '4' && (
-          <VChart
-            spec={spec_rank_bar}
-            option={CHART_CONFIG}
-          />
+          <Suspense fallback={null}>
+            <LazyVChart
+              spec={spec_rank_bar}
+              option={CHART_CONFIG}
+            />
+          </Suspense>
         )}
       </div>
     </Card>

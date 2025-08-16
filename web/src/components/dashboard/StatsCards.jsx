@@ -17,9 +17,12 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 
-import React from 'react';
+import React, { Suspense } from 'react';
 import { Card, Avatar, Skeleton } from '@douyinfe/semi-ui';
-import { VChart } from '@visactor/react-vchart';
+
+const LazyVChart = React.lazy(() =>
+  import('@visactor/react-vchart').then(m => ({ default: m.VChart }))
+);
 
 const StatsCards = ({
   groupedStatsData,
@@ -74,10 +77,12 @@ const StatsCards = ({
                   </div>
                   {(loading || (item.trendData && item.trendData.length > 0)) && (
                     <div className="w-24 h-10">
-                      <VChart
-                        spec={getTrendSpec(item.trendData, item.trendColor)}
-                        option={CHART_CONFIG}
-                      />
+                      <Suspense fallback={null}>
+                        <LazyVChart
+                          spec={getTrendSpec(item.trendData, item.trendColor)}
+                          option={CHART_CONFIG}
+                        />
+                      </Suspense>
                     </div>
                   )}
                 </div>
