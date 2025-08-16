@@ -17,7 +17,13 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { API, showError, showSuccess, showWarning } from '../../helpers';
-import { Banner, Button, Card, Checkbox, Divider, Form, Input, Modal, Tag, Typography } from '@douyinfe/semi-ui';
+import { Banner, Button, Card, Checkbox, Divider, Input, Modal, Tag, Typography, Steps, Space, Badge } from '@douyinfe/semi-ui';
+import {
+  IconShield,
+  IconAlertTriangle,
+  IconRefresh,
+  IconCopy
+} from '@douyinfe/semi-icons';
 import React, { useEffect, useState } from 'react';
 
 import { QRCodeSVG } from 'qrcode.react';
@@ -43,6 +49,7 @@ const TwoFASetting = () => {
   const [verificationCode, setVerificationCode] = useState('');
   const [backupCodes, setBackupCodes] = useState([]);
   const [confirmDisable, setConfirmDisable] = useState(false);
+  const [currentStep, setCurrentStep] = useState(0);
 
   // 获取2FA状态
   const fetchStatus = async () => {
@@ -68,6 +75,7 @@ const TwoFASetting = () => {
       if (res.data.success) {
         setSetupData(res.data.data);
         setSetupModalVisible(true);
+        setCurrentStep(0);
       } else {
         showError(res.data.message);
       }
@@ -95,6 +103,7 @@ const TwoFASetting = () => {
         setEnableModalVisible(false);
         setSetupModalVisible(false);
         setVerificationCode('');
+        setCurrentStep(0);
         fetchStatus();
       } else {
         showError(res.data.message);
@@ -166,75 +175,250 @@ const TwoFASetting = () => {
     }
   };
 
-  const copyBackupCodes = () => {
-    const codesText = backupCodes.join('\n');
-    navigator.clipboard.writeText(codesText).then(() => {
-      showSuccess('备用码已复制到剪贴板');
+  // 通用复制函数
+  const copyTextToClipboard = (text, successMessage = '已复制到剪贴板') => {
+    navigator.clipboard.writeText(text).then(() => {
+      showSuccess(successMessage);
     }).catch(() => {
       showError('复制失败，请手动复制');
     });
   };
 
-  return (
-    <div>
+  const copyBackupCodes = () => {
+    const codesText = backupCodes.join('\n');
+    copyTextToClipboard(codesText, '备用码已复制到剪贴板');
+  };
+
+  // 备用码展示组件
+  const BackupCodesDisplay = ({ codes, title, onCopy }) => {
+    return (
       <Card
-        className="!rounded-xl transition-shadow w-full"
+        className="!rounded-xl"
+        style={{ width: '100%' }}
+      >
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <Text strong className="text-slate-700 dark:text-slate-200">
+              {title}
+            </Text>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {codes.map((code, index) => (
+              <div
+                key={index}
+                className="rounded-lg p-3"
+              >
+                <div className="flex items-center justify-between">
+                  <Text code className="text-sm font-mono text-slate-700 dark:text-slate-200">
+                    {code}
+                  </Text>
+                  <Text type="quaternary" className="text-xs">
+                    #{(index + 1).toString().padStart(2, '0')}
+                  </Text>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <Divider margin={12} />
+          <Button
+            type="primary"
+            theme="solid"
+            icon={<IconCopy />}
+            onClick={onCopy}
+            className="!rounded-lg !bg-slate-600 hover:!bg-slate-700 w-full"
+          >
+            复制所有代码
+          </Button>
+        </div>
+      </Card>
+    );
+  };
+
+  // 渲染设置模态框footer
+  const renderSetupModalFooter = () => {
+    return (
+      <>
+        {currentStep > 0 && (
+          <Button
+            onClick={() => setCurrentStep(currentStep - 1)}
+            className="!rounded-lg"
+          >
+            上一步
+          </Button>
+        )}
+        {currentStep < 2 ? (
+          <Button
+            type="primary"
+            theme="solid"
+            onClick={() => setCurrentStep(currentStep + 1)}
+            className="!rounded-lg !bg-slate-600 hover:!bg-slate-700"
+          >
+            下一步
+          </Button>
+        ) : (
+          <Button
+            type="primary"
+            theme="solid"
+            loading={loading}
+            onClick={() => {
+              if (!verificationCode) {
+                showWarning('请输入验证码');
+                return;
+              }
+              handleEnable2FA();
+            }}
+            className="!rounded-lg !bg-slate-600 hover:!bg-slate-700"
+          >
+            完成设置并启用两步验证
+          </Button>
+        )}
+      </>
+    );
+  };
+
+  // 渲染禁用模态框footer
+  const renderDisableModalFooter = () => {
+    return (
+      <>
+        <Button
+          onClick={() => {
+            setDisableModalVisible(false);
+            setVerificationCode('');
+            setConfirmDisable(false);
+          }}
+          className="!rounded-lg"
+        >
+          取消
+        </Button>
+        <Button
+          type="danger"
+          theme="solid"
+          loading={loading}
+          disabled={!confirmDisable || !verificationCode}
+          onClick={handleDisable2FA}
+          className="!rounded-lg !bg-slate-500 hover:!bg-slate-600"
+        >
+          确认禁用
+        </Button>
+      </>
+    );
+  };
+
+  // 渲染重新生成模态框footer
+  const renderRegenerateModalFooter = () => {
+    if (backupCodes.length > 0) {
+      return (
+        <Button
+          type="primary"
+          theme="solid"
+          onClick={() => {
+            setBackupModalVisible(false);
+            setVerificationCode('');
+            setBackupCodes([]);
+          }}
+          className="!rounded-lg !bg-slate-600 hover:!bg-slate-700"
+        >
+          完成
+        </Button>
+      );
+    }
+
+    return (
+      <>
+        <Button
+          onClick={() => {
+            setBackupModalVisible(false);
+            setVerificationCode('');
+            setBackupCodes([]);
+          }}
+          className="!rounded-lg"
+        >
+          取消
+        </Button>
+        <Button
+          type="primary"
+          theme="solid"
+          loading={loading}
+          disabled={!verificationCode}
+          onClick={handleRegenerateBackupCodes}
+          className="!rounded-lg !bg-slate-600 hover:!bg-slate-700"
+        >
+          生成新的备用码
+        </Button>
+      </>
+    );
+  };
+
+  return (
+    <>
+      <Card
+        className="!rounded-xl w-full"
         bodyStyle={{ padding: '20px' }}
         shadows='hover'
-        style={{ marginBottom: 16 }}
       >
-        <div className="flex items-center justify-between">
-          <div className="flex items-center flex-1">
-            <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center mr-3">
-              <svg className="w-5 h-5 text-green-600 dark:text-green-400" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M6 8a2 2 0 11-4 0 2 2 0 014 0zM8 7a1 1 0 100 2h8a1 1 0 100-2H8zM6 14a2 2 0 11-4 0 2 2 0 014 0zM8 13a1 1 0 100 2h8a1 1 0 100-2H8z" clipRule="evenodd" />
-              </svg>
+        <div className="flex flex-col sm:flex-row items-start sm:justify-between gap-4">
+          <div className="flex items-start w-full sm:w-auto">
+            <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center mr-4 flex-shrink-0">
+              <IconShield size="large" className="text-slate-600 dark:text-slate-300" />
             </div>
-            <div className="flex-1 min-w-0">
-              <div className="font-medium text-gray-900 dark:text-gray-100">两步验证设置</div>
-              <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                两步验证（2FA）为您的账户提供额外的安全保护。启用后，登录时需要输入密码和验证器应用生成的验证码。
-              </div>
-              <div className="flex items-center mt-2 space-x-2">
-                <Text strong>当前状态：</Text>
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-1">
+                <Typography.Title heading={6} className="mb-0">
+                  两步验证设置
+                </Typography.Title>
                 {status.enabled ? (
-                  <Tag color="green" size="small">已启用</Tag>
+                  <Tag color="green" shape="circle" size="small">已启用</Tag>
                 ) : (
-                  <Tag color="red" size="small">未启用</Tag>
+                  <Tag color="red" shape="circle" size="small">未启用</Tag>
                 )}
                 {status.locked && (
-                  <Tag color="orange" size="small">账户已锁定</Tag>
+                  <Tag color="orange" shape="circle" size="small">账户已锁定</Tag>
                 )}
               </div>
+              <Typography.Text type="tertiary" className="text-sm">
+                两步验证（2FA）为您的账户提供额外的安全保护。启用后，登录时需要输入密码和验证器应用生成的验证码。
+              </Typography.Text>
               {status.enabled && (
-                <div className="mt-1">
+                <div className="mt-2">
                   <Text size="small" type="secondary">剩余备用码：{status.backup_codes_remaining || 0} 个</Text>
                 </div>
               )}
             </div>
           </div>
-          <div className="flex flex-col space-y-2">
+          <div className="flex flex-col space-y-2 w-full sm:w-auto">
             {!status.enabled ? (
               <Button
                 type="primary"
+                theme="solid"
                 size="default"
                 onClick={handleSetup2FA}
                 loading={loading}
+                className="!rounded-lg !bg-slate-600 hover:!bg-slate-700"
+                icon={<IconShield />}
               >
-                启用两步验证
+                启用验证
               </Button>
             ) : (
               <div className="flex flex-col space-y-2">
                 <Button
                   type="danger"
+                  theme="solid"
                   size="default"
                   onClick={() => setDisableModalVisible(true)}
+                  className="!rounded-lg !bg-slate-500 hover:!bg-slate-600"
+                  icon={<IconAlertTriangle />}
                 >
                   禁用两步验证
                 </Button>
                 <Button
+                  type="primary"
+                  theme="solid"
                   size="default"
                   onClick={() => setBackupModalVisible(true)}
+                  className="!rounded-lg"
+                  icon={<IconRefresh />}
                 >
                   重新生成备用码
                 </Button>
@@ -248,11 +432,7 @@ const TwoFASetting = () => {
       <Modal
         title={
           <div className="flex items-center">
-            <div className="w-8 h-8 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center mr-3">
-              <svg className="w-4 h-4 text-green-600 dark:text-green-400" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M6 8a2 2 0 11-4 0 2 2 0 014 0zM8 7a1 1 0 100 2h8a1 1 0 100-2H8zM6 14a2 2 0 11-4 0 2 2 0 014 0zM8 13a1 1 0 100 2h8a1 1 0 100-2H8z" clipRule="evenodd" />
-              </svg>
-            </div>
+            <IconShield className="mr-2 text-slate-600" />
             设置两步验证
           </div>
         }
@@ -260,101 +440,66 @@ const TwoFASetting = () => {
         onCancel={() => {
           setSetupModalVisible(false);
           setSetupData(null);
+          setCurrentStep(0);
+          setVerificationCode('');
         }}
-        footer={null}
+        footer={renderSetupModalFooter()}
         width={650}
         style={{ maxWidth: '90vw' }}
       >
         {setupData && (
           <div className="space-y-6">
-            {/* 步骤 1：扫描二维码 */}
-            <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
-              <div className="flex items-center mb-3">
-                <div className="w-6 h-6 rounded-full bg-blue-500 text-white flex items-center justify-center text-sm font-medium mr-2">
-                  1
-                </div>
-                <Text strong className="text-gray-900 dark:text-gray-100">扫描二维码</Text>
-              </div>
-              <Paragraph className="text-gray-600 dark:text-gray-300 mb-4">
-                使用认证器应用（如 Google Authenticator、Microsoft Authenticator）扫描下方二维码：
-              </Paragraph>
-              <div className="flex justify-center mb-4">
-                <div className="bg-white p-4 rounded-lg shadow-sm">
-                  <QRCodeSVG value={setupData.qr_code_data} size={180} />
-                </div>
-              </div>
-              <div className="bg-blue-50 dark:bg-blue-900 rounded-lg p-3">
-                <Text className="text-blue-800 dark:text-blue-200 text-sm">
-                  或手动输入密钥：<Text code copyable className="ml-2">{setupData.secret}</Text>
-                </Text>
-              </div>
-            </div>
+            {/* 步骤进度 */}
+            <Steps type="basic" size="small" current={currentStep}>
+              <Steps.Step title="扫描二维码" description="使用认证器应用扫描二维码" />
+              <Steps.Step title="保存备用码" description="保存备用码以备不时之需" />
+              <Steps.Step title="验证设置" description="输入验证码完成设置" />
+            </Steps>
 
-            {/* 步骤 2：保存备用码 */}
-            <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
-              <div className="flex items-center mb-3">
-                <div className="w-6 h-6 rounded-full bg-orange-500 text-white flex items-center justify-center text-sm font-medium mr-2">
-                  2
-                </div>
-                <Text strong className="text-gray-900 dark:text-gray-100">保存备用码</Text>
-              </div>
-              <Paragraph className="text-gray-600 dark:text-gray-300 mb-4">
-                请将以下备用码保存在安全的地方。如果丢失手机，可以使用这些备用码登录：
-              </Paragraph>
-              <div className="bg-yellow-50 dark:bg-yellow-900 border border-yellow-200 dark:border-yellow-700 rounded-lg p-4">
-                <div className="grid grid-cols-2 gap-2 mb-3">
-                  {setupData.backup_codes.map((code, index) => (
-                    <div key={index} className="bg-white dark:bg-gray-700 p-2 rounded text-center">
-                      <Text code className="text-sm">{code}</Text>
+            {/* 步骤内容 */}
+            <div className="rounded-xl">
+              {currentStep === 0 && (
+                <div>
+                  <Paragraph className="text-gray-600 dark:text-gray-300 mb-4">
+                    使用认证器应用（如 Google Authenticator、Microsoft Authenticator）扫描下方二维码：
+                  </Paragraph>
+                  <div className="flex justify-center mb-4">
+                    <div className="bg-white p-4 rounded-lg shadow-sm">
+                      <QRCodeSVG value={setupData.qr_code_data} size={180} />
                     </div>
-                  ))}
+                  </div>
+                  <div className="bg-blue-50 dark:bg-blue-900 rounded-lg p-3">
+                    <Text className="text-blue-800 dark:text-blue-200 text-sm">
+                      或手动输入密钥：<Text code copyable className="ml-2">{setupData.secret}</Text>
+                    </Text>
+                  </div>
                 </div>
-                <Button
-                  size="small"
-                  type="primary"
-                  onClick={() => {
-                    const codesText = setupData.backup_codes.join('\n');
-                    navigator.clipboard.writeText(codesText);
-                    showSuccess('备用码已复制');
-                  }}
-                  className="w-full"
-                >
-                  复制所有备用码
-                </Button>
-              </div>
-            </div>
+              )}
 
-            {/* 步骤 3：验证设置 */}
-            <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
-              <div className="flex items-center mb-3">
-                <div className="w-6 h-6 rounded-full bg-green-500 text-white flex items-center justify-center text-sm font-medium mr-2">
-                  3
+              {currentStep === 1 && (
+                <div className="space-y-4">
+                  {/* 备用码展示 */}
+                  <BackupCodesDisplay
+                    codes={setupData.backup_codes}
+                    title="备用恢复代码"
+                    onCopy={() => {
+                      const codesText = setupData.backup_codes.join('\n');
+                      copyTextToClipboard(codesText, '备用码已复制到剪贴板');
+                    }}
+                  />
                 </div>
-                <Text strong className="text-gray-900 dark:text-gray-100">验证设置</Text>
-              </div>
-              <Paragraph className="text-gray-600 dark:text-gray-300 mb-4">
-                输入认证器应用显示的6位数字验证码：
-              </Paragraph>
-              <Form onSubmit={handleEnable2FA}>
-                <Form.Input
-                  field="code"
-                  placeholder="请输入6位验证码"
+              )}
+
+              {currentStep === 2 && (
+                <Input
+                  placeholder="输入认证器应用显示的6位数字验证码"
                   value={verificationCode}
                   onChange={setVerificationCode}
                   size="large"
-                  style={{ marginBottom: 16 }}
                   maxLength={6}
+                  className="!rounded-lg"
                 />
-                <Button
-                  htmlType="submit"
-                  type="primary"
-                  loading={loading}
-                  size="large"
-                  block
-                >
-                  完成设置并启用两步验证
-                </Button>
-              </Form>
+              )}
             </div>
           </div>
         )}
@@ -364,11 +509,7 @@ const TwoFASetting = () => {
       <Modal
         title={
           <div className="flex items-center">
-            <div className="w-8 h-8 rounded-full bg-red-100 dark:bg-red-900 flex items-center justify-center mr-3">
-              <svg className="w-4 h-4 text-red-600 dark:text-red-400" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-              </svg>
-            </div>
+            <IconAlertTriangle className="mr-2 text-red-500" />
             禁用两步验证
           </div>
         }
@@ -378,58 +519,73 @@ const TwoFASetting = () => {
           setVerificationCode('');
           setConfirmDisable(false);
         }}
-        footer={null}
+        footer={renderDisableModalFooter()}
         width={550}
+        style={{ maxWidth: '90vw' }}
       >
-        <div className="space-y-4">
-          <Banner
-            type="warning"
-            description={
-              <div className="space-y-2">
-                <div className="font-medium">警告：禁用两步验证将会：</div>
-                <ul className="list-disc list-inside space-y-1 text-sm">
-                  <li>降低您账户的安全性</li>
-                  <li>永久删除您的两步验证设置</li>
-                  <li>永久删除所有备用码（包括未使用的）</li>
-                  <li>需要重新完整设置才能再次启用</li>
-                </ul>
-                <div className="text-sm text-red-600 dark:text-red-400 font-medium mt-2">
-                  此操作不可撤销，请谨慎操作！
-                </div>
-              </div>
-            }
-            className="rounded-lg"
-          />
-          <Form onSubmit={handleDisable2FA}>
-            <Form.Input
-              field="code"
-              label="验证码"
-              placeholder="请输入认证器验证码或备用码"
-              value={verificationCode}
-              onChange={setVerificationCode}
-              size="large"
-              style={{ marginBottom: 16 }}
+        <div className="space-y-6">
+          {/* 警告提示 */}
+          <div className="rounded-xl">
+            <Banner
+              type="warning"
+              description="警告：禁用两步验证将永久删除您的验证设置和所有备用码，此操作不可撤销！"
+              className="!rounded-lg"
             />
-            <div className="mb-4">
-              <Checkbox
-                checked={confirmDisable}
-                onChange={(e) => setConfirmDisable(e.target.checked)}
-                className="text-sm"
-              >
-                我已了解禁用两步验证将永久删除所有相关设置和备用码，此操作不可撤销
-              </Checkbox>
+          </div>
+
+          {/* 内容区域 */}
+          <div className="space-y-4">
+            <div>
+              <Text strong className="block mb-2 text-slate-700 dark:text-slate-200">
+                禁用后的影响：
+              </Text>
+              <ul className="space-y-2 text-sm text-slate-600 dark:text-slate-300">
+                <li className="flex items-start gap-2">
+                  <Badge dot type='warning' />
+                  降低您账户的安全性
+                </li>
+                <li className="flex items-start gap-2">
+                  <Badge dot type='warning' />
+                  需要重新完整设置才能再次启用
+                </li>
+                <li className="flex items-start gap-2">
+                  <Badge dot type='danger' />
+                  永久删除您的两步验证设置
+                </li>
+                <li className="flex items-start gap-2">
+                  <Badge dot type='danger' />
+                  永久删除所有备用码（包括未使用的）
+                </li>
+              </ul>
             </div>
-            <Button
-              htmlType="submit"
-              type="danger"
-              loading={loading}
-              size="large"
-              block
-              disabled={!confirmDisable}
-            >
-              确认禁用两步验证
-            </Button>
-          </Form>
+
+            <Divider margin={16} />
+
+            <div className="space-y-4">
+              <div>
+                <Text strong className="block mb-2 text-slate-700 dark:text-slate-200">
+                  验证身份
+                </Text>
+                <Input
+                  placeholder="请输入认证器验证码或备用码"
+                  value={verificationCode}
+                  onChange={setVerificationCode}
+                  size="large"
+                  className="!rounded-lg"
+                />
+              </div>
+
+              <div>
+                <Checkbox
+                  checked={confirmDisable}
+                  onChange={(e) => setConfirmDisable(e.target.checked)}
+                  className="text-sm"
+                >
+                  我已了解禁用两步验证将永久删除所有相关设置和备用码，此操作不可撤销
+                </Checkbox>
+              </div>
+            </div>
+          </div>
         </div>
       </Modal>
 
@@ -437,11 +593,7 @@ const TwoFASetting = () => {
       <Modal
         title={
           <div className="flex items-center">
-            <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center mr-3">
-              <svg className="w-4 h-4 text-blue-600 dark:text-blue-400" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd" />
-              </svg>
-            </div>
+            <IconRefresh className="mr-2 text-slate-600" />
             重新生成备用码
           </div>
         }
@@ -451,73 +603,64 @@ const TwoFASetting = () => {
           setVerificationCode('');
           setBackupCodes([]);
         }}
-        footer={null}
+        footer={renderRegenerateModalFooter()}
         width={500}
+        style={{ maxWidth: '90vw' }}
       >
-        <div className="space-y-4">
+        <div className="space-y-6">
           {backupCodes.length === 0 ? (
             <>
-              <Banner
-                type="warning"
-                description="重新生成备用码将使现有的备用码失效，请确保您已保存了当前的备用码。"
-                className="rounded-lg"
-              />
-              <Form onSubmit={handleRegenerateBackupCodes}>
-                <Form.Input
-                  field="code"
-                  label="验证码"
-                  placeholder="请输入认证器验证码"
-                  value={verificationCode}
-                  onChange={setVerificationCode}
-                  size="large"
-                  style={{ marginBottom: 16 }}
+              {/* 警告提示 */}
+              <div className="rounded-xl">
+                <Banner
+                  type="warning"
+                  description="重新生成备用码将使现有的备用码失效，请确保您已保存了当前的备用码。"
+                  className="!rounded-lg"
                 />
-                <Button
-                  htmlType="submit"
-                  type="primary"
-                  loading={loading}
-                  size="large"
-                  block
-                >
-                  生成新的备用码
-                </Button>
-              </Form>
+              </div>
+
+              {/* 验证区域 */}
+              <div className="space-y-4">
+                <div>
+                  <Text strong className="block mb-2 text-slate-700 dark:text-slate-200">
+                    验证身份
+                  </Text>
+                  <Input
+                    placeholder="请输入认证器验证码"
+                    value={verificationCode}
+                    onChange={setVerificationCode}
+                    size="large"
+                    className="!rounded-lg"
+                  />
+                </div>
+              </div>
             </>
           ) : (
             <>
-              <div className="text-center mb-4">
-                <div className="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center mx-auto mb-2">
-                  <svg className="w-6 h-6 text-green-600 dark:text-green-400" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
+              {/* 成功提示 */}
+              <Space vertical style={{ width: '100%' }}>
+                <div className="flex items-center justify-center gap-2">
+                  <Badge dot type='success' />
+                  <Text strong className="text-lg text-slate-700 dark:text-slate-200">
+                    新的备用码已生成
+                  </Text>
                 </div>
-                <Text strong className="text-lg">新的备用码已生成</Text>
-                <Paragraph className="text-gray-600 dark:text-gray-300 mt-2">
-                  请将以下备用码保存在安全的地方：
-                </Paragraph>
-              </div>
-              <div className="bg-yellow-50 dark:bg-yellow-900 border border-yellow-200 dark:border-yellow-700 rounded-lg p-4">
-                <div className="grid grid-cols-2 gap-2 mb-3">
-                  {backupCodes.map((code, index) => (
-                    <div key={index} className="bg-white dark:bg-gray-700 p-2 rounded text-center">
-                      <Text code className="text-sm">{code}</Text>
-                    </div>
-                  ))}
-                </div>
-                <Button
-                  onClick={copyBackupCodes}
-                  type="primary"
-                  size="large"
-                  block
-                >
-                  复制所有备用码
-                </Button>
-              </div>
+                <Text className="text-slate-500 dark:text-slate-400 text-sm">
+                  旧的备用码已失效，请保存新的备用码
+                </Text>
+
+                {/* 备用码展示 */}
+                <BackupCodesDisplay
+                  codes={backupCodes}
+                  title="新的备用恢复代码"
+                  onCopy={copyBackupCodes}
+                />
+              </Space>
             </>
           )}
         </div>
       </Modal>
-    </div>
+    </>
   );
 };
 
