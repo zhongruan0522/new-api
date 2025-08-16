@@ -9,11 +9,11 @@ import (
 )
 
 type ConditionOperation struct {
-	Path   string      `json:"path"`   // JSON路径
-	Mode   string      `json:"mode"`   // full, prefix, suffix, contains, gt, gte, lt, lte
-	Value  interface{} `json:"value"`  // 匹配的值
-	Invert bool        `json:"invert"` // 反选功能，true表示取反结果
-
+	Path           string      `json:"path"`             // JSON路径
+	Mode           string      `json:"mode"`             // full, prefix, suffix, contains, gt, gte, lt, lte
+	Value          interface{} `json:"value"`            // 匹配的值
+	Invert         bool        `json:"invert"`           // 反选功能，true表示取反结果
+	PassMissingKey bool        `json:"pass_missing_key"` // 未获取到json key时的行为
 }
 
 type ParamOperation struct {
@@ -99,6 +99,9 @@ func tryParseOperations(paramOverride map[string]interface{}) ([]ParamOperation,
 									if invert, ok := condMap["invert"].(bool); ok {
 										condition.Invert = invert
 									}
+									if passMissingKey, ok := condMap["pass_missing_key"].(bool); ok {
+										condition.PassMissingKey = passMissingKey
+									}
 									operation.Conditions = append(operation.Conditions, condition)
 								}
 							}
@@ -150,6 +153,9 @@ func checkConditions(jsonStr string, conditions []ConditionOperation, logic stri
 func checkSingleCondition(jsonStr string, condition ConditionOperation) (bool, error) {
 	value := gjson.Get(jsonStr, condition.Path)
 	if !value.Exists() {
+		if condition.PassMissingKey {
+			return true, nil
+		}
 		return false, nil
 	}
 
