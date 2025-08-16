@@ -202,6 +202,12 @@ func compareGjsonValues(jsonValue, targetValue gjson.Result, mode string) (bool,
 }
 
 func compareEqual(jsonValue, targetValue gjson.Result) (bool, error) {
+	// 对布尔值特殊处理
+	if (jsonValue.Type == gjson.True || jsonValue.Type == gjson.False) &&
+		(targetValue.Type == gjson.True || targetValue.Type == gjson.False) {
+		return jsonValue.Bool() == targetValue.Bool(), nil
+	}
+
 	// 如果类型不同，报错
 	if jsonValue.Type != targetValue.Type {
 		return false, fmt.Errorf("compare for different types, got %v and %v", jsonValue.Type, targetValue.Type)
