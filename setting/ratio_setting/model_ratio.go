@@ -52,13 +52,21 @@ var defaultModelRatio = map[string]float64{
 	"gpt-4o-realtime-preview-2024-12-17":      2.5,
 	"gpt-4o-mini-realtime-preview":            0.3,
 	"gpt-4o-mini-realtime-preview-2024-12-17": 0.3,
-	"gpt-image-1":                             2.5,
-	"o1":                                      7.5,
-	"o1-2024-12-17":                           7.5,
-	"o1-preview":                              7.5,
-	"o1-preview-2024-09-12":                   7.5,
-	"o1-mini":                                 0.55,
-	"o1-mini-2024-09-12":                      0.55,
+	"gpt-4.1":                                 1.0,  // $2 / 1M tokens
+	"gpt-4.1-2025-04-14":                      1.0,  // $2 / 1M tokens
+	"gpt-4.1-mini":                            0.2,  // $0.4 / 1M tokens
+	"gpt-4.1-mini-2025-04-14":                 0.2,  // $0.4 / 1M tokens
+	"gpt-4.1-nano":                            0.05, // $0.1 / 1M tokens
+	"gpt-4.1-nano-2025-04-14":                 0.05, // $0.1 / 1M tokens
+	"gpt-image-1":                             2.5,  // $5 / 1M tokens
+	"o1":                                      7.5,  // $15 / 1M tokens
+	"o1-2024-12-17":                           7.5,  // $15 / 1M tokens
+	"o1-preview":                              7.5,  // $15 / 1M tokens
+	"o1-preview-2024-09-12":                   7.5,  // $15 / 1M tokens
+	"o1-mini":                                 0.55, // $1.1 / 1M tokens
+	"o1-mini-2024-09-12":                      0.55, // $1.1 / 1M tokens
+	"o1-pro":                                  75.0, // $150 / 1M tokens
+	"o1-pro-2025-03-19":                       75.0, // $150 / 1M tokens
 	"o3-mini":                                 0.55,
 	"o3-mini-2025-01-31":                      0.55,
 	"o3-mini-high":                            0.55,
@@ -67,6 +75,16 @@ var defaultModelRatio = map[string]float64{
 	"o3-mini-2025-01-31-low":                  0.55,
 	"o3-mini-medium":                          0.55,
 	"o3-mini-2025-01-31-medium":               0.55,
+	"o3":                                      1.0,  // $2 / 1M tokens
+	"o3-2025-04-16":                           1.0,  // $2 / 1M tokens
+	"o3-pro":                                  10.0, // $20 / 1M tokens
+	"o3-pro-2025-06-10":                       10.0, // $20 / 1M tokens
+	"o3-deep-research":                        5.0,  // $10 / 1M tokens
+	"o3-deep-research-2025-06-26":             5.0,  // $10 / 1M tokens
+	"o4-mini":                                 0.55, // $1.1 / 1M tokens
+	"o4-mini-2025-04-16":                      0.55, // $1.1 / 1M tokens
+	"o4-mini-deep-research":                   1.0,  // $2 / 1M tokens
+	"o4-mini-deep-research-2025-06-26":        1.0,  // $2 / 1M tokens
 	"gpt-4o-mini":                             0.075,
 	"gpt-4o-mini-2024-07-18":                  0.075,
 	"gpt-4-turbo":                             5, // $0.01 / 1K tokens
