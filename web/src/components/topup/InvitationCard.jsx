@@ -54,7 +54,7 @@ const InvitationCard = ({
       {/* 收益展示区域 */}
       <div className='space-y-4'>
         {/* 主要收益卡片 - 待使用收益 */}
-        <Card className='!rounded-xl with-pastel-balls'>
+        <Card className='!rounded-xl'>
           <div className='flex justify-between items-center mb-3'>
             <div className="flex items-center">
               <TrendingUp size={16} className="mr-2 text-slate-600 dark:text-slate-300" />

@@ -17,15 +17,13 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 
-import React from 'react';
-import { SetupWizard } from '../../components/setup';
+// 主要组件导出
+export { default as SetupWizard } from './SetupWizard';
 
-/**
- * Setup页面组件
- * 使用新的组件化结构进行系统初始化
- */
-const Setup = () => {
-  return <SetupWizard />;
-};
+export { default as StepNavigation } from './components/StepNavigation';
 
-export default Setup;
+// 步骤组件导出
+export { default as DatabaseStep } from './components/steps/DatabaseStep';
+export { default as AdminStep } from './components/steps/AdminStep';
+export { default as UsageModeStep } from './components/steps/UsageModeStep';
+export { default as CompleteStep } from './components/steps/CompleteStep';
