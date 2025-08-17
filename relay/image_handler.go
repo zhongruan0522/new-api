@@ -51,7 +51,7 @@ func ImageHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *type
 	} else {
 		convertedRequest, err := adaptor.ConvertImageRequest(c, info, *imageRequest)
 		if err != nil {
-			return types.NewError(err, types.ErrorCodeConvertRequestFailed, types.ErrOptionWithSkipRetry())
+			return types.NewError(err, types.ErrorCodeConvertRequestFailed)
 		}
 		if info.RelayMode == relayconstant.RelayModeImagesEdits {
 			requestBody = convertedRequest.(io.Reader)

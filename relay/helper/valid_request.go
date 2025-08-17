@@ -134,7 +134,7 @@ func GetAndValidOpenAIImageRequest(c *gin.Context, relayMode int) (*dto.ImageReq
 	case relayconstant.RelayModeImagesEdits:
 		_, err := c.MultipartForm()
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to parse image edit form request: %w", err)
 		}
 		formData := c.Request.PostForm
 		imageRequest.Prompt = formData.Get("prompt")
