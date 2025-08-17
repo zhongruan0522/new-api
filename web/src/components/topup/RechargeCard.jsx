@@ -224,7 +224,7 @@ const RechargeCard = ({
                                   ) : payMethod.type === 'stripe' ? (
                                     <SiStripe size={24} color="#635BFF" />
                                   ) : (
-                                    <CreditCard size={24} className='text-slate-500' />
+                                    <CreditCard size={24} color={payMethod.color || 'var(--semi-color-text-2)'} />
                                   )}
                                 </div>
                                 <div className='text-sm font-medium text-slate-700 dark:text-slate-200'>{payMethod.name}</div>
@@ -269,6 +269,7 @@ const RechargeCard = ({
                 onChange={(value) => setRedemptionCode(value)}
                 className='!rounded-lg'
                 prefix={<IconGift />}
+                showClear
               />
 
               <div className='flex flex-col sm:flex-row gap-2'>

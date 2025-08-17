@@ -24,7 +24,7 @@ import {
   Card,
   Skeleton,
 } from '@douyinfe/semi-ui';
-import { SiAlipay, SiWechat } from 'react-icons/si';
+import { SiAlipay, SiWechat, SiStripe } from 'react-icons/si';
 import { CreditCard } from 'lucide-react';
 
 const { Text } = Typography;
@@ -86,11 +86,13 @@ const PaymentConfirmModal = ({
                     return (
                       <>
                         {payMethod.type === 'zfb' ? (
-                          <SiAlipay className='mr-2' size={16} />
+                          <SiAlipay className='mr-2' size={16} color="#1677FF" />
                         ) : payMethod.type === 'wx' ? (
-                          <SiWechat className='mr-2' size={16} />
+                          <SiWechat className='mr-2' size={16} color="#07C160" />
+                        ) : payMethod.type === 'stripe' ? (
+                          <SiStripe className='mr-2' size={16} color="#635BFF" />
                         ) : (
-                          <CreditCard className='mr-2' size={16} />
+                          <CreditCard className='mr-2' size={16} color={payMethod.color || 'var(--semi-color-text-2)'} />
                         )}
                         <Text className='text-slate-900 dark:text-slate-100'>{payMethod.name}</Text>
                       </>
@@ -100,21 +102,21 @@ const PaymentConfirmModal = ({
                     if (payWay === 'zfb') {
                       return (
                         <>
-                          <SiAlipay className='mr-2' size={16} />
+                          <SiAlipay className='mr-2' size={16} color="#1677FF" />
                           <Text className='text-slate-900 dark:text-slate-100'>{t('支付宝')}</Text>
                         </>
                       );
                     } else if (payWay === 'stripe') {
                       return (
                         <>
-                          <CreditCard className='mr-2' size={16} />
+                          <SiStripe className='mr-2' size={16} color="#635BFF" />
                           <Text className='text-slate-900 dark:text-slate-100'>Stripe</Text>
                         </>
                       );
                     } else {
                       return (
                         <>
-                          <SiWechat className='mr-2' size={16} />
+                          <SiWechat className='mr-2' size={16} color="#07C160" />
                           <Text className='text-slate-900 dark:text-slate-100'>{t('微信')}</Text>
                         </>
                       );

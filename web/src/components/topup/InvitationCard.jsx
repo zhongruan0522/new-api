@@ -54,7 +54,7 @@ const InvitationCard = ({
       {/* 收益展示区域 */}
       <div className='space-y-4'>
         {/* 主要收益卡片 - 待使用收益 */}
-        <Card className='!rounded-xl bg-slate-50 dark:bg-slate-800'>
+        <Card className='!rounded-xl with-pastel-balls'>
           <div className='flex justify-between items-center mb-3'>
             <div className="flex items-center">
               <TrendingUp size={16} className="mr-2 text-slate-600 dark:text-slate-300" />
@@ -75,7 +75,6 @@ const InvitationCard = ({
           <div className='text-2xl sm:text-3xl font-bold text-slate-900 dark:text-slate-100 mb-1'>
             {renderQuota(userState?.user?.aff_quota || 0)}
           </div>
-          <div className="text-xs text-slate-500 dark:text-slate-400">{t('可随时划转到账户余额')}</div>
         </Card>
 
         {/* 统计数据网格 */}
@@ -88,7 +87,6 @@ const InvitationCard = ({
             <div className='text-xl font-semibold text-slate-900 dark:text-slate-100'>
               {renderQuota(userState?.user?.aff_history_quota || 0)}
             </div>
-            <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">{t('累计获得')}</div>
           </Card>
 
           <Card className='!rounded-xl bg-slate-50 dark:bg-slate-800'>
@@ -99,7 +97,6 @@ const InvitationCard = ({
             <div className='text-xl font-semibold text-slate-900 dark:text-slate-100 flex items-center'>
               {userState?.user?.aff_count || 0} {t('人')}
             </div>
-            <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">{t('成功邀请')}</div>
           </Card>
         </div>
 
@@ -126,7 +123,7 @@ const InvitationCard = ({
 
         {/* 奖励说明 */}
         <Card
-          className='!rounded-xl'
+          className='!rounded-xl with-pastel-balls-warm'
           title={
             <Text strong className='text-slate-700'>
               {t('奖励说明')}

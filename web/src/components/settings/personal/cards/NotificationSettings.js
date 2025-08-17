@@ -106,7 +106,7 @@ const NotificationSettings = ({
         onSubmit={handleSubmit}
       >
         {() => (
-          <Tabs type="line" defaultActiveKey="notification">
+          <Tabs type="card" defaultActiveKey="notification">
             {/* 通知配置 Tab */}
             <TabPane
               tab={
@@ -223,11 +223,11 @@ const NotificationSettings = ({
                           />
                         </div>
                         <div className="text-xs text-gray-500 leading-relaxed">
-                          <div><strong>type:</strong> 通知类型 (quota_exceed: 额度预警)</div>
-                          <div><strong>title:</strong> 通知标题</div>
-                          <div><strong>content:</strong> 通知内容，支持 {`{{value}}`} 变量占位符</div>
-                          <div><strong>values:</strong> 按顺序替换content中的变量占位符</div>
-                          <div><strong>timestamp:</strong> Unix时间戳</div>
+                          <div><strong>type:</strong> {t('通知类型 (quota_exceed: 额度预警)')} </div>
+                          <div><strong>title:</strong> {t('通知标题')}</div>
+                          <div><strong>content:</strong> {t('通知内容，支持 {{value}} 变量占位符')}</div>
+                          <div><strong>values:</strong> {t('按顺序替换content中的变量占位符')}</div>
+                          <div><strong>timestamp:</strong> {t('Unix时间戳')}</div>
                         </div>
                       </div>
                     </Form.Slot>
