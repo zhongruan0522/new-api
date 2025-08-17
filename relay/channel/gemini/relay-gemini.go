@@ -935,7 +935,7 @@ func GeminiChatStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *
 				}
 			}
 		}
-
+		logger.LogDebug(c, fmt.Sprintf("info.SendResponseCount = %d", info.SendResponseCount))
 		if info.SendResponseCount == 0 {
 			// send first response
 			emptyResponse := helper.GenerateStartEmptyResponse(id, createAt, info.UpstreamModelName, nil)
@@ -952,6 +952,11 @@ func GeminiChatStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *
 				response.ClearToolCalls()
 				if response.IsFinished() {
 					response.Choices[0].FinishReason = nil
+				}
+			} else {
+				err = handleStream(c, info, emptyResponse)
+				if err != nil {
+					logger.LogError(c, err.Error())
 				}
 			}
 		}
