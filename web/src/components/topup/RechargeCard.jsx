@@ -236,17 +236,14 @@ const RechargeCard = ({
                     </div>
                   </div>
                 )}
-
               </div>
             ) : (
-              <div className='py-8'>
-                <Banner
-                  type='warning'
-                  description={t('管理员未开启在线充值功能，请联系管理员开启或使用兑换码充值。')}
-                  className='!rounded-xl'
-                  closeIcon={null}
-                />
-              </div>
+              <Banner
+                type='warning'
+                description={t('管理员未开启在线充值功能，请联系管理员开启或使用兑换码充值。')}
+                className='!rounded-xl'
+                closeIcon={null}
+              />
             )}
           </div>
         </TabPane>

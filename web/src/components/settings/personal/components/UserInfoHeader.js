@@ -54,7 +54,7 @@ const UserInfoHeader = ({ t, userState }) => {
               {getAvatarText()}
             </Avatar>
             <div className="flex-1 min-w-0">
-              <div className="text-base text-3xl font-semibold truncate text-gray-800 dark:text-gray-100">
+              <div className="text-base !text-3xl font-semibold truncate text-gray-800 dark:text-gray-100">
                 {getUsername()}
               </div>
               <div className="mt-1 flex flex-wrap gap-1 sm:gap-2">

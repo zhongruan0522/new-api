@@ -17,7 +17,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 
-import React, { useContext, useEffect, useState, useRef } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { UserContext } from '../../context/User/index.js';
 import { useSetTheme, useTheme } from '../../context/Theme/index.js';
@@ -63,7 +63,6 @@ const HeaderBar = ({ onMobileMenuToggle, drawerOpen }) => {
   const [logoLoaded, setLogoLoaded] = useState(false);
   let navigate = useNavigate();
   const [currentLang, setCurrentLang] = useState(i18n.language);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
   const [noticeVisible, setNoticeVisible] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -157,7 +156,6 @@ const HeaderBar = ({ onMobileMenuToggle, drawerOpen }) => {
     userDispatch({ type: 'logout' });
     localStorage.removeItem('user');
     navigate('/login');
-    setMobileMenuOpen(false);
   }
 
   const handleNewYearClick = () => {
@@ -228,20 +226,12 @@ const HeaderBar = ({ onMobileMenuToggle, drawerOpen }) => {
 
   const handleLanguageChange = (lang) => {
     i18n.changeLanguage(lang);
-    setMobileMenuOpen(false);
-  };
-
-  const handleNavLinkClick = (itemKey) => {
-    if (itemKey === 'home') {
-      // styleDispatch(styleActions.setSider(false)); // This line is removed
-    }
-    setMobileMenuOpen(false);
   };
 
   const renderNavLinks = (isMobileView = false, isLoading = false) => {
     if (isLoading) {
       const skeletonLinkClasses = isMobileView
-        ? 'flex items-center gap-1 p-3 w-full rounded-md'
+        ? 'flex items-center gap-1 p-1 w-full rounded-md'
         : 'flex items-center gap-1 p-2 rounded-md';
       return Array(4)
         .fill(null)
@@ -253,7 +243,7 @@ const HeaderBar = ({ onMobileMenuToggle, drawerOpen }) => {
               placeholder={
                 <Skeleton.Title
                   active
-                  style={{ width: isMobileView ? 100 : 60, height: 16 }}
+                  style={{ width: isMobileView ? 40 : 60, height: 16 }}
                 />
               }
             />
@@ -263,8 +253,8 @@ const HeaderBar = ({ onMobileMenuToggle, drawerOpen }) => {
 
     return mainNavLinks.map((link) => {
       const commonLinkClasses = isMobileView
-        ? 'flex items-center gap-1 p-3 w-full text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors font-semibold'
-        : 'flex items-center gap-1 p-2 text-sm text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors rounded-md font-semibold';
+        ? 'flex-shrink-0 flex items-center gap-1 p-1 font-semibold'
+        : 'flex-shrink-0 flex items-center gap-1 p-2 font-semibold';
 
       const linkContent = (
         <span>{link.text}</span>
@@ -278,7 +268,6 @@ const HeaderBar = ({ onMobileMenuToggle, drawerOpen }) => {
             target='_blank'
             rel='noopener noreferrer'
             className={commonLinkClasses}
-            onClick={() => handleNavLinkClick(link.itemKey)}
           >
             {linkContent}
           </a>
@@ -295,7 +284,6 @@ const HeaderBar = ({ onMobileMenuToggle, drawerOpen }) => {
           key={link.itemKey}
           to={targetPath}
           className={commonLinkClasses}
-          onClick={() => handleNavLinkClick(link.itemKey)}
         >
           {linkContent}
         </Link>
@@ -337,7 +325,6 @@ const HeaderBar = ({ onMobileMenuToggle, drawerOpen }) => {
               <Dropdown.Item
                 onClick={() => {
                   navigate('/console/personal');
-                  setMobileMenuOpen(false);
                 }}
                 className="!px-3 !py-1.5 !text-sm !text-semi-color-text-0 hover:!bg-semi-color-fill-1 dark:!text-gray-200 dark:hover:!bg-blue-500 dark:hover:!text-white"
               >
@@ -349,7 +336,6 @@ const HeaderBar = ({ onMobileMenuToggle, drawerOpen }) => {
               <Dropdown.Item
                 onClick={() => {
                   navigate('/console/token');
-                  setMobileMenuOpen(false);
                 }}
                 className="!px-3 !py-1.5 !text-sm !text-semi-color-text-0 hover:!bg-semi-color-fill-1 dark:!text-gray-200 dark:hover:!bg-blue-500 dark:hover:!text-white"
               >
@@ -361,7 +347,6 @@ const HeaderBar = ({ onMobileMenuToggle, drawerOpen }) => {
               <Dropdown.Item
                 onClick={() => {
                   navigate('/console/topup');
-                  setMobileMenuOpen(false);
                 }}
                 className="!px-3 !py-1.5 !text-sm !text-semi-color-text-0 hover:!bg-semi-color-fill-1 dark:!text-gray-200 dark:hover:!bg-blue-500 dark:hover:!text-white"
               >
@@ -426,7 +411,7 @@ const HeaderBar = ({ onMobileMenuToggle, drawerOpen }) => {
 
       return (
         <div className="flex items-center">
-          <Link to="/login" onClick={() => handleNavLinkClick('login')} className="flex">
+          <Link to="/login" className="flex">
             <Button
               theme="borderless"
               type="tertiary"
@@ -439,7 +424,7 @@ const HeaderBar = ({ onMobileMenuToggle, drawerOpen }) => {
           </Link>
           {showRegisterButton && (
             <div className="hidden md:block">
-              <Link to="/register" onClick={() => handleNavLinkClick('register')} className="flex -ml-px">
+              <Link to="/register" className="flex -ml-px">
                 <Button
                   theme="solid"
                   type="primary"
@@ -469,94 +454,72 @@ const HeaderBar = ({ onMobileMenuToggle, drawerOpen }) => {
       <div className="w-full px-2">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center">
-            <div className="md:hidden">
+            {isConsoleRoute && isMobile && (
               <Button
                 icon={
-                  isConsoleRoute
-                    ? ((isMobile ? drawerOpen : collapsed) ? <IconClose className="text-lg" /> : <IconMenu className="text-lg" />)
-                    : (mobileMenuOpen ? <IconClose className="text-lg" /> : <IconMenu className="text-lg" />)
+                  (isMobile ? drawerOpen : collapsed) ? <IconClose className="text-lg" /> : <IconMenu className="text-lg" />
                 }
-                aria-label={
-                  isConsoleRoute
-                    ? ((isMobile ? drawerOpen : collapsed) ? t('关闭侧边栏') : t('打开侧边栏'))
-                    : (mobileMenuOpen ? t('关闭菜单') : t('打开菜单'))
-                }
-                onClick={() => {
-                  if (isConsoleRoute) {
-                    // 控制侧边栏的显示/隐藏，无论是否移动设备
-                    isMobile ? onMobileMenuToggle() : toggleCollapsed();
-                  } else {
-                    // 控制HeaderBar自己的移动菜单
-                    setMobileMenuOpen(!mobileMenuOpen);
-                  }
-                }}
+                aria-label={(isMobile ? drawerOpen : collapsed) ? t('关闭侧边栏') : t('打开侧边栏')}
+                onClick={() => isMobile ? onMobileMenuToggle() : toggleCollapsed()}
                 theme="borderless"
                 type="tertiary"
                 className="!p-2 !text-current focus:!bg-semi-color-fill-1 dark:focus:!bg-gray-700"
               />
-            </div>
-            <Link to="/" onClick={() => handleNavLinkClick('home')} className="flex items-center gap-2 group ml-2">
-              <div className="relative w-8 h-8 md:w-8 md:h-8">
-                {(isLoading || !logoLoaded) && (
-                  <Skeleton.Image
-                    active
-                    className="absolute inset-0 !rounded-full"
-                    style={{ width: '100%', height: '100%' }}
-                  />
-                )}
-                <img
-                  src={logo}
-                  alt="logo"
-                  className={`absolute inset-0 w-full h-full transition-opacity duration-200 group-hover:scale-105 rounded-full ${(!isLoading && logoLoaded) ? 'opacity-100' : 'opacity-0'}`}
-                />
-              </div>
-              <div className="hidden md:flex items-center gap-2">
-                <div className="flex items-center gap-2">
-                  <Skeleton
-                    loading={isLoading}
-                    active
-                    placeholder={
-                      <Skeleton.Title
-                        active
-                        style={{ width: 120, height: 24 }}
-                      />
-                    }
-                  >
-                    <Typography.Title heading={4} className="!text-lg !font-semibold !mb-0">
-                      {systemName}
-                    </Typography.Title>
-                  </Skeleton>
-                  {(isSelfUseMode || isDemoSiteMode) && !isLoading && (
-                    <Tag
-                      color={isSelfUseMode ? 'purple' : 'blue'}
-                      className="text-xs px-1.5 py-0.5 rounded whitespace-nowrap shadow-sm"
-                      size="small"
-                      shape='circle'
-                    >
-                      {isSelfUseMode ? t('自用模式') : t('演示站点')}
-                    </Tag>
-                  )}
-                </div>
-              </div>
-            </Link>
-            {(isSelfUseMode || isDemoSiteMode) && !isLoading && (
-              <div className="md:hidden">
-                <Tag
-                  color={isSelfUseMode ? 'purple' : 'blue'}
-                  className="ml-2 text-xs px-1 py-0.5 rounded whitespace-nowrap shadow-sm"
-                  size="small"
-                  shape='circle'
-                >
-                  {isSelfUseMode ? t('自用模式') : t('演示站点')}
-                </Tag>
-              </div>
             )}
-
-            <nav className="hidden md:flex items-center gap-1 lg:gap-2 ml-6">
-              {renderNavLinks(false, isLoading)}
-            </nav>
+            {(!isMobile || !isConsoleRoute) && (
+              <Link to="/" className="flex items-center gap-2">
+                <div className="relative w-8 h-8 md:w-8 md:h-8">
+                  {(isLoading || !logoLoaded) && (
+                    <Skeleton.Image
+                      active
+                      className="absolute inset-0 !rounded-full"
+                      style={{ width: '100%', height: '100%' }}
+                    />
+                  )}
+                  <img
+                    src={logo}
+                    alt="logo"
+                    className={`absolute inset-0 w-full h-full transition-opacity duration-200 group-hover:scale-105 rounded-full ${(!isLoading && logoLoaded) ? 'opacity-100' : 'opacity-0'}`}
+                  />
+                </div>
+                <div className="hidden md:flex items-center gap-2">
+                  <div className="flex items-center gap-2">
+                    <Skeleton
+                      loading={isLoading}
+                      active
+                      placeholder={
+                        <Skeleton.Title
+                          active
+                          style={{ width: 120, height: 24 }}
+                        />
+                      }
+                    >
+                      <Typography.Title heading={4} className="!text-lg !font-semibold !mb-0">
+                        {systemName}
+                      </Typography.Title>
+                    </Skeleton>
+                    {(isSelfUseMode || isDemoSiteMode) && !isLoading && (
+                      <Tag
+                        color={isSelfUseMode ? 'purple' : 'blue'}
+                        className="text-xs px-1.5 py-0.5 rounded whitespace-nowrap shadow-sm"
+                        size="small"
+                        shape='circle'
+                      >
+                        {isSelfUseMode ? t('自用模式') : t('演示站点')}
+                      </Tag>
+                    )}
+                  </div>
+                </div>
+              </Link>
+            )}
           </div>
 
+          {/* 中间可滚动导航区域（全部设备）*/}
+          <nav className="flex flex-1 items-center gap-1 lg:gap-2 mx-2 md:mx-4 overflow-x-auto whitespace-nowrap scrollbar-hide">
+            {renderNavLinks(isMobile, isLoading)}
+          </nav>
+
+          {/* 右侧用户信息及功能按钮 */}
           <div className="flex items-center gap-2 md:gap-3">
             {isNewYear && (
               <Dropdown
@@ -587,6 +550,7 @@ const HeaderBar = ({ onMobileMenuToggle, drawerOpen }) => {
                   onClick={handleNoticeOpen}
                   theme="borderless"
                   type="tertiary"
+                  size='small'
                   className="!p-1.5 !text-current focus:!bg-semi-color-fill-1 dark:focus:!bg-gray-700 !rounded-full !bg-semi-color-fill-0 dark:!bg-semi-color-fill-1 hover:!bg-semi-color-fill-1 dark:hover:!bg-semi-color-fill-2"
                 />
               </Badge>
@@ -642,22 +606,6 @@ const HeaderBar = ({ onMobileMenuToggle, drawerOpen }) => {
 
             {renderUserArea()}
           </div>
-        </div>
-      </div>
-
-      <div className="md:hidden">
-        <div
-          className={`
-            absolute top-16 left-0 right-0
-            bg-white/75 dark:bg-zinc-900/75 backdrop-blur-lg
-            shadow-lg p-3
-            transform transition-all duration-300 ease-in-out
-            ${(!isConsoleRoute && mobileMenuOpen) ? 'translate-y-0 opacity-100 visible' : '-translate-y-4 opacity-0 invisible'}
-          `}
-        >
-          <nav className="flex flex-col gap-1">
-            {renderNavLinks(true, isLoading)}
-          </nav>
         </div>
       </div>
     </header>
