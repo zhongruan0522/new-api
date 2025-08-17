@@ -71,7 +71,7 @@ const AccountManagement = ({
         </div>
       </div>
 
-      <Tabs type="card" defaultActiveKey="binding">
+      <Tabs type="line" defaultActiveKey="binding">
         {/* 账户绑定 Tab */}
         <TabPane
           tab={

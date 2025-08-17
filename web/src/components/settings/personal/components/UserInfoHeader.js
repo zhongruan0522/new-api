@@ -19,10 +19,12 @@ For commercial licensing, please contact support@quantumnous.com
 
 import React from 'react';
 import { Avatar, Card, Tag, Divider, Typography } from '@douyinfe/semi-ui';
-import { isRoot, isAdmin, renderQuota, stringToColor } from '../../../../helpers';
+import { isRoot, isAdmin, renderQuota } from '../../../../helpers';
+import { useTheme } from '../../../../context/Theme';
 import { Coins, BarChart2, Users } from 'lucide-react';
 
 const UserInfoHeader = ({ t, userState }) => {
+  const theme = useTheme();
 
   const getUsername = () => {
     if (userState.user) {
@@ -42,7 +44,16 @@ const UserInfoHeader = ({ t, userState }) => {
   };
 
   return (
-    <Card className="!rounded-2xl">
+    <Card
+      className="!rounded-2xl !border-0"
+      style={{
+        background: theme === 'dark'
+          ? 'linear-gradient(135deg, #1e293b 0%, #334155 50%, #475569 100%)'
+          : 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #cbd5e1 100%)',
+        position: 'relative'
+      }}
+      bodyStyle={{ padding: 0 }}
+    >
       {/* 装饰性背景元素 */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute -top-10 -right-10 w-40 h-40 bg-slate-400 dark:bg-slate-500 opacity-5 rounded-full"></div>
@@ -50,13 +61,12 @@ const UserInfoHeader = ({ t, userState }) => {
         <div className="absolute top-1/2 right-1/4 w-24 h-24 bg-slate-400 dark:bg-slate-500 opacity-6 rounded-full"></div>
       </div>
 
-      <div className="relative text-gray-600 dark:text-gray-300">
+      <div className="relative p-4 sm:p-6 md:p-8 text-gray-600 dark:text-gray-300">
         <div className="flex justify-between items-start mb-4 sm:mb-6">
           <div className="flex items-center flex-1 min-w-0">
             <Avatar
               size='large'
-              className="mr-3 sm:mr-4 shadow-md flex-shrink-0"
-              color={stringToColor(getUsername())}
+              className="mr-3 sm:mr-4 shadow-md flex-shrink-0 bg-slate-500 dark:bg-slate-400"
             >
               {getAvatarText()}
             </Avatar>
@@ -103,7 +113,7 @@ const UserInfoHeader = ({ t, userState }) => {
 
           {/* 右上角统计信息（Semi UI 卡片） */}
           <div className="hidden sm:block flex-shrink-0 ml-2">
-            <Card size="small" className="!rounded-xl shadow-sm" bodyStyle={{ padding: '8px 12px' }}>
+            <Card size="small" className="!rounded-xl !border-0 shadow-sm" bodyStyle={{ padding: '8px 12px' }}>
               <div className="flex items-center gap-3 lg:gap-4">
                 <div className="flex items-center justify-end gap-2">
                   <Coins size={16} className="text-slate-600 dark:text-slate-300" />
