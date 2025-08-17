@@ -21,10 +21,10 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Notification, Button, Space, Toast, Typography, Select } from '@douyinfe/semi-ui';
 import { API, showError, getModelCategories, selectFilter } from '../../../helpers';
 import CardPro from '../../common/ui/CardPro';
-import TokensTable from './TokensTable.jsx';
-import TokensActions from './TokensActions.jsx';
-import TokensFilters from './TokensFilters.jsx';
-import TokensDescription from './TokensDescription.jsx';
+import TokensTable from './TokensTable';
+import TokensActions from './TokensActions';
+import TokensFilters from './TokensFilters';
+import TokensDescription from './TokensDescription';
 import EditTokenModal from './modals/EditTokenModal';
 import { useTokensData } from '../../../hooks/tokens/useTokensData';
 import { useIsMobile } from '../../../hooks/common/useIsMobile';
@@ -222,7 +222,7 @@ function TokensPage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [modelOptions, selectedModel, tokensData.t, fluentNoticeOpen]);
-  
+
   useEffect(() => {
     const selector = '#fluent-new-api-container';
     const root = document.body || document.documentElement;

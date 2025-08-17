@@ -20,13 +20,13 @@ For commercial licensing, please contact support@quantumnous.com
 import { useState, useEffect, useContext } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { UserContext } from '../../context/User/index.js';
-import { StatusContext } from '../../context/Status/index.js';
-import { useSetTheme, useTheme } from '../../context/Theme/index.js';
-import { getLogo, getSystemName, API, showSuccess } from '../../helpers/index.js';
-import { useIsMobile } from './useIsMobile.js';
-import { useSidebarCollapsed } from './useSidebarCollapsed.js';
-import { useMinimumLoadingTime } from './useMinimumLoadingTime.js';
+import { UserContext } from '../../context/User';
+import { StatusContext } from '../../context/Status';
+import { useSetTheme, useTheme } from '../../context/Theme';
+import { getLogo, getSystemName, API, showSuccess } from '../../helpers';
+import { useIsMobile } from './useIsMobile';
+import { useSidebarCollapsed } from './useSidebarCollapsed';
+import { useMinimumLoadingTime } from './useMinimumLoadingTime';
 
 export const useHeaderBar = ({ onMobileMenuToggle, drawerOpen }) => {
   const { t, i18n } = useTranslation();

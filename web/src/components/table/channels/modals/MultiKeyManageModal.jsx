@@ -38,7 +38,7 @@ import {
   Card
 } from '@douyinfe/semi-ui';
 import { IllustrationNoResult, IllustrationNoResultDark } from '@douyinfe/semi-illustrations';
-import { API, showError, showSuccess, timestamp2string } from '../../../../helpers/index.js';
+import { API, showError, showSuccess, timestamp2string } from '../../../../helpers';
 
 const { Text } = Typography;
 

@@ -19,8 +19,8 @@ For commercial licensing, please contact support@quantumnous.com
 
 import React, { useContext, useEffect } from 'react';
 import { getRelativeTime } from '../../helpers';
-import { UserContext } from '../../context/User/index.js';
-import { StatusContext } from '../../context/Status/index.js';
+import { UserContext } from '../../context/User';
+import { StatusContext } from '../../context/Status';
 
 import DashboardHeader from './DashboardHeader';
 import StatsCards from './StatsCards';
