@@ -17,4 +17,21 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 
-export { default } from './HeaderBar/index.js';
+import React from 'react';
+import { Button } from '@douyinfe/semi-ui';
+import { IconSun, IconMoon } from '@douyinfe/semi-icons';
+
+const ThemeToggle = ({ theme, onThemeToggle, t }) => {
+  return (
+    <Button
+      icon={theme === 'dark' ? <IconSun size="large" className="text-yellow-500" /> : <IconMoon size="large" className="text-gray-300" />}
+      aria-label={t('切换主题')}
+      onClick={onThemeToggle}
+      theme="borderless"
+      type="tertiary"
+      className="!p-1.5 !text-current focus:!bg-semi-color-fill-1 dark:focus:!bg-gray-700 !rounded-full !bg-semi-color-fill-0 dark:!bg-semi-color-fill-1 hover:!bg-semi-color-fill-1 dark:hover:!bg-semi-color-fill-2"
+    />
+  );
+};
+
+export default ThemeToggle;

@@ -170,7 +170,7 @@ const LoginForm = () => {
             setLoginLoading(false);
             return;
           }
-          
+
           userDispatch({ type: 'login', payload: data });
           setUserData(data);
           updateAPI();
@@ -313,7 +313,7 @@ const LoginForm = () => {
             <Title heading={3} className='!text-gray-800'>{systemName}</Title>
           </div>
 
-          <Card className="shadow-xl border-0 !rounded-2xl overflow-hidden">
+          <Card className="border-0 !rounded-2xl overflow-hidden">
             <div className="flex justify-center pt-6 pb-2">
               <Title heading={3} className="text-gray-800 dark:text-gray-200">{t('登 录')}</Title>
             </div>
@@ -430,7 +430,7 @@ const LoginForm = () => {
             <Title heading={3}>{systemName}</Title>
           </div>
 
-          <Card className="shadow-xl border-0 !rounded-2xl overflow-hidden">
+          <Card className="border-0 !rounded-2xl overflow-hidden">
             <div className="flex justify-center pt-6 pb-2">
               <Title heading={3} className="text-gray-800 dark:text-gray-200">{t('登 录')}</Title>
             </div>
@@ -581,7 +581,7 @@ const LoginForm = () => {
         width={450}
         centered
       >
-        <TwoFAVerification 
+        <TwoFAVerification
           onSuccess={handle2FASuccess}
           onBack={handleBackToLogin}
           isModal={true}

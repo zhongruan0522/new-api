@@ -17,4 +17,43 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 
-export { default } from './HeaderBar/index.js';
+import { useMemo } from 'react';
+
+export const useNavigation = (t, docsLink) => {
+  const mainNavLinks = useMemo(() => [
+    {
+      text: t('首页'),
+      itemKey: 'home',
+      to: '/',
+    },
+    {
+      text: t('控制台'),
+      itemKey: 'console',
+      to: '/console',
+    },
+    {
+      text: t('模型广场'),
+      itemKey: 'pricing',
+      to: '/pricing',
+    },
+    ...(docsLink
+      ? [
+        {
+          text: t('文档'),
+          itemKey: 'docs',
+          isExternal: true,
+          externalLink: docsLink,
+        },
+      ]
+      : []),
+    {
+      text: t('关于'),
+      itemKey: 'about',
+      to: '/about',
+    },
+  ], [t, docsLink]);
+
+  return {
+    mainNavLinks,
+  };
+};

@@ -310,7 +310,7 @@ const RegisterForm = () => {
             <Title heading={3} className='!text-gray-800'>{systemName}</Title>
           </div>
 
-          <Card className="shadow-xl border-0 !rounded-2xl overflow-hidden">
+          <Card className="border-0 !rounded-2xl overflow-hidden">
             <div className="flex justify-center pt-6 pb-2">
               <Title heading={3} className="text-gray-800 dark:text-gray-200">{t('注 册')}</Title>
             </div>
@@ -417,7 +417,7 @@ const RegisterForm = () => {
             <Title heading={3} className='!text-gray-800'>{systemName}</Title>
           </div>
 
-          <Card className="shadow-xl border-0 !rounded-2xl overflow-hidden">
+          <Card className="border-0 !rounded-2xl overflow-hidden">
             <div className="flex justify-center pt-6 pb-2">
               <Title heading={3} className="text-gray-800 dark:text-gray-200">{t('注 册')}</Title>
             </div>
