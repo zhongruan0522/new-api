@@ -325,7 +325,6 @@ const LoginForm = () => {
                     className="w-full h-12 flex items-center justify-center !rounded-full border border-gray-200 hover:bg-gray-50 transition-colors"
                     type="tertiary"
                     icon={<Icon svg={<WeChatIcon />} style={{ color: '#07C160' }} />}
-                    size="large"
                     onClick={onWeChatLoginClicked}
                     loading={wechatLoading}
                   >
@@ -339,7 +338,6 @@ const LoginForm = () => {
                     className="w-full h-12 flex items-center justify-center !rounded-full border border-gray-200 hover:bg-gray-50 transition-colors"
                     type="tertiary"
                     icon={<IconGithubLogo size="large" />}
-                    size="large"
                     onClick={handleGitHubClick}
                     loading={githubLoading}
                   >
@@ -353,7 +351,6 @@ const LoginForm = () => {
                     className="w-full h-12 flex items-center justify-center !rounded-full border border-gray-200 hover:bg-gray-50 transition-colors"
                     type="tertiary"
                     icon={<OIDCIcon style={{ color: '#1877F2' }} />}
-                    size="large"
                     onClick={handleOIDCClick}
                     loading={oidcLoading}
                   >
@@ -367,7 +364,6 @@ const LoginForm = () => {
                     className="w-full h-12 flex items-center justify-center !rounded-full border border-gray-200 hover:bg-gray-50 transition-colors"
                     type="tertiary"
                     icon={<LinuxDoIcon style={{ color: '#E95420', width: '20px', height: '20px' }} />}
-                    size="large"
                     onClick={handleLinuxDOClick}
                     loading={linuxdoLoading}
                   >
@@ -393,7 +389,6 @@ const LoginForm = () => {
                   type="primary"
                   className="w-full h-12 flex items-center justify-center bg-black text-white !rounded-full hover:bg-gray-800 transition-colors"
                   icon={<IconMail size="large" />}
-                  size="large"
                   onClick={handleEmailLoginClick}
                   loading={emailLoginLoading}
                 >
@@ -441,7 +436,6 @@ const LoginForm = () => {
                   label={t('用户名或邮箱')}
                   placeholder={t('请输入您的用户名或邮箱地址')}
                   name="username"
-                  size="large"
                   onChange={(value) => handleChange('username', value)}
                   prefix={<IconMail />}
                 />
@@ -452,7 +446,6 @@ const LoginForm = () => {
                   placeholder={t('请输入您的密码')}
                   name="password"
                   mode="password"
-                  size="large"
                   onChange={(value) => handleChange('password', value)}
                   prefix={<IconLock />}
                 />
@@ -463,7 +456,6 @@ const LoginForm = () => {
                     className="w-full !rounded-full"
                     type="primary"
                     htmlType="submit"
-                    size="large"
                     onClick={handleSubmit}
                     loading={loginLoading}
                   >
@@ -474,7 +466,6 @@ const LoginForm = () => {
                     theme="borderless"
                     type='tertiary'
                     className="w-full !rounded-full"
-                    size="large"
                     onClick={handleResetPasswordClick}
                     loading={resetPasswordLoading}
                   >
@@ -494,7 +485,6 @@ const LoginForm = () => {
                       theme="outline"
                       type="tertiary"
                       className="w-full !rounded-full"
-                      size="large"
                       onClick={handleOtherLoginOptionsClick}
                       loading={otherLoginOptionsLoading}
                     >
@@ -534,7 +524,6 @@ const LoginForm = () => {
         onOk={onSubmitWeChatVerificationCode}
         onCancel={() => setShowWeChatLoginModal(false)}
         okText={t('登录')}
-        size="small"
         centered={true}
         okButtonProps={{
           loading: wechatCodeSubmitLoading,
@@ -548,7 +537,7 @@ const LoginForm = () => {
           <p>{t('微信扫码关注公众号，输入「验证码」获取验证码（三分钟内有效）')}</p>
         </div>
 
-        <Form size="large">
+        <Form>
           <Form.Input
             field="wechat_verification_code"
             placeholder={t('验证码')}

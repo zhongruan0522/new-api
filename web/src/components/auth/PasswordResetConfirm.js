@@ -131,7 +131,6 @@ const PasswordResetConfirm = () => {
                     field="email"
                     label={t('邮箱')}
                     name="email"
-                    size="large"
                     disabled={true}
                     prefix={<IconMail />}
                     placeholder={email ? '' : t('等待获取邮箱信息...')}
@@ -142,7 +141,6 @@ const PasswordResetConfirm = () => {
                       field="newPassword"
                       label={t('新密码')}
                       name="newPassword"
-                      size="large"
                       disabled={true}
                       prefix={<IconLock />}
                       suffix={
@@ -167,7 +165,6 @@ const PasswordResetConfirm = () => {
                       className="w-full !rounded-full"
                       type="primary"
                       htmlType="submit"
-                      size="large"
                       onClick={handleSubmit}
                       loading={loading}
                       disabled={disableButton || newPassword || !isValidResetLink}

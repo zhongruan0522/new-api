@@ -120,7 +120,6 @@ const PasswordResetForm = () => {
                     label={t('邮箱')}
                     placeholder={t('请输入您的邮箱地址')}
                     name="email"
-                    size="large"
                     value={email}
                     onChange={handleChange}
                     prefix={<IconMail />}
@@ -132,7 +131,6 @@ const PasswordResetForm = () => {
                       className="w-full !rounded-full"
                       type="primary"
                       htmlType="submit"
-                      size="large"
                       onClick={handleSubmit}
                       loading={loading}
                       disabled={disableButton}
