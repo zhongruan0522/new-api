@@ -102,9 +102,9 @@ func (a *Adaptor) DoRequest(c *gin.Context, info *relaycommon.RelayInfo, request
 
 func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (usage any, err *types.NewAPIError) {
 	if info.IsStream {
-		err, usage = ClaudeStreamHandler(c, resp, info, a.RequestMode)
+		return ClaudeStreamHandler(c, resp, info, a.RequestMode)
 	} else {
-		err, usage = ClaudeHandler(c, resp, info, a.RequestMode)
+		return ClaudeHandler(c, resp, info, a.RequestMode)
 	}
 	return
 }

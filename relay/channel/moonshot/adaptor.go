@@ -89,17 +89,16 @@ func (a *Adaptor) ConvertEmbeddingRequest(c *gin.Context, info *relaycommon.Rela
 
 func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (usage any, err *types.NewAPIError) {
 	switch info.RelayFormat {
-	case types.RelayFormatOpenAI:
-		adaptor := openai.Adaptor{}
-		return adaptor.DoResponse(c, resp, info)
 	case types.RelayFormatClaude:
 		if info.IsStream {
-			err, usage = claude.ClaudeStreamHandler(c, resp, info, claude.RequestModeMessage)
+			return claude.ClaudeStreamHandler(c, resp, info, claude.RequestModeMessage)
 		} else {
-			err, usage = claude.ClaudeHandler(c, resp, info, claude.RequestModeMessage)
+			return claude.ClaudeHandler(c, resp, info, claude.RequestModeMessage)
 		}
+	default:
+		adaptor := openai.Adaptor{}
+		return adaptor.DoResponse(c, resp, info)
 	}
-	return
 }
 
 func (a *Adaptor) GetModelList() []string {
