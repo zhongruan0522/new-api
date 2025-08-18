@@ -210,7 +210,7 @@ docker run --name new-api -d --restart always -p 3000:3000 -e SQL_DSN="root:1234
   /></a>
   &nbsp;&nbsp;&nbsp;&nbsp;
   <a href="https://io.net/" target="_blank"><img
-    src="./docs/images/io-net.png" alt="IO.NET" height="58"
+    src="./docs/images/io-net.svg" alt="IO.NET" height="58"
   /></a>
 </p>
 

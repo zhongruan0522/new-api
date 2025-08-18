@@ -211,7 +211,7 @@ If you have any questions, please refer to [Help and Support](https://docs.newap
   /></a>
   &nbsp;&nbsp;&nbsp;&nbsp;
   <a href="https://io.net/" target="_blank"><img
-    src="./docs/images/io-net.png" alt="IO.NET" height="58"
+    src="./docs/images/io-net.svg" alt="IO.NET" height="58"
   /></a>
 </p>
 
