@@ -205,9 +205,13 @@ If you have any questions, please refer to [Help and Support](https://docs.newap
   <a href="https://www.compshare.cn/?ytag=GPU_yy_gh_newapi" target="_blank"><img
     src="./docs/images/ucloud.svg" alt="UCloud" height="58"
   /></a>
-  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+  &nbsp;&nbsp;&nbsp;&nbsp;
   <a href="https://www.aliyun.com/" target="_blank"><img
     src="./docs/images/aliyun.svg" alt="Alibaba Cloud" height="58"
+  /></a>
+  &nbsp;&nbsp;&nbsp;&nbsp;
+  <a href="https://io.net/" target="_blank"><img
+    src="./docs/images/io-net.png" alt="IO.NET" height="58"
   /></a>
 </p>
 
