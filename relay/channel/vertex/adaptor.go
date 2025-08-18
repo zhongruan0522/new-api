@@ -215,7 +215,7 @@ func (a *Adaptor) ConvertOpenAIRequest(c *gin.Context, info *relaycommon.RelayIn
 		if len(request.ExtraBody) > 0 {
 			var extra map[string]any
 			if err := json.Unmarshal(request.ExtraBody, &extra); err == nil {
-				if n, ok := extra["n"].(float64); ok {
+				if n, ok := extra["n"].(float64); ok && n > 0 {
 					imgReq.N = uint(n)
 				}
 				if size, ok := extra["size"].(string); ok {
