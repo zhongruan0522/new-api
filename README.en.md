@@ -194,19 +194,19 @@ If you have any questions, please refer to [Help and Support](https://docs.newap
 <p align="center"><strong>No particular order</strong></p>
 <p align="center">
   <a href="https://www.cherry-ai.com/" target=_blank><img
-    src="./docs/images/cherry-studio.svg" alt="Cherry Studio" height="120"
+    src="./docs/images/cherry-studio.png" alt="Cherry Studio" height="120"
   /></a>
   <a href="https://bda.pku.edu.cn/" target=_blank><img
     src="./docs/images/pku.png" alt="Peking University" height="120"
   /></a>
   <a href="https://www.compshare.cn/?ytag=GPU_yy_gh_newapi" target=_blank><img
-    src="./docs/images/ucloud.svg" alt="UCloud" height="120"
+    src="./docs/images/ucloud.png" alt="UCloud" height="120"
   /></a>
   <a href="https://www.aliyun.com/" target=_blank><img
-    src="./docs/images/aliyun.svg" alt="Alibaba Cloud" height="120"
+    src="./docs/images/aliyun.png" alt="Alibaba Cloud" height="120"
   /></a>
   <a href="https://io.net/" target=_blank><img
-    src="./docs/images/io-net.svg" alt="IO.NET" height="120"
+    src="./docs/images/io-net.png" alt="IO.NET" height="120"
   /></a>
 </p>
 <p>&nbsp;</p>

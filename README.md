@@ -193,19 +193,19 @@ docker run --name new-api -d --restart always -p 3000:3000 -e SQL_DSN="root:1234
 <p align="center"><strong>排名不分先后</strong></p>
 <p align="center">
   <a href="https://www.cherry-ai.com/" target=_blank><img
-    src="./docs/images/cherry-studio.svg" alt="Cherry Studio" height="120"
+    src="./docs/images/cherry-studio.png" alt="Cherry Studio" height="120"
   /></a>
   <a href="https://bda.pku.edu.cn/" target=_blank><img
     src="./docs/images/pku.png" alt="北京大学" height="120"
   /></a>
   <a href="https://www.compshare.cn/?ytag=GPU_yy_gh_newapi" target=_blank><img
-    src="./docs/images/ucloud.svg" alt="UCloud 优刻得" height="120"
+    src="./docs/images/ucloud.png" alt="UCloud 优刻得" height="120"
   /></a>
   <a href="https://www.aliyun.com/" target=_blank><img
-    src="./docs/images/aliyun.svg" alt="阿里云" height="120"
+    src="./docs/images/aliyun.png" alt="阿里云" height="120"
   /></a>
   <a href="https://io.net/" target=_blank><img
-    src="./docs/images/io-net.svg" alt="IO.NET" height="120"
+    src="./docs/images/io-net.png" alt="IO.NET" height="120"
   /></a>
 </p>
 <p>&nbsp;</p>
