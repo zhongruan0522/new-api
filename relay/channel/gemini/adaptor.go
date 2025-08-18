@@ -59,15 +59,22 @@ func (a *Adaptor) ConvertImageRequest(c *gin.Context, info *relaycommon.RelayInf
 		return nil, errors.New("not supported model for image generation")
 	}
 
-	// convert size to aspect ratio
+	// convert size to aspect ratio but allow user to specify aspect ratio
 	aspectRatio := "1:1" // default aspect ratio
-	switch request.Size {
-	case "1024x1024":
-		aspectRatio = "1:1"
-	case "1024x1792":
-		aspectRatio = "9:16"
-	case "1792x1024":
-		aspectRatio = "16:9"
+	size := strings.TrimSpace(request.Size)
+	if size != "" {
+		if strings.Contains(size, ":") {
+			aspectRatio = size
+		} else {
+			switch size {
+			case "1024x1024":
+				aspectRatio = "1:1"
+			case "1024x1792":
+				aspectRatio = "9:16"
+			case "1792x1024":
+				aspectRatio = "16:9"
+			}
+		}
 	}
 
 	// build gemini imagen request
