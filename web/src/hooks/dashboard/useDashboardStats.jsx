@@ -52,7 +52,6 @@ export const useDashboardStats = (
           value: renderQuota(userState?.user?.quota),
           icon: <IconMoneyExchangeStroked />,
           avatarColor: 'blue',
-          onClick: () => navigate('/console/topup'),
           trendData: [],
           trendColor: '#3b82f6'
         },
