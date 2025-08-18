@@ -194,15 +194,17 @@ docker run --name new-api -d --restart always -p 3000:3000 -e SQL_DSN="root:1234
   <a href="https://www.cherry-ai.com/" target="_blank"><img
     src="./docs/images/cherry-studio.svg" alt="Cherry Studio" height="58"
   /></a>
-  &nbsp;&nbsp;&nbsp;&nbsp;
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
   <a href="https://bda.pku.edu.cn/" target="_blank"><img
     src="./docs/images/pku.png" alt="北京大学" height="58"
   /></a>
-  &nbsp;&nbsp;&nbsp;&nbsp;
+</p>
+
+<p align="center">
   <a href="https://www.compshare.cn/?ytag=GPU_yy_gh_newapi" target="_blank"><img
     src="./docs/images/ucloud.svg" alt="UCloud 优刻得" height="58"
   /></a>
-  &nbsp;&nbsp;&nbsp;&nbsp;
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
   <a href="https://www.aliyun.com/" target="_blank"><img
     src="./docs/images/aliyun.svg" alt="阿里云" height="58"
   /></a>
