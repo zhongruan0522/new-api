@@ -188,33 +188,27 @@ docker run --name new-api -d --restart always -p 3000:3000 -e SQL_DSN="root:1234
 - [反馈问题](https://docs.newapi.pro/support/feedback-issues)
 - [常见问题](https://docs.newapi.pro/support/faq)
 
-## 🤝 我们信任的合作伙伴
-
+<h2>🤝 我们信任的合作伙伴</h2>
+<p id="premium-sponsors">&nbsp;</p>
+<p align="center"><strong>排名不分先后</strong></p>
 <p align="center">
-  <a href="https://www.cherry-ai.com/" target="_blank"><img
-    src="./docs/images/cherry-studio.svg" alt="Cherry Studio" height="58"
+  <a href="https://www.cherry-ai.com/" target=_blank><img
+    src="./docs/images/cherry-studio.svg" alt="Cherry Studio" height="120"
   /></a>
-  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-  <a href="https://bda.pku.edu.cn/" target="_blank"><img
-    src="./docs/images/pku.png" alt="北京大学" height="58"
+  <a href="https://bda.pku.edu.cn/" target=_blank><img
+    src="./docs/images/pku.png" alt="北京大学" height="120"
+  /></a>
+  <a href="https://www.compshare.cn/?ytag=GPU_yy_gh_newapi" target=_blank><img
+    src="./docs/images/ucloud.svg" alt="UCloud 优刻得" height="120"
+  /></a>
+  <a href="https://www.aliyun.com/" target=_blank><img
+    src="./docs/images/aliyun.svg" alt="阿里云" height="120"
+  /></a>
+  <a href="https://io.net/" target=_blank><img
+    src="./docs/images/io-net.svg" alt="IO.NET" height="120"
   /></a>
 </p>
-
-<p align="center">
-  <a href="https://www.compshare.cn/?ytag=GPU_yy_gh_newapi" target="_blank"><img
-    src="./docs/images/ucloud.svg" alt="UCloud 优刻得" height="58"
-  /></a>
-  &nbsp;&nbsp;&nbsp;&nbsp;
-  <a href="https://www.aliyun.com/" target="_blank"><img
-    src="./docs/images/aliyun.svg" alt="阿里云" height="58"
-  /></a>
-  &nbsp;&nbsp;&nbsp;&nbsp;
-  <a href="https://io.net/" target="_blank"><img
-    src="./docs/images/io-net.svg" alt="IO.NET" height="58"
-  /></a>
-</p>
-
-<p align="center"><em>排名不分先后</em></p>
+<p>&nbsp;</p>
 
 ## 🌟 Star History
 
