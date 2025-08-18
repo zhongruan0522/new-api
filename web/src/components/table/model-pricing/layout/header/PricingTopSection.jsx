@@ -52,7 +52,6 @@ const PricingTopSection = ({
           onCompositionEnd={handleCompositionEnd}
           onChange={handleChange}
           showClear
-          style={{ backgroundColor: 'transparent' }}
         />
       </div>
 
