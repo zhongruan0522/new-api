@@ -65,7 +65,6 @@ const PersonalSetting = () => {
   const [disableButton, setDisableButton] = useState(false);
   const [countdown, setCountdown] = useState(30);
   const [systemToken, setSystemToken] = useState('');
-  const [models, setModels] = useState([]);
   const [notificationSettings, setNotificationSettings] = useState({
     warningType: 'email',
     warningThreshold: 100000,
@@ -75,7 +74,6 @@ const PersonalSetting = () => {
     acceptUnsetModelRatioModel: false,
     recordIpLog: false,
   });
-  const [modelsLoading, setModelsLoading] = useState(true);
 
   useEffect(() => {
     let status = localStorage.getItem('status');
@@ -90,7 +88,6 @@ const PersonalSetting = () => {
     getUserData().then((res) => {
       console.log(userState);
     });
-    loadModels().then();
   }, []);
 
   useEffect(() => {
@@ -145,27 +142,6 @@ const PersonalSetting = () => {
       userDispatch({ type: 'login', payload: data });
     } else {
       showError(message);
-    }
-  };
-
-  const loadModels = async () => {
-    setModelsLoading(true);
-
-    try {
-      let res = await API.get(`/api/user/models`);
-      const { success, message, data } = res.data;
-
-      if (success) {
-        if (data != null) {
-          setModels(data);
-        }
-      } else {
-        showError(message);
-      }
-    } catch (error) {
-      showError(t('加载模型列表失败'));
-    } finally {
-      setModelsLoading(false);
     }
   };
 
