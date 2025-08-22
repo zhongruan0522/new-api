@@ -109,7 +109,7 @@ const RechargeCard = ({
                 <div className='grid grid-cols-3 gap-6 mt-4'>
                   {/* 当前余额 */}
                   <div className='text-center'>
-                    <div className='text-2xl font-bold mb-2' style={{ color: 'white' }}>
+                    <div className='text-base sm:text-2xl font-bold mb-2' style={{ color: 'white' }}>
                       {renderQuota(userState?.user?.quota)}
                     </div>
                     <div className='flex items-center justify-center text-sm'>
@@ -120,7 +120,7 @@ const RechargeCard = ({
 
                   {/* 历史消耗 */}
                   <div className='text-center'>
-                    <div className='text-2xl font-bold mb-2' style={{ color: 'white' }}>
+                    <div className='text-base sm:text-2xl font-bold mb-2' style={{ color: 'white' }}>
                       {renderQuota(userState?.user?.used_quota)}
                     </div>
                     <div className='flex items-center justify-center text-sm'>
@@ -131,7 +131,7 @@ const RechargeCard = ({
 
                   {/* 请求次数 */}
                   <div className='text-center'>
-                    <div className='text-2xl font-bold mb-2' style={{ color: 'white' }}>
+                    <div className='text-base sm:text-2xl font-bold mb-2' style={{ color: 'white' }}>
                       {userState?.user?.request_count || 0}
                     </div>
                     <div className='flex items-center justify-center text-sm'>

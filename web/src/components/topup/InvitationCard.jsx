@@ -89,7 +89,7 @@ const InvitationCard = ({
                 <div className='grid grid-cols-3 gap-6 mt-4'>
                   {/* 待使用收益 */}
                   <div className='text-center'>
-                    <div className='text-2xl font-bold mb-2' style={{ color: 'white' }}>
+                    <div className='text-base sm:text-2xl font-bold mb-2' style={{ color: 'white' }}>
                       {renderQuota(userState?.user?.aff_quota || 0)}
                     </div>
                     <div className='flex items-center justify-center text-sm'>
@@ -100,7 +100,7 @@ const InvitationCard = ({
 
                   {/* 总收益 */}
                   <div className='text-center'>
-                    <div className='text-2xl font-bold mb-2' style={{ color: 'white' }}>
+                    <div className='text-base sm:text-2xl font-bold mb-2' style={{ color: 'white' }}>
                       {renderQuota(userState?.user?.aff_history_quota || 0)}
                     </div>
                     <div className='flex items-center justify-center text-sm'>
@@ -111,7 +111,7 @@ const InvitationCard = ({
 
                   {/* 邀请人数 */}
                   <div className='text-center'>
-                    <div className='text-2xl font-bold mb-2' style={{ color: 'white' }}>
+                    <div className='text-base sm:text-2xl font-bold mb-2' style={{ color: 'white' }}>
                       {userState?.user?.aff_count || 0}
                     </div>
                     <div className='flex items-center justify-center text-sm'>
