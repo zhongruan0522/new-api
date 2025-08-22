@@ -17,7 +17,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 
-import { useState, useEffect, useContext } from 'react';
+import { useState, useEffect, useContext, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { UserContext } from '../../context/User';
@@ -68,9 +68,14 @@ export const useHeaderBar = ({ onMobileMenuToggle, drawerOpen }) => {
 
   // Send theme to iframe
   useEffect(() => {
-    const iframe = document.querySelector('iframe');
-    if (iframe) {
-      iframe.contentWindow.postMessage({ themeMode: actualTheme }, '*');
+    try {
+      const iframe = document.querySelector('iframe');
+      const cw = iframe && iframe.contentWindow;
+      if (cw) {
+        cw.postMessage({ themeMode: actualTheme }, '*');
+      }
+    } catch (e) {
+      // Silently ignore cross-origin or access errors
     }
   }, [actualTheme]);
 
@@ -78,9 +83,14 @@ export const useHeaderBar = ({ onMobileMenuToggle, drawerOpen }) => {
   useEffect(() => {
     const handleLanguageChanged = (lng) => {
       setCurrentLang(lng);
-      const iframe = document.querySelector('iframe');
-      if (iframe) {
-        iframe.contentWindow.postMessage({ lang: lng }, '*');
+      try {
+        const iframe = document.querySelector('iframe');
+        const cw = iframe && iframe.contentWindow;
+        if (cw) {
+          cw.postMessage({ lang: lng }, '*');
+        }
+      } catch (e) {
+        // Silently ignore cross-origin or access errors
       }
     };
 
@@ -91,32 +101,32 @@ export const useHeaderBar = ({ onMobileMenuToggle, drawerOpen }) => {
   }, [i18n]);
 
   // Actions
-  const logout = async () => {
+  const logout = useCallback(async () => {
     await API.get('/api/user/logout');
     showSuccess(t('注销成功!'));
     userDispatch({ type: 'logout' });
     localStorage.removeItem('user');
     navigate('/login');
-  };
+  }, [navigate, t, userDispatch]);
 
-  const handleLanguageChange = (lang) => {
+  const handleLanguageChange = useCallback((lang) => {
     i18n.changeLanguage(lang);
-  };
+  }, [i18n]);
 
-  const handleThemeToggle = (newTheme) => {
+  const handleThemeToggle = useCallback((newTheme) => {
     if (!newTheme || (newTheme !== 'light' && newTheme !== 'dark' && newTheme !== 'auto')) {
       return;
     }
     setTheme(newTheme);
-  };
+  }, [setTheme]);
 
-  const handleMobileMenuToggle = () => {
+  const handleMobileMenuToggle = useCallback(() => {
     if (isMobile) {
       onMobileMenuToggle();
     } else {
       toggleCollapsed();
     }
-  };
+  }, [isMobile, onMobileMenuToggle, toggleCollapsed]);
 
   return {
     // State
