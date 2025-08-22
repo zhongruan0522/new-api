@@ -36,7 +36,7 @@ const MjLogsActions = ({
   const showSkeleton = useMinimumLoadingTime(loading);
 
   const placeholder = (
-    <div className="flex items-center text-orange-500 mb-2 md:mb-0">
+    <div className="flex items-center mb-2 md:mb-0">
       <IconEyeOpened className="mr-2" />
       <Skeleton.Title style={{ width: 300, height: 21, borderRadius: 6 }} />
     </div>
@@ -45,7 +45,7 @@ const MjLogsActions = ({
   return (
     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-2 w-full">
       <Skeleton loading={showSkeleton} active placeholder={placeholder}>
-        <div className="flex items-center text-orange-500 mb-2 md:mb-0">
+        <div className="flex items-center mb-2 md:mb-0">
           <IconEyeOpened className="mr-2" />
           <Text>
             {isAdminUser && showBanner

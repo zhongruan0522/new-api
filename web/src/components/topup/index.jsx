@@ -17,7 +17,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 
-import React, { useEffect, useState, useContext } from 'react';
+import React, { useEffect, useState, useContext, useRef } from 'react';
 import {
   API,
   showError,
@@ -63,15 +63,15 @@ const TopUp = () => {
   const [enableStripeTopUp, setEnableStripeTopUp] = useState(statusState?.status?.enable_stripe_topup || false);
   const [statusLoading, setStatusLoading] = useState(true);
 
-  const [userQuota, setUserQuota] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [open, setOpen] = useState(false);
   const [payWay, setPayWay] = useState('');
-  const [userDataLoading, setUserDataLoading] = useState(true);
   const [amountLoading, setAmountLoading] = useState(false);
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [confirmLoading, setConfirmLoading] = useState(false);
   const [payMethods, setPayMethods] = useState([]);
+
+  const affFetchedRef = useRef(false);
 
   // 邀请相关状态
   const [affLink, setAffLink] = useState('');
@@ -79,25 +79,8 @@ const TopUp = () => {
   const [transferAmount, setTransferAmount] = useState(0);
 
   // 预设充值额度选项
-  const [presetAmounts, setPresetAmounts] = useState([
-    { value: 5 },
-    { value: 10 },
-    { value: 30 },
-    { value: 50 },
-    { value: 100 },
-    { value: 300 },
-    { value: 500 },
-    { value: 1000 },
-  ]);
+  const [presetAmounts, setPresetAmounts] = useState([]);
   const [selectedPreset, setSelectedPreset] = useState(null);
-
-  const getUsername = () => {
-    if (userState.user) {
-      return userState.user.username;
-    } else {
-      return 'null';
-    }
-  };
 
   const topUp = async () => {
     if (redemptionCode === '') {
@@ -116,9 +99,6 @@ const TopUp = () => {
           title: t('兑换成功！'),
           content: t('成功兑换额度：') + renderQuota(data),
           centered: true,
-        });
-        setUserQuota((quota) => {
-          return quota + data;
         });
         if (userState.user) {
           const updatedUser = {
@@ -260,16 +240,13 @@ const TopUp = () => {
   };
 
   const getUserQuota = async () => {
-    setUserDataLoading(true);
     let res = await API.get(`/api/user/self`);
     const { success, message, data } = res.data;
     if (success) {
-      setUserQuota(data.quota);
       userDispatch({ type: 'login', payload: data });
     } else {
       showError(message);
     }
-    setUserDataLoading(false);
   };
 
   // 获取邀请链接
@@ -310,13 +287,9 @@ const TopUp = () => {
   };
 
   useEffect(() => {
-    if (userState?.user?.id) {
-      setUserDataLoading(false);
-      setUserQuota(userState.user.quota);
-    } else {
+    if (!userState?.user?.id) {
       getUserQuota().then();
     }
-    getAffLink().then();
     setTransferAmount(getQuotaPerUnit());
 
     let payMethods = localStorage.getItem('pay_methods');
@@ -330,9 +303,9 @@ const TopUp = () => {
         // 如果没有color，则设置默认颜色
         payMethods = payMethods.map((method) => {
           if (!method.color) {
-            if (method.type === 'zfb') {
+            if (method.type === 'alipay') {
               method.color = 'rgba(var(--semi-blue-5), 1)';
-            } else if (method.type === 'wx') {
+            } else if (method.type === 'wxpay') {
               method.color = 'rgba(var(--semi-green-5), 1)';
             } else if (method.type === 'stripe') {
               method.color = 'rgba(var(--semi-purple-5), 1)';
@@ -366,13 +339,26 @@ const TopUp = () => {
   }, [statusState?.status?.enable_stripe_topup]);
 
   useEffect(() => {
+    if (affFetchedRef.current) return;
+    affFetchedRef.current = true;
+    getAffLink().then();
+  }, []);
+
+  useEffect(() => {
     if (statusState?.status) {
-      setMinTopUp(statusState.status.min_topup || 1);
-      setTopUpCount(statusState.status.min_topup || 1);
+      const minTopUpValue = statusState.status.min_topup || 1;
+      setMinTopUp(minTopUpValue);
+      setTopUpCount(minTopUpValue);
       setTopUpLink(statusState.status.top_up_link || '');
       setEnableOnlineTopUp(statusState.status.enable_online_topup || false);
       setPriceRatio(statusState.status.price || 1);
       setEnableStripeTopUp(statusState.status.enable_stripe_topup || false);
+
+      // 根据最小充值金额生成预设充值额度选项
+      setPresetAmounts(generatePresetAmounts(minTopUpValue));
+      // 初始化显示实付金额
+      getAmount(minTopUpValue);
+
       setStatusLoading(false);
     }
   }, [statusState?.status]);
@@ -452,6 +438,14 @@ const TopUp = () => {
   // 格式化大数字显示
   const formatLargeNumber = (num) => {
     return num.toString();
+  };
+
+  // 根据最小充值金额生成预设充值额度选项
+  const generatePresetAmounts = (minAmount) => {
+    const multipliers = [1, 5, 10, 30, 50, 100, 300, 500];
+    return multipliers.map(multiplier => ({
+      value: minAmount * multiplier
+    }));
   };
 
   return (

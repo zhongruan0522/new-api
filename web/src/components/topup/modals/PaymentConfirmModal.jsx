@@ -85,9 +85,9 @@ const PaymentConfirmModal = ({
                   if (payMethod) {
                     return (
                       <>
-                        {payMethod.type === 'zfb' ? (
+                        {payMethod.type === 'alipay' ? (
                           <SiAlipay className='mr-2' size={16} color="#1677FF" />
-                        ) : payMethod.type === 'wx' ? (
+                        ) : payMethod.type === 'wxpay' ? (
                           <SiWechat className='mr-2' size={16} color="#07C160" />
                         ) : payMethod.type === 'stripe' ? (
                           <SiStripe className='mr-2' size={16} color="#635BFF" />
@@ -99,7 +99,7 @@ const PaymentConfirmModal = ({
                     );
                   } else {
                     // 默认充值方式
-                    if (payWay === 'zfb') {
+                    if (payWay === 'alipay') {
                       return (
                         <>
                           <SiAlipay className='mr-2' size={16} color="#1677FF" />
