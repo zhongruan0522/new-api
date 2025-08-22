@@ -694,13 +694,23 @@ html.dark .with-pastel-balls::before {
 .table-scroll-card .semi-card-body {
   flex: 1 1 auto;
   overflow-y: auto;
-
-  -ms-overflow-style: none;
-  scrollbar-width: none;
 }
 
 .table-scroll-card .semi-card-body::-webkit-scrollbar {
-  display: none;
+  width: 6px;
+}
+
+.table-scroll-card .semi-card-body::-webkit-scrollbar-thumb {
+  background: rgba(var(--semi-grey-2), 0.3);
+  border-radius: 2px;
+}
+
+.table-scroll-card .semi-card-body::-webkit-scrollbar-thumb:hover {
+  background: rgba(var(--semi-grey-2), 0.5);
+}
+
+.table-scroll-card .semi-card-body::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 @media (max-width: 767px) {
