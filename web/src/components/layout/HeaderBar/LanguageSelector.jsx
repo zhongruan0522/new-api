@@ -19,7 +19,7 @@ For commercial licensing, please contact support@quantumnous.com
 
 import React from 'react';
 import { Button, Dropdown } from '@douyinfe/semi-ui';
-import { IconLanguage } from '@douyinfe/semi-icons';
+import { Languages } from 'lucide-react';
 import { CN, GB } from 'country-flag-icons/react/3x2';
 
 const LanguageSelector = ({ currentLang, onLanguageChange, t }) => {
@@ -46,7 +46,7 @@ const LanguageSelector = ({ currentLang, onLanguageChange, t }) => {
       }
     >
       <Button
-        icon={<IconLanguage className="text-lg" />}
+        icon={<Languages size={18} />}
         aria-label={t('切换语言')}
         theme="borderless"
         type="tertiary"

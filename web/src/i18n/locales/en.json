@@ -1984,5 +1984,15 @@
   "按顺序替换content中的变量占位符": "Replace variable placeholders in content in order",
   "Unix时间戳": "Unix timestamp",
   "隐私设置": "Privacy settings",
-  "记录请求与错误日志IP": "Record request and error log IP"
+  "记录请求与错误日志IP": "Record request and error log IP",
+  "切换主题": "Switch Theme",
+  "浅色模式": "Light Mode",
+  "深色模式": "Dark Mode",
+  "自动模式": "Auto Mode",
+  "始终使用浅色主题": "Always use light theme",
+  "始终使用深色主题": "Always use dark theme",
+  "跟随系统主题设置": "Follow system theme",
+  "当前跟随系统": "Currently following system",
+  "深色": "Dark",
+  "浅色": "Light"
 }

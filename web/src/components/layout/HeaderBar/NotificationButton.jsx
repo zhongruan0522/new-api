@@ -19,11 +19,11 @@ For commercial licensing, please contact support@quantumnous.com
 
 import React from 'react';
 import { Button, Badge } from '@douyinfe/semi-ui';
-import { IconBell } from '@douyinfe/semi-icons';
+import { Bell } from 'lucide-react';
 
 const NotificationButton = ({ unreadCount, onNoticeOpen, t }) => {
   const buttonProps = {
-    icon: <IconBell className="text-lg" />,
+    icon: <Bell size={18} />,
     'aria-label': t('系统公告'),
     onClick: onNoticeOpen,
     theme: "borderless",

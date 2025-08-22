@@ -22,7 +22,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { UserContext } from '../../context/User';
 import { StatusContext } from '../../context/Status';
-import { useSetTheme, useTheme } from '../../context/Theme';
+import { useSetTheme, useTheme, useActualTheme } from '../../context/Theme';
 import { getLogo, getSystemName, API, showSuccess } from '../../helpers';
 import { useIsMobile } from './useIsMobile';
 import { useSidebarCollapsed } from './useSidebarCollapsed';
@@ -31,7 +31,7 @@ import { useMinimumLoadingTime } from './useMinimumLoadingTime';
 export const useHeaderBar = ({ onMobileMenuToggle, drawerOpen }) => {
   const { t, i18n } = useTranslation();
   const [userState, userDispatch] = useContext(UserContext);
-  const [statusState, statusDispatch] = useContext(StatusContext);
+  const [statusState] = useContext(StatusContext);
   const isMobile = useIsMobile();
   const [collapsed, toggleCollapsed] = useSidebarCollapsed();
   const [logoLoaded, setLogoLoaded] = useState(false);
@@ -54,6 +54,7 @@ export const useHeaderBar = ({ onMobileMenuToggle, drawerOpen }) => {
   const isConsoleRoute = location.pathname.startsWith('/console');
 
   const theme = useTheme();
+  const actualTheme = useActualTheme();
   const setTheme = useSetTheme();
 
   // Logo loading effect
@@ -65,21 +66,13 @@ export const useHeaderBar = ({ onMobileMenuToggle, drawerOpen }) => {
     img.onload = () => setLogoLoaded(true);
   }, [logo]);
 
-  // Theme effect
+  // Send theme to iframe
   useEffect(() => {
-    if (theme === 'dark') {
-      document.body.setAttribute('theme-mode', 'dark');
-      document.documentElement.classList.add('dark');
-    } else {
-      document.body.removeAttribute('theme-mode');
-      document.documentElement.classList.remove('dark');
-    }
-
     const iframe = document.querySelector('iframe');
     if (iframe) {
-      iframe.contentWindow.postMessage({ themeMode: theme }, '*');
+      iframe.contentWindow.postMessage({ themeMode: actualTheme }, '*');
     }
-  }, [theme, isNewYear]);
+  }, [actualTheme]);
 
   // Language change effect
   useEffect(() => {
@@ -110,8 +103,11 @@ export const useHeaderBar = ({ onMobileMenuToggle, drawerOpen }) => {
     i18n.changeLanguage(lang);
   };
 
-  const handleThemeToggle = () => {
-    setTheme(theme === 'dark' ? false : true);
+  const handleThemeToggle = (newTheme) => {
+    if (!newTheme || (newTheme !== 'light' && newTheme !== 'dark' && newTheme !== 'auto')) {
+      return;
+    }
+    setTheme(newTheme);
   };
 
   const handleMobileMenuToggle = () => {
