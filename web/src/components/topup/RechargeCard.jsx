@@ -23,11 +23,8 @@ import {
   Typography,
   Card,
   Button,
-  Input,
-  InputNumber,
   Banner,
   Skeleton,
-  Divider,
   Form,
   Space,
   Row,
@@ -35,10 +32,9 @@ import {
   Spin,
 } from '@douyinfe/semi-ui';
 import { SiAlipay, SiWechat, SiStripe } from 'react-icons/si';
-import { CreditCard, Gift, Link as LinkIcon, Coins, Wallet, BarChart2, TrendingUp } from 'lucide-react';
+import { CreditCard, Coins, Wallet, BarChart2, TrendingUp } from 'lucide-react';
 import { IconGift } from '@douyinfe/semi-icons';
 import { useMinimumLoadingTime } from '../../hooks/common/useMinimumLoadingTime';
-
 
 const { Text } = Typography;
 
@@ -69,7 +65,6 @@ const RechargeCard = ({
   isSubmitting,
   topUpLink,
   openTopUpLink,
-  // 新增：用于右侧统计卡片
   userState,
   renderQuota,
   statusLoading,
