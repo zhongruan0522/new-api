@@ -34,7 +34,7 @@ const NotificationButton = ({ unreadCount, onNoticeOpen, t }) => {
   if (unreadCount > 0) {
     return (
       <Badge count={unreadCount} type="danger" overflowCount={99}>
-        <Button {...buttonProps} size='small' />
+        <Button {...buttonProps} />
       </Badge>
     );
   }
