@@ -73,6 +73,10 @@ func (r *GeminiChatRequest) IsStream(c *gin.Context) bool {
 	return false
 }
 
+func (r *GeminiChatRequest) SetModelName(modelName string) {
+	// GeminiChatRequest does not have a model field, so this method does nothing.
+}
+
 func (r *GeminiChatRequest) GetTools() []GeminiChatTool {
 	var tools []GeminiChatTool
 	if strings.HasSuffix(string(r.Tools), "[") {
@@ -312,8 +316,59 @@ type GeminiEmbeddingRequest struct {
 	OutputDimensionality int               `json:"outputDimensionality,omitempty"`
 }
 
+func (r *GeminiEmbeddingRequest) IsStream(c *gin.Context) bool {
+	// Gemini embedding requests are not streamed
+	return false
+}
+
+func (r *GeminiEmbeddingRequest) GetTokenCountMeta() *types.TokenCountMeta {
+	var inputTexts []string
+	for _, part := range r.Content.Parts {
+		if part.Text != "" {
+			inputTexts = append(inputTexts, part.Text)
+		}
+	}
+	inputText := strings.Join(inputTexts, "\n")
+	return &types.TokenCountMeta{
+		CombineText: inputText,
+	}
+}
+
+func (r *GeminiEmbeddingRequest) SetModelName(modelName string) {
+	if modelName != "" {
+		r.Model = modelName
+	}
+}
+
 type GeminiBatchEmbeddingRequest struct {
 	Requests []*GeminiEmbeddingRequest `json:"requests"`
+}
+
+func (r *GeminiBatchEmbeddingRequest) IsStream(c *gin.Context) bool {
+	// Gemini batch embedding requests are not streamed
+	return false
+}
+
+func (r *GeminiBatchEmbeddingRequest) GetTokenCountMeta() *types.TokenCountMeta {
+	var inputTexts []string
+	for _, request := range r.Requests {
+		meta := request.GetTokenCountMeta()
+		if meta != nil && meta.CombineText != "" {
+			inputTexts = append(inputTexts, meta.CombineText)
+		}
+	}
+	inputText := strings.Join(inputTexts, "\n")
+	return &types.TokenCountMeta{
+		CombineText: inputText,
+	}
+}
+
+func (r *GeminiBatchEmbeddingRequest) SetModelName(modelName string) {
+	if modelName != "" {
+		for _, req := range r.Requests {
+			req.SetModelName(modelName)
+		}
+	}
 }
 
 type GeminiEmbeddingResponse struct {

@@ -12,10 +12,10 @@ type ImageRequest struct {
 	Model             string          `json:"model"`
 	Prompt            string          `json:"prompt" binding:"required"`
 	N                 uint            `json:"n,omitempty"`
-	Size           string          `json:"size,omitempty"`
-	Quality        string          `json:"quality,omitempty"`
-	ResponseFormat string          `json:"response_format,omitempty"`
-	Style          json.RawMessage `json:"style,omitempty"`
+	Size              string          `json:"size,omitempty"`
+	Quality           string          `json:"quality,omitempty"`
+	ResponseFormat    string          `json:"response_format,omitempty"`
+	Style             json.RawMessage `json:"style,omitempty"`
 	User              json.RawMessage `json:"user,omitempty"`
 	ExtraFields       json.RawMessage `json:"extra_fields,omitempty"`
 	Background        json.RawMessage `json:"background,omitempty"`
@@ -61,6 +61,12 @@ func (i *ImageRequest) GetTokenCountMeta() *types.TokenCountMeta {
 
 func (i *ImageRequest) IsStream(c *gin.Context) bool {
 	return false
+}
+
+func (i *ImageRequest) SetModelName(modelName string) {
+	if modelName != "" {
+		i.Model = modelName
+	}
 }
 
 type ImageResponse struct {

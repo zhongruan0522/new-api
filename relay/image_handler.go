@@ -20,16 +20,19 @@ import (
 )
 
 func ImageHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *types.NewAPIError) {
-
 	info.InitChannelMeta(c)
 
-	imageRequest, ok := info.Request.(*dto.ImageRequest)
-
+	imageReq, ok := info.Request.(*dto.ImageRequest)
 	if !ok {
-		common.FatalLog(fmt.Sprintf("invalid request type, expected dto.ImageRequest, got %T", info.Request))
+		return types.NewErrorWithStatusCode(fmt.Errorf("invalid request type, expected dto.ImageRequest, got %T", info.Request), types.ErrorCodeInvalidRequest, http.StatusBadRequest, types.ErrOptionWithSkipRetry())
 	}
 
-	err := helper.ModelMappedHelper(c, info, imageRequest)
+	request, err := common.DeepCopy(imageReq)
+	if err != nil {
+		return types.NewError(fmt.Errorf("failed to copy request to ImageRequest: %w", err), types.ErrorCodeInvalidRequest, types.ErrOptionWithSkipRetry())
+	}
+
+	err = helper.ModelMappedHelper(c, info, request)
 	if err != nil {
 		return types.NewError(err, types.ErrorCodeChannelModelMappedError, types.ErrOptionWithSkipRetry())
 	}
@@ -49,7 +52,7 @@ func ImageHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *type
 		}
 		requestBody = bytes.NewBuffer(body)
 	} else {
-		convertedRequest, err := adaptor.ConvertImageRequest(c, info, *imageRequest)
+		convertedRequest, err := adaptor.ConvertImageRequest(c, info, *request)
 		if err != nil {
 			return types.NewError(err, types.ErrorCodeConvertRequestFailed)
 		}
@@ -102,21 +105,21 @@ func ImageHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *type
 	}
 
 	if usage.(*dto.Usage).TotalTokens == 0 {
-		usage.(*dto.Usage).TotalTokens = int(imageRequest.N)
+		usage.(*dto.Usage).TotalTokens = int(request.N)
 	}
 	if usage.(*dto.Usage).PromptTokens == 0 {
-		usage.(*dto.Usage).PromptTokens = int(imageRequest.N)
+		usage.(*dto.Usage).PromptTokens = int(request.N)
 	}
 
 	quality := "standard"
-	if imageRequest.Quality == "hd" {
+	if request.Quality == "hd" {
 		quality = "hd"
 	}
 
 	var logContent string
 
-	if len(imageRequest.Size) > 0 {
-		logContent = fmt.Sprintf("大小 %s, 品质 %s", imageRequest.Size, quality)
+	if len(request.Size) > 0 {
+		logContent = fmt.Sprintf("大小 %s, 品质 %s", request.Size, quality)
 	}
 
 	postConsumeQuota(c, info, usage.(*dto.Usage), logContent)

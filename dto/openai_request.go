@@ -183,6 +183,12 @@ func (r *GeneralOpenAIRequest) IsStream(c *gin.Context) bool {
 	return r.Stream
 }
 
+func (r *GeneralOpenAIRequest) SetModelName(modelName string) {
+	if modelName != "" {
+		r.Model = modelName
+	}
+}
+
 func (r *GeneralOpenAIRequest) ToMap() map[string]any {
 	result := make(map[string]any)
 	data, _ := common.Marshal(r)
@@ -839,6 +845,12 @@ func (r *OpenAIResponsesRequest) GetTokenCountMeta() *types.TokenCountMeta {
 
 func (r *OpenAIResponsesRequest) IsStream(c *gin.Context) bool {
 	return r.Stream
+}
+
+func (r *OpenAIResponsesRequest) SetModelName(modelName string) {
+	if modelName != "" {
+		r.Model = modelName
+	}
 }
 
 type Reasoning struct {

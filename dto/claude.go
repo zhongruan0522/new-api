@@ -321,8 +321,14 @@ func (c *ClaudeRequest) GetTokenCountMeta() *types.TokenCountMeta {
 	return &tokenCountMeta
 }
 
-func (claudeRequest *ClaudeRequest) IsStream(c *gin.Context) bool {
-	return claudeRequest.Stream
+func (c *ClaudeRequest) IsStream(ctx *gin.Context) bool {
+	return c.Stream
+}
+
+func (c *ClaudeRequest) SetModelName(modelName string) {
+	if modelName != "" {
+		c.Model = modelName
+	}
 }
 
 func (c *ClaudeRequest) SearchToolNameByToolCallId(toolCallId string) string {
