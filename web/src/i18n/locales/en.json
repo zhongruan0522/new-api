@@ -1995,5 +1995,7 @@
   "跟随系统主题设置": "Follow system theme",
   "当前跟随系统": "Currently following system",
   "深色": "Dark",
-  "浅色": "Light"
+  "浅色": "Light",
+  "点击复制模型名称": "Click to copy model name",
+  "已复制：{{name}}": "Copied: {{name}}"
 }
