@@ -17,11 +17,11 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 
-import React, { useState } from 'react';
+import React, { useState, memo } from 'react';
 import PricingFilterModal from '../../modal/PricingFilterModal';
 import PricingVendorIntroWithSkeleton from './PricingVendorIntroWithSkeleton';
 
-const PricingTopSection = ({
+const PricingTopSection = memo(({
   selectedRowKeys,
   copyText,
   handleChange,
@@ -40,7 +40,6 @@ const PricingTopSection = ({
 
   return (
     <>
-      {/* 供应商介绍区域（包含搜索功能） */}
       <PricingVendorIntroWithSkeleton
         loading={loading}
         filterVendor={filterVendor}
@@ -57,7 +56,6 @@ const PricingTopSection = ({
         setShowFilterModal={setShowFilterModal}
       />
 
-      {/* 移动端筛选Modal */}
       {isMobile && (
         <PricingFilterModal
           visible={showFilterModal}
@@ -68,6 +66,8 @@ const PricingTopSection = ({
       )}
     </>
   );
-};
+});
+
+PricingTopSection.displayName = 'PricingTopSection';
 
 export default PricingTopSection; 

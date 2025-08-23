@@ -17,120 +17,148 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 
-import React from 'react';
+import React, { memo } from 'react';
 import { Card, Skeleton } from '@douyinfe/semi-ui';
 
-const PricingVendorIntroSkeleton = ({
-  isAllVendors = false
-}) => {
-  // 统一的封面样式函数
-  const getCoverStyle = (primaryDarkerChannel) => ({
-    '--palette-primary-darkerChannel': primaryDarkerChannel,
+const THEME_COLORS = {
+  allVendors: {
+    primary: '37 99 235',
+    background: 'rgba(59, 130, 246, 0.1)',
+    border: 'rgba(59, 130, 246, 0.2)'
+  },
+  specific: {
+    primary: '16 185 129',
+    background: 'rgba(16, 185, 129, 0.1)',
+    border: 'rgba(16, 185, 129, 0.2)'
+  },
+  neutral: {
+    background: 'rgba(156, 163, 175, 0.1)',
+    border: 'rgba(156, 163, 175, 0.2)'
+  }
+};
+
+const SIZES = {
+  title: { width: { all: 120, specific: 100 }, height: 24 },
+  tag: { width: 80, height: 20 },
+  description: { height: 14 },
+  avatar: { width: 40, height: 40 },
+  searchInput: { height: 32 },
+  button: { width: 80, height: 32 }
+};
+
+const SKELETON_STYLES = {
+  cover: (primaryColor) => ({
+    '--palette-primary-darkerChannel': primaryColor,
     backgroundImage: `linear-gradient(0deg, rgba(var(--palette-primary-darkerChannel) / 80%), rgba(var(--palette-primary-darkerChannel) / 80%)), url('/cover-4.webp')`,
     backgroundSize: 'cover',
     backgroundPosition: 'center',
     backgroundRepeat: 'no-repeat'
-  });
+  }),
+  title: {
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    borderRadius: 8,
+    backdropFilter: 'blur(4px)'
+  },
+  tag: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 9999,
+    backdropFilter: 'blur(4px)',
+    border: '1px solid rgba(255,255,255,0.3)'
+  },
+  description: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 4,
+    backdropFilter: 'blur(4px)'
+  },
+  avatar: (isAllVendors) => {
+    const colors = isAllVendors ? THEME_COLORS.allVendors : THEME_COLORS.specific;
+    return {
+      backgroundColor: colors.background,
+      borderRadius: 12,
+      border: `1px solid ${colors.border}`
+    };
+  },
+  searchInput: {
+    backgroundColor: THEME_COLORS.neutral.background,
+    borderRadius: 8,
+    border: `1px solid ${THEME_COLORS.neutral.border}`
+  },
+  button: {
+    backgroundColor: THEME_COLORS.allVendors.background,
+    borderRadius: 8,
+    border: `1px solid ${THEME_COLORS.allVendors.border}`
+  }
+};
 
-  // 快速生成骨架矩形
-  const rect = (style = {}, key) => (
-    <div key={key} className="animate-pulse" style={style} />
-  );
+const createSkeletonRect = (style = {}, key = null) => (
+  <div key={key} className="animate-pulse" style={style} />
+);
+
+const PricingVendorIntroSkeleton = memo(({
+  isAllVendors = false
+}) => {
 
   const placeholder = (
     <Card className="!rounded-2xl shadow-sm border-0"
       cover={
         <div
           className="relative h-32"
-          style={getCoverStyle(isAllVendors ? '37 99 235' : '16 185 129')}
+          style={SKELETON_STYLES.cover(isAllVendors ? THEME_COLORS.allVendors.primary : THEME_COLORS.specific.primary)}
         >
           <div className="relative z-10 h-full flex items-center justify-between p-4">
-            {/* 左侧：标题和描述骨架 */}
             <div className="flex-1 min-w-0 mr-4">
               <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-2">
-                {rect({
-                  width: isAllVendors ? 120 : 100,
-                  height: 24,
-                  backgroundColor: 'rgba(255, 255, 255, 0.25)',
-                  borderRadius: 8,
-                  backdropFilter: 'blur(4px)'
-                })}
-                {rect({
-                  width: 80,
-                  height: 20,
-                  backgroundColor: 'rgba(255, 255, 255, 0.2)',
-                  borderRadius: 9999,
-                  backdropFilter: 'blur(4px)',
-                  border: '1px solid rgba(255,255,255,0.3)'
-                })}
+                {createSkeletonRect({
+                  ...SKELETON_STYLES.title,
+                  width: isAllVendors ? SIZES.title.width.all : SIZES.title.width.specific,
+                  height: SIZES.title.height
+                }, 'title')}
+                {createSkeletonRect({
+                  ...SKELETON_STYLES.tag,
+                  width: SIZES.tag.width,
+                  height: SIZES.tag.height
+                }, 'tag')}
               </div>
               <div className="space-y-2">
-                {rect({
+                {createSkeletonRect({
+                  ...SKELETON_STYLES.description,
                   width: '100%',
-                  height: 14,
-                  backgroundColor: 'rgba(255, 255, 255, 0.2)',
-                  borderRadius: 4,
-                  backdropFilter: 'blur(4px)'
-                })}
-                {rect({
-                  width: '75%',
-                  height: 14,
+                  height: SIZES.description.height
+                }, 'desc1')}
+                {createSkeletonRect({
+                  ...SKELETON_STYLES.description,
                   backgroundColor: 'rgba(255, 255, 255, 0.15)',
-                  borderRadius: 4,
-                  backdropFilter: 'blur(4px)'
-                })}
+                  width: '75%',
+                  height: SIZES.description.height
+                }, 'desc2')}
               </div>
             </div>
 
-            {/* 右侧：供应商图标骨架 */}
-            <div className="flex-shrink-0 min-w-16 h-16 rounded-2xl bg-white/90 shadow-md backdrop-blur-sm flex items-center justify-center px-2">
-              {isAllVendors ? (
-                <div className="flex items-center gap-2">
-                  {Array.from({ length: 4 }).map((_, index) => (
-                    rect({
-                      width: 32,
-                      height: 32,
-                      backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                      borderRadius: 9999,
-                      border: '1px solid rgba(59, 130, 246, 0.2)'
-                    }, index)
-                  ))}
-                </div>
-              ) : (
-                rect({
-                  width: 40,
-                  height: 40,
-                  backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                  borderRadius: 12,
-                  border: '1px solid rgba(16, 185, 129, 0.2)'
-                })
-              )}
+            <div className="flex-shrink-0 w-16 h-16 rounded-2xl bg-white/90 shadow-md backdrop-blur-sm flex items-center justify-center">
+              {createSkeletonRect({
+                ...SKELETON_STYLES.avatar(isAllVendors),
+                width: SIZES.avatar.width,
+                height: SIZES.avatar.height
+              }, 'avatar')}
             </div>
           </div>
         </div>
       }
     >
-      {/* 搜索和操作区域骨架 */}
-      <div className="flex items-center gap-4 w-full">
-        {/* 搜索框骨架 */}
+      <div className="flex items-center gap-2 w-full">
         <div className="flex-1">
-          {rect({
+          {createSkeletonRect({
+            ...SKELETON_STYLES.searchInput,
             width: '100%',
-            height: 32,
-            backgroundColor: 'rgba(156, 163, 175, 0.1)',
-            borderRadius: 8,
-            border: '1px solid rgba(156, 163, 175, 0.2)'
-          })}
+            height: SIZES.searchInput.height
+          }, 'search')}
         </div>
 
-        {/* 操作按钮骨架 */}
-        {rect({
-          width: 80,
-          height: 32,
-          backgroundColor: 'rgba(59, 130, 246, 0.1)',
-          borderRadius: 8,
-          border: '1px solid rgba(59, 130, 246, 0.2)'
-        })}
+        {createSkeletonRect({
+          ...SKELETON_STYLES.button,
+          width: SIZES.button.width,
+          height: SIZES.button.height
+        }, 'button')}
       </div>
     </Card>
   );
@@ -138,6 +166,8 @@ const PricingVendorIntroSkeleton = ({
   return (
     <Skeleton loading={true} active placeholder={placeholder}></Skeleton>
   );
-};
+});
+
+PricingVendorIntroSkeleton.displayName = 'PricingVendorIntroSkeleton';
 
 export default PricingVendorIntroSkeleton;

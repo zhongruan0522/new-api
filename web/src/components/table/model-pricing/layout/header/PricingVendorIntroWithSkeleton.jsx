@@ -17,25 +17,15 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 
-import React from 'react';
+import React, { memo } from 'react';
 import PricingVendorIntro from './PricingVendorIntro';
 import PricingVendorIntroSkeleton from './PricingVendorIntroSkeleton';
 import { useMinimumLoadingTime } from '../../../../../hooks/common/useMinimumLoadingTime';
 
-const PricingVendorIntroWithSkeleton = ({
+const PricingVendorIntroWithSkeleton = memo(({
   loading = false,
   filterVendor,
-  models,
-  allModels,
-  t,
-  selectedRowKeys,
-  copyText,
-  handleChange,
-  handleCompositionStart,
-  handleCompositionEnd,
-  isMobile,
-  searchValue,
-  setShowFilterModal
+  ...restProps
 }) => {
   const showSkeleton = useMinimumLoadingTime(loading);
 
@@ -50,19 +40,11 @@ const PricingVendorIntroWithSkeleton = ({
   return (
     <PricingVendorIntro
       filterVendor={filterVendor}
-      models={models}
-      allModels={allModels}
-      t={t}
-      selectedRowKeys={selectedRowKeys}
-      copyText={copyText}
-      handleChange={handleChange}
-      handleCompositionStart={handleCompositionStart}
-      handleCompositionEnd={handleCompositionEnd}
-      isMobile={isMobile}
-      searchValue={searchValue}
-      setShowFilterModal={setShowFilterModal}
+      {...restProps}
     />
   );
-};
+});
+
+PricingVendorIntroWithSkeleton.displayName = 'PricingVendorIntroWithSkeleton';
 
 export default PricingVendorIntroWithSkeleton;

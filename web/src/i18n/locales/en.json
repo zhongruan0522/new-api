@@ -1814,6 +1814,7 @@
   "匹配类型": "Matching type",
   "描述": "Description",
   "供应商": "Vendor",
+  "供应商介绍": "Vendor introduction",
   "端点": "Endpoint",
   "已绑定渠道": "Bound channels",
   "更新时间": "Update time",

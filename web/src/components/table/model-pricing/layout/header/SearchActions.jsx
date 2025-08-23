@@ -17,11 +17,11 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 
-import React from 'react';
+import React, { memo, useCallback } from 'react';
 import { Input, Button } from '@douyinfe/semi-ui';
 import { IconSearch, IconCopy, IconFilter } from '@douyinfe/semi-icons';
 
-const SearchActions = ({
+const SearchActions = memo(({
   selectedRowKeys = [],
   copyText,
   handleChange,
@@ -32,9 +32,18 @@ const SearchActions = ({
   setShowFilterModal,
   t
 }) => {
+  const handleCopyClick = useCallback(() => {
+    if (copyText && selectedRowKeys.length > 0) {
+      copyText(selectedRowKeys);
+    }
+  }, [copyText, selectedRowKeys]);
+
+  const handleFilterClick = useCallback(() => {
+    setShowFilterModal?.(true);
+  }, [setShowFilterModal]);
+
   return (
-    <div className="flex items-center gap-4 w-full">
-      {/* 搜索框 */}
+    <div className="flex items-center gap-2 w-full">
       <div className="flex-1">
         <Input
           prefix={<IconSearch />}
@@ -47,33 +56,31 @@ const SearchActions = ({
         />
       </div>
 
-      {/* 操作按钮 */}
       <Button
-        theme='outline'
-        type='primary'
+        theme="outline"
+        type="primary"
         icon={<IconCopy />}
-        onClick={() => copyText?.(selectedRowKeys)}
+        onClick={handleCopyClick}
         disabled={selectedRowKeys.length === 0}
-        className="!bg-blue-500 hover:!bg-blue-600 text-white"
+        className="!bg-blue-500 hover:!bg-blue-600 !text-white disabled:!bg-gray-300 disabled:!text-gray-500"
       >
         {t('复制')}
       </Button>
 
-      {/* 移动端筛选按钮 */}
       {isMobile && (
         <Button
           theme="outline"
-          type='tertiary'
+          type="tertiary"
           icon={<IconFilter />}
-          onClick={() => setShowFilterModal?.(true)}
+          onClick={handleFilterClick}
         >
           {t('筛选')}
         </Button>
       )}
     </div>
   );
-};
+});
+
+SearchActions.displayName = 'SearchActions';
 
 export default SearchActions;
-
-
