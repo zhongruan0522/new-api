@@ -25,38 +25,41 @@ import (
 )
 
 func TextHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *types.NewAPIError) {
-
 	info.InitChannelMeta(c)
 
-	textRequest, ok := info.Request.(*dto.GeneralOpenAIRequest)
-
+	textReq, ok := info.Request.(*dto.GeneralOpenAIRequest)
 	if !ok {
 		//return types.NewErrorWithStatusCode(errors.New("invalid request type"), types.ErrorCodeInvalidRequest, http.StatusBadRequest, types.ErrOptionWithSkipRetry())
 		common.FatalLog("invalid request type, expected dto.GeneralOpenAIRequest, got %T", info.Request)
 	}
 
-	if textRequest.WebSearchOptions != nil {
-		c.Set("chat_completion_web_search_context_size", textRequest.WebSearchOptions.SearchContextSize)
+	request, err := common.DeepCopy(textReq)
+	if err != nil {
+		return types.NewError(fmt.Errorf("failed to copy request to GeneralOpenAIRequest: %w", err), types.ErrorCodeInvalidRequest, types.ErrOptionWithSkipRetry())
 	}
 
-	err := helper.ModelMappedHelper(c, info, textRequest)
+	if request.WebSearchOptions != nil {
+		c.Set("chat_completion_web_search_context_size", request.WebSearchOptions.SearchContextSize)
+	}
+
+	err = helper.ModelMappedHelper(c, info, request)
 	if err != nil {
 		return types.NewError(err, types.ErrorCodeChannelModelMappedError, types.ErrOptionWithSkipRetry())
 	}
 
 	includeUsage := true
 	// 判断用户是否需要返回使用情况
-	if textRequest.StreamOptions != nil {
-		includeUsage = textRequest.StreamOptions.IncludeUsage
+	if request.StreamOptions != nil {
+		includeUsage = request.StreamOptions.IncludeUsage
 	}
 
 	// 如果不支持StreamOptions，将StreamOptions设置为nil
-	if !info.SupportStreamOptions || !textRequest.Stream {
-		textRequest.StreamOptions = nil
+	if !info.SupportStreamOptions || !request.Stream {
+		request.StreamOptions = nil
 	} else {
 		// 如果支持StreamOptions，且请求中没有设置StreamOptions，根据配置文件设置StreamOptions
 		if constant.ForceStreamOption {
-			textRequest.StreamOptions = &dto.StreamOptions{
+			request.StreamOptions = &dto.StreamOptions{
 				IncludeUsage: true,
 			}
 		}
@@ -81,7 +84,7 @@ func TextHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *types
 		}
 		requestBody = bytes.NewBuffer(body)
 	} else {
-		convertedRequest, err := adaptor.ConvertOpenAIRequest(c, info, textRequest)
+		convertedRequest, err := adaptor.ConvertOpenAIRequest(c, info, request)
 		if err != nil {
 			return types.NewError(err, types.ErrorCodeConvertRequestFailed, types.ErrOptionWithSkipRetry())
 		}
