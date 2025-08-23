@@ -28,6 +28,7 @@ const PricingTopSection = ({
   handleCompositionStart,
   handleCompositionEnd,
   isMobile,
+  sidebarProps,
   filterVendor,
   models,
   filteredModels,
@@ -61,6 +62,7 @@ const PricingTopSection = ({
         <PricingFilterModal
           visible={showFilterModal}
           onClose={() => setShowFilterModal(false)}
+          sidebarProps={sidebarProps}
           t={t}
         />
       )}
