@@ -243,6 +243,7 @@ const PricingCardView = ({
                     {/* 复制按钮 */}
                     <Button
                       size="small"
+                      theme="outline"
                       type="tertiary"
                       icon={<IconCopy />}
                       onClick={(e) => {
