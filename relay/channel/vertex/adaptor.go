@@ -279,31 +279,31 @@ func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, info *relaycom
 	if info.IsStream {
 		switch a.RequestMode {
 		case RequestModeClaude:
-			err, usage = claude.ClaudeStreamHandler(c, resp, info, claude.RequestModeMessage)
+			return claude.ClaudeStreamHandler(c, resp, info, claude.RequestModeMessage)
 		case RequestModeGemini:
 			if info.RelayMode == constant.RelayModeGemini {
-				usage, err = gemini.GeminiTextGenerationStreamHandler(c, info, resp)
+				return gemini.GeminiTextGenerationStreamHandler(c, info, resp)
 			} else {
-				usage, err = gemini.GeminiChatStreamHandler(c, info, resp)
+				return gemini.GeminiChatStreamHandler(c, info, resp)
 			}
 		case RequestModeLlama:
-			usage, err = openai.OaiStreamHandler(c, info, resp)
+			return openai.OaiStreamHandler(c, info, resp)
 		}
 	} else {
 		switch a.RequestMode {
 		case RequestModeClaude:
-			err, usage = claude.ClaudeHandler(c, resp, info, claude.RequestModeMessage)
+			return claude.ClaudeHandler(c, resp, info, claude.RequestModeMessage)
 		case RequestModeGemini:
 			if info.RelayMode == constant.RelayModeGemini {
-				usage, err = gemini.GeminiTextGenerationHandler(c, info, resp)
+				return gemini.GeminiTextGenerationHandler(c, info, resp)
 			} else {
 				if strings.HasPrefix(info.UpstreamModelName, "imagen") {
 					return gemini.GeminiImageHandler(c, info, resp)
 				}
-				usage, err = gemini.GeminiChatHandler(c, info, resp)
+				return gemini.GeminiChatHandler(c, info, resp)
 			}
 		case RequestModeLlama:
-			usage, err = openai.OpenaiHandler(c, info, resp)
+			return openai.OpenaiHandler(c, info, resp)
 		}
 	}
 	return
