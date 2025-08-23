@@ -158,7 +158,14 @@ func (info *RelayInfo) InitChannelMeta(c *gin.Context) {
 	if streamSupportedChannels[channelMeta.ChannelType] {
 		channelMeta.SupportStreamOptions = true
 	}
+
 	info.ChannelMeta = channelMeta
+
+	// reset some fields based on channel meta
+	// 重置某些字段，例如模型名称等
+	if info.Request != nil {
+		info.Request.SetModelName(info.OriginModelName)
+	}
 }
 
 func (info *RelayInfo) ToString() string {
@@ -470,6 +477,7 @@ func GenTaskRelayInfo(c *gin.Context) (*TaskRelayInfo, error) {
 	info := &TaskRelayInfo{
 		RelayInfo: relayInfo,
 	}
+	info.InitChannelMeta(c)
 	return info, nil
 }
 
