@@ -103,7 +103,7 @@ func GetTokenUsage(c *gin.Context) {
 	}
 	tokenKey := parts[1]
 
-	token, err := model.GetTokenByKey(tokenKey, true)
+	token, err := model.GetTokenByKey(strings.TrimPrefix(tokenKey, "sk-"), false)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,
@@ -118,17 +118,18 @@ func GetTokenUsage(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"code": true,
+		"code":    true,
 		"message": "ok",
 		"data": gin.H{
-			"object":          "token_usage",
-			"id":              token.Id,
-			"name":            token.Name,
-			"total_granted":   token.RemainQuota + token.UsedQuota,
-			"total_used":      token.UsedQuota,
-			"total_available": token.RemainQuota,
-			"unlimited_quota": token.UnlimitedQuota,
-			"expires_at":      expiredAt,
+			"object":               "token_usage",
+			"name":                 token.Name,
+			"total_granted":        token.RemainQuota + token.UsedQuota,
+			"total_used":           token.UsedQuota,
+			"total_available":      token.RemainQuota,
+			"unlimited_quota":      token.UnlimitedQuota,
+			"model_limits":         token.GetModelLimitsMap(),
+			"model_limits_enabled": token.ModelLimitsEnabled,
+			"expires_at":           expiredAt,
 		},
 	})
 }
