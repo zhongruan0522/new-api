@@ -477,6 +477,7 @@ func GenTaskRelayInfo(c *gin.Context) (*TaskRelayInfo, error) {
 	info := &TaskRelayInfo{
 		RelayInfo: relayInfo,
 	}
+	info.InitChannelMeta(c)
 	return info, nil
 }
 
