@@ -8,6 +8,7 @@ import (
 	"one-api/relay/channel/claude"
 	relaycommon "one-api/relay/common"
 	"one-api/setting/model_setting"
+	"one-api/types"
 
 	"github.com/gin-gonic/gin"
 )
@@ -19,6 +20,11 @@ const (
 
 type Adaptor struct {
 	RequestMode int
+}
+
+func (a *Adaptor) ConvertGeminiRequest(*gin.Context, *relaycommon.RelayInfo, *dto.GeminiChatRequest) (any, error) {
+	//TODO implement me
+	return nil, errors.New("not implemented")
 }
 
 func (a *Adaptor) ConvertClaudeRequest(c *gin.Context, info *relaycommon.RelayInfo, request *dto.ClaudeRequest) (any, error) {
@@ -57,7 +63,7 @@ func (a *Adaptor) ConvertOpenAIRequest(c *gin.Context, info *relaycommon.RelayIn
 
 	var claudeReq *dto.ClaudeRequest
 	var err error
-	claudeReq, err = claude.RequestOpenAI2ClaudeMessage(*request)
+	claudeReq, err = claude.RequestOpenAI2ClaudeMessage(c, *request)
 	if err != nil {
 		return nil, err
 	}
@@ -84,7 +90,7 @@ func (a *Adaptor) DoRequest(c *gin.Context, info *relaycommon.RelayInfo, request
 	return nil, nil
 }
 
-func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (usage any, err *dto.OpenAIErrorWithStatusCode) {
+func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (usage any, err *types.NewAPIError) {
 	if info.IsStream {
 		err, usage = awsStreamHandler(c, resp, info, a.RequestMode)
 	} else {

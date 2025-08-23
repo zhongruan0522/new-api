@@ -69,7 +69,7 @@ func getOidcUserInfoByCode(code string) (*OidcUser, error) {
 	}
 
 	if oidcResponse.AccessToken == "" {
-		common.SysError("OIDC 获取 Token 失败，请检查设置！")
+		common.SysLog("OIDC 获取 Token 失败，请检查设置！")
 		return nil, errors.New("OIDC 获取 Token 失败，请检查设置！")
 	}
 
@@ -85,7 +85,7 @@ func getOidcUserInfoByCode(code string) (*OidcUser, error) {
 	}
 	defer res2.Body.Close()
 	if res2.StatusCode != http.StatusOK {
-		common.SysError("OIDC 获取用户信息失败！请检查设置！")
+		common.SysLog("OIDC 获取用户信息失败！请检查设置！")
 		return nil, errors.New("OIDC 获取用户信息失败！请检查设置！")
 	}
 
@@ -95,7 +95,7 @@ func getOidcUserInfoByCode(code string) (*OidcUser, error) {
 		return nil, err
 	}
 	if oidcUser.OpenID == "" || oidcUser.Email == "" {
-		common.SysError("OIDC 获取用户信息为空！请检查设置！")
+		common.SysLog("OIDC 获取用户信息为空！请检查设置！")
 		return nil, errors.New("OIDC 获取用户信息为空！请检查设置！")
 	}
 	return &oidcUser, nil
@@ -126,10 +126,7 @@ func OidcAuth(c *gin.Context) {
 	code := c.Query("code")
 	oidcUser, err := getOidcUserInfoByCode(code)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.ApiError(c, err)
 		return
 	}
 	user := model.User{
@@ -195,10 +192,7 @@ func OidcBind(c *gin.Context) {
 	code := c.Query("code")
 	oidcUser, err := getOidcUserInfoByCode(code)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.ApiError(c, err)
 		return
 	}
 	user := model.User{
@@ -217,19 +211,13 @@ func OidcBind(c *gin.Context) {
 	user.Id = id.(int)
 	err = user.FillUserById()
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.ApiError(c, err)
 		return
 	}
 	user.OidcId = oidcUser.OpenID
 	err = user.Update(false)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.ApiError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{

@@ -1,7 +1,8 @@
 package relay
 
 import (
-	commonconstant "one-api/constant"
+	"github.com/gin-gonic/gin"
+	"one-api/constant"
 	"one-api/relay/channel"
 	"one-api/relay/channel/ali"
 	"one-api/relay/channel/aws"
@@ -14,15 +15,20 @@ import (
 	"one-api/relay/channel/deepseek"
 	"one-api/relay/channel/dify"
 	"one-api/relay/channel/gemini"
+	"one-api/relay/channel/jimeng"
 	"one-api/relay/channel/jina"
 	"one-api/relay/channel/mistral"
 	"one-api/relay/channel/mokaai"
+	"one-api/relay/channel/moonshot"
 	"one-api/relay/channel/ollama"
 	"one-api/relay/channel/openai"
 	"one-api/relay/channel/palm"
 	"one-api/relay/channel/perplexity"
 	"one-api/relay/channel/siliconflow"
+	taskjimeng "one-api/relay/channel/task/jimeng"
+	"one-api/relay/channel/task/kling"
 	"one-api/relay/channel/task/suno"
+	taskVidu "one-api/relay/channel/task/vidu"
 	"one-api/relay/channel/tencent"
 	"one-api/relay/channel/vertex"
 	"one-api/relay/channel/volcengine"
@@ -30,7 +36,7 @@ import (
 	"one-api/relay/channel/xunfei"
 	"one-api/relay/channel/zhipu"
 	"one-api/relay/channel/zhipu_4v"
-	"one-api/relay/constant"
+	"strconv"
 )
 
 func GetAdaptor(apiType int) channel.Adaptor {
@@ -91,16 +97,38 @@ func GetAdaptor(apiType int) channel.Adaptor {
 		return &xai.Adaptor{}
 	case constant.APITypeCoze:
 		return &coze.Adaptor{}
+	case constant.APITypeJimeng:
+		return &jimeng.Adaptor{}
+	case constant.APITypeMoonshot:
+		return &moonshot.Adaptor{} // Moonshot uses Claude API
 	}
 	return nil
 }
 
-func GetTaskAdaptor(platform commonconstant.TaskPlatform) channel.TaskAdaptor {
+func GetTaskPlatform(c *gin.Context) constant.TaskPlatform {
+	channelType := c.GetInt("channel_type")
+	if channelType > 0 {
+		return constant.TaskPlatform(strconv.Itoa(channelType))
+	}
+	return constant.TaskPlatform(c.GetString("platform"))
+}
+
+func GetTaskAdaptor(platform constant.TaskPlatform) channel.TaskAdaptor {
 	switch platform {
 	//case constant.APITypeAIProxyLibrary:
 	//	return &aiproxy.Adaptor{}
-	case commonconstant.TaskPlatformSuno:
+	case constant.TaskPlatformSuno:
 		return &suno.TaskAdaptor{}
+	}
+	if channelType, err := strconv.ParseInt(string(platform), 10, 64); err == nil {
+		switch channelType {
+		case constant.ChannelTypeKling:
+			return &kling.TaskAdaptor{}
+		case constant.ChannelTypeJimeng:
+			return &taskjimeng.TaskAdaptor{}
+		case constant.ChannelTypeVidu:
+			return &taskVidu.TaskAdaptor{}
+		}
 	}
 	return nil
 }

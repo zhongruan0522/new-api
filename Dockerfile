@@ -2,6 +2,7 @@ FROM oven/bun:latest AS builder
 
 WORKDIR /build
 COPY web/package.json .
+COPY web/bun.lock .
 RUN bun install
 COPY ./web .
 COPY ./VERSION .
@@ -24,8 +25,7 @@ RUN go build -ldflags "-s -w -X 'one-api/common.Version=$(cat VERSION)'" -o one-
 
 FROM alpine
 
-RUN apk update \
-    && apk upgrade \
+RUN apk upgrade --no-cache \
     && apk add --no-cache ca-certificates tzdata ffmpeg \
     && update-ca-certificates
 

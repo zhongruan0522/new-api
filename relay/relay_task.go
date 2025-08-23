@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"io"
 	"net/http"
 	"one-api/common"
@@ -15,8 +14,9 @@ import (
 	relaycommon "one-api/relay/common"
 	relayconstant "one-api/relay/constant"
 	"one-api/service"
-	"one-api/setting"
-	"one-api/setting/operation_setting"
+	"one-api/setting/ratio_setting"
+
+	"github.com/gin-gonic/gin"
 )
 
 /*
@@ -24,7 +24,14 @@ Task 任务通过平台、Action 区分任务
 */
 func RelayTaskSubmit(c *gin.Context, relayMode int) (taskErr *dto.TaskError) {
 	platform := constant.TaskPlatform(c.GetString("platform"))
-	relayInfo := relaycommon.GenTaskRelayInfo(c)
+	if platform == "" {
+		platform = GetTaskPlatform(c)
+	}
+
+	relayInfo, err := relaycommon.GenTaskRelayInfo(c)
+	if err != nil {
+		return service.TaskErrorWrapper(err, "gen_relay_info_failed", http.StatusInternalServerError)
+	}
 
 	adaptor := GetTaskAdaptor(platform)
 	if adaptor == nil {
@@ -37,10 +44,13 @@ func RelayTaskSubmit(c *gin.Context, relayMode int) (taskErr *dto.TaskError) {
 		return
 	}
 
-	modelName := service.CoverTaskActionToModelName(platform, relayInfo.Action)
-	modelPrice, success := operation_setting.GetModelPrice(modelName, true)
+	modelName := relayInfo.OriginModelName
+	if modelName == "" {
+		modelName = service.CoverTaskActionToModelName(platform, relayInfo.Action)
+	}
+	modelPrice, success := ratio_setting.GetModelPrice(modelName, true)
 	if !success {
-		defaultPrice, ok := operation_setting.GetDefaultModelRatioMap()[modelName]
+		defaultPrice, ok := ratio_setting.GetDefaultModelRatioMap()[modelName]
 		if !ok {
 			modelPrice = 0.1
 		} else {
@@ -49,8 +59,14 @@ func RelayTaskSubmit(c *gin.Context, relayMode int) (taskErr *dto.TaskError) {
 	}
 
 	// 预扣
-	groupRatio := setting.GetGroupRatio(relayInfo.Group)
-	ratio := modelPrice * groupRatio
+	groupRatio := ratio_setting.GetGroupRatio(relayInfo.UsingGroup)
+	var ratio float64
+	userGroupRatio, hasUserGroupRatio := ratio_setting.GetGroupGroupRatio(relayInfo.UserGroup, relayInfo.UsingGroup)
+	if hasUserGroupRatio {
+		ratio = modelPrice * userGroupRatio
+	} else {
+		ratio = modelPrice * groupRatio
+	}
 	userQuota, err := model.GetUserQuota(relayInfo.UserId, false)
 	if err != nil {
 		taskErr = service.TaskErrorWrapper(err, "get_user_quota_failed", http.StatusInternalServerError)
@@ -85,7 +101,7 @@ func RelayTaskSubmit(c *gin.Context, relayMode int) (taskErr *dto.TaskError) {
 			c.Set("channel_id", originTask.ChannelId)
 			c.Request.Header.Set("Authorization", fmt.Sprintf("Bearer %s", channel.Key))
 
-			relayInfo.BaseUrl = channel.GetBaseURL()
+			relayInfo.ChannelBaseUrl = channel.GetBaseURL()
 			relayInfo.ChannelId = originTask.ChannelId
 		}
 	}
@@ -115,16 +131,31 @@ func RelayTaskSubmit(c *gin.Context, relayMode int) (taskErr *dto.TaskError) {
 
 			err := service.PostConsumeQuota(relayInfo.RelayInfo, quota, 0, true)
 			if err != nil {
-				common.SysError("error consuming token remain quota: " + err.Error())
+				common.SysLog("error consuming token remain quota: " + err.Error())
 			}
 			if quota != 0 {
 				tokenName := c.GetString("token_name")
-				logContent := fmt.Sprintf("模型固定价格 %.2f，分组倍率 %.2f，操作 %s", modelPrice, groupRatio, relayInfo.Action)
+				gRatio := groupRatio
+				if hasUserGroupRatio {
+					gRatio = userGroupRatio
+				}
+				logContent := fmt.Sprintf("模型固定价格 %.2f，分组倍率 %.2f，操作 %s", modelPrice, gRatio, relayInfo.Action)
 				other := make(map[string]interface{})
 				other["model_price"] = modelPrice
 				other["group_ratio"] = groupRatio
-				model.RecordConsumeLog(c, relayInfo.UserId, relayInfo.ChannelId, 0, 0,
-					modelName, tokenName, quota, logContent, relayInfo.TokenId, userQuota, 0, false, relayInfo.Group, other)
+				if hasUserGroupRatio {
+					other["user_group_ratio"] = userGroupRatio
+				}
+				model.RecordConsumeLog(c, relayInfo.UserId, model.RecordConsumeLogParams{
+					ChannelId: relayInfo.ChannelId,
+					ModelName: modelName,
+					TokenName: tokenName,
+					Quota:     quota,
+					Content:   logContent,
+					TokenId:   relayInfo.TokenId,
+					Group:     relayInfo.UsingGroup,
+					Other:     other,
+				})
 				model.UpdateUserUsedQuotaAndRequestCount(relayInfo.UserId, quota)
 				model.UpdateChannelUsedQuota(relayInfo.ChannelId, quota)
 			}
@@ -137,10 +168,11 @@ func RelayTaskSubmit(c *gin.Context, relayMode int) (taskErr *dto.TaskError) {
 	}
 	relayInfo.ConsumeQuota = true
 	// insert task
-	task := model.InitTask(constant.TaskPlatformSuno, relayInfo)
+	task := model.InitTask(platform, relayInfo)
 	task.TaskID = taskID
 	task.Quota = quota
 	task.Data = taskData
+	task.Action = relayInfo.Action
 	err = task.Insert()
 	if err != nil {
 		taskErr = service.TaskErrorWrapper(err, "insert_task_failed", http.StatusInternalServerError)
@@ -150,8 +182,9 @@ func RelayTaskSubmit(c *gin.Context, relayMode int) (taskErr *dto.TaskError) {
 }
 
 var fetchRespBuilders = map[int]func(c *gin.Context) (respBody []byte, taskResp *dto.TaskError){
-	relayconstant.RelayModeSunoFetchByID: sunoFetchByIDRespBodyBuilder,
-	relayconstant.RelayModeSunoFetch:     sunoFetchRespBodyBuilder,
+	relayconstant.RelayModeSunoFetchByID:  sunoFetchByIDRespBodyBuilder,
+	relayconstant.RelayModeSunoFetch:      sunoFetchRespBodyBuilder,
+	relayconstant.RelayModeVideoFetchByID: videoFetchByIDRespBodyBuilder,
 }
 
 func RelayTaskFetch(c *gin.Context, relayMode int) (taskResp *dto.TaskError) {
@@ -207,6 +240,30 @@ func sunoFetchRespBodyBuilder(c *gin.Context) (respBody []byte, taskResp *dto.Ta
 
 func sunoFetchByIDRespBodyBuilder(c *gin.Context) (respBody []byte, taskResp *dto.TaskError) {
 	taskId := c.Param("id")
+	userId := c.GetInt("id")
+
+	originTask, exist, err := model.GetByTaskId(userId, taskId)
+	if err != nil {
+		taskResp = service.TaskErrorWrapper(err, "get_task_failed", http.StatusInternalServerError)
+		return
+	}
+	if !exist {
+		taskResp = service.TaskErrorWrapperLocal(errors.New("task_not_exist"), "task_not_exist", http.StatusBadRequest)
+		return
+	}
+
+	respBody, err = json.Marshal(dto.TaskResponse[any]{
+		Code: "success",
+		Data: TaskModel2Dto(originTask),
+	})
+	return
+}
+
+func videoFetchByIDRespBodyBuilder(c *gin.Context) (respBody []byte, taskResp *dto.TaskError) {
+	taskId := c.Param("task_id")
+	if taskId == "" {
+		taskId = c.GetString("task_id")
+	}
 	userId := c.GetInt("id")
 
 	originTask, exist, err := model.GetByTaskId(userId, taskId)

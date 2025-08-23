@@ -9,11 +9,17 @@ import (
 	"one-api/relay/channel"
 	relaycommon "one-api/relay/common"
 	"one-api/relay/constant"
+	"one-api/types"
 
 	"github.com/gin-gonic/gin"
 )
 
 type Adaptor struct {
+}
+
+func (a *Adaptor) ConvertGeminiRequest(*gin.Context, *relaycommon.RelayInfo, *dto.GeminiChatRequest) (any, error) {
+	//TODO implement me
+	return nil, errors.New("not implemented")
 }
 
 func (a *Adaptor) ConvertClaudeRequest(*gin.Context, *relaycommon.RelayInfo, *dto.ClaudeRequest) (any, error) {
@@ -37,9 +43,9 @@ func (a *Adaptor) Init(info *relaycommon.RelayInfo) {
 
 func (a *Adaptor) GetRequestURL(info *relaycommon.RelayInfo) (string, error) {
 	if info.RelayMode == constant.RelayModeRerank {
-		return fmt.Sprintf("%s/v1/rerank", info.BaseUrl), nil
+		return fmt.Sprintf("%s/v1/rerank", info.ChannelBaseUrl), nil
 	} else {
-		return fmt.Sprintf("%s/v1/chat", info.BaseUrl), nil
+		return fmt.Sprintf("%s/v1/chat", info.ChannelBaseUrl), nil
 	}
 }
 
@@ -71,14 +77,14 @@ func (a *Adaptor) ConvertEmbeddingRequest(c *gin.Context, info *relaycommon.Rela
 	return nil, errors.New("not implemented")
 }
 
-func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (usage any, err *dto.OpenAIErrorWithStatusCode) {
+func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (usage any, err *types.NewAPIError) {
 	if info.RelayMode == constant.RelayModeRerank {
-		err, usage = cohereRerankHandler(c, resp, info)
+		usage, err = cohereRerankHandler(c, resp, info)
 	} else {
 		if info.IsStream {
-			err, usage = cohereStreamHandler(c, resp, info)
+			usage, err = cohereStreamHandler(c, info, resp) // TODO: fix this
 		} else {
-			err, usage = cohereHandler(c, resp, info.UpstreamModelName, info.PromptTokens)
+			usage, err = cohereHandler(c, info, resp)
 		}
 	}
 	return

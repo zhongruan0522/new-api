@@ -1,13 +1,46 @@
 package dto
 
+import (
+	"fmt"
+	"github.com/gin-gonic/gin"
+	"one-api/types"
+	"strings"
+)
+
 type RerankRequest struct {
 	Documents       []any  `json:"documents"`
 	Query           string `json:"query"`
 	Model           string `json:"model"`
-	TopN            int    `json:"top_n"`
+	TopN            int    `json:"top_n,omitempty"`
 	ReturnDocuments *bool  `json:"return_documents,omitempty"`
 	MaxChunkPerDoc  int    `json:"max_chunk_per_doc,omitempty"`
 	OverLapTokens   int    `json:"overlap_tokens,omitempty"`
+}
+
+func (r *RerankRequest) IsStream(c *gin.Context) bool {
+	return false
+}
+
+func (r *RerankRequest) GetTokenCountMeta() *types.TokenCountMeta {
+	var texts = make([]string, 0)
+
+	for _, document := range r.Documents {
+		texts = append(texts, fmt.Sprintf("%v", document))
+	}
+
+	if r.Query != "" {
+		texts = append(texts, r.Query)
+	}
+
+	return &types.TokenCountMeta{
+		CombineText: strings.Join(texts, "\n"),
+	}
+}
+
+func (r *RerankRequest) SetModelName(modelName string) {
+	if modelName != "" {
+		r.Model = modelName
+	}
 }
 
 func (r *RerankRequest) GetReturnDocuments() bool {

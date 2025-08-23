@@ -4,12 +4,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"one-api/relay/common"
-
 	"github.com/gin-gonic/gin"
+	"one-api/dto"
+	"one-api/relay/common"
 )
 
-func ModelMappedHelper(c *gin.Context, info *common.RelayInfo) error {
+func ModelMappedHelper(c *gin.Context, info *common.RelayInfo, request dto.Request) error {
 	// map model name
 	modelMapping := c.GetString("model_mapping")
 	if modelMapping != "" && modelMapping != "{}" {
@@ -49,6 +49,9 @@ func ModelMappedHelper(c *gin.Context, info *common.RelayInfo) error {
 		if info.IsModelMapped {
 			info.UpstreamModelName = currentModel
 		}
+	}
+	if request != nil {
+		request.SetModelName(info.UpstreamModelName)
 	}
 	return nil
 }
