@@ -27,7 +27,15 @@ const PricingVendorIntroWithSkeleton = ({
   filterVendor,
   models,
   allModels,
-  t
+  t,
+  selectedRowKeys,
+  copyText,
+  handleChange,
+  handleCompositionStart,
+  handleCompositionEnd,
+  isMobile,
+  searchValue,
+  setShowFilterModal
 }) => {
   const showSkeleton = useMinimumLoadingTime(loading);
 
@@ -45,6 +53,14 @@ const PricingVendorIntroWithSkeleton = ({
       models={models}
       allModels={allModels}
       t={t}
+      selectedRowKeys={selectedRowKeys}
+      copyText={copyText}
+      handleChange={handleChange}
+      handleCompositionStart={handleCompositionStart}
+      handleCompositionEnd={handleCompositionEnd}
+      isMobile={isMobile}
+      searchValue={searchValue}
+      setShowFilterModal={setShowFilterModal}
     />
   );
 };

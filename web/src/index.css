@@ -728,8 +728,8 @@ html.dark .with-pastel-balls::before {
 }
 
 .pricing-sidebar {
-  min-width: 460px;
-  max-width: 460px;
+  min-width: 400px;
+  max-width: 400px;
   height: calc(100vh - 60px);
   background-color: var(--semi-color-bg-0);
   overflow: auto;

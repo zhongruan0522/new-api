@@ -18,8 +18,9 @@ For commercial licensing, please contact support@quantumnous.com
 */
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Card, Tag, Avatar, AvatarGroup, Typography } from '@douyinfe/semi-ui';
+import { Card, Tag, Avatar, Typography, Tooltip } from '@douyinfe/semi-ui';
 import { getLobeHubIcon } from '../../../../../helpers';
+import SearchActions from './SearchActions';
 
 const { Paragraph } = Typography;
 
@@ -27,8 +28,17 @@ const PricingVendorIntro = ({
   filterVendor,
   models = [],
   allModels = [],
-  t
+  t,
+  selectedRowKeys = [],
+  copyText,
+  handleChange,
+  handleCompositionStart,
+  handleCompositionEnd,
+  isMobile = false,
+  searchValue = '',
+  setShowFilterModal
 }) => {
+  const MAX_VISIBLE_AVATARS = 8;
   // 轮播动效状态（只对全部供应商生效）
   const [currentOffset, setCurrentOffset] = useState(0);
 
@@ -65,7 +75,7 @@ const PricingVendorIntro = ({
     }
 
     return vendorList;
-  }, [allModels, models]);
+  }, [allModels, models, t]);
 
   // 计算当前过滤器的模型数量
   const currentModelCount = models.length;
@@ -79,7 +89,7 @@ const PricingVendorIntro = ({
 
     const interval = setInterval(() => {
       setCurrentOffset(prev => (prev + 1) % vendorInfo.length);
-    }, 2000); // 每2秒切换一次
+    }, 2000);
 
     return () => clearInterval(interval);
   }, [filterVendor, vendorInfo.length]);
@@ -95,6 +105,70 @@ const PricingVendorIntro = ({
     const vendor = vendorInfo.find(v => v.name === vendorKey);
     return vendor?.description || t('该供应商提供多种AI模型，适用于不同的应用场景。');
   };
+
+  // 统一的 Tag 样式
+  const tagStyle = {
+    backgroundColor: 'rgba(255,255,255,0.95)',
+    color: '#1f2937',
+    border: '1px solid rgba(255,255,255,0.8)',
+    fontWeight: '500'
+  };
+
+  // 生成封面背景样式
+  const getCoverStyle = (primaryDarkerChannel) => ({
+    '--palette-primary-darkerChannel': primaryDarkerChannel,
+    backgroundImage: `linear-gradient(0deg, rgba(var(--palette-primary-darkerChannel) / 80%), rgba(var(--palette-primary-darkerChannel) / 80%)), url('/cover-4.webp')`,
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
+    backgroundRepeat: 'no-repeat'
+  });
+
+  // 抽象的头部卡片渲染（用于全部供应商与具体供应商）
+  const renderHeaderCard = ({ title, count, description, rightContent, primaryDarkerChannel }) => (
+    <Card className="!rounded-2xl shadow-sm border-0"
+      cover={
+        <div
+          className="relative h-32"
+          style={getCoverStyle(primaryDarkerChannel)}
+        >
+          <div className="relative z-10 h-full flex items-center justify-between p-4">
+            {/* 左侧：标题与描述 */}
+            <div className="flex-1 min-w-0 mr-4">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-2">
+                <h2 className="text-lg sm:text-xl font-bold truncate" style={{ color: 'white' }}>
+                  {title}
+                </h2>
+                <Tag style={tagStyle} shape="circle" size="small" className="self-start sm:self-center">
+                  {t('共 {{count}} 个模型', { count })}
+                </Tag>
+              </div>
+              <Paragraph
+                className="text-xs sm:text-sm leading-relaxed !mb-0"
+                style={{ color: 'rgba(255,255,255,0.9)' }}
+                ellipsis={{
+                  rows: 2,
+                  expandable: true,
+                  collapsible: true,
+                  collapseText: t('收起'),
+                  expandText: t('展开')
+                }}
+              >
+                {description}
+              </Paragraph>
+            </div>
+
+            {/* 右侧：展示区 */}
+            <div className="flex-shrink-0">
+              {rightContent}
+            </div>
+          </div>
+        </div>
+      }
+    >
+      {/* 搜索与操作区 */}
+      {renderSearchActions()}
+    </Card>
+  );
 
   // 为全部供应商创建特殊的头像组合
   const renderAllVendorsAvatar = () => {
@@ -115,89 +189,81 @@ const PricingVendorIntro = ({
       );
     }
 
+    const visible = rotatedVendors.slice(0, MAX_VISIBLE_AVATARS);
+    const rest = vendorInfo.length - visible.length;
+
     return (
-      <div className="min-w-16 h-16 rounded-2xl bg-white shadow-md flex items-center justify-center px-2">
-        <AvatarGroup
-          maxCount={4}
-          size="default"
-          overlapFrom='end'
-          key={currentOffset}
-          renderMore={(restNumber) => (
-            <Avatar
-              size="default"
-              style={{ backgroundColor: 'transparent', color: 'var(--semi-color-text-0)' }}
-              alt={`${restNumber} more vendors`}
-            >
-              {`+${restNumber}`}
-            </Avatar>
-          )}
-        >
-          {rotatedVendors.map((vendor) => (
-            <Avatar
-              key={vendor.name}
-              size="default"
-              color="transparent"
-              alt={vendor.name === 'unknown' ? t('未知供应商') : vendor.name}
-            >
-              {vendor.icon ?
-                getLobeHubIcon(vendor.icon, 20) :
-                (vendor.name === 'unknown' ? '?' : vendor.name.charAt(0).toUpperCase())
-              }
-            </Avatar>
+      <div className="min-w-16 h-16 rounded-2xl bg-white/90 shadow-md backdrop-blur-sm flex items-center justify-center px-2">
+        <div className="flex items-center gap-2">
+          {visible.map((vendor) => (
+            <Tooltip key={vendor.name} content={vendor.name === 'unknown' ? t('未知供应商') : vendor.name} position="top">
+              <div
+                className="w-8 h-8 rounded-full flex items-center justify-center border"
+                style={{
+                  background: 'linear-gradient(180deg, rgba(59,130,246,0.08), rgba(59,130,246,0.02))',
+                  boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
+                  borderColor: 'rgba(59, 130, 246, 0.25)'
+                }}
+              >
+                {vendor.icon ? (
+                  getLobeHubIcon(vendor.icon, 18)
+                ) : (
+                  <Avatar size="small" style={{ backgroundColor: 'rgba(59, 130, 246, 0.08)' }}>
+                    {vendor.name === 'unknown' ? '?' : vendor.name.charAt(0).toUpperCase()}
+                  </Avatar>
+                )}
+              </div>
+            </Tooltip>
           ))}
-        </AvatarGroup>
+          {rest > 0 && (
+            <div
+              className="w-8 h-8 rounded-full bg-blue-50 text-blue-600 text-xs font-medium flex items-center justify-center"
+              title={`+${rest}`}
+            >
+              {`+${rest}`}
+            </div>
+          )}
+        </div>
       </div>
     );
   };
 
   // 为具体供应商渲染单个图标
   const renderVendorAvatar = (vendor) => (
-    <div className="w-16 h-16 rounded-2xl bg-white shadow-md flex items-center justify-center">
+    <div className="w-16 h-16 rounded-2xl bg-white/90 shadow-md backdrop-blur-sm flex items-center justify-center">
       {vendor.icon ?
         getLobeHubIcon(vendor.icon, 40) :
-        <Avatar size="large" color="transparent">
+        <Avatar size="large" style={{ backgroundColor: 'rgba(16, 185, 129, 0.1)' }}>
           {vendor.name === 'unknown' ? '?' : vendor.name.charAt(0).toUpperCase()}
         </Avatar>
       }
     </div>
   );
 
+  // 渲染搜索和操作区域
+  const renderSearchActions = () => (
+    <SearchActions
+      selectedRowKeys={selectedRowKeys}
+      copyText={copyText}
+      handleChange={handleChange}
+      handleCompositionStart={handleCompositionStart}
+      handleCompositionEnd={handleCompositionEnd}
+      isMobile={isMobile}
+      searchValue={searchValue}
+      setShowFilterModal={setShowFilterModal}
+      t={t}
+    />
+  );
+
   // 如果是全部供应商
   if (filterVendor === 'all') {
-    return (
-      <div className='mb-4'>
-        <Card className="!rounded-2xl with-pastel-balls" bodyStyle={{ padding: '16px' }}>
-          <div className="flex items-start space-x-3 md:space-x-4">
-            {/* 全部供应商的头像组合 */}
-            <div className="flex-shrink-0">
-              {renderAllVendorsAvatar()}
-            </div>
-
-            {/* 供应商信息 */}
-            <div className="flex-1 min-w-0">
-              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-2">
-                <h2 className="text-lg sm:text-xl font-bold text-gray-900 truncate">{t('全部供应商')}</h2>
-                <Tag color="white" shape="circle" size="small" className="self-start sm:self-center">
-                  {t('共 {{count}} 个模型', { count: currentModelCount })}
-                </Tag>
-              </div>
-              <Paragraph
-                className="text-xs sm:text-sm text-gray-600 leading-relaxed !mb-0"
-                ellipsis={{
-                  rows: 2,
-                  expandable: true,
-                  collapsible: true,
-                  collapseText: t('收起'),
-                  expandText: t('展开')
-                }}
-              >
-                {getVendorDescription('all')}
-              </Paragraph>
-            </div>
-          </div>
-        </Card>
-      </div>
-    );
+    return renderHeaderCard({
+      title: t('全部供应商'),
+      count: currentModelCount,
+      description: getVendorDescription('all'),
+      rightContent: renderAllVendorsAvatar(),
+      primaryDarkerChannel: '37 99 235'
+    });
   }
 
   // 具体供应商
@@ -208,40 +274,13 @@ const PricingVendorIntro = ({
 
   const vendorDisplayName = currentVendor.name === 'unknown' ? t('未知供应商') : currentVendor.name;
 
-  return (
-    <div className='mb-4'>
-      <Card className="!rounded-2xl with-pastel-balls" bodyStyle={{ padding: '16px' }}>
-        <div className="flex items-start space-x-3 md:space-x-4">
-          {/* 供应商图标 */}
-          <div className="flex-shrink-0">
-            {renderVendorAvatar(currentVendor)}
-          </div>
-
-          {/* 供应商信息 */}
-          <div className="flex-1 min-w-0">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-2">
-              <h2 className="text-lg sm:text-xl font-bold text-gray-900 truncate">{vendorDisplayName}</h2>
-              <Tag color="white" shape="circle" size="small" className="self-start sm:self-center">
-                {t('共 {{count}} 个模型', { count: currentModelCount })}
-              </Tag>
-            </div>
-            <Paragraph
-              className="text-xs sm:text-sm text-gray-600 leading-relaxed !mb-0"
-              ellipsis={{
-                rows: 2,
-                expandable: true,
-                collapsible: true,
-                collapseText: t('收起'),
-                expandText: t('展开')
-              }}
-            >
-              {currentVendor.description || getVendorDescription(currentVendor.name)}
-            </Paragraph>
-          </div>
-        </div>
-      </Card>
-    </div>
-  );
+  return renderHeaderCard({
+    title: vendorDisplayName,
+    count: currentModelCount,
+    description: currentVendor.description || getVendorDescription(currentVendor.name),
+    rightContent: renderVendorAvatar(currentVendor),
+    primaryDarkerChannel: '16 185 129'
+  });
 };
 
 export default PricingVendorIntro;
