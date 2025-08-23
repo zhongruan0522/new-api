@@ -1788,7 +1788,7 @@
   "将仅保留第一个密钥文件，其余文件将被移除，是否继续？": "Only the first key file will be retained, and the remaining files will be removed. Continue?",
   "自定义模型名称": "Custom model name",
   "启用全部密钥": "Enable all keys",
-  "以充值价格显示": "Recharge price",
+  "充值价格显示": "Recharge price",
   "美元汇率（非充值汇率，仅用于定价页面换算）": "USD exchange rate (not recharge rate, only used for pricing page conversion)",
   "美元汇率": "USD exchange rate",
   "隐藏操作项": "Hide actions",

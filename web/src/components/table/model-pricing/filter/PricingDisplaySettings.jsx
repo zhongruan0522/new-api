@@ -39,7 +39,7 @@ const PricingDisplaySettings = ({
   const items = [
     {
       value: 'recharge',
-      label: t('以充值价格显示')
+      label: t('充值价格显示')
     },
     {
       value: 'ratio',

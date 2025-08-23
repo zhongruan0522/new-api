@@ -25,8 +25,8 @@ import {
   Dropdown,
   Typography,
 } from '@douyinfe/semi-ui';
+import { ChevronDown } from 'lucide-react';
 import {
-  IconChevronDown,
   IconExit,
   IconUserSetting,
   IconCreditCard,
@@ -120,7 +120,7 @@ const UserArea = ({
               {userState.user.username}
             </Typography.Text>
           </span>
-          <IconChevronDown className="text-xs text-semi-color-text-2 dark:text-gray-400" />
+          <ChevronDown size={14} className="text-xs text-semi-color-text-2 dark:text-gray-400" />
         </Button>
       </Dropdown>
     );
