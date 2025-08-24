@@ -1,7 +1,6 @@
 package ali
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -88,7 +87,7 @@ func updateTask(info *relaycommon.RelayInfo, taskID string) (*AliResponse, error
 }
 
 func asyncTaskWait(c *gin.Context, info *relaycommon.RelayInfo, taskID string) (*AliResponse, []byte, error) {
-	waitSeconds := 5
+	waitSeconds := 10
 	step := 0
 	maxStep := 20
 
@@ -129,7 +128,7 @@ func asyncTaskWait(c *gin.Context, info *relaycommon.RelayInfo, taskID string) (
 	return nil, nil, fmt.Errorf("aliAsyncTaskWait timeout")
 }
 
-func responseAli2OpenAIImage(c *gin.Context, response *AliResponse, info *relaycommon.RelayInfo, responseFormat string) *dto.ImageResponse {
+func responseAli2OpenAIImage(c *gin.Context, response *AliResponse, originBody []byte, info *relaycommon.RelayInfo, responseFormat string) *dto.ImageResponse {
 	imageResponse := dto.ImageResponse{
 		Created: info.StartTime.Unix(),
 	}
@@ -153,7 +152,9 @@ func responseAli2OpenAIImage(c *gin.Context, response *AliResponse, info *relayc
 			RevisedPrompt: "",
 		})
 	}
-	imageResponse.Extra = response
+	var mapResponse map[string]any
+	_ = common.Unmarshal(originBody, &mapResponse)
+	imageResponse.Extra = mapResponse
 	return &imageResponse
 }
 
@@ -166,7 +167,7 @@ func aliImageHandler(c *gin.Context, resp *http.Response, info *relaycommon.Rela
 		return types.NewOpenAIError(err, types.ErrorCodeReadResponseBodyFailed, http.StatusInternalServerError), nil
 	}
 	service.CloseResponseBodyGracefully(resp)
-	err = json.Unmarshal(responseBody, &aliTaskResponse)
+	err = common.Unmarshal(responseBody, &aliTaskResponse)
 	if err != nil {
 		return types.NewOpenAIError(err, types.ErrorCodeBadResponseBody, http.StatusInternalServerError), nil
 	}
@@ -176,7 +177,7 @@ func aliImageHandler(c *gin.Context, resp *http.Response, info *relaycommon.Rela
 		return types.NewError(errors.New(aliTaskResponse.Message), types.ErrorCodeBadResponse), nil
 	}
 
-	aliResponse, _, err := asyncTaskWait(c, info, aliTaskResponse.Output.TaskId)
+	aliResponse, originRespBody, err := asyncTaskWait(c, info, aliTaskResponse.Output.TaskId)
 	if err != nil {
 		return types.NewError(err, types.ErrorCodeBadResponse), nil
 	}
@@ -190,7 +191,7 @@ func aliImageHandler(c *gin.Context, resp *http.Response, info *relaycommon.Rela
 		}, resp.StatusCode), nil
 	}
 
-	fullTextResponse := responseAli2OpenAIImage(c, aliResponse, info, responseFormat)
+	fullTextResponse := responseAli2OpenAIImage(c, aliResponse, originRespBody, info, responseFormat)
 	jsonResponse, err := common.Marshal(fullTextResponse)
 	if err != nil {
 		return types.NewError(err, types.ErrorCodeBadResponseBody), nil
