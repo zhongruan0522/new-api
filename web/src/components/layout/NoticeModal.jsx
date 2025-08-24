@@ -41,14 +41,21 @@ const NoticeModal = ({ visible, onClose, isMobile, defaultTab = 'inApp', unreadK
   const getKeyForItem = (item) => `${item?.publishDate || ''}-${(item?.content || '').slice(0, 30)}`;
 
   const processedAnnouncements = useMemo(() => {
-    return (announcements || []).slice(0, 20).map(item => ({
-      key: getKeyForItem(item),
-      type: item.type || 'default',
-      time: getRelativeTime(item.publishDate),
-      content: item.content,
-      extra: item.extra,
-      isUnread: unreadSet.has(getKeyForItem(item))
-    }));
+    return (announcements || []).slice(0, 20).map(item => {
+      const pubDate = item?.publishDate ? new Date(item.publishDate) : null;
+      const absoluteTime = pubDate && !isNaN(pubDate.getTime())
+        ? `${pubDate.getFullYear()}-${String(pubDate.getMonth() + 1).padStart(2, '0')}-${String(pubDate.getDate()).padStart(2, '0')} ${String(pubDate.getHours()).padStart(2, '0')}:${String(pubDate.getMinutes()).padStart(2, '0')}`
+        : (item?.publishDate || '');
+      return ({
+        key: getKeyForItem(item),
+        type: item.type || 'default',
+        time: absoluteTime,
+        content: item.content,
+        extra: item.extra,
+        relative: getRelativeTime(item.publishDate),
+        isUnread: unreadSet.has(getKeyForItem(item))
+      });
+    });
   }, [announcements, unreadSet]);
 
   const handleCloseTodayNotice = () => {
@@ -131,7 +138,7 @@ const NoticeModal = ({ visible, onClose, isMobile, defaultTab = 'inApp', unreadK
 
     return (
       <div className="max-h-[55vh] overflow-y-auto pr-2 card-content-scroll">
-        <Timeline mode="alternate">
+        <Timeline mode="left">
           {processedAnnouncements.map((item, idx) => {
             const htmlContent = marked.parse(item.content || '');
             const htmlExtra = item.extra ? marked.parse(item.extra) : '';
@@ -139,7 +146,13 @@ const NoticeModal = ({ visible, onClose, isMobile, defaultTab = 'inApp', unreadK
               <Timeline.Item
                 key={idx}
                 type={item.type}
-                time={item.time}
+                time={`${item.relative ? item.relative + ' ' : ''}${item.time}`}
+                extra={item.extra ? (
+                  <div
+                    className="text-xs text-gray-500"
+                    dangerouslySetInnerHTML={{ __html: htmlExtra }}
+                  />
+                ) : null}
                 className={item.isUnread ? '' : ''}
               >
                 <div>
@@ -147,12 +160,6 @@ const NoticeModal = ({ visible, onClose, isMobile, defaultTab = 'inApp', unreadK
                     className={item.isUnread ? 'shine-text' : ''}
                     dangerouslySetInnerHTML={{ __html: htmlContent }}
                   />
-                  {item.extra && (
-                    <div
-                      className="text-xs text-gray-500"
-                      dangerouslySetInnerHTML={{ __html: htmlExtra }}
-                    />
-                  )}
                 </div>
               </Timeline.Item>
             );
@@ -177,8 +184,7 @@ const NoticeModal = ({ visible, onClose, isMobile, defaultTab = 'inApp', unreadK
           <Tabs
             activeKey={activeTab}
             onChange={setActiveTab}
-            type='card'
-            size='small'
+            type='button'
           >
             <TabPane tab={<span className="flex items-center gap-1"><Bell size={14} /> {t('通知')}</span>} itemKey='inApp' />
             <TabPane tab={<span className="flex items-center gap-1"><Megaphone size={14} /> {t('系统公告')}</span>} itemKey='system' />

@@ -754,7 +754,7 @@ html.dark .with-pastel-balls::before {
 }
 
 .pricing-search-header {
-  padding: 1rem;
+  padding: 0.5rem;
   background-color: var(--semi-color-bg-0);
   flex-shrink: 0;
   position: sticky;
