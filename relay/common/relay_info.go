@@ -63,6 +63,7 @@ type ChannelMeta struct {
 	Organization         string
 	ChannelCreateTime    int64
 	ParamOverride        map[string]interface{}
+	HeadersOverride      map[string]interface{}
 	ChannelSetting       dto.ChannelSettings
 	ChannelOtherSettings dto.ChannelOtherSettings
 	UpstreamModelName    string
@@ -120,6 +121,7 @@ type RelayInfo struct {
 func (info *RelayInfo) InitChannelMeta(c *gin.Context) {
 	channelType := common.GetContextKeyInt(c, constant.ContextKeyChannelType)
 	paramOverride := common.GetContextKeyStringMap(c, constant.ContextKeyChannelParamOverride)
+	headerOverride := common.GetContextKeyStringMap(c, constant.ContextKeyChannelHeaderOverride)
 	apiType, _ := common.ChannelType2APIType(channelType)
 	channelMeta := &ChannelMeta{
 		ChannelType:          channelType,
@@ -133,6 +135,7 @@ func (info *RelayInfo) InitChannelMeta(c *gin.Context) {
 		Organization:         c.GetString("channel_organization"),
 		ChannelCreateTime:    c.GetInt64("channel_create_time"),
 		ParamOverride:        paramOverride,
+		HeadersOverride:      headerOverride,
 		UpstreamModelName:    common.GetContextKeyString(c, constant.ContextKeyOriginalModel),
 		IsModelMapped:        false,
 		SupportStreamOptions: false,

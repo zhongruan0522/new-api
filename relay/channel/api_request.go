@@ -13,6 +13,7 @@ import (
 	"one-api/relay/helper"
 	"one-api/service"
 	"one-api/setting/operation_setting"
+	"one-api/types"
 	"sync"
 	"time"
 
@@ -47,7 +48,19 @@ func DoApiRequest(a Adaptor, c *gin.Context, info *common.RelayInfo, requestBody
 	if err != nil {
 		return nil, fmt.Errorf("new request failed: %w", err)
 	}
-	err = a.SetupRequestHeader(c, &req.Header, info)
+	headers := req.Header
+	headerOverride := make(map[string]string)
+	for k, v := range info.HeadersOverride {
+		if str, ok := v.(string); ok {
+			headerOverride[k] = str
+		} else {
+			return nil, types.NewError(err, types.ErrorCodeChannelHeaderOverrideInvalid)
+		}
+	}
+	for key, value := range headerOverride {
+		headers.Set(key, value)
+	}
+	err = a.SetupRequestHeader(c, &headers, info)
 	if err != nil {
 		return nil, fmt.Errorf("setup request header failed: %w", err)
 	}
@@ -72,8 +85,19 @@ func DoFormRequest(a Adaptor, c *gin.Context, info *common.RelayInfo, requestBod
 	}
 	// set form data
 	req.Header.Set("Content-Type", c.Request.Header.Get("Content-Type"))
-
-	err = a.SetupRequestHeader(c, &req.Header, info)
+	headers := req.Header
+	headerOverride := make(map[string]string)
+	for k, v := range info.HeadersOverride {
+		if str, ok := v.(string); ok {
+			headerOverride[k] = str
+		} else {
+			return nil, types.NewError(err, types.ErrorCodeChannelHeaderOverrideInvalid)
+		}
+	}
+	for key, value := range headerOverride {
+		headers.Set(key, value)
+	}
+	err = a.SetupRequestHeader(c, &headers, info)
 	if err != nil {
 		return nil, fmt.Errorf("setup request header failed: %w", err)
 	}
