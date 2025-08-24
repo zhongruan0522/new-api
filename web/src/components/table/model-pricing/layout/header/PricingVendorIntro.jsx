@@ -252,11 +252,11 @@ const PricingVendorIntro = memo(({
         >
           <div className="relative z-10 h-full flex items-center justify-between p-4">
             <div className="flex-1 min-w-0 mr-4">
-              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-2">
+              <div className="flex flex-row flex-wrap items-center gap-2 sm:gap-3 mb-2">
                 <h2 className="text-lg sm:text-xl font-bold truncate" style={COMPONENT_STYLES.titleText}>
                   {title}
                 </h2>
-                <Tag style={COMPONENT_STYLES.tag} shape="circle" size="small" className="self-start sm:self-center">
+                <Tag style={COMPONENT_STYLES.tag} shape="circle" size="small" className="self-center">
                   {t('共 {{count}} 个模型', { count })}
                 </Tag>
               </div>

@@ -84,9 +84,9 @@ const SKELETON_STYLES = {
     border: `1px solid ${THEME_COLORS.neutral.border}`
   },
   button: {
-    backgroundColor: THEME_COLORS.allVendors.background,
+    backgroundColor: THEME_COLORS.neutral.background,
     borderRadius: 8,
-    border: `1px solid ${THEME_COLORS.allVendors.border}`
+    border: `1px solid ${THEME_COLORS.neutral.border}`
   }
 };
 
@@ -95,7 +95,8 @@ const createSkeletonRect = (style = {}, key = null) => (
 );
 
 const PricingVendorIntroSkeleton = memo(({
-  isAllVendors = false
+  isAllVendors = false,
+  isMobile = false
 }) => {
 
   const placeholder = (
@@ -107,7 +108,7 @@ const PricingVendorIntroSkeleton = memo(({
         >
           <div className="relative z-10 h-full flex items-center justify-between p-4">
             <div className="flex-1 min-w-0 mr-4">
-              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-2">
+              <div className="flex flex-row flex-wrap items-center gap-2 sm:gap-3 mb-2">
                 {createSkeletonRect({
                   ...SKELETON_STYLES.title,
                   width: isAllVendors ? SIZES.title.width.all : SIZES.title.width.specific,
@@ -158,7 +159,13 @@ const PricingVendorIntroSkeleton = memo(({
           ...SKELETON_STYLES.button,
           width: SIZES.button.width,
           height: SIZES.button.height
-        }, 'button')}
+        }, 'copy-button')}
+
+        {isMobile && createSkeletonRect({
+          ...SKELETON_STYLES.button,
+          width: SIZES.button.width,
+          height: SIZES.button.height
+        }, 'filter-button')}
       </div>
     </Card>
   );

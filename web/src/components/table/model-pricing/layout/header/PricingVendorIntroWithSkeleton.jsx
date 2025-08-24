@@ -33,6 +33,7 @@ const PricingVendorIntroWithSkeleton = memo(({
     return (
       <PricingVendorIntroSkeleton
         isAllVendors={filterVendor === 'all'}
+        isMobile={restProps.isMobile}
       />
     );
   }
