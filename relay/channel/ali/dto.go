@@ -86,18 +86,23 @@ type AliResponse struct {
 }
 
 type AliImageRequest struct {
-	Model string `json:"model"`
-	Input struct {
-		Prompt         string `json:"prompt"`
-		NegativePrompt string `json:"negative_prompt,omitempty"`
-	} `json:"input"`
-	Parameters struct {
-		Size  string `json:"size,omitempty"`
-		N     int    `json:"n,omitempty"`
-		Steps string `json:"steps,omitempty"`
-		Scale string `json:"scale,omitempty"`
-	} `json:"parameters,omitempty"`
+	Model          string `json:"model"`
+	Input          any    `json:"input"`
+	Parameters     any    `json:"parameters,omitempty"`
 	ResponseFormat string `json:"response_format,omitempty"`
+}
+
+type AliImageParameters struct {
+	Size      string `json:"size,omitempty"`
+	N         int    `json:"n,omitempty"`
+	Steps     string `json:"steps,omitempty"`
+	Scale     string `json:"scale,omitempty"`
+	Watermark *bool  `json:"watermark,omitempty"`
+}
+
+type AliImageInput struct {
+	Prompt         string `json:"prompt"`
+	NegativePrompt string `json:"negative_prompt,omitempty"`
 }
 
 type AliRerankParameters struct {

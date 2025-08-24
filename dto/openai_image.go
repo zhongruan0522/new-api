@@ -25,6 +25,8 @@ type ImageRequest struct {
 	PartialImages     json.RawMessage `json:"partial_images,omitempty"`
 	// Stream            bool            `json:"stream,omitempty"`
 	Watermark *bool `json:"watermark,omitempty"`
+	// 用匿名参数接收额外参数
+	Extra map[string]json.RawMessage `json:"-"`
 }
 
 func (i *ImageRequest) GetTokenCountMeta() *types.TokenCountMeta {
@@ -72,6 +74,7 @@ func (i *ImageRequest) SetModelName(modelName string) {
 type ImageResponse struct {
 	Data    []ImageData `json:"data"`
 	Created int64       `json:"created"`
+	Extra   any         `json:"extra,omitempty"`
 }
 type ImageData struct {
 	Url           string `json:"url"`

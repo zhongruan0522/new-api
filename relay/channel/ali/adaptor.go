@@ -63,6 +63,9 @@ func (a *Adaptor) SetupRequestHeader(c *gin.Context, req *http.Header, info *rel
 	if c.GetString("plugin") != "" {
 		req.Set("X-DashScope-Plugin", c.GetString("plugin"))
 	}
+	if info.RelayMode == constant.RelayModeImagesGenerations {
+		req.Set("X-DashScope-Async", "enable")
+	}
 	return nil
 }
 
@@ -90,7 +93,10 @@ func (a *Adaptor) ConvertOpenAIRequest(c *gin.Context, info *relaycommon.RelayIn
 }
 
 func (a *Adaptor) ConvertImageRequest(c *gin.Context, info *relaycommon.RelayInfo, request dto.ImageRequest) (any, error) {
-	aliRequest := oaiImage2Ali(request)
+	aliRequest, err := oaiImage2Ali(request)
+	if err != nil {
+		return nil, fmt.Errorf("convert image request failed: %w", err)
+	}
 	return aliRequest, nil
 }
 
@@ -125,8 +131,16 @@ func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, info *relaycom
 			return claude.ClaudeHandler(c, resp, info, claude.RequestModeMessage)
 		}
 	default:
-		adaptor := openai.Adaptor{}
-		return adaptor.DoResponse(c, resp, info)
+		switch info.RelayMode {
+		case constant.RelayModeImagesGenerations:
+			err, usage = aliImageHandler(c, resp, info)
+		case constant.RelayModeRerank:
+			err, usage = RerankHandler(c, resp, info)
+		default:
+			adaptor := openai.Adaptor{}
+			usage, err = adaptor.DoResponse(c, resp, info)
+		}
+		return usage, err
 	}
 }
 
