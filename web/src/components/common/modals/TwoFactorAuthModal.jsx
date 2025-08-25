@@ -47,8 +47,8 @@ const TwoFactorAuthModal = ({
 }) => {
   const { t } = useTranslation();
 
-  const handleKeyPress = (e) => {
-    if (e.key === 'Enter' && code) {
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && code && !loading) {
       onVerify();
     }
   };
@@ -75,7 +75,7 @@ const TwoFactorAuthModal = ({
           <Button
             type="primary"
             loading={loading}
-            disabled={!code}
+            disabled={!code || loading}
             onClick={onVerify}
           >
             {t('验证')}
@@ -114,7 +114,8 @@ const TwoFactorAuthModal = ({
             onChange={onCodeChange}
             size="large"
             maxLength={8}
-            onKeyPress={handleKeyPress}
+            onKeyDown={handleKeyDown}
+            autoFocus
           />
           <Typography.Text type="tertiary" size="small" className="mt-2 block">
             {t('支持6位TOTP验证码或8位备用码')}
