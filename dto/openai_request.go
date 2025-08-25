@@ -67,8 +67,8 @@ type GeneralOpenAIRequest struct {
 	Reasoning json.RawMessage `json:"reasoning,omitempty"`
 	// Ali Qwen Params
 	VlHighResolutionImages json.RawMessage `json:"vl_high_resolution_images,omitempty"`
-	// 用匿名参数接收额外参数，例如ollama的think参数在此接收
-	Extra map[string]json.RawMessage `json:"-"`
+	// ollama Params
+	Think json.RawMessage `json:"think,omitempty"`
 }
 
 func (r *GeneralOpenAIRequest) GetTokenCountMeta() *types.TokenCountMeta {

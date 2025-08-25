@@ -3,7 +3,6 @@ package ali
 import (
 	"errors"
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"io"
 	"net/http"
 	"one-api/dto"
@@ -14,6 +13,8 @@ import (
 	"one-api/relay/constant"
 	"one-api/types"
 	"strings"
+
+	"github.com/gin-gonic/gin"
 )
 
 type Adaptor struct {
@@ -44,6 +45,8 @@ func (a *Adaptor) GetRequestURL(info *relaycommon.RelayInfo) (string, error) {
 			fullRequestURL = fmt.Sprintf("%s/api/v1/services/rerank/text-rerank/text-rerank", info.ChannelBaseUrl)
 		case constant.RelayModeImagesGenerations:
 			fullRequestURL = fmt.Sprintf("%s/api/v1/services/aigc/text2image/image-synthesis", info.ChannelBaseUrl)
+		case constant.RelayModeImagesEdits:
+			fullRequestURL = fmt.Sprintf("%s/api/v1/services/aigc/multimodal-generation/generation", info.ChannelBaseUrl)
 		case constant.RelayModeCompletions:
 			fullRequestURL = fmt.Sprintf("%s/compatible-mode/v1/completions", info.ChannelBaseUrl)
 		default:
@@ -65,6 +68,9 @@ func (a *Adaptor) SetupRequestHeader(c *gin.Context, req *http.Header, info *rel
 	}
 	if info.RelayMode == constant.RelayModeImagesGenerations {
 		req.Set("X-DashScope-Async", "enable")
+	}
+	if info.RelayMode == constant.RelayModeImagesEdits {
+		req.Set("Content-Type", "application/json")
 	}
 	return nil
 }
@@ -93,11 +99,30 @@ func (a *Adaptor) ConvertOpenAIRequest(c *gin.Context, info *relaycommon.RelayIn
 }
 
 func (a *Adaptor) ConvertImageRequest(c *gin.Context, info *relaycommon.RelayInfo, request dto.ImageRequest) (any, error) {
-	aliRequest, err := oaiImage2Ali(request)
-	if err != nil {
-		return nil, fmt.Errorf("convert image request failed: %w", err)
+	if info.RelayMode == constant.RelayModeImagesGenerations {
+		aliRequest, err := oaiImage2Ali(request)
+		if err != nil {
+			return nil, fmt.Errorf("convert image request failed: %w", err)
+		}
+		return aliRequest, nil
+	} else if info.RelayMode == constant.RelayModeImagesEdits {
+		// ali image edit https://bailian.console.aliyun.com/?tab=api#/api/?type=model&url=2976416
+		// 如果用户使用表单，则需要解析表单数据
+		if strings.Contains(c.Request.Header.Get("Content-Type"), "multipart/form-data") {
+			aliRequest, err := oaiFormEdit2AliImageEdit(c, info, request)
+			if err != nil {
+				return nil, fmt.Errorf("convert image edit form request failed: %w", err)
+			}
+			return aliRequest, nil
+		} else {
+			aliRequest, err := oaiImage2Ali(request)
+			if err != nil {
+				return nil, fmt.Errorf("convert image request failed: %w", err)
+			}
+			return aliRequest, nil
+		}
 	}
-	return aliRequest, nil
+	return nil, fmt.Errorf("unsupported image relay mode: %d", info.RelayMode)
 }
 
 func (a *Adaptor) ConvertRerankRequest(c *gin.Context, relayMode int, request dto.RerankRequest) (any, error) {
@@ -134,6 +159,8 @@ func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, info *relaycom
 		switch info.RelayMode {
 		case constant.RelayModeImagesGenerations:
 			err, usage = aliImageHandler(c, resp, info)
+		case constant.RelayModeImagesEdits:
+			err, usage = aliImageEditHandler(c, resp, info)
 		case constant.RelayModeRerank:
 			err, usage = RerankHandler(c, resp, info)
 		default:

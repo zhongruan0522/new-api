@@ -3,8 +3,13 @@ package ali
 import "one-api/dto"
 
 type AliMessage struct {
-	Content string `json:"content"`
+	Content any    `json:"content"`
 	Role    string `json:"role"`
+}
+
+type AliMediaContent struct {
+	Image string `json:"image,omitempty"`
+	Text  string `json:"text,omitempty"`
 }
 
 type AliInput struct {
@@ -70,13 +75,14 @@ type TaskResult struct {
 }
 
 type AliOutput struct {
-	TaskId       string       `json:"task_id,omitempty"`
-	TaskStatus   string       `json:"task_status,omitempty"`
-	Text         string       `json:"text"`
-	FinishReason string       `json:"finish_reason"`
-	Message      string       `json:"message,omitempty"`
-	Code         string       `json:"code,omitempty"`
-	Results      []TaskResult `json:"results,omitempty"`
+	TaskId       string           `json:"task_id,omitempty"`
+	TaskStatus   string           `json:"task_status,omitempty"`
+	Text         string           `json:"text"`
+	FinishReason string           `json:"finish_reason"`
+	Message      string           `json:"message,omitempty"`
+	Code         string           `json:"code,omitempty"`
+	Results      []TaskResult     `json:"results,omitempty"`
+	Choices      []map[string]any `json:"choices,omitempty"`
 }
 
 type AliResponse struct {
@@ -101,8 +107,9 @@ type AliImageParameters struct {
 }
 
 type AliImageInput struct {
-	Prompt         string `json:"prompt"`
-	NegativePrompt string `json:"negative_prompt,omitempty"`
+	Prompt         string       `json:"prompt,omitempty"`
+	NegativePrompt string       `json:"negative_prompt,omitempty"`
+	Messages       []AliMessage `json:"messages,omitempty"`
 }
 
 type AliRerankParameters struct {
