@@ -537,7 +537,7 @@ func detectImageMimeType(filename string) string {
 func (a *Adaptor) ConvertOpenAIResponsesRequest(c *gin.Context, info *relaycommon.RelayInfo, request dto.OpenAIResponsesRequest) (any, error) {
 	//  转换模型推理力度后缀
 	effort, originModel := parseReasoningEffortFromModelSuffix(request.Model)
-	if effort != "" {
+	if effort != "" && request.Reasoning != nil {
 		request.Reasoning.Effort = effort
 		request.Model = originModel
 	}
