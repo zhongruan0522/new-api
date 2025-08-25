@@ -247,6 +247,10 @@ func (channel *Channel) Save() error {
 	return DB.Save(channel).Error
 }
 
+func (channel *Channel) SaveWithoutKey() error {
+	return DB.Omit("key").Save(channel).Error
+}
+
 func GetAllChannels(startIdx int, num int, selectAll bool, idSort bool) ([]*Channel, error) {
 	var channels []*Channel
 	var err error
@@ -645,7 +649,7 @@ func UpdateChannelStatus(channelId int, usingKey string, status int, reason stri
 			channel.Status = status
 			shouldUpdateAbilities = true
 		}
-		err = channel.Save()
+		err = channel.SaveWithoutKey()
 		if err != nil {
 			common.SysLog(fmt.Sprintf("failed to update channel status: channel_id=%d, status=%d, error=%v", channel.Id, status, err))
 			return false
