@@ -1725,30 +1725,29 @@ const EditChannelModal = (props) => {
                   />
 
                   <Form.TextArea
-                      field='header_override'
-                      label={t('请求头覆盖')}
-                      placeholder={
-                          t('此项可选，用于覆盖请求头参数') +
-                          '\n' + t('格式示例：') +
-                          '\n{\n  "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36 Edg/139.0.0.0"\n}'
-                      }
-                      autosize
-                      onChange={(value) => handleInputChange('header_override', value)}
-                      extraText={
-                        <div className="flex gap-2 flex-wrap">
-                          <Text
-                              className="!text-semi-color-primary cursor-pointer"
-                              onClick={() => handleInputChange('header_override', JSON.stringify({
-                                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36 Edg/139.0.0.0"
-                              }, null, 2))}
-                          >
-                            {t('格式模板')}
-                          </Text>
-                        </div>
-                      }
-                      showClear
+                    field='header_override'
+                    label={t('请求头覆盖')}
+                    placeholder={
+                      t('此项可选，用于覆盖请求头参数') +
+                      '\n' + t('格式示例：') +
+                      '\n{\n  "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36 Edg/139.0.0.0"\n}'
+                    }
+                    autosize
+                    onChange={(value) => handleInputChange('header_override', value)}
+                    extraText={
+                      <div className="flex gap-2 flex-wrap">
+                        <Text
+                          className="!text-semi-color-primary cursor-pointer"
+                          onClick={() => handleInputChange('header_override', JSON.stringify({
+                            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36 Edg/139.0.0.0"
+                          }, null, 2))}
+                        >
+                          {t('格式模板')}
+                        </Text>
+                      </div>
+                    }
+                    showClear
                   />
-
 
                   <JSONEditor
                     key={`status_code_mapping-${isEdit ? channelId : 'new'}`}
