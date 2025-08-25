@@ -234,7 +234,7 @@ func NewErrorWithStatusCode(err error, errorCode ErrorCode, statusCode int, ops 
 func WithOpenAIError(openAIError OpenAIError, statusCode int, ops ...NewAPIErrorOptions) *NewAPIError {
 	code, ok := openAIError.Code.(string)
 	if !ok {
-		if openAIError.Code == nil {
+		if openAIError.Code != nil {
 			code = fmt.Sprintf("%v", openAIError.Code)
 		} else {
 			code = "unknown_error"
