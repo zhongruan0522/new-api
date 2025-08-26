@@ -92,6 +92,8 @@ func OaiResponsesStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp
 					}
 				}
 			}
+		} else {
+			logger.LogError(c, "failed to unmarshal stream response: "+err.Error())
 		}
 		return true
 	})
