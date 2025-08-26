@@ -109,7 +109,7 @@ func OaiResponsesStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp
 	}
 
 	if usage.PromptTokens == 0 && usage.CompletionTokens != 0 {
-		usage.PromptTokens = usage.CompletionTokens
+		usage.PromptTokens = info.PromptTokens
 	} else {
 		usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
 	}
