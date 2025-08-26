@@ -57,18 +57,24 @@ type GeneralOpenAIRequest struct {
 	Dimensions          int               `json:"dimensions,omitempty"`
 	Modalities          json.RawMessage   `json:"modalities,omitempty"`
 	Audio               json.RawMessage   `json:"audio,omitempty"`
-	EnableThinking      any               `json:"enable_thinking,omitempty"` // ali
-	THINKING            json.RawMessage   `json:"thinking,omitempty"`        // doubao,zhipu_v4
-	ExtraBody           json.RawMessage   `json:"extra_body,omitempty"`
-	SearchParameters    any               `json:"search_parameters,omitempty"` //xai
-	WebSearchOptions    *WebSearchOptions `json:"web_search_options,omitempty"`
+	// gemini
+	ExtraBody json.RawMessage `json:"extra_body,omitempty"`
+	//xai
+	SearchParameters json.RawMessage `json:"search_parameters,omitempty"`
+	// claude
+	WebSearchOptions *WebSearchOptions `json:"web_search_options,omitempty"`
 	// OpenRouter Params
 	Usage     json.RawMessage `json:"usage,omitempty"`
 	Reasoning json.RawMessage `json:"reasoning,omitempty"`
 	// Ali Qwen Params
 	VlHighResolutionImages json.RawMessage `json:"vl_high_resolution_images,omitempty"`
+	EnableThinking         any             `json:"enable_thinking,omitempty"`
 	// ollama Params
 	Think json.RawMessage `json:"think,omitempty"`
+	// baidu v2
+	WebSearch json.RawMessage `json:"web_search,omitempty"`
+	// doubao,zhipu_v4
+	THINKING json.RawMessage `json:"thinking,omitempty"`
 }
 
 func (r *GeneralOpenAIRequest) GetTokenCountMeta() *types.TokenCountMeta {
