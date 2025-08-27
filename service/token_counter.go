@@ -304,7 +304,7 @@ func CountRequestToken(c *gin.Context, meta *types.TokenCountMeta, info *relayco
 	for _, file := range meta.Files {
 		switch file.FileType {
 		case types.FileTypeImage:
-			if info.RelayFormat == types.RelayFormatGemini {
+			if info.RelayFormat == types.RelayFormatGemini && !strings.HasPrefix(model, "gemini-2.5-flash-image-preview") {
 				tkm += 256
 			} else {
 				token, err := getImageToken(file, model, info.IsStream)
