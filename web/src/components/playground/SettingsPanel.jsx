@@ -143,6 +143,8 @@ const SettingsPanel = ({
             name='group'
             required
             selection
+            filter={selectFilter}
+            autoClearSearchValue={false}
             onChange={(value) => onInputChange('group', value)}
             value={inputs.group}
             autoComplete='new-password'
