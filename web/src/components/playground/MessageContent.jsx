@@ -71,8 +71,8 @@ const MessageContent = ({
     }
 
     return (
-      <div className={`${className} flex items-center p-4 bg-red-50 rounded-xl`}>
-        <Typography.Text type="danger" className="text-sm">
+      <div className={`${className}`}>
+        <Typography.Text className="text-white">
           {errorText}
         </Typography.Text>
       </div>
