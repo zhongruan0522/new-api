@@ -250,12 +250,17 @@ func getImageToken(fileMeta *types.FileMeta, model string, stream bool) (int, er
 }
 
 func CountRequestToken(c *gin.Context, meta *types.TokenCountMeta, info *relaycommon.RelayInfo) (int, error) {
-	if meta == nil {
-		return 0, errors.New("token count meta is nil")
+	if !constant.GetMediaToken {
+		return 0, nil
 	}
-
+	if !constant.GetMediaTokenNotStream && !info.IsStream {
+		return 0, nil
+	}
 	if info.RelayFormat == types.RelayFormatOpenAIRealtime {
 		return 0, nil
+	}
+	if meta == nil {
+		return 0, errors.New("token count meta is nil")
 	}
 
 	model := common.GetContextKeyString(c, constant.ContextKeyOriginalModel)
@@ -276,7 +281,7 @@ func CountRequestToken(c *gin.Context, meta *types.TokenCountMeta, info *relayco
 
 	shouldFetchFiles := true
 
-	if info.RelayFormat == types.RelayFormatOpenAIRealtime || info.RelayFormat == types.RelayFormatGemini {
+	if info.RelayFormat == types.RelayFormatGemini {
 		shouldFetchFiles = false
 	}
 
