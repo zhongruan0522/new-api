@@ -301,7 +301,7 @@ func CountRequestToken(c *gin.Context, meta *types.TokenCountMeta, info *relayco
 		}
 	}
 
-	for _, file := range meta.Files {
+	for i, file := range meta.Files {
 		switch file.FileType {
 		case types.FileTypeImage:
 			if info.RelayFormat == types.RelayFormatGemini {
@@ -309,7 +309,7 @@ func CountRequestToken(c *gin.Context, meta *types.TokenCountMeta, info *relayco
 			} else {
 				token, err := getImageToken(file, model, info.IsStream)
 				if err != nil {
-					return 0, fmt.Errorf("error counting image token: %v", err)
+					return 0, fmt.Errorf("error counting image token, media index[%d], original data[%s], err: %v", i, file.OriginData, err)
 				}
 				tkm += token
 			}
