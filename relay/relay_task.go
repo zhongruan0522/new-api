@@ -24,6 +24,10 @@ Task 任务通过平台、Action 区分任务
 */
 func RelayTaskSubmit(c *gin.Context, info *relaycommon.RelayInfo) (taskErr *dto.TaskError) {
 	info.InitChannelMeta(c)
+	// ensure TaskRelayInfo is initialized to avoid nil dereference when accessing embedded fields
+	if info.TaskRelayInfo == nil {
+		info.TaskRelayInfo = &relaycommon.TaskRelayInfo{}
+	}
 	platform := constant.TaskPlatform(c.GetString("platform"))
 	if platform == "" {
 		platform = GetTaskPlatform(c)
