@@ -302,6 +302,30 @@ func CountRequestToken(c *gin.Context, meta *types.TokenCountMeta, info *relayco
 					file.FileType = types.FileTypeFile
 				}
 				file.MimeType = mineType
+			} else if strings.HasPrefix(file.OriginData, "data:") {
+				// get mime type from base64 header
+				parts := strings.SplitN(file.OriginData, ",", 2)
+				if len(parts) >= 1 {
+					header := parts[0]
+					// Extract mime type from "data:mime/type;base64" format
+					if strings.Contains(header, ":") && strings.Contains(header, ";") {
+						mimeStart := strings.Index(header, ":") + 1
+						mimeEnd := strings.Index(header, ";")
+						if mimeStart < mimeEnd {
+							mineType := header[mimeStart:mimeEnd]
+							if strings.HasPrefix(mineType, "image/") {
+								file.FileType = types.FileTypeImage
+							} else if strings.HasPrefix(mineType, "video/") {
+								file.FileType = types.FileTypeVideo
+							} else if strings.HasPrefix(mineType, "audio/") {
+								file.FileType = types.FileTypeAudio
+							} else {
+								file.FileType = types.FileTypeFile
+							}
+							file.MimeType = mineType
+						}
+					}
+				}
 			}
 		}
 	}
