@@ -20,6 +20,7 @@ For commercial licensing, please contact support@quantumnous.com
 import React, { useState, memo } from 'react';
 import PricingFilterModal from '../../modal/PricingFilterModal';
 import PricingVendorIntroWithSkeleton from './PricingVendorIntroWithSkeleton';
+import SearchActions from './SearchActions';
 
 const PricingTopSection = memo(({
   selectedRowKeys,
@@ -40,28 +41,43 @@ const PricingTopSection = memo(({
 
   return (
     <>
-      <PricingVendorIntroWithSkeleton
-        loading={loading}
-        filterVendor={filterVendor}
-        models={filteredModels}
-        allModels={models}
-        t={t}
-        selectedRowKeys={selectedRowKeys}
-        copyText={copyText}
-        handleChange={handleChange}
-        handleCompositionStart={handleCompositionStart}
-        handleCompositionEnd={handleCompositionEnd}
-        isMobile={isMobile}
-        searchValue={searchValue}
-        setShowFilterModal={setShowFilterModal}
-      />
-
-      {isMobile && (
-        <PricingFilterModal
-          visible={showFilterModal}
-          onClose={() => setShowFilterModal(false)}
-          sidebarProps={sidebarProps}
+      {isMobile ? (
+        <>
+          <div className="w-full">
+            <SearchActions
+              selectedRowKeys={selectedRowKeys}
+              copyText={copyText}
+              handleChange={handleChange}
+              handleCompositionStart={handleCompositionStart}
+              handleCompositionEnd={handleCompositionEnd}
+              isMobile={isMobile}
+              searchValue={searchValue}
+              setShowFilterModal={setShowFilterModal}
+              t={t}
+            />
+          </div>
+          <PricingFilterModal
+            visible={showFilterModal}
+            onClose={() => setShowFilterModal(false)}
+            sidebarProps={sidebarProps}
+            t={t}
+          />
+        </>
+      ) : (
+        <PricingVendorIntroWithSkeleton
+          loading={loading}
+          filterVendor={filterVendor}
+          models={filteredModels}
+          allModels={models}
           t={t}
+          selectedRowKeys={selectedRowKeys}
+          copyText={copyText}
+          handleChange={handleChange}
+          handleCompositionStart={handleCompositionStart}
+          handleCompositionEnd={handleCompositionEnd}
+          isMobile={isMobile}
+          searchValue={searchValue}
+          setShowFilterModal={setShowFilterModal}
         />
       )}
     </>

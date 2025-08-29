@@ -247,7 +247,7 @@ const PricingVendorIntro = memo(({
     <Card className="!rounded-2xl shadow-sm border-0"
       cover={
         <div
-          className="relative h-32"
+          className="relative h-full"
           style={createCoverStyle(primaryDarkerChannel)}
         >
           <div className="relative z-10 h-full flex items-center justify-between p-4">

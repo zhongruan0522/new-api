@@ -202,7 +202,7 @@ const PricingCardView = ({
   }
 
   return (
-    <div className="px-2">
+    <div className="px-2 pt-2">
       <div className="grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-4">
         {paginatedModels.map((model, index) => {
           const modelKey = getModelKey(model);
@@ -278,9 +278,7 @@ const PricingCardView = ({
                 {/* 底部区域 */}
                 <div className="mt-auto">
                   {/* 标签区域 */}
-                  <div className="mb-3">
-                    {renderTags(model)}
-                  </div>
+                  {renderTags(model)}
 
                   {/* 倍率信息（可选） */}
                   {showRatio && (

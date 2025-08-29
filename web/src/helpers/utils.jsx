@@ -656,22 +656,15 @@ export const calculateModelPrice = ({
 
 // 格式化价格信息（用于卡片视图）
 export const formatPriceInfo = (priceData, t) => {
-  const groupTag = priceData.usedGroup ? (
-    <span style={{ color: 'var(--semi-color-text-1)' }} className="ml-1 text-xs">
-      {t('分组')} {priceData.usedGroup}
-    </span>
-  ) : null;
-
   if (priceData.isPerToken) {
     return (
       <>
         <span style={{ color: 'var(--semi-color-text-1)' }}>
-          {t('提示')} {priceData.inputPrice}/{priceData.unitLabel}
+          {t('输入')} {priceData.inputPrice}/{priceData.unitLabel}
         </span>
         <span style={{ color: 'var(--semi-color-text-1)' }}>
-          {t('补全')} {priceData.completionPrice}/{priceData.unitLabel}
+          {t('输出')} {priceData.completionPrice}/{priceData.unitLabel}
         </span>
-        {groupTag}
       </>
     );
   }
@@ -681,7 +674,6 @@ export const formatPriceInfo = (priceData, t) => {
       <span style={{ color: 'var(--semi-color-text-1)' }}>
         {t('模型价格')} {priceData.price}
       </span>
-      {groupTag}
     </>
   );
 };

@@ -103,7 +103,7 @@ const PricingVendorIntroSkeleton = memo(({
     <Card className="!rounded-2xl shadow-sm border-0"
       cover={
         <div
-          className="relative h-32"
+          className="relative h-full"
           style={SKELETON_STYLES.cover(isAllVendors ? THEME_COLORS.allVendors.primary : THEME_COLORS.specific.primary)}
         >
           <div className="relative z-10 h-full flex items-center justify-between p-4">

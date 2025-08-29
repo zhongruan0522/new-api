@@ -775,6 +775,7 @@ html.dark .with-pastel-balls::before {
 }
 
 /* ==================== semi-ui 组件自定义样式 ==================== */
-.semi-card-header {
+.semi-card-header,
+.semi-card-body {
   padding: 10px !important;
 }
