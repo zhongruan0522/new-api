@@ -172,6 +172,9 @@ func (a *TaskAdaptor) BuildRequestBody(c *gin.Context, info *relaycommon.RelayIn
 	if err != nil {
 		return nil, err
 	}
+	if body.Image == "" && body.ImageTail == "" {
+		c.Set("action", constant.TaskActionTextGenerate)
+	}
 	data, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
