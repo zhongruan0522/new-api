@@ -18,9 +18,7 @@ For commercial licensing, please contact support@quantumnous.com
 */
 
 import React from 'react';
-import { Tooltip } from '@douyinfe/semi-ui';
 import SelectableButtonGroup from '../../../common/ui/SelectableButtonGroup';
-import { IconHelpCircle } from '@douyinfe/semi-icons';
 
 const PricingDisplaySettings = ({
   showWithRecharge,
@@ -43,17 +41,7 @@ const PricingDisplaySettings = ({
     },
     {
       value: 'ratio',
-      label: (
-        <span className="flex items-center gap-1">
-          {t('显示倍率')}
-          <Tooltip content={t('倍率是用于系统计算不同模型的最终价格用的，如果您不理解倍率，请忽略')}>
-            <IconHelpCircle
-              size="small"
-              style={{ color: 'var(--semi-color-text-2)', cursor: 'help' }}
-            />
-          </Tooltip>
-        </span>
-      ),
+      label: t('显示倍率')
     },
     {
       value: 'tableView',

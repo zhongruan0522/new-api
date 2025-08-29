@@ -1891,7 +1891,6 @@
   "未知供应商": "Unknown",
   "共 {{count}} 个模型": "{{count}} models",
   "倍率信息": "Ratio information",
-  "倍率是用于系统计算不同模型的最终价格用的，如果您不理解倍率，请忽略": "The ratio is used to calculate the final price of different models in the system. If you do not understand the ratio, please ignore it.",
   "多密钥管理": "Multi-key management",
   "总密钥数": "Total key count",
   "随机模式": "Random mode",

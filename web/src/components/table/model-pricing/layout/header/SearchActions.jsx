@@ -18,8 +18,8 @@ For commercial licensing, please contact support@quantumnous.com
 */
 
 import React, { memo, useCallback } from 'react';
-import { Input, Button, Switch, Select, Divider, Tooltip } from '@douyinfe/semi-ui';
-import { IconSearch, IconCopy, IconFilter, IconHelpCircle } from '@douyinfe/semi-icons';
+import { Input, Button, Switch, Select, Divider } from '@douyinfe/semi-ui';
+import { IconSearch, IconCopy, IconFilter } from '@douyinfe/semi-icons';
 
 const SearchActions = memo(({
   selectedRowKeys = [],
@@ -113,9 +113,6 @@ const SearchActions = memo(({
           {/* 显示倍率开关 */}
           <div className="flex items-center gap-2">
             <span className="text-sm text-gray-600">{t('倍率')}</span>
-            <Tooltip content={t('倍率是用于系统计算不同模型的最终价格用的，如果您不理解倍率，请忽略')}>
-              <IconHelpCircle size="small" style={{ color: 'var(--semi-color-text-2)', cursor: 'help' }} />
-            </Tooltip>
             <Switch
               checked={showRatio}
               onChange={setShowRatio}
