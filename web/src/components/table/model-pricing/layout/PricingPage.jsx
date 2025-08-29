@@ -45,7 +45,6 @@ const PricingPage = () => {
         {!isMobile && (
           <Sider
             className="pricing-scroll-hide pricing-sidebar"
-            width={460}
           >
             <PricingSidebar {...allProps} />
           </Sider>

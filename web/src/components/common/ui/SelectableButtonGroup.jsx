@@ -20,6 +20,7 @@ For commercial licensing, please contact support@quantumnous.com
 import React, { useState } from 'react';
 import { useIsMobile } from '../../../hooks/common/useIsMobile';
 import { useMinimumLoadingTime } from '../../../hooks/common/useMinimumLoadingTime';
+import { useContainerWidth } from '../../../hooks/common/useContainerWidth';
 import { Divider, Button, Tag, Row, Col, Collapsible, Checkbox, Skeleton, Tooltip } from '@douyinfe/semi-ui';
 import { IconChevronDown, IconChevronUp } from '@douyinfe/semi-icons';
 
@@ -52,10 +53,28 @@ const SelectableButtonGroup = ({
   const [isOpen, setIsOpen] = useState(false);
   const [skeletonCount] = useState(6);
   const isMobile = useIsMobile();
-  const perRow = 3;
+  const [containerRef, containerWidth] = useContainerWidth();
+
+  // 基于容器宽度计算响应式列数和标签显示策略
+  const getResponsiveConfig = () => {
+    if (containerWidth <= 280) return { columns: 1, showTags: true };   // 极窄：1列+标签
+    if (containerWidth <= 380) return { columns: 2, showTags: true };   // 窄屏：2列+标签  
+    if (containerWidth <= 460) return { columns: 3, showTags: false };  // 中等：3列不加标签
+    return { columns: 3, showTags: true };                              // 最宽：3列+标签
+  };
+
+  const { columns: perRow, showTags: shouldShowTags } = getResponsiveConfig();
   const maxVisibleRows = Math.max(1, Math.floor(collapseHeight / 32)); // Approx row height 32
   const needCollapse = collapsible && items.length > perRow * maxVisibleRows;
   const showSkeleton = useMinimumLoadingTime(loading);
+
+  // 统一使用紧凑的网格间距
+  const gutterSize = [4, 4];
+
+  // 计算 Semi UI Col 的 span 值
+  const getColSpan = () => {
+    return Math.floor(24 / perRow);
+  };
 
   const maskStyle = isOpen
     ? {}
@@ -87,13 +106,10 @@ const SelectableButtonGroup = ({
   const renderSkeletonButtons = () => {
 
     const placeholder = (
-      <Row gutter={[8, 8]} style={{ lineHeight: '32px', ...style }}>
+      <Row gutter={gutterSize} style={{ lineHeight: '32px', ...style }}>
         {Array.from({ length: skeletonCount }).map((_, index) => (
           <Col
-            {...(isMobile
-              ? { span: 12 }
-              : { span: 8 }
-            )}
+            span={getColSpan()}
             key={index}
           >
             <div style={{
@@ -105,7 +121,7 @@ const SelectableButtonGroup = ({
               border: '1px solid var(--semi-color-border)',
               borderRadius: 'var(--semi-border-radius-medium)',
               padding: '0 12px',
-              gap: '8px'
+              gap: '6px'
             }}>
               {withCheckbox && (
                 <Skeleton.Title active style={{ width: 14, height: 14 }} />
@@ -129,7 +145,7 @@ const SelectableButtonGroup = ({
   };
 
   const contentElement = showSkeleton ? renderSkeletonButtons() : (
-    <Row gutter={[8, 8]} style={{ lineHeight: '32px', ...style }}>
+    <Row gutter={gutterSize} style={{ lineHeight: '32px', ...style }}>
       {items.map((item) => {
         const isDisabled = item.disabled || (typeof item.tagCount === 'number' && item.tagCount === 0);
         const isActive = Array.isArray(activeValue)
@@ -139,10 +155,7 @@ const SelectableButtonGroup = ({
         if (withCheckbox) {
           return (
             <Col
-              {...(isMobile
-                ? { span: 12 }
-                : { span: 8 }
-              )}
+              span={getColSpan()}
               key={item.value}
             >
               <Button
@@ -166,7 +179,7 @@ const SelectableButtonGroup = ({
                   <Tooltip content={item.label}>
                     <span className="sbg-ellipsis">{item.label}</span>
                   </Tooltip>
-                  {item.tagCount !== undefined && (
+                  {item.tagCount !== undefined && shouldShowTags && (
                     <Tag className="sbg-tag" color='white' shape="circle" size="small">{item.tagCount}</Tag>
                   )}
                 </div>
@@ -177,10 +190,7 @@ const SelectableButtonGroup = ({
 
         return (
           <Col
-            {...(isMobile
-              ? { span: 12 }
-              : { span: 8 }
-            )}
+            span={getColSpan()}
             key={item.value}
           >
             <Button
@@ -196,7 +206,7 @@ const SelectableButtonGroup = ({
                 <Tooltip content={item.label}>
                   <span className="sbg-ellipsis">{item.label}</span>
                 </Tooltip>
-                {item.tagCount !== undefined && (
+                {item.tagCount !== undefined && shouldShowTags && (
                   <Tag className="sbg-tag" color='white' shape="circle" size="small">{item.tagCount}</Tag>
                 )}
               </div>
@@ -208,7 +218,7 @@ const SelectableButtonGroup = ({
   );
 
   return (
-    <div className="mb-8">
+    <div className={`mb-8 ${containerWidth <= 400 ? 'sbg-compact' : ''}`} ref={containerRef}>
       {title && (
         <Divider margin="12px" align="left">
           {showSkeleton ? (
