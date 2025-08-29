@@ -71,7 +71,7 @@ const FilterModalContent = ({ sidebarProps, t }) => {
   });
 
   return (
-    <div className="p-2">
+    <>
       <PricingDisplaySettings
         showWithRecharge={showWithRecharge}
         setShowWithRecharge={setShowWithRecharge}
@@ -131,7 +131,7 @@ const FilterModalContent = ({ sidebarProps, t }) => {
         loading={loading}
         t={t}
       />
-    </div>
+    </>
   );
 };
 

@@ -38,7 +38,7 @@ const ScrollableContainer = forwardRef(({
   children,
   maxHeight = '24rem',
   className = '',
-  contentClassName = 'p-2',
+  contentClassName = '',
   fadeIndicatorClassName = '',
   checkInterval = 100,
   scrollThreshold = 5,

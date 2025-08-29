@@ -19,7 +19,8 @@ For commercial licensing, please contact support@quantumnous.com
 
 import React from 'react';
 import { Card, Tag, Tooltip, Checkbox, Empty, Pagination, Button, Avatar } from '@douyinfe/semi-ui';
-import { IconHelpCircle, IconCopy } from '@douyinfe/semi-icons';
+import { IconHelpCircle } from '@douyinfe/semi-icons';
+import { Copy } from 'lucide-react';
 import { IllustrationNoResult, IllustrationNoResultDark } from '@douyinfe/semi-illustrations';
 import { stringToColor, calculateModelPrice, formatPriceInfo, getLobeHubIcon } from '../../../../../helpers';
 import PricingCardSkeleton from './PricingCardSkeleton';
@@ -245,7 +246,7 @@ const PricingCardView = ({
                       size="small"
                       theme="outline"
                       type="tertiary"
-                      icon={<IconCopy />}
+                      icon={<Copy size={12} />}
                       onClick={(e) => {
                         e.stopPropagation();
                         copyText(model.model_name);

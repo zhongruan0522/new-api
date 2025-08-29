@@ -22,6 +22,7 @@ import { Tag, Space, Tooltip } from '@douyinfe/semi-ui';
 import { IconHelpCircle } from '@douyinfe/semi-icons';
 import { renderModelTag, stringToColor, calculateModelPrice, getLobeHubIcon } from '../../../../../helpers';
 import { renderLimitedItems, renderDescription } from '../../../../common/ui/RenderUtils';
+import { useIsMobile } from '../../../../../hooks/common/useIsMobile';
 
 function renderQuotaType(type, t) {
   switch (type) {
@@ -98,7 +99,7 @@ export const getPricingTableColumns = ({
   displayPrice,
   showRatio,
 }) => {
-
+  const isMobile = useIsMobile();
   const priceDataCache = new WeakMap();
 
   const getPriceData = (record) => {
@@ -207,7 +208,7 @@ export const getPricingTableColumns = ({
   const priceColumn = {
     title: t('模型价格'),
     dataIndex: 'model_price',
-    fixed: 'right',
+    ...(isMobile ? {} : { fixed: 'right' }),
     render: (text, record, index) => {
       const priceData = getPriceData(record);
 
@@ -215,10 +216,10 @@ export const getPricingTableColumns = ({
         return (
           <div className="space-y-1">
             <div className="text-gray-700">
-              {t('提示')} {priceData.inputPrice} / 1{priceData.unitLabel} tokens
+              {t('输入')} {priceData.inputPrice} / 1{priceData.unitLabel} tokens
             </div>
             <div className="text-gray-700">
-              {t('补全')} {priceData.completionPrice} / 1{priceData.unitLabel} tokens
+              {t('输出')} {priceData.completionPrice} / 1{priceData.unitLabel} tokens
             </div>
           </div>
         );

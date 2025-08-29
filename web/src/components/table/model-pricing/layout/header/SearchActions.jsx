@@ -18,8 +18,8 @@ For commercial licensing, please contact support@quantumnous.com
 */
 
 import React, { memo, useCallback } from 'react';
-import { Input, Button } from '@douyinfe/semi-ui';
-import { IconSearch, IconCopy, IconFilter } from '@douyinfe/semi-icons';
+import { Input, Button, Switch, Select, Divider, Tooltip } from '@douyinfe/semi-ui';
+import { IconSearch, IconCopy, IconFilter, IconHelpCircle } from '@douyinfe/semi-icons';
 
 const SearchActions = memo(({
   selectedRowKeys = [],
@@ -30,6 +30,16 @@ const SearchActions = memo(({
   isMobile = false,
   searchValue = '',
   setShowFilterModal,
+  showWithRecharge,
+  setShowWithRecharge,
+  currency,
+  setCurrency,
+  showRatio,
+  setShowRatio,
+  viewMode,
+  setViewMode,
+  tokenUnit,
+  setTokenUnit,
   t
 }) => {
   const handleCopyClick = useCallback(() => {
@@ -41,6 +51,14 @@ const SearchActions = memo(({
   const handleFilterClick = useCallback(() => {
     setShowFilterModal?.(true);
   }, [setShowFilterModal]);
+
+  const handleViewModeToggle = useCallback(() => {
+    setViewMode?.(viewMode === 'table' ? 'card' : 'table');
+  }, [viewMode, setViewMode]);
+
+  const handleTokenUnitToggle = useCallback(() => {
+    setTokenUnit?.(tokenUnit === 'K' ? 'M' : 'K');
+  }, [tokenUnit, setTokenUnit]);
 
   return (
     <div className="flex items-center gap-2 w-full">
@@ -66,6 +84,63 @@ const SearchActions = memo(({
       >
         {t('复制')}
       </Button>
+
+      {!isMobile && (
+        <>
+          <Divider layout="vertical" margin="8px" />
+
+          {/* 充值价格显示开关 */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-600">{t('充值价格显示')}</span>
+            <Switch
+              checked={showWithRecharge}
+              onChange={setShowWithRecharge}
+            />
+          </div>
+
+          {/* 货币单位选择 */}
+          {showWithRecharge && (
+            <Select
+              value={currency}
+              onChange={setCurrency}
+              optionList={[
+                { value: 'USD', label: 'USD' },
+                { value: 'CNY', label: 'CNY' }
+              ]}
+            />
+          )}
+
+          {/* 显示倍率开关 */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-600">{t('倍率')}</span>
+            <Tooltip content={t('倍率是用于系统计算不同模型的最终价格用的，如果您不理解倍率，请忽略')}>
+              <IconHelpCircle size="small" style={{ color: 'var(--semi-color-text-2)', cursor: 'help' }} />
+            </Tooltip>
+            <Switch
+              checked={showRatio}
+              onChange={setShowRatio}
+            />
+          </div>
+
+          {/* 视图模式切换按钮 */}
+          <Button
+            theme={viewMode === 'table' ? 'solid' : 'outline'}
+            type={viewMode === 'table' ? 'primary' : 'tertiary'}
+            onClick={handleViewModeToggle}
+          >
+            {t('表格视图')}
+          </Button>
+
+          {/* Token单位切换按钮 */}
+          <Button
+            theme={tokenUnit === 'K' ? 'solid' : 'outline'}
+            type={tokenUnit === 'K' ? 'primary' : 'tertiary'}
+            onClick={handleTokenUnitToggle}
+          >
+            {tokenUnit}
+          </Button>
+        </>
+      )}
 
       {isMobile && (
         <Button

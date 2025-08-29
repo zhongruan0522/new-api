@@ -17,8 +17,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 
-import React, { useState } from 'react';
-import { useIsMobile } from '../../../hooks/common/useIsMobile';
+import React, { useState, useRef, useEffect } from 'react';
 import { useMinimumLoadingTime } from '../../../hooks/common/useMinimumLoadingTime';
 import { useContainerWidth } from '../../../hooks/common/useContainerWidth';
 import { Divider, Button, Tag, Row, Col, Collapsible, Checkbox, Skeleton, Tooltip } from '@douyinfe/semi-ui';
@@ -51,9 +50,33 @@ const SelectableButtonGroup = ({
   loading = false
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [skeletonCount] = useState(6);
-  const isMobile = useIsMobile();
+  const [skeletonCount] = useState(12);
   const [containerRef, containerWidth] = useContainerWidth();
+
+  const ConditionalTooltipText = ({ text }) => {
+    const textRef = useRef(null);
+    const [isOverflowing, setIsOverflowing] = useState(false);
+
+    useEffect(() => {
+      const el = textRef.current;
+      if (!el) return;
+      setIsOverflowing(el.scrollWidth > el.clientWidth);
+    }, [text, containerWidth]);
+
+    const textElement = (
+      <span ref={textRef} className="sbg-ellipsis">
+        {text}
+      </span>
+    );
+
+    return isOverflowing ? (
+      <Tooltip content={text}>
+        {textElement}
+      </Tooltip>
+    ) : (
+      textElement
+    );
+  };
 
   // 基于容器宽度计算响应式列数和标签显示策略
   const getResponsiveConfig = () => {
@@ -176,9 +199,7 @@ const SelectableButtonGroup = ({
               >
                 <div className="sbg-content">
                   {item.icon && (<span className="sbg-icon">{item.icon}</span>)}
-                  <Tooltip content={item.label}>
-                    <span className="sbg-ellipsis">{item.label}</span>
-                  </Tooltip>
+                  <ConditionalTooltipText text={item.label} />
                   {item.tagCount !== undefined && shouldShowTags && (
                     <Tag className="sbg-tag" color='white' shape="circle" size="small">{item.tagCount}</Tag>
                   )}
@@ -203,9 +224,7 @@ const SelectableButtonGroup = ({
             >
               <div className="sbg-content">
                 {item.icon && (<span className="sbg-icon">{item.icon}</span>)}
-                <Tooltip content={item.label}>
-                  <span className="sbg-ellipsis">{item.label}</span>
-                </Tooltip>
+                <ConditionalTooltipText text={item.label} />
                 {item.tagCount !== undefined && shouldShowTags && (
                   <Tag className="sbg-tag" color='white' shape="circle" size="small">{item.tagCount}</Tag>
                 )}

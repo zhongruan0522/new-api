@@ -38,7 +38,6 @@ const PricingTable = ({
   setIsModalOpenurl,
   currency,
   tokenUnit,
-  setTokenUnit,
   displayPrice,
   searchValue,
   showRatio,
@@ -99,7 +98,6 @@ const PricingTable = ({
         dataSource={filteredModels}
         loading={loading}
         rowSelection={rowSelection}
-        className="custom-table"
         scroll={compactMode ? undefined : { x: 'max-content' }}
         onRow={(record) => ({
           onClick: () => openModelDetail && openModelDetail(record),
@@ -114,7 +112,7 @@ const PricingTable = ({
           />
         }
         pagination={{
-          defaultPageSize: 100,
+          defaultPageSize: 20,
           pageSize: pageSize,
           showSizeChanger: true,
           pageSizeOptions: [10, 20, 50, 100],

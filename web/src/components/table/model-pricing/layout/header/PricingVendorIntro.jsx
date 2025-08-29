@@ -126,7 +126,17 @@ const PricingVendorIntro = memo(({
   handleCompositionEnd,
   isMobile = false,
   searchValue = '',
-  setShowFilterModal
+  setShowFilterModal,
+  showWithRecharge,
+  setShowWithRecharge,
+  currency,
+  setCurrency,
+  showRatio,
+  setShowRatio,
+  viewMode,
+  setViewMode,
+  tokenUnit,
+  setTokenUnit
 }) => {
   const [currentOffset, setCurrentOffset] = useState(0);
   const [descModalVisible, setDescModalVisible] = useState(false);
@@ -239,9 +249,19 @@ const PricingVendorIntro = memo(({
       isMobile={isMobile}
       searchValue={searchValue}
       setShowFilterModal={setShowFilterModal}
+      showWithRecharge={showWithRecharge}
+      setShowWithRecharge={setShowWithRecharge}
+      currency={currency}
+      setCurrency={setCurrency}
+      showRatio={showRatio}
+      setShowRatio={setShowRatio}
+      viewMode={viewMode}
+      setViewMode={setViewMode}
+      tokenUnit={tokenUnit}
+      setTokenUnit={setTokenUnit}
       t={t}
     />
-  ), [selectedRowKeys, copyText, handleChange, handleCompositionStart, handleCompositionEnd, isMobile, searchValue, setShowFilterModal, t]);
+  ), [selectedRowKeys, copyText, handleChange, handleCompositionStart, handleCompositionEnd, isMobile, searchValue, setShowFilterModal, showWithRecharge, setShowWithRecharge, currency, setCurrency, showRatio, setShowRatio, viewMode, setViewMode, tokenUnit, setTokenUnit, t]);
 
   const renderHeaderCard = useCallback(({ title, count, description, rightContent, primaryDarkerChannel }) => (
     <Card className="!rounded-2xl shadow-sm border-0"

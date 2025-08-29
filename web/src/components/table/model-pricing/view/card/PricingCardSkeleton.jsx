@@ -92,7 +92,7 @@ const PricingCardSkeleton = ({
                   size="small"
                   style={{
                     width: 64,
-                    height: 20,
+                    height: 18,
                     borderRadius: 10
                   }}
                 />
