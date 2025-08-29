@@ -21,7 +21,7 @@ import React from 'react';
 import { Card, Skeleton } from '@douyinfe/semi-ui';
 
 const PricingCardSkeleton = ({
-  skeletonCount = 10,
+  skeletonCount = 100,
   rowSelection = false,
   showRatio = false
 }) => {

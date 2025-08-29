@@ -282,10 +282,7 @@ const PricingCardView = ({
 
                   {/* 倍率信息（可选） */}
                   {showRatio && (
-                    <div
-                      className="pt-3 border-t border-dashed"
-                      style={{ borderColor: 'var(--semi-color-border)' }}
-                    >
+                    <div className="pt-3">
                       <div className="flex items-center space-x-1 mb-2">
                         <span className="text-xs font-medium text-gray-700">{t('倍率信息')}</span>
                         <Tooltip content={t('倍率是为了方便换算不同价格的模型')}>
