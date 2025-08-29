@@ -37,6 +37,36 @@ var defaultVendorRules = map[string]string{
 	"vidu":     "Vidu",
 }
 
+// 供应商默认图标映射
+var defaultVendorIcons = map[string]string{
+	"OpenAI":     "OpenAI",
+	"Anthropic":  "Claude.Color",
+	"Google":     "Gemini.Color",
+	"Moonshot":   "Moonshot",
+	"智谱":         "Zhipu.Color",
+	"阿里巴巴":       "Qwen.Color",
+	"DeepSeek":   "DeepSeek.Color",
+	"MiniMax":    "Minimax.Color",
+	"百度":         "Wenxin.Color",
+	"讯飞":         "Spark.Color",
+	"腾讯":         "Hunyuan.Color",
+	"Cohere":     "Cohere.Color",
+	"Cloudflare": "Cloudflare.Color",
+	"360":        "Ai360.Color",
+	"零一万物":       "Yi.Color",
+	"Jina":       "Jina",
+	"Mistral":    "Mistral.Color",
+	"xAI":        "XAI",
+	"Meta":       "Ollama",
+	"字节跳动":       "Doubao.Color",
+	"快手":         "Kling.Color",
+	"即梦":         "Jimeng.Color",
+	"Vidu":       "Vidu",
+	"微软":         "AzureAI",
+	"Microsoft":  "AzureAI",
+	"Azure":      "AzureAI",
+}
+
 // initDefaultVendorMapping 简化的默认供应商映射
 func initDefaultVendorMapping(metaMap map[string]*Model, vendorMap map[int]*Vendor, enableAbilities []AbilityWithChannel) {
 	for _, ability := range enableAbilities {
@@ -78,6 +108,7 @@ func getOrCreateVendor(vendorName string, vendorMap map[int]*Vendor) int {
 	newVendor := &Vendor{
 		Name:   vendorName,
 		Status: 1,
+		Icon:   getDefaultVendorIcon(vendorName),
 	}
 
 	if err := newVendor.Insert(); err != nil {
@@ -86,4 +117,12 @@ func getOrCreateVendor(vendorName string, vendorMap map[int]*Vendor) int {
 
 	vendorMap[newVendor.Id] = newVendor
 	return newVendor.Id
+}
+
+// 获取供应商默认图标
+func getDefaultVendorIcon(vendorName string) string {
+	if icon, exists := defaultVendorIcons[vendorName]; exists {
+		return icon
+	}
+	return ""
 }
