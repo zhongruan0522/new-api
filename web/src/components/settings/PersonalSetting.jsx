@@ -38,6 +38,8 @@ const PersonalSetting = () => {
   let navigate = useNavigate();
   const { t } = useTranslation();
 
+
+
   const [inputs, setInputs] = useState({
     wechat_verification_code: '',
     email_verification_code: '',
@@ -330,6 +332,8 @@ const PersonalSetting = () => {
               saveNotificationSettings={saveNotificationSettings}
             />
           </div>
+
+
         </div>
       </div>
 

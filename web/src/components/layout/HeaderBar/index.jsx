@@ -44,6 +44,8 @@ const HeaderBar = ({ onMobileMenuToggle, drawerOpen }) => {
     isDemoSiteMode,
     isConsoleRoute,
     theme,
+    headerNavModules,
+    pricingRequireAuth,
     logout,
     handleLanguageChange,
     handleThemeToggle,
@@ -60,7 +62,7 @@ const HeaderBar = ({ onMobileMenuToggle, drawerOpen }) => {
     getUnreadKeys,
   } = useNotifications(statusState);
 
-  const { mainNavLinks } = useNavigation(t, docsLink);
+  const { mainNavLinks } = useNavigation(t, docsLink, headerNavModules);
 
   return (
     <header className='text-semi-color-text-0 sticky top-0 z-50 transition-colors duration-300 bg-white/75 dark:bg-zinc-900/75 backdrop-blur-lg'>
@@ -102,6 +104,7 @@ const HeaderBar = ({ onMobileMenuToggle, drawerOpen }) => {
             isMobile={isMobile}
             isLoading={isLoading}
             userState={userState}
+            pricingRequireAuth={pricingRequireAuth}
           />
 
           <ActionButtons
