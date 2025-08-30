@@ -32,30 +32,30 @@ const PricingDisplaySettings = ({
   tokenUnit,
   setTokenUnit,
   loading = false,
-  t
+  t,
 }) => {
   const items = [
     {
       value: 'recharge',
-      label: t('充值价格显示')
+      label: t('充值价格显示'),
     },
     {
       value: 'ratio',
-      label: t('显示倍率')
+      label: t('显示倍率'),
     },
     {
       value: 'tableView',
-      label: t('表格视图')
+      label: t('表格视图'),
     },
     {
       value: 'tokenUnit',
-      label: t('按K显示单位')
-    }
+      label: t('按K显示单位'),
+    },
   ];
 
   const currencyItems = [
     { value: 'USD', label: 'USD ($)' },
-    { value: 'CNY', label: 'CNY (¥)' }
+    { value: 'CNY', label: 'CNY (¥)' },
   ];
 
   const handleChange = (value) => {
@@ -112,4 +112,4 @@ const PricingDisplaySettings = ({
   );
 };
 
-export default PricingDisplaySettings; 
+export default PricingDisplaySettings;

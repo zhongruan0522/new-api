@@ -73,10 +73,7 @@ function App() {
             </Suspense>
           }
         />
-        <Route
-          path='/forbidden'
-          element={<Forbidden />}
-        />
+        <Route path='/forbidden' element={<Forbidden />} />
         <Route
           path='/console/models'
           element={

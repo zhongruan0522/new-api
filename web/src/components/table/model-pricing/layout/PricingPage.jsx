@@ -36,23 +36,19 @@ const PricingPage = () => {
     showRatio,
     setShowRatio,
     viewMode,
-    setViewMode
+    setViewMode,
   };
 
   return (
-    <div className="bg-white">
-      <Layout className="pricing-layout">
+    <div className='bg-white'>
+      <Layout className='pricing-layout'>
         {!isMobile && (
-          <Sider
-            className="pricing-scroll-hide pricing-sidebar"
-          >
+          <Sider className='pricing-scroll-hide pricing-sidebar'>
             <PricingSidebar {...allProps} />
           </Sider>
         )}
 
-        <Content
-          className="pricing-scroll-hide pricing-content"
-        >
+        <Content className='pricing-scroll-hide pricing-content'>
           <PricingContent
             {...allProps}
             isMobile={isMobile}
@@ -86,4 +82,4 @@ const PricingPage = () => {
   );
 };
 
-export default PricingPage; 
+export default PricingPage;

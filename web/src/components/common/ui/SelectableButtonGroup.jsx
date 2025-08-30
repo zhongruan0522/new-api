@@ -20,7 +20,17 @@ For commercial licensing, please contact support@quantumnous.com
 import React, { useState, useRef, useEffect } from 'react';
 import { useMinimumLoadingTime } from '../../../hooks/common/useMinimumLoadingTime';
 import { useContainerWidth } from '../../../hooks/common/useContainerWidth';
-import { Divider, Button, Tag, Row, Col, Collapsible, Checkbox, Skeleton, Tooltip } from '@douyinfe/semi-ui';
+import {
+  Divider,
+  Button,
+  Tag,
+  Row,
+  Col,
+  Collapsible,
+  Checkbox,
+  Skeleton,
+  Tooltip,
+} from '@douyinfe/semi-ui';
 import { IconChevronDown, IconChevronUp } from '@douyinfe/semi-icons';
 
 /**
@@ -47,7 +57,7 @@ const SelectableButtonGroup = ({
   collapsible = true,
   collapseHeight = 200,
   withCheckbox = false,
-  loading = false
+  loading = false,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [skeletonCount] = useState(12);
@@ -64,15 +74,13 @@ const SelectableButtonGroup = ({
     }, [text, containerWidth]);
 
     const textElement = (
-      <span ref={textRef} className="sbg-ellipsis">
+      <span ref={textRef} className='sbg-ellipsis'>
         {text}
       </span>
     );
 
     return isOverflowing ? (
-      <Tooltip content={text}>
-        {textElement}
-      </Tooltip>
+      <Tooltip content={text}>{textElement}</Tooltip>
     ) : (
       textElement
     );
@@ -80,10 +88,10 @@ const SelectableButtonGroup = ({
 
   // 基于容器宽度计算响应式列数和标签显示策略
   const getResponsiveConfig = () => {
-    if (containerWidth <= 280) return { columns: 1, showTags: true };   // 极窄：1列+标签
-    if (containerWidth <= 380) return { columns: 2, showTags: true };   // 窄屏：2列+标签  
-    if (containerWidth <= 460) return { columns: 3, showTags: false };  // 中等：3列不加标签
-    return { columns: 3, showTags: true };                              // 最宽：3列+标签
+    if (containerWidth <= 280) return { columns: 1, showTags: true }; // 极窄：1列+标签
+    if (containerWidth <= 380) return { columns: 2, showTags: true }; // 窄屏：2列+标签
+    if (containerWidth <= 460) return { columns: 3, showTags: false }; // 中等：3列不加标签
+    return { columns: 3, showTags: true }; // 最宽：3列+标签
   };
 
   const { columns: perRow, showTags: shouldShowTags } = getResponsiveConfig();
@@ -102,9 +110,9 @@ const SelectableButtonGroup = ({
   const maskStyle = isOpen
     ? {}
     : {
-      WebkitMaskImage:
-        'linear-gradient(to bottom, black 0%, rgba(0, 0, 0, 1) 60%, rgba(0, 0, 0, 0.2) 80%, transparent 100%)',
-    };
+        WebkitMaskImage:
+          'linear-gradient(to bottom, black 0%, rgba(0, 0, 0, 1) 60%, rgba(0, 0, 0, 0.2) 80%, transparent 100%)',
+      };
 
   const toggle = () => {
     setIsOpen(!isOpen);
@@ -127,25 +135,23 @@ const SelectableButtonGroup = ({
   };
 
   const renderSkeletonButtons = () => {
-
     const placeholder = (
       <Row gutter={gutterSize} style={{ lineHeight: '32px', ...style }}>
         {Array.from({ length: skeletonCount }).map((_, index) => (
-          <Col
-            span={getColSpan()}
-            key={index}
-          >
-            <div style={{
-              width: '100%',
-              height: '32px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'flex-start',
-              border: '1px solid var(--semi-color-border)',
-              borderRadius: 'var(--semi-border-radius-medium)',
-              padding: '0 12px',
-              gap: '6px'
-            }}>
+          <Col span={getColSpan()} key={index}>
+            <div
+              style={{
+                width: '100%',
+                height: '32px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'flex-start',
+                border: '1px solid var(--semi-color-border)',
+                borderRadius: 'var(--semi-border-radius-medium)',
+                padding: '0 12px',
+                gap: '6px',
+              }}
+            >
               {withCheckbox && (
                 <Skeleton.Title active style={{ width: 14, height: 14 }} />
               )}
@@ -153,7 +159,7 @@ const SelectableButtonGroup = ({
                 active
                 style={{
                   width: `${60 + (index % 3) * 20}px`,
-                  height: 14
+                  height: 14,
                 }}
               />
             </div>
@@ -167,26 +173,29 @@ const SelectableButtonGroup = ({
     );
   };
 
-  const contentElement = showSkeleton ? renderSkeletonButtons() : (
+  const contentElement = showSkeleton ? (
+    renderSkeletonButtons()
+  ) : (
     <Row gutter={gutterSize} style={{ lineHeight: '32px', ...style }}>
       {items.map((item) => {
-        const isDisabled = item.disabled || (typeof item.tagCount === 'number' && item.tagCount === 0);
+        const isDisabled =
+          item.disabled ||
+          (typeof item.tagCount === 'number' && item.tagCount === 0);
         const isActive = Array.isArray(activeValue)
           ? activeValue.includes(item.value)
           : activeValue === item.value;
 
         if (withCheckbox) {
           return (
-            <Col
-              span={getColSpan()}
-              key={item.value}
-            >
+            <Col span={getColSpan()} key={item.value}>
               <Button
-                onClick={() => { /* disabled */ }}
+                onClick={() => {
+                  /* disabled */
+                }}
                 theme={isActive ? 'light' : 'outline'}
                 type={isActive ? 'primary' : 'tertiary'}
                 disabled={isDisabled}
-                className="sbg-button"
+                className='sbg-button'
                 icon={
                   <Checkbox
                     checked={isActive}
@@ -197,11 +206,18 @@ const SelectableButtonGroup = ({
                 }
                 style={{ width: '100%', cursor: 'default' }}
               >
-                <div className="sbg-content">
-                  {item.icon && (<span className="sbg-icon">{item.icon}</span>)}
+                <div className='sbg-content'>
+                  {item.icon && <span className='sbg-icon'>{item.icon}</span>}
                   <ConditionalTooltipText text={item.label} />
                   {item.tagCount !== undefined && shouldShowTags && (
-                    <Tag className="sbg-tag" color='white' shape="circle" size="small">{item.tagCount}</Tag>
+                    <Tag
+                      className='sbg-tag'
+                      color='white'
+                      shape='circle'
+                      size='small'
+                    >
+                      {item.tagCount}
+                    </Tag>
                   )}
                 </div>
               </Button>
@@ -210,23 +226,27 @@ const SelectableButtonGroup = ({
         }
 
         return (
-          <Col
-            span={getColSpan()}
-            key={item.value}
-          >
+          <Col span={getColSpan()} key={item.value}>
             <Button
               onClick={() => onChange(item.value)}
               theme={isActive ? 'light' : 'outline'}
               type={isActive ? 'primary' : 'tertiary'}
               disabled={isDisabled}
-              className="sbg-button"
+              className='sbg-button'
               style={{ width: '100%' }}
             >
-              <div className="sbg-content">
-                {item.icon && (<span className="sbg-icon">{item.icon}</span>)}
+              <div className='sbg-content'>
+                {item.icon && <span className='sbg-icon'>{item.icon}</span>}
                 <ConditionalTooltipText text={item.label} />
                 {item.tagCount !== undefined && shouldShowTags && (
-                  <Tag className="sbg-tag" color='white' shape="circle" size="small">{item.tagCount}</Tag>
+                  <Tag
+                    className='sbg-tag'
+                    color='white'
+                    shape='circle'
+                    size='small'
+                  >
+                    {item.tagCount}
+                  </Tag>
                 )}
               </div>
             </Button>
@@ -237,9 +257,12 @@ const SelectableButtonGroup = ({
   );
 
   return (
-    <div className={`mb-8 ${containerWidth <= 400 ? 'sbg-compact' : ''}`} ref={containerRef}>
+    <div
+      className={`mb-8 ${containerWidth <= 400 ? 'sbg-compact' : ''}`}
+      ref={containerRef}
+    >
       {title && (
-        <Divider margin="12px" align="left">
+        <Divider margin='12px' align='left'>
           {showSkeleton ? (
             <Skeleton.Title active style={{ width: 80, height: 14 }} />
           ) : (
@@ -249,23 +272,30 @@ const SelectableButtonGroup = ({
       )}
       {needCollapse && !showSkeleton ? (
         <div style={{ position: 'relative' }}>
-          <Collapsible isOpen={isOpen} collapseHeight={collapseHeight} style={{ ...maskStyle }}>
+          <Collapsible
+            isOpen={isOpen}
+            collapseHeight={collapseHeight}
+            style={{ ...maskStyle }}
+          >
             {contentElement}
           </Collapsible>
           {isOpen ? null : (
             <div onClick={toggle} style={{ ...linkStyle }}>
-              <IconChevronDown size="small" />
+              <IconChevronDown size='small' />
               <span>{t('展开更多')}</span>
             </div>
           )}
           {isOpen && (
-            <div onClick={toggle} style={{
-              ...linkStyle,
-              position: 'static',
-              marginTop: 8,
-              bottom: 'auto'
-            }}>
-              <IconChevronUp size="small" />
+            <div
+              onClick={toggle}
+              style={{
+                ...linkStyle,
+                position: 'static',
+                marginTop: 8,
+                bottom: 'auto',
+              }}
+            >
+              <IconChevronUp size='small' />
               <span>{t('收起')}</span>
             </div>
           )}
@@ -277,4 +307,4 @@ const SelectableButtonGroup = ({
   );
 };
 
-export default SelectableButtonGroup; 
+export default SelectableButtonGroup;

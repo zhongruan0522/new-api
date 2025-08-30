@@ -31,7 +31,7 @@ export const useContainerWidth = () => {
     const element = ref.current;
     if (!element) return;
 
-    const resizeObserver = new ResizeObserver(entries => {
+    const resizeObserver = new ResizeObserver((entries) => {
       for (let entry of entries) {
         const { width: newWidth } = entry.contentRect;
         setWidth(newWidth);

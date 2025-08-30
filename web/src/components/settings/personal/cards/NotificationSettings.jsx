@@ -27,14 +27,9 @@ import {
   Radio,
   Toast,
   Tabs,
-  TabPane
+  TabPane,
 } from '@douyinfe/semi-ui';
-import {
-  IconMail,
-  IconKey,
-  IconBell,
-  IconLink
-} from '@douyinfe/semi-icons';
+import { IconMail, IconKey, IconBell, IconLink } from '@douyinfe/semi-icons';
 import { ShieldCheck, Bell, DollarSign } from 'lucide-react';
 import { renderQuotaWithPrompt } from '../../../../helpers';
 import CodeViewer from '../../../playground/CodeViewer';
@@ -43,7 +38,7 @@ const NotificationSettings = ({
   t,
   notificationSettings,
   handleNotificationSettingChange,
-  saveNotificationSettings
+  saveNotificationSettings,
 }) => {
   const formApiRef = useRef(null);
 
@@ -62,7 +57,8 @@ const NotificationSettings = ({
   // 表单提交
   const handleSubmit = () => {
     if (formApiRef.current) {
-      formApiRef.current.validate()
+      formApiRef.current
+        .validate()
         .then(() => {
           saveNotificationSettings();
         })
@@ -77,26 +73,27 @@ const NotificationSettings = ({
 
   return (
     <Card
-      className="!rounded-2xl shadow-sm border-0"
+      className='!rounded-2xl shadow-sm border-0'
       footer={
-        <div className="flex justify-end">
-          <Button
-            type='primary'
-            onClick={handleSubmit}
-          >
+        <div className='flex justify-end'>
+          <Button type='primary' onClick={handleSubmit}>
             {t('保存设置')}
           </Button>
         </div>
       }
     >
       {/* 卡片头部 */}
-      <div className="flex items-center mb-4">
-        <Avatar size="small" color="blue" className="mr-3 shadow-md">
+      <div className='flex items-center mb-4'>
+        <Avatar size='small' color='blue' className='mr-3 shadow-md'>
           <Bell size={16} />
         </Avatar>
         <div>
-          <Typography.Text className="text-lg font-medium">{t('其他设置')}</Typography.Text>
-          <div className="text-xs text-gray-600">{t('通知、价格和隐私相关设置')}</div>
+          <Typography.Text className='text-lg font-medium'>
+            {t('其他设置')}
+          </Typography.Text>
+          <div className='text-xs text-gray-600'>
+            {t('通知、价格和隐私相关设置')}
+          </div>
         </div>
       </div>
 
@@ -106,18 +103,18 @@ const NotificationSettings = ({
         onSubmit={handleSubmit}
       >
         {() => (
-          <Tabs type="card" defaultActiveKey="notification">
+          <Tabs type='card' defaultActiveKey='notification'>
             {/* 通知配置 Tab */}
             <TabPane
               tab={
-                <div className="flex items-center">
-                  <Bell size={16} className="mr-2" />
+                <div className='flex items-center'>
+                  <Bell size={16} className='mr-2' />
                   {t('通知配置')}
                 </div>
               }
-              itemKey="notification"
+              itemKey='notification'
             >
-              <div className="py-4">
+              <div className='py-4'>
                 <Form.RadioGroup
                   field='warningType'
                   label={t('通知方式')}
@@ -125,15 +122,18 @@ const NotificationSettings = ({
                   onChange={(value) => handleFormChange('warningType', value)}
                   rules={[{ required: true, message: t('请选择通知方式') }]}
                 >
-                  <Radio value="email">{t('邮件通知')}</Radio>
-                  <Radio value="webhook">{t('Webhook通知')}</Radio>
+                  <Radio value='email'>{t('邮件通知')}</Radio>
+                  <Radio value='webhook'>{t('Webhook通知')}</Radio>
                 </Form.RadioGroup>
 
                 <Form.AutoComplete
                   field='warningThreshold'
                   label={
                     <span>
-                      {t('额度预警阈值')} {renderQuotaWithPrompt(notificationSettings.warningThreshold)}
+                      {t('额度预警阈值')}{' '}
+                      {renderQuotaWithPrompt(
+                        notificationSettings.warningThreshold,
+                      )}
                     </span>
                   }
                   placeholder={t('请输入预警额度')}
@@ -145,7 +145,9 @@ const NotificationSettings = ({
                   ]}
                   onChange={(val) => handleFormChange('warningThreshold', val)}
                   prefix={<IconBell />}
-                  extraText={t('当剩余额度低于此数值时，系统将通过选择的方式发送通知')}
+                  extraText={t(
+                    '当剩余额度低于此数值时，系统将通过选择的方式发送通知',
+                  )}
                   style={{ width: '100%', maxWidth: '300px' }}
                   rules={[
                     { required: true, message: t('请输入预警阈值') },
@@ -156,8 +158,8 @@ const NotificationSettings = ({
                           return Promise.reject(t('预警阈值必须为正数'));
                         }
                         return Promise.resolve();
-                      }
-                    }
+                      },
+                    },
                   ]}
                 />
 
@@ -167,9 +169,13 @@ const NotificationSettings = ({
                     field='notificationEmail'
                     label={t('通知邮箱')}
                     placeholder={t('留空则使用账号绑定的邮箱')}
-                    onChange={(val) => handleFormChange('notificationEmail', val)}
+                    onChange={(val) =>
+                      handleFormChange('notificationEmail', val)
+                    }
                     prefix={<IconMail />}
-                    extraText={t('设置用于接收额度预警的邮箱地址，不填则使用账号绑定的邮箱')}
+                    extraText={t(
+                      '设置用于接收额度预警的邮箱地址，不填则使用账号绑定的邮箱',
+                    )}
                     showClear
                   />
                 )}
@@ -180,20 +186,25 @@ const NotificationSettings = ({
                     <Form.Input
                       field='webhookUrl'
                       label={t('Webhook地址')}
-                      placeholder={t('请输入Webhook地址，例如: https://example.com/webhook')}
+                      placeholder={t(
+                        '请输入Webhook地址，例如: https://example.com/webhook',
+                      )}
                       onChange={(val) => handleFormChange('webhookUrl', val)}
                       prefix={<IconLink />}
-                      extraText={t('只支持HTTPS，系统将以POST方式发送通知，请确保地址可以接收POST请求')}
+                      extraText={t(
+                        '只支持HTTPS，系统将以POST方式发送通知，请确保地址可以接收POST请求',
+                      )}
                       showClear
                       rules={[
                         {
-                          required: notificationSettings.warningType === 'webhook',
-                          message: t('请输入Webhook地址')
+                          required:
+                            notificationSettings.warningType === 'webhook',
+                          message: t('请输入Webhook地址'),
                         },
                         {
                           pattern: /^https:\/\/.+/,
-                          message: t('Webhook地址必须以https://开头')
-                        }
+                          message: t('Webhook地址必须以https://开头'),
+                        },
                       ]}
                     />
 
@@ -203,7 +214,9 @@ const NotificationSettings = ({
                       placeholder={t('请输入密钥')}
                       onChange={(val) => handleFormChange('webhookSecret', val)}
                       prefix={<IconKey />}
-                      extraText={t('密钥将以Bearer方式添加到请求头中，用于验证webhook请求的合法性')}
+                      extraText={t(
+                        '密钥将以Bearer方式添加到请求头中，用于验证webhook请求的合法性',
+                      )}
                       showClear
                     />
 
@@ -212,22 +225,36 @@ const NotificationSettings = ({
                         <div style={{ height: '200px', marginBottom: '12px' }}>
                           <CodeViewer
                             content={{
-                              "type": "quota_exceed",
-                              "title": "额度预警通知",
-                              "content": "您的额度即将用尽，当前剩余额度为 {{value}}",
-                              "values": ["$0.99"],
-                              "timestamp": 1739950503
+                              type: 'quota_exceed',
+                              title: '额度预警通知',
+                              content:
+                                '您的额度即将用尽，当前剩余额度为 {{value}}',
+                              values: ['$0.99'],
+                              timestamp: 1739950503,
                             }}
-                            title="webhook"
-                            language="json"
+                            title='webhook'
+                            language='json'
                           />
                         </div>
-                        <div className="text-xs text-gray-500 leading-relaxed">
-                          <div><strong>type:</strong> {t('通知类型 (quota_exceed: 额度预警)')} </div>
-                          <div><strong>title:</strong> {t('通知标题')}</div>
-                          <div><strong>content:</strong> {t('通知内容，支持 {{value}} 变量占位符')}</div>
-                          <div><strong>values:</strong> {t('按顺序替换content中的变量占位符')}</div>
-                          <div><strong>timestamp:</strong> {t('Unix时间戳')}</div>
+                        <div className='text-xs text-gray-500 leading-relaxed'>
+                          <div>
+                            <strong>type:</strong>{' '}
+                            {t('通知类型 (quota_exceed: 额度预警)')}{' '}
+                          </div>
+                          <div>
+                            <strong>title:</strong> {t('通知标题')}
+                          </div>
+                          <div>
+                            <strong>content:</strong>{' '}
+                            {t('通知内容，支持 {{value}} 变量占位符')}
+                          </div>
+                          <div>
+                            <strong>values:</strong>{' '}
+                            {t('按顺序替换content中的变量占位符')}
+                          </div>
+                          <div>
+                            <strong>timestamp:</strong> {t('Unix时间戳')}
+                          </div>
                         </div>
                       </div>
                     </Form.Slot>
@@ -239,21 +266,25 @@ const NotificationSettings = ({
             {/* 价格设置 Tab */}
             <TabPane
               tab={
-                <div className="flex items-center">
-                  <DollarSign size={16} className="mr-2" />
+                <div className='flex items-center'>
+                  <DollarSign size={16} className='mr-2' />
                   {t('价格设置')}
                 </div>
               }
-              itemKey="pricing"
+              itemKey='pricing'
             >
-              <div className="py-4">
+              <div className='py-4'>
                 <Form.Switch
                   field='acceptUnsetModelRatioModel'
                   label={t('接受未设置价格模型')}
                   checkedText={t('开')}
                   uncheckedText={t('关')}
-                  onChange={(value) => handleFormChange('acceptUnsetModelRatioModel', value)}
-                  extraText={t('当模型没有设置价格时仍接受调用，仅当您信任该网站时使用，可能会产生高额费用')}
+                  onChange={(value) =>
+                    handleFormChange('acceptUnsetModelRatioModel', value)
+                  }
+                  extraText={t(
+                    '当模型没有设置价格时仍接受调用，仅当您信任该网站时使用，可能会产生高额费用',
+                  )}
                 />
               </div>
             </TabPane>
@@ -261,21 +292,23 @@ const NotificationSettings = ({
             {/* 隐私设置 Tab */}
             <TabPane
               tab={
-                <div className="flex items-center">
-                  <ShieldCheck size={16} className="mr-2" />
+                <div className='flex items-center'>
+                  <ShieldCheck size={16} className='mr-2' />
                   {t('隐私设置')}
                 </div>
               }
-              itemKey="privacy"
+              itemKey='privacy'
             >
-              <div className="py-4">
+              <div className='py-4'>
                 <Form.Switch
                   field='recordIpLog'
                   label={t('记录请求与错误日志IP')}
                   checkedText={t('开')}
                   uncheckedText={t('关')}
                   onChange={(value) => handleFormChange('recordIpLog', value)}
-                  extraText={t('开启后，仅"消费"和"错误"日志将记录您的客户端IP地址')}
+                  extraText={t(
+                    '开启后，仅"消费"和"错误"日志将记录您的客户端IP地址',
+                  )}
                 />
               </div>
             </TabPane>

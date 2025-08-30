@@ -109,16 +109,25 @@ export const useHeaderBar = ({ onMobileMenuToggle, drawerOpen }) => {
     navigate('/login');
   }, [navigate, t, userDispatch]);
 
-  const handleLanguageChange = useCallback((lang) => {
-    i18n.changeLanguage(lang);
-  }, [i18n]);
+  const handleLanguageChange = useCallback(
+    (lang) => {
+      i18n.changeLanguage(lang);
+    },
+    [i18n],
+  );
 
-  const handleThemeToggle = useCallback((newTheme) => {
-    if (!newTheme || (newTheme !== 'light' && newTheme !== 'dark' && newTheme !== 'auto')) {
-      return;
-    }
-    setTheme(newTheme);
-  }, [setTheme]);
+  const handleThemeToggle = useCallback(
+    (newTheme) => {
+      if (
+        !newTheme ||
+        (newTheme !== 'light' && newTheme !== 'dark' && newTheme !== 'auto')
+      ) {
+        return;
+      }
+      setTheme(newTheme);
+    },
+    [setTheme],
+  );
 
   const handleMobileMenuToggle = useCallback(() => {
     if (isMobile) {
