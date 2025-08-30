@@ -619,6 +619,7 @@ func getHardcodedCompletionModelRatio(name string) (float64, bool) {
 func GetAudioRatio(name string) float64 {
 	audioRatioMapMutex.RLock()
 	defer audioRatioMapMutex.RUnlock()
+	name = FormatMatchingModelName(name)
 	if ratio, ok := audioRatioMap[name]; ok {
 		return ratio
 	}
@@ -628,6 +629,7 @@ func GetAudioRatio(name string) float64 {
 func GetAudioCompletionRatio(name string) float64 {
 	audioCompletionRatioMapMutex.RLock()
 	defer audioCompletionRatioMapMutex.RUnlock()
+	name = FormatMatchingModelName(name)
 	if ratio, ok := audioCompletionRatioMap[name]; ok {
 
 		return ratio
@@ -698,14 +700,16 @@ func AudioRatio2JSONString() string {
 }
 
 func UpdateAudioRatioByJSONString(jsonStr string) error {
-	audioRatioMapMutex.Lock()
-	defer audioRatioMapMutex.Unlock()
-	audioRatioMap = make(map[string]float64)
-	err := common.Unmarshal([]byte(jsonStr), &audioRatioMap)
-	if err == nil {
-		InvalidateExposedDataCache()
+
+	tmp := make(map[string]float64)
+	if err := common.Unmarshal([]byte(jsonStr), &tmp); err != nil {
+		return err
 	}
-	return err
+	audioRatioMapMutex.Lock()
+	audioRatioMap = tmp
+	audioRatioMapMutex.Unlock()
+	InvalidateExposedDataCache()
+	return nil
 }
 
 func GetAudioRatioCopy() map[string]float64 {
@@ -729,14 +733,15 @@ func AudioCompletionRatio2JSONString() string {
 }
 
 func UpdateAudioCompletionRatioByJSONString(jsonStr string) error {
-	audioCompletionRatioMapMutex.Lock()
-	defer audioCompletionRatioMapMutex.Unlock()
-	audioCompletionRatioMap = make(map[string]float64)
-	err := common.Unmarshal([]byte(jsonStr), &audioCompletionRatioMap)
-	if err == nil {
-		InvalidateExposedDataCache()
+	tmp := make(map[string]float64)
+	if err := common.Unmarshal([]byte(jsonStr), &tmp); err != nil {
+		return err
 	}
-	return err
+	audioCompletionRatioMapMutex.Lock()
+	audioCompletionRatioMap = tmp
+	audioCompletionRatioMapMutex.Unlock()
+	InvalidateExposedDataCache()
+	return nil
 }
 
 func GetAudioCompletionRatioCopy() map[string]float64 {
