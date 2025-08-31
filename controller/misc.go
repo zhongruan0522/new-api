@@ -89,6 +89,10 @@ func GetStatus(c *gin.Context) {
 		"announcements_enabled": cs.AnnouncementsEnabled,
 		"faq_enabled":           cs.FAQEnabled,
 
+		// 模块管理配置
+		"HeaderNavModules":     common.OptionMap["HeaderNavModules"],
+		"SidebarModulesAdmin":  common.OptionMap["SidebarModulesAdmin"],
+
 		"oidc_enabled":                system_setting.GetOIDCSettings().Enabled,
 		"oidc_client_id":              system_setting.GetOIDCSettings().ClientId,
 		"oidc_authorization_endpoint": system_setting.GetOIDCSettings().AuthorizationEndpoint,
