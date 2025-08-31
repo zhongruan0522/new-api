@@ -444,26 +444,26 @@ func GetSelf(c *gin.Context) {
 
 	// 构建响应数据，包含用户信息和权限
 	responseData := map[string]interface{}{
-		"id":               user.Id,
-		"username":         user.Username,
-		"display_name":     user.DisplayName,
-		"role":             user.Role,
-		"status":           user.Status,
-		"email":            user.Email,
-		"group":            user.Group,
-		"quota":            user.Quota,
-		"used_quota":       user.UsedQuota,
-		"request_count":    user.RequestCount,
-		"aff_code":         user.AffCode,
-		"aff_count":        user.AffCount,
-		"aff_quota":        user.AffQuota,
+		"id":                user.Id,
+		"username":          user.Username,
+		"display_name":      user.DisplayName,
+		"role":              user.Role,
+		"status":            user.Status,
+		"email":             user.Email,
+		"group":             user.Group,
+		"quota":             user.Quota,
+		"used_quota":        user.UsedQuota,
+		"request_count":     user.RequestCount,
+		"aff_code":          user.AffCode,
+		"aff_count":         user.AffCount,
+		"aff_quota":         user.AffQuota,
 		"aff_history_quota": user.AffHistoryQuota,
-		"inviter_id":       user.InviterId,
-		"linux_do_id":      user.LinuxDOId,
-		"setting":          user.Setting,
-		"stripe_customer":  user.StripeCustomer,
-		"sidebar_modules":  userSetting.SidebarModules, // 正确提取sidebar_modules字段
-		"permissions":      permissions,                 // 新增权限字段
+		"inviter_id":        user.InviterId,
+		"linux_do_id":       user.LinuxDOId,
+		"setting":           user.Setting,
+		"stripe_customer":   user.StripeCustomer,
+		"sidebar_modules":   userSetting.SidebarModules, // 正确提取sidebar_modules字段
+		"permissions":       permissions,                // 新增权限字段
 	}
 
 	c.JSON(http.StatusOK, gin.H{
@@ -564,8 +564,6 @@ func generateDefaultSidebarConfig(userRole int) string {
 	return string(configBytes)
 }
 
-
-
 func GetUserModels(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
@@ -665,6 +663,25 @@ func UpdateSelf(c *gin.Context) {
 	// 检查是否是sidebar_modules更新请求
 	if sidebarModules, exists := requestData["sidebar_modules"]; exists {
 		userId := c.GetInt("id")
+		userRole := c.GetInt("role")
+		// 注意超级管理员目前在 calculateUserPermissions 中被设置为无权更新设置
+		perms := calculateUserPermissions(userRole)
+		allow, ok := perms["sidebar_settings"]
+		if !ok {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": "无权更新设置",
+			})
+			return
+		}
+		allowBool, ok := allow.(bool)
+		if !ok || !allowBool {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": "无权更新设置",
+			})
+			return
+		}
 		user, err := model.GetUserById(userId, false)
 		if err != nil {
 			common.ApiError(c, err)
