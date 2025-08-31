@@ -663,14 +663,6 @@ func UpdateSelf(c *gin.Context) {
 	// 检查是否是sidebar_modules更新请求
 	if sidebarModules, exists := requestData["sidebar_modules"]; exists {
 		userId := c.GetInt("id")
-		userRole := c.GetInt("role")
-		if userRole != common.RoleRootUser && userRole != common.RoleAdminUser {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": "无权更新设置",
-			})
-			return
-		}
 		user, err := model.GetUserById(userId, false)
 		if err != nil {
 			common.ApiError(c, err)
