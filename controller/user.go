@@ -664,18 +664,7 @@ func UpdateSelf(c *gin.Context) {
 	if sidebarModules, exists := requestData["sidebar_modules"]; exists {
 		userId := c.GetInt("id")
 		userRole := c.GetInt("role")
-		// 注意超级管理员目前在 calculateUserPermissions 中被设置为无权更新设置
-		perms := calculateUserPermissions(userRole)
-		allow, ok := perms["sidebar_settings"]
-		if !ok {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": "无权更新设置",
-			})
-			return
-		}
-		allowBool, ok := allow.(bool)
-		if !ok || !allowBool {
+		if userRole != common.RoleRootUser && userRole != common.RoleAdminUser {
 			c.JSON(http.StatusOK, gin.H{
 				"success": false,
 				"message": "无权更新设置",
