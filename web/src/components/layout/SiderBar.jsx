@@ -24,7 +24,9 @@ import { getLucideIcon } from '../../helpers/render';
 import { ChevronLeft } from 'lucide-react';
 import { useSidebarCollapsed } from '../../hooks/common/useSidebarCollapsed';
 import { useSidebar } from '../../hooks/common/useSidebar';
+import { useMinimumLoadingTime } from '../../hooks/common/useMinimumLoadingTime';
 import { isAdmin, isRoot, showError } from '../../helpers';
+import SkeletonWrapper from './components/SkeletonWrapper';
 
 import { Nav, Divider, Button } from '@douyinfe/semi-ui';
 
@@ -55,6 +57,8 @@ const SiderBar = ({ onNavigate = () => {} }) => {
     hasSectionVisibleModules,
     loading: sidebarLoading,
   } = useSidebar();
+
+  const showSkeleton = useMinimumLoadingTime(sidebarLoading, 500);
 
   const [selectedKeys, setSelectedKeys] = useState(['home']);
   const [chatItems, setChatItems] = useState([]);
@@ -377,120 +381,137 @@ const SiderBar = ({ onNavigate = () => {} }) => {
       className='sidebar-container'
       style={{ width: 'var(--sidebar-current-width)' }}
     >
-      <Nav
-        className='sidebar-nav'
-        defaultIsCollapsed={collapsed}
-        isCollapsed={collapsed}
-        onCollapseChange={toggleCollapsed}
-        selectedKeys={selectedKeys}
-        itemStyle='sidebar-nav-item'
-        hoverStyle='sidebar-nav-item:hover'
-        selectedStyle='sidebar-nav-item-selected'
-        renderWrapper={({ itemElement, props }) => {
-          const to = routerMapState[props.itemKey] || routerMap[props.itemKey];
-
-          // 如果没有路由，直接返回元素
-          if (!to) return itemElement;
-
-          return (
-            <Link
-              style={{ textDecoration: 'none' }}
-              to={to}
-              onClick={onNavigate}
-            >
-              {itemElement}
-            </Link>
-          );
-        }}
-        onSelect={(key) => {
-          // 如果点击的是已经展开的子菜单的父项，则收起子菜单
-          if (openedKeys.includes(key.itemKey)) {
-            setOpenedKeys(openedKeys.filter((k) => k !== key.itemKey));
-          }
-
-          setSelectedKeys([key.itemKey]);
-        }}
-        openKeys={openedKeys}
-        onOpenChange={(data) => {
-          setOpenedKeys(data.openKeys);
-        }}
+      <SkeletonWrapper
+        loading={showSkeleton}
+        type='sidebar'
+        className=''
+        collapsed={collapsed}
+        showAdmin={isAdmin()}
       >
-        {/* 聊天区域 */}
-        {hasSectionVisibleModules('chat') && (
-          <div className='sidebar-section'>
-            {!collapsed && (
-              <div className='sidebar-group-label'>{t('聊天')}</div>
-            )}
-            {chatMenuItems.map((item) => renderSubItem(item))}
-          </div>
-        )}
+        <Nav
+          className='sidebar-nav'
+          defaultIsCollapsed={collapsed}
+          isCollapsed={collapsed}
+          onCollapseChange={toggleCollapsed}
+          selectedKeys={selectedKeys}
+          itemStyle='sidebar-nav-item'
+          hoverStyle='sidebar-nav-item:hover'
+          selectedStyle='sidebar-nav-item-selected'
+          renderWrapper={({ itemElement, props }) => {
+            const to =
+              routerMapState[props.itemKey] || routerMap[props.itemKey];
 
-        {/* 控制台区域 */}
-        {hasSectionVisibleModules('console') && (
-          <>
-            <Divider className='sidebar-divider' />
-            <div>
-              {!collapsed && (
-                <div className='sidebar-group-label'>{t('控制台')}</div>
-              )}
-              {workspaceItems.map((item) => renderNavItem(item))}
-            </div>
-          </>
-        )}
+            // 如果没有路由，直接返回元素
+            if (!to) return itemElement;
 
-        {/* 个人中心区域 */}
-        {hasSectionVisibleModules('personal') && (
-          <>
-            <Divider className='sidebar-divider' />
-            <div>
-              {!collapsed && (
-                <div className='sidebar-group-label'>{t('个人中心')}</div>
-              )}
-              {financeItems.map((item) => renderNavItem(item))}
-            </div>
-          </>
-        )}
+            return (
+              <Link
+                style={{ textDecoration: 'none' }}
+                to={to}
+                onClick={onNavigate}
+              >
+                {itemElement}
+              </Link>
+            );
+          }}
+          onSelect={(key) => {
+            // 如果点击的是已经展开的子菜单的父项，则收起子菜单
+            if (openedKeys.includes(key.itemKey)) {
+              setOpenedKeys(openedKeys.filter((k) => k !== key.itemKey));
+            }
 
-        {/* 管理员区域 - 只在管理员时显示且配置允许时显示 */}
-        {isAdmin() && hasSectionVisibleModules('admin') && (
-          <>
-            <Divider className='sidebar-divider' />
-            <div>
+            setSelectedKeys([key.itemKey]);
+          }}
+          openKeys={openedKeys}
+          onOpenChange={(data) => {
+            setOpenedKeys(data.openKeys);
+          }}
+        >
+          {/* 聊天区域 */}
+          {hasSectionVisibleModules('chat') && (
+            <div className='sidebar-section'>
               {!collapsed && (
-                <div className='sidebar-group-label'>{t('管理员')}</div>
+                <div className='sidebar-group-label'>{t('聊天')}</div>
               )}
-              {adminItems.map((item) => renderNavItem(item))}
+              {chatMenuItems.map((item) => renderSubItem(item))}
             </div>
-          </>
-        )}
-      </Nav>
+          )}
+
+          {/* 控制台区域 */}
+          {hasSectionVisibleModules('console') && (
+            <>
+              <Divider className='sidebar-divider' />
+              <div>
+                {!collapsed && (
+                  <div className='sidebar-group-label'>{t('控制台')}</div>
+                )}
+                {workspaceItems.map((item) => renderNavItem(item))}
+              </div>
+            </>
+          )}
+
+          {/* 个人中心区域 */}
+          {hasSectionVisibleModules('personal') && (
+            <>
+              <Divider className='sidebar-divider' />
+              <div>
+                {!collapsed && (
+                  <div className='sidebar-group-label'>{t('个人中心')}</div>
+                )}
+                {financeItems.map((item) => renderNavItem(item))}
+              </div>
+            </>
+          )}
+
+          {/* 管理员区域 - 只在管理员时显示且配置允许时显示 */}
+          {isAdmin() && hasSectionVisibleModules('admin') && (
+            <>
+              <Divider className='sidebar-divider' />
+              <div>
+                {!collapsed && (
+                  <div className='sidebar-group-label'>{t('管理员')}</div>
+                )}
+                {adminItems.map((item) => renderNavItem(item))}
+              </div>
+            </>
+          )}
+        </Nav>
+      </SkeletonWrapper>
 
       {/* 底部折叠按钮 */}
       <div className='sidebar-collapse-button'>
-        <Button
-          theme='outline'
-          type='tertiary'
-          size='small'
-          icon={
-            <ChevronLeft
-              size={16}
-              strokeWidth={2.5}
-              color='var(--semi-color-text-2)'
-              style={{
-                transform: collapsed ? 'rotate(180deg)' : 'rotate(0deg)',
-              }}
-            />
-          }
-          onClick={toggleCollapsed}
-          icononly={collapsed}
-          style={
-            collapsed
-              ? { padding: '4px', width: '100%' }
-              : { padding: '4px 12px', width: '100%' }
-          }
+        <SkeletonWrapper
+          loading={showSkeleton}
+          type='button'
+          width={collapsed ? 36 : 156}
+          height={24}
+          className='w-full'
         >
-          {!collapsed ? t('收起侧边栏') : null}
-        </Button>
+          <Button
+            theme='outline'
+            type='tertiary'
+            size='small'
+            icon={
+              <ChevronLeft
+                size={16}
+                strokeWidth={2.5}
+                color='var(--semi-color-text-2)'
+                style={{
+                  transform: collapsed ? 'rotate(180deg)' : 'rotate(0deg)',
+                }}
+              />
+            }
+            onClick={toggleCollapsed}
+            icononly={collapsed}
+            style={
+              collapsed
+                ? { width: 36, height: 24, padding: 0 }
+                : { padding: '4px 12px', width: '100%' }
+            }
+          >
+            {!collapsed ? t('收起侧边栏') : null}
+          </Button>
+        </SkeletonWrapper>
       </div>
     </div>
   );

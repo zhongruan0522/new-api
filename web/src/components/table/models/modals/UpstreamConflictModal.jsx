@@ -91,6 +91,7 @@ const UpstreamConflictModal = ({
       {
         title: t('模型'),
         dataIndex: 'model_name',
+        fixed: 'left',
         render: (text) => <Text strong>{text}</Text>,
       },
     ];
@@ -235,7 +236,12 @@ const UpstreamConflictModal = ({
           <div className='mb-3 text-[var(--semi-color-text-2)]'>
             {t('仅会覆盖你勾选的字段，未勾选的字段保持本地不变。')}
           </div>
-          <Table columns={columns} dataSource={dataSource} pagination={false} />
+          <Table
+            columns={columns}
+            dataSource={dataSource}
+            pagination={false}
+            scroll={{ x: 'max-content' }}
+          />
         </>
       )}
     </Modal>

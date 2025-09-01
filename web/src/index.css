@@ -184,6 +184,7 @@ code {
   justify-content: center;
   align-items: center;
   padding: 12px;
+  margin-top: auto;
   cursor: pointer;
   background-color: var(--semi-color-bg-0);
   position: sticky;
