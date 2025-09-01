@@ -1993,6 +1993,14 @@ const EditChannelModal = (props) => {
                     showClear
                     onChange={(value) => handleInputChange('tag', value)}
                   />
+                  <Form.TextArea
+                    field='remark'
+                    label={t('备注')}
+                    placeholder={t('请输入备注（仅管理员可见）')}
+                    maxLength={255}
+                    showClear
+                    onChange={(value) => handleInputChange('remark', value)}
+                  />
 
                   <Row gutter={12}>
                     <Col span={12}>
