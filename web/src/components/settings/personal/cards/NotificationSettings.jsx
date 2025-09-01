@@ -347,6 +347,7 @@ const NotificationSettings = ({
                 >
                   <Radio value='email'>{t('邮件通知')}</Radio>
                   <Radio value='webhook'>{t('Webhook通知')}</Radio>
+                  <Radio value='bark'>{t('Bark通知')}</Radio>
                 </Form.RadioGroup>
 
                 <Form.AutoComplete
@@ -481,6 +482,58 @@ const NotificationSettings = ({
                         </div>
                       </div>
                     </Form.Slot>
+                  </>
+                )}
+
+                {/* Bark推送设置 */}
+                {notificationSettings.warningType === 'bark' && (
+                  <>
+                    <Form.Input
+                      field='barkUrl'
+                      label={t('Bark推送URL')}
+                      placeholder={t('请输入Bark推送URL，例如: https://api.day.app/yourkey/{{title}}/{{content}}')}
+                      onChange={(val) => handleFormChange('barkUrl', val)}
+                      prefix={<IconLink />}
+                      extraText={t(
+                        '支持HTTP和HTTPS，模板变量: {{title}} (通知标题), {{content}} (通知内容)',
+                      )}
+                      showClear
+                      rules={[
+                        {
+                          required:
+                            notificationSettings.warningType === 'bark',
+                          message: t('请输入Bark推送URL'),
+                        },
+                        {
+                          pattern: /^https?:\/\/.+/,
+                          message: t('Bark推送URL必须以http://或https://开头'),
+                        },
+                      ]}
+                    />
+
+                    <div className='mt-3 p-4 bg-gray-50/50 rounded-xl'>
+                      <div className='text-sm text-gray-700 mb-3'>
+                        <strong>{t('模板示例')}</strong>
+                      </div>
+                      <div className='text-xs text-gray-600 font-mono bg-white p-3 rounded-lg shadow-sm mb-4'>
+                        https://api.day.app/yourkey/{'{{title}}'}/{'{{content}}'}?sound=alarm&group=quota
+                      </div>
+                      <div className='text-xs text-gray-500 space-y-2'>
+                        <div>• <strong>{'title'}:</strong> {t('通知标题')}</div>
+                        <div>• <strong>{'content'}:</strong> {t('通知内容')}</div>
+                        <div className='mt-3 pt-3 border-t border-gray-200'>
+                          <span className='text-gray-400'>{t('更多参数请参考')}</span>{' '}
+                          <a 
+                            href='https://github.com/Finb/Bark' 
+                            target='_blank' 
+                            rel='noopener noreferrer'
+                            className='text-blue-500 hover:text-blue-600 font-medium'
+                          >
+                            Bark 官方文档
+                          </a>
+                        </div>
+                      </div>
+                    </div>
                   </>
                 )}
               </div>

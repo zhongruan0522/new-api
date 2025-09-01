@@ -1097,6 +1097,7 @@ type UpdateUserSettingRequest struct {
 	WebhookUrl                 string  `json:"webhook_url,omitempty"`
 	WebhookSecret              string  `json:"webhook_secret,omitempty"`
 	NotificationEmail          string  `json:"notification_email,omitempty"`
+	BarkUrl                    string  `json:"bark_url,omitempty"`
 	AcceptUnsetModelRatioModel bool    `json:"accept_unset_model_ratio_model"`
 	RecordIpLog                bool    `json:"record_ip_log"`
 }
@@ -1112,7 +1113,7 @@ func UpdateUserSetting(c *gin.Context) {
 	}
 
 	// 验证预警类型
-	if req.QuotaWarningType != dto.NotifyTypeEmail && req.QuotaWarningType != dto.NotifyTypeWebhook {
+	if req.QuotaWarningType != dto.NotifyTypeEmail && req.QuotaWarningType != dto.NotifyTypeWebhook && req.QuotaWarningType != dto.NotifyTypeBark {
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,
 			"message": "无效的预警类型",
@@ -1160,6 +1161,33 @@ func UpdateUserSetting(c *gin.Context) {
 		}
 	}
 
+	// 如果是Bark类型，验证Bark URL
+	if req.QuotaWarningType == dto.NotifyTypeBark {
+		if req.BarkUrl == "" {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": "Bark推送URL不能为空",
+			})
+			return
+		}
+		// 验证URL格式
+		if _, err := url.ParseRequestURI(req.BarkUrl); err != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": "无效的Bark推送URL",
+			})
+			return
+		}
+		// 检查是否是HTTP或HTTPS
+		if !strings.HasPrefix(req.BarkUrl, "https://") && !strings.HasPrefix(req.BarkUrl, "http://") {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": "Bark推送URL必须以http://或https://开头",
+			})
+			return
+		}
+	}
+
 	userId := c.GetInt("id")
 	user, err := model.GetUserById(userId, true)
 	if err != nil {
@@ -1186,6 +1214,11 @@ func UpdateUserSetting(c *gin.Context) {
 	// 如果提供了通知邮箱，添加到设置中
 	if req.QuotaWarningType == dto.NotifyTypeEmail && req.NotificationEmail != "" {
 		settings.NotificationEmail = req.NotificationEmail
+	}
+
+	// 如果是Bark类型，添加Bark URL到设置中
+	if req.QuotaWarningType == dto.NotifyTypeBark {
+		settings.BarkUrl = req.BarkUrl
 	}
 
 	// 更新用户设置
