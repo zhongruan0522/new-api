@@ -21,7 +21,13 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import SkeletonWrapper from './SkeletonWrapper';
 
-const Navigation = ({ mainNavLinks, isMobile, isLoading, userState, pricingRequireAuth }) => {
+const Navigation = ({
+  mainNavLinks,
+  isMobile,
+  isLoading,
+  userState,
+  pricingRequireAuth,
+}) => {
   const renderNavLinks = () => {
     const baseClasses =
       'flex-shrink-0 flex items-center gap-1 font-semibold rounded-md transition-all duration-200 ease-in-out';
