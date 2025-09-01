@@ -2064,7 +2064,7 @@
   "点击查看差异": "Click to view differences",
   "无冲突项": "No conflict items",
   "应用覆盖": "Apply overwrite",
-  "仅会覆盖你勾选的字段，未勾选的字段保持本地不变。": "Only selected fields will be overwritten; unselected fields remain unchanged.",
+  "仅会覆盖你勾选的字段，未勾选的字段保持本地不变。": "Only selected fields will be overwritten, unselected fields remain unchanged.",
   "本地": "Local",
   "官方": "Official",
   "模型社区需要大家的共同维护，如发现数据有误或想贡献新的模型数据，请访问：": "The model community needs everyone's contribution. If you find incorrect data or want to contribute new models, please visit:",
