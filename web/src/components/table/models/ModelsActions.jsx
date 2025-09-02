@@ -245,7 +245,7 @@ const ModelsActions = ({
         conflicts={conflicts}
         onSubmit={async (payload) => {
           return await applyUpstreamOverwrite?.({
-            ...payload,
+            overwrite: payload,
             locale: syncLocale,
           });
         }}
