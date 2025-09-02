@@ -21,11 +21,12 @@ import React, { useState } from 'react';
 import MissingModelsModal from './modals/MissingModelsModal';
 import PrefillGroupManagement from './modals/PrefillGroupManagement';
 import EditPrefillGroupModal from './modals/EditPrefillGroupModal';
-import { Button, Modal, Popover } from '@douyinfe/semi-ui';
+import { Button, Modal, Popover, RadioGroup, Radio } from '@douyinfe/semi-ui';
 import { showSuccess, showError, copy } from '../../../helpers';
 import CompactModeToggle from '../../common/ui/CompactModeToggle';
 import SelectionNotification from './components/SelectionNotification';
 import UpstreamConflictModal from './modals/UpstreamConflictModal';
+import SyncWizardModal from './modals/SyncWizardModal';
 
 const ModelsActions = ({
   selectedKeys,
@@ -50,10 +51,12 @@ const ModelsActions = ({
   const [prefillInit, setPrefillInit] = useState({ id: undefined });
   const [showConflict, setShowConflict] = useState(false);
   const [conflicts, setConflicts] = useState([]);
+  const [showSyncModal, setShowSyncModal] = useState(false);
+  const [syncLocale, setSyncLocale] = useState('zh');
 
-  const handleSyncUpstream = async () => {
+  const handleSyncUpstream = async (locale) => {
     // 先预览
-    const data = await previewUpstreamDiff?.();
+    const data = await previewUpstreamDiff?.({ locale });
     const conflictItems = data?.conflicts || [];
     if (conflictItems.length > 0) {
       setConflicts(conflictItems);
@@ -61,7 +64,7 @@ const ModelsActions = ({
       return;
     }
     // 无冲突，直接同步缺失
-    await syncUpstream?.();
+    await syncUpstream?.({ locale });
   };
 
   // Handle delete selected models with confirmation
@@ -151,9 +154,12 @@ const ModelsActions = ({
             className='flex-1 md:flex-initial'
             size='small'
             loading={syncing || previewing}
-            onClick={handleSyncUpstream}
+            onClick={() => {
+              setSyncLocale('zh');
+              setShowSyncModal(true);
+            }}
           >
-            {t('同步官方')}
+            {t('同步')}
           </Button>
         </Popover>
 
@@ -196,6 +202,20 @@ const ModelsActions = ({
         </div>
       </Modal>
 
+      <SyncWizardModal
+        visible={showSyncModal}
+        onClose={() => setShowSyncModal(false)}
+        loading={syncing || previewing}
+        t={t}
+        onConfirm={async ({ option, locale }) => {
+          setSyncLocale(locale);
+          if (option === 'official') {
+            await handleSyncUpstream(locale);
+          }
+          setShowSyncModal(false);
+        }}
+      />
+
       <MissingModelsModal
         visible={showMissingModal}
         onClose={() => setShowMissingModal(false)}
@@ -224,7 +244,10 @@ const ModelsActions = ({
         onClose={() => setShowConflict(false)}
         conflicts={conflicts}
         onSubmit={async (payload) => {
-          return await applyUpstreamOverwrite?.(payload);
+          return await applyUpstreamOverwrite?.({
+            ...payload,
+            locale: syncLocale,
+          });
         }}
         t={t}
         loading={syncing}

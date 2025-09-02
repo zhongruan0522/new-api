@@ -166,10 +166,13 @@ export const useModelsData = () => {
   };
 
   // Sync upstream models/vendors for missing models only
-  const syncUpstream = async () => {
+  const syncUpstream = async (opts = {}) => {
+    const locale = opts?.locale;
     setSyncing(true);
     try {
-      const res = await API.post('/api/models/sync_upstream');
+      const body = {};
+      if (locale) body.locale = locale;
+      const res = await API.post('/api/models/sync_upstream', body);
       const { success, message, data } = res.data || {};
       if (success) {
         const createdModels = data?.created_models || 0;
@@ -192,10 +195,12 @@ export const useModelsData = () => {
   };
 
   // Preview upstream differences
-  const previewUpstreamDiff = async () => {
+  const previewUpstreamDiff = async (opts = {}) => {
+    const locale = opts?.locale;
     setPreviewing(true);
     try {
-      const res = await API.get('/api/models/sync_upstream/preview');
+      const url = `/api/models/sync_upstream/preview${locale ? `?locale=${locale}` : ''}`;
+      const res = await API.get(url);
       const { success, message, data } = res.data || {};
       if (success) {
         return data || { missing: [], conflicts: [] };
@@ -211,10 +216,15 @@ export const useModelsData = () => {
   };
 
   // Apply selected overwrite
-  const applyUpstreamOverwrite = async (overwrite = []) => {
+  const applyUpstreamOverwrite = async (payloadOrArray = []) => {
+    const isArray = Array.isArray(payloadOrArray);
+    const overwrite = isArray ? payloadOrArray : payloadOrArray.overwrite || [];
+    const locale = isArray ? undefined : payloadOrArray.locale;
     setSyncing(true);
     try {
-      const res = await API.post('/api/models/sync_upstream', { overwrite });
+      const body = { overwrite };
+      if (locale) body.locale = locale;
+      const res = await API.post('/api/models/sync_upstream', body);
       const { success, message, data } = res.data || {};
       if (success) {
         const createdModels = data?.created_models || 0;

@@ -17,7 +17,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import {
   Modal,
   Table,
@@ -26,9 +26,12 @@ import {
   Empty,
   Tag,
   Popover,
+  Input,
 } from '@douyinfe/semi-ui';
 import { MousePointerClick } from 'lucide-react';
 import { useIsMobile } from '../../../../hooks/common/useIsMobile';
+import { MODEL_TABLE_PAGE_SIZE } from '../../../../constants';
+import { IconSearch } from '@douyinfe/semi-icons';
 
 const { Text } = Typography;
 
@@ -52,6 +55,8 @@ const UpstreamConflictModal = ({
 }) => {
   const [selections, setSelections] = useState({});
   const isMobile = useIsMobile();
+  const [currentPage, setCurrentPage] = useState(1);
+  const [searchKeyword, setSearchKeyword] = useState('');
 
   const formatValue = (v) => {
     if (v === null || v === undefined) return '-';
@@ -70,12 +75,14 @@ const UpstreamConflictModal = ({
         init[item.model_name] = new Set();
       });
       setSelections(init);
+      setCurrentPage(1);
+      setSearchKeyword('');
     } else {
       setSelections({});
     }
   }, [visible, conflicts]);
 
-  const toggleField = (modelName, field, checked) => {
+  const toggleField = useCallback((modelName, field, checked) => {
     setSelections((prev) => {
       const next = { ...prev };
       const set = new Set(next[modelName] || []);
@@ -84,7 +91,67 @@ const UpstreamConflictModal = ({
       next[modelName] = set;
       return next;
     });
-  };
+  }, []);
+
+  // 构造数据源与过滤后的数据源
+  const dataSource = useMemo(
+    () =>
+      (conflicts || []).map((c) => ({
+        key: c.model_name,
+        model_name: c.model_name,
+        fields: c.fields || [],
+      })),
+    [conflicts],
+  );
+
+  const filteredDataSource = useMemo(() => {
+    const kw = (searchKeyword || '').toLowerCase();
+    if (!kw) return dataSource;
+    return dataSource.filter((item) =>
+      (item.model_name || '').toLowerCase().includes(kw),
+    );
+  }, [dataSource, searchKeyword]);
+
+  // 列头工具：当前过滤范围内可操作的行集合/勾选状态/批量设置
+  const getPresentRowsForField = useCallback(
+    (fieldKey) =>
+      (filteredDataSource || []).filter((row) =>
+        (row.fields || []).some((f) => f.field === fieldKey),
+      ),
+    [filteredDataSource],
+  );
+
+  const getHeaderState = useCallback(
+    (fieldKey) => {
+      const presentRows = getPresentRowsForField(fieldKey);
+      const selectedCount = presentRows.filter((row) =>
+        selections[row.model_name]?.has(fieldKey),
+      ).length;
+      const allCount = presentRows.length;
+      return {
+        headerChecked: allCount > 0 && selectedCount === allCount,
+        headerIndeterminate: selectedCount > 0 && selectedCount < allCount,
+        hasAny: allCount > 0,
+      };
+    },
+    [getPresentRowsForField, selections],
+  );
+
+  const applyHeaderChange = useCallback(
+    (fieldKey, checked) => {
+      setSelections((prev) => {
+        const next = { ...prev };
+        getPresentRowsForField(fieldKey).forEach((row) => {
+          const set = new Set(next[row.model_name] || []);
+          if (checked) set.add(fieldKey);
+          else set.delete(fieldKey);
+          next[row.model_name] = set;
+        });
+        return next;
+      });
+    },
+    [getPresentRowsForField],
+  );
 
   const columns = useMemo(() => {
     const base = [
@@ -100,37 +167,11 @@ const UpstreamConflictModal = ({
       const rawLabel = FIELD_LABELS[fieldKey] || fieldKey;
       const label = t(rawLabel);
 
-      // 统计列头复选框状态（仅统计存在该字段冲突的行）
-      const presentRows = (conflicts || []).filter((row) =>
-        (row.fields || []).some((f) => f.field === fieldKey),
-      );
-      const selectedCount = presentRows.filter((row) =>
-        selections[row.model_name]?.has(fieldKey),
-      ).length;
-      const allCount = presentRows.length;
-      if (allCount === 0) {
-        return null; // 若此字段在所有行中都不存在，则不展示该列
-      }
-      const headerChecked = allCount > 0 && selectedCount === allCount;
-      const headerIndeterminate = selectedCount > 0 && selectedCount < allCount;
-
-      const onHeaderChange = (e) => {
-        const checked = e?.target?.checked;
-        setSelections((prev) => {
-          const next = { ...prev };
-          (conflicts || []).forEach((row) => {
-            const hasField = (row.fields || []).some(
-              (f) => f.field === fieldKey,
-            );
-            if (!hasField) return;
-            const set = new Set(next[row.model_name] || []);
-            if (checked) set.add(fieldKey);
-            else set.delete(fieldKey);
-            next[row.model_name] = set;
-          });
-          return next;
-        });
-      };
+      const { headerChecked, headerIndeterminate, hasAny } =
+        getHeaderState(fieldKey);
+      if (!hasAny) return null;
+      const onHeaderChange = (e) =>
+        applyHeaderChange(fieldKey, e?.target?.checked);
 
       return {
         title: (
@@ -194,13 +235,20 @@ const UpstreamConflictModal = ({
     });
 
     return [...base, ...cols.filter(Boolean)];
-  }, [t, selections, conflicts]);
+  }, [
+    t,
+    selections,
+    filteredDataSource,
+    getHeaderState,
+    applyHeaderChange,
+    toggleField,
+  ]);
 
-  const dataSource = conflicts.map((c) => ({
-    key: c.model_name,
-    model_name: c.model_name,
-    fields: c.fields || [],
-  }));
+  const pagedDataSource = useMemo(() => {
+    const start = (currentPage - 1) * MODEL_TABLE_PAGE_SIZE;
+    const end = start + MODEL_TABLE_PAGE_SIZE;
+    return filteredDataSource.slice(start, end);
+  }, [filteredDataSource, currentPage]);
 
   const handleOk = async () => {
     const payload = Object.entries(selections)
@@ -236,12 +284,41 @@ const UpstreamConflictModal = ({
           <div className='mb-3 text-[var(--semi-color-text-2)]'>
             {t('仅会覆盖你勾选的字段，未勾选的字段保持本地不变。')}
           </div>
-          <Table
-            columns={columns}
-            dataSource={dataSource}
-            pagination={false}
-            scroll={{ x: 'max-content' }}
-          />
+          {/* 搜索框 */}
+          <div className='flex items-center justify-end gap-2 w-full mb-4'>
+            <Input
+              placeholder={t('搜索模型...')}
+              value={searchKeyword}
+              onChange={(v) => {
+                setSearchKeyword(v);
+                setCurrentPage(1);
+              }}
+              className='!w-full'
+              prefix={<IconSearch />}
+              showClear
+            />
+          </div>
+          {filteredDataSource.length > 0 ? (
+            <Table
+              columns={columns}
+              dataSource={pagedDataSource}
+              pagination={{
+                currentPage: currentPage,
+                pageSize: MODEL_TABLE_PAGE_SIZE,
+                total: filteredDataSource.length,
+                showSizeChanger: false,
+                onPageChange: (page) => setCurrentPage(page),
+              }}
+              scroll={{ x: 'max-content' }}
+            />
+          ) : (
+            <Empty
+              description={
+                searchKeyword ? t('未找到匹配的模型') : t('无冲突项')
+              }
+              className='p-6'
+            />
+          )}
         </>
       )}
     </Modal>
