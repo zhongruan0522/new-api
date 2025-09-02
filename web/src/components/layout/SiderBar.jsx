@@ -58,7 +58,7 @@ const SiderBar = ({ onNavigate = () => {} }) => {
     loading: sidebarLoading,
   } = useSidebar();
 
-  const showSkeleton = useMinimumLoadingTime(sidebarLoading, 500);
+  const showSkeleton = useMinimumLoadingTime(sidebarLoading);
 
   const [selectedKeys, setSelectedKeys] = useState(['home']);
   const [chatItems, setChatItems] = useState([]);
@@ -305,14 +305,12 @@ const SiderBar = ({ onNavigate = () => {} }) => {
         key={item.itemKey}
         itemKey={item.itemKey}
         text={
-          <div className='flex items-center'>
-            <span
-              className='truncate font-medium text-sm'
-              style={{ color: textColor }}
-            >
-              {item.text}
-            </span>
-          </div>
+          <span
+            className='truncate font-medium text-sm'
+            style={{ color: textColor }}
+          >
+            {item.text}
+          </span>
         }
         icon={
           <div className='sidebar-icon-container flex-shrink-0'>
@@ -335,14 +333,12 @@ const SiderBar = ({ onNavigate = () => {} }) => {
           key={item.itemKey}
           itemKey={item.itemKey}
           text={
-            <div className='flex items-center'>
-              <span
-                className='truncate font-medium text-sm'
-                style={{ color: textColor }}
-              >
-                {item.text}
-              </span>
-            </div>
+            <span
+              className='truncate font-medium text-sm'
+              style={{ color: textColor }}
+            >
+              {item.text}
+            </span>
           }
           icon={
             <div className='sidebar-icon-container flex-shrink-0'>
@@ -379,7 +375,10 @@ const SiderBar = ({ onNavigate = () => {} }) => {
   return (
     <div
       className='sidebar-container'
-      style={{ width: 'var(--sidebar-current-width)' }}
+      style={{
+        width: 'var(--sidebar-current-width)',
+        background: 'var(--semi-color-bg-0)',
+      }}
     >
       <SkeletonWrapper
         loading={showSkeleton}

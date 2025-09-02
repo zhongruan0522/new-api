@@ -159,7 +159,7 @@ const SkeletonWrapper = ({
           className={`flex items-center p-2 mb-1 rounded-md ${className}`}
         >
           {/* 图标骨架屏 */}
-          <div className='sidebar-icon-container flex-shrink-0 mr-2'>
+          <div className='sidebar-icon-container flex-shrink-0'>
             <Skeleton
               loading={true}
               active
@@ -247,7 +247,7 @@ const SkeletonWrapper = ({
           margin: '3px 8px',
         }}
       >
-        <div className='sidebar-icon-container flex-shrink-0 mr-2'>
+        <div className='sidebar-icon-container flex-shrink-0'>
           {renderIcon()}
         </div>
         {renderLabel(labelWidth)}

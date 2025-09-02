@@ -71,6 +71,11 @@ code {
   margin-right: 0;
 }
 
+.sidebar-nav .semi-navigation-item-text {
+  flex: 1;
+  min-width: 0;
+}
+
 .semi-navigation-item,
 .semi-navigation-sub-title {
   height: 100% !important;
