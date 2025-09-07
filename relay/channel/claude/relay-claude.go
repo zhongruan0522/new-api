@@ -32,7 +32,7 @@ func stopReasonClaude2OpenAI(reason string) string {
 	case "end_turn":
 		return "stop"
 	case "max_tokens":
-		return "max_tokens"
+		return "length"
 	case "tool_use":
 		return "tool_calls"
 	default:
@@ -426,7 +426,10 @@ func StreamResponseClaude2OpenAI(reqMode int, claudeResponse *dto.ClaudeResponse
 			choice.Delta.Role = "assistant"
 		} else if claudeResponse.Type == "content_block_start" {
 			if claudeResponse.ContentBlock != nil {
-				//choice.Delta.SetContentString(claudeResponse.ContentBlock.Text)
+				// 如果是文本块，尽可能发送首段文本（若存在）
+				if claudeResponse.ContentBlock.Type == "text" && claudeResponse.ContentBlock.Text != nil {
+					choice.Delta.SetContentString(*claudeResponse.ContentBlock.Text)
+				}
 				if claudeResponse.ContentBlock.Type == "tool_use" {
 					tools = append(tools, dto.ToolCallResponse{
 						Index: common.GetPointer(fcIdx),
