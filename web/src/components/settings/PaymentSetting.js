@@ -3,8 +3,10 @@ import { Card, Spin } from '@douyinfe/semi-ui';
 import SettingsGeneralPayment from '../../pages/Setting/Payment/SettingsGeneralPayment.js';
 import SettingsPaymentGateway from '../../pages/Setting/Payment/SettingsPaymentGateway.js';
 import SettingsPaymentGatewayStripe from '../../pages/Setting/Payment/SettingsPaymentGatewayStripe.js';
+import SettingsPaymentGatewayCreem from '../../pages/Setting/Payment/SettingsPaymentGatewayCreem.js';
 import { API, showError, toBoolean } from '../../helpers';
 import { useTranslation } from 'react-i18next';
+
 
 const PaymentSetting = () => {
   const { t } = useTranslation();
@@ -24,6 +26,9 @@ const PaymentSetting = () => {
     StripePriceId: '',
     StripeUnitPrice: 8.0,
     StripeMinTopUp: 1,
+
+    CreemApiKey: '',
+    CreemProducts: '[]',
   });
 
   let [loading, setLoading] = useState(false);
@@ -41,6 +46,14 @@ const PaymentSetting = () => {
             } catch (error) {
               console.error('解析TopupGroupRatio出错:', error);
               newInputs[item.key] = item.value;
+            }
+            break;
+          case 'CreemProducts':
+            try {
+              newInputs[item.key] = item.value;
+            } catch (error) {
+              console.error('解析CreemProducts出错:', error);
+              newInputs[item.key] = '[]';
             }
             break;
           case 'Price':
@@ -91,6 +104,9 @@ const PaymentSetting = () => {
         </Card>
         <Card style={{ marginTop: '10px' }}>
           <SettingsPaymentGatewayStripe options={inputs} refresh={onRefresh} />
+        </Card>
+        <Card style={{ marginTop: '10px' }}>
+          <SettingsPaymentGatewayCreem options={inputs} refresh={onRefresh} />
         </Card>
       </Spin>
     </>

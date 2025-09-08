@@ -66,6 +66,11 @@ const TopUp = () => {
   const [enableStripeTopUp, setEnableStripeTopUp] = useState(statusState?.status?.enable_stripe_topup || false);
   const [stripeOpen, setStripeOpen] = useState(false);
 
+  const [creemProducts, setCreemProducts] = useState([]);
+  const [enableCreemTopUp, setEnableCreemTopUp] = useState(false);
+  const [creemOpen, setCreemOpen] = useState(false);
+  const [selectedCreemProduct, setSelectedCreemProduct] = useState(null);
+
   const [userQuota, setUserQuota] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [open, setOpen] = useState(false);
@@ -296,6 +301,50 @@ const TopUp = () => {
     window.open(data.pay_link, '_blank');
   };
 
+  const creemPreTopUp = async (product) => {
+    if (!enableCreemTopUp) {
+      showError(t('管理员未开启 Creem 充值！'));
+      return;
+    }
+    setSelectedCreemProduct(product);
+    setCreemOpen(true);
+  };
+
+  const onlineCreemTopUp = async () => {
+    if (!selectedCreemProduct) {
+      showError(t('请选择产品'));
+      return;
+    }
+    setConfirmLoading(true);
+    try {
+      const res = await API.post('/api/user/creem/pay', {
+        product_id: selectedCreemProduct.productId,
+        payment_method: 'creem',
+      });
+      if (res !== undefined) {
+        const { message, data } = res.data;
+        if (message === 'success') {
+          processCreemCallback(data);
+        } else {
+          showError(data);
+        }
+      } else {
+        showError(res);
+      }
+    } catch (err) {
+      console.log(err);
+      showError(t('支付请求失败'));
+    } finally {
+      setCreemOpen(false);
+      setConfirmLoading(false);
+    }
+  };
+
+  const processCreemCallback = (data) => {
+    // 与 Stripe 保持一致的实现方式
+    window.open(data.checkout_url, '_blank');
+  };
+
   const getUserQuota = async () => {
     setUserDataLoading(true);
     let res = await API.get(`/api/user/self`);
@@ -396,6 +445,15 @@ const TopUp = () => {
       setStripeMinTopUp(statusState.status.stripe_min_topup || 1);
       setStripeTopUpCount(statusState.status.stripe_min_topup || 1);
       setEnableStripeTopUp(statusState.status.enable_stripe_topup || false);
+
+      // Creem settings
+      setEnableCreemTopUp(statusState.status.enable_creem_topup || false);
+      try {
+        const products = JSON.parse(statusState.status.creem_products || '[]');
+        setCreemProducts(products);
+      } catch (e) {
+        setCreemProducts([]);
+      }
     }
   }, [statusState?.status]);
 
@@ -468,6 +526,11 @@ const TopUp = () => {
 
   const handleStripeCancel = () => {
     setStripeOpen(false);
+  };
+
+  const handleCreemCancel = () => {
+    setCreemOpen(false);
+    setSelectedCreemProduct(null);
   };
 
   const handleTransferCancel = () => {
@@ -621,6 +684,32 @@ const TopUp = () => {
           {t('实付金额')}：{renderStripeAmount()}
         </p>
         <p>{t('是否确认充值？')}</p>
+      </Modal>
+
+      <Modal
+        title={t('确定要充值吗')}
+        visible={creemOpen}
+        onOk={onlineCreemTopUp}
+        onCancel={handleCreemCancel}
+        maskClosable={false}
+        size='small'
+        centered
+        confirmLoading={confirmLoading}
+      >
+        {selectedCreemProduct && (
+          <>
+            <p>
+              {t('产品名称')}：{selectedCreemProduct.name}
+            </p>
+            <p>
+              {t('价格')}：{selectedCreemProduct.currency === 'EUR' ? '€' : '$'}{selectedCreemProduct.price}
+            </p>
+            <p>
+              {t('充值额度')}：{selectedCreemProduct.quota}
+            </p>
+            <p>{t('是否确认充值？')}</p>
+          </>
+        )}
       </Modal>
 
       <div className='grid grid-cols-1 lg:grid-cols-12 gap-6'>
@@ -925,7 +1014,7 @@ const TopUp = () => {
                 </>
               )}
 
-              {!enableOnlineTopUp && !enableStripeTopUp && (
+              {!enableOnlineTopUp && !enableStripeTopUp && !enableCreemTopUp && (
                 <Banner
                   type='warning'
                   description={t(
@@ -1016,7 +1105,151 @@ const TopUp = () => {
                           </div>
                       </div>
                     </div>
-                  </>
+
+                  {/* 移动端 Stripe 充值区域 */}
+                  <div className='md:hidden space-y-4'>
+                    <Divider style={{ margin: '24px 0' }}>
+                      <Text className='text-sm font-medium'>
+                        {t('Stripe 充值')}
+                      </Text>
+                    </Divider>
+
+                    <div>
+                      <div className='flex justify-between mb-2'>
+                        <Text strong>{t('充值数量')}</Text>
+                        {amountLoading ? (
+                          <Skeleton.Title
+                            style={{ width: '80px', height: '16px' }}
+                          />
+                        ) : (
+                          <Text type='tertiary'>
+                            {t('实付金额：') + renderStripeAmount()}
+                          </Text>
+                        )}
+                      </div>
+                      <InputNumber
+                        disabled={!enableStripeTopUp}
+                        placeholder={
+                          t('充值数量，最低 ') + renderQuotaWithAmount(stripeMinTopUp)
+                        }
+                        value={stripeTopUpCount}
+                        min={stripeMinTopUp}
+                        max={999999999}
+                        step={1}
+                        precision={0}
+                        onChange={async (value) => {
+                          if (value && value >= 1) {
+                            setStripeTopUpCount(value);
+                            setSelectedPreset(null);
+                            await getStripeAmount(value);
+                          }
+                        }}
+                        onBlur={(e) => {
+                          const value = parseInt(e.target.value);
+                          if (!value || value < 1) {
+                            setStripeTopUpCount(1);
+                            getStripeAmount(1);
+                          }
+                        }}
+                        className='w-full'
+                        formatter={(value) => (value ? `${value}` : '')}
+                        parser={(value) =>
+                          value ? parseInt(value.replace(/[^\d]/g, '')) : 0
+                        }
+                      />
+                    </div>
+
+                    <div>
+                      <Button
+                        type='primary'
+                        onClick={() => stripePreTopUp()}
+                        disabled={!enableStripeTopUp}
+                        loading={paymentLoading && payWay === 'stripe'}
+                        icon={<CreditCard size={16} />}
+                        style={{
+                          height: '40px',
+                          color: '#b161fe',
+                        }}
+                        className='transition-all hover:shadow-md w-full'
+                      >
+                        <span className='ml-1'>Stripe</span>
+                      </Button>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {enableCreemTopUp && creemProducts.length > 0 && (
+                <>
+                  <div className='hidden md:block space-y-4'>
+                    <Divider style={{ margin: '24px 0' }}>
+                      <Text className='text-sm font-medium'>
+                        {t('Creem 充值')}
+                      </Text>
+                    </Divider>
+
+                    <div>
+                      <Text strong className='block mb-3'>
+                        {t('选择充值套餐')}
+                      </Text>
+                      <div className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3'>
+                        {creemProducts.map((product, index) => (
+                          <Card
+                            key={index}
+                            onClick={() => creemPreTopUp(product)}
+                            className='cursor-pointer !rounded-2xl transition-all hover:shadow-md border-gray-200 hover:border-gray-300'
+                            bodyStyle={{ textAlign: 'center', padding: '16px' }}
+                          >
+                            <div className='font-medium text-lg mb-2'>
+                              {product.name}
+                            </div>
+                            <div className='text-sm text-gray-600 mb-2'>
+                              {t('充值额度')}: {product.quota}
+                            </div>
+                            <div className='text-lg font-semibold text-blue-600'>
+                              {product.currency === 'EUR' ? '€' : '$'}{product.price}
+                            </div>
+                          </Card>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 移动端 Creem 充值区域 */}
+                  <div className='md:hidden space-y-4'>
+                    <Divider style={{ margin: '24px 0' }}>
+                      <Text className='text-sm font-medium'>
+                        {t('Creem 充值')}
+                      </Text>
+                    </Divider>
+
+                    <div>
+                      <Text strong className='block mb-3'>
+                        {t('选择充值套餐')}
+                      </Text>
+                      <div className='grid grid-cols-1 sm:grid-cols-2 gap-3'>
+                        {creemProducts.map((product, index) => (
+                          <Card
+                            key={index}
+                            onClick={() => creemPreTopUp(product)}
+                            className='cursor-pointer !rounded-2xl transition-all hover:shadow-md border-gray-200 hover:border-gray-300'
+                            bodyStyle={{ textAlign: 'center', padding: '16px' }}
+                          >
+                            <div className='font-medium text-lg mb-2'>
+                              {product.name}
+                            </div>
+                            <div className='text-sm text-gray-600 mb-2'>
+                              {t('充值额度')}: {product.quota}
+                            </div>
+                            <div className='text-lg font-semibold text-blue-600'>
+                              {product.currency === 'EUR' ? '€' : '$'}{product.price}
+                            </div>
+                          </Card>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </>
               )}
 
               <Divider style={{ margin: '24px 0' }}>
@@ -1185,7 +1418,12 @@ const TopUp = () => {
         </div>
       </div>
 
-      {/* 移动端底部固定的自定义金额和支付区域 */}
+      {/* 移动端底部间距，避免内容被固定区域遮挡 */}
+      {enableOnlineTopUp && (
+        <div className='md:hidden h-32'></div>
+      )}
+
+      {/* 移动端底部固定的自定义金额和支付区域 - 仅限在线充值 */}
       {enableOnlineTopUp && (
         <div
           className='md:hidden fixed bottom-0 left-0 right-0 p-4 shadow-lg z-50'
