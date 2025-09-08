@@ -34,6 +34,7 @@ import (
 	"one-api/relay/channel/xunfei"
 	"one-api/relay/channel/zhipu"
 	"one-api/relay/channel/zhipu_4v"
+	"one-api/relay/channel/submodel"
 )
 
 func GetAdaptor(apiType int) channel.Adaptor {
@@ -96,6 +97,8 @@ func GetAdaptor(apiType int) channel.Adaptor {
 		return &coze.Adaptor{}
 	case constant.APITypeJimeng:
 		return &jimeng.Adaptor{}
+	case constant.APITypeSubmodel:
+		return &submodel.Adaptor{}
 	}
 	return nil
 }

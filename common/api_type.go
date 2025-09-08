@@ -65,6 +65,8 @@ func ChannelType2APIType(channelType int) (int, bool) {
 		apiType = constant.APITypeCoze
 	case constant.ChannelTypeJimeng:
 		apiType = constant.APITypeJimeng
+	case constant.ChannelTypeSubmodel:
+		apiType = constant.APITypeSubmodel
 	}
 	if apiType == -1 {
 		return constant.APITypeOpenAI, false
