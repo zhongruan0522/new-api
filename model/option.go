@@ -81,6 +81,9 @@ func InitOptionMap() {
 	common.OptionMap["StripeWebhookSecret"] = setting.StripeWebhookSecret
 	common.OptionMap["StripePriceId"] = setting.StripePriceId
 	common.OptionMap["StripeUnitPrice"] = strconv.FormatFloat(setting.StripeUnitPrice, 'f', -1, 64)
+	common.OptionMap["CreemApiKey"] = setting.CreemApiKey
+	common.OptionMap["CreemProducts"] = setting.CreemProducts
+	common.OptionMap["CreemTestMode"] = strconv.FormatBool(setting.CreemTestMode)
 	common.OptionMap["TopupGroupRatio"] = common.TopupGroupRatio2JSONString()
 	common.OptionMap["Chats"] = setting.Chats2JsonString()
 	common.OptionMap["AutoGroups"] = setting.AutoGroups2JsonString()
@@ -326,6 +329,12 @@ func updateOptionMap(key string, value string) (err error) {
 		setting.StripeUnitPrice, _ = strconv.ParseFloat(value, 64)
 	case "StripeMinTopUp":
 		setting.StripeMinTopUp, _ = strconv.Atoi(value)
+	case "CreemApiKey":
+		setting.CreemApiKey = value
+	case "CreemProducts":
+		setting.CreemProducts = value
+	case "CreemTestMode":
+		setting.CreemTestMode = value == "true"
 	case "TopupGroupRatio":
 		err = common.UpdateTopupGroupRatioByJSONString(value)
 	case "GitHubClientId":

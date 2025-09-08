@@ -74,6 +74,8 @@ func GetStatus(c *gin.Context) {
 		"default_collapse_sidebar": common.DefaultCollapseSidebar,
 		"enable_online_topup":      setting.PayAddress != "" && setting.EpayId != "" && setting.EpayKey != "",
 		"enable_stripe_topup":      setting.StripeApiSecret != "" && setting.StripeWebhookSecret != "" && setting.StripePriceId != "",
+		"enable_creem_topup":       setting.CreemApiKey != "" && setting.CreemProducts != "[]",
+		"creem_products":           setting.CreemProducts,
 		"mj_notify_enabled":        setting.MjNotifyEnabled,
 		"chats":                    setting.Chats,
 		"demo_site_enabled":        operation_setting.DemoSiteEnabled,
