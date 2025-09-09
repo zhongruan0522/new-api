@@ -130,7 +130,12 @@ func awsHandler(c *gin.Context, info *relaycommon.RelayInfo, requestMode int) (*
 		Usage:        &dto.Usage{},
 	}
 
-	handlerErr := claude.HandleClaudeResponseData(c, info, claudeInfo, awsResp.Body, RequestModeMessage)
+	// 复制上游 Content-Type 到客户端响应头
+	if awsResp.ContentType != nil && *awsResp.ContentType != "" {
+		c.Writer.Header().Set("Content-Type", *awsResp.ContentType)
+	}
+
+	handlerErr := claude.HandleClaudeResponseData(c, info, claudeInfo, nil, awsResp.Body, RequestModeMessage)
 	if handlerErr != nil {
 		return handlerErr, nil
 	}
