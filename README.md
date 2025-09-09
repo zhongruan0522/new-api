@@ -100,7 +100,7 @@ New API提供了丰富的功能，详细特性请参考[特性说明](https://do
     1. OpenAI Chat Completions => Claude Messages
     2. Clade Messages => OpenAI Chat Completions (可用于Claude Code调用第三方模型)
     3. OpenAI Chat Completions => Gemini Chat
-20. 💰 缓存计费支持，开启后可以在缓存命中时按照设定的比例计费：
+19. 💰 缓存计费支持，开启后可以在缓存命中时按照设定的比例计费：
     1. 在 `系统设置-运营设置` 中设置 `提示缓存倍率` 选项
     2. 在渠道中设置 `提示缓存倍率`，范围 0-1，例如设置为 0.5 表示缓存命中时按照 50% 计费
     3. 支持的渠道：
