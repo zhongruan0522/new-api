@@ -49,12 +49,10 @@ const (
 	ChannelTypeCoze           = 49
 	ChannelTypeKling          = 50
 	ChannelTypeJimeng         = 51
-<<<<<<< HEAD
-	ChannelTypeSubmodel       = 52
-=======
 	ChannelTypeVidu           = 52
->>>>>>> 041782c49e0289b9d2e64a318e81e4f75754dabf
+	ChannelTypeSubmodel       = 53
 	ChannelTypeDummy          // this one is only for count, do not add any channel after this
+
 
 )
 
