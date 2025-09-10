@@ -120,7 +120,7 @@ func ImageHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *type
 	var logContent string
 
 	if len(request.Size) > 0 {
-		logContent = fmt.Sprintf("大小 %s, 品质 %s", request.Size, quality)
+		logContent = fmt.Sprintf("大小 %s, 品质 %s, 张数 %d", request.Size, quality, request.N)
 	}
 
 	postConsumeQuota(c, info, usage.(*dto.Usage), logContent)
