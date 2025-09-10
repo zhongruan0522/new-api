@@ -13,4 +13,4 @@ var ModelList = []string{
 	"deepseek-ai/DeepSeek-V3.1",
 }
 
-var ChannelName = "submodel"
+const ChannelName = "submodel"

@@ -251,7 +251,6 @@ var defaultModelRatio = map[string]float64{
 	"grok-vision-beta":      2.5,
 	"grok-3-fast-beta":      2.5,
 	"grok-3-mini-fast-beta": 0.3,
-
     // submodel
 	"NousResearch/Hermes-4-405B-FP8":               0.8,
 	"Qwen/Qwen3-235B-A22B-Thinking-2507":           0.6,
@@ -262,8 +261,7 @@ var defaultModelRatio = map[string]float64{
 	"deepseek-ai/DeepSeek-R1-0528":                 0.8,
 	"deepseek-ai/DeepSeek-R1":                      0.8,
 	"deepseek-ai/DeepSeek-V3-0324":                 0.8,
-	"deepseek-ai/DeepSeek-V3.1":                    0.8
-
+	"deepseek-ai/DeepSeek-V3.1":                    0.8,
 }
 
 var defaultModelPrice = map[string]float64{
