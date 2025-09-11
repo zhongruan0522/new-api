@@ -76,6 +76,7 @@ func convertToNovaRequest(req *dto.GeneralOpenAIRequest) *NovaRequest {
 
 	// 设置推理配置
 	if req.MaxTokens != 0 || (req.Temperature != nil && *req.Temperature != 0) || req.TopP != 0 {
+		novaReq.InferenceConfig = &NovaInferenceConfig{}
 		if req.MaxTokens != 0 {
 			novaReq.InferenceConfig.MaxTokens = int(req.MaxTokens)
 		}

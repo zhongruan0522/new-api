@@ -97,6 +97,12 @@ func awsHandler(c *gin.Context, info *relaycommon.RelayInfo, requestMode int) (*
 	// 检查是否为Nova模型
 	isNova, _ := c.Get("is_nova_model")
 	if isNova == true {
+		// Nova模型也支持跨区域
+		awsRegionPrefix := awsRegionPrefix(awsCli.Options().Region)
+		canCrossRegion := awsModelCanCrossRegion(awsModelId, awsRegionPrefix)
+		if canCrossRegion {
+			awsModelId = awsModelCrossRegion(awsModelId, awsRegionPrefix)
+		}
 		return handleNovaRequest(c, awsCli, info, awsModelId)
 	}
 
