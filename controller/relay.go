@@ -139,15 +139,15 @@ func Relay(c *gin.Context, relayFormat types.RelayFormat) {
 
 	// common.SetContextKey(c, constant.ContextKeyTokenCountMeta, meta)
 
-	preConsumedQuota, newAPIError := service.PreConsumeQuota(c, priceData.ShouldPreConsumedQuota, relayInfo)
+	newAPIError = service.PreConsumeQuota(c, priceData.ShouldPreConsumedQuota, relayInfo)
 	if newAPIError != nil {
 		return
 	}
 
 	defer func() {
 		// Only return quota if downstream failed and quota was actually pre-consumed
-		if newAPIError != nil && preConsumedQuota != 0 {
-			service.ReturnPreConsumedQuota(c, relayInfo, preConsumedQuota)
+		if newAPIError != nil && relayInfo.FinalPreConsumedQuota != 0 {
+			service.ReturnPreConsumedQuota(c, relayInfo)
 		}
 	}()
 
