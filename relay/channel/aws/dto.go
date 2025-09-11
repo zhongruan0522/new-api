@@ -75,7 +75,7 @@ func convertToNovaRequest(req *dto.GeneralOpenAIRequest) *NovaRequest {
 	}
 
 	// 设置推理配置
-	if req.MaxTokens != 0 || (req.Temperature != nil && *req.Temperature != 0) || req.TopP != 0 {
+	if req.MaxTokens != 0 || (req.Temperature != nil && *req.Temperature != 0) || req.TopP != 0 || req.TopK != 0 || req.Stop != nil {
 		novaReq.InferenceConfig = &NovaInferenceConfig{}
 		if req.MaxTokens != 0 {
 			novaReq.InferenceConfig.MaxTokens = int(req.MaxTokens)
@@ -86,7 +86,40 @@ func convertToNovaRequest(req *dto.GeneralOpenAIRequest) *NovaRequest {
 		if req.TopP != 0 {
 			novaReq.InferenceConfig.TopP = req.TopP
 		}
+		if req.TopK != 0 {
+			novaReq.InferenceConfig.TopK = req.TopK
+		}
+		if req.Stop != nil {
+			if stopSequences := parseStopSequences(req.Stop); len(stopSequences) > 0 {
+				novaReq.InferenceConfig.StopSequences = stopSequences
+			}
+		}
 	}
 
 	return novaReq
+}
+
+// parseStopSequences 解析停止序列，支持字符串或字符串数组
+func parseStopSequences(stop any) []string {
+	if stop == nil {
+		return nil
+	}
+
+	switch v := stop.(type) {
+	case string:
+		if v != "" {
+			return []string{v}
+		}
+	case []string:
+		return v
+	case []interface{}:
+		var sequences []string
+		for _, item := range v {
+			if str, ok := item.(string); ok && str != "" {
+				sequences = append(sequences, str)
+			}
+		}
+		return sequences
+	}
+	return nil
 }
