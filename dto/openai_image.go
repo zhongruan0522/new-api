@@ -64,19 +64,21 @@ func (r ImageRequest) MarshalJSON() ([]byte, error) {
 	// 将已定义字段转为 map
 	type Alias ImageRequest
 	alias := Alias(r)
-	base, err := json.Marshal(alias)
+	base, err := common.Marshal(alias)
 	if err != nil {
 		return nil, err
 	}
 
 	var baseMap map[string]json.RawMessage
-	if err := json.Unmarshal(base, &baseMap); err != nil {
+	if err := common.Unmarshal(base, &baseMap); err != nil {
 		return nil, err
 	}
 
 	// 合并 ExtraFields
 	for k, v := range r.Extra {
-		baseMap[k] = v
+		if _, exists := baseMap[k]; !exists {
+			baseMap[k] = v
+		}
 	}
 
 	return json.Marshal(baseMap)
