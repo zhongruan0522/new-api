@@ -17,9 +17,10 @@ var awsModelIDMap = map[string]string{
 	"claude-opus-4-20250514":     "anthropic.claude-opus-4-20250514-v1:0",
 	"claude-opus-4-1-20250805":   "anthropic.claude-opus-4-1-20250805-v1:0",
 	// Nova models
-	"amazon.nova-micro-v1:0": "us.amazon.nova-micro-v1:0",
-	"amazon.nova-lite-v1:0":  "us.amazon.nova-lite-v1:0",
-	"amazon.nova-pro-v1:0":   "us.amazon.nova-pro-v1:0",
+	"amazon.nova-micro-v1:0":   "us.amazon.nova-micro-v1:0",
+	"amazon.nova-lite-v1:0":    "us.amazon.nova-lite-v1:0",
+	"amazon.nova-pro-v1:0":     "us.amazon.nova-pro-v1:0",
+	"amazon.nova-premier-v1:0": "us.amazon.nova-premier-v1:0",
 }
 
 var awsModelCanCrossRegionMap = map[string]map[string]bool{
