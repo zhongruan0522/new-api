@@ -16,7 +16,7 @@ type HasPrompt interface {
 }
 
 type HasImage interface {
-	GetImage() string
+	HasImage() bool
 }
 
 func GetFullRequestURL(baseURL string, requestURL string, channelType int) string {
@@ -74,6 +74,11 @@ func ValidateBasicTaskRequest(c *gin.Context, info *RelayInfo, action string) *d
 		return taskErr
 	}
 
+	if len(req.Images) == 0 && strings.TrimSpace(req.Image) != "" {
+		// 兼容单图上传
+		req.Images = []string{req.Image}
+	}
+
 	storeTaskRequest(c, info, action, req)
 	return nil
 }
@@ -89,7 +94,7 @@ func ValidateTaskRequestWithImage(c *gin.Context, info *RelayInfo, requestObj in
 	}
 
 	action := constant.TaskActionTextGenerate
-	if hasImage, ok := requestObj.(HasImage); ok && strings.TrimSpace(hasImage.GetImage()) != "" {
+	if hasImage, ok := requestObj.(HasImage); ok && hasImage.HasImage() {
 		action = constant.TaskActionGenerate
 	}
 

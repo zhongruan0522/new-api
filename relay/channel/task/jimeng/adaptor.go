@@ -318,11 +318,11 @@ func (a *TaskAdaptor) convertToRequestPayload(req *relaycommon.TaskSubmitReq) (*
 	}
 
 	// Handle one-of image_urls or binary_data_base64
-	if req.Image != "" {
-		if strings.HasPrefix(req.Image, "http") {
-			r.ImageUrls = []string{req.Image}
+	if req.HasImage() {
+		if strings.HasPrefix(req.Images[0], "http") {
+			r.ImageUrls = req.Images
 		} else {
-			r.BinaryDataBase64 = []string{req.Image}
+			r.BinaryDataBase64 = req.Images
 		}
 	}
 	metadata := req.Metadata
