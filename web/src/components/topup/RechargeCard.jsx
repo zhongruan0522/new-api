@@ -353,11 +353,12 @@ const RechargeCard = ({
                           >
                             <div style={{ textAlign: 'center' }}>
                               <Typography.Title heading={6} style={{ margin: '0 0 8px 0' }}>
-                                {formatLargeNumber(preset.value)} {t('美元额度')}
+                                <Coins size={18} />
+                                {formatLargeNumber(preset.value)}
                                 {hasDiscount && (
                                    <Tag style={{ marginLeft: 4 }} color="green">
                                    {t('折').includes('off') ?
-                                     ((1 - discount) * 100).toFixed(1) :
+                                     ((1 - parseFloat(discount)) * 100).toFixed(1) :
                                      (discount * 10).toFixed(1)}{t('折')}
                                  </Tag>
                                 )}

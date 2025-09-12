@@ -2080,5 +2080,9 @@
   "官方": "Official",
   "模型社区需要大家的共同维护，如发现数据有误或想贡献新的模型数据，请访问：": "The model community needs everyone's contribution. If you find incorrect data or want to contribute new models, please visit:",
   "是": "Yes",
-  "否": "No"
+  "否": "No",
+  "原价": "Original price",
+  "优惠": "Discount",
+  "折": "% off",
+  "节省": "Save"
 }
