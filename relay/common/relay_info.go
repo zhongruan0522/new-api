@@ -486,6 +486,14 @@ type TaskSubmitReq struct {
 	Metadata map[string]interface{} `json:"metadata,omitempty"`
 }
 
+func (t TaskSubmitReq) GetPrompt() string {
+	return t.Prompt
+}
+
+func (t TaskSubmitReq) GetImage() string {
+	return t.Image
+}
+
 type TaskInfo struct {
 	Code     int    `json:"code"`
 	TaskID   string `json:"task_id"`
