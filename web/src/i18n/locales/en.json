@@ -1993,7 +1993,7 @@
   "安全验证": "Security verification",
   "验证": "Verify",
   "为了保护账户安全，请验证您的两步验证码。": "To protect account security, please verify your two-factor authentication code.",
-  "支持6位TOTP验证码或8位备用码": "Supports 6-digit TOTP verification code or 8-digit backup code",
+  "支持6位TOTP验证码或8位备用码，可到`个人设置-安全设置-两步验证设置`配置或查看。": "Supports 6-digit TOTP verification code or 8-digit backup code, can be configured or viewed in `Personal Settings - Security Settings - Two-Factor Authentication Settings`.",
   "获取密钥失败": "Failed to get key",
   "查看密钥": "View key",
   "查看渠道密钥": "View channel key",
