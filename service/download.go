@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"one-api/common"
-	"one-api/setting"
+	"one-api/setting/system_setting"
 	"strings"
 )
 
@@ -21,14 +21,20 @@ type WorkerRequest struct {
 
 // DoWorkerRequest 通过Worker发送请求
 func DoWorkerRequest(req *WorkerRequest) (*http.Response, error) {
-	if !setting.EnableWorker() {
+	if !system_setting.EnableWorker() {
 		return nil, fmt.Errorf("worker not enabled")
 	}
-	if !setting.WorkerAllowHttpImageRequestEnabled && !strings.HasPrefix(req.URL, "https") {
+	if !system_setting.WorkerAllowHttpImageRequestEnabled && !strings.HasPrefix(req.URL, "https") {
 		return nil, fmt.Errorf("only support https url")
 	}
 
-	workerUrl := setting.WorkerUrl
+	// SSRF防护：验证请求URL
+	fetchSetting := system_setting.GetFetchSetting()
+	if err := common.ValidateURLWithFetchSetting(req.URL, fetchSetting.EnableSSRFProtection, fetchSetting.AllowPrivateIp, fetchSetting.WhitelistDomains, fetchSetting.WhitelistIps, fetchSetting.AllowedPorts); err != nil {
+		return nil, fmt.Errorf("request reject: %v", err)
+	}
+
+	workerUrl := system_setting.WorkerUrl
 	if !strings.HasSuffix(workerUrl, "/") {
 		workerUrl += "/"
 	}
@@ -43,15 +49,21 @@ func DoWorkerRequest(req *WorkerRequest) (*http.Response, error) {
 }
 
 func DoDownloadRequest(originUrl string, reason ...string) (resp *http.Response, err error) {
-	if setting.EnableWorker() {
+	if system_setting.EnableWorker() {
 		common.SysLog(fmt.Sprintf("downloading file from worker: %s, reason: %s", originUrl, strings.Join(reason, ", ")))
 		req := &WorkerRequest{
 			URL: originUrl,
-			Key: setting.WorkerValidKey,
+			Key: system_setting.WorkerValidKey,
 		}
 		return DoWorkerRequest(req)
 	} else {
-		common.SysLog(fmt.Sprintf("downloading from origin with worker: %s, reason: %s", originUrl, strings.Join(reason, ", ")))
+		// SSRF防护：验证请求URL（非Worker模式）
+		fetchSetting := system_setting.GetFetchSetting()
+		if err := common.ValidateURLWithFetchSetting(originUrl, fetchSetting.EnableSSRFProtection, fetchSetting.AllowPrivateIp, fetchSetting.WhitelistDomains, fetchSetting.WhitelistIps, fetchSetting.AllowedPorts); err != nil {
+			return nil, fmt.Errorf("request reject: %v", err)
+		}
+
+		common.SysLog(fmt.Sprintf("downloading from origin: %s, reason: %s", common.MaskSensitiveInfo(originUrl), strings.Join(reason, ", ")))
 		return http.Get(originUrl)
 	}
 }

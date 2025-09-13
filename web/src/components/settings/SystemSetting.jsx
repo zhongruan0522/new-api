@@ -44,6 +44,7 @@ import { useTranslation } from 'react-i18next';
 const SystemSetting = () => {
   const { t } = useTranslation();
   let [inputs, setInputs] = useState({
+    
     PasswordLoginEnabled: '',
     PasswordRegisterEnabled: '',
     EmailVerificationEnabled: '',
@@ -87,6 +88,12 @@ const SystemSetting = () => {
     LinuxDOClientSecret: '',
     LinuxDOMinimumTrustLevel: '',
     ServerAddress: '',
+    // SSRF防护配置
+    'fetch_setting.enable_ssrf_protection': true,
+    'fetch_setting.allow_private_ip': '',
+    'fetch_setting.whitelist_domains': [],
+    'fetch_setting.whitelist_ips': [],
+    'fetch_setting.allowed_ports': [],
   });
 
   const [originInputs, setOriginInputs] = useState({});
@@ -98,6 +105,9 @@ const SystemSetting = () => {
     useState(false);
   const [linuxDOOAuthEnabled, setLinuxDOOAuthEnabled] = useState(false);
   const [emailToAdd, setEmailToAdd] = useState('');
+  const [whitelistDomains, setWhitelistDomains] = useState([]);
+  const [whitelistIps, setWhitelistIps] = useState([]);
+  const [allowedPorts, setAllowedPorts] = useState([]);
 
   const getOptions = async () => {
     setLoading(true);
@@ -112,6 +122,34 @@ const SystemSetting = () => {
             break;
           case 'EmailDomainWhitelist':
             setEmailDomainWhitelist(item.value ? item.value.split(',') : []);
+            break;
+          case 'fetch_setting.allow_private_ip':
+          case 'fetch_setting.enable_ssrf_protection':
+            item.value = toBoolean(item.value);
+            break;
+          case 'fetch_setting.whitelist_domains':
+            try {
+              const domains = item.value ? JSON.parse(item.value) : [];
+              setWhitelistDomains(Array.isArray(domains) ? domains : []);
+            } catch (e) {
+              setWhitelistDomains([]);
+            }
+            break;
+          case 'fetch_setting.whitelist_ips':
+            try {
+              const ips = item.value ? JSON.parse(item.value) : [];
+              setWhitelistIps(Array.isArray(ips) ? ips : []);
+            } catch (e) {
+              setWhitelistIps([]);
+            }
+            break;
+          case 'fetch_setting.allowed_ports':
+            try {
+              const ports = item.value ? JSON.parse(item.value) : [];
+              setAllowedPorts(Array.isArray(ports) ? ports : []);
+            } catch (e) {
+              setAllowedPorts(['80', '443', '8080', '8443']);
+            }
             break;
           case 'PasswordLoginEnabled':
           case 'PasswordRegisterEnabled':
@@ -273,6 +311,38 @@ const SystemSetting = () => {
       ]);
     } else {
       showError(t('邮箱域名白名单格式不正确'));
+    }
+  };
+
+  const submitSSRF = async () => {
+    const options = [];
+
+    // 处理域名白名单
+    if (Array.isArray(whitelistDomains)) {
+      options.push({
+        key: 'fetch_setting.whitelist_domains',
+        value: JSON.stringify(whitelistDomains),
+      });
+    }
+
+    // 处理IP白名单
+    if (Array.isArray(whitelistIps)) {
+      options.push({
+        key: 'fetch_setting.whitelist_ips',
+        value: JSON.stringify(whitelistIps),
+      });
+    }
+
+    // 处理端口配置
+    if (Array.isArray(allowedPorts)) {
+      options.push({
+        key: 'fetch_setting.allowed_ports',
+        value: JSON.stringify(allowedPorts),
+      });
+    }
+
+    if (options.length > 0) {
+      await updateOptions(options);
     }
   };
 
@@ -584,6 +654,136 @@ const SystemSetting = () => {
                     {t('允许 HTTP 协议图片请求（适用于自部署代理）')}
                   </Form.Checkbox>
                   <Button onClick={submitWorker}>{t('更新Worker设置')}</Button>
+                </Form.Section>
+              </Card>
+
+              <Card>
+                <Form.Section text={t('SSRF防护设置')}>
+                  <Text extraText={t('SSRF防护详细说明')}>
+                    {t('配置服务器端请求伪造(SSRF)防护，用于保护内网资源安全')}
+                  </Text>
+                  <Row
+                    gutter={{ xs: 8, sm: 16, md: 24, lg: 24, xl: 24, xxl: 24 }}
+                  >
+                    <Col xs={24} sm={24} md={24} lg={24} xl={24}>
+                      <Form.Checkbox
+                        field='fetch_setting.enable_ssrf_protection'
+                        noLabel
+                        extraText={t('SSRF防护开关详细说明')}
+                        onChange={(e) =>
+                          handleCheckboxChange('fetch_setting.enable_ssrf_protection', e)
+                        }
+                      >
+                        {t('启用SSRF防护（推荐开启以保护服务器安全）')}
+                      </Form.Checkbox>
+                    </Col>
+                  </Row>
+                  
+                  <Row
+                    gutter={{ xs: 8, sm: 16, md: 24, lg: 24, xl: 24, xxl: 24 }}
+                    style={{ marginTop: 16 }}
+                  >
+                    <Col xs={24} sm={24} md={24} lg={24} xl={24}>
+                      <Form.Checkbox
+                        field='fetch_setting.allow_private_ip'
+                        noLabel
+                        extraText={t('私有IP访问详细说明')}
+                        onChange={(e) =>
+                          handleCheckboxChange('fetch_setting.allow_private_ip', e)
+                        }
+                      >
+                        {t('允许访问私有IP地址（127.0.0.1、192.168.x.x等内网地址）')}
+                      </Form.Checkbox>
+                    </Col>
+                  </Row>
+                  
+                  <Row
+                    gutter={{ xs: 8, sm: 16, md: 24, lg: 24, xl: 24, xxl: 24 }}
+                    style={{ marginTop: 16 }}
+                  >
+                    <Col xs={24} sm={24} md={24} lg={24} xl={24}>
+                      <Text strong>{t('域名白名单')}</Text>
+                      <Text type="secondary" style={{ display: 'block', marginBottom: 8 }}>
+                        {t('支持通配符格式，如：example.com, *.api.example.com')}
+                      </Text>
+                      <TagInput
+                        value={whitelistDomains}
+                        onChange={(value) => {
+                          setWhitelistDomains(value);
+                          // 触发Form的onChange事件
+                          setInputs(prev => ({
+                            ...prev,
+                            'fetch_setting.whitelist_domains': value
+                          }));
+                        }}
+                        placeholder={t('输入域名后回车，如：example.com')}
+                        style={{ width: '100%' }}
+                      />
+                      <Text type="secondary" style={{ display: 'block', marginBottom: 8 }}>
+                        {t('域名白名单详细说明')}
+                      </Text>
+                    </Col>
+                  </Row>
+
+                  <Row
+                    gutter={{ xs: 8, sm: 16, md: 24, lg: 24, xl: 24, xxl: 24 }}
+                    style={{ marginTop: 16 }}
+                  >
+                    <Col xs={24} sm={24} md={24} lg={24} xl={24}>
+                      <Text strong>{t('IP白名单')}</Text>
+                      <Text type="secondary" style={{ display: 'block', marginBottom: 8 }}>
+                        {t('支持CIDR格式，如：8.8.8.8, 192.168.1.0/24')}
+                      </Text>
+                      <TagInput
+                        value={whitelistIps}
+                        onChange={(value) => {
+                          setWhitelistIps(value);
+                          // 触发Form的onChange事件
+                          setInputs(prev => ({
+                            ...prev,
+                            'fetch_setting.whitelist_ips': value
+                          }));
+                        }}
+                        placeholder={t('输入IP地址后回车，如：8.8.8.8')}
+                        style={{ width: '100%' }}
+                      />
+                      <Text type="secondary" style={{ display: 'block', marginBottom: 8 }}>
+                        {t('IP白名单详细说明')}
+                      </Text>
+                    </Col>
+                  </Row>
+
+                  <Row
+                    gutter={{ xs: 8, sm: 16, md: 24, lg: 24, xl: 24, xxl: 24 }}
+                    style={{ marginTop: 16 }}
+                  >
+                    <Col xs={24} sm={24} md={24} lg={24} xl={24}>
+                      <Text strong>{t('允许的端口')}</Text>
+                      <Text type="secondary" style={{ display: 'block', marginBottom: 8 }}>
+                        {t('支持单个端口和端口范围，如：80, 443, 8000-8999')}
+                      </Text>
+                      <TagInput
+                        value={allowedPorts}
+                        onChange={(value) => {
+                          setAllowedPorts(value);
+                          // 触发Form的onChange事件
+                          setInputs(prev => ({
+                            ...prev,
+                            'fetch_setting.allowed_ports': value
+                          }));
+                        }}
+                        placeholder={t('输入端口后回车，如：80 或 8000-8999')}
+                        style={{ width: '100%' }}
+                      />
+                      <Text type="secondary" style={{ display: 'block', marginBottom: 8 }}>
+                        {t('端口配置详细说明')}
+                      </Text>
+                    </Col>
+                  </Row>
+
+                  <Button onClick={submitSSRF} style={{ marginTop: 16 }}>
+                    {t('更新SSRF防护设置')}
+                  </Button>
                 </Form.Section>
               </Card>
 
