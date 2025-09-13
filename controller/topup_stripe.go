@@ -8,6 +8,7 @@ import (
 	"one-api/common"
 	"one-api/model"
 	"one-api/setting"
+	"one-api/setting/operation_setting"
 	"strconv"
 	"strings"
 	"time"
@@ -254,6 +255,7 @@ func GetChargedAmount(count float64, user model.User) float64 {
 }
 
 func getStripePayMoney(amount float64, group string) float64 {
+	originalAmount := amount
 	if !common.DisplayInCurrencyEnabled {
 		amount = amount / common.QuotaPerUnit
 	}
@@ -262,7 +264,14 @@ func getStripePayMoney(amount float64, group string) float64 {
 	if topupGroupRatio == 0 {
 		topupGroupRatio = 1
 	}
-	payMoney := amount * setting.StripeUnitPrice * topupGroupRatio
+	// apply optional preset discount by the original request amount (if configured), default 1.0
+	discount := 1.0
+	if ds, ok := operation_setting.GetPaymentSetting().AmountDiscount[int(originalAmount)]; ok {
+		if ds > 0 {
+			discount = ds
+		}
+	}
+	payMoney := amount * setting.StripeUnitPrice * topupGroupRatio * discount
 	return payMoney
 }
 

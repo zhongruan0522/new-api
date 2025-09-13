@@ -326,22 +326,11 @@ func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage 
 	} else {
 		quotaCalculateDecimal = dModelPrice.Mul(dQuotaPerUnit).Mul(dGroupRatio)
 	}
-	var dGeminiImageOutputQuota decimal.Decimal
-	var imageOutputPrice float64
-	if strings.HasPrefix(modelName, "gemini-2.5-flash-image-preview") {
-		imageOutputPrice = operation_setting.GetGeminiImageOutputPricePerMillionTokens(modelName)
-		if imageOutputPrice > 0 {
-			dImageOutputTokens := decimal.NewFromInt(int64(ctx.GetInt("gemini_image_tokens")))
-			dGeminiImageOutputQuota = decimal.NewFromFloat(imageOutputPrice).Div(decimal.NewFromInt(1000000)).Mul(dImageOutputTokens).Mul(dGroupRatio).Mul(dQuotaPerUnit)
-		}
-	}
 	// 添加 responses tools call 调用的配额
 	quotaCalculateDecimal = quotaCalculateDecimal.Add(dWebSearchQuota)
 	quotaCalculateDecimal = quotaCalculateDecimal.Add(dFileSearchQuota)
 	// 添加 audio input 独立计费
 	quotaCalculateDecimal = quotaCalculateDecimal.Add(audioInputQuota)
-	// 添加 Gemini image output 计费
-	quotaCalculateDecimal = quotaCalculateDecimal.Add(dGeminiImageOutputQuota)
 
 	quota := int(quotaCalculateDecimal.Round(0).IntPart())
 	totalTokens := promptTokens + completionTokens
@@ -439,10 +428,6 @@ func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage 
 		other["audio_input_seperate_price"] = true
 		other["audio_input_token_count"] = audioTokens
 		other["audio_input_price"] = audioInputPrice
-	}
-	if !dGeminiImageOutputQuota.IsZero() {
-		other["image_output_token_count"] = ctx.GetInt("gemini_image_tokens")
-		other["image_output_price"] = imageOutputPrice
 	}
 	model.RecordConsumeLog(ctx, relayInfo.UserId, model.RecordConsumeLogParams{
 		ChannelId:        relayInfo.ChannelId,

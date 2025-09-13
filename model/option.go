@@ -73,9 +73,9 @@ func InitOptionMap() {
 	common.OptionMap["CustomCallbackAddress"] = ""
 	common.OptionMap["EpayId"] = ""
 	common.OptionMap["EpayKey"] = ""
-	common.OptionMap["Price"] = strconv.FormatFloat(setting.Price, 'f', -1, 64)
-	common.OptionMap["USDExchangeRate"] = strconv.FormatFloat(setting.USDExchangeRate, 'f', -1, 64)
-	common.OptionMap["MinTopUp"] = strconv.Itoa(setting.MinTopUp)
+	common.OptionMap["Price"] = strconv.FormatFloat(operation_setting.Price, 'f', -1, 64)
+	common.OptionMap["USDExchangeRate"] = strconv.FormatFloat(operation_setting.USDExchangeRate, 'f', -1, 64)
+	common.OptionMap["MinTopUp"] = strconv.Itoa(operation_setting.MinTopUp)
 	common.OptionMap["StripeMinTopUp"] = strconv.Itoa(setting.StripeMinTopUp)
 	common.OptionMap["StripeApiSecret"] = setting.StripeApiSecret
 	common.OptionMap["StripeWebhookSecret"] = setting.StripeWebhookSecret
@@ -85,7 +85,7 @@ func InitOptionMap() {
 	common.OptionMap["Chats"] = setting.Chats2JsonString()
 	common.OptionMap["AutoGroups"] = setting.AutoGroups2JsonString()
 	common.OptionMap["DefaultUseAutoGroup"] = strconv.FormatBool(setting.DefaultUseAutoGroup)
-	common.OptionMap["PayMethods"] = setting.PayMethods2JsonString()
+	common.OptionMap["PayMethods"] = operation_setting.PayMethods2JsonString()
 	common.OptionMap["GitHubClientId"] = ""
 	common.OptionMap["GitHubClientSecret"] = ""
 	common.OptionMap["TelegramBotToken"] = ""
@@ -299,23 +299,23 @@ func updateOptionMap(key string, value string) (err error) {
 	case "WorkerValidKey":
 		setting.WorkerValidKey = value
 	case "PayAddress":
-		setting.PayAddress = value
+		operation_setting.PayAddress = value
 	case "Chats":
 		err = setting.UpdateChatsByJsonString(value)
 	case "AutoGroups":
 		err = setting.UpdateAutoGroupsByJsonString(value)
 	case "CustomCallbackAddress":
-		setting.CustomCallbackAddress = value
+		operation_setting.CustomCallbackAddress = value
 	case "EpayId":
-		setting.EpayId = value
+		operation_setting.EpayId = value
 	case "EpayKey":
-		setting.EpayKey = value
+		operation_setting.EpayKey = value
 	case "Price":
-		setting.Price, _ = strconv.ParseFloat(value, 64)
+		operation_setting.Price, _ = strconv.ParseFloat(value, 64)
 	case "USDExchangeRate":
-		setting.USDExchangeRate, _ = strconv.ParseFloat(value, 64)
+		operation_setting.USDExchangeRate, _ = strconv.ParseFloat(value, 64)
 	case "MinTopUp":
-		setting.MinTopUp, _ = strconv.Atoi(value)
+		operation_setting.MinTopUp, _ = strconv.Atoi(value)
 	case "StripeApiSecret":
 		setting.StripeApiSecret = value
 	case "StripeWebhookSecret":
@@ -413,7 +413,7 @@ func updateOptionMap(key string, value string) (err error) {
 	case "StreamCacheQueueLength":
 		setting.StreamCacheQueueLength, _ = strconv.Atoi(value)
 	case "PayMethods":
-		err = setting.UpdatePayMethodsByJsonString(value)
+		err = operation_setting.UpdatePayMethodsByJsonString(value)
 	}
 	return err
 }
