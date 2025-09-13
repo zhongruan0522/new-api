@@ -10,6 +10,7 @@ import (
 	"one-api/service"
 	"one-api/setting"
 	"one-api/setting/operation_setting"
+	"one-api/setting/system_setting"
 	"strconv"
 	"sync"
 	"time"
@@ -152,7 +153,7 @@ func RequestEpay(c *gin.Context) {
 	}
 
 	callBackAddress := service.GetCallbackAddress()
-	returnUrl, _ := url.Parse(setting.ServerAddress + "/console/log")
+	returnUrl, _ := url.Parse(system_setting.ServerAddress + "/console/log")
 	notifyUrl, _ := url.Parse(callBackAddress + "/api/user/epay/notify")
 	tradeNo := fmt.Sprintf("%s%d", common.GetRandomString(6), time.Now().Unix())
 	tradeNo = fmt.Sprintf("USR%dNO%s", id, tradeNo)
