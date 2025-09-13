@@ -3,7 +3,6 @@ package controller
 import (
 	"bytes"
 	"fmt"
-	"github.com/bytedance/gopkg/util/gopool"
 	"io"
 	"log"
 	"net/http"
@@ -21,6 +20,8 @@ import (
 	"one-api/setting"
 	"one-api/types"
 	"strings"
+
+	"github.com/bytedance/gopkg/util/gopool"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
@@ -138,15 +139,15 @@ func Relay(c *gin.Context, relayFormat types.RelayFormat) {
 
 	// common.SetContextKey(c, constant.ContextKeyTokenCountMeta, meta)
 
-	preConsumedQuota, newAPIError := service.PreConsumeQuota(c, priceData.ShouldPreConsumedQuota, relayInfo)
+	newAPIError = service.PreConsumeQuota(c, priceData.ShouldPreConsumedQuota, relayInfo)
 	if newAPIError != nil {
 		return
 	}
 
 	defer func() {
 		// Only return quota if downstream failed and quota was actually pre-consumed
-		if newAPIError != nil && preConsumedQuota != 0 {
-			service.ReturnPreConsumedQuota(c, relayInfo, preConsumedQuota)
+		if newAPIError != nil && relayInfo.FinalPreConsumedQuota != 0 {
+			service.ReturnPreConsumedQuota(c, relayInfo)
 		}
 	}()
 
@@ -276,14 +277,13 @@ func shouldRetry(c *gin.Context, openaiErr *types.NewAPIError, retryTimes int) b
 
 func processChannelError(c *gin.Context, channelError types.ChannelError, err *types.NewAPIError) {
 	logger.LogError(c, fmt.Sprintf("relay error (channel #%d, status code: %d): %s", channelError.ChannelId, err.StatusCode, err.Error()))
-
-	gopool.Go(func() {
-		// 不要使用context获取渠道信息，异步处理时可能会出现渠道信息不一致的情况
-		// do not use context to get channel info, there may be inconsistent channel info when processing asynchronously
-		if service.ShouldDisableChannel(channelError.ChannelId, err) && channelError.AutoBan {
+	// 不要使用context获取渠道信息，异步处理时可能会出现渠道信息不一致的情况
+	// do not use context to get channel info, there may be inconsistent channel info when processing asynchronously
+	if service.ShouldDisableChannel(channelError.ChannelId, err) && channelError.AutoBan {
+		gopool.Go(func() {
 			service.DisableChannel(channelError, err.Error())
-		}
-	})
+		})
+	}
 
 	if constant.ErrorLogEnabled && types.IsRecordErrorLog(err) {
 		// 保存错误日志到mysql中
@@ -383,11 +383,14 @@ func RelayNotFound(c *gin.Context) {
 func RelayTask(c *gin.Context) {
 	retryTimes := common.RetryTimes
 	channelId := c.GetInt("channel_id")
-	relayMode := c.GetInt("relay_mode")
 	group := c.GetString("group")
 	originalModel := c.GetString("original_model")
 	c.Set("use_channel", []string{fmt.Sprintf("%d", channelId)})
-	taskErr := taskRelayHandler(c, relayMode)
+	relayInfo, err := relaycommon.GenRelayInfo(c, types.RelayFormatTask, nil, nil)
+	if err != nil {
+		return
+	}
+	taskErr := taskRelayHandler(c, relayInfo)
 	if taskErr == nil {
 		retryTimes = 0
 	}
@@ -407,7 +410,7 @@ func RelayTask(c *gin.Context) {
 
 		requestBody, _ := common.GetRequestBody(c)
 		c.Request.Body = io.NopCloser(bytes.NewBuffer(requestBody))
-		taskErr = taskRelayHandler(c, relayMode)
+		taskErr = taskRelayHandler(c, relayInfo)
 	}
 	useChannel := c.GetStringSlice("use_channel")
 	if len(useChannel) > 1 {
@@ -422,13 +425,13 @@ func RelayTask(c *gin.Context) {
 	}
 }
 
-func taskRelayHandler(c *gin.Context, relayMode int) *dto.TaskError {
+func taskRelayHandler(c *gin.Context, relayInfo *relaycommon.RelayInfo) *dto.TaskError {
 	var err *dto.TaskError
-	switch relayMode {
+	switch relayInfo.RelayMode {
 	case relayconstant.RelayModeSunoFetch, relayconstant.RelayModeSunoFetchByID, relayconstant.RelayModeVideoFetchByID:
-		err = relay.RelayTaskFetch(c, relayMode)
+		err = relay.RelayTaskFetch(c, relayInfo.RelayMode)
 	default:
-		err = relay.RelayTaskSubmit(c, relayMode)
+		err = relay.RelayTaskSubmit(c, relayInfo)
 	}
 	return err
 }
