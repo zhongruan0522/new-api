@@ -160,7 +160,6 @@ func (a *Adaptor) GetRequestURL(info *relaycommon.RelayInfo) (string, error) {
 		if strings.HasPrefix(info.UpstreamModelName, "imagen") {
 			suffix = "predict"
 		}
-
 		return a.getRequestUrl(info, info.UpstreamModelName, suffix)
 	} else if a.RequestMode == RequestModeClaude {
 		if info.IsStream {
@@ -181,7 +180,7 @@ func (a *Adaptor) GetRequestURL(info *relaycommon.RelayInfo) (string, error) {
 
 func (a *Adaptor) SetupRequestHeader(c *gin.Context, req *http.Header, info *relaycommon.RelayInfo) error {
 	channel.SetupApiRequestHeader(info, c, req)
-	if info.ChannelOtherSettings.VertexKeyType == "json" {
+	if info.ChannelOtherSettings.VertexKeyType != dto.VertexKeyTypeAPIKey {
 		accessToken, err := getAccessToken(a, info)
 		if err != nil {
 			return err
