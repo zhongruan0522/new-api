@@ -19,7 +19,7 @@ func ReturnPreConsumedQuota(c *gin.Context, relayInfo *relaycommon.RelayInfo) {
 		gopool.Go(func() {
 			relayInfoCopy := *relayInfo
 
-			err := PostConsumeQuota(&relayInfoCopy, -relayInfo.FinalPreConsumedQuota, 0, false)
+			err := PostConsumeQuota(&relayInfoCopy, -relayInfoCopy.FinalPreConsumedQuota, 0, false)
 			if err != nil {
 				common.SysLog("error return pre-consumed quota: " + err.Error())
 			}
