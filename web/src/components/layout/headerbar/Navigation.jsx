@@ -19,9 +19,15 @@ For commercial licensing, please contact support@quantumnous.com
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import SkeletonWrapper from './SkeletonWrapper';
+import SkeletonWrapper from '../components/SkeletonWrapper';
 
-const Navigation = ({ mainNavLinks, isMobile, isLoading, userState }) => {
+const Navigation = ({
+  mainNavLinks,
+  isMobile,
+  isLoading,
+  userState,
+  pricingRequireAuth,
+}) => {
   const renderNavLinks = () => {
     const baseClasses =
       'flex-shrink-0 flex items-center gap-1 font-semibold rounded-md transition-all duration-200 ease-in-out';
@@ -49,6 +55,9 @@ const Navigation = ({ mainNavLinks, isMobile, isLoading, userState }) => {
 
       let targetPath = link.to;
       if (link.itemKey === 'console' && !userState.user) {
+        targetPath = '/login';
+      }
+      if (link.itemKey === 'pricing' && pricingRequireAuth && !userState.user) {
         targetPath = '/login';
       }
 

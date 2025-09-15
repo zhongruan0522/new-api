@@ -35,6 +35,8 @@ import {
   renderQuota,
   getChannelIcon,
   renderQuotaWithAmount,
+  showSuccess,
+  showError,
 } from '../../../helpers';
 import { CHANNEL_OPTIONS } from '../../../constants';
 import { IconTreeTriangleDown, IconMore } from '@douyinfe/semi-icons';
@@ -216,6 +218,42 @@ export const getChannelsColumns = ({
       key: COLUMN_KEYS.NAME,
       title: t('名称'),
       dataIndex: 'name',
+      render: (text, record, index) => {
+        if (record.remark && record.remark.trim() !== '') {
+          return (
+            <Tooltip
+              content={
+                <div className='flex flex-col gap-2 max-w-xs'>
+                  <div className='text-sm'>{record.remark}</div>
+                  <Button
+                    size='small'
+                    type='primary'
+                    theme='outline'
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigator.clipboard
+                        .writeText(record.remark)
+                        .then(() => {
+                          showSuccess(t('复制成功'));
+                        })
+                        .catch(() => {
+                          showError(t('复制失败'));
+                        });
+                    }}
+                  >
+                    {t('复制')}
+                  </Button>
+                </div>
+              }
+              trigger='hover'
+              position='topLeft'
+            >
+              <span>{text}</span>
+            </Tooltip>
+          );
+        }
+        return text;
+      },
     },
     {
       key: COLUMN_KEYS.GROUP,

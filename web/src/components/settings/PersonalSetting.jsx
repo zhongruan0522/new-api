@@ -65,6 +65,7 @@ const PersonalSetting = () => {
     webhookUrl: '',
     webhookSecret: '',
     notificationEmail: '',
+    barkUrl: '',
     acceptUnsetModelRatioModel: false,
     recordIpLog: false,
   });
@@ -106,6 +107,7 @@ const PersonalSetting = () => {
         webhookUrl: settings.webhook_url || '',
         webhookSecret: settings.webhook_secret || '',
         notificationEmail: settings.notification_email || '',
+        barkUrl: settings.bark_url || '',
         acceptUnsetModelRatioModel:
           settings.accept_unset_model_ratio_model || false,
         recordIpLog: settings.record_ip_log || false,
@@ -283,6 +285,7 @@ const PersonalSetting = () => {
         webhook_url: notificationSettings.webhookUrl,
         webhook_secret: notificationSettings.webhookSecret,
         notification_email: notificationSettings.notificationEmail,
+        bark_url: notificationSettings.barkUrl,
         accept_unset_model_ratio_model:
           notificationSettings.acceptUnsetModelRatioModel,
         record_ip_log: notificationSettings.recordIpLog,
