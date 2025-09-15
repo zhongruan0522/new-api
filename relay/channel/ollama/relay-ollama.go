@@ -101,18 +101,21 @@ func openAIChatToOllamaChat(c *gin.Context, r *dto.GeneralOpenAIRequest) (*Ollam
 		// history tool call result message
 		if m.Role == "tool" && m.Name != nil { cm.ToolName = *m.Name }
 		// tool calls from assistant previous message
-		if len(m.ToolCalls)>0 {
-			calls := make([]OllamaToolCall,0,len(m.ToolCalls))
-			for _, tc := range m.ToolCalls {
-				var args interface{}
-				if tc.Function.Arguments != "" { _ = json.Unmarshal([]byte(tc.Function.Arguments), &args) }
-				oc := OllamaToolCall{}
-				oc.Function.Name = tc.Function.Name
-				if args==nil { args = map[string]any{} }
-				oc.Function.Arguments = args
-				calls = append(calls, oc)
+		if m.ToolCalls != nil && len(m.ToolCalls) > 0 {
+			parsed := m.ParseToolCalls()
+			if len(parsed) > 0 {
+				calls := make([]OllamaToolCall,0,len(parsed))
+				for _, tc := range parsed {
+					var args interface{}
+					if tc.Function.Arguments != "" { _ = json.Unmarshal([]byte(tc.Function.Arguments), &args) }
+					if args==nil { args = map[string]any{} }
+					oc := OllamaToolCall{}
+					oc.Function.Name = tc.Function.Name
+					oc.Function.Arguments = args
+					calls = append(calls, oc)
+				}
+				cm.ToolCalls = calls
 			}
-			cm.ToolCalls = calls
 		}
 		chatReq.Messages = append(chatReq.Messages, cm)
 	}
@@ -165,7 +168,6 @@ func requestOpenAI2Embeddings(r dto.EmbeddingRequest) *OllamaEmbeddingRequest {
 	opts := map[string]any{}
 	if r.Temperature != nil { opts["temperature"] = r.Temperature }
 	if r.TopP != 0 { opts["top_p"] = r.TopP }
-	if r.TopK != 0 { opts["top_k"] = r.TopK }
 	if r.FrequencyPenalty != 0 { opts["frequency_penalty"] = r.FrequencyPenalty }
 	if r.PresencePenalty != 0 { opts["presence_penalty"] = r.PresencePenalty }
 	if r.Seed != 0 { opts["seed"] = int(r.Seed) }

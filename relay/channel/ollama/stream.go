@@ -87,7 +87,6 @@ func ollamaStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http
             // delta content
             var content string
             if chunk.Message != nil { content = chunk.Message.Content } else { content = chunk.Response }
-            if content != "" { aggregatedText.WriteString(content) }
             delta := dto.ChatCompletionsStreamResponse{
                 Id:      responseId,
                 Object:  "chat.completion.chunk",

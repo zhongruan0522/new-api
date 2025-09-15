@@ -32,7 +32,8 @@ func (a *Adaptor) ConvertClaudeRequest(c *gin.Context, info *relaycommon.RelayIn
 	openaiRequest.(*dto.GeneralOpenAIRequest).StreamOptions = &dto.StreamOptions{
 		IncludeUsage: true,
 	}
-	return requestOpenAI2Ollama(c, openaiRequest.(*dto.GeneralOpenAIRequest))
+	// map to ollama chat request (Claude -> OpenAI -> Ollama chat)
+	return openAIChatToOllamaChat(c, openaiRequest.(*dto.GeneralOpenAIRequest))
 }
 
 func (a *Adaptor) ConvertAudioRequest(c *gin.Context, info *relaycommon.RelayInfo, request dto.AudioRequest) (io.Reader, error) {

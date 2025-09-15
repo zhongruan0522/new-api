@@ -2,7 +2,6 @@ package ollama
 
 import (
 	"encoding/json"
-	"one-api/dto"
 )
 
 // OllamaChatMessage represents a single chat message
