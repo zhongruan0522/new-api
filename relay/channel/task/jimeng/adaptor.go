@@ -340,6 +340,22 @@ func (a *TaskAdaptor) convertToRequestPayload(req *relaycommon.TaskSubmitReq) (*
 	if err != nil {
 		return nil, errors.Wrap(err, "unmarshal metadata failed")
 	}
+
+	// 即梦视频3.0 ReqKey转换
+	// https://www.volcengine.com/docs/85621/1792707
+	if strings.Contains(r.ReqKey, "jimeng_v30") {
+		if len(r.ImageUrls) > 1 {
+			// 多张图片：首尾帧生成
+			r.ReqKey = strings.Replace(r.ReqKey, "jimeng_v30", "jimeng_i2v_first_tail_v30", 1)
+		} else if len(r.ImageUrls) == 1 {
+			// 单张图片：图生视频
+			r.ReqKey = strings.Replace(r.ReqKey, "jimeng_v30", "jimeng_i2v_first_v30", 1)
+		} else {
+			// 无图片：文生视频
+			r.ReqKey = strings.Replace(r.ReqKey, "jimeng_v30", "jimeng_t2v_v30", 1)
+		}
+	}
+
 	return &r, nil
 }
 
