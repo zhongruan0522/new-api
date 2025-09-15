@@ -36,6 +36,7 @@ type requestPayload struct {
 	Prompt           string   `json:"prompt,omitempty"`
 	Seed             int64    `json:"seed"`
 	AspectRatio      string   `json:"aspect_ratio"`
+	Frames           int      `json:"frames,omitempty"`
 }
 
 type responsePayload struct {
@@ -311,10 +312,15 @@ func hmacSHA256(key []byte, data []byte) []byte {
 
 func (a *TaskAdaptor) convertToRequestPayload(req *relaycommon.TaskSubmitReq) (*requestPayload, error) {
 	r := requestPayload{
-		ReqKey:      "jimeng_vgfm_i2v_l20",
-		Prompt:      req.Prompt,
-		AspectRatio: "16:9", // Default aspect ratio
-		Seed:        -1,     // Default to random
+		ReqKey: req.Model,
+		Prompt: req.Prompt,
+	}
+
+	switch req.Duration {
+	case 10:
+		r.Frames = 241 // 24*10+1 = 241
+	default:
+		r.Frames = 121 // 24*5+1 = 121
 	}
 
 	// Handle one-of image_urls or binary_data_base64
