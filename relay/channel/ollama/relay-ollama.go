@@ -15,7 +15,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// openAIChatToOllamaChat converts OpenAI-style chat request to Ollama chat
 func openAIChatToOllamaChat(c *gin.Context, r *dto.GeneralOpenAIRequest) (*OllamaChatRequest, error) {
 	chatReq := &OllamaChatRequest{
 		Model:   r.Model,
@@ -23,12 +22,10 @@ func openAIChatToOllamaChat(c *gin.Context, r *dto.GeneralOpenAIRequest) (*Ollam
 		Options: map[string]any{},
 		Think:   r.Think,
 	}
-	// format mapping
 	if r.ResponseFormat != nil {
 		if r.ResponseFormat.Type == "json" {
 			chatReq.Format = "json"
 		} else if r.ResponseFormat.Type == "json_schema" {
-			// supply schema object directly
 			if len(r.ResponseFormat.JsonSchema) > 0 {
 				var schema any
 				_ = json.Unmarshal(r.ResponseFormat.JsonSchema, &schema)
@@ -46,7 +43,6 @@ func openAIChatToOllamaChat(c *gin.Context, r *dto.GeneralOpenAIRequest) (*Ollam
 	if r.Seed != 0 { chatReq.Options["seed"] = int(r.Seed) }
 	if mt := r.GetMaxTokens(); mt != 0 { chatReq.Options["num_predict"] = int(mt) }
 
-	// Stop -> options.stop (array)
 	if r.Stop != nil {
 		switch v := r.Stop.(type) {
 		case string:
@@ -60,7 +56,6 @@ func openAIChatToOllamaChat(c *gin.Context, r *dto.GeneralOpenAIRequest) (*Ollam
 		}
 	}
 
-	// tools
 	if len(r.Tools) > 0 {
 		tools := make([]OllamaTool,0,len(r.Tools))
 		for _, t := range r.Tools {
@@ -69,10 +64,8 @@ func openAIChatToOllamaChat(c *gin.Context, r *dto.GeneralOpenAIRequest) (*Ollam
 		chatReq.Tools = tools
 	}
 
-	// messages
 	chatReq.Messages = make([]OllamaChatMessage,0,len(r.Messages))
 	for _, m := range r.Messages {
-		// gather text parts & images
 		var textBuilder strings.Builder
 		var images []string
 		if m.IsStringContent() {
@@ -98,9 +91,7 @@ func openAIChatToOllamaChat(c *gin.Context, r *dto.GeneralOpenAIRequest) (*Ollam
 		}
 		cm := OllamaChatMessage{Role: m.Role, Content: textBuilder.String()}
 		if len(images)>0 { cm.Images = images }
-		// history tool call result message
 		if m.Role == "tool" && m.Name != nil { cm.ToolName = *m.Name }
-		// tool calls from assistant previous message
 		if m.ToolCalls != nil && len(m.ToolCalls) > 0 {
 			parsed := m.ParseToolCalls()
 			if len(parsed) > 0 {

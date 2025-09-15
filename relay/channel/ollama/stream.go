@@ -19,7 +19,6 @@ import (
     "github.com/gin-gonic/gin"
 )
 
-// Ollama streaming chunk (chat or generate)
 type ollamaChatStreamChunk struct {
     Model            string `json:"model"`
     CreatedAt        string `json:"created_at"`
@@ -47,7 +46,7 @@ type ollamaChatStreamChunk struct {
     EvalDuration       int64 `json:"eval_duration"`
 }
 
-func toUnix(ts string) int64 { // parse RFC3339 / variant; fallback time.Now
+func toUnix(ts string) int64 {
     if ts == "" { return time.Now().Unix() }
     // try time.RFC3339 or with nanoseconds
     t, err := time.Parse(time.RFC3339Nano, ts)
@@ -55,7 +54,6 @@ func toUnix(ts string) int64 { // parse RFC3339 / variant; fallback time.Now
     return t.Unix()
 }
 
-// streaming handler: convert Ollama stream -> OpenAI SSE
 func ollamaStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Response) (*dto.Usage, *types.NewAPIError) {
     if resp == nil || resp.Body == nil { return nil, types.NewOpenAIError(fmt.Errorf("empty response"), types.ErrorCodeBadResponse, http.StatusBadRequest) }
     defer service.CloseResponseBodyGracefully(resp)
@@ -67,7 +65,6 @@ func ollamaStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http
     var responseId = common.GetUUID()
     var created = time.Now().Unix()
     var toolCallIndex int
-    // send start event
     start := helper.GenerateStartEmptyResponse(responseId, created, model, nil)
     if data, err := common.Marshal(start); err == nil { _ = helper.StringData(c, string(data)) }
 
@@ -141,16 +138,47 @@ func ollamaChatHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.R
     body, err := io.ReadAll(resp.Body)
     if err != nil { return nil, types.NewOpenAIError(err, types.ErrorCodeReadResponseBodyFailed, http.StatusInternalServerError) }
     service.CloseResponseBodyGracefully(resp)
-    if common.DebugEnabled { println("ollama non-stream resp:", string(body)) }
-    var chunk ollamaChatStreamChunk
-    if err = json.Unmarshal(body, &chunk); err != nil { return nil, types.NewOpenAIError(err, types.ErrorCodeBadResponseBody, http.StatusInternalServerError) }
-    model := chunk.Model
+    raw := string(body)
+    if common.DebugEnabled { println("ollama non-stream raw resp:", raw) }
+
+    lines := strings.Split(raw, "\n")
+    var (
+        aggContent strings.Builder
+        lastChunk ollamaChatStreamChunk
+        parsedAny bool
+    )
+    for _, ln := range lines {
+        ln = strings.TrimSpace(ln)
+        if ln == "" { continue }
+        var ck ollamaChatStreamChunk
+        if err := json.Unmarshal([]byte(ln), &ck); err != nil {
+            if len(lines) == 1 { return nil, types.NewOpenAIError(err, types.ErrorCodeBadResponseBody, http.StatusInternalServerError) }
+            continue
+        }
+        parsedAny = true
+        lastChunk = ck
+        if !ck.Done { 
+            if ck.Message != nil && ck.Message.Content != "" { aggContent.WriteString(ck.Message.Content) } else if ck.Response != "" { aggContent.WriteString(ck.Response) }
+        } else { 
+            if ck.Message != nil && ck.Message.Content != "" { aggContent.WriteString(ck.Message.Content) } else if ck.Response != "" { aggContent.WriteString(ck.Response) }
+        }
+    }
+
+    if !parsedAny {
+        var single ollamaChatStreamChunk
+        if err := json.Unmarshal(body, &single); err != nil { return nil, types.NewOpenAIError(err, types.ErrorCodeBadResponseBody, http.StatusInternalServerError) }
+        lastChunk = single
+        if single.Message != nil { aggContent.WriteString(single.Message.Content) } else { aggContent.WriteString(single.Response) }
+    }
+
+    model := lastChunk.Model
     if model == "" { model = info.UpstreamModelName }
-    created := toUnix(chunk.CreatedAt)
-    content := ""
-    if chunk.Message != nil { content = chunk.Message.Content } else { content = chunk.Response }
-    usage := &dto.Usage{PromptTokens: chunk.PromptEvalCount, CompletionTokens: chunk.EvalCount, TotalTokens: chunk.PromptEvalCount + chunk.EvalCount}
-    // Build OpenAI style response
+    created := toUnix(lastChunk.CreatedAt)
+    usage := &dto.Usage{PromptTokens: lastChunk.PromptEvalCount, CompletionTokens: lastChunk.EvalCount, TotalTokens: lastChunk.PromptEvalCount + lastChunk.EvalCount}
+    content := aggContent.String()
+    finishReason := lastChunk.DoneReason
+    if finishReason == "" { finishReason = "stop" }
+
     full := dto.OpenAITextResponse{
         Id:      common.GetUUID(),
         Model:   model,
@@ -159,7 +187,7 @@ func ollamaChatHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.R
         Choices: []dto.OpenAITextResponseChoice{ {
             Index: 0,
             Message: dto.Message{Role: "assistant", Content: contentPtr(content)},
-            FinishReason: func() string { if chunk.DoneReason == "" { return "stop" } ; return chunk.DoneReason }(),
+            FinishReason: &finishReason,
         } },
         Usage: *usage,
     }

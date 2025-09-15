@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 )
 
-// OllamaChatMessage represents a single chat message
 type OllamaChatMessage struct {
 	Role      string            `json:"role"`
 	Content   string            `json:"content,omitempty"`
@@ -32,7 +31,6 @@ type OllamaToolCall struct {
 	} `json:"function"`
 }
 
-// OllamaChatRequest -> /api/chat
 type OllamaChatRequest struct {
 	Model     string              `json:"model"`
 	Messages  []OllamaChatMessage `json:"messages"`
@@ -44,7 +42,6 @@ type OllamaChatRequest struct {
 	Think     json.RawMessage     `json:"think,omitempty"`
 }
 
-// OllamaGenerateRequest -> /api/generate
 type OllamaGenerateRequest struct {
 	Model     string         `json:"model"`
 	Prompt    string         `json:"prompt,omitempty"`
