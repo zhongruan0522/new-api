@@ -10,6 +10,7 @@ import (
 	relaycommon "one-api/relay/common"
 	relayconstant "one-api/relay/constant"
 	"one-api/types"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -48,15 +49,15 @@ func (a *Adaptor) Init(info *relaycommon.RelayInfo) {
 }
 
 func (a *Adaptor) GetRequestURL(info *relaycommon.RelayInfo) (string, error) {
-	if info.RelayFormat == types.RelayFormatClaude {
-		return info.ChannelBaseUrl + "/v1/chat/completions", nil
-	}
-	switch info.RelayMode {
-	case relayconstant.RelayModeEmbeddings:
+	// embeddings fixed endpoint
+	if info.RelayMode == relayconstant.RelayModeEmbeddings {
 		return info.ChannelBaseUrl + "/api/embed", nil
-	default:
-		return relaycommon.GetFullRequestURL(info.ChannelBaseUrl, info.RequestURLPath, info.ChannelType), nil
 	}
+	// For chat vs generate: if original path contains "/v1/completions" map to generate; otherwise chat
+	if strings.Contains(info.RequestURLPath, "/v1/completions") || info.RelayMode == relayconstant.RelayModeCompletions {
+		return info.ChannelBaseUrl + "/api/generate", nil
+	}
+	return info.ChannelBaseUrl + "/api/chat", nil
 }
 
 func (a *Adaptor) SetupRequestHeader(c *gin.Context, req *http.Header, info *relaycommon.RelayInfo) error {
@@ -66,10 +67,12 @@ func (a *Adaptor) SetupRequestHeader(c *gin.Context, req *http.Header, info *rel
 }
 
 func (a *Adaptor) ConvertOpenAIRequest(c *gin.Context, info *relaycommon.RelayInfo, request *dto.GeneralOpenAIRequest) (any, error) {
-	if request == nil {
-		return nil, errors.New("request is nil")
+	if request == nil { return nil, errors.New("request is nil") }
+	// decide generate or chat
+	if strings.Contains(info.RequestURLPath, "/v1/completions") || info.RelayMode == relayconstant.RelayModeCompletions {
+		return openAIToGenerate(c, request)
 	}
-	return requestOpenAI2Ollama(c, request)
+	return openAIChatToOllamaChat(c, request)
 }
 
 func (a *Adaptor) ConvertRerankRequest(c *gin.Context, relayMode int, request dto.RerankRequest) (any, error) {
@@ -92,15 +95,13 @@ func (a *Adaptor) DoRequest(c *gin.Context, info *relaycommon.RelayInfo, request
 func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (usage any, err *types.NewAPIError) {
 	switch info.RelayMode {
 	case relayconstant.RelayModeEmbeddings:
-		usage, err = ollamaEmbeddingHandler(c, info, resp)
+		return ollamaEmbeddingHandler(c, info, resp)
 	default:
 		if info.IsStream {
-			usage, err = openai.OaiStreamHandler(c, info, resp)
-		} else {
-			usage, err = openai.OpenaiHandler(c, info, resp)
+			return ollamaStreamHandler(c, info, resp)
 		}
+		return ollamaChatHandler(c, info, resp)
 	}
-	return
 }
 
 func (a *Adaptor) GetModelList() []string {
