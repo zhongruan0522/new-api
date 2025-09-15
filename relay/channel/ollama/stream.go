@@ -187,7 +187,7 @@ func ollamaChatHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.R
         Choices: []dto.OpenAITextResponseChoice{ {
             Index: 0,
             Message: dto.Message{Role: "assistant", Content: contentPtr(content)},
-            FinishReason: &finishReason,
+            FinishReason: finishReason,
         } },
         Usage: *usage,
     }
