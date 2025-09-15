@@ -114,15 +114,23 @@ func ollamaStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http
             continue
         }
         // done frame
+        // finalize once and break loop
         usage.PromptTokens = chunk.PromptEvalCount
         usage.CompletionTokens = chunk.EvalCount
         usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
         finishReason := chunk.DoneReason
         if finishReason == "" { finishReason = "stop" }
-        stop := helper.GenerateStopResponse(responseId, created, model, finishReason)
-        if data, err := common.Marshal(stop); err == nil { _ = helper.StringData(c, string(data)) }
-        final := helper.GenerateFinalUsageResponse(responseId, created, model, *usage)
-        if data, err := common.Marshal(final); err == nil { _ = helper.StringData(c, string(data)) }
+        // emit stop delta
+        if stop := helper.GenerateStopResponse(responseId, created, model, finishReason); stop != nil {
+            if data, err := common.Marshal(stop); err == nil { _ = helper.StringData(c, string(data)) }
+        }
+        // emit usage frame
+        if final := helper.GenerateFinalUsageResponse(responseId, created, model, *usage); final != nil {
+            if data, err := common.Marshal(final); err == nil { _ = helper.StringData(c, string(data)) }
+        }
+        // send [DONE]
+        helper.Done(c)
+        break
     }
     if err := scanner.Err(); err != nil && err != io.EOF { logger.LogError(c, "ollama stream scan error: "+err.Error()) }
     return usage, nil
