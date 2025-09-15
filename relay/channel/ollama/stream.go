@@ -25,9 +25,9 @@ type ollamaChatStreamChunk struct {
     CreatedAt        string `json:"created_at"`
     // chat
     Message *struct {
-        Role      string                 `json:"role"`
-        Content   string                 `json:"content"`
-        ToolCalls []struct {             `json:"tool_calls"`
+        Role      string `json:"role"`
+        Content   string `json:"content"`
+        ToolCalls []struct {
             Function struct {
                 Name      string      `json:"name"`
                 Arguments interface{} `json:"arguments"`
@@ -66,7 +66,6 @@ func ollamaStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http
     var model = info.UpstreamModelName
     var responseId = common.GetUUID()
     var created = time.Now().Unix()
-    var aggregatedText strings.Builder
     var toolCallIndex int
     // send start event
     start := helper.GenerateStartEmptyResponse(responseId, created, model, nil)
