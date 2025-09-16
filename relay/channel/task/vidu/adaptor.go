@@ -80,8 +80,7 @@ func (a *TaskAdaptor) Init(info *relaycommon.RelayInfo) {
 }
 
 func (a *TaskAdaptor) ValidateRequestAndSetAction(c *gin.Context, info *relaycommon.RelayInfo) *dto.TaskError {
-	// Use the unified validation method for TaskSubmitReq with image-based action determination
-	return relaycommon.ValidateTaskRequestWithImageBinding(c, info)
+	return relaycommon.ValidateBasicTaskRequest(c, info, constant.TaskActionGenerate)
 }
 
 func (a *TaskAdaptor) BuildRequestBody(c *gin.Context, _ *relaycommon.RelayInfo) (io.Reader, error) {
@@ -187,14 +186,9 @@ func (a *TaskAdaptor) GetChannelName() string {
 // ============================
 
 func (a *TaskAdaptor) convertToRequestPayload(req *relaycommon.TaskSubmitReq) (*requestPayload, error) {
-	var images []string
-	if req.Image != "" {
-		images = []string{req.Image}
-	}
-
 	r := requestPayload{
 		Model:             defaultString(req.Model, "viduq1"),
-		Images:            images,
+		Images:            req.Images,
 		Prompt:            req.Prompt,
 		Duration:          defaultInt(req.Duration, 5),
 		Resolution:        defaultString(req.Size, "1080p"),
