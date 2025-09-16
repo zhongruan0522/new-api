@@ -89,7 +89,7 @@ func SendWebhookNotify(webhookURL string, secret string, data dto.Notify) error 
 	} else {
 		// SSRF防护：验证Webhook URL（非Worker模式）
 		fetchSetting := system_setting.GetFetchSetting()
-		if err := common.ValidateURLWithFetchSetting(webhookURL, fetchSetting.EnableSSRFProtection, fetchSetting.AllowPrivateIp, fetchSetting.WhitelistDomains, fetchSetting.WhitelistIps, fetchSetting.AllowedPorts); err != nil {
+		if err := common.ValidateURLWithFetchSetting(webhookURL, fetchSetting.EnableSSRFProtection, fetchSetting.AllowPrivateIp, fetchSetting.DomainList, fetchSetting.IpList, fetchSetting.AllowedPorts); err != nil {
 			return fmt.Errorf("request reject: %v", err)
 		}
 

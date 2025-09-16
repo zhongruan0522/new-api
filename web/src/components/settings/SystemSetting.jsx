@@ -29,6 +29,7 @@ import {
   TagInput,
   Spin,
   Card,
+  Radio,
 } from '@douyinfe/semi-ui';
 const { Text } = Typography;
 import {
@@ -91,8 +92,10 @@ const SystemSetting = () => {
     // SSRF防护配置
     'fetch_setting.enable_ssrf_protection': true,
     'fetch_setting.allow_private_ip': '',
-    'fetch_setting.whitelist_domains': [],
-    'fetch_setting.whitelist_ips': [],
+    'fetch_setting.domain_filter_mode': true, // true 白名单，false 黑名单
+    'fetch_setting.ip_filter_mode': true, // true 白名单，false 黑名单
+    'fetch_setting.domain_list': [],
+    'fetch_setting.ip_list': [],
     'fetch_setting.allowed_ports': [],
   });
 
@@ -105,8 +108,10 @@ const SystemSetting = () => {
     useState(false);
   const [linuxDOOAuthEnabled, setLinuxDOOAuthEnabled] = useState(false);
   const [emailToAdd, setEmailToAdd] = useState('');
-  const [whitelistDomains, setWhitelistDomains] = useState([]);
-  const [whitelistIps, setWhitelistIps] = useState([]);
+  const [domainFilterMode, setDomainFilterMode] = useState(true);
+  const [ipFilterMode, setIpFilterMode] = useState(true);
+  const [domainList, setDomainList] = useState([]);
+  const [ipList, setIpList] = useState([]);
   const [allowedPorts, setAllowedPorts] = useState([]);
 
   const getOptions = async () => {
@@ -125,22 +130,24 @@ const SystemSetting = () => {
             break;
           case 'fetch_setting.allow_private_ip':
           case 'fetch_setting.enable_ssrf_protection':
+          case 'fetch_setting.domain_filter_mode':
+          case 'fetch_setting.ip_filter_mode':
             item.value = toBoolean(item.value);
             break;
-          case 'fetch_setting.whitelist_domains':
+          case 'fetch_setting.domain_list':
             try {
               const domains = item.value ? JSON.parse(item.value) : [];
-              setWhitelistDomains(Array.isArray(domains) ? domains : []);
+              setDomainList(Array.isArray(domains) ? domains : []);
             } catch (e) {
-              setWhitelistDomains([]);
+              setDomainList([]);
             }
             break;
-          case 'fetch_setting.whitelist_ips':
+          case 'fetch_setting.ip_list':
             try {
               const ips = item.value ? JSON.parse(item.value) : [];
-              setWhitelistIps(Array.isArray(ips) ? ips : []);
+              setIpList(Array.isArray(ips) ? ips : []);
             } catch (e) {
-              setWhitelistIps([]);
+              setIpList([]);
             }
             break;
           case 'fetch_setting.allowed_ports':
@@ -178,6 +185,13 @@ const SystemSetting = () => {
       });
       setInputs(newInputs);
       setOriginInputs(newInputs);
+      // 同步模式布尔到本地状态
+      if (typeof newInputs['fetch_setting.domain_filter_mode'] !== 'undefined') {
+        setDomainFilterMode(!!newInputs['fetch_setting.domain_filter_mode']);
+      }
+      if (typeof newInputs['fetch_setting.ip_filter_mode'] !== 'undefined') {
+        setIpFilterMode(!!newInputs['fetch_setting.ip_filter_mode']);
+      }
       if (formApiRef.current) {
         formApiRef.current.setValues(newInputs);
       }
@@ -317,19 +331,27 @@ const SystemSetting = () => {
   const submitSSRF = async () => {
     const options = [];
 
-    // 处理域名白名单
-    if (Array.isArray(whitelistDomains)) {
+    // 处理域名过滤模式与列表
+    options.push({
+      key: 'fetch_setting.domain_filter_mode',
+      value: domainFilterMode,
+    });
+    if (Array.isArray(domainList)) {
       options.push({
-        key: 'fetch_setting.whitelist_domains',
-        value: JSON.stringify(whitelistDomains),
+        key: 'fetch_setting.domain_list',
+        value: JSON.stringify(domainList),
       });
     }
 
-    // 处理IP白名单
-    if (Array.isArray(whitelistIps)) {
+    // 处理IP过滤模式与列表
+    options.push({
+      key: 'fetch_setting.ip_filter_mode',
+      value: ipFilterMode,
+    });
+    if (Array.isArray(ipList)) {
       options.push({
-        key: 'fetch_setting.whitelist_ips',
-        value: JSON.stringify(whitelistIps),
+        key: 'fetch_setting.ip_list',
+        value: JSON.stringify(ipList),
       });
     }
 
@@ -702,25 +724,43 @@ const SystemSetting = () => {
                     style={{ marginTop: 16 }}
                   >
                     <Col xs={24} sm={24} md={24} lg={24} xl={24}>
-                      <Text strong>{t('域名白名单')}</Text>
+                      <Text strong>
+                        {t(domainFilterMode ? '域名白名单' : '域名黑名单')}
+                      </Text>
                       <Text type="secondary" style={{ display: 'block', marginBottom: 8 }}>
                         {t('支持通配符格式，如：example.com, *.api.example.com')}
                       </Text>
+                      <Radio.Group
+                        type='button'
+                        value={domainFilterMode ? 'whitelist' : 'blacklist'}
+                        onChange={(val) => {
+                          const isWhitelist = val === 'whitelist';
+                          setDomainFilterMode(isWhitelist);
+                          setInputs(prev => ({
+                            ...prev,
+                            'fetch_setting.domain_filter_mode': isWhitelist,
+                          }));
+                        }}
+                        style={{ marginBottom: 8 }}
+                      >
+                        <Radio value='whitelist'>{t('白名单')}</Radio>
+                        <Radio value='blacklist'>{t('黑名单')}</Radio>
+                      </Radio.Group>
                       <TagInput
-                        value={whitelistDomains}
+                        value={domainList}
                         onChange={(value) => {
-                          setWhitelistDomains(value);
+                          setDomainList(value);
                           // 触发Form的onChange事件
                           setInputs(prev => ({
                             ...prev,
-                            'fetch_setting.whitelist_domains': value
+                            'fetch_setting.domain_list': value
                           }));
                         }}
                         placeholder={t('输入域名后回车，如：example.com')}
                         style={{ width: '100%' }}
                       />
                       <Text type="secondary" style={{ display: 'block', marginBottom: 8 }}>
-                        {t('域名白名单详细说明')}
+                        {t('域名过滤详细说明')}
                       </Text>
                     </Col>
                   </Row>
@@ -730,25 +770,43 @@ const SystemSetting = () => {
                     style={{ marginTop: 16 }}
                   >
                     <Col xs={24} sm={24} md={24} lg={24} xl={24}>
-                      <Text strong>{t('IP白名单')}</Text>
+                      <Text strong>
+                        {t(ipFilterMode ? 'IP白名单' : 'IP黑名单')}
+                      </Text>
                       <Text type="secondary" style={{ display: 'block', marginBottom: 8 }}>
                         {t('支持CIDR格式，如：8.8.8.8, 192.168.1.0/24')}
                       </Text>
+                      <Radio.Group
+                        type='button'
+                        value={ipFilterMode ? 'whitelist' : 'blacklist'}
+                        onChange={(val) => {
+                          const isWhitelist = val === 'whitelist';
+                          setIpFilterMode(isWhitelist);
+                          setInputs(prev => ({
+                            ...prev,
+                            'fetch_setting.ip_filter_mode': isWhitelist,
+                          }));
+                        }}
+                        style={{ marginBottom: 8 }}
+                      >
+                        <Radio value='whitelist'>{t('白名单')}</Radio>
+                        <Radio value='blacklist'>{t('黑名单')}</Radio>
+                      </Radio.Group>
                       <TagInput
-                        value={whitelistIps}
+                        value={ipList}
                         onChange={(value) => {
-                          setWhitelistIps(value);
+                          setIpList(value);
                           // 触发Form的onChange事件
                           setInputs(prev => ({
                             ...prev,
-                            'fetch_setting.whitelist_ips': value
+                            'fetch_setting.ip_list': value
                           }));
                         }}
                         placeholder={t('输入IP地址后回车，如：8.8.8.8')}
                         style={{ width: '100%' }}
                       />
                       <Text type="secondary" style={{ display: 'block', marginBottom: 8 }}>
-                        {t('IP白名单详细说明')}
+                        {t('IP过滤详细说明')}
                       </Text>
                     </Col>
                   </Row>
