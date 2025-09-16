@@ -28,6 +28,7 @@ const PaymentSetting = () => {
     StripeMinTopUp: 1,
 
     CreemApiKey: '',
+    CreemWebhookSecret: '',
     CreemProducts: '[]',
   });
 

@@ -99,7 +99,7 @@ func Recharge(referenceId string, customerId string) (err error) {
 	return nil
 }
 
-func RechargeCreem(referenceId string) (err error) {
+func RechargeCreem(referenceId string, customerEmail string, customerName string) (err error) {
 	if referenceId == "" {
 		return errors.New("未提供支付单号")
 	}
@@ -131,7 +131,29 @@ func RechargeCreem(referenceId string) (err error) {
 
 		// Creem 直接使用 Amount 作为充值额度
 		quota = float64(topUp.Amount)
-		err = tx.Model(&User{}).Where("id = ?", topUp.UserId).Update("quota", gorm.Expr("quota + ?", quota)).Error
+
+		// 构建更新字段，优先使用邮箱，如果邮箱为空则使用用户名
+		updateFields := map[string]interface{}{
+			"quota": gorm.Expr("quota + ?", quota),
+		}
+
+		// 如果有客户邮箱，尝试更新用户邮箱（仅当用户邮箱为空时）
+		if customerEmail != "" {
+			// 先检查用户当前邮箱是否为空
+			var user User
+			err = tx.Where("id = ?", topUp.UserId).First(&user).Error
+			if err != nil {
+				return err
+			}
+
+			// 如果用户邮箱为空，则更新为支付时使用的邮箱
+			if user.Email == "" {
+				updateFields["email"] = customerEmail
+				fmt.Printf("更新用户邮箱：用户ID %d, 新邮箱 %s\n", topUp.UserId, customerEmail)
+			}
+		}
+
+		err = tx.Model(&User{}).Where("id = ?", topUp.UserId).Updates(updateFields).Error
 		if err != nil {
 			return err
 		}
@@ -143,7 +165,7 @@ func RechargeCreem(referenceId string) (err error) {
 		return errors.New("充值失败，" + err.Error())
 	}
 
-	RecordLog(topUp.UserId, LogTypeTopup, fmt.Sprintf("使用Creem充值成功，充值额度: %v，支付金额：%.2f", common.FormatQuota(int(quota)), topUp.Money))
+	RecordLog(topUp.UserId, LogTypeTopup, fmt.Sprintf("使用Creem充值成功，充值额度: %v，支付金额：%.2f，客户邮箱：%s", common.FormatQuota(int(quota)), topUp.Money, customerEmail))
 
 	return nil
 }
