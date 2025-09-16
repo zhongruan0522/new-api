@@ -189,7 +189,7 @@ func ollamaChatHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.R
     if finishReason == "" { finishReason = "stop" }
 
     msg := dto.Message{Role: "assistant", Content: contentPtr(content)}
-    if rc := reasoningBuilder.String(); rc != "" { msg.ReasoningContent = &rc }
+    if rc := reasoningBuilder.String(); rc != "" { msg.ReasoningContent = rc }
     full := dto.OpenAITextResponse{
         Id:      common.GetUUID(),
         Model:   model,
