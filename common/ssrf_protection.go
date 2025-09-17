@@ -10,12 +10,13 @@ import (
 
 // SSRFProtection SSRF防护配置
 type SSRFProtection struct {
-	AllowPrivateIp   bool
-	DomainFilterMode bool     // true: 白名单, false: 黑名单
-	DomainList       []string // domain format, e.g. example.com, *.example.com
-	IpFilterMode     bool     // true: 白名单, false: 黑名单
-	IpList           []string // CIDR or single IP
-	AllowedPorts     []int    // 允许的端口范围
+	AllowPrivateIp         bool
+	DomainFilterMode       bool     // true: 白名单, false: 黑名单
+	DomainList             []string // domain format, e.g. example.com, *.example.com
+	IpFilterMode           bool     // true: 白名单, false: 黑名单
+	IpList                 []string // CIDR or single IP
+	AllowedPorts           []int    // 允许的端口范围
+	ApplyIPFilterForDomain bool     // 对域名启用IP过滤
 }
 
 // DefaultSSRFProtection 默认SSRF防护配置
@@ -276,6 +277,11 @@ func (p *SSRFProtection) ValidateURL(urlStr string) error {
 		return fmt.Errorf("domain in blacklist: %s", host)
 	}
 
+	// 若未启用对域名应用IP过滤，则到此通过
+	if !p.ApplyIPFilterForDomain {
+		return nil
+	}
+
 	// 解析域名对应IP并检查
 	ips, err := net.LookupIP(host)
 	if err != nil {
@@ -296,7 +302,7 @@ func (p *SSRFProtection) ValidateURL(urlStr string) error {
 }
 
 // ValidateURLWithFetchSetting 使用FetchSetting配置验证URL
-func ValidateURLWithFetchSetting(urlStr string, enableSSRFProtection, allowPrivateIp bool, domainFilterMode bool, ipFilterMode bool, domainList, ipList, allowedPorts []string) error {
+func ValidateURLWithFetchSetting(urlStr string, enableSSRFProtection, allowPrivateIp bool, domainFilterMode bool, ipFilterMode bool, domainList, ipList, allowedPorts []string, applyIPFilterForDomain bool) error {
 	// 如果SSRF防护被禁用，直接返回成功
 	if !enableSSRFProtection {
 		return nil
@@ -309,12 +315,13 @@ func ValidateURLWithFetchSetting(urlStr string, enableSSRFProtection, allowPriva
 	}
 
 	protection := &SSRFProtection{
-		AllowPrivateIp:   allowPrivateIp,
-		DomainFilterMode: domainFilterMode,
-		DomainList:       domainList,
-		IpFilterMode:     ipFilterMode,
-		IpList:           ipList,
-		AllowedPorts:     allowedPortInts,
+		AllowPrivateIp:         allowPrivateIp,
+		DomainFilterMode:       domainFilterMode,
+		DomainList:             domainList,
+		IpFilterMode:           ipFilterMode,
+		IpList:                 ipList,
+		AllowedPorts:           allowedPortInts,
+		ApplyIPFilterForDomain: applyIPFilterForDomain,
 	}
 	return protection.ValidateURL(urlStr)
 }

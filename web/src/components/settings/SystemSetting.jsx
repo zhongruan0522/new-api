@@ -97,6 +97,7 @@ const SystemSetting = () => {
     'fetch_setting.domain_list': [],
     'fetch_setting.ip_list': [],
     'fetch_setting.allowed_ports': [],
+    'fetch_setting.apply_ip_filter_for_domain': false,
   });
 
   const [originInputs, setOriginInputs] = useState({});
@@ -132,6 +133,7 @@ const SystemSetting = () => {
           case 'fetch_setting.enable_ssrf_protection':
           case 'fetch_setting.domain_filter_mode':
           case 'fetch_setting.ip_filter_mode':
+          case 'fetch_setting.apply_ip_filter_for_domain':
             item.value = toBoolean(item.value);
             break;
           case 'fetch_setting.domain_list':
@@ -724,6 +726,17 @@ const SystemSetting = () => {
                     style={{ marginTop: 16 }}
                   >
                     <Col xs={24} sm={24} md={24} lg={24} xl={24}>
+                      <Banner type='warning' description={t('此功能为实验性选项，域名可能解析到多个 IPv4/IPv6 地址，若开启，请确保 IP 过滤列表覆盖这些地址，否则可能导致访问失败。')} style={{ marginBottom: 8 }} />
+                      <Form.Checkbox
+                        field='fetch_setting.apply_ip_filter_for_domain'
+                        noLabel
+                        onChange={(e) =>
+                          handleCheckboxChange('fetch_setting.apply_ip_filter_for_domain', e)
+                        }
+                        style={{ marginBottom: 8 }}
+                      >
+                        {t('对域名启用 IP 过滤（实验性）')}
+                      </Form.Checkbox>
                       <Text strong>
                         {t(domainFilterMode ? '域名白名单' : '域名黑名单')}
                       </Text>
@@ -734,7 +747,8 @@ const SystemSetting = () => {
                         type='button'
                         value={domainFilterMode ? 'whitelist' : 'blacklist'}
                         onChange={(val) => {
-                          const isWhitelist = val === 'whitelist';
+                          const selected = val && val.target ? val.target.value : val;
+                          const isWhitelist = selected === 'whitelist';
                           setDomainFilterMode(isWhitelist);
                           setInputs(prev => ({
                             ...prev,
@@ -780,7 +794,8 @@ const SystemSetting = () => {
                         type='button'
                         value={ipFilterMode ? 'whitelist' : 'blacklist'}
                         onChange={(val) => {
-                          const isWhitelist = val === 'whitelist';
+                          const selected = val && val.target ? val.target.value : val;
+                          const isWhitelist = selected === 'whitelist';
                           setIpFilterMode(isWhitelist);
                           setInputs(prev => ({
                             ...prev,
