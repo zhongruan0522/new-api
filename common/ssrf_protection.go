@@ -295,11 +295,6 @@ func (p *SSRFProtection) ValidateURL(urlStr string) error {
 	return nil
 }
 
-// ValidateURLWithDefaults 使用默认配置验证URL
-func ValidateURLWithDefaults(urlStr string) error {
-	return DefaultSSRFProtection.ValidateURL(urlStr)
-}
-
 // ValidateURLWithFetchSetting 使用FetchSetting配置验证URL
 func ValidateURLWithFetchSetting(urlStr string, enableSSRFProtection, allowPrivateIp bool, domainFilterMode bool, ipFilterMode bool, domainList, ipList, allowedPorts []string) error {
 	// 如果SSRF防护被禁用，直接返回成功
