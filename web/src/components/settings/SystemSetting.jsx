@@ -773,9 +773,6 @@ const SystemSetting = () => {
                         placeholder={t('输入域名后回车，如：example.com')}
                         style={{ width: '100%' }}
                       />
-                      <Text type="secondary" style={{ display: 'block', marginBottom: 8 }}>
-                        {t('域名过滤详细说明')}
-                      </Text>
                     </Col>
                   </Row>
 
@@ -820,9 +817,6 @@ const SystemSetting = () => {
                         placeholder={t('输入IP地址后回车，如：8.8.8.8')}
                         style={{ width: '100%' }}
                       />
-                      <Text type="secondary" style={{ display: 'block', marginBottom: 8 }}>
-                        {t('IP过滤详细说明')}
-                      </Text>
                     </Col>
                   </Row>
 
