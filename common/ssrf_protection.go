@@ -237,7 +237,7 @@ func (p *SSRFProtection) ValidateURL(urlStr string) error {
 	host, portStr, err := net.SplitHostPort(u.Host)
 	if err != nil {
 		// 没有端口，使用默认端口
-		host = u.Host
+		host = u.Hostname()
 		if u.Scheme == "https" {
 			portStr = "443"
 		} else {
