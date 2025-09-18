@@ -92,12 +92,17 @@ func (a *Adaptor) DoRequest(c *gin.Context, info *relaycommon.RelayInfo, request
 }
 
 func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (usage any, err *types.NewAPIError) {
-	if info.IsStream {
-		usage, err = openai.OaiStreamHandler(c, info, resp)
-	} else {
-		usage, err = openai.OpenaiHandler(c, info, resp)
+	switch info.RelayFormat {
+	case types.RelayFormatClaude:
+		if info.IsStream {
+			return claude.ClaudeStreamHandler(c, resp, info, claude.RequestModeMessage)
+		} else {
+			return claude.ClaudeHandler(c, resp, info, claude.RequestModeMessage)
+		}
+	default:
+		adaptor := openai.Adaptor{}
+		return adaptor.DoResponse(c, resp, info)
 	}
-	return
 }
 
 func (a *Adaptor) GetModelList() []string {
