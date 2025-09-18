@@ -113,6 +113,12 @@ func sendBarkNotify(barkURL string, data dto.Notify) error {
 			return fmt.Errorf("bark request failed with status code: %d", resp.StatusCode)
 		}
 	} else {
+		// SSRF防护：验证Bark URL（非Worker模式）
+		fetchSetting := system_setting.GetFetchSetting()
+		if err := common.ValidateURLWithFetchSetting(finalURL, fetchSetting.EnableSSRFProtection, fetchSetting.AllowPrivateIp, fetchSetting.DomainFilterMode, fetchSetting.IpFilterMode, fetchSetting.DomainList, fetchSetting.IpList, fetchSetting.AllowedPorts, fetchSetting.ApplyIPFilterForDomain); err != nil {
+			return fmt.Errorf("request reject: %v", err)
+		}
+
 		// 直接发送请求
 		req, err = http.NewRequest(http.MethodGet, finalURL, nil)
 		if err != nil {

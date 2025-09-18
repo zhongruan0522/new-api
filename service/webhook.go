@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"one-api/common"
 	"one-api/dto"
 	"one-api/setting/system_setting"
 	"time"
@@ -86,6 +87,12 @@ func SendWebhookNotify(webhookURL string, secret string, data dto.Notify) error 
 			return fmt.Errorf("webhook request failed with status code: %d", resp.StatusCode)
 		}
 	} else {
+		// SSRF防护：验证Webhook URL（非Worker模式）
+		fetchSetting := system_setting.GetFetchSetting()
+		if err := common.ValidateURLWithFetchSetting(webhookURL, fetchSetting.EnableSSRFProtection, fetchSetting.AllowPrivateIp, fetchSetting.DomainFilterMode, fetchSetting.IpFilterMode, fetchSetting.DomainList, fetchSetting.IpList, fetchSetting.AllowedPorts, fetchSetting.ApplyIPFilterForDomain); err != nil {
+			return fmt.Errorf("request reject: %v", err)
+		}
+
 		req, err = http.NewRequest(http.MethodPost, webhookURL, bytes.NewBuffer(payloadBytes))
 		if err != nil {
 			return fmt.Errorf("failed to create webhook request: %v", err)
