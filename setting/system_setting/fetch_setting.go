@@ -16,8 +16,8 @@ type FetchSetting struct {
 var defaultFetchSetting = FetchSetting{
 	EnableSSRFProtection:   true, // 默认开启SSRF防护
 	AllowPrivateIp:         false,
-	DomainFilterMode:       true,
-	IpFilterMode:           true,
+	DomainFilterMode:       false,
+	IpFilterMode:           false,
 	DomainList:             []string{},
 	IpList:                 []string{},
 	AllowedPorts:           []string{"80", "443", "8080", "8443"},

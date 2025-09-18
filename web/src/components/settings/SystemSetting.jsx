@@ -92,8 +92,8 @@ const SystemSetting = () => {
     // SSRF防护配置
     'fetch_setting.enable_ssrf_protection': true,
     'fetch_setting.allow_private_ip': '',
-    'fetch_setting.domain_filter_mode': true, // true 白名单，false 黑名单
-    'fetch_setting.ip_filter_mode': true, // true 白名单，false 黑名单
+    'fetch_setting.domain_filter_mode': false, // true 白名单，false 黑名单
+    'fetch_setting.ip_filter_mode': false, // true 白名单，false 黑名单
     'fetch_setting.domain_list': [],
     'fetch_setting.ip_list': [],
     'fetch_setting.allowed_ports': [],
@@ -726,10 +726,10 @@ const SystemSetting = () => {
                     style={{ marginTop: 16 }}
                   >
                     <Col xs={24} sm={24} md={24} lg={24} xl={24}>
-                      <Banner type='warning' description={t('此功能为实验性选项，域名可能解析到多个 IPv4/IPv6 地址，若开启，请确保 IP 过滤列表覆盖这些地址，否则可能导致访问失败。')} style={{ marginBottom: 8 }} />
                       <Form.Checkbox
                         field='fetch_setting.apply_ip_filter_for_domain'
                         noLabel
+                        extraText={t('域名IP过滤详细说明')}
                         onChange={(e) =>
                           handleCheckboxChange('fetch_setting.apply_ip_filter_for_domain', e)
                         }

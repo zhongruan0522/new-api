@@ -2098,7 +2098,6 @@
   "支持通配符格式，如：example.com, *.api.example.com": "Supports wildcard format, e.g.: example.com, *.api.example.com",
   "域名白名单详细说明": "Whitelisted domains bypass all SSRF checks and are allowed direct access. Supports exact domains (example.com) or wildcards (*.api.example.com) for subdomains. When whitelist is empty, all domains go through SSRF validation.",
   "输入域名后回车，如：example.com": "Enter domain and press Enter, e.g.: example.com",
-  "IP白名单": "IP Whitelist",
   "支持CIDR格式，如：8.8.8.8, 192.168.1.0/24": "Supports CIDR format, e.g.: 8.8.8.8, 192.168.1.0/24",
   "IP白名单详细说明": "Controls which IP addresses are allowed access. Use single IPs (8.8.8.8) or CIDR notation (192.168.1.0/24). Empty whitelist allows all IPs (subject to private IP settings), non-empty whitelist only allows listed IPs.",
   "输入IP地址后回车，如：8.8.8.8": "Enter IP address and press Enter, e.g.: 8.8.8.8",
@@ -2106,5 +2105,10 @@
   "支持单个端口和端口范围，如：80, 443, 8000-8999": "Supports single ports and port ranges, e.g.: 80, 443, 8000-8999",
   "端口配置详细说明": "Restrict external requests to specific ports. Use single ports (80, 443) or ranges (8000-8999). Empty list allows all ports. Default includes common web ports.",
   "输入端口后回车，如：80 或 8000-8999": "Enter port and press Enter, e.g.: 80 or 8000-8999",
-  "更新SSRF防护设置": "Update SSRF Protection Settings"
+  "更新SSRF防护设置": "Update SSRF Protection Settings",
+  "对域名启用 IP 过滤（实验性）": "Enable IP filtering for domains (experimental)",
+  "域名IP过滤详细说明": "⚠️ This is an experimental option. A domain may resolve to multiple IPv4/IPv6 addresses. If enabled, ensure the IP filter list covers these addresses, otherwise access may fail.",
+  "域名黑名单": "Domain Blacklist",
+  "白名单": "Whitelist",
+  "黑名单": "Blacklist"
 }
