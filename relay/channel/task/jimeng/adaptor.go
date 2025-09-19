@@ -94,6 +94,9 @@ func (a *TaskAdaptor) ValidateRequestAndSetAction(c *gin.Context, info *relaycom
 
 // BuildRequestURL constructs the upstream URL.
 func (a *TaskAdaptor) BuildRequestURL(info *relaycommon.RelayInfo) (string, error) {
+	if isNewAPIRelay(info.ApiKey) {
+		return fmt.Sprintf("%s/jimeng/?Action=CVSync2AsyncSubmitTask&Version=2022-08-31", a.baseURL), nil
+	}
 	return fmt.Sprintf("%s/?Action=CVSync2AsyncSubmitTask&Version=2022-08-31", a.baseURL), nil
 }
 
@@ -101,7 +104,12 @@ func (a *TaskAdaptor) BuildRequestURL(info *relaycommon.RelayInfo) (string, erro
 func (a *TaskAdaptor) BuildRequestHeader(c *gin.Context, req *http.Request, info *relaycommon.RelayInfo) error {
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
-	return a.signRequest(req, a.accessKey, a.secretKey)
+	if isNewAPIRelay(info.ApiKey) {
+		req.Header.Set("Authorization", "Bearer "+info.ApiKey)
+	} else {
+		return a.signRequest(req, a.accessKey, a.secretKey)
+	}
+	return nil
 }
 
 // BuildRequestBody converts request into Jimeng specific format.
@@ -161,6 +169,9 @@ func (a *TaskAdaptor) FetchTask(baseUrl, key string, body map[string]any) (*http
 	}
 
 	uri := fmt.Sprintf("%s/?Action=CVSync2AsyncGetResult&Version=2022-08-31", baseUrl)
+	if isNewAPIRelay(key) {
+		uri = fmt.Sprintf("%s/jimeng/?Action=CVSync2AsyncGetResult&Version=2022-08-31", a.baseURL)
+	}
 	payload := map[string]string{
 		"req_key": "jimeng_vgfm_t2v_l20", // This is fixed value from doc: https://www.volcengine.com/docs/85621/1544774
 		"task_id": taskID,
@@ -178,17 +189,20 @@ func (a *TaskAdaptor) FetchTask(baseUrl, key string, body map[string]any) (*http
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("Content-Type", "application/json")
 
-	keyParts := strings.Split(key, "|")
-	if len(keyParts) != 2 {
-		return nil, fmt.Errorf("invalid api key format for jimeng: expected 'ak|sk'")
-	}
-	accessKey := strings.TrimSpace(keyParts[0])
-	secretKey := strings.TrimSpace(keyParts[1])
+	if isNewAPIRelay(key) {
+		req.Header.Set("Authorization", "Bearer "+key)
+	} else {
+		keyParts := strings.Split(key, "|")
+		if len(keyParts) != 2 {
+			return nil, fmt.Errorf("invalid api key format for jimeng: expected 'ak|sk'")
+		}
+		accessKey := strings.TrimSpace(keyParts[0])
+		secretKey := strings.TrimSpace(keyParts[1])
 
-	if err := a.signRequest(req, accessKey, secretKey); err != nil {
-		return nil, errors.Wrap(err, "sign request failed")
+		if err := a.signRequest(req, accessKey, secretKey); err != nil {
+			return nil, errors.Wrap(err, "sign request failed")
+		}
 	}
-
 	return service.GetHttpClient().Do(req)
 }
 
@@ -383,4 +397,8 @@ func (a *TaskAdaptor) ParseTaskResult(respBody []byte) (*relaycommon.TaskInfo, e
 	}
 	taskResult.Url = resTask.Data.VideoUrl
 	return &taskResult, nil
+}
+
+func isNewAPIRelay(apiKey string) bool {
+	return strings.HasPrefix(apiKey, "sk-")
 }
