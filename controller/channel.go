@@ -501,9 +501,10 @@ func validateChannel(channel *model.Channel, isAdd bool) error {
 }
 
 type AddChannelRequest struct {
-	Mode         string                `json:"mode"`
-	MultiKeyMode constant.MultiKeyMode `json:"multi_key_mode"`
-	Channel      *model.Channel        `json:"channel"`
+	Mode                      string                `json:"mode"`
+	MultiKeyMode              constant.MultiKeyMode `json:"multi_key_mode"`
+	BatchAddSetKeyPrefix2Name bool                  `json:"batch_add_set_key_prefix_2_name"`
+	Channel                   *model.Channel        `json:"channel"`
 }
 
 func getVertexArrayKeys(keys string) ([]string, error) {
@@ -616,6 +617,13 @@ func AddChannel(c *gin.Context) {
 		}
 		localChannel := addChannelRequest.Channel
 		localChannel.Key = key
+		if addChannelRequest.BatchAddSetKeyPrefix2Name && len(keys) > 1 {
+			keyPrefix := localChannel.Key
+			if len(localChannel.Key) > 8 {
+				keyPrefix = localChannel.Key[:8]
+			}
+			localChannel.Name = fmt.Sprintf("%s %s", localChannel.Name, keyPrefix)
+		}
 		channels = append(channels, *localChannel)
 	}
 	err = model.BatchInsertChannels(channels)
