@@ -135,19 +135,27 @@ func (a *Adaptor) getRequestUrl(info *relaycommon.RelayInfo, modelName, suffix s
 			), nil
 		}
 	} else {
+		var keyPrefix string
+		if strings.HasSuffix(suffix, "?alt=sse") {
+			keyPrefix = "&"
+		} else {
+			keyPrefix = "?"
+		}
 		if region == "global" {
 			return fmt.Sprintf(
-				"https://aiplatform.googleapis.com/v1/publishers/google/models/%s:%s?key=%s",
+				"https://aiplatform.googleapis.com/v1/publishers/google/models/%s:%s%skey=%s",
 				modelName,
 				suffix,
+				keyPrefix,
 				info.ApiKey,
 			), nil
 		} else {
 			return fmt.Sprintf(
-				"https://%s-aiplatform.googleapis.com/v1/publishers/google/models/%s:%s?key=%s",
+				"https://%s-aiplatform.googleapis.com/v1/publishers/google/models/%s:%s%skey=%s",
 				region,
 				modelName,
 				suffix,
+				keyPrefix,
 				info.ApiKey,
 			), nil
 		}
