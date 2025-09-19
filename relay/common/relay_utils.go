@@ -81,6 +81,14 @@ func ValidateBasicTaskRequest(c *gin.Context, info *RelayInfo, action string) *d
 
 	if req.HasImage() {
 		action = constant.TaskActionGenerate
+		if info.ChannelType == constant.ChannelTypeVidu {
+			// vidu 增加 首尾帧生视频和参考图生视频
+			if len(req.Images) == 2 {
+				action = constant.TaskActionFirstTailGenerate
+			} else if len(req.Images) > 2 {
+				action = constant.TaskActionReferenceGenerate
+			}
+		}
 	}
 
 	storeTaskRequest(c, info, action, req)

@@ -111,6 +111,10 @@ func (a *TaskAdaptor) BuildRequestURL(info *relaycommon.RelayInfo) (string, erro
 	switch info.Action {
 	case constant.TaskActionGenerate:
 		path = "/img2video"
+	case constant.TaskActionFirstTailGenerate:
+		path = "/start-end2video"
+	case constant.TaskActionReferenceGenerate:
+		path = "/reference2video"
 	default:
 		path = "/text2video"
 	}
