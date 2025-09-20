@@ -777,6 +777,7 @@ type OpenAIResponsesRequest struct {
 	Reasoning          *Reasoning      `json:"reasoning,omitempty"`
 	ServiceTier        string          `json:"service_tier,omitempty"`
 	Store              bool            `json:"store,omitempty"`
+	PromptCacheKey     json.RawMessage `json:"prompt_cache_key,omitempty"`
 	Stream             bool            `json:"stream,omitempty"`
 	Temperature        float64         `json:"temperature,omitempty"`
 	Text               json.RawMessage `json:"text,omitempty"`
