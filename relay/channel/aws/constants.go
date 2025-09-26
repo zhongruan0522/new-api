@@ -21,6 +21,10 @@ var awsModelIDMap = map[string]string{
 	"nova-lite-v1:0":    "amazon.nova-lite-v1:0",
 	"nova-pro-v1:0":     "amazon.nova-pro-v1:0",
 	"nova-premier-v1:0": "amazon.nova-premier-v1:0",
+	"nova-canvas-v1:0":  "amazon.nova-canvas-v1:0",
+	"nova-reel-v1:0":    "amazon.nova-reel-v1:0",
+	"nova-reel-v1:1":    "amazon.nova-reel-v1:1",
+	"nova-sonic-v1:0":   "amazon.nova-sonic-v1:0",
 }
 
 var awsModelCanCrossRegionMap = map[string]map[string]bool{
