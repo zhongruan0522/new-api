@@ -86,10 +86,27 @@ var awsModelCanCrossRegionMap = map[string]map[string]bool{
 		"apac": true,
 	},
 	"amazon.nova-premier-v1:0": {
+		"us": true,
+	},
+	"amazon.nova-canvas-v1:0": {
 		"us":   true,
 		"eu":   true,
 		"apac": true,
-	}}
+	},
+	"amazon.nova-reel-v1:0": {
+		"us":   true,
+		"eu":   true,
+		"apac": true,
+	},
+	"amazon.nova-reel-v1:1": {
+		"us": true,
+	},
+	"amazon.nova-sonic-v1:0": {
+		"us":   true,
+		"eu":   true,
+		"apac": true,
+	},
+}
 
 var awsRegionCrossModelPrefixMap = map[string]string{
 	"us": "us",
