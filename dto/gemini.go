@@ -261,8 +261,8 @@ type GeminiChatGenerationConfig struct {
 	CandidateCount     int                   `json:"candidateCount,omitempty"`
 	StopSequences      []string              `json:"stopSequences,omitempty"`
 	ResponseMimeType   string                `json:"responseMimeType,omitempty"`
-	ResponseSchema     any                   `json:"responseSchema,omitempty"`
-	ResponseJsonSchema any                   `json:"responseJsonSchema,omitempty"`
+	ResponseSchema     json.RawMessage       `json:"responseSchema,omitempty"`
+	ResponseJsonSchema json.RawMessage       `json:"responseJsonSchema,omitempty"`
 	PresencePenalty    *float32              `json:"presencePenalty,omitempty"`
 	FrequencyPenalty   *float32              `json:"frequencyPenalty,omitempty"`
 	ResponseLogprobs   bool                  `json:"responseLogprobs,omitempty"`
