@@ -85,6 +85,26 @@ const REGION_EXAMPLE = {
   'claude-3-5-sonnet-20240620': 'europe-west1',
 };
 
+// 支持并且已适配通过接口获取模型列表的渠道类型
+const MODEL_FETCHABLE_TYPES = new Set([
+  1,
+  4,
+  14,
+  34,
+  17,
+  26,
+  24,
+  47,
+  25,
+  20,
+  23,
+  31,
+  35,
+  40,
+  42,
+  48,
+]);
+
 function type2secretPrompt(type) {
   // inputs.type === 15 ? '按照如下格式输入：APIKey|SecretKey' : (inputs.type === 18 ? '按照如下格式输入：APPID|APISecret|APIKey' : '请输入渠道对应的鉴权密钥')
   switch (type) {
@@ -1872,13 +1892,15 @@ const EditChannelModal = (props) => {
                         >
                           {t('填入所有模型')}
                         </Button>
-                        <Button
-                          size='small'
-                          type='tertiary'
-                          onClick={() => fetchUpstreamModelList('models')}
-                        >
-                          {t('获取模型列表')}
-                        </Button>
+                        {MODEL_FETCHABLE_TYPES.has(inputs.type) && (
+                          <Button
+                            size='small'
+                            type='tertiary'
+                            onClick={() => fetchUpstreamModelList('models')}
+                          >
+                            {t('获取模型列表')}
+                          </Button>
+                        )}
                         <Button
                           size='small'
                           type='warning'
