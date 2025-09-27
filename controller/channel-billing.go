@@ -10,7 +10,7 @@ import (
 	"one-api/constant"
 	"one-api/model"
 	"one-api/service"
-	"one-api/setting"
+	"one-api/setting/operation_setting"
 	"one-api/types"
 	"strconv"
 	"time"
@@ -135,7 +135,11 @@ func GetResponseBody(method, url string, channel *model.Channel, headers http.He
 	for k := range headers {
 		req.Header.Add(k, headers.Get(k))
 	}
-	res, err := service.GetHttpClient().Do(req)
+	client, err := service.NewProxyHttpClient(channel.GetSetting().Proxy)
+	if err != nil {
+		return nil, err
+	}
+	res, err := client.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -338,7 +342,7 @@ func updateChannelMoonshotBalance(channel *model.Channel) (float64, error) {
 		return 0, fmt.Errorf("failed to update moonshot balance, status: %v, code: %d, scode: %s", response.Status, response.Code, response.Scode)
 	}
 	availableBalanceCny := response.Data.AvailableBalance
-	availableBalanceUsd := decimal.NewFromFloat(availableBalanceCny).Div(decimal.NewFromFloat(setting.Price)).InexactFloat64()
+	availableBalanceUsd := decimal.NewFromFloat(availableBalanceCny).Div(decimal.NewFromFloat(operation_setting.Price)).InexactFloat64()
 	channel.UpdateBalance(availableBalanceUsd)
 	return availableBalanceUsd, nil
 }

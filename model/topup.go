@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"one-api/common"
+	"one-api/logger"
 
 	"gorm.io/gorm"
 )
@@ -94,7 +95,7 @@ func Recharge(referenceId string, customerId string) (err error) {
 		return errors.New("充值失败，" + err.Error())
 	}
 
-	RecordLog(topUp.UserId, LogTypeTopup, fmt.Sprintf("使用在线充值成功，充值金额: %v，支付金额：%d", common.FormatQuota(int(quota)), topUp.Amount))
+	RecordLog(topUp.UserId, LogTypeTopup, fmt.Sprintf("使用在线充值成功，充值金额: %v，支付金额：%d", logger.FormatQuota(int(quota)), topUp.Amount))
 
 	return nil
 }
@@ -163,7 +164,7 @@ func RechargeCreem(referenceId string, customerEmail string, customerName string
 		return errors.New("充值失败，" + err.Error())
 	}
 
-	RecordLog(topUp.UserId, LogTypeTopup, fmt.Sprintf("使用Creem充值成功，充值额度: %v，支付金额：%.2f", common.FormatQuota(int(quota)), topUp.Money))
+	RecordLog(topUp.UserId, LogTypeTopup, fmt.Sprintf("使用Creem充值成功，充值额度: %v，支付金额：%.2f", quota, topUp.Money))
 
 	return nil
 }

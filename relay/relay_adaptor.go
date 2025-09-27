@@ -2,7 +2,6 @@ package relay
 
 import (
 	"one-api/constant"
-	commonconstant "one-api/constant"
 	"one-api/relay/channel"
 	"one-api/relay/channel/ali"
 	"one-api/relay/channel/aws"
@@ -19,6 +18,7 @@ import (
 	"one-api/relay/channel/jina"
 	"one-api/relay/channel/mistral"
 	"one-api/relay/channel/mokaai"
+	"one-api/relay/channel/moonshot"
 	"one-api/relay/channel/ollama"
 	"one-api/relay/channel/openai"
 	"one-api/relay/channel/palm"
@@ -27,6 +27,8 @@ import (
 	taskjimeng "one-api/relay/channel/task/jimeng"
 	"one-api/relay/channel/task/kling"
 	"one-api/relay/channel/task/suno"
+	taskvertex "one-api/relay/channel/task/vertex"
+	taskVidu "one-api/relay/channel/task/vidu"
 	"one-api/relay/channel/tencent"
 	"one-api/relay/channel/vertex"
 	"one-api/relay/channel/volcengine"
@@ -34,6 +36,9 @@ import (
 	"one-api/relay/channel/xunfei"
 	"one-api/relay/channel/zhipu"
 	"one-api/relay/channel/zhipu_4v"
+	"strconv"
+
+	"github.com/gin-gonic/gin"
 )
 
 func GetAdaptor(apiType int) channel.Adaptor {
@@ -96,20 +101,38 @@ func GetAdaptor(apiType int) channel.Adaptor {
 		return &coze.Adaptor{}
 	case constant.APITypeJimeng:
 		return &jimeng.Adaptor{}
+	case constant.APITypeMoonshot:
+		return &moonshot.Adaptor{} // Moonshot uses Claude API
 	}
 	return nil
 }
 
-func GetTaskAdaptor(platform commonconstant.TaskPlatform) channel.TaskAdaptor {
+func GetTaskPlatform(c *gin.Context) constant.TaskPlatform {
+	channelType := c.GetInt("channel_type")
+	if channelType > 0 {
+		return constant.TaskPlatform(strconv.Itoa(channelType))
+	}
+	return constant.TaskPlatform(c.GetString("platform"))
+}
+
+func GetTaskAdaptor(platform constant.TaskPlatform) channel.TaskAdaptor {
 	switch platform {
 	//case constant.APITypeAIProxyLibrary:
 	//	return &aiproxy.Adaptor{}
-	case commonconstant.TaskPlatformSuno:
+	case constant.TaskPlatformSuno:
 		return &suno.TaskAdaptor{}
-	case commonconstant.TaskPlatformKling:
-		return &kling.TaskAdaptor{}
-	case commonconstant.TaskPlatformJimeng:
-		return &taskjimeng.TaskAdaptor{}
+	}
+	if channelType, err := strconv.ParseInt(string(platform), 10, 64); err == nil {
+		switch channelType {
+		case constant.ChannelTypeKling:
+			return &kling.TaskAdaptor{}
+		case constant.ChannelTypeJimeng:
+			return &taskjimeng.TaskAdaptor{}
+		case constant.ChannelTypeVertexAi:
+			return &taskvertex.TaskAdaptor{}
+		case constant.ChannelTypeVidu:
+			return &taskVidu.TaskAdaptor{}
+		}
 	}
 	return nil
 }

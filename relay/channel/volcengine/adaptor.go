@@ -2,12 +2,14 @@ package volcengine
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"mime/multipart"
 	"net/http"
 	"net/textproto"
+	channelconstant "one-api/constant"
 	"one-api/dto"
 	"one-api/relay/channel"
 	"one-api/relay/channel/openai"
@@ -23,10 +25,14 @@ import (
 type Adaptor struct {
 }
 
-func (a *Adaptor) ConvertClaudeRequest(*gin.Context, *relaycommon.RelayInfo, *dto.ClaudeRequest) (any, error) {
+func (a *Adaptor) ConvertGeminiRequest(*gin.Context, *relaycommon.RelayInfo, *dto.GeminiChatRequest) (any, error) {
 	//TODO implement me
-	panic("implement me")
-	return nil, nil
+	return nil, errors.New("not implemented")
+}
+
+func (a *Adaptor) ConvertClaudeRequest(c *gin.Context, info *relaycommon.RelayInfo, req *dto.ClaudeRequest) (any, error) {
+	adaptor := openai.Adaptor{}
+	return adaptor.ConvertClaudeRequest(c, info, req)
 }
 
 func (a *Adaptor) ConvertAudioRequest(c *gin.Context, info *relaycommon.RelayInfo, request dto.AudioRequest) (io.Reader, error) {
@@ -36,6 +42,8 @@ func (a *Adaptor) ConvertAudioRequest(c *gin.Context, info *relaycommon.RelayInf
 
 func (a *Adaptor) ConvertImageRequest(c *gin.Context, info *relaycommon.RelayInfo, request dto.ImageRequest) (any, error) {
 	switch info.RelayMode {
+	case constant.RelayModeImagesGenerations:
+		return request, nil
 	case constant.RelayModeImagesEdits:
 
 		var requestBody bytes.Buffer
@@ -181,16 +189,26 @@ func (a *Adaptor) Init(info *relaycommon.RelayInfo) {
 }
 
 func (a *Adaptor) GetRequestURL(info *relaycommon.RelayInfo) (string, error) {
+	// 支持自定义域名，如果未设置则使用默认域名
+	baseUrl := info.ChannelBaseUrl
+	if baseUrl == "" {
+		baseUrl = channelconstant.ChannelBaseURLs[channelconstant.ChannelTypeVolcEngine]
+	}
+
 	switch info.RelayMode {
 	case constant.RelayModeChatCompletions:
 		if strings.HasPrefix(info.UpstreamModelName, "bot") {
-			return fmt.Sprintf("%s/api/v3/bots/chat/completions", info.BaseUrl), nil
+			return fmt.Sprintf("%s/api/v3/bots/chat/completions", baseUrl), nil
 		}
-		return fmt.Sprintf("%s/api/v3/chat/completions", info.BaseUrl), nil
+		return fmt.Sprintf("%s/api/v3/chat/completions", baseUrl), nil
 	case constant.RelayModeEmbeddings:
-		return fmt.Sprintf("%s/api/v3/embeddings", info.BaseUrl), nil
+		return fmt.Sprintf("%s/api/v3/embeddings", baseUrl), nil
 	case constant.RelayModeImagesGenerations:
-		return fmt.Sprintf("%s/api/v3/images/generations", info.BaseUrl), nil
+		return fmt.Sprintf("%s/api/v3/images/generations", baseUrl), nil
+	case constant.RelayModeImagesEdits:
+		return fmt.Sprintf("%s/api/v3/images/edits", baseUrl), nil
+	case constant.RelayModeRerank:
+		return fmt.Sprintf("%s/api/v3/rerank", baseUrl), nil
 	default:
 	}
 	return "", fmt.Errorf("unsupported relay mode: %d", info.RelayMode)
@@ -205,6 +223,12 @@ func (a *Adaptor) SetupRequestHeader(c *gin.Context, req *http.Header, info *rel
 func (a *Adaptor) ConvertOpenAIRequest(c *gin.Context, info *relaycommon.RelayInfo, request *dto.GeneralOpenAIRequest) (any, error) {
 	if request == nil {
 		return nil, errors.New("request is nil")
+	}
+	// 适配 方舟deepseek混合模型 的 thinking 后缀
+	if strings.HasSuffix(info.UpstreamModelName, "-thinking") && strings.HasPrefix(info.UpstreamModelName, "deepseek") {
+		info.UpstreamModelName = strings.TrimSuffix(info.UpstreamModelName, "-thinking")
+		request.Model = info.UpstreamModelName
+		request.THINKING = json.RawMessage(`{"type": "enabled"}`)
 	}
 	return request, nil
 }
@@ -227,18 +251,8 @@ func (a *Adaptor) DoRequest(c *gin.Context, info *relaycommon.RelayInfo, request
 }
 
 func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (usage any, err *types.NewAPIError) {
-	switch info.RelayMode {
-	case constant.RelayModeChatCompletions:
-		if info.IsStream {
-			usage, err = openai.OaiStreamHandler(c, info, resp)
-		} else {
-			usage, err = openai.OpenaiHandler(c, info, resp)
-		}
-	case constant.RelayModeEmbeddings:
-		usage, err = openai.OpenaiHandler(c, info, resp)
-	case constant.RelayModeImagesGenerations, constant.RelayModeImagesEdits:
-		usage, err = openai.OpenaiHandlerWithUsage(c, info, resp)
-	}
+	adaptor := openai.Adaptor{}
+	usage, err = adaptor.DoResponse(c, resp, info)
 	return
 }
 
