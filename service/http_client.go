@@ -70,6 +70,7 @@ func NewProxyHttpClient(proxyURL string) (*http.Client, error) {
 				Proxy: http.ProxyURL(parsedURL),
 			},
 		}
+		client.Timeout = time.Duration(common.RelayTimeout) * time.Second
 		proxyClientLock.Lock()
 		proxyClients[proxyURL] = client
 		proxyClientLock.Unlock()
@@ -102,6 +103,7 @@ func NewProxyHttpClient(proxyURL string) (*http.Client, error) {
 				},
 			},
 		}
+		client.Timeout = time.Duration(common.RelayTimeout) * time.Second
 		proxyClientLock.Lock()
 		proxyClients[proxyURL] = client
 		proxyClientLock.Unlock()
