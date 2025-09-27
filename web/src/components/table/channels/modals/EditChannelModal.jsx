@@ -322,6 +322,10 @@ const EditChannelModal = (props) => {
         case 36:
           localModels = ['suno_music', 'suno_lyrics'];
           break;
+        case 45:
+          localModels = getChannelModels(value);
+          setInputs((prevInputs) => ({ ...prevInputs, base_url: 'https://ark.cn-beijing.volces.com' }));
+          break;
         default:
           localModels = getChannelModels(value);
           break;
@@ -820,6 +824,10 @@ const EditChannelModal = (props) => {
     }
     if (!Array.isArray(localInputs.models) || localInputs.models.length === 0) {
       showInfo(t('请至少选择一个模型！'));
+      return;
+    }
+    if (localInputs.type === 45 && (!localInputs.base_url || localInputs.base_url.trim() === '')) {
+      showInfo(t('请输入API地址！'));
       return;
     }
     if (
