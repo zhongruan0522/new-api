@@ -91,22 +91,7 @@ const REGION_EXAMPLE = {
 
 // 支持并且已适配通过接口获取模型列表的渠道类型
 const MODEL_FETCHABLE_TYPES = new Set([
-  1,
-  4,
-  14,
-  34,
-  17,
-  26,
-  24,
-  47,
-  25,
-  20,
-  23,
-  31,
-  35,
-  40,
-  42,
-  48,
+  1, 4, 14, 34, 17, 26, 24, 47, 25, 20, 23, 31, 35, 40, 42, 48,
   43,
 ]);
 
@@ -279,8 +264,8 @@ const EditChannelModal = (props) => {
   const scrollToSection = (sectionKey) => {
     const sectionElement = formSectionRefs.current[sectionKey];
     if (sectionElement) {
-      sectionElement.scrollIntoView({ 
-        behavior: 'smooth', 
+      sectionElement.scrollIntoView({
+        behavior: 'smooth',
         block: 'start',
         inline: 'nearest'
       });
@@ -301,7 +286,7 @@ const EditChannelModal = (props) => {
     } else {
       newIndex = currentSectionIndex < availableSections.length - 1 ? currentSectionIndex + 1 : 0;
     }
-    
+
     setCurrentSectionIndex(newIndex);
     scrollToSection(availableSections[newIndex]);
   };
@@ -1340,7 +1325,7 @@ const EditChannelModal = (props) => {
                 type='tertiary'
                 icon={<IconChevronUp />}
                 onClick={() => navigateToSection('up')}
-                style={{ 
+                style={{
                   borderRadius: '50%',
                   width: '32px',
                   height: '32px',
@@ -1356,7 +1341,7 @@ const EditChannelModal = (props) => {
                 type='tertiary'
                 icon={<IconChevronDown />}
                 onClick={() => navigateToSection('down')}
-                style={{ 
+                style={{
                   borderRadius: '50%',
                   width: '32px',
                   height: '32px',
@@ -1398,8 +1383,8 @@ const EditChannelModal = (props) => {
         >
           {() => (
             <Spin spinning={loading}>
-              <div 
-                className='p-2' 
+              <div
+                className='p-2'
                 ref={formContainerRef}
               >
                 <div ref={el => formSectionRefs.current.basicInfo = el}>
