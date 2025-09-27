@@ -9,6 +9,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/textproto"
+	channelconstant "one-api/constant"
 	"one-api/dto"
 	"one-api/relay/channel"
 	"one-api/relay/channel/openai"
@@ -191,7 +192,7 @@ func (a *Adaptor) GetRequestURL(info *relaycommon.RelayInfo) (string, error) {
 	// 支持自定义域名，如果未设置则使用默认域名
 	baseUrl := info.ChannelBaseUrl
 	if baseUrl == "" {
-		baseUrl = "https://ark.cn-beijing.volces.com"
+		baseUrl = channelconstant.ChannelBaseURLs[channelconstant.ChannelTypeVolcEngine]
 	}
 
 	switch info.RelayMode {
