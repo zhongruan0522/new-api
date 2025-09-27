@@ -249,10 +249,13 @@ func CreemWebhook(c *gin.Context) {
 	// 获取签名头
 	signature := c.GetHeader(CreemSignatureHeader)
 
-	// 打印请求信息用于调试
-	log.Printf("Creem Webhook - URI: %s, Query: %s", c.Request.RequestURI, c.Request.URL.RawQuery)
-	log.Printf("Creem Webhook - Signature: %s", signature)
-	log.Printf("Creem Webhook - Body: %s", string(bodyBytes))
+	// 打印关键信息（避免输出完整敏感payload）
+	log.Printf("Creem Webhook - URI: %s", c.Request.RequestURI)
+	if signature == "" && !setting.CreemTestMode {
+		log.Printf("Creem Webhook缺少签名头")
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
 
 	// 验证签名
 	if !verifyCreemSignature(string(bodyBytes), signature, setting.CreemWebhookSecret) {
