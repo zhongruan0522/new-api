@@ -1,5 +1,6 @@
 from playwright.sync_api import sync_playwright, expect
 import time
+import re
 
 def run(playwright):
     browser = playwright.chromium.launch(headless=True)
@@ -10,8 +11,11 @@ def run(playwright):
     page.goto("http://localhost:5173", wait_until="networkidle")
     print("Page loaded")
 
-    # The aria-label is in Chinese in the source, so we use that.
-    language_button = page.get_by_role("button", name="切换语言")
+    # Use a regex to find the button by its aria-label in either Chinese or English.
+    language_button = page.get_by_role(
+        "button",
+        name=re.compile(r"(切换语言|Change Language)", re.IGNORECASE),
+    )
 
     # Wait for the button to be visible
     expect(language_button).to_be_visible()
