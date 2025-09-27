@@ -188,6 +188,8 @@ func FetchUpstreamModels(c *gin.Context) {
 		url = fmt.Sprintf("%s/v1beta/openai/models", baseURL) // Remove key in url since we need to use AuthHeader
 	case constant.ChannelTypeAli:
 		url = fmt.Sprintf("%s/compatible-mode/v1/models", baseURL)
+	case constant.ChannelTypeZhipu_v4:
+		url = fmt.Sprintf("%s/api/paas/v4/models", baseURL)
 	default:
 		url = fmt.Sprintf("%s/v1/models", baseURL)
 	}
