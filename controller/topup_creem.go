@@ -441,10 +441,9 @@ func genCreemLink(referenceId string, product *CreemProduct, email string, usern
 	log.Printf("Creem API响应 - 状态码: %d, 响应体: %s", resp.StatusCode, string(body))
 
 	// 检查响应状态
-	if resp.StatusCode != http.StatusOK {
+	if resp.StatusCode/100 != 2 {
 		return "", fmt.Errorf("Creem API 返回错误状态 %d: %s", resp.StatusCode, string(body))
 	}
-
 	// 解析响应
 	var checkoutResp CreemCheckoutResponse
 	err = json.Unmarshal(body, &checkoutResp)
