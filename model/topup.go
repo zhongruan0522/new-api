@@ -98,13 +98,12 @@ func Recharge(referenceId string, customerId string) (err error) {
 
 	return nil
 }
-
-func RechargeCreem(referenceId string, customerEmail string, customerName string) (err error) {
+func RechargeCreem(referenceId string, customerEmail string) (err error) {
 	if referenceId == "" {
 		return errors.New("未提供支付单号")
 	}
 
-	var quota float64
+	var quota int64
 	topUp := &TopUp{}
 
 	refCol := "`trade_no`"
@@ -129,8 +128,8 @@ func RechargeCreem(referenceId string, customerEmail string, customerName string
 			return err
 		}
 
-		// Creem 直接使用 Amount 作为充值额度
-		quota = float64(topUp.Amount)
+		// Creem 直接使用 Amount 作为充值额度（整数）
+		quota = topUp.Amount
 
 		// 构建更新字段，优先使用邮箱，如果邮箱为空则使用用户名
 		updateFields := map[string]interface{}{
@@ -149,7 +148,7 @@ func RechargeCreem(referenceId string, customerEmail string, customerName string
 			// 如果用户邮箱为空，则更新为支付时使用的邮箱
 			if user.Email == "" {
 				updateFields["email"] = customerEmail
-				fmt.Printf("更新用户邮箱：用户ID %d, 新邮箱 %s\n", topUp.UserId, customerEmail)
+				// 避免输出敏感信息到stdout
 			}
 		}
 
@@ -165,7 +164,7 @@ func RechargeCreem(referenceId string, customerEmail string, customerName string
 		return errors.New("充值失败，" + err.Error())
 	}
 
-	RecordLog(topUp.UserId, LogTypeTopup, fmt.Sprintf("使用Creem充值成功，充值额度: %v，支付金额：%.2f，客户邮箱：%s", common.FormatQuota(int(quota)), topUp.Money, customerEmail))
+	RecordLog(topUp.UserId, LogTypeTopup, fmt.Sprintf("使用Creem充值成功，充值额度: %v，支付金额：%.2f", common.FormatQuota(int(quota)), topUp.Money))
 
 	return nil
 }
