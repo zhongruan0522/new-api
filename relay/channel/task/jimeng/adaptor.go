@@ -36,6 +36,7 @@ type requestPayload struct {
 	Prompt           string   `json:"prompt,omitempty"`
 	Seed             int64    `json:"seed"`
 	AspectRatio      string   `json:"aspect_ratio"`
+	Frames           int      `json:"frames,omitempty"`
 }
 
 type responsePayload struct {
@@ -325,10 +326,15 @@ func hmacSHA256(key []byte, data []byte) []byte {
 
 func (a *TaskAdaptor) convertToRequestPayload(req *relaycommon.TaskSubmitReq) (*requestPayload, error) {
 	r := requestPayload{
-		ReqKey:      "jimeng_vgfm_i2v_l20",
-		Prompt:      req.Prompt,
-		AspectRatio: "16:9", // Default aspect ratio
-		Seed:        -1,     // Default to random
+		ReqKey: req.Model,
+		Prompt: req.Prompt,
+	}
+
+	switch req.Duration {
+	case 10:
+		r.Frames = 241 // 24*10+1 = 241
+	default:
+		r.Frames = 121 // 24*5+1 = 121
 	}
 
 	// Handle one-of image_urls or binary_data_base64
@@ -348,6 +354,22 @@ func (a *TaskAdaptor) convertToRequestPayload(req *relaycommon.TaskSubmitReq) (*
 	if err != nil {
 		return nil, errors.Wrap(err, "unmarshal metadata failed")
 	}
+
+	// 即梦视频3.0 ReqKey转换
+	// https://www.volcengine.com/docs/85621/1792707
+	if strings.Contains(r.ReqKey, "jimeng_v30") {
+		if len(r.ImageUrls) > 1 {
+			// 多张图片：首尾帧生成
+			r.ReqKey = strings.Replace(r.ReqKey, "jimeng_v30", "jimeng_i2v_first_tail_v30", 1)
+		} else if len(r.ImageUrls) == 1 {
+			// 单张图片：图生视频
+			r.ReqKey = strings.Replace(r.ReqKey, "jimeng_v30", "jimeng_i2v_first_v30", 1)
+		} else {
+			// 无图片：文生视频
+			r.ReqKey = strings.Replace(r.ReqKey, "jimeng_v30", "jimeng_t2v_v30", 1)
+		}
+	}
+
 	return &r, nil
 }
 

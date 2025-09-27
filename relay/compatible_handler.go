@@ -278,6 +278,13 @@ func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage 
 				fileSearchTool.CallCount, dFileSearchQuota.String())
 		}
 	}
+	var dImageGenerationCallQuota decimal.Decimal
+	var imageGenerationCallPrice float64
+	if ctx.GetBool("image_generation_call") {
+		imageGenerationCallPrice = operation_setting.GetGPTImage1PriceOnceCall(ctx.GetString("image_generation_call_quality"), ctx.GetString("image_generation_call_size"))
+		dImageGenerationCallQuota = decimal.NewFromFloat(imageGenerationCallPrice).Mul(dGroupRatio).Mul(dQuotaPerUnit)
+		extraContent += fmt.Sprintf("Image Generation Call 花费 %s", dImageGenerationCallQuota.String())
+	}
 
 	var quotaCalculateDecimal decimal.Decimal
 
@@ -333,6 +340,8 @@ func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage 
 	quotaCalculateDecimal = quotaCalculateDecimal.Add(dFileSearchQuota)
 	// 添加 audio input 独立计费
 	quotaCalculateDecimal = quotaCalculateDecimal.Add(audioInputQuota)
+	// 添加 image generation call 计费
+	quotaCalculateDecimal = quotaCalculateDecimal.Add(dImageGenerationCallQuota)
 
 	quota := int(quotaCalculateDecimal.Round(0).IntPart())
 	totalTokens := promptTokens + completionTokens
@@ -430,6 +439,10 @@ func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage 
 		other["audio_input_seperate_price"] = true
 		other["audio_input_token_count"] = audioTokens
 		other["audio_input_price"] = audioInputPrice
+	}
+	if !dImageGenerationCallQuota.IsZero() {
+		other["image_generation_call"] = true
+		other["image_generation_call_price"] = imageGenerationCallPrice
 	}
 	model.RecordConsumeLog(ctx, relayInfo.UserId, model.RecordConsumeLogParams{
 		ChannelId:        relayInfo.ChannelId,
