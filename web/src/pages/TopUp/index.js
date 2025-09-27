@@ -315,6 +315,11 @@ const TopUp = () => {
       showError(t('请选择产品'));
       return;
     }
+    // Validate product has required fields
+    if (!selectedCreemProduct.productId) {
+      showError(t('产品配置错误，请联系管理员'));
+      return;
+    }
     setConfirmLoading(true);
     try {
       const res = await API.post('/api/user/creem/pay', {
@@ -668,14 +673,14 @@ const TopUp = () => {
       </Modal>
 
       <Modal
-          title={t('确定要充值吗')}
-          visible={stripeOpen}
-          onOk={onlineStripeTopUp}
-          onCancel={handleStripeCancel}
-          maskClosable={false}
-          size='small'
-          centered
-          confirmLoading={confirmLoading}
+        title={t('确定要充值吗')}
+        visible={stripeOpen}
+        onOk={onlineStripeTopUp}
+        onCancel={handleStripeCancel}
+        maskClosable={false}
+        size='small'
+        centered
+        confirmLoading={confirmLoading}
       >
         <p>
           {t('充值数量')}：{stripeTopUpCount}
@@ -1026,85 +1031,85 @@ const TopUp = () => {
               )}
 
               {enableStripeTopUp && (
-                  <>
-                    {/* 桌面端显示的自定义金额和支付按钮 */}
-                    <div className='hidden md:block space-y-4'>
-                      <Divider style={{ margin: '24px 0' }}>
-                        <Text className='text-sm font-medium'>
-                          {t(!enableOnlineTopUp ? '或输入自定义金额' : 'Stripe')}
-                        </Text>
-                      </Divider>
+                <>
+                  {/* 桌面端显示的自定义金额和支付按钮 */}
+                  <div className='hidden md:block space-y-4'>
+                    <Divider style={{ margin: '24px 0' }}>
+                      <Text className='text-sm font-medium'>
+                        {t(!enableOnlineTopUp ? '或输入自定义金额' : 'Stripe')}
+                      </Text>
+                    </Divider>
 
-                      <div>
-                        <div className='flex justify-between mb-2'>
-                          <Text strong>{t('充值数量')}</Text>
-                          {amountLoading ? (
-                              <Skeleton.Title
-                                  style={{ width: '80px', height: '16px' }}
-                              />
-                          ) : (
-                              <Text type='tertiary'>
-                                {t('实付金额：') + renderStripeAmount()}
-                              </Text>
-                          )}
-                        </div>
-                        <InputNumber
-                            disabled={!enableStripeTopUp}
-                            placeholder={
-                                t('充值数量，最低 ') + renderQuotaWithAmount(stripeMinTopUp)
-                            }
-                            value={stripeTopUpCount}
-                            min={stripeMinTopUp}
-                            max={999999999}
-                            step={1}
-                            precision={0}
-                            onChange={async (value) => {
-                              if (value && value >= 1) {
-                                setStripeTopUpCount(value);
-                                setSelectedPreset(null);
-                                await getStripeAmount(value);
-                              }
-                            }}
-                            onBlur={(e) => {
-                              const value = parseInt(e.target.value);
-                              if (!value || value < 1) {
-                                setStripeTopUpCount(1);
-                                getStripeAmount(1);
-                              }
-                            }}
-                            size='large'
-                            className='w-full'
-                            formatter={(value) => (value ? `${value}` : '')}
-                            parser={(value) =>
-                                value ? parseInt(value.replace(/[^\d]/g, '')) : 0
-                            }
-                        />
+                    <div>
+                      <div className='flex justify-between mb-2'>
+                        <Text strong>{t('充值数量')}</Text>
+                        {amountLoading ? (
+                          <Skeleton.Title
+                            style={{ width: '80px', height: '16px' }}
+                          />
+                        ) : (
+                          <Text type='tertiary'>
+                            {t('实付金额：') + renderStripeAmount()}
+                          </Text>
+                        )}
                       </div>
+                      <InputNumber
+                        disabled={!enableStripeTopUp}
+                        placeholder={
+                          t('充值数量，最低 ') + renderQuotaWithAmount(stripeMinTopUp)
+                        }
+                        value={stripeTopUpCount}
+                        min={stripeMinTopUp}
+                        max={999999999}
+                        step={1}
+                        precision={0}
+                        onChange={async (value) => {
+                          if (value && value >= 1) {
+                            setStripeTopUpCount(value);
+                            setSelectedPreset(null);
+                            await getStripeAmount(value);
+                          }
+                        }}
+                        onBlur={(e) => {
+                          const value = parseInt(e.target.value);
+                          if (!value || value < 1) {
+                            setStripeTopUpCount(1);
+                            getStripeAmount(1);
+                          }
+                        }}
+                        size='large'
+                        className='w-full'
+                        formatter={(value) => (value ? `${value}` : '')}
+                        parser={(value) =>
+                          value ? parseInt(value.replace(/[^\d]/g, '')) : 0
+                        }
+                      />
+                    </div>
 
-                      <div>
-                        <Text strong className='block mb-3'>
-                          {t('选择支付方式')}
-                        </Text>
-                          <div className='grid grid-cols-1 gap-3'>
-                            <Button
-                                key='stripe'
-                                type='primary'
-                                onClick={() => stripePreTopUp()}
-                                size='large'
-                                disabled={!enableStripeTopUp}
-                                loading={paymentLoading && payWay === 'stripe'}
-                                icon={<CreditCard size={16} />}
-                                style={{
-                                  height: '40px',
-                                  color: '#b161fe',
-                                }}
-                                className='transition-all hover:shadow-md w-full'
-                            >
-                              <span className='ml-1'>Stripe</span>
-                            </Button>
-                          </div>
+                    <div>
+                      <Text strong className='block mb-3'>
+                        {t('选择支付方式')}
+                      </Text>
+                      <div className='grid grid-cols-1 gap-3'>
+                        <Button
+                          key='stripe'
+                          type='primary'
+                          onClick={() => stripePreTopUp()}
+                          size='large'
+                          disabled={!enableStripeTopUp}
+                          loading={paymentLoading && payWay === 'stripe'}
+                          icon={<CreditCard size={16} />}
+                          style={{
+                            height: '40px',
+                            color: '#b161fe',
+                          }}
+                          className='transition-all hover:shadow-md w-full'
+                        >
+                          <span className='ml-1'>Stripe</span>
+                        </Button>
                       </div>
                     </div>
+                  </div>
 
                   {/* 移动端 Stripe 充值区域 */}
                   <div className='md:hidden space-y-4'>

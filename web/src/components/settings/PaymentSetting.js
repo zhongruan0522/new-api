@@ -50,12 +50,7 @@ const PaymentSetting = () => {
             }
             break;
           case 'CreemProducts':
-            try {
-              newInputs[item.key] = item.value;
-            } catch (error) {
-              console.error('解析CreemProducts出错:', error);
-              newInputs[item.key] = '[]';
-            }
+            newInputs[item.key] = item.value || '[]';
             break;
           case 'Price':
           case 'MinTopUp':

@@ -36,8 +36,9 @@ func generateCreemSignature(payload string, secret string) string {
 // 验证Creem webhook签名
 func verifyCreemSignature(payload string, signature string, secret string) bool {
 	if secret == "" {
+		log.Printf("Creem webhook secret not set")
 		if setting.CreemTestMode {
-			log.Printf("Creem webhook secret未配置，测试模式下跳过签名验证")
+			log.Printf("Skip Creem webhook sign verify in test mode")
 			return true
 		}
 		return false
@@ -146,8 +147,8 @@ func RequestCreemPay(c *gin.Context) {
 	// 读取body内容用于打印，同时保留原始数据供后续使用
 	bodyBytes, err := io.ReadAll(c.Request.Body)
 	if err != nil {
-		log.Printf("读取请求body失败: %v", err)
-		c.JSON(200, gin.H{"message": "error", "data": "读取请求失败"})
+		log.Printf("read creem pay req body err: %v", err)
+		c.JSON(200, gin.H{"message": "error", "data": "read query error"})
 		return
 	}
 
@@ -158,7 +159,6 @@ func RequestCreemPay(c *gin.Context) {
 	c.Request.Body = io.NopCloser(bytes.NewReader(bodyBytes))
 
 	err = c.ShouldBindJSON(&req)
-	log.Printf(" json body is %+v", req)
 	if err != nil {
 		c.JSON(200, gin.H{"message": "error", "data": "参数错误"})
 		return
@@ -251,7 +251,9 @@ func CreemWebhook(c *gin.Context) {
 
 	// 打印关键信息（避免输出完整敏感payload）
 	log.Printf("Creem Webhook - URI: %s", c.Request.RequestURI)
-	if signature == "" && !setting.CreemTestMode {
+	if setting.CreemTestMode {
+		log.Printf("Creem Webhook - Signature: %s , Body: %s", signature, bodyBytes)
+	} else if signature == "" {
 		log.Printf("Creem Webhook缺少签名头")
 		c.AbortWithStatus(http.StatusUnauthorized)
 		return
@@ -314,12 +316,11 @@ func handleCheckoutCompleted(c *gin.Context, event *CreemWebhookEvent) {
 	}
 
 	// 记录详细的支付信息
-	log.Printf("处理Creem支付完成 - 订单号: %s, Creem订单ID: %s, 支付金额: %d %s, 客户邮箱: %s, 产品: %s",
+	log.Printf("处理Creem支付完成 - 订单号: %s, Creem订单ID: %s, 支付金额: %d %s, 客户邮箱: <redacted>, 产品: %s",
 		referenceId,
 		event.Object.Order.Id,
 		event.Object.Order.AmountPaid,
 		event.Object.Order.Currency,
-		event.Object.Customer.Email,
 		event.Object.Product.Name)
 
 	// 查询本地订单确认存在
@@ -355,8 +356,8 @@ func handleCheckoutCompleted(c *gin.Context, event *CreemWebhookEvent) {
 		return
 	}
 
-	log.Printf("Creem充值成功 - 订单号: %s, 充值额度: %d, 支付金额: %.2f, 客户邮箱: %s, 客户姓名: %s",
-		referenceId, topUp.Amount, topUp.Money, customerEmail, customerName)
+	log.Printf("Creem充值成功 - 订单号: %s, 充值额度: %d, 支付金额: %.2f",
+		referenceId, topUp.Amount, topUp.Money)
 	c.Status(http.StatusOK)
 }
 
@@ -438,11 +439,11 @@ func genCreemLink(referenceId string, product *CreemProduct, email string, usern
 		return "", fmt.Errorf("读取响应失败: %v", err)
 	}
 
-	log.Printf("Creem API响应 - 状态码: %d, 响应体: %s", resp.StatusCode, string(body))
+	log.Printf("Creem API resp - status code: %d, resp: %s", resp.StatusCode, string(body))
 
 	// 检查响应状态
 	if resp.StatusCode/100 != 2 {
-		return "", fmt.Errorf("Creem API 返回错误状态 %d: %s", resp.StatusCode, string(body))
+		return "", fmt.Errorf("Creem API http status %d ", resp.StatusCode)
 	}
 	// 解析响应
 	var checkoutResp CreemCheckoutResponse
@@ -452,7 +453,7 @@ func genCreemLink(referenceId string, product *CreemProduct, email string, usern
 	}
 
 	if checkoutResp.CheckoutUrl == "" {
-		return "", fmt.Errorf("Creem API 未返回支付链接")
+		return "", fmt.Errorf("Creem API resp no checkout url ")
 	}
 
 	log.Printf("Creem 支付链接创建成功 - 订单号: %s, 支付链接: %s", referenceId, checkoutResp.CheckoutUrl)

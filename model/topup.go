@@ -98,7 +98,7 @@ func Recharge(referenceId string, customerId string) (err error) {
 
 	return nil
 }
-func RechargeCreem(referenceId string, customerEmail string) (err error) {
+func RechargeCreem(referenceId string, customerEmail string, customerName string) (err error) {
 	if referenceId == "" {
 		return errors.New("未提供支付单号")
 	}
@@ -148,7 +148,6 @@ func RechargeCreem(referenceId string, customerEmail string) (err error) {
 			// 如果用户邮箱为空，则更新为支付时使用的邮箱
 			if user.Email == "" {
 				updateFields["email"] = customerEmail
-				// 避免输出敏感信息到stdout
 			}
 		}
 
