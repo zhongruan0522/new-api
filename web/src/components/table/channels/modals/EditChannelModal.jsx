@@ -215,7 +215,7 @@ const EditChannelModal = (props) => {
     pass_through_body_enabled: false,
     system_prompt: '',
   });
-  const showApiConfigCard = inputs.type !== 45; // 控制是否显示 API 配置卡片（仅当渠道类型不是 豆包 时显示）
+  const showApiConfigCard = true; // 控制是否显示 API 配置卡片
   const getInitValues = () => ({ ...originInputs });
 
   // 处理渠道额外设置的更新
@@ -1736,8 +1736,7 @@ const EditChannelModal = (props) => {
                     {inputs.type !== 3 &&
                       inputs.type !== 8 &&
                       inputs.type !== 22 &&
-                      inputs.type !== 36 &&
-                      inputs.type !== 45 && (
+                      inputs.type !== 36 && (
                         <div>
                           <Form.Input
                             field='base_url'
