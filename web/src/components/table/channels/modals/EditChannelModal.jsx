@@ -1736,7 +1736,8 @@ const EditChannelModal = (props) => {
                     {inputs.type !== 3 &&
                       inputs.type !== 8 &&
                       inputs.type !== 22 &&
-                      inputs.type !== 36 && (
+                      inputs.type !== 36 &&
+                      inputs.type !== 45 && (
                         <div>
                           <Form.Input
                             field='base_url'
@@ -1787,6 +1788,30 @@ const EditChannelModal = (props) => {
                           showClear
                         />
                       </div>
+                    )}
+
+                    {inputs.type === 45 && (
+                        <div>
+                          <Form.Select
+                              field='base_url'
+                              label={t('API地址')}
+                              placeholder={t('请选择API地址')}
+                              onChange={(value) =>
+                                  handleInputChange('base_url', value)
+                              }
+                              optionList={[
+                                {
+                                  value: 'https://ark.cn-beijing.volces.com',
+                                  label: 'https://ark.cn-beijing.volces.com'
+                                },
+                                {
+                                  value: 'https://ark.ap-southeast.bytepluses.com',
+                                  label: 'https://ark.ap-southeast.bytepluses.com'
+                                }
+                              ]}
+                              defaultValue='https://ark.cn-beijing.volces.com'
+                          />
+                        </div>
                     )}
                   </Card>
                 )}
