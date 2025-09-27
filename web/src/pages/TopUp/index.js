@@ -673,7 +673,7 @@ const TopUp = () => {
       </Modal>
 
       <Modal
-        title={t('确定要充值吗')}
+        title={t('确定要充值 $')}
         visible={stripeOpen}
         onOk={onlineStripeTopUp}
         onCancel={handleStripeCancel}
@@ -692,7 +692,7 @@ const TopUp = () => {
       </Modal>
 
       <Modal
-        title={t('确定要充值吗')}
+        title={t('确定要充值 $')}
         visible={creemOpen}
         onOk={onlineCreemTopUp}
         onCancel={handleCreemCancel}
@@ -1188,9 +1188,7 @@ const TopUp = () => {
                 <>
                   <div className='hidden md:block space-y-4'>
                     <Divider style={{ margin: '24px 0' }}>
-                      <Text className='text-sm font-medium'>
-                        {t('Creem 充值')}
-                      </Text>
+                      <Text className='text-sm font-medium'>Creem</Text>
                     </Divider>
 
                     <div>
@@ -1223,9 +1221,7 @@ const TopUp = () => {
                   {/* 移动端 Creem 充值区域 */}
                   <div className='md:hidden space-y-4'>
                     <Divider style={{ margin: '24px 0' }}>
-                      <Text className='text-sm font-medium'>
-                        {t('Creem 充值')}
-                      </Text>
+                      <Text className='text-sm font-medium'>Creem</Text>
                     </Divider>
 
                     <div>

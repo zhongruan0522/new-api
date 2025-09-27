@@ -189,7 +189,7 @@ export default function SettingsPaymentGatewayCreem(props) {
             key: 'productId',
         },
         {
-            title: t('价格'),
+            title: t('展示价格'),
             dataIndex: 'price',
             key: 'price',
             render: (price, record) => `${record.currency === 'EUR' ? '€' : '$'}${price}`,
@@ -232,20 +232,17 @@ export default function SettingsPaymentGatewayCreem(props) {
             >
                 <Form.Section text={t('Creem 设置')}>
                     <Text>
-                        Creem 是一个简单的支付处理平台，支持固定金额的产品销售。请在
+                        {t('Creem 介绍')}
                         <a
                             href='https://creem.io'
                             target='_blank'
                             rel='noreferrer'
-                        >
-                            Creem 官网
-                        </a>
-                        创建账户并获取 API 密钥。
+                        >Creem Official Site</a>
                         <br />
                     </Text>
                     <Banner
                         type='info'
-                        description={t('Creem 只支持预设的固定金额产品，不支持自定义金额充值')}
+                        description={t('Creem Setting Tips')}
                     />
 
                     <Row gutter={{ xs: 8, sm: 16, md: 24, lg: 24, xl: 24, xxl: 24 }}>
@@ -253,7 +250,7 @@ export default function SettingsPaymentGatewayCreem(props) {
                             <Form.Input
                                 field='CreemApiKey'
                                 label={t('API 密钥')}
-                                placeholder={t('creem_xxx 的 Creem API 密钥，敏感信息不显示')}
+                                placeholder={t('Creem API 密钥，敏感信息不显示')}
                                 type='password'
                             />
                         </Col>
@@ -261,7 +258,7 @@ export default function SettingsPaymentGatewayCreem(props) {
                             <Form.Input
                                 field='CreemWebhookSecret'
                                 label={t('Webhook 密钥')}
-                                placeholder={t('用于验证 Webhook 请求的密钥，敏感信息不显示')}
+                                placeholder={t('用于验证回调 new-api 的 webhook 请求的密钥，敏感信息不显示')}
                                 type='password'
                             />
                         </Col>
@@ -348,13 +345,13 @@ export default function SettingsPaymentGatewayCreem(props) {
                             size='large'
                             className='w-full'
                         >
-                            <Select.Option value='USD'>USD (美元)</Select.Option>
-                            <Select.Option value='EUR'>EUR (欧元)</Select.Option>
+                            <Select.Option value='USD'>{t('USD (美元)')}</Select.Option>
+                            <Select.Option value='EUR'>{t('EUR (欧元)')}</Select.Option>
                         </Select>
                     </div>
                     <div>
                         <Text strong className='block mb-2'>
-                            {t('价格')} ({productForm.currency === 'EUR' ? '欧元' : '美元'})
+                            {t('价格')} ({productForm.currency === 'EUR' ? t('欧元') : t('美元')})
                         </Text>
                         <InputNumber
                             value={productForm.price}
@@ -364,6 +361,7 @@ export default function SettingsPaymentGatewayCreem(props) {
                             precision={2}
                             size='large'
                             className='w-full'
+                            defaultValue={4.49}
                         />
                     </div>
                     <div>
