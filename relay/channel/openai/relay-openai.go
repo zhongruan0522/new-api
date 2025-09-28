@@ -12,6 +12,7 @@ import (
 	"one-api/constant"
 	"one-api/dto"
 	"one-api/logger"
+	"one-api/relay/channel/openrouter"
 	relaycommon "one-api/relay/common"
 	"one-api/relay/helper"
 	"one-api/service"
@@ -185,7 +186,19 @@ func OpenaiHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Respo
 	if common.DebugEnabled {
 		println("upstream response body:", string(responseBody))
 	}
-	err = common.Unmarshal(responseBody, &simpleResponse)
+	// Unmarshal to simpleResponse
+	if info.ChannelType == constant.ChannelTypeOpenRouter {
+		// 尝试解析为 openrouter enterprise
+		var enterpriseResponse openrouter.OpenRouterEnterpriseResponse
+		if err2 := common.Unmarshal(responseBody, &enterpriseResponse); err2 == nil && enterpriseResponse.Data != nil {
+			err = common.Unmarshal(enterpriseResponse.Data, &simpleResponse)
+		} else {
+			// treat as normal openrouter
+			err = common.Unmarshal(responseBody, &simpleResponse)
+		}
+	} else {
+		err = common.Unmarshal(responseBody, &simpleResponse)
+	}
 	if err != nil {
 		return nil, types.NewOpenAIError(err, types.ErrorCodeBadResponseBody, http.StatusInternalServerError)
 	}
