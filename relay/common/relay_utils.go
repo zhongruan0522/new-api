@@ -79,34 +79,18 @@ func ValidateBasicTaskRequest(c *gin.Context, info *RelayInfo, action string) *d
 		req.Images = []string{req.Image}
 	}
 
+	if req.HasImage() {
+		action = constant.TaskActionGenerate
+		if info.ChannelType == constant.ChannelTypeVidu {
+			// vidu 增加 首尾帧生视频和参考图生视频
+			if len(req.Images) == 2 {
+				action = constant.TaskActionFirstTailGenerate
+			} else if len(req.Images) > 2 {
+				action = constant.TaskActionReferenceGenerate
+			}
+		}
+	}
+
 	storeTaskRequest(c, info, action, req)
 	return nil
-}
-
-func ValidateTaskRequestWithImage(c *gin.Context, info *RelayInfo, requestObj interface{}) *dto.TaskError {
-	hasPrompt, ok := requestObj.(HasPrompt)
-	if !ok {
-		return createTaskError(fmt.Errorf("request must have prompt"), "invalid_request", http.StatusBadRequest, true)
-	}
-
-	if taskErr := validatePrompt(hasPrompt.GetPrompt()); taskErr != nil {
-		return taskErr
-	}
-
-	action := constant.TaskActionTextGenerate
-	if hasImage, ok := requestObj.(HasImage); ok && hasImage.HasImage() {
-		action = constant.TaskActionGenerate
-	}
-
-	storeTaskRequest(c, info, action, requestObj)
-	return nil
-}
-
-func ValidateTaskRequestWithImageBinding(c *gin.Context, info *RelayInfo) *dto.TaskError {
-	var req TaskSubmitReq
-	if err := c.ShouldBindJSON(&req); err != nil {
-		return createTaskError(err, "invalid_request_body", http.StatusBadRequest, false)
-	}
-
-	return ValidateTaskRequestWithImage(c, info, req)
 }
