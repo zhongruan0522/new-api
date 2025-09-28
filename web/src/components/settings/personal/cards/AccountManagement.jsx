@@ -28,6 +28,7 @@ import {
   Tabs,
   TabPane,
   Popover,
+  Modal,
 } from '@douyinfe/semi-ui';
 import {
   IconMail,
@@ -83,6 +84,9 @@ const AccountManagement = ({
       </Popover>
     );
   };
+  const isBound = (accountId) => Boolean(accountId);
+  const [showTelegramBindModal, setShowTelegramBindModal] = React.useState(false);
+
   return (
     <Card className='!rounded-2xl'>
       {/* 卡片头部 */}
@@ -142,7 +146,7 @@ const AccountManagement = ({
                       size='small'
                       onClick={() => setShowEmailBindModal(true)}
                     >
-                      {userState.user && userState.user.email !== ''
+                      {isBound(userState.user?.email)
                         ? t('修改绑定')
                         : t('绑定')}
                     </Button>
@@ -165,9 +169,11 @@ const AccountManagement = ({
                         {t('微信')}
                       </div>
                       <div className='text-sm text-gray-500 truncate'>
-                        {userState.user && userState.user.wechat_id !== ''
-                          ? t('已绑定')
-                          : t('未绑定')}
+                        {!status.wechat_login
+                          ? t('未启用')
+                          : isBound(userState.user?.wechat_id)
+                            ? t('已绑定')
+                            : t('未绑定')}
                       </div>
                     </div>
                   </div>
@@ -179,7 +185,7 @@ const AccountManagement = ({
                       disabled={!status.wechat_login}
                       onClick={() => setShowWeChatBindModal(true)}
                     >
-                      {userState.user && userState.user.wechat_id !== ''
+                      {isBound(userState.user?.wechat_id)
                         ? t('修改绑定')
                         : status.wechat_login
                           ? t('绑定')
@@ -220,8 +226,7 @@ const AccountManagement = ({
                         onGitHubOAuthClicked(status.github_client_id)
                       }
                       disabled={
-                        (userState.user && userState.user.github_id !== '') ||
-                        !status.github_oauth
+                        isBound(userState.user?.github_id) || !status.github_oauth
                       }
                     >
                       {status.github_oauth ? t('绑定') : t('未启用')}
@@ -264,8 +269,7 @@ const AccountManagement = ({
                         )
                       }
                       disabled={
-                        (userState.user && userState.user.oidc_id !== '') ||
-                        !status.oidc_enabled
+                        isBound(userState.user?.oidc_id) || !status.oidc_enabled
                       }
                     >
                       {status.oidc_enabled ? t('绑定') : t('未启用')}
@@ -298,26 +302,56 @@ const AccountManagement = ({
                   </div>
                   <div className='flex-shrink-0'>
                     {status.telegram_oauth ? (
-                      userState.user.telegram_id !== '' ? (
-                        <Button disabled={true} size='small'>
+                      isBound(userState.user?.telegram_id) ? (
+                        <Button
+                          disabled
+                          size='small'
+                          type='primary'
+                          theme='outline'
+                        >
                           {t('已绑定')}
                         </Button>
                       ) : (
-                        <div className='scale-75'>
-                          <TelegramLoginButton
-                            dataAuthUrl='/api/oauth/telegram/bind'
-                            botName={status.telegram_bot_name}
-                          />
-                        </div>
+                        <Button
+                          type='primary'
+                          theme='outline'
+                          size='small'
+                          onClick={() => setShowTelegramBindModal(true)}
+                        >
+                          {t('绑定')}
+                        </Button>
                       )
                     ) : (
-                      <Button disabled={true} size='small'>
+                      <Button
+                        disabled
+                        size='small'
+                        type='primary'
+                        theme='outline'
+                      >
                         {t('未启用')}
                       </Button>
                     )}
                   </div>
                 </div>
               </Card>
+              <Modal
+                title={t('绑定 Telegram')}
+                visible={showTelegramBindModal}
+                onCancel={() => setShowTelegramBindModal(false)}
+                footer={null}
+              >
+                <div className='my-3 text-sm text-gray-600'>
+                  {t('点击下方按钮通过 Telegram 完成绑定')}
+                </div>
+                <div className='flex justify-center'>
+                  <div className='scale-90'>
+                    <TelegramLoginButton
+                      dataAuthUrl='/api/oauth/telegram/bind'
+                      botName={status.telegram_bot_name}
+                    />
+                  </div>
+                </div>
+              </Modal>
 
               {/* LinuxDO绑定 */}
               <Card className='!rounded-xl'>
@@ -350,8 +384,7 @@ const AccountManagement = ({
                         onLinuxDOOAuthClicked(status.linuxdo_client_id)
                       }
                       disabled={
-                        (userState.user && userState.user.linux_do_id !== '') ||
-                        !status.linuxdo_oauth
+                        isBound(userState.user?.linux_do_id) || !status.linuxdo_oauth
                       }
                     >
                       {status.linuxdo_oauth ? t('绑定') : t('未启用')}
