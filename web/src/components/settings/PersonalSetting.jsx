@@ -85,6 +85,9 @@ const PersonalSetting = () => {
       if (parsed.turnstile_check) {
         setTurnstileEnabled(true);
         setTurnstileSiteKey(parsed.turnstile_site_key);
+      } else {
+        setTurnstileEnabled(false);
+        setTurnstileSiteKey('');
       }
     }
     // Always refresh status from server to avoid stale flags (e.g., admin just enabled OAuth)
@@ -98,6 +101,9 @@ const PersonalSetting = () => {
           if (data.turnstile_check) {
             setTurnstileEnabled(true);
             setTurnstileSiteKey(data.turnstile_site_key);
+          } else {
+            setTurnstileEnabled(false);
+            setTurnstileSiteKey('');
           }
         }
       } catch (e) {
