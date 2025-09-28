@@ -19,4 +19,12 @@ const (
 type ChannelOtherSettings struct {
 	AzureResponsesVersion string        `json:"azure_responses_version,omitempty"`
 	VertexKeyType         VertexKeyType `json:"vertex_key_type,omitempty"` // "json" or "api_key"
+	OpenRouterEnterprise  *bool         `json:"openrouter_enterprise,omitempty"`
+}
+
+func (s *ChannelOtherSettings) IsOpenRouterEnterprise() bool {
+	if s == nil || s.OpenRouterEnterprise == nil {
+		return false
+	}
+	return *s.OpenRouterEnterprise
 }
