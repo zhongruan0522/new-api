@@ -56,8 +56,10 @@ import {
 } from '../../../../helpers';
 import ModelSelectModal from './ModelSelectModal';
 import JSONEditor from '../../../common/ui/JSONEditor';
-import TwoFactorAuthModal from '../../../common/modals/TwoFactorAuthModal';
+import SecureVerificationModal from '../../../common/modals/SecureVerificationModal';
 import ChannelKeyDisplay from '../../../common/ui/ChannelKeyDisplay';
+import { useSecureVerification } from '../../../../hooks/common/useSecureVerification';
+import { createApiCalls } from '../../../../services/secureVerification';
 import {
   IconSave,
   IconClose,
@@ -193,41 +195,41 @@ const EditChannelModal = (props) => {
   const [keyMode, setKeyMode] = useState('append'); // 密钥模式：replace（覆盖）或 append（追加）
   const [isEnterpriseAccount, setIsEnterpriseAccount] = useState(false); // 是否为企业账户
 
-  // 2FA验证查看密钥相关状态
-  const [twoFAState, setTwoFAState] = useState({
+  // 密钥显示状态
+  const [keyDisplayState, setKeyDisplayState] = useState({
     showModal: false,
-    code: '',
-    loading: false,
-    showKey: false,
     keyData: '',
   });
 
-  // 专门的2FA验证状态（用于TwoFactorAuthModal）
-  const [show2FAVerifyModal, setShow2FAVerifyModal] = useState(false);
-  const [verifyCode, setVerifyCode] = useState('');
-  const [verifyLoading, setVerifyLoading] = useState(false);
+  // 使用通用安全验证 Hook
+  const {
+    isModalVisible,
+    verificationMethods,
+    verificationState,
+    startVerification,
+    executeVerification,
+    cancelVerification,
+    setVerificationCode,
+    switchVerificationMethod,
+  } = useSecureVerification({
+    onSuccess: (result) => {
+      // 验证成功后显示密钥
+      if (result.success && result.data?.key) {
+        setKeyDisplayState({
+          showModal: true,
+          keyData: result.data.key,
+        });
+      }
+    },
+    successMessage: t('密钥获取成功'),
+  });
 
-  // 2FA状态更新辅助函数
-  const updateTwoFAState = (updates) => {
-    setTwoFAState((prev) => ({ ...prev, ...updates }));
-  };
-
-  // 重置2FA状态
-  const resetTwoFAState = () => {
-    setTwoFAState({
+  // 重置密钥显示状态
+  const resetKeyDisplayState = () => {
+    setKeyDisplayState({
       showModal: false,
-      code: '',
-      loading: false,
-      showKey: false,
       keyData: '',
     });
-  };
-
-  // 重置2FA验证状态
-  const reset2FAVerifyState = () => {
-    setShow2FAVerifyModal(false);
-    setVerifyCode('');
-    setVerifyLoading(false);
   };
 
   // 渠道额外设置状态
@@ -602,40 +604,29 @@ const EditChannelModal = (props) => {
     }
   };
 
-  // 使用TwoFactorAuthModal的验证函数
-  const handleVerify2FA = async () => {
-    if (!verifyCode) {
-      showError(t('请输入验证码或备用码'));
-      return;
-    }
-
-    setVerifyLoading(true);
+  // 显示安全验证模态框并开始验证流程
+  const handleShow2FAModal = async () => {
     try {
-      const res = await API.post(`/api/channel/${channelId}/key`, {
-        code: verifyCode,
+      console.log('=== handleShow2FAModal called ===');
+      console.log('channelId:', channelId);
+      console.log('startVerification function:', typeof startVerification);
+      
+      // 测试模态框状态
+      console.log('Current modal state:', isModalVisible);
+      
+      const apiCall = createApiCalls.viewChannelKey(channelId);
+      console.log('apiCall created:', typeof apiCall);
+      
+      const result = await startVerification(apiCall, {
+        title: t('查看渠道密钥'),
+        description: t('为了保护账户安全，请验证您的身份。'),
+        preferredMethod: 'passkey', // 优先使用 Passkey
       });
-      if (res.data.success) {
-        // 验证成功，显示密钥
-        updateTwoFAState({
-          showModal: true,
-          showKey: true,
-          keyData: res.data.data.key,
-        });
-        reset2FAVerifyState();
-        showSuccess(t('验证成功'));
-      } else {
-        showError(res.data.message);
-      }
+      console.log('startVerification result:', result);
     } catch (error) {
-      showError(t('获取密钥失败'));
-    } finally {
-      setVerifyLoading(false);
+      console.error('handleShow2FAModal error:', error);
+      showError(error.message || t('启动验证失败'));
     }
-  };
-
-  // 显示2FA验证模态框 - 使用TwoFactorAuthModal
-  const handleShow2FAModal = () => {
-    setShow2FAVerifyModal(true);
   };
 
   useEffect(() => {
@@ -741,10 +732,8 @@ const EditChannelModal = (props) => {
     }
     // 重置本地输入，避免下次打开残留上一次的 JSON 字段值
     setInputs(getInitValues());
-    // 重置2FA状态
-    resetTwoFAState();
-    // 重置2FA验证状态
-    reset2FAVerifyState();
+    // 重置密钥显示状态
+    resetKeyDisplayState();
   };
 
   const handleVertexUploadChange = ({ fileList }) => {
@@ -2498,17 +2487,17 @@ const EditChannelModal = (props) => {
           onVisibleChange={(visible) => setIsModalOpenurl(visible)}
         />
       </SideSheet>
-      {/* 使用TwoFactorAuthModal组件进行2FA验证 */}
-      <TwoFactorAuthModal
-        visible={show2FAVerifyModal}
-        code={verifyCode}
-        loading={verifyLoading}
-        onCodeChange={setVerifyCode}
-        onVerify={handleVerify2FA}
-        onCancel={reset2FAVerifyState}
-        title={t('查看渠道密钥')}
-        description={t('为了保护账户安全，请验证您的两步验证码。')}
-        placeholder={t('请输入验证码或备用码')}
+      {/* 使用通用安全验证模态框 */}
+      <SecureVerificationModal
+        visible={isModalVisible}
+        verificationMethods={verificationMethods}
+        verificationState={verificationState}
+        onVerify={executeVerification}
+        onCancel={cancelVerification}
+        onCodeChange={setVerificationCode}
+        onMethodSwitch={switchVerificationMethod}
+        title={verificationState.title}
+        description={verificationState.description}
       />
 
       {/* 使用ChannelKeyDisplay组件显示密钥 */}
@@ -2531,10 +2520,10 @@ const EditChannelModal = (props) => {
             {t('渠道密钥信息')}
           </div>
         }
-        visible={twoFAState.showModal && twoFAState.showKey}
-        onCancel={resetTwoFAState}
+        visible={keyDisplayState.showModal}
+        onCancel={resetKeyDisplayState}
         footer={
-          <Button type='primary' onClick={resetTwoFAState}>
+          <Button type='primary' onClick={resetKeyDisplayState}>
             {t('完成')}
           </Button>
         }
@@ -2542,7 +2531,7 @@ const EditChannelModal = (props) => {
         style={{ maxWidth: '90vw' }}
       >
         <ChannelKeyDisplay
-          keyData={twoFAState.keyData}
+          keyData={keyDisplayState.keyData}
           showSuccessIcon={true}
           successText={t('密钥获取成功')}
           showWarning={true}
