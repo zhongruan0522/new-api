@@ -34,24 +34,39 @@ export class SecureVerificationService {
    */
   static async checkAvailableVerificationMethods() {
     try {
-      console.log('Checking user verification methods...');
       const [twoFAResponse, passkeyResponse, passkeySupported] = await Promise.all([
         API.get('/api/user/2fa/status'),
         API.get('/api/user/passkey'),
         isPasskeySupported()
       ]);
 
-      console.log('2FA response:', twoFAResponse);
-      console.log('Passkey response:', passkeyResponse);
-      console.log('Passkey browser support:', passkeySupported);
+      console.log('=== DEBUGGING VERIFICATION METHODS ===');
+      console.log('2FA Response:', JSON.stringify(twoFAResponse, null, 2));
+      console.log('Passkey Response:', JSON.stringify(passkeyResponse, null, 2));
+      
+      const has2FA = twoFAResponse.data?.success && twoFAResponse.data?.data?.enabled === true;
+      const hasPasskey = passkeyResponse.data?.success && passkeyResponse.data?.data?.enabled === true;
+      
+      console.log('has2FA calculation:', {
+        success: twoFAResponse.data?.success,
+        dataExists: !!twoFAResponse.data?.data,
+        enabled: twoFAResponse.data?.data?.enabled,
+        result: has2FA
+      });
+      
+      console.log('hasPasskey calculation:', {
+        success: passkeyResponse.data?.success,
+        dataExists: !!passkeyResponse.data?.data,
+        enabled: passkeyResponse.data?.data?.enabled,
+        result: hasPasskey
+      });
 
       const result = {
-        has2FA: twoFAResponse.success && twoFAResponse.data?.enabled === true,
-        hasPasskey: passkeyResponse.success && (passkeyResponse.data?.enabled === true || passkeyResponse.data?.status === 'enabled' || passkeyResponse.data !== null),
+        has2FA,
+        hasPasskey,
         passkeySupported
       };
       
-      console.log('Final verification methods result:', result);
       return result;
     } catch (error) {
       console.error('Failed to check verification methods:', error);

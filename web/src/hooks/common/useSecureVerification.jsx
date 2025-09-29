@@ -81,17 +81,13 @@ export const useSecureVerification = ({
 
   // 开始验证流程
   const startVerification = useCallback(async (apiCall, options = {}) => {
-    console.log('startVerification called:', { apiCall, options });
     const { preferredMethod, title, description } = options;
     
     // 检查验证方式
-    console.log('Checking verification methods...');
     const methods = await checkVerificationMethods();
-    console.log('Verification methods:', methods);
     
     if (!methods.has2FA && !methods.hasPasskey) {
       const errorMessage = t('您需要先启用两步验证或 Passkey 才能执行此操作');
-      console.error('No verification methods available:', errorMessage);
       showError(errorMessage);
       onError?.(new Error(errorMessage));
       return false;
@@ -106,7 +102,6 @@ export const useSecureVerification = ({
         defaultMethod = '2fa';
       }
     }
-    console.log('Selected verification method:', defaultMethod);
 
     setVerificationState(prev => ({
       ...prev,
@@ -116,7 +111,6 @@ export const useSecureVerification = ({
       description
     }));
     setIsModalVisible(true);
-    console.log('Modal should be visible now');
     
     return true;
   }, [checkVerificationMethods, onError, t]);
