@@ -837,6 +837,7 @@
   "确定要充值 $": "Confirmer la recharge de $",
   "微信/支付宝 实付金额：": "Montant du paiement réel WeChat/Alipay :",
   "Stripe 实付金额：": "Montant du paiement réel Stripe :",
+  "允许在 Stripe 支付中输入促销码": "Autoriser la saisie de codes promotionnels lors du paiement Stripe",
   "支付中...": "Paiement en cours",
   "支付宝": "Alipay",
   "收益统计": "Statistiques sur les revenus",
