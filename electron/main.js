@@ -110,49 +110,6 @@ function waitForServer(resolve, reject, retries = 30) {
   req.end();
 }
 
-function createTray() {
-  tray = new Tray(path.join(__dirname, 'tray-icon.png'));
-
-  const contextMenu = Menu.buildFromTemplate([
-    {
-      label: 'Show New API',
-      click: () => {
-        if (mainWindow === null) {
-          createWindow();
-        } else {
-          mainWindow.show();
-          if (process.platform === 'darwin') {
-            app.dock.show();
-          }
-        }
-      }
-    },
-    { type: 'separator' },
-    {
-      label: 'Quit',
-      click: () => {
-        app.isQuitting = true;
-        app.quit();
-      }
-    }
-  ]);
-
-  tray.setToolTip('New API');
-  tray.setContextMenu(contextMenu);
-
-  // On macOS, clicking the tray icon shows the menu
-  tray.on('click', () => {
-    if (mainWindow === null) {
-      createWindow();
-    } else {
-      mainWindow.isVisible() ? mainWindow.hide() : mainWindow.show();
-      if (mainWindow.isVisible() && process.platform === 'darwin') {
-        app.dock.show();
-      }
-    }
-  });
-}
-
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1400,
@@ -185,6 +142,49 @@ function createWindow() {
 
   mainWindow.on('closed', () => {
     mainWindow = null;
+  });
+}
+
+function createTray() {
+  tray = new Tray(path.join(__dirname, 'tray-iconTemplate.png'));
+
+  const contextMenu = Menu.buildFromTemplate([
+    {
+      label: 'Show New API',
+      click: () => {
+        if (mainWindow === null) {
+          createWindow();
+        } else {
+          mainWindow.show();
+          if (process.platform === 'darwin') {
+            app.dock.show();
+          }
+        }
+      }
+    },
+    { type: 'separator' },
+    {
+      label: 'Quit',
+      click: () => {
+        app.isQuitting = true;
+        app.quit();
+      }
+    }
+  ]);
+
+  tray.setToolTip('New API');
+  tray.setContextMenu(contextMenu);
+
+  // On macOS, clicking the tray icon shows the window
+  tray.on('click', () => {
+    if (mainWindow === null) {
+      createWindow();
+    } else {
+      mainWindow.isVisible() ? mainWindow.hide() : mainWindow.show();
+      if (mainWindow.isVisible() && process.platform === 'darwin') {
+        app.dock.show();
+      }
+    }
   });
 }
 
