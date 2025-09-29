@@ -37,7 +37,9 @@
     "files": [
       "main.js",
       "preload.js",
-      "icon.png"
+      "icon.png",
+      "tray-iconTemplate.png",
+      "tray-iconTemplate@2x.png"
     ],
     "extraResources": [
       {
