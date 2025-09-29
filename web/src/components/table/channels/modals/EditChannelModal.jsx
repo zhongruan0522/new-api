@@ -85,6 +85,26 @@ const REGION_EXAMPLE = {
   'claude-3-5-sonnet-20240620': 'europe-west1',
 };
 
+// 支持并且已适配通过接口获取模型列表的渠道类型
+const MODEL_FETCHABLE_TYPES = new Set([
+  1,
+  4,
+  14,
+  34,
+  17,
+  26,
+  24,
+  47,
+  25,
+  20,
+  23,
+  31,
+  35,
+  40,
+  42,
+  48,
+]);
+
 function type2secretPrompt(type) {
   // inputs.type === 15 ? '按照如下格式输入：APIKey|SecretKey' : (inputs.type === 18 ? '按照如下格式输入：APPID|APISecret|APIKey' : '请输入渠道对应的鉴权密钥')
   switch (type) {
@@ -144,6 +164,8 @@ const EditChannelModal = (props) => {
     settings: '',
     // 仅 Vertex: 密钥格式（存入 settings.vertex_key_type）
     vertex_key_type: 'json',
+    // 企业账户设置
+    is_enterprise_account: false,
   };
   const [batch, setBatch] = useState(false);
   const [multiToSingle, setMultiToSingle] = useState(false);
@@ -169,6 +191,7 @@ const EditChannelModal = (props) => {
   const [channelSearchValue, setChannelSearchValue] = useState('');
   const [useManualInput, setUseManualInput] = useState(false); // 是否使用手动输入模式
   const [keyMode, setKeyMode] = useState('append'); // 密钥模式：replace（覆盖）或 append（追加）
+  const [isEnterpriseAccount, setIsEnterpriseAccount] = useState(false); // 是否为企业账户
 
   // 2FA验证查看密钥相关状态
   const [twoFAState, setTwoFAState] = useState({
@@ -215,7 +238,7 @@ const EditChannelModal = (props) => {
     pass_through_body_enabled: false,
     system_prompt: '',
   });
-  const showApiConfigCard = inputs.type !== 45; // 控制是否显示 API 配置卡片（仅当渠道类型不是 豆包 时显示）
+  const showApiConfigCard = true; // 控制是否显示 API 配置卡片
   const getInitValues = () => ({ ...originInputs });
 
   // 处理渠道额外设置的更新
@@ -322,6 +345,10 @@ const EditChannelModal = (props) => {
         case 36:
           localModels = ['suno_music', 'suno_lyrics'];
           break;
+        case 45:
+          localModels = getChannelModels(value);
+          setInputs((prevInputs) => ({ ...prevInputs, base_url: 'https://ark.cn-beijing.volces.com' }));
+          break;
         default:
           localModels = getChannelModels(value);
           break;
@@ -413,15 +440,27 @@ const EditChannelModal = (props) => {
             parsedSettings.azure_responses_version || '';
           // 读取 Vertex 密钥格式
           data.vertex_key_type = parsedSettings.vertex_key_type || 'json';
+          // 读取企业账户设置
+          data.is_enterprise_account = parsedSettings.openrouter_enterprise === true;
         } catch (error) {
           console.error('解析其他设置失败:', error);
           data.azure_responses_version = '';
           data.region = '';
           data.vertex_key_type = 'json';
+          data.is_enterprise_account = false;
         }
       } else {
         // 兼容历史数据：老渠道没有 settings 时，默认按 json 展示
         data.vertex_key_type = 'json';
+        data.is_enterprise_account = false;
+      }
+
+      if (
+        data.type === 45 &&
+        (!data.base_url ||
+          (typeof data.base_url === 'string' && data.base_url.trim() === ''))
+      ) {
+        data.base_url = 'https://ark.cn-beijing.volces.com';
       }
 
       setInputs(data);
@@ -433,6 +472,8 @@ const EditChannelModal = (props) => {
       } else {
         setAutoBan(true);
       }
+      // 同步企业账户状态
+      setIsEnterpriseAccount(data.is_enterprise_account || false);
       setBasicModels(getChannelModels(data.type));
       // 同步更新channelSettings状态显示
       setChannelSettings({
@@ -692,6 +733,8 @@ const EditChannelModal = (props) => {
     });
     // 重置密钥模式状态
     setKeyMode('append');
+    // 重置企业账户状态
+    setIsEnterpriseAccount(false);
     // 清空表单中的key_mode字段
     if (formApiRef.current) {
       formApiRef.current.setValue('key_mode', undefined);
@@ -802,7 +845,9 @@ const EditChannelModal = (props) => {
               delete localInputs.key;
             }
           } else {
-            localInputs.key = batch ? JSON.stringify(keys) : JSON.stringify(keys[0]);
+            localInputs.key = batch
+              ? JSON.stringify(keys)
+              : JSON.stringify(keys[0]);
           }
         }
       }
@@ -820,6 +865,10 @@ const EditChannelModal = (props) => {
     }
     if (!Array.isArray(localInputs.models) || localInputs.models.length === 0) {
       showInfo(t('请至少选择一个模型！'));
+      return;
+    }
+    if (localInputs.type === 45 && (!localInputs.base_url || localInputs.base_url.trim() === '')) {
+      showInfo(t('请输入API地址！'));
       return;
     }
     if (
@@ -851,6 +900,21 @@ const EditChannelModal = (props) => {
     };
     localInputs.setting = JSON.stringify(channelExtraSettings);
 
+    // 处理type === 20的企业账户设置
+    if (localInputs.type === 20) {
+      let settings = {};
+      if (localInputs.settings) {
+        try {
+          settings = JSON.parse(localInputs.settings);
+        } catch (error) {
+          console.error('解析settings失败:', error);
+        }
+      }
+      // 设置企业账户标识，无论是true还是false都要传到后端
+      settings.openrouter_enterprise = localInputs.is_enterprise_account === true;
+      localInputs.settings = JSON.stringify(settings);
+    }
+
     // 清理不需要发送到后端的字段
     delete localInputs.force_format;
     delete localInputs.thinking_to_content;
@@ -858,6 +922,7 @@ const EditChannelModal = (props) => {
     delete localInputs.pass_through_body_enabled;
     delete localInputs.system_prompt;
     delete localInputs.system_prompt_override;
+    delete localInputs.is_enterprise_account;
     // 顶层的 vertex_key_type 不应发送给后端
     delete localInputs.vertex_key_type;
 
@@ -896,6 +961,56 @@ const EditChannelModal = (props) => {
       props.handleClose();
     } else {
       showError(message);
+    }
+  };
+
+  // 密钥去重函数
+  const deduplicateKeys = () => {
+    const currentKey = formApiRef.current?.getValue('key') || inputs.key || '';
+
+    if (!currentKey.trim()) {
+      showInfo(t('请先输入密钥'));
+      return;
+    }
+
+    // 按行分割密钥
+    const keyLines = currentKey.split('\n');
+    const beforeCount = keyLines.length;
+
+    // 使用哈希表去重，保持原有顺序
+    const keySet = new Set();
+    const deduplicatedKeys = [];
+
+    keyLines.forEach((line) => {
+      const trimmedLine = line.trim();
+      if (trimmedLine && !keySet.has(trimmedLine)) {
+        keySet.add(trimmedLine);
+        deduplicatedKeys.push(trimmedLine);
+      }
+    });
+
+    const afterCount = deduplicatedKeys.length;
+    const deduplicatedKeyText = deduplicatedKeys.join('\n');
+
+    // 更新表单和状态
+    if (formApiRef.current) {
+      formApiRef.current.setValue('key', deduplicatedKeyText);
+    }
+    handleInputChange('key', deduplicatedKeyText);
+
+    // 显示去重结果
+    const message = t(
+      '去重完成：去重前 {{before}} 个密钥，去重后 {{after}} 个密钥',
+      {
+        before: beforeCount,
+        after: afterCount,
+      },
+    );
+
+    if (beforeCount === afterCount) {
+      showInfo(t('未发现重复密钥'));
+    } else {
+      showSuccess(message);
     }
   };
 
@@ -994,24 +1109,41 @@ const EditChannelModal = (props) => {
         </Checkbox>
       )}
       {batch && (
-        <Checkbox
-          disabled={isEdit}
-          checked={multiToSingle}
-          onChange={() => {
-            setMultiToSingle((prev) => !prev);
-            setInputs((prev) => {
-              const newInputs = { ...prev };
-              if (!multiToSingle) {
-                newInputs.multi_key_mode = multiKeyMode;
-              } else {
-                delete newInputs.multi_key_mode;
-              }
-              return newInputs;
-            });
-          }}
-        >
-          {t('密钥聚合模式')}
-        </Checkbox>
+        <>
+          <Checkbox
+            disabled={isEdit}
+            checked={multiToSingle}
+            onChange={() => {
+              setMultiToSingle((prev) => {
+                const nextValue = !prev;
+                setInputs((prevInputs) => {
+                  const newInputs = { ...prevInputs };
+                  if (nextValue) {
+                    newInputs.multi_key_mode = multiKeyMode;
+                  } else {
+                    delete newInputs.multi_key_mode;
+                  }
+                  return newInputs;
+                });
+                return nextValue;
+              });
+            }}
+          >
+            {t('密钥聚合模式')}
+          </Checkbox>
+
+          {inputs.type !== 41 && (
+            <Button
+              size='small'
+              type='tertiary'
+              theme='outline'
+              onClick={deduplicateKeys}
+              style={{ textDecoration: 'underline' }}
+            >
+              {t('密钥去重')}
+            </Button>
+          )}
+        </>
       )}
     </Space>
   ) : null;
@@ -1175,6 +1307,21 @@ const EditChannelModal = (props) => {
                     onChange={(value) => handleInputChange('type', value)}
                   />
 
+                  {inputs.type === 20 && (
+                    <Form.Switch
+                      field='is_enterprise_account'
+                      label={t('是否为企业账户')}
+                      checkedText={t('是')}
+                      uncheckedText={t('否')}
+                      onChange={(value) => {
+                        setIsEnterpriseAccount(value);
+                        handleInputChange('is_enterprise_account', value);
+                      }}
+                      extraText={t('企业账户为特殊返回格式，需要特殊处理，如果非企业账户，请勿勾选')}
+                      initValue={inputs.is_enterprise_account}
+                    />
+                  )}
+
                   <Form.Input
                     field='name'
                     label={t('名称')}
@@ -1198,7 +1345,10 @@ const EditChannelModal = (props) => {
                       value={inputs.vertex_key_type || 'json'}
                       onChange={(value) => {
                         // 更新设置中的 vertex_key_type
-                        handleChannelOtherSettingsChange('vertex_key_type', value);
+                        handleChannelOtherSettingsChange(
+                          'vertex_key_type',
+                          value,
+                        );
                         // 切换为 api_key 时，关闭批量与手动/文件切换，并清理已选文件
                         if (value === 'api_key') {
                           setBatch(false);
@@ -1218,7 +1368,8 @@ const EditChannelModal = (props) => {
                     />
                   )}
                   {batch ? (
-                    inputs.type === 41 && (inputs.vertex_key_type || 'json') === 'json' ? (
+                    inputs.type === 41 &&
+                    (inputs.vertex_key_type || 'json') === 'json' ? (
                       <Form.Upload
                         field='vertex_files'
                         label={t('密钥文件 (.json)')}
@@ -1254,7 +1405,7 @@ const EditChannelModal = (props) => {
                         autoComplete='new-password'
                         onChange={(value) => handleInputChange('key', value)}
                         extraText={
-                          <div className='flex items-center gap-2'>
+                          <div className='flex items-center gap-2 flex-wrap'>
                             {isEdit &&
                               isMultiKeyChannel &&
                               keyMode === 'append' && (
@@ -1282,7 +1433,8 @@ const EditChannelModal = (props) => {
                     )
                   ) : (
                     <>
-                      {inputs.type === 41 && (inputs.vertex_key_type || 'json') === 'json' ? (
+                      {inputs.type === 41 &&
+                      (inputs.vertex_key_type || 'json') === 'json' ? (
                         <>
                           {!batch && (
                             <div className='flex items-center justify-between mb-3'>
@@ -1789,6 +1941,30 @@ const EditChannelModal = (props) => {
                         />
                       </div>
                     )}
+
+                    {inputs.type === 45 && (
+                        <div>
+                          <Form.Select
+                              field='base_url'
+                              label={t('API地址')}
+                              placeholder={t('请选择API地址')}
+                              onChange={(value) =>
+                                  handleInputChange('base_url', value)
+                              }
+                              optionList={[
+                                {
+                                  value: 'https://ark.cn-beijing.volces.com',
+                                  label: 'https://ark.cn-beijing.volces.com'
+                                },
+                                {
+                                  value: 'https://ark.ap-southeast.bytepluses.com',
+                                  label: 'https://ark.ap-southeast.bytepluses.com'
+                                }
+                              ]}
+                              defaultValue='https://ark.cn-beijing.volces.com'
+                          />
+                        </div>
+                    )}
                   </Card>
                 )}
 
@@ -1872,13 +2048,15 @@ const EditChannelModal = (props) => {
                         >
                           {t('填入所有模型')}
                         </Button>
-                        <Button
-                          size='small'
-                          type='tertiary'
-                          onClick={() => fetchUpstreamModelList('models')}
-                        >
-                          {t('获取模型列表')}
-                        </Button>
+                        {MODEL_FETCHABLE_TYPES.has(inputs.type) && (
+                          <Button
+                            size='small'
+                            type='tertiary'
+                            onClick={() => fetchUpstreamModelList('models')}
+                          >
+                            {t('获取模型列表')}
+                          </Button>
+                        )}
                         <Button
                           size='small'
                           type='warning'

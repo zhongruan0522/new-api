@@ -23,6 +23,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// https://cloud.google.com/vertex-ai/generative-ai/docs/model-reference/inference?hl=zh-cn#blob
 var geminiSupportedMimeTypes = map[string]bool{
 	"application/pdf": true,
 	"audio/mpeg":      true,
@@ -30,6 +31,7 @@ var geminiSupportedMimeTypes = map[string]bool{
 	"audio/wav":       true,
 	"image/png":       true,
 	"image/jpeg":      true,
+	"image/webp":      true,
 	"text/plain":      true,
 	"video/mov":       true,
 	"video/mpeg":      true,
@@ -243,6 +245,7 @@ func CovertGemini2OpenAI(c *gin.Context, textRequest dto.GeneralOpenAIRequest, i
 		functions := make([]dto.FunctionRequest, 0, len(textRequest.Tools))
 		googleSearch := false
 		codeExecution := false
+		urlContext := false
 		for _, tool := range textRequest.Tools {
 			if tool.Function.Name == "googleSearch" {
 				googleSearch = true
@@ -250,6 +253,10 @@ func CovertGemini2OpenAI(c *gin.Context, textRequest dto.GeneralOpenAIRequest, i
 			}
 			if tool.Function.Name == "codeExecution" {
 				codeExecution = true
+				continue
+			}
+			if tool.Function.Name == "urlContext" {
+				urlContext = true
 				continue
 			}
 			if tool.Function.Parameters != nil {
@@ -277,6 +284,11 @@ func CovertGemini2OpenAI(c *gin.Context, textRequest dto.GeneralOpenAIRequest, i
 		if googleSearch {
 			geminiTools = append(geminiTools, dto.GeminiChatTool{
 				GoogleSearch: make(map[string]string),
+			})
+		}
+		if urlContext {
+			geminiTools = append(geminiTools, dto.GeminiChatTool{
+				URLContext: make(map[string]string),
 			})
 		}
 		if len(functions) > 0 {

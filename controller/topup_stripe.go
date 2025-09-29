@@ -217,7 +217,7 @@ func genStripeLink(referenceId string, customerId string, email string, amount i
 
 	params := &stripe.CheckoutSessionParams{
 		ClientReferenceID: stripe.String(referenceId),
-		SuccessURL:        stripe.String(system_setting.ServerAddress + "/log"),
+		SuccessURL:        stripe.String(system_setting.ServerAddress + "/console/log"),
 		CancelURL:         stripe.String(system_setting.ServerAddress + "/topup"),
 		LineItems: []*stripe.CheckoutSessionLineItemParams{
 			{
@@ -225,7 +225,8 @@ func genStripeLink(referenceId string, customerId string, email string, amount i
 				Quantity: stripe.Int64(amount),
 			},
 		},
-		Mode: stripe.String(string(stripe.CheckoutSessionModePayment)),
+		Mode:                stripe.String(string(stripe.CheckoutSessionModePayment)),
+		AllowPromotionCodes: stripe.Bool(setting.StripePromotionCodesEnabled),
 	}
 
 	if "" == customerId {

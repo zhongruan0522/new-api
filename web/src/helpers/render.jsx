@@ -1030,6 +1030,8 @@ export function renderModelPrice(
   audioInputSeperatePrice = false,
   audioInputTokens = 0,
   audioInputPrice = 0,
+  imageGenerationCall = false,
+  imageGenerationCallPrice = 0,
 ) {
   const { ratio: effectiveGroupRatio, label: ratioLabel } = getEffectiveRatio(
     groupRatio,
@@ -1072,7 +1074,8 @@ export function renderModelPrice(
       (audioInputTokens / 1000000) * audioInputPrice * groupRatio +
       (completionTokens / 1000000) * completionRatioPrice * groupRatio +
       (webSearchCallCount / 1000) * webSearchPrice * groupRatio +
-      (fileSearchCallCount / 1000) * fileSearchPrice * groupRatio;
+      (fileSearchCallCount / 1000) * fileSearchPrice * groupRatio +
+      (imageGenerationCallPrice * groupRatio);
 
     return (
       <>
@@ -1134,7 +1137,13 @@ export function renderModelPrice(
               })}
             </p>
           )}
-          <p></p>
+          {imageGenerationCall && imageGenerationCallPrice > 0 && (
+            <p>
+              {i18next.t('图片生成调用：${{price}} / 1次', {
+                price: imageGenerationCallPrice,
+              })}
+            </p>
+          )}
           <p>
             {(() => {
               // 构建输入部分描述
@@ -1213,6 +1222,16 @@ export function renderModelPrice(
                       ratioType: ratioLabel,
                     },
                   )
+                  : '',
+                imageGenerationCall && imageGenerationCallPrice > 0
+                  ? i18next.t(
+                      ' + 图片生成调用 ${{price}} / 1次 * {{ratioType}} {{ratio}}',
+                      {
+                        price: imageGenerationCallPrice,
+                        ratio: groupRatio,
+                        ratioType: ratioLabel,
+                      },
+                    )
                   : '',
               ].join('');
 

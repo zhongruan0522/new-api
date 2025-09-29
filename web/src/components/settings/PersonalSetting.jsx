@@ -19,7 +19,14 @@ For commercial licensing, please contact support@quantumnous.com
 
 import React, { useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { API, copy, showError, showInfo, showSuccess } from '../../helpers';
+import {
+  API,
+  copy,
+  showError,
+  showInfo,
+  showSuccess,
+  setStatusData,
+} from '../../helpers';
 import { UserContext } from '../../context/User';
 import { Modal } from '@douyinfe/semi-ui';
 import { useTranslation } from 'react-i18next';
@@ -71,18 +78,40 @@ const PersonalSetting = () => {
   });
 
   useEffect(() => {
-    let status = localStorage.getItem('status');
-    if (status) {
-      status = JSON.parse(status);
-      setStatus(status);
-      if (status.turnstile_check) {
+    let saved = localStorage.getItem('status');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      setStatus(parsed);
+      if (parsed.turnstile_check) {
         setTurnstileEnabled(true);
-        setTurnstileSiteKey(status.turnstile_site_key);
+        setTurnstileSiteKey(parsed.turnstile_site_key);
+      } else {
+        setTurnstileEnabled(false);
+        setTurnstileSiteKey('');
       }
     }
-    getUserData().then((res) => {
-      console.log(userState);
-    });
+    // Always refresh status from server to avoid stale flags (e.g., admin just enabled OAuth)
+    (async () => {
+      try {
+        const res = await API.get('/api/status');
+        const { success, data } = res.data;
+        if (success && data) {
+          setStatus(data);
+          setStatusData(data);
+          if (data.turnstile_check) {
+            setTurnstileEnabled(true);
+            setTurnstileSiteKey(data.turnstile_site_key);
+          } else {
+            setTurnstileEnabled(false);
+            setTurnstileSiteKey('');
+          }
+        }
+      } catch (e) {
+        // ignore and keep local status
+      }
+    })();
+
+    getUserData();
   }, []);
 
   useEffect(() => {

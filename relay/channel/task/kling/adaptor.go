@@ -117,6 +117,11 @@ func (a *TaskAdaptor) ValidateRequestAndSetAction(c *gin.Context, info *relaycom
 // BuildRequestURL constructs the upstream URL.
 func (a *TaskAdaptor) BuildRequestURL(info *relaycommon.RelayInfo) (string, error) {
 	path := lo.Ternary(info.Action == constant.TaskActionGenerate, "/v1/videos/image2video", "/v1/videos/text2video")
+
+	if isNewAPIRelay(info.ApiKey) {
+		return fmt.Sprintf("%s/kling%s", a.baseURL, path), nil
+	}
+
 	return fmt.Sprintf("%s%s", a.baseURL, path), nil
 }
 
@@ -199,6 +204,9 @@ func (a *TaskAdaptor) FetchTask(baseUrl, key string, body map[string]any) (*http
 	}
 	path := lo.Ternary(action == constant.TaskActionGenerate, "/v1/videos/image2video", "/v1/videos/text2video")
 	url := fmt.Sprintf("%s%s/%s", baseUrl, path, taskID)
+	if isNewAPIRelay(key) {
+		url = fmt.Sprintf("%s/kling%s/%s", baseUrl, path, taskID)
+	}
 
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
@@ -304,8 +312,13 @@ func (a *TaskAdaptor) createJWTToken() (string, error) {
 //}
 
 func (a *TaskAdaptor) createJWTTokenWithKey(apiKey string) (string, error) {
-
+	if isNewAPIRelay(apiKey) {
+		return apiKey, nil // new api relay
+	}
 	keyParts := strings.Split(apiKey, "|")
+	if len(keyParts) != 2 {
+		return "", errors.New("invalid api_key, required format is accessKey|secretKey")
+	}
 	accessKey := strings.TrimSpace(keyParts[0])
 	if len(keyParts) == 1 {
 		return accessKey, nil
@@ -351,4 +364,8 @@ func (a *TaskAdaptor) ParseTaskResult(respBody []byte) (*relaycommon.TaskInfo, e
 		taskInfo.Url = video.Url
 	}
 	return taskInfo, nil
+}
+
+func isNewAPIRelay(apiKey string) bool {
+	return strings.HasPrefix(apiKey, "sk-")
 }
