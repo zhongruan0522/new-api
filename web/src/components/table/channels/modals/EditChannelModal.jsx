@@ -455,6 +455,14 @@ const EditChannelModal = (props) => {
         data.is_enterprise_account = false;
       }
 
+      if (
+        data.type === 45 &&
+        (!data.base_url ||
+          (typeof data.base_url === 'string' && data.base_url.trim() === ''))
+      ) {
+        data.base_url = 'https://ark.cn-beijing.volces.com';
+      }
+
       setInputs(data);
       if (formApiRef.current) {
         formApiRef.current.setValues(data);
