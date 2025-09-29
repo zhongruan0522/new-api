@@ -251,6 +251,17 @@ var defaultModelRatio = map[string]float64{
 	"grok-vision-beta":      2.5,
 	"grok-3-fast-beta":      2.5,
 	"grok-3-mini-fast-beta": 0.3,
+    // submodel
+	"NousResearch/Hermes-4-405B-FP8":               0.8,
+	"Qwen/Qwen3-235B-A22B-Thinking-2507":           0.6,
+	"Qwen/Qwen3-Coder-480B-A35B-Instruct-FP8":      0.8,
+	"Qwen/Qwen3-235B-A22B-Instruct-2507":           0.3,
+	"zai-org/GLM-4.5-FP8":                          0.8,
+	"openai/gpt-oss-120b":                          0.5,
+	"deepseek-ai/DeepSeek-R1-0528":                 0.8,
+	"deepseek-ai/DeepSeek-R1":                      0.8,
+	"deepseek-ai/DeepSeek-V3-0324":                 0.8,
+	"deepseek-ai/DeepSeek-V3.1":                    0.8,
 }
 
 var defaultModelPrice = map[string]float64{
@@ -501,7 +512,6 @@ func GetCompletionRatio(name string) float64 {
 }
 
 func getHardcodedCompletionModelRatio(name string) (float64, bool) {
-	lowercaseName := strings.ToLower(name)
 
 	isReservedModel := strings.HasSuffix(name, "-all") || strings.HasSuffix(name, "-gizmo-*")
 	if isReservedModel {
@@ -594,9 +604,6 @@ func getHardcodedCompletionModelRatio(name string) (float64, bool) {
 		}
 	}
 	// hint 只给官方上4倍率，由于开源模型供应商自行定价，不对其进行补全倍率进行强制对齐
-	if lowercaseName == "deepseek-chat" || lowercaseName == "deepseek-reasoner" {
-		return 4, true
-	}
 	if strings.HasPrefix(name, "ERNIE-Speed-") {
 		return 2, true
 	} else if strings.HasPrefix(name, "ERNIE-Lite-") {
