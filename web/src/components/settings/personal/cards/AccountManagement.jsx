@@ -85,7 +85,8 @@ const AccountManagement = ({
     );
   };
   const isBound = (accountId) => Boolean(accountId);
-  const [showTelegramBindModal, setShowTelegramBindModal] = React.useState(false);
+  const [showTelegramBindModal, setShowTelegramBindModal] =
+    React.useState(false);
 
   return (
     <Card className='!rounded-2xl'>
@@ -226,7 +227,8 @@ const AccountManagement = ({
                         onGitHubOAuthClicked(status.github_client_id)
                       }
                       disabled={
-                        isBound(userState.user?.github_id) || !status.github_oauth
+                        isBound(userState.user?.github_id) ||
+                        !status.github_oauth
                       }
                     >
                       {status.github_oauth ? t('绑定') : t('未启用')}
@@ -384,7 +386,8 @@ const AccountManagement = ({
                         onLinuxDOOAuthClicked(status.linuxdo_client_id)
                       }
                       disabled={
-                        isBound(userState.user?.linux_do_id) || !status.linuxdo_oauth
+                        isBound(userState.user?.linux_do_id) ||
+                        !status.linuxdo_oauth
                       }
                     >
                       {status.linuxdo_oauth ? t('绑定') : t('未启用')}
