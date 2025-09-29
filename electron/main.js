@@ -1,4 +1,4 @@
-const { app, BrowserWindow, dialog } = require('electron');
+const { app, BrowserWindow, dialog, Tray, Menu } = require('electron');
 const { spawn } = require('child_process');
 const path = require('path');
 const http = require('http');
@@ -6,6 +6,7 @@ const fs = require('fs');
 
 let mainWindow;
 let serverProcess;
+let tray = null;
 const PORT = 3000;
 
 function getBinaryPath() {
@@ -109,6 +110,49 @@ function waitForServer(resolve, reject, retries = 30) {
   req.end();
 }
 
+function createTray() {
+  tray = new Tray(path.join(__dirname, 'tray-icon.png'));
+
+  const contextMenu = Menu.buildFromTemplate([
+    {
+      label: 'Show New API',
+      click: () => {
+        if (mainWindow === null) {
+          createWindow();
+        } else {
+          mainWindow.show();
+          if (process.platform === 'darwin') {
+            app.dock.show();
+          }
+        }
+      }
+    },
+    { type: 'separator' },
+    {
+      label: 'Quit',
+      click: () => {
+        app.isQuitting = true;
+        app.quit();
+      }
+    }
+  ]);
+
+  tray.setToolTip('New API');
+  tray.setContextMenu(contextMenu);
+
+  // On macOS, clicking the tray icon shows the menu
+  tray.on('click', () => {
+    if (mainWindow === null) {
+      createWindow();
+    } else {
+      mainWindow.isVisible() ? mainWindow.hide() : mainWindow.show();
+      if (mainWindow.isVisible() && process.platform === 'darwin') {
+        app.dock.show();
+      }
+    }
+  });
+}
+
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1400,
@@ -128,6 +172,17 @@ function createWindow() {
     mainWindow.webContents.openDevTools();
   }
 
+  // Close to tray instead of quitting
+  mainWindow.on('close', (event) => {
+    if (!app.isQuitting) {
+      event.preventDefault();
+      mainWindow.hide();
+      if (process.platform === 'darwin') {
+        app.dock.hide();
+      }
+    }
+  });
+
   mainWindow.on('closed', () => {
     mainWindow = null;
   });
@@ -136,6 +191,7 @@ function createWindow() {
 app.whenReady().then(async () => {
   try {
     await startServer();
+    createTray();
     createWindow();
   } catch (err) {
     console.error('Failed to start application:', err);
@@ -145,9 +201,8 @@ app.whenReady().then(async () => {
 });
 
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit();
-  }
+  // Don't quit when window is closed, keep running in tray
+  // Only quit when explicitly choosing Quit from tray menu
 });
 
 app.on('activate', () => {
