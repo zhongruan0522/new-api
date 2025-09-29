@@ -18,6 +18,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/bytedance/gopkg/util/gopool"
 	"github.com/gin-contrib/sessions"
@@ -35,6 +36,7 @@ var buildFS embed.FS
 var indexPage []byte
 
 func main() {
+	startTime := time.Now()
 
 	err := InitResources()
 	if err != nil {
@@ -168,6 +170,10 @@ func main() {
 	if port == "" {
 		port = strconv.Itoa(*common.Port)
 	}
+
+	// Log startup success message
+	common.LogStartupSuccess(startTime, port)
+
 	err = server.Run(":" + port)
 	if err != nil {
 		common.FatalLog("failed to start HTTP server: " + err.Error())
