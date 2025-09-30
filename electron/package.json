@@ -41,22 +41,6 @@
       "tray-iconTemplate.png",
       "tray-iconTemplate@2x.png"
     ],
-    "extraResources": [
-      {
-        "from": "../new-api",
-        "to": "bin/new-api",
-        "filter": [
-          "**/*"
-        ]
-      },
-      {
-        "from": "../new-api.exe",
-        "to": "bin/new-api.exe",
-        "filter": [
-          "**/*"
-        ]
-      }
-    ],
     "mac": {
       "category": "public.app-category.developer-tools",
       "icon": "icon.png",
