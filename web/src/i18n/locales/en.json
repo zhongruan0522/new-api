@@ -1406,6 +1406,7 @@
   "Claude思考适配 BudgetTokens = MaxTokens * BudgetTokens 百分比": "Claude thinking adaptation BudgetTokens = MaxTokens * BudgetTokens percentage",
   "思考适配 BudgetTokens 百分比": "Thinking adaptation BudgetTokens percentage",
   "0.1-1之间的小数": "Decimal between 0.1 and 1",
+  "0.1以上的小数": "Decimal above 0.1",
   "模型相关设置": "Model related settings",
   "收起侧边栏": "Collapse sidebar",
   "展开侧边栏": "Expand sidebar",
@@ -2185,5 +2186,9 @@
   "允许的 Origins": "Allowed Origins",
   "留空将自动使用服务器地址，多个 Origin 用于支持多域名部署": "Leave blank to auto-use server address, multiple Origins for multi-domain deployment",
   "输入 Origin 后回车，如：https://example.com": "Enter Origin and press Enter, e.g.: https://example.com",
-  "保存 Passkey 设置": "Save Passkey Settings"
+  "保存 Passkey 设置": "Save Passkey Settings",
+  "黑名单": "Blacklist",
+  "common": {
+    "changeLanguage": "Change Language"
+  }
 }

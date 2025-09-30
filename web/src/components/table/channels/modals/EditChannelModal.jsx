@@ -105,6 +105,7 @@ const MODEL_FETCHABLE_TYPES = new Set([
   40,
   42,
   48,
+  43,
 ]);
 
 function type2secretPrompt(type) {
