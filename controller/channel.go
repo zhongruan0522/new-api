@@ -384,128 +384,13 @@ func GetChannel(c *gin.Context) {
 	return
 }
 
-// GetChannelKey 验证2FA或Passkey后获取渠道密钥
+// GetChannelKey 获取渠道密钥（需要通过安全验证中间件）
+// 此函数依赖 SecureVerificationRequired 中间件，确保用户已通过安全验证
 func GetChannelKey(c *gin.Context) {
-	type GetChannelKeyRequest struct {
-		Code   string `json:"code,omitempty"`   // 2FA验证码或备用码
-		Method string `json:"method,omitempty"` // 验证方式: "2fa" 或 "passkey"
-	}
-
-	var req GetChannelKeyRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		common.ApiError(c, fmt.Errorf("参数错误: %v", err))
-		return
-	}
-
 	userId := c.GetInt("id")
 	channelId, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		common.ApiError(c, fmt.Errorf("渠道ID格式错误: %v", err))
-		return
-	}
-
-	// 检查用户支持的验证方式
-	twoFA, err := model.GetTwoFAByUserId(userId)
-	if err != nil {
-		common.ApiError(c, fmt.Errorf("获取2FA信息失败: %v", err))
-		return
-	}
-
-	passkey, passkeyErr := model.GetPasskeyByUserID(userId)
-	hasPasskey := passkeyErr == nil && passkey != nil
-
-	has2FA := twoFA != nil && twoFA.IsEnabled
-
-	// 至少需要启用一种验证方式
-	if !has2FA && !hasPasskey {
-		common.ApiError(c, fmt.Errorf("用户未启用2FA或Passkey，无法查看密钥"))
-		return
-	}
-
-	// 根据请求的验证方式进行验证
-	switch req.Method {
-	case "2fa":
-		if !has2FA {
-			common.ApiError(c, fmt.Errorf("用户未启用2FA"))
-			return
-		}
-		if req.Code == "" {
-			common.ApiError(c, fmt.Errorf("2FA验证码不能为空"))
-			return
-		}
-		if !validateTwoFactorAuth(twoFA, req.Code) {
-			common.ApiError(c, fmt.Errorf("验证码或备用码错误，请重试"))
-			return
-		}
-
-	case "passkey":
-		if !hasPasskey {
-			common.ApiError(c, fmt.Errorf("用户未启用Passkey"))
-			return
-		}
-		// Passkey验证已在前端完成，这里只需要检查是否有有效的Passkey验证会话
-		// 由于Passkey验证是基于WebAuthn协议的，验证过程已经在PasskeyVerifyFinish中完成
-		// 这里我们可以设置一个临时标记来验证Passkey验证是否成功
-
-	default:
-		// 自动选择验证方式：如果提供了code则使用2FA，否则需要用户明确指定
-		if req.Code != "" && has2FA {
-			if !validateTwoFactorAuth(twoFA, req.Code) {
-				common.ApiError(c, fmt.Errorf("验证码或备用码错误，请重试"))
-				return
-			}
-		} else {
-			common.ApiError(c, fmt.Errorf("请指定验证方式(method: '2fa' 或 'passkey')"))
-			return
-		}
-	}
-
-	// 获取渠道信息（包含密钥）
-	channel, err := model.GetChannelById(channelId, true)
-	if err != nil {
-		common.ApiError(c, fmt.Errorf("获取渠道信息失败: %v", err))
-		return
-	}
-
-	if channel == nil {
-		common.ApiError(c, fmt.Errorf("渠道不存在"))
-		return
-	}
-
-	// 记录操作日志
-	logMethod := req.Method
-	if logMethod == "" {
-		logMethod = "2fa"
-	}
-	model.RecordLog(userId, model.LogTypeSystem, fmt.Sprintf("查看渠道密钥信息 (渠道ID: %d, 验证方式: %s)", channelId, logMethod))
-
-	// 统一的成功响应格式
-	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"message": "验证成功",
-		"data": map[string]interface{}{
-			"key": channel.Key,
-		},
-	})
-}
-
-// GetChannelKeyWithPasskey 使用Passkey验证查看渠道密钥
-func GetChannelKeyWithPasskey(c *gin.Context) {
-	userId := c.GetInt("id")
-	channelId, err := strconv.Atoi(c.Param("id"))
-	if err != nil {
-		common.ApiError(c, fmt.Errorf("渠道ID格式错误: %v", err))
-		return
-	}
-
-	// 检查用户是否已绑定Passkey
-	passkey, err := model.GetPasskeyByUserID(userId)
-	if err != nil {
-		common.ApiError(c, fmt.Errorf("用户未绑定Passkey，无法使用此验证方式"))
-		return
-	}
-	if passkey == nil {
-		common.ApiError(c, fmt.Errorf("用户未绑定Passkey"))
 		return
 	}
 
@@ -522,12 +407,12 @@ func GetChannelKeyWithPasskey(c *gin.Context) {
 	}
 
 	// 记录操作日志
-	model.RecordLog(userId, model.LogTypeSystem, fmt.Sprintf("查看渠道密钥信息 (渠道ID: %d, 验证方式: passkey)", channelId))
+	model.RecordLog(userId, model.LogTypeSystem, fmt.Sprintf("查看渠道密钥信息 (渠道ID: %d)", channelId))
 
 	// 返回渠道密钥
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
-		"message": "Passkey验证成功",
+		"message": "获取成功",
 		"data": map[string]interface{}{
 			"key": channel.Key,
 		},

@@ -40,6 +40,10 @@ func SetApiRouter(router *gin.Engine) {
 
 		apiRouter.POST("/stripe/webhook", controller.StripeWebhook)
 
+		// Universal secure verification routes
+		apiRouter.POST("/verify", middleware.UserAuth(), middleware.CriticalRateLimit(), controller.UniversalVerify)
+		apiRouter.GET("/verify/status", middleware.UserAuth(), controller.GetVerificationStatus)
+
 		userRoute := apiRouter.Group("/user")
 		{
 			userRoute.POST("/register", middleware.CriticalRateLimit(), middleware.TurnstileCheck(), controller.Register)
@@ -124,8 +128,7 @@ func SetApiRouter(router *gin.Engine) {
 			channelRoute.GET("/models", controller.ChannelListModels)
 			channelRoute.GET("/models_enabled", controller.EnabledListModels)
 			channelRoute.GET("/:id", controller.GetChannel)
-			channelRoute.POST("/:id/key", middleware.CriticalRateLimit(), middleware.DisableCache(), controller.GetChannelKey)
-			channelRoute.POST("/:id/key/passkey", middleware.CriticalRateLimit(), middleware.DisableCache(), controller.GetChannelKeyWithPasskey)
+			channelRoute.POST("/:id/key", middleware.CriticalRateLimit(), middleware.DisableCache(), middleware.SecureVerificationRequired(), controller.GetChannelKey)
 			channelRoute.GET("/test", controller.TestAllChannels)
 			channelRoute.GET("/test/:id", controller.TestChannel)
 			channelRoute.GET("/update_balance", controller.UpdateAllChannelsBalance)

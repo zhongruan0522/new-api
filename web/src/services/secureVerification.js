@@ -18,14 +18,15 @@ For commercial licensing, please contact support@quantumnous.com
 */
 
 import { API, showError } from '../helpers';
-import { 
-  prepareCredentialRequestOptions, 
-  buildAssertionResult, 
-  isPasskeySupported 
+import {
+  prepareCredentialRequestOptions,
+  buildAssertionResult,
+  isPasskeySupported
 } from '../helpers/passkey';
 
 /**
  * 通用安全验证服务
+ * 验证状态完全由后端 Session 控制，前端不存储任何状态
  */
 export class SecureVerificationService {
   /**
@@ -81,36 +82,41 @@ export class SecureVerificationService {
   /**
    * 执行2FA验证
    * @param {string} code - 验证码
-   * @param {Function} apiCall - API调用函数，接收 {method: '2fa', code} 参数
-   * @returns {Promise<any>} API响应结果
+   * @returns {Promise<void>}
    */
-  static async verify2FA(code, apiCall) {
+  static async verify2FA(code) {
     if (!code?.trim()) {
       throw new Error('请输入验证码或备用码');
     }
 
-    return await apiCall({
+    // 调用通用验证 API，验证成功后后端会设置 session
+    const verifyResponse = await API.post('/api/verify', {
       method: '2fa',
       code: code.trim()
     });
+
+    if (!verifyResponse.data?.success) {
+      throw new Error(verifyResponse.data?.message || '验证失败');
+    }
+
+    // 验证成功，session 已在后端设置
   }
 
   /**
    * 执行Passkey验证
-   * @param {Function} apiCall - API调用函数，接收 {method: 'passkey'} 参数
-   * @returns {Promise<any>} API响应结果
+   * @returns {Promise<void>}
    */
-  static async verifyPasskey(apiCall) {
+  static async verifyPasskey() {
     try {
       // 开始Passkey验证
       const beginResponse = await API.post('/api/user/passkey/verify/begin');
-      if (!beginResponse.success) {
-        throw new Error(beginResponse.message);
+      if (!beginResponse.data?.success) {
+        throw new Error(beginResponse.data?.message || '开始验证失败');
       }
 
       // 准备WebAuthn选项
-      const publicKey = prepareCredentialRequestOptions(beginResponse.data);
-      
+      const publicKey = prepareCredentialRequestOptions(beginResponse.data.data.options);
+
       // 执行WebAuthn验证
       const credential = await navigator.credentials.get({ publicKey });
       if (!credential) {
@@ -119,17 +125,23 @@ export class SecureVerificationService {
 
       // 构建验证结果
       const assertionResult = buildAssertionResult(credential);
-      
+
       // 完成验证
       const finishResponse = await API.post('/api/user/passkey/verify/finish', assertionResult);
-      if (!finishResponse.success) {
-        throw new Error(finishResponse.message);
+      if (!finishResponse.data?.success) {
+        throw new Error(finishResponse.data?.message || '验证失败');
       }
 
-      // 调用业务API
-      return await apiCall({
+      // 调用通用验证 API 设置 session（Passkey 验证已完成）
+      const verifyResponse = await API.post('/api/verify', {
         method: 'passkey'
       });
+
+      if (!verifyResponse.data?.success) {
+        throw new Error(verifyResponse.data?.message || '验证失败');
+      }
+
+      // 验证成功，session 已在后端设置
     } catch (error) {
       if (error.name === 'NotAllowedError') {
         throw new Error('Passkey 验证被取消或超时');
@@ -144,17 +156,15 @@ export class SecureVerificationService {
   /**
    * 通用验证方法，根据验证类型执行相应的验证流程
    * @param {string} method - 验证方式: '2fa' | 'passkey'
-   * @param {Object} params - 参数对象
-   * @param {string} params.code - 2FA验证码（当method为'2fa'时必需）
-   * @param {Function} params.apiCall - API调用函数
-   * @returns {Promise<any>} API响应结果
+   * @param {string} code - 2FA验证码（当method为'2fa'时必需）
+   * @returns {Promise<void>}
    */
-  static async verify(method, { code, apiCall }) {
+  static async verify(method, code = '') {
     switch (method) {
       case '2fa':
-        return await this.verify2FA(code, apiCall);
+        return await this.verify2FA(code);
       case 'passkey':
-        return await this.verifyPasskey(apiCall);
+        return await this.verifyPasskey();
       default:
         throw new Error(`不支持的验证方式: ${method}`);
     }
@@ -169,8 +179,10 @@ export const createApiCalls = {
    * 创建查看渠道密钥的API调用
    * @param {number} channelId - 渠道ID
    */
-  viewChannelKey: (channelId) => async (verificationData) => {
-    return await API.post(`/api/channel/${channelId}/key`, verificationData);
+  viewChannelKey: (channelId) => async () => {
+    // 新系统中，验证已通过中间件处理，直接调用 API 即可
+    const response = await API.post(`/api/channel/${channelId}/key`, {});
+    return response.data;
   },
 
   /**
@@ -179,20 +191,27 @@ export const createApiCalls = {
    * @param {string} method - HTTP方法，默认为 'POST'
    * @param {Object} extraData - 额外的请求数据
    */
-  custom: (url, method = 'POST', extraData = {}) => async (verificationData) => {
-    const data = { ...extraData, ...verificationData };
-    
+  custom: (url, method = 'POST', extraData = {}) => async () => {
+    // 新系统中，验证已通过中间件处理
+    const data = extraData;
+
+    let response;
     switch (method.toUpperCase()) {
       case 'GET':
-        return await API.get(url, { params: data });
+        response = await API.get(url, { params: data });
+        break;
       case 'POST':
-        return await API.post(url, data);
+        response = await API.post(url, data);
+        break;
       case 'PUT':
-        return await API.put(url, data);
+        response = await API.put(url, data);
+        break;
       case 'DELETE':
-        return await API.delete(url, { data });
+        response = await API.delete(url, { data });
+        break;
       default:
         throw new Error(`不支持的HTTP方法: ${method}`);
     }
+    return response.data;
   }
 };

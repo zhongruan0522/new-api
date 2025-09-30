@@ -333,6 +333,7 @@
   "通过密码注册时需要进行邮箱验证": "Email verification is required when registering via password",
   "允许通过 GitHub 账户登录 & 注册": "Allow login & registration via GitHub account",
   "允许通过微信登录 & 注册": "Allow login & registration via WeChat",
+  "允许通过 Passkey 登录 & 认证": "Allow login & authentication via Passkey",
   "允许新用户注册（此项为否时，新用户将无法以任何方式进行注册": "Allow new user registration (if this option is off, new users will not be able to register in any way",
   "启用 Turnstile 用户校验": "Enable Turnstile user verification",
   "配置 SMTP": "Configure SMTP",

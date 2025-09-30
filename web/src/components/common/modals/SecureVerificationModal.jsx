@@ -17,9 +17,9 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Modal, Button, Input, Typography, Tabs, TabPane, Card } from '@douyinfe/semi-ui';
+import { Modal, Button, Input, Typography, Tabs, TabPane, Space, Spin } from '@douyinfe/semi-ui';
 
 /**
  * 通用安全验证模态框组件
@@ -47,13 +47,27 @@ const SecureVerificationModal = ({
   description,
 }) => {
   const { t } = useTranslation();
+  const [isAnimating, setIsAnimating] = useState(false);
+  const [verifySuccess, setVerifySuccess] = useState(false);
 
   const { has2FA, hasPasskey, passkeySupported } = verificationMethods;
   const { method, loading, code } = verificationState;
 
+  useEffect(() => {
+    if (visible) {
+      setIsAnimating(true);
+      setVerifySuccess(false);
+    } else {
+      setIsAnimating(false);
+    }
+  }, [visible]);
+
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && code.trim() && !loading && method === '2fa') {
       onVerify(method, code);
+    }
+    if (e.key === 'Escape' && !loading) {
+      onCancel();
     }
   };
 
@@ -101,165 +115,165 @@ const SecureVerificationModal = ({
 
   return (
     <Modal
-      title={
-        <div className='flex items-center'>
-          <div className='w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center mr-3'>
-            <svg
-              className='w-4 h-4 text-blue-600 dark:text-blue-400'
-              fill='currentColor'
-              viewBox='0 0 20 20'
-            >
-              <path
-                fillRule='evenodd'
-                d='M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z'
-                clipRule='evenodd'
-              />
-            </svg>
-          </div>
-          {title || t('安全验证')}
-        </div>
-      }
+      title={title || t('安全验证')}
       visible={visible}
-      onCancel={onCancel}
+      onCancel={loading ? undefined : onCancel}
+      closeOnEsc={!loading}
       footer={null}
-      width={600}
-      style={{ maxWidth: '90vw' }}
+      width={460}
+      centered
+      style={{
+        maxWidth: 'calc(100vw - 32px)'
+      }}
+      bodyStyle={{
+        padding: '20px 24px'
+      }}
     >
-      <div className='space-y-6'>
-        {/* 安全提示 */}
-        <div className='bg-blue-50 dark:bg-blue-900 rounded-lg p-4'>
-          <div className='flex items-start'>
-            <svg
-              className='w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5 mr-3 flex-shrink-0'
-              fill='currentColor'
-              viewBox='0 0 20 20'
-            >
-              <path
-                fillRule='evenodd'
-                d='M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z'
-                clipRule='evenodd'
-              />
-            </svg>
-            <div>
-              <Typography.Text
-                strong
-                className='text-blue-800 dark:text-blue-200'
-              >
-                {t('安全验证')}
-              </Typography.Text>
-              <Typography.Text className='block text-blue-700 dark:text-blue-300 text-sm mt-1'>
-                {description || t('为了保护账户安全，请选择一种方式进行验证。')}
-              </Typography.Text>
-            </div>
-          </div>
-        </div>
+      <div style={{ width: '100%' }}>
+        {/* 描述信息 */}
+        {description && (
+          <Typography.Paragraph
+            type="tertiary"
+            style={{
+              margin: '0 0 20px 0',
+              fontSize: '14px',
+              lineHeight: '1.6'
+            }}
+          >
+            {description}
+          </Typography.Paragraph>
+        )}
 
         {/* 验证方式选择 */}
-        <Tabs activeKey={method} onChange={onMethodSwitch} type='card'>
+        <Tabs
+          activeKey={method}
+          onChange={onMethodSwitch}
+          type='line'
+          size='default'
+          style={{ margin: 0 }}
+        >
           {has2FA && (
             <TabPane
-              tab={
-                <div className='flex items-center space-x-2'>
-                  <svg className='w-4 h-4' fill='currentColor' viewBox='0 0 20 20'>
-                    <path d='M10 12a2 2 0 100-4 2 2 0 000 4z' />
-                    <path
-                      fillRule='evenodd'
-                      d='M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z'
-                      clipRule='evenodd'
-                    />
-                  </svg>
-                  <span>{t('两步验证')}</span>
-                </div>
-              }
+              tab={t('两步验证')}
               itemKey='2fa'
             >
-              <Card className='border-0 shadow-none bg-transparent'>
-                <div className='space-y-4'>
-                  <div>
-                    <Typography.Text strong className='block mb-2'>
-                      {t('验证码')}
-                    </Typography.Text>
-                    <Input
-                      placeholder={t('请输入认证器验证码或备用码')}
-                      value={code}
-                      onChange={onCodeChange}
-                      size='large'
-                      maxLength={8}
-                      onKeyDown={handleKeyDown}
-                      autoFocus={method === '2fa'}
-                    />
-                    <Typography.Text type='tertiary' size='small' className='mt-2 block'>
-                      {t('支持6位TOTP验证码或8位备用码')}
-                    </Typography.Text>
-                  </div>
-                  <div className='flex justify-end space-x-3'>
-                    <Button onClick={onCancel}>{t('取消')}</Button>
-                    <Button
-                      type='primary'
-                      loading={loading}
-                      disabled={!code.trim() || loading}
-                      onClick={() => onVerify(method, code)}
-                    >
-                      {t('验证')}
-                    </Button>
-                  </div>
+              <div style={{ paddingTop: '20px' }}>
+                <div style={{ marginBottom: '12px' }}>
+                  <Input
+                    placeholder={t('请输入6位验证码或8位备用码')}
+                    value={code}
+                    onChange={onCodeChange}
+                    size='large'
+                    maxLength={8}
+                    onKeyDown={handleKeyDown}
+                    autoFocus={method === '2fa'}
+                    disabled={loading}
+                    prefix={
+                      <svg style={{ width: 16, height: 16, marginRight: 8, flexShrink: 0 }} fill='currentColor' viewBox='0 0 20 20'>
+                        <path fillRule='evenodd' d='M18 8a6 6 0 01-7.743 5.743L10 14l-1 1-1 1H6v2H2v-4l4.257-4.257A6 6 0 1118 8zm-6-4a1 1 0 100 2 2 2 0 012 2 1 1 0 102 0 4 4 0 00-4-4z' clipRule='evenodd' />
+                      </svg>
+                    }
+                    style={{ width: '100%' }}
+                  />
                 </div>
-              </Card>
+
+                <Typography.Text
+                  type="tertiary"
+                  size="small"
+                  style={{
+                    display: 'block',
+                    marginBottom: '20px',
+                    fontSize: '13px',
+                    lineHeight: '1.5'
+                  }}
+                >
+                  {t('从认证器应用中获取验证码，或使用备用码')}
+                </Typography.Text>
+
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'flex-end',
+                  gap: '8px',
+                  flexWrap: 'wrap'
+                }}>
+                  <Button onClick={onCancel} disabled={loading}>
+                    {t('取消')}
+                  </Button>
+                  <Button
+                    theme='solid'
+                    type='primary'
+                    loading={loading}
+                    disabled={!code.trim() || loading}
+                    onClick={() => onVerify(method, code)}
+                  >
+                    {t('验证')}
+                  </Button>
+                </div>
+              </div>
             </TabPane>
           )}
 
           {hasPasskey && passkeySupported && (
             <TabPane
-              tab={
-                <div className='flex items-center space-x-2'>
-                  <svg className='w-4 h-4' fill='currentColor' viewBox='0 0 20 20'>
-                    <path
-                      fillRule='evenodd'
-                      d='M18 8a6 6 0 01-7.743 5.743L10 14l-1 1-1 1H6v2H2v-4l4.257-4.257A6 6 0 1118 8zm-6-4a1 1 0 100 2 2 2 0 012 2 1 1 0 102 0 4 4 0 00-4-4z'
-                      clipRule='evenodd'
-                    />
-                  </svg>
-                  <span>{t('Passkey')}</span>
-                </div>
-              }
+              tab={t('Passkey')}
               itemKey='passkey'
             >
-              <Card className='border-0 shadow-none bg-transparent'>
-                <div className='space-y-4'>
-                  <div className='text-center py-4'>
-                    <div className='mb-4'>
-                      <svg
-                        className='w-16 h-16 text-blue-500 mx-auto'
-                        fill='currentColor'
-                        viewBox='0 0 20 20'
-                      >
-                        <path
-                          fillRule='evenodd'
-                          d='M18 8a6 6 0 01-7.743 5.743L10 14l-1 1-1 1H6v2H2v-4l4.257-4.257A6 6 0 1118 8zm-6-4a1 1 0 100 2 2 2 0 012 2 1 1 0 102 0 4 4 0 00-4-4z'
-                          clipRule='evenodd'
-                        />
-                      </svg>
-                    </div>
-                    <Typography.Text strong className='block mb-2'>
-                      {t('使用 Passkey 验证')}
-                    </Typography.Text>
-                    <Typography.Text type='tertiary' className='block mb-4'>
-                      {t('点击下方按钮，使用您的生物特征或安全密钥进行验证')}
-                    </Typography.Text>
+              <div style={{ paddingTop: '20px' }}>
+                <div style={{
+                  textAlign: 'center',
+                  padding: '24px 16px',
+                  marginBottom: '20px'
+                }}>
+                  <div style={{
+                    width: 56,
+                    height: 56,
+                    margin: '0 auto 16px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    borderRadius: '50%',
+                    background: 'var(--semi-color-primary-light-default)',
+                  }}>
+                    <svg style={{ width: 28, height: 28, color: 'var(--semi-color-primary)' }} fill='currentColor' viewBox='0 0 20 20'>
+                      <path fillRule='evenodd' d='M18 8a6 6 0 01-7.743 5.743L10 14l-1 1-1 1H6v2H2v-4l4.257-4.257A6 6 0 1118 8zm-6-4a1 1 0 100 2 2 2 0 012 2 1 1 0 102 0 4 4 0 00-4-4z' clipRule='evenodd' />
+                    </svg>
                   </div>
-                  <div className='flex justify-end space-x-3'>
-                    <Button onClick={onCancel}>{t('取消')}</Button>
-                    <Button
-                      type='primary'
-                      loading={loading}
-                      disabled={loading}
-                      onClick={() => onVerify(method)}
-                    >
-                      {loading ? t('验证中...') : t('验证 Passkey')}
-                    </Button>
-                  </div>
+                  <Typography.Title heading={5} style={{ margin: '0 0 8px', fontSize: '16px' }}>
+                    {t('使用 Passkey 验证')}
+                  </Typography.Title>
+                  <Typography.Text
+                    type='tertiary'
+                    style={{
+                      display: 'block',
+                      margin: 0,
+                      fontSize: '13px',
+                      lineHeight: '1.5'
+                    }}
+                  >
+                    {t('点击验证按钮，使用您的生物特征或安全密钥')}
+                  </Typography.Text>
                 </div>
-              </Card>
+
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'flex-end',
+                  gap: '8px',
+                  flexWrap: 'wrap'
+                }}>
+                  <Button onClick={onCancel} disabled={loading}>
+                    {t('取消')}
+                  </Button>
+                  <Button
+                    theme='solid'
+                    type='primary'
+                    loading={loading}
+                    disabled={loading}
+                    onClick={() => onVerify(method)}
+                  >
+                    {t('验证 Passkey')}
+                  </Button>
+                </div>
+              </div>
             </TabPane>
           )}
         </Tabs>

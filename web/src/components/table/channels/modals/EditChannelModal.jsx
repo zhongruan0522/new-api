@@ -206,7 +206,7 @@ const EditChannelModal = (props) => {
     isModalVisible,
     verificationMethods,
     verificationState,
-    startVerification,
+    withVerification,
     executeVerification,
     cancelVerification,
     setVerificationCode,
@@ -214,11 +214,19 @@ const EditChannelModal = (props) => {
   } = useSecureVerification({
     onSuccess: (result) => {
       // 验证成功后显示密钥
-      if (result.success && result.data?.key) {
+      console.log('Verification success, result:', result);
+      if (result && result.success && result.data?.key) {
         showSuccess(t('密钥获取成功'));
         setKeyDisplayState({
           showModal: true,
           keyData: result.data.key,
+        });
+      } else if (result && result.key) {
+        // 直接返回了 key（没有包装在 data 中）
+        showSuccess(t('密钥获取成功'));
+        setKeyDisplayState({
+          showModal: true,
+          keyData: result.key,
         });
       }
     },
@@ -604,19 +612,30 @@ const EditChannelModal = (props) => {
     }
   };
 
-  // 显示安全验证模态框并开始验证流程
+  // 查看渠道密钥（透明验证）
   const handleShow2FAModal = async () => {
     try {
-      const apiCall = createApiCalls.viewChannelKey(channelId);
-      
-      await startVerification(apiCall, {
-        title: t('查看渠道密钥'),
-        description: t('为了保护账户安全，请验证您的身份。'),
-        preferredMethod: 'passkey', // 优先使用 Passkey
-      });
+      // 使用 withVerification 包装，会自动处理需要验证的情况
+      const result = await withVerification(
+        createApiCalls.viewChannelKey(channelId),
+        {
+          title: t('查看渠道密钥'),
+          description: t('为了保护账户安全，请验证您的身份。'),
+          preferredMethod: 'passkey', // 优先使用 Passkey
+        }
+      );
+
+      // 如果直接返回了结果（已验证），显示密钥
+      if (result && result.success && result.data?.key) {
+        showSuccess(t('密钥获取成功'));
+        setKeyDisplayState({
+          showModal: true,
+          keyData: result.data.key,
+        });
+      }
     } catch (error) {
-      console.error('Failed to start verification:', error);
-      showError(error.message || t('启动验证失败'));
+      console.error('Failed to view channel key:', error);
+      showError(error.message || t('获取密钥失败'));
     }
   };
 

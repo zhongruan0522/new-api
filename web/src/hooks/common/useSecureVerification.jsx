@@ -21,6 +21,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SecureVerificationService } from '../../services/secureVerification';
 import { showError, showSuccess } from '../../helpers';
+import { isVerificationRequiredError } from '../../helpers/secureApiCall';
 
 /**
  * 通用安全验证 Hook
@@ -82,10 +83,10 @@ export const useSecureVerification = ({
   // 开始验证流程
   const startVerification = useCallback(async (apiCall, options = {}) => {
     const { preferredMethod, title, description } = options;
-    
+
     // 检查验证方式
     const methods = await checkVerificationMethods();
-    
+
     if (!methods.has2FA && !methods.hasPasskey) {
       const errorMessage = t('您需要先启用两步验证或 Passkey 才能执行此操作');
       showError(errorMessage);
@@ -111,7 +112,7 @@ export const useSecureVerification = ({
       description
     }));
     setIsModalVisible(true);
-    
+
     return true;
   }, [checkVerificationMethods, onError, t]);
 
@@ -125,10 +126,11 @@ export const useSecureVerification = ({
     setVerificationState(prev => ({ ...prev, loading: true }));
 
     try {
-      const result = await SecureVerificationService.verify(method, {
-        code,
-        apiCall: verificationState.apiCall
-      });
+      // 先调用验证 API，成功后后端会设置 session
+      await SecureVerificationService.verify(method, code);
+
+      // 验证成功，调用业务 API（此时中间件会通过）
+      const result = await verificationState.apiCall();
 
       // 显示成功消息
       if (successMessage) {
@@ -191,12 +193,36 @@ export const useSecureVerification = ({
     return null;
   }, [verificationMethods]);
 
+  /**
+   * 包装 API 调用，自动处理验证错误
+   * 当 API 返回需要验证的错误时，自动弹出验证模态框
+   * @param {Function} apiCall - API 调用函数
+   * @param {Object} options - 验证选项（同 startVerification）
+   * @returns {Promise<any>}
+   */
+  const withVerification = useCallback(async (apiCall, options = {}) => {
+    try {
+      // 直接尝试调用 API
+      return await apiCall();
+    } catch (error) {
+      // 检查是否是需要验证的错误
+      if (isVerificationRequiredError(error)) {
+        // 自动触发验证流程
+        await startVerification(apiCall, options);
+        // 不抛出错误，让验证模态框处理
+        return null;
+      }
+      // 其他错误继续抛出
+      throw error;
+    }
+  }, [startVerification]);
+
   return {
     // 状态
     isModalVisible,
     verificationMethods,
     verificationState,
-    
+
     // 方法
     startVerification,
     executeVerification,
@@ -205,11 +231,12 @@ export const useSecureVerification = ({
     setVerificationCode,
     switchVerificationMethod,
     checkVerificationMethods,
-    
+
     // 辅助方法
     canUseMethod,
     getRecommendedMethod,
-    
+    withVerification, // 新增：自动处理验证的包装函数
+
     // 便捷属性
     hasAnyVerificationMethod: verificationMethods.has2FA || verificationMethods.hasPasskey,
     isLoading: verificationState.loading,

@@ -1043,7 +1043,7 @@ const SystemSetting = () => {
                           handleCheckboxChange('passkey.enabled', e)
                         }
                       >
-                        {t('允许通过 Passkey 登录 & 注册')}
+                        {t('允许通过 Passkey 登录 & 认证')}
                       </Form.Checkbox>
                     </Col>
                   </Row>
