@@ -42,5 +42,8 @@ func GetPasskeySettings() *PasskeySettings {
 			defaultPasskeySettings.RPID = serverAddr
 		}
 	}
+	if defaultPasskeySettings.Origins == "" || defaultPasskeySettings.Origins == "[]" {
+		defaultPasskeySettings.Origins = ServerAddress
+	}
 	return &defaultPasskeySettings
 }
