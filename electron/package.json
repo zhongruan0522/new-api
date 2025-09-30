@@ -4,7 +4,7 @@
   "description": "New API - AI Model Gateway Desktop Application",
   "main": "main.js",
   "scripts": {
-    "start": "NODE_ENV=development electron .",
+    "start": "set NODE_ENV=development&& electron .",
     "build": "electron-builder",
     "build:mac": "electron-builder --mac",
     "build:win": "electron-builder --win",
