@@ -91,5 +91,8 @@
   "目标用户：{{username}}": "目标用户：{{username}}",
   "Passkey 已重置": "Passkey 已重置",
   "二步验证已重置": "二步验证已重置",
-  "允许通过 Passkey 登录 & 认证": "允许通过 Passkey 登录 & 认证"
+  "允许通过 Passkey 登录 & 认证": "允许通过 Passkey 登录 & 认证",
+  "确认解绑 Passkey": "确认解绑 Passkey",
+  "解绑后将无法使用 Passkey 登录，确定要继续吗？": "解绑后将无法使用 Passkey 登录，确定要继续吗？",
+  "确认解绑": "确认解绑"
 }

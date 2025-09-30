@@ -525,10 +525,23 @@ const AccountManagement = ({
                       </div>
                     </div>
                     <Button
-                      type='primary'
-                      theme={passkeyEnabled ? 'outline' : 'solid'}
-                      onClick={passkeyEnabled ? onPasskeyDelete : onPasskeyRegister}
-                      className='w-full sm:w-auto'
+                      type={passkeyEnabled ? 'danger' : 'primary'}
+                      theme={passkeyEnabled ? 'solid' : 'solid'}
+                      onClick={
+                        passkeyEnabled
+                          ? () => {
+                              Modal.confirm({
+                                title: t('确认解绑 Passkey'),
+                                content: t('解绑后将无法使用 Passkey 登录，确定要继续吗？'),
+                                okText: t('确认解绑'),
+                                cancelText: t('取消'),
+                                okType: 'danger',
+                                onOk: onPasskeyDelete,
+                              });
+                            }
+                          : onPasskeyRegister
+                      }
+                      className={`w-full sm:w-auto ${passkeyEnabled ? '!bg-slate-500 hover:!bg-slate-600' : ''}`}
                       icon={<IconKey />}
                       disabled={!passkeySupported && !passkeyEnabled}
                       loading={passkeyEnabled ? passkeyDeleteLoading : passkeyRegisterLoading}

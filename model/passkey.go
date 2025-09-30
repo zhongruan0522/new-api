@@ -141,9 +141,10 @@ func GetPasskeyByUserID(userID int) (*PasskeyCredential, error) {
 	var credential PasskeyCredential
 	if err := DB.Where("user_id = ?", userID).First(&credential).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			common.SysLog(fmt.Sprintf("GetPasskeyByUserID: passkey not found for user %d", userID))
-			return nil, ErrFriendlyPasskeyNotFound
+			// 未找到记录是正常情况（用户未绑定），返回 ErrPasskeyNotFound 而不记录日志
+			return nil, ErrPasskeyNotFound
 		}
+		// 只有真正的数据库错误才记录日志
 		common.SysLog(fmt.Sprintf("GetPasskeyByUserID: database error for user %d: %v", userID, err))
 		return nil, ErrFriendlyPasskeyNotFound
 	}
