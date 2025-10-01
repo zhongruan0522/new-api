@@ -169,6 +169,10 @@ const EditChannelModal = (props) => {
     vertex_key_type: 'json',
     // 企业账户设置
     is_enterprise_account: false,
+    // 字段透传控制默认值
+    allow_service_tier: false,
+    disable_store: false,  // false = 允许透传（默认开启）
+    allow_safety_identifier: false,
   };
   const [batch, setBatch] = useState(false);
   const [multiToSingle, setMultiToSingle] = useState(false);
@@ -453,17 +457,27 @@ const EditChannelModal = (props) => {
           data.vertex_key_type = parsedSettings.vertex_key_type || 'json';
           // 读取企业账户设置
           data.is_enterprise_account = parsedSettings.openrouter_enterprise === true;
+          // 读取字段透传控制设置
+          data.allow_service_tier = parsedSettings.allow_service_tier || false;
+          data.disable_store = parsedSettings.disable_store || false;
+          data.allow_safety_identifier = parsedSettings.allow_safety_identifier || false;
         } catch (error) {
           console.error('解析其他设置失败:', error);
           data.azure_responses_version = '';
           data.region = '';
           data.vertex_key_type = 'json';
           data.is_enterprise_account = false;
+          data.allow_service_tier = false;
+          data.disable_store = false;
+          data.allow_safety_identifier = false;
         }
       } else {
         // 兼容历史数据：老渠道没有 settings 时，默认按 json 展示
         data.vertex_key_type = 'json';
         data.is_enterprise_account = false;
+        data.allow_service_tier = false;
+        data.disable_store = false;
+        data.allow_safety_identifier = false;
       }
 
       if (
@@ -900,20 +914,32 @@ const EditChannelModal = (props) => {
     };
     localInputs.setting = JSON.stringify(channelExtraSettings);
 
-    // 处理type === 20的企业账户设置
-    if (localInputs.type === 20) {
-      let settings = {};
-      if (localInputs.settings) {
-        try {
-          settings = JSON.parse(localInputs.settings);
-        } catch (error) {
-          console.error('解析settings失败:', error);
-        }
+    // 处理 settings 字段（包括企业账户设置和字段透传控制）
+    let settings = {};
+    if (localInputs.settings) {
+      try {
+        settings = JSON.parse(localInputs.settings);
+      } catch (error) {
+        console.error('解析settings失败:', error);
       }
-      // 设置企业账户标识，无论是true还是false都要传到后端
-      settings.openrouter_enterprise = localInputs.is_enterprise_account === true;
-      localInputs.settings = JSON.stringify(settings);
     }
+
+    // type === 20: 设置企业账户标识，无论是true还是false都要传到后端
+    if (localInputs.type === 20) {
+      settings.openrouter_enterprise = localInputs.is_enterprise_account === true;
+    }
+
+    // type === 1 (OpenAI) 或 type === 14 (Claude): 设置字段透传控制（显式保存布尔值）
+    if (localInputs.type === 1 || localInputs.type === 14) {
+      settings.allow_service_tier = localInputs.allow_service_tier === true;
+      // 仅 OpenAI 渠道需要 store 和 safety_identifier
+      if (localInputs.type === 1) {
+        settings.disable_store = localInputs.disable_store === true;
+        settings.allow_safety_identifier = localInputs.allow_safety_identifier === true;
+      }
+    }
+
+    localInputs.settings = JSON.stringify(settings);
 
     // 清理不需要发送到后端的字段
     delete localInputs.force_format;
@@ -925,6 +951,10 @@ const EditChannelModal = (props) => {
     delete localInputs.is_enterprise_account;
     // 顶层的 vertex_key_type 不应发送给后端
     delete localInputs.vertex_key_type;
+    // 清理字段透传控制的临时字段
+    delete localInputs.allow_service_tier;
+    delete localInputs.disable_store;
+    delete localInputs.allow_safety_identifier;
 
     let res;
     localInputs.auto_ban = localInputs.auto_ban ? 1 : 0;
@@ -2384,6 +2414,76 @@ const EditChannelModal = (props) => {
                       '键为原状态码，值为要复写的状态码，仅影响本地判断',
                     )}
                   />
+
+                  {/* 字段透传控制 - OpenAI 渠道 */}
+                  {inputs.type === 1 && (
+                    <>
+                      <div className='mt-4 mb-2 text-sm font-medium text-gray-700'>
+                        {t('字段透传控制')}
+                      </div>
+
+                      <Form.Switch
+                        field='allow_service_tier'
+                        label={t('允许 service_tier 透传')}
+                        checkedText={t('开')}
+                        uncheckedText={t('关')}
+                        onChange={(value) =>
+                          handleChannelOtherSettingsChange('allow_service_tier', value)
+                        }
+                        extraText={t(
+                          'service_tier 字段用于指定服务层级，允许透传可能导致实际计费高于预期。默认关闭以避免额外费用',
+                        )}
+                      />
+
+                      <Form.Switch
+                        field='disable_store'
+                        label={t('禁用 store 透传')}
+                        checkedText={t('开')}
+                        uncheckedText={t('关')}
+                        onChange={(value) =>
+                          handleChannelOtherSettingsChange('disable_store', value)
+                        }
+                        extraText={t(
+                          'store 字段用于授权 OpenAI 存储请求数据以评估和优化产品。默认关闭，开启后可能导致 Codex 无法正常使用',
+                        )}
+                      />
+
+                      <Form.Switch
+                        field='allow_safety_identifier'
+                        label={t('允许 safety_identifier 透传')}
+                        checkedText={t('开')}
+                        uncheckedText={t('关')}
+                        onChange={(value) =>
+                          handleChannelOtherSettingsChange('allow_safety_identifier', value)
+                        }
+                        extraText={t(
+                          'safety_identifier 字段用于帮助 OpenAI 识别可能违反使用政策的应用程序用户。默认关闭以保护用户隐私',
+                        )}
+                      />
+                    </>
+                  )}
+
+                  {/* 字段透传控制 - Claude 渠道 */}
+                  {(inputs.type === 14) && (
+                    <>
+                      <div className='mt-4 mb-2 text-sm font-medium text-gray-700'>
+                        {t('字段透传控制')}
+                      </div>
+
+                      <Form.Switch
+                        field='allow_service_tier'
+                        label={t('允许 service_tier 透传')}
+                        checkedText={t('开')}
+                        uncheckedText={t('关')}
+                        onChange={(value) =>
+                          handleChannelOtherSettingsChange('allow_service_tier', value)
+                        }
+                        extraText={t(
+                          'service_tier 字段用于指定服务层级，允许透传可能导致实际计费高于预期。默认关闭以避免额外费用',
+                        )}
+                      />
+                    </>
+                  )}
                 </Card>
 
                 {/* Channel Extra Settings Card */}
@@ -2487,6 +2587,7 @@ const EditChannelModal = (props) => {
                       '如果用户请求中包含系统提示词，则使用此设置拼接到用户的系统提示词前面',
                     )}
                   />
+
                 </Card>
               </div>
             </Spin>
