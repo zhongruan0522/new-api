@@ -36,6 +36,7 @@ import {
   IconEdit,
   IconDelete,
   IconSearch,
+  IconSaveStroked,
 } from '@douyinfe/semi-icons';
 import {
   compareObjects,
@@ -55,7 +56,7 @@ export default function SettingsChats(props) {
   });
   const refForm = useRef();
   const [inputsRow, setInputsRow] = useState(inputs);
-  const [editMode, setEditMode] = useState('json');
+  const [editMode, setEditMode] = useState('visual');
   const [chatConfigs, setChatConfigs] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingConfig, setEditingConfig] = useState(null);
@@ -167,7 +168,9 @@ export default function SettingsChats(props) {
     }
     setInputs(currentInputs);
     setInputsRow(structuredClone(currentInputs));
-    refForm.current.setValues(currentInputs);
+    if (refForm.current) {
+      refForm.current.setValues(currentInputs);
+    }
 
     // 同步到可视化配置
     const configs = jsonToConfigs(currentInputs.Chats || '[]');
@@ -220,6 +223,18 @@ export default function SettingsChats(props) {
       modalFormRef.current
         .validate()
         .then((values) => {
+          // 检查名称是否重复
+          const isDuplicate = chatConfigs.some(
+            (config) =>
+              config.name === values.name &&
+              (!isEdit || config.id !== editingConfig.id)
+          );
+
+          if (isDuplicate) {
+            showError(t('聊天应用名称已存在，请使用其他名称'));
+            return;
+          }
+
           if (isEdit) {
             const newConfigs = chatConfigs.map((config) =>
               config.id === editingConfig.id
@@ -263,6 +278,28 @@ export default function SettingsChats(props) {
       config.name.toLowerCase().includes(searchText.toLowerCase()),
   );
 
+  const highlightKeywords = (text) => {
+    if (!text) return text;
+
+    const parts = text.split(/(\{address\}|\{key\})/g);
+    return parts.map((part, index) => {
+      if (part === '{address}') {
+        return (
+          <span key={index} style={{ color: '#0077cc', fontWeight: 600 }}>
+            {part}
+          </span>
+        );
+      } else if (part === '{key}') {
+        return (
+          <span key={index} style={{ color: '#ff6b35', fontWeight: 600 }}>
+            {part}
+          </span>
+        );
+      }
+      return part;
+    });
+  };
+
   const columns = [
     {
       title: t('聊天应用名称'),
@@ -275,7 +312,9 @@ export default function SettingsChats(props) {
       dataIndex: 'url',
       key: 'url',
       render: (text) => (
-        <div style={{ maxWidth: 300, wordBreak: 'break-all' }}>{text}</div>
+        <div style={{ maxWidth: 300, wordBreak: 'break-all' }}>
+          {highlightKeywords(text)}
+        </div>
       ),
     },
     {
@@ -351,6 +390,14 @@ export default function SettingsChats(props) {
                 >
                   {t('添加聊天配置')}
                 </Button>
+                <Button
+                  type='primary'
+                  theme='solid'
+                  icon={<IconSaveStroked />}
+                  onClick={onSubmit}
+                >
+                  {t('保存聊天设置')}
+                </Button>
                 <Input
                   prefix={<IconSearch />}
                   placeholder={t('搜索聊天应用名称')}
@@ -410,11 +457,17 @@ export default function SettingsChats(props) {
           )}
         </Form.Section>
 
-        <Space>
-          <Button type='primary' onClick={onSubmit}>
-            {t('保存聊天设置')}
-          </Button>
-        </Space>
+        {editMode === 'json' && (
+          <Space>
+            <Button
+              type='primary'
+              icon={<IconSaveStroked />}
+              onClick={onSubmit}
+            >
+              {t('保存聊天设置')}
+            </Button>
+          </Space>
+        )}
       </Space>
 
       <Modal
