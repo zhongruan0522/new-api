@@ -590,7 +590,7 @@ const NotificationSettings = ({
                             rel='noopener noreferrer'
                             className='text-blue-500 hover:text-blue-600 font-medium'
                           >
-                            Bark 官方文档
+                            Bark {t('官方文档')}
                           </a>
                         </div>
                       </div>
@@ -691,7 +691,7 @@ const NotificationSettings = ({
                             rel='noopener noreferrer'
                             className='text-blue-500 hover:text-blue-600 font-medium'
                           >
-                            Gotify 官方文档
+                            Gotify {t('官方文档')}
                           </a>
                         </div>
                       </div>
