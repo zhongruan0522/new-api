@@ -146,7 +146,13 @@ function createWindow() {
 }
 
 function createTray() {
-  tray = new Tray(path.join(__dirname, 'tray-iconTemplate.png'));
+  // Use template icon for macOS (black with transparency, auto-adapts to theme)
+  // Use colored icon for Windows
+  const trayIconPath = process.platform === 'darwin'
+    ? path.join(__dirname, 'tray-iconTemplate.png')
+    : path.join(__dirname, 'tray-icon-windows.png');
+
+  tray = new Tray(trayIconPath);
 
   const contextMenu = Menu.buildFromTemplate([
     {

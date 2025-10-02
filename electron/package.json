@@ -39,7 +39,8 @@
       "preload.js",
       "icon.png",
       "tray-iconTemplate.png",
-      "tray-iconTemplate@2x.png"
+      "tray-iconTemplate@2x.png",
+      "tray-icon-windows.png"
     ],
     "mac": {
       "category": "public.app-category.developer-tools",
