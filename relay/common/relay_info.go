@@ -515,7 +515,8 @@ type TaskInfo struct {
 func RemoveDisabledFields(jsonData []byte, channelOtherSettings dto.ChannelOtherSettings) ([]byte, error) {
 	var data map[string]interface{}
 	if err := common.Unmarshal(jsonData, &data); err != nil {
-		return jsonData, err
+		common.SysError("RemoveDisabledFields Unmarshal error :" + err.Error())
+		return jsonData, nil
 	}
 
 	// 默认移除 service_tier，除非明确允许（避免额外计费风险）
@@ -539,5 +540,10 @@ func RemoveDisabledFields(jsonData []byte, channelOtherSettings dto.ChannelOther
 		}
 	}
 
-	return common.Marshal(data)
+	jsonDataAfter, err := common.Marshal(data)
+	if err != nil {
+		common.SysError("RemoveDisabledFields Marshal error :" + err.Error())
+		return jsonData, nil
+	}
+	return jsonDataAfter, nil
 }
