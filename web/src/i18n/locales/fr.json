@@ -2135,6 +2135,13 @@
   "关闭侧边栏": "Fermer la barre latérale",
   "定价": "Tarification",
   "语言": "Langue",
+  "字段透传控制": "Contrôle du passage des champs",
+  "允许 service_tier 透传": "Autoriser le passage de service_tier",
+  "禁用 store 透传": "Désactiver le passage de store",
+  "允许 safety_identifier 透传": "Autoriser le passage de safety_identifier",
+  "service_tier 字段用于指定服务层级，允许透传可能导致实际计费高于预期。默认关闭以避免额外费用": "Le champ service_tier est utilisé pour spécifier le niveau de service. Permettre le passage peut entraîner une facturation plus élevée que prévu. Désactivé par défaut pour éviter des frais supplémentaires",
+  "store 字段用于授权 OpenAI 存储请求数据以评估和优化产品。默认关闭，开启后可能导致 Codex 无法正常使用": "Le champ store autorise OpenAI à stocker les données de requête pour l'évaluation et l'optimisation du produit. Désactivé par défaut. L'activation peut causer un dysfonctionnement de Codex",
+  "safety_identifier 字段用于帮助 OpenAI 识别可能违反使用政策的应用程序用户。默认关闭以保护用户隐私": "Le champ safety_identifier aide OpenAI à identifier les utilisateurs d'applications susceptibles de violer les politiques d'utilisation. Désactivé par défaut pour protéger la confidentialité des utilisateurs",
   "common": {
     "changeLanguage": "Changer de langue"
   }
