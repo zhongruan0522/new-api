@@ -2521,8 +2521,6 @@ const EditChannelModal = (props) => {
                       '键为原状态码，值为要复写的状态码，仅影响本地判断',
                     )}
                   />
-                  </Card>
-                </div>
 
                   {/* 字段透传控制 - OpenAI 渠道 */}
                   {inputs.type === 1 && (
@@ -2593,7 +2591,8 @@ const EditChannelModal = (props) => {
                       />
                     </>
                   )}
-                </Card>
+                  </Card>
+                </div>
 
                 {/* Channel Extra Settings Card */}
                 <div ref={el => formSectionRefs.current.channelExtraSettings = el}>
@@ -2699,8 +2698,6 @@ const EditChannelModal = (props) => {
                   />
                   </Card>
                 </div>
-
-                </Card>
               </div>
             </Spin>
           )}
