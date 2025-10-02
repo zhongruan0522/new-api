@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"embed"
 	"fmt"
 	"log"
@@ -16,6 +17,7 @@ import (
 	"one-api/setting/ratio_setting"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/bytedance/gopkg/util/gopool"
@@ -147,6 +149,22 @@ func main() {
 	})
 	server.Use(sessions.Sessions("session", store))
 
+	analyticsInjectBuilder := &strings.Builder{}
+	if os.Getenv("UMAMI_WEBSITE_ID") != "" {
+		umamiSiteID := os.Getenv("UMAMI_WEBSITE_ID")
+		umamiScriptURL := os.Getenv("UMAMI_SCRIPT_URL")
+		if umamiScriptURL == "" {
+			umamiScriptURL = "https://analytics.umami.is/script.js"
+		}
+		analyticsInjectBuilder.WriteString("<script defer src=\"")
+		analyticsInjectBuilder.WriteString(umamiScriptURL)
+		analyticsInjectBuilder.WriteString("\" data-website-id=\"")
+		analyticsInjectBuilder.WriteString(umamiSiteID)
+		analyticsInjectBuilder.WriteString("\"></script>")
+	}
+	analyticsInject := analyticsInjectBuilder.String()
+	indexPage = bytes.ReplaceAll(indexPage, []byte("<analytics></analytics>\n"), []byte(analyticsInject))
+
 	router.SetRouter(server, buildFS, indexPage)
 	var port = os.Getenv("PORT")
 	if port == "" {
@@ -167,8 +185,9 @@ func InitResources() error {
 	// This is a placeholder function for future resource initialization
 	err := godotenv.Load(".env")
 	if err != nil {
-		common.SysLog("未找到 .env 文件，使用默认环境变量，如果需要，请创建 .env 文件并设置相关变量")
-		common.SysLog("No .env file found, using default environment variables. If needed, please create a .env file and set the relevant variables.")
+		if common.DebugEnabled {
+			common.SysLog("No .env file found, using default environment variables. If needed, please create a .env file and set the relevant variables.")
+		}
 	}
 
 	// 加载环境变量
