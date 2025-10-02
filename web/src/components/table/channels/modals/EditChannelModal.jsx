@@ -68,6 +68,8 @@ import {
   IconCode,
   IconGlobe,
   IconBolt,
+  IconChevronUp,
+  IconChevronDown,
 } from '@douyinfe/semi-icons';
 
 const { Text, Title } = Typography;
@@ -206,6 +208,27 @@ const EditChannelModal = (props) => {
     keyData: '',
   });
 
+  // 专门的2FA验证状态（用于TwoFactorAuthModal）
+  const [show2FAVerifyModal, setShow2FAVerifyModal] = useState(false);
+  const [verifyCode, setVerifyCode] = useState('');
+  const [verifyLoading, setVerifyLoading] = useState(false);
+
+  // 表单块导航相关状态
+  const formSectionRefs = useRef({
+    basicInfo: null,
+    apiConfig: null,
+    modelConfig: null,
+    advancedSettings: null,
+    channelExtraSettings: null,
+  });
+  const [currentSectionIndex, setCurrentSectionIndex] = useState(0);
+  const formSections = ['basicInfo', 'apiConfig', 'modelConfig', 'advancedSettings', 'channelExtraSettings'];
+  const formContainerRef = useRef(null);
+
+  // 2FA状态更新辅助函数
+  const updateTwoFAState = (updates) => {
+    setTwoFAState((prev) => ({ ...prev, ...updates }));
+  };
   // 使用通用安全验证 Hook
   const {
     isModalVisible,
@@ -243,6 +266,44 @@ const EditChannelModal = (props) => {
       showModal: false,
       keyData: '',
     });
+  };
+
+  // 重置2FA验证状态
+  const reset2FAVerifyState = () => {
+    setShow2FAVerifyModal(false);
+    setVerifyCode('');
+    setVerifyLoading(false);
+  };
+
+  // 表单导航功能
+  const scrollToSection = (sectionKey) => {
+    const sectionElement = formSectionRefs.current[sectionKey];
+    if (sectionElement) {
+      sectionElement.scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'start',
+        inline: 'nearest'
+      });
+    }
+  };
+
+  const navigateToSection = (direction) => {
+    const availableSections = formSections.filter(section => {
+      if (section === 'apiConfig') {
+        return showApiConfigCard;
+      }
+      return true;
+    });
+
+    let newIndex;
+    if (direction === 'up') {
+      newIndex = currentSectionIndex > 0 ? currentSectionIndex - 1 : availableSections.length - 1;
+    } else {
+      newIndex = currentSectionIndex < availableSections.length - 1 ? currentSectionIndex + 1 : 0;
+    }
+    
+    setCurrentSectionIndex(newIndex);
+    scrollToSection(availableSections[newIndex]);
   };
 
   // 渠道额外设置状态
@@ -729,6 +790,8 @@ const EditChannelModal = (props) => {
       fetchModelGroups();
       // 重置手动输入模式状态
       setUseManualInput(false);
+      // 重置导航状态
+      setCurrentSectionIndex(0);
     } else {
       // 统一的模态框关闭重置逻辑
       resetModalState();
@@ -1270,7 +1333,41 @@ const EditChannelModal = (props) => {
         visible={props.visible}
         width={isMobile ? '100%' : 600}
         footer={
-          <div className='flex justify-end bg-white'>
+          <div className='flex justify-between items-center bg-white'>
+            <div className='flex gap-2'>
+              <Button
+                size='small'
+                type='tertiary'
+                icon={<IconChevronUp />}
+                onClick={() => navigateToSection('up')}
+                style={{ 
+                  borderRadius: '50%',
+                  width: '32px',
+                  height: '32px',
+                  padding: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+                title={t('上一个表单块')}
+              />
+              <Button
+                size='small'
+                type='tertiary'
+                icon={<IconChevronDown />}
+                onClick={() => navigateToSection('down')}
+                style={{ 
+                  borderRadius: '50%',
+                  width: '32px',
+                  height: '32px',
+                  padding: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+                title={t('下一个表单块')}
+              />
+            </div>
             <Space>
               <Button
                 theme='solid'
@@ -1301,10 +1398,14 @@ const EditChannelModal = (props) => {
         >
           {() => (
             <Spin spinning={loading}>
-              <div className='p-2'>
-                <Card className='!rounded-2xl shadow-sm border-0 mb-6'>
-                  {/* Header: Basic Info */}
-                  <div className='flex items-center mb-2'>
+              <div 
+                className='p-2' 
+                ref={formContainerRef}
+              >
+                <div ref={el => formSectionRefs.current.basicInfo = el}>
+                  <Card className='!rounded-2xl shadow-sm border-0 mb-6'>
+                    {/* Header: Basic Info */}
+                    <div className='flex items-center mb-2'>
                     <Avatar
                       size='small'
                       color='blue'
@@ -1778,13 +1879,15 @@ const EditChannelModal = (props) => {
                       }
                     />
                   )}
-                </Card>
+                  </Card>
+                </div>
 
                 {/* API Configuration Card */}
                 {showApiConfigCard && (
-                  <Card className='!rounded-2xl shadow-sm border-0 mb-6'>
-                    {/* Header: API Config */}
-                    <div className='flex items-center mb-2'>
+                  <div ref={el => formSectionRefs.current.apiConfig = el}>
+                    <Card className='!rounded-2xl shadow-sm border-0 mb-6'>
+                      {/* Header: API Config */}
+                      <div className='flex items-center mb-2'>
                       <Avatar
                         size='small'
                         color='green'
@@ -1995,13 +2098,15 @@ const EditChannelModal = (props) => {
                           />
                         </div>
                     )}
-                  </Card>
+                    </Card>
+                  </div>
                 )}
 
                 {/* Model Configuration Card */}
-                <Card className='!rounded-2xl shadow-sm border-0 mb-6'>
-                  {/* Header: Model Config */}
-                  <div className='flex items-center mb-2'>
+                <div ref={el => formSectionRefs.current.modelConfig = el}>
+                  <Card className='!rounded-2xl shadow-sm border-0 mb-6'>
+                    {/* Header: Model Config */}
+                    <div className='flex items-center mb-2'>
                     <Avatar
                       size='small'
                       color='purple'
@@ -2196,12 +2301,14 @@ const EditChannelModal = (props) => {
                     formApi={formApiRef.current}
                     extraText={t('键为请求中的模型名称，值为要替换的模型名称')}
                   />
-                </Card>
+                  </Card>
+                </div>
 
                 {/* Advanced Settings Card */}
-                <Card className='!rounded-2xl shadow-sm border-0 mb-6'>
-                  {/* Header: Advanced Settings */}
-                  <div className='flex items-center mb-2'>
+                <div ref={el => formSectionRefs.current.advancedSettings = el}>
+                  <Card className='!rounded-2xl shadow-sm border-0 mb-6'>
+                    {/* Header: Advanced Settings */}
+                    <div className='flex items-center mb-2'>
                     <Avatar
                       size='small'
                       color='orange'
@@ -2414,6 +2521,8 @@ const EditChannelModal = (props) => {
                       '键为原状态码，值为要复写的状态码，仅影响本地判断',
                     )}
                   />
+                  </Card>
+                </div>
 
                   {/* 字段透传控制 - OpenAI 渠道 */}
                   {inputs.type === 1 && (
@@ -2487,9 +2596,10 @@ const EditChannelModal = (props) => {
                 </Card>
 
                 {/* Channel Extra Settings Card */}
-                <Card className='!rounded-2xl shadow-sm border-0 mb-6'>
-                  {/* Header: Channel Extra Settings */}
-                  <div className='flex items-center mb-2'>
+                <div ref={el => formSectionRefs.current.channelExtraSettings = el}>
+                  <Card className='!rounded-2xl shadow-sm border-0 mb-6'>
+                    {/* Header: Channel Extra Settings */}
+                    <div className='flex items-center mb-2'>
                     <Avatar
                       size='small'
                       color='violet'
@@ -2587,6 +2697,8 @@ const EditChannelModal = (props) => {
                       '如果用户请求中包含系统提示词，则使用此设置拼接到用户的系统提示词前面',
                     )}
                   />
+                  </Card>
+                </div>
 
                 </Card>
               </div>
