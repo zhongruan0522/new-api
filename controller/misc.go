@@ -42,6 +42,8 @@ func GetStatus(c *gin.Context) {
 	common.OptionMapRWMutex.RLock()
 	defer common.OptionMapRWMutex.RUnlock()
 
+	passkeySetting := system_setting.GetPasskeySettings()
+
 	data := gin.H{
 		"version":                     common.Version,
 		"start_time":                  common.StartTime,
@@ -58,11 +60,7 @@ func GetStatus(c *gin.Context) {
 		"footer_html":                 common.Footer,
 		"wechat_qrcode":               common.WeChatAccountQRCodeImageURL,
 		"wechat_login":                common.WeChatAuthEnabled,
-		"server_address":              setting.ServerAddress,
-		"price":                       setting.Price,
-		"stripe_unit_price":           setting.StripeUnitPrice,
-		"min_topup":                   setting.MinTopUp,
-		"stripe_min_topup":            setting.StripeMinTopUp,
+		"server_address":              system_setting.ServerAddress,
 		"turnstile_check":             common.TurnstileCheckEnabled,
 		"turnstile_site_key":          common.TurnstileSiteKey,
 		"top_up_link":                 common.TopUpLink,
@@ -75,15 +73,15 @@ func GetStatus(c *gin.Context) {
 		"enable_data_export":          common.DataExportEnabled,
 		"data_export_default_time":    common.DataExportDefaultTime,
 		"default_collapse_sidebar":    common.DefaultCollapseSidebar,
-		"enable_online_topup":         setting.PayAddress != "" && setting.EpayId != "" && setting.EpayKey != "",
-		"enable_stripe_topup":         setting.StripeApiSecret != "" && setting.StripeWebhookSecret != "" && setting.StripePriceId != "",
 		"mj_notify_enabled":           setting.MjNotifyEnabled,
 		"chats":                       setting.Chats,
 		"demo_site_enabled":           operation_setting.DemoSiteEnabled,
 		"self_use_mode_enabled":       operation_setting.SelfUseModeEnabled,
 		"default_use_auto_group":      setting.DefaultUseAutoGroup,
-		"pay_methods":                 setting.PayMethods,
-		"usd_exchange_rate":           setting.USDExchangeRate,
+
+		"usd_exchange_rate": operation_setting.USDExchangeRate,
+		"price":             operation_setting.Price,
+		"stripe_unit_price": setting.StripeUnitPrice,
 
 		// 面板启用开关
 		"api_info_enabled":      cs.ApiInfoEnabled,
@@ -98,6 +96,13 @@ func GetStatus(c *gin.Context) {
 		"oidc_enabled":                system_setting.GetOIDCSettings().Enabled,
 		"oidc_client_id":              system_setting.GetOIDCSettings().ClientId,
 		"oidc_authorization_endpoint": system_setting.GetOIDCSettings().AuthorizationEndpoint,
+		"passkey_login":               passkeySetting.Enabled,
+		"passkey_display_name":        passkeySetting.RPDisplayName,
+		"passkey_rp_id":               passkeySetting.RPID,
+		"passkey_origins":             passkeySetting.Origins,
+		"passkey_allow_insecure":      passkeySetting.AllowInsecureOrigin,
+		"passkey_user_verification":   passkeySetting.UserVerification,
+		"passkey_attachment":          passkeySetting.AttachmentPreference,
 		"setup":                       constant.Setup,
 	}
 
@@ -253,7 +258,7 @@ func SendPasswordResetEmail(c *gin.Context) {
 	}
 	code := common.GenerateVerificationCode(0)
 	common.RegisterVerificationCodeWithKey(email, code, common.PasswordResetPurpose)
-	link := fmt.Sprintf("%s/user/reset?email=%s&token=%s", setting.ServerAddress, email, code)
+	link := fmt.Sprintf("%s/user/reset?email=%s&token=%s", system_setting.ServerAddress, email, code)
 	subject := fmt.Sprintf("%s密码重置", common.SystemName)
 	content := fmt.Sprintf("<p>您好，你正在进行%s密码重置。</p>"+
 		"<p>点击 <a href='%s'>此处</a> 进行密码重置。</p>"+

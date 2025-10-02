@@ -52,6 +52,10 @@ func (a *Adaptor) GetRequestURL(info *relaycommon.RelayInfo) (string, error) {
 }
 
 func (a *Adaptor) SetupRequestHeader(c *gin.Context, req *http.Header, info *relaycommon.RelayInfo) error {
+	anthropicBeta := c.Request.Header.Get("anthropic-beta")
+	if anthropicBeta != "" {
+		req.Set("anthropic-beta", anthropicBeta)
+	}
 	model_setting.GetClaudeSettings().WriteHeaders(info.OriginModelName, req)
 	return nil
 }
@@ -60,7 +64,16 @@ func (a *Adaptor) ConvertOpenAIRequest(c *gin.Context, info *relaycommon.RelayIn
 	if request == nil {
 		return nil, errors.New("request is nil")
 	}
+	// 检查是否为Nova模型
+	if isNovaModel(request.Model) {
+		novaReq := convertToNovaRequest(request)
+		c.Set("request_model", request.Model)
+		c.Set("converted_request", novaReq)
+		c.Set("is_nova_model", true)
+		return novaReq, nil
+	}
 
+	// 原有的Claude模型处理逻辑
 	var claudeReq *dto.ClaudeRequest
 	var err error
 	claudeReq, err = claude.RequestOpenAI2ClaudeMessage(c, *request)
@@ -69,6 +82,7 @@ func (a *Adaptor) ConvertOpenAIRequest(c *gin.Context, info *relaycommon.RelayIn
 	}
 	c.Set("request_model", claudeReq.Model)
 	c.Set("converted_request", claudeReq)
+	c.Set("is_nova_model", false)
 	return claudeReq, err
 }
 

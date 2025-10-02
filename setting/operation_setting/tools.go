@@ -11,21 +11,30 @@ const (
 )
 
 const (
+	GPTImage1Low1024x1024    = 0.011
+	GPTImage1Low1024x1536    = 0.016
+	GPTImage1Low1536x1024    = 0.016
+	GPTImage1Medium1024x1024 = 0.042
+	GPTImage1Medium1024x1536 = 0.063
+	GPTImage1Medium1536x1024 = 0.063
+	GPTImage1High1024x1024   = 0.167
+	GPTImage1High1024x1536   = 0.25
+	GPTImage1High1536x1024   = 0.25
+)
+
+const (
 	// Gemini Audio Input Price
 	Gemini25FlashPreviewInputAudioPrice     = 1.00
 	Gemini25FlashProductionInputAudioPrice  = 1.00 // for `gemini-2.5-flash`
 	Gemini25FlashLitePreviewInputAudioPrice = 0.50
 	Gemini25FlashNativeAudioInputAudioPrice = 3.00
 	Gemini20FlashInputAudioPrice            = 0.70
+	GeminiRoboticsER15InputAudioPrice       = 1.00
 )
 
 const (
 	// Claude Web search
 	ClaudeWebSearchPrice = 10.00
-)
-
-const (
-	Gemini25FlashImagePreviewImageOutputPrice = 30.00
 )
 
 func GetClaudeWebSearchPricePerThousand() float64 {
@@ -66,13 +75,36 @@ func GetGeminiInputAudioPricePerMillionTokens(modelName string) float64 {
 		return Gemini25FlashProductionInputAudioPrice
 	} else if strings.HasPrefix(modelName, "gemini-2.0-flash") {
 		return Gemini20FlashInputAudioPrice
+	} else if strings.HasPrefix(modelName, "gemini-robotics-er-1.5") {
+		return GeminiRoboticsER15InputAudioPrice
 	}
 	return 0
 }
 
-func GetGeminiImageOutputPricePerMillionTokens(modelName string) float64 {
-	if strings.HasPrefix(modelName, "gemini-2.5-flash-image-preview") {
-		return Gemini25FlashImagePreviewImageOutputPrice
+func GetGPTImage1PriceOnceCall(quality string, size string) float64 {
+	prices := map[string]map[string]float64{
+		"low": {
+			"1024x1024": GPTImage1Low1024x1024,
+			"1024x1536": GPTImage1Low1024x1536,
+			"1536x1024": GPTImage1Low1536x1024,
+		},
+		"medium": {
+			"1024x1024": GPTImage1Medium1024x1024,
+			"1024x1536": GPTImage1Medium1024x1536,
+			"1536x1024": GPTImage1Medium1536x1024,
+		},
+		"high": {
+			"1024x1024": GPTImage1High1024x1024,
+			"1024x1536": GPTImage1High1024x1536,
+			"1536x1024": GPTImage1High1536x1024,
+		},
 	}
-	return 0
+
+	if qualityMap, exists := prices[quality]; exists {
+		if price, exists := qualityMap[size]; exists {
+			return price
+		}
+	}
+
+	return GPTImage1High1024x1024
 }
