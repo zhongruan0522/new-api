@@ -37,6 +37,7 @@ import { SiAlipay, SiWechat, SiStripe } from 'react-icons/si';
 import { CreditCard, Coins, Wallet, BarChart2, TrendingUp } from 'lucide-react';
 import { IconGift } from '@douyinfe/semi-icons';
 import { useMinimumLoadingTime } from '../../hooks/common/useMinimumLoadingTime';
+import { getCurrencyConfig } from '../../helpers/render';
 
 const { Text } = Typography;
 
@@ -343,25 +344,8 @@ const RechargeCard = ({
                       <div className='flex items-center gap-2'>
                         <span>{t('选择充值额度')}</span>
                         {(() => {
-                          const quotaDisplayType = localStorage.getItem('quota_display_type') || 'USD';
-                          if (quotaDisplayType === 'USD') return null;
-                          
-                          const statusStr = localStorage.getItem('status');
-                          let symbol = '¥';
-                          let rate = 7;
-                          
-                          try {
-                            if (statusStr) {
-                              const s = JSON.parse(statusStr);
-                              if (quotaDisplayType === 'CNY') {
-                                rate = s?.usd_exchange_rate || 7;
-                                symbol = '¥';
-                              } else if (quotaDisplayType === 'CUSTOM') {
-                                rate = s?.custom_currency_exchange_rate || 1;
-                                symbol = s?.custom_currency_symbol || '¤';
-                              }
-                            }
-                          } catch (e) {}
+                          const { symbol, rate, type } = getCurrencyConfig();
+                          if (type === 'USD') return null;
                           
                           return (
                             <span style={{ color: 'var(--semi-color-text-2)', fontSize: '12px', fontWeight: 'normal' }}>
@@ -385,15 +369,9 @@ const RechargeCard = ({
                         const save = originalPrice - discountedPrice;
 
                         // 根据当前货币类型换算显示金额和数量
-                        const quotaDisplayType = localStorage.getItem('quota_display_type') || 'USD';
-                        let symbol = '¥';
-                        let displayValue = preset.value; // 显示的数量
-                        let displayActualPay = actualPay;
-                        let displaySave = save;
-                        
-                        // 获取汇率
+                        const { symbol, rate, type } = getCurrencyConfig();
                         const statusStr = localStorage.getItem('status');
-                        let usdRate = 7; // 默认汇率 1 USD = 7 CNY
+                        let usdRate = 7; // 默认CNY汇率
                         try {
                           if (statusStr) {
                             const s = JSON.parse(statusStr);
@@ -401,35 +379,22 @@ const RechargeCard = ({
                           }
                         } catch (e) {}
                         
-                        if (quotaDisplayType === 'USD') {
-                          symbol = '$';
-                          // 数量和价格都保持美元（系统默认）
-                          displayValue = preset.value;
+                        let displayValue = preset.value; // 显示的数量
+                        let displayActualPay = actualPay;
+                        let displaySave = save;
+                        
+                        if (type === 'USD') {
+                          // 数量保持USD，价格从CNY转USD
                           displayActualPay = actualPay / usdRate;
                           displaySave = save / usdRate;
-                        } else if (quotaDisplayType === 'CNY') {
-                          symbol = '¥';
-                          // 数量需要换算为人民币
+                        } else if (type === 'CNY') {
+                          // 数量转CNY，价格已是CNY
                           displayValue = preset.value * usdRate;
-                          // 价格已经是人民币，保持不变
-                          displayActualPay = actualPay;
-                          displaySave = save;
-                        } else if (quotaDisplayType === 'CUSTOM') {
-                          let customSymbol = '¤';
-                          let customRate = 1;
-                          try {
-                            if (statusStr) {
-                              const s = JSON.parse(statusStr);
-                              customSymbol = s?.custom_currency_symbol || '¤';
-                              customRate = s?.custom_currency_exchange_rate || 1;
-                            }
-                          } catch (e) {}
-                          symbol = customSymbol;
-                          // 数量从USD转为自定义货币
-                          displayValue = preset.value * customRate;
-                          // 价格从CNY先转USD再转自定义货币
-                          displayActualPay = (actualPay / usdRate) * customRate;
-                          displaySave = (save / usdRate) * customRate;
+                        } else if (type === 'CUSTOM') {
+                          // 数量和价格都转自定义货币
+                          displayValue = preset.value * rate;
+                          displayActualPay = (actualPay / usdRate) * rate;
+                          displaySave = (save / usdRate) * rate;
                         }
 
                         return (
