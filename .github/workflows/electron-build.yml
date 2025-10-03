@@ -35,8 +35,9 @@ jobs:
           npm run build
         env:
           DISABLE_ESLINT_PLUGIN: 'true'
+          NODE_OPTIONS: '--max_old_space_size=4096'
 
-      - name: Build Go binary (darwin/Linux)
+      - name: Build Go binary (macos/Linux)
         if: runner.os != 'Windows'
         run: |
           go build -ldflags="-s -w" -o new-api
@@ -69,7 +70,7 @@ jobs:
         if: runner.os == 'macOS'
         uses: actions/upload-artifact@v4
         with:
-          name: darwin-build
+          name: macos-build
           path: |
             electron/dist/*.dmg
             electron/dist/*.zip
@@ -95,7 +96,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            darwin-build/*
+            macos-build/*
             windows-build/*
           draft: false
           prerelease: false
