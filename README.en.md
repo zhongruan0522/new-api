@@ -213,7 +213,6 @@ For detailed API documentation, please refer to [API Documentation](https://docs
 
 Other projects based on New API:
 - [new-api-horizon](https://github.com/Calcium-Ion/new-api-horizon): High-performance optimized version of New API
-- [VoAPI](https://github.com/VoAPI/VoAPI): Frontend beautified version based on New API
 
 ## Help and Support
 
