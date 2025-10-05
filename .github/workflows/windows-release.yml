@@ -44,7 +44,7 @@ jobs:
           VERSION=$(git describe --tags)
           go build -ldflags "-s -w -X 'one-api/common.Version=$VERSION'" -o new-api-$VERSION.exe
       - name: Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/')
         with:
           files: new-api-*.exe

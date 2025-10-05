@@ -42,7 +42,7 @@ jobs:
           VERSION=$(git describe --tags)
           go build -ldflags "-X 'one-api/common.Version=$VERSION'" -o new-api-macos-$VERSION
       - name: Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/')
         with:
           files: new-api-macos-*
