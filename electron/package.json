@@ -30,7 +30,7 @@
   },
   "build": {
     "appId": "com.newapi.desktop",
-    "productName": "New API",
+    "productName": "New-API-App",
     "publish": null,
     "directories": {
       "output": "dist"
