@@ -131,6 +131,8 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
+    permissions:
+      contents: write
 
     steps:
       - name: Download all artifacts
@@ -140,9 +142,9 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            # macos-build/*
             windows-build/*
           draft: false
           prerelease: false
+          overwrite_files: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
