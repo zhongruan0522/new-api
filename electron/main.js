@@ -222,6 +222,12 @@ function checkServerAvailability(port, maxRetries = 30, retryDelay = 1000) {
 function startServer() {
   return new Promise((resolve, reject) => {
     const isDev = process.env.NODE_ENV === 'development';
+
+    const userDataPath = app.getPath('userData');
+    const dataDir = path.join(userDataPath, 'data');
+    
+    // 设置环境变量供 preload.js 使用
+    process.env.ELECTRON_DATA_DIR = dataDir;
     
     if (isDev) {
       // 开发模式：假设开发者手动启动了 Go 后端和前端开发服务器
@@ -250,8 +256,6 @@ function startServer() {
 
     // 生产模式：启动二进制服务器
     const env = { ...process.env, PORT: PORT.toString() };
-    const userDataPath = app.getPath('userData');
-    const dataDir = path.join(userDataPath, 'data');
 
     if (!fs.existsSync(dataDir)) {
       fs.mkdirSync(dataDir, { recursive: true });
