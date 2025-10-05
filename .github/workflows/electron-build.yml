@@ -66,6 +66,29 @@ jobs:
           cd electron
           VERSION=$(git describe --tags)
           VERSION=${VERSION#v}  # Remove 'v' prefix if present
+          # Convert to valid semver: take first 3 components and convert rest to prerelease format
+          # e.g., 0.9.0.9.1-50-g7074ea2e -> 0.9.0-dev.9.1.50.g7074ea2e
+          if [[ $VERSION =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)(.*)$ ]]; then
+            MAJOR=${BASH_REMATCH[1]}
+            MINOR=${BASH_REMATCH[2]}
+            PATCH=${BASH_REMATCH[3]}
+            REST=${BASH_REMATCH[4]}
+          
+            VERSION="$MAJOR.$MINOR.$PATCH"
+          
+            # If there's extra content, parse and convert to prerelease format
+            if [[ -n "$REST" ]]; then
+              if [[ $REST =~ ^(\..*)?(-[0-9]+-g[0-9a-f]+)$ ]]; then
+                EXTRA=${BASH_REMATCH[1]}
+                GIT_SUFFIX=${BASH_REMATCH[2]}
+                VERSION="$VERSION-dev"
+                [[ -n "$EXTRA" ]] && VERSION="$VERSION${EXTRA//./.}"
+                [[ -n "$GIT_SUFFIX" ]] && VERSION="$VERSION${GIT_SUFFIX//-/.}"
+              else
+                VERSION="$VERSION-dev${REST//./.}"
+              fi
+            fi
+          fi
           npm version $VERSION --no-git-tag-version --allow-same-version
 
       - name: Install Electron dependencies
