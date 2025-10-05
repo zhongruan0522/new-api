@@ -9,6 +9,7 @@ logs
 web/dist
 .env
 one-api
+new-api
 .DS_Store
 tiktoken_cache
 .eslintcache

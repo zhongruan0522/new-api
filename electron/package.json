@@ -4,7 +4,8 @@
   "description": "New API - AI Model Gateway Desktop Application",
   "main": "main.js",
   "scripts": {
-    "start": "set NODE_ENV=development&& electron .",
+    "start": "electron .",
+    "dev": "cross-env NODE_ENV=development electron .",
     "build": "electron-builder",
     "build:mac": "electron-builder --mac",
     "build:win": "electron-builder --win",
@@ -17,14 +18,14 @@
     "openai",
     "claude"
   ],
-  "author": "",
-  "license": "MIT",
+  "author": "QuantumNous",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Calcium-Ion/new-api"
+    "url": "https://github.com/QuantumNous/new-api"
   },
   "devDependencies": {
-    "electron": "^28.0.0",
+    "cross-env": "^7.0.3",
+    "electron": "28.3.3",
     "electron-builder": "^24.9.1"
   },
   "build": {
