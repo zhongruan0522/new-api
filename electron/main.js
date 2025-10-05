@@ -9,6 +9,7 @@ let serverProcess;
 let tray = null;
 let serverErrorLogs = [];
 const PORT = 3000;
+const DEV_FRONTEND_PORT = 5173; // Vite dev server port
 
 // 保存日志到文件并打开
 function saveAndOpenErrorLog() {
@@ -79,10 +80,10 @@ function analyzeError(errorLogs) {
   if (allLogs.includes('database is locked') || 
       allLogs.includes('unable to open database')) {
     return {
-      type: '数据库错误',
-      title: '数据库访问失败',
-      message: '无法访问或锁定数据库文件',
-      solution: '可能的解决方案：\n\n1. 确保没有其他 New API 实例正在运行\n2. 检查数据库文件权限\n3. 尝试删除数据库锁文件（.db-shm 和 .db-wal）\n4. 重启应用程序'
+      type: '数据文件被占用',
+      title: '无法访问数据文件',
+      message: '应用的数据文件正被其他程序占用',
+      solution: '可能的解决方案：\n\n1. 检查是否已经打开了另一个 New API 窗口\n   - 查看任务栏/Dock 中是否有其他 New API 图标\n   - 查看系统托盘（Windows）或菜单栏（Mac）中是否有 New API 图标\n\n2. 如果刚刚关闭过应用，请等待 10 秒后再试\n\n3. 重启电脑以释放被占用的文件\n\n4. 如果问题持续，可以尝试：\n   - 退出所有 New API 实例\n   - 删除数据目录中的临时文件（.db-shm 和 .db-wal）\n   - 重新启动应用'
     };
   }
   
@@ -173,32 +174,101 @@ function getBinaryPath() {
   return path.join(process.resourcesPath, 'bin', binaryName);
 }
 
+// Check if a server is available with retry logic
+function checkServerAvailability(port, maxRetries = 30, retryDelay = 1000) {
+  return new Promise((resolve, reject) => {
+    let currentAttempt = 0;
+    
+    const tryConnect = () => {
+      currentAttempt++;
+      
+      if (currentAttempt % 5 === 1 && currentAttempt > 1) {
+        console.log(`Attempting to connect to port ${port}... (attempt ${currentAttempt}/${maxRetries})`);
+      }
+      
+      const req = http.get({
+        hostname: '127.0.0.1', // Use IPv4 explicitly instead of 'localhost' to avoid IPv6 issues
+        port: port,
+        timeout: 10000
+      }, (res) => {
+        // Server responded, connection successful
+        req.destroy();
+        console.log(`✓ Successfully connected to port ${port} (status: ${res.statusCode})`);
+        resolve();
+      });
+
+      req.on('error', (err) => {
+        if (currentAttempt >= maxRetries) {
+          reject(new Error(`Failed to connect to port ${port} after ${maxRetries} attempts: ${err.message}`));
+        } else {
+          setTimeout(tryConnect, retryDelay);
+        }
+      });
+
+      req.on('timeout', () => {
+        req.destroy();
+        if (currentAttempt >= maxRetries) {
+          reject(new Error(`Connection timeout on port ${port} after ${maxRetries} attempts`));
+        } else {
+          setTimeout(tryConnect, retryDelay);
+        }
+      });
+    };
+    
+    tryConnect();
+  });
+}
+
 function startServer() {
   return new Promise((resolve, reject) => {
-    const binaryPath = getBinaryPath();
     const isDev = process.env.NODE_ENV === 'development';
-
-    console.log('Starting server from:', binaryPath);
-
-    const env = { ...process.env, PORT: PORT.toString() };
-
-    let dataDir;
+    
     if (isDev) {
-      dataDir = path.join(__dirname, '..', 'data');
-    } else {
-      const userDataPath = app.getPath('userData');
-      dataDir = path.join(userDataPath, 'data');
+      // 开发模式：假设开发者手动启动了 Go 后端和前端开发服务器
+      // 只需要等待前端开发服务器就绪
+      console.log('Development mode: skipping server startup');
+      console.log('Please make sure you have started:');
+      console.log('  1. Go backend: go run main.go (port 3000)');
+      console.log('  2. Frontend dev server: cd web && bun dev (port 5173)');
+      console.log('');
+      console.log('Checking if servers are running...');
+      
+      // First check if both servers are accessible
+      checkServerAvailability(DEV_FRONTEND_PORT)
+        .then(() => {
+          console.log('✓ Frontend dev server is accessible on port 5173');
+          resolve();
+        })
+        .catch((err) => {
+          console.error(`✗ Cannot connect to frontend dev server on port ${DEV_FRONTEND_PORT}`);
+          console.error('Please make sure the frontend dev server is running:');
+          console.error('  cd web && bun dev');
+          reject(err);
+        });
+      return;
     }
+
+    // 生产模式：启动二进制服务器
+    const env = { ...process.env, PORT: PORT.toString() };
+    const userDataPath = app.getPath('userData');
+    const dataDir = path.join(userDataPath, 'data');
 
     if (!fs.existsSync(dataDir)) {
       fs.mkdirSync(dataDir, { recursive: true });
     }
 
     env.SQLITE_PATH = path.join(dataDir, 'new-api.db');
+    
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('📁 您的数据存储位置：');
+    console.log('   ' + dataDir);
+    console.log('   💡 备份提示：复制此目录即可备份所有数据');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
-    const workingDir = isDev
-      ? path.join(__dirname, '..')
-      : process.resourcesPath;
+    const binaryPath = getBinaryPath();
+    const workingDir = process.resourcesPath;
+    
+    console.log('Starting server from:', binaryPath);
 
     serverProcess = spawn(binaryPath, [], {
       env,
@@ -299,32 +369,25 @@ function startServer() {
       }
     });
 
-    waitForServer(resolve, reject);
+    checkServerAvailability(PORT)
+      .then(() => {
+        console.log('✓ Backend server is accessible on port 3000');
+        resolve();
+      })
+      .catch((err) => {
+        console.error('✗ Failed to connect to backend server');
+        reject(err);
+      });
   });
-}
-
-function waitForServer(resolve, reject, retries = 30) {
-  if (retries === 0) {
-    reject(new Error('Server failed to start within timeout'));
-    return;
-  }
-
-  const req = http.get(`http://localhost:${PORT}`, (res) => {
-    console.log('Server is ready');
-    resolve();
-  });
-
-  req.on('error', () => {
-    setTimeout(() => waitForServer(resolve, reject, retries - 1), 1000);
-  });
-
-  req.end();
 }
 
 function createWindow() {
+  const isDev = process.env.NODE_ENV === 'development';
+  const loadPort = isDev ? DEV_FRONTEND_PORT : PORT;
+  
   mainWindow = new BrowserWindow({
-    width: 1400,
-    height: 900,
+    width: 1080,
+    height: 720,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: false,
@@ -334,9 +397,11 @@ function createWindow() {
     icon: path.join(__dirname, 'icon.png')
   });
 
-  mainWindow.loadURL(`http://localhost:${PORT}`);
+  mainWindow.loadURL(`http://127.0.0.1:${loadPort}`);
+  
+  console.log(`Loading from: http://127.0.0.1:${loadPort}`);
 
-  if (process.env.NODE_ENV === 'development') {
+  if (isDev) {
     mainWindow.webContents.openDevTools();
   }
 
