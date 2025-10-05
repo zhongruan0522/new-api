@@ -9,9 +9,10 @@ function getDataDirPath() {
   switch (platform) {
     case 'darwin':
       return `${homeDir}/Library/Application Support/New API/data`;
-    case 'win32':
+    case 'win32': {
       const appData = process.env.APPDATA || `${homeDir}\\AppData\\Roaming`;
       return `${appData}\\New API\\data`;
+    }
     case 'linux':
       return `${homeDir}/.config/New API/data`;
     default:
