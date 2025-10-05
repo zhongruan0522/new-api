@@ -106,20 +106,21 @@ export default function SettingsLog(props) {
               <Text type="tertiary"> ({t('约')} {daysDiff} {t('天前')})</Text>
             )}
           </p>
-          <div style={{ 
-            background: '#fff7e6', 
-            border: '1px solid #ffd591', 
-            padding: '12px', 
+          <div style={{
+            background: '#fff7e6',
+            border: '1px solid #ffd591',
+            padding: '12px',
             borderRadius: '4px',
-            marginTop: '12px'
+            marginTop: '12px',
+            color: '#333'
           }}>
-            <Text type="warning" strong>⚠️ {t('注意')}：</Text>
-            <Text>{t('将删除')} </Text>
-            <Text strong type="danger">{targetTime}</Text>
+            <Text strong style={{ color: '#d46b08' }}>⚠️ {t('注意')}：</Text>
+            <Text style={{ color: '#333' }}>{t('将删除')} </Text>
+            <Text strong style={{ color: '#cf1322' }}>{targetTime}</Text>
             {daysDiff > 0 && (
-              <Text type="tertiary"> ({t('约')} {daysDiff} {t('天前')})</Text>
+              <Text style={{ color: '#8c8c8c' }}> ({t('约')} {daysDiff} {t('天前')})</Text>
             )}
-            <Text> {t('之前的所有日志')}</Text>
+            <Text style={{ color: '#333' }}> {t('之前的所有日志')}</Text>
           </div>
           <p style={{ marginTop: '12px' }}>
             <Text type="danger">{t('此操作不可恢复，请仔细确认时间后再操作！')}</Text>
