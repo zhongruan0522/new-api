@@ -63,9 +63,10 @@ const TopupHistoryModal = ({ visible, onCancel, t }) => {
   const loadTopups = async (currentPage, currentPageSize) => {
     setLoading(true);
     try {
-      const res = await API.get(
-        `/api/user/topup/self?p=${currentPage}&page_size=${currentPageSize}`,
-      );
+      const endpoint = isAdmin()
+        ? `/api/user/topup?p=${currentPage}&page_size=${currentPageSize}`
+        : `/api/user/topup/self?p=${currentPage}&page_size=${currentPageSize}`;
+      const res = await API.get(endpoint);
       const { success, message, data } = res.data;
       if (success) {
         setTopups(data.items || []);

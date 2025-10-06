@@ -330,6 +330,21 @@ func GetUserTopUps(c *gin.Context) {
 	common.ApiSuccess(c, pageInfo)
 }
 
+// GetAllTopUps 管理员获取全平台充值记录
+func GetAllTopUps(c *gin.Context) {
+	pageInfo := common.GetPageQuery(c)
+
+	topups, total, err := model.GetAllTopUps(pageInfo)
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+
+	pageInfo.SetTotal(int(total))
+	pageInfo.SetItems(topups)
+	common.ApiSuccess(c, pageInfo)
+}
+
 type AdminCompleteTopupRequest struct {
 	TradeNo string `json:"trade_no"`
 }
