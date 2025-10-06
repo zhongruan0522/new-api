@@ -25,12 +25,14 @@ import {
   Toast,
   Empty,
   Button,
+  Input,
 } from '@douyinfe/semi-ui';
 import {
   IllustrationNoResult,
   IllustrationNoResultDark,
 } from '@douyinfe/semi-illustrations';
 import { Coins } from 'lucide-react';
+import { IconSearch } from '@douyinfe/semi-icons';
 import { API, timestamp2string } from '../../../helpers';
 import { isAdmin } from '../../../helpers/utils';
 import { useIsMobile } from '../../../hooks/common/useIsMobile';
@@ -57,15 +59,18 @@ const TopupHistoryModal = ({ visible, onCancel, t }) => {
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [keyword, setKeyword] = useState('');
 
   const isMobile = useIsMobile();
 
   const loadTopups = async (currentPage, currentPageSize) => {
     setLoading(true);
     try {
-      const endpoint = isAdmin()
-        ? `/api/user/topup?p=${currentPage}&page_size=${currentPageSize}`
-        : `/api/user/topup/self?p=${currentPage}&page_size=${currentPageSize}`;
+      const base = isAdmin() ? '/api/user/topup' : '/api/user/topup/self';
+      const qs =
+        `p=${currentPage}&page_size=${currentPageSize}` +
+        (keyword ? `&keyword=${encodeURIComponent(keyword)}` : '');
+      const endpoint = `${base}?${qs}`;
       const res = await API.get(endpoint);
       const { success, message, data } = res.data;
       if (success) {
@@ -86,7 +91,7 @@ const TopupHistoryModal = ({ visible, onCancel, t }) => {
     if (visible) {
       loadTopups(page, pageSize);
     }
-  }, [visible, page, pageSize]);
+  }, [visible, page, pageSize, keyword]);
 
   const handlePageChange = (currentPage) => {
     setPage(currentPage);
@@ -221,6 +226,15 @@ const TopupHistoryModal = ({ visible, onCancel, t }) => {
       footer={null}
       size={isMobile ? 'full-width' : 'large'}
     >
+      <div className='mb-3'>
+        <Input
+          prefix={<IconSearch />}
+          placeholder={t('订单号')}
+          value={keyword}
+          onChange={setKeyword}
+          showClear
+        />
+      </div>
       <Table
         columns={columns}
         dataSource={topups}
