@@ -18,7 +18,16 @@ For commercial licensing, please contact support@quantumnous.com
 */
 
 import React, { useEffect, useState, useRef } from 'react';
-import { Button, Col, Form, Row, Spin, DatePicker, Typography, Modal } from '@douyinfe/semi-ui';
+import {
+  Button,
+  Col,
+  Form,
+  Row,
+  Spin,
+  DatePicker,
+  Typography,
+  Modal,
+} from '@douyinfe/semi-ui';
 import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next';
 import {
@@ -90,40 +99,58 @@ export default function SettingsLog(props) {
     const targetTime = targetDate.format('YYYY-MM-DD HH:mm:ss');
     const currentTime = now.format('YYYY-MM-DD HH:mm:ss');
     const daysDiff = now.diff(targetDate, 'day');
-    
+
     Modal.confirm({
       title: t('确认清除历史日志'),
       content: (
         <div style={{ lineHeight: '1.8' }}>
           <p>
             <Text>{t('当前时间')}：</Text>
-            <Text strong style={{ color: '#52c41a' }}>{currentTime}</Text>
+            <Text strong style={{ color: '#52c41a' }}>
+              {currentTime}
+            </Text>
           </p>
           <p>
             <Text>{t('选择时间')}：</Text>
-            <Text strong type="danger">{targetTime}</Text>
+            <Text strong type='danger'>
+              {targetTime}
+            </Text>
             {daysDiff > 0 && (
-              <Text type="tertiary"> ({t('约')} {daysDiff} {t('天前')})</Text>
+              <Text type='tertiary'>
+                {' '}
+                ({t('约')} {daysDiff} {t('天前')})
+              </Text>
             )}
           </p>
-          <div style={{
-            background: '#fff7e6',
-            border: '1px solid #ffd591',
-            padding: '12px',
-            borderRadius: '4px',
-            marginTop: '12px',
-            color: '#333'
-          }}>
-            <Text strong style={{ color: '#d46b08' }}>⚠️ {t('注意')}：</Text>
+          <div
+            style={{
+              background: '#fff7e6',
+              border: '1px solid #ffd591',
+              padding: '12px',
+              borderRadius: '4px',
+              marginTop: '12px',
+              color: '#333',
+            }}
+          >
+            <Text strong style={{ color: '#d46b08' }}>
+              ⚠️ {t('注意')}：
+            </Text>
             <Text style={{ color: '#333' }}>{t('将删除')} </Text>
-            <Text strong style={{ color: '#cf1322' }}>{targetTime}</Text>
+            <Text strong style={{ color: '#cf1322' }}>
+              {targetTime}
+            </Text>
             {daysDiff > 0 && (
-              <Text style={{ color: '#8c8c8c' }}> ({t('约')} {daysDiff} {t('天前')})</Text>
+              <Text style={{ color: '#8c8c8c' }}>
+                {' '}
+                ({t('约')} {daysDiff} {t('天前')})
+              </Text>
             )}
             <Text style={{ color: '#333' }}> {t('之前的所有日志')}</Text>
           </div>
           <p style={{ marginTop: '12px' }}>
-            <Text type="danger">{t('此操作不可恢复，请仔细确认时间后再操作！')}</Text>
+            <Text type='danger'>
+              {t('此操作不可恢复，请仔细确认时间后再操作！')}
+            </Text>
           </p>
         </div>
       ),
@@ -203,10 +230,18 @@ export default function SettingsLog(props) {
                       });
                     }}
                   />
-                  <Text type="tertiary" size="small" style={{ display: 'block', marginTop: 4, marginBottom: 8 }}>
+                  <Text
+                    type='tertiary'
+                    size='small'
+                    style={{ display: 'block', marginTop: 4, marginBottom: 8 }}
+                  >
                     {t('将清除选定时间之前的所有日志')}
                   </Text>
-                  <Button size='default' type='danger' onClick={onCleanHistoryLog}>
+                  <Button
+                    size='default'
+                    type='danger'
+                    onClick={onCleanHistoryLog}
+                  >
                     {t('清除历史日志')}
                   </Button>
                 </Spin>
