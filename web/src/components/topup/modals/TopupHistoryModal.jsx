@@ -102,6 +102,11 @@ const TopupHistoryModal = ({ visible, onCancel, t }) => {
     setPage(1);
   };
 
+  const handleKeywordChange = (value) => {
+    setKeyword(value);
+    setPage(1);
+  };
+
   // 管理员补单
   const handleAdminComplete = async (tradeNo) => {
     try {
@@ -231,7 +236,7 @@ const TopupHistoryModal = ({ visible, onCancel, t }) => {
           prefix={<IconSearch />}
           placeholder={t('订单号')}
           value={keyword}
-          onChange={setKeyword}
+          onChange={handleKeywordChange}
           showClear
         />
       </div>
