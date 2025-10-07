@@ -26,8 +26,9 @@ import { Banner } from '@douyinfe/semi-ui';
  */
 const DatabaseStep = ({ setupStatus, renderNavigationButtons, t }) => {
   // 检测是否在 Electron 环境中运行
-  const isElectron = typeof window !== 'undefined' && window.electron?.isElectron;
-  
+  const isElectron =
+    typeof window !== 'undefined' && window.electron?.isElectron;
+
   return (
     <>
       {/* 数据库警告 */}
