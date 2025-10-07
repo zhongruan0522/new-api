@@ -237,8 +237,8 @@ func EpayNotify(c *gin.Context) {
 		_, err := c.Writer.Write([]byte("fail"))
 		if err != nil {
 			log.Println("易支付回调写入失败")
-			return
 		}
+		return
 	}
 	verifyInfo, err := client.Verify(params)
 	if err == nil && verifyInfo.VerifyStatus {
