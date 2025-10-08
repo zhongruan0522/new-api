@@ -110,27 +110,9 @@ const RegisterForm = () => {
       setTurnstileSiteKey(status.turnstile_site_key);
     }
     
-    // 检查用户协议和隐私政策是否已设置
-    const checkTermsAvailability = async () => {
-      try {
-        const [userAgreementRes, privacyPolicyRes] = await Promise.all([
-          API.get('/api/user-agreement'),
-          API.get('/api/privacy-policy')
-        ]);
-        
-        if (userAgreementRes.data.success && userAgreementRes.data.data) {
-          setHasUserAgreement(true);
-        }
-        
-        if (privacyPolicyRes.data.success && privacyPolicyRes.data.data) {
-          setHasPrivacyPolicy(true);
-        }
-      } catch (error) {
-        console.error('检查用户协议和隐私政策失败:', error);
-      }
-    };
-    
-    checkTermsAvailability();
+    // 从 status 获取用户协议和隐私政策的启用状态
+    setHasUserAgreement(status.user_agreement_enabled || false);
+    setHasPrivacyPolicy(status.privacy_policy_enabled || false);
   }, [status]);
 
   useEffect(() => {

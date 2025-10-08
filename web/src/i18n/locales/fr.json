@@ -2270,5 +2270,8 @@
   "和": " et ",
   "请先阅读并同意用户协议和隐私政策": "Veuillez d'abord lire et accepter l'accord utilisateur et la politique de confidentialité",
   "填写用户协议内容后，用户注册时将被要求勾选已阅读用户协议": "Après avoir rempli le contenu de l'accord utilisateur, les utilisateurs devront cocher qu'ils ont lu l'accord utilisateur lors de l'inscription",
-  "填写隐私政策内容后，用户注册时将被要求勾选已阅读隐私政策": "Après avoir rempli le contenu de la politique de confidentialité, les utilisateurs devront cocher qu'ils ont lu la politique de confidentialité lors de l'inscription"
+  "填写隐私政策内容后，用户注册时将被要求勾选已阅读隐私政策": "Après avoir rempli le contenu de la politique de confidentialité, les utilisateurs devront cocher qu'ils ont lu la politique de confidentialité lors de l'inscription",
+  "管理员设置了外部链接，点击下方按钮访问": "L'administrateur a défini un lien externe, cliquez sur le bouton ci-dessous pour accéder",
+  "访问用户协议": "Accéder à l'accord utilisateur",
+  "访问隐私政策": "Accéder à la politique de confidentialité"
 }

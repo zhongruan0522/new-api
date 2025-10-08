@@ -2276,5 +2276,8 @@
   "和": " and ",
   "请先阅读并同意用户协议和隐私政策": "Please read and agree to the user agreement and privacy policy first",
   "填写用户协议内容后，用户注册时将被要求勾选已阅读用户协议": "After filling in the user agreement content, users will be required to check that they have read the user agreement when registering",
-  "填写隐私政策内容后，用户注册时将被要求勾选已阅读隐私政策": "After filling in the privacy policy content, users will be required to check that they have read the privacy policy when registering"
+  "填写隐私政策内容后，用户注册时将被要求勾选已阅读隐私政策": "After filling in the privacy policy content, users will be required to check that they have read the privacy policy when registering",
+  "管理员设置了外部链接，点击下方按钮访问": "Administrator has set an external link, click the button below to access",
+  "访问用户协议": "Access User Agreement",
+  "访问隐私政策": "Access Privacy Policy"
 }

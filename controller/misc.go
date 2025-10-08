@@ -108,6 +108,8 @@ func GetStatus(c *gin.Context) {
 		"passkey_user_verification":   passkeySetting.UserVerification,
 		"passkey_attachment":          passkeySetting.AttachmentPreference,
 		"setup":                       constant.Setup,
+		"user_agreement_enabled":      common.OptionMap["UserAgreement"] != "",
+		"privacy_policy_enabled":      common.OptionMap["PrivacyPolicy"] != "",
 	}
 
 	// 根据启用状态注入可选内容
