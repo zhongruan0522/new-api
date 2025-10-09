@@ -36,23 +36,21 @@ type responsePayload struct {
 }
 
 type responseTask struct {
-	ID      string `json:"id"`
-	Model   string `json:"model"`
-	Status  string `json:"status"`
-	Content struct {
-		VideoURL string `json:"video_url"`
-	} `json:"content"`
-	Seed        int    `json:"seed"`
-	Resolution  string `json:"resolution"`
-	Duration    int    `json:"duration"`
-	AspectRatio string `json:"aspect_ratio"`
-	Usage       struct {
-		PromptTokens     int `json:"prompt_tokens"`
-		CompletionTokens int `json:"completion_tokens"`
-		TotalTokens      int `json:"total_tokens"`
-	} `json:"usage"`
-	CreatedAt int64 `json:"created_at"`
-	UpdatedAt int64 `json:"updated_at"`
+	ID                 string `json:"id"`
+	Object             string `json:"object"`
+	Model              string `json:"model"`
+	Status             string `json:"status"`
+	Progress           int    `json:"progress"`
+	CreatedAt          int64  `json:"created_at"`
+	CompletedAt        int64  `json:"completed_at,omitempty"`
+	ExpiresAt          int64  `json:"expires_at,omitempty"`
+	Seconds            string `json:"seconds,omitempty"`
+	Size               string `json:"size,omitempty"`
+	RemixedFromVideoID string `json:"remixed_from_video_id,omitempty"`
+	Error              *struct {
+		Message string `json:"message"`
+		Code    string `json:"code"`
+	} `json:"error,omitempty"`
 }
 
 // ============================
@@ -131,15 +129,13 @@ func (a *TaskAdaptor) FetchTask(baseUrl, key string, body map[string]any) (*http
 		return nil, fmt.Errorf("invalid task_id")
 	}
 
-	uri := fmt.Sprintf("%s/v1/videos/generations/%s", baseUrl, taskID)
+	uri := fmt.Sprintf("%s/v1/videos/%s", baseUrl, taskID)
 
 	req, err := http.NewRequest(http.MethodGet, uri, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	req.Header.Set("Accept", "application/json")
-	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+key)
 
 	return service.GetHttpClient().Do(req)
@@ -163,29 +159,25 @@ func (a *TaskAdaptor) ParseTaskResult(respBody []byte) (*relaycommon.TaskInfo, e
 		Code: 0,
 	}
 
-	// Map Sora status to internal status
 	switch resTask.Status {
-	case "pending", "queued":
+	case "queued", "pending":
 		taskResult.Status = model.TaskStatusQueued
-		taskResult.Progress = "10%"
-	case "processing", "running":
+	case "processing", "in_progress":
 		taskResult.Status = model.TaskStatusInProgress
-		taskResult.Progress = "50%"
-	case "succeeded", "completed":
+	case "completed":
 		taskResult.Status = model.TaskStatusSuccess
-		taskResult.Progress = "100%"
-		taskResult.Url = resTask.Content.VideoURL
-		// Parse usage information for billing
-		taskResult.CompletionTokens = resTask.Usage.CompletionTokens
-		taskResult.TotalTokens = resTask.Usage.TotalTokens
+		taskResult.Url = fmt.Sprintf("%s/v1/videos/%s/content", a.baseURL, resTask.ID)
 	case "failed", "cancelled":
 		taskResult.Status = model.TaskStatusFailure
-		taskResult.Progress = "100%"
-		taskResult.Reason = "task failed"
+		if resTask.Error != nil {
+			taskResult.Reason = resTask.Error.Message
+		} else {
+			taskResult.Reason = "task failed"
+		}
 	default:
-		// Unknown status, treat as processing
-		taskResult.Status = model.TaskStatusInProgress
-		taskResult.Progress = "30%"
+	}
+	if resTask.Progress > 0 && resTask.Progress < 100 {
+		taskResult.Progress = fmt.Sprintf("%d%%", resTask.Progress)
 	}
 
 	return &taskResult, nil
