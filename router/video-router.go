@@ -9,6 +9,7 @@ import (
 
 func SetVideoRouter(router *gin.Engine) {
 	videoV1Router := router.Group("/v1")
+	videoV1Router.GET("/videos/:task_id/content", controller.VideoProxy)
 	videoV1Router.Use(middleware.TokenAuth(), middleware.Distribute())
 	{
 		videoV1Router.POST("/video/generations", controller.RelayTask)

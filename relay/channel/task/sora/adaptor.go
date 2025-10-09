@@ -12,6 +12,7 @@ import (
 	"one-api/relay/channel"
 	relaycommon "one-api/relay/common"
 	"one-api/service"
+	"one-api/setting/system_setting"
 
 	"github.com/gin-gonic/gin"
 	"github.com/pkg/errors"
@@ -166,7 +167,7 @@ func (a *TaskAdaptor) ParseTaskResult(respBody []byte) (*relaycommon.TaskInfo, e
 		taskResult.Status = model.TaskStatusInProgress
 	case "completed":
 		taskResult.Status = model.TaskStatusSuccess
-		taskResult.Url = fmt.Sprintf("%s/v1/videos/%s/content", a.baseURL, resTask.ID)
+		taskResult.Url = fmt.Sprintf("%s/v1/videos/%s/content", system_setting.ServerAddress, resTask.ID)
 	case "failed", "cancelled":
 		taskResult.Status = model.TaskStatusFailure
 		if resTask.Error != nil {
