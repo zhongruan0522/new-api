@@ -30,7 +30,7 @@ import {
   setUserData,
 } from '../../helpers';
 import Turnstile from 'react-turnstile';
-import { Button, Card, Divider, Form, Icon, Modal } from '@douyinfe/semi-ui';
+import { Button, Card, Checkbox, Divider, Form, Icon, Modal } from '@douyinfe/semi-ui';
 import Title from '@douyinfe/semi-ui/lib/es/typography/title';
 import Text from '@douyinfe/semi-ui/lib/es/typography/text';
 import {
@@ -514,9 +514,9 @@ const RegisterForm = () => {
 
                 {(hasUserAgreement || hasPrivacyPolicy) && (
                   <div className='pt-4'>
-                    <Form.Checkbox
+                    <Checkbox
                       checked={agreedToTerms}
-                      onChange={(checked) => setAgreedToTerms(checked)}
+                      onChange={(e) => setAgreedToTerms(e.target.checked)}
                     >
                       <Text size='small' className='text-gray-600'>
                         {t('我已阅读并同意')}
@@ -546,7 +546,7 @@ const RegisterForm = () => {
                           </>
                         )}
                       </Text>
-                    </Form.Checkbox>
+                    </Checkbox>
                   </div>
                 )}
 
