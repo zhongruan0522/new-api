@@ -106,25 +106,53 @@ func validateMultipartTaskRequest(c *gin.Context, info *RelayInfo, action string
 }
 
 func ValidateMultipartDirect(c *gin.Context, info *RelayInfo) *dto.TaskError {
-	form, err := common.ParseMultipartFormReusable(c)
-	if err != nil {
-		return createTaskError(err, "invalid_multipart_form", http.StatusBadRequest, true)
-	}
-	defer form.RemoveAll()
+	contentType := c.GetHeader("Content-Type")
+	var prompt string
+	var hasInputReference bool
 
-	prompts, ok := form.Value["prompt"]
-	if !ok || len(prompts) == 0 {
-		return createTaskError(fmt.Errorf("prompt field is required"), "missing_prompt", http.StatusBadRequest, true)
+	if strings.HasPrefix(contentType, "multipart/form-data") {
+		form, err := common.ParseMultipartFormReusable(c)
+		if err != nil {
+			return createTaskError(err, "invalid_multipart_form", http.StatusBadRequest, true)
+		}
+		defer form.RemoveAll()
+
+		prompts, ok := form.Value["prompt"]
+		if !ok || len(prompts) == 0 {
+			return createTaskError(fmt.Errorf("prompt field is required"), "missing_prompt", http.StatusBadRequest, true)
+		}
+		prompt = prompts[0]
+
+		if _, ok := form.Value["model"]; !ok {
+			return createTaskError(fmt.Errorf("model field is required"), "missing_model", http.StatusBadRequest, true)
+		}
+
+		if _, ok := form.File["input_reference"]; ok {
+			hasInputReference = true
+		}
+	} else {
+		var req TaskSubmitReq
+		if err := common.UnmarshalBodyReusable(c, &req); err != nil {
+			return createTaskError(err, "invalid_json", http.StatusBadRequest, true)
+		}
+
+		prompt = req.Prompt
+
+		if strings.TrimSpace(req.Model) == "" {
+			return createTaskError(fmt.Errorf("model field is required"), "missing_model", http.StatusBadRequest, true)
+		}
+
+		if req.HasImage() {
+			hasInputReference = true
+		}
 	}
-	if taskErr := validatePrompt(prompts[0]); taskErr != nil {
+
+	if taskErr := validatePrompt(prompt); taskErr != nil {
 		return taskErr
 	}
 
-	if _, ok := form.Value["model"]; !ok {
-		return createTaskError(fmt.Errorf("model field is required"), "missing_model", http.StatusBadRequest, true)
-	}
 	action := constant.TaskActionTextGenerate
-	if _, ok := form.File["input_reference"]; ok {
+	if hasInputReference {
 		action = constant.TaskActionGenerate
 	}
 	info.Action = action

@@ -174,14 +174,22 @@ func getModelRequest(c *gin.Context) (*ModelRequest, bool, error) {
 		relayMode := relayconstant.RelayModeUnknown
 		if c.Request.Method == http.MethodPost {
 			relayMode = relayconstant.RelayModeVideoSubmit
-			form, err := common.ParseMultipartFormReusable(c)
-			if err != nil {
-				return nil, false, errors.New("无效的video请求, " + err.Error())
-			}
-			defer form.RemoveAll()
-			if form != nil {
-				if values, ok := form.Value["model"]; ok && len(values) > 0 {
-					modelRequest.Model = values[0]
+			contentType := c.Request.Header.Get("Content-Type")
+			if strings.HasPrefix(contentType, "multipart/form-data") {
+				form, err := common.ParseMultipartFormReusable(c)
+				if err != nil {
+					return nil, false, errors.New("无效的video请求, " + err.Error())
+				}
+				defer form.RemoveAll()
+				if form != nil {
+					if values, ok := form.Value["model"]; ok && len(values) > 0 {
+						modelRequest.Model = values[0]
+					}
+				}
+			} else if strings.HasPrefix(contentType, "application/json") {
+				err = common.UnmarshalBodyReusable(c, &modelRequest)
+				if err != nil {
+					return nil, false, errors.New("无效的video请求, " + err.Error())
 				}
 			}
 		} else if c.Request.Method == http.MethodGet {
