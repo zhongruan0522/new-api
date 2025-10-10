@@ -552,20 +552,22 @@ func RemoveDisabledFields(jsonData []byte, channelOtherSettings dto.ChannelOther
 }
 
 type OpenAIVideo struct {
-	ID                 string `json:"id"`
-	TaskID             string `json:"task_id,omitempty"` //兼容旧接口
-	Object             string `json:"object"`
-	Model              string `json:"model"`
-	Status             string `json:"status"`
-	Progress           int    `json:"progress"`
-	CreatedAt          int64  `json:"created_at"`
-	CompletedAt        int64  `json:"completed_at,omitempty"`
-	ExpiresAt          int64  `json:"expires_at,omitempty"`
-	Seconds            string `json:"seconds,omitempty"`
-	Size               string `json:"size,omitempty"`
-	RemixedFromVideoID string `json:"remixed_from_video_id,omitempty"`
-	Error              *struct {
-		Message string `json:"message"`
-		Code    string `json:"code"`
-	} `json:"error,omitempty"`
+	ID                 string            `json:"id"`
+	TaskID             string            `json:"task_id,omitempty"` //兼容旧接口 待废弃
+	Object             string            `json:"object"`
+	Model              string            `json:"model"`
+	Status             string            `json:"status"`
+	Progress           int               `json:"progress"`
+	CreatedAt          int64             `json:"created_at"`
+	CompletedAt        int64             `json:"completed_at,omitempty"`
+	ExpiresAt          int64             `json:"expires_at,omitempty"`
+	Seconds            string            `json:"seconds,omitempty"`
+	Size               string            `json:"size,omitempty"`
+	RemixedFromVideoID string            `json:"remixed_from_video_id,omitempty"`
+	Error              *OpenAIVideoError `json:"error,omitempty"`
+	Metadata           map[string]any    `json:"metadata,omitempty"`
+}
+type OpenAIVideoError struct {
+	Message string `json:"message"`
+	Code    string `json:"code"`
 }
