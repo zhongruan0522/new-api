@@ -11,6 +11,7 @@ import (
 	"one-api/constant"
 	"one-api/dto"
 	"one-api/model"
+	"one-api/relay/channel"
 	relaycommon "one-api/relay/common"
 	relayconstant "one-api/relay/constant"
 	"one-api/service"
@@ -367,7 +368,21 @@ func videoFetchByIDRespBodyBuilder(c *gin.Context) (respBody []byte, taskResp *d
 	}
 
 	if strings.HasPrefix(c.Request.RequestURI, "/v1/videos/") {
-		respBody = originTask.Data
+		adaptor := GetTaskAdaptor(originTask.Platform)
+		if adaptor == nil {
+			taskResp = service.TaskErrorWrapperLocal(fmt.Errorf("invalid channel id: %d", originTask.ChannelId), "invalid_channel_id", http.StatusBadRequest)
+			return
+		}
+		if converter, ok := adaptor.(channel.OpenAIVideoConverter); ok {
+			openAIVideo, err := converter.ConvertToOpenAIVideo(originTask)
+			if err != nil {
+				taskResp = service.TaskErrorWrapper(err, "convert_to_openai_video_failed", http.StatusInternalServerError)
+				return
+			}
+			respBody, _ = json.Marshal(openAIVideo)
+			return
+		}
+		taskResp = service.TaskErrorWrapperLocal(errors.New(fmt.Sprintf("not_implemented:%s", originTask.Platform)), "not_implemented", http.StatusNotImplemented)
 		return
 	}
 	respBody, err = json.Marshal(dto.TaskResponse[any]{
