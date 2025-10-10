@@ -617,22 +617,47 @@ var autoTestChannelsOnce sync.Once
 
 func AutomaticallyTestChannels() {
 	autoTestChannelsOnce.Do(func() {
-		for {
-			if !operation_setting.GetMonitorSetting().AutoTestChannelEnabled {
-				time.Sleep(10 * time.Minute)
-				continue
-			}
-			frequency := operation_setting.GetMonitorSetting().AutoTestChannelMinutes
-			common.SysLog(fmt.Sprintf("automatically test channels with interval %d minutes", frequency))
+		go func() {
 			for {
-				time.Sleep(time.Duration(frequency) * time.Minute)
-				common.SysLog("automatically testing all channels")
-				_ = testAllChannels(false)
-				common.SysLog("automatically channel test finished")
 				if !operation_setting.GetMonitorSetting().AutoTestChannelEnabled {
-					break
+					time.Sleep(10 * time.Minute)
+					continue
 				}
+
+				frequency := operation_setting.GetMonitorSetting().AutoTestChannelMinutes
+				common.SysLog(fmt.Sprintf("starting tests with interval %d minutes", frequency))
+				ticker := time.NewTicker(time.Duration(frequency) * time.Minute)
+
+				// 使用匿名函数来绑定 ticker 的生命周期
+				func() {
+					defer ticker.Stop()
+
+					// 立即执行一次
+					common.SysLog("automatically testing all channels (initial run)")
+					_ = testAllChannels(false)
+					common.SysLog("automatically channel test finished")
+
+					// 开始循环等待后续的 tick
+					for {
+						select {
+						case <-ticker.C:
+							// 检查是否需要退出或重新配置
+							if !operation_setting.GetMonitorSetting().AutoTestChannelEnabled {
+								return
+							}
+							newFrequency := operation_setting.GetMonitorSetting().AutoTestChannelMinutes
+							if newFrequency != frequency {
+								return
+							}
+
+							// 执行定时任务
+							common.SysLog("automatically testing all channels")
+							_ = testAllChannels(false)
+							common.SysLog("automatically channel test finished")
+						}
+					}
+				}()
 			}
-		}
+		}()
 	})
 }
