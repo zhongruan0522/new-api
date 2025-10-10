@@ -53,7 +53,7 @@ func RelayTaskSubmit(c *gin.Context, info *relaycommon.RelayInfo) (taskErr *dto.
 	}
 	modelPrice, success := ratio_setting.GetModelPrice(modelName, true)
 	if !success {
-		defaultPrice, ok := ratio_setting.GetDefaultModelRatioMap()[modelName]
+		defaultPrice, ok := ratio_setting.GetDefaultModelPriceMap()[modelName]
 		if !ok {
 			modelPrice = 0.1
 		} else {
@@ -69,6 +69,13 @@ func RelayTaskSubmit(c *gin.Context, info *relaycommon.RelayInfo) (taskErr *dto.
 		ratio = modelPrice * userGroupRatio
 	} else {
 		ratio = modelPrice * groupRatio
+	}
+	if len(info.PriceData.OtherRatios) > 0 {
+		for _, ra := range info.PriceData.OtherRatios {
+			if 1.0 != ra {
+				ratio *= ra
+			}
+		}
 	}
 	userQuota, err := model.GetUserQuota(info.UserId, false)
 	if err != nil {
@@ -143,6 +150,17 @@ func RelayTaskSubmit(c *gin.Context, info *relaycommon.RelayInfo) (taskErr *dto.
 					gRatio = userGroupRatio
 				}
 				logContent := fmt.Sprintf("模型固定价格 %.2f，分组倍率 %.2f，操作 %s", modelPrice, gRatio, info.Action)
+				if len(info.PriceData.OtherRatios) > 0 {
+					var contents []string
+					for key, ra := range info.PriceData.OtherRatios {
+						if 1.0 != ra {
+							contents = append(contents, fmt.Sprintf("%s: %.2f", key, ra))
+						}
+					}
+					if len(contents) > 0 {
+						logContent = fmt.Sprintf("%s, 计算参数：%s", logContent, strings.Join(contents, ", "))
+					}
+				}
 				other := make(map[string]interface{})
 				other["model_price"] = modelPrice
 				other["group_ratio"] = groupRatio
