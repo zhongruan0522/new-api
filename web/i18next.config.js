@@ -82,10 +82,10 @@ export default defineConfig({
       "validateStatus",
       "value",
       "viewBox",
-      "width",
+      "width"
     ],
     sort: true,
-    disablePlurals: true,
+    disablePlurals: false,
     removeUnusedKeys: true,
     nsSeparator: false,
     keySeparator: false,
