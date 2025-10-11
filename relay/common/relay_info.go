@@ -3,6 +3,7 @@ package common
 import (
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -568,6 +569,23 @@ type OpenAIVideo struct {
 	Error              *OpenAIVideoError `json:"error,omitempty"`
 	Metadata           map[string]any    `json:"metadata,omitempty"`
 }
+
+func (m *OpenAIVideo) SetProgressStr(progress string) {
+	progress = strings.TrimSuffix(progress, "%")
+	m.Progress, _ = strconv.Atoi(progress)
+}
+func (m *OpenAIVideo) SetMetadata(k string, v any) {
+	if m.Metadata == nil {
+		m.Metadata = make(map[string]any)
+	}
+	m.Metadata[k] = v
+}
+func NewOpenAIVideo() *OpenAIVideo {
+	return &OpenAIVideo{
+		Object: "video",
+	}
+}
+
 type OpenAIVideoError struct {
 	Message string `json:"message"`
 	Code    string `json:"code"`

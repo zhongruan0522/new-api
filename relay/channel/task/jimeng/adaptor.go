@@ -158,7 +158,13 @@ func (a *TaskAdaptor) DoResponse(c *gin.Context, resp *http.Response, info *rela
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"task_id": jResp.Data.TaskID})
+	ov := relaycommon.NewOpenAIVideo()
+	ov.ID = jResp.Data.TaskID
+	ov.TaskID = jResp.Data.TaskID
+	ov.CreatedAt = time.Now().Unix()
+	ov.Model = info.OriginModelName
+	ov.Metadata = map[string]any{}
+	c.JSON(http.StatusOK, ov)
 	return jResp.Data.TaskID, responseBody, nil
 }
 
@@ -398,6 +404,30 @@ func (a *TaskAdaptor) ParseTaskResult(respBody []byte) (*relaycommon.TaskInfo, e
 	}
 	taskResult.Url = resTask.Data.VideoUrl
 	return &taskResult, nil
+}
+
+func (a *TaskAdaptor) ConvertToOpenAIVideo(originTask *model.Task) (*relaycommon.OpenAIVideo, error) {
+	var jimengResp responseTask
+	if err := json.Unmarshal(originTask.Data, &jimengResp); err != nil {
+		return nil, errors.Wrap(err, "unmarshal jimeng task data failed")
+	}
+
+	openAIVideo := relaycommon.NewOpenAIVideo()
+	openAIVideo.ID = originTask.TaskID
+	openAIVideo.Status = string(originTask.Status)
+	openAIVideo.SetProgressStr(originTask.Progress)
+	openAIVideo.SetMetadata("url", jimengResp.Data.VideoUrl)
+	openAIVideo.CreatedAt = originTask.CreatedAt
+	openAIVideo.CompletedAt = originTask.UpdatedAt
+
+	if jimengResp.Code != 10000 {
+		openAIVideo.Error = &relaycommon.OpenAIVideoError{
+			Message: jimengResp.Message,
+			Code:    fmt.Sprintf("%d", jimengResp.Code),
+		}
+	}
+
+	return openAIVideo, nil
 }
 
 func isNewAPIRelay(apiKey string) bool {

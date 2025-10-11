@@ -370,16 +370,6 @@ func (a *TaskAdaptor) ConvertToOpenAIVideo(originTask *model.Task) (*relaycommon
 	if err := json.Unmarshal(originTask.Data, &klingResp); err != nil {
 		return nil, errors.Wrap(err, "unmarshal kling task data failed")
 	}
-
-	convertProgress := func(progress string) int {
-		progress = strings.TrimSuffix(progress, "%")
-		p, err := strconv.Atoi(progress)
-		if err != nil {
-			logger.Warnf("convert progress failed, progress: %s, err: %v", progress, err)
-		}
-		return p
-	}
-
 	openAIVideo := &relaycommon.OpenAIVideo{
 		ID:     klingResp.Data.TaskId,
 		Object: "video",
@@ -388,10 +378,8 @@ func (a *TaskAdaptor) ConvertToOpenAIVideo(originTask *model.Task) (*relaycommon
 		CreatedAt:   klingResp.Data.CreatedAt,
 		CompletedAt: klingResp.Data.UpdatedAt,
 		Metadata:    make(map[string]any),
-		Progress:    convertProgress(originTask.Progress),
 	}
-
-	// 处理视频 URL
+	openAIVideo.SetProgressStr(originTask.Progress)
 	if len(klingResp.Data.TaskResult.Videos) > 0 {
 		video := klingResp.Data.TaskResult.Videos[0]
 		if video.Url != "" {
