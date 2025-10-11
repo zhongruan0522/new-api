@@ -163,7 +163,6 @@ func (a *TaskAdaptor) DoResponse(c *gin.Context, resp *http.Response, info *rela
 	ov.TaskID = jResp.Data.TaskID
 	ov.CreatedAt = time.Now().Unix()
 	ov.Model = info.OriginModelName
-	ov.Metadata = map[string]any{}
 	c.JSON(http.StatusOK, ov)
 	return jResp.Data.TaskID, responseBody, nil
 }
