@@ -6,13 +6,11 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"strconv"
 	"strings"
 	"time"
 
 	"github.com/QuantumNous/new-api/model"
 
-	"github.com/bytedance/gopkg/util/logger"
 	"github.com/samber/lo"
 
 	"github.com/gin-gonic/gin"
@@ -190,8 +188,12 @@ func (a *TaskAdaptor) DoResponse(c *gin.Context, resp *http.Response, info *rela
 		taskErr = service.TaskErrorWrapperLocal(fmt.Errorf(kResp.Message), "task_failed", http.StatusBadRequest)
 		return
 	}
-	kResp.TaskId = kResp.Data.TaskId
-	c.JSON(http.StatusOK, kResp)
+	ov := relaycommon.NewOpenAIVideo()
+	ov.ID = kResp.Data.TaskId
+	ov.TaskID = kResp.Data.TaskId
+	ov.CreatedAt = time.Now().Unix()
+	ov.Model = info.OriginModelName
+	c.JSON(http.StatusOK, ov)
 	return kResp.Data.TaskId, responseBody, nil
 }
 
@@ -371,31 +373,17 @@ func (a *TaskAdaptor) ConvertToOpenAIVideo(originTask *model.Task) (*relaycommon
 		return nil, errors.Wrap(err, "unmarshal kling task data failed")
 	}
 
-	convertProgress := func(progress string) int {
-		progress = strings.TrimSuffix(progress, "%")
-		p, err := strconv.Atoi(progress)
-		if err != nil {
-			logger.Warnf("convert progress failed, progress: %s, err: %v", progress, err)
-		}
-		return p
-	}
+	openAIVideo := relaycommon.NewOpenAIVideo()
+	openAIVideo.ID = originTask.TaskID
+	openAIVideo.Status = originTask.Status.ToVideoStatus()
+	openAIVideo.SetProgressStr(originTask.Progress)
+	openAIVideo.CreatedAt = klingResp.Data.CreatedAt
+	openAIVideo.CompletedAt = klingResp.Data.UpdatedAt
 
-	openAIVideo := &relaycommon.OpenAIVideo{
-		ID:     klingResp.Data.TaskId,
-		Object: "video",
-		//Model:       "kling-v1", //todo save model
-		Status:      string(originTask.Status),
-		CreatedAt:   klingResp.Data.CreatedAt,
-		CompletedAt: klingResp.Data.UpdatedAt,
-		Metadata:    make(map[string]any),
-		Progress:    convertProgress(originTask.Progress),
-	}
-
-	// 处理视频 URL
 	if len(klingResp.Data.TaskResult.Videos) > 0 {
 		video := klingResp.Data.TaskResult.Videos[0]
 		if video.Url != "" {
-			openAIVideo.Metadata["url"] = video.Url
+			openAIVideo.SetMetadata("url", video.Url)
 		}
 		if video.Duration != "" {
 			openAIVideo.Seconds = video.Duration

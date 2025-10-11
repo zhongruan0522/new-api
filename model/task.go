@@ -11,6 +11,23 @@ import (
 
 type TaskStatus string
 
+func (t TaskStatus) ToVideoStatus() string {
+	var status string
+	switch t {
+	case TaskStatusQueued, TaskStatusSubmitted:
+		status = commonRelay.VideoStatusQueued
+	case TaskStatusInProgress:
+		status = commonRelay.VideoStatusInProgress
+	case TaskStatusSuccess:
+		status = commonRelay.VideoStatusCompleted
+	case TaskStatusFailure:
+		status = commonRelay.VideoStatusFailed
+	default:
+		status = commonRelay.VideoStatusUnknown // Default fallback
+	}
+	return status
+}
+
 const (
 	TaskStatusNotStart   TaskStatus = "NOT_START"
 	TaskStatusSubmitted             = "SUBMITTED"
