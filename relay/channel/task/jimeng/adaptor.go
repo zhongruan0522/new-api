@@ -414,7 +414,7 @@ func (a *TaskAdaptor) ConvertToOpenAIVideo(originTask *model.Task) (*relaycommon
 
 	openAIVideo := relaycommon.NewOpenAIVideo()
 	openAIVideo.ID = originTask.TaskID
-	openAIVideo.Status = string(originTask.Status)
+	openAIVideo.Status = originTask.Status.ToVideoStatus()
 	openAIVideo.SetProgressStr(originTask.Progress)
 	openAIVideo.SetMetadata("url", jimengResp.Data.VideoUrl)
 	openAIVideo.CreatedAt = originTask.CreatedAt
