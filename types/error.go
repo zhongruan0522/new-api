@@ -160,6 +160,9 @@ func (e *NewAPIError) ToOpenAIError() OpenAIError {
 	if e.errorCode != ErrorCodeCountTokenFailed {
 		result.Message = common.MaskSensitiveInfo(result.Message)
 	}
+	if result.Message == "" {
+		result.Message = string(e.errorType)
+	}
 	return result
 }
 
@@ -185,6 +188,9 @@ func (e *NewAPIError) ToClaudeError() ClaudeError {
 	}
 	if e.errorCode != ErrorCodeCountTokenFailed {
 		result.Message = common.MaskSensitiveInfo(result.Message)
+	}
+	if result.Message == "" {
+		result.Message = string(e.errorType)
 	}
 	return result
 }
