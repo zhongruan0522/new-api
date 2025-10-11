@@ -109,6 +109,9 @@ func validateMultipartTaskRequest(c *gin.Context, info *RelayInfo, action string
 func ValidateMultipartDirect(c *gin.Context, info *RelayInfo) *dto.TaskError {
 	contentType := c.GetHeader("Content-Type")
 	var prompt string
+	var model string
+	var seconds int
+	var size string
 	var hasInputReference bool
 
 	if strings.HasPrefix(contentType, "multipart/form-data") {
@@ -127,9 +130,21 @@ func ValidateMultipartDirect(c *gin.Context, info *RelayInfo) *dto.TaskError {
 		if _, ok := form.Value["model"]; !ok {
 			return createTaskError(fmt.Errorf("model field is required"), "missing_model", http.StatusBadRequest, true)
 		}
+		model = form.Value["model"][0]
 
 		if _, ok := form.File["input_reference"]; ok {
 			hasInputReference = true
+		}
+
+		if ss, ok := form.Value["seconds"]; ok {
+			sInt := common.String2Int(ss[0])
+			if sInt > seconds {
+				seconds = common.String2Int(ss[0])
+			}
+		}
+
+		if sz, ok := form.Value["size"]; ok {
+			size = sz[0]
 		}
 	} else {
 		var req TaskSubmitReq
@@ -138,6 +153,8 @@ func ValidateMultipartDirect(c *gin.Context, info *RelayInfo) *dto.TaskError {
 		}
 
 		prompt = req.Prompt
+		model = req.Model
+		seconds = req.Duration
 
 		if strings.TrimSpace(req.Model) == "" {
 			return createTaskError(fmt.Errorf("model field is required"), "missing_model", http.StatusBadRequest, true)
@@ -157,18 +174,14 @@ func ValidateMultipartDirect(c *gin.Context, info *RelayInfo) *dto.TaskError {
 		action = constant.TaskActionGenerate
 	}
 	info.Action = action
-	model := form.Value["model"][0]
 	if strings.HasPrefix(model, "sora-2") {
-		seconds := 4
-		size := "720x1280"
-		if ss, ok := form.Value["seconds"]; ok {
-			sInt := common.String2Int(ss[0])
-			if sInt > seconds {
-				seconds = common.String2Int(ss[0])
-			}
+
+		if size == "" {
+			size = "720x1280"
 		}
-		if s, ok := form.Value["size"]; ok {
-			size = s[0]
+
+		if seconds <= 0 {
+			seconds = 4
 		}
 
 		if model == "sora-2" && !lo.Contains([]string{"720x1280", "1280x720"}, size) {
