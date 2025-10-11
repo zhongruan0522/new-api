@@ -24,7 +24,8 @@ export default defineConfig({
   locales: [
     "zh",
     "en",
-    "fr"
+    "fr",
+    "ru"
   ],
   extract: {
     input: [
@@ -86,7 +87,7 @@ export default defineConfig({
     ],
     sort: true,
     disablePlurals: false,
-    removeUnusedKeys: true,
+    removeUnusedKeys: false,
     nsSeparator: false,
     keySeparator: false,
     mergeNamespaces: true
