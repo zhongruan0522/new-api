@@ -377,6 +377,12 @@ export const useLogsData = () => {
                 other.file_search_call_count || 0,
               ),
         });
+        if (logs[i]?.content) {
+          expandDataLocal.push({
+            key: t('其他详情'),
+            value: logs[i].content,
+          });
+        }
       }
       if (logs[i].type === 2) {
         let modelMapped =

@@ -173,7 +173,6 @@ func ValidateMultipartDirect(c *gin.Context, info *RelayInfo) *dto.TaskError {
 	if hasInputReference {
 		action = constant.TaskActionGenerate
 	}
-	info.Action = action
 	if strings.HasPrefix(model, "sora-2") {
 
 		if size == "" {
@@ -198,6 +197,8 @@ func ValidateMultipartDirect(c *gin.Context, info *RelayInfo) *dto.TaskError {
 			info.PriceData.OtherRatios["size"] = 1.666667
 		}
 	}
+
+	info.Action = action
 
 	return nil
 }

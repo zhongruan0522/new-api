@@ -78,6 +78,7 @@ func RelayTaskSubmit(c *gin.Context, info *relaycommon.RelayInfo) (taskErr *dto.
 			}
 		}
 	}
+	println(fmt.Sprintf("model: %s, model_price: %.4f, group: %s, group_ratio: %.4f, final_ratio: %.4f", modelName, modelPrice, info.UsingGroup, groupRatio, ratio))
 	userQuota, err := model.GetUserQuota(info.UserId, false)
 	if err != nil {
 		taskErr = service.TaskErrorWrapper(err, "get_user_quota_failed", http.StatusInternalServerError)
@@ -146,11 +147,11 @@ func RelayTaskSubmit(c *gin.Context, info *relaycommon.RelayInfo) (taskErr *dto.
 			}
 			if quota != 0 {
 				tokenName := c.GetString("token_name")
-				gRatio := groupRatio
-				if hasUserGroupRatio {
-					gRatio = userGroupRatio
-				}
-				logContent := fmt.Sprintf("模型固定价格 %.2f，分组倍率 %.2f，操作 %s", modelPrice, gRatio, info.Action)
+				//gRatio := groupRatio
+				//if hasUserGroupRatio {
+				//	gRatio = userGroupRatio
+				//}
+				logContent := fmt.Sprintf("操作 %s", info.Action)
 				if len(info.PriceData.OtherRatios) > 0 {
 					var contents []string
 					for key, ra := range info.PriceData.OtherRatios {
