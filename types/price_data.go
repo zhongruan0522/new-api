@@ -17,6 +17,7 @@ type PriceData struct {
 	ImageRatio             float64
 	AudioRatio             float64
 	AudioCompletionRatio   float64
+	OtherRatios            map[string]float64
 	UsePrice               bool
 	ShouldPreConsumedQuota int
 	GroupRatioInfo         GroupRatioInfo
