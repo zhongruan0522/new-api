@@ -7,9 +7,11 @@ import (
 	"io"
 	"net/http"
 	"one-api/model"
+	"strconv"
 	"strings"
 	"time"
 
+	"github.com/bytedance/gopkg/util/logger"
 	"github.com/samber/lo"
 
 	"github.com/gin-gonic/gin"
@@ -303,14 +305,6 @@ func (a *TaskAdaptor) createJWTToken() (string, error) {
 	return a.createJWTTokenWithKey(a.apiKey)
 }
 
-//func (a *TaskAdaptor) createJWTTokenWithKey(apiKey string) (string, error) {
-//	parts := strings.Split(apiKey, "|")
-//	if len(parts) != 2 {
-//		return "", fmt.Errorf("invalid API key format, expected 'access_key,secret_key'")
-//	}
-//	return a.createJWTTokenWithKey(strings.TrimSpace(parts[0]), strings.TrimSpace(parts[1]))
-//}
-
 func (a *TaskAdaptor) createJWTTokenWithKey(apiKey string) (string, error) {
 	if isNewAPIRelay(apiKey) {
 		return apiKey, nil // new api relay
@@ -368,4 +362,51 @@ func (a *TaskAdaptor) ParseTaskResult(respBody []byte) (*relaycommon.TaskInfo, e
 
 func isNewAPIRelay(apiKey string) bool {
 	return strings.HasPrefix(apiKey, "sk-")
+}
+
+func (a *TaskAdaptor) ConvertToOpenAIVideo(originTask *model.Task) (*relaycommon.OpenAIVideo, error) {
+	var klingResp responsePayload
+	if err := json.Unmarshal(originTask.Data, &klingResp); err != nil {
+		return nil, errors.Wrap(err, "unmarshal kling task data failed")
+	}
+
+	convertProgress := func(progress string) int {
+		progress = strings.TrimSuffix(progress, "%")
+		p, err := strconv.Atoi(progress)
+		if err != nil {
+			logger.Warnf("convert progress failed, progress: %s, err: %v", progress, err)
+		}
+		return p
+	}
+
+	openAIVideo := &relaycommon.OpenAIVideo{
+		ID:     klingResp.Data.TaskId,
+		Object: "video",
+		//Model:       "kling-v1", //todo save model
+		Status:      string(originTask.Status),
+		CreatedAt:   klingResp.Data.CreatedAt,
+		CompletedAt: klingResp.Data.UpdatedAt,
+		Metadata:    make(map[string]any),
+		Progress:    convertProgress(originTask.Progress),
+	}
+
+	// 处理视频 URL
+	if len(klingResp.Data.TaskResult.Videos) > 0 {
+		video := klingResp.Data.TaskResult.Videos[0]
+		if video.Url != "" {
+			openAIVideo.Metadata["url"] = video.Url
+		}
+		if video.Duration != "" {
+			openAIVideo.Seconds = video.Duration
+		}
+	}
+
+	if klingResp.Code != 0 && klingResp.Message != "" {
+		openAIVideo.Error = &relaycommon.OpenAIVideoError{
+			Message: klingResp.Message,
+			Code:    fmt.Sprintf("%d", klingResp.Code),
+		}
+	}
+
+	return openAIVideo, nil
 }

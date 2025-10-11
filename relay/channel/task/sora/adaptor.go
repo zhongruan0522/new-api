@@ -184,3 +184,12 @@ func (a *TaskAdaptor) ParseTaskResult(respBody []byte) (*relaycommon.TaskInfo, e
 
 	return &taskResult, nil
 }
+
+func (a *TaskAdaptor) ConvertToOpenAIVideo(task *model.Task) (*relaycommon.OpenAIVideo, error) {
+	openAIVideo := &relaycommon.OpenAIVideo{}
+	err := json.Unmarshal(task.Data, openAIVideo)
+	if err != nil {
+		return nil, errors.Wrap(err, "unmarshal to OpenAIVideo failed")
+	}
+	return openAIVideo, nil
+}
