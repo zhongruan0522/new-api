@@ -214,6 +214,7 @@ func updateVideoSingleTask(ctx context.Context, adaptor channel.TaskAdaptor, cha
 			}
 		}
 	case model.TaskStatusFailure:
+		preStatus := task.Status
 		task.Status = model.TaskStatusFailure
 		task.Progress = "100%"
 		if task.FinishTime == 0 {
@@ -222,12 +223,18 @@ func updateVideoSingleTask(ctx context.Context, adaptor channel.TaskAdaptor, cha
 		task.FailReason = taskResult.Reason
 		logger.LogInfo(ctx, fmt.Sprintf("Task %s failed: %s", task.TaskID, task.FailReason))
 		quota := task.Quota
+		taskResult.Progress = "100%"
 		if quota != 0 {
-			if err := model.IncreaseUserQuota(task.UserId, quota, false); err != nil {
-				logger.LogError(ctx, "Failed to increase user quota: "+err.Error())
+			if preStatus != model.TaskStatusFailure {
+				// 任务失败且之前状态不是失败才退还额度，防止重复退还
+				if err := model.IncreaseUserQuota(task.UserId, quota, false); err != nil {
+					logger.LogWarn(ctx, "Failed to increase user quota: "+err.Error())
+				}
+				logContent := fmt.Sprintf("Video async task failed %s, refund %s", task.TaskID, logger.LogQuota(quota))
+				model.RecordLog(task.UserId, model.LogTypeSystem, logContent)
+			} else {
+				logger.LogWarn(ctx, fmt.Sprintf("Task %s already in failure status, skip refund", task.TaskID))
 			}
-			logContent := fmt.Sprintf("Video async task failed %s, refund %s", task.TaskID, logger.LogQuota(quota))
-			model.RecordLog(task.UserId, model.LogTypeSystem, logContent)
 		}
 	default:
 		return fmt.Errorf("unknown task status %s for task %s", taskResult.Status, taskId)
