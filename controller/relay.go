@@ -140,9 +140,13 @@ func Relay(c *gin.Context, relayFormat types.RelayFormat) {
 
 	// common.SetContextKey(c, constant.ContextKeyTokenCountMeta, meta)
 
-	newAPIError = service.PreConsumeQuota(c, priceData.ShouldPreConsumedQuota, relayInfo)
-	if newAPIError != nil {
-		return
+	if priceData.FreeModel {
+		logger.LogInfo(c, fmt.Sprintf("模型 %s 免费，跳过预扣费", relayInfo.OriginModelName))
+	} else {
+		newAPIError = service.PreConsumeQuota(c, priceData.QuotaToPreConsume, relayInfo)
+		if newAPIError != nil {
+			return
+		}
 	}
 
 	defer func() {

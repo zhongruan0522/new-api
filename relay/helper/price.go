@@ -5,6 +5,7 @@ import (
 
 	"github.com/QuantumNous/new-api/common"
 	relaycommon "github.com/QuantumNous/new-api/relay/common"
+	"github.com/QuantumNous/new-api/setting/operation_setting"
 	"github.com/QuantumNous/new-api/setting/ratio_setting"
 	"github.com/QuantumNous/new-api/types"
 
@@ -55,6 +56,7 @@ func ModelPriceHelper(c *gin.Context, info *relaycommon.RelayInfo, promptTokens 
 	var cacheCreationRatio float64
 	var audioRatio float64
 	var audioCompletionRatio float64
+	var freeModel bool
 	if !usePrice {
 		preConsumedTokens := common.Max(promptTokens, common.PreConsumedQuota)
 		if meta.MaxTokens != 0 {
@@ -87,18 +89,35 @@ func ModelPriceHelper(c *gin.Context, info *relaycommon.RelayInfo, promptTokens 
 		preConsumedQuota = int(modelPrice * common.QuotaPerUnit * groupRatioInfo.GroupRatio)
 	}
 
+	// check if free model pre-consume is disabled
+	if !operation_setting.GetQuotaSetting().EnableFreeModelPreConsume {
+		// if model price or ratio is 0, do not pre-consume quota
+		if usePrice {
+			if modelPrice == 0 {
+				preConsumedQuota = 0
+				freeModel = true
+			}
+		} else {
+			if modelRatio == 0 {
+				preConsumedQuota = 0
+				freeModel = true
+			}
+		}
+	}
+
 	priceData := types.PriceData{
-		ModelPrice:             modelPrice,
-		ModelRatio:             modelRatio,
-		CompletionRatio:        completionRatio,
-		GroupRatioInfo:         groupRatioInfo,
-		UsePrice:               usePrice,
-		CacheRatio:             cacheRatio,
-		ImageRatio:             imageRatio,
-		AudioRatio:             audioRatio,
-		AudioCompletionRatio:   audioCompletionRatio,
-		CacheCreationRatio:     cacheCreationRatio,
-		ShouldPreConsumedQuota: preConsumedQuota,
+		FreeModel:            freeModel,
+		ModelPrice:           modelPrice,
+		ModelRatio:           modelRatio,
+		CompletionRatio:      completionRatio,
+		GroupRatioInfo:       groupRatioInfo,
+		UsePrice:             usePrice,
+		CacheRatio:           cacheRatio,
+		ImageRatio:           imageRatio,
+		AudioRatio:           audioRatio,
+		AudioCompletionRatio: audioCompletionRatio,
+		CacheCreationRatio:   cacheCreationRatio,
+		QuotaToPreConsume:    preConsumedQuota,
 	}
 
 	if common.DebugEnabled {
