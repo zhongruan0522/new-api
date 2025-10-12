@@ -211,7 +211,16 @@ func CovertGemini2OpenAI(c *gin.Context, textRequest dto.GeneralOpenAIRequest, i
 			// eg. {"google":{"thinking_config":{"thinking_budget":5324,"include_thoughts":true}}}
 			if googleBody, ok := extraBody["google"].(map[string]interface{}); ok {
 				adaptorWithExtraBody = true
+				// check error param name like thinkingConfig, should be thinking_config
+				if _, hasErrorParam := googleBody["thinkingConfig"]; hasErrorParam {
+					return nil, errors.New("extra_body.google.thinkingConfig is not supported, use extra_body.google.thinking_config instead")
+				}
+
 				if thinkingConfig, ok := googleBody["thinking_config"].(map[string]interface{}); ok {
+					// check error param name like thinkingBudget, should be thinking_budget
+					if _, hasErrorParam := thinkingConfig["thinkingBudget"]; hasErrorParam {
+						return nil, errors.New("extra_body.google.thinking_config.thinkingBudget is not supported, use extra_body.google.thinking_config.thinking_budget instead")
+					}
 					if budget, ok := thinkingConfig["thinking_budget"].(float64); ok {
 						budgetInt := int(budget)
 						geminiRequest.GenerationConfig.ThinkingConfig = &dto.GeminiThinkingConfig{
