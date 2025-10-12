@@ -33,7 +33,8 @@ jobs:
       - name: Resolve tag & write VERSION
         run: |
           git fetch --tags --force --depth=1
-          echo "TAG=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+          TAG=${GITHUB_REF#refs/tags/}
+          echo "TAG=$TAG" >> $GITHUB_ENV
           echo "$TAG" > VERSION
           echo "Building tag: $TAG for ${{ matrix.arch }}"
 
