@@ -37,11 +37,13 @@ func (a *Adaptor) ConvertAudioRequest(c *gin.Context, info *relaycommon.RelayInf
 
 func (a *Adaptor) ConvertImageRequest(c *gin.Context, info *relaycommon.RelayInfo, request dto.ImageRequest) (any, error) {
 	// 解析extra到SFImageRequest里，以填入SiliconFlow特殊字段。若失败重建一个空的。
-	extra, _ := common.Marshal(request.Extra)
 	sfRequest := &SFImageRequest{}
-	err := common.Unmarshal(extra, sfRequest)
-	if err != nil {
-		sfRequest = &SFImageRequest{}
+	extra, err := common.Marshal(request.Extra)
+	if err == nil {
+		err = common.Unmarshal(extra, sfRequest)
+		if err != nil {
+			sfRequest = &SFImageRequest{}
+		}
 	}
 
 	sfRequest.Model = request.Model
@@ -121,6 +123,8 @@ func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, info *relaycom
 	case constant.RelayModeCompletions:
 		fallthrough
 	case constant.RelayModeChatCompletions:
+		fallthrough
+	case constant.RelayModeImagesGenerations:
 		fallthrough
 	default:
 		if info.IsStream {
