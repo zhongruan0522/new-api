@@ -103,100 +103,6 @@ function renderType(type, t) {
   }
 }
 
-const endpointColorMap = {
-  chat: 'blue',
-  completions: 'blue',
-  messages: 'purple',
-  responses: 'violet',
-  images: 'pink',
-  image: 'pink',
-  embeddings: 'green',
-  embedding: 'green',
-  audio: 'teal',
-  speech: 'teal',
-  translations: 'teal',
-  transcriptions: 'teal',
-  rerank: 'cyan',
-  moderations: 'red',
-  models: 'orange',
-  engines: 'orange',
-  mj: 'red',
-  submit: 'red',
-  suno: 'amber',
-  realtime: 'indigo',
-  notifications: 'violet',
-};
-
-function formatPathSegment(segment) {
-  if (!segment) {
-    return '';
-  }
-  const normalized = segment.replace(/^:/, '').replace(/[_-]/g, ' ');
-  return normalized
-    .split(' ')
-    .filter(Boolean)
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(' ');
-}
-
-function deriveEndpointMeta(path) {
-  if (!path) {
-    return null;
-  }
-  const cleanPath = path.split('?')[0];
-  const segments = cleanPath.split('/').filter(Boolean);
-  if (segments.length === 0) {
-    return null;
-  }
-  let startIndex = 0;
-  if (/^v\d/i.test(segments[0])) {
-    startIndex = 1;
-  }
-
-  const primary = segments[startIndex] || segments[segments.length - 1];
-  const tailSegments = segments
-    .slice(startIndex + 1)
-    .filter((segment) => segment && !segment.startsWith(':'));
-  const secondary = tailSegments[tailSegments.length - 1];
-
-  const labelParts = [];
-  const formattedPrimary = formatPathSegment(primary);
-  if (formattedPrimary) {
-    labelParts.push(formattedPrimary);
-  }
-  const formattedSecondary = formatPathSegment(secondary);
-  if (formattedSecondary && formattedSecondary !== formattedPrimary) {
-    labelParts.push(formattedSecondary);
-  }
-  const label = labelParts.join(' · ');
-
-  const color =
-    endpointColorMap[primary] ||
-    (secondary ? endpointColorMap[secondary] : undefined) ||
-    'grey';
-
-  return {
-    label: label || formatPathSegment(primary),
-    color,
-  };
-}
-
-function renderEndpointTag(requestPath) {
-  const meta = deriveEndpointMeta(requestPath);
-  if (!meta) {
-    return null;
-  }
-  const tag = (
-    <Tag color={meta.color} type='light' shape='circle' size='small'>
-      {meta.label}
-    </Tag>
-  );
-  if (requestPath) {
-    return <Tooltip content={requestPath}>{tag}</Tooltip>;
-  }
-  return tag;
-}
-
 function renderIsStream(bool, t) {
   if (bool) {
     return (
@@ -465,14 +371,7 @@ export const getLogsColumns = ({
       title: t('类型'),
       dataIndex: 'type',
       render: (text, record, index) => {
-        const other = getLogOther(record.other) || {};
-        const requestPath = other.request_path;
-        return (
-          <Space size='small' wrap>
-            {renderType(text, t)}
-            {renderEndpointTag(requestPath)}
-          </Space>
-        );
+        return <>{renderType(text, t)}</>;
       },
     },
     {

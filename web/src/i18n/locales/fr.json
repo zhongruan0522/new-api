@@ -1684,6 +1684,7 @@
     "请求失败": "Échec de la demande",
     "请求头覆盖": "Remplacement des en-têtes de demande",
     "请求并计费模型": "Modèle de demande et de facturation",
+    "请求路径": "Chemin de requête",
     "请求时长: ${time}s": "Durée de la requête : ${time}s",
     "请求次数": "Nombre de demandes",
     "请求结束后多退少补": "Ajuster après la fin de la demande",
