@@ -103,6 +103,38 @@ function renderType(type, t) {
   }
 }
 
+const relayFormatMeta = {
+  openai: { color: 'blue', label: 'OpenAI' },
+  claude: { color: 'purple', label: 'Claude' },
+  gemini: { color: 'orange', label: 'Gemini' },
+  openai_responses: { color: 'violet', label: 'Responses' },
+  openai_audio: { color: 'teal', label: 'Audio' },
+  openai_image: { color: 'pink', label: 'Image' },
+  openai_realtime: { color: 'indigo', label: 'Realtime' },
+  rerank: { color: 'cyan', label: 'Rerank' },
+  embedding: { color: 'green', label: 'Embedding' },
+  task: { color: 'amber', label: 'Task' },
+  mj_proxy: { color: 'red', label: 'Midjourney' },
+};
+
+function renderRelayFormat(relayFormat) {
+  if (!relayFormat) {
+    return null;
+  }
+  const meta = relayFormatMeta[relayFormat] || {
+    color: 'grey',
+    label: relayFormat
+      .replace(/_/g, ' ')
+      .replace(/\b\w/g, (c) => c.toUpperCase()),
+  };
+
+  return (
+    <Tag color={meta.color} type='light' shape='circle' size='small'>
+      {meta.label}
+    </Tag>
+  );
+}
+
 function renderIsStream(bool, t) {
   if (bool) {
     return (
@@ -371,7 +403,13 @@ export const getLogsColumns = ({
       title: t('类型'),
       dataIndex: 'type',
       render: (text, record, index) => {
-        return <>{renderType(text, t)}</>;
+        const relayFormat = getLogOther(record.other)?.relay_format;
+        return (
+          <Space size='small' wrap>
+            {renderType(text, t)}
+            {renderRelayFormat(relayFormat)}
+          </Space>
+        );
       },
     },
     {

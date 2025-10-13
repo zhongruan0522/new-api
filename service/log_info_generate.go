@@ -13,6 +13,9 @@ import (
 func GenerateTextOtherInfo(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, modelRatio, groupRatio, completionRatio float64,
 	cacheTokens int, cacheRatio float64, modelPrice float64, userGroupRatio float64) map[string]interface{} {
 	other := make(map[string]interface{})
+	if relayInfo != nil && relayInfo.RelayFormat != "" {
+		other["relay_format"] = string(relayInfo.RelayFormat)
+	}
 	other["model_ratio"] = modelRatio
 	other["group_ratio"] = groupRatio
 	other["completion_ratio"] = completionRatio
@@ -78,8 +81,11 @@ func GenerateClaudeOtherInfo(ctx *gin.Context, relayInfo *relaycommon.RelayInfo,
 	return info
 }
 
-func GenerateMjOtherInfo(priceData types.PerCallPriceData) map[string]interface{} {
+func GenerateMjOtherInfo(relayInfo *relaycommon.RelayInfo, priceData types.PerCallPriceData) map[string]interface{} {
 	other := make(map[string]interface{})
+	if relayInfo != nil && relayInfo.RelayFormat != "" {
+		other["relay_format"] = string(relayInfo.RelayFormat)
+	}
 	other["model_price"] = priceData.ModelPrice
 	other["group_ratio"] = priceData.GroupRatioInfo.GroupRatio
 	if priceData.GroupRatioInfo.HasSpecialRatio {

@@ -299,6 +299,10 @@ func processChannelError(c *gin.Context, channelError types.ChannelError, err *t
 		userGroup := c.GetString("group")
 		channelId := c.GetInt("channel_id")
 		other := make(map[string]interface{})
+		relayFormat := common.GetContextKeyString(c, constant.ContextKeyRelayFormat)
+		if relayFormat != "" {
+			other["relay_format"] = relayFormat
+		}
 		other["error_type"] = err.GetErrorType()
 		other["error_code"] = err.GetErrorCode()
 		other["status_code"] = err.StatusCode
