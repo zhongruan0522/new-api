@@ -477,8 +477,7 @@ func StreamResponseClaude2OpenAI(reqMode int, claudeResponse *dto.ClaudeResponse
 					signatureContent := "\n"
 					choice.Delta.ReasoningContent = &signatureContent
 				case "thinking_delta":
-					thinkingContent := claudeResponse.Delta.Thinking
-					choice.Delta.ReasoningContent = &thinkingContent
+					choice.Delta.ReasoningContent = claudeResponse.Delta.Thinking
 				}
 			}
 		} else if claudeResponse.Type == "message_delta" {
@@ -513,7 +512,9 @@ func ResponseClaude2OpenAI(reqMode int, claudeResponse *dto.ClaudeResponse) *dto
 	var responseThinking string
 	if len(claudeResponse.Content) > 0 {
 		responseText = claudeResponse.Content[0].GetText()
-		responseThinking = claudeResponse.Content[0].Thinking
+		if claudeResponse.Content[0].Thinking != nil {
+			responseThinking = *claudeResponse.Content[0].Thinking
+		}
 	}
 	tools := make([]dto.ToolCallResponse, 0)
 	thinkingContent := ""
@@ -545,7 +546,9 @@ func ResponseClaude2OpenAI(reqMode int, claudeResponse *dto.ClaudeResponse) *dto
 				})
 			case "thinking":
 				// 加密的不管， 只输出明文的推理过程
-				thinkingContent = message.Thinking
+				if message.Thinking != nil {
+					thinkingContent = *message.Thinking
+				}
 			case "text":
 				responseText = message.GetText()
 			}
@@ -598,8 +601,8 @@ func FormatClaudeResponseInfo(requestMode int, claudeResponse *dto.ClaudeRespons
 			if claudeResponse.Delta.Text != nil {
 				claudeInfo.ResponseText.WriteString(*claudeResponse.Delta.Text)
 			}
-			if claudeResponse.Delta.Thinking != "" {
-				claudeInfo.ResponseText.WriteString(claudeResponse.Delta.Thinking)
+			if claudeResponse.Delta.Thinking != nil {
+				claudeInfo.ResponseText.WriteString(*claudeResponse.Delta.Thinking)
 			}
 		} else if claudeResponse.Type == "message_delta" {
 			// 最终的usage获取
