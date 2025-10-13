@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/QuantumNous/new-api/constant"
+	"github.com/QuantumNous/new-api/dto"
 	commonRelay "github.com/QuantumNous/new-api/relay/common"
 )
 
@@ -15,15 +16,15 @@ func (t TaskStatus) ToVideoStatus() string {
 	var status string
 	switch t {
 	case TaskStatusQueued, TaskStatusSubmitted:
-		status = commonRelay.VideoStatusQueued
+		status = dto.VideoStatusQueued
 	case TaskStatusInProgress:
-		status = commonRelay.VideoStatusInProgress
+		status = dto.VideoStatusInProgress
 	case TaskStatusSuccess:
-		status = commonRelay.VideoStatusCompleted
+		status = dto.VideoStatusCompleted
 	case TaskStatusFailure:
-		status = commonRelay.VideoStatusFailed
+		status = dto.VideoStatusFailed
 	default:
-		status = commonRelay.VideoStatusUnknown // Default fallback
+		status = dto.VideoStatusUnknown // Default fallback
 	}
 	return status
 }

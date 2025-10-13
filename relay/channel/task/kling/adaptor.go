@@ -188,7 +188,7 @@ func (a *TaskAdaptor) DoResponse(c *gin.Context, resp *http.Response, info *rela
 		taskErr = service.TaskErrorWrapperLocal(fmt.Errorf(kResp.Message), "task_failed", http.StatusBadRequest)
 		return
 	}
-	ov := relaycommon.NewOpenAIVideo()
+	ov := dto.NewOpenAIVideo()
 	ov.ID = kResp.Data.TaskId
 	ov.TaskID = kResp.Data.TaskId
 	ov.CreatedAt = time.Now().Unix()
@@ -367,13 +367,13 @@ func isNewAPIRelay(apiKey string) bool {
 	return strings.HasPrefix(apiKey, "sk-")
 }
 
-func (a *TaskAdaptor) ConvertToOpenAIVideo(originTask *model.Task) (*relaycommon.OpenAIVideo, error) {
+func (a *TaskAdaptor) ConvertToOpenAIVideo(originTask *model.Task) (*dto.OpenAIVideo, error) {
 	var klingResp responsePayload
 	if err := json.Unmarshal(originTask.Data, &klingResp); err != nil {
 		return nil, errors.Wrap(err, "unmarshal kling task data failed")
 	}
 
-	openAIVideo := relaycommon.NewOpenAIVideo()
+	openAIVideo := dto.NewOpenAIVideo()
 	openAIVideo.ID = originTask.TaskID
 	openAIVideo.Status = originTask.Status.ToVideoStatus()
 	openAIVideo.SetProgressStr(originTask.Progress)
@@ -391,7 +391,7 @@ func (a *TaskAdaptor) ConvertToOpenAIVideo(originTask *model.Task) (*relaycommon
 	}
 
 	if klingResp.Code != 0 && klingResp.Message != "" {
-		openAIVideo.Error = &relaycommon.OpenAIVideoError{
+		openAIVideo.Error = &dto.OpenAIVideoError{
 			Message: klingResp.Message,
 			Code:    fmt.Sprintf("%d", klingResp.Code),
 		}
