@@ -103,36 +103,98 @@ function renderType(type, t) {
   }
 }
 
-const relayFormatMeta = {
-  openai: { color: 'blue', label: 'OpenAI' },
-  claude: { color: 'purple', label: 'Claude' },
-  gemini: { color: 'orange', label: 'Gemini' },
-  openai_responses: { color: 'violet', label: 'Responses' },
-  openai_audio: { color: 'teal', label: 'Audio' },
-  openai_image: { color: 'pink', label: 'Image' },
-  openai_realtime: { color: 'indigo', label: 'Realtime' },
-  rerank: { color: 'cyan', label: 'Rerank' },
-  embedding: { color: 'green', label: 'Embedding' },
-  task: { color: 'amber', label: 'Task' },
-  mj_proxy: { color: 'red', label: 'Midjourney' },
+const endpointColorMap = {
+  chat: 'blue',
+  completions: 'blue',
+  messages: 'purple',
+  responses: 'violet',
+  images: 'pink',
+  image: 'pink',
+  embeddings: 'green',
+  embedding: 'green',
+  audio: 'teal',
+  speech: 'teal',
+  translations: 'teal',
+  transcriptions: 'teal',
+  rerank: 'cyan',
+  moderations: 'red',
+  models: 'orange',
+  engines: 'orange',
+  mj: 'red',
+  submit: 'red',
+  suno: 'amber',
+  realtime: 'indigo',
+  notifications: 'violet',
 };
 
-function renderRelayFormat(relayFormat) {
-  if (!relayFormat) {
+function formatPathSegment(segment) {
+  if (!segment) {
+    return '';
+  }
+  const normalized = segment.replace(/^:/, '').replace(/[_-]/g, ' ');
+  return normalized
+    .split(' ')
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
+}
+
+function deriveEndpointMeta(path) {
+  if (!path) {
     return null;
   }
-  const meta = relayFormatMeta[relayFormat] || {
-    color: 'grey',
-    label: relayFormat
-      .replace(/_/g, ' ')
-      .replace(/\b\w/g, (c) => c.toUpperCase()),
-  };
+  const cleanPath = path.split('?')[0];
+  const segments = cleanPath.split('/').filter(Boolean);
+  if (segments.length === 0) {
+    return null;
+  }
+  let startIndex = 0;
+  if (/^v\d/i.test(segments[0])) {
+    startIndex = 1;
+  }
 
-  return (
+  const primary = segments[startIndex] || segments[segments.length - 1];
+  const tailSegments = segments
+    .slice(startIndex + 1)
+    .filter((segment) => segment && !segment.startsWith(':'));
+  const secondary = tailSegments[tailSegments.length - 1];
+
+  const labelParts = [];
+  const formattedPrimary = formatPathSegment(primary);
+  if (formattedPrimary) {
+    labelParts.push(formattedPrimary);
+  }
+  const formattedSecondary = formatPathSegment(secondary);
+  if (formattedSecondary && formattedSecondary !== formattedPrimary) {
+    labelParts.push(formattedSecondary);
+  }
+  const label = labelParts.join(' · ');
+
+  const color =
+    endpointColorMap[primary] ||
+    (secondary ? endpointColorMap[secondary] : undefined) ||
+    'grey';
+
+  return {
+    label: label || formatPathSegment(primary),
+    color,
+  };
+}
+
+function renderEndpointTag(requestPath) {
+  const meta = deriveEndpointMeta(requestPath);
+  if (!meta) {
+    return null;
+  }
+  const tag = (
     <Tag color={meta.color} type='light' shape='circle' size='small'>
       {meta.label}
     </Tag>
   );
+  if (requestPath) {
+    return <Tooltip content={requestPath}>{tag}</Tooltip>;
+  }
+  return tag;
 }
 
 function renderIsStream(bool, t) {
@@ -403,11 +465,12 @@ export const getLogsColumns = ({
       title: t('类型'),
       dataIndex: 'type',
       render: (text, record, index) => {
-        const relayFormat = getLogOther(record.other)?.relay_format;
+        const other = getLogOther(record.other) || {};
+        const requestPath = other.request_path;
         return (
           <Space size='small' wrap>
             {renderType(text, t)}
-            {renderRelayFormat(relayFormat)}
+            {renderEndpointTag(requestPath)}
           </Space>
         );
       },

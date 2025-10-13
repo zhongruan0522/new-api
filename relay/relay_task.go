@@ -165,8 +165,8 @@ func RelayTaskSubmit(c *gin.Context, info *relaycommon.RelayInfo) (taskErr *dto.
 					}
 				}
 				other := make(map[string]interface{})
-				if info.RelayFormat != "" {
-					other["relay_format"] = string(info.RelayFormat)
+				if c != nil && c.Request != nil && c.Request.URL != nil {
+					other["request_path"] = c.Request.URL.Path
 				}
 				other["model_price"] = modelPrice
 				other["group_ratio"] = groupRatio

@@ -465,10 +465,6 @@ func GenRelayInfo(c *gin.Context, relayFormat types.RelayFormat, request dto.Req
 		return nil, errors.New("invalid relay format")
 	}
 
-	if info != nil {
-		common.SetContextKey(c, constant.ContextKeyRelayFormat, string(info.RelayFormat))
-	}
-
 	return info, nil
 }
 
