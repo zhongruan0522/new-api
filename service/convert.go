@@ -352,7 +352,7 @@ func StreamResponseOpenAI2Claude(openAIResponse *dto.ChatCompletionsStreamRespon
 								Type:  "content_block_start",
 								ContentBlock: &dto.ClaudeMediaMessage{
 									Type:     "thinking",
-									Thinking: "",
+									Thinking: common.GetPointer[string](""),
 								},
 							})
 						}
@@ -360,7 +360,7 @@ func StreamResponseOpenAI2Claude(openAIResponse *dto.ChatCompletionsStreamRespon
 						// text delta
 						claudeResponse.Delta = &dto.ClaudeMediaMessage{
 							Type:     "thinking_delta",
-							Thinking: reasoning,
+							Thinking: &reasoning,
 						}
 					} else {
 						if info.ClaudeConvertInfo.LastMessagesType != relaycommon.LastMessageTypeText {
