@@ -426,46 +426,38 @@ func genBaseRelayInfo(c *gin.Context, request dto.Request) *RelayInfo {
 }
 
 func GenRelayInfo(c *gin.Context, relayFormat types.RelayFormat, request dto.Request, ws *websocket.Conn) (*RelayInfo, error) {
-	var info *RelayInfo
-
 	switch relayFormat {
 	case types.RelayFormatOpenAI:
-		info = GenRelayInfoOpenAI(c, request)
+		return GenRelayInfoOpenAI(c, request), nil
 	case types.RelayFormatOpenAIAudio:
-		info = GenRelayInfoOpenAIAudio(c, request)
+		return GenRelayInfoOpenAIAudio(c, request), nil
 	case types.RelayFormatOpenAIImage:
-		info = GenRelayInfoImage(c, request)
+		return GenRelayInfoImage(c, request), nil
 	case types.RelayFormatOpenAIRealtime:
-		info = GenRelayInfoWs(c, ws)
+		return GenRelayInfoWs(c, ws), nil
 	case types.RelayFormatClaude:
-		info = GenRelayInfoClaude(c, request)
+		return GenRelayInfoClaude(c, request), nil
 	case types.RelayFormatRerank:
-		rerankReq, ok := request.(*dto.RerankRequest)
-		if !ok {
-			return nil, errors.New("request is not a RerankRequest")
+		if request, ok := request.(*dto.RerankRequest); ok {
+			return GenRelayInfoRerank(c, request), nil
 		}
-		info = GenRelayInfoRerank(c, rerankReq)
+		return nil, errors.New("request is not a RerankRequest")
 	case types.RelayFormatGemini:
-		info = GenRelayInfoGemini(c, request)
+		return GenRelayInfoGemini(c, request), nil
 	case types.RelayFormatEmbedding:
-		info = GenRelayInfoEmbedding(c, request)
+		return GenRelayInfoEmbedding(c, request), nil
 	case types.RelayFormatOpenAIResponses:
-		responsesReq, ok := request.(*dto.OpenAIResponsesRequest)
-		if !ok {
-			return nil, errors.New("request is not a OpenAIResponsesRequest")
+		if request, ok := request.(*dto.OpenAIResponsesRequest); ok {
+			return GenRelayInfoResponses(c, request), nil
 		}
-		info = GenRelayInfoResponses(c, responsesReq)
+		return nil, errors.New("request is not a OpenAIResponsesRequest")
 	case types.RelayFormatTask:
-		info = genBaseRelayInfo(c, nil)
-		info.RelayFormat = types.RelayFormatTask
+		return genBaseRelayInfo(c, nil), nil
 	case types.RelayFormatMjProxy:
-		info = genBaseRelayInfo(c, nil)
-		info.RelayFormat = types.RelayFormatMjProxy
+		return genBaseRelayInfo(c, nil), nil
 	default:
 		return nil, errors.New("invalid relay format")
 	}
-
-	return info, nil
 }
 
 func (info *RelayInfo) SetPromptTokens(promptTokens int) {
