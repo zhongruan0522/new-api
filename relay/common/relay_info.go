@@ -512,6 +512,13 @@ type TaskInfo struct {
 	TotalTokens      int    `json:"total_tokens,omitempty"`      // 用于按倍率计费
 }
 
+func FailTaskInfo(reason string) *TaskInfo {
+	return &TaskInfo{
+		Status: "FAILURE",
+		Reason: reason,
+	}
+}
+
 // RemoveDisabledFields 从请求 JSON 数据中移除渠道设置中禁用的字段
 // service_tier: 服务层级字段，可能导致额外计费（OpenAI、Claude、Responses API 支持）
 // store: 数据存储授权字段，涉及用户隐私（仅 OpenAI、Responses API 支持，默认允许透传，禁用后可能导致 Codex 无法使用）

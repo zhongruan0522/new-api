@@ -53,5 +53,5 @@ type TaskAdaptor interface {
 }
 
 type OpenAIVideoConverter interface {
-	ConvertToOpenAIVideo(originTask *model.Task) (*dto.OpenAIVideo, error)
+	ConvertToOpenAIVideo(originTask *model.Task) ([]byte, error)
 }

@@ -15,6 +15,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/QuantumNous/new-api/common"
 	"github.com/QuantumNous/new-api/model"
 
 	"github.com/gin-gonic/gin"
@@ -446,7 +447,7 @@ func (a *TaskAdaptor) ParseTaskResult(respBody []byte) (*relaycommon.TaskInfo, e
 	return &taskResult, nil
 }
 
-func (a *TaskAdaptor) ConvertToOpenAIVideo(originTask *model.Task) (*dto.OpenAIVideo, error) {
+func (a *TaskAdaptor) ConvertToOpenAIVideo(originTask *model.Task) ([]byte, error) {
 	var jimengResp responseTask
 	if err := json.Unmarshal(originTask.Data, &jimengResp); err != nil {
 		return nil, errors.Wrap(err, "unmarshal jimeng task data failed")
@@ -467,7 +468,8 @@ func (a *TaskAdaptor) ConvertToOpenAIVideo(originTask *model.Task) (*dto.OpenAIV
 		}
 	}
 
-	return openAIVideo, nil
+	jsonData, _ := common.Marshal(openAIVideo)
+	return jsonData, nil
 }
 
 func isNewAPIRelay(apiKey string) bool {

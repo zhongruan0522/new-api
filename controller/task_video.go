@@ -88,10 +88,13 @@ func updateVideoSingleTask(ctx context.Context, adaptor channel.TaskAdaptor, cha
 		return fmt.Errorf("readAll failed for task %s: %w", taskId, err)
 	}
 
+	logger.LogDebug(ctx, fmt.Sprintf("UpdateVideoSingleTask response: %s", string(responseBody)))
+
 	taskResult := &relaycommon.TaskInfo{}
 	// try parse as New API response format
 	var responseItems dto.TaskResponse[model.Task]
-	if err = json.Unmarshal(responseBody, &responseItems); err == nil && responseItems.IsSuccess() {
+	if err = common.Unmarshal(responseBody, &responseItems); err == nil && responseItems.IsSuccess() {
+		logger.LogDebug(ctx, fmt.Sprintf("UpdateVideoSingleTask parsed as new api response format: %+v", responseItems))
 		t := responseItems.Data
 		taskResult.TaskID = t.TaskID
 		taskResult.Status = string(t.Status)
@@ -105,9 +108,12 @@ func updateVideoSingleTask(ctx context.Context, adaptor channel.TaskAdaptor, cha
 		task.Data = redactVideoResponseBody(responseBody)
 	}
 
+	logger.LogDebug(ctx, fmt.Sprintf("UpdateVideoSingleTask taskResult: %+v", taskResult))
+
 	now := time.Now().Unix()
 	if taskResult.Status == "" {
-		return fmt.Errorf("task %s status is empty", taskId)
+		//return fmt.Errorf("task %s status is empty", taskId)
+		taskResult = relaycommon.FailTaskInfo("upstream returned empty status")
 	}
 	task.Status = model.TaskStatus(taskResult.Status)
 	switch taskResult.Status {

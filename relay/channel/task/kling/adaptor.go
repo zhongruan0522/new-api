@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/QuantumNous/new-api/common"
 	"github.com/QuantumNous/new-api/model"
 
 	"github.com/samber/lo"
@@ -367,7 +368,7 @@ func isNewAPIRelay(apiKey string) bool {
 	return strings.HasPrefix(apiKey, "sk-")
 }
 
-func (a *TaskAdaptor) ConvertToOpenAIVideo(originTask *model.Task) (*dto.OpenAIVideo, error) {
+func (a *TaskAdaptor) ConvertToOpenAIVideo(originTask *model.Task) ([]byte, error) {
 	var klingResp responsePayload
 	if err := json.Unmarshal(originTask.Data, &klingResp); err != nil {
 		return nil, errors.Wrap(err, "unmarshal kling task data failed")
@@ -396,6 +397,6 @@ func (a *TaskAdaptor) ConvertToOpenAIVideo(originTask *model.Task) (*dto.OpenAIV
 			Code:    fmt.Sprintf("%d", klingResp.Code),
 		}
 	}
-
-	return openAIVideo, nil
+	jsonData, _ := common.Marshal(openAIVideo)
+	return jsonData, nil
 }

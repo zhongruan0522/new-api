@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/QuantumNous/new-api/common"
 	"github.com/gin-gonic/gin"
 
 	"github.com/QuantumNous/new-api/constant"
@@ -263,7 +264,7 @@ func (a *TaskAdaptor) ParseTaskResult(respBody []byte) (*relaycommon.TaskInfo, e
 	return taskInfo, nil
 }
 
-func (a *TaskAdaptor) ConvertToOpenAIVideo(originTask *model.Task) (*dto.OpenAIVideo, error) {
+func (a *TaskAdaptor) ConvertToOpenAIVideo(originTask *model.Task) ([]byte, error) {
 	var viduResp taskResultResponse
 	if err := json.Unmarshal(originTask.Data, &viduResp); err != nil {
 		return nil, errors.Wrap(err, "unmarshal vidu task data failed")
@@ -287,5 +288,6 @@ func (a *TaskAdaptor) ConvertToOpenAIVideo(originTask *model.Task) (*dto.OpenAIV
 		}
 	}
 
-	return openAIVideo, nil
+	jsonData, _ := common.Marshal(openAIVideo)
+	return jsonData, nil
 }
