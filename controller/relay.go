@@ -299,6 +299,9 @@ func processChannelError(c *gin.Context, channelError types.ChannelError, err *t
 		userGroup := c.GetString("group")
 		channelId := c.GetInt("channel_id")
 		other := make(map[string]interface{})
+		if c.Request != nil && c.Request.URL != nil {
+			other["request_path"] = c.Request.URL.Path
+		}
 		other["error_type"] = err.GetErrorType()
 		other["error_code"] = err.GetErrorCode()
 		other["status_code"] = err.StatusCode

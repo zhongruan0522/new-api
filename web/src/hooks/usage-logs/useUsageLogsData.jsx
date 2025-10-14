@@ -468,6 +468,12 @@ export const useLogsData = () => {
           });
         }
       }
+      if (other?.request_path) {
+        expandDataLocal.push({
+          key: t('请求路径'),
+          value: other.request_path,
+        });
+      }
       expandDatesLocal[logs[i].key] = expandDataLocal;
     }
 
