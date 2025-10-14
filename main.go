@@ -150,6 +150,26 @@ func main() {
 	})
 	server.Use(sessions.Sessions("session", store))
 
+	InjectUmamiAnalytics()
+	InjectGoogleAnalytics()
+
+	// 设置路由
+	router.SetRouter(server, buildFS, indexPage)
+	var port = os.Getenv("PORT")
+	if port == "" {
+		port = strconv.Itoa(*common.Port)
+	}
+
+	// Log startup success message
+	common.LogStartupSuccess(startTime, port)
+
+	err = server.Run(":" + port)
+	if err != nil {
+		common.FatalLog("failed to start HTTP server: " + err.Error())
+	}
+}
+
+func InjectUmamiAnalytics() {
 	analyticsInjectBuilder := &strings.Builder{}
 	if os.Getenv("UMAMI_WEBSITE_ID") != "" {
 		umamiSiteID := os.Getenv("UMAMI_WEBSITE_ID")
@@ -164,21 +184,28 @@ func main() {
 		analyticsInjectBuilder.WriteString("\"></script>")
 	}
 	analyticsInject := analyticsInjectBuilder.String()
-	indexPage = bytes.ReplaceAll(indexPage, []byte("<analytics></analytics>\n"), []byte(analyticsInject))
+	indexPage = bytes.ReplaceAll(indexPage, []byte("<!--umami-->\n"), []byte(analyticsInject))
+}
 
-	router.SetRouter(server, buildFS, indexPage)
-	var port = os.Getenv("PORT")
-	if port == "" {
-		port = strconv.Itoa(*common.Port)
+func InjectGoogleAnalytics() {
+	analyticsInjectBuilder := &strings.Builder{}
+	if os.Getenv("GOOGLE_ANALYTICS_ID") != "" {
+		gaID := os.Getenv("GOOGLE_ANALYTICS_ID")
+		// Google Analytics 4 (gtag.js)
+		analyticsInjectBuilder.WriteString("<script async src=\"https://www.googletagmanager.com/gtag/js?id=")
+		analyticsInjectBuilder.WriteString(gaID)
+		analyticsInjectBuilder.WriteString("\"></script>")
+		analyticsInjectBuilder.WriteString("<script>")
+		analyticsInjectBuilder.WriteString("window.dataLayer = window.dataLayer || [];")
+		analyticsInjectBuilder.WriteString("function gtag(){dataLayer.push(arguments);}")
+		analyticsInjectBuilder.WriteString("gtag('js', new Date());")
+		analyticsInjectBuilder.WriteString("gtag('config', '")
+		analyticsInjectBuilder.WriteString(gaID)
+		analyticsInjectBuilder.WriteString("');")
+		analyticsInjectBuilder.WriteString("</script>")
 	}
-
-	// Log startup success message
-	common.LogStartupSuccess(startTime, port)
-
-	err = server.Run(":" + port)
-	if err != nil {
-		common.FatalLog("failed to start HTTP server: " + err.Error())
-	}
+	analyticsInject := analyticsInjectBuilder.String()
+	indexPage = bytes.ReplaceAll(indexPage, []byte("<!--Google Analytics-->\n"), []byte(analyticsInject))
 }
 
 func InitResources() error {
