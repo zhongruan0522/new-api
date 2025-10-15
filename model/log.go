@@ -39,14 +39,15 @@ type Log struct {
 	Other            string `json:"other"`
 }
 
+// don't use iota, avoid change log type value
 const (
-	LogTypeUnknown = iota
-	LogTypeTopup
-	LogTypeConsume
-	LogTypeManage
-	LogTypeSystem
-	LogTypeError
-	LogTypeRefund
+	LogTypeUnknown = 0
+	LogTypeTopup   = 1
+	LogTypeConsume = 2
+	LogTypeManage  = 3
+	LogTypeSystem  = 4
+	LogTypeError   = 5
+	LogTypeRefund  = 6
 )
 
 func formatUserLogs(logs []*Log) {
