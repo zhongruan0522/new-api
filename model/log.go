@@ -45,6 +45,7 @@ const (
 	LogTypeConsume
 	LogTypeManage
 	LogTypeSystem
+	LogTypeRefund
 	LogTypeError
 )
 
