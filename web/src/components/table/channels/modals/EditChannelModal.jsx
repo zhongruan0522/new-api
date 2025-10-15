@@ -153,6 +153,8 @@ const EditChannelModal = (props) => {
     settings: '',
     // 仅 Vertex: 密钥格式（存入 settings.vertex_key_type）
     vertex_key_type: 'json',
+    // 仅 AWS: 密钥格式和区域（存入 settings.aws_key_type 和 settings.aws_region）
+    aws_key_type: 'ak_sk',
     // 企业账户设置
     is_enterprise_account: false,
     // 字段透传控制默认值
@@ -515,6 +517,8 @@ const EditChannelModal = (props) => {
             parsedSettings.azure_responses_version || '';
           // 读取 Vertex 密钥格式
           data.vertex_key_type = parsedSettings.vertex_key_type || 'json';
+          // 读取 AWS 密钥格式和区域
+          data.aws_key_type = parsedSettings.aws_key_type || 'ak_sk';
           // 读取企业账户设置
           data.is_enterprise_account =
             parsedSettings.openrouter_enterprise === true;
@@ -528,6 +532,7 @@ const EditChannelModal = (props) => {
           data.azure_responses_version = '';
           data.region = '';
           data.vertex_key_type = 'json';
+          data.aws_key_type = 'ak_sk';
           data.is_enterprise_account = false;
           data.allow_service_tier = false;
           data.disable_store = false;
@@ -536,6 +541,7 @@ const EditChannelModal = (props) => {
       } else {
         // 兼容历史数据：老渠道没有 settings 时，默认按 json 展示
         data.vertex_key_type = 'json';
+        data.aws_key_type = 'ak_sk';
         data.is_enterprise_account = false;
         data.allow_service_tier = false;
         data.disable_store = false;
@@ -997,6 +1003,11 @@ const EditChannelModal = (props) => {
         localInputs.is_enterprise_account === true;
     }
 
+    // type === 33 (AWS): 保存 aws_key_type 到 settings
+    if (localInputs.type === 33) {
+      settings.aws_key_type = localInputs.aws_key_type || 'ak_sk';
+    }
+
     // type === 1 (OpenAI) 或 type === 14 (Claude): 设置字段透传控制（显式保存布尔值）
     if (localInputs.type === 1 || localInputs.type === 14) {
       settings.allow_service_tier = localInputs.allow_service_tier === true;
@@ -1020,6 +1031,8 @@ const EditChannelModal = (props) => {
     delete localInputs.is_enterprise_account;
     // 顶层的 vertex_key_type 不应发送给后端
     delete localInputs.vertex_key_type;
+    // 顶层的 aws_key_type 不应发送给后端
+    delete localInputs.aws_key_type;
     // 清理字段透传控制的临时字段
     delete localInputs.allow_service_tier;
     delete localInputs.disable_store;
@@ -1468,6 +1481,31 @@ const EditChannelModal = (props) => {
                       autoComplete='new-password'
                     />
 
+                    {inputs.type === 33 && (
+                      <>
+                        <Form.Select
+                          field='aws_key_type'
+                          label={t('密钥格式')}
+                          placeholder={t('请选择密钥格式')}
+                          optionList={[
+                            {
+                              label: 'Access Key ID / Secret Access Key',
+                              value: 'ak_sk',
+                            },
+                            { label: 'API Key', value: 'api_key' },
+                          ]}
+                          style={{ width: '100%' }}
+                          value={inputs.aws_key_type || 'ak_sk'}
+                          onChange={(value) => {
+                            handleChannelOtherSettingsChange('aws_key_type', value);
+                          }}
+                          extraText={t(
+                            'AK/SK 模式：使用 Access Key ID 和 Secret Access Key；API Key 模式：使用 API Key',
+                          )}
+                        />
+                      </>
+                    )}
+
                     {inputs.type === 41 && (
                       <Form.Select
                         field='vertex_key_type'
@@ -1536,7 +1574,15 @@ const EditChannelModal = (props) => {
                         <Form.TextArea
                           field='key'
                           label={t('密钥')}
-                          placeholder={t('请输入密钥，一行一个')}
+                          placeholder={
+                            inputs.type === 33
+                              ? inputs.aws_key_type === 'api_key'
+                                ? t('请输入 API Key，一行一个，格式：API Key|Region')
+                                : t(
+                                    '请输入密钥，一行一个，格式：Access Key ID|Secret Access Key|Region',
+                                  )
+                              : t('请输入密钥，一行一个')
+                          }
                           rules={
                             isEdit
                               ? []
@@ -1730,7 +1776,13 @@ const EditChannelModal = (props) => {
                                 ? t('密钥（编辑模式下，保存的密钥不会显示）')
                                 : t('密钥')
                             }
-                            placeholder={t(type2secretPrompt(inputs.type))}
+                            placeholder={
+                              inputs.type === 33
+                                ? inputs.aws_key_type === 'api_key'
+                                  ? t('请输入 API Key，格式：API Key|Region')
+                                  : t('按照如下格式输入：Access Key ID|Secret Access Key|Region')
+                                : t(type2secretPrompt(inputs.type))
+                            }
                             rules={
                               isEdit
                                 ? []

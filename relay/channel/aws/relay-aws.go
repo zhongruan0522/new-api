@@ -3,6 +3,7 @@ package aws
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
 
@@ -49,12 +50,72 @@ func newAwsClient(c *gin.Context, info *relaycommon.RelayInfo) (*bedrockruntime.
 	return client, nil
 }
 
-func wrapErr(err error) *dto.OpenAIErrorWithStatusCode {
-	return &dto.OpenAIErrorWithStatusCode{
-		StatusCode: http.StatusInternalServerError,
-		Error: dto.OpenAIError{
-			Message: fmt.Sprintf("%s", err.Error()),
-		},
+func doAwsClientRequest(c *gin.Context, info *relaycommon.RelayInfo, a *Adaptor, requestBody io.Reader) (any, error) {
+	awsCli, err := newAwsClient(c, info)
+	if err != nil {
+		return nil, types.NewError(err, types.ErrorCodeChannelAwsClientError)
+	}
+	a.AwsClient = awsCli
+
+	awsModelId := awsModelID(info.UpstreamModelName)
+
+	awsRegionPrefix := awsRegionPrefix(awsCli.Options().Region)
+	canCrossRegion := awsModelCanCrossRegion(awsModelId, awsRegionPrefix)
+	if canCrossRegion {
+		awsModelId = awsModelCrossRegion(awsModelId, awsRegionPrefix)
+	}
+
+	if isNovaModel(awsModelId) {
+		var novaReq *NovaRequest
+		err = common.DecodeJson(requestBody, &novaReq)
+		if err != nil {
+			return nil, types.NewError(errors.Wrap(err, "decode nova request fail"), types.ErrorCodeBadRequestBody)
+		}
+
+		// 使用InvokeModel API，但使用Nova格式的请求体
+		awsReq := &bedrockruntime.InvokeModelInput{
+			ModelId:     aws.String(awsModelId),
+			Accept:      aws.String("application/json"),
+			ContentType: aws.String("application/json"),
+		}
+
+		reqBody, err := common.Marshal(novaReq)
+		if err != nil {
+			return nil, types.NewError(errors.Wrap(err, "marshal nova request"), types.ErrorCodeBadResponseBody)
+		}
+		awsReq.Body = reqBody
+		return nil, nil
+	} else {
+		awsClaudeReq, err := formatRequest(requestBody)
+		if err != nil {
+			return nil, types.NewError(errors.Wrap(err, "format aws request fail"), types.ErrorCodeBadRequestBody)
+		}
+
+		if info.IsStream {
+			awsReq := &bedrockruntime.InvokeModelWithResponseStreamInput{
+				ModelId:     aws.String(awsModelId),
+				Accept:      aws.String("application/json"),
+				ContentType: aws.String("application/json"),
+			}
+			awsReq.Body, err = common.Marshal(awsClaudeReq)
+			if err != nil {
+				return nil, types.NewError(errors.Wrap(err, "marshal aws request fail"), types.ErrorCodeBadRequestBody)
+			}
+			a.AwsReq = awsReq
+			return nil, nil
+		} else {
+			awsReq := &bedrockruntime.InvokeModelInput{
+				ModelId:     aws.String(awsModelId),
+				Accept:      aws.String("application/json"),
+				ContentType: aws.String("application/json"),
+			}
+			awsReq.Body, err = common.Marshal(awsClaudeReq)
+			if err != nil {
+				return nil, types.NewError(errors.Wrap(err, "marshal aws request fail"), types.ErrorCodeBadRequestBody)
+			}
+			a.AwsReq = awsReq
+			return nil, nil
+		}
 	}
 }
 
@@ -108,7 +169,7 @@ func awsHandler(c *gin.Context, info *relaycommon.RelayInfo, a *Adaptor) (*types
 		c.Writer.Header().Set("Content-Type", *awsResp.ContentType)
 	}
 
-	handlerErr := claude.HandleClaudeResponseData(c, info, claudeInfo, nil, awsResp.Body, RequestModeMessage)
+	handlerErr := claude.HandleClaudeResponseData(c, info, claudeInfo, nil, awsResp.Body, claude.RequestModeMessage)
 	if handlerErr != nil {
 		return handlerErr, nil
 	}
@@ -135,7 +196,7 @@ func awsStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, a *Adaptor) (
 		switch v := event.(type) {
 		case *bedrockruntimeTypes.ResponseStreamMemberChunk:
 			info.SetFirstResponseTime()
-			respErr := claude.HandleStreamResponseData(c, info, claudeInfo, string(v.Value.Bytes), RequestModeMessage)
+			respErr := claude.HandleStreamResponseData(c, info, claudeInfo, string(v.Value.Bytes), claude.RequestModeMessage)
 			if respErr != nil {
 				return respErr, nil
 			}
@@ -148,7 +209,7 @@ func awsStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, a *Adaptor) (
 		}
 	}
 
-	claude.HandleStreamFinalResponse(c, info, claudeInfo, RequestModeMessage)
+	claude.HandleStreamFinalResponse(c, info, claudeInfo, claude.RequestModeMessage)
 	return nil, claudeInfo.Usage
 }
 
