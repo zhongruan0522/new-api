@@ -110,7 +110,7 @@ function type2secretPrompt(type) {
     case 50:
       return '按照如下格式输入: AccessKey|SecretKey, 如果上游是New API，则直接输ApiKey';
     case 51:
-      return '按照如下格式输入: Access Key ID|Secret Access Key';
+      return '按照如下格式输入: AccessKey|SecretAccessKey';
     default:
       return '请输入渠道对应的鉴权密钥';
   }
@@ -1489,7 +1489,7 @@ const EditChannelModal = (props) => {
                           placeholder={t('请选择密钥格式')}
                           optionList={[
                             {
-                              label: 'Access Key ID / Secret Access Key',
+                              label: 'AccessKey / SecretAccessKey',
                               value: 'ak_sk',
                             },
                             { label: 'API Key', value: 'api_key' },
@@ -1500,7 +1500,7 @@ const EditChannelModal = (props) => {
                             handleChannelOtherSettingsChange('aws_key_type', value);
                           }}
                           extraText={t(
-                            'AK/SK 模式：使用 Access Key ID 和 Secret Access Key；API Key 模式：使用 API Key',
+                            'AK/SK 模式：使用 AccessKey 和 SecretAccessKey；API Key 模式：使用 API Key',
                           )}
                         />
                       </>
@@ -1577,9 +1577,9 @@ const EditChannelModal = (props) => {
                           placeholder={
                             inputs.type === 33
                               ? inputs.aws_key_type === 'api_key'
-                                ? t('请输入 API Key，一行一个，格式：API Key|Region')
+                                ? t('请输入 API Key，一行一个，格式：APIKey|Region')
                                 : t(
-                                    '请输入密钥，一行一个，格式：Access Key ID|Secret Access Key|Region',
+                                    '请输入密钥，一行一个，格式：AccessKey|SecretAccessKey|Region',
                                   )
                               : t('请输入密钥，一行一个')
                           }
@@ -1779,8 +1779,8 @@ const EditChannelModal = (props) => {
                             placeholder={
                               inputs.type === 33
                                 ? inputs.aws_key_type === 'api_key'
-                                  ? t('请输入 API Key，格式：API Key|Region')
-                                  : t('按照如下格式输入：Access Key ID|Secret Access Key|Region')
+                                  ? t('请输入 API Key，格式：APIKey|Region')
+                                  : t('按照如下格式输入：AccessKey|SecretAccessKey|Region')
                                 : t(type2secretPrompt(inputs.type))
                             }
                             rules={
