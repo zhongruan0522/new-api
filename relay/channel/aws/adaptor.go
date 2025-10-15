@@ -121,12 +121,11 @@ func (a *Adaptor) ConvertOpenAIRequest(c *gin.Context, info *relaycommon.RelayIn
 	}
 
 	// 原有的Claude模型处理逻辑
-	var claudeReq *dto.ClaudeRequest
-	var err error
-	claudeReq, err = claude.RequestOpenAI2ClaudeMessage(c, *request)
+	claudeReq, err := claude.RequestOpenAI2ClaudeMessage(c, *request)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to convert openai request to claude request")
 	}
+	info.UpstreamModelName = claudeReq.Model
 	return claudeReq, err
 }
 
