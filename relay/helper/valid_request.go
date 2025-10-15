@@ -300,7 +300,7 @@ func GetAndValidateGeminiRequest(c *gin.Context) (*dto.GeminiChatRequest, error)
 	if err != nil {
 		return nil, err
 	}
-	if len(request.Contents) == 0 {
+	if len(request.Contents) == 0 && len(request.Requests) == 0 {
 		return nil, errors.New("contents is required")
 	}
 

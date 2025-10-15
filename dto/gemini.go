@@ -12,6 +12,7 @@ import (
 )
 
 type GeminiChatRequest struct {
+	Requests           []GeminiChatRequest        `json:"requests,omitempty"` // For batch requests
 	Contents           []GeminiChatContent        `json:"contents"`
 	SafetySettings     []GeminiChatSafetySettings `json:"safetySettings,omitempty"`
 	GenerationConfig   GeminiChatGenerationConfig `json:"generationConfig,omitempty"`
