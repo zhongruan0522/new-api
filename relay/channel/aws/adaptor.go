@@ -10,6 +10,7 @@ import (
 	"github.com/QuantumNous/new-api/relay/channel"
 	"github.com/QuantumNous/new-api/relay/channel/claude"
 	relaycommon "github.com/QuantumNous/new-api/relay/common"
+	"github.com/QuantumNous/new-api/service"
 	"github.com/QuantumNous/new-api/types"
 	"github.com/aws/aws-sdk-go-v2/service/bedrockruntime"
 	"github.com/pkg/errors"
@@ -38,6 +39,37 @@ func (a *Adaptor) ConvertGeminiRequest(*gin.Context, *relaycommon.RelayInfo, *dt
 }
 
 func (a *Adaptor) ConvertClaudeRequest(c *gin.Context, info *relaycommon.RelayInfo, request *dto.ClaudeRequest) (any, error) {
+	for i, message := range request.Messages {
+		updated := false
+		if !message.IsStringContent() {
+			content, err := message.ParseContent()
+			if err != nil {
+				return nil, errors.Wrap(err, "failed to parse message content")
+			}
+			for i2, mediaMessage := range content {
+				if mediaMessage.Source != nil {
+					if mediaMessage.Source.Type == "url" {
+						fileData, err := service.GetFileBase64FromUrl(c, mediaMessage.Source.Url, "formatting image for Claude")
+						if err != nil {
+							return nil, fmt.Errorf("get file base64 from url failed: %s", err.Error())
+						}
+						mediaMessage.Source.MediaType = fileData.MimeType
+						mediaMessage.Source.Data = fileData.Base64Data
+						mediaMessage.Source.Url = ""
+						mediaMessage.Source.Type = "base64"
+						content[i2] = mediaMessage
+						updated = true
+					}
+				}
+			}
+			if updated {
+				message.SetContent(content)
+			}
+		}
+		if updated {
+			request.Messages[i] = message
+		}
+	}
 	return request, nil
 }
 

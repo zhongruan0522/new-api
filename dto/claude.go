@@ -148,6 +148,10 @@ func (c *ClaudeMessage) SetStringContent(content string) {
 	c.Content = content
 }
 
+func (c *ClaudeMessage) SetContent(content any) {
+	c.Content = content
+}
+
 func (c *ClaudeMessage) ParseContent() ([]ClaudeMediaMessage, error) {
 	return common.Any2Type[[]ClaudeMediaMessage](c.Content)
 }
