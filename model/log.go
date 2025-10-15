@@ -45,8 +45,8 @@ const (
 	LogTypeConsume
 	LogTypeManage
 	LogTypeSystem
-	LogTypeRefund
 	LogTypeError
+	LogTypeRefund
 )
 
 func formatUserLogs(logs []*Log) {
