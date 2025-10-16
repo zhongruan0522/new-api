@@ -255,6 +255,7 @@ func updateVideoSingleTask(ctx context.Context, adaptor channel.TaskAdaptor, cha
 	}
 	if err := task.Update(); err != nil {
 		common.SysLog("UpdateVideoTask task error: " + err.Error())
+		shouldRefund = false
 	}
 
 	if shouldRefund {
