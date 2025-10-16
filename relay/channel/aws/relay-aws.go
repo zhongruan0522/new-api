@@ -57,9 +57,11 @@ func doAwsClientRequest(c *gin.Context, info *relaycommon.RelayInfo, a *Adaptor,
 	}
 	a.AwsClient = awsCli
 
-	awsModelId := awsModelID(info.UpstreamModelName)
+	println(info.UpstreamModelName)
+	// 获取对应的AWS模型ID
+	awsModelId := getAwsModelID(info.UpstreamModelName)
 
-	awsRegionPrefix := awsRegionPrefix(awsCli.Options().Region)
+	awsRegionPrefix := getAwsRegionPrefix(awsCli.Options().Region)
 	canCrossRegion := awsModelCanCrossRegion(awsModelId, awsRegionPrefix)
 	if canCrossRegion {
 		awsModelId = awsModelCrossRegion(awsModelId, awsRegionPrefix)
@@ -119,7 +121,7 @@ func doAwsClientRequest(c *gin.Context, info *relaycommon.RelayInfo, a *Adaptor,
 	}
 }
 
-func awsRegionPrefix(awsRegionId string) string {
+func getAwsRegionPrefix(awsRegionId string) string {
 	parts := strings.Split(awsRegionId, "-")
 	regionPrefix := ""
 	if len(parts) > 0 {
@@ -141,11 +143,10 @@ func awsModelCrossRegion(awsModelId, awsRegionPrefix string) string {
 	return modelPrefix + "." + awsModelId
 }
 
-func awsModelID(requestModel string) string {
-	if awsModelID, ok := awsModelIDMap[requestModel]; ok {
-		return awsModelID
+func getAwsModelID(requestModel string) string {
+	if awsModelIDName, ok := awsModelIDMap[requestModel]; ok {
+		return awsModelIDName
 	}
-
 	return requestModel
 }
 
