@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/QuantumNous/new-api/constant"
@@ -118,4 +119,17 @@ func initConstantEnv() {
 	constant.GenerateDefaultToken = GetEnvOrDefaultBool("GENERATE_DEFAULT_TOKEN", false)
 	// 是否启用错误日志
 	constant.ErrorLogEnabled = GetEnvOrDefaultBool("ERROR_LOG_ENABLED", false)
+
+	soraPatchStr := GetEnvOrDefaultString("TASK_PRICE_PATCH", "")
+	if soraPatchStr != "" {
+		var taskPricePatches []string
+		soraPatches := strings.Split(soraPatchStr, ",")
+		for _, patch := range soraPatches {
+			trimmedPatch := strings.TrimSpace(patch)
+			if trimmedPatch != "" {
+				taskPricePatches = append(taskPricePatches, trimmedPatch)
+			}
+		}
+		constant.TaskPricePatches = taskPricePatches
+	}
 }

@@ -72,10 +72,13 @@ func RelayTaskSubmit(c *gin.Context, info *relaycommon.RelayInfo) (taskErr *dto.
 	} else {
 		ratio = modelPrice * groupRatio
 	}
-	if len(info.PriceData.OtherRatios) > 0 {
-		for _, ra := range info.PriceData.OtherRatios {
-			if 1.0 != ra {
-				ratio *= ra
+	// FIXME: 临时修补，支持任务仅按次计费
+	if !common.StringsContains(constant.TaskPricePatches, modelName) {
+		if len(info.PriceData.OtherRatios) > 0 {
+			for _, ra := range info.PriceData.OtherRatios {
+				if 1.0 != ra {
+					ratio *= ra
+				}
 			}
 		}
 	}
@@ -153,15 +156,20 @@ func RelayTaskSubmit(c *gin.Context, info *relaycommon.RelayInfo) (taskErr *dto.
 				//	gRatio = userGroupRatio
 				//}
 				logContent := fmt.Sprintf("操作 %s", info.Action)
-				if len(info.PriceData.OtherRatios) > 0 {
-					var contents []string
-					for key, ra := range info.PriceData.OtherRatios {
-						if 1.0 != ra {
-							contents = append(contents, fmt.Sprintf("%s: %.2f", key, ra))
+				// FIXME: 临时修补，支持任务仅按次计费
+				if common.StringsContains(constant.TaskPricePatches, modelName) {
+					logContent = fmt.Sprintf("%s，按次计费", logContent)
+				} else {
+					if len(info.PriceData.OtherRatios) > 0 {
+						var contents []string
+						for key, ra := range info.PriceData.OtherRatios {
+							if 1.0 != ra {
+								contents = append(contents, fmt.Sprintf("%s: %.2f", key, ra))
+							}
 						}
-					}
-					if len(contents) > 0 {
-						logContent = fmt.Sprintf("%s, 计算参数：%s", logContent, strings.Join(contents, ", "))
+						if len(contents) > 0 {
+							logContent = fmt.Sprintf("%s, 计算参数：%s", logContent, strings.Join(contents, ", "))
+						}
 					}
 				}
 				other := make(map[string]interface{})
