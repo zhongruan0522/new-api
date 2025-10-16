@@ -153,5 +153,5 @@ func LogJson(ctx context.Context, msg string, obj any) {
 		LogError(ctx, fmt.Sprintf("json marshal failed: %s", err.Error()))
 		return
 	}
-	LogInfo(ctx, fmt.Sprintf("%s | %s", msg, string(jsonStr)))
+	LogDebug(ctx, fmt.Sprintf("%s | %s", msg, string(jsonStr)))
 }
