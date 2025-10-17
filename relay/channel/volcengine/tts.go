@@ -33,17 +33,44 @@ type VolcengineTTSUser struct {
 }
 
 type VolcengineTTSAudio struct {
-	VoiceType     string  `json:"voice_type"`
-	Encoding      string  `json:"encoding"`
-	SpeedRatio    float64 `json:"speed_ratio"`
-	Rate          int     `json:"rate"`
-	LoudnessRatio float64 `json:"loudness_ratio,omitempty"`
+	VoiceType        string  `json:"voice_type"`
+	Encoding         string  `json:"encoding"`
+	SpeedRatio       float64 `json:"speed_ratio"`
+	Rate             int     `json:"rate"`
+	Bitrate          int     `json:"bitrate,omitempty"`
+	LoudnessRatio    float64 `json:"loudness_ratio,omitempty"`
+	EnableEmotion    bool    `json:"enable_emotion,omitempty"`
+	Emotion          string  `json:"emotion,omitempty"`
+	EmotionScale     float64 `json:"emotion_scale,omitempty"`
+	ExplicitLanguage string  `json:"explicit_language,omitempty"`
+	ContextLanguage  string  `json:"context_language,omitempty"`
 }
 
 type VolcengineTTSReqInfo struct {
-	ReqID     string `json:"reqid"`
-	Text      string `json:"text"`
-	Operation string `json:"operation"`
+	ReqID           string                   `json:"reqid"`
+	Text            string                   `json:"text"`
+	Operation       string                   `json:"operation"`
+	Model           string                   `json:"model,omitempty"`
+	TextType        string                   `json:"text_type,omitempty"`
+	SilenceDuration float64                  `json:"silence_duration,omitempty"`
+	WithTimestamp   interface{}              `json:"with_timestamp,omitempty"`
+	ExtraParam      *VolcengineTTSExtraParam `json:"extra_param,omitempty"`
+}
+
+type VolcengineTTSExtraParam struct {
+	DisableMarkdownFilter      bool                      `json:"disable_markdown_filter,omitempty"`
+	EnableLatexTn              bool                      `json:"enable_latex_tn,omitempty"`
+	MuteCutThreshold           string                    `json:"mute_cut_threshold,omitempty"`
+	MuteCutRemainMs            string                    `json:"mute_cut_remain_ms,omitempty"`
+	DisableEmojiFilter         bool                      `json:"disable_emoji_filter,omitempty"`
+	UnsupportedCharRatioThresh float64                   `json:"unsupported_char_ratio_thresh,omitempty"`
+	AigcWatermark              bool                      `json:"aigc_watermark,omitempty"`
+	CacheConfig                *VolcengineTTSCacheConfig `json:"cache_config,omitempty"`
+}
+
+type VolcengineTTSCacheConfig struct {
+	TextType int  `json:"text_type,omitempty"`
+	UseCache bool `json:"use_cache,omitempty"`
 }
 
 type VolcengineTTSResponse struct {
@@ -89,7 +116,7 @@ func mapVoiceType(openAIVoice string) string {
 	if voice, ok := openAIToVolcengineVoiceMap[openAIVoice]; ok {
 		return voice
 	}
-	return "zh_male_M392_conversation_wvae_bigtts"
+	return openAIVoice
 }
 
 func mapSpeedRatio(speed float64) float64 {

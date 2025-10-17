@@ -71,6 +71,7 @@ func (a *Adaptor) ConvertAudioRequest(c *gin.Context, info *relaycommon.RelayInf
 			ReqID:     generateRequestID(),
 			Text:      request.Input,
 			Operation: "query",
+			Model:     info.OriginModelName,
 		},
 	}
 
@@ -258,7 +259,11 @@ func (a *Adaptor) GetRequestURL(info *relaycommon.RelayInfo) (string, error) {
 		case constant.RelayModeRerank:
 			return fmt.Sprintf("%s/api/v3/rerank", baseUrl), nil
 		case constant.RelayModeAudioSpeech:
-			return "https://openspeech.bytedance.com/api/v1/tts", nil
+			// 只有当 baseUrl 是火山默认的官方Url时才改为官方的的TTS接口，否则走透传的New接口
+			if baseUrl == channelconstant.ChannelBaseURLs[channelconstant.ChannelTypeVolcEngine] {
+				return "https://openspeech.bytedance.com/api/v1/tts", nil
+			}
+			return fmt.Sprintf("%s/v1/audio/speech", baseUrl), nil
 		default:
 		}
 	}
