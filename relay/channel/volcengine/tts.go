@@ -107,7 +107,7 @@ var responseFormatToEncodingMap = map[string]string{
 func parseVolcengineAuth(apiKey string) (appID, token string, err error) {
 	parts := strings.Split(apiKey, "|")
 	if len(parts) != 2 {
-		return "", "", errors.New("invalid api key format, expected: appid:access_token")
+		return "", "", errors.New("invalid api key format, expected: appid|access_token")
 	}
 	return parts[0], parts[1], nil
 }
