@@ -119,6 +119,7 @@ func mapVoiceType(openAIVoice string) string {
 	return openAIVoice
 }
 
+// [0.1,2]，默认为 1，通常保留一位小数即可
 func mapSpeedRatio(speed float64) float64 {
 	if speed == 0 {
 		return 1.0
@@ -133,9 +134,6 @@ func mapSpeedRatio(speed float64) float64 {
 }
 
 func mapEncoding(responseFormat string) string {
-	if responseFormat == "" {
-		return "mp3"
-	}
 	if encoding, ok := responseFormatToEncodingMap[responseFormat]; ok {
 		return encoding
 	}
@@ -155,7 +153,7 @@ func getContentTypeByEncoding(encoding string) string {
 	return "application/octet-stream"
 }
 
-func handleTTSResponse(c *gin.Context, resp *http.Response, encoding string) (usage any, err *types.NewAPIError) {
+func handleTTSResponse(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo, encoding string) (usage any, err *types.NewAPIError) {
 	body, readErr := io.ReadAll(resp.Body)
 	if readErr != nil {
 		return nil, types.NewErrorWithStatusCode(
@@ -196,7 +194,6 @@ func handleTTSResponse(c *gin.Context, resp *http.Response, encoding string) (us
 	c.Header("Content-Type", contentType)
 	c.Data(http.StatusOK, contentType, audioData)
 
-	info := c.MustGet("relay_info").(*relaycommon.RelayInfo)
 	usage = &dto.Usage{
 		PromptTokens:     info.PromptTokens,
 		CompletionTokens: 0,

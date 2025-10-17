@@ -319,7 +319,7 @@ func (a *Adaptor) DoRequest(c *gin.Context, info *relaycommon.RelayInfo, request
 func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (usage any, err *types.NewAPIError) {
 	if info.RelayMode == constant.RelayModeAudioSpeech {
 		encoding := mapEncoding(c.GetString("response_format"))
-		return handleTTSResponse(c, resp, encoding)
+		return handleTTSResponse(c, resp, info, encoding)
 	}
 
 	adaptor := openai.Adaptor{}
