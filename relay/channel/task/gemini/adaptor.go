@@ -19,15 +19,32 @@ import (
 	"github.com/QuantumNous/new-api/setting/model_setting"
 	"github.com/QuantumNous/new-api/setting/system_setting"
 	"github.com/gin-gonic/gin"
+	"github.com/pkg/errors"
 )
 
 // ============================
 // Request / Response structures
 // ============================
 
-type requestPayload struct {
-	Instances  []map[string]any `json:"instances"`
-	Parameters map[string]any   `json:"parameters,omitempty"`
+// GeminiVideoGenerationConfig represents the video generation configuration
+// Based on: https://ai.google.dev/gemini-api/docs/video
+type GeminiVideoGenerationConfig struct {
+	AspectRatio      string  `json:"aspectRatio,omitempty"`      // "16:9" or "9:16"
+	DurationSeconds  float64 `json:"durationSeconds,omitempty"`  // 4, 6, or 8 (as number)
+	NegativePrompt   string  `json:"negativePrompt,omitempty"`   // unwanted elements
+	PersonGeneration string  `json:"personGeneration,omitempty"` // "allow_all" for text-to-video, "allow_adult" for image-to-video
+	Resolution       string  `json:"resolution,omitempty"`       // video resolution
+}
+
+// GeminiVideoRequest represents a single video generation instance
+type GeminiVideoRequest struct {
+	Prompt string `json:"prompt"`
+}
+
+// GeminiVideoPayload represents the complete video generation request payload
+type GeminiVideoPayload struct {
+	Instances  []GeminiVideoRequest        `json:"instances"`
+	Parameters GeminiVideoGenerationConfig `json:"parameters,omitempty"`
 }
 
 type submitResponse struct {
@@ -114,38 +131,22 @@ func (a *TaskAdaptor) BuildRequestBody(c *gin.Context, info *relaycommon.RelayIn
 	}
 	req := v.(relaycommon.TaskSubmitReq)
 
-	body := requestPayload{
-		Instances:  []map[string]any{{"prompt": req.Prompt}},
-		Parameters: map[string]any{},
+	// Create structured video generation request
+	body := GeminiVideoPayload{
+		Instances: []GeminiVideoRequest{
+			{Prompt: req.Prompt},
+		},
+		Parameters: GeminiVideoGenerationConfig{},
 	}
 
-	// Add Veo-specific parameters from metadata
-	if req.Metadata != nil {
-		if v, ok := req.Metadata["aspectRatio"]; ok {
-			body.Parameters["aspectRatio"] = v
-		} else {
-			body.Parameters["aspectRatio"] = "16:9" // default
-		}
-
-		if v, ok := req.Metadata["negativePrompt"]; ok {
-			body.Parameters["negativePrompt"] = v
-		}
-
-		if v, ok := req.Metadata["durationSeconds"]; ok {
-			body.Parameters["durationSeconds"] = v
-		} else {
-			body.Parameters["durationSeconds"] = "8" // default
-		}
-
-		if v, ok := req.Metadata["resolution"]; ok {
-			body.Parameters["resolution"] = v
-		}
-
-		if v, ok := req.Metadata["personGeneration"]; ok {
-			body.Parameters["personGeneration"] = v
-		} else {
-			body.Parameters["personGeneration"] = "allow_adult" // default
-		}
+	metadata := req.Metadata
+	medaBytes, err := json.Marshal(metadata)
+	if err != nil {
+		return nil, errors.Wrap(err, "metadata marshal metadata failed")
+	}
+	err = json.Unmarshal(medaBytes, &body.Parameters)
+	if err != nil {
+		return nil, errors.Wrap(err, "unmarshal metadata failed")
 	}
 
 	data, err := json.Marshal(body)
