@@ -17,6 +17,7 @@ import (
 	relaycommon "github.com/QuantumNous/new-api/relay/common"
 	"github.com/QuantumNous/new-api/service"
 	"github.com/QuantumNous/new-api/setting/model_setting"
+	"github.com/QuantumNous/new-api/setting/system_setting"
 	"github.com/gin-gonic/gin"
 )
 
@@ -87,10 +88,6 @@ func (a *TaskAdaptor) ValidateRequestAndSetAction(c *gin.Context, info *relaycom
 // BuildRequestURL constructs the upstream URL.
 func (a *TaskAdaptor) BuildRequestURL(info *relaycommon.RelayInfo) (string, error) {
 	modelName := info.OriginModelName
-	if modelName == "" {
-		modelName = "veo-3.0-generate-001"
-	}
-
 	version := model_setting.GetGeminiVersionSetting(modelName)
 
 	return fmt.Sprintf(
@@ -178,13 +175,18 @@ func (a *TaskAdaptor) DoResponse(c *gin.Context, resp *http.Response, info *rela
 	if strings.TrimSpace(s.Name) == "" {
 		return "", nil, service.TaskErrorWrapper(fmt.Errorf("missing operation name"), "invalid_response", http.StatusInternalServerError)
 	}
-	localID := encodeLocalTaskID(s.Name)
-	c.JSON(http.StatusOK, gin.H{"task_id": localID})
-	return localID, responseBody, nil
+	taskID = encodeLocalTaskID(s.Name)
+	ov := dto.NewOpenAIVideo()
+	ov.ID = taskID
+	ov.TaskID = taskID
+	ov.CreatedAt = time.Now().Unix()
+	ov.Model = info.OriginModelName
+	c.JSON(http.StatusOK, ov)
+	return taskID, responseBody, nil
 }
 
 func (a *TaskAdaptor) GetModelList() []string {
-	return []string{"veo-3.0-generate-001"}
+	return []string{"veo-3.0-generate-001", "veo-3.1-generate-preview", "veo-3.1-fast-generate-preview"}
 }
 
 func (a *TaskAdaptor) GetChannelName() string {
@@ -204,7 +206,7 @@ func (a *TaskAdaptor) FetchTask(baseUrl, key string, body map[string]any) (*http
 	}
 
 	// For Gemini API, we use GET request to the operations endpoint
-	version := model_setting.GetGeminiVersionSetting("veo-3.0-generate-001")
+	version := model_setting.GetGeminiVersionSetting("default")
 	url := fmt.Sprintf("%s/%s/%s", baseUrl, version, upstreamName)
 
 	req, err := http.NewRequest(http.MethodGet, url, nil)
@@ -245,7 +247,8 @@ func (a *TaskAdaptor) ParseTaskResult(respBody []byte) (*relaycommon.TaskInfo, e
 	// Extract URL from generateVideoResponse if available
 	if len(op.Response.GenerateVideoResponse.GeneratedSamples) > 0 {
 		if uri := op.Response.GenerateVideoResponse.GeneratedSamples[0].Video.URI; uri != "" {
-			ti.Url = uri
+			taskID := encodeLocalTaskID(op.Name)
+			ti.Url = fmt.Sprintf("%s/v1/videos/%s/content?url=%s", system_setting.ServerAddress, taskID, uri)
 		}
 	}
 
@@ -257,10 +260,7 @@ func (a *TaskAdaptor) ParseTaskResult(respBody []byte) (*relaycommon.TaskInfo, e
 // ============================
 
 func encodeLocalTaskID(name string) string {
-	// Add timestamp to ensure uniqueness
-	timestamp := time.Now().Unix()
-	data := fmt.Sprintf("%s:%d", name, timestamp)
-	return base64.RawURLEncoding.EncodeToString([]byte(data))
+	return base64.RawURLEncoding.EncodeToString([]byte(name))
 }
 
 func decodeLocalTaskID(local string) (string, error) {
@@ -268,12 +268,5 @@ func decodeLocalTaskID(local string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-
-	// Extract the operation name from encoded data (remove timestamp if present)
-	parts := strings.Split(string(b), ":")
-	if len(parts) > 0 {
-		return parts[0], nil
-	}
-
 	return string(b), nil
 }
