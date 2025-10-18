@@ -60,7 +60,7 @@ func VideoProxy(c *gin.Context) {
 
 	channel, err := model.CacheGetChannel(task.ChannelId)
 	if err != nil {
-		logger.LogError(c.Request.Context(), fmt.Sprintf("Failed to get channel %d: %s", task.ChannelId, err.Error()))
+		logger.LogError(c.Request.Context(), fmt.Sprintf("Failed to get task %s: not found", taskID))
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": gin.H{
 				"message": "Failed to retrieve channel information",
