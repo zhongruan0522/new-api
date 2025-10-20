@@ -34,17 +34,20 @@ func (a *Adaptor) ConvertAudioRequest(c *gin.Context, info *relaycommon.RelayInf
 		return nil, errors.New("unsupported audio relay mode")
 	}
 
-	voiceID := mapVoiceType(request.Voice)
+	voiceID := request.Voice
 	speed := request.Speed
-	outputFormat := mapOutputFormat(request.ResponseFormat)
-
-	c.Set("response_format", outputFormat)
+	outputFormat := request.ResponseFormat
 
 	minimaxRequest := MiniMaxTTSRequest{
-		Model:        getTTSModel(info.OriginModelName),
-		Text:         request.Input,
-		VoiceID:      voiceID,
-		Speed:        speed,
+		Model: info.OriginModelName,
+		Text:  request.Input,
+		VoiceSetting: VoiceSetting{
+			VoiceID: voiceID,
+			Speed:   speed,
+		},
+		AudioSetting: &AudioSetting{
+			Format: outputFormat,
+		},
 		OutputFormat: outputFormat,
 	}
 
@@ -59,6 +62,11 @@ func (a *Adaptor) ConvertAudioRequest(c *gin.Context, info *relaycommon.RelayInf
 	if err != nil {
 		return nil, fmt.Errorf("error marshalling minimax request: %w", err)
 	}
+	if outputFormat != "hex" {
+		outputFormat = "url"
+	}
+
+	c.Set("response_format", outputFormat)
 
 	// Debug: log the request structure
 	fmt.Printf("MiniMax TTS Request: %s\n", string(jsonData))
@@ -79,12 +87,6 @@ func (a *Adaptor) GetRequestURL(info *relaycommon.RelayInfo) (string, error) {
 
 func (a *Adaptor) SetupRequestHeader(c *gin.Context, req *http.Header, info *relaycommon.RelayInfo) error {
 	channel.SetupApiRequestHeader(info, c, req)
-
-	if info.RelayMode == constant.RelayModeAudioSpeech {
-		req.Set("Content-Type", "application/json")
-		return nil
-	}
-
 	req.Set("Authorization", "Bearer "+info.ApiKey)
 	return nil
 }
