@@ -9,15 +9,16 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/textproto"
-	channelconstant "one-api/constant"
-	"one-api/dto"
-	"one-api/relay/channel"
-	"one-api/relay/channel/openai"
-	relaycommon "one-api/relay/common"
-	"one-api/relay/constant"
-	"one-api/types"
 	"path/filepath"
 	"strings"
+
+	channelconstant "github.com/QuantumNous/new-api/constant"
+	"github.com/QuantumNous/new-api/dto"
+	"github.com/QuantumNous/new-api/relay/channel"
+	"github.com/QuantumNous/new-api/relay/channel/openai"
+	relaycommon "github.com/QuantumNous/new-api/relay/common"
+	"github.com/QuantumNous/new-api/relay/constant"
+	"github.com/QuantumNous/new-api/types"
 
 	"github.com/gin-gonic/gin"
 )
@@ -36,8 +37,57 @@ func (a *Adaptor) ConvertClaudeRequest(c *gin.Context, info *relaycommon.RelayIn
 }
 
 func (a *Adaptor) ConvertAudioRequest(c *gin.Context, info *relaycommon.RelayInfo, request dto.AudioRequest) (io.Reader, error) {
-	//TODO implement me
-	return nil, errors.New("not implemented")
+	if info.RelayMode != constant.RelayModeAudioSpeech {
+		return nil, errors.New("unsupported audio relay mode")
+	}
+
+	appID, token, err := parseVolcengineAuth(info.ApiKey)
+	if err != nil {
+		return nil, err
+	}
+
+	voiceType := mapVoiceType(request.Voice)
+	speedRatio := request.Speed
+	encoding := mapEncoding(request.ResponseFormat)
+
+	c.Set("response_format", encoding)
+
+	volcRequest := VolcengineTTSRequest{
+		App: VolcengineTTSApp{
+			AppID:   appID,
+			Token:   token,
+			Cluster: "volcano_tts",
+		},
+		User: VolcengineTTSUser{
+			UID: "openai_relay_user",
+		},
+		Audio: VolcengineTTSAudio{
+			VoiceType:  voiceType,
+			Encoding:   encoding,
+			SpeedRatio: speedRatio,
+			Rate:       24000,
+		},
+		Request: VolcengineTTSReqInfo{
+			ReqID:     generateRequestID(),
+			Text:      request.Input,
+			Operation: "query",
+			Model:     info.OriginModelName,
+		},
+	}
+
+	// 同步扩展字段的厂商自定义metadata
+	if len(request.Metadata) > 0 {
+		if err = json.Unmarshal(request.Metadata, &volcRequest); err != nil {
+			return nil, fmt.Errorf("error unmarshalling metadata to volcengine request: %w", err)
+		}
+	}
+
+	jsonData, err := json.Marshal(volcRequest)
+	if err != nil {
+		return nil, fmt.Errorf("error marshalling volcengine request: %w", err)
+	}
+
+	return bytes.NewReader(jsonData), nil
 }
 
 func (a *Adaptor) ConvertImageRequest(c *gin.Context, info *relaycommon.RelayInfo, request dto.ImageRequest) (any, error) {
@@ -189,33 +239,56 @@ func (a *Adaptor) Init(info *relaycommon.RelayInfo) {
 }
 
 func (a *Adaptor) GetRequestURL(info *relaycommon.RelayInfo) (string, error) {
-	// 支持自定义域名，如果未设置则使用默认域名
 	baseUrl := info.ChannelBaseUrl
 	if baseUrl == "" {
 		baseUrl = channelconstant.ChannelBaseURLs[channelconstant.ChannelTypeVolcEngine]
 	}
 
-	switch info.RelayMode {
-	case constant.RelayModeChatCompletions:
+	switch info.RelayFormat {
+	case types.RelayFormatClaude:
 		if strings.HasPrefix(info.UpstreamModelName, "bot") {
 			return fmt.Sprintf("%s/api/v3/bots/chat/completions", baseUrl), nil
 		}
 		return fmt.Sprintf("%s/api/v3/chat/completions", baseUrl), nil
-	case constant.RelayModeEmbeddings:
-		return fmt.Sprintf("%s/api/v3/embeddings", baseUrl), nil
-	case constant.RelayModeImagesGenerations:
-		return fmt.Sprintf("%s/api/v3/images/generations", baseUrl), nil
-	case constant.RelayModeImagesEdits:
-		return fmt.Sprintf("%s/api/v3/images/edits", baseUrl), nil
-	case constant.RelayModeRerank:
-		return fmt.Sprintf("%s/api/v3/rerank", baseUrl), nil
 	default:
+		switch info.RelayMode {
+		case constant.RelayModeChatCompletions:
+			if strings.HasPrefix(info.UpstreamModelName, "bot") {
+				return fmt.Sprintf("%s/api/v3/bots/chat/completions", baseUrl), nil
+			}
+			return fmt.Sprintf("%s/api/v3/chat/completions", baseUrl), nil
+		case constant.RelayModeEmbeddings:
+			return fmt.Sprintf("%s/api/v3/embeddings", baseUrl), nil
+		case constant.RelayModeImagesGenerations:
+			return fmt.Sprintf("%s/api/v3/images/generations", baseUrl), nil
+		case constant.RelayModeImagesEdits:
+			return fmt.Sprintf("%s/api/v3/images/edits", baseUrl), nil
+		case constant.RelayModeRerank:
+			return fmt.Sprintf("%s/api/v3/rerank", baseUrl), nil
+		case constant.RelayModeAudioSpeech:
+			// 只有当 baseUrl 是火山默认的官方Url时才改为官方的的TTS接口，否则走透传的New接口
+			if baseUrl == channelconstant.ChannelBaseURLs[channelconstant.ChannelTypeVolcEngine] {
+				return "https://openspeech.bytedance.com/api/v1/tts", nil
+			}
+			return fmt.Sprintf("%s/v1/audio/speech", baseUrl), nil
+		default:
+		}
 	}
 	return "", fmt.Errorf("unsupported relay mode: %d", info.RelayMode)
 }
 
 func (a *Adaptor) SetupRequestHeader(c *gin.Context, req *http.Header, info *relaycommon.RelayInfo) error {
 	channel.SetupApiRequestHeader(info, c, req)
+
+	if info.RelayMode == constant.RelayModeAudioSpeech {
+		parts := strings.Split(info.ApiKey, "|")
+		if len(parts) == 2 {
+			req.Set("Authorization", "Bearer;"+parts[1])
+		}
+		req.Set("Content-Type", "application/json")
+		return nil
+	}
+
 	req.Set("Authorization", "Bearer "+info.ApiKey)
 	return nil
 }
@@ -251,6 +324,11 @@ func (a *Adaptor) DoRequest(c *gin.Context, info *relaycommon.RelayInfo, request
 }
 
 func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (usage any, err *types.NewAPIError) {
+	if info.RelayMode == constant.RelayModeAudioSpeech {
+		encoding := mapEncoding(c.GetString("response_format"))
+		return handleTTSResponse(c, resp, info, encoding)
+	}
+
 	adaptor := openai.Adaptor{}
 	usage, err = adaptor.DoResponse(c, resp, info)
 	return

@@ -46,6 +46,7 @@ const PaymentSetting = () => {
     StripePriceId: '',
     StripeUnitPrice: 8.0,
     StripeMinTopUp: 1,
+    StripePromotionCodesEnabled: false,
   });
 
   let [loading, setLoading] = useState(false);

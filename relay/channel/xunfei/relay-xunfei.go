@@ -8,13 +8,14 @@ import (
 	"fmt"
 	"io"
 	"net/url"
-	"one-api/common"
-	"one-api/constant"
-	"one-api/dto"
-	"one-api/relay/helper"
-	"one-api/types"
 	"strings"
 	"time"
+
+	"github.com/QuantumNous/new-api/common"
+	"github.com/QuantumNous/new-api/constant"
+	"github.com/QuantumNous/new-api/dto"
+	"github.com/QuantumNous/new-api/relay/helper"
+	"github.com/QuantumNous/new-api/types"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
@@ -207,10 +208,6 @@ func xunfeiMakeRequest(textRequest dto.GeneralOpenAIRequest, domain, authUrl, ap
 		return nil, nil, err
 	}
 
-	defer func() {
-		conn.Close()
-	}()
-
 	data := requestOpenAI2Xunfei(textRequest, appId, domain)
 	err = conn.WriteJSON(data)
 	if err != nil {
@@ -220,6 +217,9 @@ func xunfeiMakeRequest(textRequest dto.GeneralOpenAIRequest, domain, authUrl, ap
 	dataChan := make(chan XunfeiChatResponse)
 	stopChan := make(chan bool)
 	go func() {
+		defer func() {
+			conn.Close()
+		}()
 		for {
 			_, msg, err := conn.ReadMessage()
 			if err != nil {

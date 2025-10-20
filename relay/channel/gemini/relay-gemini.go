@@ -6,19 +6,20 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"one-api/common"
-	"one-api/constant"
-	"one-api/dto"
-	"one-api/logger"
-	"one-api/relay/channel/openai"
-	relaycommon "one-api/relay/common"
-	"one-api/relay/helper"
-	"one-api/service"
-	"one-api/setting/model_setting"
-	"one-api/types"
 	"strconv"
 	"strings"
 	"unicode/utf8"
+
+	"github.com/QuantumNous/new-api/common"
+	"github.com/QuantumNous/new-api/constant"
+	"github.com/QuantumNous/new-api/dto"
+	"github.com/QuantumNous/new-api/logger"
+	"github.com/QuantumNous/new-api/relay/channel/openai"
+	relaycommon "github.com/QuantumNous/new-api/relay/common"
+	"github.com/QuantumNous/new-api/relay/helper"
+	"github.com/QuantumNous/new-api/service"
+	"github.com/QuantumNous/new-api/setting/model_setting"
+	"github.com/QuantumNous/new-api/types"
 
 	"github.com/gin-gonic/gin"
 )
@@ -210,7 +211,16 @@ func CovertGemini2OpenAI(c *gin.Context, textRequest dto.GeneralOpenAIRequest, i
 			// eg. {"google":{"thinking_config":{"thinking_budget":5324,"include_thoughts":true}}}
 			if googleBody, ok := extraBody["google"].(map[string]interface{}); ok {
 				adaptorWithExtraBody = true
+				// check error param name like thinkingConfig, should be thinking_config
+				if _, hasErrorParam := googleBody["thinkingConfig"]; hasErrorParam {
+					return nil, errors.New("extra_body.google.thinkingConfig is not supported, use extra_body.google.thinking_config instead")
+				}
+
 				if thinkingConfig, ok := googleBody["thinking_config"].(map[string]interface{}); ok {
+					// check error param name like thinkingBudget, should be thinking_budget
+					if _, hasErrorParam := thinkingConfig["thinkingBudget"]; hasErrorParam {
+						return nil, errors.New("extra_body.google.thinking_config.thinkingBudget is not supported, use extra_body.google.thinking_config.thinking_budget instead")
+					}
 					if budget, ok := thinkingConfig["thinking_budget"].(float64); ok {
 						budgetInt := int(budget)
 						geminiRequest.GenerationConfig.ThinkingConfig = &dto.GeminiThinkingConfig{
@@ -245,6 +255,7 @@ func CovertGemini2OpenAI(c *gin.Context, textRequest dto.GeneralOpenAIRequest, i
 		functions := make([]dto.FunctionRequest, 0, len(textRequest.Tools))
 		googleSearch := false
 		codeExecution := false
+		urlContext := false
 		for _, tool := range textRequest.Tools {
 			if tool.Function.Name == "googleSearch" {
 				googleSearch = true
@@ -252,6 +263,10 @@ func CovertGemini2OpenAI(c *gin.Context, textRequest dto.GeneralOpenAIRequest, i
 			}
 			if tool.Function.Name == "codeExecution" {
 				codeExecution = true
+				continue
+			}
+			if tool.Function.Name == "urlContext" {
+				urlContext = true
 				continue
 			}
 			if tool.Function.Parameters != nil {
@@ -279,6 +294,11 @@ func CovertGemini2OpenAI(c *gin.Context, textRequest dto.GeneralOpenAIRequest, i
 		if googleSearch {
 			geminiTools = append(geminiTools, dto.GeminiChatTool{
 				GoogleSearch: make(map[string]string),
+			})
+		}
+		if urlContext {
+			geminiTools = append(geminiTools, dto.GeminiChatTool{
+				URLContext: make(map[string]string),
 			})
 		}
 		if len(functions) > 0 {
@@ -951,9 +971,15 @@ func GeminiChatStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *
 			// send first response
 			emptyResponse := helper.GenerateStartEmptyResponse(id, createAt, info.UpstreamModelName, nil)
 			if response.IsToolCall() {
-				emptyResponse.Choices[0].Delta.ToolCalls = make([]dto.ToolCallResponse, 1)
-				emptyResponse.Choices[0].Delta.ToolCalls[0] = *response.GetFirstToolCall()
-				emptyResponse.Choices[0].Delta.ToolCalls[0].Function.Arguments = ""
+				if len(emptyResponse.Choices) > 0 && len(response.Choices) > 0 {
+					toolCalls := response.Choices[0].Delta.ToolCalls
+					copiedToolCalls := make([]dto.ToolCallResponse, len(toolCalls))
+					for idx := range toolCalls {
+						copiedToolCalls[idx] = toolCalls[idx]
+						copiedToolCalls[idx].Function.Arguments = ""
+					}
+					emptyResponse.Choices[0].Delta.ToolCalls = copiedToolCalls
+				}
 				finishReason = constant.FinishReasonToolCalls
 				err = handleStream(c, info, emptyResponse)
 				if err != nil {
@@ -1034,7 +1060,12 @@ func GeminiChatHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.R
 		return nil, types.NewOpenAIError(err, types.ErrorCodeBadResponseBody, http.StatusInternalServerError)
 	}
 	if len(geminiResponse.Candidates) == 0 {
-		return nil, types.NewOpenAIError(errors.New("no candidates returned"), types.ErrorCodeBadResponseBody, http.StatusInternalServerError)
+		//return nil, types.NewOpenAIError(errors.New("no candidates returned"), types.ErrorCodeBadResponseBody, http.StatusInternalServerError)
+		//if geminiResponse.PromptFeedback != nil && geminiResponse.PromptFeedback.BlockReason != nil {
+		//	return nil, types.NewOpenAIError(errors.New("request blocked by Gemini API: "+*geminiResponse.PromptFeedback.BlockReason), types.ErrorCodePromptBlocked, http.StatusBadRequest)
+		//} else {
+		//	return nil, types.NewOpenAIError(errors.New("empty response from Gemini API"), types.ErrorCodeEmptyResponse, http.StatusInternalServerError)
+		//}
 	}
 	fullTextResponse := responseGeminiChat2OpenAI(c, &geminiResponse)
 	fullTextResponse.Model = info.UpstreamModelName

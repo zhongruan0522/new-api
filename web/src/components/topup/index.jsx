@@ -37,6 +37,7 @@ import RechargeCard from './RechargeCard';
 import InvitationCard from './InvitationCard';
 import TransferModal from './modals/TransferModal';
 import PaymentConfirmModal from './modals/PaymentConfirmModal';
+import TopupHistoryModal from './modals/TopupHistoryModal';
 
 const TopUp = () => {
   const { t } = useTranslation();
@@ -83,14 +84,17 @@ const TopUp = () => {
   const [openTransfer, setOpenTransfer] = useState(false);
   const [transferAmount, setTransferAmount] = useState(0);
 
+  // 账单Modal状态
+  const [openHistory, setOpenHistory] = useState(false);
+
   // 预设充值额度选项
   const [presetAmounts, setPresetAmounts] = useState([]);
   const [selectedPreset, setSelectedPreset] = useState(null);
-  
+
   // 充值配置信息
   const [topupInfo, setTopupInfo] = useState({
     amount_options: [],
-    discount: {}
+    discount: {},
   });
 
   const topUp = async () => {
@@ -317,9 +321,9 @@ const TopUp = () => {
       if (success) {
         setTopupInfo({
           amount_options: data.amount_options || [],
-          discount: data.discount || {}
+          discount: data.discount || {},
         });
-        
+
         // 处理支付方式
         let payMethods = data.pay_methods || [];
         try {
@@ -335,10 +339,15 @@ const TopUp = () => {
             payMethods = payMethods.map((method) => {
               // 规范化最小充值数
               const normalizedMinTopup = Number(method.min_topup);
-              method.min_topup = Number.isFinite(normalizedMinTopup) ? normalizedMinTopup : 0;
+              method.min_topup = Number.isFinite(normalizedMinTopup)
+                ? normalizedMinTopup
+                : 0;
 
               // Stripe 的最小充值从后端字段回填
-              if (method.type === 'stripe' && (!method.min_topup || method.min_topup <= 0)) {
+              if (
+                method.type === 'stripe' &&
+                (!method.min_topup || method.min_topup <= 0)
+              ) {
                 const stripeMin = Number(data.stripe_min_topup);
                 if (Number.isFinite(stripeMin)) {
                   method.min_topup = stripeMin;
@@ -369,7 +378,11 @@ const TopUp = () => {
           const enableStripeTopUp = data.enable_stripe_topup || false;
           const enableOnlineTopUp = data.enable_online_topup || false;
           const enableCreemTopUp = data.enable_creem_topup || false;
-          const minTopUpValue = enableOnlineTopUp? data.min_topup : enableStripeTopUp? data.stripe_min_topup : 1;
+          const minTopUpValue = enableOnlineTopUp
+            ? data.min_topup
+            : enableStripeTopUp
+              ? data.stripe_min_topup
+              : 1;
           setEnableOnlineTopUp(enableOnlineTopUp);
           setEnableStripeTopUp(enableStripeTopUp);
           setEnableCreemTopUp(enableCreemTopUp);
@@ -397,12 +410,12 @@ const TopUp = () => {
           console.log('解析支付方式失败:', e);
           setPayMethods([]);
         }
-        
+
         // 如果有自定义充值数量选项，使用它们替换默认的预设选项
         if (data.amount_options && data.amount_options.length > 0) {
-          const customPresets = data.amount_options.map(amount => ({
+          const customPresets = data.amount_options.map((amount) => ({
             value: amount,
-            discount: data.discount[amount] || 1.0
+            discount: data.discount[amount] || 1.0,
           }));
           setPresetAmounts(customPresets);
         }
@@ -546,6 +559,14 @@ const TopUp = () => {
     setOpenTransfer(false);
   };
 
+  const handleOpenHistory = () => {
+    setOpenHistory(true);
+  };
+
+  const handleHistoryCancel = () => {
+    setOpenHistory(false);
+  };
+
   const handleCreemCancel = () => {
     setCreemOpen(false);
     setSelectedCreemProduct(null);
@@ -555,7 +576,7 @@ const TopUp = () => {
   const selectPresetAmount = (preset) => {
     setTopUpCount(preset.value);
     setSelectedPreset(preset.value);
-    
+
     // 计算实际支付金额，考虑折扣
     const discount = preset.discount || topupInfo.discount[preset.value] || 1.0;
     const discountedAmount = preset.value * priceRatio * discount;
@@ -605,6 +626,13 @@ const TopUp = () => {
         payMethods={payMethods}
         amountNumber={amount}
         discountRate={topupInfo?.discount?.[topUpCount] || 1.0}
+      />
+
+      {/* 充值账单模态框 */}
+      <TopupHistoryModal
+        visible={openHistory}
+        onCancel={handleHistoryCancel}
+        t={t}
       />
 
       {/* Creem 充值确认模态框 */}
@@ -673,6 +701,7 @@ const TopUp = () => {
               renderQuota={renderQuota}
               statusLoading={statusLoading}
               topupInfo={topupInfo}
+              onOpenHistory={handleOpenHistory}
             />
           </div>
 
