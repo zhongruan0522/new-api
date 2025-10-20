@@ -10,6 +10,7 @@ import (
 
 	"github.com/QuantumNous/new-api/dto"
 	"github.com/QuantumNous/new-api/relay/channel"
+	"github.com/QuantumNous/new-api/relay/channel/openai"
 	relaycommon "github.com/QuantumNous/new-api/relay/common"
 	"github.com/QuantumNous/new-api/relay/constant"
 	"github.com/QuantumNous/new-api/types"
@@ -116,9 +117,8 @@ func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, info *relaycom
 		return handleTTSResponse(c, resp, info)
 	}
 
-	// For chat completions, just pass through the response
-	// MiniMax API is compatible with OpenAI format
-	return handleChatCompletionResponse(c, resp, info)
+	adaptor := openai.Adaptor{}
+	return adaptor.DoResponse(c, resp, info)
 }
 
 func (a *Adaptor) GetModelList() []string {
