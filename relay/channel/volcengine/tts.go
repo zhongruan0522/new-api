@@ -230,10 +230,6 @@ func handleTTSWebSocketResponse(c *gin.Context, requestURL string, volcRequest V
 	}
 	defer conn.Close()
 
-	// Update request operation to "submit" for WebSocket
-	volcRequest.Request.Operation = "submit"
-
-	// Marshal request payload
 	payload, marshalErr := json.Marshal(volcRequest)
 	if marshalErr != nil {
 		return nil, types.NewErrorWithStatusCode(
@@ -280,10 +276,8 @@ func handleTTSWebSocketResponse(c *gin.Context, requestURL string, volcRequest V
 				http.StatusBadRequest,
 			)
 		case MsgTypeFrontEndResultServer:
-			// Metadata response, can be logged or processed
 			continue
 		case MsgTypeAudioOnlyServer:
-			// Stream audio chunk to client
 			if len(msg.Payload) > 0 {
 				audioBuffer = append(audioBuffer, msg.Payload...)
 				if _, writeErr := c.Writer.Write(msg.Payload); writeErr != nil {
@@ -293,10 +287,10 @@ func handleTTSWebSocketResponse(c *gin.Context, requestURL string, volcRequest V
 						http.StatusInternalServerError,
 					)
 				}
+				//logger.Infof("write audio chunk size: %d", len(msg.Payload))
 				c.Writer.Flush()
 			}
 
-			// Check if this is the last packet (negative sequence)
 			if msg.Sequence < 0 {
 				c.Status(http.StatusOK)
 				usage = &dto.Usage{
@@ -307,12 +301,10 @@ func handleTTSWebSocketResponse(c *gin.Context, requestURL string, volcRequest V
 				return usage, nil
 			}
 		default:
-			// Unknown message type, log and continue
 			continue
 		}
 	}
 
-	// If we reach here, connection closed without final packet
 	c.Status(http.StatusOK)
 	usage = &dto.Usage{
 		PromptTokens:     info.PromptTokens,
