@@ -196,9 +196,7 @@ func generateRequestID() string {
 	return uuid.New().String()
 }
 
-// handleTTSWebSocketResponse handles streaming TTS response via WebSocket
 func handleTTSWebSocketResponse(c *gin.Context, requestURL string, volcRequest VolcengineTTSRequest, info *relaycommon.RelayInfo, encoding string) (usage any, err *types.NewAPIError) {
-	// Parse API key for auth
 	_, token, parseErr := parseVolcengineAuth(info.ApiKey)
 	if parseErr != nil {
 		return nil, types.NewErrorWithStatusCode(
@@ -208,11 +206,9 @@ func handleTTSWebSocketResponse(c *gin.Context, requestURL string, volcRequest V
 		)
 	}
 
-	// Setup WebSocket headers
 	header := http.Header{}
 	header.Set("Authorization", fmt.Sprintf("Bearer;%s", token))
 
-	// Dial WebSocket connection
 	conn, resp, dialErr := websocket.DefaultDialer.DialContext(context.Background(), requestURL, header)
 	if dialErr != nil {
 		if resp != nil {
@@ -239,7 +235,6 @@ func handleTTSWebSocketResponse(c *gin.Context, requestURL string, volcRequest V
 		)
 	}
 
-	// Send full client request
 	if sendErr := FullClientRequest(conn, payload); sendErr != nil {
 		return nil, types.NewErrorWithStatusCode(
 			fmt.Errorf("failed to send request: %w", sendErr),
@@ -248,13 +243,10 @@ func handleTTSWebSocketResponse(c *gin.Context, requestURL string, volcRequest V
 		)
 	}
 
-	// Set response headers
 	contentType := getContentTypeByEncoding(encoding)
 	c.Header("Content-Type", contentType)
 	c.Header("Transfer-Encoding", "chunked")
 
-	// Stream audio data
-	var audioBuffer []byte
 	for {
 		msg, recvErr := ReceiveMessage(conn)
 		if recvErr != nil {
@@ -279,7 +271,6 @@ func handleTTSWebSocketResponse(c *gin.Context, requestURL string, volcRequest V
 			continue
 		case MsgTypeAudioOnlyServer:
 			if len(msg.Payload) > 0 {
-				audioBuffer = append(audioBuffer, msg.Payload...)
 				if _, writeErr := c.Writer.Write(msg.Payload); writeErr != nil {
 					return nil, types.NewErrorWithStatusCode(
 						fmt.Errorf("failed to write audio data: %w", writeErr),
@@ -287,7 +278,6 @@ func handleTTSWebSocketResponse(c *gin.Context, requestURL string, volcRequest V
 						http.StatusInternalServerError,
 					)
 				}
-				//logger.Infof("write audio chunk size: %d", len(msg.Payload))
 				c.Writer.Flush()
 			}
 

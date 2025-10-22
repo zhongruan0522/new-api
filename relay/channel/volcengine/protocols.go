@@ -11,69 +11,45 @@ import (
 )
 
 type (
-	// EventType defines the event type which determines the event of the message.
-	EventType int32
-	// MsgType defines message type which determines how the message will be
-	// serialized with the protocol.
-	MsgType uint8
-	// MsgTypeFlagBits defines the 4-bit message-type specific flags. The specific
-	// values should be defined in each specific usage scenario.
-	MsgTypeFlagBits uint8
-	// VersionBits defines the 4-bit version type.
-	VersionBits uint8
-	// HeaderSizeBits defines the 4-bit header-size type.
-	HeaderSizeBits uint8
-	// SerializationBits defines the 4-bit serialization method type.
+	EventType         int32
+	MsgType           uint8
+	MsgTypeFlagBits   uint8
+	VersionBits       uint8
+	HeaderSizeBits    uint8
 	SerializationBits uint8
-	// CompressionBits defines the 4-bit compression method type.
-	CompressionBits uint8
+	CompressionBits   uint8
 )
 
 const (
-	MsgTypeFlagNoSeq       MsgTypeFlagBits = 0     // Non-terminal packet with no sequence
-	MsgTypeFlagPositiveSeq MsgTypeFlagBits = 0b1   // Non-terminal packet with sequence > 0
-	MsgTypeFlagLastNoSeq   MsgTypeFlagBits = 0b10  // last packet with no sequence
-	MsgTypeFlagNegativeSeq MsgTypeFlagBits = 0b11  // last packet with sequence < 0
-	MsgTypeFlagWithEvent   MsgTypeFlagBits = 0b100 // Payload contains event number (int32)
+	MsgTypeFlagNoSeq       MsgTypeFlagBits = 0
+	MsgTypeFlagPositiveSeq MsgTypeFlagBits = 0b1
+	MsgTypeFlagNegativeSeq MsgTypeFlagBits = 0b11
+	MsgTypeFlagWithEvent   MsgTypeFlagBits = 0b100
 )
 
 const (
 	Version1 VersionBits = iota + 1
-	Version2
-	Version3
-	Version4
 )
 
 const (
 	HeaderSize4 HeaderSizeBits = iota + 1
-	HeaderSize8
-	HeaderSize12
-	HeaderSize16
 )
 
 const (
-	SerializationRaw    SerializationBits = 0
-	SerializationJSON   SerializationBits = 0b1
-	SerializationThrift SerializationBits = 0b11
-	SerializationCustom SerializationBits = 0b1111
+	SerializationJSON SerializationBits = 0b1
 )
 
 const (
-	CompressionNone   CompressionBits = 0
-	CompressionGzip   CompressionBits = 0b1
-	CompressionCustom CompressionBits = 0b1111
+	CompressionNone CompressionBits = 0
 )
 
 const (
-	MsgTypeInvalid              MsgType = 0
 	MsgTypeFullClientRequest    MsgType = 0b1
 	MsgTypeAudioOnlyClient      MsgType = 0b10
 	MsgTypeFullServerResponse   MsgType = 0b1001
 	MsgTypeAudioOnlyServer      MsgType = 0b1011
 	MsgTypeFrontEndResultServer MsgType = 0b1100
 	MsgTypeError                MsgType = 0b1111
-
-	MsgTypeServerACK = MsgTypeAudioOnlyServer
 )
 
 func (t MsgType) String() string {
@@ -85,7 +61,7 @@ func (t MsgType) String() string {
 	case MsgTypeFullServerResponse:
 		return "MsgType_FullServerResponse"
 	case MsgTypeAudioOnlyServer:
-		return "MsgType_AudioOnlyServer" // MsgTypeServerACK
+		return "MsgType_AudioOnlyServer"
 	case MsgTypeError:
 		return "MsgType_Error"
 	case MsgTypeFrontEndResultServer:
@@ -96,44 +72,33 @@ func (t MsgType) String() string {
 }
 
 const (
-	// Default event, applicable for scenarios not using events or not requiring event transmission,
-	// or for scenarios using events, non-zero values can be used to validate event legitimacy
 	EventType_None EventType = 0
-	// 1 ~ 49 for upstream Connection events
+
 	EventType_StartConnection  EventType = 1
-	EventType_StartTask        EventType = 1 // Alias of "StartConnection"
 	EventType_FinishConnection EventType = 2
-	EventType_FinishTask       EventType = 2 // Alias of "FinishConnection"
-	// 50 ~ 99 for downstream Connection events
-	// Connection established successfully
-	EventType_ConnectionStarted EventType = 50
-	EventType_TaskStarted       EventType = 50 // Alias of "ConnectionStarted"
-	// Connection failed (possibly due to authentication failure)
-	EventType_ConnectionFailed EventType = 51
-	EventType_TaskFailed       EventType = 51 // Alias of "ConnectionFailed"
-	// Connection ended
+
+	EventType_ConnectionStarted  EventType = 50
+	EventType_ConnectionFailed   EventType = 51
 	EventType_ConnectionFinished EventType = 52
-	EventType_TaskFinished       EventType = 52 // Alias of "ConnectionFinished"
-	// 100 ~ 149 for upstream Session events
+
 	EventType_StartSession  EventType = 100
 	EventType_CancelSession EventType = 101
 	EventType_FinishSession EventType = 102
-	// 150 ~ 199 for downstream Session events
+
 	EventType_SessionStarted  EventType = 150
 	EventType_SessionCanceled EventType = 151
 	EventType_SessionFinished EventType = 152
 	EventType_SessionFailed   EventType = 153
-	// Usage events
+
 	EventType_UsageResponse EventType = 154
-	EventType_ChargeData    EventType = 154 // Alias of "UsageResponse"
-	// 200 ~ 249 for upstream general events
+
 	EventType_TaskRequest  EventType = 200
 	EventType_UpdateConfig EventType = 201
-	// 250 ~ 299 for downstream general events
+
 	EventType_AudioMuted EventType = 250
-	// 300 ~ 349 for upstream TTS events
+
 	EventType_SayHello EventType = 300
-	// 350 ~ 399 for downstream TTS events
+
 	EventType_TTSSentenceStart     EventType = 350
 	EventType_TTSSentenceEnd       EventType = 351
 	EventType_TTSResponse          EventType = 352
@@ -141,22 +106,20 @@ const (
 	EventType_PodcastRoundStart    EventType = 360
 	EventType_PodcastRoundResponse EventType = 361
 	EventType_PodcastRoundEnd      EventType = 362
-	// 450 ~ 499 for downstream ASR events
+
 	EventType_ASRInfo     EventType = 450
 	EventType_ASRResponse EventType = 451
 	EventType_ASREnded    EventType = 459
-	// 500 ~ 549 for upstream dialogue events
-	// (Ground-Truth-Alignment) text for speech synthesis
+
 	EventType_ChatTTSText EventType = 500
-	// 550 ~ 599 for downstream dialogue events
+
 	EventType_ChatResponse EventType = 550
 	EventType_ChatEnded    EventType = 559
-	// 650 ~ 699 for downstream dialogue events
-	// Events for source (original) language subtitle.
+
 	EventType_SourceSubtitleStart    EventType = 650
 	EventType_SourceSubtitleResponse EventType = 651
 	EventType_SourceSubtitleEnd      EventType = 652
-	// Events for target (translation) language subtitle.
+
 	EventType_TranslationSubtitleStart    EventType = 653
 	EventType_TranslationSubtitleResponse EventType = 654
 	EventType_TranslationSubtitleEnd      EventType = 655
@@ -242,26 +205,6 @@ func (t EventType) String() string {
 		return fmt.Sprintf("EventType_(%d)", t)
 	}
 }
-
-// 0                 1                 2                 3
-// | 0 1 2 3 4 5 6 7 | 0 1 2 3 4 5 6 7 | 0 1 2 3 4 5 6 7 | 0 1 2 3 4 5 6 7 |
-// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-// |    Version      |   Header Size   |     Msg Type    |      Flags      |
-// |   (4 bits)      |    (4 bits)     |     (4 bits)    |     (4 bits)    |
-// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-// | Serialization   |   Compression   |           Reserved                |
-// |   (4 bits)      |    (4 bits)     |           (8 bits)                |
-// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-// |                                                                       |
-// |                   Optional Header Extensions                          |
-// |                     (if Header Size > 1)                              |
-// |                                                                       |
-// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-// |                                                                       |
-// |                           Payload                                     |
-// |                      (variable length)                                |
-// |                                                                       |
-// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
 type Message struct {
 	Version       VersionBits
@@ -573,23 +516,7 @@ func ReceiveMessage(conn *websocket.Conn) (*Message, error) {
 	if err != nil {
 		return nil, err
 	}
-	// Log: receive msg
 	return msg, nil
-}
-
-func WaitForEvent(conn *websocket.Conn, msgType MsgType, eventType EventType) (*Message, error) {
-	for {
-		msg, err := ReceiveMessage(conn)
-		if err != nil {
-			return nil, err
-		}
-		if msg.MsgType != msgType || msg.EventType != eventType {
-			return nil, fmt.Errorf("unexpected message: %s", msg)
-		}
-		if msg.MsgType == msgType && msg.EventType == eventType {
-			return msg, nil
-		}
-	}
 }
 
 func FullClientRequest(conn *websocket.Conn, payload []byte) error {
@@ -598,115 +525,6 @@ func FullClientRequest(conn *websocket.Conn, payload []byte) error {
 		return err
 	}
 	msg.Payload = payload
-	// Log: send msg
-	frame, err := msg.Marshal()
-	if err != nil {
-		return err
-	}
-	return conn.WriteMessage(websocket.BinaryMessage, frame)
-}
-
-func AudioOnlyClient(conn *websocket.Conn, payload []byte, flag MsgTypeFlagBits) error {
-	msg, err := NewMessage(MsgTypeAudioOnlyClient, flag)
-	if err != nil {
-		return err
-	}
-	msg.Payload = payload
-	// Log: send msg
-	frame, err := msg.Marshal()
-	if err != nil {
-		return err
-	}
-	return conn.WriteMessage(websocket.BinaryMessage, frame)
-}
-
-func StartConnection(conn *websocket.Conn) error {
-	msg, err := NewMessage(MsgTypeFullClientRequest, MsgTypeFlagWithEvent)
-	if err != nil {
-		return err
-	}
-	msg.EventType = EventType_StartConnection
-	msg.Payload = []byte("{}")
-	// Log: send msg
-	frame, err := msg.Marshal()
-	if err != nil {
-		return err
-	}
-	return conn.WriteMessage(websocket.BinaryMessage, frame)
-}
-
-func FinishConnection(conn *websocket.Conn) error {
-	msg, err := NewMessage(MsgTypeFullClientRequest, MsgTypeFlagWithEvent)
-	if err != nil {
-		return err
-	}
-	msg.EventType = EventType_FinishConnection
-	msg.Payload = []byte("{}")
-	// Log: send msg
-	frame, err := msg.Marshal()
-	if err != nil {
-		return err
-	}
-	return conn.WriteMessage(websocket.BinaryMessage, frame)
-}
-
-func StartSession(conn *websocket.Conn, payload []byte, sessionID string) error {
-	msg, err := NewMessage(MsgTypeFullClientRequest, MsgTypeFlagWithEvent)
-	if err != nil {
-		return err
-	}
-	msg.EventType = EventType_StartSession
-	msg.SessionID = sessionID
-	msg.Payload = payload
-	// Log: send msg
-	frame, err := msg.Marshal()
-	if err != nil {
-		return err
-	}
-	return conn.WriteMessage(websocket.BinaryMessage, frame)
-}
-
-func FinishSession(conn *websocket.Conn, sessionID string) error {
-	msg, err := NewMessage(MsgTypeFullClientRequest, MsgTypeFlagWithEvent)
-	if err != nil {
-		return err
-	}
-	msg.EventType = EventType_FinishSession
-	msg.SessionID = sessionID
-	msg.Payload = []byte("{}")
-	// Log: send msg
-	frame, err := msg.Marshal()
-	if err != nil {
-		return err
-	}
-	return conn.WriteMessage(websocket.BinaryMessage, frame)
-}
-
-func CancelSession(conn *websocket.Conn, sessionID string) error {
-	msg, err := NewMessage(MsgTypeFullClientRequest, MsgTypeFlagWithEvent)
-	if err != nil {
-		return err
-	}
-	msg.EventType = EventType_CancelSession
-	msg.SessionID = sessionID
-	msg.Payload = []byte("{}")
-	// Log: send msg
-	frame, err := msg.Marshal()
-	if err != nil {
-		return err
-	}
-	return conn.WriteMessage(websocket.BinaryMessage, frame)
-}
-
-func TaskRequest(conn *websocket.Conn, payload []byte, sessionID string) error {
-	msg, err := NewMessage(MsgTypeFullClientRequest, MsgTypeFlagWithEvent)
-	if err != nil {
-		return err
-	}
-	msg.EventType = EventType_TaskRequest
-	msg.SessionID = sessionID
-	msg.Payload = payload
-	// Log: send msg
 	frame, err := msg.Marshal()
 	if err != nil {
 		return err
