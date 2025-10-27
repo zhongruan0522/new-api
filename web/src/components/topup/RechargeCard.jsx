@@ -447,7 +447,7 @@ const RechargeCard = ({
                                 style={{ margin: '0 0 8px 0' }}
                               >
                                 <Coins size={18} />
-                                {formatLargeNumber(preset.value)} $
+                                {formatLargeNumber(displayValue)} {symbol}
                                 {hasDiscount && (
                                   <Tag style={{ marginLeft: 4 }} color='green'>
                                     {t('折').includes('off')
