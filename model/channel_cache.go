@@ -142,7 +142,6 @@ func GetRandomSatisfiedChannel(group string, model string, retry int) (*Channel,
 	targetPriority := int64(sortedUniquePriorities[retry])
 
 	// get the priority for the given retry number
-	var shouldSmooth = false
 	var sumWeight = 0
 	var targetChannels []*Channel
 	for _, channelId := range channels {
@@ -155,38 +154,34 @@ func GetRandomSatisfiedChannel(group string, model string, retry int) (*Channel,
 			return nil, fmt.Errorf("数据库一致性错误，渠道# %d 不存在，请联系管理员修复", channelId)
 		}
 	}
-	if sumWeight/len(targetChannels) < 10 {
-		shouldSmooth = true
+
+	if len(targetChannels) == 0 {
+		return nil, errors.New(fmt.Sprintf("no channel found, group: %s, model: %s, priority: %d", group, model, targetPriority))
 	}
 
-	// 平滑系数
+	// smoothing factor and adjustment
 	smoothingFactor := 1
-	if shouldSmooth {
+	smoothingAdjustment := 0
+
+	if sumWeight == 0 {
+		// when all channels have weight 0, set sumWeight to the number of channels and set smoothing adjustment to 100
+		// each channel's effective weight = 100
+		sumWeight = len(targetChannels) * 100
+		smoothingAdjustment = 100
+	} else if sumWeight/len(targetChannels) < 10 {
+		// when the average weight is less than 10, set smoothing factor to 100
 		smoothingFactor = 100
 	}
+
 	// Calculate the total weight of all channels up to endIdx
 	totalWeight := sumWeight * smoothingFactor
 
-	// totalWeight 小于等于0时，给每个渠道加100的权重，然后进行随机选择
-	if totalWeight <= 0 {
-		if len(targetChannels) > 0 {
-			totalWeight = len(targetChannels) * 100
-			randomWeight := rand.Intn(totalWeight)
-			for _, channel := range targetChannels {
-				randomWeight -= 100
-				if randomWeight <= 0 {
-					return channel, nil
-				}
-			}
-		}
-		return nil, errors.New("no available channels")
-	}
 	// Generate a random value in the range [0, totalWeight)
 	randomWeight := rand.Intn(totalWeight)
 
 	// Find a channel based on its weight
 	for _, channel := range targetChannels {
-		randomWeight -= channel.GetWeight() * smoothingFactor
+		randomWeight -= channel.GetWeight()*smoothingFactor + smoothingAdjustment
 		if randomWeight < 0 {
 			return channel, nil
 		}
