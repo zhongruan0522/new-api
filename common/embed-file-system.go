@@ -25,7 +25,7 @@ func (e *embedFileSystem) Exists(prefix string, path string) bool {
 
 func (e *embedFileSystem) Open(name string) (http.File, error) {
 	if name == "/" {
-		// This will make sure the index page gose to NoRouter handler,
+		// This will make sure the index page goes to NoRouter handler,
 		// which will use the replaced index bytes with analytic codes.
 		return nil, os.ErrNotExist
 	}
