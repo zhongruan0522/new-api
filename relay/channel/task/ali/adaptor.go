@@ -5,10 +5,12 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/QuantumNous/new-api/common"
 	"github.com/QuantumNous/new-api/dto"
+	"github.com/QuantumNous/new-api/logger"
 	"github.com/QuantumNous/new-api/model"
 	"github.com/QuantumNous/new-api/relay/channel"
 	relaycommon "github.com/QuantumNous/new-api/relay/common"
@@ -123,7 +125,12 @@ func (a *TaskAdaptor) ValidateRequestAndSetAction(c *gin.Context, info *relaycom
 	if err := common.UnmarshalBodyReusable(c, &taskReq); err != nil {
 		return service.TaskErrorWrapper(err, "unmarshal_task_request_failed", http.StatusBadRequest)
 	}
-	a.aliReq = a.convertToAliRequest(info, taskReq)
+	aliReq, err := a.convertToAliRequest(info, taskReq)
+	if err != nil {
+		return service.TaskErrorWrapper(err, "convert_to_ali_request_failed", http.StatusInternalServerError)
+	}
+	a.aliReq = aliReq
+	logger.LogJson(c, "ali video request body", aliReq)
 	return relaycommon.ValidateMultipartDirect(c, info)
 }
 
@@ -148,7 +155,7 @@ func (a *TaskAdaptor) BuildRequestBody(c *gin.Context, info *relaycommon.RelayIn
 	return bytes.NewReader(bodyBytes), nil
 }
 
-func (a *TaskAdaptor) convertToAliRequest(info *relaycommon.RelayInfo, req relaycommon.TaskSubmitReq) *AliVideoRequest {
+func (a *TaskAdaptor) convertToAliRequest(info *relaycommon.RelayInfo, req relaycommon.TaskSubmitReq) (*AliVideoRequest, error) {
 	otherRatios := map[string]map[string]float64{
 		"wan2.5-i2v-preview": {
 			"480P":  1,
@@ -209,6 +216,13 @@ func (a *TaskAdaptor) convertToAliRequest(info *relaycommon.RelayInfo, req relay
 	// 处理时长
 	if req.Duration > 0 {
 		aliReq.Parameters.Duration = req.Duration
+	} else if req.Seconds != "" {
+		seconds, err := strconv.Atoi(req.Seconds)
+		if err != nil {
+			return nil, errors.Wrap(err, "convert seconds to int failed")
+		} else {
+			aliReq.Parameters.Duration = seconds
+		}
 	} else {
 		aliReq.Parameters.Duration = 5 // 默认5秒
 	}
@@ -216,13 +230,21 @@ func (a *TaskAdaptor) convertToAliRequest(info *relaycommon.RelayInfo, req relay
 	// 从 metadata 中提取额外参数
 	if req.Metadata != nil {
 		if metadataBytes, err := common.Marshal(req.Metadata); err == nil {
-			_ = common.Unmarshal(metadataBytes, aliReq)
+			err = common.Unmarshal(metadataBytes, aliReq)
+			if err != nil {
+				return nil, errors.Wrap(err, "unmarshal metadata failed")
+			}
+		} else {
+			return nil, errors.Wrap(err, "marshal metadata failed")
 		}
+	}
+
+	if aliReq.Model != req.Model {
+		return nil, errors.New("can't change model with metadata")
 	}
 
 	info.PriceData.OtherRatios = map[string]float64{
 		"seconds": float64(aliReq.Parameters.Duration),
-		//"size":    1,
 	}
 
 	if otherRatio, ok := otherRatios[req.Model]; ok {
@@ -233,7 +255,7 @@ func (a *TaskAdaptor) convertToAliRequest(info *relaycommon.RelayInfo, req relay
 
 	// println(fmt.Sprintf("other ratios: %v", info.PriceData.OtherRatios))
 
-	return aliReq
+	return aliReq, nil
 }
 
 // DoRequest delegates to common helper
