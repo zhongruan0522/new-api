@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/QuantumNous/new-api/common"
@@ -107,7 +108,7 @@ func (a *TaskAdaptor) ValidateRequestAndSetAction(c *gin.Context, info *relaycom
 	return nil
 }
 
-func (a *TaskAdaptor) BuildRequestBody(c *gin.Context, _ *relaycommon.RelayInfo) (io.Reader, error) {
+func (a *TaskAdaptor) BuildRequestBody(c *gin.Context, info *relaycommon.RelayInfo) (io.Reader, error) {
 	v, exists := c.Get("task_request")
 	if !exists {
 		return nil, fmt.Errorf("request not found in context")
@@ -117,6 +118,13 @@ func (a *TaskAdaptor) BuildRequestBody(c *gin.Context, _ *relaycommon.RelayInfo)
 	body, err := a.convertToRequestPayload(&req)
 	if err != nil {
 		return nil, err
+	}
+
+	if info.Action == constant.TaskActionReferenceGenerate {
+		if strings.Contains(body.Model, "viduq2") {
+			// 参考图生视频只能用 viduq2 模型, 不能带有pro或turbo后缀 https://platform.vidu.cn/docs/reference-to-video
+			body.Model = "viduq2"
+		}
 	}
 
 	data, err := json.Marshal(body)
