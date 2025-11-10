@@ -82,7 +82,29 @@ func (a *TaskAdaptor) Init(info *relaycommon.RelayInfo) {
 }
 
 func (a *TaskAdaptor) ValidateRequestAndSetAction(c *gin.Context, info *relaycommon.RelayInfo) *dto.TaskError {
-	return relaycommon.ValidateBasicTaskRequest(c, info, constant.TaskActionGenerate)
+	if err := relaycommon.ValidateBasicTaskRequest(c, info, constant.TaskActionGenerate); err != nil {
+		return err
+	}
+	req, err := relaycommon.GetTaskRequest(c)
+	if err != nil {
+		return service.TaskErrorWrapper(err, "get_task_request_failed", http.StatusBadRequest)
+	}
+	action := constant.TaskActionTextGenerate
+	if meatAction, ok := req.Metadata["action"]; ok {
+		action, _ = meatAction.(string)
+	} else if req.HasImage() {
+		action = constant.TaskActionGenerate
+		if info.ChannelType == constant.ChannelTypeVidu {
+			// vidu 增加 首尾帧生视频和参考图生视频
+			if len(req.Images) == 2 {
+				action = constant.TaskActionFirstTailGenerate
+			} else if len(req.Images) > 2 {
+				action = constant.TaskActionReferenceGenerate
+			}
+		}
+	}
+	info.Action = action
+	return nil
 }
 
 func (a *TaskAdaptor) BuildRequestBody(c *gin.Context, _ *relaycommon.RelayInfo) (io.Reader, error) {
@@ -95,10 +117,6 @@ func (a *TaskAdaptor) BuildRequestBody(c *gin.Context, _ *relaycommon.RelayInfo)
 	body, err := a.convertToRequestPayload(&req)
 	if err != nil {
 		return nil, err
-	}
-
-	if len(body.Images) == 0 {
-		c.Set("action", constant.TaskActionTextGenerate)
 	}
 
 	data, err := json.Marshal(body)
@@ -131,9 +149,6 @@ func (a *TaskAdaptor) BuildRequestHeader(c *gin.Context, req *http.Request, info
 }
 
 func (a *TaskAdaptor) DoRequest(c *gin.Context, info *relaycommon.RelayInfo, requestBody io.Reader) (*http.Response, error) {
-	if action := c.GetString("action"); action != "" {
-		info.Action = action
-	}
 	return channel.DoTaskApiRequest(a, c, info, requestBody)
 }
 
@@ -185,7 +200,7 @@ func (a *TaskAdaptor) FetchTask(baseUrl, key string, body map[string]any) (*http
 }
 
 func (a *TaskAdaptor) GetModelList() []string {
-	return []string{"viduq1", "vidu2.0", "vidu1.5"}
+	return []string{"viduq2", "viduq1", "vidu2.0", "vidu1.5"}
 }
 
 func (a *TaskAdaptor) GetChannelName() string {
