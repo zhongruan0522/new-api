@@ -12,7 +12,6 @@ import (
 
 	"github.com/QuantumNous/new-api/common"
 	"github.com/QuantumNous/new-api/model"
-
 	"github.com/gin-gonic/gin"
 	"github.com/pkg/errors"
 
@@ -259,11 +258,7 @@ func (a *TaskAdaptor) ParseTaskResult(respBody []byte) (*relaycommon.TaskInfo, e
 	case TaskStatusSuccess:
 		taskResult.Status = model.TaskStatusSuccess
 		taskResult.Progress = "100%"
-		if resTask.VideoURL != "" {
-			taskResult.Url = resTask.VideoURL
-		} else if resTask.FileID != "" {
-			taskResult.Url = fmt.Sprintf("https://api.minimaxi.com/v1/files/download?file_id=%s", resTask.FileID)
-		}
+		taskResult.Url = a.buildVideoURL(resTask.TaskID, resTask.FileID)
 	case TaskStatusFailed:
 		taskResult.Status = model.TaskStatusFailure
 		taskResult.Progress = "100%"
@@ -284,20 +279,7 @@ func (a *TaskAdaptor) ConvertToOpenAIVideo(originTask *model.Task) ([]byte, erro
 		return nil, errors.Wrap(err, "unmarshal hailuo task data failed")
 	}
 
-	openAIVideo := dto.NewOpenAIVideo()
-	openAIVideo.ID = originTask.TaskID
-	openAIVideo.Status = originTask.Status.ToVideoStatus()
-	openAIVideo.SetProgressStr(originTask.Progress)
-	openAIVideo.CreatedAt = originTask.CreatedAt
-	openAIVideo.CompletedAt = originTask.UpdatedAt
-
-	if hailuoResp.VideoURL != "" {
-		openAIVideo.SetMetadata("url", hailuoResp.VideoURL)
-	} else if hailuoResp.FileID != "" {
-		openAIVideo.SetMetadata("file_id", hailuoResp.FileID)
-		openAIVideo.SetMetadata("url", fmt.Sprintf("https://api.minimaxi.com/v1/files/download?file_id=%s", hailuoResp.FileID))
-	}
-
+	openAIVideo := originTask.ToOpenAIVideo()
 	if hailuoResp.BaseResp.StatusCode != StatusSuccess {
 		openAIVideo.Error = &dto.OpenAIVideoError{
 			Message: hailuoResp.BaseResp.StatusMsg,
@@ -311,6 +293,44 @@ func (a *TaskAdaptor) ConvertToOpenAIVideo(originTask *model.Task) ([]byte, erro
 	}
 
 	return jsonData, nil
+}
+
+func (a *TaskAdaptor) buildVideoURL(_, fileID string) string {
+	if a.apiKey == "" || a.baseURL == "" {
+		return ""
+	}
+
+	url := fmt.Sprintf("%s/v1/files/retrieve?file_id=%s", a.baseURL, fileID)
+
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return ""
+	}
+
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("Authorization", "Bearer "+a.apiKey)
+
+	resp, err := service.GetHttpClient().Do(req)
+	if err != nil {
+		return ""
+	}
+	defer resp.Body.Close()
+
+	responseBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return ""
+	}
+
+	var retrieveResp RetrieveFileResponse
+	if err := json.Unmarshal(responseBody, &retrieveResp); err != nil {
+		return ""
+	}
+
+	if retrieveResp.BaseResp.StatusCode != StatusSuccess {
+		return ""
+	}
+
+	return retrieveResp.File.DownloadURL
 }
 
 func contains(slice []string, item string) bool {

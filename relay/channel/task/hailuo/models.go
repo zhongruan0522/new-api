@@ -26,11 +26,12 @@ type QueryTaskRequest struct {
 }
 
 type QueryTaskResponse struct {
-	TaskID   string   `json:"task_id"`
-	Status   string   `json:"status"`
-	FileID   string   `json:"file_id,omitempty"`
-	VideoURL string   `json:"video_url,omitempty"`
-	BaseResp BaseResp `json:"base_resp"`
+	TaskID      string   `json:"task_id"`
+	Status      string   `json:"status"`
+	FileID      string   `json:"file_id,omitempty"`
+	VideoWidth  int      `json:"video_width,omitempty"`
+	VideoHeight int      `json:"video_height,omitempty"`
+	BaseResp    BaseResp `json:"base_resp"`
 }
 
 type ErrorInfo struct {
@@ -54,6 +55,20 @@ type ModelConfig struct {
 	SupportedResolutions []string
 	HasPromptOptimizer   bool
 	HasFastPretreatment  bool
+}
+
+type RetrieveFileResponse struct {
+	File     FileObject `json:"file"`
+	BaseResp BaseResp   `json:"base_resp"`
+}
+
+type FileObject struct {
+	FileID      int64  `json:"file_id"`
+	Bytes       int64  `json:"bytes"`
+	CreatedAt   int64  `json:"created_at"`
+	Filename    string `json:"filename"`
+	Purpose     string `json:"purpose"`
+	DownloadURL string `json:"download_url"`
 }
 
 func GetModelConfig(model string) ModelConfig {
