@@ -1,17 +1,25 @@
 package hailuo
 
-type TextToVideoRequest struct {
-	Model            string `json:"model"`
-	Prompt           string `json:"prompt"`
-	PromptOptimizer  *bool  `json:"prompt_optimizer,omitempty"`
-	FastPretreatment *bool  `json:"fast_pretreatment,omitempty"`
-	Duration         *int   `json:"duration,omitempty"`
-	Resolution       string `json:"resolution,omitempty"`
-	CallbackURL      string `json:"callback_url,omitempty"`
-	AigcWatermark    *bool  `json:"aigc_watermark,omitempty"`
+type SubjectReference struct {
+	Type  string   `json:"type"`  // Subject type, currently only supports "character"
+	Image []string `json:"image"` // Array of subject reference images (currently only supports single image)
 }
 
-type TextToVideoResponse struct {
+type VideoRequest struct {
+	Model            string             `json:"model"`
+	Prompt           string             `json:"prompt,omitempty"`
+	PromptOptimizer  *bool              `json:"prompt_optimizer,omitempty"`
+	FastPretreatment *bool              `json:"fast_pretreatment,omitempty"`
+	Duration         *int               `json:"duration,omitempty"`
+	Resolution       string             `json:"resolution,omitempty"`
+	CallbackURL      string             `json:"callback_url,omitempty"`
+	AigcWatermark    *bool              `json:"aigc_watermark,omitempty"`
+	FirstFrameImage  string             `json:"first_frame_image,omitempty"` // For image-to-video and start-end-to-video
+	LastFrameImage   string             `json:"last_frame_image,omitempty"`  // For start-end-to-video
+	SubjectReference []SubjectReference `json:"subject_reference,omitempty"` // For subject-reference-to-video
+}
+
+type VideoResponse struct {
 	TaskID   string   `json:"task_id"`
 	BaseResp BaseResp `json:"base_resp"`
 }
@@ -81,11 +89,19 @@ func GetModelConfig(model string) ModelConfig {
 			HasPromptOptimizer:   true,
 			HasFastPretreatment:  true,
 		},
+		"MiniMax-Hailuo-2.3-Fast": {
+			Name:                 "MiniMax-Hailuo-2.3-Fast",
+			DefaultResolution:    Resolution768P,
+			SupportedDurations:   []int{6, 10},
+			SupportedResolutions: []string{Resolution768P, Resolution1080P},
+			HasPromptOptimizer:   true,
+			HasFastPretreatment:  true,
+		},
 		"MiniMax-Hailuo-02": {
 			Name:                 "MiniMax-Hailuo-02",
 			DefaultResolution:    Resolution768P,
 			SupportedDurations:   []int{6, 10},
-			SupportedResolutions: []string{Resolution768P, Resolution1080P},
+			SupportedResolutions: []string{Resolution512P, Resolution768P, Resolution1080P},
 			HasPromptOptimizer:   true,
 			HasFastPretreatment:  true,
 		},
@@ -105,6 +121,38 @@ func GetModelConfig(model string) ModelConfig {
 			HasPromptOptimizer:   true,
 			HasFastPretreatment:  false,
 		},
+		"I2V-01-Director": {
+			Name:                 "I2V-01-Director",
+			DefaultResolution:    Resolution720P,
+			SupportedDurations:   []int{6},
+			SupportedResolutions: []string{Resolution720P, Resolution1080P},
+			HasPromptOptimizer:   true,
+			HasFastPretreatment:  false,
+		},
+		"I2V-01-live": {
+			Name:                 "I2V-01-live",
+			DefaultResolution:    Resolution720P,
+			SupportedDurations:   []int{6},
+			SupportedResolutions: []string{Resolution720P, Resolution1080P},
+			HasPromptOptimizer:   true,
+			HasFastPretreatment:  false,
+		},
+		"I2V-01": {
+			Name:                 "I2V-01",
+			DefaultResolution:    Resolution720P,
+			SupportedDurations:   []int{6},
+			SupportedResolutions: []string{Resolution720P, Resolution1080P},
+			HasPromptOptimizer:   true,
+			HasFastPretreatment:  false,
+		},
+		"S2V-01": {
+			Name:                 "S2V-01",
+			DefaultResolution:    Resolution720P,
+			SupportedDurations:   []int{6},
+			SupportedResolutions: []string{Resolution720P},
+			HasPromptOptimizer:   true,
+			HasFastPretreatment:  false,
+		},
 	}
 
 	if config, exists := configs[model]; exists {
@@ -113,9 +161,9 @@ func GetModelConfig(model string) ModelConfig {
 
 	return ModelConfig{
 		Name:                 model,
-		DefaultResolution:    Resolution720P,
+		DefaultResolution:    DefaultResolution,
 		SupportedDurations:   []int{6},
-		SupportedResolutions: []string{Resolution720P},
+		SupportedResolutions: []string{DefaultResolution},
 		HasPromptOptimizer:   true,
 		HasFastPretreatment:  false,
 	}

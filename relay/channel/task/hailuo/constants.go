@@ -6,9 +6,14 @@ const (
 
 var ModelList = []string{
 	"MiniMax-Hailuo-2.3",
+	"MiniMax-Hailuo-2.3-Fast",
 	"MiniMax-Hailuo-02",
 	"T2V-01-Director",
 	"T2V-01",
+	"I2V-01-Director",
+	"I2V-01-live",
+	"I2V-01",
+	"S2V-01",
 }
 
 const (
@@ -35,13 +40,13 @@ const (
 )
 
 const (
+	Resolution512P  = "512P"
 	Resolution720P  = "720P"
 	Resolution768P  = "768P"
 	Resolution1080P = "1080P"
 )
 
 const (
-	DefaultDuration        = 6
-	DefaultResolution      = Resolution768P
-	DefaultPromptOptimizer = true
+	DefaultDuration   = 6
+	DefaultResolution = Resolution720P
 )

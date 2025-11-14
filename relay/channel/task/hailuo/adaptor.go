@@ -22,6 +22,7 @@ import (
 	"github.com/QuantumNous/new-api/service"
 )
 
+// https://platform.minimaxi.com/docs/api-reference/video-generation-intro
 type TaskAdaptor struct {
 	ChannelType int
 	apiKey      string
@@ -84,7 +85,7 @@ func (a *TaskAdaptor) DoResponse(c *gin.Context, resp *http.Response, info *rela
 	}
 	_ = resp.Body.Close()
 
-	var hResp TextToVideoResponse
+	var hResp VideoResponse
 	if err := json.Unmarshal(responseBody, &hResp); err != nil {
 		taskErr = service.TaskErrorWrapper(errors.Wrapf(err, "body: %s", responseBody), "unmarshal_response_body_failed", http.StatusInternalServerError)
 		return
@@ -136,86 +137,28 @@ func (a *TaskAdaptor) GetChannelName() string {
 	return ChannelName
 }
 
-func (a *TaskAdaptor) convertToRequestPayload(req *relaycommon.TaskSubmitReq) (*TextToVideoRequest, error) {
+func (a *TaskAdaptor) convertToRequestPayload(req *relaycommon.TaskSubmitReq) (*VideoRequest, error) {
 	modelConfig := GetModelConfig(req.Model)
-	if !contains(ModelList, req.Model) {
-		return nil, fmt.Errorf("unsupported model: %s", req.Model)
-	}
-
 	duration := DefaultDuration
 	if req.Duration > 0 {
 		duration = req.Duration
 	}
-
-	if !containsInt(modelConfig.SupportedDurations, duration) {
-		return nil, fmt.Errorf("duration %d is not supported by model %s, supported durations: %v",
-			duration, req.Model, modelConfig.SupportedDurations)
-	}
-
 	resolution := modelConfig.DefaultResolution
 	if req.Size != "" {
 		resolution = a.parseResolutionFromSize(req.Size, modelConfig)
 	}
 
-	if !contains(modelConfig.SupportedResolutions, resolution) {
-		return nil, fmt.Errorf("resolution %s is not supported by model %s, supported resolutions: %v",
-			resolution, req.Model, modelConfig.SupportedResolutions)
-	}
-
-	hailuoReq := &TextToVideoRequest{
+	videoRequest := &VideoRequest{
 		Model:      req.Model,
 		Prompt:     req.Prompt,
 		Duration:   &duration,
 		Resolution: resolution,
 	}
-
-	promptOptimizer := DefaultPromptOptimizer
-	hailuoReq.PromptOptimizer = &promptOptimizer
-
-	metadata := req.Metadata
-	if metadata != nil {
-		metadataBytes, err := json.Marshal(metadata)
-		if err != nil {
-			return nil, errors.Wrap(err, "marshal metadata failed")
-		}
-
-		var metadataMap map[string]interface{}
-		if err := json.Unmarshal(metadataBytes, &metadataMap); err != nil {
-			return nil, errors.Wrap(err, "unmarshal metadata failed")
-		}
-
-		if val, exists := metadataMap["prompt_optimizer"]; exists {
-			if boolVal, ok := val.(bool); ok {
-				hailuoReq.PromptOptimizer = &boolVal
-			}
-		}
-
-		if modelConfig.HasFastPretreatment {
-			if val, exists := metadataMap["fast_pretreatment"]; exists {
-				if boolVal, ok := val.(bool); ok {
-					hailuoReq.FastPretreatment = &boolVal
-				}
-			}
-		}
-
-		if val, exists := metadataMap["callback_url"]; exists {
-			if strVal, ok := val.(string); ok {
-				hailuoReq.CallbackURL = strVal
-			}
-		}
-
-		if val, exists := metadataMap["aigc_watermark"]; exists {
-			if boolVal, ok := val.(bool); ok {
-				hailuoReq.AigcWatermark = &boolVal
-			}
-		}
+	if err := req.UnmarshalMetadata(&videoRequest); err != nil {
+		return nil, errors.Wrap(err, "unmarshal metadata to video request failed")
 	}
 
-	if req.HasImage() {
-		return nil, fmt.Errorf("image input is not supported by hailuo video generation")
-	}
-
-	return hailuoReq, nil
+	return videoRequest, nil
 }
 
 func (a *TaskAdaptor) parseResolutionFromSize(size string, modelConfig ModelConfig) string {
@@ -226,6 +169,8 @@ func (a *TaskAdaptor) parseResolutionFromSize(size string, modelConfig ModelConf
 		return Resolution768P
 	case strings.Contains(size, "720"):
 		return Resolution720P
+	case strings.Contains(size, "512"):
+		return Resolution512P
 	default:
 		return modelConfig.DefaultResolution
 	}
