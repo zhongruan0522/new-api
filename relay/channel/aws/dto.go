@@ -12,7 +12,7 @@ import (
 type AwsClaudeRequest struct {
 	// AnthropicVersion should be "bedrock-2023-05-31"
 	AnthropicVersion string              `json:"anthropic_version"`
-	AnthropicBeta    json.RawMessage     `json:"anthropic_beta"`
+	AnthropicBeta    json.RawMessage     `json:"anthropic_beta,omitempty"`
 	System           any                 `json:"system,omitempty"`
 	Messages         []dto.ClaudeMessage `json:"messages"`
 	MaxTokens        uint                `json:"max_tokens,omitempty"`
@@ -40,7 +40,10 @@ func formatRequest(requestBody io.Reader, requestHeader http.Header) (*AwsClaude
 		if err != nil {
 			return nil, err
 		}
-		awsClaudeRequest.AnthropicBeta = json.RawMessage(betaJson)
+		var tempArray []string
+		if err := json.Unmarshal(betaJson, &tempArray); err == nil && len(tempArray) != 0 && len(betaJson) > 0 {
+			awsClaudeRequest.AnthropicBeta = json.RawMessage(betaJson)
+		}
 	}
 	return &awsClaudeRequest, nil
 }
