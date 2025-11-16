@@ -222,6 +222,9 @@ func (a *Adaptor) SetupRequestHeader(c *gin.Context, req *http.Header, info *rel
 	if a.AccountCredentials.ProjectID != "" {
 		req.Set("x-goog-user-project", a.AccountCredentials.ProjectID)
 	}
+	if strings.Contains(info.UpstreamModelName, "claude") {
+		claude.CommonClaudeHeadersOperation(c, req, info)
+	}
 	return nil
 }
 
