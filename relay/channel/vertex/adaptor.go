@@ -76,7 +76,9 @@ func (a *Adaptor) ConvertImageRequest(c *gin.Context, info *relaycommon.RelayInf
 func (a *Adaptor) Init(info *relaycommon.RelayInfo) {
 	if strings.HasPrefix(info.UpstreamModelName, "claude") {
 		a.RequestMode = RequestModeClaude
-	} else if strings.Contains(info.UpstreamModelName, "llama") {
+	} else if strings.Contains(info.UpstreamModelName, "llama") ||
+		// open source models
+		strings.Contains(info.UpstreamModelName, "-maas") {
 		a.RequestMode = RequestModeLlama
 	} else {
 		a.RequestMode = RequestModeGemini
