@@ -1,12 +1,15 @@
 package aws
 
 import (
+	"context"
 	"encoding/json"
 	"io"
 	"net/http"
+	"strings"
 
 	"github.com/QuantumNous/new-api/common"
 	"github.com/QuantumNous/new-api/dto"
+	"github.com/QuantumNous/new-api/logger"
 )
 
 type AwsClaudeRequest struct {
@@ -34,17 +37,19 @@ func formatRequest(requestBody io.Reader, requestHeader http.Header) (*AwsClaude
 	awsClaudeRequest.AnthropicVersion = "bedrock-2023-05-31"
 
 	// check header anthropic-beta
-	anthropicBetaValues := requestHeader.Values("anthropic-beta")
+	anthropicBetaValues := requestHeader.Get("anthropic-beta")
 	if len(anthropicBetaValues) > 0 {
-		betaJson, err := json.Marshal(anthropicBetaValues)
-		if err != nil {
-			return nil, err
-		}
 		var tempArray []string
-		if err := json.Unmarshal(betaJson, &tempArray); err == nil && len(tempArray) != 0 && len(betaJson) > 0 {
-			awsClaudeRequest.AnthropicBeta = json.RawMessage(betaJson)
+		tempArray = strings.Split(anthropicBetaValues, ",")
+		if len(tempArray) > 0 {
+			betaJson, err := json.Marshal(tempArray)
+			if err != nil {
+				return nil, err
+			}
+			awsClaudeRequest.AnthropicBeta = betaJson
 		}
 	}
+	logger.LogJson(context.Background(), "json", awsClaudeRequest)
 	return &awsClaudeRequest, nil
 }
 
