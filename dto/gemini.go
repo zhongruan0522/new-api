@@ -182,8 +182,12 @@ type FunctionCall struct {
 }
 
 type GeminiFunctionResponse struct {
-	Name     string                 `json:"name"`
-	Response map[string]interface{} `json:"response"`
+	Name         string                 `json:"name"`
+	Response     map[string]interface{} `json:"response"`
+	WillContinue json.RawMessage        `json:"willContinue,omitempty"`
+	Scheduling   json.RawMessage        `json:"scheduling,omitempty"`
+	Parts        json.RawMessage        `json:"parts,omitempty"`
+	ID           json.RawMessage        `json:"id,omitempty"`
 }
 
 type GeminiPartExecutableCode struct {
@@ -206,6 +210,7 @@ type GeminiPart struct {
 	Thought             bool                           `json:"thought,omitempty"`
 	InlineData          *GeminiInlineData              `json:"inlineData,omitempty"`
 	FunctionCall        *FunctionCall                  `json:"functionCall,omitempty"`
+	ThoughtSignature    json.RawMessage                `json:"thoughtSignature,omitempty"`
 	FunctionResponse    *GeminiFunctionResponse        `json:"functionResponse,omitempty"`
 	FileData            *GeminiFileData                `json:"fileData,omitempty"`
 	ExecutableCode      *GeminiPartExecutableCode      `json:"executableCode,omitempty"`
