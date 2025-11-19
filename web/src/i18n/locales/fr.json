@@ -2089,6 +2089,8 @@
     "默认测试模型": "Modèle de test par défaut",
     "默认补全倍率": "Taux de complétion par défaut",
     "统一的": "La Passerelle",
-    "大模型接口网关": "API LLM Unifiée"
+    "大模型接口网关": "API LLM Unifiée",
+    "正在跳转 GitHub...": "Redirection vers GitHub...",
+    "请求超时，请刷新页面后重新发起 GitHub 登录": "Délai dépassé, veuillez actualiser la page puis relancer la connexion GitHub"
   }
 }

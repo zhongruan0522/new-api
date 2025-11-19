@@ -2109,6 +2109,8 @@
     "请填写完整的产品信息": "Please fill in complete product information",
     "产品ID已存在": "Product ID already exists",
     "统一的": "The Unified",
-    "大模型接口网关": "LLM API Gateway"
+    "大模型接口网关": "LLM API Gateway",
+    "正在跳转 GitHub...": "Redirecting to GitHub...",
+    "请求超时，请刷新页面后重新发起 GitHub 登录": "Request timed out, please refresh and restart GitHub login"
   }
 }
