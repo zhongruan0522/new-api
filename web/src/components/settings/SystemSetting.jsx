@@ -52,9 +52,9 @@ const SystemSetting = () => {
     GitHubOAuthEnabled: '',
     GitHubClientId: '',
     GitHubClientSecret: '',
-    DiscordOAuthEnabled: '',
-    DiscordClientId: '',
-    DiscordClientSecret: '',
+    'discord.enabled': '',
+    'discord.client_id': '',
+    'discord.client_secret': '',
     'oidc.enabled': '',
     'oidc.client_id': '',
     'oidc.client_secret': '',
@@ -182,7 +182,7 @@ const SystemSetting = () => {
           case 'EmailAliasRestrictionEnabled':
           case 'SMTPSSLEnabled':
           case 'LinuxDOOAuthEnabled':
-          case 'DiscordOAuthEnabled':
+          case 'discord.enabled':
           case 'oidc.enabled':
           case 'passkey.enabled':
           case 'passkey.allow_insecure_origin':
@@ -480,16 +480,16 @@ const SystemSetting = () => {
   const submitDiscordOAuth = async () => {
     const options = [];
 
-    if (originInputs['DiscordClientId'] !== inputs.DiscordClientId) {
-      options.push({ key: 'DiscordClientId', value: inputs.DiscordClientId });
+    if (originInputs['discord.client_id'] !== inputs['discord.client_id']) {
+      options.push({ key: 'discord.client_id', value: inputs['discord.client_id'] });
     }
     if (
-      originInputs['DiscordClientSecret'] !== inputs.DiscordClientSecret &&
-      inputs.DiscordClientSecret !== ''
+      originInputs['discord.client_secret'] !== inputs['discord.client_secret'] &&
+      inputs['discord.client_secret'] !== ''
     ) {
       options.push({
-        key: 'DiscordClientSecret',
-        value: inputs.DiscordClientSecret,
+        key: 'discord.client_secret',
+        value: inputs['discord.client_secret'],
       });
     }
 
@@ -1040,10 +1040,10 @@ const SystemSetting = () => {
                         {t('允许通过 GitHub 账户登录 & 注册')}
                       </Form.Checkbox>
                       <Form.Checkbox
-                        field='DiscordOAuthEnabled'
+                        field='discord.enabled'
                         noLabel
                         onChange={(e) =>
-                          handleCheckboxChange('DiscordOAuthEnabled', e)
+                          handleCheckboxChange('discord.enabled', e)
                         }
                       >
                         {t('允许通过 Discord 账户登录 & 注册')}
@@ -1457,13 +1457,13 @@ const SystemSetting = () => {
                   >
                     <Col xs={24} sm={24} md={12} lg={12} xl={12}>
                       <Form.Input
-                        field='DiscordClientId'
+                        field="['discord.client_id']"
                         label={t('Discord Client ID')}
                       />
                     </Col>
                     <Col xs={24} sm={24} md={12} lg={12} xl={12}>
                       <Form.Input
-                        field='DiscordClientSecret'
+                        field="['discord.client_secret']"
                         label={t('Discord Client Secret')}
                         type='password'
                         placeholder={t('敏感信息不会发送到前端显示')}
