@@ -56,8 +56,15 @@ func (a *Adaptor) ConvertAudioRequest(c *gin.Context, info *relaycommon.RelayInf
 }
 
 func (a *Adaptor) ConvertImageRequest(c *gin.Context, info *relaycommon.RelayInfo, request dto.ImageRequest) (any, error) {
-	if !strings.HasPrefix(info.UpstreamModelName, "imagen") {
-		return nil, errors.New("not supported model for image generation")
+	if strings.HasPrefix(info.UpstreamModelName, "gemini-3-pro-image") {
+		chatRequest := dto.GeneralOpenAIRequest{
+			Model: request.Model,
+			Messages: []dto.Message{
+				{Role: "user", Content: request.Prompt},
+			},
+			N: int(request.N),
+		}
+		return a.ConvertOpenAIRequest(c, info, &chatRequest)
 	}
 
 	// convert size to aspect ratio but allow user to specify aspect ratio
