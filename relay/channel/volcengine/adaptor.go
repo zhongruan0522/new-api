@@ -40,7 +40,11 @@ func (a *Adaptor) ConvertGeminiRequest(*gin.Context, *relaycommon.RelayInfo, *dt
 }
 
 func (a *Adaptor) ConvertClaudeRequest(c *gin.Context, info *relaycommon.RelayInfo, req *dto.ClaudeRequest) (any, error) {
-	adaptor := claude.Adaptor{}
+	if info.ChannelBaseUrl == DoubaoCodingPlan {
+		adaptor := claude.Adaptor{}
+		return adaptor.ConvertClaudeRequest(c, info, req)
+	}
+	adaptor := openai.Adaptor{}
 	return adaptor.ConvertClaudeRequest(c, info, req)
 }
 
@@ -341,7 +345,7 @@ func (a *Adaptor) DoRequest(c *gin.Context, info *relaycommon.RelayInfo, request
 }
 
 func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (usage any, err *types.NewAPIError) {
-	if info.RelayFormat == types.RelayFormatClaude {
+	if info.RelayFormat == types.RelayFormatClaude && info.ChannelBaseUrl == DoubaoCodingPlan {
 		if info.IsStream {
 			return claude.ClaudeStreamHandler(c, resp, info, claude.RequestModeMessage)
 		}
