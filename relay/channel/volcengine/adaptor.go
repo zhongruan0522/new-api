@@ -341,6 +341,13 @@ func (a *Adaptor) DoRequest(c *gin.Context, info *relaycommon.RelayInfo, request
 }
 
 func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (usage any, err *types.NewAPIError) {
+	if info.RelayFormat == types.RelayFormatClaude {
+		if info.IsStream {
+			return claude.ClaudeStreamHandler(c, resp, info, claude.RequestModeMessage)
+		}
+		return claude.ClaudeHandler(c, resp, info, claude.RequestModeMessage)
+	}
+
 	if info.RelayMode == constant.RelayModeAudioSpeech {
 		encoding := mapEncoding(c.GetString(contextKeyResponseFormat))
 		if info.IsStream {
