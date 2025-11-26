@@ -77,6 +77,8 @@ type operationResponse struct {
 					URI string `json:"uri"`
 				} `json:"video"`
 			} `json:"generatedSamples"`
+			RaiMediaFilteredCount   int      `json:"raiMediaFilteredCount"`
+			RaiMediaFilteredReasons []string `json:"raiMediaFilteredReasons"`
 		} `json:"generateVideoResponse"`
 	} `json:"response"`
 	Error struct {
@@ -256,20 +258,19 @@ func (a *TaskAdaptor) ParseTaskResult(respBody []byte) (*relaycommon.TaskInfo, e
 		return ti, nil
 	}
 
-	ti.Status = model.TaskStatusSuccess
-	ti.Progress = "100%"
-
-	taskID := encodeLocalTaskID(op.Name)
-	ti.TaskID = taskID
-	ti.Url = fmt.Sprintf("%s/v1/videos/%s/content", system_setting.ServerAddress, taskID)
-
-	// Extract URL from generateVideoResponse if available
-	if len(op.Response.GenerateVideoResponse.GeneratedSamples) > 0 {
+	if len(op.Response.GenerateVideoResponse.GeneratedSamples) == 0 {
+		ti.Status = model.TaskStatusFailure
+		ti.Reason = fmt.Sprintf("no generated video url found: %s", strings.Join(op.Response.GenerateVideoResponse.RaiMediaFilteredReasons, "; "))
+	} else {
 		if uri := op.Response.GenerateVideoResponse.GeneratedSamples[0].Video.URI; uri != "" {
 			ti.RemoteUrl = uri
 		}
+		ti.Status = model.TaskStatusSuccess
 	}
-
+	ti.Progress = "100%"
+	taskID := encodeLocalTaskID(op.Name)
+	ti.TaskID = taskID
+	ti.Url = fmt.Sprintf("%s/v1/videos/%s/content", system_setting.ServerAddress, taskID)
 	return ti, nil
 }
 
