@@ -258,7 +258,7 @@ func GetBase64sFromForm(c *gin.Context, fieldName string) ([]*Base64Data, error)
 	}
 	imageFiles, exists := mf.File[fieldName]
 	if !exists || len(imageFiles) == 0 {
-		return nil, errors.New("field " + fieldName + "\" is not found or empty")
+		return nil, errors.New("field " + fieldName + " is not found or empty")
 	}
 	var imageBase64s []*Base64Data
 	for _, file := range imageFiles {
