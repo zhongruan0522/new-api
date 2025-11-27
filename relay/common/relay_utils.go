@@ -263,6 +263,7 @@ func GetBase64sFromForm(c *gin.Context, fieldName string) ([]*Base64Data, error)
 	var imageBase64s []*Base64Data
 	for _, file := range imageFiles {
 		image, err := file.Open()
+		defer image.Close()
 		if err != nil {
 			return nil, errors.New("failed to open image file")
 		}
@@ -276,7 +277,6 @@ func GetBase64sFromForm(c *gin.Context, fieldName string) ([]*Base64Data, error)
 			MimeType: mimeType,
 			Data:     base64Data,
 		})
-		image.Close()
 	}
 	return imageBase64s, nil
 }
