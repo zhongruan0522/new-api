@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"slices"
 	"strings"
 
 	"github.com/QuantumNous/new-api/dto"
@@ -170,6 +171,12 @@ func (a *Adaptor) ConvertImageRequest(c *gin.Context, info *relaycommon.RelayInf
 		}
 
 		config := processSizeParameters(strings.TrimSpace(request.Size), request.Quality)
+
+		// 兼容 nano-banana 传quality[imageSize]会报错 An internal error has occurred. Please retry or report in https://developers.generativeai.google/guide/troubleshooting
+		if slices.Contains([]string{"nano-banana", "gemini-2.5-flash-image"}, info.UpstreamModelName) {
+			config.ImageSize = ""
+		}
+
 		googleGenerationConfig := map[string]interface{}{
 			"responseModalities": []string{"TEXT", "IMAGE"},
 			"imageConfig":        config,
