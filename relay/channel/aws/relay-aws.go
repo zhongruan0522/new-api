@@ -22,19 +22,15 @@ import (
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/bedrockruntime"
 	bedrockruntimeTypes "github.com/aws/aws-sdk-go-v2/service/bedrockruntime/types"
-	"github.com/aws/smithy-go"
 	"github.com/aws/smithy-go/auth/bearer"
 )
 
 // getAwsErrorStatusCode extracts HTTP status code from AWS SDK error
 func getAwsErrorStatusCode(err error) int {
-	var apiErr smithy.APIError
-	if errors.As(err, &apiErr) {
-		// Check for HTTP response error which contains status code
-		var httpErr interface{ HTTPStatusCode() int }
-		if errors.As(err, &httpErr) {
-			return httpErr.HTTPStatusCode()
-		}
+	// Check for HTTP response error which contains status code
+	var httpErr interface{ HTTPStatusCode() int }
+	if errors.As(err, &httpErr) {
+		return httpErr.HTTPStatusCode()
 	}
 	// Default to 500 if we can't determine the status code
 	return http.StatusInternalServerError
