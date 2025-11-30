@@ -208,6 +208,7 @@ func CovertOpenAI2Gemini(c *gin.Context, textRequest dto.GeneralOpenAIRequest, i
 
 	adaptorWithExtraBody := false
 
+	// patch extra_body
 	if len(textRequest.ExtraBody) > 0 {
 		if !strings.HasSuffix(info.UpstreamModelName, "-nothinking") {
 			var extraBody map[string]interface{}
@@ -237,6 +238,39 @@ func CovertOpenAI2Gemini(c *gin.Context, textRequest dto.GeneralOpenAIRequest, i
 						geminiRequest.GenerationConfig.ThinkingConfig = &dto.GeminiThinkingConfig{
 							IncludeThoughts: true,
 						}
+					}
+				}
+
+				// check error param name like imageConfig, should be image_config
+				if _, hasErrorParam := googleBody["imageConfig"]; hasErrorParam {
+					return nil, errors.New("extra_body.google.imageConfig is not supported, use extra_body.google.image_config instead")
+				}
+
+				if imageConfig, ok := googleBody["image_config"].(map[string]interface{}); ok {
+					// check error param name like aspectRatio, should be aspect_ratio
+					if _, hasErrorParam := imageConfig["aspectRatio"]; hasErrorParam {
+						return nil, errors.New("extra_body.google.image_config.aspectRatio is not supported, use extra_body.google.image_config.aspect_ratio instead")
+					}
+					// check error param name like imageSize, should be image_size
+					if _, hasErrorParam := imageConfig["imageSize"]; hasErrorParam {
+						return nil, errors.New("extra_body.google.image_config.imageSize is not supported, use extra_body.google.image_config.image_size instead")
+					}
+
+					// convert snake_case to camelCase for Gemini API
+					geminiImageConfig := make(map[string]interface{})
+					if aspectRatio, ok := imageConfig["aspect_ratio"]; ok {
+						geminiImageConfig["aspectRatio"] = aspectRatio
+					}
+					if imageSize, ok := imageConfig["image_size"]; ok {
+						geminiImageConfig["imageSize"] = imageSize
+					}
+
+					if len(geminiImageConfig) > 0 {
+						imageConfigBytes, err := common.Marshal(geminiImageConfig)
+						if err != nil {
+							return nil, fmt.Errorf("failed to marshal image_config: %w", err)
+						}
+						geminiRequest.GenerationConfig.ImageConfig = imageConfigBytes
 					}
 				}
 			}
