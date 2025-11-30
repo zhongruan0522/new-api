@@ -130,29 +130,11 @@ func processSizeParameters(size, quality string) ImageConfig {
 }
 
 func (a *Adaptor) ConvertImageRequest(c *gin.Context, info *relaycommon.RelayInfo, request dto.ImageRequest) (any, error) {
-	if model_setting.IsGeminiModelSupportImagine(info.UpstreamModelName) {
-		var content any
-		if base64Data, err := relaycommon.GetImageBase64sFromForm(c); err == nil {
-			content = []any{
-				dto.MediaContent{
-					Type: dto.ContentTypeText,
-					Text: request.Prompt,
-				},
-				dto.MediaContent{
-					Type: dto.ContentTypeFile,
-					File: &dto.MessageFile{
-						FileData: base64Data.String(),
-					},
-				},
-			}
-		} else {
-			content = request.Prompt
-		}
-
+	if strings.HasPrefix(info.UpstreamModelName, "gemini-3-pro-image") {
 		chatRequest := dto.GeneralOpenAIRequest{
 			Model: request.Model,
 			Messages: []dto.Message{
-				{Role: "user", Content: content},
+				{Role: "user", Content: request.Prompt},
 			},
 			N: int(request.N),
 		}
