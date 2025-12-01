@@ -10,10 +10,7 @@
       "name": "系统"
     },
     {
-      "name": "用户认证"
-    },
-    {
-      "name": "两步验证"
+      "name": "用户登陆注册"
     },
     {
       "name": "OAuth"
@@ -23,6 +20,9 @@
     },
     {
       "name": "充值"
+    },
+    {
+      "name": "两步验证"
     },
     {
       "name": "安全验证"
@@ -405,7 +405,7 @@
         "deprecated": false,
         "description": "🔓 无需鉴权",
         "tags": [
-          "用户认证"
+          "用户登陆注册"
         ],
         "parameters": [
           {
@@ -440,7 +440,7 @@
         "deprecated": false,
         "description": "🔓 无需鉴权",
         "tags": [
-          "用户认证"
+          "用户登陆注册"
         ],
         "parameters": [
           {
@@ -475,7 +475,7 @@
         "deprecated": false,
         "description": "🔓 无需鉴权",
         "tags": [
-          "用户认证"
+          "用户登陆注册"
         ],
         "parameters": [],
         "requestBody": {
@@ -520,7 +520,7 @@
         "deprecated": false,
         "description": "🔓 无需鉴权",
         "tags": [
-          "用户认证"
+          "用户登陆注册"
         ],
         "parameters": [],
         "requestBody": {
@@ -571,7 +571,7 @@
         "deprecated": false,
         "description": "🔓 无需鉴权",
         "tags": [
-          "用户认证"
+          "用户登陆注册"
         ],
         "parameters": [],
         "requestBody": {
@@ -613,8 +613,7 @@
         "deprecated": false,
         "description": "🔓 无需鉴权（登录流程）",
         "tags": [
-          "用户认证",
-          "两步验证"
+          "用户登陆注册"
         ],
         "parameters": [],
         "requestBody": {
@@ -653,7 +652,7 @@
         "deprecated": false,
         "description": "🔓 无需鉴权",
         "tags": [
-          "用户认证"
+          "用户登陆注册"
         ],
         "parameters": [],
         "responses": {
@@ -678,7 +677,7 @@
         "deprecated": false,
         "description": "🔓 无需鉴权",
         "tags": [
-          "用户认证"
+          "用户登陆注册"
         ],
         "parameters": [],
         "responses": {
@@ -703,7 +702,7 @@
         "deprecated": false,
         "description": "🔓 无需鉴权",
         "tags": [
-          "用户认证"
+          "用户登陆注册"
         ],
         "parameters": [],
         "responses": {
@@ -728,7 +727,7 @@
         "deprecated": false,
         "description": "🔓 无需鉴权",
         "tags": [
-          "用户认证"
+          "用户登陆注册"
         ],
         "parameters": [],
         "responses": {
@@ -1779,8 +1778,7 @@
         "deprecated": false,
         "description": "👨‍💼 需要管理员权限（Admin）",
         "tags": [
-          "用户管理",
-          "两步验证"
+          "用户管理"
         ],
         "parameters": [
           {
@@ -4948,6 +4946,56 @@
   },
   "components": {
     "schemas": {
+      "ApiResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {}
+        }
+      },
+      "PageInfo": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer"
+          },
+          "page_size": {
+            "type": "integer"
+          },
+          "total": {
+            "type": "integer"
+          },
+          "items": {
+            "type": "array",
+            "items": {}
+          }
+        }
+      },
+      "Log": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "user_id": {
+            "type": "integer"
+          },
+          "type": {
+            "type": "integer"
+          },
+          "content": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "integer"
+          }
+        }
+      },
       "User": {
         "type": "object",
         "properties": {
@@ -5075,7 +5123,2688 @@
       }
     },
     "responses": {},
-    "securitySchemes": {}
+    "securitySchemes": {
+      "SessionAuth1": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "session",
+        "description": "Session认证，通过登录接口获取"
+      },
+      "AccessToken1": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "Authorization",
+        "description": "Access Token认证，格式: Bearer {access_token}，通过 /api/user/token 接口生成"
+      },
+      "NewApiUser1": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "New-Api-User",
+        "description": "用户ID请求头，必须与当前登录用户ID匹配，使用Session或AccessToken认证时必须提供"
+      },
+      "Combination222": {
+        "group": [
+          {
+            "id": 573666
+          },
+          {
+            "id": 573668
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1122": {
+        "group": [
+          {
+            "id": 573667
+          },
+          {
+            "id": 573668
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination223": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1123": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination224": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1124": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination225": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1125": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination226": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1126": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination227": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1127": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination228": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1128": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination229": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1129": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination230": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1130": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination231": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1131": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination232": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1132": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination233": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1133": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination234": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1134": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination235": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1135": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination236": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1136": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination237": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1137": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination238": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1138": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination239": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1139": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination240": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1140": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination241": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1141": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination242": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1142": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination243": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1143": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination244": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1144": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination245": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1145": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination246": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1146": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination247": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1147": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination248": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1148": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination249": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1149": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination250": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1150": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination251": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1151": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination252": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1152": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination253": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1153": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination254": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1154": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination255": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1155": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination256": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1156": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination257": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1157": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination258": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1158": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination259": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1159": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination260": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1160": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination261": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1161": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination262": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1162": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination263": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1163": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination264": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1164": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination265": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1165": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination266": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1166": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination267": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1167": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination268": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1168": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination269": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1169": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination270": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1170": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination271": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1171": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination272": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1172": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination273": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1173": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination274": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1174": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination275": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1175": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination276": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1176": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination277": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1177": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination278": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1178": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination279": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1179": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination280": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1180": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination281": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1181": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination282": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1182": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination283": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1183": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination284": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1184": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination285": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1185": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination286": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1186": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination287": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1187": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination288": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1188": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination289": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1189": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination290": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1190": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination291": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1191": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination292": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1192": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination293": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1193": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination294": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1194": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination295": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1195": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination296": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1196": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination297": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1197": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination298": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1198": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination299": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1199": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination300": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1200": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination301": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1201": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination302": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1202": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination303": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1203": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination304": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1204": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination305": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1205": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination306": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1206": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination307": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1207": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination308": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1208": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination309": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1209": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination310": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1210": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination311": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1211": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination312": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1212": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination313": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1213": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination314": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1214": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination315": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1215": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination316": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1216": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination317": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1217": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination318": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1218": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination319": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1219": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination320": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1220": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination321": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1221": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination322": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1222": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination323": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1223": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination324": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1224": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination325": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1225": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination326": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1226": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination327": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1227": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination328": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1228": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination329": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1229": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination330": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1230": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination331": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1231": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination332": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1232": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination333": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1233": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination334": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1234": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination335": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1235": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination336": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1236": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination337": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1237": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination338": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1238": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination339": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1239": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination340": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1240": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination341": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1241": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination342": {
+        "group": [
+          {
+            "id": "SessionAuth"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      },
+      "Combination1242": {
+        "group": [
+          {
+            "id": "AccessToken"
+          },
+          {
+            "id": "NewApiUser"
+          }
+        ],
+        "type": "combination"
+      }
+    }
   },
   "servers": [],
   "security": [
