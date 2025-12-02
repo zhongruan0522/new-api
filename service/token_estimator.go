@@ -3,6 +3,7 @@ package service
 import (
 	"math"
 	"strings"
+	"sync"
 	"unicode"
 )
 
@@ -31,20 +32,26 @@ type multipliers struct {
 	BasePad    int     // 基础起步消耗 (Start/End tokens)
 }
 
-var multipliersMap = map[Provider]multipliers{
-	Gemini: {
-		Word: 1.15, Number: 2.8, CJK: 0.68, Symbol: 0.38, MathSymbol: 1.05, URLDelim: 1.2, AtSign: 2.5, Emoji: 1.08, Newline: 1.15, Space: 0.2, BasePad: 0,
-	},
-	Claude: {
-		Word: 1.13, Number: 1.63, CJK: 1.21, Symbol: 0.4, MathSymbol: 4.52, URLDelim: 1.26, AtSign: 2.82, Emoji: 2.6, Newline: 0.89, Space: 0.39, BasePad: 0,
-	},
-	OpenAI: {
-		Word: 1.02, Number: 1.55, CJK: 0.85, Symbol: 0.4, MathSymbol: 2.68, URLDelim: 1.0, AtSign: 2.0, Emoji: 2.12, Newline: 0.5, Space: 0.42, BasePad: 0,
-	},
-}
+var (
+	multipliersMap = map[Provider]multipliers{
+		Gemini: {
+			Word: 1.15, Number: 2.8, CJK: 0.68, Symbol: 0.38, MathSymbol: 1.05, URLDelim: 1.2, AtSign: 2.5, Emoji: 1.08, Newline: 1.15, Space: 0.2, BasePad: 0,
+		},
+		Claude: {
+			Word: 1.13, Number: 1.63, CJK: 1.21, Symbol: 0.4, MathSymbol: 4.52, URLDelim: 1.26, AtSign: 2.82, Emoji: 2.6, Newline: 0.89, Space: 0.39, BasePad: 0,
+		},
+		OpenAI: {
+			Word: 1.02, Number: 1.55, CJK: 0.85, Symbol: 0.4, MathSymbol: 2.68, URLDelim: 1.0, AtSign: 2.0, Emoji: 2.12, Newline: 0.5, Space: 0.42, BasePad: 0,
+		},
+	}
+	multipliersLock sync.RWMutex
+)
 
 // getMultipliers 根据厂商获取权重配置
 func getMultipliers(p Provider) multipliers {
+	multipliersLock.RLock()
+	defer multipliersLock.RUnlock()
+
 	switch p {
 	case Gemini:
 		return multipliersMap[Gemini]
