@@ -34,12 +34,19 @@ func checkRedirect(req *http.Request, via []*http.Request) error {
 }
 
 func InitHttpClient() {
+	transport := &http.Transport{
+		MaxIdleConns:          common.RelayMaxIdleConns,
+		MaxIdleConnsPerHost:   common.RelayMaxIdleConnsPerHost,
+	}
+
 	if common.RelayTimeout == 0 {
 		httpClient = &http.Client{
+			Transport:     transport,
 			CheckRedirect: checkRedirect,
 		}
 	} else {
 		httpClient = &http.Client{
+			Transport:     transport,
 			Timeout:       time.Duration(common.RelayTimeout) * time.Second,
 			CheckRedirect: checkRedirect,
 		}
@@ -84,6 +91,8 @@ func NewProxyHttpClient(proxyURL string) (*http.Client, error) {
 	case "http", "https":
 		client := &http.Client{
 			Transport: &http.Transport{
+				MaxIdleConns:          common.RelayMaxIdleConns,
+				MaxIdleConnsPerHost:   common.RelayMaxIdleConnsPerHost,
 				Proxy: http.ProxyURL(parsedURL),
 			},
 			CheckRedirect: checkRedirect,
@@ -116,6 +125,8 @@ func NewProxyHttpClient(proxyURL string) (*http.Client, error) {
 
 		client := &http.Client{
 			Transport: &http.Transport{
+				MaxIdleConns:          common.RelayMaxIdleConns,
+				MaxIdleConnsPerHost:   common.RelayMaxIdleConnsPerHost,
 				DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
 					return dialer.Dial(network, addr)
 				},
