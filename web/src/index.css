@@ -108,12 +108,14 @@ code {
   display: flex;
   flex-direction: column;
   transition: width 0.3s ease;
+  background: var(--semi-color-bg-1);
+  border-right: 1px solid var(--semi-color-border);
 }
 
 .sidebar-nav {
   flex: 1;
   width: 100%;
-  background: var(--semi-color-bg-0);
+  background: var(--semi-color-bg-1);
   height: 100%;
   overflow: hidden;
   border-right: none;
@@ -191,11 +193,11 @@ code {
   padding: 12px;
   margin-top: auto;
   cursor: pointer;
-  background-color: var(--semi-color-bg-0);
+  background-color: var(--semi-color-bg-1);
   position: sticky;
   bottom: 0;
   z-index: 10;
-  box-shadow: 0 -10px 10px -5px var(--semi-color-bg-0);
+  box-shadow: 0 -10px 10px -5px var(--semi-color-bg-1);
   backdrop-filter: blur(4px);
   border-top: 1px solid rgba(var(--semi-grey-0), 0.08);
 }

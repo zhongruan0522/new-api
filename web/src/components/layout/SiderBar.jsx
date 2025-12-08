@@ -377,7 +377,7 @@ const SiderBar = ({ onNavigate = () => {} }) => {
       className='sidebar-container'
       style={{
         width: 'var(--sidebar-current-width)',
-        background: 'var(--semi-color-bg-0)',
+        background: 'var(--semi-color-bg-1)',
       }}
     >
       <SkeletonWrapper
