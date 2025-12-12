@@ -22,23 +22,26 @@ func CacheGetRandomSatisfiedChannel(c *gin.Context, tokenGroup string, modelName
 			return nil, selectGroup, errors.New("auto groups is not enabled")
 		}
 		autoGroups := GetUserAutoGroup(userGroup)
-		// 如果 token 启用了跨分组重试，获取上次失败的 auto group 索引，从下一个开始尝试
 		startIndex := 0
+		priorityRetry := retry
 		crossGroupRetry := common.GetContextKeyBool(c, constant.ContextKeyTokenCrossGroupRetry)
 		if crossGroupRetry && retry > 0 {
 			logger.LogDebug(c, "Auto group retry cross group, retry: %d", retry)
 			if lastIndex, exists := common.GetContextKey(c, constant.ContextKeyAutoGroupIndex); exists {
 				if idx, ok := lastIndex.(int); ok {
 					startIndex = idx + 1
+					priorityRetry = 0
 				}
 			}
 			logger.LogDebug(c, "Auto group retry cross group, start index: %d", startIndex)
 		}
+
 		for i := startIndex; i < len(autoGroups); i++ {
 			autoGroup := autoGroups[i]
 			logger.LogDebug(c, "Auto selecting group: %s", autoGroup)
-			channel, _ = model.GetRandomSatisfiedChannel(autoGroup, modelName, 0)
+			channel, _ = model.GetRandomSatisfiedChannel(autoGroup, modelName, priorityRetry)
 			if channel == nil {
+				priorityRetry = 0
 				continue
 			} else {
 				c.Set("auto_group", autoGroup)
