@@ -27,8 +27,10 @@ func CacheGetRandomSatisfiedChannel(c *gin.Context, group string, modelName stri
 		crossGroupRetry := common.GetContextKeyBool(c, constant.ContextKeyTokenCrossGroupRetry)
 		if crossGroupRetry && retry > 0 {
 			logger.LogDebug(c, "Auto group retry cross group, retry: %d", retry)
-			if lastIndex, exists := c.Get(string(constant.ContextKeyAutoGroupIndex)); exists {
-				startIndex = lastIndex.(int) + 1
+			if lastIndex, exists := common.GetContextKey(c, constant.ContextKeyAutoGroupIndex); exists {
+				if idx, ok := lastIndex.(int); ok {
+					startIndex = idx + 1
+				}
 			}
 			logger.LogDebug(c, "Auto group retry cross group, start index: %d", startIndex)
 		}
@@ -40,7 +42,7 @@ func CacheGetRandomSatisfiedChannel(c *gin.Context, group string, modelName stri
 				continue
 			} else {
 				c.Set("auto_group", autoGroup)
-				c.Set(string(constant.ContextKeyAutoGroupIndex), i)
+				common.SetContextKey(c, constant.ContextKeyAutoGroupIndex, i)
 				selectGroup = autoGroup
 				logger.LogDebug(c, "Auto selected group: %s", autoGroup)
 				break
