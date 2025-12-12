@@ -12,12 +12,12 @@ import (
 )
 
 // CacheGetRandomSatisfiedChannel tries to get a random channel that satisfies the requirements.
-func CacheGetRandomSatisfiedChannel(c *gin.Context, group string, modelName string, retry int) (*model.Channel, string, error) {
+func CacheGetRandomSatisfiedChannel(c *gin.Context, tokenGroup string, modelName string, retry int) (*model.Channel, string, error) {
 	var channel *model.Channel
 	var err error
-	selectGroup := group
+	selectGroup := tokenGroup
 	userGroup := common.GetContextKeyString(c, constant.ContextKeyUserGroup)
-	if group == "auto" {
+	if tokenGroup == "auto" {
 		if len(setting.GetAutoGroups()) == 0 {
 			return nil, selectGroup, errors.New("auto groups is not enabled")
 		}
@@ -49,9 +49,9 @@ func CacheGetRandomSatisfiedChannel(c *gin.Context, group string, modelName stri
 			}
 		}
 	} else {
-		channel, err = model.GetRandomSatisfiedChannel(group, modelName, retry)
+		channel, err = model.GetRandomSatisfiedChannel(tokenGroup, modelName, retry)
 		if err != nil {
-			return nil, group, err
+			return nil, tokenGroup, err
 		}
 	}
 	return channel, selectGroup, nil
