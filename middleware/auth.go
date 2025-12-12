@@ -307,7 +307,7 @@ func SetupContextForToken(c *gin.Context, token *model.Token, parts ...string) e
 	} else {
 		c.Set("token_model_limit_enabled", false)
 	}
-	c.Set("token_group", token.Group)
+	common.SetContextKey(c, constant.ContextKeyTokenGroup, token.Group)
 	c.Set("token_cross_group_retry", token.CrossGroupRetry)
 	if len(parts) > 1 {
 		if model.IsAdmin(token.UserId) {
