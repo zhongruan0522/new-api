@@ -2226,6 +2226,9 @@
     "默认助手消息": "Bonjour ! Comment puis-je vous aider aujourd'hui ?",
     "可选，用于复现结果": "Optionnel, pour des résultats reproductibles",
     "随机种子 (留空为随机)": "Graine aléatoire (laisser vide pour aléatoire)",
-    "默认补全倍率": "Taux de complétion par défaut"
+    "默认补全倍率": "Taux de complétion par défaut",
+    "跨分组重试": "Nouvelle tentative inter-groupes",
+    "跨分组": "Inter-groupes",
+    "开启后，当前分组渠道失败时会按顺序尝试下一个分组的渠道": "Après activation, lorsque le canal du groupe actuel échoue, il essaiera le canal du groupe suivant dans l'ordre"
   }
 }
