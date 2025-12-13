@@ -12,10 +12,11 @@ import (
 )
 
 type RetryParam struct {
-	Ctx        *gin.Context
-	TokenGroup string
-	ModelName  string
-	Retry      *int
+	Ctx          *gin.Context
+	TokenGroup   string
+	ModelName    string
+	Retry        *int
+	resetNextTry bool
 }
 
 func (p *RetryParam) GetRetry() int {
@@ -30,10 +31,18 @@ func (p *RetryParam) SetRetry(retry int) {
 }
 
 func (p *RetryParam) IncreaseRetry() {
+	if p.resetNextTry {
+		p.resetNextTry = false
+		return
+	}
 	if p.Retry == nil {
 		p.Retry = new(int)
 	}
 	*p.Retry++
+}
+
+func (p *RetryParam) ResetRetryNextTry() {
+	p.resetNextTry = true
 }
 
 // CacheGetRandomSatisfiedChannel tries to get a random channel that satisfies the requirements.
@@ -134,7 +143,8 @@ func CacheGetRandomSatisfiedChannel(param *RetryParam) (*model.Channel, string, 
 				common.SetContextKey(param.Ctx, constant.ContextKeyAutoGroupIndex, i+1)
 				// Reset retry counter so outer loop can continue for next group
 				// 重置重试计数器，以便外层循环可以为下一个分组继续
-				param.SetRetry(-1)
+				param.SetRetry(0)
+				param.ResetRetryNextTry()
 			} else {
 				// Stay in current group, save current state
 				// 保持在当前分组，保存当前状态
