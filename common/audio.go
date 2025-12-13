@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/QuantumNous/new-api/logger"
 	"github.com/abema/go-mp4"
 	"github.com/go-audio/aiff"
 	"github.com/go-audio/wav"
@@ -19,7 +20,7 @@ import (
 // GetAudioDuration 使用纯 Go 库获取音频文件的时长（秒）。
 // 它不再依赖外部的 ffmpeg 或 ffprobe 程序。
 func GetAudioDuration(ctx context.Context, f io.ReadSeeker, ext string) (duration float64, err error) {
-	SysLog(fmt.Sprintf("GetAudioDuration: ext=%s", ext))
+	logger.LogInfo(ctx, fmt.Sprintf("GetAudioDuration: ext=%s", ext))
 	// 根据文件扩展名选择解析器
 	switch ext {
 	case ".mp3":
@@ -44,7 +45,7 @@ func GetAudioDuration(ctx context.Context, f io.ReadSeeker, ext string) (duratio
 	default:
 		return 0, fmt.Errorf("unsupported audio format: %s", ext)
 	}
-	SysLog(fmt.Sprintf("GetAudioDuration: duration=%f", duration))
+	logger.LogInfo(ctx, fmt.Sprintf("GetAudioDuration: duration=%f", duration))
 	return duration, err
 }
 
