@@ -91,7 +91,6 @@ func OpenaiTTSHandler(c *gin.Context, resp *http.Response, info *relaycommon.Rel
 		}
 
 		usage.PromptTokensDetails.TextTokens = usage.PromptTokens
-		usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
 
 		if durationErr != nil {
 			logger.LogWarn(c, fmt.Sprintf("failed to get audio duration: %v", durationErr))
@@ -106,6 +105,7 @@ func OpenaiTTSHandler(c *gin.Context, resp *http.Response, info *relaycommon.Rel
 			usage.CompletionTokens = completionTokens
 			usage.CompletionTokenDetails.AudioTokens = completionTokens
 		}
+		usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
 	}
 
 	return usage
