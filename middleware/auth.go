@@ -242,8 +242,8 @@ func TokenAuth() func(c *gin.Context) {
 			return
 		}
 
-		allowIpsMap := token.GetIpLimits()
-		if len(allowIpsMap) > 0 {
+		allowIps := token.GetIpLimits()
+		if len(allowIps) > 0 {
 			clientIp := c.ClientIP()
 			logger.LogDebug(c, "Token has IP restrictions, checking client IP %s", clientIp)
 			ip := net.ParseIP(clientIp)
@@ -251,7 +251,7 @@ func TokenAuth() func(c *gin.Context) {
 				abortWithOpenAiMessage(c, http.StatusForbidden, "无法解析客户端 IP 地址")
 				return
 			}
-			if common.IsIpInCIDRList(ip, allowIpsMap) == false {
+			if common.IsIpInCIDRList(ip, allowIps) == false {
 				abortWithOpenAiMessage(c, http.StatusForbidden, "您的 IP 不在令牌允许访问的列表中")
 				return
 			}
