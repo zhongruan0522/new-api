@@ -40,7 +40,7 @@ func GetRequestBody(c *gin.Context) ([]byte, error) {
 	}
 	maxMB := constant.MaxRequestBodyMB
 	if maxMB <= 0 {
-		maxMB = 64
+		maxMB = 32
 	}
 	maxBytes := int64(maxMB) << 20
 
