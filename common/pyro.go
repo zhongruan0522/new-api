@@ -1,7 +1,6 @@
 package common
 
 import (
-	"os"
 	"runtime"
 
 	"github.com/grafana/pyroscope-go"
@@ -9,10 +8,12 @@ import (
 
 func StartPyroScope() error {
 
-	pyroscopeUrl := os.Getenv("PYROSCOPE_URL")
+	pyroscopeUrl := GetEnvOrDefaultString("PYROSCOPE_URL", "")
 	if pyroscopeUrl == "" {
 		return nil
 	}
+
+	pyroscopeAppName := GetEnvOrDefaultString("PYROSCOPE_APP_NAME", "new-api")
 
 	// These 2 lines are only required if you're using mutex or block profiling
 	// Read the explanation below for how to set these rates:
@@ -20,7 +21,7 @@ func StartPyroScope() error {
 	runtime.SetBlockProfileRate(5)
 
 	_, err := pyroscope.Start(pyroscope.Config{
-		ApplicationName: SystemName,
+		ApplicationName: pyroscopeAppName,
 
 		ServerAddress: pyroscopeUrl,
 
