@@ -316,6 +316,8 @@ docker run --name new-api -d --restart always \
 | `PYROSCOPE_APP_NAME` | Pyroscopeアプリ名 | `new-api` |
 | `PYROSCOPE_BASIC_AUTH_USER` | Pyroscope Basic Authユーザー | - |
 | `PYROSCOPE_BASIC_AUTH_PASSWORD` | Pyroscope Basic Authパスワード | - |
+| `PYROSCOPE_MUTEX_RATE` | Pyroscope mutexサンプリング率 | `5` |
+| `PYROSCOPE_BLOCK_RATE` | Pyroscope blockサンプリング率 | `5` |
 | `HOSTNAME` | Pyroscope用のホスト名タグ | `new-api` |
 
 📖 **完全な設定:** [環境変数ドキュメント](https://docs.newapi.pro/installation/environment-variables)

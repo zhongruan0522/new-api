@@ -18,10 +18,11 @@ func StartPyroScope() error {
 	pyroscopeBasicAuthPassword := GetEnvOrDefaultString("PYROSCOPE_BASIC_AUTH_PASSWORD", "")
 	pyroscopeHostname := GetEnvOrDefaultString("HOSTNAME", "new-api")
 
-	// These 2 lines are only required if you're using mutex or block profiling
-	// Read the explanation below for how to set these rates:
-	runtime.SetMutexProfileFraction(5)
-	runtime.SetBlockProfileRate(5)
+	mutexRate := GetEnvOrDefault("PYROSCOPE_MUTEX_RATE", 5)
+	blockRate := GetEnvOrDefault("PYROSCOPE_BLOCK_RATE", 5)
+
+	runtime.SetMutexProfileFraction(mutexRate)
+	runtime.SetBlockProfileRate(blockRate)
 
 	_, err := pyroscope.Start(pyroscope.Config{
 		ApplicationName: pyroscopeAppName,
