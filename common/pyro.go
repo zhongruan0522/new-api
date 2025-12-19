@@ -14,6 +14,9 @@ func StartPyroScope() error {
 	}
 
 	pyroscopeAppName := GetEnvOrDefaultString("PYROSCOPE_APP_NAME", "new-api")
+	pyroscopeBasicAuthUser := GetEnvOrDefaultString("PYROSCOPE_BASIC_AUTH_USER", "")
+	pyroscopeBasicAuthPassword := GetEnvOrDefaultString("PYROSCOPE_BASIC_AUTH_PASSWORD", "")
+	pyroscopeHostname := GetEnvOrDefaultString("HOSTNAME", "new-api")
 
 	// These 2 lines are only required if you're using mutex or block profiling
 	// Read the explanation below for how to set these rates:
@@ -23,11 +26,13 @@ func StartPyroScope() error {
 	_, err := pyroscope.Start(pyroscope.Config{
 		ApplicationName: pyroscopeAppName,
 
-		ServerAddress: pyroscopeUrl,
+		ServerAddress:     pyroscopeUrl,
+		BasicAuthUser:     pyroscopeBasicAuthUser,
+		BasicAuthPassword: pyroscopeBasicAuthPassword,
 
 		Logger: nil,
 
-		Tags: map[string]string{"hostname": GetEnvOrDefaultString("HOSTNAME", "new-api")},
+		Tags: map[string]string{"hostname": pyroscopeHostname},
 
 		ProfileTypes: []pyroscope.ProfileType{
 			pyroscope.ProfileCPU,

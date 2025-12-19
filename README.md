@@ -308,6 +308,11 @@ docker run --name new-api -d --restart always \
 | `STREAM_SCANNER_MAX_BUFFER_MB` | 流式扫描器单行最大缓冲（MB），图像生成等超大 `data:` 片段（如 4K 图片 base64）需适当调大 | `64` |
 | `AZURE_DEFAULT_API_VERSION` | Azure API 版本                                                 | `2025-04-01-preview` |
 | `ERROR_LOG_ENABLED` | 错误日志开关                                                       | `false` |
+| `PYROSCOPE_URL` | Pyroscope 服务地址                                            | - |
+| `PYROSCOPE_APP_NAME` | Pyroscope 应用名                                        | `new-api` |
+| `PYROSCOPE_BASIC_AUTH_USER` | Pyroscope Basic Auth 用户名                        | - |
+| `PYROSCOPE_BASIC_AUTH_PASSWORD` | Pyroscope Basic Auth 密码                  | - |
+| `HOSTNAME` | Pyroscope 标签里的主机名                                          | `new-api` |
 
 📖 **完整配置：** [环境变量文档](https://docs.newapi.pro/installation/environment-variables)
 
