@@ -2,7 +2,7 @@ package common
 
 import (
 	"bytes"
-	"errors"
+	"fmt"
 	"io"
 	"mime"
 	"mime/multipart"
@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/QuantumNous/new-api/constant"
+	"github.com/pkg/errors"
 
 	"github.com/gin-gonic/gin"
 )
@@ -39,8 +40,15 @@ func GetRequestBody(c *gin.Context) ([]byte, error) {
 		}
 	}
 	maxMB := constant.MaxRequestBodyMB
-	if maxMB <= 0 {
-		maxMB = 32
+	if maxMB < 0 {
+		// no limit
+		body, err := io.ReadAll(c.Request.Body)
+		_ = c.Request.Body.Close()
+		if err != nil {
+			return nil, err
+		}
+		c.Set(KeyRequestBody, body)
+		return body, nil
 	}
 	maxBytes := int64(maxMB) << 20
 
@@ -49,13 +57,13 @@ func GetRequestBody(c *gin.Context) ([]byte, error) {
 	if err != nil {
 		_ = c.Request.Body.Close()
 		if IsRequestBodyTooLargeError(err) {
-			return nil, ErrRequestBodyTooLarge
+			return nil, errors.Wrap(ErrRequestBodyTooLarge, fmt.Sprintf("request body exceeds %d MB", maxMB))
 		}
 		return nil, err
 	}
 	_ = c.Request.Body.Close()
 	if int64(len(body)) > maxBytes {
-		return nil, ErrRequestBodyTooLarge
+		return nil, errors.Wrap(ErrRequestBodyTooLarge, fmt.Sprintf("request body exceeds %d MB", maxMB))
 	}
 	c.Set(KeyRequestBody, body)
 	return body, nil
