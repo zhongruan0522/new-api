@@ -205,11 +205,11 @@ docker run --name new-api -d --restart always \
 - ⚡ [OpenAI Responses](https://docs.newapi.pro/ja/docs/api/ai-model/chat/openai/create-response)
 - ⚡ [OpenAI Realtime API](https://docs.newapi.pro/ja/docs/api/ai-model/realtime/create-realtime-session)（Azureを含む）
 - ⚡ [Claude Messages](https://docs.newapi.pro/ja/docs/api/ai-model/chat/create-message)
-- ⚡ [Google Gemini](https://docs.newapi.pro/ja/docs/api/ai-model/chat/openai/create-chat-completion)
+- ⚡ [Google Gemini](https://doc.newapi.pro/ja/api/google-gemini-chat)
 - 🔄 [Rerankモデル](https://docs.newapi.pro/ja/docs/api/ai-model/rerank/create-rerank)
 - ⚡ [OpenAI Realtime API](https://docs.newapi.pro/ja/docs/api/ai-model/realtime/create-realtime-session)
 - ⚡ [Claude Messages](https://docs.newapi.pro/ja/docs/api/ai-model/chat/create-message)
-- ⚡ [Google Gemini](https://docs.newapi.pro/ja/docs/api/ai-model/chat/openai/create-chat-completion)
+- ⚡ [Google Gemini](https://doc.newapi.pro/ja/api/google-gemini-chat)
 - 🔄 [Rerankモデル](https://docs.newapi.pro/ja/docs/api/ai-model/rerank/create-rerank)（Cohere、Jina）
 
 **インテリジェントルーティング:**
@@ -256,11 +256,11 @@ docker run --name new-api -d --restart always \
 | モデルタイプ | 説明 | ドキュメント |
 |---------|------|------|
 | 🤖 OpenAI GPTs | gpt-4-gizmo-* シリーズ | - |
-| 🎨 Midjourney-Proxy | [Midjourney-Proxy(Plus)](https://github.com/novicezk/midjourney-proxy) | [ドキュメント](https://docs.newapi.pro/ja/docs/guide/console/drawing-log) |
-| 🎵 Suno-API | [Suno API](https://github.com/Suno-API/Suno-API) | [ドキュメント](https://docs.newapi.pro/ja/docs/guide/console/task-log) |
+| 🎨 Midjourney-Proxy | [Midjourney-Proxy(Plus)](https://github.com/novicezk/midjourney-proxy) | [ドキュメント](https://doc.newapi.pro/ja/api/midjourney-proxy-image) |
+| 🎵 Suno-API | [Suno API](https://github.com/Suno-API/Suno-API) | [ドキュメント](https://doc.newapi.pro/ja/api/suno-music) |
 | 🔄 Rerank | Cohere、Jina | [ドキュメント](https://docs.newapi.pro/ja/docs/api/ai-model/rerank/create-rerank) |
 | 💬 Claude | Messagesフォーマット | [ドキュメント](https://docs.newapi.pro/ja/docs/api/ai-model/chat/create-message) |
-| 🌐 Gemini | Google Geminiフォーマット | [ドキュメント](https://docs.newapi.pro/ja/docs/api/ai-model/chat/openai/create-chat-completion) |
+| 🌐 Gemini | Google Geminiフォーマット | [ドキュメント](https://doc.newapi.pro/ja/api/google-gemini-chat) |
 | 🔧 Dify | ChatFlowモード | - |
 | 🎯 カスタム | 完全な呼び出しアドレスの入力をサポート | - |
 
@@ -278,7 +278,7 @@ docker run --name new-api -d --restart always \
 - [再ランク付けインターフェース (Rerank)](https://docs.newapi.pro/ja/docs/api/ai-model/rerank/create-rerank)
 - [リアルタイム対話インターフェース (Realtime)](https://docs.newapi.pro/ja/docs/api/ai-model/realtime/create-realtime-session)
 - [Claudeチャット](https://docs.newapi.pro/ja/docs/api/ai-model/chat/create-message)
-- [Google Geminiチャット](https://docs.newapi.pro/ja/docs/api/ai-model/chat/openai/create-chat-completion)
+- [Google Geminiチャット](https://doc.newapi.pro/ja/api/google-gemini-chat)
 
 </details>
 

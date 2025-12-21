@@ -205,7 +205,7 @@ docker run --name new-api -d --restart always \
 - ⚡ [OpenAI Responses](https://docs.newapi.pro/zh/docs/api/ai-model/chat/openai/create-response)
 - ⚡ [OpenAI Realtime API](https://docs.newapi.pro/zh/docs/api/ai-model/realtime/create-realtime-session)（含 Azure）
 - ⚡ [Claude Messages](https://docs.newapi.pro/zh/docs/api/ai-model/chat/create-message)
-- ⚡ [Google Gemini](https://docs.newapi.pro/zh/docs/api/ai-model/chat/openai/create-chat-completion)
+- ⚡ [Google Gemini](https://doc.newapi.pro/api/google-gemini-chat)
 - 🔄 [Rerank 模型](https://docs.newapi.pro/zh/docs/api/ai-model/rerank/create-rerank)（Cohere、Jina）
 
 **智能路由：**
@@ -252,11 +252,11 @@ docker run --name new-api -d --restart always \
 | 模型类型 | 说明 | 文档 |
 |---------|------|------|
 | 🤖 OpenAI GPTs | gpt-4-gizmo-* 系列 | - |
-| 🎨 Midjourney-Proxy | [Midjourney-Proxy(Plus)](https://github.com/novicezk/midjourney-proxy) | [文档](https://docs.newapi.pro/zh/docs/guide/console/drawing-log) |
-| 🎵 Suno-API | [Suno API](https://github.com/Suno-API/Suno-API) | [文档](https://docs.newapi.pro/zh/docs/guide/console/task-log) |
+| 🎨 Midjourney-Proxy | [Midjourney-Proxy(Plus)](https://github.com/novicezk/midjourney-proxy) | [文档](https://doc.newapi.pro/api/midjourney-proxy-image) |
+| 🎵 Suno-API | [Suno API](https://github.com/Suno-API/Suno-API) | [文档](https://doc.newapi.pro/api/suno-music) |
 | 🔄 Rerank | Cohere、Jina | [文档](https://docs.newapi.pro/zh/docs/api/ai-model/rerank/create-rerank) |
 | 💬 Claude | Messages 格式 | [文档](https://docs.newapi.pro/zh/docs/api/ai-model/chat/create-message) |
-| 🌐 Gemini | Google Gemini 格式 | [文档](https://docs.newapi.pro/zh/docs/api/ai-model/chat/openai/create-chat-completion) |
+| 🌐 Gemini | Google Gemini 格式 | [文档](https://doc.newapi.pro/api/google-gemini-chat) |
 | 🔧 Dify | ChatFlow 模式 | - |
 | 🎯 自定义 | 支持完整调用地址 | - |
 
@@ -274,7 +274,7 @@ docker run --name new-api -d --restart always \
 - [重排序接口 (Rerank)](https://docs.newapi.pro/zh/docs/api/ai-model/rerank/create-rerank)
 - [实时对话 (Realtime)](https://docs.newapi.pro/zh/docs/api/ai-model/realtime/create-realtime-session)
 - [Claude 聊天](https://docs.newapi.pro/zh/docs/api/ai-model/chat/create-message)
-- [Google Gemini 聊天](https://docs.newapi.pro/zh/docs/api/ai-model/chat/openai/create-chat-completion)
+- [Google Gemini 聊天](https://doc.newapi.pro/api/google-gemini-chat)
 
 </details>
 

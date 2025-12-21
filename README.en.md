@@ -204,7 +204,7 @@ docker run --name new-api -d --restart always \
 - ⚡ [OpenAI Responses](https://docs.newapi.pro/en/docs/api/ai-model/chat/openai/create-response)
 - ⚡ [OpenAI Realtime API](https://docs.newapi.pro/en/docs/api/ai-model/realtime/create-realtime-session) (including Azure)
 - ⚡ [Claude Messages](https://docs.newapi.pro/en/docs/api/ai-model/chat/create-message)
-- ⚡ [Google Gemini](https://docs.newapi.pro/en/docs/api/ai-model/chat/openai/create-chat-completion)
+- ⚡ [Google Gemini](https://doc.newapi.pro/en/api/google-gemini-chat)
 - 🔄 [Rerank Models](https://docs.newapi.pro/en/docs/api/ai-model/rerank/create-rerank) (Cohere, Jina)
 
 **Intelligent Routing:**
@@ -251,11 +251,11 @@ docker run --name new-api -d --restart always \
 | Model Type | Description | Documentation |
 |---------|------|------|
 | 🤖 OpenAI GPTs | gpt-4-gizmo-* series | - |
-| 🎨 Midjourney-Proxy | [Midjourney-Proxy(Plus)](https://github.com/novicezk/midjourney-proxy) | [Documentation](https://docs.newapi.pro/en/docs/guide/console/drawing-log) |
-| 🎵 Suno-API | [Suno API](https://github.com/Suno-API/Suno-API) | [Documentation](https://docs.newapi.pro/en/docs/guide/console/task-log) |
+| 🎨 Midjourney-Proxy | [Midjourney-Proxy(Plus)](https://github.com/novicezk/midjourney-proxy) | [Documentation](https://doc.newapi.pro/en/api/midjourney-proxy-image) |
+| 🎵 Suno-API | [Suno API](https://github.com/Suno-API/Suno-API) | [Documentation](https://doc.newapi.pro/en/api/suno-music) |
 | 🔄 Rerank | Cohere, Jina | [Documentation](https://docs.newapi.pro/en/docs/api/ai-model/rerank/create-rerank) |
 | 💬 Claude | Messages format | [Documentation](https://docs.newapi.pro/en/docs/api/ai-model/chat/create-message) |
-| 🌐 Gemini | Google Gemini format | [Documentation](https://docs.newapi.pro/en/docs/api/ai-model/chat/openai/create-chat-completion) |
+| 🌐 Gemini | Google Gemini format | [Documentation](https://doc.newapi.pro/en/api/google-gemini-chat) |
 | 🔧 Dify | ChatFlow mode | - |
 | 🎯 Custom | Supports complete call address | - |
 
@@ -273,7 +273,7 @@ docker run --name new-api -d --restart always \
 - [Rerank Interface (Rerank)](https://docs.newapi.pro/en/docs/api/ai-model/rerank/create-rerank)
 - [Realtime Conversation (Realtime)](https://docs.newapi.pro/en/docs/api/ai-model/realtime/create-realtime-session)
 - [Claude Chat](https://docs.newapi.pro/en/docs/api/ai-model/chat/create-message)
-- [Google Gemini Chat](https://docs.newapi.pro/en/docs/api/ai-model/chat/openai/create-chat-completion)
+- [Google Gemini Chat](https://doc.newapi.pro/en/api/google-gemini-chat)
 
 </details>
 
