@@ -162,6 +162,11 @@ func GeminiHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *typ
 			}
 		}
 
+		// remove disabled fields for Vertex AI
+		if info.ChannelType == constant.ChannelTypeVertexAi {
+			jsonData, _ = relaycommon.RemoveGeminiDisabledFields(jsonData)
+		}
+
 		logger.LogDebug(c, "Gemini request body: "+string(jsonData))
 
 		requestBody = bytes.NewReader(jsonData)
