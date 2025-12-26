@@ -7,7 +7,6 @@ import (
 
 	"github.com/QuantumNous/new-api/common"
 	"github.com/QuantumNous/new-api/setting/operation_setting"
-	"github.com/QuantumNous/new-api/setting/reasoning"
 )
 
 // from songquanpeng/one-api
@@ -137,6 +136,7 @@ var defaultModelRatio = map[string]float64{
 	"claude-2.1":                                4,     // $8 / 1M tokens
 	"claude-3-haiku-20240307":                   0.125, // $0.25 / 1M tokens
 	"claude-3-5-haiku-20241022":                 0.5,   // $1 / 1M tokens
+	"claude-haiku-4-5-20251001":                 0.5,   // $1 / 1M tokens
 	"claude-3-sonnet-20240229":                  1.5,   // $3 / 1M tokens
 	"claude-3-5-sonnet-20240620":                1.5,
 	"claude-3-5-sonnet-20241022":                1.5,
@@ -297,6 +297,7 @@ var defaultModelPrice = map[string]float64{
 	"mj_upload":                      0.05,
 	"sora-2":                         0.3,
 	"sora-2-pro":                     0.5,
+	"gpt-4o-mini-tts":                0.3,
 }
 
 var defaultAudioRatio = map[string]float64{
@@ -304,11 +305,13 @@ var defaultAudioRatio = map[string]float64{
 	"gpt-4o-mini-audio-preview":    66.67,
 	"gpt-4o-realtime-preview":      8,
 	"gpt-4o-mini-realtime-preview": 16.67,
+	"gpt-4o-mini-tts":              25,
 }
 
 var defaultAudioCompletionRatio = map[string]float64{
 	"gpt-4o-realtime":      2,
 	"gpt-4o-mini-realtime": 2,
+	"gpt-4o-mini-tts":      1,
 }
 
 var (
@@ -536,7 +539,10 @@ func getHardcodedCompletionModelRatio(name string) (float64, bool) {
 			if name == "gpt-4o-2024-05-13" {
 				return 3, true
 			}
-			return 4, true
+			if strings.HasPrefix(name, "gpt-4o-mini-tts") {
+				return 20, false
+			}
+			return 4, false
 		}
 		// gpt-5 匹配
 		if strings.HasPrefix(name, "gpt-5") {
@@ -821,10 +827,6 @@ func FormatMatchingModelName(name string) string {
 		name = handleThinkingBudgetModel(name, "gemini-2.5-flash", "gemini-2.5-flash-thinking-*")
 	} else if strings.HasPrefix(name, "gemini-2.5-pro") {
 		name = handleThinkingBudgetModel(name, "gemini-2.5-pro", "gemini-2.5-pro-thinking-*")
-	}
-
-	if base, _, ok := reasoning.TrimEffortSuffix(name); ok {
-		name = base
 	}
 
 	if strings.HasPrefix(name, "gpt-4-gizmo") {

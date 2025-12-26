@@ -181,7 +181,7 @@ func TextHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *types
 		return newApiErr
 	}
 
-	if strings.HasPrefix(info.OriginModelName, "gpt-4o-audio") {
+	if usage.(*dto.Usage).CompletionTokenDetails.AudioTokens > 0 || usage.(*dto.Usage).PromptTokensDetails.AudioTokens > 0 {
 		service.PostAudioConsumeQuota(c, info, usage.(*dto.Usage), "")
 	} else {
 		postConsumeQuota(c, info, usage.(*dto.Usage), "")
@@ -300,14 +300,20 @@ func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage 
 	if !relayInfo.PriceData.UsePrice {
 		baseTokens := dPromptTokens
 		// 减去 cached tokens
+		// Anthropic API 的 input_tokens 已经不包含缓存 tokens，不需要减去
+		// OpenAI/OpenRouter 等 API 的 prompt_tokens 包含缓存 tokens，需要减去
 		var cachedTokensWithRatio decimal.Decimal
 		if !dCacheTokens.IsZero() {
-			baseTokens = baseTokens.Sub(dCacheTokens)
+			if relayInfo.ChannelType != constant.ChannelTypeAnthropic {
+				baseTokens = baseTokens.Sub(dCacheTokens)
+			}
 			cachedTokensWithRatio = dCacheTokens.Mul(dCacheRatio)
 		}
 		var dCachedCreationTokensWithRatio decimal.Decimal
 		if !dCachedCreationTokens.IsZero() {
-			baseTokens = baseTokens.Sub(dCachedCreationTokens)
+			if relayInfo.ChannelType != constant.ChannelTypeAnthropic {
+				baseTokens = baseTokens.Sub(dCachedCreationTokens)
+			}
 			dCachedCreationTokensWithRatio = dCachedCreationTokens.Mul(dCachedCreationRatio)
 		}
 
