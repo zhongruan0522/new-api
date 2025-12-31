@@ -311,6 +311,10 @@ var defaultAudioCompletionRatio = map[string]float64{
 	"gpt-4o-realtime":      2,
 	"gpt-4o-mini-realtime": 2,
 	"gpt-4o-mini-tts":      1,
+	"tts-1":                0,
+	"tts-1-hd":             0,
+	"tts-1-1106":           0,
+	"tts-1-hd-1106":        0,
 }
 
 var (
@@ -656,7 +660,7 @@ func GetAudioRatio(name string) float64 {
 	if ratio, ok := audioRatioMap[name]; ok {
 		return ratio
 	}
-	return 20
+	return 1
 }
 
 func GetAudioCompletionRatio(name string) float64 {
@@ -667,7 +671,7 @@ func GetAudioCompletionRatio(name string) float64 {
 
 		return ratio
 	}
-	return 2
+	return 1
 }
 
 func ModelRatio2JSONString() string {
