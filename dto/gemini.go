@@ -126,7 +126,7 @@ func (r *GeminiChatRequest) SetModelName(modelName string) {
 
 func (r *GeminiChatRequest) GetTools() []GeminiChatTool {
 	var tools []GeminiChatTool
-	if strings.HasSuffix(string(r.Tools), "[") {
+	if strings.HasPrefix(string(r.Tools), "[") {
 		// is array
 		if err := common.Unmarshal(r.Tools, &tools); err != nil {
 			logger.LogError(nil, "error_unmarshalling_tools: "+err.Error())
