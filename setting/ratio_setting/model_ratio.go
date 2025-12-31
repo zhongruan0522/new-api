@@ -674,6 +674,22 @@ func GetAudioCompletionRatio(name string) float64 {
 	return 1
 }
 
+func ContainsAudioRatio(name string) bool {
+	audioRatioMapMutex.RLock()
+	defer audioRatioMapMutex.RUnlock()
+	name = FormatMatchingModelName(name)
+	_, ok := audioRatioMap[name]
+	return ok
+}
+
+func ContainsAudioCompletionRatio(name string) bool {
+	audioCompletionRatioMapMutex.RLock()
+	defer audioCompletionRatioMapMutex.RUnlock()
+	name = FormatMatchingModelName(name)
+	_, ok := audioCompletionRatioMap[name]
+	return ok
+}
+
 func ModelRatio2JSONString() string {
 	modelRatioMapMutex.RLock()
 	defer modelRatioMapMutex.RUnlock()
@@ -749,16 +765,6 @@ func UpdateAudioRatioByJSONString(jsonStr string) error {
 	return nil
 }
 
-func GetAudioRatioCopy() map[string]float64 {
-	audioRatioMapMutex.RLock()
-	defer audioRatioMapMutex.RUnlock()
-	copyMap := make(map[string]float64, len(audioRatioMap))
-	for k, v := range audioRatioMap {
-		copyMap[k] = v
-	}
-	return copyMap
-}
-
 func AudioCompletionRatio2JSONString() string {
 	audioCompletionRatioMapMutex.RLock()
 	defer audioCompletionRatioMapMutex.RUnlock()
@@ -779,16 +785,6 @@ func UpdateAudioCompletionRatioByJSONString(jsonStr string) error {
 	audioCompletionRatioMapMutex.Unlock()
 	InvalidateExposedDataCache()
 	return nil
-}
-
-func GetAudioCompletionRatioCopy() map[string]float64 {
-	audioCompletionRatioMapMutex.RLock()
-	defer audioCompletionRatioMapMutex.RUnlock()
-	copyMap := make(map[string]float64, len(audioCompletionRatioMap))
-	for k, v := range audioCompletionRatioMap {
-		copyMap[k] = v
-	}
-	return copyMap
 }
 
 func GetModelRatioCopy() map[string]float64 {
