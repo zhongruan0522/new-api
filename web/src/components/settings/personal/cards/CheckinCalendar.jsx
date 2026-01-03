@@ -53,8 +53,10 @@ const CheckinCalendar = ({ t, status }) => {
   const [currentMonth, setCurrentMonth] = useState(
     new Date().toISOString().slice(0, 7),
   );
-  // 折叠状态：如果已签到则默认折叠
-  const [isCollapsed, setIsCollapsed] = useState(true);
+  // 初始加载状态，用于避免折叠状态闪烁
+  const [initialLoaded, setInitialLoaded] = useState(false);
+  // 折叠状态：null 表示未确定（等待首次加载）
+  const [isCollapsed, setIsCollapsed] = useState(null);
 
   // 创建日期到额度的映射，方便快速查找
   const checkinRecordsMap = useMemo(() => {
@@ -77,17 +79,31 @@ const CheckinCalendar = ({ t, status }) => {
 
   // 获取签到状态
   const fetchCheckinStatus = async (month) => {
+    const isFirstLoad = !initialLoaded;
     setLoading(true);
     try {
       const res = await API.get(`/api/user/checkin?month=${month}`);
       const { success, data, message } = res.data;
       if (success) {
         setCheckinData(data);
+        // 首次加载时，根据签到状态设置折叠状态
+        if (isFirstLoad) {
+          setIsCollapsed(data.stats?.checked_in_today ?? false);
+          setInitialLoaded(true);
+        }
       } else {
         showError(message || t('获取签到状态失败'));
+        if (isFirstLoad) {
+          setIsCollapsed(false);
+          setInitialLoaded(true);
+        }
       }
     } catch (error) {
       showError(t('获取签到状态失败'));
+      if (isFirstLoad) {
+        setIsCollapsed(false);
+        setInitialLoaded(true);
+      }
     } finally {
       setLoading(false);
     }
@@ -120,15 +136,6 @@ const CheckinCalendar = ({ t, status }) => {
       fetchCheckinStatus(currentMonth);
     }
   }, [status?.checkin_enabled, currentMonth]);
-
-  // 当签到状态加载完成后，根据是否已签到设置折叠状态
-  useEffect(() => {
-    if (checkinData.stats?.checked_in_today) {
-      setIsCollapsed(true);
-    } else {
-      setIsCollapsed(false);
-    }
-  }, [checkinData.stats?.checked_in_today]);
 
   // 如果签到功能未启用，不显示组件
   if (!status?.checkin_enabled) {
@@ -200,11 +207,13 @@ const CheckinCalendar = ({ t, status }) => {
               )}
             </div>
             <div className='text-xs text-gray-500 dark:text-gray-400'>
-              {checkinData.stats?.checked_in_today
-                ? t('今日已签到，累计签到') +
-                  ` ${checkinData.stats?.total_checkins || 0} ` +
-                  t('天')
-                : t('每日签到可获得随机额度奖励')}
+              {!initialLoaded
+                ? t('正在加载签到状态...')
+                : checkinData.stats?.checked_in_today
+                  ? t('今日已签到，累计签到') +
+                    ` ${checkinData.stats?.total_checkins || 0} ` +
+                    t('天')
+                  : t('每日签到可获得随机额度奖励')}
             </div>
           </div>
         </div>
@@ -213,18 +222,20 @@ const CheckinCalendar = ({ t, status }) => {
           theme='solid'
           icon={<Gift size={16} />}
           onClick={doCheckin}
-          loading={checkinLoading}
-          disabled={checkinData.stats?.checked_in_today}
+          loading={checkinLoading || !initialLoaded}
+          disabled={!initialLoaded || checkinData.stats?.checked_in_today}
           className='!bg-green-600 hover:!bg-green-700'
         >
-          {checkinData.stats?.checked_in_today
-            ? t('今日已签到')
-            : t('立即签到')}
+          {!initialLoaded
+            ? t('加载中...')
+            : checkinData.stats?.checked_in_today
+              ? t('今日已签到')
+              : t('立即签到')}
         </Button>
       </div>
 
       {/* 可折叠内容 */}
-      <Collapsible isOpen={!isCollapsed} keepDOM>
+      <Collapsible isOpen={isCollapsed === false} keepDOM>
         {/* 签到统计 */}
         <div className='grid grid-cols-3 gap-3 mb-4 mt-4'>
           <div className='text-center p-2.5 bg-slate-50 dark:bg-slate-800 rounded-lg'>

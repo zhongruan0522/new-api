@@ -2241,6 +2241,7 @@
     "每日签到可获得随机额度奖励": "L'enregistrement quotidien récompense un quota aléatoire",
     "今日已签到": "Enregistré aujourd'hui",
     "立即签到": "S'enregistrer maintenant",
+    "正在加载签到状态...": "Chargement du statut d'enregistrement...",
     "获取签到状态失败": "Échec de la récupération du statut d'enregistrement",
     "签到成功！获得": "Enregistrement réussi ! Reçu",
     "签到失败": "Échec de l'enregistrement",
