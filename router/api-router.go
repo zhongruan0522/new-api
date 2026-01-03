@@ -96,7 +96,7 @@ func SetApiRouter(router *gin.Engine) {
 
 				// Check-in routes
 				selfRoute.GET("/checkin", controller.GetCheckinStatus)
-				selfRoute.POST("/checkin", controller.DoCheckin)
+				selfRoute.POST("/checkin", middleware.TurnstileCheck(), controller.DoCheckin)
 			}
 
 			adminRoute := userRoute.Group("/")
