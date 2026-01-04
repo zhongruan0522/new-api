@@ -32,6 +32,7 @@ var geminiSupportedMimeTypes = map[string]bool{
 	"audio/wav":       true,
 	"image/png":       true,
 	"image/jpeg":      true,
+	"image/jpg":       true, // support old image/jpeg
 	"image/webp":      true,
 	"text/plain":      true,
 	"video/mov":       true,
