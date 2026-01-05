@@ -970,9 +970,6 @@ func UpdateChannel(c *gin.Context) {
 						// 单个JSON密钥
 						newKeys = []string{channel.Key}
 					}
-					// 合并密钥
-					allKeys := append(existingKeys, newKeys...)
-					channel.Key = strings.Join(allKeys, "\n")
 				} else {
 					// 普通渠道的处理
 					inputKeys := strings.Split(channel.Key, "\n")
@@ -982,10 +979,31 @@ func UpdateChannel(c *gin.Context) {
 							newKeys = append(newKeys, key)
 						}
 					}
-					// 合并密钥
-					allKeys := append(existingKeys, newKeys...)
-					channel.Key = strings.Join(allKeys, "\n")
 				}
+
+				seen := make(map[string]struct{}, len(existingKeys)+len(newKeys))
+				for _, key := range existingKeys {
+					normalized := strings.TrimSpace(key)
+					if normalized == "" {
+						continue
+					}
+					seen[normalized] = struct{}{}
+				}
+				dedupedNewKeys := make([]string, 0, len(newKeys))
+				for _, key := range newKeys {
+					normalized := strings.TrimSpace(key)
+					if normalized == "" {
+						continue
+					}
+					if _, ok := seen[normalized]; ok {
+						continue
+					}
+					seen[normalized] = struct{}{}
+					dedupedNewKeys = append(dedupedNewKeys, normalized)
+				}
+
+				allKeys := append(existingKeys, dedupedNewKeys...)
+				channel.Key = strings.Join(allKeys, "\n")
 			}
 		case "replace":
 			// 覆盖模式：直接使用新密钥（默认行为，不需要特殊处理）
