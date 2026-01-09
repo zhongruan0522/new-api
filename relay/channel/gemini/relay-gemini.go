@@ -1366,18 +1366,8 @@ func GeminiImageHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.
 	return usage, nil
 }
 
-type GeminiModelInfo struct {
-	Name                       string   `json:"name"`
-	Version                    string   `json:"version"`
-	DisplayName                string   `json:"displayName"`
-	Description                string   `json:"description"`
-	InputTokenLimit            int      `json:"inputTokenLimit"`
-	OutputTokenLimit           int      `json:"outputTokenLimit"`
-	SupportedGenerationMethods []string `json:"supportedGenerationMethods"`
-}
-
 type GeminiModelsResponse struct {
-	Models        []GeminiModelInfo `json:"models"`
+	Models        []dto.GeminiModel `json:"models"`
 	NextPageToken string            `json:"nextPageToken"`
 }
 
@@ -1432,7 +1422,11 @@ func FetchGeminiModels(baseURL, apiKey, proxyURL string) ([]string, error) {
 		}
 
 		for _, model := range modelsResponse.Models {
-			modelName := strings.TrimPrefix(model.Name, "models/")
+			modelNameValue, ok := model.Name.(string)
+			if !ok {
+				continue
+			}
+			modelName := strings.TrimPrefix(modelNameValue, "models/")
 			allModels = append(allModels, modelName)
 		}
 
