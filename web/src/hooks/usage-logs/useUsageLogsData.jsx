@@ -313,7 +313,7 @@ export const useLogsData = () => {
       if (chain.length <= 1) {
         return t('原生格式');
       }
-      return `${t('转换')} ${chain.join(' -> ')}`;
+      return `${chain.join(' -> ')}`;
     };
 
     let expandDatesLocal = {};
