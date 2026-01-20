@@ -476,10 +476,17 @@ export const useLogsData = () => {
           });
         }
       }
-      if (other?.request_path) {
+      if (isAdminUser) {
+        const requestConversionChain = other?.request_conversion;
+        const chain = Array.isArray(requestConversionChain)
+          ? requestConversionChain.filter(Boolean)
+          : [];
         expandDataLocal.push({
-          key: t('请求路径'),
-          value: other.request_path,
+          key: t('请求转换'),
+          value:
+            chain.length > 1
+              ? `${chain.join(' -> ')}`
+              : t('原生格式'),
         });
       }
       if (isAdminUser) {
