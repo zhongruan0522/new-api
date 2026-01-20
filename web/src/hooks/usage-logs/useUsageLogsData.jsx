@@ -313,7 +313,7 @@ export const useLogsData = () => {
       if (chain.length <= 1) {
         return t('原生格式');
       }
-      return chain.join(' -> ');
+      return `${t('转换')} ${chain.join(' -> ')}`;
     };
 
     let expandDatesLocal = {};
@@ -485,6 +485,12 @@ export const useLogsData = () => {
             value: other.reasoning_effort,
           });
         }
+      }
+      if (other?.request_path) {
+        expandDataLocal.push({
+          key: t('请求路径'),
+          value: other.request_path,
+        });
       }
       if (isAdminUser) {
         expandDataLocal.push({
