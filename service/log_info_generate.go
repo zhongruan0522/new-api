@@ -83,10 +83,18 @@ func appendRequestConversionChain(relayInfo *relaycommon.RelayInfo, other map[st
 	}
 	chain := make([]string, 0, len(relayInfo.RequestConversionChain))
 	for _, f := range relayInfo.RequestConversionChain {
-		if f == "" {
-			continue
+		switch f {
+		case types.RelayFormatOpenAI:
+			chain = append(chain, "OpenAI Compatible")
+		case types.RelayFormatClaude:
+			chain = append(chain, "Claude Messages")
+		case types.RelayFormatGemini:
+			chain = append(chain, "Google Gemini")
+		case types.RelayFormatOpenAIResponses:
+			chain = append(chain, "OpenAI Responses")
+		default:
+			chain = append(chain, string(f))
 		}
-		chain = append(chain, string(f))
 	}
 	if len(chain) == 0 {
 		return

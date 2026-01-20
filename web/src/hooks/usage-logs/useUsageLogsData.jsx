@@ -306,6 +306,16 @@ export const useLogsData = () => {
 
   // Format logs data
   const setLogsFormat = (logs) => {
+    const requestConversionDisplayValue = (conversionChain) => {
+      const chain = Array.isArray(conversionChain)
+        ? conversionChain.filter(Boolean)
+        : [];
+      if (chain.length <= 1) {
+        return t('原生格式');
+      }
+      return chain.join(' -> ');
+    };
+
     let expandDatesLocal = {};
     for (let i = 0; i < logs.length; i++) {
       logs[i].timestamp2string = timestamp2string(logs[i].created_at);
@@ -477,16 +487,9 @@ export const useLogsData = () => {
         }
       }
       if (isAdminUser) {
-        const requestConversionChain = other?.request_conversion;
-        const chain = Array.isArray(requestConversionChain)
-          ? requestConversionChain.filter(Boolean)
-          : [];
         expandDataLocal.push({
           key: t('请求转换'),
-          value:
-            chain.length > 1
-              ? `${chain.join(' -> ')}`
-              : t('原生格式'),
+          value: requestConversionDisplayValue(other?.request_conversion),
         });
       }
       if (isAdminUser) {
