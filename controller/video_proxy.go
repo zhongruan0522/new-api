@@ -12,7 +12,6 @@ import (
 	"github.com/QuantumNous/new-api/logger"
 	"github.com/QuantumNous/new-api/model"
 	"github.com/QuantumNous/new-api/service"
-	"github.com/samber/lo"
 
 	"github.com/gin-gonic/gin"
 )
@@ -135,7 +134,8 @@ func VideoProxy(c *gin.Context) {
 		videoURL = fmt.Sprintf("%s/v1/videos/%s/content", baseURL, task.TaskID)
 		req.Header.Set("Authorization", "Bearer "+channel.Key)
 	default:
-		videoURL = lo.Ternary(task.Url != "", task.Url, task.FailReason)
+		// Video URL is directly in task.FailReason
+		videoURL = task.FailReason
 	}
 
 	req.URL, err = url.Parse(videoURL)
