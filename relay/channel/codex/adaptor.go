@@ -93,6 +93,7 @@ func (a *Adaptor) ConvertOpenAIResponsesRequest(c *gin.Context, info *relaycommo
 	request.Store = json.RawMessage("false")
 	// rm max_output_tokens
 	request.MaxOutputTokens = 0
+	request.Temperature = nil
 	return request, nil
 }
 
