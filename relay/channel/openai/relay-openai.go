@@ -1,7 +1,6 @@
 package openai
 
 import (
-	"bytes"
 	"fmt"
 	"io"
 	"net/http"
@@ -22,19 +21,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 )
-
-const xaiCSAMSafetyCheckType = "SAFETY_CHECK_TYPE_CSAM"
-
-func maybeMarkXaiCSAMRefusal(c *gin.Context, info *relaycommon.RelayInfo, responseBody []byte) bool {
-	if c == nil || info == nil || len(responseBody) == 0 {
-		return false
-	}
-	if !bytes.Contains(responseBody, []byte(xaiCSAMSafetyCheckType)) {
-		return false
-	}
-	common.SetContextKey(c, constant.ContextKeyAdminRejectReason, "grok_safety_check_type=csam")
-	return true
-}
 
 func sendStreamData(c *gin.Context, info *relaycommon.RelayInfo, data string, forceFormat bool, thinkToContent bool) error {
 	if data == "" {
@@ -215,7 +201,6 @@ func OpenaiHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Respo
 	if err != nil {
 		return nil, types.NewOpenAIError(err, types.ErrorCodeReadResponseBodyFailed, http.StatusInternalServerError)
 	}
-	isXaiCSAMRefusal := maybeMarkXaiCSAMRefusal(c, info, responseBody)
 	if common.DebugEnabled {
 		println("upstream response body:", string(responseBody))
 	}
@@ -237,16 +222,10 @@ func OpenaiHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Respo
 
 	err = common.Unmarshal(responseBody, &simpleResponse)
 	if err != nil {
-		if isXaiCSAMRefusal {
-			return nil, types.NewOpenAIError(err, types.ErrorCodeBadResponseBody, http.StatusInternalServerError, types.ErrOptionWithSkipRetry())
-		}
 		return nil, types.NewOpenAIError(err, types.ErrorCodeBadResponseBody, http.StatusInternalServerError)
 	}
 
 	if oaiError := simpleResponse.GetOpenAIError(); oaiError != nil && oaiError.Type != "" {
-		if isXaiCSAMRefusal {
-			return nil, types.WithOpenAIError(*oaiError, resp.StatusCode, types.ErrOptionWithSkipRetry())
-		}
 		return nil, types.WithOpenAIError(*oaiError, resp.StatusCode)
 	}
 
