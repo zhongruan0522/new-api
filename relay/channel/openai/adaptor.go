@@ -184,11 +184,6 @@ func (a *Adaptor) SetupRequestHeader(c *gin.Context, header *http.Header, info *
 		header.Set("api-key", info.ApiKey)
 		return nil
 	}
-	// 自定义渠道类型完全跳过默认 Authorization 设置，由 Header Override 控制
-	if info.ChannelType == constant.ChannelTypeCustom {
-		// 自定义渠道不设置默认 Authorization，完全由 Header Override 控制
-		return nil
-	}
 	if info.ChannelType == constant.ChannelTypeOpenAI && "" != info.Organization {
 		header.Set("OpenAI-Organization", info.Organization)
 	}
