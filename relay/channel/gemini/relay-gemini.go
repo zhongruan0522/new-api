@@ -1197,6 +1197,10 @@ func geminiStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http
 			return false
 		}
 
+		if len(geminiResponse.Candidates) == 0 && geminiResponse.PromptFeedback != nil && geminiResponse.PromptFeedback.BlockReason != nil {
+			common.SetContextKey(c, constant.ContextKeyAdminRejectReason, fmt.Sprintf("gemini_block_reason=%s", *geminiResponse.PromptFeedback.BlockReason))
+		}
+
 		// 统计图片数量
 		for _, candidate := range geminiResponse.Candidates {
 			for _, part := range candidate.Content.Parts {
@@ -1372,12 +1376,14 @@ func GeminiChatHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.R
 
 		var newAPIError *types.NewAPIError
 		if geminiResponse.PromptFeedback != nil && geminiResponse.PromptFeedback.BlockReason != nil {
+			common.SetContextKey(c, constant.ContextKeyAdminRejectReason, fmt.Sprintf("gemini_block_reason=%s", *geminiResponse.PromptFeedback.BlockReason))
 			newAPIError = types.NewOpenAIError(
 				errors.New("request blocked by Gemini API: "+*geminiResponse.PromptFeedback.BlockReason),
 				types.ErrorCodePromptBlocked,
 				http.StatusBadRequest,
 			)
 		} else {
+			common.SetContextKey(c, constant.ContextKeyAdminRejectReason, "gemini_empty_candidates")
 			newAPIError = types.NewOpenAIError(
 				errors.New("empty response from Gemini API"),
 				types.ErrorCodeEmptyResponse,
