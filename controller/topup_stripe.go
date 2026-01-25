@@ -28,11 +28,18 @@ const (
 
 var stripeAdaptor = &StripeAdaptor{}
 
+// StripePayRequest represents a payment request for Stripe checkout.
 type StripePayRequest struct {
-	Amount        int64  `json:"amount"`
+	// Amount is the quantity of units to purchase.
+	Amount int64 `json:"amount"`
+	// PaymentMethod specifies the payment method (e.g., "stripe").
 	PaymentMethod string `json:"payment_method"`
-	SuccessURL    string `json:"success_url,omitempty"`
-	CancelURL     string `json:"cancel_url,omitempty"`
+	// SuccessURL is the optional custom URL to redirect after successful payment.
+	// If empty, defaults to the server's console log page.
+	SuccessURL string `json:"success_url,omitempty"`
+	// CancelURL is the optional custom URL to redirect when payment is canceled.
+	// If empty, defaults to the server's console topup page.
+	CancelURL string `json:"cancel_url,omitempty"`
 }
 
 type StripeAdaptor struct {
@@ -212,6 +219,18 @@ func sessionExpired(event stripe.Event) {
 	log.Println("充值订单已过期", referenceId)
 }
 
+// genStripeLink generates a Stripe Checkout session URL for payment.
+// It creates a new checkout session with the specified parameters and returns the payment URL.
+//
+// Parameters:
+//   - referenceId: unique reference identifier for the transaction
+//   - customerId: existing Stripe customer ID (empty string if new customer)
+//   - email: customer email address for new customer creation
+//   - amount: quantity of units to purchase
+//   - successURL: custom URL to redirect after successful payment (empty for default)
+//   - cancelURL: custom URL to redirect when payment is canceled (empty for default)
+//
+// Returns the checkout session URL or an error if the session creation fails.
 func genStripeLink(referenceId string, customerId string, email string, amount int64, successURL string, cancelURL string) (string, error) {
 	if !strings.HasPrefix(setting.StripeApiSecret, "sk_") && !strings.HasPrefix(setting.StripeApiSecret, "rk_") {
 		return "", fmt.Errorf("无效的Stripe API密钥")
