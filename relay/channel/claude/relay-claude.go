@@ -14,6 +14,7 @@ import (
 	"github.com/QuantumNous/new-api/relay/channel/openrouter"
 	relaycommon "github.com/QuantumNous/new-api/relay/common"
 	"github.com/QuantumNous/new-api/relay/helper"
+	"github.com/QuantumNous/new-api/relay/reasonmap"
 	"github.com/QuantumNous/new-api/service"
 	"github.com/QuantumNous/new-api/setting/model_setting"
 	"github.com/QuantumNous/new-api/types"
@@ -28,18 +29,7 @@ const (
 )
 
 func stopReasonClaude2OpenAI(reason string) string {
-	switch reason {
-	case "stop_sequence":
-		return "stop"
-	case "end_turn":
-		return "stop"
-	case "max_tokens":
-		return "length"
-	case "tool_use":
-		return "tool_calls"
-	default:
-		return reason
-	}
+	return reasonmap.ClaudeStopReasonToOpenAIFinishReason(reason)
 }
 
 func maybeMarkClaudeRefusal(c *gin.Context, stopReason string) {
