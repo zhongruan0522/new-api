@@ -578,9 +578,6 @@ export const getLogsColumns = ({
               other?.is_system_prompt_overwritten,
               'openai',
             );
-        if (isAdminUser && other?.reject_reason) {
-          content += `\nBlock reason: ${other.reject_reason}`;
-        }
         return (
           <Typography.Paragraph
             ellipsis={{
