@@ -78,6 +78,16 @@ func (*StripeAdaptor) RequestPay(c *gin.Context, req *StripePayRequest) {
 		return
 	}
 
+	if req.SuccessURL != "" && common.ValidateRedirectURL(req.SuccessURL) != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "支付成功重定向URL不在可信任域名列表中", "data": ""})
+		return
+	}
+
+	if req.CancelURL != "" && common.ValidateRedirectURL(req.CancelURL) != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "支付取消重定向URL不在可信任域名列表中", "data": ""})
+		return
+	}
+
 	id := c.GetInt("id")
 	user, _ := model.GetUserById(id, false)
 	chargedMoney := GetChargedAmount(float64(req.Amount), *user)
