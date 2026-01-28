@@ -7,8 +7,8 @@
 🍥 **Passerelle de modèles étendus de nouvelle génération et système de gestion d'actifs d'IA**
 
 <p align="center">
-  <a href="./README.md">中文</a> | 
-  <a href="./README.en.md">English</a> | 
+  <a href="./README.zh.md">中文</a> | 
+  <a href="./README.md">English</a> | 
   <strong>Français</strong> | 
   <a href="./README.ja.md">日本語</a>
 </p>
@@ -200,9 +200,11 @@ docker run --name new-api -d --restart always \
 
 ### 🔐 Autorisation et sécurité
 
+- 😈 Connexion par autorisation Discord
 - 🤖 Connexion par autorisation LinuxDO
 - 📱 Connexion par autorisation Telegram
 - 🔑 Authentification unifiée OIDC
+- 🔍 Requête de quota d'utilisation de clé (avec [neko-api-key-tool](https://github.com/Calcium-Ion/neko-api-key-tool))
 
 ### 🚀 Fonctionnalités avancées
 
@@ -230,10 +232,13 @@ docker run --name new-api -d --restart always \
 <details>
 <summary>Voir la configuration détaillée</summary>
 
-**Modèles de la série o d'OpenAI:**
+**Modèles de la série OpenAI :**
 - `o3-mini-high` - Effort de raisonnement élevé
 - `o3-mini-medium` - Effort de raisonnement moyen
 - `o3-mini-low` - Effort de raisonnement faible
+- `gpt-5-high` - Effort de raisonnement élevé
+- `gpt-5-medium` - Effort de raisonnement moyen
+- `gpt-5-low` - Effort de raisonnement faible
 
 **Modèles de pensée de Claude:**
 - `claude-3-7-sonnet-20250219-thinking` - Activer le mode de pensée
@@ -375,8 +380,9 @@ docker run --name new-api -d --restart always \
 <details>
 <summary><strong>Méthode 3: Panneau BaoTa</strong></summary>
 
-1. Installez le panneau BaoTa (version **9.2.0** ou supérieure), recherchez **New-API** dans le magasin d'applications et installez-le.
-2. Recherchez **New-API** dans le magasin d'applications et installez-le.
+1. Installez le panneau BaoTa (version ≥ 9.2.0)
+2. Recherchez **New-API** dans le magasin d'applications
+3. Installation en un clic
 
 📖 [Tutoriel avec des images](./docs/BT.md)
 
@@ -412,6 +418,7 @@ docker run --name new-api -d --restart always \
 | Projet | Description |
 |------|------|
 | [neko-api-key-tool](https://github.com/Calcium-Ion/neko-api-key-tool) | Outil de recherche de quota d'utilisation avec une clé |
+| [new-api-horizon](https://github.com/Calcium-Ion/new-api-horizon) | Version optimisée haute performance de New API |
 
 ---
 

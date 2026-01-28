@@ -7,8 +7,8 @@
 🍥 **次世代大規模モデルゲートウェイとAI資産管理システム**
 
 <p align="center">
-  <a href="./README.md">中文</a> | 
-  <a href="./README.en.md">English</a> | 
+  <a href="./README.zh.md">中文</a> | 
+  <a href="./README.md">English</a> | 
   <a href="./README.fr.md">Français</a> | 
   <strong>日本語</strong>
 </p>
@@ -200,9 +200,11 @@ docker run --name new-api -d --restart always \
 
 ### 🔐 認証とセキュリティ
 
+- 😈 Discord認証ログイン
 - 🤖 LinuxDO認証ログイン
 - 📱 Telegram認証ログイン
 - 🔑 OIDC統一認証
+- 🔍 Key使用量クォータ照会（[neko-api-key-tool](https://github.com/Calcium-Ion/neko-api-key-tool)と併用）
 
 
 
@@ -211,10 +213,6 @@ docker run --name new-api -d --restart always \
 **APIフォーマットサポート:**
 - ⚡ [OpenAI Responses](https://docs.newapi.pro/ja/docs/api/ai-model/chat/openai/create-response)
 - ⚡ [OpenAI Realtime API](https://docs.newapi.pro/ja/docs/api/ai-model/realtime/create-realtime-session)（Azureを含む）
-- ⚡ [Claude Messages](https://docs.newapi.pro/ja/docs/api/ai-model/chat/create-message)
-- ⚡ [Google Gemini](https://doc.newapi.pro/ja/api/google-gemini-chat)
-- 🔄 [Rerankモデル](https://docs.newapi.pro/ja/docs/api/ai-model/rerank/create-rerank)
-- ⚡ [OpenAI Realtime API](https://docs.newapi.pro/ja/docs/api/ai-model/realtime/create-realtime-session)
 - ⚡ [Claude Messages](https://docs.newapi.pro/ja/docs/api/ai-model/chat/create-message)
 - ⚡ [Google Gemini](https://doc.newapi.pro/ja/api/google-gemini-chat)
 - 🔄 [Rerankモデル](https://docs.newapi.pro/ja/docs/api/ai-model/rerank/create-rerank)（Cohere、Jina）
