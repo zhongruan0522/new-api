@@ -631,7 +631,21 @@ func FormatClaudeResponseInfo(requestMode int, claudeResponse *dto.ClaudeRespons
 					// 不叠加，只取最新的
 					claudeInfo.Usage.PromptTokens = claudeResponse.Usage.InputTokens
 				}
-				claudeInfo.Usage.CompletionTokens = claudeResponse.Usage.OutputTokens
+				if claudeResponse.Usage.CacheReadInputTokens > 0 {
+					claudeInfo.Usage.PromptTokensDetails.CachedTokens = claudeResponse.Usage.CacheReadInputTokens
+				}
+				if claudeResponse.Usage.CacheCreationInputTokens > 0 {
+					claudeInfo.Usage.PromptTokensDetails.CachedCreationTokens = claudeResponse.Usage.CacheCreationInputTokens
+				}
+				if cacheCreation5m := claudeResponse.Usage.GetCacheCreation5mTokens(); cacheCreation5m > 0 {
+					claudeInfo.Usage.ClaudeCacheCreation5mTokens = cacheCreation5m
+				}
+				if cacheCreation1h := claudeResponse.Usage.GetCacheCreation1hTokens(); cacheCreation1h > 0 {
+					claudeInfo.Usage.ClaudeCacheCreation1hTokens = cacheCreation1h
+				}
+				if claudeResponse.Usage.OutputTokens > 0 {
+					claudeInfo.Usage.CompletionTokens = claudeResponse.Usage.OutputTokens
+				}
 				claudeInfo.Usage.TotalTokens = claudeInfo.Usage.PromptTokens + claudeInfo.Usage.CompletionTokens
 			}
 
