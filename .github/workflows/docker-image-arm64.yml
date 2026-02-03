@@ -31,16 +31,21 @@ jobs:
       contents: read
 
     steps:
-      - name: Check out (shallow)
+      - name: Check out
         uses: actions/checkout@v4
         with:
-          fetch-depth: 1
+          fetch-depth: ${{ github.event_name == 'workflow_dispatch' && 0 || 1 }}
+          ref: ${{ github.event.inputs.tag || github.ref }}
 
       - name: Resolve tag & write VERSION
         run: |
-          git fetch --tags --force --depth=1
           if [ -n "${{ github.event.inputs.tag }}" ]; then
             TAG="${{ github.event.inputs.tag }}"
+            # Verify tag exists
+            if ! git rev-parse "refs/tags/$TAG" >/dev/null 2>&1; then
+              echo "Error: Tag '$TAG' does not exist in the repository"
+              exit 1
+            fi
           else
             TAG=${GITHUB_REF#refs/tags/}
           fi
