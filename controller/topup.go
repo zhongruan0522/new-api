@@ -65,12 +65,10 @@ func GetTopUpInfo(c *gin.Context) {
 type EpayRequest struct {
 	Amount        int64  `json:"amount"`
 	PaymentMethod string `json:"payment_method"`
-	TopUpCode     string `json:"top_up_code"`
 }
 
 type AmountRequest struct {
-	Amount    int64  `json:"amount"`
-	TopUpCode string `json:"top_up_code"`
+	Amount int64 `json:"amount"`
 }
 
 func GetEpayClient() *epay.Client {
@@ -230,10 +228,21 @@ func UnlockOrder(tradeNo string) {
 }
 
 func EpayNotify(c *gin.Context) {
-	params := lo.Reduce(lo.Keys(c.Request.URL.Query()), func(r map[string]string, t string, i int) map[string]string {
-		r[t] = c.Request.URL.Query().Get(t)
+	if err := c.Request.ParseForm(); err != nil {
+		log.Println("易支付回调解析失败:", err)
+		_, _ = c.Writer.Write([]byte("fail"))
+		return
+	}
+	params := lo.Reduce(lo.Keys(c.Request.PostForm), func(r map[string]string, t string, i int) map[string]string {
+		r[t] = c.Request.PostForm.Get(t)
 		return r
 	}, map[string]string{})
+	if len(params) == 0 {
+		params = lo.Reduce(lo.Keys(c.Request.URL.Query()), func(r map[string]string, t string, i int) map[string]string {
+			r[t] = c.Request.URL.Query().Get(t)
+			return r
+		}, map[string]string{})
+	}
 	client := GetEpayClient()
 	if client == nil {
 		log.Println("易支付回调失败 未找到配置信息")

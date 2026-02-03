@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -185,6 +186,22 @@ func sessionCompleted(event stripe.Event) {
 		return
 	}
 
+	// Try complete subscription order first
+	LockOrder(referenceId)
+	defer UnlockOrder(referenceId)
+	payload := map[string]any{
+		"customer":     customerId,
+		"amount_total": event.GetObjectValue("amount_total"),
+		"currency":     strings.ToUpper(event.GetObjectValue("currency")),
+		"event_type":   string(event.Type),
+	}
+	if err := model.CompleteSubscriptionOrder(referenceId, common.GetJsonString(payload)); err == nil {
+		return
+	} else if err != nil && !errors.Is(err, model.ErrSubscriptionOrderNotFound) {
+		log.Println("complete subscription order failed:", err.Error(), referenceId)
+		return
+	}
+
 	err := model.Recharge(referenceId, customerId)
 	if err != nil {
 		log.Println(err.Error(), referenceId)
@@ -206,6 +223,16 @@ func sessionExpired(event stripe.Event) {
 
 	if len(referenceId) == 0 {
 		log.Println("未提供支付单号")
+		return
+	}
+
+	// Subscription order expiration
+	LockOrder(referenceId)
+	defer UnlockOrder(referenceId)
+	if err := model.ExpireSubscriptionOrder(referenceId); err == nil {
+		return
+	} else if err != nil && !errors.Is(err, model.ErrSubscriptionOrderNotFound) {
+		log.Println("过期订阅订单失败", referenceId, ", err:", err.Error())
 		return
 	}
 
