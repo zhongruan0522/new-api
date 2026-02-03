@@ -61,12 +61,18 @@ func IsModelNameDuplicated(id int, name string) (bool, error) {
 
 func (mi *Model) Update() error {
 	mi.UpdatedTime = common.GetTimestamp()
-	return DB.Session(&gorm.Session{AllowGlobalUpdate: false, FullSaveAssociations: false}).
-		Model(&Model{}).
-		Where("id = ?", mi.Id).
-		Omit("created_time").
-		Select("*").
-		Updates(mi).Error
+	return DB.Model(&Model{}).Where("id = ?", mi.Id).Updates(map[string]interface{}{
+		"model_name":    mi.ModelName,
+		"description":   mi.Description,
+		"icon":          mi.Icon,
+		"tags":          mi.Tags,
+		"vendor_id":     mi.VendorID,
+		"endpoints":     mi.Endpoints,
+		"status":        mi.Status,
+		"sync_official": mi.SyncOfficial,
+		"name_rule":     mi.NameRule,
+		"updated_time":  mi.UpdatedTime,
+	}).Error
 }
 
 func (mi *Model) Delete() error {
