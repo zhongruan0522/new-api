@@ -228,20 +228,31 @@ func UnlockOrder(tradeNo string) {
 }
 
 func EpayNotify(c *gin.Context) {
-	if err := c.Request.ParseForm(); err != nil {
-		log.Println("易支付回调解析失败:", err)
-		_, _ = c.Writer.Write([]byte("fail"))
-		return
-	}
-	params := lo.Reduce(lo.Keys(c.Request.PostForm), func(r map[string]string, t string, i int) map[string]string {
-		r[t] = c.Request.PostForm.Get(t)
-		return r
-	}, map[string]string{})
-	if len(params) == 0 {
+	var params map[string]string
+
+	if c.Request.Method == "POST" {
+		// POST 请求：从 POST body 解析参数
+		if err := c.Request.ParseForm(); err != nil {
+			log.Println("易支付回调POST解析失败:", err)
+			_, _ = c.Writer.Write([]byte("fail"))
+			return
+		}
+		params = lo.Reduce(lo.Keys(c.Request.PostForm), func(r map[string]string, t string, i int) map[string]string {
+			r[t] = c.Request.PostForm.Get(t)
+			return r
+		}, map[string]string{})
+	} else {
+		// GET 请求：从 URL Query 解析参数
 		params = lo.Reduce(lo.Keys(c.Request.URL.Query()), func(r map[string]string, t string, i int) map[string]string {
 			r[t] = c.Request.URL.Query().Get(t)
 			return r
 		}, map[string]string{})
+	}
+
+	if len(params) == 0 {
+		log.Println("易支付回调参数为空")
+		_, _ = c.Writer.Write([]byte("fail"))
+		return
 	}
 	client := GetEpayClient()
 	if client == nil {
