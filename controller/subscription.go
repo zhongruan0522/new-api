@@ -118,6 +118,14 @@ func AdminCreateSubscriptionPlan(c *gin.Context) {
 		common.ApiErrorMsg(c, "套餐标题不能为空")
 		return
 	}
+	if req.Plan.PriceAmount < 0 {
+		common.ApiErrorMsg(c, "价格不能为负数")
+		return
+	}
+	if req.Plan.PriceAmount > 9999 {
+		common.ApiErrorMsg(c, "价格不能超过9999")
+		return
+	}
 	if req.Plan.Currency == "" {
 		req.Plan.Currency = "USD"
 	}
@@ -170,6 +178,14 @@ func AdminUpdateSubscriptionPlan(c *gin.Context) {
 	}
 	if strings.TrimSpace(req.Plan.Title) == "" {
 		common.ApiErrorMsg(c, "套餐标题不能为空")
+		return
+	}
+	if req.Plan.PriceAmount < 0 {
+		common.ApiErrorMsg(c, "价格不能为负数")
+		return
+	}
+	if req.Plan.PriceAmount > 9999 {
+		common.ApiErrorMsg(c, "价格不能超过9999")
 		return
 	}
 	req.Plan.Id = id
