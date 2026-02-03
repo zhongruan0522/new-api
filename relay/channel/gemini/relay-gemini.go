@@ -988,11 +988,9 @@ func unescapeMapOrSlice(data interface{}) interface{} {
 func getResponseToolCall(item *dto.GeminiPart) *dto.ToolCallResponse {
 	var argsBytes []byte
 	var err error
-	if result, ok := item.FunctionCall.Arguments.(map[string]interface{}); ok {
-		argsBytes, err = json.Marshal(unescapeMapOrSlice(result))
-	} else {
-		argsBytes, err = json.Marshal(item.FunctionCall.Arguments)
-	}
+	// 移除 unescapeMapOrSlice 调用，直接使用 json.Marshal
+	// JSON 序列化/反序列化已经正确处理了转义字符
+	argsBytes, err = json.Marshal(item.FunctionCall.Arguments)
 
 	if err != nil {
 		return nil
