@@ -3,7 +3,6 @@ package controller
 import (
 	"net/http"
 	"os"
-	"path/filepath"
 	"runtime"
 
 	"github.com/QuantumNous/new-api/common"
@@ -78,6 +77,9 @@ type PerformanceConfig struct {
 
 // GetPerformanceStats 获取性能统计信息
 func GetPerformanceStats(c *gin.Context) {
+	// 先同步磁盘缓存统计，确保显示准确
+	common.SyncDiskCacheStats()
+
 	// 获取缓存统计
 	cacheStats := common.GetDiskCacheStats()
 
@@ -123,11 +125,8 @@ func GetPerformanceStats(c *gin.Context) {
 
 // ClearDiskCache 清理磁盘缓存
 func ClearDiskCache(c *gin.Context) {
-	cachePath := common.GetDiskCachePath()
-	if cachePath == "" {
-		cachePath = os.TempDir()
-	}
-	dir := filepath.Join(cachePath, "new-api-body-cache")
+	// 使用统一的缓存目录
+	dir := common.GetDiskCacheDir()
 
 	// 删除缓存目录
 	err := os.RemoveAll(dir)
@@ -136,8 +135,9 @@ func ClearDiskCache(c *gin.Context) {
 		return
 	}
 
-	// 重置统计
+	// 重置统计（包括命中次数和使用量）
 	common.ResetDiskCacheStats()
+	common.ResetDiskCacheUsage()
 
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
@@ -167,11 +167,8 @@ func ForceGC(c *gin.Context) {
 
 // getDiskCacheInfo 获取磁盘缓存目录信息
 func getDiskCacheInfo() DiskCacheInfo {
-	cachePath := common.GetDiskCachePath()
-	if cachePath == "" {
-		cachePath = os.TempDir()
-	}
-	dir := filepath.Join(cachePath, "new-api-body-cache")
+	// 使用统一的缓存目录
+	dir := common.GetDiskCacheDir()
 
 	info := DiskCacheInfo{
 		Path:   dir,
