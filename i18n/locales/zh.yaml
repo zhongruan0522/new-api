@@ -224,3 +224,9 @@ ability.repair_running: "已经有一个修复任务在运行中，请稍后再�
 oauth.invalid_code: "无效的授权码"
 oauth.get_user_error: "获取用户信息失败"
 oauth.account_used: "该账户已被其他用户绑定"
+
+# Model layer error messages
+redeem.failed: "兑换失败，请稍后重试"
+user.create_default_token_error: "创建默认令牌失败"
+common.uuid_duplicate: "请重试，系统生成的 UUID 竟然重复了！"
+common.invalid_input: "输入不合法"

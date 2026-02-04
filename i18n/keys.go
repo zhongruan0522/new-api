@@ -268,3 +268,11 @@ const (
 	MsgOAuthGetUserErr  = "oauth.get_user_error"
 	MsgOAuthAccountUsed = "oauth.account_used"
 )
+
+// Model layer error messages (for translation in controller)
+const (
+	MsgRedeemFailed          = "redeem.failed"
+	MsgCreateDefaultTokenErr = "user.create_default_token_error"
+	MsgUuidDuplicate         = "common.uuid_duplicate"
+	MsgInvalidInput          = "common.invalid_input"
+)
