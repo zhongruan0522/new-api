@@ -744,6 +744,8 @@
     "填入": "Remplir",
     "填入所有模型": "Remplir tous les modèles",
     "填入模板": "Remplir le modèle",
+    "填入透传模版": "Remplir le modèle passthrough",
+    "填入透传完整模版": "Remplir le modèle passthrough complet",
     "填入相关模型": "Remplir les modèles associés",
     "填写Gotify服务器的完整URL地址": "Remplir l'adresse URL complète du serveur Gotify",
     "填写带https的域名，逗号分隔": "Saisir les domaines avec https, séparés par des virgules",
