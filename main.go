@@ -288,6 +288,8 @@ func InitResources() error {
 	} else {
 		common.SysLog("i18n initialized with languages: " + strings.Join(i18n.SupportedLanguages(), ", "))
 	}
+	// Register user language loader for lazy loading
+	i18n.SetUserLangLoader(model.GetUserLanguage)
 
 	return nil
 }

@@ -12,6 +12,7 @@ import (
 
 	"github.com/QuantumNous/new-api/common"
 	"github.com/QuantumNous/new-api/constant"
+	"github.com/QuantumNous/new-api/dto"
 )
 
 const (
@@ -109,15 +110,65 @@ func Translate(lang, key string, args ...map[string]any) string {
 	return msg
 }
 
+// userLangLoaderFunc is a function that loads user language from database/cache
+// It's set by the model package to avoid circular imports
+var userLangLoaderFunc func(userId int) string
+
+// SetUserLangLoader sets the function to load user language (called from model package)
+func SetUserLangLoader(loader func(userId int) string) {
+	userLangLoaderFunc = loader
+}
+
 // GetLangFromContext extracts the language setting from gin context
+// It checks multiple sources in priority order:
+// 1. User settings (ContextKeyUserSetting) - if already loaded (e.g., by TokenAuth)
+// 2. Lazy load user language from cache/DB using user ID
+// 3. Language set by middleware (ContextKeyLanguage) - from Accept-Language header
+// 4. Default language (English)
 func GetLangFromContext(c *gin.Context) string {
 	if c == nil {
 		return DefaultLang
 	}
 
-	// Try to get language from context (set by middleware)
+	// 1. Try to get language from user settings (if already loaded by TokenAuth or other middleware)
+	if userSetting, ok := common.GetContextKeyType[dto.UserSetting](c, constant.ContextKeyUserSetting); ok {
+		if userSetting.Language != "" {
+			normalized := normalizeLang(userSetting.Language)
+			if IsSupported(normalized) {
+				return normalized
+			}
+		}
+	}
+
+	// 2. Lazy load user language using user ID (for session-based auth where full settings aren't loaded)
+	if userLangLoaderFunc != nil {
+		if userId, exists := c.Get("id"); exists {
+			if uid, ok := userId.(int); ok && uid > 0 {
+				lang := userLangLoaderFunc(uid)
+				if lang != "" {
+					normalized := normalizeLang(lang)
+					if IsSupported(normalized) {
+						return normalized
+					}
+				}
+			}
+		}
+	}
+
+	// 3. Try to get language from context (set by I18n middleware from Accept-Language)
 	if lang := c.GetString(string(constant.ContextKeyLanguage)); lang != "" {
-		return normalizeLang(lang)
+		normalized := normalizeLang(lang)
+		if IsSupported(normalized) {
+			return normalized
+		}
+	}
+
+	// 4. Try Accept-Language header directly (fallback if middleware didn't run)
+	if acceptLang := c.GetHeader("Accept-Language"); acceptLang != "" {
+		lang := ParseAcceptLanguage(acceptLang)
+		if IsSupported(lang) {
+			return lang
+		}
 	}
 
 	return DefaultLang
