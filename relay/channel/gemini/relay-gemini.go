@@ -466,7 +466,6 @@ func CovertOpenAI2Gemini(c *gin.Context, textRequest dto.GeneralOpenAIRequest, i
 		}
 
 		openaiContent := message.ParseContent()
-		imageNum := 0
 		for _, part := range openaiContent {
 			if part.Type == dto.ContentTypeText {
 				if part.Text == "" {
@@ -507,10 +506,6 @@ func CovertOpenAI2Gemini(c *gin.Context, textRequest dto.GeneralOpenAIRequest, i
 					}
 					// 提取 data URL (从 "](" 后面开始，到 ")" 之前)
 					dataUrl := text[bracketIdx+2 : closeIdx]
-					imageNum += 1
-					if constant.GeminiVisionMaxImageNum != -1 && imageNum > constant.GeminiVisionMaxImageNum {
-						return nil, fmt.Errorf("too many images in the message, max allowed is %d", constant.GeminiVisionMaxImageNum)
-					}
 					format, base64String, err := service.DecodeBase64FileData(dataUrl)
 					if err != nil {
 						return nil, fmt.Errorf("decode markdown base64 image data failed: %s", err.Error())
@@ -535,11 +530,6 @@ func CovertOpenAI2Gemini(c *gin.Context, textRequest dto.GeneralOpenAIRequest, i
 					})
 				}
 			} else if part.Type == dto.ContentTypeImageURL {
-				imageNum += 1
-
-				if constant.GeminiVisionMaxImageNum != -1 && imageNum > constant.GeminiVisionMaxImageNum {
-					return nil, fmt.Errorf("too many images in the message, max allowed is %d", constant.GeminiVisionMaxImageNum)
-				}
 				// 使用统一的文件服务获取图片数据
 				var source *types.FileSource
 				imageUrl := part.GetImageMedia().Url
