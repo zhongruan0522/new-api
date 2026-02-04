@@ -25,8 +25,14 @@ type FileSource struct {
 
 	// 内部缓存（不导出，不序列化）
 	cachedData  *CachedFileData
-	cacheMu     sync.RWMutex
 	cacheLoaded bool
+	registered  bool       // 是否已注册到清理列表
+	mu          sync.Mutex // 保护加载过程
+}
+
+// Mu 获取内部锁
+func (f *FileSource) Mu() *sync.Mutex {
+	return &f.mu
 }
 
 // CachedFileData 缓存的文件数据
@@ -35,14 +41,19 @@ type CachedFileData struct {
 	base64Data  string        // 内存中的 base64 数据（小文件）
 	MimeType    string        // MIME 类型
 	Size        int64         // 文件大小（字节）
+	DiskSize    int64         // 磁盘缓存实际占用大小（字节，通常是 base64 长度）
 	ImageConfig *image.Config // 图片配置（如果是图片）
 	ImageFormat string        // 图片格式（如果是图片）
 
 	// 磁盘缓存相关
-	diskPath   string     // 磁盘缓存文件路径（大文件）
-	isDisk     bool       // 是否使用磁盘缓存
-	diskMu     sync.Mutex // 磁盘操作锁
-	diskClosed bool       // 是否已关闭/清理
+	diskPath        string     // 磁盘缓存文件路径（大文件）
+	isDisk          bool       // 是否使用磁盘缓存
+	diskMu          sync.Mutex // 磁盘操作锁（保护磁盘文件的读取和删除）
+	diskClosed      bool       // 是否已关闭/清理
+	statDecremented bool       // 是否已扣减统计
+
+	// 统计回调，避免循环依赖
+	OnClose func(size int64)
 }
 
 // NewMemoryCachedData 创建内存缓存的数据
@@ -114,7 +125,13 @@ func (c *CachedFileData) Close() error {
 
 	c.diskClosed = true
 	if c.diskPath != "" {
-		return os.Remove(c.diskPath)
+		err := os.Remove(c.diskPath)
+		// 只有在删除成功且未扣减过统计时，才执行回调
+		if err == nil && !c.statDecremented && c.OnClose != nil {
+			c.OnClose(c.DiskSize)
+			c.statDecremented = true
+		}
+		return err
 	}
 	return nil
 }
@@ -170,31 +187,32 @@ func (f *FileSource) GetRawData() string {
 
 // SetCache 设置缓存数据
 func (f *FileSource) SetCache(data *CachedFileData) {
-	f.cacheMu.Lock()
-	defer f.cacheMu.Unlock()
 	f.cachedData = data
 	f.cacheLoaded = true
 }
 
+// IsRegistered 是否已注册到清理列表
+func (f *FileSource) IsRegistered() bool {
+	return f.registered
+}
+
+// SetRegistered 设置注册状态
+func (f *FileSource) SetRegistered(registered bool) {
+	f.registered = registered
+}
+
 // GetCache 获取缓存数据
 func (f *FileSource) GetCache() *CachedFileData {
-	f.cacheMu.RLock()
-	defer f.cacheMu.RUnlock()
 	return f.cachedData
 }
 
 // HasCache 是否有缓存
 func (f *FileSource) HasCache() bool {
-	f.cacheMu.RLock()
-	defer f.cacheMu.RUnlock()
 	return f.cacheLoaded && f.cachedData != nil
 }
 
 // ClearCache 清除缓存，释放内存和磁盘文件
 func (f *FileSource) ClearCache() {
-	f.cacheMu.Lock()
-	defer f.cacheMu.Unlock()
-
 	// 如果有缓存数据，先关闭它（会清理磁盘文件）
 	if f.cachedData != nil {
 		f.cachedData.Close()

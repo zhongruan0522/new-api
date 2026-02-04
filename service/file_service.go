@@ -36,11 +36,44 @@ func LoadFileSource(c *gin.Context, source *types.FileSource, reason ...string) 
 		return nil, fmt.Errorf("file source is nil")
 	}
 
-	// 如果已有缓存，直接返回
+	if common.DebugEnabled {
+		logger.LogDebug(c, fmt.Sprintf("LoadFileSource starting for: %s", source.GetIdentifier()))
+	}
+
+	// 1. 快速检查内部缓存
 	if source.HasCache() {
+		// 即使命中内部缓存，也要确保注册到清理列表（如果尚未注册）
+		if c != nil {
+			registerSourceForCleanup(c, source)
+		}
 		return source.GetCache(), nil
 	}
 
+	// 2. 加锁保护加载过程
+	source.Mu().Lock()
+	defer source.Mu().Unlock()
+
+	// 3. 双重检查
+	if source.HasCache() {
+		if c != nil {
+			registerSourceForCleanup(c, source)
+		}
+		return source.GetCache(), nil
+	}
+
+	// 4. 如果是 URL，检查 Context 缓存
+	var contextKey string
+	if source.IsURL() && c != nil {
+		contextKey = getContextCacheKey(source.URL)
+		if cachedData, exists := c.Get(contextKey); exists {
+			data := cachedData.(*types.CachedFileData)
+			source.SetCache(data)
+			registerSourceForCleanup(c, source)
+			return data, nil
+		}
+	}
+
+	// 5. 执行加载逻辑
 	var cachedData *types.CachedFileData
 	var err error
 
@@ -54,10 +87,13 @@ func LoadFileSource(c *gin.Context, source *types.FileSource, reason ...string) 
 		return nil, err
 	}
 
-	// 设置缓存
+	// 6. 设置缓存
 	source.SetCache(cachedData)
+	if contextKey != "" && c != nil {
+		c.Set(contextKey, cachedData)
+	}
 
-	// 注册到 context 以便请求结束时自动清理
+	// 7. 注册到 context 以便请求结束时自动清理
 	if c != nil {
 		registerSourceForCleanup(c, source)
 	}
@@ -67,6 +103,10 @@ func LoadFileSource(c *gin.Context, source *types.FileSource, reason ...string) 
 
 // registerSourceForCleanup 注册 FileSource 到 context 以便请求结束时清理
 func registerSourceForCleanup(c *gin.Context, source *types.FileSource) {
+	if source.IsRegistered() {
+		return
+	}
+
 	key := string(constant.ContextKeyFileSourcesToCleanup)
 	var sources []*types.FileSource
 	if existing, exists := c.Get(key); exists {
@@ -74,6 +114,7 @@ func registerSourceForCleanup(c *gin.Context, source *types.FileSource) {
 	}
 	sources = append(sources, source)
 	c.Set(key, sources)
+	source.SetRegistered(true)
 }
 
 // CleanupFileSources 清理请求中所有注册的 FileSource
@@ -83,9 +124,6 @@ func CleanupFileSources(c *gin.Context) {
 	if sources, exists := c.Get(key); exists {
 		for _, source := range sources.([]*types.FileSource) {
 			if cache := source.GetCache(); cache != nil {
-				if cache.IsDisk() {
-					common.DecrementDiskFiles(cache.Size)
-				}
 				cache.Close()
 			}
 		}
@@ -94,21 +132,13 @@ func CleanupFileSources(c *gin.Context) {
 }
 
 // loadFromURL 从 URL 加载文件
-// 支持磁盘缓存：当文件大小超过阈值且磁盘缓存可用时，将数据存储到磁盘
 func loadFromURL(c *gin.Context, url string, reason ...string) (*types.CachedFileData, error) {
-	contextKey := getContextCacheKey(url)
-
-	// 检查 context 缓存
-	if cachedData, exists := c.Get(contextKey); exists {
-		if common.DebugEnabled {
-			logger.LogDebug(c, fmt.Sprintf("Using cached file data for URL: %s", url))
-		}
-		return cachedData.(*types.CachedFileData), nil
-	}
-
 	// 下载文件
 	var maxFileSize = constant.MaxFileDownloadMB * 1024 * 1024
 
+	if common.DebugEnabled {
+		logger.LogDebug(c, "loadFromURL: initiating download")
+	}
 	resp, err := DoDownloadRequest(url, reason...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to download file from %s: %w", url, err)
@@ -120,6 +150,9 @@ func loadFromURL(c *gin.Context, url string, reason ...string) (*types.CachedFil
 	}
 
 	// 读取文件内容（限制大小）
+	if common.DebugEnabled {
+		logger.LogDebug(c, "loadFromURL: reading response body")
+	}
 	fileBytes, err := io.ReadAll(io.LimitReader(resp.Body, int64(maxFileSize+1)))
 	if err != nil {
 		return nil, fmt.Errorf("failed to read file content: %w", err)
@@ -147,6 +180,10 @@ func loadFromURL(c *gin.Context, url string, reason ...string) (*types.CachedFil
 			cachedData = types.NewMemoryCachedData(base64Data, mimeType, int64(len(fileBytes)))
 		} else {
 			cachedData = types.NewDiskCachedData(diskPath, mimeType, int64(len(fileBytes)))
+			cachedData.DiskSize = base64Size
+			cachedData.OnClose = func(size int64) {
+				common.DecrementDiskFiles(size)
+			}
 			common.IncrementDiskFiles(base64Size)
 			if common.DebugEnabled {
 				logger.LogDebug(c, fmt.Sprintf("File cached to disk: %s, size: %d bytes", diskPath, base64Size))
@@ -159,6 +196,9 @@ func loadFromURL(c *gin.Context, url string, reason ...string) (*types.CachedFil
 
 	// 如果是图片，尝试获取图片配置
 	if strings.HasPrefix(mimeType, "image/") {
+		if common.DebugEnabled {
+			logger.LogDebug(c, "loadFromURL: decoding image config")
+		}
 		config, format, err := decodeImageConfig(fileBytes)
 		if err == nil {
 			cachedData.ImageConfig = &config
@@ -169,9 +209,6 @@ func loadFromURL(c *gin.Context, url string, reason ...string) (*types.CachedFil
 			}
 		}
 	}
-
-	// 存入 context 缓存
-	c.Set(contextKey, cachedData)
 
 	return cachedData, nil
 }
@@ -187,7 +224,6 @@ func writeToDiskCache(base64Data string) (string, error) {
 }
 
 // smartDetectMimeType 智能检测 MIME 类型
-// 优先级：Content-Type header > Content-Disposition filename > URL 路径 > 内容嗅探 > 图片解码
 func smartDetectMimeType(resp *http.Response, url string, fileBytes []byte) string {
 	// 1. 尝试从 Content-Type header 获取
 	mimeType := resp.Header.Get("Content-Type")
@@ -259,13 +295,11 @@ func loadFromBase64(base64String string, providedMimeType string) (*types.Cached
 
 	// 处理 data: 前缀
 	if strings.HasPrefix(base64String, "data:") {
-		// 格式: data:mime/type;base64,xxxxx
 		idx := strings.Index(base64String, ",")
 		if idx != -1 {
 			header := base64String[:idx]
 			cleanBase64 = base64String[idx+1:]
 
-			// 从 header 提取 MIME 类型
 			if strings.Contains(header, ":") && strings.Contains(header, ";") {
 				mimeStart := strings.Index(header, ":") + 1
 				mimeEnd := strings.Index(header, ";")
@@ -280,36 +314,34 @@ func loadFromBase64(base64String string, providedMimeType string) (*types.Cached
 		cleanBase64 = base64String
 	}
 
-	// 使用提供的 MIME 类型（如果有）
 	if providedMimeType != "" {
 		mimeType = providedMimeType
 	}
 
-	// 解码 base64
 	decodedData, err := base64.StdEncoding.DecodeString(cleanBase64)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decode base64 data: %w", err)
 	}
 
-	// 判断是否使用磁盘缓存（对于 base64 内联数据也支持磁盘缓存）
 	base64Size := int64(len(cleanBase64))
 	var cachedData *types.CachedFileData
 
 	if shouldUseDiskCache(base64Size) {
-		// 使用磁盘缓存
 		diskPath, err := writeToDiskCache(cleanBase64)
 		if err != nil {
-			// 磁盘缓存失败，回退到内存
 			cachedData = types.NewMemoryCachedData(cleanBase64, mimeType, int64(len(decodedData)))
 		} else {
 			cachedData = types.NewDiskCachedData(diskPath, mimeType, int64(len(decodedData)))
+			cachedData.DiskSize = base64Size
+			cachedData.OnClose = func(size int64) {
+				common.DecrementDiskFiles(size)
+			}
 			common.IncrementDiskFiles(base64Size)
 		}
 	} else {
 		cachedData = types.NewMemoryCachedData(cleanBase64, mimeType, int64(len(decodedData)))
 	}
 
-	// 如果是图片或 MIME 类型未知，尝试解码图片获取更多信息
 	if mimeType == "" || strings.HasPrefix(mimeType, "image/") {
 		config, format, err := decodeImageConfig(decodedData)
 		if err == nil {
@@ -324,8 +356,7 @@ func loadFromBase64(base64String string, providedMimeType string) (*types.Cached
 	return cachedData, nil
 }
 
-// GetImageConfig 获取图片配置（宽高等信息）
-// 会自动处理缓存，避免重复下载/解码
+// GetImageConfig 获取图片配置
 func GetImageConfig(c *gin.Context, source *types.FileSource) (image.Config, string, error) {
 	cachedData, err := LoadFileSource(c, source, "get_image_config")
 	if err != nil {
@@ -336,7 +367,6 @@ func GetImageConfig(c *gin.Context, source *types.FileSource) (image.Config, str
 		return *cachedData.ImageConfig, cachedData.ImageFormat, nil
 	}
 
-	// 如果缓存中没有图片配置，尝试解码
 	base64Str, err := cachedData.GetBase64Data()
 	if err != nil {
 		return image.Config{}, "", fmt.Errorf("failed to get base64 data: %w", err)
@@ -351,7 +381,6 @@ func GetImageConfig(c *gin.Context, source *types.FileSource) (image.Config, str
 		return image.Config{}, "", err
 	}
 
-	// 更新缓存
 	cachedData.ImageConfig = &config
 	cachedData.ImageFormat = format
 
@@ -359,8 +388,6 @@ func GetImageConfig(c *gin.Context, source *types.FileSource) (image.Config, str
 }
 
 // GetBase64Data 获取 base64 编码的数据
-// 会自动处理缓存，避免重复下载
-// 支持内存缓存和磁盘缓存
 func GetBase64Data(c *gin.Context, source *types.FileSource, reason ...string) (string, string, error) {
 	cachedData, err := LoadFileSource(c, source, reason...)
 	if err != nil {
@@ -375,12 +402,10 @@ func GetBase64Data(c *gin.Context, source *types.FileSource, reason ...string) (
 
 // GetMimeType 获取文件的 MIME 类型
 func GetMimeType(c *gin.Context, source *types.FileSource) (string, error) {
-	// 如果已经有缓存，直接返回
 	if source.HasCache() {
 		return source.GetCache().MimeType, nil
 	}
 
-	// 如果是 URL，尝试只获取 header 而不下载完整文件
 	if source.IsURL() {
 		mimeType, err := GetFileTypeFromUrl(c, source.URL, "get_mime_type")
 		if err == nil && mimeType != "" && mimeType != "application/octet-stream" {
@@ -388,7 +413,6 @@ func GetMimeType(c *gin.Context, source *types.FileSource) (string, error) {
 		}
 	}
 
-	// 否则加载完整数据
 	cachedData, err := LoadFileSource(c, source, "get_mime_type")
 	if err != nil {
 		return "", err
@@ -396,7 +420,7 @@ func GetMimeType(c *gin.Context, source *types.FileSource) (string, error) {
 	return cachedData.MimeType, nil
 }
 
-// DetectFileType 检测文件类型（image/audio/video/file）
+// DetectFileType 检测文件类型
 func DetectFileType(mimeType string) types.FileType {
 	if strings.HasPrefix(mimeType, "image/") {
 		return types.FileTypeImage
@@ -414,13 +438,11 @@ func DetectFileType(mimeType string) types.FileType {
 func decodeImageConfig(data []byte) (image.Config, string, error) {
 	reader := bytes.NewReader(data)
 
-	// 尝试标准格式
 	config, format, err := image.DecodeConfig(reader)
 	if err == nil {
 		return config, format, nil
 	}
 
-	// 尝试 webp
 	reader.Seek(0, io.SeekStart)
 	config, err = webp.DecodeConfig(reader)
 	if err == nil {
@@ -432,13 +454,11 @@ func decodeImageConfig(data []byte) (image.Config, string, error) {
 
 // guessMimeTypeFromURL 从 URL 猜测 MIME 类型
 func guessMimeTypeFromURL(url string) string {
-	// 移除查询参数
 	cleanedURL := url
 	if q := strings.Index(cleanedURL, "?"); q != -1 {
 		cleanedURL = cleanedURL[:q]
 	}
 
-	// 获取最后一段
 	if slash := strings.LastIndex(cleanedURL, "/"); slash != -1 && slash+1 < len(cleanedURL) {
 		last := cleanedURL[slash+1:]
 		if dot := strings.LastIndex(last, "."); dot != -1 && dot+1 < len(last) {

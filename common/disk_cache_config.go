@@ -113,8 +113,12 @@ func IncrementDiskFiles(size int64) {
 
 // DecrementDiskFiles 减少磁盘文件计数
 func DecrementDiskFiles(size int64) {
-	atomic.AddInt64(&diskCacheStats.ActiveDiskFiles, -1)
-	atomic.AddInt64(&diskCacheStats.CurrentDiskUsageBytes, -size)
+	if atomic.AddInt64(&diskCacheStats.ActiveDiskFiles, -1) < 0 {
+		atomic.StoreInt64(&diskCacheStats.ActiveDiskFiles, 0)
+	}
+	if atomic.AddInt64(&diskCacheStats.CurrentDiskUsageBytes, -size) < 0 {
+		atomic.StoreInt64(&diskCacheStats.CurrentDiskUsageBytes, 0)
+	}
 }
 
 // IncrementMemoryBuffers 增加内存缓存计数

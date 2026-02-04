@@ -291,11 +291,11 @@ export default function SettingsPerformance(props) {
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                 <Button onClick={fetchStats}>{t('刷新统计')}</Button>
                 <Popconfirm
-                  title={t('确认清理磁盘缓存？')}
-                  content={t('这将删除所有临时缓存文件')}
+                  title={t('确认清理不活跃的磁盘缓存？')}
+                  content={t('这将删除超过 10 分钟未使用的临时缓存文件')}
                   onConfirm={clearDiskCache}
                 >
-                  <Button type='warning'>{t('清理磁盘缓存')}</Button>
+                  <Button type='warning'>{t('清理不活跃缓存')}</Button>
                 </Popconfirm>
                 <Button onClick={resetStats}>{t('重置统计')}</Button>
                 <Button onClick={forceGC}>{t('执行 GC')}</Button>

@@ -127,7 +127,11 @@ func CleanupOldDiskCacheFiles(maxAge time.Duration) error {
 			continue
 		}
 		if now.Sub(info.ModTime()) > maxAge {
-			os.Remove(filepath.Join(dir, entry.Name()))
+			// 注意：后台清理任务删除文件时，由于无法得知原始 base64Size，
+			// 只能按磁盘文件大小扣减。这在目前 base64 存储模式下是准确的。
+			if err := os.Remove(filepath.Join(dir, entry.Name())); err == nil {
+				DecrementDiskFiles(info.Size())
+			}
 		}
 	}
 	return nil
