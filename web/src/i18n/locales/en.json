@@ -2787,6 +2787,12 @@
     "GC execution failed": "GC execution failed",
     "Cache Directory": "Cache Directory",
     "Available": "Available",
-    "输出价格": "Output Price"
+    "输出价格": "Output Price",
+    "偏好设置": "Preferences",
+    "界面语言和其他个人偏好": "Interface language and other personal preferences",
+    "语言偏好": "Language Preference",
+    "选择您的首选界面语言，设置将自动保存并同步到所有设备": "Select your preferred interface language. Settings will be saved automatically and synced across all devices",
+    "语言偏好已保存": "Language preference saved",
+    "提示：语言偏好会同步到您登录的所有设备，并影响API返回的错误消息语言。": "Note: Language preference syncs across all your logged-in devices and affects the language of API error messages."
   }
 }
