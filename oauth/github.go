@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/QuantumNous/new-api/common"
@@ -29,7 +30,8 @@ type gitHubOAuthResponse struct {
 }
 
 type gitHubUser struct {
-	Login string `json:"login"`
+	Id    int64  `json:"id"`    // GitHub numeric ID (permanent, never changes)
+	Login string `json:"login"` // GitHub username (can be changed by user)
 	Name  string `json:"name"`
 	Email string `json:"email"`
 }
@@ -127,18 +129,22 @@ func (p *GitHubProvider) GetUserInfo(ctx context.Context, token *OAuthToken) (*O
 		return nil, err
 	}
 
-	if githubUser.Login == "" {
-		logger.LogError(ctx, "[OAuth-GitHub] GetUserInfo failed: empty login field")
+	if githubUser.Id == 0 || githubUser.Login == "" {
+		logger.LogError(ctx, "[OAuth-GitHub] GetUserInfo failed: empty id or login field")
 		return nil, NewOAuthError(i18n.MsgOAuthUserInfoEmpty, map[string]any{"Provider": "GitHub"})
 	}
 
-	logger.LogDebug(ctx, "[OAuth-GitHub] GetUserInfo success: login=%s, name=%s, email=%s", githubUser.Login, githubUser.Name, githubUser.Email)
+	logger.LogDebug(ctx, "[OAuth-GitHub] GetUserInfo success: id=%d, login=%s, name=%s, email=%s",
+		githubUser.Id, githubUser.Login, githubUser.Name, githubUser.Email)
 
 	return &OAuthUser{
-		ProviderUserID: githubUser.Login,
+		ProviderUserID: strconv.FormatInt(githubUser.Id, 10), // Use numeric ID as primary identifier
 		Username:       githubUser.Login,
 		DisplayName:    githubUser.Name,
 		Email:          githubUser.Email,
+		Extra: map[string]any{
+			"legacy_id": githubUser.Login, // Store login for migration from old accounts
+		},
 	}, nil
 }
 
