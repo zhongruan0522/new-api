@@ -287,3 +287,14 @@ const (
 	MsgUuidDuplicate         = "common.uuid_duplicate"
 	MsgInvalidInput          = "common.invalid_input"
 )
+
+// Custom OAuth provider related messages
+const (
+	MsgCustomOAuthNotFound           = "custom_oauth.not_found"
+	MsgCustomOAuthSlugEmpty          = "custom_oauth.slug_empty"
+	MsgCustomOAuthSlugExists         = "custom_oauth.slug_exists"
+	MsgCustomOAuthNameEmpty          = "custom_oauth.name_empty"
+	MsgCustomOAuthHasBindings        = "custom_oauth.has_bindings"
+	MsgCustomOAuthBindingNotFound    = "custom_oauth.binding_not_found"
+	MsgCustomOAuthProviderIdInvalid  = "custom_oauth.provider_id_field_invalid"
+)

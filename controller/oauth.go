@@ -171,12 +171,22 @@ func handleOAuthBind(c *gin.Context, provider oauth.Provider) {
 		return
 	}
 
-	// Update user with OAuth ID
-	provider.SetProviderUserID(&user, oauthUser.ProviderUserID)
-	err = user.Update(false)
-	if err != nil {
-		common.ApiError(c, err)
-		return
+	// Handle binding based on provider type
+	if genericProvider, ok := provider.(*oauth.GenericOAuthProvider); ok {
+		// Custom provider: use user_oauth_bindings table
+		err = model.UpdateUserOAuthBinding(user.Id, genericProvider.GetProviderId(), oauthUser.ProviderUserID)
+		if err != nil {
+			common.ApiError(c, err)
+			return
+		}
+	} else {
+		// Built-in provider: update user record directly
+		provider.SetProviderUserID(&user, oauthUser.ProviderUserID)
+		err = user.Update(false)
+		if err != nil {
+			common.ApiError(c, err)
+			return
+		}
 	}
 
 	common.ApiSuccessI18n(c, i18n.MsgOAuthBindSuccess, nil)
@@ -188,7 +198,6 @@ func findOrCreateOAuthUser(c *gin.Context, provider oauth.Provider, oauthUser *o
 
 	// Check if user already exists with new ID
 	if provider.IsUserIDTaken(oauthUser.ProviderUserID) {
-		provider.SetProviderUserID(user, oauthUser.ProviderUserID)
 		err := provider.FillUserByProviderID(user, oauthUser.ProviderUserID)
 		if err != nil {
 			return nil, err
@@ -203,7 +212,6 @@ func findOrCreateOAuthUser(c *gin.Context, provider oauth.Provider, oauthUser *o
 	// Try to find user with legacy ID (for GitHub migration from login to numeric ID)
 	if legacyID, ok := oauthUser.Extra["legacy_id"].(string); ok && legacyID != "" {
 		if provider.IsUserIDTaken(legacyID) {
-			provider.SetProviderUserID(user, legacyID)
 			err := provider.FillUserByProviderID(user, legacyID)
 			if err != nil {
 				return nil, err
@@ -240,7 +248,6 @@ func findOrCreateOAuthUser(c *gin.Context, provider oauth.Provider, oauthUser *o
 	}
 	user.Role = common.RoleCommonUser
 	user.Status = common.UserStatusEnabled
-	provider.SetProviderUserID(user, oauthUser.ProviderUserID)
 
 	// Handle affiliate code
 	affCode := session.Get("aff")
@@ -251,6 +258,25 @@ func findOrCreateOAuthUser(c *gin.Context, provider oauth.Provider, oauthUser *o
 
 	if err := user.Insert(inviterId); err != nil {
 		return nil, err
+	}
+
+	// For custom providers, create the binding after user is created
+	if genericProvider, ok := provider.(*oauth.GenericOAuthProvider); ok {
+		binding := &model.UserOAuthBinding{
+			UserId:         user.Id,
+			ProviderId:     genericProvider.GetProviderId(),
+			ProviderUserId: oauthUser.ProviderUserID,
+		}
+		if err := model.CreateUserOAuthBinding(binding); err != nil {
+			common.SysError(fmt.Sprintf("[OAuth] Failed to create binding for user %d: %s", user.Id, err.Error()))
+			// Don't fail the registration, just log the error
+		}
+	} else {
+		// Built-in provider: set the provider user ID on the user model
+		provider.SetProviderUserID(user, oauthUser.ProviderUserID)
+		if err := user.Update(false); err != nil {
+			common.SysError(fmt.Sprintf("[OAuth] Failed to update provider ID for user %d: %s", user.Id, err.Error()))
+		}
 	}
 
 	return user, nil
