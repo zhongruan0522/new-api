@@ -223,6 +223,17 @@ ability.repair_running: "A repair task is already running, please try again late
 oauth.invalid_code: "Invalid authorization code"
 oauth.get_user_error: "Failed to get user information"
 oauth.account_used: "This account has been bound to another user"
+oauth.unknown_provider: "Unknown OAuth provider"
+oauth.state_invalid: "State parameter is empty or mismatched"
+oauth.not_enabled: "{{.Provider}} login and registration has not been enabled by administrator"
+oauth.user_deleted: "User has been deleted"
+oauth.user_banned: "User has been banned"
+oauth.bind_success: "Binding successful"
+oauth.already_bound: "This {{.Provider}} account has already been bound"
+oauth.connect_failed: "Unable to connect to {{.Provider}} server, please try again later"
+oauth.token_failed: "Failed to get token from {{.Provider}}, please check settings"
+oauth.user_info_empty: "{{.Provider}} returned empty user info, please check settings"
+oauth.trust_level_low: "Linux DO trust level does not meet the minimum required by administrator"
 
 # Model layer error messages
 redeem.failed: "Redemption failed, please try again later"

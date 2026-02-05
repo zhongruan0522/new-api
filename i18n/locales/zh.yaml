@@ -224,6 +224,17 @@ ability.repair_running: "已经有一个修复任务在运行中，请稍后再�
 oauth.invalid_code: "无效的授权码"
 oauth.get_user_error: "获取用户信息失败"
 oauth.account_used: "该账户已被其他用户绑定"
+oauth.unknown_provider: "未知的 OAuth 提供商"
+oauth.state_invalid: "state 参数为空或不匹配"
+oauth.not_enabled: "管理员未开启通过 {{.Provider}} 登录以及注册"
+oauth.user_deleted: "用户已注销"
+oauth.user_banned: "用户已被封禁"
+oauth.bind_success: "绑定成功"
+oauth.already_bound: "该 {{.Provider}} 账户已被绑定"
+oauth.connect_failed: "无法连接至 {{.Provider}} 服务器，请稍后重试"
+oauth.token_failed: "{{.Provider}} 获取 Token 失败，请检查设置"
+oauth.user_info_empty: "{{.Provider}} 获取用户信息为空，请检查设置"
+oauth.trust_level_low: "Linux DO 信任等级未达到管理员设置的最低信任等级"
 
 # Model layer error messages
 redeem.failed: "兑换失败，请稍后重试"
