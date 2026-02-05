@@ -571,7 +571,6 @@ export const modelColorMap = {
   'claude-3-opus-20240229': 'rgb(255,132,31)', // 橙红色
   'claude-3-sonnet-20240229': 'rgb(253,135,93)', // 橙色
   'claude-3-haiku-20240307': 'rgb(255,175,146)', // 浅橙色
-  'claude-2.1': 'rgb(255,209,190)', // 浅橙色（略有区别）
 };
 
 export function modelToColor(modelName) {

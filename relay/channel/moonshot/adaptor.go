@@ -103,9 +103,9 @@ func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, info *relaycom
 	switch info.RelayFormat {
 	case types.RelayFormatClaude:
 		if info.IsStream {
-			return claude.ClaudeStreamHandler(c, resp, info, claude.RequestModeMessage)
+			return claude.ClaudeStreamHandler(c, resp, info)
 		} else {
-			return claude.ClaudeHandler(c, resp, info, claude.RequestModeMessage)
+			return claude.ClaudeHandler(c, resp, info)
 		}
 	default:
 		adaptor := openai.Adaptor{}
