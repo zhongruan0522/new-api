@@ -113,6 +113,7 @@ type RelayInfo struct {
 	UserQuota              int
 	RelayFormat            types.RelayFormat
 	SendResponseCount      int
+	ReceivedResponseCount  int
 	FinalPreConsumedQuota  int // 最终预消耗的配额
 	// BillingSource indicates whether this request is billed from wallet quota or subscription.
 	// "" or "wallet" => wallet; "subscription" => subscription
