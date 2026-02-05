@@ -719,19 +719,15 @@ export const getLogsColumns = ({
               other?.is_system_prompt_overwritten,
               'openai',
             );
-        // Do not add billing source here; keep details clean.
-        const summary = [content, text ? `${t('详情')}：${text}` : null]
-          .filter(Boolean)
-          .join('\n');
         return (
-          <Typography.Paragraph
-            ellipsis={{
-              rows: 3,
-            }}
-            style={{ maxWidth: 240, whiteSpace: 'pre-line' }}
-          >
-            {summary}
-          </Typography.Paragraph>
+            <Typography.Paragraph
+                ellipsis={{
+                  rows: 3,
+                }}
+                style={{ maxWidth: 240, whiteSpace: 'pre-line' }}
+            >
+              {content}
+            </Typography.Paragraph>
         );
       },
     },
