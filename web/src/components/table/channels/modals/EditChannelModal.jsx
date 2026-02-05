@@ -1857,6 +1857,17 @@ const EditChannelModal = (props) => {
                       disabled={isIonetLocked}
                     />
 
+                    {inputs.type === 57 && (
+                      <Banner
+                        type='warning'
+                        closeIcon={null}
+                        className='mb-4 rounded-xl'
+                        description={t(
+                          '免责声明：仅限个人使用，请勿分发或共享任何凭证。该渠道存在前置条件与使用门槛，请在充分了解流程与风险后使用，并遵守 OpenAI 的相关条款与政策。',
+                        )}
+                      />
+                    )}
+
                     {inputs.type === 20 && (
                       <Form.Switch
                         field='is_enterprise_account'
@@ -3118,18 +3129,18 @@ const EditChannelModal = (props) => {
                               onClick={() =>
                                 handleInputChange(
                                   'header_override',
-                                    JSON.stringify(
-                                        {
-                                          '*': true,
-                                          're:^X-Trace-.*$': true,
-                                          'X-Foo': '{client_header:X-Foo}',
-                                          Authorization: 'Bearer {api_key}',
-                                          'User-Agent':
-                                              'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36 Edg/139.0.0.0',
-                                        },
-                                        null,
-                                        2,
-                                    ),
+                                  JSON.stringify(
+                                    {
+                                      '*': true,
+                                      're:^X-Trace-.*$': true,
+                                      'X-Foo': '{client_header:X-Foo}',
+                                      Authorization: 'Bearer {api_key}',
+                                      'User-Agent':
+                                        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36 Edg/139.0.0.0',
+                                    },
+                                    null,
+                                    2,
+                                  ),
                                 )
                               }
                             >
