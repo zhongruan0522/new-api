@@ -348,9 +348,9 @@ func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, info *relaycom
 	if info.RelayFormat == types.RelayFormatClaude {
 		if _, ok := channelconstant.ChannelSpecialBases[info.ChannelBaseUrl]; ok {
 			if info.IsStream {
-				return claude.ClaudeStreamHandler(c, resp, info, claude.RequestModeMessage)
+				return claude.ClaudeStreamHandler(c, resp, info)
 			}
-			return claude.ClaudeHandler(c, resp, info, claude.RequestModeMessage)
+			return claude.ClaudeHandler(c, resp, info)
 		}
 	}
 
