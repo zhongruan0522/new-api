@@ -296,7 +296,12 @@ func DeleteCustomOAuthProvider(c *gin.Context) {
 	}
 
 	// Check if there are any user bindings
-	count, _ := model.GetBindingCountByProviderId(id)
+	count, err := model.GetBindingCountByProviderId(id)
+	if err != nil {
+		common.SysError("Failed to get binding count for provider " + strconv.Itoa(id) + ": " + err.Error())
+		common.ApiErrorMsg(c, "检查用户绑定时发生错误，请稍后重试")
+		return
+	}
 	if count > 0 {
 		common.ApiErrorMsg(c, "该 OAuth 提供商还有用户绑定，无法删除。请先解除所有用户绑定。")
 		return
