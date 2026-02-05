@@ -35,5 +35,4 @@
 # GitHub Linguist - Language Detection
 # ============================================
 # Mark web frontend as vendored so GitHub recognizes this as a Go project
-web/** linguist-vendored
 electron/** linguist-vendored
