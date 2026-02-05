@@ -252,8 +252,9 @@ func StreamResponseOpenAI2Claude(openAIResponse *dto.ChatCompletionsStreamRespon
 			claudeResponses = append(claudeResponses, resp)
 			// 首块包含工具 delta，则追加 input_json_delta
 			if toolCall.Function.Arguments != "" {
+				idx := 0
 				claudeResponses = append(claudeResponses, &dto.ClaudeResponse{
-					Index: &info.ClaudeConvertInfo.Index,
+					Index: &idx,
 					Type:  "content_block_delta",
 					Delta: &dto.ClaudeMediaMessage{
 						Type:        "input_json_delta",
@@ -270,16 +271,22 @@ func StreamResponseOpenAI2Claude(openAIResponse *dto.ChatCompletionsStreamRespon
 			content := openAIResponse.Choices[0].Delta.GetContentString()
 
 			if reasoning != "" {
+				if info.ClaudeConvertInfo.LastMessagesType == relaycommon.LastMessageTypeTools || info.ClaudeConvertInfo.LastMessagesType == relaycommon.LastMessageTypeText {
+					claudeResponses = append(claudeResponses, generateStopBlock(info.ClaudeConvertInfo.Index))
+					info.ClaudeConvertInfo.Index++
+				}
+				idx := info.ClaudeConvertInfo.Index
 				claudeResponses = append(claudeResponses, &dto.ClaudeResponse{
-					Index: &info.ClaudeConvertInfo.Index,
+					Index: &idx,
 					Type:  "content_block_start",
 					ContentBlock: &dto.ClaudeMediaMessage{
 						Type:     "thinking",
 						Thinking: common.GetPointer[string](""),
 					},
 				})
+				idx2 := idx
 				claudeResponses = append(claudeResponses, &dto.ClaudeResponse{
-					Index: &info.ClaudeConvertInfo.Index,
+					Index: &idx2,
 					Type:  "content_block_delta",
 					Delta: &dto.ClaudeMediaMessage{
 						Type:     "thinking_delta",
@@ -288,16 +295,22 @@ func StreamResponseOpenAI2Claude(openAIResponse *dto.ChatCompletionsStreamRespon
 				})
 				info.ClaudeConvertInfo.LastMessagesType = relaycommon.LastMessageTypeThinking
 			} else if content != "" {
+				if info.ClaudeConvertInfo.LastMessagesType == relaycommon.LastMessageTypeTools || info.ClaudeConvertInfo.LastMessagesType == relaycommon.LastMessageTypeThinking {
+					claudeResponses = append(claudeResponses, generateStopBlock(info.ClaudeConvertInfo.Index))
+					info.ClaudeConvertInfo.Index++
+				}
+				idx := info.ClaudeConvertInfo.Index
 				claudeResponses = append(claudeResponses, &dto.ClaudeResponse{
-					Index: &info.ClaudeConvertInfo.Index,
+					Index: &idx,
 					Type:  "content_block_start",
 					ContentBlock: &dto.ClaudeMediaMessage{
 						Type: "text",
 						Text: common.GetPointer[string](""),
 					},
 				})
+				idx2 := idx
 				claudeResponses = append(claudeResponses, &dto.ClaudeResponse{
-					Index: &info.ClaudeConvertInfo.Index,
+					Index: &idx2,
 					Type:  "content_block_delta",
 					Delta: &dto.ClaudeMediaMessage{
 						Type: "text_delta",
@@ -422,8 +435,13 @@ func StreamResponseOpenAI2Claude(openAIResponse *dto.ChatCompletionsStreamRespon
 			if reasoning != "" || textContent != "" {
 				if reasoning != "" {
 					if info.ClaudeConvertInfo.LastMessagesType != relaycommon.LastMessageTypeThinking {
+						if info.ClaudeConvertInfo.LastMessagesType == relaycommon.LastMessageTypeText || info.ClaudeConvertInfo.LastMessagesType == relaycommon.LastMessageTypeTools {
+							claudeResponses = append(claudeResponses, generateStopBlock(info.ClaudeConvertInfo.Index))
+							info.ClaudeConvertInfo.Index++
+						}
+						idx := info.ClaudeConvertInfo.Index
 						claudeResponses = append(claudeResponses, &dto.ClaudeResponse{
-							Index: &info.ClaudeConvertInfo.Index,
+							Index: &idx,
 							Type:  "content_block_start",
 							ContentBlock: &dto.ClaudeMediaMessage{
 								Type:     "thinking",
@@ -442,8 +460,9 @@ func StreamResponseOpenAI2Claude(openAIResponse *dto.ChatCompletionsStreamRespon
 							claudeResponses = append(claudeResponses, generateStopBlock(info.ClaudeConvertInfo.Index))
 							info.ClaudeConvertInfo.Index++
 						}
+						idx := info.ClaudeConvertInfo.Index
 						claudeResponses = append(claudeResponses, &dto.ClaudeResponse{
-							Index: &info.ClaudeConvertInfo.Index,
+							Index: &idx,
 							Type:  "content_block_start",
 							ContentBlock: &dto.ClaudeMediaMessage{
 								Type: "text",
@@ -462,7 +481,7 @@ func StreamResponseOpenAI2Claude(openAIResponse *dto.ChatCompletionsStreamRespon
 			}
 		}
 
-		claudeResponse.Index = &info.ClaudeConvertInfo.Index
+		claudeResponse.Index = common.GetPointer[int](info.ClaudeConvertInfo.Index)
 		if !isEmpty && claudeResponse.Delta != nil {
 			claudeResponses = append(claudeResponses, &claudeResponse)
 		}
