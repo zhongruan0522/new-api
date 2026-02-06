@@ -20,6 +20,8 @@ var ModelList = []string{
 	"claude-sonnet-4-5-20250929-thinking",
 	"claude-opus-4-5-20251101",
 	"claude-opus-4-5-20251101-thinking",
+	"claude-opus-4-6",
+	"claude-opus-4-6-thinking",
 }
 
 var ChannelName = "claude"
