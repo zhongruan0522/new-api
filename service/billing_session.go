@@ -27,12 +27,15 @@ type BillingSession struct {
 	funding          FundingSource
 	preConsumedQuota int  // 实际预扣额度（信任用户可能为 0）
 	tokenConsumed    int  // 令牌额度实际扣减量
-	settled          bool // Settle 已调用
+	fundingSettled   bool // funding.Settle 已成功，资金来源已提交
+	settled          bool // Settle 全部完成（资金 + 令牌）
 	refunded         bool // Refund 已调用
 	mu               sync.Mutex
 }
 
 // Settle 根据实际消耗额度进行结算。
+// 资金来源和令牌额度分两步提交：若资金来源已提交但令牌调整失败，
+// 会标记 fundingSettled 防止 Refund 对已提交的资金来源执行退款。
 func (s *BillingSession) Settle(actualQuota int) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -44,20 +47,25 @@ func (s *BillingSession) Settle(actualQuota int) error {
 		s.settled = true
 		return nil
 	}
-	// 1) 调整资金来源
-	if err := s.funding.Settle(delta); err != nil {
-		return err
+	// 1) 调整资金来源（仅在尚未提交时执行，防止重复调用）
+	if !s.fundingSettled {
+		if err := s.funding.Settle(delta); err != nil {
+			return err
+		}
+		s.fundingSettled = true
 	}
 	// 2) 调整令牌额度
+	var tokenErr error
 	if !s.relayInfo.IsPlayground {
 		if delta > 0 {
-			if err := model.DecreaseTokenQuota(s.relayInfo.TokenId, s.relayInfo.TokenKey, delta); err != nil {
-				return err
-			}
+			tokenErr = model.DecreaseTokenQuota(s.relayInfo.TokenId, s.relayInfo.TokenKey, delta)
 		} else {
-			if err := model.IncreaseTokenQuota(s.relayInfo.TokenId, s.relayInfo.TokenKey, -delta); err != nil {
-				return err
-			}
+			tokenErr = model.IncreaseTokenQuota(s.relayInfo.TokenId, s.relayInfo.TokenKey, -delta)
+		}
+		if tokenErr != nil {
+			// 资金来源已提交，令牌调整失败只能记录日志；标记 settled 防止 Refund 误退资金
+			common.SysLog(fmt.Sprintf("error adjusting token quota after funding settled (userId=%d, tokenId=%d, delta=%d): %s",
+				s.relayInfo.UserId, s.relayInfo.TokenId, delta, tokenErr.Error()))
 		}
 	}
 	// 3) 更新 relayInfo 上的订阅 PostDelta（用于日志）
@@ -65,7 +73,7 @@ func (s *BillingSession) Settle(actualQuota int) error {
 		s.relayInfo.SubscriptionPostDelta += int64(delta)
 	}
 	s.settled = true
-	return nil
+	return tokenErr
 }
 
 // Refund 退还所有预扣费，幂等安全，异步执行。
@@ -113,7 +121,8 @@ func (s *BillingSession) NeedsRefund() bool {
 }
 
 func (s *BillingSession) needsRefundLocked() bool {
-	if s.settled || s.refunded {
+	if s.settled || s.refunded || s.fundingSettled {
+		// fundingSettled 时资金来源已提交结算，不能再退预扣费
 		return false
 	}
 	if s.tokenConsumed > 0 {
@@ -158,17 +167,18 @@ func (s *BillingSession) preConsume(c *gin.Context, quota int) *types.NewAPIErro
 
 	// ---- 2) 预扣资金来源 ----
 	if err := s.funding.PreConsume(effectiveQuota); err != nil {
-		// 回滚令牌额度
+		// 预扣费失败，回滚令牌额度
 		if s.tokenConsumed > 0 && !s.relayInfo.IsPlayground {
-			_ = model.IncreaseTokenQuota(s.relayInfo.TokenId, s.relayInfo.TokenKey, s.tokenConsumed)
+			if rollbackErr := model.IncreaseTokenQuota(s.relayInfo.TokenId, s.relayInfo.TokenKey, s.tokenConsumed); rollbackErr != nil {
+				common.SysLog(fmt.Sprintf("error rolling back token quota (userId=%d, tokenId=%d, amount=%d, fundingErr=%s): %s",
+					s.relayInfo.UserId, s.relayInfo.TokenId, s.tokenConsumed, err.Error(), rollbackErr.Error()))
+			}
 			s.tokenConsumed = 0
 		}
+		// TODO: model 层应定义哨兵错误（如 ErrNoActiveSubscription），用 errors.Is 替代字符串匹配
 		errMsg := err.Error()
 		if strings.Contains(errMsg, "no active subscription") || strings.Contains(errMsg, "subscription quota insufficient") {
 			return types.NewErrorWithStatusCode(fmt.Errorf("订阅额度不足或未配置订阅: %s", errMsg), types.ErrorCodeInsufficientUserQuota, http.StatusForbidden, types.ErrOptionWithSkipRetry(), types.ErrOptionWithNoRecordErrorLog())
-		}
-		if strings.Contains(errMsg, "用户额度不足") || strings.Contains(errMsg, "预扣费额度失败") {
-			return types.NewErrorWithStatusCode(err, types.ErrorCodeInsufficientUserQuota, http.StatusForbidden, types.ErrOptionWithSkipRetry(), types.ErrOptionWithNoRecordErrorLog())
 		}
 		return types.NewError(err, types.ErrorCodeUpdateDataError, types.ErrOptionWithSkipRetry())
 	}
@@ -202,8 +212,10 @@ func (s *BillingSession) shouldTrust(c *gin.Context) bool {
 	case BillingSourceWallet:
 		return s.relayInfo.UserQuota > trustQuota
 	case BillingSourceSubscription:
-		// 订阅暂不支持信任旁路（订阅剩余额度需要额外查询，且预扣开销小）
-		// 后续可以在此处添加订阅信任逻辑
+		// 订阅不能启用信任旁路。原因：
+		// 1. PreConsumeUserSubscription 要求 amount>0 来创建预扣记录并锁定订阅
+		// 2. SubscriptionFunding.PreConsume 忽略参数，始终用 s.amount 预扣
+		// 3. 若信任旁路将 effectiveQuota 设为 0，会导致 preConsumedQuota 与实际订阅预扣不一致
 		return false
 	default:
 		return false
@@ -286,7 +298,9 @@ func NewBillingSession(c *gin.Context, relayInfo *relaycommon.RelayInfo, preCons
 				amount:    subConsume,
 			},
 		}
-		if apiErr := session.preConsume(c, preConsumedQuota); apiErr != nil {
+		// 必须传 subConsume 而非 preConsumedQuota，保证 SubscriptionFunding.amount、
+		// preConsume 参数和 FinalPreConsumedQuota 三者一致，避免订阅多扣费。
+		if apiErr := session.preConsume(c, int(subConsume)); apiErr != nil {
 			return nil, apiErr
 		}
 		return session, nil
