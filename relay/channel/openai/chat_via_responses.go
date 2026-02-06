@@ -106,6 +106,8 @@ func OaiResponsesToChatStreamHandler(c *gin.Context, info *relaycommon.RelayInfo
 	toolCallArgsByID := make(map[string]string)
 	toolCallNameSent := make(map[string]bool)
 	toolCallCanonicalIDByItemID := make(map[string]string)
+	hasSentReasoningSummary := false
+	needsReasoningSummarySeparator := false
 	//reasoningSummaryTextByKey := make(map[string]string)
 
 	sendStartIfNeeded := func() bool {
@@ -154,6 +156,17 @@ func OaiResponsesToChatStreamHandler(c *gin.Context, info *relaycommon.RelayInfo
 		if delta == "" {
 			return true
 		}
+		if needsReasoningSummarySeparator {
+			if strings.HasPrefix(delta, "\n\n") {
+				needsReasoningSummarySeparator = false
+			} else if strings.HasPrefix(delta, "\n") {
+				delta = "\n" + delta
+				needsReasoningSummarySeparator = false
+			} else {
+				delta = "\n\n" + delta
+				needsReasoningSummarySeparator = false
+			}
+		}
 		if !sendStartIfNeeded() {
 			return false
 		}
@@ -177,6 +190,7 @@ func OaiResponsesToChatStreamHandler(c *gin.Context, info *relaycommon.RelayInfo
 			streamErr = types.NewOpenAIError(err, types.ErrorCodeBadResponse, http.StatusInternalServerError)
 			return false
 		}
+		hasSentReasoningSummary = true
 		return true
 	}
 
@@ -282,6 +296,9 @@ func OaiResponsesToChatStreamHandler(c *gin.Context, info *relaycommon.RelayInfo
 			}
 
 		case "response.reasoning_summary_text.done":
+			if hasSentReasoningSummary {
+				needsReasoningSummarySeparator = true
+			}
 
 		//case "response.reasoning_summary_part.added", "response.reasoning_summary_part.done":
 		//	key := responsesStreamIndexKey(strings.TrimSpace(streamResp.ItemID), streamResp.SummaryIndex)
