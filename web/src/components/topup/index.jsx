@@ -734,26 +734,34 @@ const TopUp = () => {
 
       {/* 主布局区域 */}
       <div className='grid grid-cols-1 lg:grid-cols-12 gap-6'>
-        {/* 左侧 - 订阅套餐 */}
-        <div className='lg:col-span-7'>
-          <SubscriptionPlansCard
-            t={t}
-            loading={subscriptionLoading}
-            plans={subscriptionPlans}
-            payMethods={payMethods}
-            enableOnlineTopUp={enableOnlineTopUp}
-            enableStripeTopUp={enableStripeTopUp}
-            enableCreemTopUp={enableCreemTopUp}
-            billingPreference={billingPreference}
-            onChangeBillingPreference={updateBillingPreference}
-            activeSubscriptions={activeSubscriptions}
-            allSubscriptions={allSubscriptions}
-            reloadSubscriptionSelf={getSubscriptionSelf}
-          />
-        </div>
+        {/* 左侧 - 订阅套餐（无套餐时隐藏整块卡片） */}
+        {(subscriptionLoading || subscriptionPlans.length > 0) && (
+          <div className='lg:col-span-7'>
+            <SubscriptionPlansCard
+              t={t}
+              loading={subscriptionLoading}
+              plans={subscriptionPlans}
+              payMethods={payMethods}
+              enableOnlineTopUp={enableOnlineTopUp}
+              enableStripeTopUp={enableStripeTopUp}
+              enableCreemTopUp={enableCreemTopUp}
+              billingPreference={billingPreference}
+              onChangeBillingPreference={updateBillingPreference}
+              activeSubscriptions={activeSubscriptions}
+              allSubscriptions={allSubscriptions}
+              reloadSubscriptionSelf={getSubscriptionSelf}
+            />
+          </div>
+        )}
 
         {/* 右侧 - 账户充值 + 邀请奖励 */}
-        <div className='lg:col-span-5 flex flex-col gap-6'>
+        <div
+          className={
+            subscriptionLoading || subscriptionPlans.length > 0
+              ? 'lg:col-span-5 flex flex-col gap-6'
+              : 'lg:col-span-12 flex flex-col gap-6'
+          }
+        >
           <RechargeCard
             t={t}
             enableOnlineTopUp={enableOnlineTopUp}
