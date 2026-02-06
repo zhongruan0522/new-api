@@ -175,6 +175,10 @@ var (
 
 	DownloadRateLimitNum            = 10
 	DownloadRateLimitDuration int64 = 60
+
+	// Per-user search rate limit (applies after authentication, keyed by user ID)
+	SearchRateLimitNum            = 10
+	SearchRateLimitDuration int64 = 60
 )
 
 var RateLimitKeyExpirationDuration = 20 * time.Minute
