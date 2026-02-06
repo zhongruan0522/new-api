@@ -66,15 +66,16 @@ func GetAllUserTokens(userId int, startIdx int, num int) ([]*Token, error) {
 
 // sanitizeLikePattern 校验并清洗用户输入的 LIKE 搜索模式。
 // 规则：
-//  1. 转义 _ 和 \（不允许 _ 作通配符）
+//  1. 转义 ! 和 _（使用 ! 作为 ESCAPE 字符，兼容 MySQL/PostgreSQL/SQLite）
 //  2. 连续的 % 合并为单个 %
 //  3. 最多允许 2 个 %
 //  4. 含 % 时（模糊搜索），去掉 % 后关键词长度必须 >= 2
 //  5. 不含 % 时按精确匹配
 func sanitizeLikePattern(input string) (string, error) {
-	// 1. 转义 \ 和 _
-	input = strings.ReplaceAll(input, `\`, `\\`)
-	input = strings.ReplaceAll(input, `_`, `\_`)
+	// 1. 先转义 ESCAPE 字符 ! 自身，再转义 _
+	//    使用 ! 而非 \ 作为 ESCAPE 字符，避免 MySQL 中反斜杠的字符串转义问题
+	input = strings.ReplaceAll(input, "!", "!!")
+	input = strings.ReplaceAll(input, `_`, `!_`)
 
 	// 2. 连续的 % 直接拒绝
 	if strings.Contains(input, "%%") {
@@ -137,14 +138,14 @@ func SearchUserTokens(userId int, keyword string, token string, offset int, limi
 		if err != nil {
 			return nil, 0, err
 		}
-		baseQuery = baseQuery.Where("name LIKE ? ESCAPE '\\'", keywordPattern)
+		baseQuery = baseQuery.Where("name LIKE ? ESCAPE '!'", keywordPattern)
 	}
 	if token != "" {
 		tokenPattern, err := sanitizeLikePattern(token)
 		if err != nil {
 			return nil, 0, err
 		}
-		baseQuery = baseQuery.Where(commonKeyCol+" LIKE ? ESCAPE '\\'", tokenPattern)
+		baseQuery = baseQuery.Where(commonKeyCol+" LIKE ? ESCAPE '!'", tokenPattern)
 	}
 
 	// 先查匹配总数（用于分页，受 maxTokens 上限保护，避免全表 COUNT）
