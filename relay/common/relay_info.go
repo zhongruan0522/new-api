@@ -316,10 +316,13 @@ func GenRelayInfoClaude(c *gin.Context, request dto.Request) *RelayInfo {
 	info.ClaudeConvertInfo = &ClaudeConvertInfo{
 		LastMessagesType: LastMessageTypeNone,
 	}
-	if c.Query("beta") == "true" {
-		info.IsClaudeBetaQuery = true
-	}
+	info.IsClaudeBetaQuery = c.Query("beta") == "true" || isClaudeBetaForced(c)
 	return info
+}
+
+func isClaudeBetaForced(c *gin.Context) bool {
+	channelOtherSettings, ok := common.GetContextKeyType[dto.ChannelOtherSettings](c, constant.ContextKeyChannelOtherSetting)
+	return ok && channelOtherSettings.ClaudeBetaQuery
 }
 
 func GenRelayInfoRerank(c *gin.Context, request *dto.RerankRequest) *RelayInfo {
