@@ -1032,7 +1032,7 @@
     "当前设置类型: ": "Current setting type: ",
     "当前跟随系统": "Currently following system",
     "当前配置无法连接到 io.net。": "Unable to connect to io.net with current configuration.",
-    "当剩余额度低于此数值时，系统将通过选择的方式发送通知": "When the remaining quota is lower than this value, the system will send a notification through the selected method",
+    "当钱包或订阅剩余额度低于此数值时，系统将通过选择的方式发送通知": "When wallet or subscription remaining quota falls below this value, the system will send a notification through the selected method",
     "当模型没有设置价格时仍接受调用，仅当您信任该网站时使用，可能会产生高额费用": "Accept calls even if the model has no price settings, use only when you trust the website, which may incur high costs",
     "当运行通道全部测试时，超过此时间将自动禁用通道": "When running all channel tests, the channel will be automatically disabled when this time is exceeded",
     "待使用收益": "Proceeds to be used",
