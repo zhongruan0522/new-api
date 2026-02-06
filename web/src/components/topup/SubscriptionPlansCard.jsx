@@ -19,7 +19,6 @@ For commercial licensing, please contact support@quantumnous.com
 
 import React, { useMemo, useState } from 'react';
 import {
-  Avatar,
   Badge,
   Button,
   Card,
@@ -33,7 +32,7 @@ import {
 } from '@douyinfe/semi-ui';
 import { API, showError, showSuccess, renderQuota } from '../../helpers';
 import { getCurrencyConfig } from '../../helpers/render';
-import { Crown, RefreshCw, Sparkles } from 'lucide-react';
+import { RefreshCw, Sparkles } from 'lucide-react';
 import SubscriptionPurchaseModal from './modals/SubscriptionPurchaseModal';
 import {
   formatSubscriptionDuration,
@@ -83,6 +82,7 @@ const SubscriptionPlansCard = ({
   activeSubscriptions = [],
   allSubscriptions = [],
   reloadSubscriptionSelf,
+  withCard = true,
 }) => {
   const [open, setOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState(null);
@@ -241,33 +241,9 @@ const SubscriptionPlansCard = ({
     return Math.round((used / total) * 100);
   };
 
-  return (
-    <Card className='!rounded-2xl shadow-sm border-0'>
+  const cardContent = (
+    <>
       {/* 卡片头部 */}
-      <div className='flex items-center justify-between mb-3'>
-        <div className='flex items-center'>
-          <Avatar size='small' color='violet' className='mr-3 shadow-md'>
-            <Crown size={16} />
-          </Avatar>
-          <div>
-            <Text className='text-lg font-medium'>{t('订阅套餐')}</Text>
-            <div className='text-xs'>{t('购买订阅获得模型额度/次数')}</div>
-          </div>
-        </div>
-        {/* 扣费策略 - 右上角 */}
-        <Select
-          value={billingPreference}
-          onChange={onChangeBillingPreference}
-          size='small'
-          optionList={[
-            { value: 'subscription_first', label: t('优先订阅') },
-            { value: 'wallet_first', label: t('优先钱包') },
-            { value: 'subscription_only', label: t('仅用订阅') },
-            { value: 'wallet_only', label: t('仅用钱包') },
-          ]}
-        />
-      </div>
-
       {loading ? (
         <div className='space-y-4'>
           {/* 我的订阅骨架屏 */}
@@ -281,7 +257,7 @@ const SubscriptionPlansCard = ({
             </div>
           </Card>
           {/* 套餐列表骨架屏 */}
-          <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-5 w-full'>
+          <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-5 w-full px-1'>
             {[1, 2, 3].map((i) => (
               <Card
                 key={i}
@@ -317,8 +293,8 @@ const SubscriptionPlansCard = ({
         <Space vertical style={{ width: '100%' }} spacing={8}>
           {/* 当前订阅状态 */}
           <Card className='!rounded-xl w-full' bodyStyle={{ padding: '12px' }}>
-            <div className='flex items-center justify-between mb-2'>
-              <div className='flex items-center gap-2'>
+            <div className='flex items-center justify-between mb-2 gap-3'>
+              <div className='flex items-center gap-2 flex-1 min-w-0'>
                 <Text strong>{t('我的订阅')}</Text>
                 {hasActiveSubscription ? (
                   <Tag
@@ -341,19 +317,32 @@ const SubscriptionPlansCard = ({
                   </Tag>
                 )}
               </div>
-              <Button
-                size='small'
-                theme='light'
-                type='tertiary'
-                icon={
-                  <RefreshCw
-                    size={12}
-                    className={refreshing ? 'animate-spin' : ''}
-                  />
-                }
-                onClick={handleRefresh}
-                loading={refreshing}
-              />
+              <div className='flex items-center gap-2'>
+                <Select
+                  value={billingPreference}
+                  onChange={onChangeBillingPreference}
+                  size='small'
+                  optionList={[
+                    { value: 'subscription_first', label: t('优先订阅') },
+                    { value: 'wallet_first', label: t('优先钱包') },
+                    { value: 'subscription_only', label: t('仅用订阅') },
+                    { value: 'wallet_only', label: t('仅用钱包') },
+                  ]}
+                />
+                <Button
+                  size='small'
+                  theme='light'
+                  type='tertiary'
+                  icon={
+                    <RefreshCw
+                      size={12}
+                      className={refreshing ? 'animate-spin' : ''}
+                    />
+                  }
+                  onClick={handleRefresh}
+                  loading={refreshing}
+                />
+              </div>
             </div>
 
             {hasAnySubscription ? (
@@ -451,7 +440,7 @@ const SubscriptionPlansCard = ({
 
           {/* 可购买套餐 - 标准定价卡片 */}
           {plans.length > 0 ? (
-            <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-5 w-full'>
+            <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-5 w-full px-1'>
               {plans.map((p, index) => {
                 const plan = p?.plan;
                 const totalAmount = Number(plan?.total_amount || 0);
@@ -482,9 +471,9 @@ const SubscriptionPlansCard = ({
                   resetLabel ? { label: resetLabel } : null,
                   totalAmount > 0
                     ? {
-                        label: totalLabel,
-                        tooltip: `${t('原生额度')}：${totalAmount}`,
-                      }
+                      label: totalLabel,
+                      tooltip: `${t('原生额度')}：${totalAmount}`,
+                    }
                     : { label: totalLabel },
                   limitLabel ? { label: limitLabel } : null,
                   upgradeLabel ? { label: upgradeLabel } : null,
@@ -493,9 +482,8 @@ const SubscriptionPlansCard = ({
                 return (
                   <Card
                     key={plan?.id}
-                    className={`!rounded-xl transition-all hover:shadow-lg w-full h-full ${
-                      isPopular ? 'ring-2 ring-purple-500' : ''
-                    }`}
+                    className={`!rounded-xl transition-all hover:shadow-lg w-full h-full ${isPopular ? 'ring-2 ring-purple-500' : ''
+                      }`}
                     bodyStyle={{ padding: 0 }}
                   >
                     <div className='p-4 h-full flex flex-col'>
@@ -583,7 +571,7 @@ const SubscriptionPlansCard = ({
                           const buttonEl = (
                             <Button
                               theme='outline'
-                              type='tertiary'
+                              type='primary'
                               block
                               disabled={reached}
                               onClick={() => {
@@ -614,6 +602,16 @@ const SubscriptionPlansCard = ({
           )}
         </Space>
       )}
+    </>
+  );
+
+  return (
+    <>
+      {withCard ? (
+        <Card className='!rounded-2xl shadow-sm border-0'>{cardContent}</Card>
+      ) : (
+        <div className='space-y-3'>{cardContent}</div>
+      )}
 
       {/* 购买确认弹窗 */}
       <SubscriptionPurchaseModal
@@ -631,16 +629,16 @@ const SubscriptionPlansCard = ({
         purchaseLimitInfo={
           selectedPlan?.plan?.id
             ? {
-                limit: Number(selectedPlan?.plan?.max_purchase_per_user || 0),
-                count: getPlanPurchaseCount(selectedPlan?.plan?.id),
-              }
+              limit: Number(selectedPlan?.plan?.max_purchase_per_user || 0),
+              count: getPlanPurchaseCount(selectedPlan?.plan?.id),
+            }
             : null
         }
         onPayStripe={payStripe}
         onPayCreem={payCreem}
         onPayEpay={payEpay}
       />
-    </Card>
+    </>
   );
 };
 
