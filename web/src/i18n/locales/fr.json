@@ -1155,6 +1155,8 @@
     "提示：链接中的{key}将被替换为API密钥，{address}将被替换为服务器地址": "Astuce : {key} dans le lien sera remplacé par la clé API, {address} sera remplacé par l'adresse du serveur",
     "提示价格：{{symbol}}{{price}} / 1M tokens": "Prix d'invite : {{symbol}}{{price}} / 1M tokens",
     "提示缓存倍率": "Ratio de cache d'invite",
+    "缓存创建倍率": "Ratio de création du cache",
+    "默认为 5m 缓存创建倍率；1h 缓存创建倍率按固定乘法自动计算（当前为 1.6x）": "Par défaut, le ratio de création de cache 5m est utilisé ; le ratio de création de cache 1h est calculé via une multiplication fixe (actuellement 1.6x)",
     "搜索供应商": "Rechercher un fournisseur",
     "搜索关键字": "Rechercher des mots-clés",
     "搜索失败": "Search failed",
