@@ -323,6 +323,10 @@ func ChatCompletionsRequestToResponsesRequest(req *dto.GeneralOpenAIRequest) (*d
 	if req.MaxCompletionTokens > maxOutputTokens {
 		maxOutputTokens = req.MaxCompletionTokens
 	}
+	// OpenAI Responses API rejects max_output_tokens < 16 when explicitly provided.
+	if maxOutputTokens > 0 && maxOutputTokens < 16 {
+		maxOutputTokens = 16
+	}
 
 	var topP *float64
 	if req.TopP != 0 {
