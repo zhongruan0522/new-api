@@ -2721,7 +2721,7 @@
     "绑定订阅套餐": "Bind Subscription Plan",
     "绑定后会立即生成用户订阅（无需支付），有效期按套餐配置计算。": "After binding, a user subscription is created immediately (no payment required); validity follows the plan configuration.",
     "订阅套餐": "Subscription Plans",
-    "购买订阅获得模型额度/次数": "Purchase a subscription to get model quota/usage",
+    "额度充值": "Quota Top-up",
     "优先订阅": "Subscription first",
     "优先钱包": "Wallet first",
     "仅用订阅": "Subscription only",
