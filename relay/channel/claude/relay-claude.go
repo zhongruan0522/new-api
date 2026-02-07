@@ -544,6 +544,30 @@ type ClaudeResponseInfo struct {
 	Done         bool
 }
 
+// enrichMessageDeltaUsage 补全 message_delta 事件中缺失的 input_tokens 和 cache 相关字段
+// 当上游（如 AWS Bedrock）的 message_delta 不包含这些字段时，从 claudeInfo 中积累的数据补全
+func enrichMessageDeltaUsage(claudeResponse *dto.ClaudeResponse, claudeInfo *ClaudeResponseInfo) {
+	if claudeResponse.Usage == nil {
+		claudeResponse.Usage = &dto.ClaudeUsage{}
+	}
+	if claudeResponse.Usage.InputTokens == 0 && claudeInfo.Usage.PromptTokens > 0 {
+		claudeResponse.Usage.InputTokens = claudeInfo.Usage.PromptTokens
+	}
+	if claudeResponse.Usage.CacheReadInputTokens == 0 && claudeInfo.Usage.PromptTokensDetails.CachedTokens > 0 {
+		claudeResponse.Usage.CacheReadInputTokens = claudeInfo.Usage.PromptTokensDetails.CachedTokens
+	}
+	if claudeResponse.Usage.CacheCreationInputTokens == 0 && claudeInfo.Usage.PromptTokensDetails.CachedCreationTokens > 0 {
+		claudeResponse.Usage.CacheCreationInputTokens = claudeInfo.Usage.PromptTokensDetails.CachedCreationTokens
+	}
+	if claudeResponse.Usage.CacheCreation == nil &&
+		(claudeInfo.Usage.ClaudeCacheCreation5mTokens > 0 || claudeInfo.Usage.ClaudeCacheCreation1hTokens > 0) {
+		claudeResponse.Usage.CacheCreation = &dto.ClaudeCacheCreationUsage{
+			Ephemeral5mInputTokens: claudeInfo.Usage.ClaudeCacheCreation5mTokens,
+			Ephemeral1hInputTokens: claudeInfo.Usage.ClaudeCacheCreation1hTokens,
+		}
+	}
+}
+
 func FormatClaudeResponseInfo(claudeResponse *dto.ClaudeResponse, oaiResponse *dto.ChatCompletionsStreamResponse, claudeInfo *ClaudeResponseInfo) bool {
 	if claudeInfo == nil {
 		return false
@@ -637,6 +661,13 @@ func HandleStreamResponseData(c *gin.Context, info *relaycommon.RelayInfo, claud
 			// message_start, 获取usage
 			if claudeResponse.Message != nil {
 				info.UpstreamModelName = claudeResponse.Message.Model
+			}
+		} else if claudeResponse.Type == "message_delta" {
+			// 确保 message_delta 的 usage 包含完整的 input_tokens 和 cache 相关字段
+			// 解决 AWS Bedrock 等上游返回的 message_delta 缺少这些字段的问题
+			enrichMessageDeltaUsage(&claudeResponse, claudeInfo)
+			if newData, err := json.Marshal(claudeResponse); err == nil {
+				data = string(newData)
 			}
 		}
 		helper.ClaudeChunkData(c, claudeResponse, data)
