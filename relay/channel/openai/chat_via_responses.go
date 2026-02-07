@@ -71,12 +71,22 @@ func OaiResponsesToChatHandler(c *gin.Context, info *relaycommon.RelayInfo, resp
 		chatResp.Usage = *usage
 	}
 
-	chatBody, err := common.Marshal(chatResp)
+	var responseBody []byte
+	switch info.RelayFormat {
+	case types.RelayFormatClaude:
+		claudeResp := service.ResponseOpenAI2Claude(chatResp, info)
+		responseBody, err = common.Marshal(claudeResp)
+	case types.RelayFormatGemini:
+		geminiResp := service.ResponseOpenAI2Gemini(chatResp, info)
+		responseBody, err = common.Marshal(geminiResp)
+	default:
+		responseBody, err = common.Marshal(chatResp)
+	}
 	if err != nil {
 		return nil, types.NewOpenAIError(err, types.ErrorCodeJsonMarshalFailed, http.StatusInternalServerError)
 	}
 
-	service.IOCopyBytesGracefully(c, resp, chatBody)
+	service.IOCopyBytesGracefully(c, resp, responseBody)
 	return usage, nil
 }
 
@@ -110,12 +120,39 @@ func OaiResponsesToChatStreamHandler(c *gin.Context, info *relaycommon.RelayInfo
 	needsReasoningSummarySeparator := false
 	//reasoningSummaryTextByKey := make(map[string]string)
 
+	if info.RelayFormat == types.RelayFormatClaude && info.ClaudeConvertInfo == nil {
+		info.ClaudeConvertInfo = &relaycommon.ClaudeConvertInfo{LastMessagesType: relaycommon.LastMessageTypeNone}
+	}
+
+	sendChatChunk := func(chunk *dto.ChatCompletionsStreamResponse) bool {
+		if chunk == nil {
+			return true
+		}
+		if info.RelayFormat == types.RelayFormatOpenAI {
+			if err := helper.ObjectData(c, chunk); err != nil {
+				streamErr = types.NewOpenAIError(err, types.ErrorCodeBadResponse, http.StatusInternalServerError)
+				return false
+			}
+			return true
+		}
+
+		chunkData, err := common.Marshal(chunk)
+		if err != nil {
+			streamErr = types.NewOpenAIError(err, types.ErrorCodeJsonMarshalFailed, http.StatusInternalServerError)
+			return false
+		}
+		if err := HandleStreamFormat(c, info, string(chunkData), false, false); err != nil {
+			streamErr = types.NewOpenAIError(err, types.ErrorCodeBadResponse, http.StatusInternalServerError)
+			return false
+		}
+		return true
+	}
+
 	sendStartIfNeeded := func() bool {
 		if sentStart {
 			return true
 		}
-		if err := helper.ObjectData(c, helper.GenerateStartEmptyResponse(responseId, createAt, model, nil)); err != nil {
-			streamErr = types.NewOpenAIError(err, types.ErrorCodeBadResponse, http.StatusInternalServerError)
+		if !sendChatChunk(helper.GenerateStartEmptyResponse(responseId, createAt, model, nil)) {
 			return false
 		}
 		sentStart = true
@@ -186,8 +223,7 @@ func OaiResponsesToChatStreamHandler(c *gin.Context, info *relaycommon.RelayInfo
 				},
 			},
 		}
-		if err := helper.ObjectData(c, chunk); err != nil {
-			streamErr = types.NewOpenAIError(err, types.ErrorCodeBadResponse, http.StatusInternalServerError)
+		if !sendChatChunk(chunk) {
 			return false
 		}
 		hasSentReasoningSummary = true
@@ -245,8 +281,7 @@ func OaiResponsesToChatStreamHandler(c *gin.Context, info *relaycommon.RelayInfo
 				},
 			},
 		}
-		if err := helper.ObjectData(c, chunk); err != nil {
-			streamErr = types.NewOpenAIError(err, types.ErrorCodeBadResponse, http.StatusInternalServerError)
+		if !sendChatChunk(chunk) {
 			return false
 		}
 		sawToolCall = true
@@ -340,8 +375,7 @@ func OaiResponsesToChatStreamHandler(c *gin.Context, info *relaycommon.RelayInfo
 						},
 					},
 				}
-				if err := helper.ObjectData(c, chunk); err != nil {
-					streamErr = types.NewOpenAIError(err, types.ErrorCodeBadResponse, http.StatusInternalServerError)
+				if !sendChatChunk(chunk) {
 					return false
 				}
 			}
@@ -436,13 +470,15 @@ func OaiResponsesToChatStreamHandler(c *gin.Context, info *relaycommon.RelayInfo
 				return false
 			}
 			if !sentStop {
+				if info.RelayFormat == types.RelayFormatClaude && info.ClaudeConvertInfo != nil {
+					info.ClaudeConvertInfo.Usage = usage
+				}
 				finishReason := "stop"
 				if sawToolCall && outputText.Len() == 0 {
 					finishReason = "tool_calls"
 				}
 				stop := helper.GenerateStopResponse(responseId, createAt, model, finishReason)
-				if err := helper.ObjectData(c, stop); err != nil {
-					streamErr = types.NewOpenAIError(err, types.ErrorCodeBadResponse, http.StatusInternalServerError)
+				if !sendChatChunk(stop) {
 					return false
 				}
 				sentStop = true
@@ -473,26 +509,31 @@ func OaiResponsesToChatStreamHandler(c *gin.Context, info *relaycommon.RelayInfo
 	}
 
 	if !sentStart {
-		if err := helper.ObjectData(c, helper.GenerateStartEmptyResponse(responseId, createAt, model, nil)); err != nil {
-			return nil, types.NewOpenAIError(err, types.ErrorCodeBadResponse, http.StatusInternalServerError)
+		if !sendChatChunk(helper.GenerateStartEmptyResponse(responseId, createAt, model, nil)) {
+			return nil, streamErr
 		}
 	}
 	if !sentStop {
+		if info.RelayFormat == types.RelayFormatClaude && info.ClaudeConvertInfo != nil {
+			info.ClaudeConvertInfo.Usage = usage
+		}
 		finishReason := "stop"
 		if sawToolCall && outputText.Len() == 0 {
 			finishReason = "tool_calls"
 		}
 		stop := helper.GenerateStopResponse(responseId, createAt, model, finishReason)
-		if err := helper.ObjectData(c, stop); err != nil {
-			return nil, types.NewOpenAIError(err, types.ErrorCodeBadResponse, http.StatusInternalServerError)
+		if !sendChatChunk(stop) {
+			return nil, streamErr
 		}
 	}
-	if info.ShouldIncludeUsage && usage != nil {
+	if info.RelayFormat == types.RelayFormatOpenAI && info.ShouldIncludeUsage && usage != nil {
 		if err := helper.ObjectData(c, helper.GenerateFinalUsageResponse(responseId, createAt, model, *usage)); err != nil {
 			return nil, types.NewOpenAIError(err, types.ErrorCodeBadResponse, http.StatusInternalServerError)
 		}
 	}
 
-	helper.Done(c)
+	if info.RelayFormat == types.RelayFormatOpenAI {
+		helper.Done(c)
+	}
 	return usage, nil
 }
