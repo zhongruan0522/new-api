@@ -50,7 +50,7 @@ const (
 	LogTypeRefund  = 6
 )
 
-func formatUserLogs(logs []*Log) {
+func formatUserLogs(logs []*Log, startIdx int) {
 	for i := range logs {
 		logs[i].ChannelName = ""
 		var otherMap map[string]interface{}
@@ -61,13 +61,13 @@ func formatUserLogs(logs []*Log) {
 			delete(otherMap, "reject_reason")
 		}
 		logs[i].Other = common.MapToJsonStr(otherMap)
-		logs[i].Id = logs[i].Id % 1024
+		logs[i].Id = startIdx + i + 1
 	}
 }
 
 func GetLogByTokenId(tokenId int) (logs []*Log, err error) {
 	err = LOG_DB.Model(&Log{}).Where("token_id = ?", tokenId).Order("id desc").Limit(common.MaxRecentItems).Find(&logs).Error
-	formatUserLogs(logs)
+	formatUserLogs(logs, 0)
 	return logs, err
 }
 
@@ -310,7 +310,7 @@ func GetUserLogs(userId int, logType int, startTimestamp int64, endTimestamp int
 		return nil, 0, errors.New("查询日志失败")
 	}
 
-	formatUserLogs(logs)
+	formatUserLogs(logs, startIdx)
 	return logs, total, err
 }
 
