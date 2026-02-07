@@ -362,6 +362,11 @@ func InitRatioSettings() {
 	cacheRatioMap = defaultCacheRatio
 	cacheRatioMapMutex.Unlock()
 
+	// Initialize createCacheRatioMap (5m cache creation ratio)
+	createCacheRatioMapMutex.Lock()
+	createCacheRatioMap = defaultCreateCacheRatio
+	createCacheRatioMapMutex.Unlock()
+
 	// initialize imageRatioMap
 	imageRatioMapMutex.Lock()
 	imageRatioMap = defaultImageRatio
