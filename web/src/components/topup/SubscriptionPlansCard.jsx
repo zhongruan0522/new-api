@@ -201,6 +201,16 @@ const SubscriptionPlansCard = ({
   // 当前订阅信息 - 支持多个订阅
   const hasActiveSubscription = activeSubscriptions.length > 0;
   const hasAnySubscription = allSubscriptions.length > 0;
+  const disableSubscriptionPreference = !hasActiveSubscription;
+  const isSubscriptionPreference =
+    billingPreference === 'subscription_first' ||
+    billingPreference === 'subscription_only';
+  const displayBillingPreference =
+    disableSubscriptionPreference && isSubscriptionPreference
+      ? 'wallet_first'
+      : billingPreference;
+  const subscriptionPreferenceLabel =
+    billingPreference === 'subscription_only' ? t('仅用订阅') : t('优先订阅');
 
   const planPurchaseCountMap = useMemo(() => {
     const map = new Map();
@@ -319,13 +329,25 @@ const SubscriptionPlansCard = ({
               </div>
               <div className='flex items-center gap-2'>
                 <Select
-                  value={billingPreference}
+                  value={displayBillingPreference}
                   onChange={onChangeBillingPreference}
                   size='small'
                   optionList={[
-                    { value: 'subscription_first', label: t('优先订阅') },
+                    {
+                      value: 'subscription_first',
+                      label: disableSubscriptionPreference
+                        ? `${t('优先订阅')} (${t('无生效')})`
+                        : t('优先订阅'),
+                      disabled: disableSubscriptionPreference,
+                    },
                     { value: 'wallet_first', label: t('优先钱包') },
-                    { value: 'subscription_only', label: t('仅用订阅') },
+                    {
+                      value: 'subscription_only',
+                      label: disableSubscriptionPreference
+                        ? `${t('仅用订阅')} (${t('无生效')})`
+                        : t('仅用订阅'),
+                      disabled: disableSubscriptionPreference,
+                    },
                     { value: 'wallet_only', label: t('仅用钱包') },
                   ]}
                 />
@@ -344,6 +366,13 @@ const SubscriptionPlansCard = ({
                 />
               </div>
             </div>
+            {disableSubscriptionPreference && isSubscriptionPreference && (
+              <Text type='tertiary' size='small'>
+                {t('已保存偏好为')}
+                {subscriptionPreferenceLabel}
+                {t('，当前无生效订阅，将自动使用钱包')}
+              </Text>
+            )}
 
             {hasAnySubscription ? (
               <>
@@ -364,6 +393,7 @@ const SubscriptionPlansCard = ({
                     const usagePercent = getUsagePercent(sub);
                     const now = Date.now() / 1000;
                     const isExpired = (subscription?.end_time || 0) < now;
+                    const isCancelled = subscription?.status === 'cancelled';
                     const isActive =
                       subscription?.status === 'active' && !isExpired;
 
@@ -386,6 +416,10 @@ const SubscriptionPlansCard = ({
                               >
                                 {t('生效')}
                               </Tag>
+                            ) : isCancelled ? (
+                              <Tag color='white' size='small' shape='circle'>
+                                {t('已作废')}
+                              </Tag>
                             ) : (
                               <Tag color='white' size='small' shape='circle'>
                                 {t('已过期')}
@@ -399,7 +433,11 @@ const SubscriptionPlansCard = ({
                           )}
                         </div>
                         <div className='text-xs text-gray-500 mb-2'>
-                          {isActive ? t('至') : t('过期于')}{' '}
+                          {isActive
+                            ? t('至')
+                            : isCancelled
+                              ? t('作废于')
+                              : t('过期于')}{' '}
                           {new Date(
                             (subscription?.end_time || 0) * 1000,
                           ).toLocaleString()}
@@ -471,9 +509,9 @@ const SubscriptionPlansCard = ({
                   resetLabel ? { label: resetLabel } : null,
                   totalAmount > 0
                     ? {
-                      label: totalLabel,
-                      tooltip: `${t('原生额度')}：${totalAmount}`,
-                    }
+                        label: totalLabel,
+                        tooltip: `${t('原生额度')}：${totalAmount}`,
+                      }
                     : { label: totalLabel },
                   limitLabel ? { label: limitLabel } : null,
                   upgradeLabel ? { label: upgradeLabel } : null,
@@ -482,8 +520,9 @@ const SubscriptionPlansCard = ({
                 return (
                   <Card
                     key={plan?.id}
-                    className={`!rounded-xl transition-all hover:shadow-lg w-full h-full ${isPopular ? 'ring-2 ring-purple-500' : ''
-                      }`}
+                    className={`!rounded-xl transition-all hover:shadow-lg w-full h-full ${
+                      isPopular ? 'ring-2 ring-purple-500' : ''
+                    }`}
                     bodyStyle={{ padding: 0 }}
                   >
                     <div className='p-4 h-full flex flex-col'>
@@ -629,9 +668,9 @@ const SubscriptionPlansCard = ({
         purchaseLimitInfo={
           selectedPlan?.plan?.id
             ? {
-              limit: Number(selectedPlan?.plan?.max_purchase_per_user || 0),
-              count: getPlanPurchaseCount(selectedPlan?.plan?.id),
-            }
+                limit: Number(selectedPlan?.plan?.max_purchase_per_user || 0),
+                count: getPlanPurchaseCount(selectedPlan?.plan?.id),
+              }
             : null
         }
         onPayStripe={payStripe}
