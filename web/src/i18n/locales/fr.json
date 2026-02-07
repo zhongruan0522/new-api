@@ -1042,7 +1042,7 @@
     "当前设置类型: ": "Type de paramètre actuel : ",
     "当前跟随系统": "Suit actuellement le système",
     "当前配置无法连接到 io.net。": "Unable to connect to io.net with current configuration.",
-    "当剩余额度低于此数值时，系统将通过选择的方式发送通知": "Lorsque le quota restant est inférieur à cette valeur, le système enverra une notification via la méthode sélectionnée",
+    "当钱包或订阅剩余额度低于此数值时，系统将通过选择的方式发送通知": "Lorsque le quota restant du portefeuille ou de l'abonnement est inférieur à cette valeur, le système enverra une notification via la méthode sélectionnée",
     "当模型没有设置价格时仍接受调用，仅当您信任该网站时使用，可能会产生高额费用": "Acceptez les appels même si le modèle n'a pas de prix défini, utilisez uniquement lorsque vous faites confiance au site Web, ce qui peut entraîner des coûts élevés",
     "当运行通道全部测试时，超过此时间将自动禁用通道": "Lors de l'exécution de tous les tests de canaux, le canal sera automatiquement désactivé lorsque ce temps sera dépassé",
     "待使用收益": "Produits à utiliser",

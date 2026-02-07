@@ -1028,7 +1028,7 @@
     "当前设置类型: ": "Loại cài đặt hiện tại: ",
     "当前跟随系统": "Hiện đang theo hệ thống",
     "当前配置无法连接到 io.net。": "Unable to connect to io.net with current configuration.",
-    "当剩余额度低于此数值时，系统将通过选择的方式发送通知": "Khi hạn ngạch còn lại thấp hơn giá trị này, hệ thống sẽ gửi thông báo thông qua phương thức đã chọn",
+    "当钱包或订阅剩余额度低于此数值时，系统将通过选择的方式发送通知": "Khi hạn ngạch còn lại của ví hoặc gói thuê bao thấp hơn giá trị này, hệ thống sẽ gửi thông báo theo phương thức đã chọn",
     "当模型没有设置价格时仍接受调用，仅当您信任该网站时使用，可能会产生高额费用": "Chấp nhận cuộc gọi ngay cả khi mô hình không có cài đặt giá, chỉ sử dụng khi bạn tin tưởng trang web, điều này có thể phát sinh chi phí cao",
     "当运行通道全部测试时，超过此时间将自动禁用通道": "Khi chạy tất cả các kiểm tra kênh, kênh sẽ tự động bị vô hiệu hóa khi vượt quá thời gian này",
     "待使用收益": "Tiền thu được để sử dụng",
