@@ -148,6 +148,8 @@ type RelayInfo struct {
 	// RequestConversionChain records request format conversions in order, e.g.
 	// ["openai", "openai_responses"] or ["openai", "claude"].
 	RequestConversionChain []types.RelayFormat
+	// 最终请求到上游的格式 TODO: 当前仅设置了Claude
+	FinalRequestRelayFormat types.RelayFormat
 
 	ThinkingContentInfo
 	TokenCountMeta
