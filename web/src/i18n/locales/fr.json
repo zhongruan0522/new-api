@@ -157,6 +157,7 @@
     "SSRF防护设置": "Protection SSRF",
     "SSRF防护详细说明": "La protection SSRF empêche les utilisateurs malveillants d'utiliser votre serveur pour accéder aux ressources du réseau interne. Configurez des listes blanches pour les domaines/IP de confiance et limitez les ports autorisés. S'applique aux téléchargements de fichiers, aux webhooks et aux notifications.",
     "store 字段用于授权 OpenAI 存储请求数据以评估和优化产品。默认关闭，开启后可能导致 Codex 无法正常使用": "Le champ store autorise OpenAI à stocker les données de requête pour l'évaluation et l'optimisation du produit. Désactivé par défaut. L'activation peut causer un dysfonctionnement de Codex",
+    "免责声明：仅限个人使用，请勿分发或共享任何凭证。该渠道存在前置条件与使用门槛，请在充分了解流程与风险后使用，并遵守 OpenAI 的相关条款与政策。相关凭证与配置仅限接入 Codex CLI 使用，不适用于其他客户端、平台或渠道。": "Avertissement : usage personnel uniquement. Ne distribuez ni ne partagez aucun identifiant. Ce canal a des prérequis et nécessite une configuration préalable ; utilisez‑le uniquement si vous comprenez la procédure et les risques, et respectez les conditions et politiques d’OpenAI. Les identifiants et la configuration sont réservés à l’intégration Codex CLI et ne sont pas destinés à d’autres clients, plateformes ou canaux.",
     "Stripe 设置": "Paramètres Stripe",
     "Telegram": "Telegram",
     "Telegram Bot Token": "Jeton du bot Telegram",
