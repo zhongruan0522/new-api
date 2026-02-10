@@ -1,30 +1,23 @@
-name: Publish Docker image (Multi Registries, native amd64+arm64)
+name: Publish Docker image (AMD64 only)
 
 on:
   push:
+    branches:
+      - main
+      - beta
     tags:
       - '*'
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Tag name to build (e.g., v0.10.8-alpha.3)'
+        description: 'Tag name to build (e.g., v0.10.8)'
         required: true
         type: string
 
 jobs:
-  build_single_arch:
-    name: Build & push (${{ matrix.arch }}) [native]
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - arch: amd64
-            platform: linux/amd64
-            runner: ubuntu-latest
-          - arch: arm64
-            platform: linux/arm64
-            runner: ubuntu-24.04-arm
-    runs-on: ${{ matrix.runner }}
+  build_amd64:
+    name: Build & push (amd64)
+    runs-on: ubuntu-latest
 
     permissions:
       packages: write
@@ -34,125 +27,82 @@ jobs:
       - name: Check out
         uses: actions/checkout@v4
         with:
-          fetch-depth: ${{ github.event_name == 'workflow_dispatch' && 0 || 1 }}
+          fetch-depth: 0
           ref: ${{ github.event.inputs.tag || github.ref }}
 
-      - name: Resolve tag & write VERSION
+      - name: Determine image tags
+        id: tags
         run: |
-          if [ -n "${{ github.event.inputs.tag }}" ]; then
+          # Normalize repository name to lowercase
+          GHCR_REPO="${GITHUB_REPOSITORY,,}"
+          echo "GHCR_REPO=$GHCR_REPO" >> $GITHUB_ENV
+
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            # Manual dispatch: use provided tag
             TAG="${{ github.event.inputs.tag }}"
-            # Verify tag exists
             if ! git rev-parse "refs/tags/$TAG" >/dev/null 2>&1; then
               echo "Error: Tag '$TAG' does not exist in the repository"
               exit 1
             fi
+            VERSION="${TAG,,}"
+            echo "TAGS=ghcr.io/${GHCR_REPO}:${VERSION}" >> $GITHUB_OUTPUT
+            echo "VERSION=$VERSION" >> $GITHUB_ENV
+            echo "Building manual dispatch tag: $TAG -> $VERSION"
+
+          elif [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            # Tag push: use tag name (lowercase)
+            TAG="${GITHUB_REF#refs/tags/}"
+            VERSION="${TAG,,}"
+            echo "TAGS=ghcr.io/${GHCR_REPO}:${VERSION}" >> $GITHUB_OUTPUT
+            echo "VERSION=$VERSION" >> $GITHUB_ENV
+            echo "Building tag: $TAG -> $VERSION"
+
+          elif [[ "${{ github.ref }}" == refs/heads/main ]]; then
+            # Main branch: tag as latest
+            echo "TAGS=ghcr.io/${GHCR_REPO}:latest" >> $GITHUB_OUTPUT
+            echo "VERSION=latest" >> $GITHUB_ENV
+            echo "Building main branch -> latest"
+
+          elif [[ "${{ github.ref }}" == refs/heads/beta ]]; then
+            # Beta branch: tag as beta
+            echo "TAGS=ghcr.io/${GHCR_REPO}:beta" >> $GITHUB_OUTPUT
+            echo "VERSION=beta" >> $GITHUB_ENV
+            echo "Building beta branch -> beta"
+
           else
-            TAG=${GITHUB_REF#refs/tags/}
+            echo "Unknown ref: ${{ github.ref }}"
+            exit 1
           fi
-          echo "TAG=$TAG" >> $GITHUB_ENV
-          echo "$TAG" > VERSION
-          echo "Building tag: $TAG for ${{ matrix.arch }}"
 
-
-#      - name: Normalize GHCR repository
-#        run: echo "GHCR_REPOSITORY=${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
+          # Write VERSION file for build
+          echo "${{ env.VERSION }}" > VERSION
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Log in to Docker Hub
+      - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-#      - name: Log in to GHCR
-#        uses: docker/login-action@v3
-#        with:
-#          registry: ghcr.io
-#          username: ${{ github.actor }}
-#          password: ${{ secrets.GITHUB_TOKEN }}
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Extract metadata (labels)
         id: meta
         uses: docker/metadata-action@v5
         with:
           images: |
-            calciumion/new-api
-#            ghcr.io/${{ env.GHCR_REPOSITORY }}
+            ghcr.io/${{ env.GHCR_REPO }}
 
-      - name: Build & push single-arch (to both registries)
+      - name: Build & push (amd64)
         uses: docker/build-push-action@v6
         with:
           context: .
-          platforms: ${{ matrix.platform }}
+          platforms: linux/amd64
           push: true
-          tags: |
-            calciumion/new-api:${{ env.TAG }}-${{ matrix.arch }}
-            calciumion/new-api:latest-${{ matrix.arch }}
-#            ghcr.io/${{ env.GHCR_REPOSITORY }}:${{ env.TAG }}-${{ matrix.arch }}
-#            ghcr.io/${{ env.GHCR_REPOSITORY }}:latest-${{ matrix.arch }}
+          tags: ${{ steps.tags.outputs.TAGS }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
           provenance: false
           sbom: false
-
-  create_manifests:
-    name: Create multi-arch manifests (Docker Hub)
-    needs: [build_single_arch]
-    runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
-    steps:
-      - name: Extract tag
-        run: |
-          if [ -n "${{ github.event.inputs.tag }}" ]; then
-            echo "TAG=${{ github.event.inputs.tag }}" >> $GITHUB_ENV
-          else
-            echo "TAG=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
-          fi
-#
-#      - name: Normalize GHCR repository
-#        run: echo "GHCR_REPOSITORY=${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
-
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-      - name: Create & push manifest (Docker Hub - version)
-        run: |
-          docker buildx imagetools create \
-            -t calciumion/new-api:${TAG} \
-            calciumion/new-api:${TAG}-amd64 \
-            calciumion/new-api:${TAG}-arm64
-
-      - name: Create & push manifest (Docker Hub - latest)
-        run: |
-          docker buildx imagetools create \
-            -t calciumion/new-api:latest \
-            calciumion/new-api:latest-amd64 \
-            calciumion/new-api:latest-arm64
-
-      # ---- GHCR ----
-#      - name: Log in to GHCR
-#        uses: docker/login-action@v3
-#        with:
-#          registry: ghcr.io
-#          username: ${{ github.actor }}
-#          password: ${{ secrets.GITHUB_TOKEN }}
-
-#      - name: Create & push manifest (GHCR - version)
-#        run: |
-#          docker buildx imagetools create \
-#            -t ghcr.io/${GHCR_REPOSITORY}:${TAG} \
-#            ghcr.io/${GHCR_REPOSITORY}:${TAG}-amd64 \
-#            ghcr.io/${GHCR_REPOSITORY}:${TAG}-arm64
-#
-#      - name: Create & push manifest (GHCR - latest)
-#        run: |
-#          docker buildx imagetools create \
-#            -t ghcr.io/${GHCR_REPOSITORY}:latest \
-#            ghcr.io/${GHCR_REPOSITORY}:latest-amd64 \
-#            ghcr.io/${GHCR_REPOSITORY}:latest-arm64
