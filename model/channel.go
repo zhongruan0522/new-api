@@ -855,12 +855,27 @@ func (channel *Channel) ValidateSettings() error {
 func (channel *Channel) GetSetting() dto.ChannelSettings {
 	setting := dto.ChannelSettings{}
 	if channel.Setting != nil && *channel.Setting != "" {
-		err := common.Unmarshal([]byte(*channel.Setting), &setting)
+		raw := []byte(*channel.Setting)
+		err := common.Unmarshal(raw, &setting)
 		if err != nil {
 			common.SysLog(fmt.Sprintf("failed to unmarshal setting: channel_id=%d, error=%v", channel.Id, err))
 			channel.Setting = nil // 清空设置以避免后续错误
 			_ = channel.Save()    // 保存修改
+			setting.PassThroughHeadersEnabled = true
+			return setting
 		}
+
+		// Backward-compatible defaulting:
+		// - Existing channels may have a JSON setting without "pass_through_headers_enabled".
+		// - Default is enabled (true) unless explicitly set to false.
+		var rawMap map[string]json.RawMessage
+		if err := common.Unmarshal(raw, &rawMap); err == nil {
+			if _, ok := rawMap["pass_through_headers_enabled"]; !ok {
+				setting.PassThroughHeadersEnabled = true
+			}
+		}
+	} else {
+		setting.PassThroughHeadersEnabled = true
 	}
 	return setting
 }
