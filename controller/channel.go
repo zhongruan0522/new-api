@@ -181,19 +181,75 @@ func buildFetchModelsHeaders(channel *model.Channel, key string) (http.Header, e
 		headers = GetAuthHeader(key)
 	}
 
-	headerOverride := channel.GetHeaderOverride()
-	for k, v := range headerOverride {
-		str, ok := v.(string)
-		if !ok {
-			return nil, fmt.Errorf("invalid header override for key %s", k)
-		}
-		if strings.Contains(str, "{api_key}") {
-			str = strings.ReplaceAll(str, "{api_key}", key)
-		}
-		headers.Set(k, str)
+	if err := applyFetchModelsHeaderOverride(headers, channel, key); err != nil {
+		return nil, err
 	}
 
 	return headers, nil
+}
+
+func buildFetchModelsGeminiHeaders(channel *model.Channel, key string) (http.Header, error) {
+	headers := http.Header{}
+	if err := applyFetchModelsHeaderOverride(headers, channel, key); err != nil {
+		return nil, err
+	}
+	if strings.TrimSpace(headers.Get("x-goog-api-key")) == "" && strings.TrimSpace(headers.Get("Authorization")) == "" {
+		headers.Set("x-goog-api-key", key)
+	}
+	return headers, nil
+}
+
+func applyFetchModelsHeaderOverride(headers http.Header, channel *model.Channel, key string) error {
+	headerOverride := channel.GetHeaderOverride()
+	for rawKey, rawValue := range headerOverride {
+		trimmedKey := strings.TrimSpace(rawKey)
+		if trimmedKey == "" {
+			continue
+		}
+		if isFetchModelsHeaderPassthroughRuleKey(trimmedKey) {
+			continue
+		}
+
+		str, ok := rawValue.(string)
+		if !ok {
+			return fmt.Errorf("invalid header override for key %s", rawKey)
+		}
+
+		trimmedValue := strings.TrimSpace(str)
+		if trimmedValue == "" {
+			continue
+		}
+
+		// {client_header:XXX} placeholders require the original client request header.
+		// Fetching models is an admin action and should not forward admin headers upstream.
+		// Skip client_header placeholders instead of passing through the literal value.
+		if strings.HasPrefix(trimmedValue, "{client_header:") {
+			continue
+		}
+
+		if strings.Contains(str, "{api_key}") {
+			str = strings.ReplaceAll(str, "{api_key}", key)
+		}
+		str = strings.TrimSpace(str)
+		if str == "" {
+			continue
+		}
+
+		headers.Set(trimmedKey, str)
+	}
+	return nil
+}
+
+func isFetchModelsHeaderPassthroughRuleKey(key string) bool {
+	key = strings.TrimSpace(key)
+	if key == "" {
+		return false
+	}
+	if key == "*" {
+		return true
+	}
+	lower := strings.ToLower(key)
+	return strings.HasPrefix(lower, "re:") || strings.HasPrefix(lower, "regex:")
 }
 
 func FetchUpstreamModels(c *gin.Context) {
@@ -277,7 +333,12 @@ func FetchUpstreamModels(c *gin.Context) {
 			return
 		}
 		key = strings.TrimSpace(key)
-		models, err := gemini.FetchGeminiModels(baseURL, key, channel.GetSetting().Proxy)
+		headers, err := buildFetchModelsGeminiHeaders(channel, key)
+		if err != nil {
+			common.ApiError(c, err)
+			return
+		}
+		models, err := gemini.FetchGeminiModelsWithHeaders(baseURL, key, channel.GetSetting().Proxy, headers)
 		if err != nil {
 			c.JSON(http.StatusOK, gin.H{
 				"success": false,
