@@ -1570,6 +1570,10 @@ type GeminiModelsResponse struct {
 }
 
 func FetchGeminiModels(baseURL, apiKey, proxyURL string) ([]string, error) {
+	return FetchGeminiModelsWithHeaders(baseURL, apiKey, proxyURL, nil)
+}
+
+func FetchGeminiModelsWithHeaders(baseURL, apiKey, proxyURL string, headers http.Header) ([]string, error) {
 	client, err := service.GetHttpClientWithProxy(proxyURL)
 	if err != nil {
 		return nil, fmt.Errorf("创建HTTP客户端失败: %v", err)
@@ -1592,7 +1596,33 @@ func FetchGeminiModels(baseURL, apiKey, proxyURL string) ([]string, error) {
 			return nil, fmt.Errorf("创建请求失败: %v", err)
 		}
 
-		request.Header.Set("x-goog-api-key", apiKey)
+		if headers != nil {
+			// Prefer explicitly provided auth headers.
+			if strings.TrimSpace(headers.Get("x-goog-api-key")) == "" && strings.TrimSpace(headers.Get("Authorization")) == "" {
+				request.Header.Set("x-goog-api-key", apiKey)
+			}
+
+			for name, values := range headers {
+				trimmedValues := make([]string, 0, len(values))
+				for _, raw := range values {
+					value := strings.TrimSpace(raw)
+					if value == "" {
+						continue
+					}
+					trimmedValues = append(trimmedValues, value)
+				}
+				if len(trimmedValues) == 0 {
+					continue
+				}
+
+				request.Header.Del(name)
+				for _, value := range trimmedValues {
+					request.Header.Add(name, value)
+				}
+			}
+		} else {
+			request.Header.Set("x-goog-api-key", apiKey)
+		}
 
 		response, err := client.Do(request)
 		if err != nil {
