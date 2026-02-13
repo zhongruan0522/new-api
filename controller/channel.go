@@ -172,6 +172,12 @@ func GetAllChannels(c *gin.Context) {
 	return
 }
 
+const (
+	fetchModelsDefaultXTitle      = "Cherry Studio"
+	fetchModelsDefaultHTTPReferer = "https://cherry-ai.com"
+	fetchModelsDefaultUserAgent   = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) CherryStudio/1.7.18 Chrome/140.0.7339.249 Electron/38.7.0 Safari/537.36"
+)
+
 func buildFetchModelsHeaders(channel *model.Channel, key string) (http.Header, error) {
 	var headers http.Header
 	switch channel.Type {
@@ -180,6 +186,8 @@ func buildFetchModelsHeaders(channel *model.Channel, key string) (http.Header, e
 	default:
 		headers = GetAuthHeader(key)
 	}
+
+	applyFetchModelsDefaultHeaders(headers)
 
 	if err := applyFetchModelsHeaderOverride(headers, channel, key); err != nil {
 		return nil, err
@@ -190,6 +198,7 @@ func buildFetchModelsHeaders(channel *model.Channel, key string) (http.Header, e
 
 func buildFetchModelsGeminiHeaders(channel *model.Channel, key string) (http.Header, error) {
 	headers := http.Header{}
+	applyFetchModelsDefaultHeaders(headers)
 	if err := applyFetchModelsHeaderOverride(headers, channel, key); err != nil {
 		return nil, err
 	}
@@ -197,6 +206,21 @@ func buildFetchModelsGeminiHeaders(channel *model.Channel, key string) (http.Hea
 		headers.Set("x-goog-api-key", key)
 	}
 	return headers, nil
+}
+
+func applyFetchModelsDefaultHeaders(headers http.Header) {
+	if headers == nil {
+		return
+	}
+	if strings.TrimSpace(headers.Get("x-title")) == "" {
+		headers.Set("x-title", fetchModelsDefaultXTitle)
+	}
+	if strings.TrimSpace(headers.Get("http-referer")) == "" {
+		headers.Set("http-referer", fetchModelsDefaultHTTPReferer)
+	}
+	if strings.TrimSpace(headers.Get("user-agent")) == "" {
+		headers.Set("user-agent", fetchModelsDefaultUserAgent)
+	}
 }
 
 func applyFetchModelsHeaderOverride(headers http.Header, channel *model.Channel, key string) error {
@@ -1217,7 +1241,9 @@ func FetchModels(c *gin.Context) {
 	}
 
 	if req.Type == constant.ChannelTypeGemini {
-		models, err := gemini.FetchGeminiModels(baseURL, key, "")
+		headers := http.Header{}
+		applyFetchModelsDefaultHeaders(headers)
+		models, err := gemini.FetchGeminiModelsWithHeaders(baseURL, key, "", headers)
 		if err != nil {
 			c.JSON(http.StatusOK, gin.H{
 				"success": false,
@@ -1245,7 +1271,15 @@ func FetchModels(c *gin.Context) {
 		return
 	}
 
-	request.Header.Set("Authorization", "Bearer "+key)
+	var headers http.Header
+	switch req.Type {
+	case constant.ChannelTypeAnthropic:
+		headers = GetClaudeAuthHeader(key)
+	default:
+		headers = GetAuthHeader(key)
+	}
+	applyFetchModelsDefaultHeaders(headers)
+	request.Header = headers
 
 	response, err := client.Do(request)
 	if err != nil {

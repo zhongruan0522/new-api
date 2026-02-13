@@ -39,6 +39,27 @@ func TestBuildFetchModelsHeaders_SkipsPassthroughRulesAndClientHeader(t *testing
 	}
 }
 
+func TestBuildFetchModelsHeaders_AppliesCherryStudioDefaultHeaders(t *testing.T) {
+	channel := &model.Channel{
+		Type: constant.ChannelTypeOpenAI,
+	}
+
+	headers, err := buildFetchModelsHeaders(channel, "abc123")
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	if got := headers.Get("x-title"); got != fetchModelsDefaultXTitle {
+		t.Fatalf("expected x-title %q, got %q", fetchModelsDefaultXTitle, got)
+	}
+	if got := headers.Get("http-referer"); got != fetchModelsDefaultHTTPReferer {
+		t.Fatalf("expected http-referer %q, got %q", fetchModelsDefaultHTTPReferer, got)
+	}
+	if got := headers.Get("user-agent"); got != fetchModelsDefaultUserAgent {
+		t.Fatalf("expected user-agent %q, got %q", fetchModelsDefaultUserAgent, got)
+	}
+}
+
 func TestBuildFetchModelsGeminiHeaders_PrefersAuthorization(t *testing.T) {
 	override := `{"Authorization":"Bearer {api_key}"}`
 	channel := &model.Channel{
@@ -86,4 +107,3 @@ func TestBuildFetchModelsHeaders_ReturnsErrorOnNonStringHeaderValue(t *testing.T
 		t.Fatalf("expected error, got nil")
 	}
 }
-
