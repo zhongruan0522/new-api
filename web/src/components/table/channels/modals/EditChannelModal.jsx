@@ -172,6 +172,7 @@ const EditChannelModal = (props) => {
     disable_store: false, // false = 允许透传（默认开启）
     allow_safety_identifier: false,
     claude_beta_query: false,
+    image_auto_convert_to_url: false,
   };
   const [batch, setBatch] = useState(false);
   const [multiToSingle, setMultiToSingle] = useState(false);
@@ -641,6 +642,8 @@ const EditChannelModal = (props) => {
           data.allow_safety_identifier =
             parsedSettings.allow_safety_identifier || false;
           data.claude_beta_query = parsedSettings.claude_beta_query || false;
+          data.image_auto_convert_to_url =
+            parsedSettings.image_auto_convert_to_url || false;
         } catch (error) {
           console.error('解析其他设置失败:', error);
           data.azure_responses_version = '';
@@ -652,6 +655,7 @@ const EditChannelModal = (props) => {
           data.disable_store = false;
           data.allow_safety_identifier = false;
           data.claude_beta_query = false;
+          data.image_auto_convert_to_url = false;
         }
       } else {
         // 兼容历史数据：老渠道没有 settings 时，默认按 json 展示
@@ -662,6 +666,7 @@ const EditChannelModal = (props) => {
         data.disable_store = false;
         data.allow_safety_identifier = false;
         data.claude_beta_query = false;
+        data.image_auto_convert_to_url = false;
       }
 
       if (
@@ -1412,6 +1417,13 @@ const EditChannelModal = (props) => {
       }
     }
 
+    // Generic: image handling (convert image blocks to URL text for text-only models)
+    if (localInputs.image_auto_convert_to_url === true) {
+      settings.image_auto_convert_to_url = true;
+    } else if ('image_auto_convert_to_url' in settings) {
+      delete settings.image_auto_convert_to_url;
+    }
+
     localInputs.settings = JSON.stringify(settings);
 
     // 清理不需要发送到后端的字段
@@ -1432,6 +1444,7 @@ const EditChannelModal = (props) => {
     delete localInputs.disable_store;
     delete localInputs.allow_safety_identifier;
     delete localInputs.claude_beta_query;
+    delete localInputs.image_auto_convert_to_url;
 
     let res;
     localInputs.auto_ban = localInputs.auto_ban ? 1 : 0;
@@ -2469,6 +2482,22 @@ const EditChannelModal = (props) => {
                         showClear
                       />
                     )}
+
+                    <Form.Switch
+                      field='image_auto_convert_to_url'
+                      label={t('多模态自动转URL')}
+                      checkedText={t('开')}
+                      uncheckedText={t('关')}
+                      onChange={(value) =>
+                        handleChannelOtherSettingsChange(
+                          'image_auto_convert_to_url',
+                          value,
+                        )
+                      }
+                      extraText={t(
+                        '开启后：当用户消息包含图片/视频（image_url / video_url）时，会自动提取（或将 base64 入库存储并生成）URL，并拼接到最后一条 user 消息文本中，方便非多模态模型调用对应的多模态理解 MCP。',
+                      )}
+                    />
 
                     {inputs.type === 1 && (
                       <Form.Input

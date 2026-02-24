@@ -3,6 +3,8 @@ package constant
 var StreamingTimeout int
 var DifyDebug bool
 var MaxFileDownloadMB int
+var MaxImageUploadMB int
+var MaxVideoUploadMB int
 var StreamScannerMaxBufferMB int
 var ForceStreamOption bool
 var CountToken bool
@@ -16,6 +18,10 @@ var NotificationLimitDurationMinute int
 var GenerateDefaultToken bool
 var ErrorLogEnabled bool
 var TaskQueryLimit int
+
+// Stored media pool limits (in MB). When exceeded, the oldest stored assets are deleted automatically.
+var StoredImagePoolMB int
+var StoredVideoPoolMB int
 
 // temporary variable for sora patch, will be removed in future
 var TaskPricePatches []string
