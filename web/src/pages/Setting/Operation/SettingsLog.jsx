@@ -47,13 +47,14 @@ export default function SettingsLog(props) {
   const [inputs, setInputs] = useState({
     LogConsumeEnabled: false,
     historyTimestamp: dayjs().subtract(1, 'month').toDate(),
+    cleanStoredMedia: true,
   });
   const refForm = useRef();
   const [inputsRow, setInputsRow] = useState(inputs);
 
   function onSubmit() {
     const updateArray = compareObjects(inputs, inputsRow).filter(
-      (item) => item.key !== 'historyTimestamp',
+      (item) => item.key !== 'historyTimestamp' && item.key !== 'cleanStoredMedia',
     );
 
     if (!updateArray.length) return showWarning(t('你似乎并没有修改什么'));
@@ -148,6 +149,12 @@ export default function SettingsLog(props) {
             <Text style={{ color: '#333' }}> {t('之前的所有日志')}</Text>
           </div>
           <p style={{ marginTop: '12px' }}>
+            <Text>{t('同时清除历史多模态文件（图片/视频，自动转URL保存）')}：</Text>
+            <Text strong type={inputs.cleanStoredMedia ? 'danger' : 'tertiary'}>
+              {inputs.cleanStoredMedia ? t('是') : t('否')}
+            </Text>
+          </p>
+          <p style={{ marginTop: '12px' }}>
             <Text type='danger'>
               {t('此操作不可恢复，请仔细确认时间后再操作！')}
             </Text>
@@ -160,11 +167,23 @@ export default function SettingsLog(props) {
       onOk: async () => {
         try {
           setLoadingCleanHistoryLog(true);
-          const res = await API.delete(
-            `/api/log/?target_timestamp=${Date.parse(inputs.historyTimestamp) / 1000}`,
-          );
+          const targetTs = Date.parse(inputs.historyTimestamp) / 1000;
+          const cleanStoredMedia = !!inputs.cleanStoredMedia;
+          const url = cleanStoredMedia
+            ? `/api/log/?target_timestamp=${targetTs}&clean_stored_media=true`
+            : `/api/log/?target_timestamp=${targetTs}`;
+          const res = await API.delete(url);
           const { success, message, data } = res.data;
           if (success) {
+            if (typeof data === 'object' && data !== null) {
+              const logs = data.logs ?? 0;
+              const storedImages = data.stored_images ?? 0;
+              const storedVideos = data.stored_videos ?? 0;
+              showSuccess(
+                `已清理：${logs} 条日志，${storedImages} 张历史图片，${storedVideos} 个历史视频！`,
+              );
+              return;
+            }
             showSuccess(`${data} ${t('条日志已清理！')}`);
             return;
           } else {
@@ -187,6 +206,7 @@ export default function SettingsLog(props) {
       }
     }
     currentInputs['historyTimestamp'] = inputs.historyTimestamp;
+    currentInputs['cleanStoredMedia'] = inputs.cleanStoredMedia;
     setInputs(Object.assign(inputs, currentInputs));
     setInputsRow(structuredClone(currentInputs));
     refForm.current.setValues(currentInputs);
@@ -237,6 +257,19 @@ export default function SettingsLog(props) {
                   >
                     {t('将清除选定时间之前的所有日志')}
                   </Text>
+                  <Form.Switch
+                    field={'cleanStoredMedia'}
+                    label={t('同时清除历史多模态文件（图片/视频，自动转URL保存）')}
+                    size='default'
+                    checkedText='是'
+                    uncheckedText='否'
+                    onChange={(value) => {
+                      setInputs({
+                        ...inputs,
+                        cleanStoredMedia: value,
+                      });
+                    }}
+                  />
                   <Button
                     size='default'
                     type='danger'

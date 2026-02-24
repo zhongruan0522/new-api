@@ -2,6 +2,9 @@ package relay
 
 import (
 	"bytes"
+	"encoding/base64"
+	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -25,6 +28,7 @@ import (
 	"github.com/shopspring/decimal"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 func TextHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *types.NewAPIError) {
@@ -47,6 +51,128 @@ func TextHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *types
 	err = helper.ModelMappedHelper(c, info, request)
 	if err != nil {
 		return types.NewError(err, types.ErrorCodeChannelModelMappedError, types.ErrOptionWithSkipRetry())
+	}
+
+	// Channel-level multimodal handling: convert media blocks to URLs appended to the last user message.
+	if info.ChannelOtherSettings.ImageAutoConvertToURL {
+		storedURLBySHA := make(map[string]string)
+		imageMaxBytes := int64(constant.MaxImageUploadMB) * 1024 * 1024
+		videoMaxBytes := int64(constant.MaxVideoUploadMB) * 1024 * 1024
+		imagePoolMaxBytes := int64(constant.StoredImagePoolMB) * 1024 * 1024
+		videoPoolMaxBytes := int64(constant.StoredVideoPoolMB) * 1024 * 1024
+
+		_, convErr := relaycommon.ApplyImageAutoConvertToURL(request, func(rawURL string, mediaContentType string) (string, error) {
+			rawURL = strings.TrimSpace(rawURL)
+			if rawURL == "" {
+				return "", nil
+			}
+			if strings.HasPrefix(rawURL, "http://") || strings.HasPrefix(rawURL, "https://") {
+				return rawURL, nil
+			}
+
+			mimeType, b64, err := service.DecodeBase64FileData(rawURL)
+			if err != nil {
+				return "", types.NewErrorWithStatusCode(fmt.Errorf("decode media data failed: %w", err), types.ErrorCodeInvalidRequest, http.StatusBadRequest, types.ErrOptionWithSkipRetry())
+			}
+			mimeType = strings.TrimSpace(mimeType)
+			if mimeType == "" {
+				return "", types.NewErrorWithStatusCode(fmt.Errorf("invalid media mime type: %q", mimeType), types.ErrorCodeInvalidRequest, http.StatusBadRequest, types.ErrOptionWithSkipRetry())
+			}
+			lowerMime := strings.ToLower(mimeType)
+			isImage := mediaContentType == dto.ContentTypeImageURL
+			isVideo := mediaContentType == dto.ContentTypeVideoUrl
+			if isImage && !strings.HasPrefix(lowerMime, "image/") {
+				return "", types.NewErrorWithStatusCode(fmt.Errorf("invalid image mime type: %q", mimeType), types.ErrorCodeInvalidRequest, http.StatusBadRequest, types.ErrOptionWithSkipRetry())
+			}
+			if isVideo && !strings.HasPrefix(lowerMime, "video/") {
+				return "", types.NewErrorWithStatusCode(fmt.Errorf("invalid video mime type: %q", mimeType), types.ErrorCodeInvalidRequest, http.StatusBadRequest, types.ErrOptionWithSkipRetry())
+			}
+			if !isImage && !isVideo {
+				return "", types.NewErrorWithStatusCode(fmt.Errorf("unsupported media content type: %q", mediaContentType), types.ErrorCodeInvalidRequest, http.StatusBadRequest, types.ErrOptionWithSkipRetry())
+			}
+
+			b64 = strings.TrimSpace(b64)
+			data, err := base64.StdEncoding.DecodeString(b64)
+			if err != nil {
+				return "", types.NewErrorWithStatusCode(fmt.Errorf("decode media base64 failed: %w", err), types.ErrorCodeInvalidRequest, http.StatusBadRequest, types.ErrOptionWithSkipRetry())
+			}
+			if len(data) == 0 {
+				return "", types.NewErrorWithStatusCode(fmt.Errorf("media data is empty"), types.ErrorCodeInvalidRequest, http.StatusBadRequest, types.ErrOptionWithSkipRetry())
+			}
+
+			if isImage && imageMaxBytes > 0 && int64(len(data)) > imageMaxBytes {
+				return "", types.NewErrorWithStatusCode(fmt.Errorf("image size %d exceeds limit %d bytes", len(data), imageMaxBytes), types.ErrorCodeInvalidRequest, http.StatusBadRequest, types.ErrOptionWithSkipRetry())
+			}
+			if isVideo && videoMaxBytes > 0 && int64(len(data)) > videoMaxBytes {
+				return "", types.NewErrorWithStatusCode(fmt.Errorf("video size %d exceeds limit %d bytes", len(data), videoMaxBytes), types.ErrorCodeInvalidRequest, http.StatusBadRequest, types.ErrOptionWithSkipRetry())
+			}
+
+			sha := hex.EncodeToString(common.Sha256Raw(data))
+			cacheKey := mediaContentType + ":" + sha
+			if existing, ok := storedURLBySHA[cacheKey]; ok {
+				return existing, nil
+			}
+
+			if isImage {
+				// Cross-request dedupe: same user + same sha -> reuse existing asset URL.
+				if existing, err := model.GetStoredImageByUserAndSha(c.Request.Context(), info.UserId, sha); err == nil && existing != nil && existing.Id != "" {
+					u := buildStoredImageURL(c, existing.Id)
+					storedURLBySHA[cacheKey] = u
+					return u, nil
+				} else if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+					return "", types.NewError(fmt.Errorf("query stored image failed: %w", err), types.ErrorCodeQueryDataError, types.ErrOptionWithSkipRetry())
+				}
+
+				img := &model.StoredImage{
+					UserId:    info.UserId,
+					ChannelId: info.ChannelId,
+					MimeType:  mimeType,
+					SizeBytes: len(data),
+					Sha256:    sha,
+					Data:      model.LargeBlob(data),
+				}
+				if err := img.Insert(c.Request.Context()); err != nil {
+					return "", types.NewError(fmt.Errorf("store image failed: %w", err), types.ErrorCodeUpdateDataError, types.ErrOptionWithSkipRetry())
+				}
+				if _, err := model.EnsureStoredImagesPoolLimit(c.Request.Context(), imagePoolMaxBytes, 100); err != nil {
+					return "", types.NewError(fmt.Errorf("enforce stored image pool limit failed: %w", err), types.ErrorCodeUpdateDataError, types.ErrOptionWithSkipRetry())
+				}
+
+				u := buildStoredImageURL(c, img.Id)
+				storedURLBySHA[cacheKey] = u
+				return u, nil
+			}
+
+			if existing, err := model.GetStoredVideoByUserAndSha(c.Request.Context(), info.UserId, sha); err == nil && existing != nil && existing.Id != "" {
+				u := buildStoredVideoURL(c, existing.Id)
+				storedURLBySHA[cacheKey] = u
+				return u, nil
+			} else if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+				return "", types.NewError(fmt.Errorf("query stored video failed: %w", err), types.ErrorCodeQueryDataError, types.ErrOptionWithSkipRetry())
+			}
+
+			v := &model.StoredVideo{
+				UserId:    info.UserId,
+				ChannelId: info.ChannelId,
+				MimeType:  mimeType,
+				SizeBytes: len(data),
+				Sha256:    sha,
+				Data:      model.LargeBlob(data),
+			}
+			if err := v.Insert(c.Request.Context()); err != nil {
+				return "", types.NewError(fmt.Errorf("store video failed: %w", err), types.ErrorCodeUpdateDataError, types.ErrOptionWithSkipRetry())
+			}
+			if _, err := model.EnsureStoredVideosPoolLimit(c.Request.Context(), videoPoolMaxBytes, 50); err != nil {
+				return "", types.NewError(fmt.Errorf("enforce stored video pool limit failed: %w", err), types.ErrorCodeUpdateDataError, types.ErrOptionWithSkipRetry())
+			}
+
+			u := buildStoredVideoURL(c, v.Id)
+			storedURLBySHA[cacheKey] = u
+			return u, nil
+		})
+		if convErr != nil {
+			return types.NewError(convErr, types.ErrorCodeInvalidRequest, types.ErrOptionWithSkipRetry())
+		}
 	}
 
 	includeUsage := true
@@ -76,9 +202,15 @@ func TextHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *types
 	adaptor.Init(info)
 
 	passThroughGlobal := model_setting.GetGlobalSettings().PassThroughRequestEnabled
+	passThroughBody := info.ChannelSetting.PassThroughBodyEnabled
+	// Image auto convert rewrites the structured request; pass-through body would bypass it.
+	if info.ChannelOtherSettings.ImageAutoConvertToURL {
+		passThroughGlobal = false
+		passThroughBody = false
+	}
 	if info.RelayMode == relayconstant.RelayModeChatCompletions &&
 		!passThroughGlobal &&
-		!info.ChannelSetting.PassThroughBodyEnabled &&
+		!passThroughBody &&
 		service.ShouldChatCompletionsUseResponsesGlobal(info.ChannelId, info.ChannelType, info.OriginModelName) {
 		applySystemPromptIfNeeded(c, info, request)
 		usage, newApiErr := chatCompletionsViaResponses(c, info, adaptor, request)
@@ -99,7 +231,7 @@ func TextHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *types
 
 	var requestBody io.Reader
 
-	if passThroughGlobal || info.ChannelSetting.PassThroughBodyEnabled {
+	if passThroughGlobal || passThroughBody {
 		body, err := common.GetRequestBody(c)
 		if err != nil {
 			return types.NewErrorWithStatusCode(err, types.ErrorCodeReadRequestBodyFailed, http.StatusBadRequest, types.ErrOptionWithSkipRetry())

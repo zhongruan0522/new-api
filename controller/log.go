@@ -150,6 +150,8 @@ func GetLogsSelfStat(c *gin.Context) {
 
 func DeleteHistoryLogs(c *gin.Context) {
 	targetTimestamp, _ := strconv.ParseInt(c.Query("target_timestamp"), 10, 64)
+	cleanStoredMedia := c.Query("clean_stored_media") == "true" || c.Query("clean_stored_media") == "1" ||
+		c.Query("clean_stored_images") == "true" || c.Query("clean_stored_images") == "1"
 	if targetTimestamp == 0 {
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,
@@ -160,6 +162,28 @@ func DeleteHistoryLogs(c *gin.Context) {
 	count, err := model.DeleteOldLog(c.Request.Context(), targetTimestamp, 100)
 	if err != nil {
 		common.ApiError(c, err)
+		return
+	}
+	if cleanStoredMedia {
+		imgCount, err := model.DeleteOldStoredImages(c.Request.Context(), targetTimestamp, 100)
+		if err != nil {
+			common.ApiError(c, err)
+			return
+		}
+		videoCount, err := model.DeleteOldStoredVideos(c.Request.Context(), targetTimestamp, 100)
+		if err != nil {
+			common.ApiError(c, err)
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{
+			"success": true,
+			"message": "",
+			"data": gin.H{
+				"logs":          count,
+				"stored_images": imgCount,
+				"stored_videos": videoCount,
+			},
+		})
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
