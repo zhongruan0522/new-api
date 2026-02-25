@@ -36,6 +36,7 @@ export const DEFAULT_ADMIN_CONFIG = {
     detail: true,
     token: true,
     log: true,
+    multimodal_files: true,
     midjourney: true,
     task: true,
   },
@@ -213,6 +214,10 @@ export const useSidebar = () => {
 
   // 计算最终的显示配置
   const finalConfig = useMemo(() => {
+    // Modules that should ONLY be controlled by admin global config (SidebarModulesAdmin),
+    // and should not be overridable by per-user sidebar_modules.
+    const GLOBAL_ONLY_MODULES = new Set(['multimodal_files']);
+
     const result = {};
 
     // 确保adminConfig已加载
@@ -247,9 +252,12 @@ export const useSidebar = () => {
 
         const adminAllowed = adminSection[moduleKey];
         // 当userSection存在时检查模块状态，否则默认为true
-        const userAllowed = userSection
-          ? userSection[moduleKey] !== false
-          : true;
+        let userAllowed = userSection ? userSection[moduleKey] !== false : true;
+
+        // Enforce global-only modules: user config cannot hide them.
+        if (GLOBAL_ONLY_MODULES.has(moduleKey)) {
+          userAllowed = true;
+        }
 
         result[sectionKey][moduleKey] =
           adminAllowed && userAllowed && sectionEnabled;

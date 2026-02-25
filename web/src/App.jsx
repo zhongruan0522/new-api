@@ -39,6 +39,7 @@ import Log from './pages/Log';
 import Chat from './pages/Chat';
 import Chat2Link from './pages/Chat2Link';
 import Midjourney from './pages/Midjourney';
+import MultimodalFiles from './pages/MultimodalFiles';
 import Pricing from './pages/Pricing';
 import Task from './pages/Task';
 import ModelPage from './pages/Model';
@@ -269,6 +270,14 @@ function App() {
           element={
             <PrivateRoute>
               <Log />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path='/console/multimodal-files'
+          element={
+            <PrivateRoute>
+              <MultimodalFiles />
             </PrivateRoute>
           }
         />

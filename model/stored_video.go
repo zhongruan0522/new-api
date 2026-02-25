@@ -70,6 +70,38 @@ func GetStoredVideoByUserAndSha(ctx context.Context, userId int, sha256 string) 
 	return &v, nil
 }
 
+func GetStoredVideoMetaByID(ctx context.Context, id string) (*StoredVideo, error) {
+	if id == "" {
+		return nil, errors.New("id is required")
+	}
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	var v StoredVideo
+	if err := DB.WithContext(ctx).Model(&StoredVideo{}).
+		Select("id", "user_id", "channel_id", "created_at", "mime_type", "size_bytes", "sha256").
+		Where("id = ?", id).
+		First(&v).Error; err != nil {
+		return nil, err
+	}
+	return &v, nil
+}
+
+func DeleteStoredVideosByIDs(ctx context.Context, ids []string, userId int) (int64, error) {
+	if len(ids) == 0 {
+		return 0, nil
+	}
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	db := DB.WithContext(ctx).Where("id IN ?", ids)
+	if userId > 0 {
+		db = db.Where("user_id = ?", userId)
+	}
+	result := db.Delete(&StoredVideo{})
+	return result.RowsAffected, result.Error
+}
+
 func DeleteOldStoredVideos(ctx context.Context, targetTimestamp int64, limit int) (int64, error) {
 	var total int64 = 0
 	if ctx == nil {
