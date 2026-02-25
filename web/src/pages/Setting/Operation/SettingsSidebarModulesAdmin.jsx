@@ -30,6 +30,7 @@ import {
 } from '@douyinfe/semi-ui';
 import { API, showSuccess, showError } from '../../../helpers';
 import { StatusContext } from '../../../context/Status';
+import { mergeAdminConfig } from '../../../hooks/common/useSidebar';
 
 const { Text } = Typography;
 
@@ -50,6 +51,7 @@ export default function SettingsSidebarModulesAdmin(props) {
       detail: true,
       token: true,
       log: true,
+      multimodal_files: true,
       midjourney: true,
       task: true,
     },
@@ -76,7 +78,7 @@ export default function SettingsSidebarModulesAdmin(props) {
       const newModules = {
         ...sidebarModulesAdmin,
         [sectionKey]: {
-          ...sidebarModulesAdmin[sectionKey],
+          ...(sidebarModulesAdmin[sectionKey] || {}),
           enabled: checked,
         },
       };
@@ -90,7 +92,7 @@ export default function SettingsSidebarModulesAdmin(props) {
       const newModules = {
         ...sidebarModulesAdmin,
         [sectionKey]: {
-          ...sidebarModulesAdmin[sectionKey],
+          ...(sidebarModulesAdmin[sectionKey] || {}),
           [moduleKey]: checked,
         },
       };
@@ -100,37 +102,7 @@ export default function SettingsSidebarModulesAdmin(props) {
 
   // 重置为默认配置
   function resetSidebarModules() {
-    const defaultModules = {
-      chat: {
-        enabled: true,
-        playground: true,
-        chat: true,
-      },
-      console: {
-        enabled: true,
-        detail: true,
-        token: true,
-        log: true,
-        midjourney: true,
-        task: true,
-      },
-      personal: {
-        enabled: true,
-        topup: true,
-        personal: true,
-      },
-      admin: {
-        enabled: true,
-        channel: true,
-        models: true,
-        deployment: true,
-        redemption: true,
-        user: true,
-        subscription: true,
-        setting: true,
-      },
-    };
-    setSidebarModulesAdmin(defaultModules);
+    setSidebarModulesAdmin(mergeAdminConfig(null));
     showSuccess(t('已重置为默认配置'));
   }
 
@@ -174,32 +146,10 @@ export default function SettingsSidebarModulesAdmin(props) {
     if (props.options && props.options.SidebarModulesAdmin) {
       try {
         const modules = JSON.parse(props.options.SidebarModulesAdmin);
-        setSidebarModulesAdmin(modules);
+        setSidebarModulesAdmin(mergeAdminConfig(modules));
       } catch (error) {
         // 使用默认配置
-        const defaultModules = {
-          chat: { enabled: true, playground: true, chat: true },
-          console: {
-            enabled: true,
-            detail: true,
-            token: true,
-            log: true,
-            midjourney: true,
-            task: true,
-          },
-          personal: { enabled: true, topup: true, personal: true },
-          admin: {
-            enabled: true,
-            channel: true,
-            models: true,
-            deployment: true,
-            redemption: true,
-            user: true,
-            subscription: true,
-            setting: true,
-          },
-        };
-        setSidebarModulesAdmin(defaultModules);
+        setSidebarModulesAdmin(mergeAdminConfig(null));
       }
     }
   }, [props.options]);
@@ -227,6 +177,11 @@ export default function SettingsSidebarModulesAdmin(props) {
         { key: 'detail', title: t('数据看板'), description: t('系统数据统计') },
         { key: 'token', title: t('令牌管理'), description: t('API令牌管理') },
         { key: 'log', title: t('使用日志'), description: t('API使用记录') },
+        {
+          key: 'multimodal_files',
+          title: t('多模态文件'),
+          description: t('多模态文件管理'),
+        },
         {
           key: 'midjourney',
           title: t('绘图日志'),
@@ -327,7 +282,7 @@ export default function SettingsSidebarModulesAdmin(props) {
                 </Text>
               </div>
               <Switch
-                checked={sidebarModulesAdmin[section.key]?.enabled}
+                checked={sidebarModulesAdmin[section.key]?.enabled !== false}
                 onChange={handleSectionChange(section.key)}
                 size='default'
               />
@@ -341,7 +296,7 @@ export default function SettingsSidebarModulesAdmin(props) {
                     bodyStyle={{ padding: '16px' }}
                     hoverable
                     style={{
-                      opacity: sidebarModulesAdmin[section.key]?.enabled
+                      opacity: sidebarModulesAdmin[section.key]?.enabled !== false
                         ? 1
                         : 0.5,
                       transition: 'opacity 0.2s',
@@ -382,11 +337,14 @@ export default function SettingsSidebarModulesAdmin(props) {
                       <div style={{ marginLeft: '16px' }}>
                         <Switch
                           checked={
-                            sidebarModulesAdmin[section.key]?.[module.key]
+                            sidebarModulesAdmin[section.key]?.[module.key] !==
+                            false
                           }
                           onChange={handleModuleChange(section.key, module.key)}
                           size='default'
-                          disabled={!sidebarModulesAdmin[section.key]?.enabled}
+                          disabled={
+                            sidebarModulesAdmin[section.key]?.enabled === false
+                          }
                         />
                       </div>
                     </div>

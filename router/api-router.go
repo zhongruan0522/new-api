@@ -284,6 +284,15 @@ func SetApiRouter(router *gin.Engine) {
 		{
 			logRoute.GET("/token", middleware.TokenAuthReadOnly(), controller.GetLogByKey)
 		}
+
+		storedMediaRoute := apiRouter.Group("/stored_media")
+		{
+			storedMediaRoute.GET("/", middleware.AdminAuth(), controller.GetAllStoredMedia)
+			storedMediaRoute.GET("/self", middleware.UserAuth(), controller.GetSelfStoredMedia)
+			storedMediaRoute.GET("/:media_type/:id", middleware.UserAuth(), controller.GetStoredMediaDetail)
+			storedMediaRoute.DELETE("/:media_type/:id", middleware.UserAuth(), controller.DeleteStoredMedia)
+			storedMediaRoute.POST("/batch", middleware.UserAuth(), controller.DeleteStoredMediaBatch)
+		}
 		groupRoute := apiRouter.Group("/group")
 		groupRoute.Use(middleware.AdminAuth())
 		{
