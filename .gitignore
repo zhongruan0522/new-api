@@ -27,3 +27,4 @@ data/
 .gomodcache/
 .gocache-temp
 .gopath
+.npm-cache/
