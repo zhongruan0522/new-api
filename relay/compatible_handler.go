@@ -53,7 +53,7 @@ func TextHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *types
 		return types.NewError(err, types.ErrorCodeChannelModelMappedError, types.ErrOptionWithSkipRetry())
 	}
 
-	// Channel-level multimodal handling: convert media blocks to URLs appended to the last user message.
+	// Channel-level multimodal handling: convert media blocks to URLs appended to the corresponding user message.
 	if info.ChannelOtherSettings.ImageAutoConvertToURL {
 		storedURLBySHA := make(map[string]string)
 		imageMaxBytes := int64(constant.MaxImageUploadMB) * 1024 * 1024

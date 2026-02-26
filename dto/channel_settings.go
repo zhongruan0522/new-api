@@ -36,7 +36,7 @@ type ChannelOtherSettings struct {
 	AwsKeyType            AwsKeyType `json:"aws_key_type,omitempty"`
 
 	// Convert image blocks (type: "image_url") into plain-text URLs and append them
-	// to the last user message. Useful for text-only models to call external multimodal tools (e.g. MCP).
+	// to the end of the corresponding user message. Useful for text-only models to call external multimodal tools (e.g. MCP).
 	//
 	// Note: despite the legacy field name, it also applies to "video_url".
 	ImageAutoConvertToURL bool `json:"image_auto_convert_to_url,omitempty"`

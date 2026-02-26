@@ -2495,7 +2495,7 @@ const EditChannelModal = (props) => {
                         )
                       }
                       extraText={t(
-                        '开启后：当用户消息包含图片/视频（image_url / video_url）时，会自动提取（或将 base64 入库存储并生成）URL，并拼接到最后一条 user 消息文本中，方便非多模态模型调用对应的多模态理解 MCP。',
+                        '开启后：当用户消息包含图片/视频（image_url / video_url）时，会自动提取（或将 base64 入库存储并生成）URL，并分别拼接到对应的 user 消息文本末尾，方便非多模态模型调用对应的多模态理解 MCP。',
                       )}
                     />
 
