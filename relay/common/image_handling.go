@@ -1,7 +1,6 @@
 package common
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/QuantumNous/new-api/dto"
@@ -15,7 +14,7 @@ type mediaURL struct {
 }
 
 // ApplyImageAutoConvertToURL converts multimodal media blocks (e.g. "image_url", "video_url")
-// into plain-text URLs and appends them to the last user message.
+// into plain-text URLs and appends them to the end of the corresponding user message.
 //
 // This is intended for text-only upstream models: the model can "see" image URLs and call
 // an external image understanding tool (e.g. MCP), while the upstream request stays text-only.
@@ -46,21 +45,17 @@ func ApplyImageAutoConvertToURL(req *dto.GeneralOpenAIRequest, resolve MediaURLR
 		return b.String()
 	}
 
-	mediaURLs := make([]mediaURL, 0)
-	lastUserIdx := -1
-
 	for i := range req.Messages {
 		if strings.ToLower(req.Messages[i].Role) != "user" {
 			continue
 		}
-		lastUserIdx = i
 
 		contents := req.Messages[i].ParseContent()
 		if len(contents) == 0 {
 			continue
 		}
 
-		hasMedia := false
+		mediaURLs := make([]mediaURL, 0)
 		for _, part := range contents {
 			switch part.Type {
 			case dto.ContentTypeImageURL:
@@ -81,7 +76,6 @@ func ApplyImageAutoConvertToURL(req *dto.GeneralOpenAIRequest, resolve MediaURLR
 					continue
 				}
 				mediaURLs = append(mediaURLs, mediaURL{Kind: "image", URL: resolved})
-				hasMedia = true
 			case dto.ContentTypeVideoUrl:
 				video := part.GetVideoUrl()
 				if video == nil {
@@ -100,68 +94,67 @@ func ApplyImageAutoConvertToURL(req *dto.GeneralOpenAIRequest, resolve MediaURLR
 					continue
 				}
 				mediaURLs = append(mediaURLs, mediaURL{Kind: "video", URL: resolved})
-				hasMedia = true
 			}
 		}
 
-		if !hasMedia {
+		if len(mediaURLs) == 0 {
 			continue
 		}
 
-		// Strip non-text parts from this user message to keep the upstream request text-only.
-		text := strings.TrimSpace(extractText(contents))
-		if text == "" {
-			text = "[media]"
+		// Deduplicate while preserving order (per message).
+		dedup := make([]mediaURL, 0, len(mediaURLs))
+		seen := make(map[string]struct{}, len(mediaURLs))
+		for _, item := range mediaURLs {
+			kind := strings.TrimSpace(item.Kind)
+			u := strings.TrimSpace(item.URL)
+			if u == "" {
+				continue
+			}
+			key := kind + "\n" + u
+			if _, ok := seen[key]; ok {
+				continue
+			}
+			seen[key] = struct{}{}
+			dedup = append(dedup, mediaURL{Kind: kind, URL: u})
 		}
-		req.Messages[i].SetStringContent(text)
+		if len(dedup) == 0 {
+			continue
+		}
+
+		// Strip non-text parts from this user message to keep the upstream request text-only,
+		// and append URLs to the same message.
+		base := strings.TrimRight(extractText(contents), " \t\r\n")
+		if strings.TrimSpace(base) == "" {
+			base = "[media]"
+		}
+
+		var b strings.Builder
+		b.WriteString(strings.TrimRight(base, " \t\r\n"))
+		b.WriteString("\n\n")
+		for idx, item := range dedup {
+			if idx > 0 {
+				b.WriteString("\n")
+			}
+			switch strings.TrimSpace(item.Kind) {
+			case "image":
+				b.WriteString("图片URL：")
+				b.WriteString(item.URL)
+				b.WriteString("，请使用MCP工具查看")
+			case "video":
+				b.WriteString("视频URL：")
+				b.WriteString(item.URL)
+				b.WriteString("，请使用MCP工具查看")
+			default:
+				// Fallback for unexpected kinds.
+				b.WriteString("媒体URL：")
+				b.WriteString(item.URL)
+				b.WriteString("，请使用MCP工具查看")
+			}
+		}
+
+		req.Messages[i].SetStringContent(strings.TrimRight(b.String(), "\n"))
 		changed = true
 	}
 
-	if lastUserIdx < 0 || len(mediaURLs) == 0 {
-		return changed, nil
-	}
-
-	// Deduplicate while preserving order.
-	dedup := make([]mediaURL, 0, len(mediaURLs))
-	seen := make(map[string]struct{}, len(mediaURLs))
-	for _, item := range mediaURLs {
-		kind := strings.TrimSpace(item.Kind)
-		u := strings.TrimSpace(item.URL)
-		if u == "" {
-			continue
-		}
-		key := kind + "\n" + u
-		if _, ok := seen[key]; ok {
-			continue
-		}
-		seen[key] = struct{}{}
-		dedup = append(dedup, mediaURL{Kind: kind, URL: u})
-	}
-	if len(dedup) == 0 {
-		return changed, nil
-	}
-
-	lastUser := &req.Messages[lastUserIdx]
-	base := strings.TrimRight(extractText(lastUser.ParseContent()), " \t\r\n")
-	// Make sure the last user message is text-only before appending URLs.
-	lastUser.SetStringContent(base)
-
-	var b strings.Builder
-	if base != "" {
-		b.WriteString(base)
-		b.WriteString("\n\n")
-	}
-	b.WriteString("Media URLs:\n")
-	for idx, item := range dedup {
-		label := strings.TrimSpace(item.Kind)
-		u := strings.TrimSpace(item.URL)
-		if label != "" {
-			b.WriteString(fmt.Sprintf("%d. [%s] %s\n", idx+1, label, u))
-		} else {
-			b.WriteString(fmt.Sprintf("%d. %s\n", idx+1, u))
-		}
-	}
-
-	lastUser.SetStringContent(strings.TrimRight(b.String(), "\n"))
-	return true, nil
+	return changed, nil
 }
