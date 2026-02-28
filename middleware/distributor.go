@@ -313,6 +313,12 @@ func SetupContextForSelectedChannel(c *gin.Context, channel *model.Channel, mode
 	if channel == nil {
 		return types.NewError(errors.New("channel is nil"), types.ErrorCodeGetChannelFailed, types.ErrOptionWithSkipRetry())
 	}
+	if channel.Type == constant.ChannelTypeUnknown {
+		return types.NewError(errors.New("invalid channel type"), types.ErrorCodeInvalidApiType, types.ErrOptionWithSkipRetry())
+	}
+	if _, ok := constant.ChannelTypeNames[channel.Type]; !ok {
+		return types.NewError(fmt.Errorf("unsupported channel type: %d", channel.Type), types.ErrorCodeInvalidApiType, types.ErrOptionWithSkipRetry())
+	}
 	common.SetContextKey(c, constant.ContextKeyChannelId, channel.Id)
 	common.SetContextKey(c, constant.ContextKeyChannelName, channel.Name)
 	common.SetContextKey(c, constant.ContextKeyChannelType, channel.Type)

@@ -19,21 +19,6 @@ For commercial licensing, please contact support@quantumnous.com
 
 export const CHANNEL_OPTIONS = [
   { value: 1, color: 'green', label: 'OpenAI' },
-  {
-    value: 2,
-    color: 'light-blue',
-    label: 'Midjourney Proxy',
-  },
-  {
-    value: 5,
-    color: 'blue',
-    label: 'Midjourney Proxy Plus',
-  },
-  {
-    value: 36,
-    color: 'purple',
-    label: 'Suno API',
-  },
   { value: 4, color: 'grey', label: 'Ollama' },
   {
     value: 14,
@@ -59,16 +44,6 @@ export const CHANNEL_OPTIONS = [
   { value: 39, color: 'grey', label: 'Cloudflare' },
   { value: 43, color: 'blue', label: 'DeepSeek' },
   {
-    value: 15,
-    color: 'blue',
-    label: '百度文心千帆',
-  },
-  {
-    value: 46,
-    color: 'blue',
-    label: '百度文心千帆V2',
-  },
-  {
     value: 17,
     color: 'orange',
     label: '阿里通义千问',
@@ -79,19 +54,9 @@ export const CHANNEL_OPTIONS = [
     label: '讯飞星火认知',
   },
   {
-    value: 16,
-    color: 'violet',
-    label: '智谱 ChatGLM（已经弃用，请使用智谱 GLM-4V）',
-  },
-  {
     value: 26,
     color: 'purple',
     label: '智谱 GLM-4V',
-  },
-  {
-    value: 27,
-    color: 'blue',
-    label: 'Perplexity',
   },
   {
     value: 24,
@@ -103,14 +68,8 @@ export const CHANNEL_OPTIONS = [
     color: 'orange',
     label: 'Google PaLM2',
   },
-  {
-    value: 47,
-    color: 'blue',
-    label: 'Xinference',
-  },
   { value: 25, color: 'green', label: 'Moonshot' },
   { value: 20, color: 'green', label: 'OpenRouter' },
-  { value: 19, color: 'blue', label: '360 智脑' },
   { value: 23, color: 'teal', label: '腾讯混元' },
   { value: 31, color: 'green', label: '零一万物' },
   { value: 35, color: 'green', label: 'MiniMax' },
@@ -119,21 +78,6 @@ export const CHANNEL_OPTIONS = [
   { value: 40, color: 'purple', label: 'SiliconCloud' },
   { value: 42, color: 'blue', label: 'Mistral AI' },
   { value: 8, color: 'pink', label: '自定义渠道' },
-  {
-    value: 22,
-    color: 'blue',
-    label: '知识库：FastGPT',
-  },
-  {
-    value: 21,
-    color: 'purple',
-    label: '知识库：AI Proxy',
-  },
-  {
-    value: 44,
-    color: 'purple',
-    label: '嵌入模型：MokaAI M3E',
-  },
   {
     value: 45,
     color: 'blue',
