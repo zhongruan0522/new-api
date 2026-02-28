@@ -58,7 +58,6 @@ import {
 import ModelSelectModal from './ModelSelectModal';
 import SingleModelSelectModal from './SingleModelSelectModal';
 import OllamaModelModal from './OllamaModelModal';
-import CodexOAuthModal from './CodexOAuthModal';
 import JSONEditor from '../../../common/ui/JSONEditor';
 import SecureVerificationModal from '../../../common/modals/SecureVerificationModal';
 import ChannelKeyDisplay from '../../../common/ui/ChannelKeyDisplay';
@@ -228,9 +227,6 @@ const EditChannelModal = (props) => {
   }, [inputs.model_mapping]);
   const [isIonetChannel, setIsIonetChannel] = useState(false);
   const [ionetMetadata, setIonetMetadata] = useState(null);
-  const [codexOAuthModalVisible, setCodexOAuthModalVisible] = useState(false);
-  const [codexCredentialRefreshing, setCodexCredentialRefreshing] =
-    useState(false);
 
   // 密钥显示状态
   const [keyDisplayState, setKeyDisplayState] = useState({
@@ -909,32 +905,6 @@ const EditChannelModal = (props) => {
     }
   };
 
-  const handleCodexOAuthGenerated = (key) => {
-    handleInputChange('key', key);
-    formatJsonField('key');
-  };
-
-  const handleRefreshCodexCredential = async () => {
-    if (!isEdit) return;
-
-    setCodexCredentialRefreshing(true);
-    try {
-      const res = await API.post(
-        `/api/channel/${channelId}/codex/refresh`,
-        {},
-        { skipErrorHandler: true },
-      );
-      if (!res?.data?.success) {
-        throw new Error(res?.data?.message || 'Failed to refresh credential');
-      }
-      showSuccess(t('凭证已刷新'));
-    } catch (error) {
-      showError(error.message || t('刷新失败'));
-    } finally {
-      setCodexCredentialRefreshing(false);
-    }
-  };
-
   useEffect(() => {
     if (inputs.type !== 45) {
       doubaoApiClickCountRef.current = 0;
@@ -1182,47 +1152,6 @@ const EditChannelModal = (props) => {
   const submit = async () => {
     const formValues = formApiRef.current ? formApiRef.current.getValues() : {};
     let localInputs = { ...formValues };
-
-    if (localInputs.type === 57) {
-      if (batch) {
-        showInfo(t('Codex 渠道不支持批量创建'));
-        return;
-      }
-
-      const rawKey = (localInputs.key || '').trim();
-      if (!isEdit && rawKey === '') {
-        showInfo(t('请输入密钥！'));
-        return;
-      }
-
-      if (rawKey !== '') {
-        if (!verifyJSON(rawKey)) {
-          showInfo(t('密钥必须是合法的 JSON 格式！'));
-          return;
-        }
-        try {
-          const parsed = JSON.parse(rawKey);
-          if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-            showInfo(t('密钥必须是 JSON 对象'));
-            return;
-          }
-          const accessToken = String(parsed.access_token || '').trim();
-          const accountId = String(parsed.account_id || '').trim();
-          if (!accessToken) {
-            showInfo(t('密钥 JSON 必须包含 access_token'));
-            return;
-          }
-          if (!accountId) {
-            showInfo(t('密钥 JSON 必须包含 account_id'));
-            return;
-          }
-          localInputs.key = JSON.stringify(parsed);
-        } catch (error) {
-          showInfo(t('密钥必须是合法的 JSON 格式！'));
-          return;
-        }
-      }
-    }
 
     if (localInputs.type === 41) {
       const keyType = localInputs.vertex_key_type || 'json';
@@ -1888,17 +1817,6 @@ const EditChannelModal = (props) => {
                       disabled={isIonetLocked}
                     />
 
-                    {inputs.type === 57 && (
-                      <Banner
-                        type='warning'
-                        closeIcon={null}
-                        className='mb-4 rounded-xl'
-                        description={t(
-                          '免责声明：仅限个人使用，请勿分发或共享任何凭证。该渠道存在前置条件与使用门槛，请在充分了解流程与风险后使用，并遵守 OpenAI 的相关条款与政策。相关凭证与配置仅限接入 Codex CLI 使用，不适用于其他客户端、平台或渠道。',
-                        )}
-                      />
-                    )}
-
                     {inputs.type === 20 && (
                       <Form.Switch
                         field='is_enterprise_account'
@@ -2071,101 +1989,8 @@ const EditChannelModal = (props) => {
                       )
                     ) : (
                       <>
-                        {inputs.type === 57 ? (
-                          <>
-                            <Form.TextArea
-                              field='key'
-                              label={
-                                isEdit
-                                  ? t('密钥（编辑模式下，保存的密钥不会显示）')
-                                  : t('密钥')
-                              }
-                              placeholder={t(
-                                '请输入 JSON 格式的 OAuth 凭据，例如：\n{\n  "access_token": "...",\n  "account_id": "..." \n}',
-                              )}
-                              rules={
-                                isEdit
-                                  ? []
-                                  : [
-                                      {
-                                        required: true,
-                                        message: t('请输入密钥'),
-                                      },
-                                    ]
-                              }
-                              autoComplete='new-password'
-                              onChange={(value) =>
-                                handleInputChange('key', value)
-                              }
-                              disabled={isIonetLocked}
-                              extraText={
-                                <div className='flex flex-col gap-2'>
-                                  <Text type='tertiary' size='small'>
-                                    {t(
-                                      '仅支持 JSON 对象，必须包含 access_token 与 account_id',
-                                    )}
-                                  </Text>
-
-                                  <Space wrap spacing='tight'>
-                                    <Button
-                                      size='small'
-                                      type='primary'
-                                      theme='outline'
-                                      onClick={() =>
-                                        setCodexOAuthModalVisible(true)
-                                      }
-                                      disabled={isIonetLocked}
-                                    >
-                                      {t('Codex 授权')}
-                                    </Button>
-                                    {isEdit && (
-                                      <Button
-                                        size='small'
-                                        type='primary'
-                                        theme='outline'
-                                        onClick={handleRefreshCodexCredential}
-                                        loading={codexCredentialRefreshing}
-                                        disabled={isIonetLocked}
-                                      >
-                                        {t('刷新凭证')}
-                                      </Button>
-                                    )}
-                                    <Button
-                                      size='small'
-                                      type='primary'
-                                      theme='outline'
-                                      onClick={() => formatJsonField('key')}
-                                      disabled={isIonetLocked}
-                                    >
-                                      {t('格式化')}
-                                    </Button>
-                                    {isEdit && (
-                                      <Button
-                                        size='small'
-                                        type='primary'
-                                        theme='outline'
-                                        onClick={handleShow2FAModal}
-                                        disabled={isIonetLocked}
-                                      >
-                                        {t('查看密钥')}
-                                      </Button>
-                                    )}
-                                    {batchExtra}
-                                  </Space>
-                                </div>
-                              }
-                              autosize
-                              showClear
-                            />
-
-                            <CodexOAuthModal
-                              visible={codexOAuthModalVisible}
-                              onCancel={() => setCodexOAuthModalVisible(false)}
-                              onSuccess={handleCodexOAuthGenerated}
-                            />
-                          </>
-                        ) : inputs.type === 41 &&
-                          (inputs.vertex_key_type || 'json') === 'json' ? (
+                        {inputs.type === 41 &&
+                        (inputs.vertex_key_type || 'json') === 'json' ? (
                           <>
                             {!batch && (
                               <div className='flex items-center justify-between mb-3'>
@@ -2468,16 +2293,6 @@ const EditChannelModal = (props) => {
                         placeholder={
                           '请输入Account ID，例如：d6b5da8hk1awo8nap34ube6gh'
                         }
-                        onChange={(value) => handleInputChange('other', value)}
-                        showClear
-                      />
-                    )}
-
-                    {inputs.type === 49 && (
-                      <Form.Input
-                        field='other'
-                        label={t('智能体ID')}
-                        placeholder={'请输入智能体ID，例如：7342866812345'}
                         onChange={(value) => handleInputChange('other', value)}
                         showClear
                       />
@@ -3291,7 +3106,7 @@ const EditChannelModal = (props) => {
                             )
                           }
                           extraText={t(
-                            'store 字段用于授权 OpenAI 存储请求数据以评估和优化产品。默认关闭，开启后可能导致 Codex 无法正常使用',
+                            'store 字段用于授权 OpenAI 存储请求数据以评估和优化产品。默认关闭，开启后可能影响部分接口/模型的兼容性',
                           )}
                         />
 

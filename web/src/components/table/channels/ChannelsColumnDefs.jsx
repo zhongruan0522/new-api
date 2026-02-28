@@ -55,6 +55,10 @@ const renderType = (type, record = {}, t) => {
   }
   type2label[0] = { value: 0, label: t('未知类型'), color: 'grey' };
 
+  const typeOption =
+    type2label[type] ||
+    ({ value: type, label: `${t('未知类型')} (${type})`, color: 'grey' });
+
   let icon = getChannelIcon(type);
 
   if (channelInfo?.is_multi_key) {
@@ -73,8 +77,8 @@ const renderType = (type, record = {}, t) => {
   }
 
   const typeTag = (
-    <Tag color={type2label[type]?.color} shape='circle' prefixIcon={icon}>
-      {type2label[type]?.label}
+    <Tag color={typeOption?.color} shape='circle' prefixIcon={icon}>
+      {typeOption?.label}
     </Tag>
   );
 

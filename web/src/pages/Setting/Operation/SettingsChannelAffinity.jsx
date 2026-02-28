@@ -66,17 +66,6 @@ const KEY_SOURCE_TYPES = [
 ];
 
 const RULE_TEMPLATES = {
-  codex: {
-    name: 'codex trace',
-    model_regex: ['^gpt-.*$'],
-    path_regex: ['/v1/responses'],
-    key_sources: [{ type: 'gjson', path: 'prompt_cache_key' }],
-    value_regex: '',
-    ttl_seconds: 0,
-    skip_retry_on_failure: false,
-    include_using_group: true,
-    include_rule_name: true,
-  },
   claudeCode: {
     name: 'claude-code trace',
     model_regex: ['^claude-.*$'],
@@ -346,7 +335,7 @@ export default function SettingsChannelAffinity(props) {
     }
   };
 
-  const appendCodexAndClaudeCodeTemplates = () => {
+  const appendClaudeCodeTemplate = () => {
     const doAppend = () => {
       const existingNames = new Set(
         (rules || [])
@@ -354,13 +343,9 @@ export default function SettingsChannelAffinity(props) {
           .filter((x) => x.length > 0),
       );
 
-      const templates = [RULE_TEMPLATES.codex, RULE_TEMPLATES.claudeCode].map(
-        (tpl) => {
-          const name = makeUniqueName(existingNames, tpl.name);
-          existingNames.add(name);
-          return { ...tpl, name };
-        },
-      );
+      const tpl = RULE_TEMPLATES.claudeCode;
+      const name = makeUniqueName(existingNames, tpl.name);
+      const templates = [{ ...tpl, name }];
 
       const next = [...(rules || []), ...templates].map((r, idx) => ({
         ...(r || {}),
@@ -376,10 +361,10 @@ export default function SettingsChannelAffinity(props) {
     }
 
     Modal.confirm({
-      title: t('填充 Codex / Claude Code 模版'),
+      title: t('填充 Claude Code 模版'),
       content: (
         <div style={{ lineHeight: '1.6' }}>
-          <Text type='tertiary'>{t('将追加 2 条规则到现有规则列表。')}</Text>
+          <Text type='tertiary'>{t('将追加 1 条规则到现有规则列表。')}</Text>
         </div>
       ),
       onOk: doAppend,
@@ -858,8 +843,8 @@ export default function SettingsChannelAffinity(props) {
               >
                 {t('JSON 模式')}
               </Button>
-              <Button onClick={appendCodexAndClaudeCodeTemplates}>
-                {t('填充 Codex / Claude Code 模版')}
+              <Button onClick={appendClaudeCodeTemplate}>
+                {t('填充 Claude Code 模版')}
               </Button>
               <Button icon={<IconPlus />} onClick={openAddModal}>
                 {t('新增规则')}
