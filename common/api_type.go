@@ -9,18 +9,12 @@ func ChannelType2APIType(channelType int) (int, bool) {
 		apiType = constant.APITypeOpenAI
 	case constant.ChannelTypeAnthropic:
 		apiType = constant.APITypeAnthropic
-	case constant.ChannelTypeBaidu:
-		apiType = constant.APITypeBaidu
 	case constant.ChannelTypePaLM:
 		apiType = constant.APITypePaLM
-	case constant.ChannelTypeZhipu:
-		apiType = constant.APITypeZhipu
 	case constant.ChannelTypeAli:
 		apiType = constant.APITypeAli
 	case constant.ChannelTypeXunfei:
 		apiType = constant.APITypeXunfei
-	case constant.ChannelTypeAIProxyLibrary:
-		apiType = constant.APITypeAIProxyLibrary
 	case constant.ChannelTypeTencent:
 		apiType = constant.APITypeTencent
 	case constant.ChannelTypeGemini:
@@ -29,8 +23,6 @@ func ChannelType2APIType(channelType int) (int, bool) {
 		apiType = constant.APITypeZhipuV4
 	case constant.ChannelTypeOllama:
 		apiType = constant.APITypeOllama
-	case constant.ChannelTypePerplexity:
-		apiType = constant.APITypePerplexity
 	case constant.ChannelTypeAws:
 		apiType = constant.APITypeAws
 	case constant.ChannelTypeCohere:
@@ -49,16 +41,10 @@ func ChannelType2APIType(channelType int) (int, bool) {
 		apiType = constant.APITypeMistral
 	case constant.ChannelTypeDeepSeek:
 		apiType = constant.APITypeDeepSeek
-	case constant.ChannelTypeMokaAI:
-		apiType = constant.APITypeMokaAI
 	case constant.ChannelTypeVolcEngine:
 		apiType = constant.APITypeVolcEngine
-	case constant.ChannelTypeBaiduV2:
-		apiType = constant.APITypeBaiduV2
 	case constant.ChannelTypeOpenRouter:
 		apiType = constant.APITypeOpenRouter
-	case constant.ChannelTypeXinference:
-		apiType = constant.APITypeXinference
 	case constant.ChannelTypeXai:
 		apiType = constant.APITypeXai
 	case constant.ChannelTypeMoonshot:

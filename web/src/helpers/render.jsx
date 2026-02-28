@@ -32,26 +32,19 @@ import {
   Qwen,
   DeepSeek,
   Minimax,
-  Wenxin,
   Spark,
-  Midjourney,
   Hunyuan,
   Cohere,
   Cloudflare,
-  Ai360,
   Yi,
   Jina,
   Mistral,
   XAI,
   Ollama,
   Doubao,
-  Suno,
-  Xinference,
   OpenRouter,
   Dify,
   SiliconCloud,
-  FastGPT,
-  Perplexity,
 } from '@lobehub/icons';
 
 import {
@@ -206,20 +199,10 @@ export const getModelCategories = (() => {
           model.model_name.toLowerCase().includes('abab') ||
           model.model_name.toLowerCase().includes('minimax'),
       },
-      baidu: {
-        label: t('文心一言'),
-        icon: <Wenxin.Color />,
-        filter: (model) => model.model_name.toLowerCase().includes('ernie'),
-      },
       xunfei: {
         label: t('讯飞星火'),
         icon: <Spark.Color />,
         filter: (model) => model.model_name.toLowerCase().includes('spark'),
-      },
-      midjourney: {
-        label: 'Midjourney',
-        icon: <Midjourney />,
-        filter: (model) => model.model_name.toLowerCase().includes('mj_'),
       },
       tencent: {
         label: t('腾讯混元'),
@@ -238,11 +221,6 @@ export const getModelCategories = (() => {
         label: 'Cloudflare',
         icon: <Cloudflare.Color />,
         filter: (model) => model.model_name.toLowerCase().includes('@cf/'),
-      },
-      ai360: {
-        label: t('360智脑'),
-        icon: <Ai360.Color />,
-        filter: (model) => model.model_name.toLowerCase().includes('360'),
       },
       jina: {
         label: 'Jina',
@@ -298,11 +276,6 @@ export function getChannelIcon(channelType) {
     case 1: // OpenAI
     case 3: // Azure OpenAI
       return <OpenAI size={iconSize} />;
-    case 2: // Midjourney Proxy
-    case 5: // Midjourney Proxy Plus
-      return <Midjourney size={iconSize} />;
-    case 36: // Suno API
-      return <Suno size={iconSize} />;
     case 4: // Ollama
       return <Ollama size={iconSize} />;
     case 14: // Anthropic Claude
@@ -316,29 +289,19 @@ export function getChannelIcon(channelType) {
       return <Cloudflare.Color size={iconSize} />;
     case 43: // DeepSeek
       return <DeepSeek.Color size={iconSize} />;
-    case 15: // 百度文心千帆
-    case 46: // 百度文心千帆V2
-      return <Wenxin.Color size={iconSize} />;
     case 17: // 阿里通义千问
       return <Qwen.Color size={iconSize} />;
     case 18: // 讯飞星火认知
       return <Spark.Color size={iconSize} />;
-    case 16: // 智谱 ChatGLM
     case 26: // 智谱 GLM-4V
       return <Zhipu.Color size={iconSize} />;
     case 24: // Google Gemini
     case 11: // Google PaLM2
       return <Gemini.Color size={iconSize} />;
-    case 47: // Xinference
-      return <Xinference.Color size={iconSize} />;
     case 25: // Moonshot
       return <Moonshot size={iconSize} />;
-    case 27: // Perplexity
-      return <Perplexity.Color size={iconSize} />;
     case 20: // OpenRouter
       return <OpenRouter size={iconSize} />;
-    case 19: // 360 智脑
-      return <Ai360.Color size={iconSize} />;
     case 23: // 腾讯混元
       return <Hunyuan.Color size={iconSize} />;
     case 31: // 零一万物
@@ -358,10 +321,6 @@ export function getChannelIcon(channelType) {
     case 48: // xAI
       return <XAI size={iconSize} />;
     case 8: // 自定义渠道
-    case 22: // 知识库：FastGPT
-      return <FastGPT.Color size={iconSize} />;
-    case 21: // 知识库：AI Proxy
-    case 44: // 嵌入模型：MokaAI M3E
     default:
       return null; // 未知类型或自定义渠道不显示图标
   }
