@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/QuantumNous/new-api/common"
@@ -144,7 +145,12 @@ func RecordConsumeLog(c *gin.Context, userId int, params RecordConsumeLogParams)
 	logger.LogInfo(c, fmt.Sprintf("record consume log: userId=%d, params=%s", userId, common.GetJsonString(params)))
 	username := c.GetString("username")
 	requestId := c.GetString(common.RequestIdKey)
-	otherStr := common.MapToJsonStr(params.Other)
+	other := params.Other
+	if other == nil {
+		other = make(map[string]interface{})
+	}
+	appendConsumeLogClientHeaders(c, other)
+	otherStr := common.MapToJsonStr(other)
 	// 记录请求与错误日志的 IP（强制开启，用于滥用追踪）
 	log := &Log{
 		UserId:           userId,
@@ -175,6 +181,48 @@ func RecordConsumeLog(c *gin.Context, userId int, params RecordConsumeLogParams)
 			LogQuotaData(userId, username, params.ModelName, params.Quota, common.GetTimestamp(), params.PromptTokens+params.CompletionTokens)
 		})
 	}
+}
+
+func appendConsumeLogClientHeaders(c *gin.Context, other map[string]interface{}) {
+	if c == nil || other == nil {
+		return
+	}
+
+	if _, exists := other["http_referer"]; !exists {
+		// Prefer the OpenAI-compatible `HTTP-Referer` header, fall back to standard `Referer`.
+		httpReferer := c.GetHeader("HTTP-Referer")
+		if strings.TrimSpace(httpReferer) == "" {
+			httpReferer = c.GetHeader("Referer")
+		}
+		other["http_referer"] = sanitizeConsumeLogHeaderValue(httpReferer)
+	}
+
+	if _, exists := other["x_title"]; !exists {
+		other["x_title"] = sanitizeConsumeLogHeaderValue(c.GetHeader("X-Title"))
+	}
+
+	if _, exists := other["ua"]; !exists {
+		ua := c.GetHeader("User-Agent")
+		if strings.TrimSpace(ua) == "" && c.Request != nil {
+			ua = c.Request.UserAgent()
+		}
+		other["ua"] = sanitizeConsumeLogHeaderValue(ua)
+	}
+}
+
+func sanitizeConsumeLogHeaderValue(value string) string {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return "-"
+	}
+	// Keep DB logs single-line to avoid rendering/log injection issues in the UI.
+	value = strings.ReplaceAll(value, "\r", " ")
+	value = strings.ReplaceAll(value, "\n", " ")
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return "-"
+	}
+	return value
 }
 
 func GetAllLogs(logType int, startTimestamp int64, endTimestamp int64, modelName string, username string, tokenName string, startIdx int, num int, channel int, group string, requestId string) (logs []*Log, total int64, err error) {
