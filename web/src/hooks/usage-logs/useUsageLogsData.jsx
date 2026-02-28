@@ -356,6 +356,20 @@ export const useLogsData = () => {
           value: logs[i].request_id,
         });
       }
+      if (logs[i].type === 2) {
+        expandDataLocal.push({
+          key: t('HTTP-Referer'),
+          value: other?.http_referer || '-',
+        });
+        expandDataLocal.push({
+          key: t('X-Title'),
+          value: other?.x_title || '-',
+        });
+        expandDataLocal.push({
+          key: t('UA'),
+          value: other?.ua || '-',
+        });
+      }
       if (other?.ws || other?.audio) {
         expandDataLocal.push({
           key: t('语音输入'),
