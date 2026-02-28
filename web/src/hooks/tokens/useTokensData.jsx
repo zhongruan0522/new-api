@@ -25,12 +25,11 @@ import {
   copy,
   showError,
   showSuccess,
-  encodeToBase64,
 } from '../../helpers';
 import { ITEMS_PER_PAGE } from '../../constants';
 import { useTableCompactMode } from '../common/useTableCompactMode';
 
-export const useTokensData = (openFluentNotification) => {
+export const useTokensData = () => {
   const { t } = useTranslation();
 
   // Basic state
@@ -120,40 +119,6 @@ export const useTokensData = (openFluentNotification) => {
         size: 'large',
       });
     }
-  };
-
-  // Open link function for chat integrations
-  const onOpenLink = async (type, url, record) => {
-    if (url && url.startsWith('fluent')) {
-      openFluentNotification(record.key);
-      return;
-    }
-    let status = localStorage.getItem('status');
-    let serverAddress = '';
-    if (status) {
-      status = JSON.parse(status);
-      serverAddress = status.server_address;
-    }
-    if (serverAddress === '') {
-      serverAddress = window.location.origin;
-    }
-    if (url.includes('{cherryConfig}') === true) {
-      let cherryConfig = {
-        id: 'new-api',
-        baseUrl: serverAddress,
-        apiKey: 'sk-' + record.key,
-      };
-      let encodedConfig = encodeURIComponent(
-        encodeToBase64(JSON.stringify(cherryConfig)),
-      );
-      url = url.replaceAll('{cherryConfig}', encodedConfig);
-    } else {
-      let encodedServerAddress = encodeURIComponent(serverAddress);
-      url = url.replaceAll('{address}', encodedServerAddress);
-      url = url.replaceAll('{key}', 'sk-' + record.key);
-    }
-
-    window.open(url, '_blank');
   };
 
   // Manage token function (delete, enable, disable)
@@ -385,7 +350,6 @@ export const useTokensData = (openFluentNotification) => {
     loadTokens,
     refresh,
     copyText,
-    onOpenLink,
     manageToken,
     searchTokens,
     sortToken,

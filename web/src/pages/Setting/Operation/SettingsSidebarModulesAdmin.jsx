@@ -41,11 +41,6 @@ export default function SettingsSidebarModulesAdmin(props) {
 
   // 左侧边栏模块管理状态（管理员全局控制）
   const [sidebarModulesAdmin, setSidebarModulesAdmin] = useState({
-    chat: {
-      enabled: true,
-      playground: true,
-      chat: true,
-    },
     console: {
       enabled: true,
       detail: true,
@@ -156,19 +151,6 @@ export default function SettingsSidebarModulesAdmin(props) {
 
   // 区域配置数据
   const sectionConfigs = [
-    {
-      key: 'chat',
-      title: t('聊天区域'),
-      description: t('操练场和聊天功能'),
-      modules: [
-        {
-          key: 'playground',
-          title: t('操练场'),
-          description: t('AI模型测试环境'),
-        },
-        { key: 'chat', title: t('聊天'), description: t('聊天会话管理') },
-      ],
-    },
     {
       key: 'console',
       title: t('控制台区域'),

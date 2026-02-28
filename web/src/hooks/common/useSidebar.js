@@ -26,11 +26,6 @@ const sidebarEventTarget = new EventTarget();
 const SIDEBAR_REFRESH_EVENT = 'sidebar-refresh';
 
 export const DEFAULT_ADMIN_CONFIG = {
-  chat: {
-    enabled: true,
-    playground: true,
-    chat: true,
-  },
   console: {
     enabled: true,
     detail: true,
@@ -66,10 +61,8 @@ export const mergeAdminConfig = (savedConfig) => {
   for (const [sectionKey, sectionConfig] of Object.entries(savedConfig)) {
     if (!sectionConfig || typeof sectionConfig !== 'object') continue;
 
-    if (!merged[sectionKey]) {
-      merged[sectionKey] = { ...sectionConfig };
-      continue;
-    }
+    // Ignore unknown sections to avoid resurrecting removed features.
+    if (!merged[sectionKey]) continue;
 
     merged[sectionKey] = { ...merged[sectionKey], ...sectionConfig };
   }
