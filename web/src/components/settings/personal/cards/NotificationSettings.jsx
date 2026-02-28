@@ -761,16 +761,23 @@ const NotificationSettings = ({
               itemKey='privacy'
             >
               <div className='py-4'>
-                <Form.Switch
-                  field='recordIpLog'
-                  label={t('记录请求与错误日志IP')}
-                  checkedText={t('开')}
-                  uncheckedText={t('关')}
-                  onChange={(value) => handleFormChange('recordIpLog', value)}
-                  extraText={t(
-                    '开启后，仅"消费"和"错误"日志将记录您的客户端IP地址',
-                  )}
-                />
+                <div className='flex items-start justify-between gap-4'>
+                  <div>
+                    <Typography.Text strong>
+                      {t('记录请求与错误日志IP')}
+                    </Typography.Text>
+                    <Typography.Text
+                      type='secondary'
+                      size='small'
+                      style={{ display: 'block', marginTop: 4 }}
+                    >
+                      {t(
+                        '为防止滥用与风控，该项已强制开启；仅“消费”和“错误”日志会记录您的客户端IP地址',
+                      )}
+                    </Typography.Text>
+                  </div>
+                  <Switch checked disabled />
+                </div>
               </div>
             </TabPane>
 

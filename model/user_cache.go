@@ -41,6 +41,8 @@ func (user *UserBase) GetSetting() dto.UserSetting {
 			common.SysLog("failed to unmarshal setting: " + err.Error())
 		}
 	}
+	// record_ip_log is forced-enabled for abuse tracing and cannot be disabled by users.
+	setting.RecordIpLog = true
 	return setting
 }
 
