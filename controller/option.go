@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
@@ -49,11 +48,20 @@ type OptionUpdateRequest struct {
 
 func UpdateOption(c *gin.Context) {
 	var option OptionUpdateRequest
-	err := json.NewDecoder(c.Request.Body).Decode(&option)
+	err := common.DecodeJson(c.Request.Body, &option)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
 			"message": "无效的参数",
+		})
+		return
+	}
+	switch option.Key {
+	case "Chats", "ChatLink", "ChatLink2":
+		// Removed legacy features: do not allow recreating these options via API.
+		c.JSON(http.StatusNotFound, gin.H{
+			"success": false,
+			"message": "该配置已移除",
 		})
 		return
 	}
@@ -205,6 +213,16 @@ func UpdateOption(c *gin.Context) {
 			})
 			return
 		}
+	case "SidebarModulesAdmin":
+		sanitized, _, err := model.SanitizeSidebarModulesConfigJSON(option.Value.(string))
+		if err != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": "无效的参数",
+			})
+			return
+		}
+		option.Value = sanitized
 	case "console_setting.api_info":
 		err = console_setting.ValidateConsoleSettings(option.Value.(string), "ApiInfo")
 		if err != nil {
