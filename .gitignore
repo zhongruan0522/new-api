@@ -20,7 +20,6 @@ tiktoken_cache
 .cache
 web/bun.lock
 plans
-
 electron/node_modules
 electron/dist
 data/
@@ -28,3 +27,4 @@ data/
 .gocache-temp
 .gopath
 .npm-cache/
+.gomodcache*/
