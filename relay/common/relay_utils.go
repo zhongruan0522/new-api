@@ -11,7 +11,6 @@ import (
 	"github.com/QuantumNous/new-api/dto"
 
 	"github.com/gin-gonic/gin"
-	"github.com/samber/lo"
 )
 
 type HasPrompt interface {
@@ -120,9 +119,7 @@ func validateMultipartTaskRequest(c *gin.Context, info *RelayInfo, action string
 
 func ValidateMultipartDirect(c *gin.Context, info *RelayInfo) *dto.TaskError {
 	var prompt string
-	var model string
 	var seconds int
-	var size string
 	var hasInputReference bool
 
 	var req TaskSubmitReq
@@ -131,8 +128,6 @@ func ValidateMultipartDirect(c *gin.Context, info *RelayInfo) *dto.TaskError {
 	}
 
 	prompt = req.Prompt
-	model = req.Model
-	size = req.Size
 	seconds, _ = strconv.Atoi(req.Seconds)
 	if seconds == 0 {
 		seconds = req.Duration
@@ -157,30 +152,6 @@ func ValidateMultipartDirect(c *gin.Context, info *RelayInfo) *dto.TaskError {
 	if hasInputReference {
 		action = constant.TaskActionGenerate
 	}
-	if strings.HasPrefix(model, "sora-2") {
-
-		if size == "" {
-			size = "720x1280"
-		}
-
-		if seconds <= 0 {
-			seconds = 4
-		}
-
-		if model == "sora-2" && !lo.Contains([]string{"720x1280", "1280x720"}, size) {
-			return createTaskError(fmt.Errorf("sora-2 size is invalid"), "invalid_size", http.StatusBadRequest, true)
-		}
-		if model == "sora-2-pro" && !lo.Contains([]string{"720x1280", "1280x720", "1792x1024", "1024x1792"}, size) {
-			return createTaskError(fmt.Errorf("sora-2 size is invalid"), "invalid_size", http.StatusBadRequest, true)
-		}
-		info.PriceData.OtherRatios = map[string]float64{
-			"seconds": float64(seconds),
-			"size":    1,
-		}
-		if lo.Contains([]string{"1792x1024", "1024x1792"}, size) {
-			info.PriceData.OtherRatios["size"] = 1.666667
-		}
-	}
 
 	info.Action = action
 
@@ -196,7 +167,7 @@ func isKnownTaskField(field string) bool {
 		"images":          true,
 		"size":            true,
 		"duration":        true,
-		"input_reference": true, // Sora 特有字段
+		"input_reference": true,
 	}
 	return knownFields[field]
 }

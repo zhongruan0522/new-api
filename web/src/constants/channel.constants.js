@@ -144,51 +144,6 @@ export const CHANNEL_OPTIONS = [
     color: 'blue',
     label: 'xAI',
   },
-  {
-    value: 49,
-    color: 'blue',
-    label: 'Coze',
-  },
-  {
-    value: 50,
-    color: 'green',
-    label: '可灵',
-  },
-  {
-    value: 51,
-    color: 'blue',
-    label: '即梦',
-  },
-  {
-    value: 52,
-    color: 'purple',
-    label: 'Vidu',
-  },
-  {
-    value: 53,
-    color: 'blue',
-    label: 'SubModel',
-  },
-  {
-    value: 54,
-    color: 'blue',
-    label: '豆包视频',
-  },
-  {
-    value: 55,
-    color: 'green',
-    label: 'Sora',
-  },
-  {
-    value: 56,
-    color: 'blue',
-    label: 'Replicate',
-  },
-  {
-    value: 57,
-    color: 'blue',
-    label: 'Codex (OpenAI OAuth)',
-  },
 ];
 
 export const MODEL_TABLE_PAGE_SIZE = 10;

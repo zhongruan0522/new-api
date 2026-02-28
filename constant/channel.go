@@ -46,15 +46,6 @@ const (
 	ChannelTypeBaiduV2        = 46
 	ChannelTypeXinference     = 47
 	ChannelTypeXai            = 48
-	ChannelTypeCoze           = 49
-	ChannelTypeKling          = 50
-	ChannelTypeJimeng         = 51
-	ChannelTypeVidu           = 52
-	ChannelTypeSubmodel       = 53
-	ChannelTypeDoubaoVideo    = 54
-	ChannelTypeSora           = 55
-	ChannelTypeReplicate      = 56
-	ChannelTypeCodex          = 57
 	ChannelTypeDummy          // this one is only for count, do not add any channel after this
 
 )
@@ -108,16 +99,7 @@ var ChannelBaseURLs = []string{
 	"https://ark.cn-beijing.volces.com",         //45
 	"https://qianfan.baidubce.com",              //46
 	"",                                          //47
-	"https://api.x.ai",                          //48
-	"https://api.coze.cn",                       //49
-	"https://api.klingai.com",                   //50
-	"https://visual.volcengineapi.com",          //51
-	"https://api.vidu.cn",                       //52
-	"https://llm.submodel.ai",                   //53
-	"https://ark.cn-beijing.volces.com",         //54
-	"https://api.openai.com",                    //55
-	"https://api.replicate.com",                 //56
-	"https://chatgpt.com",                       //57
+	"https://api.x.ai",                          //48                                         //57 (removed)
 }
 
 var ChannelTypeNames = map[int]string{
@@ -166,15 +148,6 @@ var ChannelTypeNames = map[int]string{
 	ChannelTypeBaiduV2:        "BaiduV2",
 	ChannelTypeXinference:     "Xinference",
 	ChannelTypeXai:            "xAI",
-	ChannelTypeCoze:           "Coze",
-	ChannelTypeKling:          "Kling",
-	ChannelTypeJimeng:         "Jimeng",
-	ChannelTypeVidu:           "Vidu",
-	ChannelTypeSubmodel:       "Submodel",
-	ChannelTypeDoubaoVideo:    "DoubaoVideo",
-	ChannelTypeSora:           "Sora",
-	ChannelTypeReplicate:      "Replicate",
-	ChannelTypeCodex:          "Codex",
 }
 
 func GetChannelTypeName(channelType int) string {

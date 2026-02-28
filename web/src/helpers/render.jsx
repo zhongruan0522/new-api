@@ -49,13 +49,9 @@ import {
   Xinference,
   OpenRouter,
   Dify,
-  Coze,
   SiliconCloud,
   FastGPT,
-  Kling,
-  Jimeng,
   Perplexity,
-  Replicate,
 } from '@lobehub/icons';
 
 import {
@@ -301,7 +297,6 @@ export function getChannelIcon(channelType) {
   switch (channelType) {
     case 1: // OpenAI
     case 3: // Azure OpenAI
-    case 57: // Codex
       return <OpenAI size={iconSize} />;
     case 2: // Midjourney Proxy
     case 5: // Midjourney Proxy Plus
@@ -362,16 +357,6 @@ export function getChannelIcon(channelType) {
       return <Doubao.Color size={iconSize} />;
     case 48: // xAI
       return <XAI size={iconSize} />;
-    case 49: // Coze
-      return <Coze size={iconSize} />;
-    case 50: // 可灵 Kling
-      return <Kling.Color size={iconSize} />;
-    case 51: // 即梦 Jimeng
-      return <Jimeng.Color size={iconSize} />;
-    case 54: // 豆包视频 Doubao Video
-      return <Doubao.Color size={iconSize} />;
-    case 56: // Replicate
-      return <Replicate size={iconSize} />;
     case 8: // 自定义渠道
     case 22: // 知识库：FastGPT
       return <FastGPT.Color size={iconSize} />;
