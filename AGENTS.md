@@ -34,7 +34,7 @@ i18n/          — Backend internationalization (go-i18n, en/zh)
 oauth/         — OAuth provider implementations
 pkg/           — Internal packages (cachex, ionet)
 web/           — React frontend
-  web/src/i18n/  — Frontend internationalization (i18next, zh/en/fr/ru/ja/vi)
+  web/src/i18n/  — Frontend i18n (i18next, Chinese only)
 ```
 
 ## Internationalization (i18n)
@@ -44,12 +44,11 @@ web/           — React frontend
 - Languages: en, zh
 
 ### Frontend (`web/src/i18n/`)
-- Library: `i18next` + `react-i18next` + `i18next-browser-languagedetector`
-- Languages: zh (fallback), en, fr, ru, ja, vi
-- Translation files: `web/src/i18n/locales/{lang}.json` — flat JSON, keys are Chinese source strings
+- Library: `i18next` + `react-i18next`
+- Language: zh (Chinese only)
+- Translation file: `web/src/i18n/locales/zh.json` — flat JSON, keys and values are Chinese
 - Usage: `useTranslation()` hook, call `t('中文key')` in components
-- Semi UI locale synced via `SemiLocaleWrapper`
-- CLI tools: `bun run i18n:extract`, `bun run i18n:sync`, `bun run i18n:lint`
+- Semi UI locale: fixed to `zh_CN`
 
 ## Rules
 
