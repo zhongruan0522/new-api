@@ -57,7 +57,10 @@ func UpdateOption(c *gin.Context) {
 		return
 	}
 	switch option.Key {
-	case "Chats", "ChatLink", "ChatLink2":
+	case "Chats", "ChatLink", "ChatLink2",
+		// Removed login methods: keep DB compatibility but block re-creation via API.
+		"WeChatAuthEnabled", "WeChatServerAddress", "WeChatServerToken", "WeChatAccountQRCodeImageURL",
+		"oidc.enabled", "oidc.client_id", "oidc.client_secret", "oidc.well_known", "oidc.authorization_endpoint", "oidc.token_endpoint", "oidc.user_info_endpoint":
 		// Removed legacy features: do not allow recreating these options via API.
 		c.JSON(http.StatusNotFound, gin.H{
 			"success": false,
@@ -92,14 +95,6 @@ func UpdateOption(c *gin.Context) {
 			})
 			return
 		}
-	case "oidc.enabled":
-		if option.Value == "true" && system_setting.GetOIDCSettings().ClientId == "" {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": "无法启用 OIDC 登录，请先填入 OIDC Client Id 以及 OIDC Client Secret！",
-			})
-			return
-		}
 	case "LinuxDOOAuthEnabled":
 		if option.Value == "true" && common.LinuxDOClientId == "" {
 			c.JSON(http.StatusOK, gin.H{
@@ -113,14 +108,6 @@ func UpdateOption(c *gin.Context) {
 			c.JSON(http.StatusOK, gin.H{
 				"success": false,
 				"message": "无法启用邮箱域名限制，请先填入限制的邮箱域名！",
-			})
-			return
-		}
-	case "WeChatAuthEnabled":
-		if option.Value == "true" && common.WeChatServerAddress == "" {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": "无法启用微信登录，请先填入微信登录相关配置信息！",
 			})
 			return
 		}

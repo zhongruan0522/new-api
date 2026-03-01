@@ -42,7 +42,6 @@ func InitOptionMap() {
 	common.OptionMap["GitHubOAuthEnabled"] = strconv.FormatBool(common.GitHubOAuthEnabled)
 	common.OptionMap["LinuxDOOAuthEnabled"] = strconv.FormatBool(common.LinuxDOOAuthEnabled)
 	common.OptionMap["TelegramOAuthEnabled"] = strconv.FormatBool(common.TelegramOAuthEnabled)
-	common.OptionMap["WeChatAuthEnabled"] = strconv.FormatBool(common.WeChatAuthEnabled)
 	common.OptionMap["TurnstileCheckEnabled"] = strconv.FormatBool(common.TurnstileCheckEnabled)
 	common.OptionMap["RegisterEnabled"] = strconv.FormatBool(common.RegisterEnabled)
 	common.OptionMap["AutomaticDisableChannelEnabled"] = strconv.FormatBool(common.AutomaticDisableChannelEnabled)
@@ -98,9 +97,6 @@ func InitOptionMap() {
 	common.OptionMap["GitHubClientSecret"] = ""
 	common.OptionMap["TelegramBotToken"] = ""
 	common.OptionMap["TelegramBotName"] = ""
-	common.OptionMap["WeChatServerAddress"] = ""
-	common.OptionMap["WeChatServerToken"] = ""
-	common.OptionMap["WeChatAccountQRCodeImageURL"] = ""
 	common.OptionMap["TurnstileSiteKey"] = ""
 	common.OptionMap["TurnstileSecretKey"] = ""
 	common.OptionMap["QuotaForNewUser"] = strconv.Itoa(common.QuotaForNewUser)
@@ -177,7 +173,9 @@ func SyncOptions(frequency int) {
 
 func UpdateOption(key string, value string) error {
 	switch key {
-	case "Chats", "ChatLink", "ChatLink2":
+	case "Chats", "ChatLink", "ChatLink2",
+		"WeChatAuthEnabled", "WeChatServerAddress", "WeChatServerToken", "WeChatAccountQRCodeImageURL",
+		"oidc.enabled", "oidc.client_id", "oidc.client_secret", "oidc.well_known", "oidc.authorization_endpoint", "oidc.token_endpoint", "oidc.user_info_endpoint":
 		return errors.New("option removed")
 	}
 	if key == "SidebarModulesAdmin" {
@@ -209,7 +207,9 @@ func updateOptionMap(key string, value string) (err error) {
 	// Removed legacy options: keep DB compatibility but do not load them into memory.
 	// (Avoid resurrecting removed features via SyncOptions or stale DB rows.)
 	switch key {
-	case "Chats", "ChatLink", "ChatLink2":
+	case "Chats", "ChatLink", "ChatLink2",
+		"WeChatAuthEnabled", "WeChatServerAddress", "WeChatServerToken", "WeChatAccountQRCodeImageURL",
+		"oidc.enabled", "oidc.client_id", "oidc.client_secret", "oidc.well_known", "oidc.authorization_endpoint", "oidc.token_endpoint", "oidc.user_info_endpoint":
 		delete(common.OptionMap, key)
 		return nil
 	}
@@ -247,8 +247,6 @@ func updateOptionMap(key string, value string) (err error) {
 			common.GitHubOAuthEnabled = boolValue
 		case "LinuxDOOAuthEnabled":
 			common.LinuxDOOAuthEnabled = boolValue
-		case "WeChatAuthEnabled":
-			common.WeChatAuthEnabled = boolValue
 		case "TelegramOAuthEnabled":
 			common.TelegramOAuthEnabled = boolValue
 		case "TurnstileCheckEnabled":
@@ -391,12 +389,6 @@ func updateOptionMap(key string, value string) (err error) {
 		common.SystemName = value
 	case "Logo":
 		common.Logo = value
-	case "WeChatServerAddress":
-		common.WeChatServerAddress = value
-	case "WeChatServerToken":
-		common.WeChatServerToken = value
-	case "WeChatAccountQRCodeImageURL":
-		common.WeChatAccountQRCodeImageURL = value
 	case "TelegramBotToken":
 		common.TelegramBotToken = value
 	case "TelegramBotName":

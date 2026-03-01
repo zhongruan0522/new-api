@@ -71,9 +71,7 @@ const EditUserModal = (props) => {
     display_name: '',
     password: '',
     github_id: '',
-    oidc_id: '',
     discord_id: '',
-    wechat_id: '',
     telegram_id: '',
     email: '',
     quota: 0,
@@ -330,17 +328,15 @@ const EditUserModal = (props) => {
                     </div>
                   </div>
 
-                  <Row gutter={12}>
-                    {[
-                      'github_id',
-                      'discord_id',
-                      'oidc_id',
-                      'wechat_id',
-                      'email',
-                      'telegram_id',
-                    ].map((field) => (
-                      <Col span={24} key={field}>
-                        <Form.Input
+                    <Row gutter={12}>
+                      {[
+                        'github_id',
+                        'discord_id',
+                        'email',
+                        'telegram_id',
+                      ].map((field) => (
+                        <Col span={24} key={field}>
+                          <Form.Input
                           field={field}
                           label={t(
                             `已绑定的 ${field.replace('_id', '').toUpperCase()} 账户`,

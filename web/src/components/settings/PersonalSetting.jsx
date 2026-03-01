@@ -43,7 +43,6 @@ import PreferencesSettings from './personal/cards/PreferencesSettings';
 import UpstreamIdentitySettings from './personal/cards/UpstreamIdentitySettings';
 import CheckinCalendar from './personal/cards/CheckinCalendar';
 import EmailBindModal from './personal/modals/EmailBindModal';
-import WeChatBindModal from './personal/modals/WeChatBindModal';
 import AccountDeleteModal from './personal/modals/AccountDeleteModal';
 import ChangePasswordModal from './personal/modals/ChangePasswordModal';
 
@@ -53,7 +52,6 @@ const PersonalSetting = () => {
   const { t } = useTranslation();
 
   const [inputs, setInputs] = useState({
-    wechat_verification_code: '',
     email_verification_code: '',
     email: '',
     self_account_deletion_confirmation: '',
@@ -63,7 +61,6 @@ const PersonalSetting = () => {
   });
   const [status, setStatus] = useState({});
   const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
-  const [showWeChatBindModal, setShowWeChatBindModal] = useState(false);
   const [showEmailBindModal, setShowEmailBindModal] = useState(false);
   const [showAccountDeleteModal, setShowAccountDeleteModal] = useState(false);
   const [turnstileEnabled, setTurnstileEnabled] = useState(false);
@@ -300,20 +297,6 @@ const PersonalSetting = () => {
     }
   };
 
-  const bindWeChat = async () => {
-    if (inputs.wechat_verification_code === '') return;
-    const res = await API.get(
-      `/api/oauth/wechat/bind?code=${inputs.wechat_verification_code}`,
-    );
-    const { success, message } = res.data;
-    if (success) {
-      showSuccess(t('微信账户绑定成功！'));
-      setShowWeChatBindModal(false);
-    } else {
-      showError(message);
-    }
-  };
-
   const changePassword = async () => {
     // if (inputs.original_password === '') {
     //   showError(t('请输入原密码！'));
@@ -338,7 +321,6 @@ const PersonalSetting = () => {
     const { success, message } = res.data;
     if (success) {
       showSuccess(t('密码修改成功！'));
-      setShowWeChatBindModal(false);
     } else {
       showError(message);
     }
@@ -469,7 +451,6 @@ const PersonalSetting = () => {
                 status={status}
                 systemToken={systemToken}
                 setShowEmailBindModal={setShowEmailBindModal}
-                setShowWeChatBindModal={setShowWeChatBindModal}
                 generateAccessToken={generateAccessToken}
                 handleSystemTokenClick={handleSystemTokenClick}
                 setShowChangePasswordModal={setShowChangePasswordModal}
@@ -515,16 +496,6 @@ const PersonalSetting = () => {
         turnstileEnabled={turnstileEnabled}
         turnstileSiteKey={turnstileSiteKey}
         setTurnstileToken={setTurnstileToken}
-      />
-
-      <WeChatBindModal
-        t={t}
-        showWeChatBindModal={showWeChatBindModal}
-        setShowWeChatBindModal={setShowWeChatBindModal}
-        inputs={inputs}
-        handleInputChange={handleInputChange}
-        bindWeChat={bindWeChat}
-        status={status}
       />
 
       <AccountDeleteModal
