@@ -15,6 +15,13 @@ type UserSetting struct {
 	SidebarModules        string  `json:"sidebar_modules,omitempty"`                // SidebarModules 左侧边栏模块配置
 	BillingPreference     string  `json:"billing_preference,omitempty"`             // BillingPreference 扣费策略（订阅/钱包）
 	Language              string  `json:"language,omitempty"`                       // Language 用户语言偏好 (zh, en)
+
+	// Upstream identity headers (optional):
+	// These are used to identify the client/app to upstream providers (e.g. OpenRouter),
+	// and will be injected into upstream requests when not already present.
+	UpstreamUserAgent   string `json:"upstream_user_agent,omitempty"`   // maps to "User-Agent"
+	UpstreamXTitle      string `json:"upstream_x_title,omitempty"`      // maps to "X-Title"
+	UpstreamHTTPReferer string `json:"upstream_http_referer,omitempty"` // maps to "HTTP-Referer" (and "Referer" if missing)
 }
 
 var (

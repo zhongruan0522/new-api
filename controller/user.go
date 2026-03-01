@@ -600,6 +600,55 @@ func UpdateSelf(c *gin.Context) {
 		return
 	}
 
+	// 检查是否是上游身份标识请求头设置更新请求
+	_, hasUA := requestData["upstream_user_agent"]
+	_, hasXTitle := requestData["upstream_x_title"]
+	_, hasHTTPReferer := requestData["upstream_http_referer"]
+	if hasUA || hasXTitle || hasHTTPReferer {
+		userId := c.GetInt("id")
+		user, err := model.GetUserById(userId, false)
+		if err != nil {
+			common.ApiError(c, err)
+			return
+		}
+
+		currentSetting := user.GetSetting()
+
+		if v, exists := requestData["upstream_user_agent"]; exists {
+			s, ok := v.(string)
+			if !ok {
+				common.ApiErrorI18n(c, i18n.MsgInvalidParams)
+				return
+			}
+			currentSetting.UpstreamUserAgent = strings.TrimSpace(s)
+		}
+		if v, exists := requestData["upstream_x_title"]; exists {
+			s, ok := v.(string)
+			if !ok {
+				common.ApiErrorI18n(c, i18n.MsgInvalidParams)
+				return
+			}
+			currentSetting.UpstreamXTitle = strings.TrimSpace(s)
+		}
+		if v, exists := requestData["upstream_http_referer"]; exists {
+			s, ok := v.(string)
+			if !ok {
+				common.ApiErrorI18n(c, i18n.MsgInvalidParams)
+				return
+			}
+			currentSetting.UpstreamHTTPReferer = strings.TrimSpace(s)
+		}
+
+		user.SetSetting(currentSetting)
+		if err := user.Update(false); err != nil {
+			common.ApiErrorI18n(c, i18n.MsgUpdateFailed)
+			return
+		}
+
+		common.ApiSuccessI18n(c, i18n.MsgUpdateSuccess, nil)
+		return
+	}
+
 	// 原有的用户信息更新逻辑
 	var user model.User
 	requestDataBytes, err := common.Marshal(requestData)
