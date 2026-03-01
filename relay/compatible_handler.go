@@ -53,15 +53,20 @@ func TextHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *types
 		return types.NewError(err, types.ErrorCodeChannelModelMappedError, types.ErrOptionWithSkipRetry())
 	}
 
-	// Channel-level multimodal handling: convert media blocks to URLs appended to the corresponding user message.
-	if info.ChannelOtherSettings.ImageAutoConvertToURL {
+	mediaMode, modeOK := info.ChannelOtherSettings.ParseImageAutoConvertToURLMode()
+	if !modeOK {
+		return types.NewErrorWithStatusCode(fmt.Errorf("invalid image_auto_convert_to_url_mode: %q", info.ChannelOtherSettings.ImageAutoConvertToURLMode), types.ErrorCodeInvalidRequest, http.StatusBadRequest, types.ErrOptionWithSkipRetry())
+	}
+
+	// Channel-level multimodal handling for text-only upstream models.
+	if mediaMode != dto.ImageAutoConvertToURLModeOff {
 		storedURLBySHA := make(map[string]string)
 		imageMaxBytes := int64(constant.MaxImageUploadMB) * 1024 * 1024
 		videoMaxBytes := int64(constant.MaxVideoUploadMB) * 1024 * 1024
 		imagePoolMaxBytes := int64(constant.StoredImagePoolMB) * 1024 * 1024
 		videoPoolMaxBytes := int64(constant.StoredVideoPoolMB) * 1024 * 1024
 
-		_, convErr := relaycommon.ApplyImageAutoConvertToURL(request, func(rawURL string, mediaContentType string) (string, error) {
+		resolveURL := func(rawURL string, mediaContentType string) (string, error) {
 			rawURL = strings.TrimSpace(rawURL)
 			if rawURL == "" {
 				return "", nil
@@ -169,9 +174,25 @@ func TextHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *types
 			u := buildStoredVideoURL(c, v.Id)
 			storedURLBySHA[cacheKey] = u
 			return u, nil
-		})
-		if convErr != nil {
-			return types.NewError(convErr, types.ErrorCodeInvalidRequest, types.ErrOptionWithSkipRetry())
+		}
+
+		switch mediaMode {
+		case dto.ImageAutoConvertToURLModeMCP:
+			_, convErr := relaycommon.ApplyImageAutoConvertToURL(request, resolveURL)
+			if convErr != nil {
+				return types.NewError(convErr, types.ErrorCodeInvalidRequest, types.ErrOptionWithSkipRetry())
+			}
+		case dto.ImageAutoConvertToURLModeThirdPartyModel:
+			if err := applyThirdPartyModelMediaToText(thirdPartyMediaToTextInput{
+				ctx:        c,
+				info:       info,
+				req:        request,
+				resolveURL: resolveURL,
+			}); err != nil {
+				return err
+			}
+		default:
+			return types.NewErrorWithStatusCode(fmt.Errorf("unsupported image_auto_convert_to_url_mode: %s", mediaMode), types.ErrorCodeInvalidRequest, http.StatusBadRequest, types.ErrOptionWithSkipRetry())
 		}
 	}
 
@@ -203,8 +224,8 @@ func TextHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *types
 
 	passThroughGlobal := model_setting.GetGlobalSettings().PassThroughRequestEnabled
 	passThroughBody := info.ChannelSetting.PassThroughBodyEnabled
-	// Image auto convert rewrites the structured request; pass-through body would bypass it.
-	if info.ChannelOtherSettings.ImageAutoConvertToURL {
+	// Media handling rewrites the structured request; pass-through body would bypass it.
+	if mediaMode != dto.ImageAutoConvertToURLModeOff {
 		passThroughGlobal = false
 		passThroughBody = false
 	}

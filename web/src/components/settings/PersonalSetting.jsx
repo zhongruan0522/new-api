@@ -40,6 +40,7 @@ import UserInfoHeader from './personal/components/UserInfoHeader';
 import AccountManagement from './personal/cards/AccountManagement';
 import NotificationSettings from './personal/cards/NotificationSettings';
 import PreferencesSettings from './personal/cards/PreferencesSettings';
+import UpstreamIdentitySettings from './personal/cards/UpstreamIdentitySettings';
 import CheckinCalendar from './personal/cards/CheckinCalendar';
 import EmailBindModal from './personal/modals/EmailBindModal';
 import WeChatBindModal from './personal/modals/WeChatBindModal';
@@ -483,6 +484,9 @@ const PersonalSetting = () => {
 
               {/* 偏好设置（语言等） */}
               <PreferencesSettings t={t} />
+
+              {/* 上游身份标识（User-Agent / X-Title / HTTP-Referer） */}
+              <UpstreamIdentitySettings t={t} />
             </div>
 
             {/* 右侧：其他设置 */}

@@ -70,6 +70,10 @@ const defaultGlobalSettingInputs = {
   'global.pass_through_request_enabled': false,
   'global.thinking_model_blacklist': '[]',
   'global.chat_completions_to_responses_policy': '{}',
+  'global.third_party_multimodal_model_id': '',
+  'global.third_party_multimodal_call_api_type': 0,
+  'global.third_party_multimodal_system_prompt': '',
+  'global.third_party_multimodal_first_user_prompt': '',
   'general_setting.ping_interval_enabled': false,
   'general_setting.ping_interval_seconds': 60,
 };
@@ -81,8 +85,24 @@ export default function SettingGlobalModel(props) {
   const [inputs, setInputs] = useState(defaultGlobalSettingInputs);
   const refForm = useRef();
   const [inputsRow, setInputsRow] = useState(defaultGlobalSettingInputs);
+  const [enabledModels, setEnabledModels] = useState([]);
   const chatCompletionsToResponsesPolicyKey =
     'global.chat_completions_to_responses_policy';
+
+  const getAllEnabledModels = async () => {
+    try {
+      const res = await API.get('/api/channel/models_enabled');
+      const { success, message, data } = res.data;
+      if (success) {
+        setEnabledModels(Array.isArray(data) ? data : []);
+      } else {
+        showError(message);
+      }
+    } catch (error) {
+      console.error(t('获取启用模型失败:'), error);
+      showError(t('获取启用模型失败'));
+    }
+  };
 
   const setChatCompletionsToResponsesPolicyValue = (value) => {
     setInputs((prev) => ({
@@ -142,6 +162,10 @@ export default function SettingGlobalModel(props) {
   }
 
   useEffect(() => {
+    getAllEnabledModels();
+  }, []);
+
+  useEffect(() => {
     const currentInputs = {};
     for (const key of Object.keys(defaultGlobalSettingInputs)) {
       if (props.options[key] !== undefined) {
@@ -165,6 +189,12 @@ export default function SettingGlobalModel(props) {
           } catch (error) {
             value = defaultGlobalSettingInputs[key];
           }
+        }
+        if (key === 'global.third_party_multimodal_call_api_type') {
+          const parsed = parseInt(value, 10);
+          value = Number.isFinite(parsed)
+            ? parsed
+            : defaultGlobalSettingInputs[key];
         }
         currentInputs[key] = value;
       } else {
@@ -351,6 +381,106 @@ export default function SettingGlobalModel(props) {
                       {t('格式化 JSON')}
                     </Button>
                   </div>
+                </Col>
+              </Row>
+            </Form.Section>
+
+            <Form.Section
+              text={
+                <span style={{ fontSize: 14, fontWeight: 600 }}>
+                  {t('第三方模型方式（多模态转文本）')}
+                </span>
+              }
+            >
+              <Row style={{ marginTop: 10 }}>
+                <Col span={24}>
+                  <Banner
+                    type='info'
+                    description={t(
+                      '说明：当渠道选择“第三方模型方式”时，系统会先调用此处配置的多模态模型，将图片/视频转成文本，再以“图片1：.../视频1：...”形式回填到原始请求的 user 消息中。',
+                    )}
+                  />
+                </Col>
+              </Row>
+
+              <Row style={{ marginTop: 10 }}>
+                <Col xs={24} sm={12} md={8} lg={8} xl={8}>
+                  <Form.Select
+                    label={t('多模态模型ID')}
+                    field={'global.third_party_multimodal_model_id'}
+                    placeholder={t('请选择一个已启用的模型ID')}
+                    showClear
+                    search
+                    optionList={enabledModels.map((m) => ({
+                      label: m,
+                      value: m,
+                    }))}
+                    onChange={(value) =>
+                      setInputs({
+                        ...inputs,
+                        'global.third_party_multimodal_model_id': value,
+                      })
+                    }
+                    extraText={t('从站内已启用的模型ID中选择')}
+                  />
+                </Col>
+
+                <Col xs={24} sm={12} md={8} lg={8} xl={8}>
+                  <Form.Select
+                    label={t('调用方式')}
+                    field={'global.third_party_multimodal_call_api_type'}
+                    placeholder={t('请选择调用方式')}
+                    optionList={[
+                      { label: 'OpenAI-Chat', value: 0 },
+                      { label: 'Claude', value: 1 },
+                      { label: 'Gemini', value: 9 },
+                    ]}
+                    onChange={(value) =>
+                      setInputs({
+                        ...inputs,
+                        'global.third_party_multimodal_call_api_type': value,
+                      })
+                    }
+                    extraText={t(
+                      '用于选择第三方多模态模型的请求规范（OpenAI/Claude/Gemini）',
+                    )}
+                  />
+                </Col>
+              </Row>
+
+              <Row style={{ marginTop: 10 }}>
+                <Col span={24}>
+                  <Form.TextArea
+                    label={t('系统提示词')}
+                    field={'global.third_party_multimodal_system_prompt'}
+                    rows={3}
+                    onChange={(value) =>
+                      setInputs({
+                        ...inputs,
+                        'global.third_party_multimodal_system_prompt': value,
+                      })
+                    }
+                    extraText={t('发送给第三方多模态模型的 system 提示词')}
+                  />
+                </Col>
+              </Row>
+
+              <Row style={{ marginTop: 10 }}>
+                <Col span={24}>
+                  <Form.TextArea
+                    label={t('第一条User提示词')}
+                    field={'global.third_party_multimodal_first_user_prompt'}
+                    rows={3}
+                    onChange={(value) =>
+                      setInputs({
+                        ...inputs,
+                        'global.third_party_multimodal_first_user_prompt': value,
+                      })
+                    }
+                    extraText={t(
+                      '发送给第三方多模态模型的第一条 user 提示词（建议明确要求输出格式/语言/长度）',
+                    )}
+                  />
                 </Col>
               </Row>
             </Form.Section>

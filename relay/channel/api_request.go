@@ -39,6 +39,33 @@ func SetupApiRequestHeader(info *common.RelayInfo, c *gin.Context, req *http.Hea
 	}
 }
 
+func applyUpstreamIdentityHeaders(info *common.RelayInfo, headers http.Header) {
+	if info == nil || headers == nil {
+		return
+	}
+
+	ua := strings.TrimSpace(info.UserSetting.UpstreamUserAgent)
+	if ua != "" && strings.TrimSpace(headers.Get("User-Agent")) == "" {
+		headers.Set("User-Agent", ua)
+	}
+
+	xTitle := strings.TrimSpace(info.UserSetting.UpstreamXTitle)
+	if xTitle != "" && strings.TrimSpace(headers.Get("X-Title")) == "" {
+		headers.Set("X-Title", xTitle)
+	}
+
+	httpReferer := strings.TrimSpace(info.UserSetting.UpstreamHTTPReferer)
+	if httpReferer == "" {
+		return
+	}
+	if strings.TrimSpace(headers.Get("HTTP-Referer")) == "" {
+		headers.Set("HTTP-Referer", httpReferer)
+	}
+	if strings.TrimSpace(headers.Get("Referer")) == "" {
+		headers.Set("Referer", httpReferer)
+	}
+}
+
 const clientHeaderPlaceholderPrefix = "{client_header:"
 
 const (
@@ -341,6 +368,7 @@ func DoApiRequest(a Adaptor, c *gin.Context, info *common.RelayInfo, requestBody
 	if err != nil {
 		return nil, fmt.Errorf("setup request header failed: %w", err)
 	}
+	applyUpstreamIdentityHeaders(info, req.Header)
 	// 在 SetupRequestHeader 之后应用 Header Override，确保用户设置优先级最高
 	// 这样可以覆盖默认的 Authorization header 设置
 	if info.ChannelSetting.PassThroughHeadersEnabled {
@@ -377,6 +405,7 @@ func DoFormRequest(a Adaptor, c *gin.Context, info *common.RelayInfo, requestBod
 	if err != nil {
 		return nil, fmt.Errorf("setup request header failed: %w", err)
 	}
+	applyUpstreamIdentityHeaders(info, req.Header)
 	// 在 SetupRequestHeader 之后应用 Header Override，确保用户设置优先级最高
 	// 这样可以覆盖默认的 Authorization header 设置
 	if info.ChannelSetting.PassThroughHeadersEnabled {
@@ -404,6 +433,7 @@ func DoWssRequest(a Adaptor, c *gin.Context, info *common.RelayInfo, requestBody
 	if err != nil {
 		return nil, fmt.Errorf("setup request header failed: %w", err)
 	}
+	applyUpstreamIdentityHeaders(info, targetHeader)
 	// 在 SetupRequestHeader 之后应用 Header Override，确保用户设置优先级最高
 	// 这样可以覆盖默认的 Authorization header 设置
 	if info.ChannelSetting.PassThroughHeadersEnabled {

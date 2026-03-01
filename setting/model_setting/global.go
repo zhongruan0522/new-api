@@ -36,6 +36,18 @@ type GlobalSettings struct {
 	PassThroughRequestEnabled        bool                             `json:"pass_through_request_enabled"`
 	ThinkingModelBlacklist           []string                         `json:"thinking_model_blacklist"`
 	ChatCompletionsToResponsesPolicy ChatCompletionsToResponsesPolicy `json:"chat_completions_to_responses_policy"`
+
+	// ThirdPartyMultimodal* settings are used by the channel-level
+	// "image_auto_convert_to_url_mode=third_party_model" feature:
+	//   - Extract images/videos from user messages
+	//   - Resolve them into URLs (may store base64 into /mcp/* assets)
+	//   - Call a configured multimodal model to convert media into text
+	//   - Append the text back to the original user message as:
+	//       图片N：xxxxx / 视频N：xxxxx
+	ThirdPartyMultimodalModelID         string `json:"third_party_multimodal_model_id"`
+	ThirdPartyMultimodalCallAPIType     int    `json:"third_party_multimodal_call_api_type"`
+	ThirdPartyMultimodalSystemPrompt    string `json:"third_party_multimodal_system_prompt"`
+	ThirdPartyMultimodalFirstUserPrompt string `json:"third_party_multimodal_first_user_prompt"`
 }
 
 // 默认配置
@@ -49,6 +61,10 @@ var defaultOpenaiSettings = GlobalSettings{
 		Enabled:     false,
 		AllChannels: true,
 	},
+	ThirdPartyMultimodalModelID:         "",
+	ThirdPartyMultimodalCallAPIType:     0,
+	ThirdPartyMultimodalSystemPrompt:    "",
+	ThirdPartyMultimodalFirstUserPrompt: "",
 }
 
 // 全局实例
