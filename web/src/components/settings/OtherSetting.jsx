@@ -264,13 +264,6 @@ const OtherSetting = () => {
               <Row>
                 <Col span={16}>
                   <Text>
-                    {t('当前版本')}：{statusState?.status?.version || t('未知')}
-                  </Text>
-                </Col>
-              </Row>
-              <Row>
-                <Col span={16}>
-                  <Text>
                     {t('启动时间')}：{getStartTimeString()}
                   </Text>
                 </Col>
