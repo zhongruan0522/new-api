@@ -128,27 +128,6 @@ export async function onDiscordOAuthClicked(client_id, options = {}) {
   );
 }
 
-export async function onOIDCClicked(
-  auth_url,
-  client_id,
-  openInNewTab = false,
-  options = {},
-) {
-  const state = await prepareOAuthState(options);
-  if (!state) return;
-  const url = new URL(auth_url);
-  url.searchParams.set('client_id', client_id);
-  url.searchParams.set('redirect_uri', `${window.location.origin}/oauth/oidc`);
-  url.searchParams.set('response_type', 'code');
-  url.searchParams.set('scope', 'openid profile email');
-  url.searchParams.set('state', state);
-  if (openInNewTab) {
-    window.open(url.toString(), '_blank');
-  } else {
-    window.location.href = url.toString();
-  }
-}
-
 export async function onGitHubOAuthClicked(github_client_id, options = {}) {
   const state = await prepareOAuthState(options);
   if (!state) return;

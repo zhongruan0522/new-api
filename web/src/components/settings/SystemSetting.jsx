@@ -40,7 +40,6 @@ import {
   showSuccess,
   toBoolean,
 } from '../../helpers';
-import axios from 'axios';
 import { useTranslation } from 'react-i18next';
 import CustomOAuthSetting from './CustomOAuthSetting';
 
@@ -56,13 +55,6 @@ const SystemSetting = () => {
     'discord.enabled': '',
     'discord.client_id': '',
     'discord.client_secret': '',
-    'oidc.enabled': '',
-    'oidc.client_id': '',
-    'oidc.client_secret': '',
-    'oidc.well_known': '',
-    'oidc.authorization_endpoint': '',
-    'oidc.token_endpoint': '',
-    'oidc.user_info_endpoint': '',
     Notice: '',
     SMTPServer: '',
     SMTPPort: '',
@@ -73,10 +65,6 @@ const SystemSetting = () => {
     WorkerValidKey: '',
     WorkerAllowHttpImageRequestEnabled: '',
     Footer: '',
-    WeChatAuthEnabled: '',
-    WeChatServerAddress: '',
-    WeChatServerToken: '',
-    WeChatAccountQRCodeImageURL: '',
     TurnstileCheckEnabled: '',
     TurnstileSiteKey: '',
     TurnstileSecretKey: '',
@@ -175,7 +163,6 @@ const SystemSetting = () => {
           case 'PasswordRegisterEnabled':
           case 'EmailVerificationEnabled':
           case 'GitHubOAuthEnabled':
-          case 'WeChatAuthEnabled':
           case 'TelegramOAuthEnabled':
           case 'RegisterEnabled':
           case 'TurnstileCheckEnabled':
@@ -184,7 +171,6 @@ const SystemSetting = () => {
           case 'SMTPSSLEnabled':
           case 'LinuxDOOAuthEnabled':
           case 'discord.enabled':
-          case 'oidc.enabled':
           case 'passkey.enabled':
           case 'passkey.allow_insecure_origin':
           case 'WorkerAllowHttpImageRequestEnabled':
@@ -424,39 +410,6 @@ const SystemSetting = () => {
     }
   };
 
-  const submitWeChat = async () => {
-    const options = [];
-
-    if (originInputs['WeChatServerAddress'] !== inputs.WeChatServerAddress) {
-      options.push({
-        key: 'WeChatServerAddress',
-        value: removeTrailingSlash(inputs.WeChatServerAddress),
-      });
-    }
-    if (
-      originInputs['WeChatAccountQRCodeImageURL'] !==
-      inputs.WeChatAccountQRCodeImageURL
-    ) {
-      options.push({
-        key: 'WeChatAccountQRCodeImageURL',
-        value: inputs.WeChatAccountQRCodeImageURL,
-      });
-    }
-    if (
-      originInputs['WeChatServerToken'] !== inputs.WeChatServerToken &&
-      inputs.WeChatServerToken !== ''
-    ) {
-      options.push({
-        key: 'WeChatServerToken',
-        value: inputs.WeChatServerToken,
-      });
-    }
-
-    if (options.length > 0) {
-      await updateOptions(options);
-    }
-  };
-
   const submitGitHubOAuth = async () => {
     const options = [];
 
@@ -495,81 +448,6 @@ const SystemSetting = () => {
       options.push({
         key: 'discord.client_secret',
         value: inputs['discord.client_secret'],
-      });
-    }
-
-    if (options.length > 0) {
-      await updateOptions(options);
-    }
-  };
-
-  const submitOIDCSettings = async () => {
-    if (inputs['oidc.well_known'] && inputs['oidc.well_known'] !== '') {
-      if (
-        !inputs['oidc.well_known'].startsWith('http://') &&
-        !inputs['oidc.well_known'].startsWith('https://')
-      ) {
-        showError(t('Well-Known URL 必须以 http:// 或 https:// 开头'));
-        return;
-      }
-      try {
-        const res = await axios.create().get(inputs['oidc.well_known']);
-        inputs['oidc.authorization_endpoint'] =
-          res.data['authorization_endpoint'];
-        inputs['oidc.token_endpoint'] = res.data['token_endpoint'];
-        inputs['oidc.user_info_endpoint'] = res.data['userinfo_endpoint'];
-        showSuccess(t('获取 OIDC 配置成功！'));
-      } catch (err) {
-        console.error(err);
-        showError(
-          t('获取 OIDC 配置失败，请检查网络状况和 Well-Known URL 是否正确'),
-        );
-        return;
-      }
-    }
-
-    const options = [];
-
-    if (originInputs['oidc.well_known'] !== inputs['oidc.well_known']) {
-      options.push({
-        key: 'oidc.well_known',
-        value: inputs['oidc.well_known'],
-      });
-    }
-    if (originInputs['oidc.client_id'] !== inputs['oidc.client_id']) {
-      options.push({ key: 'oidc.client_id', value: inputs['oidc.client_id'] });
-    }
-    if (
-      originInputs['oidc.client_secret'] !== inputs['oidc.client_secret'] &&
-      inputs['oidc.client_secret'] !== ''
-    ) {
-      options.push({
-        key: 'oidc.client_secret',
-        value: inputs['oidc.client_secret'],
-      });
-    }
-    if (
-      originInputs['oidc.authorization_endpoint'] !==
-      inputs['oidc.authorization_endpoint']
-    ) {
-      options.push({
-        key: 'oidc.authorization_endpoint',
-        value: inputs['oidc.authorization_endpoint'],
-      });
-    }
-    if (originInputs['oidc.token_endpoint'] !== inputs['oidc.token_endpoint']) {
-      options.push({
-        key: 'oidc.token_endpoint',
-        value: inputs['oidc.token_endpoint'],
-      });
-    }
-    if (
-      originInputs['oidc.user_info_endpoint'] !==
-      inputs['oidc.user_info_endpoint']
-    ) {
-      options.push({
-        key: 'oidc.user_info_endpoint',
-        value: inputs['oidc.user_info_endpoint'],
       });
     }
 
@@ -1063,15 +941,6 @@ const SystemSetting = () => {
                         {t('允许通过 Linux DO 账户登录 & 注册')}
                       </Form.Checkbox>
                       <Form.Checkbox
-                        field='WeChatAuthEnabled'
-                        noLabel
-                        onChange={(e) =>
-                          handleCheckboxChange('WeChatAuthEnabled', e)
-                        }
-                      >
-                        {t('允许通过微信登录 & 注册')}
-                      </Form.Checkbox>
-                      <Form.Checkbox
                         field='TelegramOAuthEnabled'
                         noLabel
                         onChange={(e) =>
@@ -1079,15 +948,6 @@ const SystemSetting = () => {
                         }
                       >
                         {t('允许通过 Telegram 进行登录')}
-                      </Form.Checkbox>
-                      <Form.Checkbox
-                        field="['oidc.enabled']"
-                        noLabel
-                        onChange={(e) =>
-                          handleCheckboxChange('oidc.enabled', e)
-                        }
-                      >
-                        {t('允许通过 OIDC 进行登录')}
                       </Form.Checkbox>
                     </Col>
                   </Row>
@@ -1340,83 +1200,6 @@ const SystemSetting = () => {
                   <Button onClick={submitSMTP}>{t('保存 SMTP 设置')}</Button>
                 </Form.Section>
               </Card>
-              <Card>
-                <Form.Section text={t('配置 OIDC')}>
-                  <Text>
-                    {t(
-                      '用以支持通过 OIDC 登录，例如 Okta、Auth0 等兼容 OIDC 协议的 IdP',
-                    )}
-                  </Text>
-                  <Banner
-                    type='info'
-                    description={`${t('主页链接填')} ${inputs.ServerAddress ? inputs.ServerAddress : t('网站地址')}，${t('重定向 URL 填')} ${inputs.ServerAddress ? inputs.ServerAddress : t('网站地址')}/oauth/oidc`}
-                    style={{ marginBottom: 20, marginTop: 16 }}
-                  />
-                  <Text>
-                    {t(
-                      '若你的 OIDC Provider 支持 Discovery Endpoint，你可以仅填写 OIDC Well-Known URL，系统会自动获取 OIDC 配置',
-                    )}
-                  </Text>
-                  <Row
-                    gutter={{ xs: 8, sm: 16, md: 24, lg: 24, xl: 24, xxl: 24 }}
-                  >
-                    <Col xs={24} sm={24} md={12} lg={12} xl={12}>
-                      <Form.Input
-                        field="['oidc.well_known']"
-                        label={t('Well-Known URL')}
-                        placeholder={t('请输入 OIDC 的 Well-Known URL')}
-                      />
-                    </Col>
-                    <Col xs={24} sm={24} md={12} lg={12} xl={12}>
-                      <Form.Input
-                        field="['oidc.client_id']"
-                        label={t('Client ID')}
-                        placeholder={t('输入 OIDC 的 Client ID')}
-                      />
-                    </Col>
-                  </Row>
-                  <Row
-                    gutter={{ xs: 8, sm: 16, md: 24, lg: 24, xl: 24, xxl: 24 }}
-                  >
-                    <Col xs={24} sm={24} md={12} lg={12} xl={12}>
-                      <Form.Input
-                        field="['oidc.client_secret']"
-                        label={t('Client Secret')}
-                        type='password'
-                        placeholder={t('敏感信息不会发送到前端显示')}
-                      />
-                    </Col>
-                    <Col xs={24} sm={24} md={12} lg={12} xl={12}>
-                      <Form.Input
-                        field="['oidc.authorization_endpoint']"
-                        label={t('Authorization Endpoint')}
-                        placeholder={t('输入 OIDC 的 Authorization Endpoint')}
-                      />
-                    </Col>
-                  </Row>
-                  <Row
-                    gutter={{ xs: 8, sm: 16, md: 24, lg: 24, xl: 24, xxl: 24 }}
-                  >
-                    <Col xs={24} sm={24} md={12} lg={12} xl={12}>
-                      <Form.Input
-                        field="['oidc.token_endpoint']"
-                        label={t('Token Endpoint')}
-                        placeholder={t('输入 OIDC 的 Token Endpoint')}
-                      />
-                    </Col>
-                    <Col xs={24} sm={24} md={12} lg={12} xl={12}>
-                      <Form.Input
-                        field="['oidc.user_info_endpoint']"
-                        label={t('User Info Endpoint')}
-                        placeholder={t('输入 OIDC 的 Userinfo Endpoint')}
-                      />
-                    </Col>
-                  </Row>
-                  <Button onClick={submitOIDCSettings}>
-                    {t('保存 OIDC 设置')}
-                  </Button>
-                </Form.Section>
-              </Card>
 
               <Card>
                 <Form.Section text={t('配置 GitHub OAuth App')}>
@@ -1536,39 +1319,6 @@ const SystemSetting = () => {
               </Card>
 
               <CustomOAuthSetting serverAddress={inputs.ServerAddress} />
-
-              <Card>
-                <Form.Section text={t('配置 WeChat Server')}>
-                  <Text>{t('用以支持通过微信进行登录注册')}</Text>
-                  <Row
-                    gutter={{ xs: 8, sm: 16, md: 24, lg: 24, xl: 24, xxl: 24 }}
-                  >
-                    <Col xs={24} sm={24} md={8} lg={8} xl={8}>
-                      <Form.Input
-                        field='WeChatServerAddress'
-                        label={t('WeChat Server 服务器地址')}
-                      />
-                    </Col>
-                    <Col xs={24} sm={24} md={8} lg={8} xl={8}>
-                      <Form.Input
-                        field='WeChatServerToken'
-                        label={t('WeChat Server 访问凭证')}
-                        type='password'
-                        placeholder={t('敏感信息不会发送到前端显示')}
-                      />
-                    </Col>
-                    <Col xs={24} sm={24} md={8} lg={8} xl={8}>
-                      <Form.Input
-                        field='WeChatAccountQRCodeImageURL'
-                        label={t('微信公众号二维码图片链接')}
-                      />
-                    </Col>
-                  </Row>
-                  <Button onClick={submitWeChat}>
-                    {t('保存 WeChat Server 设置')}
-                  </Button>
-                </Form.Section>
-              </Card>
 
               <Card>
                 <Form.Section text={t('配置 Telegram 登录')}>
