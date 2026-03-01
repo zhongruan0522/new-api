@@ -147,7 +147,7 @@ const UpstreamIdentitySettings = ({ t }) => {
           <Col xs={24} sm={24} md={12} lg={12} xl={12}>
             <Form.Input
               field='upstream_x_title'
-              label='X-Title'
+              label='HTTP-TITLE / X-Title'
               placeholder={t('可选，不填则不设置')}
               showClear
             />
@@ -173,4 +173,3 @@ const UpstreamIdentitySettings = ({ t }) => {
 };
 
 export default UpstreamIdentitySettings;
-

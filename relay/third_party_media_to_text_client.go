@@ -29,6 +29,40 @@ type thirdPartyMediaTextClient struct {
 	setting dto.UserSetting
 }
 
+func applyThirdPartyIdentityHeaderOverride(info *relaycommon.RelayInfo, setting dto.UserSetting) {
+	if info == nil || info.HeadersOverride == nil {
+		return
+	}
+
+	existing := make(map[string]struct{}, len(info.HeadersOverride))
+	for k := range info.HeadersOverride {
+		key := strings.ToLower(strings.TrimSpace(k))
+		if key == "" {
+			continue
+		}
+		existing[key] = struct{}{}
+	}
+
+	if ua := strings.TrimSpace(setting.UpstreamUserAgent); ua != "" {
+		if _, ok := existing["user-agent"]; !ok {
+			info.HeadersOverride["User-Agent"] = ua
+		}
+	}
+	if title := strings.TrimSpace(setting.UpstreamXTitle); title != "" {
+		if _, ok := existing["x-title"]; !ok {
+			info.HeadersOverride["X-Title"] = title
+		}
+	}
+	if referer := strings.TrimSpace(setting.UpstreamHTTPReferer); referer != "" {
+		if _, ok := existing["http-referer"]; !ok {
+			info.HeadersOverride["HTTP-Referer"] = referer
+		}
+		if _, ok := existing["referer"]; !ok {
+			info.HeadersOverride["Referer"] = referer
+		}
+	}
+}
+
 func newThirdPartyMediaTextClient(parent *gin.Context, ch *model.Channel, cfg thirdPartyMultimodalConfig, userSetting dto.UserSetting) (*thirdPartyMediaTextClient, *types.NewAPIError) {
 	if ch == nil {
 		return nil, types.NewErrorWithStatusCode(errors.New("third-party channel is nil"), types.ErrorCodeGetChannelFailed, http.StatusInternalServerError, types.ErrOptionWithSkipRetry())
@@ -79,7 +113,7 @@ func (c *thirdPartyMediaTextClient) callThirdPartyMultimodalModel(kind string, r
 	if infoErr != nil {
 		return 0, nil, infoErr
 	}
-	internalInfo.UserSetting = c.setting
+	applyThirdPartyIdentityHeaderOverride(internalInfo, c.setting)
 
 	adaptor := GetAdaptor(internalInfo.ApiType)
 	if adaptor == nil {
