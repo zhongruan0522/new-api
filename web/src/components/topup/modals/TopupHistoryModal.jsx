@@ -50,7 +50,6 @@ const STATUS_CONFIG = {
 // 支付方式映射
 const PAYMENT_METHOD_MAP = {
   stripe: 'Stripe',
-  creem: 'Creem',
   alipay: '支付宝',
   wxpay: '微信',
 };
@@ -148,6 +147,7 @@ const TopupHistoryModal = ({ visible, onCancel, t }) => {
 
   // 渲染支付方式
   const renderPaymentMethod = (pm) => {
+    if (pm === 'creem') return <Text>{t('已移除支付方式')}</Text>;
     const displayName = PAYMENT_METHOD_MAP[pm];
     return <Text>{displayName ? t(displayName) : pm || '-'}</Text>;
   };

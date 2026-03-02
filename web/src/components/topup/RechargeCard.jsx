@@ -56,9 +56,6 @@ const RechargeCard = ({
   t,
   enableOnlineTopUp,
   enableStripeTopUp,
-  enableCreemTopUp,
-  creemProducts,
-  creemPreTopUp,
   presetAmounts,
   selectedPreset,
   selectPresetAmount,
@@ -224,7 +221,7 @@ const RechargeCard = ({
           <div className='py-8 flex justify-center'>
             <Spin size='large' />
           </div>
-        ) : enableOnlineTopUp || enableStripeTopUp || enableCreemTopUp ? (
+        ) : enableOnlineTopUp || enableStripeTopUp ? (
           <Form
             getFormApi={(api) => (onlineFormApiRef.current = api)}
             initValues={{ topUpCount: topUpCount }}
@@ -483,32 +480,6 @@ const RechargeCard = ({
                 </Form.Slot>
               )}
 
-              {/* Creem 充值区域 */}
-              {enableCreemTopUp && creemProducts.length > 0 && (
-                <Form.Slot label={t('Creem 充值')}>
-                  <div className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3'>
-                    {creemProducts.map((product, index) => (
-                      <Card
-                        key={index}
-                        onClick={() => creemPreTopUp(product)}
-                        className='cursor-pointer !rounded-2xl transition-all hover:shadow-md border-gray-200 hover:border-gray-300'
-                        bodyStyle={{ textAlign: 'center', padding: '16px' }}
-                      >
-                        <div className='font-medium text-lg mb-2'>
-                          {product.name}
-                        </div>
-                        <div className='text-sm text-gray-600 mb-2'>
-                          {t('充值额度')}: {product.quota}
-                        </div>
-                        <div className='text-lg font-semibold text-blue-600'>
-                          {product.currency === 'EUR' ? '€' : '$'}
-                          {product.price}
-                        </div>
-                      </Card>
-                    ))}
-                  </div>
-                </Form.Slot>
-              )}
             </div>
           </Form>
         ) : (
@@ -621,7 +592,6 @@ const RechargeCard = ({
                 payMethods={payMethods}
                 enableOnlineTopUp={enableOnlineTopUp}
                 enableStripeTopUp={enableStripeTopUp}
-                enableCreemTopUp={enableCreemTopUp}
                 billingPreference={billingPreference}
                 onChangeBillingPreference={onChangeBillingPreference}
                 activeSubscriptions={activeSubscriptions}
