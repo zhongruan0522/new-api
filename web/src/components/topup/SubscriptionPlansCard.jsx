@@ -44,7 +44,7 @@ const { Text } = Typography;
 // 过滤易支付方式
 function getEpayMethods(payMethods = []) {
   return (payMethods || []).filter(
-    (m) => m?.type && m.type !== 'stripe' && m.type !== 'creem',
+    (m) => m?.type && m.type !== 'stripe',
   );
 }
 
@@ -76,7 +76,6 @@ const SubscriptionPlansCard = ({
   payMethods = [],
   enableOnlineTopUp = false,
   enableStripeTopUp = false,
-  enableCreemTopUp = false,
   billingPreference,
   onChangeBillingPreference,
   activeSubscriptions = [],
@@ -125,34 +124,6 @@ const SubscriptionPlansCard = ({
       });
       if (res.data?.message === 'success') {
         window.open(res.data.data?.pay_link, '_blank');
-        showSuccess(t('已打开支付页面'));
-        closeBuy();
-      } else {
-        const errorMsg =
-          typeof res.data?.data === 'string'
-            ? res.data.data
-            : res.data?.message || t('支付失败');
-        showError(errorMsg);
-      }
-    } catch (e) {
-      showError(t('支付请求失败'));
-    } finally {
-      setPaying(false);
-    }
-  };
-
-  const payCreem = async () => {
-    if (!selectedPlan?.plan?.creem_product_id) {
-      showError(t('该套餐未配置 Creem'));
-      return;
-    }
-    setPaying(true);
-    try {
-      const res = await API.post('/api/subscription/creem/pay', {
-        plan_id: selectedPlan.plan.id,
-      });
-      if (res.data?.message === 'success') {
-        window.open(res.data.data?.checkout_url, '_blank');
         showSuccess(t('已打开支付页面'));
         closeBuy();
       } else {
@@ -664,7 +635,6 @@ const SubscriptionPlansCard = ({
         epayMethods={epayMethods}
         enableOnlineTopUp={enableOnlineTopUp}
         enableStripeTopUp={enableStripeTopUp}
-        enableCreemTopUp={enableCreemTopUp}
         purchaseLimitInfo={
           selectedPlan?.plan?.id
             ? {
@@ -674,7 +644,6 @@ const SubscriptionPlansCard = ({
             : null
         }
         onPayStripe={payStripe}
-        onPayCreem={payCreem}
         onPayEpay={payEpay}
       />
     </>

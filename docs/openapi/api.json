@@ -1932,31 +1932,6 @@
         ]
       }
     },
-    "/api/user/creem/pay": {
-      "post": {
-        "summary": "发起Creem支付",
-        "deprecated": false,
-        "description": "🔐 需要登录（User权限）",
-        "tags": [
-          "充值"
-        ],
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "成功",
-            "headers": {}
-          }
-        },
-        "security": [
-          {
-            "Combination343": []
-          },
-          {
-            "Combination1243": []
-          }
-        ]
-      }
-    },
     "/api/user/epay/notify": {
       "get": {
         "summary": "易支付回调",
@@ -1985,31 +1960,6 @@
     "/api/stripe/webhook": {
       "post": {
         "summary": "Stripe Webhook",
-        "deprecated": false,
-        "description": "🔓 无需鉴权（Webhook回调）",
-        "tags": [
-          "充值"
-        ],
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "成功",
-            "headers": {}
-          }
-        },
-        "security": [
-          {
-            "Combination343": []
-          },
-          {
-            "Combination1243": []
-          }
-        ]
-      }
-    },
-    "/api/creem/webhook": {
-      "post": {
-        "summary": "Creem Webhook",
         "deprecated": false,
         "description": "🔓 无需鉴权（Webhook回调）",
         "tags": [
