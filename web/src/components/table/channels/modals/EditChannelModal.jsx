@@ -741,6 +741,26 @@ const EditChannelModal = (props) => {
     const models = [];
     let err = false;
 
+    const normalizeFetchedModelName = (model) => {
+      if (!model) return '';
+      if (typeof model === 'string') return model.trim();
+      if (typeof model === 'number') return String(model).trim();
+      if (typeof model === 'object') {
+        const candidate =
+          model.id ||
+          model.ID ||
+          model.model_name ||
+          model.modelName ||
+          model.name ||
+          model.model ||
+          model.Model;
+        if (typeof candidate === 'string') return candidate.trim();
+        if (typeof candidate === 'number') return String(candidate).trim();
+        return '';
+      }
+      return '';
+    };
+
     if (isEdit) {
       // 如果是编辑模式，使用已有的 channelId 获取模型列表
       const res = await API.get('/api/channel/fetch_models/' + channelId, {
@@ -781,7 +801,9 @@ const EditChannelModal = (props) => {
     }
 
     if (!err) {
-      const uniqueModels = Array.from(new Set(models));
+      const uniqueModels = Array.from(
+        new Set(models.map(normalizeFetchedModelName).filter(Boolean)),
+      );
       setFetchedModels(uniqueModels);
       if (!silent) {
         setModelModalVisible(true);

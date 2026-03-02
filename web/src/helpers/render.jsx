@@ -134,128 +134,147 @@ export const getModelCategories = (() => {
         label: 'OpenAI',
         icon: <OpenAI />,
         filter: (model) =>
-          model.model_name.toLowerCase().includes('gpt') ||
-          model.model_name.toLowerCase().includes('dall-e') ||
-          model.model_name.toLowerCase().includes('whisper') ||
-          model.model_name.toLowerCase().includes('tts-1') ||
-          model.model_name.toLowerCase().includes('text-embedding-3') ||
-          model.model_name.toLowerCase().includes('text-moderation') ||
-          model.model_name.toLowerCase().includes('babbage') ||
-          model.model_name.toLowerCase().includes('davinci') ||
-          model.model_name.toLowerCase().includes('curie') ||
-          model.model_name.toLowerCase().includes('ada') ||
-          model.model_name.toLowerCase().includes('o1') ||
-          model.model_name.toLowerCase().includes('o3') ||
-          model.model_name.toLowerCase().includes('o4'),
+          String(model?.model_name ?? '').toLowerCase().includes('gpt') ||
+          String(model?.model_name ?? '').toLowerCase().includes('dall-e') ||
+          String(model?.model_name ?? '').toLowerCase().includes('whisper') ||
+          String(model?.model_name ?? '').toLowerCase().includes('tts-1') ||
+          String(model?.model_name ?? '')
+            .toLowerCase()
+            .includes('text-embedding-3') ||
+          String(model?.model_name ?? '')
+            .toLowerCase()
+            .includes('text-moderation') ||
+          String(model?.model_name ?? '').toLowerCase().includes('babbage') ||
+          String(model?.model_name ?? '').toLowerCase().includes('davinci') ||
+          String(model?.model_name ?? '').toLowerCase().includes('curie') ||
+          String(model?.model_name ?? '').toLowerCase().includes('ada') ||
+          String(model?.model_name ?? '').toLowerCase().includes('o1') ||
+          String(model?.model_name ?? '').toLowerCase().includes('o3') ||
+          String(model?.model_name ?? '').toLowerCase().includes('o4'),
       },
       anthropic: {
         label: 'Anthropic',
         icon: <Claude.Color />,
-        filter: (model) => model.model_name.toLowerCase().includes('claude'),
+        filter: (model) =>
+          String(model?.model_name ?? '').toLowerCase().includes('claude'),
       },
       gemini: {
         label: 'Gemini',
         icon: <Gemini.Color />,
         filter: (model) =>
-          model.model_name.toLowerCase().includes('gemini') ||
-          model.model_name.toLowerCase().includes('gemma') ||
-          model.model_name.toLowerCase().includes('learnlm') ||
-          model.model_name.toLowerCase().startsWith('embedding-') ||
-          model.model_name.toLowerCase().includes('text-embedding-004') ||
-          model.model_name.toLowerCase().includes('imagen-4') ||
-          model.model_name.toLowerCase().includes('veo-') ||
-          model.model_name.toLowerCase().includes('aqa'),
+          String(model?.model_name ?? '').toLowerCase().includes('gemini') ||
+          String(model?.model_name ?? '').toLowerCase().includes('gemma') ||
+          String(model?.model_name ?? '').toLowerCase().includes('learnlm') ||
+          String(model?.model_name ?? '').toLowerCase().startsWith('embedding-') ||
+          String(model?.model_name ?? '')
+            .toLowerCase()
+            .includes('text-embedding-004') ||
+          String(model?.model_name ?? '').toLowerCase().includes('imagen-4') ||
+          String(model?.model_name ?? '').toLowerCase().includes('veo-') ||
+          String(model?.model_name ?? '').toLowerCase().includes('aqa'),
       },
       moonshot: {
         label: 'Moonshot',
         icon: <Moonshot />,
         filter: (model) =>
-          model.model_name.toLowerCase().includes('moonshot') ||
-          model.model_name.toLowerCase().includes('kimi'),
+          String(model?.model_name ?? '').toLowerCase().includes('moonshot') ||
+          String(model?.model_name ?? '').toLowerCase().includes('kimi'),
       },
       zhipu: {
         label: t('智谱'),
         icon: <Zhipu.Color />,
         filter: (model) =>
-          model.model_name.toLowerCase().includes('chatglm') ||
-          model.model_name.toLowerCase().includes('glm-') ||
-          model.model_name.toLowerCase().includes('cogview') ||
-          model.model_name.toLowerCase().includes('cogvideo'),
+          String(model?.model_name ?? '').toLowerCase().includes('chatglm') ||
+          String(model?.model_name ?? '').toLowerCase().includes('glm-') ||
+          String(model?.model_name ?? '').toLowerCase().includes('cogview') ||
+          String(model?.model_name ?? '').toLowerCase().includes('cogvideo'),
       },
       qwen: {
         label: t('通义千问'),
         icon: <Qwen.Color />,
-        filter: (model) => model.model_name.toLowerCase().includes('qwen'),
+        filter: (model) =>
+          String(model?.model_name ?? '').toLowerCase().includes('qwen'),
       },
       deepseek: {
         label: 'DeepSeek',
         icon: <DeepSeek.Color />,
-        filter: (model) => model.model_name.toLowerCase().includes('deepseek'),
+        filter: (model) =>
+          String(model?.model_name ?? '').toLowerCase().includes('deepseek'),
       },
       minimax: {
         label: 'MiniMax',
         icon: <Minimax.Color />,
         filter: (model) =>
-          model.model_name.toLowerCase().includes('abab') ||
-          model.model_name.toLowerCase().includes('minimax'),
+          String(model?.model_name ?? '').toLowerCase().includes('abab') ||
+          String(model?.model_name ?? '').toLowerCase().includes('minimax'),
       },
       xunfei: {
         label: t('讯飞星火'),
         icon: <Spark.Color />,
-        filter: (model) => model.model_name.toLowerCase().includes('spark'),
+        filter: (model) =>
+          String(model?.model_name ?? '').toLowerCase().includes('spark'),
       },
       tencent: {
         label: t('腾讯混元'),
         icon: <Hunyuan.Color />,
-        filter: (model) => model.model_name.toLowerCase().includes('hunyuan'),
+        filter: (model) =>
+          String(model?.model_name ?? '').toLowerCase().includes('hunyuan'),
       },
       cohere: {
         label: 'Cohere',
         icon: <Cohere.Color />,
         filter: (model) =>
-          model.model_name.toLowerCase().includes('command') ||
-          model.model_name.toLowerCase().includes('c4ai-') ||
-          model.model_name.toLowerCase().includes('embed-'),
+          String(model?.model_name ?? '').toLowerCase().includes('command') ||
+          String(model?.model_name ?? '').toLowerCase().includes('c4ai-') ||
+          String(model?.model_name ?? '').toLowerCase().includes('embed-'),
       },
       cloudflare: {
         label: 'Cloudflare',
         icon: <Cloudflare.Color />,
-        filter: (model) => model.model_name.toLowerCase().includes('@cf/'),
+        filter: (model) =>
+          String(model?.model_name ?? '').toLowerCase().includes('@cf/'),
       },
       jina: {
         label: 'Jina',
         icon: <Jina />,
-        filter: (model) => model.model_name.toLowerCase().includes('jina'),
+        filter: (model) =>
+          String(model?.model_name ?? '').toLowerCase().includes('jina'),
       },
       mistral: {
         label: 'Mistral AI',
         icon: <Mistral.Color />,
         filter: (model) =>
-          model.model_name.toLowerCase().includes('mistral') ||
-          model.model_name.toLowerCase().includes('codestral') ||
-          model.model_name.toLowerCase().includes('pixtral') ||
-          model.model_name.toLowerCase().includes('voxtral') ||
-          model.model_name.toLowerCase().includes('magistral'),
+          String(model?.model_name ?? '').toLowerCase().includes('mistral') ||
+          String(model?.model_name ?? '').toLowerCase().includes('codestral') ||
+          String(model?.model_name ?? '').toLowerCase().includes('pixtral') ||
+          String(model?.model_name ?? '').toLowerCase().includes('voxtral') ||
+          String(model?.model_name ?? '')
+            .toLowerCase()
+            .includes('magistral'),
       },
       xai: {
         label: 'xAI',
         icon: <XAI />,
-        filter: (model) => model.model_name.toLowerCase().includes('grok'),
+        filter: (model) =>
+          String(model?.model_name ?? '').toLowerCase().includes('grok'),
       },
       llama: {
         label: 'Llama',
         icon: <Ollama />,
-        filter: (model) => model.model_name.toLowerCase().includes('llama'),
+        filter: (model) =>
+          String(model?.model_name ?? '').toLowerCase().includes('llama'),
       },
       doubao: {
         label: t('豆包'),
         icon: <Doubao.Color />,
-        filter: (model) => model.model_name.toLowerCase().includes('doubao'),
+        filter: (model) =>
+          String(model?.model_name ?? '').toLowerCase().includes('doubao'),
       },
       yi: {
         label: t('零一万物'),
         icon: <Yi.Color />,
-        filter: (model) => model.model_name.toLowerCase().includes('yi'),
+        filter: (model) =>
+          String(model?.model_name ?? '').toLowerCase().includes('yi'),
       },
     };
 
