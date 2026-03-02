@@ -22,6 +22,10 @@ type thirdPartyMultimodalConfig struct {
 	callAPIType     int
 	systemPrompt    string
 	firstUserPrompt string
+
+	userAgent   string
+	xTitle      string
+	httpReferer string
 }
 
 type thirdPartyMediaToTextInput struct {
@@ -60,12 +64,7 @@ func applyThirdPartyModelMediaToText(in thirdPartyMediaToTextInput) *types.NewAP
 		)
 	}
 
-	userSetting := dto.UserSetting{}
-	if in.info != nil {
-		userSetting = in.info.UserSetting
-	}
-
-	client, buildErr := newThirdPartyMediaTextClient(in.ctx, selected, cfg, userSetting)
+	client, buildErr := newThirdPartyMediaTextClient(in.ctx, selected, cfg)
 	if buildErr != nil {
 		return buildErr
 	}
@@ -101,6 +100,9 @@ func loadThirdPartyMultimodalConfig() (thirdPartyMultimodalConfig, *types.NewAPI
 		callAPIType:     gs.ThirdPartyMultimodalCallAPIType,
 		systemPrompt:    gs.ThirdPartyMultimodalSystemPrompt,
 		firstUserPrompt: gs.ThirdPartyMultimodalFirstUserPrompt,
+		userAgent:       strings.TrimSpace(gs.ThirdPartyMultimodalUserAgent),
+		xTitle:          strings.TrimSpace(gs.ThirdPartyMultimodalXTitle),
+		httpReferer:     strings.TrimSpace(gs.ThirdPartyMultimodalHTTPReferer),
 	}
 	if cfg.modelID == "" {
 		return thirdPartyMultimodalConfig{}, types.NewErrorWithStatusCode(errors.New("third_party_multimodal_model_id is required for third_party_model mode"), types.ErrorCodeInvalidRequest, http.StatusBadRequest, types.ErrOptionWithSkipRetry())

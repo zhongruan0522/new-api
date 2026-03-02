@@ -48,6 +48,13 @@ type GlobalSettings struct {
 	ThirdPartyMultimodalCallAPIType     int    `json:"third_party_multimodal_call_api_type"`
 	ThirdPartyMultimodalSystemPrompt    string `json:"third_party_multimodal_system_prompt"`
 	ThirdPartyMultimodalFirstUserPrompt string `json:"third_party_multimodal_first_user_prompt"`
+
+	// ThirdPartyMultimodal* identity headers are ONLY used by the internal
+	// third-party multimodal request (media-to-text).
+	// They will NOT be injected into normal upstream relay requests.
+	ThirdPartyMultimodalUserAgent   string `json:"third_party_multimodal_user_agent"`
+	ThirdPartyMultimodalXTitle      string `json:"third_party_multimodal_x_title"`
+	ThirdPartyMultimodalHTTPReferer string `json:"third_party_multimodal_http_referer"`
 }
 
 // 默认配置
@@ -65,6 +72,9 @@ var defaultOpenaiSettings = GlobalSettings{
 	ThirdPartyMultimodalCallAPIType:     0,
 	ThirdPartyMultimodalSystemPrompt:    "",
 	ThirdPartyMultimodalFirstUserPrompt: "",
+	ThirdPartyMultimodalUserAgent:       "",
+	ThirdPartyMultimodalXTitle:          "",
+	ThirdPartyMultimodalHTTPReferer:     "",
 }
 
 // 全局实例
