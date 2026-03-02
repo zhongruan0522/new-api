@@ -18,36 +18,19 @@ For commercial licensing, please contact support@quantumnous.com
 */
 
 import React, { useEffect, useState } from 'react';
-import { Card, Spin, Tabs } from '@douyinfe/semi-ui';
+import { Card, Spin } from '@douyinfe/semi-ui';
 
-import { API, showError, showSuccess, toBoolean } from '../../helpers';
-import { useTranslation } from 'react-i18next';
-import SettingGeminiModel from '../../pages/Setting/Model/SettingGeminiModel';
-import SettingClaudeModel from '../../pages/Setting/Model/SettingClaudeModel';
+import { API, showError, toBoolean } from '../../helpers';
 import SettingGlobalModel from '../../pages/Setting/Model/SettingGlobalModel';
-import SettingGrokModel from '../../pages/Setting/Model/SettingGrokModel';
 import SettingsChannelAffinity from '../../pages/Setting/Operation/SettingsChannelAffinity';
 
 const ModelSetting = () => {
-  const { t } = useTranslation();
   let [inputs, setInputs] = useState({
-    'gemini.safety_settings': '',
-    'gemini.version_settings': '',
-    'gemini.supported_imagine_models': '',
-    'gemini.remove_function_response_id_enabled': true,
-    'claude.model_headers_settings': '',
-    'claude.thinking_adapter_enabled': true,
-    'claude.default_max_tokens': '',
-    'claude.thinking_adapter_budget_tokens_percentage': 0.8,
     'global.pass_through_request_enabled': false,
     'global.thinking_model_blacklist': '[]',
     'global.chat_completions_to_responses_policy': '{}',
     'general_setting.ping_interval_enabled': false,
     'general_setting.ping_interval_seconds': 60,
-    'gemini.thinking_adapter_enabled': false,
-    'gemini.thinking_adapter_budget_tokens_percentage': 0.6,
-    'grok.violation_deduction_enabled': true,
-    'grok.violation_deduction_amount': 0.05,
   });
 
   let [loading, setLoading] = useState(false);
@@ -59,11 +42,6 @@ const ModelSetting = () => {
       let newInputs = {};
       data.forEach((item) => {
         if (
-          item.key === 'gemini.safety_settings' ||
-          item.key === 'gemini.version_settings' ||
-          item.key === 'claude.model_headers_settings' ||
-          item.key === 'claude.default_max_tokens' ||
-          item.key === 'gemini.supported_imagine_models' ||
           item.key === 'global.thinking_model_blacklist' ||
           item.key === 'global.chat_completions_to_responses_policy'
         ) {
@@ -116,18 +94,6 @@ const ModelSetting = () => {
         {/* Channel affinity */}
         <Card style={{ marginTop: '10px' }}>
           <SettingsChannelAffinity options={inputs} refresh={onRefresh} />
-        </Card>
-        {/* Gemini */}
-        <Card style={{ marginTop: '10px' }}>
-          <SettingGeminiModel options={inputs} refresh={onRefresh} />
-        </Card>
-        {/* Claude */}
-        <Card style={{ marginTop: '10px' }}>
-          <SettingClaudeModel options={inputs} refresh={onRefresh} />
-        </Card>
-        {/* Grok */}
-        <Card style={{ marginTop: '10px' }}>
-          <SettingGrokModel options={inputs} refresh={onRefresh} />
         </Card>
       </Spin>
     </>

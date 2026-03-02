@@ -1,6 +1,7 @@
 package vertex
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -53,10 +54,8 @@ type Adaptor struct {
 }
 
 func (a *Adaptor) ConvertGeminiRequest(c *gin.Context, info *relaycommon.RelayInfo, request *dto.GeminiChatRequest) (any, error) {
-	// Vertex AI does not support functionResponse.id; keep it stripped here for consistency.
-	if model_setting.GetGeminiSettings().RemoveFunctionResponseIdEnabled {
-		removeFunctionResponseID(request)
-	}
+	// Vertex AI does not support functionResponse.id; strip it unconditionally.
+	removeFunctionResponseID(request)
 	geminiAdaptor := gemini.Adaptor{}
 	return geminiAdaptor.ConvertGeminiRequest(c, info, request)
 }
@@ -361,7 +360,25 @@ func (a *Adaptor) ConvertOpenAIResponsesRequest(c *gin.Context, info *relaycommo
 }
 
 func (a *Adaptor) DoRequest(c *gin.Context, info *relaycommon.RelayInfo, requestBody io.Reader) (any, error) {
-	return channel.DoApiRequest(a, c, info, requestBody)
+	if a.RequestMode != RequestModeGemini || requestBody == nil {
+		return channel.DoApiRequest(a, c, info, requestBody)
+	}
+
+	bodyBytes, err := io.ReadAll(requestBody)
+	if err != nil {
+		return nil, fmt.Errorf("read vertex request body failed: %w", err)
+	}
+
+	// Only rewrite payload when needed; avoid touching unrelated requests.
+	if bytes.Contains(bodyBytes, []byte("functionResponse")) || bytes.Contains(bodyBytes, []byte("function_response")) {
+		cleaned, err := stripGeminiFunctionResponseIDFromJSON(bodyBytes)
+		if err != nil {
+			return nil, err
+		}
+		bodyBytes = cleaned
+	}
+
+	return channel.DoApiRequest(a, c, info, bytes.NewReader(bodyBytes))
 }
 
 func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (usage any, err *types.NewAPIError) {
@@ -418,4 +435,60 @@ func (a *Adaptor) GetModelList() []string {
 
 func (a *Adaptor) GetChannelName() string {
 	return ChannelName
+}
+
+func stripGeminiFunctionResponseIDFromJSON(jsonData []byte) ([]byte, error) {
+	var data map[string]interface{}
+	if err := common.Unmarshal(jsonData, &data); err != nil {
+		return nil, fmt.Errorf("invalid gemini request body: %w", err)
+	}
+
+	stripGeminiFunctionResponseIDFromMap(data)
+
+	cleaned, err := common.Marshal(data)
+	if err != nil {
+		return nil, fmt.Errorf("marshal cleaned gemini request body failed: %w", err)
+	}
+	return cleaned, nil
+}
+
+func stripGeminiFunctionResponseIDFromMap(data map[string]interface{}) {
+	if data == nil {
+		return
+	}
+
+	// contents[].parts[].functionResponse.id / function_response.id
+	if contents, ok := data["contents"].([]interface{}); ok {
+		for _, content := range contents {
+			contentMap, ok := content.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			parts, ok := contentMap["parts"].([]interface{})
+			if !ok {
+				continue
+			}
+			for _, part := range parts {
+				partMap, ok := part.(map[string]interface{})
+				if !ok {
+					continue
+				}
+				if funcResp, ok := partMap["functionResponse"].(map[string]interface{}); ok {
+					delete(funcResp, "id")
+				}
+				if funcResp, ok := partMap["function_response"].(map[string]interface{}); ok {
+					delete(funcResp, "id")
+				}
+			}
+		}
+	}
+
+	// requests[]: batch style Gemini payload
+	if requests, ok := data["requests"].([]interface{}); ok {
+		for _, r := range requests {
+			if requestMap, ok := r.(map[string]interface{}); ok {
+				stripGeminiFunctionResponseIDFromMap(requestMap)
+			}
+		}
+	}
 }

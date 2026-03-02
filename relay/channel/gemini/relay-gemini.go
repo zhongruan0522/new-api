@@ -207,9 +207,30 @@ func CovertOpenAI2Gemini(c *gin.Context, textRequest dto.GeneralOpenAIRequest, i
 		},
 	}
 
+	var googleExtraBody map[string]interface{}
+	attachThoughtSignatureRequested := false
+	thoughtSignatureValue := thoughtSignatureBypassValue
+	if len(textRequest.ExtraBody) > 0 {
+		var extraBody map[string]interface{}
+		if err := common.Unmarshal(textRequest.ExtraBody, &extraBody); err != nil {
+			return nil, fmt.Errorf("invalid extra body: %w", err)
+		}
+		// eg. {"google":{"thinking_config":{"thinking_budget":5324,"include_thoughts":true}}}
+		if googleBody, ok := extraBody["google"].(map[string]interface{}); ok {
+			googleExtraBody = googleBody
+			if signatureValue, ok, err := parseFunctionCallThoughtSignature(googleBody); err != nil {
+				return nil, err
+			} else if ok {
+				attachThoughtSignatureRequested = true
+				thoughtSignatureValue = signatureValue
+			}
+		}
+	}
+
 	attachThoughtSignature := (info.ChannelType == constant.ChannelTypeGemini ||
 		info.ChannelType == constant.ChannelTypeVertexAi) &&
-		model_setting.GetGeminiSettings().FunctionCallThoughtSignatureEnabled
+		attachThoughtSignatureRequested
+	thoughtSignature := json.RawMessage(strconv.Quote(thoughtSignatureValue))
 
 	if model_setting.IsGeminiModelSupportImagine(info.UpstreamModelName) {
 		geminiRequest.GenerationConfig.ResponseModalities = []string{
@@ -225,78 +246,70 @@ func CovertOpenAI2Gemini(c *gin.Context, textRequest dto.GeneralOpenAIRequest, i
 		geminiRequest.GenerationConfig.StopSequences = stopSequences
 	}
 
-	adaptorWithExtraBody := false
+	disableThinkingAdaptor := false
 
 	// patch extra_body
-	if len(textRequest.ExtraBody) > 0 {
-		if !strings.HasSuffix(info.UpstreamModelName, "-nothinking") {
-			var extraBody map[string]interface{}
-			if err := common.Unmarshal(textRequest.ExtraBody, &extraBody); err != nil {
-				return nil, fmt.Errorf("invalid extra body: %w", err)
+	if googleExtraBody != nil && !strings.HasSuffix(info.UpstreamModelName, "-nothinking") {
+		// check error param name like thinkingConfig, should be thinking_config
+		if _, hasErrorParam := googleExtraBody["thinkingConfig"]; hasErrorParam {
+			return nil, errors.New("extra_body.google.thinkingConfig is not supported, use extra_body.google.thinking_config instead")
+		}
+
+		if thinkingConfig, ok := googleExtraBody["thinking_config"].(map[string]interface{}); ok {
+			disableThinkingAdaptor = true
+			// check error param name like thinkingBudget, should be thinking_budget
+			if _, hasErrorParam := thinkingConfig["thinkingBudget"]; hasErrorParam {
+				return nil, errors.New("extra_body.google.thinking_config.thinkingBudget is not supported, use extra_body.google.thinking_config.thinking_budget instead")
 			}
-			// eg. {"google":{"thinking_config":{"thinking_budget":5324,"include_thoughts":true}}}
-			if googleBody, ok := extraBody["google"].(map[string]interface{}); ok {
-				adaptorWithExtraBody = true
-				// check error param name like thinkingConfig, should be thinking_config
-				if _, hasErrorParam := googleBody["thinkingConfig"]; hasErrorParam {
-					return nil, errors.New("extra_body.google.thinkingConfig is not supported, use extra_body.google.thinking_config instead")
+			if budget, ok := thinkingConfig["thinking_budget"].(float64); ok {
+				budgetInt := int(budget)
+				geminiRequest.GenerationConfig.ThinkingConfig = &dto.GeminiThinkingConfig{
+					ThinkingBudget:  common.GetPointer(budgetInt),
+					IncludeThoughts: true,
 				}
-
-				if thinkingConfig, ok := googleBody["thinking_config"].(map[string]interface{}); ok {
-					// check error param name like thinkingBudget, should be thinking_budget
-					if _, hasErrorParam := thinkingConfig["thinkingBudget"]; hasErrorParam {
-						return nil, errors.New("extra_body.google.thinking_config.thinkingBudget is not supported, use extra_body.google.thinking_config.thinking_budget instead")
-					}
-					if budget, ok := thinkingConfig["thinking_budget"].(float64); ok {
-						budgetInt := int(budget)
-						geminiRequest.GenerationConfig.ThinkingConfig = &dto.GeminiThinkingConfig{
-							ThinkingBudget:  common.GetPointer(budgetInt),
-							IncludeThoughts: true,
-						}
-					} else {
-						geminiRequest.GenerationConfig.ThinkingConfig = &dto.GeminiThinkingConfig{
-							IncludeThoughts: true,
-						}
-					}
+			} else {
+				geminiRequest.GenerationConfig.ThinkingConfig = &dto.GeminiThinkingConfig{
+					IncludeThoughts: true,
 				}
+			}
+		}
 
-				// check error param name like imageConfig, should be image_config
-				if _, hasErrorParam := googleBody["imageConfig"]; hasErrorParam {
-					return nil, errors.New("extra_body.google.imageConfig is not supported, use extra_body.google.image_config instead")
+		// check error param name like imageConfig, should be image_config
+		if _, hasErrorParam := googleExtraBody["imageConfig"]; hasErrorParam {
+			return nil, errors.New("extra_body.google.imageConfig is not supported, use extra_body.google.image_config instead")
+		}
+
+		if imageConfig, ok := googleExtraBody["image_config"].(map[string]interface{}); ok {
+			disableThinkingAdaptor = true
+			// check error param name like aspectRatio, should be aspect_ratio
+			if _, hasErrorParam := imageConfig["aspectRatio"]; hasErrorParam {
+				return nil, errors.New("extra_body.google.image_config.aspectRatio is not supported, use extra_body.google.image_config.aspect_ratio instead")
+			}
+			// check error param name like imageSize, should be image_size
+			if _, hasErrorParam := imageConfig["imageSize"]; hasErrorParam {
+				return nil, errors.New("extra_body.google.image_config.imageSize is not supported, use extra_body.google.image_config.image_size instead")
+			}
+
+			// convert snake_case to camelCase for Gemini API
+			geminiImageConfig := make(map[string]interface{})
+			if aspectRatio, ok := imageConfig["aspect_ratio"]; ok {
+				geminiImageConfig["aspectRatio"] = aspectRatio
+			}
+			if imageSize, ok := imageConfig["image_size"]; ok {
+				geminiImageConfig["imageSize"] = imageSize
+			}
+
+			if len(geminiImageConfig) > 0 {
+				imageConfigBytes, err := common.Marshal(geminiImageConfig)
+				if err != nil {
+					return nil, fmt.Errorf("failed to marshal image_config: %w", err)
 				}
-
-				if imageConfig, ok := googleBody["image_config"].(map[string]interface{}); ok {
-					// check error param name like aspectRatio, should be aspect_ratio
-					if _, hasErrorParam := imageConfig["aspectRatio"]; hasErrorParam {
-						return nil, errors.New("extra_body.google.image_config.aspectRatio is not supported, use extra_body.google.image_config.aspect_ratio instead")
-					}
-					// check error param name like imageSize, should be image_size
-					if _, hasErrorParam := imageConfig["imageSize"]; hasErrorParam {
-						return nil, errors.New("extra_body.google.image_config.imageSize is not supported, use extra_body.google.image_config.image_size instead")
-					}
-
-					// convert snake_case to camelCase for Gemini API
-					geminiImageConfig := make(map[string]interface{})
-					if aspectRatio, ok := imageConfig["aspect_ratio"]; ok {
-						geminiImageConfig["aspectRatio"] = aspectRatio
-					}
-					if imageSize, ok := imageConfig["image_size"]; ok {
-						geminiImageConfig["imageSize"] = imageSize
-					}
-
-					if len(geminiImageConfig) > 0 {
-						imageConfigBytes, err := common.Marshal(geminiImageConfig)
-						if err != nil {
-							return nil, fmt.Errorf("failed to marshal image_config: %w", err)
-						}
-						geminiRequest.GenerationConfig.ImageConfig = imageConfigBytes
-					}
-				}
+				geminiRequest.GenerationConfig.ImageConfig = imageConfigBytes
 			}
 		}
 	}
 
-	if !adaptorWithExtraBody {
+	if !disableThinkingAdaptor {
 		ThinkingAdaptor(&geminiRequest, info, textRequest)
 	}
 
@@ -457,7 +470,7 @@ func CovertOpenAI2Gemini(c *gin.Context, textRequest dto.GeneralOpenAIRequest, i
 					},
 				}
 				if shouldAttachThoughtSignature && !signatureAttached && hasFunctionCallContent(toolCall.FunctionCall) && len(toolCall.ThoughtSignature) == 0 {
-					toolCall.ThoughtSignature = json.RawMessage(strconv.Quote(thoughtSignatureBypassValue))
+					toolCall.ThoughtSignature = thoughtSignature
 					signatureAttached = true
 				}
 				parts = append(parts, toolCall)
@@ -517,7 +530,7 @@ func CovertOpenAI2Gemini(c *gin.Context, textRequest dto.GeneralOpenAIRequest, i
 						},
 					}
 					if shouldAttachThoughtSignature {
-						imgPart.ThoughtSignature = json.RawMessage(strconv.Quote(thoughtSignatureBypassValue))
+						imgPart.ThoughtSignature = thoughtSignature
 					}
 					parts = append(parts, imgPart)
 					// 继续处理剩余文本
@@ -592,7 +605,7 @@ func CovertOpenAI2Gemini(c *gin.Context, textRequest dto.GeneralOpenAIRequest, i
 		if shouldAttachThoughtSignature && !signatureAttached && len(parts) > 0 {
 			for i := range parts {
 				if parts[i].Text != "" {
-					parts[i].ThoughtSignature = json.RawMessage(strconv.Quote(thoughtSignatureBypassValue))
+					parts[i].ThoughtSignature = thoughtSignature
 					break
 				}
 			}
@@ -666,6 +679,35 @@ func hasFunctionCallContent(call *dto.FunctionCall) bool {
 		return len(v) > 0
 	default:
 		return true
+	}
+}
+
+func parseFunctionCallThoughtSignature(googleBody map[string]interface{}) (string, bool, error) {
+	if googleBody == nil {
+		return "", false, nil
+	}
+
+	if v, ok := googleBody["thought_signature"]; ok {
+		return normalizeFunctionCallThoughtSignatureValue("thought_signature", v)
+	}
+	if v, ok := googleBody["thoughtSignature"]; ok {
+		return normalizeFunctionCallThoughtSignatureValue("thoughtSignature", v)
+	}
+
+	return "", false, nil
+}
+
+func normalizeFunctionCallThoughtSignatureValue(field string, v interface{}) (string, bool, error) {
+	switch value := v.(type) {
+	case nil:
+		return thoughtSignatureBypassValue, true, nil
+	case string:
+		if strings.TrimSpace(value) == "" {
+			return thoughtSignatureBypassValue, true, nil
+		}
+		return value, true, nil
+	default:
+		return "", false, fmt.Errorf("extra_body.google.%s must be a string or null", field)
 	}
 }
 
