@@ -74,14 +74,25 @@ const defaultGlobalSettingInputs = {
   'global.third_party_multimodal_call_api_type': 0,
   'global.third_party_multimodal_system_prompt': '',
   'global.third_party_multimodal_first_user_prompt': '',
+  'global.third_party_multimodal_user_agent': '',
+  'global.third_party_multimodal_x_title': '',
+  'global.third_party_multimodal_http_referer': '',
   'general_setting.ping_interval_enabled': false,
   'general_setting.ping_interval_seconds': 60,
 };
+
+const thirdPartyMultimodalHeaderKeys = [
+  'global.third_party_multimodal_user_agent',
+  'global.third_party_multimodal_x_title',
+  'global.third_party_multimodal_http_referer',
+];
 
 export default function SettingGlobalModel(props) {
   const { t } = useTranslation();
 
   const [loading, setLoading] = useState(false);
+  const [thirdPartyHeadersLoading, setThirdPartyHeadersLoading] =
+    useState(false);
   const [inputs, setInputs] = useState(defaultGlobalSettingInputs);
   const refForm = useRef();
   const [inputsRow, setInputsRow] = useState(defaultGlobalSettingInputs);
@@ -124,6 +135,55 @@ export default function SettingGlobalModel(props) {
       return text === '' ? '{}' : value;
     }
     return value;
+  };
+
+  const saveThirdPartyHeaders = async () => {
+    const changed = compareObjects(inputs, inputsRow).filter((item) =>
+      thirdPartyMultimodalHeaderKeys.includes(item.key),
+    );
+    if (!changed.length) return showWarning(t('浣犱技涔庡苟娌℃湁淇敼浠€涔?));
+
+    setThirdPartyHeadersLoading(true);
+    try {
+      const requestQueue = changed.map((item) =>
+        API.put('/api/option/', {
+          key: item.key,
+          value: String(inputs[item.key] ?? ''),
+        }),
+      );
+      const res = await Promise.all(requestQueue);
+      if (changed.length === 1) {
+        if (res.includes(undefined)) return;
+      } else if (changed.length > 1) {
+        if (res.includes(undefined))
+          return showError(t('閮ㄥ垎淇濆瓨澶辫触锛岃閲嶈瘯'));
+      }
+
+      const updated = { ...inputsRow };
+      changed.forEach((item) => {
+        updated[item.key] = inputs[item.key];
+      });
+      setInputsRow(updated);
+      showSuccess(t('淇濆瓨鎴愬姛'));
+    } catch (error) {
+      showError(t('淇濆瓨澶辫触锛岃閲嶈瘯'));
+    } finally {
+      setThirdPartyHeadersLoading(false);
+    }
+  };
+
+  const resetThirdPartyHeaders = () => {
+    const next = { ...inputs };
+    thirdPartyMultimodalHeaderKeys.forEach((key) => {
+      next[key] = inputsRow[key] ?? '';
+    });
+
+    setInputs(next);
+    if (refForm.current) {
+      thirdPartyMultimodalHeaderKeys.forEach((key) =>
+        refForm.current.setValue(key, next[key]),
+      );
+    }
   };
 
   function onSubmit() {
@@ -481,6 +541,87 @@ export default function SettingGlobalModel(props) {
                       '发送给第三方多模态模型的第一条 user 提示词（建议明确要求输出格式/语言/长度）',
                     )}
                   />
+                </Col>
+              </Row>
+
+              <Row style={{ marginTop: 10 }}>
+                <Col span={24}>
+                  <Banner
+                    type='warning'
+                    description={t(
+                      '说明：这里配置的 User-Agent / X-Title / HTTP-Referer 仅用于“第三方模型方式（多模态转文本）”内部调用上游多模态模型时的请求头；不会写入普通渠道的上游转发请求。',
+                    )}
+                  />
+                </Col>
+              </Row>
+
+              <Row style={{ marginTop: 10 }} gutter={16}>
+                <Col xs={24} sm={12} md={8} lg={8} xl={8}>
+                  <Form.Input
+                    label='User-Agent'
+                    field={'global.third_party_multimodal_user_agent'}
+                    placeholder={t('可选，不填则不设置')}
+                    showClear
+                    onChange={(value) =>
+                      setInputs({
+                        ...inputs,
+                        'global.third_party_multimodal_user_agent': value,
+                      })
+                    }
+                  />
+                </Col>
+
+                <Col xs={24} sm={12} md={8} lg={8} xl={8}>
+                  <Form.Input
+                    label='HTTP-TITLE / X-Title'
+                    field={'global.third_party_multimodal_x_title'}
+                    placeholder={t('可选，不填则不设置')}
+                    showClear
+                    onChange={(value) =>
+                      setInputs({
+                        ...inputs,
+                        'global.third_party_multimodal_x_title': value,
+                      })
+                    }
+                  />
+                </Col>
+
+                <Col xs={24} sm={12} md={8} lg={8} xl={8}>
+                  <Form.Input
+                    label='HTTP-Referer / Referer'
+                    field={'global.third_party_multimodal_http_referer'}
+                    placeholder={t('可选，不填则不设置')}
+                    showClear
+                    onChange={(value) =>
+                      setInputs({
+                        ...inputs,
+                        'global.third_party_multimodal_http_referer': value,
+                      })
+                    }
+                  />
+                </Col>
+              </Row>
+
+              <Row style={{ marginTop: 10 }}>
+                <Col span={24}>
+                  <div className='flex gap-2'>
+                    <Button
+                      type='primary'
+                      size='small'
+                      onClick={saveThirdPartyHeaders}
+                      loading={thirdPartyHeadersLoading}
+                    >
+                      {t('淇濆瓨')}
+                    </Button>
+                    <Button
+                      type='secondary'
+                      size='small'
+                      onClick={resetThirdPartyHeaders}
+                      disabled={thirdPartyHeadersLoading}
+                    >
+                      {t('閲嶇疆')}
+                    </Button>
+                  </div>
                 </Col>
               </Row>
             </Form.Section>
