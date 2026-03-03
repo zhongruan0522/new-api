@@ -141,7 +141,7 @@ export default function SettingGlobalModel(props) {
     const changed = compareObjects(inputs, inputsRow).filter((item) =>
       thirdPartyMultimodalHeaderKeys.includes(item.key),
     );
-    if (!changed.length) return showWarning(t('浣犱技涔庡苟娌℃湁淇敼浠€涔?));
+    if (!changed.length) return showWarning(t('你似乎并没有修改什么'));
 
     setThirdPartyHeadersLoading(true);
     try {
