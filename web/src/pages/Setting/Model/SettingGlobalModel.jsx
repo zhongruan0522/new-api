@@ -160,7 +160,7 @@ export default function SettingGlobalModel(props) {
         if (res.includes(undefined)) return;
       } else if (changed.length > 1) {
         if (res.includes(undefined))
-          return showError(t('閮ㄥ垎淇濆瓨澶辫触锛岃閲嶈瘯'));
+          return showError(t('部分保存失败，请重试'));
       }
 
       const updated = { ...inputsRow };
@@ -168,9 +168,9 @@ export default function SettingGlobalModel(props) {
         updated[item.key] = inputs[item.key];
       });
       setInputsRow(updated);
-      showSuccess(t('淇濆瓨鎴愬姛'));
+      showSuccess(t('保存成功'));
     } catch (error) {
-      showError(t('淇濆瓨澶辫触锛岃閲嶈瘯'));
+      showError(t('保存失败，请重试'));
     } finally {
       setThirdPartyMultimodalSaving(false);
     }
@@ -615,7 +615,7 @@ export default function SettingGlobalModel(props) {
                       onClick={saveThirdPartyMultimodalSettings}
                       loading={thirdPartyMultimodalSaving}
                     >
-                      {t('淇濆瓨')}
+                      {t('保存')}
                     </Button>
                     <Button
                       type='secondary'
@@ -623,7 +623,7 @@ export default function SettingGlobalModel(props) {
                       onClick={resetThirdPartyMultimodalSettings}
                       disabled={thirdPartyMultimodalSaving}
                     >
-                      {t('閲嶇疆')}
+                      {t('重置')}
                     </Button>
                   </div>
                 </Col>
