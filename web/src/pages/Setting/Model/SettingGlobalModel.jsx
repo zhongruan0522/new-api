@@ -81,7 +81,11 @@ const defaultGlobalSettingInputs = {
   'general_setting.ping_interval_seconds': 60,
 };
 
-const thirdPartyMultimodalHeaderKeys = [
+const thirdPartyMultimodalOptionKeys = [
+  'global.third_party_multimodal_model_id',
+  'global.third_party_multimodal_call_api_type',
+  'global.third_party_multimodal_system_prompt',
+  'global.third_party_multimodal_first_user_prompt',
   'global.third_party_multimodal_user_agent',
   'global.third_party_multimodal_x_title',
   'global.third_party_multimodal_http_referer',
@@ -91,7 +95,7 @@ export default function SettingGlobalModel(props) {
   const { t } = useTranslation();
 
   const [loading, setLoading] = useState(false);
-  const [thirdPartyHeadersLoading, setThirdPartyHeadersLoading] =
+  const [thirdPartyMultimodalSaving, setThirdPartyMultimodalSaving] =
     useState(false);
   const [inputs, setInputs] = useState(defaultGlobalSettingInputs);
   const refForm = useRef();
@@ -137,13 +141,13 @@ export default function SettingGlobalModel(props) {
     return value;
   };
 
-  const saveThirdPartyHeaders = async () => {
+  const saveThirdPartyMultimodalSettings = async () => {
     const changed = compareObjects(inputs, inputsRow).filter((item) =>
-      thirdPartyMultimodalHeaderKeys.includes(item.key),
+      thirdPartyMultimodalOptionKeys.includes(item.key),
     );
     if (!changed.length) return showWarning(t('你似乎并没有修改什么'));
 
-    setThirdPartyHeadersLoading(true);
+    setThirdPartyMultimodalSaving(true);
     try {
       const requestQueue = changed.map((item) =>
         API.put('/api/option/', {
@@ -168,19 +172,19 @@ export default function SettingGlobalModel(props) {
     } catch (error) {
       showError(t('淇濆瓨澶辫触锛岃閲嶈瘯'));
     } finally {
-      setThirdPartyHeadersLoading(false);
+      setThirdPartyMultimodalSaving(false);
     }
   };
 
-  const resetThirdPartyHeaders = () => {
+  const resetThirdPartyMultimodalSettings = () => {
     const next = { ...inputs };
-    thirdPartyMultimodalHeaderKeys.forEach((key) => {
-      next[key] = inputsRow[key] ?? '';
+    thirdPartyMultimodalOptionKeys.forEach((key) => {
+      next[key] = inputsRow[key] ?? defaultGlobalSettingInputs[key];
     });
 
     setInputs(next);
     if (refForm.current) {
-      thirdPartyMultimodalHeaderKeys.forEach((key) =>
+      thirdPartyMultimodalOptionKeys.forEach((key) =>
         refForm.current.setValue(key, next[key]),
       );
     }
@@ -608,16 +612,16 @@ export default function SettingGlobalModel(props) {
                     <Button
                       type='primary'
                       size='small'
-                      onClick={saveThirdPartyHeaders}
-                      loading={thirdPartyHeadersLoading}
+                      onClick={saveThirdPartyMultimodalSettings}
+                      loading={thirdPartyMultimodalSaving}
                     >
                       {t('淇濆瓨')}
                     </Button>
                     <Button
                       type='secondary'
                       size='small'
-                      onClick={resetThirdPartyHeaders}
-                      disabled={thirdPartyHeadersLoading}
+                      onClick={resetThirdPartyMultimodalSettings}
+                      disabled={thirdPartyMultimodalSaving}
                     >
                       {t('閲嶇疆')}
                     </Button>
