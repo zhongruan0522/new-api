@@ -83,17 +83,17 @@ func buildChatSystemMessageFromInstructions(systemRole string, raw json.RawMessa
 
 func applyResponsesToChatTools(out *dto.GeneralOpenAIRequest, responsesReq *dto.OpenAIResponsesRequest) error {
 	if len(responsesReq.ToolChoice) > 0 {
-		var toolChoice any
-		if err := common.Unmarshal(responsesReq.ToolChoice, &toolChoice); err != nil {
-			return fmt.Errorf("unmarshal tool_choice failed: %w", err)
+		toolChoice, err := convertResponsesToolChoiceToChatAny(responsesReq.ToolChoice)
+		if err != nil {
+			return err
 		}
 		out.ToolChoice = toolChoice
 	}
 
 	if len(responsesReq.Tools) > 0 {
-		var tools []dto.ToolCallRequest
-		if err := common.Unmarshal(responsesReq.Tools, &tools); err != nil {
-			return fmt.Errorf("unmarshal tools failed: %w", err)
+		tools, err := convertResponsesToolsRawToChatTools(responsesReq.Tools)
+		if err != nil {
+			return err
 		}
 		out.Tools = tools
 	}
