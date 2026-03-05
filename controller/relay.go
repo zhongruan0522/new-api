@@ -46,8 +46,8 @@ func relayHandler(c *gin.Context, info *relaycommon.RelayInfo) *types.NewAPIErro
 		err = relay.RerankHelper(c, info)
 	case relayconstant.RelayModeEmbeddings:
 		err = relay.EmbeddingHelper(c, info)
-	case relayconstant.RelayModeResponses, relayconstant.RelayModeResponsesCompact:
-		err = relay.ResponsesHelper(c, info)
+	case relayconstant.RelayModeChatCompletions, relayconstant.RelayModeResponses, relayconstant.RelayModeResponsesCompact:
+		err = relay.OpenAIWireHelper(c, info)
 	default:
 		err = relay.TextHelper(c, info)
 	}

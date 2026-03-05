@@ -157,6 +157,7 @@ const EditChannelModal = (props) => {
     proxy: '',
     pass_through_body_enabled: false,
     pass_through_headers_enabled: true,
+    openai_wire_api: 'both',
     system_prompt: '',
     system_prompt_override: false,
     settings: '',
@@ -383,6 +384,7 @@ const EditChannelModal = (props) => {
     proxy: '',
     pass_through_body_enabled: false,
     pass_through_headers_enabled: true,
+    openai_wire_api: 'both',
     system_prompt: '',
   });
   const showApiConfigCard = true; // 控制是否显示 API 配置卡片
@@ -597,6 +599,7 @@ const EditChannelModal = (props) => {
             parsedSettings.pass_through_body_enabled || false;
           data.pass_through_headers_enabled =
             parsedSettings.pass_through_headers_enabled !== false;
+          data.openai_wire_api = parsedSettings.openai_wire_api || 'both';
           data.system_prompt = parsedSettings.system_prompt || '';
           data.system_prompt_override =
             parsedSettings.system_prompt_override || false;
@@ -607,6 +610,7 @@ const EditChannelModal = (props) => {
           data.proxy = '';
           data.pass_through_body_enabled = false;
           data.pass_through_headers_enabled = true;
+          data.openai_wire_api = 'both';
           data.system_prompt = '';
           data.system_prompt_override = false;
         }
@@ -616,6 +620,7 @@ const EditChannelModal = (props) => {
         data.proxy = '';
         data.pass_through_body_enabled = false;
         data.pass_through_headers_enabled = true;
+        data.openai_wire_api = 'both';
         data.system_prompt = '';
         data.system_prompt_override = false;
       }
@@ -698,6 +703,7 @@ const EditChannelModal = (props) => {
         proxy: data.proxy,
         pass_through_body_enabled: data.pass_through_body_enabled,
         pass_through_headers_enabled: data.pass_through_headers_enabled,
+        openai_wire_api: data.openai_wire_api || 'both',
         system_prompt: data.system_prompt,
         system_prompt_override: data.system_prompt_override || false,
       });
@@ -1039,6 +1045,7 @@ const EditChannelModal = (props) => {
       thinking_to_content: false,
       proxy: '',
       pass_through_body_enabled: false,
+      openai_wire_api: 'both',
       system_prompt: '',
       system_prompt_override: false,
     });
@@ -1327,6 +1334,7 @@ const EditChannelModal = (props) => {
       pass_through_body_enabled: localInputs.pass_through_body_enabled || false,
       pass_through_headers_enabled:
         localInputs.pass_through_headers_enabled !== false,
+      openai_wire_api: localInputs.openai_wire_api || 'both',
       system_prompt: localInputs.system_prompt || '',
       system_prompt_override: localInputs.system_prompt_override || false,
     };
@@ -1394,6 +1402,7 @@ const EditChannelModal = (props) => {
     delete localInputs.proxy;
     delete localInputs.pass_through_body_enabled;
     delete localInputs.pass_through_headers_enabled;
+    delete localInputs.openai_wire_api;
     delete localInputs.system_prompt;
     delete localInputs.system_prompt_override;
     delete localInputs.is_enterprise_account;
@@ -3292,6 +3301,25 @@ const EditChannelModal = (props) => {
                       }
                       extraText={t(
                         '开启后默认透传用户请求头，并与 Header Override 合并（Header Override 优先，仅覆盖冲突项）',
+                      )}
+                    />
+
+                    <Form.Select
+                      field='openai_wire_api'
+                      label={t('默认 OpenAI 规范')}
+                      placeholder={t('选择该渠道默认使用的 OpenAI 规范')}
+                      optionList={[
+                        { label: t('两者通用 (Chat/Responses)'), value: 'both' },
+                        { label: 'ChatCompletions', value: 'chat' },
+                        { label: 'Responses', value: 'responses' },
+                      ]}
+                      style={{ width: '100%' }}
+                      value={inputs.openai_wire_api || 'both'}
+                      onChange={(value) =>
+                        handleChannelSettingsChange('openai_wire_api', value)
+                      }
+                      extraText={t(
+                        '鐢ㄤ簬鎸囧畾璇ユ笭閬撲笂娓告渶榛樿浣跨敤鐨?OpenAI 瑙勮寖锛涘綋鍏ュ彛绔偣涓庢涓嶄竴鑷存椂锛屽皢鍦?ChatCompletions 涓?Responses 涔嬮棿鑷姩浜掕浆',
                       )}
                     />
 
