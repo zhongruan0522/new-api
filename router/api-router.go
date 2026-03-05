@@ -165,6 +165,14 @@ func SetApiRouter(router *gin.Engine) {
 			optionRoute.POST("/migrate_console_setting", controller.MigrateConsoleSetting) // 用于迁移检测的旧键，下个版本会删除
 		}
 
+		dbRoute := apiRouter.Group("/db")
+		dbRoute.Use(middleware.RootAuth())
+		{
+			dbRoute.GET("/pre_migrate/info", controller.GetDBPreMigrateInfo)
+			dbRoute.POST("/pre_migrate", middleware.CriticalRateLimit(), controller.StartDBPreMigrate)
+			dbRoute.GET("/pre_migrate/:id", controller.GetDBPreMigrateJob)
+		}
+
 		// Custom OAuth provider management (admin only)
 		customOAuthRoute := apiRouter.Group("/custom-oauth-provider")
 		customOAuthRoute.Use(middleware.RootAuth())
