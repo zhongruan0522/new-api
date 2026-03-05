@@ -28,7 +28,6 @@ const ModelSetting = () => {
   let [inputs, setInputs] = useState({
     'global.pass_through_request_enabled': false,
     'global.thinking_model_blacklist': '[]',
-    'global.chat_completions_to_responses_policy': '{}',
     'general_setting.ping_interval_enabled': false,
     'general_setting.ping_interval_seconds': 60,
   });
@@ -41,10 +40,7 @@ const ModelSetting = () => {
     if (success) {
       let newInputs = {};
       data.forEach((item) => {
-        if (
-          item.key === 'global.thinking_model_blacklist' ||
-          item.key === 'global.chat_completions_to_responses_policy'
-        ) {
+        if (item.key === 'global.thinking_model_blacklist') {
           if (item.value !== '') {
             try {
               item.value = JSON.stringify(JSON.parse(item.value), null, 2);
