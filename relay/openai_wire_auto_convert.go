@@ -77,6 +77,7 @@ func relayChatDownstreamToResponsesUpstream(c *gin.Context, info *relaycommon.Re
 	if err != nil {
 		return types.NewErrorWithStatusCode(err, types.ErrorCodeInvalidRequest, http.StatusBadRequest, types.ErrOptionWithSkipRetry())
 	}
+	relaycommon.AppendRequestConversionFromRequest(info, responsesReq)
 
 	includeUsage := true
 	if chatReq.StreamOptions != nil {
@@ -125,6 +126,7 @@ func relayResponsesDownstreamToChatUpstream(c *gin.Context, info *relaycommon.Re
 	if err != nil {
 		return types.NewErrorWithStatusCode(err, types.ErrorCodeInvalidRequest, http.StatusBadRequest, types.ErrOptionWithSkipRetry())
 	}
+	relaycommon.AppendRequestConversionFromRequest(info, chatReq)
 	if responsesReq.Stream && info.SupportStreamOptions {
 		chatReq.StreamOptions = &dto.StreamOptions{IncludeUsage: true}
 	}

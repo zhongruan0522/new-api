@@ -67,17 +67,17 @@ func applyChatToResponsesInstructions(out *dto.OpenAIResponsesRequest, instructi
 
 func applyChatToResponsesTools(out *dto.OpenAIResponsesRequest, chatReq *dto.GeneralOpenAIRequest) error {
 	if chatReq.ToolChoice != nil {
-		raw, err := common.Marshal(chatReq.ToolChoice)
+		raw, err := convertChatToolChoiceToResponsesRaw(chatReq.ToolChoice)
 		if err != nil {
-			return fmt.Errorf("marshal tool_choice failed: %w", err)
+			return err
 		}
 		out.ToolChoice = raw
 	}
 
 	if len(chatReq.Tools) > 0 {
-		raw, err := common.Marshal(chatReq.Tools)
+		raw, err := convertChatToolsToResponsesRaw(chatReq.Tools)
 		if err != nil {
-			return fmt.Errorf("marshal tools failed: %w", err)
+			return err
 		}
 		out.Tools = raw
 	}
