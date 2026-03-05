@@ -862,6 +862,7 @@ func (channel *Channel) GetSetting() dto.ChannelSettings {
 			channel.Setting = nil // 清空设置以避免后续错误
 			_ = channel.Save()    // 保存修改
 			setting.PassThroughHeadersEnabled = true
+			setting.OpenAIWireAPI = dto.OpenAIWireAPIBoth
 			return setting
 		}
 
@@ -873,9 +874,13 @@ func (channel *Channel) GetSetting() dto.ChannelSettings {
 			if _, ok := rawMap["pass_through_headers_enabled"]; !ok {
 				setting.PassThroughHeadersEnabled = true
 			}
+			if _, ok := rawMap["openai_wire_api"]; !ok {
+				setting.OpenAIWireAPI = dto.OpenAIWireAPIBoth
+			}
 		}
 	} else {
 		setting.PassThroughHeadersEnabled = true
+		setting.OpenAIWireAPI = dto.OpenAIWireAPIBoth
 	}
 	return setting
 }
