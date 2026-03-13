@@ -1029,14 +1029,14 @@ func UpdateChannel(c *gin.Context) {
 		return
 	}
 
-	// 使用统一的校验函数
-	if err := validateChannel(&channel.Channel, false); err != nil {
+	if channel.Id == 0 {
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,
-			"message": err.Error(),
+			"message": "参数错误",
 		})
 		return
 	}
+
 	// Preserve existing ChannelInfo to ensure multi-key channels keep correct state even if the client does not send ChannelInfo in the request.
 	originChannel, err := model.GetChannelById(channel.Id, true)
 	if err != nil {
@@ -1047,12 +1047,34 @@ func UpdateChannel(c *gin.Context) {
 		return
 	}
 
+	// Some clients (e.g. the dashboard in edit mode) may omit immutable fields like `type` in patch updates.
+	// Treat omitted fields as "no change" by inheriting from the original channel, so validation and key-mode logic can work correctly.
+	if channel.Type == constant.ChannelTypeUnknown {
+		channel.Type = originChannel.Type
+	}
+	if channel.OtherSettings == "" {
+		channel.OtherSettings = originChannel.OtherSettings
+	}
+	// VertexAI requires `other` (region config). When patch-updating without `other`, inherit it so unrelated edits won't fail validation.
+	if channel.Type == constant.ChannelTypeVertexAi && channel.Other == "" {
+		channel.Other = originChannel.Other
+	}
+
 	// Always copy the original ChannelInfo so that fields like IsMultiKey and MultiKeySize are retained.
 	channel.ChannelInfo = originChannel.ChannelInfo
 
 	// If the request explicitly specifies a new MultiKeyMode, apply it on top of the original info.
 	if channel.MultiKeyMode != nil && *channel.MultiKeyMode != "" {
 		channel.ChannelInfo.MultiKeyMode = constant.MultiKeyMode(*channel.MultiKeyMode)
+	}
+
+	// 使用统一的校验函数（在继承必要字段后再校验，避免缺字段导致误判）
+	if err := validateChannel(&channel.Channel, false); err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": err.Error(),
+		})
+		return
 	}
 
 	// 处理多key模式下的密钥追加/覆盖逻辑
