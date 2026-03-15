@@ -47,7 +47,6 @@ export const DEFAULT_ADMIN_CONFIG = {
     deployment: true,
     redemption: true,
     user: true,
-    subscription: true,
     setting: true,
   },
 };
@@ -64,7 +63,13 @@ export const mergeAdminConfig = (savedConfig) => {
     // Ignore unknown sections to avoid resurrecting removed features.
     if (!merged[sectionKey]) continue;
 
-    merged[sectionKey] = { ...merged[sectionKey], ...sectionConfig };
+    const nextSection = { ...merged[sectionKey] };
+    for (const [moduleKey, enabled] of Object.entries(sectionConfig)) {
+      if (Object.prototype.hasOwnProperty.call(nextSection, moduleKey)) {
+        nextSection[moduleKey] = enabled;
+      }
+    }
+    merged[sectionKey] = nextSection;
   }
 
   return merged;
