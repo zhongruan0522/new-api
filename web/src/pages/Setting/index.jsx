@@ -163,7 +163,8 @@ const Setting = () => {
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search);
     const tab = searchParams.get('tab');
-    if (tab) {
+    const validKeys = new Set(panes.map((p) => p.itemKey));
+    if (tab && validKeys.has(tab)) {
       setTabActiveKey(tab);
     } else {
       onChangeTab('operation');
