@@ -80,7 +80,6 @@ const NotificationSettings = ({
       enabled: true,
       channel: true,
       models: true,
-      deployment: true,
       redemption: true,
       user: true,
       setting: true,
@@ -160,13 +159,12 @@ const NotificationSettings = ({
       personal: { enabled: true, topup: true, personal: true },
       admin: {
         enabled: true,
-        channel: true,
-        models: true,
-        deployment: true,
-        redemption: true,
-        user: true,
-        setting: true,
-      },
+      channel: true,
+      models: true,
+      redemption: true,
+      user: true,
+      setting: true,
+    },
     };
     setSidebarModulesUser(defaultConfig);
   };
@@ -272,11 +270,6 @@ const NotificationSettings = ({
       modules: [
         { key: 'channel', title: t('渠道管理'), description: t('API渠道配置') },
         { key: 'models', title: t('模型管理'), description: t('AI模型配置') },
-        {
-          key: 'deployment',
-          title: t('模型部署'),
-          description: t('模型部署管理'),
-        },
         {
           key: 'redemption',
           title: t('兑换码管理'),
