@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/QuantumNous/new-api/common"
+	"github.com/QuantumNous/new-api/constant"
 	appconstant "github.com/QuantumNous/new-api/constant"
 	"github.com/QuantumNous/new-api/dto"
 	relaycommon "github.com/QuantumNous/new-api/relay/common"
@@ -63,6 +64,12 @@ func ResponsesHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *
 	err = helper.ModelMappedHelper(c, info, request)
 	if err != nil {
 		return types.NewError(err, types.ErrorCodeChannelModelMappedError, types.ErrOptionWithSkipRetry())
+	}
+
+	// Responses API 使用 instructions 字段承载系统提示词，这里补齐与 chat/messages 一致的注入行为。
+	err = applyResponsesSystemPrompt(c, request, info.ChannelSetting)
+	if err != nil {
+		return types.NewError(err, types.ErrorCodeConvertRequestFailed, types.ErrOptionWithSkipRetry())
 	}
 
 	adaptor := GetAdaptor(info.ApiType)
@@ -157,5 +164,56 @@ func ResponsesHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *
 	} else {
 		postConsumeQuota(c, info, usageDto)
 	}
+	return nil
+}
+
+func applyResponsesSystemPrompt(c *gin.Context, request *dto.OpenAIResponsesRequest, channelSetting dto.ChannelSettings) error {
+	if request == nil {
+		return nil
+	}
+
+	systemPrompt := strings.TrimSpace(channelSetting.SystemPrompt)
+	if systemPrompt == "" {
+		return nil
+	}
+
+	// Responses 不像 Chat 使用 messages.system，而是通过 instructions 字段表达系统级提示。
+	if len(request.Instructions) == 0 || common.GetJsonType(request.Instructions) == "null" {
+		raw, err := common.Marshal(systemPrompt)
+		if err != nil {
+			return fmt.Errorf("marshal responses system prompt failed: %w", err)
+		}
+		request.Instructions = raw
+		return nil
+	}
+
+	if !channelSetting.SystemPromptOverride {
+		return nil
+	}
+
+	if common.GetJsonType(request.Instructions) != "string" {
+		return nil
+	}
+
+	var existing string
+	if err := common.Unmarshal(request.Instructions, &existing); err != nil {
+		return fmt.Errorf("unmarshal responses instructions failed: %w", err)
+	}
+
+	if c != nil {
+		common.SetContextKey(c, constant.ContextKeySystemPromptOverride, true)
+	}
+	existing = strings.TrimSpace(existing)
+	if existing == "" {
+		existing = systemPrompt
+	} else {
+		existing = systemPrompt + "\n" + existing
+	}
+
+	raw, err := common.Marshal(existing)
+	if err != nil {
+		return fmt.Errorf("marshal merged responses instructions failed: %w", err)
+	}
+	request.Instructions = raw
 	return nil
 }

@@ -326,12 +326,16 @@ func FetchUpstreamModels(c *gin.Context) {
 			if len(metadata) == 0 {
 				metadata = nil
 			}
+			ownedBy := modelInfo.OwnedBy
+			if ownedBy == "" {
+				ownedBy = "ollama"
+			}
 
 			result.Data = append(result.Data, OpenAIModel{
 				ID:       modelInfo.Name,
 				Object:   "model",
-				Created:  0,
-				OwnedBy:  "ollama",
+				Created:  modelInfo.Created,
+				OwnedBy:  ownedBy,
 				Metadata: metadata,
 			})
 		}
