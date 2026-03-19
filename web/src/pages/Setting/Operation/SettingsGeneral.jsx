@@ -54,8 +54,6 @@ export default function GeneralSettings(props) {
     USDExchangeRate: '',
     DisplayTokenStatEnabled: false,
     DefaultCollapseSidebar: false,
-    DemoSiteEnabled: false,
-    SelfUseModeEnabled: false,
     'token_setting.max_user_tokens': 1000,
   });
   const refForm = useRef();
@@ -264,27 +262,6 @@ export default function GeneralSettings(props) {
                   checkedText='｜'
                   uncheckedText='〇'
                   onChange={handleFieldChange('DefaultCollapseSidebar')}
-                />
-              </Col>
-              <Col xs={24} sm={12} md={8} lg={8} xl={8}>
-                <Form.Switch
-                  field={'DemoSiteEnabled'}
-                  label={t('演示站点模式')}
-                  size='default'
-                  checkedText='｜'
-                  uncheckedText='〇'
-                  onChange={handleFieldChange('DemoSiteEnabled')}
-                />
-              </Col>
-              <Col xs={24} sm={12} md={8} lg={8} xl={8}>
-                <Form.Switch
-                  field={'SelfUseModeEnabled'}
-                  label={t('自用模式')}
-                  extraText={t('开启后不限制：必须设置模型倍率')}
-                  size='default'
-                  checkedText='｜'
-                  uncheckedText='〇'
-                  onChange={handleFieldChange('SelfUseModeEnabled')}
                 />
               </Col>
             </Row>
