@@ -41,7 +41,7 @@ import MultimodalFiles from './pages/MultimodalFiles';
 import Pricing from './pages/Pricing';
 import Task from './pages/Task';
 import ModelPage from './pages/Model';
-import ModelDeploymentPage from './pages/ModelDeployment';
+
 import OAuth2Callback from './components/auth/OAuth2Callback';
 import PersonalSetting from './components/settings/PersonalSetting';
 import Setup from './pages/Setup';
@@ -104,14 +104,6 @@ function App() {
           element={
             <AdminRoute>
               <ModelPage />
-            </AdminRoute>
-          }
-        />
-        <Route
-          path='/console/deployment'
-          element={
-            <AdminRoute>
-              <ModelDeploymentPage />
             </AdminRoute>
           }
         />
