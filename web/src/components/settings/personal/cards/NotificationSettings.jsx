@@ -80,7 +80,6 @@ const NotificationSettings = ({
       enabled: true,
       channel: true,
       models: true,
-      deployment: true,
       redemption: true,
       user: true,
       setting: true,
@@ -160,13 +159,12 @@ const NotificationSettings = ({
       personal: { enabled: true, topup: true, personal: true },
       admin: {
         enabled: true,
-        channel: true,
-        models: true,
-        deployment: true,
-        redemption: true,
-        user: true,
-        setting: true,
-      },
+      channel: true,
+      models: true,
+      redemption: true,
+      user: true,
+      setting: true,
+    },
     };
     setSidebarModulesUser(defaultConfig);
   };
