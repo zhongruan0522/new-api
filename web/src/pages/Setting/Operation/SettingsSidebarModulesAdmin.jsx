@@ -59,7 +59,6 @@ export default function SettingsSidebarModulesAdmin(props) {
       enabled: true,
       channel: true,
       models: true,
-      deployment: true,
       redemption: true,
       user: true,
       setting: true,
