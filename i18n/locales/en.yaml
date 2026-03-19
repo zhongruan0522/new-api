@@ -195,18 +195,6 @@ setting.gotify_url_invalid: "Invalid Gotify server URL"
 setting.url_must_http: "URL must start with http:// or https://"
 setting.saved: "Settings updated"
 
-# Deployment messages (io.net)
-deployment.not_enabled: "io.net model deployment is not enabled or API key is missing"
-deployment.id_required: "Deployment ID is required"
-deployment.container_id_required: "Container ID is required"
-deployment.name_empty: "Deployment name cannot be empty"
-deployment.name_taken: "Deployment name is not available, please choose a different name"
-deployment.hardware_id_required: "hardware_id parameter is required"
-deployment.hardware_invalid_id: "Invalid hardware_id parameter"
-deployment.api_key_required: "api_key is required"
-deployment.invalid_payload: "Invalid request payload"
-deployment.not_found: "Container details not found"
-
 # Performance messages
 performance.disk_cache_cleared: "Inactive disk cache has been cleared"
 performance.stats_reset: "Statistics have been reset"
