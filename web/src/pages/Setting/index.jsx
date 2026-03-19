@@ -31,7 +31,6 @@ import {
   LayoutDashboard,
   Palette,
   CreditCard,
-  Server,
   Activity,
 } from 'lucide-react';
 
@@ -45,7 +44,7 @@ import DashboardSetting from '../../components/settings/DashboardSetting';
 import RatioSetting from '../../components/settings/RatioSetting';
 import DrawingSetting from '../../components/settings/DrawingSetting';
 import PaymentSetting from '../../components/settings/PaymentSetting';
-import ModelDeploymentSetting from '../../components/settings/ModelDeploymentSetting';
+
 import PerformanceSetting from '../../components/settings/PerformanceSetting';
 
 const Setting = () => {
@@ -129,16 +128,6 @@ const Setting = () => {
     panes.push({
       tab: (
         <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-          <Server size={18} />
-          {t('模型部署设置')}
-        </span>
-      ),
-      content: <ModelDeploymentSetting />,
-      itemKey: 'model-deployment',
-    });
-    panes.push({
-      tab: (
-        <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
           <Activity size={18} />
           {t('性能设置')}
         </span>
@@ -174,7 +163,8 @@ const Setting = () => {
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search);
     const tab = searchParams.get('tab');
-    if (tab) {
+    const validKeys = new Set(panes.map((p) => p.itemKey));
+    if (tab && validKeys.has(tab)) {
       setTabActiveKey(tab);
     } else {
       onChangeTab('operation');

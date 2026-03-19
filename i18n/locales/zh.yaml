@@ -196,18 +196,6 @@ setting.gotify_url_invalid: "无效的Gotify服务器地址"
 setting.url_must_http: "URL必须以http://或https://开头"
 setting.saved: "设置已更新"
 
-# Deployment messages (io.net)
-deployment.not_enabled: "io.net 模型部署功能未启用或 API 密钥缺失"
-deployment.id_required: "deployment ID 为必填项"
-deployment.container_id_required: "container ID 为必填项"
-deployment.name_empty: "deployment 名称不能为空"
-deployment.name_taken: "deployment 名称已被使用，请选择其他名称"
-deployment.hardware_id_required: "hardware_id 参数为必填项"
-deployment.hardware_invalid_id: "无效的 hardware_id 参数"
-deployment.api_key_required: "api_key 为必填项"
-deployment.invalid_payload: "无效的请求内容"
-deployment.not_found: "未找到容器详情"
-
 # Performance messages
 performance.disk_cache_cleared: "不活跃的磁盘缓存已清理"
 performance.stats_reset: "统计信息已重置"

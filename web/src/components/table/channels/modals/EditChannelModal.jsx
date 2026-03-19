@@ -226,8 +226,6 @@ const EditChannelModal = (props) => {
       return [];
     }
   }, [inputs.model_mapping]);
-  const [isIonetChannel, setIsIonetChannel] = useState(false);
-  const [ionetMetadata, setIonetMetadata] = useState(null);
 
   // 密钥显示状态
   const [keyDisplayState, setKeyDisplayState] = useState({
@@ -238,21 +236,6 @@ const EditChannelModal = (props) => {
   // 专门的2FA验证状态（用于TwoFactorAuthModal）
   const [show2FAVerifyModal, setShow2FAVerifyModal] = useState(false);
   const [verifyCode, setVerifyCode] = useState('');
-
-  useEffect(() => {
-    if (!isEdit) {
-      setIsIonetChannel(false);
-      setIonetMetadata(null);
-    }
-  }, [isEdit]);
-
-  const handleOpenIonetDeployment = () => {
-    if (!ionetMetadata?.deployment_id) {
-      return;
-    }
-    const targetUrl = `/console/deployment?deployment_id=${ionetMetadata.deployment_id}`;
-    window.open(targetUrl, '_blank', 'noopener');
-  };
   const [verifyLoading, setVerifyLoading] = useState(false);
 
   // 表单块导航相关状态
@@ -435,16 +418,7 @@ const EditChannelModal = (props) => {
     handleInputChange('settings', settingsJson);
   };
 
-  const isIonetLocked = isIonetChannel && isEdit;
-
   const handleInputChange = (name, value) => {
-    if (
-      isIonetChannel &&
-      isEdit &&
-      ['type', 'key', 'base_url'].includes(name)
-    ) {
-      return;
-    }
     if (formApiRef.current) {
       formApiRef.current.setValue(name, value);
     }
@@ -712,24 +686,6 @@ const EditChannelModal = (props) => {
         .filter(Boolean);
       initialModelMappingRef.current = data.model_mapping || '';
 
-      let parsedIonet = null;
-      if (data.other_info) {
-        try {
-          const maybeMeta = JSON.parse(data.other_info);
-          if (
-            maybeMeta &&
-            typeof maybeMeta === 'object' &&
-            maybeMeta.source === 'ionet'
-          ) {
-            parsedIonet = maybeMeta;
-          }
-        } catch (error) {
-          // ignore parse error
-        }
-      }
-      const managedByIonet = !!parsedIonet;
-      setIsIonetChannel(managedByIonet);
-      setIonetMetadata(parsedIonet);
       // console.log(data);
     } else {
       showError(message);
@@ -1818,31 +1774,6 @@ const EditChannelModal = (props) => {
                       </div>
                     </div>
 
-                    {isIonetChannel && (
-                      <Banner
-                        type='info'
-                        closeIcon={null}
-                        className='mb-4 rounded-xl'
-                        description={t(
-                          '此渠道由 IO.NET 自动同步，类型、密钥和 API 地址已锁定。',
-                        )}
-                      >
-                        <Space>
-                          {ionetMetadata?.deployment_id && (
-                            <Button
-                              size='small'
-                              theme='light'
-                              type='primary'
-                              icon={<IconGlobe />}
-                              onClick={handleOpenIonetDeployment}
-                            >
-                              {t('查看关联部署')}
-                            </Button>
-                          )}
-                        </Space>
-                      </Banner>
-                    )}
-
                     <Form.Select
                       field='type'
                       label={t('类型')}
@@ -1856,7 +1787,7 @@ const EditChannelModal = (props) => {
                       onSearch={(value) => setChannelSearchValue(value)}
                       renderOptionItem={renderChannelOption}
                       onChange={(value) => handleInputChange('type', value)}
-                      disabled={isIonetLocked}
+                      disabled={false}
                     />
 
                     {inputs.type === 20 && (
@@ -2001,7 +1932,7 @@ const EditChannelModal = (props) => {
                           autosize
                           autoComplete='new-password'
                           onChange={(value) => handleInputChange('key', value)}
-                          disabled={isIonetLocked}
+                          disabled={false}
                           extraText={
                             <div className='flex items-center gap-2 flex-wrap'>
                               {isEdit &&
@@ -2446,7 +2377,7 @@ const EditChannelModal = (props) => {
                                 handleInputChange('base_url', value)
                               }
                               showClear
-                              disabled={isIonetLocked}
+                              disabled={false}
                             />
                           </div>
                           <div>
@@ -2501,7 +2432,7 @@ const EditChannelModal = (props) => {
                                 handleInputChange('base_url', value)
                               }
                               showClear
-                              disabled={isIonetLocked}
+                              disabled={false}
                             />
                           </div>
                         </>
@@ -2533,7 +2464,7 @@ const EditChannelModal = (props) => {
                                 handleInputChange('base_url', value)
                               }
                               showClear
-                              disabled={isIonetLocked}
+                              disabled={false}
                               extraText={t(
                                 '对于官方渠道，new-api已经内置地址，除非是第三方代理站点或者Azure的特殊接入地址，否则不需要填写',
                               )}
@@ -2553,7 +2484,7 @@ const EditChannelModal = (props) => {
                               handleInputChange('base_url', value)
                             }
                             showClear
-                            disabled={isIonetLocked}
+                            disabled={false}
                           />
                         </div>
                       )}
@@ -2572,7 +2503,7 @@ const EditChannelModal = (props) => {
                               handleInputChange('base_url', value)
                             }
                             showClear
-                            disabled={isIonetLocked}
+                            disabled={false}
                           />
                         </div>
                       )}
@@ -2603,7 +2534,7 @@ const EditChannelModal = (props) => {
                               },
                             ]}
                             defaultValue='https://ark.cn-beijing.volces.com'
-                            disabled={isIonetLocked}
+                            disabled={false}
                           />
                         </div>
                       )}
