@@ -19,7 +19,7 @@ For commercial licensing, please contact support@quantumnous.com
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Typography, Tag } from '@douyinfe/semi-ui';
+import { Typography } from '@douyinfe/semi-ui';
 import SkeletonWrapper from '../components/SkeletonWrapper';
 
 const HeaderLogo = ({
@@ -29,8 +29,6 @@ const HeaderLogo = ({
   logoLoaded,
   isLoading,
   systemName,
-  isSelfUseMode,
-  isDemoSiteMode,
   t,
 }) => {
   if (isMobile && isConsoleRoute) {
@@ -62,16 +60,6 @@ const HeaderLogo = ({
               {systemName}
             </Typography.Title>
           </SkeletonWrapper>
-          {(isSelfUseMode || isDemoSiteMode) && !isLoading && (
-            <Tag
-              color={isSelfUseMode ? 'purple' : 'blue'}
-              className='text-xs px-1.5 py-0.5 rounded whitespace-nowrap shadow-sm'
-              size='small'
-              shape='circle'
-            >
-              {isSelfUseMode ? t('自用模式') : t('演示站点')}
-            </Tag>
-          )}
         </div>
       </div>
     </Link>
