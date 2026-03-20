@@ -158,8 +158,6 @@ const EditChannelModal = (props) => {
     pass_through_body_enabled: false,
     pass_through_headers_enabled: true,
     openai_wire_api: 'both',
-    system_prompt: '',
-    system_prompt_override: false,
     settings: '',
     // 仅 Vertex: 密钥格式（存入 settings.vertex_key_type）
     vertex_key_type: 'json',
@@ -368,7 +366,6 @@ const EditChannelModal = (props) => {
     pass_through_body_enabled: false,
     pass_through_headers_enabled: true,
     openai_wire_api: 'both',
-    system_prompt: '',
   });
   const showApiConfigCard = true; // 控制是否显示 API 配置卡片
   const getInitValues = () => ({ ...originInputs });
@@ -574,9 +571,6 @@ const EditChannelModal = (props) => {
           data.pass_through_headers_enabled =
             parsedSettings.pass_through_headers_enabled !== false;
           data.openai_wire_api = parsedSettings.openai_wire_api || 'both';
-          data.system_prompt = parsedSettings.system_prompt || '';
-          data.system_prompt_override =
-            parsedSettings.system_prompt_override || false;
         } catch (error) {
           console.error('解析渠道设置失败:', error);
           data.force_format = false;
@@ -585,8 +579,6 @@ const EditChannelModal = (props) => {
           data.pass_through_body_enabled = false;
           data.pass_through_headers_enabled = true;
           data.openai_wire_api = 'both';
-          data.system_prompt = '';
-          data.system_prompt_override = false;
         }
       } else {
         data.force_format = false;
@@ -595,8 +587,6 @@ const EditChannelModal = (props) => {
         data.pass_through_body_enabled = false;
         data.pass_through_headers_enabled = true;
         data.openai_wire_api = 'both';
-        data.system_prompt = '';
-        data.system_prompt_override = false;
       }
 
       if (data.settings) {
@@ -678,8 +668,6 @@ const EditChannelModal = (props) => {
         pass_through_body_enabled: data.pass_through_body_enabled,
         pass_through_headers_enabled: data.pass_through_headers_enabled,
         openai_wire_api: data.openai_wire_api || 'both',
-        system_prompt: data.system_prompt,
-        system_prompt_override: data.system_prompt_override || false,
       });
       initialModelsRef.current = (data.models || [])
         .map((model) => (model || '').trim())
@@ -1002,8 +990,6 @@ const EditChannelModal = (props) => {
       proxy: '',
       pass_through_body_enabled: false,
       openai_wire_api: 'both',
-      system_prompt: '',
-      system_prompt_override: false,
     });
     // 重置密钥模式状态
     setKeyMode('append');
@@ -1291,8 +1277,6 @@ const EditChannelModal = (props) => {
       pass_through_headers_enabled:
         localInputs.pass_through_headers_enabled !== false,
       openai_wire_api: localInputs.openai_wire_api || 'both',
-      system_prompt: localInputs.system_prompt || '',
-      system_prompt_override: localInputs.system_prompt_override || false,
     };
     localInputs.setting = JSON.stringify(channelExtraSettings);
 
@@ -1359,8 +1343,6 @@ const EditChannelModal = (props) => {
     delete localInputs.pass_through_body_enabled;
     delete localInputs.pass_through_headers_enabled;
     delete localInputs.openai_wire_api;
-    delete localInputs.system_prompt;
-    delete localInputs.system_prompt_override;
     delete localInputs.is_enterprise_account;
     // 顶层的 vertex_key_type 不应发送给后端
     delete localInputs.vertex_key_type;
@@ -3263,37 +3245,6 @@ const EditChannelModal = (props) => {
                       }
                       showClear
                       extraText={t('用于配置网络代理，支持 socks5 协议')}
-                    />
-
-                    <Form.TextArea
-                      field='system_prompt'
-                      label={t('系统提示词')}
-                      placeholder={t(
-                        '输入系统提示词，用户的系统提示词将优先于此设置',
-                      )}
-                      onChange={(value) =>
-                        handleChannelSettingsChange('system_prompt', value)
-                      }
-                      autosize
-                      showClear
-                      extraText={t(
-                        '用户优先：如果用户在请求中指定了系统提示词，将优先使用用户的设置',
-                      )}
-                    />
-                    <Form.Switch
-                      field='system_prompt_override'
-                      label={t('系统提示词拼接')}
-                      checkedText={t('开')}
-                      uncheckedText={t('关')}
-                      onChange={(value) =>
-                        handleChannelSettingsChange(
-                          'system_prompt_override',
-                          value,
-                        )
-                      }
-                      extraText={t(
-                        '如果用户请求中包含系统提示词，则使用此设置拼接到用户的系统提示词前面',
-                      )}
                     />
                   </Card>
                 </div>

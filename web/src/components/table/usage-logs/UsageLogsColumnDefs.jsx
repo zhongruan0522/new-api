@@ -685,7 +685,6 @@ export const getLogsColumns = ({
                 1.0,
               false,
               1.0,
-              other?.is_system_prompt_overwritten,
               'claude',
             )
           : renderModelPriceSimple(
@@ -703,7 +702,6 @@ export const getLogsColumns = ({
               1.0,
               false,
               1.0,
-              other?.is_system_prompt_overwritten,
               'openai',
             );
         return (

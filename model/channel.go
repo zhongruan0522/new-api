@@ -848,6 +848,17 @@ func (channel *Channel) ValidateSettings() error {
 		if err != nil {
 			return err
 		}
+
+		// 拒绝已移除的字段，避免旧客户端静默写入导致"配置存在但运行时不生效"
+		var rawMap map[string]json.RawMessage
+		if err := common.Unmarshal([]byte(*channel.Setting), &rawMap); err == nil {
+			if _, ok := rawMap["system_prompt"]; ok {
+				return fmt.Errorf("channel setting \"system_prompt\" 已移除，请删除该字段")
+			}
+			if _, ok := rawMap["system_prompt_override"]; ok {
+				return fmt.Errorf("channel setting \"system_prompt_override\" 已移除，请删除该字段")
+			}
+		}
 	}
 	return nil
 }
