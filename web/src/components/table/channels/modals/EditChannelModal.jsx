@@ -3233,7 +3233,7 @@ const EditChannelModal = (props) => {
                           handleChannelSettingsChange('openai_wire_api', value)
                         }
                         extraText={t(
-                          '鐢ㄤ簬鎸囧畾璇ユ笭閬撲笂娓告渶榛樿浣跨敤鐨?OpenAI 瑙勮寖锛涘綍鍏ュ彛绫偣涓庢涓嶄竴鑷存椂锛屽皢鍦?ChatCompletions 涓?Responses 涔嬮棿鑷姩浜掕浆',
+                          '用于指定该渠道默认使用的 OpenAI 规范；当入口端点与此不一致时，将在 ChatCompletions 与 Responses 之间自动转换',
                         )}
                       />
                     )}
