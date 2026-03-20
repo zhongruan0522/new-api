@@ -14,20 +14,16 @@ import (
 
 // ClaudeSettings 定义Claude模型的配置
 type ClaudeSettings struct {
-	HeadersSettings                       map[string]map[string][]string `json:"model_headers_settings"`
-	DefaultMaxTokens                      map[string]int                 `json:"default_max_tokens"`
-	ThinkingAdapterEnabled                bool                           `json:"thinking_adapter_enabled"`
-	ThinkingAdapterBudgetTokensPercentage float64                        `json:"thinking_adapter_budget_tokens_percentage"`
+	HeadersSettings  map[string]map[string][]string `json:"model_headers_settings"`
+	DefaultMaxTokens map[string]int                 `json:"default_max_tokens"`
 }
 
 // 默认配置
 var defaultClaudeSettings = ClaudeSettings{
-	HeadersSettings:        map[string]map[string][]string{},
-	ThinkingAdapterEnabled: true,
+	HeadersSettings: map[string]map[string][]string{},
 	DefaultMaxTokens: map[string]int{
 		"default": 8192,
 	},
-	ThinkingAdapterBudgetTokensPercentage: 0.8,
 }
 
 // 全局实例

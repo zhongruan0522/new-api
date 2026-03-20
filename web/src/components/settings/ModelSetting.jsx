@@ -27,7 +27,6 @@ import SettingsChannelAffinity from '../../pages/Setting/Operation/SettingsChann
 const ModelSetting = () => {
   let [inputs, setInputs] = useState({
     'global.pass_through_request_enabled': false,
-    'global.thinking_model_blacklist': '[]',
     'general_setting.ping_interval_enabled': false,
     'general_setting.ping_interval_seconds': 60,
   });
@@ -40,16 +39,6 @@ const ModelSetting = () => {
     if (success) {
       let newInputs = {};
       data.forEach((item) => {
-        if (item.key === 'global.thinking_model_blacklist') {
-          if (item.value !== '') {
-            try {
-              item.value = JSON.stringify(JSON.parse(item.value), null, 2);
-            } catch (e) {
-              // Keep raw value so user can fix it, and avoid crashing the page.
-              console.error(`Invalid JSON for option ${item.key}:`, e);
-            }
-          }
-        }
         // Keep boolean config keys ending with enabled/Enabled so UI parses correctly.
         if (item.key.endsWith('Enabled') || item.key.endsWith('enabled')) {
           newInputs[item.key] = toBoolean(item.value);
