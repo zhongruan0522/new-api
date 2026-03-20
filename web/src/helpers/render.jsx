@@ -1041,7 +1041,6 @@ function renderPriceSimpleCore({
   cacheCreationRatio1h = 1.0,
   image = false,
   imageRatio = 1.0,
-  isSystemPromptOverride = false,
 }) {
   const { ratio: effectiveGroupRatio, label: ratioLabel } = getEffectiveRatio(
     groupRatio,
@@ -1114,10 +1113,6 @@ function renderPriceSimpleCore({
     cacheCreationRatio1h: cacheCreationRatio1h,
     imageRatio: imageRatio,
   });
-
-  if (isSystemPromptOverride) {
-    result += '\n\r' + i18next.t('系统提示覆盖');
-  }
 
   return result;
 }
@@ -1477,7 +1472,6 @@ export function renderModelPriceSimple(
   cacheCreationRatio1h = 1.0,
   image = false,
   imageRatio = 1.0,
-  isSystemPromptOverride = false,
   provider = 'openai',
 ) {
   return renderPriceSimpleCore({
@@ -1495,7 +1489,6 @@ export function renderModelPriceSimple(
     cacheCreationRatio1h,
     image,
     imageRatio,
-    isSystemPromptOverride,
   });
 }
 

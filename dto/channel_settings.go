@@ -3,8 +3,8 @@ package dto
 import "strings"
 
 type ChannelSettings struct {
-	ForceFormat               bool   `json:"force_format,omitempty"`
-	ThinkingToContent         bool   `json:"thinking_to_content,omitempty"`
+	ForceFormat       bool `json:"force_format,omitempty"`
+	ThinkingToContent bool `json:"thinking_to_content,omitempty"`
 	// OpenAIWireAPI controls which OpenAI wire API this channel should treat as its default upstream spec.
 	// Supported values:
 	//   - "both"      : channel is compatible with both /v1/chat/completions and /v1/responses (no auto conversion)
@@ -12,12 +12,10 @@ type ChannelSettings struct {
 	//   - "responses" : treat Responses as default; auto-convert ChatCompletions -> Responses when needed
 	//
 	// Empty value is treated as "both" for backward compatibility.
-	OpenAIWireAPI OpenAIWireAPI `json:"openai_wire_api,omitempty"`
-	Proxy                     string `json:"proxy"`
-	PassThroughBodyEnabled    bool   `json:"pass_through_body_enabled,omitempty"`
-	PassThroughHeadersEnabled bool   `json:"pass_through_headers_enabled"`
-	SystemPrompt              string `json:"system_prompt,omitempty"`
-	SystemPromptOverride      bool   `json:"system_prompt_override,omitempty"`
+	OpenAIWireAPI             OpenAIWireAPI `json:"openai_wire_api,omitempty"`
+	Proxy                     string        `json:"proxy"`
+	PassThroughBodyEnabled    bool          `json:"pass_through_body_enabled,omitempty"`
+	PassThroughHeadersEnabled bool          `json:"pass_through_headers_enabled"`
 }
 
 type OpenAIWireAPI string
