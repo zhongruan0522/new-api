@@ -17,7 +17,6 @@ import (
 	"github.com/QuantumNous/new-api/relay/reasonmap"
 	"github.com/QuantumNous/new-api/service"
 	"github.com/QuantumNous/new-api/setting/model_setting"
-	"github.com/QuantumNous/new-api/setting/reasoning"
 	"github.com/QuantumNous/new-api/types"
 
 	"github.com/gin-gonic/gin"
@@ -142,37 +141,6 @@ func RequestOpenAI2ClaudeMessage(c *gin.Context, textRequest dto.GeneralOpenAIRe
 
 	if claudeRequest.MaxTokens == 0 {
 		claudeRequest.MaxTokens = uint(model_setting.GetClaudeSettings().GetDefaultMaxTokens(textRequest.Model))
-	}
-
-	if baseModel, effortLevel, ok := reasoning.TrimEffortSuffix(textRequest.Model); ok && effortLevel != "" &&
-		strings.HasPrefix(textRequest.Model, "claude-opus-4-6") {
-		claudeRequest.Model = baseModel
-		claudeRequest.Thinking = &dto.Thinking{
-			Type: "adaptive",
-		}
-		claudeRequest.OutputConfig = json.RawMessage(fmt.Sprintf(`{"effort":"%s"}`, effortLevel))
-		claudeRequest.TopP = 0
-		claudeRequest.Temperature = common.GetPointer[float64](1.0)
-	} else if model_setting.GetClaudeSettings().ThinkingAdapterEnabled &&
-		strings.HasSuffix(textRequest.Model, "-thinking") {
-
-		// 因为BudgetTokens 必须大于1024
-		if claudeRequest.MaxTokens < 1280 {
-			claudeRequest.MaxTokens = 1280
-		}
-
-		// BudgetTokens 为 max_tokens 的 80%
-		claudeRequest.Thinking = &dto.Thinking{
-			Type:         "enabled",
-			BudgetTokens: common.GetPointer[int](int(float64(claudeRequest.MaxTokens) * model_setting.GetClaudeSettings().ThinkingAdapterBudgetTokensPercentage)),
-		}
-		// TODO: 临时处理
-		// https://docs.anthropic.com/en/docs/build-with-claude/extended-thinking#important-considerations-when-using-extended-thinking
-		claudeRequest.TopP = 0
-		claudeRequest.Temperature = common.GetPointer[float64](1.0)
-		if !model_setting.ShouldPreserveThinkingSuffix(textRequest.Model) {
-			claudeRequest.Model = strings.TrimSuffix(textRequest.Model, "-thinking")
-		}
 	}
 
 	if textRequest.ReasoningEffort != "" {

@@ -32,19 +32,11 @@ import {
   showError,
   showSuccess,
   showWarning,
-  verifyJSON,
 } from '../../../helpers';
 import { useTranslation } from 'react-i18next';
 
-const thinkingExample = JSON.stringify(
-  ['moonshotai/kimi-k2-thinking', 'kimi-k2-thinking'],
-  null,
-  2,
-);
-
 const defaultGlobalSettingInputs = {
   'global.pass_through_request_enabled': false,
-  'global.thinking_model_blacklist': '[]',
   'global.third_party_multimodal_model_id': '',
   'global.third_party_multimodal_call_api_type': 0,
   'global.third_party_multimodal_system_prompt': '',
@@ -245,34 +237,6 @@ export default function SettingGlobalModel(props) {
                   extraText={t(
                     '开启后，所有请求将直接透传给上游，不会进行任何处理（重定向和渠道适配也将失效）,请谨慎开启',
                   )}
-                />
-              </Col>
-            </Row>
-            <Row>
-              <Col span={24}>
-                <Form.TextArea
-                  label={t('禁用思考处理的模型列表')}
-                  field={'global.thinking_model_blacklist'}
-                  placeholder={t('例如：') + '\n' + thinkingExample}
-                  rows={4}
-                  rules={[
-                    {
-                      validator: (rule, value) => {
-                        if (!value || value.trim() === '') return true;
-                        return verifyJSON(value);
-                      },
-                      message: t('不是合法的 JSON 字符串'),
-                    },
-                  ]}
-                  extraText={t(
-                    '列出的模型将不会自动添加或移除-thinking/-nothinking 后缀',
-                  )}
-                  onChange={(value) =>
-                    setInputs({
-                      ...inputs,
-                      'global.thinking_model_blacklist': value,
-                    })
-                  }
                 />
               </Col>
             </Row>
