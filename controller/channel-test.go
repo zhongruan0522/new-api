@@ -104,8 +104,7 @@ func testChannel(channel *model.Channel, testModel string, endpointType string, 
 		if strings.Contains(strings.ToLower(testModel), "embedding") ||
 			strings.HasPrefix(testModel, "m3e") || // m3e 系列模型
 			strings.Contains(testModel, "bge-") || // bge 系列模型
-			strings.Contains(testModel, "embed") ||
-			channel.Type == constant.ChannelTypeMokaAI { // 其他 embedding 模型
+			strings.Contains(testModel, "embed") {
 			requestPath = "/v1/embeddings" // 修改请求路径
 		}
 

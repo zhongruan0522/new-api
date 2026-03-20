@@ -28,12 +28,34 @@ var openAIModelsMap map[string]dto.OpenAIModels
 var channelId2Models map[int][]string
 
 func init() {
-	// https://platform.openai.com/docs/models/model-endpoint-compatibility
-	for i := 0; i < constant.APITypeDummy; i++ {
-		if i == constant.APITypeAIProxyLibrary {
-			continue
-		}
-		adaptor := relay.GetAdaptor(i)
+	// 硬编码所有有效的 APIType，避免遍历已删除的稀疏槽位导致 nil panic
+	allAPITypes := []int{
+		constant.APITypeOpenAI,
+		constant.APITypeAnthropic,
+		constant.APITypePaLM,
+		constant.APITypeAli,
+		constant.APITypeXunfei,
+		constant.APITypeTencent,
+		constant.APITypeGemini,
+		constant.APITypeZhipuV4,
+		constant.APITypeOllama,
+		constant.APITypeAws,
+		constant.APITypeCohere,
+		constant.APITypeDify,
+		constant.APITypeJina,
+		constant.APITypeCloudflare,
+		constant.APITypeSiliconFlow,
+		constant.APITypeVertexAi,
+		constant.APITypeMistral,
+		constant.APITypeDeepSeek,
+		constant.APITypeVolcEngine,
+		constant.APITypeOpenRouter,
+		constant.APITypeXai,
+		constant.APITypeMoonshot,
+		constant.APITypeMiniMax,
+	}
+	for _, apiType := range allAPITypes {
+		adaptor := relay.GetAdaptor(apiType)
 		channelName := adaptor.GetChannelName()
 		modelNames := adaptor.GetModelList()
 		for _, modelName := range modelNames {
@@ -76,7 +98,7 @@ func init() {
 	channelId2Models = make(map[int][]string)
 	for i := 1; i <= constant.ChannelTypeDummy; i++ {
 		apiType, success := common.ChannelType2APIType(i)
-		if !success || apiType == constant.APITypeAIProxyLibrary {
+		if !success {
 			continue
 		}
 		meta := &relaycommon.RelayInfo{ChannelMeta: &relaycommon.ChannelMeta{
