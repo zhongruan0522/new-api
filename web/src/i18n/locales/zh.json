@@ -2770,6 +2770,7 @@
     "预迁移失败": "预迁移失败",
     "启动失败：未返回任务ID": "启动失败：未返回任务ID",
     "目标数据库 DSN 不能为空": "目标数据库 DSN 不能为空",
-    "目标为 PostgreSQL 时，DSN 必须以 postgres:// 或 postgresql:// 开头": "目标为 PostgreSQL 时，DSN 必须以 postgres:// 或 postgresql:// 开头"
+    "目标为 PostgreSQL 时，DSN 必须以 postgres:// 或 postgresql:// 开头": "目标为 PostgreSQL 时，DSN 必须以 postgres:// 或 postgresql:// 开头",
+    "用于指定该渠道默认使用的 OpenAI 规范；当入口端点与此不一致时，将在 ChatCompletions 与 Responses 之间自动转换": "用于指定该渠道默认使用的 OpenAI 规范；当入口端点与此不一致时，将在 ChatCompletions 与 Responses 之间自动转换"
   }
 }
