@@ -7,28 +7,16 @@ const (
 	ChannelTypeAzure          = 3
 	ChannelTypeOllama         = 4
 	ChannelTypeMidjourneyPlus = 5
-	ChannelTypeOpenAIMax      = 6
-	ChannelTypeOhMyGPT        = 7
 	ChannelTypeCustom         = 8
-	ChannelTypeAILS           = 9
-	ChannelTypeAIProxy        = 10
 	ChannelTypePaLM           = 11
-	ChannelTypeAPI2GPT        = 12
-	ChannelTypeAIGC2D         = 13
 	ChannelTypeAnthropic      = 14
-	ChannelTypeBaidu          = 15
-	ChannelTypeZhipu          = 16
 	ChannelTypeAli            = 17
 	ChannelTypeXunfei         = 18
-	ChannelType360            = 19
 	ChannelTypeOpenRouter     = 20
-	ChannelTypeAIProxyLibrary = 21
-	ChannelTypeFastGPT        = 22
 	ChannelTypeTencent        = 23
 	ChannelTypeGemini         = 24
 	ChannelTypeMoonshot       = 25
 	ChannelTypeZhipu_v4       = 26
-	ChannelTypePerplexity     = 27
 	ChannelTypeLingYiWanWu    = 31
 	ChannelTypeAws            = 33
 	ChannelTypeCohere         = 34
@@ -41,101 +29,91 @@ const (
 	ChannelTypeVertexAi       = 41
 	ChannelTypeMistral        = 42
 	ChannelTypeDeepSeek       = 43
-	ChannelTypeMokaAI         = 44
 	ChannelTypeVolcEngine     = 45
-	ChannelTypeBaiduV2        = 46
-	ChannelTypeXinference     = 47
 	ChannelTypeXai            = 48
-	ChannelTypeDummy          // this one is only for count, do not add any channel after this
-
+	ChannelTypeDummy          = 49 // this one is only for count, do not add any channel after this
 )
 
 var ChannelBaseURLs = []string{
-	"",                                    // 0
-	"https://api.openai.com",              // 1
-	"https://oa.api2d.net",                // 2
-	"",                                    // 3
-	"http://localhost:11434",              // 4
-	"https://api.openai-sb.com",           // 5
-	"https://api.openaimax.com",           // 6
-	"https://api.ohmygpt.com",             // 7
-	"",                                    // 8
-	"https://api.caipacity.com",           // 9
-	"https://api.aiproxy.io",              // 10
-	"",                                    // 11
-	"https://api.api2gpt.com",             // 12
-	"https://api.aigc2d.com",              // 13
-	"https://api.anthropic.com",           // 14
-	"https://aip.baidubce.com",            // 15
-	"https://open.bigmodel.cn",            // 16
-	"https://dashscope.aliyuncs.com",      // 17
-	"",                                    // 18
-	"https://api.360.cn",                  // 19
-	"https://openrouter.ai/api",           // 20
-	"https://api.aiproxy.io",              // 21
-	"https://fastgpt.run/api/openapi",     // 22
-	"https://hunyuan.tencentcloudapi.com", //23
-	"https://generativelanguage.googleapis.com", //24
-	"https://api.moonshot.cn",                   //25
-	"https://open.bigmodel.cn",                  //26
-	"https://api.perplexity.ai",                 //27
-	"",                                          //28
-	"",                                          //29
-	"",                                          //30
-	"https://api.lingyiwanwu.com",               //31
-	"",                                          //32
-	"",                                          //33
-	"https://api.cohere.ai",                     //34
-	"https://api.minimax.chat",                  //35
-	"",                                          //36
-	"https://api.dify.ai",                       //37
-	"https://api.jina.ai",                       //38
-	"https://api.cloudflare.com",                //39
-	"https://api.siliconflow.cn",                //40
-	"",                                          //41
-	"https://api.mistral.ai",                    //42
-	"https://api.deepseek.com",                  //43
-	"https://api.moka.ai",                       //44
-	"https://ark.cn-beijing.volces.com",         //45
-	"https://qianfan.baidubce.com",              //46
-	"",                                          //47
-	"https://api.x.ai",                          //48                                         //57 (removed)
+	"",                                    // 0  Unknown
+	"https://api.openai.com",              // 1  OpenAI
+	"https://oa.api2d.net",                // 2  Midjourney
+	"",                                    // 3  Azure
+	"http://localhost:11434",              // 4  Ollama
+	"https://api.openai-sb.com",           // 5  MidjourneyPlus
+	"",                                    // 6  (removed)
+	"",                                    // 7  (removed)
+	"",                                    // 8  Custom
+	"",                                    // 9  (removed)
+	"",                                    // 10 (removed)
+	"",                                    // 11 PaLM
+	"",                                    // 12 (removed)
+	"",                                    // 13 (removed)
+	"https://api.anthropic.com",           // 14 Anthropic
+	"",                                    // 15 (removed)
+	"",                                    // 16 (removed)
+	"https://dashscope.aliyuncs.com",      // 17 Ali
+	"",                                    // 18 Xunfei
+	"",                                    // 19 (removed)
+	"https://openrouter.ai/api",           // 20 OpenRouter
+	"",                                    // 21 (removed)
+	"",                                    // 22 (removed)
+	"https://hunyuan.tencentcloudapi.com", // 23 Tencent
+	"https://generativelanguage.googleapis.com", // 24 Gemini
+	"https://api.moonshot.cn",                   // 25 Moonshot
+	"https://open.bigmodel.cn",                  // 26 ZhipuV4
+	"",                                          // 27 (removed)
+	"",                                          // 28
+	"",                                          // 29
+	"",                                          // 30
+	"https://api.lingyiwanwu.com",               // 31 LingYiWanWu
+	"",                                          // 32
+	"",                                          // 33 AWS
+	"https://api.cohere.ai",                     // 34 Cohere
+	"https://api.minimax.chat",                  // 35 MiniMax
+	"",                                          // 36 SunoAPI
+	"https://api.dify.ai",                       // 37 Dify
+	"https://api.jina.ai",                       // 38 Jina
+	"https://api.cloudflare.com",                // 39 Cloudflare
+	"https://api.siliconflow.cn",                // 40 SiliconFlow
+	"",                                          // 41 VertexAi
+	"https://api.mistral.ai",                    // 42 Mistral
+	"https://api.deepseek.com",                  // 43 DeepSeek
+	"",                                          // 44 (removed)
+	"https://ark.cn-beijing.volces.com",         // 45 VolcEngine
+	"",                                          // 46 (removed)
+	"",                                          // 47 (removed)
+	"https://api.x.ai",                          // 48 xAI
 }
 
 var ChannelTypeNames = map[int]string{
-	ChannelTypeUnknown:        "Unknown",
-	ChannelTypeOpenAI:         "OpenAI",
-	ChannelTypeAzure:          "Azure",
-	ChannelTypeOllama:         "Ollama",
-	ChannelTypeOpenAIMax:      "OpenAIMax",
-	ChannelTypeOhMyGPT:        "OhMyGPT",
-	ChannelTypeCustom:         "Custom",
-	ChannelTypeAILS:           "AILS",
-	ChannelTypeAIProxy:        "AIProxy",
-	ChannelTypePaLM:           "PaLM",
-	ChannelTypeAPI2GPT:        "API2GPT",
-	ChannelTypeAIGC2D:         "AIGC2D",
-	ChannelTypeAnthropic:      "Anthropic",
-	ChannelTypeAli:            "Ali",
-	ChannelTypeXunfei:         "Xunfei",
-	ChannelTypeOpenRouter:     "OpenRouter",
-	ChannelTypeTencent:        "Tencent",
-	ChannelTypeGemini:         "Gemini",
-	ChannelTypeMoonshot:       "Moonshot",
-	ChannelTypeZhipu_v4:       "ZhipuV4",
-	ChannelTypeLingYiWanWu:    "LingYiWanWu",
-	ChannelTypeAws:            "AWS",
-	ChannelTypeCohere:         "Cohere",
-	ChannelTypeMiniMax:        "MiniMax",
-	ChannelTypeDify:           "Dify",
-	ChannelTypeJina:           "Jina",
-	ChannelCloudflare:         "Cloudflare",
-	ChannelTypeSiliconFlow:    "SiliconFlow",
-	ChannelTypeVertexAi:       "VertexAI",
-	ChannelTypeMistral:        "Mistral",
-	ChannelTypeDeepSeek:       "DeepSeek",
-	ChannelTypeVolcEngine:     "VolcEngine",
-	ChannelTypeXai:            "xAI",
+	ChannelTypeUnknown:     "Unknown",
+	ChannelTypeOpenAI:      "OpenAI",
+	ChannelTypeAzure:       "Azure",
+	ChannelTypeOllama:      "Ollama",
+	ChannelTypeCustom:      "Custom",
+	ChannelTypePaLM:        "PaLM",
+	ChannelTypeAnthropic:   "Anthropic",
+	ChannelTypeAli:         "Ali",
+	ChannelTypeXunfei:      "Xunfei",
+	ChannelTypeOpenRouter:  "OpenRouter",
+	ChannelTypeTencent:     "Tencent",
+	ChannelTypeGemini:      "Gemini",
+	ChannelTypeMoonshot:    "Moonshot",
+	ChannelTypeZhipu_v4:    "ZhipuV4",
+	ChannelTypeLingYiWanWu: "LingYiWanWu",
+	ChannelTypeAws:         "AWS",
+	ChannelTypeCohere:      "Cohere",
+	ChannelTypeMiniMax:     "MiniMax",
+	ChannelTypeDify:        "Dify",
+	ChannelTypeJina:        "Jina",
+	ChannelCloudflare:      "Cloudflare",
+	ChannelTypeSiliconFlow: "SiliconFlow",
+	ChannelTypeVertexAi:    "VertexAI",
+	ChannelTypeMistral:     "Mistral",
+	ChannelTypeDeepSeek:    "DeepSeek",
+	ChannelTypeVolcEngine:  "VolcEngine",
+	ChannelTypeXai:         "xAI",
 }
 
 func GetChannelTypeName(channelType int) string {

@@ -7,8 +7,6 @@ import (
 	"github.com/QuantumNous/new-api/relay/channel"
 	"github.com/QuantumNous/new-api/relay/channel/ali"
 	"github.com/QuantumNous/new-api/relay/channel/aws"
-	"github.com/QuantumNous/new-api/relay/channel/baidu"
-	"github.com/QuantumNous/new-api/relay/channel/baidu_v2"
 	"github.com/QuantumNous/new-api/relay/channel/claude"
 	"github.com/QuantumNous/new-api/relay/channel/cloudflare"
 	"github.com/QuantumNous/new-api/relay/channel/cohere"
@@ -18,12 +16,10 @@ import (
 	"github.com/QuantumNous/new-api/relay/channel/jina"
 	"github.com/QuantumNous/new-api/relay/channel/minimax"
 	"github.com/QuantumNous/new-api/relay/channel/mistral"
-	"github.com/QuantumNous/new-api/relay/channel/mokaai"
 	"github.com/QuantumNous/new-api/relay/channel/moonshot"
 	"github.com/QuantumNous/new-api/relay/channel/ollama"
 	"github.com/QuantumNous/new-api/relay/channel/openai"
 	"github.com/QuantumNous/new-api/relay/channel/palm"
-	"github.com/QuantumNous/new-api/relay/channel/perplexity"
 	"github.com/QuantumNous/new-api/relay/channel/siliconflow"
 	taskali "github.com/QuantumNous/new-api/relay/channel/task/ali"
 	taskdoubao "github.com/QuantumNous/new-api/relay/channel/task/doubao"
@@ -36,7 +32,6 @@ import (
 	"github.com/QuantumNous/new-api/relay/channel/volcengine"
 	"github.com/QuantumNous/new-api/relay/channel/xai"
 	"github.com/QuantumNous/new-api/relay/channel/xunfei"
-	"github.com/QuantumNous/new-api/relay/channel/zhipu"
 	"github.com/QuantumNous/new-api/relay/channel/zhipu_4v"
 	"github.com/gin-gonic/gin"
 )
@@ -47,8 +42,6 @@ func GetAdaptor(apiType int) channel.Adaptor {
 		return &ali.Adaptor{}
 	case constant.APITypeAnthropic:
 		return &claude.Adaptor{}
-	case constant.APITypeBaidu:
-		return &baidu.Adaptor{}
 	case constant.APITypeGemini:
 		return &gemini.Adaptor{}
 	case constant.APITypeOpenAI:
@@ -59,14 +52,10 @@ func GetAdaptor(apiType int) channel.Adaptor {
 		return &tencent.Adaptor{}
 	case constant.APITypeXunfei:
 		return &xunfei.Adaptor{}
-	case constant.APITypeZhipu:
-		return &zhipu.Adaptor{}
 	case constant.APITypeZhipuV4:
 		return &zhipu_4v.Adaptor{}
 	case constant.APITypeOllama:
 		return &ollama.Adaptor{}
-	case constant.APITypePerplexity:
-		return &perplexity.Adaptor{}
 	case constant.APITypeAws:
 		return &aws.Adaptor{}
 	case constant.APITypeCohere:
@@ -85,20 +74,14 @@ func GetAdaptor(apiType int) channel.Adaptor {
 		return &mistral.Adaptor{}
 	case constant.APITypeDeepSeek:
 		return &deepseek.Adaptor{}
-	case constant.APITypeMokaAI:
-		return &mokaai.Adaptor{}
 	case constant.APITypeVolcEngine:
 		return &volcengine.Adaptor{}
-	case constant.APITypeBaiduV2:
-		return &baidu_v2.Adaptor{}
 	case constant.APITypeOpenRouter:
-		return &openai.Adaptor{}
-	case constant.APITypeXinference:
 		return &openai.Adaptor{}
 	case constant.APITypeXai:
 		return &xai.Adaptor{}
 	case constant.APITypeMoonshot:
-		return &moonshot.Adaptor{} // Moonshot uses Claude API
+		return &moonshot.Adaptor{}
 	case constant.APITypeMiniMax:
 		return &minimax.Adaptor{}
 	}
@@ -115,8 +98,6 @@ func GetTaskPlatform(c *gin.Context) constant.TaskPlatform {
 
 func GetTaskAdaptor(platform constant.TaskPlatform) channel.TaskAdaptor {
 	switch platform {
-	//case constant.APITypeAIProxyLibrary:
-	//	return &aiproxy.Adaptor{}
 	case constant.TaskPlatformSuno:
 		return &suno.TaskAdaptor{}
 	}
