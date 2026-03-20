@@ -60,30 +60,6 @@ type OpenAISBUsageResponse struct {
 	} `json:"data"`
 }
 
-type AIProxyUserOverviewResponse struct {
-	Success   bool   `json:"success"`
-	Message   string `json:"message"`
-	ErrorCode int    `json:"error_code"`
-	Data      struct {
-		TotalPoints float64 `json:"totalPoints"`
-	} `json:"data"`
-}
-
-type API2GPTUsageResponse struct {
-	Object         string  `json:"object"`
-	TotalGranted   float64 `json:"total_granted"`
-	TotalUsed      float64 `json:"total_used"`
-	TotalRemaining float64 `json:"total_remaining"`
-}
-
-type APGC2DGPTUsageResponse struct {
-	//Grants         interface{} `json:"grants"`
-	Object         string  `json:"object"`
-	TotalAvailable float64 `json:"total_available"`
-	TotalGranted   float64 `json:"total_granted"`
-	TotalUsed      float64 `json:"total_used"`
-}
-
 type SiliconFlowUsageResponse struct {
 	Code    int    `json:"code"`
 	Message string `json:"message"`
@@ -204,42 +180,6 @@ func updateChannelOpenAISBBalance(channel *model.Channel) (float64, error) {
 	return balance, nil
 }
 
-func updateChannelAIProxyBalance(channel *model.Channel) (float64, error) {
-	url := "https://aiproxy.io/api/report/getUserOverview"
-	headers := http.Header{}
-	headers.Add("Api-Key", channel.Key)
-	body, err := GetResponseBody("GET", url, channel, headers)
-	if err != nil {
-		return 0, err
-	}
-	response := AIProxyUserOverviewResponse{}
-	err = json.Unmarshal(body, &response)
-	if err != nil {
-		return 0, err
-	}
-	if !response.Success {
-		return 0, fmt.Errorf("code: %d, message: %s", response.ErrorCode, response.Message)
-	}
-	channel.UpdateBalance(response.Data.TotalPoints)
-	return response.Data.TotalPoints, nil
-}
-
-func updateChannelAPI2GPTBalance(channel *model.Channel) (float64, error) {
-	url := "https://api.api2gpt.com/dashboard/billing/credit_grants"
-	body, err := GetResponseBody("GET", url, channel, GetAuthHeader(channel.Key))
-
-	if err != nil {
-		return 0, err
-	}
-	response := API2GPTUsageResponse{}
-	err = json.Unmarshal(body, &response)
-	if err != nil {
-		return 0, err
-	}
-	channel.UpdateBalance(response.TotalRemaining)
-	return response.TotalRemaining, nil
-}
-
 func updateChannelSiliconFlowBalance(channel *model.Channel) (float64, error) {
 	url := "https://api.siliconflow.cn/v1/user/info"
 	body, err := GetResponseBody("GET", url, channel, GetAuthHeader(channel.Key))
@@ -289,21 +229,6 @@ func updateChannelDeepSeekBalance(channel *model.Channel) (float64, error) {
 	}
 	channel.UpdateBalance(balance)
 	return balance, nil
-}
-
-func updateChannelAIGC2DBalance(channel *model.Channel) (float64, error) {
-	url := "https://api.aigc2d.com/dashboard/billing/credit_grants"
-	body, err := GetResponseBody("GET", url, channel, GetAuthHeader(channel.Key))
-	if err != nil {
-		return 0, err
-	}
-	response := APGC2DGPTUsageResponse{}
-	err = json.Unmarshal(body, &response)
-	if err != nil {
-		return 0, err
-	}
-	channel.UpdateBalance(response.TotalAvailable)
-	return response.TotalAvailable, nil
 }
 
 func updateChannelOpenRouterBalance(channel *model.Channel) (float64, error) {
@@ -370,14 +295,6 @@ func updateChannelBalance(channel *model.Channel) (float64, error) {
 		return 0, errors.New("尚未实现")
 	case constant.ChannelTypeCustom:
 		baseURL = channel.GetBaseURL()
-	//case common.ChannelTypeOpenAISB:
-	//	return updateChannelOpenAISBBalance(channel)
-	case constant.ChannelTypeAIProxy:
-		return updateChannelAIProxyBalance(channel)
-	case constant.ChannelTypeAPI2GPT:
-		return updateChannelAPI2GPTBalance(channel)
-	case constant.ChannelTypeAIGC2D:
-		return updateChannelAIGC2DBalance(channel)
 	case constant.ChannelTypeSiliconFlow:
 		return updateChannelSiliconFlowBalance(channel)
 	case constant.ChannelTypeDeepSeek:
