@@ -25,7 +25,6 @@ import (
 	"github.com/QuantumNous/new-api/relay/common_handler"
 	relayconstant "github.com/QuantumNous/new-api/relay/constant"
 	"github.com/QuantumNous/new-api/service"
-	"github.com/QuantumNous/new-api/setting/model_setting"
 	"github.com/QuantumNous/new-api/types"
 
 	"github.com/gin-gonic/gin"
@@ -235,45 +234,22 @@ func (a *Adaptor) ConvertOpenAIRequest(c *gin.Context, info *relaycommon.RelayIn
 		if len(request.Usage) == 0 {
 			request.Usage = json.RawMessage(`{"include":true}`)
 		}
-		// 适配 OpenRouter 的 thinking 后缀
-		if !model_setting.ShouldPreserveThinkingSuffix(info.OriginModelName) &&
-			strings.HasSuffix(info.UpstreamModelName, "-thinking") {
-			info.UpstreamModelName = strings.TrimSuffix(info.UpstreamModelName, "-thinking")
-			request.Model = info.UpstreamModelName
-			if len(request.Reasoning) == 0 {
+		if len(request.Reasoning) == 0 {
+			if request.ReasoningEffort != "" {
 				reasoning := map[string]any{
 					"enabled": true,
 				}
-				if request.ReasoningEffort != "" && request.ReasoningEffort != "none" {
+				if request.ReasoningEffort != "none" {
 					reasoning["effort"] = request.ReasoningEffort
-				}
-				marshal, err := common.Marshal(reasoning)
-				if err != nil {
-					return nil, fmt.Errorf("error marshalling reasoning: %w", err)
-				}
-				request.Reasoning = marshal
-			}
-			// 清空多余的ReasoningEffort
-			request.ReasoningEffort = ""
-		} else {
-			if len(request.Reasoning) == 0 {
-				// 适配 OpenAI 的 ReasoningEffort 格式
-				if request.ReasoningEffort != "" {
-					reasoning := map[string]any{
-						"enabled": true,
+					marshal, err := common.Marshal(reasoning)
+					if err != nil {
+						return nil, fmt.Errorf("error marshalling reasoning: %w", err)
 					}
-					if request.ReasoningEffort != "none" {
-						reasoning["effort"] = request.ReasoningEffort
-						marshal, err := common.Marshal(reasoning)
-						if err != nil {
-							return nil, fmt.Errorf("error marshalling reasoning: %w", err)
-						}
-						request.Reasoning = marshal
-					}
+					request.Reasoning = marshal
 				}
 			}
-			request.ReasoningEffort = ""
 		}
+		request.ReasoningEffort = ""
 
 		// https://docs.anthropic.com/en/api/openai-sdk#extended-thinking-support
 		// 没有做排除3.5Haiku等，要出问题再加吧，最佳兼容性（不是

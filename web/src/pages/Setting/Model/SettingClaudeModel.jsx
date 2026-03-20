@@ -52,9 +52,7 @@ export default function SettingClaudeModel(props) {
   const [loading, setLoading] = useState(false);
   const [inputs, setInputs] = useState({
     'claude.model_headers_settings': '',
-    'claude.thinking_adapter_enabled': true,
     'claude.default_max_tokens': '',
-    'claude.thinking_adapter_budget_tokens_percentage': 0.8,
   });
   const refForm = useRef();
   const [inputsRow, setInputsRow] = useState(inputs);
@@ -168,47 +166,6 @@ export default function SettingClaudeModel(props) {
                   ]}
                   onChange={(value) =>
                     setInputs({ ...inputs, 'claude.default_max_tokens': value })
-                  }
-                />
-              </Col>
-            </Row>
-            <Row>
-              <Col span={16}>
-                <Form.Switch
-                  label={t('启用Claude思考适配（-thinking后缀）')}
-                  field={'claude.thinking_adapter_enabled'}
-                  onChange={(value) =>
-                    setInputs({
-                      ...inputs,
-                      'claude.thinking_adapter_enabled': value,
-                    })
-                  }
-                />
-              </Col>
-            </Row>
-            <Row>
-              <Col span={16}>
-                {/*//展示MaxTokens和BudgetTokens的计算公式, 并展示实际数字*/}
-                <Text>
-                  {t(
-                    'Claude思考适配 BudgetTokens = MaxTokens * BudgetTokens 百分比',
-                  )}
-                </Text>
-              </Col>
-            </Row>
-            <Row>
-              <Col xs={24} sm={12} md={8} lg={8} xl={8}>
-                <Form.InputNumber
-                  label={t('思考适配 BudgetTokens 百分比')}
-                  field={'claude.thinking_adapter_budget_tokens_percentage'}
-                  initValue={''}
-                  extraText={t('0.1以上的小数')}
-                  min={0.1}
-                  onChange={(value) =>
-                    setInputs({
-                      ...inputs,
-                      'claude.thinking_adapter_budget_tokens_percentage': value,
-                    })
                   }
                 />
               </Col>

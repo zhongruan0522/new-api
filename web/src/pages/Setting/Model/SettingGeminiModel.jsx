@@ -43,8 +43,6 @@ const DEFAULT_GEMINI_INPUTS = {
   'gemini.safety_settings': '',
   'gemini.version_settings': '',
   'gemini.supported_imagine_models': '',
-  'gemini.thinking_adapter_enabled': false,
-  'gemini.thinking_adapter_budget_tokens_percentage': 0.6,
   'gemini.function_call_thought_signature_enabled': true,
   'gemini.remove_function_response_id_enabled': true,
 };
@@ -232,64 +230,6 @@ export default function SettingGeminiModel(props) {
                       message: t('不是合法的 JSON 字符串'),
                     },
                   ]}
-                />
-              </Col>
-            </Row>
-          </Form.Section>
-
-          <Form.Section text={t('Gemini思考适配设置')}>
-            <Row>
-              <Col span={16}>
-                <Text>
-                  {t(
-                    '和Claude不同，默认情况下Gemini的思考模型会自动决定要不要思考，就算不开启适配模型也可以正常使用，' +
-                      '如果您需要计费，推荐设置无后缀模型价格按思考价格设置。' +
-                      '支持使用 gemini-2.5-pro-preview-06-05-thinking-128 格式来精确传递思考预算。',
-                  )}
-                </Text>
-              </Col>
-            </Row>
-            <Row>
-              <Col span={16}>
-                <Form.Switch
-                  label={t('启用Gemini思考后缀适配')}
-                  field={'gemini.thinking_adapter_enabled'}
-                  extraText={t(
-                    '适配 -thinking、-thinking-预算数字 和 -nothinking 后缀',
-                  )}
-                  onChange={(value) =>
-                    setInputs({
-                      ...inputs,
-                      'gemini.thinking_adapter_enabled': value,
-                    })
-                  }
-                />
-              </Col>
-            </Row>
-            <Row>
-              <Col span={16}>
-                <Text>
-                  {t(
-                    'Gemini思考适配 BudgetTokens = MaxTokens * BudgetTokens 百分比',
-                  )}
-                </Text>
-              </Col>
-            </Row>
-            <Row>
-              <Col xs={24} sm={12} md={8} lg={8} xl={8}>
-                <Form.InputNumber
-                  label={t('思考预算占比')}
-                  field={'gemini.thinking_adapter_budget_tokens_percentage'}
-                  initValue={''}
-                  extraText={t('0.002-1之间的小数')}
-                  min={0.002}
-                  max={1}
-                  onChange={(value) =>
-                    setInputs({
-                      ...inputs,
-                      'gemini.thinking_adapter_budget_tokens_percentage': value,
-                    })
-                  }
                 />
               </Col>
             </Row>

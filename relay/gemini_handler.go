@@ -10,7 +10,6 @@ import (
 	"github.com/QuantumNous/new-api/common"
 	"github.com/QuantumNous/new-api/dto"
 	"github.com/QuantumNous/new-api/logger"
-	"github.com/QuantumNous/new-api/relay/channel/gemini"
 	relaycommon "github.com/QuantumNous/new-api/relay/common"
 	"github.com/QuantumNous/new-api/relay/helper"
 	"github.com/QuantumNous/new-api/service"
@@ -19,37 +18,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 )
-
-func isNoThinkingRequest(req *dto.GeminiChatRequest) bool {
-	if req.GenerationConfig.ThinkingConfig != nil && req.GenerationConfig.ThinkingConfig.ThinkingBudget != nil {
-		configBudget := req.GenerationConfig.ThinkingConfig.ThinkingBudget
-		if configBudget != nil && *configBudget == 0 {
-			// 如果思考预算为 0，则认为是非思考请求
-			return true
-		}
-	}
-	return false
-}
-
-func trimModelThinking(modelName string) string {
-	// 去除模型名称中的 -nothinking 后缀
-	if strings.HasSuffix(modelName, "-nothinking") {
-		return strings.TrimSuffix(modelName, "-nothinking")
-	}
-	// 去除模型名称中的 -thinking 后缀
-	if strings.HasSuffix(modelName, "-thinking") {
-		return strings.TrimSuffix(modelName, "-thinking")
-	}
-
-	// 去除模型名称中的 -thinking-number
-	if strings.Contains(modelName, "-thinking-") {
-		parts := strings.Split(modelName, "-thinking-")
-		if len(parts) > 1 {
-			return parts[0] + "-thinking"
-		}
-	}
-	return modelName
-}
 
 func GeminiHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *types.NewAPIError) {
 	info.InitChannelMeta(c)
@@ -68,24 +36,6 @@ func GeminiHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *typ
 	err = helper.ModelMappedHelper(c, info, request)
 	if err != nil {
 		return types.NewError(err, types.ErrorCodeChannelModelMappedError, types.ErrOptionWithSkipRetry())
-	}
-
-	if model_setting.GetGeminiSettings().ThinkingAdapterEnabled {
-		if isNoThinkingRequest(request) {
-			// check is thinking
-			if !strings.Contains(info.OriginModelName, "-nothinking") {
-				// try to get no thinking model price
-				noThinkingModelName := info.OriginModelName + "-nothinking"
-				containPrice := helper.ContainPriceOrRatio(noThinkingModelName)
-				if containPrice {
-					info.OriginModelName = noThinkingModelName
-					info.UpstreamModelName = noThinkingModelName
-				}
-			}
-		}
-		if request.GenerationConfig.ThinkingConfig == nil {
-			gemini.ThinkingAdaptor(request, info)
-		}
 	}
 
 	adaptor := GetAdaptor(info.ApiType)
