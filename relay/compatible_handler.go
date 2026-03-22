@@ -578,10 +578,12 @@ func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage 
 		other["image_generation_call"] = true
 		other["image_generation_call_price"] = imageGenerationCallPrice
 	}
-	// 用毫秒级精度计算吐字速度，避免整秒取整导致短请求缺失或失真
-	elapsedMs := time.Since(relayInfo.StartTime).Milliseconds()
-	if completionTokens > 0 && elapsedMs > 0 {
-		other["speed"] = float64(completionTokens) / (float64(elapsedMs) / 1000.0)
+	// 仅流式请求计算吐字速度，用毫秒级精度避免整秒取整导致失真
+	if relayInfo.IsStream && completionTokens > 0 {
+		elapsedMs := time.Since(relayInfo.StartTime).Milliseconds()
+		if elapsedMs > 0 {
+			other["speed"] = float64(completionTokens) / (float64(elapsedMs) / 1000.0)
+		}
 	}
 	model.RecordConsumeLog(ctx, relayInfo.UserId, model.RecordConsumeLogParams{
 		ChannelId:        relayInfo.ChannelId,
