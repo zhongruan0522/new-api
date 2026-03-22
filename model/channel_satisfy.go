@@ -1,8 +1,8 @@
 package model
 
 import (
-	"github.com/QuantumNous/new-api/common"
-	"github.com/QuantumNous/new-api/setting/ratio_setting"
+	"github.com/zhongruan0522/new-api/common"
+	"github.com/zhongruan0522/new-api/setting/ratio_setting"
 )
 
 func IsChannelEnabledForGroupModel(group string, modelName string, channelID int) bool {

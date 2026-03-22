@@ -3,11 +3,11 @@ package service
 import (
 	"errors"
 
-	"github.com/QuantumNous/new-api/common"
-	"github.com/QuantumNous/new-api/constant"
-	"github.com/QuantumNous/new-api/logger"
-	"github.com/QuantumNous/new-api/model"
-	"github.com/QuantumNous/new-api/setting"
+	"github.com/zhongruan0522/new-api/common"
+	"github.com/zhongruan0522/new-api/constant"
+	"github.com/zhongruan0522/new-api/logger"
+	"github.com/zhongruan0522/new-api/model"
+	"github.com/zhongruan0522/new-api/setting"
 	"github.com/gin-gonic/gin"
 )
 

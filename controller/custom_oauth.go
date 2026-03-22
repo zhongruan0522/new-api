@@ -4,9 +4,9 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/QuantumNous/new-api/common"
-	"github.com/QuantumNous/new-api/model"
-	"github.com/QuantumNous/new-api/oauth"
+	"github.com/zhongruan0522/new-api/common"
+	"github.com/zhongruan0522/new-api/model"
+	"github.com/zhongruan0522/new-api/oauth"
 	"github.com/gin-gonic/gin"
 )
 

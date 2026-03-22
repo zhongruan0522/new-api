@@ -7,13 +7,13 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/QuantumNous/new-api/common"
-	"github.com/QuantumNous/new-api/constant"
-	"github.com/QuantumNous/new-api/dto"
-	"github.com/QuantumNous/new-api/model"
-	"github.com/QuantumNous/new-api/relay/channel/gemini"
-	"github.com/QuantumNous/new-api/relay/channel/ollama"
-	"github.com/QuantumNous/new-api/service"
+	"github.com/zhongruan0522/new-api/common"
+	"github.com/zhongruan0522/new-api/constant"
+	"github.com/zhongruan0522/new-api/dto"
+	"github.com/zhongruan0522/new-api/model"
+	"github.com/zhongruan0522/new-api/relay/channel/gemini"
+	"github.com/zhongruan0522/new-api/relay/channel/ollama"
+	"github.com/zhongruan0522/new-api/service"
 
 	"github.com/gin-gonic/gin"
 )

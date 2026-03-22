@@ -1,8 +1,8 @@
 package performance_setting
 
 import (
-	"github.com/QuantumNous/new-api/common"
-	"github.com/QuantumNous/new-api/setting/config"
+	"github.com/zhongruan0522/new-api/common"
+	"github.com/zhongruan0522/new-api/setting/config"
 )
 
 // PerformanceSetting 性能设置配置

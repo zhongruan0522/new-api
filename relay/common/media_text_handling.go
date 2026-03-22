@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/QuantumNous/new-api/dto"
+	"github.com/zhongruan0522/new-api/dto"
 )
 
 type MediaTextResolver func(kind string, resolvedURL string) (text string, err error)

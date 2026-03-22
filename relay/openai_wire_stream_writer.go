@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/QuantumNous/new-api/dto"
+	"github.com/zhongruan0522/new-api/dto"
 	"github.com/gin-gonic/gin"
 )
 

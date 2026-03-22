@@ -3,7 +3,7 @@ package common
 import (
 	"testing"
 
-	"github.com/QuantumNous/new-api/constant"
+	"github.com/zhongruan0522/new-api/constant"
 )
 
 func TestGetEndpointTypesByChannelTypeForOllama(t *testing.T) {
