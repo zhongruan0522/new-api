@@ -513,8 +513,8 @@ export const getLogsColumns = ({
               <Space>
                 {renderUseTime(text, t)}
                 {renderFirstUseTime(other?.frt, t)}
-                {renderIsStream(record.is_stream, t)}
                 {speedTag}
+                {renderIsStream(record.is_stream, t)}
               </Space>
             </>
           );
@@ -524,7 +524,6 @@ export const getLogsColumns = ({
               <Space>
                 {renderUseTime(text, t)}
                 {renderIsStream(record.is_stream, t)}
-                {speedTag}
               </Space>
             </>
           );
