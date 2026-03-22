@@ -6,8 +6,8 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/QuantumNous/new-api/common"
-	"github.com/QuantumNous/new-api/logger"
+	"github.com/zhongruan0522/new-api/common"
+	"github.com/zhongruan0522/new-api/logger"
 
 	"github.com/gin-gonic/gin"
 )

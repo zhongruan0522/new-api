@@ -3,8 +3,8 @@ package common
 import (
 	"testing"
 
-	"github.com/QuantumNous/new-api/common"
-	"github.com/QuantumNous/new-api/dto"
+	"github.com/zhongruan0522/new-api/common"
+	"github.com/zhongruan0522/new-api/dto"
 )
 
 func TestConvertChatCompletionsRequestToResponsesRequest_Tools(t *testing.T) {

@@ -1,6 +1,6 @@
 package service
 
-import "github.com/QuantumNous/new-api/model"
+import "github.com/zhongruan0522/new-api/model"
 
 // FundingSource abstracts a pre-consume / settle / refund lifecycle for a funding source.
 // Subscription billing is removed; currently only wallet funding is supported.

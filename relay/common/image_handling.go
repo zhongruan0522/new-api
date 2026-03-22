@@ -3,7 +3,7 @@ package common
 import (
 	"strings"
 
-	"github.com/QuantumNous/new-api/dto"
+	"github.com/zhongruan0522/new-api/dto"
 )
 
 type MediaURLResolver func(rawURL string, mediaContentType string) (resolvedURL string, err error)

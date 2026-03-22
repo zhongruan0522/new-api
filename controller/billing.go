@@ -1,10 +1,10 @@
 package controller
 
 import (
-	"github.com/QuantumNous/new-api/common"
-	"github.com/QuantumNous/new-api/model"
-	"github.com/QuantumNous/new-api/setting/operation_setting"
-	"github.com/QuantumNous/new-api/types"
+	"github.com/zhongruan0522/new-api/common"
+	"github.com/zhongruan0522/new-api/model"
+	"github.com/zhongruan0522/new-api/setting/operation_setting"
+	"github.com/zhongruan0522/new-api/types"
 	"github.com/gin-gonic/gin"
 )
 

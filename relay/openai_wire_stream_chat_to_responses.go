@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/QuantumNous/new-api/common"
-	"github.com/QuantumNous/new-api/dto"
+	"github.com/zhongruan0522/new-api/common"
+	"github.com/zhongruan0522/new-api/dto"
 )
 
 const chatToResponsesAssistantMessageID = "msg_0"

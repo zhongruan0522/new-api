@@ -5,8 +5,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/QuantumNous/new-api/common"
-	"github.com/QuantumNous/new-api/dto"
+	"github.com/zhongruan0522/new-api/common"
+	"github.com/zhongruan0522/new-api/dto"
 )
 
 func (c *chatToResponsesStreamConverter) hydrateFromChunk(chunk *dto.ChatCompletionsStreamResponse) {

@@ -1,7 +1,7 @@
 package model_setting
 
 import (
-	"github.com/QuantumNous/new-api/setting/config"
+	"github.com/zhongruan0522/new-api/setting/config"
 )
 
 // GeminiSettings defines Gemini model configuration. 注意bool要以enabled结尾才可以生效编辑
