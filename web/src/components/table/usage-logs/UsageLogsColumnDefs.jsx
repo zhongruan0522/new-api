@@ -211,6 +211,24 @@ function renderFirstUseTime(type, t) {
   }
 }
 
+function renderSpeed(speed, t) {
+  if (speed === undefined || speed === null || speed <= 0) {
+    return null;
+  }
+  const speedStr = speed.toFixed(1);
+  let color = 'red';
+  if (speed >= 100) {
+    color = 'green';
+  } else if (speed >= 70) {
+    color = 'blue';
+  }
+  return (
+    <Tag color={color} shape='circle'>
+      {speedStr} t/s
+    </Tag>
+  );
+}
+
 function renderModelName(record, copyText, t) {
   let other = getLogOther(record.other);
   let modelMapped =
@@ -487,14 +505,16 @@ export const getLogsColumns = ({
         if (!(record.type === 2 || record.type === 5)) {
           return <></>;
         }
+        let other = getLogOther(record.other);
+        let speedTag = renderSpeed(other?.speed, t);
         if (record.is_stream) {
-          let other = getLogOther(record.other);
           return (
             <>
               <Space>
                 {renderUseTime(text, t)}
                 {renderFirstUseTime(other?.frt, t)}
                 {renderIsStream(record.is_stream, t)}
+                {speedTag}
               </Space>
             </>
           );
@@ -504,6 +524,7 @@ export const getLogsColumns = ({
               <Space>
                 {renderUseTime(text, t)}
                 {renderIsStream(record.is_stream, t)}
+                {speedTag}
               </Space>
             </>
           );
