@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/QuantumNous/new-api/common"
+	"github.com/zhongruan0522/new-api/common"
 
 	"github.com/gin-gonic/gin"
 )

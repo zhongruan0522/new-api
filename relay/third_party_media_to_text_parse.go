@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/QuantumNous/new-api/common"
-	"github.com/QuantumNous/new-api/constant"
-	"github.com/QuantumNous/new-api/dto"
+	"github.com/zhongruan0522/new-api/common"
+	"github.com/zhongruan0522/new-api/constant"
+	"github.com/zhongruan0522/new-api/dto"
 )
 
 func parseThirdPartyOutputText(apiType int, body []byte) (string, error) {

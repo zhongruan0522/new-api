@@ -23,7 +23,7 @@ RUN go mod download
 
 COPY . .
 COPY --from=builder /build/dist ./web/dist
-RUN go build -ldflags "-s -w -X 'github.com/QuantumNous/new-api/common.Version=$(cat VERSION)'" -o new-api
+RUN go build -ldflags "-s -w -X 'github.com/zhongruan0522/new-api/common.Version=$(cat VERSION)'" -o new-api
 
 FROM debian:bookworm-slim
 

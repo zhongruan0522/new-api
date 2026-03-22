@@ -5,7 +5,7 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/QuantumNous/new-api/common"
+	"github.com/zhongruan0522/new-api/common"
 )
 
 // StoredVideo stores user-provided video bytes for the "multimodal auto convert to URL" feature.

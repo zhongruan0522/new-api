@@ -9,12 +9,12 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/QuantumNous/new-api/common"
-	"github.com/QuantumNous/new-api/constant"
-	"github.com/QuantumNous/new-api/dto"
-	relaycommon "github.com/QuantumNous/new-api/relay/common"
-	constant2 "github.com/QuantumNous/new-api/relay/constant"
-	"github.com/QuantumNous/new-api/types"
+	"github.com/zhongruan0522/new-api/common"
+	"github.com/zhongruan0522/new-api/constant"
+	"github.com/zhongruan0522/new-api/dto"
+	relaycommon "github.com/zhongruan0522/new-api/relay/common"
+	constant2 "github.com/zhongruan0522/new-api/relay/constant"
+	"github.com/zhongruan0522/new-api/types"
 
 	"github.com/gin-gonic/gin"
 )
