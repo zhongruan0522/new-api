@@ -35,8 +35,6 @@ const SearchActions = memo(
     setShowWithRecharge,
     currency,
     setCurrency,
-    showRatio,
-    setShowRatio,
     viewMode,
     setViewMode,
     tokenUnit,
@@ -111,12 +109,6 @@ const SearchActions = memo(
                 ]}
               />
             )}
-
-            {/* 显示倍率开关 */}
-            <div className='flex items-center gap-2'>
-              <span className='text-sm text-gray-600'>{t('倍率')}</span>
-              <Switch checked={showRatio} onChange={setShowRatio} />
-            </div>
 
             {/* 视图模式切换按钮 */}
             <Button

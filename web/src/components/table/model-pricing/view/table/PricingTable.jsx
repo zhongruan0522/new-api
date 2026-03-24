@@ -34,13 +34,10 @@ const PricingTable = ({
   selectedGroup,
   groupRatio,
   copyText,
-  setModalImageUrl,
-  setIsModalOpenurl,
   currency,
   tokenUnit,
   displayPrice,
   searchValue,
-  showRatio,
   compactMode = false,
   openModelDetail,
   t,
@@ -51,24 +48,18 @@ const PricingTable = ({
       selectedGroup,
       groupRatio,
       copyText,
-      setModalImageUrl,
-      setIsModalOpenurl,
       currency,
       tokenUnit,
       displayPrice,
-      showRatio,
     });
   }, [
     t,
     selectedGroup,
     groupRatio,
     copyText,
-    setModalImageUrl,
-    setIsModalOpenurl,
     currency,
     tokenUnit,
     displayPrice,
-    showRatio,
   ]);
 
   // 更新列定义中的 searchValue
