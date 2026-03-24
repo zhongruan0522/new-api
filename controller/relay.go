@@ -378,8 +378,8 @@ func processChannelError(c *gin.Context, channelError types.ChannelError, err *t
 		if startTime.IsZero() {
 			startTime = time.Now()
 		}
-		useTimeSeconds := int(time.Since(startTime).Seconds())
-		model.RecordErrorLog(c, userId, channelId, modelName, tokenName, err.MaskSensitiveErrorWithStatusCode(), tokenId, useTimeSeconds, false, userGroup, other)
+		useTimeMs := int(time.Since(startTime).Milliseconds())
+		model.RecordErrorLog(c, userId, channelId, modelName, tokenName, err.MaskSensitiveErrorWithStatusCode(), tokenId, useTimeMs, false, userGroup, other)
 	}
 
 }

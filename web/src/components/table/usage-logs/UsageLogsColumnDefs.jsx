@@ -159,7 +159,9 @@ function renderIsStream(bool, t) {
 }
 
 function renderUseTime(type, t) {
-  const time = parseInt(type);
+  // use_time 现在存储的是毫秒，前端转换为秒显示
+  const ms = parseInt(type);
+  const time = (ms / 1000).toFixed(1);
   if (time < 101) {
     return (
       <Tag color='green' shape='circle'>
@@ -185,8 +187,9 @@ function renderUseTime(type, t) {
 }
 
 function renderFirstUseTime(type, t) {
+  // frt 已经是毫秒，转换为秒显示，保留2位小数
   let time = parseFloat(type) / 1000.0;
-  time = time.toFixed(1);
+  time = time.toFixed(2);
   if (time < 3) {
     return (
       <Tag color='green' shape='circle'>
