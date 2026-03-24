@@ -533,11 +533,72 @@ export const calculateModelPrice = ({
     usedGroup,
     usedGroupRatio,
     // 额外计费价格（按量计费模式下计算）
-    cachePrice: null,
-    cacheCreatePrice: null,
-    audioPrice: null,
-    audioCompletionPrice: null,
-    imagePrice: null,
+    cacheReadPrice: null,
+    cacheCreatePrice5m: null,
+    audioInputPrice: null,
+    audioOutputPrice: null,
+    imageInputPrice: null,
+  };
+};
+
+// 统一解析模型价格页使用的实际分组与货币显示信息，避免列表与详情计算不一致。
+const resolvePricingDisplayContext = ({
+  record,
+  selectedGroup,
+  groupRatio,
+  tokenUnit,
+  currency,
+}) => {
+  let usedGroup = selectedGroup;
+  let usedGroupRatio = groupRatio[selectedGroup];
+
+  if (selectedGroup === 'all' || usedGroupRatio === undefined) {
+    let minRatio = Number.POSITIVE_INFINITY;
+    if (
+      Array.isArray(record.enable_groups) &&
+      record.enable_groups.length > 0
+    ) {
+      record.enable_groups.forEach((group) => {
+        const currentRatio = groupRatio[group];
+        if (currentRatio !== undefined && currentRatio < minRatio) {
+          minRatio = currentRatio;
+          usedGroup = group;
+          usedGroupRatio = currentRatio;
+        }
+      });
+    }
+
+    if (usedGroupRatio === undefined) {
+      usedGroupRatio = 1;
+    }
+  }
+
+  const unitDivisor = tokenUnit === 'K' ? 1000 : 1;
+  const unitLabel = tokenUnit === 'K' ? 'K' : 'M';
+
+  let symbol = '$';
+  if (currency === 'CNY') {
+    symbol = '¥';
+  } else if (currency === 'CUSTOM') {
+    try {
+      const statusStr = localStorage.getItem('status');
+      if (statusStr) {
+        const status = JSON.parse(statusStr);
+        symbol = status?.custom_currency_symbol || '¤';
+      } else {
+        symbol = '¤';
+      }
+    } catch (e) {
+      symbol = '¤';
+    }
+  }
+
+  return {
+    usedGroup,
+    usedGroupRatio,
+    unitDivisor,
+    unitLabel,
+    symbol,
   };
 };
 
@@ -551,52 +612,55 @@ export const calculateExtraPrices = ({
   currency,
   precision = 4,
 }) => {
-  const usedGroupRatio =
-    groupRatio[selectedGroup] ||
-    (Array.isArray(record.enable_groups)
-      ? record.enable_groups.reduce((min, g) => {
-          const r = groupRatio[g];
-          return r !== undefined && r < min ? r : min;
-        }, Number.POSITIVE_INFINITY)
-      : undefined) ||
-    1;
+  const {
+    usedGroup,
+    usedGroupRatio,
+    unitDivisor,
+    unitLabel,
+    symbol,
+  } = resolvePricingDisplayContext({
+    record,
+    selectedGroup,
+    groupRatio,
+    tokenUnit,
+    currency,
+  });
 
-  const unitDivisor = tokenUnit === 'K' ? 1000 : 1;
-  const unitLabel = tokenUnit === 'K' ? 'K' : 'M';
-
-  let symbol = '$';
-  if (currency === 'CNY') {
-    symbol = '¥';
-  } else if (currency === 'CUSTOM') {
-    try {
-      const statusStr = localStorage.getItem('status');
-      if (statusStr) {
-        const s = JSON.parse(statusStr);
-        symbol = s?.custom_currency_symbol || '¤';
-      } else {
-        symbol = '¤';
-      }
-    } catch (e) {
-      symbol = '¤';
+  // 额外计费都基于文本输入单价展开，再叠加对应的倍率或分组倍率。
+  const baseModelRatio = Number(record?.model_ratio || 0);
+  const computePrice = (multiplier) => {
+    const normalizedMultiplier = Number(multiplier);
+    if (
+      record?.quota_type !== 0 ||
+      !Number.isFinite(baseModelRatio) ||
+      baseModelRatio <= 0 ||
+      !Number.isFinite(normalizedMultiplier) ||
+      normalizedMultiplier <= 0
+    ) {
+      return null;
     }
-  }
 
-  const computePrice = (ratio) => {
-    if (!ratio || ratio <= 0) return null;
-    // 缓存/音频/图片等倍率价格 = ratio * 2 * groupRatio（与输入价格公式一致）
-    const usdPrice = ratio * 2 * usedGroupRatio;
+    const usdPrice = baseModelRatio * normalizedMultiplier * 2 * usedGroupRatio;
     const rawDisplay = displayPrice(usdPrice);
     const num = parseFloat(rawDisplay.replace(/[^0-9.]/g, '')) / unitDivisor;
-    return `${symbol}${num.toFixed(precision)}/${unitLabel}`;
+    return `${symbol}${num.toFixed(precision)}`;
   };
 
+  const audioInputMultiplier = Number(record?.audio_ratio);
+  const audioOutputMultiplier =
+    Number.isFinite(audioInputMultiplier) && audioInputMultiplier > 0
+      ? audioInputMultiplier * Number(record?.audio_completion_ratio)
+      : null;
+
   return {
-    cachePrice: computePrice(record.cache_ratio),
-    cacheCreatePrice: computePrice(record.create_cache_ratio),
-    audioPrice: computePrice(record.audio_ratio),
-    audioCompletionPrice: computePrice(record.audio_completion_ratio),
-    imagePrice: computePrice(record.image_ratio),
+    cacheReadPrice: computePrice(record.cache_ratio),
+    cacheCreatePrice5m: computePrice(record.create_cache_ratio),
+    audioInputPrice: computePrice(record.audio_ratio),
+    audioOutputPrice: computePrice(audioOutputMultiplier),
+    imageInputPrice: computePrice(record.image_ratio),
     unitLabel,
+    usedGroup,
+    usedGroupRatio,
   };
 };
 

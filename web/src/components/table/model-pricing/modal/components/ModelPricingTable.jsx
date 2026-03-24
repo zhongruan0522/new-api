@@ -20,9 +20,18 @@ For commercial licensing, please contact support@quantumnous.com
 import React from 'react';
 import { Card, Avatar, Typography, Table, Tag } from '@douyinfe/semi-ui';
 import { IconCoinMoneyStroked } from '@douyinfe/semi-icons';
-import { calculateModelPrice } from '../../../../../helpers';
+import { calculateModelPrice, calculateExtraPrices } from '../../../../../helpers';
 
 const { Text } = Typography;
+
+// 分组详情需要把额外计费规则集中展示，避免列过宽影响侧边抽屉阅读体验。
+const EXTRA_PRICE_ITEMS = [
+  { key: 'cacheReadPrice', label: '缓存读取' },
+  { key: 'cacheCreatePrice5m', label: '缓存创建 (5m)' },
+  { key: 'audioInputPrice', label: '音频输入' },
+  { key: 'audioOutputPrice', label: '音频输出' },
+  { key: 'imageInputPrice', label: '图片输入' },
+];
 
 const ModelPricingTable = ({
   modelData,
@@ -58,6 +67,16 @@ const ModelPricingTable = ({
             currency,
           })
         : { inputPrice: '-', outputPrice: '-', price: '-' };
+      const extraPrices = modelData
+        ? calculateExtraPrices({
+            record: modelData,
+            selectedGroup: group,
+            groupRatio,
+            tokenUnit,
+            displayPrice,
+            currency,
+          })
+        : {};
 
       // 获取分组倍率
       const groupRatioValue =
@@ -78,6 +97,7 @@ const ModelPricingTable = ({
           modelData?.quota_type === 0
             ? priceData.completionPrice || priceData.outputPrice
             : '-',
+        extraPrices,
         fixedPrice: modelData?.quota_type === 1 ? priceData.price : '-',
       };
     });
@@ -138,6 +158,27 @@ const ModelPricingTable = ({
                 / {tokenUnit === 'K' ? '1K' : '1M'} tokens
               </div>
             </>
+          ),
+        },
+        {
+          title: t('额外计费'),
+          dataIndex: 'extraPrices',
+          render: (extraPrices) => (
+            <div className='space-y-1'>
+              {EXTRA_PRICE_ITEMS.map((item) => {
+                const value = extraPrices?.[item.key];
+                return (
+                  <div key={item.key} className='text-xs text-gray-600'>
+                    <span className='text-gray-500'>{t(item.label)}：</span>
+                    <span className='font-semibold text-orange-600'>
+                      {value
+                        ? `${value} / 1${extraPrices?.unitLabel || tokenUnit} tokens`
+                        : t('不支持')}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
           ),
         },
       );

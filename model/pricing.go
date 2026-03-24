@@ -25,11 +25,11 @@ type Pricing struct {
 	ModelPrice             float64                 `json:"model_price"`
 	OwnerBy                string                  `json:"owner_by"`
 	CompletionRatio        float64                 `json:"completion_ratio"`
-	CacheRatio             float64                 `json:"cache_ratio"`
-	CreateCacheRatio       float64                 `json:"create_cache_ratio"`
-	ImageRatio             float64                 `json:"image_ratio"`
-	AudioRatio             float64                 `json:"audio_ratio"`
-	AudioCompletionRatio   float64                 `json:"audio_completion_ratio"`
+	CacheRatio             *float64                `json:"cache_ratio,omitempty"`
+	CreateCacheRatio       *float64                `json:"create_cache_ratio,omitempty"`
+	ImageRatio             *float64                `json:"image_ratio,omitempty"`
+	AudioRatio             *float64                `json:"audio_ratio,omitempty"`
+	AudioCompletionRatio   *float64                `json:"audio_completion_ratio,omitempty"`
 	EnableGroup            []string                `json:"enable_groups"`
 	SupportedEndpointTypes []constant.EndpointType `json:"supported_endpoint_types"`
 }
@@ -301,11 +301,24 @@ func updatePricing() {
 			pricing.CompletionRatio = ratio_setting.GetCompletionRatio(model)
 			pricing.QuotaType = 0
 		}
-		pricing.CacheRatio, _ = ratio_setting.GetCacheRatio(model)
-		pricing.CreateCacheRatio, _ = ratio_setting.GetCreateCacheRatio(model)
-		pricing.ImageRatio, _ = ratio_setting.GetImageRatio(model)
-		pricing.AudioRatio = ratio_setting.GetAudioRatio(model)
-		pricing.AudioCompletionRatio = ratio_setting.GetAudioCompletionRatio(model)
+		// 额外倍率：仅在显式配置（含内置默认映射）时写入；避免把兜底默认值(如 1/1.25)暴露给前端
+		if v, ok := ratio_setting.GetCacheRatio(model); ok {
+			pricing.CacheRatio = &v
+		}
+		if v, ok := ratio_setting.GetCreateCacheRatio(model); ok {
+			pricing.CreateCacheRatio = &v
+		}
+		if v, ok := ratio_setting.GetImageRatio(model); ok {
+			pricing.ImageRatio = &v
+		}
+		if ratio_setting.ContainsAudioRatio(model) {
+			v := ratio_setting.GetAudioRatio(model)
+			pricing.AudioRatio = &v
+		}
+		if ratio_setting.ContainsAudioCompletionRatio(model) {
+			v := ratio_setting.GetAudioCompletionRatio(model)
+			pricing.AudioCompletionRatio = &v
+		}
 		pricingMap = append(pricingMap, pricing)
 	}
 
