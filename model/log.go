@@ -90,7 +90,7 @@ func RecordLog(userId int, logType int, content string) {
 	}
 }
 
-func RecordErrorLog(c *gin.Context, userId int, channelId int, modelName string, tokenName string, content string, tokenId int, useTimeSeconds int,
+func RecordErrorLog(c *gin.Context, userId int, channelId int, modelName string, tokenName string, content string, tokenId int, useTimeMs int,
 	isStream bool, group string, other map[string]interface{}) {
 	logger.LogInfo(c, fmt.Sprintf("record error log: userId=%d, channelId=%d, modelName=%s, tokenName=%s, content=%s", userId, channelId, modelName, tokenName, content))
 	username := c.GetString("username")
@@ -110,7 +110,7 @@ func RecordErrorLog(c *gin.Context, userId int, channelId int, modelName string,
 		Quota:            0,
 		ChannelId:        channelId,
 		TokenId:          tokenId,
-		UseTime:          useTimeSeconds,
+		UseTime:          useTimeMs,
 		IsStream:         isStream,
 		Group:            group,
 		Ip:               c.ClientIP(),
@@ -132,7 +132,7 @@ type RecordConsumeLogParams struct {
 	Quota            int                    `json:"quota"`
 	Content          string                 `json:"content"`
 	TokenId          int                    `json:"token_id"`
-	UseTimeSeconds   int                    `json:"use_time_seconds"`
+	UseTimeMs        int                    `json:"use_time_ms"`
 	IsStream         bool                   `json:"is_stream"`
 	Group            string                 `json:"group"`
 	Other            map[string]interface{} `json:"other"`
@@ -165,7 +165,7 @@ func RecordConsumeLog(c *gin.Context, userId int, params RecordConsumeLogParams)
 		Quota:            params.Quota,
 		ChannelId:        params.ChannelId,
 		TokenId:          params.TokenId,
-		UseTime:          params.UseTimeSeconds,
+		UseTime:          params.UseTimeMs,
 		IsStream:         params.IsStream,
 		Group:            params.Group,
 		Ip:               c.ClientIP(),

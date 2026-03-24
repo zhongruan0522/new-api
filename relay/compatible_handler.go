@@ -325,7 +325,7 @@ func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage 
 
 	adminRejectReason := common.GetContextKeyString(ctx, constant.ContextKeyAdminRejectReason)
 
-	useTimeSeconds := time.Now().Unix() - relayInfo.StartTime.Unix()
+	useTimeMs := time.Since(relayInfo.StartTime).Milliseconds()
 	promptTokens := usage.PromptTokens
 	cacheTokens := usage.PromptTokensDetails.CachedTokens
 	imageTokens := usage.PromptTokensDetails.ImageTokens
@@ -580,9 +580,8 @@ func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage 
 	}
 	// 仅流式请求计算吐字速度：输出token数 / (总耗时 - 首字延迟)
 	if relayInfo.IsStream && completionTokens > 0 {
-		elapsedMs := time.Since(relayInfo.StartTime).Milliseconds()
 		frtMs := relayInfo.FirstResponseTime.Sub(relayInfo.StartTime).Milliseconds()
-		generationMs := elapsedMs - frtMs
+		generationMs := useTimeMs - frtMs
 		if generationMs > 0 {
 			other["speed"] = float64(completionTokens) / (float64(generationMs) / 1000.0)
 		}
@@ -596,7 +595,7 @@ func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage 
 		Quota:            quota,
 		Content:          logContent,
 		TokenId:          relayInfo.TokenId,
-		UseTimeSeconds:   int(useTimeSeconds),
+		UseTimeMs:        int(useTimeMs),
 		IsStream:         relayInfo.IsStream,
 		Group:            relayInfo.UsingGroup,
 		Other:            other,

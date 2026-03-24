@@ -464,7 +464,6 @@ func testChannel(channel *model.Channel, testModel string, endpointType string, 
 	}
 	tok := time.Now()
 	milliseconds := tok.Sub(tik).Milliseconds()
-	consumedTime := float64(milliseconds) / 1000.0
 	other := service.GenerateTextOtherInfo(c, info, priceData.ModelRatio, priceData.GroupRatioInfo.GroupRatio, priceData.CompletionRatio,
 		usage.PromptTokensDetails.CachedTokens, priceData.CacheRatio, priceData.ModelPrice, priceData.GroupRatioInfo.GroupSpecialRatio)
 	model.RecordConsumeLog(c, 1, model.RecordConsumeLogParams{
@@ -475,7 +474,7 @@ func testChannel(channel *model.Channel, testModel string, endpointType string, 
 		TokenName:        "模型测试",
 		Quota:            quota,
 		Content:          "模型测试",
-		UseTimeSeconds:   int(consumedTime),
+		UseTimeMs:        int(milliseconds),
 		IsStream:         info.IsStream,
 		Group:            info.UsingGroup,
 		Other:            other,
