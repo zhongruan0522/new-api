@@ -37,8 +37,138 @@ import {
   IconSave,
   IconEdit,
 } from '@douyinfe/semi-icons';
-import { API, showError, showSuccess, getQuotaPerUnit } from '../../../helpers';
+import { API, showError, showSuccess } from '../../../helpers';
 import { useTranslation } from 'react-i18next';
+
+const PER_TOKEN_RATIO_FIELDS = [
+  'ratio',
+  'completionRatio',
+  'cacheRatio',
+  'createCacheRatio',
+  'imageRatio',
+  'audioRatio',
+  'audioCompletionRatio',
+];
+
+// 统一处理可视化计费编辑里的倍率/价格换算，避免不同入口出现计算口径不一致。
+const hasValue = (value) => value !== '' && value !== undefined && value !== null;
+
+const parseInputNumber = (value) => {
+  if (!hasValue(value)) {
+    return null;
+  }
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+};
+
+const calculateTokenPriceFromRatio = (ratio) => ratio * 2;
+
+const calculateRelativeRatio = (targetPrice, basePrice) => {
+  if (
+    !Number.isFinite(targetPrice) ||
+    !Number.isFinite(basePrice) ||
+    basePrice <= 0
+  ) {
+    return '';
+  }
+  return (targetPrice / basePrice).toString();
+};
+
+const hasPerTokenPricing = (model) =>
+  PER_TOKEN_RATIO_FIELDS.some((field) => hasValue(model?.[field]));
+
+const buildConflictState = (model) =>
+  hasValue(model?.price) && hasPerTokenPricing(model);
+
+const buildTokenPriceFieldsFromRatios = (model) => {
+  const ratio = parseInputNumber(model?.ratio);
+  const completionRatio = parseInputNumber(model?.completionRatio);
+  const cacheRatio = parseInputNumber(model?.cacheRatio);
+  const createCacheRatio = parseInputNumber(model?.createCacheRatio);
+  const imageRatio = parseInputNumber(model?.imageRatio);
+  const audioRatio = parseInputNumber(model?.audioRatio);
+  const audioCompletionRatio = parseInputNumber(model?.audioCompletionRatio);
+
+  const tokenPrice = ratio !== null ? calculateTokenPriceFromRatio(ratio) : null;
+  const audioTokenPrice =
+    tokenPrice !== null && audioRatio !== null ? tokenPrice * audioRatio : null;
+
+  return {
+    tokenPrice: tokenPrice !== null ? tokenPrice.toString() : '',
+    completionTokenPrice:
+      tokenPrice !== null && completionRatio !== null
+        ? (tokenPrice * completionRatio).toString()
+        : '',
+    cacheTokenPrice:
+      tokenPrice !== null && cacheRatio !== null
+        ? (tokenPrice * cacheRatio).toString()
+        : '',
+    createCacheTokenPrice:
+      tokenPrice !== null && createCacheRatio !== null
+        ? (tokenPrice * createCacheRatio).toString()
+        : '',
+    audioTokenPrice: audioTokenPrice !== null ? audioTokenPrice.toString() : '',
+    audioCompletionTokenPrice:
+      audioTokenPrice !== null && audioCompletionRatio !== null
+        ? (audioTokenPrice * audioCompletionRatio).toString()
+        : '',
+    imageTokenPrice:
+      tokenPrice !== null && imageRatio !== null
+        ? (tokenPrice * imageRatio).toString()
+        : '',
+  };
+};
+
+const syncRatioFieldsFromTokenPrices = (model) => {
+  const tokenPrice = parseInputNumber(model?.tokenPrice);
+  const completionTokenPrice = parseInputNumber(model?.completionTokenPrice);
+  const cacheTokenPrice = parseInputNumber(model?.cacheTokenPrice);
+  const createCacheTokenPrice = parseInputNumber(model?.createCacheTokenPrice);
+  const audioTokenPrice = parseInputNumber(model?.audioTokenPrice);
+  const audioCompletionTokenPrice = parseInputNumber(
+    model?.audioCompletionTokenPrice,
+  );
+  const imageTokenPrice = parseInputNumber(model?.imageTokenPrice);
+
+  const updatedModel = {
+    ...(model || {}),
+    ratio:
+      tokenPrice !== null ? (tokenPrice / 2).toString() : hasValue(model?.tokenPrice) ? '' : model?.ratio || '',
+    completionRatio: hasValue(model?.completionTokenPrice)
+      ? calculateRelativeRatio(completionTokenPrice, tokenPrice)
+      : model?.completionRatio || '',
+    cacheRatio: hasValue(model?.cacheTokenPrice)
+      ? calculateRelativeRatio(cacheTokenPrice, tokenPrice)
+      : model?.cacheRatio || '',
+    createCacheRatio: hasValue(model?.createCacheTokenPrice)
+      ? calculateRelativeRatio(createCacheTokenPrice, tokenPrice)
+      : model?.createCacheRatio || '',
+    audioRatio: hasValue(model?.audioTokenPrice)
+      ? calculateRelativeRatio(audioTokenPrice, tokenPrice)
+      : model?.audioRatio || '',
+    audioCompletionRatio: hasValue(model?.audioCompletionTokenPrice)
+      ? calculateRelativeRatio(audioCompletionTokenPrice, audioTokenPrice)
+      : model?.audioCompletionRatio || '',
+    imageRatio: hasValue(model?.imageTokenPrice)
+      ? calculateRelativeRatio(imageTokenPrice, tokenPrice)
+      : model?.imageRatio || '',
+  };
+
+  updatedModel.hasConflict = buildConflictState(updatedModel);
+  return updatedModel;
+};
+
+const clearPerTokenPricing = (model) => ({
+  ...(model || {}),
+  ratio: '',
+  completionRatio: '',
+  cacheRatio: '',
+  createCacheRatio: '',
+  imageRatio: '',
+  audioRatio: '',
+  audioCompletionRatio: '',
+  hasConflict: false,
+});
 
 export default function ModelSettingsVisualEditor(props) {
   const { t } = useTranslation();
@@ -54,7 +184,6 @@ export default function ModelSettingsVisualEditor(props) {
   const [conflictOnly, setConflictOnly] = useState(false);
   const formRef = useRef(null);
   const pageSize = 10;
-  const quotaPerUnit = getQuotaPerUnit();
 
   useEffect(() => {
     try {
@@ -100,7 +229,16 @@ export default function ModelSettingsVisualEditor(props) {
           imageRatio: image,
           audioRatio: audio,
           audioCompletionRatio: audioComp,
-          hasConflict: price !== '' && (ratio !== '' || comp !== ''),
+          hasConflict: buildConflictState({
+            price,
+            ratio,
+            completionRatio: comp,
+            cacheRatio: cache,
+            createCacheRatio: createCache,
+            imageRatio: image,
+            audioRatio: audio,
+            audioCompletionRatio: audioComp,
+          }),
         };
       });
 
@@ -367,7 +505,7 @@ export default function ModelSettingsVisualEditor(props) {
   ];
 
   const updateModel = (name, field, value) => {
-    if (isNaN(value)) {
+    if (value !== '' && isNaN(value)) {
       showError('请输入数字');
       return;
     }
@@ -375,9 +513,7 @@ export default function ModelSettingsVisualEditor(props) {
       prev.map((model) => {
         if (model.name !== name) return model;
         const updated = { ...model, [field]: value };
-        updated.hasConflict =
-          updated.price !== '' &&
-          (updated.ratio !== '' || updated.completionRatio !== '');
+        updated.hasConflict = buildConflictState(updated);
         return updated;
       }),
     );
@@ -387,126 +523,92 @@ export default function ModelSettingsVisualEditor(props) {
     setModels((prev) => prev.filter((model) => model.name !== name));
   };
 
-  const calculateRatioFromTokenPrice = (tokenPrice) => {
-    return tokenPrice / 2;
-  };
-
-  const calculateCompletionRatioFromPrices = (
-    modelTokenPrice,
-    completionTokenPrice,
-  ) => {
-    if (!modelTokenPrice || modelTokenPrice === '0') {
-      showError('模型价格不能为0');
-      return '';
-    }
-    return completionTokenPrice / modelTokenPrice;
-  };
-
   const handleTokenPriceChange = (value) => {
-    let newState = {
+    const newState = {
       ...(currentModel || {}),
       tokenPrice: value,
-      ratio: 0,
+      ratio: hasValue(value) && !isNaN(value)
+        ? (Number(value) / 2).toString()
+        : '',
     };
 
-    if (!isNaN(value) && value !== '') {
-      const tokenPrice = parseFloat(value);
-      const ratio = calculateRatioFromTokenPrice(tokenPrice);
-      newState.ratio = ratio;
-    }
-
-    setCurrentModel(newState);
+    setCurrentModel(syncRatioFieldsFromTokenPrices(newState));
   };
 
   const handleCompletionTokenPriceChange = (value) => {
-    let newState = {
+    const newState = {
       ...(currentModel || {}),
       completionTokenPrice: value,
-      completionRatio: 0,
+      completionRatio:
+        hasValue(value) && hasValue(currentModel?.tokenPrice)
+          ? calculateRelativeRatio(Number(value), Number(currentModel.tokenPrice))
+          : '',
     };
-
-    if (!isNaN(value) && value !== '' && currentModel?.tokenPrice) {
-      const completionTokenPrice = parseFloat(value);
-      const modelTokenPrice = parseFloat(currentModel.tokenPrice);
-
-      if (modelTokenPrice > 0) {
-        const completionRatio = calculateCompletionRatioFromPrices(
-          modelTokenPrice,
-          completionTokenPrice,
-        );
-        newState.completionRatio = completionRatio;
-      }
-    }
 
     setCurrentModel(newState);
   };
 
   const handleCacheTokenPriceChange = (value) => {
-    let newState = {
+    const newState = {
       ...(currentModel || {}),
       cacheTokenPrice: value,
-      cacheRatio: 0,
+      cacheRatio:
+        hasValue(value) && hasValue(currentModel?.tokenPrice)
+          ? calculateRelativeRatio(Number(value), Number(currentModel.tokenPrice))
+          : '',
     };
-
-    if (!isNaN(value) && value !== '') {
-      newState.cacheRatio = calculateRatioFromTokenPrice(parseFloat(value));
-    }
 
     setCurrentModel(newState);
   };
 
   const handleCreateCacheTokenPriceChange = (value) => {
-    let newState = {
+    const newState = {
       ...(currentModel || {}),
       createCacheTokenPrice: value,
-      createCacheRatio: 0,
+      createCacheRatio:
+        hasValue(value) && hasValue(currentModel?.tokenPrice)
+          ? calculateRelativeRatio(Number(value), Number(currentModel.tokenPrice))
+          : '',
     };
-
-    if (!isNaN(value) && value !== '') {
-      newState.createCacheRatio = calculateRatioFromTokenPrice(parseFloat(value));
-    }
 
     setCurrentModel(newState);
   };
 
   const handleAudioTokenPriceChange = (value) => {
-    let newState = {
+    const newState = {
       ...(currentModel || {}),
       audioTokenPrice: value,
-      audioRatio: 0,
+      audioRatio:
+        hasValue(value) && hasValue(currentModel?.tokenPrice)
+          ? calculateRelativeRatio(Number(value), Number(currentModel.tokenPrice))
+          : '',
     };
 
-    if (!isNaN(value) && value !== '') {
-      newState.audioRatio = calculateRatioFromTokenPrice(parseFloat(value));
-    }
-
-    setCurrentModel(newState);
+    setCurrentModel(syncRatioFieldsFromTokenPrices(newState));
   };
 
   const handleAudioCompletionTokenPriceChange = (value) => {
-    let newState = {
+    const newState = {
       ...(currentModel || {}),
       audioCompletionTokenPrice: value,
-      audioCompletionRatio: 0,
+      audioCompletionRatio:
+        hasValue(value) && hasValue(currentModel?.audioTokenPrice)
+          ? calculateRelativeRatio(Number(value), Number(currentModel.audioTokenPrice))
+          : '',
     };
-
-    if (!isNaN(value) && value !== '') {
-      newState.audioCompletionRatio = calculateRatioFromTokenPrice(parseFloat(value));
-    }
 
     setCurrentModel(newState);
   };
 
   const handleImageTokenPriceChange = (value) => {
-    let newState = {
+    const newState = {
       ...(currentModel || {}),
       imageTokenPrice: value,
-      imageRatio: 0,
+      imageRatio:
+        hasValue(value) && hasValue(currentModel?.tokenPrice)
+          ? calculateRelativeRatio(Number(value), Number(currentModel.tokenPrice))
+          : '',
     };
-
-    if (!isNaN(value) && value !== '') {
-      newState.imageRatio = calculateRatioFromTokenPrice(parseFloat(value));
-    }
 
     setCurrentModel(newState);
   };
@@ -533,9 +635,7 @@ export default function ModelSettingsVisualEditor(props) {
             audioRatio: values.audioRatio || '',
             audioCompletionRatio: values.audioCompletionRatio || '',
           };
-          updated.hasConflict =
-            updated.price !== '' &&
-            (updated.ratio !== '' || updated.completionRatio !== '');
+          updated.hasConflict = buildConflictState(updated);
           return updated;
         }),
       );
@@ -561,18 +661,12 @@ export default function ModelSettingsVisualEditor(props) {
           audioRatio: values.audioRatio || '',
           audioCompletionRatio: values.audioCompletionRatio || '',
         };
-        newModel.hasConflict =
-          newModel.price !== '' &&
-          (newModel.ratio !== '' || newModel.completionRatio !== '');
+        newModel.hasConflict = buildConflictState(newModel);
         return [newModel, ...prev];
       });
       setVisible(false);
       showSuccess(t('添加成功'));
     }
-  };
-
-  const calculateTokenPriceFromRatio = (ratio) => {
-    return ratio * 2;
   };
 
   const resetModalState = () => {
@@ -600,46 +694,10 @@ export default function ModelSettingsVisualEditor(props) {
     setPricingSubMode(initialPricingSubMode);
 
     // Create a copy of the model data to avoid modifying the original
-    const modelCopy = { ...record };
-
-    // If the model has ratio data and we want to populate token price fields
-    if (record.ratio) {
-      modelCopy.tokenPrice = calculateTokenPriceFromRatio(
-        parseFloat(record.ratio),
-      ).toString();
-
-      if (record.completionRatio) {
-        modelCopy.completionTokenPrice = (
-          parseFloat(modelCopy.tokenPrice) * parseFloat(record.completionRatio)
-        ).toString();
-      }
-    }
-
-    if (record.cacheRatio) {
-      modelCopy.cacheTokenPrice = calculateTokenPriceFromRatio(
-        parseFloat(record.cacheRatio),
-      ).toString();
-    }
-    if (record.createCacheRatio) {
-      modelCopy.createCacheTokenPrice = calculateTokenPriceFromRatio(
-        parseFloat(record.createCacheRatio),
-      ).toString();
-    }
-    if (record.audioRatio) {
-      modelCopy.audioTokenPrice = calculateTokenPriceFromRatio(
-        parseFloat(record.audioRatio),
-      ).toString();
-    }
-    if (record.audioCompletionRatio) {
-      modelCopy.audioCompletionTokenPrice = calculateTokenPriceFromRatio(
-        parseFloat(record.audioCompletionRatio),
-      ).toString();
-    }
-    if (record.imageRatio) {
-      modelCopy.imageTokenPrice = calculateTokenPriceFromRatio(
-        parseFloat(record.imageRatio),
-      ).toString();
-    }
+    const modelCopy = {
+      ...record,
+      ...buildTokenPriceFieldsFromRatios(record),
+    };
 
     // Set the current model
     setCurrentModel(modelCopy);
@@ -739,61 +797,16 @@ export default function ModelSettingsVisualEditor(props) {
         }}
         onOk={() => {
           if (currentModel) {
-            // If we're in token price mode, make sure ratio values are properly set
-            const valuesToSave = { ...currentModel };
+            let valuesToSave = { ...currentModel };
 
-            if (
-              pricingMode === 'per-token' &&
-              pricingSubMode === 'token-price' &&
-              currentModel.tokenPrice
-            ) {
-              const tokenPrice = parseFloat(currentModel.tokenPrice);
-              valuesToSave.ratio = (tokenPrice / 2).toString();
-
-              if (
-                currentModel.completionTokenPrice &&
-                currentModel.tokenPrice
-              ) {
-                const completionPrice = parseFloat(
-                  currentModel.completionTokenPrice,
-                );
-                const modelPrice = parseFloat(currentModel.tokenPrice);
-                if (modelPrice > 0) {
-                  valuesToSave.completionRatio = (
-                    completionPrice / modelPrice
-                  ).toString();
-                }
-              }
-
-              if (currentModel.cacheTokenPrice) {
-                valuesToSave.cacheRatio = (parseFloat(currentModel.cacheTokenPrice) / 2).toString();
-              }
-              if (currentModel.createCacheTokenPrice) {
-                valuesToSave.createCacheRatio = (parseFloat(currentModel.createCacheTokenPrice) / 2).toString();
-              }
-              if (currentModel.audioTokenPrice) {
-                valuesToSave.audioRatio = (parseFloat(currentModel.audioTokenPrice) / 2).toString();
-              }
-              if (currentModel.audioCompletionTokenPrice) {
-                valuesToSave.audioCompletionRatio = (parseFloat(currentModel.audioCompletionTokenPrice) / 2).toString();
-              }
-              if (currentModel.imageTokenPrice) {
-                valuesToSave.imageRatio = (parseFloat(currentModel.imageTokenPrice) / 2).toString();
-              }
+            if (pricingMode === 'per-token' && pricingSubMode === 'token-price') {
+              valuesToSave = syncRatioFieldsFromTokenPrices(valuesToSave);
             }
 
-            // Clear price if we're in per-token mode
             if (pricingMode === 'per-token') {
               valuesToSave.price = '';
             } else {
-              // Clear ratios if we're in per-request mode
-              valuesToSave.ratio = '';
-              valuesToSave.completionRatio = '';
-              valuesToSave.cacheRatio = '';
-              valuesToSave.createCacheRatio = '';
-              valuesToSave.imageRatio = '';
-              valuesToSave.audioRatio = '';
-              valuesToSave.audioCompletionRatio = '';
+              valuesToSave = clearPerTokenPricing(valuesToSave);
             }
 
             addOrUpdateModel(valuesToSave);
@@ -819,12 +832,17 @@ export default function ModelSettingsVisualEditor(props) {
                 value={pricingMode}
                 onChange={(e) => {
                   const newMode = e.target.value;
-                  const oldMode = pricingMode;
                   setPricingMode(newMode);
 
                   // Instead of resetting all values, convert between modes
                   if (currentModel) {
-                    const updatedModel = { ...currentModel };
+                    const updatedModel =
+                      newMode === 'per-token'
+                        ? {
+                            ...currentModel,
+                            ...buildTokenPriceFieldsFromRatios(currentModel),
+                          }
+                        : { ...currentModel };
 
                     // Update formRef with converted values
                     if (formRef.current) {
@@ -892,62 +910,13 @@ export default function ModelSettingsVisualEditor(props) {
 
                       // Handle conversion between submodes
                       if (currentModel) {
-                        const updatedModel = { ...currentModel };
-
-                        // Convert between ratio and token price
-                        if (
-                          oldSubMode === 'ratio' &&
-                          newSubMode === 'token-price'
-                        ) {
-                          if (updatedModel.ratio) {
-                            updatedModel.tokenPrice =
-                              calculateTokenPriceFromRatio(
-                                parseFloat(updatedModel.ratio),
-                              ).toString();
-
-                            if (updatedModel.completionRatio) {
-                              updatedModel.completionTokenPrice = (
-                                parseFloat(updatedModel.tokenPrice) *
-                                parseFloat(updatedModel.completionRatio)
-                              ).toString();
-                            }
-                          }
-                          if (updatedModel.cacheRatio) {
-                            updatedModel.cacheTokenPrice =
-                              calculateTokenPriceFromRatio(
-                                parseFloat(updatedModel.cacheRatio),
-                              ).toString();
-                          }
-                          if (updatedModel.createCacheRatio) {
-                            updatedModel.createCacheTokenPrice =
-                              calculateTokenPriceFromRatio(
-                                parseFloat(updatedModel.createCacheRatio),
-                              ).toString();
-                          }
-                          if (updatedModel.audioRatio) {
-                            updatedModel.audioTokenPrice =
-                              calculateTokenPriceFromRatio(
-                                parseFloat(updatedModel.audioRatio),
-                              ).toString();
-                          }
-                          if (updatedModel.audioCompletionRatio) {
-                            updatedModel.audioCompletionTokenPrice =
-                              calculateTokenPriceFromRatio(
-                                parseFloat(updatedModel.audioCompletionRatio),
-                              ).toString();
-                          }
-                          if (updatedModel.imageRatio) {
-                            updatedModel.imageTokenPrice =
-                              calculateTokenPriceFromRatio(
-                                parseFloat(updatedModel.imageRatio),
-                              ).toString();
-                          }
-                        } else if (
-                          oldSubMode === 'token-price' &&
-                          newSubMode === 'ratio'
-                        ) {
-                          // Ratio values should already be calculated by the handlers
-                        }
+                        const updatedModel =
+                          oldSubMode === 'ratio' && newSubMode === 'token-price'
+                            ? {
+                                ...currentModel,
+                                ...buildTokenPriceFieldsFromRatios(currentModel),
+                              }
+                            : { ...currentModel };
 
                         // Update the form values
                         if (formRef.current) {
