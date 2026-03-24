@@ -40,8 +40,6 @@ const PricingTopSection = memo(
     setShowWithRecharge,
     currency,
     setCurrency,
-    showRatio,
-    setShowRatio,
     viewMode,
     setViewMode,
     tokenUnit,
@@ -68,8 +66,6 @@ const PricingTopSection = memo(
                 setShowWithRecharge={setShowWithRecharge}
                 currency={currency}
                 setCurrency={setCurrency}
-                showRatio={showRatio}
-                setShowRatio={setShowRatio}
                 viewMode={viewMode}
                 setViewMode={setViewMode}
                 tokenUnit={tokenUnit}
@@ -103,8 +99,6 @@ const PricingTopSection = memo(
             setShowWithRecharge={setShowWithRecharge}
             currency={currency}
             setCurrency={setCurrency}
-            showRatio={showRatio}
-            setShowRatio={setShowRatio}
             viewMode={viewMode}
             setViewMode={setViewMode}
             tokenUnit={tokenUnit}

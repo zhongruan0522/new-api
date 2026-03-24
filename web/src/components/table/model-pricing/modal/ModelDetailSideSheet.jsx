@@ -37,7 +37,6 @@ const ModelDetailSideSheet = ({
   currency,
   tokenUnit,
   displayPrice,
-  showRatio,
   usableGroup,
   vendorsMap,
   endpointMap,
@@ -94,7 +93,6 @@ const ModelDetailSideSheet = ({
               currency={currency}
               tokenUnit={tokenUnit}
               displayPrice={displayPrice}
-              showRatio={showRatio}
               usableGroup={usableGroup}
               autoGroups={autoGroups}
               t={t}

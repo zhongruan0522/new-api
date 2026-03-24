@@ -25,8 +25,6 @@ const PricingDisplaySettings = ({
   setShowWithRecharge,
   currency,
   setCurrency,
-  showRatio,
-  setShowRatio,
   viewMode,
   setViewMode,
   tokenUnit,
@@ -38,10 +36,6 @@ const PricingDisplaySettings = ({
     {
       value: 'recharge',
       label: t('充值价格显示'),
-    },
-    {
-      value: 'ratio',
-      label: t('显示倍率'),
     },
     {
       value: 'tableView',
@@ -64,9 +58,6 @@ const PricingDisplaySettings = ({
       case 'recharge':
         setShowWithRecharge(!showWithRecharge);
         break;
-      case 'ratio':
-        setShowRatio(!showRatio);
-        break;
       case 'tableView':
         setViewMode(viewMode === 'table' ? 'card' : 'table');
         break;
@@ -79,7 +70,6 @@ const PricingDisplaySettings = ({
   const getActiveValues = () => {
     const activeValues = [];
     if (showWithRecharge) activeValues.push('recharge');
-    if (showRatio) activeValues.push('ratio');
     if (viewMode === 'table') activeValues.push('tableView');
     if (tokenUnit === 'K') activeValues.push('tokenUnit');
     return activeValues;

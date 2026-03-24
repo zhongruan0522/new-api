@@ -532,6 +532,71 @@ export const calculateModelPrice = ({
     isPerToken: false,
     usedGroup,
     usedGroupRatio,
+    // 额外计费价格（按量计费模式下计算）
+    cachePrice: null,
+    cacheCreatePrice: null,
+    audioPrice: null,
+    audioCompletionPrice: null,
+    imagePrice: null,
+  };
+};
+
+// 计算额外计费项的价格（缓存、音频、图片等）
+export const calculateExtraPrices = ({
+  record,
+  selectedGroup,
+  groupRatio,
+  tokenUnit,
+  displayPrice,
+  currency,
+  precision = 4,
+}) => {
+  const usedGroupRatio =
+    groupRatio[selectedGroup] ||
+    (Array.isArray(record.enable_groups)
+      ? record.enable_groups.reduce((min, g) => {
+          const r = groupRatio[g];
+          return r !== undefined && r < min ? r : min;
+        }, Number.POSITIVE_INFINITY)
+      : undefined) ||
+    1;
+
+  const unitDivisor = tokenUnit === 'K' ? 1000 : 1;
+  const unitLabel = tokenUnit === 'K' ? 'K' : 'M';
+
+  let symbol = '$';
+  if (currency === 'CNY') {
+    symbol = '¥';
+  } else if (currency === 'CUSTOM') {
+    try {
+      const statusStr = localStorage.getItem('status');
+      if (statusStr) {
+        const s = JSON.parse(statusStr);
+        symbol = s?.custom_currency_symbol || '¤';
+      } else {
+        symbol = '¤';
+      }
+    } catch (e) {
+      symbol = '¤';
+    }
+  }
+
+  const computePrice = (ratio) => {
+    if (ratio <= 0) return null;
+    // 缓存/音频/图片等倍率价格 = ratio * 2 * groupRatio（与输入价格公式一致）
+    const usdPrice = ratio * 2 * usedGroupRatio;
+    const rawDisplay = displayPrice(usdPrice);
+    const num = parseFloat(rawDisplay.replace(/[^0-9.]/g, '')) / unitDivisor;
+    return `${symbol}${num.toFixed(precision)}/${unitLabel}`;
+  };
+
+  return {
+    cachePrice: computePrice(record.cache_ratio),
+    cacheCreatePrice: computePrice(record.create_cache_ratio),
+    audioPrice: computePrice(record.audio_ratio),
+    audioCompletionPrice: computePrice(record.audio_completion_ratio),
+    imagePrice: computePrice(record.image_ratio),
+    unitLabel,
   };
 };
 
@@ -613,7 +678,6 @@ const DEFAULT_PRICING_FILTERS = {
   search: '',
   showWithRecharge: false,
   currency: 'USD',
-  showRatio: false,
   viewMode: 'card',
   tokenUnit: 'M',
   filterGroup: 'all',
@@ -629,7 +693,6 @@ export const resetPricingFilters = ({
   handleChange,
   setShowWithRecharge,
   setCurrency,
-  setShowRatio,
   setViewMode,
   setFilterGroup,
   setFilterQuotaType,
@@ -642,7 +705,6 @@ export const resetPricingFilters = ({
   handleChange?.(DEFAULT_PRICING_FILTERS.search);
   setShowWithRecharge?.(DEFAULT_PRICING_FILTERS.showWithRecharge);
   setCurrency?.(DEFAULT_PRICING_FILTERS.currency);
-  setShowRatio?.(DEFAULT_PRICING_FILTERS.showRatio);
   setViewMode?.(DEFAULT_PRICING_FILTERS.viewMode);
   setTokenUnit?.(DEFAULT_PRICING_FILTERS.tokenUnit);
   setFilterGroup?.(DEFAULT_PRICING_FILTERS.filterGroup);

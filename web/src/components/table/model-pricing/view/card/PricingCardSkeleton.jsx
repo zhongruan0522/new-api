@@ -23,7 +23,6 @@ import { Card, Skeleton } from '@douyinfe/semi-ui';
 const PricingCardSkeleton = ({
   skeletonCount = 100,
   rowSelection = false,
-  showRatio = false,
 }) => {
   const placeholder = (
     <div className='px-2 pt-2'>
@@ -104,29 +103,6 @@ const PricingCardSkeleton = ({
                 />
               ))}
             </div>
-
-            {/* 倍率信息骨架（可选） */}
-            {showRatio && (
-              <div className='mt-4 pt-3 border-t border-gray-100'>
-                <div className='flex items-center space-x-1 mb-2'>
-                  <Skeleton.Title
-                    style={{ width: 60, height: 12, marginBottom: 0 }}
-                  />
-                  <Skeleton.Button
-                    size='small'
-                    style={{ width: 14, height: 14, borderRadius: 7 }}
-                  />
-                </div>
-                <div className='grid grid-cols-3 gap-2'>
-                  {Array.from({ length: 3 }).map((_, ratioIndex) => (
-                    <Skeleton.Title
-                      key={ratioIndex}
-                      style={{ width: '100%', height: 12, marginBottom: 0 }}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
           </Card>
         ))}
       </div>

@@ -18,12 +18,12 @@ For commercial licensing, please contact support@quantumnous.com
 */
 
 import React from 'react';
-import { Tag, Space, Tooltip } from '@douyinfe/semi-ui';
-import { IconHelpCircle } from '@douyinfe/semi-icons';
+import { Tag, Space } from '@douyinfe/semi-ui';
 import {
   renderModelTag,
   stringToColor,
   calculateModelPrice,
+  calculateExtraPrices,
   getLobeHubIcon,
 } from '../../../../../helpers';
 import {
@@ -105,12 +105,9 @@ export const getPricingTableColumns = ({
   selectedGroup,
   groupRatio,
   copyText,
-  setModalImageUrl,
-  setIsModalOpenurl,
   currency,
   tokenUnit,
   displayPrice,
-  showRatio,
 }) => {
   const isMobile = useIsMobile();
   const priceDataCache = new WeakMap();
@@ -188,85 +185,20 @@ export const getPricingTableColumns = ({
     quotaColumn,
   ];
 
-  const ratioColumn = {
-    title: () => (
-      <div className='flex items-center space-x-1'>
-        <span>{t('倍率')}</span>
-        <Tooltip content={t('倍率是为了方便换算不同价格的模型')}>
-          <IconHelpCircle
-            className='text-blue-500 cursor-pointer'
-            onClick={() => {
-              setModalImageUrl('/ratio.png');
-              setIsModalOpenurl(true);
-            }}
-          />
-        </Tooltip>
-      </div>
-    ),
-    dataIndex: 'model_ratio',
-    render: (text, record, index) => {
-      const completionRatio = parseFloat(record.completion_ratio.toFixed(3));
-      const priceData = getPriceData(record);
-
-      const hasExtraRatios =
-        record.cache_ratio > 0 ||
-        record.create_cache_ratio > 0 ||
-        record.audio_ratio > 0 ||
-        record.audio_completion_ratio > 0 ||
-        record.image_ratio > 0;
-
-      return (
-        <div className='space-y-1'>
-          <div className='text-gray-700'>
-            {t('模型倍率')}：{record.quota_type === 0 ? text : t('无')}
-          </div>
-          <div className='text-gray-700'>
-            {t('补全倍率')}：
-            {record.quota_type === 0 ? completionRatio : t('无')}
-          </div>
-          <div className='text-gray-700'>
-            {t('分组倍率')}：{priceData?.usedGroupRatio ?? '-'}
-          </div>
-          {hasExtraRatios && (
-            <div className='space-y-1 mt-1'>
-              {record.cache_ratio > 0 && (
-                <div className='text-gray-500 text-xs'>
-                  {t('缓存')}：{record.cache_ratio}
-                </div>
-              )}
-              {record.create_cache_ratio > 0 && (
-                <div className='text-gray-500 text-xs'>
-                  {t('缓存创建')}：{record.create_cache_ratio}
-                </div>
-              )}
-              {record.audio_ratio > 0 && (
-                <div className='text-gray-500 text-xs'>
-                  {t('音频')}：{record.audio_ratio}
-                </div>
-              )}
-              {record.audio_completion_ratio > 0 && (
-                <div className='text-gray-500 text-xs'>
-                  {t('音频补全')}：{record.audio_completion_ratio}
-                </div>
-              )}
-              {record.image_ratio > 0 && (
-                <div className='text-gray-500 text-xs'>
-                  {t('图片')}：{record.image_ratio}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      );
-    },
-  };
-
   const priceColumn = {
     title: t('模型价格'),
     dataIndex: 'model_price',
     ...(isMobile ? {} : { fixed: 'right' }),
     render: (text, record, index) => {
       const priceData = getPriceData(record);
+      const extraPrices = calculateExtraPrices({
+        record,
+        selectedGroup,
+        groupRatio,
+        tokenUnit,
+        displayPrice,
+        currency,
+      });
 
       if (priceData.isPerToken) {
         return (
@@ -277,6 +209,23 @@ export const getPricingTableColumns = ({
             <div className='text-gray-700'>
               {t('输出')} {priceData.completionPrice} / 1{priceData.unitLabel}{' '}
               tokens
+            </div>
+            <div className='space-y-1 mt-1 pt-1 border-t border-gray-100'>
+              <div className='text-gray-500 text-xs'>
+                {t('缓存')}：{extraPrices.cachePrice ?? t('不支持')}
+              </div>
+              <div className='text-gray-500 text-xs'>
+                {t('缓存创建')}：{extraPrices.cacheCreatePrice ?? t('不支持')}
+              </div>
+              <div className='text-gray-500 text-xs'>
+                {t('音频')}：{extraPrices.audioPrice ?? t('不支持')}
+              </div>
+              <div className='text-gray-500 text-xs'>
+                {t('音频补全')}：{extraPrices.audioCompletionPrice ?? t('不支持')}
+              </div>
+              <div className='text-gray-500 text-xs'>
+                {t('图片')}：{extraPrices.imagePrice ?? t('不支持')}
+              </div>
             </div>
           </div>
         );
@@ -292,9 +241,6 @@ export const getPricingTableColumns = ({
 
   const columns = [...baseColumns];
   columns.push(endpointColumn);
-  if (showRatio) {
-    columns.push(ratioColumn);
-  }
   columns.push(priceColumn);
   return columns;
 };

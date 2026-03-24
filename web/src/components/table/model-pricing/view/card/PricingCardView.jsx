@@ -21,14 +21,12 @@ import React from 'react';
 import {
   Card,
   Tag,
-  Tooltip,
   Checkbox,
   Empty,
   Pagination,
   Button,
   Avatar,
 } from '@douyinfe/semi-ui';
-import { IconHelpCircle } from '@douyinfe/semi-icons';
 import { Copy } from 'lucide-react';
 import {
   IllustrationNoResult,
@@ -37,6 +35,7 @@ import {
 import {
   stringToColor,
   calculateModelPrice,
+  calculateExtraPrices,
   formatPriceInfo,
   getLobeHubIcon,
 } from '../../../../../helpers';
@@ -69,7 +68,6 @@ const PricingCardView = ({
   currency,
   tokenUnit,
   displayPrice,
-  showRatio,
   t,
   selectedRowKeys = [],
   setSelectedRowKeys,
@@ -213,7 +211,6 @@ const PricingCardView = ({
     return (
       <PricingCardSkeleton
         rowSelection={!!rowSelection}
-        showRatio={showRatio}
       />
     );
   }
@@ -240,6 +237,16 @@ const PricingCardView = ({
           const isSelected = selectedRowKeys.includes(modelKey);
 
           const priceData = calculateModelPrice({
+            record: model,
+            selectedGroup,
+            groupRatio,
+            tokenUnit,
+            displayPrice,
+            currency,
+          });
+
+          // 计算额外计费项价格（缓存、音频、图片）
+          const extraPrices = calculateExtraPrices({
             record: model,
             selectedGroup,
             groupRatio,
@@ -311,75 +318,28 @@ const PricingCardView = ({
                   {/* 标签区域 */}
                   {renderTags(model)}
 
-                  {/* 倍率信息（可选） */}
-                  {showRatio && (
+                  {/* 额外计费价格 */}
+                  {model.quota_type === 0 && (
                     <div className='pt-3'>
-                      <div className='flex items-center space-x-1 mb-2'>
-                        <span className='text-xs font-medium text-gray-700'>
-                          {t('倍率信息')}
-                        </span>
-                        <Tooltip
-                          content={t('倍率是为了方便换算不同价格的模型')}
-                        >
-                          <IconHelpCircle
-                            className='text-blue-500 cursor-pointer'
-                            size='small'
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setModalImageUrl('/ratio.png');
-                              setIsModalOpenurl(true);
-                            }}
-                          />
-                        </Tooltip>
-                      </div>
                       <div className='grid grid-cols-3 gap-2 text-xs text-gray-600'>
                         <div>
-                          {t('模型')}:{' '}
-                          {model.quota_type === 0 ? model.model_ratio : t('无')}
+                          {t('缓存')}: {extraPrices.cachePrice ?? t('不支持')}
                         </div>
                         <div>
-                          {t('补全')}:{' '}
-                          {model.quota_type === 0
-                            ? parseFloat(model.completion_ratio.toFixed(3))
-                            : t('无')}
+                          {t('缓存创建')}: {extraPrices.cacheCreatePrice ?? t('不支持')}
                         </div>
                         <div>
-                          {t('分组')}: {priceData?.usedGroupRatio ?? '-'}
+                          {t('音频')}: {extraPrices.audioPrice ?? t('不支持')}
                         </div>
                       </div>
-                      {(model.cache_ratio > 0 ||
-                        model.create_cache_ratio > 0 ||
-                        model.audio_ratio > 0 ||
-                        model.audio_completion_ratio > 0 ||
-                        model.image_ratio > 0) && (
-                        <div className='grid grid-cols-3 gap-2 text-xs text-gray-500 mt-1'>
-                          {model.cache_ratio > 0 && (
-                            <div>
-                              {t('缓存')}: {model.cache_ratio}
-                            </div>
-                          )}
-                          {model.create_cache_ratio > 0 && (
-                            <div>
-                              {t('缓存创建')}: {model.create_cache_ratio}
-                            </div>
-                          )}
-                          {model.audio_ratio > 0 && (
-                            <div>
-                              {t('音频')}: {model.audio_ratio}
-                            </div>
-                          )}
-                          {model.audio_completion_ratio > 0 && (
-                            <div>
-                              {t('音频补全')}: {model.audio_completion_ratio}
-                            </div>
-                          )}
-                          {model.image_ratio > 0 && (
-                            <div>
-                              {t('图片')}: {model.image_ratio}
-                            </div>
-                          )}
+                      <div className='grid grid-cols-3 gap-2 text-xs text-gray-600 mt-1'>
+                        <div>
+                          {t('音频补全')}: {extraPrices.audioCompletionPrice ?? t('不支持')}
                         </div>
-                      )}
+                        <div>
+                          {t('图片')}: {extraPrices.imagePrice ?? t('不支持')}
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>
