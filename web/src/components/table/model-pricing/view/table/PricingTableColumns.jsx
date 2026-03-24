@@ -32,6 +32,15 @@ import {
 } from '../../../../common/ui/RenderUtils';
 import { useIsMobile } from '../../../../../hooks/common/useIsMobile';
 
+// 统一额外计费标签，确保列表页与详情页展示一致。
+const EXTRA_PRICE_LABELS = {
+  cacheReadPrice: '缓存读取',
+  cacheCreatePrice5m: '缓存创建',
+  audioInputPrice: '音频输入',
+  audioOutputPrice: '音频输出',
+  imageInputPrice: '图片输入',
+};
+
 function renderQuotaType(type, t) {
   switch (type) {
     case 1:
@@ -201,6 +210,14 @@ export const getPricingTableColumns = ({
       });
 
       if (priceData.isPerToken) {
+        const extraPriceItems = [
+          ['cacheReadPrice', extraPrices.cacheReadPrice],
+          ['cacheCreatePrice5m', extraPrices.cacheCreatePrice5m],
+          ['audioInputPrice', extraPrices.audioInputPrice],
+          ['audioOutputPrice', extraPrices.audioOutputPrice],
+          ['imageInputPrice', extraPrices.imageInputPrice],
+        ];
+
         return (
           <div className='space-y-1'>
             <div className='text-gray-700'>
@@ -211,21 +228,13 @@ export const getPricingTableColumns = ({
               tokens
             </div>
             <div className='space-y-1 mt-1 pt-1 border-t border-gray-100'>
-              <div className='text-gray-500 text-xs'>
-                {t('缓存')}：{extraPrices.cachePrice ?? t('不支持')}
-              </div>
-              <div className='text-gray-500 text-xs'>
-                {t('缓存创建')}：{extraPrices.cacheCreatePrice ?? t('不支持')}
-              </div>
-              <div className='text-gray-500 text-xs'>
-                {t('音频')}：{extraPrices.audioPrice ?? t('不支持')}
-              </div>
-              <div className='text-gray-500 text-xs'>
-                {t('音频补全')}：{extraPrices.audioCompletionPrice ?? t('不支持')}
-              </div>
-              <div className='text-gray-500 text-xs'>
-                {t('图片')}：{extraPrices.imagePrice ?? t('不支持')}
-              </div>
+              {extraPriceItems.map(([field, value]) => (
+                <div key={field} className='text-gray-500 text-xs'>
+                  {t(EXTRA_PRICE_LABELS[field])}
+                  {field === 'cacheCreatePrice5m' ? ' (5m)' : ''}：
+                  {value ? `${value} / 1${extraPrices.unitLabel} tokens` : t('不支持')}
+                </div>
+              ))}
             </div>
           </div>
         );

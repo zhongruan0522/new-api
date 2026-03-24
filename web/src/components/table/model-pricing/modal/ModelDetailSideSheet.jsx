@@ -58,7 +58,7 @@ const ModelDetailSideSheet = ({
         borderBottom: '1px solid var(--semi-color-border)',
       }}
       visible={visible}
-      width={isMobile ? '100%' : 600}
+      width={isMobile ? '100%' : 760}
       closeIcon={
         <Button
           className='semi-button-tertiary semi-button-size-small semi-button-borderless'

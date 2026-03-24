@@ -52,6 +52,15 @@ const CARD_STYLES = {
   default: 'border-gray-200 hover:border-gray-300',
 };
 
+// 卡片视图只展示已支持的真实额外计费项，避免把未配置的默认值误认为可用。
+const EXTRA_PRICE_ITEMS = [
+  { key: 'cacheReadPrice', label: '缓存读取' },
+  { key: 'cacheCreatePrice5m', label: '缓存创建 (5m)' },
+  { key: 'audioInputPrice', label: '音频输入' },
+  { key: 'audioOutputPrice', label: '音频输出' },
+  { key: 'imageInputPrice', label: '图片输入' },
+];
+
 const PricingCardView = ({
   filteredModels,
   loading,
@@ -321,24 +330,18 @@ const PricingCardView = ({
                   {/* 额外计费价格 */}
                   {model.quota_type === 0 && (
                     <div className='pt-3'>
-                      <div className='grid grid-cols-3 gap-2 text-xs text-gray-600'>
-                        <div>
-                          {t('缓存')}: {extraPrices.cachePrice ?? t('不支持')}
-                        </div>
-                        <div>
-                          {t('缓存创建')}: {extraPrices.cacheCreatePrice ?? t('不支持')}
-                        </div>
-                        <div>
-                          {t('音频')}: {extraPrices.audioPrice ?? t('不支持')}
-                        </div>
-                      </div>
-                      <div className='grid grid-cols-3 gap-2 text-xs text-gray-600 mt-1'>
-                        <div>
-                          {t('音频补全')}: {extraPrices.audioCompletionPrice ?? t('不支持')}
-                        </div>
-                        <div>
-                          {t('图片')}: {extraPrices.imagePrice ?? t('不支持')}
-                        </div>
+                      <div className='grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-gray-600'>
+                        {EXTRA_PRICE_ITEMS.map((item) => {
+                          const value = extraPrices[item.key];
+                          return (
+                            <div key={item.key}>
+                              {t(item.label)}:{' '}
+                              {value
+                                ? `${value} / 1${extraPrices.unitLabel} tokens`
+                                : t('不支持')}
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   )}
