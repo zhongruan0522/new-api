@@ -347,6 +347,39 @@ const PricingCardView = ({
                           {t('分组')}: {priceData?.usedGroupRatio ?? '-'}
                         </div>
                       </div>
+                      {(model.cache_ratio > 0 ||
+                        model.create_cache_ratio > 0 ||
+                        model.audio_ratio > 0 ||
+                        model.audio_completion_ratio > 0 ||
+                        model.image_ratio > 0) && (
+                        <div className='grid grid-cols-3 gap-2 text-xs text-gray-500 mt-1'>
+                          {model.cache_ratio > 0 && (
+                            <div>
+                              {t('缓存')}: {model.cache_ratio}
+                            </div>
+                          )}
+                          {model.create_cache_ratio > 0 && (
+                            <div>
+                              {t('缓存创建')}: {model.create_cache_ratio}
+                            </div>
+                          )}
+                          {model.audio_ratio > 0 && (
+                            <div>
+                              {t('音频')}: {model.audio_ratio}
+                            </div>
+                          )}
+                          {model.audio_completion_ratio > 0 && (
+                            <div>
+                              {t('音频补全')}: {model.audio_completion_ratio}
+                            </div>
+                          )}
+                          {model.image_ratio > 0 && (
+                            <div>
+                              {t('图片')}: {model.image_ratio}
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
