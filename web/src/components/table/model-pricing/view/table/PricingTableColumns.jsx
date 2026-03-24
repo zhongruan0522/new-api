@@ -208,6 +208,13 @@ export const getPricingTableColumns = ({
       const completionRatio = parseFloat(record.completion_ratio.toFixed(3));
       const priceData = getPriceData(record);
 
+      const hasExtraRatios =
+        record.cache_ratio > 0 ||
+        record.create_cache_ratio > 0 ||
+        record.audio_ratio > 0 ||
+        record.audio_completion_ratio > 0 ||
+        record.image_ratio > 0;
+
       return (
         <div className='space-y-1'>
           <div className='text-gray-700'>
@@ -220,6 +227,35 @@ export const getPricingTableColumns = ({
           <div className='text-gray-700'>
             {t('分组倍率')}：{priceData?.usedGroupRatio ?? '-'}
           </div>
+          {hasExtraRatios && (
+            <div className='space-y-1 mt-1'>
+              {record.cache_ratio > 0 && (
+                <div className='text-gray-500 text-xs'>
+                  {t('缓存')}：{record.cache_ratio}
+                </div>
+              )}
+              {record.create_cache_ratio > 0 && (
+                <div className='text-gray-500 text-xs'>
+                  {t('缓存创建')}：{record.create_cache_ratio}
+                </div>
+              )}
+              {record.audio_ratio > 0 && (
+                <div className='text-gray-500 text-xs'>
+                  {t('音频')}：{record.audio_ratio}
+                </div>
+              )}
+              {record.audio_completion_ratio > 0 && (
+                <div className='text-gray-500 text-xs'>
+                  {t('音频补全')}：{record.audio_completion_ratio}
+                </div>
+              )}
+              {record.image_ratio > 0 && (
+                <div className='text-gray-500 text-xs'>
+                  {t('图片')}：{record.image_ratio}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       );
     },
