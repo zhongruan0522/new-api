@@ -30,6 +30,27 @@ import (
 	"gorm.io/gorm"
 )
 
+func calculateStreamSpeed(useTimeMs int64, frtMs int64, completionTokens int, receivedResponseCount int) (float64, bool) {
+	if useTimeMs <= 0 || completionTokens <= 0 {
+		return 0, false
+	}
+
+	// 部分“流式”响应会在首包后一次性刷出全部内容，回退到端到端耗时避免异常峰值。
+	effectiveMs := useTimeMs - frtMs
+	if effectiveMs <= 0 || receivedResponseCount <= 1 {
+		effectiveMs = useTimeMs
+	}
+
+	speed := float64(completionTokens) / (float64(effectiveMs) / 1000.0)
+	if speed > 1000 && effectiveMs != useTimeMs {
+		speed = float64(completionTokens) / (float64(useTimeMs) / 1000.0)
+	}
+	if speed <= 0 || speed > 1000 {
+		return 0, false
+	}
+	return speed, true
+}
+
 func TextHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *types.NewAPIError) {
 	info.InitChannelMeta(c)
 
@@ -578,12 +599,11 @@ func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage 
 		other["image_generation_call"] = true
 		other["image_generation_call_price"] = imageGenerationCallPrice
 	}
-	// 仅流式请求计算吐字速度：输出token数 / (总耗时 - 首字延迟)
-	if relayInfo.IsStream && completionTokens > 0 {
+	// 仅流式请求计算吐字速度：优先使用输出阶段耗时，异常峰值时回退到端到端耗时。
+	if relayInfo.IsStream && completionTokens > 0 && useTimeMs > 0 {
 		frtMs := relayInfo.FirstResponseTime.Sub(relayInfo.StartTime).Milliseconds()
-		generationMs := useTimeMs - frtMs
-		if generationMs > 0 {
-			other["speed"] = float64(completionTokens) / (float64(generationMs) / 1000.0)
+		if speed, ok := calculateStreamSpeed(useTimeMs, frtMs, completionTokens, relayInfo.ReceivedResponseCount); ok {
+			other["speed"] = speed
 		}
 	}
 	model.RecordConsumeLog(ctx, relayInfo.UserId, model.RecordConsumeLogParams{
