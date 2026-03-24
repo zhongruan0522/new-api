@@ -582,7 +582,7 @@ export const calculateExtraPrices = ({
   }
 
   const computePrice = (ratio) => {
-    if (ratio <= 0) return null;
+    if (!ratio || ratio <= 0) return null;
     // 缓存/音频/图片等倍率价格 = ratio * 2 * groupRatio（与输入价格公式一致）
     const usdPrice = ratio * 2 * usedGroupRatio;
     const rawDisplay = displayPrice(usdPrice);
