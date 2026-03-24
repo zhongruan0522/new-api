@@ -34,8 +34,6 @@ const FilterModalContent = ({ sidebarProps, t }) => {
     setCurrency,
     handleChange,
     setActiveKey,
-    showRatio,
-    setShowRatio,
     viewMode,
     setViewMode,
     filterGroup,
@@ -77,8 +75,6 @@ const FilterModalContent = ({ sidebarProps, t }) => {
         setShowWithRecharge={setShowWithRecharge}
         currency={currency}
         setCurrency={setCurrency}
-        showRatio={showRatio}
-        setShowRatio={setShowRatio}
         viewMode={viewMode}
         setViewMode={setViewMode}
         tokenUnit={tokenUnit}

@@ -30,7 +30,6 @@ const ModelPricingTable = ({
   currency,
   tokenUnit,
   displayPrice,
-  showRatio,
   usableGroup,
   autoGroups = [],
   t,
@@ -96,19 +95,6 @@ const ModelPricingTable = ({
         ),
       },
     ];
-
-    // 如果显示倍率，添加倍率列
-    if (showRatio) {
-      columns.push({
-        title: t('倍率'),
-        dataIndex: 'ratio',
-        render: (text) => (
-          <Tag color='white' size='small' shape='circle'>
-            {text}x
-          </Tag>
-        ),
-      });
-    }
 
     // 添加计费类型列
     columns.push({
