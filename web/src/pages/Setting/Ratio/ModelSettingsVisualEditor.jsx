@@ -615,6 +615,32 @@ export default function ModelSettingsVisualEditor(props) {
       }
     }
 
+    if (record.cacheRatio) {
+      modelCopy.cacheTokenPrice = calculateTokenPriceFromRatio(
+        parseFloat(record.cacheRatio),
+      ).toString();
+    }
+    if (record.createCacheRatio) {
+      modelCopy.createCacheTokenPrice = calculateTokenPriceFromRatio(
+        parseFloat(record.createCacheRatio),
+      ).toString();
+    }
+    if (record.audioRatio) {
+      modelCopy.audioTokenPrice = calculateTokenPriceFromRatio(
+        parseFloat(record.audioRatio),
+      ).toString();
+    }
+    if (record.audioCompletionRatio) {
+      modelCopy.audioCompletionTokenPrice = calculateTokenPriceFromRatio(
+        parseFloat(record.audioCompletionRatio),
+      ).toString();
+    }
+    if (record.imageRatio) {
+      modelCopy.imageTokenPrice = calculateTokenPriceFromRatio(
+        parseFloat(record.imageRatio),
+      ).toString();
+    }
+
     // Set the current model
     setCurrentModel(modelCopy);
 
@@ -641,6 +667,11 @@ export default function ModelSettingsVisualEditor(props) {
           formValues.imageRatioInput = modelCopy.imageRatio;
           formValues.modelTokenPrice = modelCopy.tokenPrice;
           formValues.completionTokenPrice = modelCopy.completionTokenPrice;
+          formValues.cacheTokenPrice = modelCopy.cacheTokenPrice;
+          formValues.createCacheTokenPrice = modelCopy.createCacheTokenPrice;
+          formValues.audioTokenPrice = modelCopy.audioTokenPrice;
+          formValues.audioCompletionTokenPrice = modelCopy.audioCompletionTokenPrice;
+          formValues.imageTokenPrice = modelCopy.imageTokenPrice;
         }
 
         formRef.current.setValues(formValues);
@@ -716,11 +747,9 @@ export default function ModelSettingsVisualEditor(props) {
               pricingSubMode === 'token-price' &&
               currentModel.tokenPrice
             ) {
-              // Calculate and set ratio from token price
               const tokenPrice = parseFloat(currentModel.tokenPrice);
               valuesToSave.ratio = (tokenPrice / 2).toString();
 
-              // Calculate and set completion ratio if both token prices are available
               if (
                 currentModel.completionTokenPrice &&
                 currentModel.tokenPrice
@@ -734,6 +763,22 @@ export default function ModelSettingsVisualEditor(props) {
                     completionPrice / modelPrice
                   ).toString();
                 }
+              }
+
+              if (currentModel.cacheTokenPrice) {
+                valuesToSave.cacheRatio = (parseFloat(currentModel.cacheTokenPrice) / 2).toString();
+              }
+              if (currentModel.createCacheTokenPrice) {
+                valuesToSave.createCacheRatio = (parseFloat(currentModel.createCacheTokenPrice) / 2).toString();
+              }
+              if (currentModel.audioTokenPrice) {
+                valuesToSave.audioRatio = (parseFloat(currentModel.audioTokenPrice) / 2).toString();
+              }
+              if (currentModel.audioCompletionTokenPrice) {
+                valuesToSave.audioCompletionRatio = (parseFloat(currentModel.audioCompletionTokenPrice) / 2).toString();
+              }
+              if (currentModel.imageTokenPrice) {
+                valuesToSave.imageRatio = (parseFloat(currentModel.imageTokenPrice) / 2).toString();
               }
             }
 
@@ -807,6 +852,16 @@ export default function ModelSettingsVisualEditor(props) {
                           updatedModel.tokenPrice || '';
                         formValues.completionTokenPrice =
                           updatedModel.completionTokenPrice || '';
+                        formValues.cacheTokenPrice =
+                          updatedModel.cacheTokenPrice || '';
+                        formValues.createCacheTokenPrice =
+                          updatedModel.createCacheTokenPrice || '';
+                        formValues.audioTokenPrice =
+                          updatedModel.audioTokenPrice || '';
+                        formValues.audioCompletionTokenPrice =
+                          updatedModel.audioCompletionTokenPrice || '';
+                        formValues.imageTokenPrice =
+                          updatedModel.imageTokenPrice || '';
                       }
 
                       formRef.current.setValues(formValues);
@@ -857,6 +912,36 @@ export default function ModelSettingsVisualEditor(props) {
                               ).toString();
                             }
                           }
+                          if (updatedModel.cacheRatio) {
+                            updatedModel.cacheTokenPrice =
+                              calculateTokenPriceFromRatio(
+                                parseFloat(updatedModel.cacheRatio),
+                              ).toString();
+                          }
+                          if (updatedModel.createCacheRatio) {
+                            updatedModel.createCacheTokenPrice =
+                              calculateTokenPriceFromRatio(
+                                parseFloat(updatedModel.createCacheRatio),
+                              ).toString();
+                          }
+                          if (updatedModel.audioRatio) {
+                            updatedModel.audioTokenPrice =
+                              calculateTokenPriceFromRatio(
+                                parseFloat(updatedModel.audioRatio),
+                              ).toString();
+                          }
+                          if (updatedModel.audioCompletionRatio) {
+                            updatedModel.audioCompletionTokenPrice =
+                              calculateTokenPriceFromRatio(
+                                parseFloat(updatedModel.audioCompletionRatio),
+                              ).toString();
+                          }
+                          if (updatedModel.imageRatio) {
+                            updatedModel.imageTokenPrice =
+                              calculateTokenPriceFromRatio(
+                                parseFloat(updatedModel.imageRatio),
+                              ).toString();
+                          }
                         } else if (
                           oldSubMode === 'token-price' &&
                           newSubMode === 'ratio'
@@ -872,11 +957,31 @@ export default function ModelSettingsVisualEditor(props) {
                             formValues.ratioInput = updatedModel.ratio || '';
                             formValues.completionRatioInput =
                               updatedModel.completionRatio || '';
+                            formValues.cacheRatioInput =
+                              updatedModel.cacheRatio || '';
+                            formValues.createCacheRatioInput =
+                              updatedModel.createCacheRatio || '';
+                            formValues.audioRatioInput =
+                              updatedModel.audioRatio || '';
+                            formValues.audioCompletionRatioInput =
+                              updatedModel.audioCompletionRatio || '';
+                            formValues.imageRatioInput =
+                              updatedModel.imageRatio || '';
                           } else if (newSubMode === 'token-price') {
                             formValues.modelTokenPrice =
                               updatedModel.tokenPrice || '';
                             formValues.completionTokenPrice =
                               updatedModel.completionTokenPrice || '';
+                            formValues.cacheTokenPrice =
+                              updatedModel.cacheTokenPrice || '';
+                            formValues.createCacheTokenPrice =
+                              updatedModel.createCacheTokenPrice || '';
+                            formValues.audioTokenPrice =
+                              updatedModel.audioTokenPrice || '';
+                            formValues.audioCompletionTokenPrice =
+                              updatedModel.audioCompletionTokenPrice || '';
+                            formValues.imageTokenPrice =
+                              updatedModel.imageTokenPrice || '';
                           }
 
                           formRef.current.setValues(formValues);
@@ -999,6 +1104,51 @@ export default function ModelSettingsVisualEditor(props) {
                       handleCompletionTokenPriceChange(value);
                     }}
                     initValue={currentModel?.completionTokenPrice || ''}
+                    suffix={t('$/1M tokens')}
+                  />
+                  <Form.Input
+                    field='cacheTokenPrice'
+                    label={t('缓存读取价格')}
+                    onChange={(value) => {
+                      handleCacheTokenPriceChange(value);
+                    }}
+                    initValue={currentModel?.cacheTokenPrice || ''}
+                    suffix={t('$/1M tokens')}
+                  />
+                  <Form.Input
+                    field='createCacheTokenPrice'
+                    label={t('缓存创建价格')}
+                    onChange={(value) => {
+                      handleCreateCacheTokenPriceChange(value);
+                    }}
+                    initValue={currentModel?.createCacheTokenPrice || ''}
+                    suffix={t('$/1M tokens')}
+                  />
+                  <Form.Input
+                    field='audioTokenPrice'
+                    label={t('音频输入价格')}
+                    onChange={(value) => {
+                      handleAudioTokenPriceChange(value);
+                    }}
+                    initValue={currentModel?.audioTokenPrice || ''}
+                    suffix={t('$/1M tokens')}
+                  />
+                  <Form.Input
+                    field='audioCompletionTokenPrice'
+                    label={t('音频输出价格')}
+                    onChange={(value) => {
+                      handleAudioCompletionTokenPriceChange(value);
+                    }}
+                    initValue={currentModel?.audioCompletionTokenPrice || ''}
+                    suffix={t('$/1M tokens')}
+                  />
+                  <Form.Input
+                    field='imageTokenPrice'
+                    label={t('图片输入价格')}
+                    onChange={(value) => {
+                      handleImageTokenPriceChange(value);
+                    }}
+                    initValue={currentModel?.imageTokenPrice || ''}
                     suffix={t('$/1M tokens')}
                   />
                 </>
