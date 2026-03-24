@@ -403,7 +403,6 @@ export default function ModelSettingsVisualEditor(props) {
   };
 
   const handleTokenPriceChange = (value) => {
-    // Use a temporary variable to hold the new state
     let newState = {
       ...(currentModel || {}),
       tokenPrice: value,
@@ -416,12 +415,10 @@ export default function ModelSettingsVisualEditor(props) {
       newState.ratio = ratio;
     }
 
-    // Set the state with the complete updated object
     setCurrentModel(newState);
   };
 
   const handleCompletionTokenPriceChange = (value) => {
-    // Use a temporary variable to hold the new state
     let newState = {
       ...(currentModel || {}),
       completionTokenPrice: value,
@@ -441,7 +438,76 @@ export default function ModelSettingsVisualEditor(props) {
       }
     }
 
-    // Set the state with the complete updated object
+    setCurrentModel(newState);
+  };
+
+  const handleCacheTokenPriceChange = (value) => {
+    let newState = {
+      ...(currentModel || {}),
+      cacheTokenPrice: value,
+      cacheRatio: 0,
+    };
+
+    if (!isNaN(value) && value !== '') {
+      newState.cacheRatio = calculateRatioFromTokenPrice(parseFloat(value));
+    }
+
+    setCurrentModel(newState);
+  };
+
+  const handleCreateCacheTokenPriceChange = (value) => {
+    let newState = {
+      ...(currentModel || {}),
+      createCacheTokenPrice: value,
+      createCacheRatio: 0,
+    };
+
+    if (!isNaN(value) && value !== '') {
+      newState.createCacheRatio = calculateRatioFromTokenPrice(parseFloat(value));
+    }
+
+    setCurrentModel(newState);
+  };
+
+  const handleAudioTokenPriceChange = (value) => {
+    let newState = {
+      ...(currentModel || {}),
+      audioTokenPrice: value,
+      audioRatio: 0,
+    };
+
+    if (!isNaN(value) && value !== '') {
+      newState.audioRatio = calculateRatioFromTokenPrice(parseFloat(value));
+    }
+
+    setCurrentModel(newState);
+  };
+
+  const handleAudioCompletionTokenPriceChange = (value) => {
+    let newState = {
+      ...(currentModel || {}),
+      audioCompletionTokenPrice: value,
+      audioCompletionRatio: 0,
+    };
+
+    if (!isNaN(value) && value !== '') {
+      newState.audioCompletionRatio = calculateRatioFromTokenPrice(parseFloat(value));
+    }
+
+    setCurrentModel(newState);
+  };
+
+  const handleImageTokenPriceChange = (value) => {
+    let newState = {
+      ...(currentModel || {}),
+      imageTokenPrice: value,
+      imageRatio: 0,
+    };
+
+    if (!isNaN(value) && value !== '') {
+      newState.imageRatio = calculateRatioFromTokenPrice(parseFloat(value));
+    }
+
     setCurrentModel(newState);
   };
 
