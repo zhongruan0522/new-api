@@ -170,7 +170,8 @@ func UpdateOption(key string, value string) error {
 	case "Chats", "ChatLink", "ChatLink2",
 		"WeChatAuthEnabled", "WeChatServerAddress", "WeChatServerToken", "WeChatAccountQRCodeImageURL",
 		"oidc.enabled", "oidc.client_id", "oidc.client_secret", "oidc.well_known", "oidc.authorization_endpoint", "oidc.token_endpoint", "oidc.user_info_endpoint",
-		"CreemApiKey", "CreemProducts", "CreemTestMode", "CreemWebhookSecret":
+		"CreemApiKey", "CreemProducts", "CreemTestMode", "CreemWebhookSecret",
+		"ExposeRatioEnabled":
 		return errors.New("option removed")
 	}
 	if key == "SidebarModulesAdmin" {
@@ -205,7 +206,8 @@ func updateOptionMap(key string, value string) (err error) {
 	case "Chats", "ChatLink", "ChatLink2",
 		"WeChatAuthEnabled", "WeChatServerAddress", "WeChatServerToken", "WeChatAccountQRCodeImageURL",
 		"oidc.enabled", "oidc.client_id", "oidc.client_secret", "oidc.well_known", "oidc.authorization_endpoint", "oidc.token_endpoint", "oidc.user_info_endpoint",
-		"CreemApiKey", "CreemProducts", "CreemTestMode", "CreemWebhookSecret":
+		"CreemApiKey", "CreemProducts", "CreemTestMode", "CreemWebhookSecret",
+		"ExposeRatioEnabled":
 		delete(common.OptionMap, key)
 		return nil
 	}
