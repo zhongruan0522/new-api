@@ -56,6 +56,9 @@ const createEmptyExtraPricing = () => ({
   audioCompletionRatio: '',
 });
 
+const normalizeEditableValue = (value) =>
+  value === '' || value === undefined || value === null ? '' : `${value}`;
+
 const getBatchFillTypeLabel = (type, t) => {
   switch (type) {
     case 'price':
@@ -166,14 +169,14 @@ export default function ModelRatioNotSetEditor(props) {
       // 创建模型数据
       const modelData = unsetModels.map((name) => ({
         name,
-        price: modelPrice[name] || '',
-        ratio: modelRatio[name] || '',
-        completionRatio: completionRatio[name] || '',
-        cacheRatio: cacheRatio[name] || '',
-        createCacheRatio: createCacheRatio[name] || '',
-        imageRatio: imageRatio[name] || '',
-        audioRatio: audioRatio[name] || '',
-        audioCompletionRatio: audioCompletionRatio[name] || '',
+        price: normalizeEditableValue(modelPrice[name]),
+        ratio: normalizeEditableValue(modelRatio[name]),
+        completionRatio: normalizeEditableValue(completionRatio[name]),
+        cacheRatio: normalizeEditableValue(cacheRatio[name]),
+        createCacheRatio: normalizeEditableValue(createCacheRatio[name]),
+        imageRatio: normalizeEditableValue(imageRatio[name]),
+        audioRatio: normalizeEditableValue(audioRatio[name]),
+        audioCompletionRatio: normalizeEditableValue(audioCompletionRatio[name]),
       }));
 
       setModels(modelData);
@@ -456,14 +459,14 @@ export default function ModelRatioNotSetEditor(props) {
     setModels((prev) => [
       {
         name: values.name,
-        price: values.price || '',
-        ratio: values.ratio || '',
-        completionRatio: values.completionRatio || '',
-        cacheRatio: values.cacheRatio || '',
-        createCacheRatio: values.createCacheRatio || '',
-        imageRatio: values.imageRatio || '',
-        audioRatio: values.audioRatio || '',
-        audioCompletionRatio: values.audioCompletionRatio || '',
+        price: normalizeEditableValue(values.price),
+        ratio: normalizeEditableValue(values.ratio),
+        completionRatio: normalizeEditableValue(values.completionRatio),
+        cacheRatio: normalizeEditableValue(values.cacheRatio),
+        createCacheRatio: normalizeEditableValue(values.createCacheRatio),
+        imageRatio: normalizeEditableValue(values.imageRatio),
+        audioRatio: normalizeEditableValue(values.audioRatio),
+        audioCompletionRatio: normalizeEditableValue(values.audioCompletionRatio),
       },
       ...prev,
     ]);
