@@ -100,7 +100,6 @@ const StoredMediaTable = ({
         title: t('转换后URL'),
         dataIndex: 'url',
         key: 'url',
-        width: 360,
         render: (text, record) => {
           const url = record?.url || '';
           if (!url) return <Text type='tertiary'>-</Text>;
