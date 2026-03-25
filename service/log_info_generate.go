@@ -12,6 +12,42 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// CalculateStreamSpeed returns output tokens per second for streaming text responses.
+// It prefers the post-first-token generation window and falls back to end-to-end latency
+// when the stream only flushes once or the instantaneous value is obviously abnormal.
+func CalculateStreamSpeed(useTimeMs int64, frtMs int64, completionTokens int, receivedResponseCount int) (float64, bool) {
+	if useTimeMs <= 0 || completionTokens <= 0 {
+		return 0, false
+	}
+
+	// 部分“流式”响应会在首包后一次性刷出全部内容，回退到端到端耗时避免异常峰值。
+	effectiveMs := useTimeMs - frtMs
+	if effectiveMs <= 0 || receivedResponseCount <= 1 {
+		effectiveMs = useTimeMs
+	}
+
+	speed := float64(completionTokens) / (float64(effectiveMs) / 1000.0)
+	if speed > 1000 && effectiveMs != useTimeMs {
+		speed = float64(completionTokens) / (float64(useTimeMs) / 1000.0)
+	}
+	if speed <= 0 || speed > 1000 {
+		return 0, false
+	}
+	return speed, true
+}
+
+// AppendStreamMetrics enriches consume-log metadata with shared stream-only metrics.
+func AppendStreamMetrics(other map[string]interface{}, relayInfo *relaycommon.RelayInfo, useTimeMs int64, completionTokens int) {
+	if other == nil || relayInfo == nil || !relayInfo.IsStream {
+		return
+	}
+
+	frtMs := relayInfo.FirstResponseTime.Sub(relayInfo.StartTime).Milliseconds()
+	if speed, ok := CalculateStreamSpeed(useTimeMs, frtMs, completionTokens, relayInfo.ReceivedResponseCount); ok {
+		other["speed"] = speed
+	}
+}
+
 func appendRequestPath(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, other map[string]interface{}) {
 	if other == nil {
 		return

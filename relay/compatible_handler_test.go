@@ -3,9 +3,12 @@ package relay
 import (
 	"math"
 	"testing"
+
+	"github.com/zhongruan0522/new-api/service"
 )
 
 func TestCalculateStreamSpeed(t *testing.T) {
+	// 这些场景覆盖共享吐字速度计算中的正常路径与回退路径。
 	tests := []struct {
 		name                  string
 		useTimeMs             int64
@@ -54,15 +57,15 @@ func TestCalculateStreamSpeed(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotSpeed, gotOK := calculateStreamSpeed(tt.useTimeMs, tt.frtMs, tt.completionTokens, tt.receivedResponseCount)
+			gotSpeed, gotOK := service.CalculateStreamSpeed(tt.useTimeMs, tt.frtMs, tt.completionTokens, tt.receivedResponseCount)
 			if gotOK != tt.wantOK {
-				t.Fatalf("calculateStreamSpeed() ok = %v, want %v", gotOK, tt.wantOK)
+				t.Fatalf("CalculateStreamSpeed() ok = %v, want %v", gotOK, tt.wantOK)
 			}
 			if !tt.wantOK {
 				return
 			}
 			if math.Abs(gotSpeed-tt.wantSpeed) > 1e-6 {
-				t.Fatalf("calculateStreamSpeed() speed = %v, want %v", gotSpeed, tt.wantSpeed)
+				t.Fatalf("CalculateStreamSpeed() speed = %v, want %v", gotSpeed, tt.wantSpeed)
 			}
 		})
 	}
