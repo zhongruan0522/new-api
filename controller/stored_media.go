@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"encoding/base64"
 	"errors"
 	"fmt"
 	"net/http"
@@ -27,14 +26,12 @@ type storedMediaListRow struct {
 }
 
 type storedMediaDetailResponse struct {
-	Id           string `json:"id"`
-	MediaType    string `json:"media_type"`
-	CreatedAt    int64  `json:"created_at"`
-	MimeType     string `json:"mime_type"`
-	SizeBytes    int    `json:"size_bytes"`
-	Url          string `json:"url"`
-	BasePreview  string `json:"base_preview"`
-	BaseTruncate bool   `json:"base_truncated"`
+	Id        string `json:"id"`
+	MediaType string `json:"media_type"`
+	CreatedAt int64  `json:"created_at"`
+	MimeType  string `json:"mime_type"`
+	SizeBytes int    `json:"size_bytes"`
+	Url       string `json:"url"`
 }
 
 type storedMediaBatchItem struct {
@@ -119,8 +116,6 @@ func GetStoredMediaDetail(c *gin.Context) {
 	role := c.GetInt("role")
 	isAdminUser := role >= common.RoleAdminUser
 
-	const previewBytes = 32 * 1024
-
 	if mediaType == "image" {
 		meta, err := model.GetStoredImageMetaByID(c.Request.Context(), id)
 		if err != nil {
@@ -142,19 +137,16 @@ func GetStoredMediaDetail(c *gin.Context) {
 			return
 		}
 
-		basePreview, truncated := buildDataURLBase64Preview(img.MimeType, []byte(img.Data), previewBytes)
 		c.JSON(http.StatusOK, gin.H{
 			"success": true,
 			"message": "",
 			"data": storedMediaDetailResponse{
-				Id:           img.Id,
-				MediaType:    "image",
-				CreatedAt:    img.CreatedAt,
-				MimeType:     img.MimeType,
-				SizeBytes:    img.SizeBytes,
-				Url:          buildStoredMediaURL(c, "image", img.Id),
-				BasePreview:  basePreview,
-				BaseTruncate: truncated,
+				Id:        img.Id,
+				MediaType: "image",
+				CreatedAt: img.CreatedAt,
+				MimeType:  img.MimeType,
+				SizeBytes: img.SizeBytes,
+				Url:       buildStoredMediaURL(c, "image", img.Id),
 			},
 		})
 		return
@@ -179,19 +171,16 @@ func GetStoredMediaDetail(c *gin.Context) {
 		common.ApiError(c, err)
 		return
 	}
-	basePreview, truncated := buildDataURLBase64Preview(v.MimeType, []byte(v.Data), previewBytes)
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
 		"data": storedMediaDetailResponse{
-			Id:           v.Id,
-			MediaType:    "video",
-			CreatedAt:    v.CreatedAt,
-			MimeType:     v.MimeType,
-			SizeBytes:    v.SizeBytes,
-			Url:          buildStoredMediaURL(c, "video", v.Id),
-			BasePreview:  basePreview,
-			BaseTruncate: truncated,
+			Id:        v.Id,
+			MediaType: "video",
+			CreatedAt: v.CreatedAt,
+			MimeType:  v.MimeType,
+			SizeBytes: v.SizeBytes,
+			Url:       buildStoredMediaURL(c, "video", v.Id),
 		},
 	})
 }
@@ -333,24 +322,6 @@ func DeleteStoredMediaBatch(c *gin.Context) {
 		"message": "",
 		"data":    totalDeleted,
 	})
-}
-
-func buildDataURLBase64Preview(mimeType string, data []byte, previewBytes int) (string, bool) {
-	mimeType = strings.TrimSpace(mimeType)
-	if mimeType == "" {
-		mimeType = "application/octet-stream"
-	}
-	if previewBytes <= 0 {
-		previewBytes = 32 * 1024
-	}
-
-	truncated := false
-	if len(data) > previewBytes {
-		data = data[:previewBytes]
-		truncated = true
-	}
-	encoded := base64.StdEncoding.EncodeToString(data)
-	return fmt.Sprintf("data:%s;base64,%s", mimeType, encoded), truncated
 }
 
 func buildStoredMediaURL(c *gin.Context, mediaType string, id string) string {

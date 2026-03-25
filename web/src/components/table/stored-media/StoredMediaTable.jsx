@@ -18,7 +18,7 @@ For commercial licensing, please contact support@quantumnous.com
 */
 
 import React, { useMemo } from 'react';
-import { Button, Empty, Modal, Space, Tag, Tooltip, Typography } from '@douyinfe/semi-ui';
+import { Button, Empty, Modal, Space, Tooltip, Typography } from '@douyinfe/semi-ui';
 import CardTable from '../../common/ui/CardTable';
 import {
   IllustrationNoResult,
@@ -67,33 +67,6 @@ const StoredMediaTable = ({
         width: 170,
         render: (text, record) => {
           return <>{record?.created_at ? timestamp2string(record.created_at) : '-'}</>;
-        },
-      },
-      {
-        title: t('原Base'),
-        dataIndex: 'base_preview',
-        key: 'base_preview',
-        width: 260,
-        render: (text, record) => {
-          if (!record?.base_preview) {
-            return <Text type='tertiary'>{t('未加载')}</Text>;
-          }
-
-          const preview = record.base_preview;
-          const display = preview.length > 80 ? preview.slice(0, 80) + '…' : preview;
-
-          return (
-            <div className='flex items-center gap-2'>
-              <Tooltip content={preview} position='top'>
-                <Text>{display}</Text>
-              </Tooltip>
-              {record.base_truncated && (
-                <Tag color='orange' size='small'>
-                  {t('已截断')}
-                </Tag>
-              )}
-            </div>
-          );
         },
       },
       {
