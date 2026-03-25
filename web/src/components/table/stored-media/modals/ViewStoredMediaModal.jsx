@@ -19,6 +19,7 @@ For commercial licensing, please contact support@quantumnous.com
 
 import React from 'react';
 import { Modal, Input, Tag, Typography } from '@douyinfe/semi-ui';
+import { TextArea } from '@douyinfe/semi-ui';
 import { timestamp2string } from '../../../../helpers';
 
 const { Text } = Typography;
@@ -86,7 +87,7 @@ const ViewStoredMediaModal = ({ visible, onCancel, data, t }) => {
 
         <div className='flex flex-col gap-2'>
           <Text type='secondary'>{t('原Base')}</Text>
-          <Input.TextArea
+          <TextArea
             value={basePreview || ''}
             readOnly
             autosize={{ minRows: 4, maxRows: 10 }}
