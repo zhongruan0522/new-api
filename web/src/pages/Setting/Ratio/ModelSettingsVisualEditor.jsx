@@ -53,6 +53,8 @@ const PER_TOKEN_RATIO_FIELDS = [
 // 统一处理可视化计费编辑里的倍率/价格换算，避免不同入口出现计算口径不一致。
 const hasValue = (value) => value !== '' && value !== undefined && value !== null;
 
+const normalizeEditableValue = (value) => (hasValue(value) ? `${value}` : '');
+
 const parseInputNumber = (value) => {
   if (!hasValue(value)) {
     return null;
@@ -133,25 +135,29 @@ const syncRatioFieldsFromTokenPrices = (model) => {
   const updatedModel = {
     ...(model || {}),
     ratio:
-      tokenPrice !== null ? (tokenPrice / 2).toString() : hasValue(model?.tokenPrice) ? '' : model?.ratio || '',
+      tokenPrice !== null
+        ? (tokenPrice / 2).toString()
+        : hasValue(model?.tokenPrice)
+          ? ''
+          : normalizeEditableValue(model?.ratio),
     completionRatio: hasValue(model?.completionTokenPrice)
       ? calculateRelativeRatio(completionTokenPrice, tokenPrice)
-      : model?.completionRatio || '',
+      : normalizeEditableValue(model?.completionRatio),
     cacheRatio: hasValue(model?.cacheTokenPrice)
       ? calculateRelativeRatio(cacheTokenPrice, tokenPrice)
-      : model?.cacheRatio || '',
+      : normalizeEditableValue(model?.cacheRatio),
     createCacheRatio: hasValue(model?.createCacheTokenPrice)
       ? calculateRelativeRatio(createCacheTokenPrice, tokenPrice)
-      : model?.createCacheRatio || '',
+      : normalizeEditableValue(model?.createCacheRatio),
     audioRatio: hasValue(model?.audioTokenPrice)
       ? calculateRelativeRatio(audioTokenPrice, tokenPrice)
-      : model?.audioRatio || '',
+      : normalizeEditableValue(model?.audioRatio),
     audioCompletionRatio: hasValue(model?.audioCompletionTokenPrice)
       ? calculateRelativeRatio(audioCompletionTokenPrice, audioTokenPrice)
-      : model?.audioCompletionRatio || '',
+      : normalizeEditableValue(model?.audioCompletionRatio),
     imageRatio: hasValue(model?.imageTokenPrice)
       ? calculateRelativeRatio(imageTokenPrice, tokenPrice)
-      : model?.imageRatio || '',
+      : normalizeEditableValue(model?.imageRatio),
   };
 
   updatedModel.hasConflict = buildConflictState(updatedModel);
@@ -626,14 +632,16 @@ export default function ModelSettingsVisualEditor(props) {
           if (index !== existingModelIndex) return model;
           const updated = {
             name: values.name,
-            price: values.price || '',
-            ratio: values.ratio || '',
-            completionRatio: values.completionRatio || '',
-            cacheRatio: values.cacheRatio || '',
-            createCacheRatio: values.createCacheRatio || '',
-            imageRatio: values.imageRatio || '',
-            audioRatio: values.audioRatio || '',
-            audioCompletionRatio: values.audioCompletionRatio || '',
+            price: normalizeEditableValue(values.price),
+            ratio: normalizeEditableValue(values.ratio),
+            completionRatio: normalizeEditableValue(values.completionRatio),
+            cacheRatio: normalizeEditableValue(values.cacheRatio),
+            createCacheRatio: normalizeEditableValue(values.createCacheRatio),
+            imageRatio: normalizeEditableValue(values.imageRatio),
+            audioRatio: normalizeEditableValue(values.audioRatio),
+            audioCompletionRatio: normalizeEditableValue(
+              values.audioCompletionRatio,
+            ),
           };
           updated.hasConflict = buildConflictState(updated);
           return updated;
@@ -652,14 +660,16 @@ export default function ModelSettingsVisualEditor(props) {
       setModels((prev) => {
         const newModel = {
           name: values.name,
-          price: values.price || '',
-          ratio: values.ratio || '',
-          completionRatio: values.completionRatio || '',
-          cacheRatio: values.cacheRatio || '',
-          createCacheRatio: values.createCacheRatio || '',
-          imageRatio: values.imageRatio || '',
-          audioRatio: values.audioRatio || '',
-          audioCompletionRatio: values.audioCompletionRatio || '',
+          price: normalizeEditableValue(values.price),
+          ratio: normalizeEditableValue(values.ratio),
+          completionRatio: normalizeEditableValue(values.completionRatio),
+          cacheRatio: normalizeEditableValue(values.cacheRatio),
+          createCacheRatio: normalizeEditableValue(values.createCacheRatio),
+          imageRatio: normalizeEditableValue(values.imageRatio),
+          audioRatio: normalizeEditableValue(values.audioRatio),
+          audioCompletionRatio: normalizeEditableValue(
+            values.audioCompletionRatio,
+          ),
         };
         newModel.hasConflict = buildConflictState(newModel);
         return [newModel, ...prev];
@@ -851,35 +861,45 @@ export default function ModelSettingsVisualEditor(props) {
                       };
 
                       if (newMode === 'per-request') {
-                        formValues.priceInput = updatedModel.price || '';
+                        formValues.priceInput = normalizeEditableValue(
+                          updatedModel.price,
+                        );
                       } else if (newMode === 'per-token') {
-                        formValues.ratioInput = updatedModel.ratio || '';
+                        formValues.ratioInput = normalizeEditableValue(
+                          updatedModel.ratio,
+                        );
                         formValues.completionRatioInput =
-                          updatedModel.completionRatio || '';
+                          normalizeEditableValue(updatedModel.completionRatio);
                         formValues.cacheRatioInput =
-                          updatedModel.cacheRatio || '';
+                          normalizeEditableValue(updatedModel.cacheRatio);
                         formValues.createCacheRatioInput =
-                          updatedModel.createCacheRatio || '';
+                          normalizeEditableValue(updatedModel.createCacheRatio);
                         formValues.audioRatioInput =
-                          updatedModel.audioRatio || '';
+                          normalizeEditableValue(updatedModel.audioRatio);
                         formValues.audioCompletionRatioInput =
-                          updatedModel.audioCompletionRatio || '';
+                          normalizeEditableValue(
+                            updatedModel.audioCompletionRatio,
+                          );
                         formValues.imageRatioInput =
-                          updatedModel.imageRatio || '';
+                          normalizeEditableValue(updatedModel.imageRatio);
                         formValues.modelTokenPrice =
-                          updatedModel.tokenPrice || '';
+                          normalizeEditableValue(updatedModel.tokenPrice);
                         formValues.completionTokenPrice =
-                          updatedModel.completionTokenPrice || '';
+                          normalizeEditableValue(updatedModel.completionTokenPrice);
                         formValues.cacheTokenPrice =
-                          updatedModel.cacheTokenPrice || '';
+                          normalizeEditableValue(updatedModel.cacheTokenPrice);
                         formValues.createCacheTokenPrice =
-                          updatedModel.createCacheTokenPrice || '';
+                          normalizeEditableValue(
+                            updatedModel.createCacheTokenPrice,
+                          );
                         formValues.audioTokenPrice =
-                          updatedModel.audioTokenPrice || '';
+                          normalizeEditableValue(updatedModel.audioTokenPrice);
                         formValues.audioCompletionTokenPrice =
-                          updatedModel.audioCompletionTokenPrice || '';
+                          normalizeEditableValue(
+                            updatedModel.audioCompletionTokenPrice,
+                          );
                         formValues.imageTokenPrice =
-                          updatedModel.imageTokenPrice || '';
+                          normalizeEditableValue(updatedModel.imageTokenPrice);
                       }
 
                       formRef.current.setValues(formValues);
@@ -923,34 +943,48 @@ export default function ModelSettingsVisualEditor(props) {
                           const formValues = {};
 
                           if (newSubMode === 'ratio') {
-                            formValues.ratioInput = updatedModel.ratio || '';
+                            formValues.ratioInput = normalizeEditableValue(
+                              updatedModel.ratio,
+                            );
                             formValues.completionRatioInput =
-                              updatedModel.completionRatio || '';
+                              normalizeEditableValue(
+                                updatedModel.completionRatio,
+                              );
                             formValues.cacheRatioInput =
-                              updatedModel.cacheRatio || '';
+                              normalizeEditableValue(updatedModel.cacheRatio);
                             formValues.createCacheRatioInput =
-                              updatedModel.createCacheRatio || '';
+                              normalizeEditableValue(
+                                updatedModel.createCacheRatio,
+                              );
                             formValues.audioRatioInput =
-                              updatedModel.audioRatio || '';
+                              normalizeEditableValue(updatedModel.audioRatio);
                             formValues.audioCompletionRatioInput =
-                              updatedModel.audioCompletionRatio || '';
+                              normalizeEditableValue(
+                                updatedModel.audioCompletionRatio,
+                              );
                             formValues.imageRatioInput =
-                              updatedModel.imageRatio || '';
+                              normalizeEditableValue(updatedModel.imageRatio);
                           } else if (newSubMode === 'token-price') {
                             formValues.modelTokenPrice =
-                              updatedModel.tokenPrice || '';
+                              normalizeEditableValue(updatedModel.tokenPrice);
                             formValues.completionTokenPrice =
-                              updatedModel.completionTokenPrice || '';
+                              normalizeEditableValue(
+                                updatedModel.completionTokenPrice,
+                              );
                             formValues.cacheTokenPrice =
-                              updatedModel.cacheTokenPrice || '';
+                              normalizeEditableValue(updatedModel.cacheTokenPrice);
                             formValues.createCacheTokenPrice =
-                              updatedModel.createCacheTokenPrice || '';
+                              normalizeEditableValue(
+                                updatedModel.createCacheTokenPrice,
+                              );
                             formValues.audioTokenPrice =
-                              updatedModel.audioTokenPrice || '';
+                              normalizeEditableValue(updatedModel.audioTokenPrice);
                             formValues.audioCompletionTokenPrice =
-                              updatedModel.audioCompletionTokenPrice || '';
+                              normalizeEditableValue(
+                                updatedModel.audioCompletionTokenPrice,
+                              );
                             formValues.imageTokenPrice =
-                              updatedModel.imageTokenPrice || '';
+                              normalizeEditableValue(updatedModel.imageTokenPrice);
                           }
 
                           formRef.current.setValues(formValues);
@@ -978,7 +1012,7 @@ export default function ModelSettingsVisualEditor(props) {
                         ratio: value,
                       }))
                     }
-                    initValue={currentModel?.ratio || ''}
+                    initValue={normalizeEditableValue(currentModel?.ratio)}
                   />
                   <Form.Input
                     field='completionRatioInput'
@@ -990,7 +1024,9 @@ export default function ModelSettingsVisualEditor(props) {
                         completionRatio: value,
                       }))
                     }
-                    initValue={currentModel?.completionRatio || ''}
+                    initValue={normalizeEditableValue(
+                      currentModel?.completionRatio,
+                    )}
                   />
                   <Form.Input
                     field='cacheRatioInput'
@@ -1002,7 +1038,7 @@ export default function ModelSettingsVisualEditor(props) {
                         cacheRatio: value,
                       }))
                     }
-                    initValue={currentModel?.cacheRatio || ''}
+                    initValue={normalizeEditableValue(currentModel?.cacheRatio)}
                   />
                   <Form.Input
                     field='createCacheRatioInput'
@@ -1014,7 +1050,9 @@ export default function ModelSettingsVisualEditor(props) {
                         createCacheRatio: value,
                       }))
                     }
-                    initValue={currentModel?.createCacheRatio || ''}
+                    initValue={normalizeEditableValue(
+                      currentModel?.createCacheRatio,
+                    )}
                   />
                   <Form.Input
                     field='audioRatioInput'
@@ -1026,7 +1064,7 @@ export default function ModelSettingsVisualEditor(props) {
                         audioRatio: value,
                       }))
                     }
-                    initValue={currentModel?.audioRatio || ''}
+                    initValue={normalizeEditableValue(currentModel?.audioRatio)}
                   />
                   <Form.Input
                     field='audioCompletionRatioInput'
@@ -1038,7 +1076,9 @@ export default function ModelSettingsVisualEditor(props) {
                         audioCompletionRatio: value,
                       }))
                     }
-                    initValue={currentModel?.audioCompletionRatio || ''}
+                    initValue={normalizeEditableValue(
+                      currentModel?.audioCompletionRatio,
+                    )}
                   />
                   <Form.Input
                     field='imageRatioInput'
@@ -1050,7 +1090,7 @@ export default function ModelSettingsVisualEditor(props) {
                         imageRatio: value,
                       }))
                     }
-                    initValue={currentModel?.imageRatio || ''}
+                    initValue={normalizeEditableValue(currentModel?.imageRatio)}
                   />
                 </>
               )}
@@ -1063,7 +1103,7 @@ export default function ModelSettingsVisualEditor(props) {
                     onChange={(value) => {
                       handleTokenPriceChange(value);
                     }}
-                    initValue={currentModel?.tokenPrice || ''}
+                    initValue={normalizeEditableValue(currentModel?.tokenPrice)}
                     suffix={t('$/1M tokens')}
                   />
                   <Form.Input
@@ -1072,7 +1112,9 @@ export default function ModelSettingsVisualEditor(props) {
                     onChange={(value) => {
                       handleCompletionTokenPriceChange(value);
                     }}
-                    initValue={currentModel?.completionTokenPrice || ''}
+                    initValue={normalizeEditableValue(
+                      currentModel?.completionTokenPrice,
+                    )}
                     suffix={t('$/1M tokens')}
                   />
                   <Form.Input
@@ -1081,7 +1123,9 @@ export default function ModelSettingsVisualEditor(props) {
                     onChange={(value) => {
                       handleCacheTokenPriceChange(value);
                     }}
-                    initValue={currentModel?.cacheTokenPrice || ''}
+                    initValue={normalizeEditableValue(
+                      currentModel?.cacheTokenPrice,
+                    )}
                     suffix={t('$/1M tokens')}
                   />
                   <Form.Input
@@ -1090,7 +1134,9 @@ export default function ModelSettingsVisualEditor(props) {
                     onChange={(value) => {
                       handleCreateCacheTokenPriceChange(value);
                     }}
-                    initValue={currentModel?.createCacheTokenPrice || ''}
+                    initValue={normalizeEditableValue(
+                      currentModel?.createCacheTokenPrice,
+                    )}
                     suffix={t('$/1M tokens')}
                   />
                   <Form.Input
@@ -1099,7 +1145,9 @@ export default function ModelSettingsVisualEditor(props) {
                     onChange={(value) => {
                       handleAudioTokenPriceChange(value);
                     }}
-                    initValue={currentModel?.audioTokenPrice || ''}
+                    initValue={normalizeEditableValue(
+                      currentModel?.audioTokenPrice,
+                    )}
                     suffix={t('$/1M tokens')}
                   />
                   <Form.Input
@@ -1108,7 +1156,9 @@ export default function ModelSettingsVisualEditor(props) {
                     onChange={(value) => {
                       handleAudioCompletionTokenPriceChange(value);
                     }}
-                    initValue={currentModel?.audioCompletionTokenPrice || ''}
+                    initValue={normalizeEditableValue(
+                      currentModel?.audioCompletionTokenPrice,
+                    )}
                     suffix={t('$/1M tokens')}
                   />
                   <Form.Input
@@ -1117,7 +1167,9 @@ export default function ModelSettingsVisualEditor(props) {
                     onChange={(value) => {
                       handleImageTokenPriceChange(value);
                     }}
-                    initValue={currentModel?.imageTokenPrice || ''}
+                    initValue={normalizeEditableValue(
+                      currentModel?.imageTokenPrice,
+                    )}
                     suffix={t('$/1M tokens')}
                   />
                 </>
@@ -1136,7 +1188,7 @@ export default function ModelSettingsVisualEditor(props) {
                   price: value,
                 }))
               }
-              initValue={currentModel?.price || ''}
+              initValue={normalizeEditableValue(currentModel?.price)}
             />
           )}
         </Form>
