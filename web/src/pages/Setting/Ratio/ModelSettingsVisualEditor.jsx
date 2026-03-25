@@ -50,10 +50,37 @@ const PER_TOKEN_RATIO_FIELDS = [
   'audioCompletionRatio',
 ];
 
+const MODEL_PRICING_FIELDS = ['price', ...PER_TOKEN_RATIO_FIELDS];
+
 // 统一处理可视化计费编辑里的倍率/价格换算，避免不同入口出现计算口径不一致。
 const hasValue = (value) => value !== '' && value !== undefined && value !== null;
 
 const normalizeEditableValue = (value) => (hasValue(value) ? `${value}` : '');
+
+const createEmptyModel = (name = '') => ({
+  name,
+  price: '',
+  ratio: '',
+  completionRatio: '',
+  cacheRatio: '',
+  createCacheRatio: '',
+  imageRatio: '',
+  audioRatio: '',
+  audioCompletionRatio: '',
+  hasConflict: false,
+  isUnset: true,
+});
+
+const hasAnyPricingConfig = (model) =>
+  MODEL_PRICING_FIELDS.some((field) => hasValue(model?.[field]));
+
+const sortModels = (modelList) =>
+  [...modelList].sort((left, right) => {
+    if (Boolean(left.isUnset) !== Boolean(right.isUnset)) {
+      return left.isUnset ? -1 : 1;
+    }
+    return left.name.localeCompare(right.name);
+  });
 
 const parseInputNumber = (value) => {
   if (!hasValue(value)) {
@@ -179,6 +206,7 @@ const clearPerTokenPricing = (model) => ({
 export default function ModelSettingsVisualEditor(props) {
   const { t } = useTranslation();
   const [models, setModels] = useState([]);
+  const [enabledModels, setEnabledModels] = useState([]);
   const [visible, setVisible] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [currentModel, setCurrentModel] = useState(null);
@@ -191,6 +219,25 @@ export default function ModelSettingsVisualEditor(props) {
   const formRef = useRef(null);
   const pageSize = 10;
 
+  const getAllEnabledModels = async () => {
+    try {
+      const res = await API.get('/api/channel/models_enabled');
+      const { success, message, data } = res.data;
+      if (success) {
+        setEnabledModels(Array.isArray(data) ? data : []);
+      } else {
+        showError(message);
+      }
+    } catch (error) {
+      console.error(t('获取启用模型失败:'), error);
+      showError(t('获取启用模型失败'));
+    }
+  };
+
+  useEffect(() => {
+    getAllEnabledModels();
+  }, []);
+
   useEffect(() => {
     try {
       const modelPrice = JSON.parse(props.options.ModelPrice || '{}');
@@ -202,8 +249,8 @@ export default function ModelSettingsVisualEditor(props) {
       const audioRatio = JSON.parse(props.options.AudioRatio || '{}');
       const audioCompletionRatio = JSON.parse(props.options.AudioCompletionRatio || '{}');
 
-      // 合并所有模型名称
-      const modelNames = new Set([
+      // 将已配置模型与已启用但未配置的模型合并到同一张表里，方便直接补齐空白配置。
+      const configuredModelNames = new Set([
         ...Object.keys(modelPrice),
         ...Object.keys(modelRatio),
         ...Object.keys(completionRatio),
@@ -214,7 +261,7 @@ export default function ModelSettingsVisualEditor(props) {
         ...Object.keys(audioCompletionRatio),
       ]);
 
-      const modelData = Array.from(modelNames).map((name) => {
+      const configuredModelData = Array.from(configuredModelNames).map((name) => {
         const price = modelPrice[name] === undefined ? '' : modelPrice[name];
         const ratio = modelRatio[name] === undefined ? '' : modelRatio[name];
         const comp =
@@ -235,6 +282,7 @@ export default function ModelSettingsVisualEditor(props) {
           imageRatio: image,
           audioRatio: audio,
           audioCompletionRatio: audioComp,
+          isUnset: false,
           hasConflict: buildConflictState({
             price,
             ratio,
@@ -248,11 +296,16 @@ export default function ModelSettingsVisualEditor(props) {
         };
       });
 
-      setModels(modelData);
+      const unsetModelData = Array.from(new Set(enabledModels))
+        .filter((name) => !configuredModelNames.has(name))
+        .map((name) => createEmptyModel(name))
+        .filter((model) => !hasAnyPricingConfig(model));
+
+      setModels(sortModels([...unsetModelData, ...configuredModelData]));
     } catch (error) {
       console.error('JSON解析错误:', error);
     }
-  }, [props.options]);
+  }, [enabledModels, props.options]);
 
   // 首先声明分页相关的工具函数
   const getPagedData = (data, currentPage, pageSize) => {
@@ -628,24 +681,27 @@ export default function ModelSettingsVisualEditor(props) {
     if (existingModelIndex >= 0) {
       // Update existing model
       setModels((prev) =>
-        prev.map((model, index) => {
-          if (index !== existingModelIndex) return model;
-          const updated = {
-            name: values.name,
-            price: normalizeEditableValue(values.price),
-            ratio: normalizeEditableValue(values.ratio),
-            completionRatio: normalizeEditableValue(values.completionRatio),
-            cacheRatio: normalizeEditableValue(values.cacheRatio),
-            createCacheRatio: normalizeEditableValue(values.createCacheRatio),
-            imageRatio: normalizeEditableValue(values.imageRatio),
-            audioRatio: normalizeEditableValue(values.audioRatio),
-            audioCompletionRatio: normalizeEditableValue(
-              values.audioCompletionRatio,
-            ),
-          };
-          updated.hasConflict = buildConflictState(updated);
-          return updated;
-        }),
+        sortModels(
+          prev.map((model, index) => {
+            if (index !== existingModelIndex) return model;
+            const updated = {
+              ...model,
+              name: values.name,
+              price: normalizeEditableValue(values.price),
+              ratio: normalizeEditableValue(values.ratio),
+              completionRatio: normalizeEditableValue(values.completionRatio),
+              cacheRatio: normalizeEditableValue(values.cacheRatio),
+              createCacheRatio: normalizeEditableValue(values.createCacheRatio),
+              imageRatio: normalizeEditableValue(values.imageRatio),
+              audioRatio: normalizeEditableValue(values.audioRatio),
+              audioCompletionRatio: normalizeEditableValue(
+                values.audioCompletionRatio,
+              ),
+            };
+            updated.hasConflict = buildConflictState(updated);
+            return updated;
+          }),
+        ),
       );
       setVisible(false);
       showSuccess(t('更新成功'));
@@ -670,9 +726,10 @@ export default function ModelSettingsVisualEditor(props) {
           audioCompletionRatio: normalizeEditableValue(
             values.audioCompletionRatio,
           ),
+          isUnset: false,
         };
         newModel.hasConflict = buildConflictState(newModel);
-        return [newModel, ...prev];
+        return sortModels([newModel, ...prev]);
       });
       setVisible(false);
       showSuccess(t('添加成功'));
@@ -787,6 +844,7 @@ export default function ModelSettingsVisualEditor(props) {
         <Table
           columns={columns}
           dataSource={pagedData}
+          rowKey='name'
           pagination={{
             currentPage: currentPage,
             pageSize: pageSize,
