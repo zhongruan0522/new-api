@@ -41,7 +41,6 @@ func SetApiRouter(router *gin.Engine) {
 		apiRouter.GET("/oauth/telegram/bind", middleware.CriticalRateLimit(), controller.TelegramBind)
 		// Standard OAuth providers (GitHub, Discord, LinuxDO) - unified route
 		apiRouter.GET("/oauth/:provider", middleware.CriticalRateLimit(), controller.HandleOAuth)
-		apiRouter.GET("/ratio_config", middleware.CriticalRateLimit(), controller.GetRatioConfig)
 
 		apiRouter.POST("/stripe/webhook", controller.StripeWebhook)
 
@@ -159,12 +158,6 @@ func SetApiRouter(router *gin.Engine) {
 			performanceRoute.DELETE("/disk_cache", controller.ClearDiskCache)
 			performanceRoute.POST("/reset_stats", controller.ResetPerformanceStats)
 			performanceRoute.POST("/gc", controller.ForceGC)
-		}
-		ratioSyncRoute := apiRouter.Group("/ratio_sync")
-		ratioSyncRoute.Use(middleware.RootAuth())
-		{
-			ratioSyncRoute.GET("/channels", controller.GetSyncableChannels)
-			ratioSyncRoute.POST("/fetch", controller.FetchUpstreamRatios)
 		}
 		channelRoute := apiRouter.Group("/channel")
 		channelRoute.Use(middleware.AdminAuth())
