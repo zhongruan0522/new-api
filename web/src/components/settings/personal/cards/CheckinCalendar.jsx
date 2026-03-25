@@ -26,16 +26,9 @@ import {
   Avatar,
   Spin,
   Tooltip,
-  Collapsible,
   Modal,
 } from '@douyinfe/semi-ui';
-import {
-  CalendarCheck,
-  Gift,
-  Check,
-  ChevronDown,
-  ChevronUp,
-} from 'lucide-react';
+import { CalendarCheck, Gift, Check } from 'lucide-react';
 import Turnstile from 'react-turnstile';
 import { API, showError, showSuccess, renderQuota } from '../../../../helpers';
 
@@ -57,12 +50,8 @@ const CheckinCalendar = ({ t, status, turnstileEnabled, turnstileSiteKey }) => {
   const [currentMonth, setCurrentMonth] = useState(
     new Date().toISOString().slice(0, 7),
   );
-  // 初始加载状态，用于避免折叠状态闪烁
   const [initialLoaded, setInitialLoaded] = useState(false);
-  // 折叠状态：null 表示未确定（等待首次加载）
-  const [isCollapsed, setIsCollapsed] = useState(null);
 
-  // 创建日期到额度的映射，方便快速查找
   const checkinRecordsMap = useMemo(() => {
     const map = {};
     const records = checkinData.stats?.records || [];
@@ -72,7 +61,6 @@ const CheckinCalendar = ({ t, status, turnstileEnabled, turnstileSiteKey }) => {
     return map;
   }, [checkinData.stats?.records]);
 
-  // 计算本月获得的额度
   const monthlyQuota = useMemo(() => {
     const records = checkinData.stats?.records || [];
     return records.reduce(
@@ -81,7 +69,6 @@ const CheckinCalendar = ({ t, status, turnstileEnabled, turnstileSiteKey }) => {
     );
   }, [checkinData.stats?.records]);
 
-  // 获取签到状态
   const fetchCheckinStatus = async (month) => {
     const isFirstLoad = !initialLoaded;
     setLoading(true);
@@ -90,26 +77,14 @@ const CheckinCalendar = ({ t, status, turnstileEnabled, turnstileSiteKey }) => {
       const { success, data, message } = res.data;
       if (success) {
         setCheckinData(data);
-        // 首次加载时，根据签到状态设置折叠状态
-        if (isFirstLoad) {
-          setIsCollapsed(data.stats?.checked_in_today ?? false);
-          setInitialLoaded(true);
-        }
       } else {
         showError(message || t('获取签到状态失败'));
-        if (isFirstLoad) {
-          setIsCollapsed(false);
-          setInitialLoaded(true);
-        }
       }
     } catch (error) {
       showError(t('获取签到状态失败'));
-      if (isFirstLoad) {
-        setIsCollapsed(false);
-        setInitialLoaded(true);
-      }
     } finally {
       setLoading(false);
+      if (isFirstLoad) setInitialLoaded(true);
     }
   };
 
@@ -135,7 +110,6 @@ const CheckinCalendar = ({ t, status, turnstileEnabled, turnstileSiteKey }) => {
         showSuccess(
           t('签到成功！获得') + ' ' + renderQuota(data.quota_awarded),
         );
-        // 刷新签到状态
         fetchCheckinStatus(currentMonth);
         setTurnstileModalVisible(false);
       } else {
@@ -165,24 +139,18 @@ const CheckinCalendar = ({ t, status, turnstileEnabled, turnstileSiteKey }) => {
     }
   }, [status?.checkin_enabled, currentMonth]);
 
-  // 如果签到功能未启用，不显示组件
   if (!status?.checkin_enabled) {
     return null;
   }
 
-  // 日期渲染函数 - 显示签到状态和获得的额度
+  // 日历日期渲染 - 显示签到标记和额度
   const dateRender = (dateString) => {
-    // Semi Calendar 传入的 dateString 是 Date.toString() 格式
-    // 需要转换为 YYYY-MM-DD 格式来匹配后端数据
     const date = new Date(dateString);
-    if (isNaN(date.getTime())) {
-      return null;
-    }
-    // 使用本地时间格式化，避免时区问题
+    if (isNaN(date.getTime())) return null;
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
-    const formattedDate = `${year}-${month}-${day}`; // YYYY-MM-DD
+    const formattedDate = `${year}-${month}-${day}`;
     const quotaAwarded = checkinRecordsMap[formattedDate];
     const isCheckedIn = quotaAwarded !== undefined;
 
@@ -206,11 +174,13 @@ const CheckinCalendar = ({ t, status, turnstileEnabled, turnstileSiteKey }) => {
     return null;
   };
 
-  // 处理月份变化
   const handleMonthChange = (date) => {
     const month = date.toISOString().slice(0, 7);
     setCurrentMonth(month);
   };
+
+  const isCheckedInToday = checkinData.stats?.checked_in_today;
+  const totalCheckins = checkinData.stats?.total_checkins || 0;
 
   return (
     <Card className='!rounded-2xl'>
@@ -238,136 +208,160 @@ const CheckinCalendar = ({ t, status, turnstileEnabled, turnstileSiteKey }) => {
         </div>
       </Modal>
 
-      {/* 卡片头部 */}
-      <div className='flex items-center justify-between'>
-        <div
-          className='flex items-center flex-1 cursor-pointer'
-          onClick={() => setIsCollapsed(!isCollapsed)}
-        >
-          <Avatar size='small' color='green' className='mr-3 shadow-md'>
-            <CalendarCheck size={16} />
-          </Avatar>
-          <div className='flex-1'>
-            <div className='flex items-center gap-2'>
-              <Typography.Text className='text-lg font-medium'>
-                {t('每日签到')}
-              </Typography.Text>
-              {isCollapsed ? (
-                <ChevronDown size={16} className='text-gray-400' />
-              ) : (
-                <ChevronUp size={16} className='text-gray-400' />
-              )}
-            </div>
-            <div className='text-xs text-gray-500 dark:text-gray-400'>
-              {!initialLoaded
-                ? t('正在加载签到状态...')
-                : checkinData.stats?.checked_in_today
-                  ? t('今日已签到，累计签到') +
-                    ` ${checkinData.stats?.total_checkins || 0} ` +
-                    t('天')
-                  : t('每日签到可获得随机额度奖励')}
-            </div>
+      {/* 卡片头部 - 与其他卡片统一 */}
+      <div className='flex items-center mb-4'>
+        <Avatar size='small' color='green' className='mr-3 shadow-md'>
+          <CalendarCheck size={16} />
+        </Avatar>
+        <div>
+          <Typography.Text className='text-lg font-medium'>
+            {t('每日签到')}
+          </Typography.Text>
+          <div className='text-xs text-gray-600 dark:text-gray-400'>
+            {!initialLoaded
+              ? t('正在加载签到状态...')
+              : isCheckedInToday
+                ? t('今日已签到，累计签到') + ` ${totalCheckins} ` + t('天')
+                : t('每日签到可获得随机额度奖励')}
           </div>
         </div>
-        <Button
-          type='primary'
-          theme='solid'
-          icon={<Gift size={16} />}
-          onClick={() => doCheckin()}
-          loading={checkinLoading || !initialLoaded}
-          disabled={!initialLoaded || checkinData.stats?.checked_in_today}
-          className='!bg-green-600 hover:!bg-green-700'
-        >
-          {!initialLoaded
-            ? t('加载中...')
-            : checkinData.stats?.checked_in_today
-              ? t('今日已签到')
-              : t('立即签到')}
-        </Button>
       </div>
 
-      {/* 可折叠内容 */}
-      <Collapsible isOpen={isCollapsed === false} keepDOM>
-        {/* 签到统计 */}
-        <div className='grid grid-cols-3 gap-3 mb-4 mt-4'>
-          <div className='text-center p-2.5 bg-slate-50 dark:bg-slate-800 rounded-lg'>
-            <div className='text-xl font-bold text-green-600'>
-              {checkinData.stats?.total_checkins || 0}
+      {/* 签到操作卡片 - 与安全设置等卡片统一的子卡片风格 */}
+      <Card className='!rounded-xl border dark:border-gray-700 mb-4'>
+        <div className='flex flex-col sm:flex-row items-start sm:items-center sm:justify-between gap-4'>
+          <div className='flex items-start w-full sm:w-auto'>
+            <div className='w-12 h-12 rounded-full bg-green-50 dark:bg-green-900/30 flex items-center justify-center mr-4 flex-shrink-0'>
+              <Gift
+                size={22}
+                className='text-green-600 dark:text-green-400'
+              />
             </div>
-            <div className='text-xs text-gray-500'>{t('累计签到')}</div>
-          </div>
-          <div className='text-center p-2.5 bg-slate-50 dark:bg-slate-800 rounded-lg'>
-            <div className='text-xl font-bold text-orange-600'>
-              {renderQuota(monthlyQuota, 6)}
+            <div>
+              <Typography.Title heading={6} className='mb-1'>
+                {isCheckedInToday ? t('今日已签到') : t('立即签到')}
+              </Typography.Title>
+              <Typography.Text type='tertiary' className='text-sm'>
+                {t('每日签到可获得随机额度奖励')}
+              </Typography.Text>
             </div>
-            <div className='text-xs text-gray-500'>{t('本月获得')}</div>
           </div>
-          <div className='text-center p-2.5 bg-slate-50 dark:bg-slate-800 rounded-lg'>
-            <div className='text-xl font-bold text-blue-600'>
-              {renderQuota(checkinData.stats?.total_quota || 0, 6)}
-            </div>
-            <div className='text-xs text-gray-500'>{t('累计获得')}</div>
-          </div>
+          <Button
+            type='primary'
+            theme='solid'
+            icon={<Gift size={16} />}
+            onClick={() => doCheckin()}
+            loading={checkinLoading || !initialLoaded}
+            disabled={!initialLoaded || isCheckedInToday}
+            className='!bg-green-600 hover:!bg-green-700 w-full sm:w-auto'
+          >
+            {!initialLoaded
+              ? t('加载中...')
+              : isCheckedInToday
+                ? t('今日已签到')
+                : t('立即签到')}
+          </Button>
         </div>
+      </Card>
 
-        {/* 签到日历 - 使用更紧凑的样式 */}
-        <Spin spinning={loading}>
-          <div className='border rounded-lg overflow-hidden checkin-calendar'>
-            <style>{`
-            .checkin-calendar .semi-calendar {
-              font-size: 13px;
-            }
-            .checkin-calendar .semi-calendar-month-header {
-              padding: 8px 12px;
-            }
-            .checkin-calendar .semi-calendar-month-week-row {
-              height: 28px;
-            }
-            .checkin-calendar .semi-calendar-month-week-row th {
-              font-size: 12px;
-              padding: 4px 0;
-            }
-            .checkin-calendar .semi-calendar-month-grid-row {
-              height: auto;
-            }
-            .checkin-calendar .semi-calendar-month-grid-row td {
-              height: 56px;
-              padding: 2px;
-            }
-            .checkin-calendar .semi-calendar-month-grid-row-cell {
-              position: relative;
-              height: 100%;
-            }
-            .checkin-calendar .semi-calendar-month-grid-row-cell-day {
-              position: absolute;
-              top: 4px;
-              left: 50%;
-              transform: translateX(-50%);
-              font-size: 12px;
-              z-index: 1;
-            }
-            .checkin-calendar .semi-calendar-month-same {
-              background: transparent;
-            }
-            .checkin-calendar .semi-calendar-month-today .semi-calendar-month-grid-row-cell-day {
-              background: var(--semi-color-primary);
-              color: white;border-radius: 50%;
-              width: 20px;
-              height: 20px;
-              display: flex;
-              align-items: center;
-              justify-content: center;}
-          `}</style>
-            <Calendar
-              mode='month'
-              onChange={handleMonthChange}
-              dateGridRender={(dateString, date) => dateRender(dateString)}
-            />
+      {/* 统计数据 - 使用与安全设置卡片统一的列表布局 */}
+      <div className='space-y-4'>
+        <Card className='!rounded-xl border dark:border-gray-700'>
+          <div className='flex flex-col sm:flex-row items-start sm:justify-between gap-4'>
+            <div className='flex items-start w-full sm:w-auto'>
+              <div className='w-12 h-12 rounded-full bg-green-50 dark:bg-green-900/30 flex items-center justify-center mr-4 flex-shrink-0'>
+                <CalendarCheck
+                  size={20}
+                  className='text-green-600 dark:text-green-400'
+                />
+              </div>
+              <div>
+                <Typography.Title heading={6} className='mb-1'>
+                  {t('累计签到')}
+                </Typography.Title>
+                <Typography.Text type='tertiary' className='text-sm'>
+                  {t('签到奖励将直接添加到您的账户余额')}
+                </Typography.Text>
+              </div>
+            </div>
+            <div className='text-right flex-shrink-0'>
+              <div className='text-2xl font-bold text-green-600 dark:text-green-400'>
+                {totalCheckins}
+              </div>
+              <div className='text-xs text-gray-500'>{t('天')}</div>
+            </div>
           </div>
-        </Spin>
+        </Card>
+
+        <Card className='!rounded-xl border dark:border-gray-700'>
+          <div className='flex flex-col sm:flex-row items-start sm:justify-between gap-4'>
+            <div className='flex items-start w-full sm:w-auto'>
+              <div className='w-12 h-12 rounded-full bg-orange-50 dark:bg-orange-900/30 flex items-center justify-center mr-4 flex-shrink-0'>
+                <Gift
+                  size={20}
+                  className='text-orange-600 dark:text-orange-400'
+                />
+              </div>
+              <div>
+                <Typography.Title heading={6} className='mb-1'>
+                  {t('本月获得')}
+                </Typography.Title>
+                <Typography.Text type='tertiary' className='text-sm'>
+                  {t('签到奖励将直接添加到您的账户余额')}
+                </Typography.Text>
+              </div>
+            </div>
+            <div className='text-right flex-shrink-0'>
+              <div className='text-2xl font-bold text-orange-600 dark:text-orange-400'>
+                {renderQuota(monthlyQuota, 6)}
+              </div>
+              <div className='text-xs text-gray-500'>{t('额度')}</div>
+            </div>
+          </div>
+        </Card>
+
+        <Card className='!rounded-xl border dark:border-gray-700'>
+          <div className='flex flex-col sm:flex-row items-start sm:justify-between gap-4'>
+            <div className='flex items-start w-full sm:w-auto'>
+              <div className='w-12 h-12 rounded-full bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center mr-4 flex-shrink-0'>
+                <Gift
+                  size={20}
+                  className='text-blue-600 dark:text-blue-400'
+                />
+              </div>
+              <div>
+                <Typography.Title heading={6} className='mb-1'>
+                  {t('累计获得')}
+                </Typography.Title>
+                <Typography.Text type='tertiary' className='text-sm'>
+                  {t('签到奖励将直接添加到您的账户余额')}
+                </Typography.Text>
+              </div>
+            </div>
+            <div className='text-right flex-shrink-0'>
+              <div className='text-2xl font-bold text-blue-600 dark:text-blue-400'>
+                {renderQuota(checkinData.stats?.total_quota || 0, 6)}
+              </div>
+              <div className='text-xs text-gray-500'>{t('额度')}</div>
+            </div>
+          </div>
+        </Card>
+
+        {/* 签到日历 */}
+        <Card className='!rounded-xl border dark:border-gray-700'>
+          <Spin spinning={loading}>
+            <div className='checkin-calendar'>
+              <Calendar
+                mode='month'
+                onChange={handleMonthChange}
+                dateGridRender={(dateString, date) => dateRender(dateString)}
+              />
+            </div>
+          </Spin>
+        </Card>
 
         {/* 签到说明 */}
-        <div className='mt-3 p-2.5 bg-slate-50 dark:bg-slate-800 rounded-lg'>
+        <div className='px-1'>
           <Typography.Text type='tertiary' className='text-xs'>
             <ul className='list-disc list-inside space-y-0.5'>
               <li>{t('每日签到可获得随机额度奖励')}</li>
@@ -376,7 +370,7 @@ const CheckinCalendar = ({ t, status, turnstileEnabled, turnstileSiteKey }) => {
             </ul>
           </Typography.Text>
         </div>
-      </Collapsible>
+      </div>
     </Card>
   );
 };

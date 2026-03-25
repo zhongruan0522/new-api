@@ -875,3 +875,50 @@ html.dark .with-pastel-balls::before {
 .semi-datepicker-range-input {
   border-radius: 10px !important;
 }
+
+/* ==================== 签到日历样式 ==================== */
+.checkin-calendar .semi-calendar {
+  font-size: 13px;
+}
+.checkin-calendar .semi-calendar-month-header {
+  padding: 8px 12px;
+}
+.checkin-calendar .semi-calendar-month-week-row {
+  height: 28px;
+}
+.checkin-calendar .semi-calendar-month-week-row th {
+  font-size: 12px;
+  padding: 4px 0;
+}
+.checkin-calendar .semi-calendar-month-grid-row {
+  height: auto;
+}
+.checkin-calendar .semi-calendar-month-grid-row td {
+  height: 56px;
+  padding: 2px;
+}
+.checkin-calendar .semi-calendar-month-grid-row-cell {
+  position: relative;
+  height: 100%;
+}
+.checkin-calendar .semi-calendar-month-grid-row-cell-day {
+  position: absolute;
+  top: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 12px;
+  z-index: 1;
+}
+.checkin-calendar .semi-calendar-month-same {
+  background: transparent;
+}
+.checkin-calendar .semi-calendar-month-today .semi-calendar-month-grid-row-cell-day {
+  background: var(--semi-color-primary);
+  color: white;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
