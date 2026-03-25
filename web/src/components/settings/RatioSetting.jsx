@@ -23,7 +23,6 @@ import { useTranslation } from 'react-i18next';
 
 import GroupRatioSettings from '../../pages/Setting/Ratio/GroupRatioSettings';
 import ModelSettingsVisualEditor from '../../pages/Setting/Ratio/ModelSettingsVisualEditor';
-import UpstreamRatioSync from '../../pages/Setting/Ratio/UpstreamRatioSync';
 
 import { API, showError, toBoolean } from '../../helpers';
 
@@ -43,7 +42,6 @@ const RatioSetting = () => {
     AudioCompletionRatio: '',
     AutoGroups: '',
     DefaultUseAutoGroup: false,
-    ExposeRatioEnabled: false,
     UserUsableGroups: '',
     'group_ratio_setting.group_special_usable_group': '',
   });
@@ -63,7 +61,7 @@ const RatioSetting = () => {
             // 如果后端返回的不是合法 JSON，直接展示
           }
         }
-        if (['DefaultUseAutoGroup', 'ExposeRatioEnabled'].includes(item.key)) {
+        if (['DefaultUseAutoGroup'].includes(item.key)) {
           newInputs[item.key] = toBoolean(item.value);
         } else {
           newInputs[item.key] = item.value;
@@ -101,9 +99,6 @@ const RatioSetting = () => {
           </Tabs.TabPane>
           <Tabs.TabPane tab={t('可视化倍率设置')} itemKey='visual'>
             <ModelSettingsVisualEditor options={inputs} refresh={onRefresh} />
-          </Tabs.TabPane>
-          <Tabs.TabPane tab={t('上游倍率同步')} itemKey='upstream_sync'>
-            <UpstreamRatioSync options={inputs} refresh={onRefresh} />
           </Tabs.TabPane>
         </Tabs>
       </Card>

@@ -48,7 +48,6 @@ export default function ModelRatioSettings(props) {
     ImageRatio: '',
     AudioRatio: '',
     AudioCompletionRatio: '',
-    ExposeRatioEnabled: false,
   });
   const refForm = useRef();
   const [inputsRow, setInputsRow] = useState(inputs);
@@ -315,17 +314,6 @@ export default function ModelRatioSettings(props) {
               ]}
               onChange={(value) =>
                 setInputs({ ...inputs, AudioCompletionRatio: value })
-              }
-            />
-          </Col>
-        </Row>
-        <Row gutter={16}>
-          <Col span={16}>
-            <Form.Switch
-              label={t('暴露倍率接口')}
-              field={'ExposeRatioEnabled'}
-              onChange={(value) =>
-                setInputs({ ...inputs, ExposeRatioEnabled: value })
               }
             />
           </Col>
