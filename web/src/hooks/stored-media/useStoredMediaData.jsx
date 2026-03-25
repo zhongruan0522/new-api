@@ -78,8 +78,6 @@ export const useStoredMediaData = () => {
     return (rawItems || []).map((it) => ({
       ...it,
       key: `${it.media_type || 'unknown'}:${it.id}`,
-      base_preview: it.base_preview || '',
-      base_truncated: !!it.base_truncated,
     }));
   };
 
@@ -175,8 +173,6 @@ export const useStoredMediaData = () => {
           if (it.key !== key) return it;
           return {
             ...it,
-            base_preview: data?.base_preview || it.base_preview || '',
-            base_truncated: !!data?.base_truncated,
             url: data?.url || it.url,
           };
         }),
