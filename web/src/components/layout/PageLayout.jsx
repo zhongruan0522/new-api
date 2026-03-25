@@ -57,6 +57,7 @@ const PageLayout = () => {
     '/console/midjourney',
     '/console/task',
     '/console/models',
+    '/console/multimodal-files',
     '/pricing',
   ];
 
