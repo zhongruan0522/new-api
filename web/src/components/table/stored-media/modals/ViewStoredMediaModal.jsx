@@ -19,7 +19,6 @@ For commercial licensing, please contact support@quantumnous.com
 
 import React from 'react';
 import { Modal, Input, Tag, Typography } from '@douyinfe/semi-ui';
-import { TextArea } from '@douyinfe/semi-ui';
 import { timestamp2string } from '../../../../helpers';
 
 const { Text } = Typography;
@@ -27,8 +26,6 @@ const { Text } = Typography;
 const ViewStoredMediaModal = ({ visible, onCancel, data, t }) => {
   const mediaType = data?.media_type;
   const url = data?.url || '';
-  const basePreview = data?.base_preview || '';
-  const truncated = !!data?.base_truncated;
 
   return (
     <Modal
@@ -49,11 +46,6 @@ const ViewStoredMediaModal = ({ visible, onCancel, data, t }) => {
           {mediaType && (
             <Tag color='white' shape='circle'>
               {mediaType}
-            </Tag>
-          )}
-          {truncated && (
-            <Tag color='orange' shape='circle'>
-              {t('已截断')}
             </Tag>
           )}
         </div>
@@ -84,15 +76,6 @@ const ViewStoredMediaModal = ({ visible, onCancel, data, t }) => {
             />
           </div>
         )}
-
-        <div className='flex flex-col gap-2'>
-          <Text type='secondary'>{t('原Base')}</Text>
-          <TextArea
-            value={basePreview || ''}
-            readOnly
-            autosize={{ minRows: 4, maxRows: 10 }}
-          />
-        </div>
       </div>
     </Modal>
   );
