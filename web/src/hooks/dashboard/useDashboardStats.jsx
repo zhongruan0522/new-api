@@ -18,7 +18,7 @@ For commercial licensing, please contact support@quantumnous.com
 */
 
 import { useMemo } from 'react';
-import { Wallet, Activity, Zap, Gauge } from 'lucide-react';
+import { Wallet, Activity, Zap, Gauge, ImageOff } from 'lucide-react';
 import {
   IconMoneyExchangeStroked,
   IconHistogram,
@@ -132,11 +132,35 @@ export const useDashboardStats = (
           },
         ],
       },
+      {
+        title: createSectionTitle(ImageOff, t('适配非多模态')),
+        color: 'bg-rose-50',
+        items: [
+          {
+            title: t('图片转URL'),
+            value: userState.user?.image_converted_count || 0,
+            icon: <IconHistogram />,
+            avatarColor: 'rose',
+            trendData: [],
+            trendColor: '#f43f5e',
+          },
+          {
+            title: t('视频转URL'),
+            value: userState.user?.video_converted_count || 0,
+            icon: <IconPulse />,
+            avatarColor: 'amber',
+            trendData: [],
+            trendColor: '#f59e0b',
+          },
+        ],
+      },
     ],
     [
       userState?.user?.quota,
       userState?.user?.used_quota,
       userState?.user?.request_count,
+      userState?.user?.image_converted_count,
+      userState?.user?.video_converted_count,
       times,
       consumeQuota,
       consumeTokens,

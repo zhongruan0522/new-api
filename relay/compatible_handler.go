@@ -64,6 +64,9 @@ func TextHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *types
 		videoMaxBytes := int64(constant.MaxVideoUploadMB) * 1024 * 1024
 		imagePoolMaxBytes := int64(constant.StoredImagePoolMB) * 1024 * 1024
 		videoPoolMaxBytes := int64(constant.StoredVideoPoolMB) * 1024 * 1024
+		// 跟踪本次请求中新增存储的图片/视频数量（去重命中不计入）
+		newImageCount := 0
+		newVideoCount := 0
 
 		resolveURL := func(rawURL string, mediaContentType string) (string, error) {
 			rawURL = strings.TrimSpace(rawURL)
@@ -142,6 +145,7 @@ func TextHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *types
 					return "", types.NewError(fmt.Errorf("enforce stored image pool limit failed: %w", err), types.ErrorCodeUpdateDataError, types.ErrOptionWithSkipRetry())
 				}
 
+				newImageCount++
 				u := buildStoredImageURL(c, img.Id)
 				storedURLBySHA[cacheKey] = u
 				return u, nil
@@ -170,6 +174,7 @@ func TextHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *types
 				return "", types.NewError(fmt.Errorf("enforce stored video pool limit failed: %w", err), types.ErrorCodeUpdateDataError, types.ErrOptionWithSkipRetry())
 			}
 
+			newVideoCount++
 			u := buildStoredVideoURL(c, v.Id)
 			storedURLBySHA[cacheKey] = u
 			return u, nil
@@ -192,6 +197,11 @@ func TextHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *types
 			}
 		default:
 			return types.NewErrorWithStatusCode(fmt.Errorf("unsupported image_auto_convert_to_url_mode: %s", mediaMode), types.ErrorCodeInvalidRequest, http.StatusBadRequest, types.ErrOptionWithSkipRetry())
+		}
+
+		// 异步更新用户的多模态适配转换计数
+		if newImageCount > 0 || newVideoCount > 0 {
+			go model.IncrementMediaConvertedCount(info.UserId, newImageCount, newVideoCount)
 		}
 	}
 
