@@ -133,6 +133,9 @@ func SetApiRouter(router *gin.Engine) {
 			dbRoute.GET("/pre_migrate/info", controller.GetDBPreMigrateInfo)
 			dbRoute.POST("/pre_migrate", middleware.CriticalRateLimit(), controller.StartDBPreMigrate)
 			dbRoute.GET("/pre_migrate/:id", controller.GetDBPreMigrateJob)
+			dbRoute.GET("/same_type_migrate/info", controller.GetDBSameTypeMigrateInfo)
+			dbRoute.POST("/same_type_migrate", middleware.CriticalRateLimit(), controller.StartDBSameTypeMigrate)
+			dbRoute.GET("/same_type_migrate/:id", controller.GetDBSameTypeMigrateJob)
 		}
 
 		performanceRoute := apiRouter.Group("/performance")
