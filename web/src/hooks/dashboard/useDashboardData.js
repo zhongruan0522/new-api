@@ -214,7 +214,7 @@ export const useDashboardData = (userState, userDispatch, statusState) => {
     }
   }, [activeUptimeTab]);
 
-  // 加载时间段内的成功/失败次数统计
+  // 加载时间段内的成功/失败次数统计（从 logs 表直接查询，与 fail_count 同口径）
   const loadStatData = useCallback(async () => {
     try {
       const { start_timestamp, end_timestamp } = inputs;
@@ -226,6 +226,7 @@ export const useDashboardData = (userState, userDispatch, statusState) => {
       const res = await API.get(url);
       const { success, data } = res.data;
       if (success && data) {
+        setTimes(data.success_count || 0);
         setFailCount(data.fail_count || 0);
       }
     } catch (err) {

@@ -65,7 +65,6 @@ const Dashboard = () => {
     dashboardData.dataExportDefaultTime,
     dashboardData.setTrendData,
     dashboardData.setConsumeQuota,
-    dashboardData.setTimes,
     dashboardData.setConsumeTokens,
     dashboardData.setPieData,
     dashboardData.setLineData,
@@ -93,7 +92,10 @@ const Dashboard = () => {
         dashboardCharts.updateChartData(data);
       }
     });
-    await dashboardData.loadUptimeData();
+    await Promise.all([
+      dashboardData.loadUptimeData(),
+      dashboardData.loadStatData(),
+    ]);
   };
 
   const handleRefresh = async () => {
