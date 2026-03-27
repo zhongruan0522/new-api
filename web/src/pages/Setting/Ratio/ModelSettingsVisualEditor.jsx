@@ -40,6 +40,7 @@ import {
 import { API, showError, showSuccess } from '../../../helpers';
 import { useTranslation } from 'react-i18next';
 
+// 所有按量计费的倍率字段（内部存储用，前端统一以价格展示）
 const PER_TOKEN_RATIO_FIELDS = [
   'ratio',
   'completionRatio',
@@ -52,7 +53,6 @@ const PER_TOKEN_RATIO_FIELDS = [
 
 const MODEL_PRICING_FIELDS = ['price', ...PER_TOKEN_RATIO_FIELDS];
 
-// 统一处理可视化计费编辑里的倍率/价格换算，避免不同入口出现计算口径不一致。
 const hasValue = (value) => value !== '' && value !== undefined && value !== null;
 
 const normalizeEditableValue = (value) => (hasValue(value) ? `${value}` : '');
@@ -90,8 +90,13 @@ const parseInputNumber = (value) => {
   return Number.isFinite(parsed) ? parsed : null;
 };
 
-const calculateTokenPriceFromRatio = (ratio) => ratio * 2;
+// 倍率 → 价格：ratio * 2 = $/1M tokens（因为 ratio 1 = $0.002/1K = $2/1M）
+const ratioToPrice = (ratio) => ratio * 2;
 
+// 价格 → 倍率
+const priceToRatio = (price) => price / 2;
+
+// 相对倍率计算（用于补全、缓存等相对于基础倍率的换算）
 const calculateRelativeRatio = (targetPrice, basePrice) => {
   if (
     !Number.isFinite(targetPrice) ||
@@ -109,7 +114,8 @@ const hasPerTokenPricing = (model) =>
 const buildConflictState = (model) =>
   hasValue(model?.price) && hasPerTokenPricing(model);
 
-const buildTokenPriceFieldsFromRatios = (model) => {
+// 从倍率字段构建价格显示值（用于弹窗编辑时的价格字段回显）
+const buildPriceFieldsFromRatios = (model) => {
   const ratio = parseInputNumber(model?.ratio);
   const completionRatio = parseInputNumber(model?.completionRatio);
   const cacheRatio = parseInputNumber(model?.cacheRatio);
@@ -118,7 +124,7 @@ const buildTokenPriceFieldsFromRatios = (model) => {
   const audioRatio = parseInputNumber(model?.audioRatio);
   const audioCompletionRatio = parseInputNumber(model?.audioCompletionRatio);
 
-  const tokenPrice = ratio !== null ? calculateTokenPriceFromRatio(ratio) : null;
+  const tokenPrice = ratio !== null ? ratioToPrice(ratio) : null;
   const audioTokenPrice =
     tokenPrice !== null && audioRatio !== null ? tokenPrice * audioRatio : null;
 
@@ -148,7 +154,8 @@ const buildTokenPriceFieldsFromRatios = (model) => {
   };
 };
 
-const syncRatioFieldsFromTokenPrices = (model) => {
+// 从价格字段同步回倍率字段（保存前调用，确保存储的是倍率）
+const syncRatioFieldsFromPrices = (model) => {
   const tokenPrice = parseInputNumber(model?.tokenPrice);
   const completionTokenPrice = parseInputNumber(model?.completionTokenPrice);
   const cacheTokenPrice = parseInputNumber(model?.cacheTokenPrice);
@@ -163,7 +170,7 @@ const syncRatioFieldsFromTokenPrices = (model) => {
     ...(model || {}),
     ratio:
       tokenPrice !== null
-        ? (tokenPrice / 2).toString()
+        ? priceToRatio(tokenPrice).toString()
         : hasValue(model?.tokenPrice)
           ? ''
           : normalizeEditableValue(model?.ratio),
@@ -203,6 +210,20 @@ const clearPerTokenPricing = (model) => ({
   hasConflict: false,
 });
 
+// 倍率 → 显示价格（用于表格列渲染）
+const ratioToDisplayPrice = (ratio) => {
+  if (!hasValue(ratio)) return '';
+  const r = Number(ratio);
+  return Number.isFinite(r) ? (r * 2).toString() : '';
+};
+
+// 显示价格 → 倍率（用于表格列输入后存储）
+const displayPriceToRatio = (price) => {
+  if (!hasValue(price)) return '';
+  const p = Number(price);
+  return Number.isFinite(p) ? (p / 2).toString() : '';
+};
+
 export default function ModelSettingsVisualEditor(props) {
   const { t } = useTranslation();
   const [models, setModels] = useState([]);
@@ -214,7 +235,6 @@ export default function ModelSettingsVisualEditor(props) {
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const [pricingMode, setPricingMode] = useState('per-token'); // 'per-token' or 'per-request'
-  const [pricingSubMode, setPricingSubMode] = useState('ratio'); // 'ratio' or 'token-price'
   const [conflictOnly, setConflictOnly] = useState(false);
   const formRef = useRef(null);
   const pageSize = 10;
@@ -249,7 +269,6 @@ export default function ModelSettingsVisualEditor(props) {
       const audioRatio = JSON.parse(props.options.AudioRatio || '{}');
       const audioCompletionRatio = JSON.parse(props.options.AudioCompletionRatio || '{}');
 
-      // 将已配置模型与已启用但未配置的模型合并到同一张表里，方便直接补齐空白配置。
       const configuredModelNames = new Set([
         ...Object.keys(modelPrice),
         ...Object.keys(modelRatio),
@@ -307,21 +326,18 @@ export default function ModelSettingsVisualEditor(props) {
     }
   }, [enabledModels, props.options]);
 
-  // 首先声明分页相关的工具函数
   const getPagedData = (data, currentPage, pageSize) => {
     const start = (currentPage - 1) * pageSize;
     const end = start + pageSize;
     return data.slice(start, end);
   };
 
-  // 在 return 语句之前，先处理过滤和分页逻辑
   const filteredModels = models.filter((model) => {
     const keywordMatch = searchText ? model.name.includes(searchText) : true;
     const conflictMatch = conflictOnly ? model.hasConflict : true;
     return keywordMatch && conflictMatch;
   });
 
-  // 然后基于过滤后的数据计算分页数据
   const pagedData = getPagedData(filteredModels, currentPage, pageSize);
 
   const SubmitData = async () => {
@@ -339,7 +355,6 @@ export default function ModelSettingsVisualEditor(props) {
     let currentConvertModelName = '';
 
     try {
-      // 数据转换
       models.forEach((model) => {
         currentConvertModelName = model.name;
         if (model.price !== '') {
@@ -364,7 +379,6 @@ export default function ModelSettingsVisualEditor(props) {
           output.AudioCompletionRatio[model.name] = parseFloat(model.audioCompletionRatio);
       });
 
-      // 准备API请求数组
       const finalOutput = {
         ModelPrice: JSON.stringify(output.ModelPrice, null, 2),
         ModelRatio: JSON.stringify(output.ModelRatio, null, 2),
@@ -383,10 +397,8 @@ export default function ModelSettingsVisualEditor(props) {
         });
       });
 
-      // 批量处理请求
       const results = await Promise.all(requestQueue);
 
-      // 验证结果
       if (requestQueue.length === 1) {
         if (results.includes(undefined)) return;
       } else if (requestQueue.length > 1) {
@@ -395,7 +407,6 @@ export default function ModelSettingsVisualEditor(props) {
         }
       }
 
-      // 检查每个请求的结果
       for (const res of results) {
         if (!res.data.success) {
           return showError(res.data.message);
@@ -412,6 +423,7 @@ export default function ModelSettingsVisualEditor(props) {
     }
   };
 
+  // 表格列：统一以价格（$/1M tokens）展示，内部仍存倍率
   const columns = [
     {
       title: t('模型名称'),
@@ -441,104 +453,130 @@ export default function ModelSettingsVisualEditor(props) {
       ),
     },
     {
-      title: t('模型倍率'),
+      title: `${t('输入价格')} ($/1M)`,
       dataIndex: 'ratio',
       key: 'ratio',
       render: (text, record) => (
         <Input
-          value={text}
-          placeholder={record.price !== '' ? t('模型倍率') : t('默认补全倍率')}
+          value={ratioToDisplayPrice(text)}
+          placeholder={record.price !== '' ? '-' : t('默认补全倍率')}
           disabled={record.price !== ''}
-          onChange={(value) => updateModel(record.name, 'ratio', value)}
+          onChange={(value) =>
+            updateModel(record.name, 'ratio', displayPriceToRatio(value))
+          }
         />
       ),
     },
     {
-      title: t('补全倍率'),
+      title: `${t('输出价格')} ($/1M)`,
       dataIndex: 'completionRatio',
       key: 'completionRatio',
       render: (text, record) => (
         <Input
-          value={text}
-          placeholder={record.price !== '' ? t('补全倍率') : t('默认补全倍率')}
+          value={completionRatioToDisplayPrice(text, record.ratio)}
+          placeholder={record.price !== '' ? '-' : t('默认补全倍率')}
           disabled={record.price !== ''}
           onChange={(value) =>
-            updateModel(record.name, 'completionRatio', value)
+            updateModel(
+              record.name,
+              'completionRatio',
+              displayPriceToCompletionRatio(value, record.ratio),
+            )
           }
         />
       ),
     },
     {
-      title: t('缓存倍率'),
+      title: `${t('缓存读取价格')} ($/1M)`,
       dataIndex: 'cacheRatio',
       key: 'cacheRatio',
       render: (text, record) => (
         <Input
-          value={text}
+          value={relativeRatioToDisplayPrice(text, record.ratio)}
           placeholder={t('缓存读取')}
           disabled={record.price !== ''}
           onChange={(value) =>
-            updateModel(record.name, 'cacheRatio', value)
+            updateModel(
+              record.name,
+              'cacheRatio',
+              displayPriceToRelativeRatio(value, record.ratio),
+            )
           }
         />
       ),
     },
     {
-      title: t('缓存创建倍率'),
+      title: `${t('缓存创建价格')} ($/1M)`,
       dataIndex: 'createCacheRatio',
       key: 'createCacheRatio',
       render: (text, record) => (
         <Input
-          value={text}
+          value={relativeRatioToDisplayPrice(text, record.ratio)}
           placeholder={t('缓存创建')}
           disabled={record.price !== ''}
           onChange={(value) =>
-            updateModel(record.name, 'createCacheRatio', value)
+            updateModel(
+              record.name,
+              'createCacheRatio',
+              displayPriceToRelativeRatio(value, record.ratio),
+            )
           }
         />
       ),
     },
     {
-      title: t('音频倍率'),
+      title: `${t('音频输入价格')} ($/1M)`,
       dataIndex: 'audioRatio',
       key: 'audioRatio',
       render: (text, record) => (
         <Input
-          value={text}
+          value={relativeRatioToDisplayPrice(text, record.ratio)}
           placeholder={t('音频输入')}
           disabled={record.price !== ''}
           onChange={(value) =>
-            updateModel(record.name, 'audioRatio', value)
+            updateModel(
+              record.name,
+              'audioRatio',
+              displayPriceToRelativeRatio(value, record.ratio),
+            )
           }
         />
       ),
     },
     {
-      title: t('音频补全倍率'),
+      title: `${t('音频输出价格')} ($/1M)`,
       dataIndex: 'audioCompletionRatio',
       key: 'audioCompletionRatio',
       render: (text, record) => (
         <Input
-          value={text}
+          value={audioCompletionRatioToDisplayPrice(text, record.ratio, record.audioRatio)}
           placeholder={t('音频输出')}
           disabled={record.price !== ''}
           onChange={(value) =>
-            updateModel(record.name, 'audioCompletionRatio', value)
+            updateModel(
+              record.name,
+              'audioCompletionRatio',
+              displayPriceToAudioCompletionRatio(value, record.ratio, record.audioRatio),
+            )
           }
         />
       ),
     },
     {
-      title: t('图片倍率'),
+      title: `${t('图片输入价格')} ($/1M)`,
       dataIndex: 'imageRatio',
       key: 'imageRatio',
       render: (text, record) => (
         <Input
-          value={text}
+          value={relativeRatioToDisplayPrice(text, record.ratio)}
           placeholder={t('图片输入')}
           disabled={record.price !== ''}
           onChange={(value) =>
-            updateModel(record.name, 'imageRatio', value)
+            updateModel(
+              record.name,
+              'imageRatio',
+              displayPriceToRelativeRatio(value, record.ratio),
+            )
           }
         />
       ),
@@ -582,16 +620,16 @@ export default function ModelSettingsVisualEditor(props) {
     setModels((prev) => prev.filter((model) => model.name !== name));
   };
 
+  // 弹窗中价格输入的 onChange 处理（输入价格 → 自动转为倍率存入 currentModel）
   const handleTokenPriceChange = (value) => {
     const newState = {
       ...(currentModel || {}),
       tokenPrice: value,
       ratio: hasValue(value) && !isNaN(value)
-        ? (Number(value) / 2).toString()
+        ? priceToRatio(Number(value)).toString()
         : '',
     };
-
-    setCurrentModel(syncRatioFieldsFromTokenPrices(newState));
+    setCurrentModel(syncRatioFieldsFromPrices(newState));
   };
 
   const handleCompletionTokenPriceChange = (value) => {
@@ -603,7 +641,6 @@ export default function ModelSettingsVisualEditor(props) {
           ? calculateRelativeRatio(Number(value), Number(currentModel.tokenPrice))
           : '',
     };
-
     setCurrentModel(newState);
   };
 
@@ -616,7 +653,6 @@ export default function ModelSettingsVisualEditor(props) {
           ? calculateRelativeRatio(Number(value), Number(currentModel.tokenPrice))
           : '',
     };
-
     setCurrentModel(newState);
   };
 
@@ -629,7 +665,6 @@ export default function ModelSettingsVisualEditor(props) {
           ? calculateRelativeRatio(Number(value), Number(currentModel.tokenPrice))
           : '',
     };
-
     setCurrentModel(newState);
   };
 
@@ -642,8 +677,7 @@ export default function ModelSettingsVisualEditor(props) {
           ? calculateRelativeRatio(Number(value), Number(currentModel.tokenPrice))
           : '',
     };
-
-    setCurrentModel(syncRatioFieldsFromTokenPrices(newState));
+    setCurrentModel(syncRatioFieldsFromPrices(newState));
   };
 
   const handleAudioCompletionTokenPriceChange = (value) => {
@@ -655,7 +689,6 @@ export default function ModelSettingsVisualEditor(props) {
           ? calculateRelativeRatio(Number(value), Number(currentModel.audioTokenPrice))
           : '',
     };
-
     setCurrentModel(newState);
   };
 
@@ -668,18 +701,15 @@ export default function ModelSettingsVisualEditor(props) {
           ? calculateRelativeRatio(Number(value), Number(currentModel.tokenPrice))
           : '',
     };
-
     setCurrentModel(newState);
   };
 
   const addOrUpdateModel = (values) => {
-    // Check if we're editing an existing model or adding a new one
     const existingModelIndex = models.findIndex(
       (model) => model.name === values.name,
     );
 
     if (existingModelIndex >= 0) {
-      // Update existing model
       setModels((prev) =>
         sortModels(
           prev.map((model, index) => {
@@ -706,8 +736,6 @@ export default function ModelSettingsVisualEditor(props) {
       setVisible(false);
       showSuccess(t('更新成功'));
     } else {
-      // Add new model
-      // Check if model name already exists
       if (models.some((model) => model.name === values.name)) {
         showError(t('模型名称已存在'));
         return;
@@ -739,57 +767,36 @@ export default function ModelSettingsVisualEditor(props) {
   const resetModalState = () => {
     setCurrentModel(null);
     setPricingMode('per-token');
-    setPricingSubMode('ratio');
     setIsEditMode(false);
   };
 
   const editModel = (record) => {
     setIsEditMode(true);
-    // Determine which pricing mode to use based on the model's current configuration
-    let initialPricingMode = 'per-token';
-    let initialPricingSubMode = 'ratio';
 
+    let initialPricingMode = 'per-token';
     if (record.price !== '') {
       initialPricingMode = 'per-request';
-    } else {
-      initialPricingMode = 'per-token';
-      // We default to ratio mode, but could set to token-price if needed
     }
 
-    // Set the pricing modes for the form
     setPricingMode(initialPricingMode);
-    setPricingSubMode(initialPricingSubMode);
 
-    // Create a copy of the model data to avoid modifying the original
+    // 从倍率构建价格字段用于弹窗回显
     const modelCopy = {
       ...record,
-      ...buildTokenPriceFieldsFromRatios(record),
+      ...buildPriceFieldsFromRatios(record),
     };
 
-    // Set the current model
     setCurrentModel(modelCopy);
-
-    // Open the modal
     setVisible(true);
 
-    // Use setTimeout to ensure the form is rendered before setting values
     setTimeout(() => {
       if (formRef.current) {
-        // Update the form fields based on pricing mode
-        const formValues = {
-          name: modelCopy.name,
-        };
+        const formValues = { name: modelCopy.name };
 
         if (initialPricingMode === 'per-request') {
           formValues.priceInput = modelCopy.price;
-        } else if (initialPricingMode === 'per-token') {
-          formValues.ratioInput = modelCopy.ratio;
-          formValues.completionRatioInput = modelCopy.completionRatio;
-          formValues.cacheRatioInput = modelCopy.cacheRatio;
-          formValues.createCacheRatioInput = modelCopy.createCacheRatio;
-          formValues.audioRatioInput = modelCopy.audioRatio;
-          formValues.audioCompletionRatioInput = modelCopy.audioCompletionRatio;
-          formValues.imageRatioInput = modelCopy.imageRatio;
+        } else {
+          // 按量计费统一以价格展示
           formValues.modelTokenPrice = modelCopy.tokenPrice;
           formValues.completionTokenPrice = modelCopy.completionTokenPrice;
           formValues.cacheTokenPrice = modelCopy.cacheTokenPrice;
@@ -867,13 +874,12 @@ export default function ModelSettingsVisualEditor(props) {
           if (currentModel) {
             let valuesToSave = { ...currentModel };
 
-            if (pricingMode === 'per-token' && pricingSubMode === 'token-price') {
-              valuesToSave = syncRatioFieldsFromTokenPrices(valuesToSave);
-            }
-
+            // 按量计费：将价格字段同步回倍率字段
             if (pricingMode === 'per-token') {
+              valuesToSave = syncRatioFieldsFromPrices(valuesToSave);
               valuesToSave.price = '';
             } else {
+              // 按次计费：清除按量字段
               valuesToSave = clearPerTokenPricing(valuesToSave);
             }
 
@@ -902,44 +908,23 @@ export default function ModelSettingsVisualEditor(props) {
                   const newMode = e.target.value;
                   setPricingMode(newMode);
 
-                  // Instead of resetting all values, convert between modes
                   if (currentModel) {
                     const updatedModel =
                       newMode === 'per-token'
                         ? {
                             ...currentModel,
-                            ...buildTokenPriceFieldsFromRatios(currentModel),
+                            ...buildPriceFieldsFromRatios(currentModel),
                           }
                         : { ...currentModel };
 
-                    // Update formRef with converted values
                     if (formRef.current) {
-                      const formValues = {
-                        name: updatedModel.name,
-                      };
+                      const formValues = { name: updatedModel.name };
 
                       if (newMode === 'per-request') {
                         formValues.priceInput = normalizeEditableValue(
                           updatedModel.price,
                         );
-                      } else if (newMode === 'per-token') {
-                        formValues.ratioInput = normalizeEditableValue(
-                          updatedModel.ratio,
-                        );
-                        formValues.completionRatioInput =
-                          normalizeEditableValue(updatedModel.completionRatio);
-                        formValues.cacheRatioInput =
-                          normalizeEditableValue(updatedModel.cacheRatio);
-                        formValues.createCacheRatioInput =
-                          normalizeEditableValue(updatedModel.createCacheRatio);
-                        formValues.audioRatioInput =
-                          normalizeEditableValue(updatedModel.audioRatio);
-                        formValues.audioCompletionRatioInput =
-                          normalizeEditableValue(
-                            updatedModel.audioCompletionRatio,
-                          );
-                        formValues.imageRatioInput =
-                          normalizeEditableValue(updatedModel.imageRatio);
+                      } else {
                         formValues.modelTokenPrice =
                           normalizeEditableValue(updatedModel.tokenPrice);
                         formValues.completionTokenPrice =
@@ -963,7 +948,6 @@ export default function ModelSettingsVisualEditor(props) {
                       formRef.current.setValues(formValues);
                     }
 
-                    // Update the model state
                     setCurrentModel(updatedModel);
                   }
                 }}
@@ -974,264 +958,84 @@ export default function ModelSettingsVisualEditor(props) {
             </div>
           </Form.Section>
 
+          {/* 按量计费：统一以价格（$/1M tokens）输入，保存时自动转倍率 */}
           {pricingMode === 'per-token' && (
             <>
-              <Form.Section text={t('价格设置方式')}>
-                <div style={{ marginBottom: '16px' }}>
-                  <RadioGroup
-                    type='button'
-                    value={pricingSubMode}
-                    onChange={(e) => {
-                      const newSubMode = e.target.value;
-                      const oldSubMode = pricingSubMode;
-                      setPricingSubMode(newSubMode);
-
-                      // Handle conversion between submodes
-                      if (currentModel) {
-                        const updatedModel =
-                          oldSubMode === 'ratio' && newSubMode === 'token-price'
-                            ? {
-                                ...currentModel,
-                                ...buildTokenPriceFieldsFromRatios(currentModel),
-                              }
-                            : { ...currentModel };
-
-                        // Update the form values
-                        if (formRef.current) {
-                          const formValues = {};
-
-                          if (newSubMode === 'ratio') {
-                            formValues.ratioInput = normalizeEditableValue(
-                              updatedModel.ratio,
-                            );
-                            formValues.completionRatioInput =
-                              normalizeEditableValue(
-                                updatedModel.completionRatio,
-                              );
-                            formValues.cacheRatioInput =
-                              normalizeEditableValue(updatedModel.cacheRatio);
-                            formValues.createCacheRatioInput =
-                              normalizeEditableValue(
-                                updatedModel.createCacheRatio,
-                              );
-                            formValues.audioRatioInput =
-                              normalizeEditableValue(updatedModel.audioRatio);
-                            formValues.audioCompletionRatioInput =
-                              normalizeEditableValue(
-                                updatedModel.audioCompletionRatio,
-                              );
-                            formValues.imageRatioInput =
-                              normalizeEditableValue(updatedModel.imageRatio);
-                          } else if (newSubMode === 'token-price') {
-                            formValues.modelTokenPrice =
-                              normalizeEditableValue(updatedModel.tokenPrice);
-                            formValues.completionTokenPrice =
-                              normalizeEditableValue(
-                                updatedModel.completionTokenPrice,
-                              );
-                            formValues.cacheTokenPrice =
-                              normalizeEditableValue(updatedModel.cacheTokenPrice);
-                            formValues.createCacheTokenPrice =
-                              normalizeEditableValue(
-                                updatedModel.createCacheTokenPrice,
-                              );
-                            formValues.audioTokenPrice =
-                              normalizeEditableValue(updatedModel.audioTokenPrice);
-                            formValues.audioCompletionTokenPrice =
-                              normalizeEditableValue(
-                                updatedModel.audioCompletionTokenPrice,
-                              );
-                            formValues.imageTokenPrice =
-                              normalizeEditableValue(updatedModel.imageTokenPrice);
-                          }
-
-                          formRef.current.setValues(formValues);
-                        }
-
-                        setCurrentModel(updatedModel);
-                      }
-                    }}
-                  >
-                    <Radio value='ratio'>{t('按倍率设置')}</Radio>
-                    <Radio value='token-price'>{t('按价格设置')}</Radio>
-                  </RadioGroup>
-                </div>
-              </Form.Section>
-
-              {pricingSubMode === 'ratio' && (
-                <>
-                  <Form.Input
-                    field='ratioInput'
-                    label={t('模型倍率')}
-                    placeholder={t('输入模型倍率')}
-                    onChange={(value) =>
-                      setCurrentModel((prev) => ({
-                        ...(prev || {}),
-                        ratio: value,
-                      }))
-                    }
-                    initValue={normalizeEditableValue(currentModel?.ratio)}
-                  />
-                  <Form.Input
-                    field='completionRatioInput'
-                    label={t('补全倍率')}
-                    placeholder={t('输入补全倍率')}
-                    onChange={(value) =>
-                      setCurrentModel((prev) => ({
-                        ...(prev || {}),
-                        completionRatio: value,
-                      }))
-                    }
-                    initValue={normalizeEditableValue(
-                      currentModel?.completionRatio,
-                    )}
-                  />
-                  <Form.Input
-                    field='cacheRatioInput'
-                    label={t('缓存倍率')}
-                    placeholder={t('缓存读取倍率')}
-                    onChange={(value) =>
-                      setCurrentModel((prev) => ({
-                        ...(prev || {}),
-                        cacheRatio: value,
-                      }))
-                    }
-                    initValue={normalizeEditableValue(currentModel?.cacheRatio)}
-                  />
-                  <Form.Input
-                    field='createCacheRatioInput'
-                    label={t('缓存创建倍率')}
-                    placeholder={t('缓存创建倍率')}
-                    onChange={(value) =>
-                      setCurrentModel((prev) => ({
-                        ...(prev || {}),
-                        createCacheRatio: value,
-                      }))
-                    }
-                    initValue={normalizeEditableValue(
-                      currentModel?.createCacheRatio,
-                    )}
-                  />
-                  <Form.Input
-                    field='audioRatioInput'
-                    label={t('音频倍率')}
-                    placeholder={t('音频输入倍率')}
-                    onChange={(value) =>
-                      setCurrentModel((prev) => ({
-                        ...(prev || {}),
-                        audioRatio: value,
-                      }))
-                    }
-                    initValue={normalizeEditableValue(currentModel?.audioRatio)}
-                  />
-                  <Form.Input
-                    field='audioCompletionRatioInput'
-                    label={t('音频补全倍率')}
-                    placeholder={t('音频输出倍率')}
-                    onChange={(value) =>
-                      setCurrentModel((prev) => ({
-                        ...(prev || {}),
-                        audioCompletionRatio: value,
-                      }))
-                    }
-                    initValue={normalizeEditableValue(
-                      currentModel?.audioCompletionRatio,
-                    )}
-                  />
-                  <Form.Input
-                    field='imageRatioInput'
-                    label={t('图片倍率')}
-                    placeholder={t('图片输入倍率')}
-                    onChange={(value) =>
-                      setCurrentModel((prev) => ({
-                        ...(prev || {}),
-                        imageRatio: value,
-                      }))
-                    }
-                    initValue={normalizeEditableValue(currentModel?.imageRatio)}
-                  />
-                </>
-              )}
-
-              {pricingSubMode === 'token-price' && (
-                <>
-                  <Form.Input
-                    field='modelTokenPrice'
-                    label={t('输入价格')}
-                    onChange={(value) => {
-                      handleTokenPriceChange(value);
-                    }}
-                    initValue={normalizeEditableValue(currentModel?.tokenPrice)}
-                    suffix={t('$/1M tokens')}
-                  />
-                  <Form.Input
-                    field='completionTokenPrice'
-                    label={t('输出价格')}
-                    onChange={(value) => {
-                      handleCompletionTokenPriceChange(value);
-                    }}
-                    initValue={normalizeEditableValue(
-                      currentModel?.completionTokenPrice,
-                    )}
-                    suffix={t('$/1M tokens')}
-                  />
-                  <Form.Input
-                    field='cacheTokenPrice'
-                    label={t('缓存读取价格')}
-                    onChange={(value) => {
-                      handleCacheTokenPriceChange(value);
-                    }}
-                    initValue={normalizeEditableValue(
-                      currentModel?.cacheTokenPrice,
-                    )}
-                    suffix={t('$/1M tokens')}
-                  />
-                  <Form.Input
-                    field='createCacheTokenPrice'
-                    label={t('缓存创建价格')}
-                    onChange={(value) => {
-                      handleCreateCacheTokenPriceChange(value);
-                    }}
-                    initValue={normalizeEditableValue(
-                      currentModel?.createCacheTokenPrice,
-                    )}
-                    suffix={t('$/1M tokens')}
-                  />
-                  <Form.Input
-                    field='audioTokenPrice'
-                    label={t('音频输入价格')}
-                    onChange={(value) => {
-                      handleAudioTokenPriceChange(value);
-                    }}
-                    initValue={normalizeEditableValue(
-                      currentModel?.audioTokenPrice,
-                    )}
-                    suffix={t('$/1M tokens')}
-                  />
-                  <Form.Input
-                    field='audioCompletionTokenPrice'
-                    label={t('音频输出价格')}
-                    onChange={(value) => {
-                      handleAudioCompletionTokenPriceChange(value);
-                    }}
-                    initValue={normalizeEditableValue(
-                      currentModel?.audioCompletionTokenPrice,
-                    )}
-                    suffix={t('$/1M tokens')}
-                  />
-                  <Form.Input
-                    field='imageTokenPrice'
-                    label={t('图片输入价格')}
-                    onChange={(value) => {
-                      handleImageTokenPriceChange(value);
-                    }}
-                    initValue={normalizeEditableValue(
-                      currentModel?.imageTokenPrice,
-                    )}
-                    suffix={t('$/1M tokens')}
-                  />
-                </>
-              )}
+              <Form.Input
+                field='modelTokenPrice'
+                label={t('输入价格')}
+                onChange={(value) => {
+                  handleTokenPriceChange(value);
+                }}
+                initValue={normalizeEditableValue(currentModel?.tokenPrice)}
+                suffix={t('$/1M tokens')}
+              />
+              <Form.Input
+                field='completionTokenPrice'
+                label={t('输出价格')}
+                onChange={(value) => {
+                  handleCompletionTokenPriceChange(value);
+                }}
+                initValue={normalizeEditableValue(
+                  currentModel?.completionTokenPrice,
+                )}
+                suffix={t('$/1M tokens')}
+              />
+              <Form.Input
+                field='cacheTokenPrice'
+                label={t('缓存读取价格')}
+                onChange={(value) => {
+                  handleCacheTokenPriceChange(value);
+                }}
+                initValue={normalizeEditableValue(
+                  currentModel?.cacheTokenPrice,
+                )}
+                suffix={t('$/1M tokens')}
+              />
+              <Form.Input
+                field='createCacheTokenPrice'
+                label={t('缓存创建价格')}
+                onChange={(value) => {
+                  handleCreateCacheTokenPriceChange(value);
+                }}
+                initValue={normalizeEditableValue(
+                  currentModel?.createCacheTokenPrice,
+                )}
+                suffix={t('$/1M tokens')}
+              />
+              <Form.Input
+                field='audioTokenPrice'
+                label={t('音频输入价格')}
+                onChange={(value) => {
+                  handleAudioTokenPriceChange(value);
+                }}
+                initValue={normalizeEditableValue(
+                  currentModel?.audioTokenPrice,
+                )}
+                suffix={t('$/1M tokens')}
+              />
+              <Form.Input
+                field='audioCompletionTokenPrice'
+                label={t('音频输出价格')}
+                onChange={(value) => {
+                  handleAudioCompletionTokenPriceChange(value);
+                }}
+                initValue={normalizeEditableValue(
+                  currentModel?.audioCompletionTokenPrice,
+                )}
+                suffix={t('$/1M tokens')}
+              />
+              <Form.Input
+                field='imageTokenPrice'
+                label={t('图片输入价格')}
+                onChange={(value) => {
+                  handleImageTokenPriceChange(value);
+                }}
+                initValue={normalizeEditableValue(
+                  currentModel?.imageTokenPrice,
+                )}
+                suffix={t('$/1M tokens')}
+              />
             </>
           )}
 
@@ -1254,3 +1058,61 @@ export default function ModelSettingsVisualEditor(props) {
     </>
   );
 }
+
+// --- 表格列辅助函数：倍率 ↔ 显示价格的转换 ---
+
+// 补全倍率 → 显示价格：completionRatio 是相对于 ratio 的倍数，所以价格 = ratio * 2 * completionRatio
+const completionRatioToDisplayPrice = (completionRatio, baseRatio) => {
+  if (!hasValue(completionRatio) || !hasValue(baseRatio)) return '';
+  const cr = Number(completionRatio);
+  const br = Number(baseRatio);
+  if (!Number.isFinite(cr) || !Number.isFinite(br)) return '';
+  return (br * 2 * cr).toString();
+};
+
+// 显示价格 → 补全倍率
+const displayPriceToCompletionRatio = (price, baseRatio) => {
+  if (!hasValue(price) || !hasValue(baseRatio)) return '';
+  const p = Number(price);
+  const br = Number(baseRatio);
+  if (!Number.isFinite(p) || !Number.isFinite(br) || br === 0) return '';
+  return (p / (br * 2)).toString();
+};
+
+// 相对倍率（缓存/图片/音频输入等）→ 显示价格
+const relativeRatioToDisplayPrice = (relativeRatio, baseRatio) => {
+  if (!hasValue(relativeRatio) || !hasValue(baseRatio)) return '';
+  const rr = Number(relativeRatio);
+  const br = Number(baseRatio);
+  if (!Number.isFinite(rr) || !Number.isFinite(br)) return '';
+  return (br * 2 * rr).toString();
+};
+
+// 显示价格 → 相对倍率
+const displayPriceToRelativeRatio = (price, baseRatio) => {
+  if (!hasValue(price) || !hasValue(baseRatio)) return '';
+  const p = Number(price);
+  const br = Number(baseRatio);
+  if (!Number.isFinite(p) || !Number.isFinite(br) || br === 0) return '';
+  return (p / (br * 2)).toString();
+};
+
+// 音频补全倍率 → 显示价格：audioCompletionRatio 相对于 audioRatio，价格 = ratio * 2 * audioRatio * audioCompletionRatio
+const audioCompletionRatioToDisplayPrice = (audioCompletionRatio, baseRatio, audioRatio) => {
+  if (!hasValue(audioCompletionRatio) || !hasValue(baseRatio) || !hasValue(audioRatio)) return '';
+  const acr = Number(audioCompletionRatio);
+  const br = Number(baseRatio);
+  const ar = Number(audioRatio);
+  if (!Number.isFinite(acr) || !Number.isFinite(br) || !Number.isFinite(ar)) return '';
+  return (br * 2 * ar * acr).toString();
+};
+
+// 显示价格 → 音频补全倍率
+const displayPriceToAudioCompletionRatio = (price, baseRatio, audioRatio) => {
+  if (!hasValue(price) || !hasValue(baseRatio) || !hasValue(audioRatio)) return '';
+  const p = Number(price);
+  const br = Number(baseRatio);
+  const ar = Number(audioRatio);
+  if (!Number.isFinite(p) || !Number.isFinite(br) || !Number.isFinite(ar) || (br * ar) === 0) return '';
+  return (p / (br * 2 * ar)).toString();
+};
