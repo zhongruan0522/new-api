@@ -28,7 +28,6 @@ import {
   updateAPI,
   getSystemName,
   setUserData,
-  onDiscordOAuthClicked,
 } from '../../helpers';
 import Turnstile from 'react-turnstile';
 import {
@@ -53,11 +52,9 @@ import {
   onLinuxDOOAuthClicked,
 } from '../../helpers';
 import LinuxDoIcon from '../common/logo/LinuxDoIcon';
-import TelegramLoginButton from 'react-telegram-login/src';
 import { UserContext } from '../../context/User';
 import { StatusContext } from '../../context/Status';
 import { useTranslation } from 'react-i18next';
-import { SiDiscord } from 'react-icons/si';
 
 const RegisterForm = () => {
   let navigate = useNavigate();
@@ -82,7 +79,6 @@ const RegisterForm = () => {
   const [turnstileToken, setTurnstileToken] = useState('');
   const [showEmailRegister, setShowEmailRegister] = useState(false);
   const [githubLoading, setGithubLoading] = useState(false);
-  const [discordLoading, setDiscordLoading] = useState(false);
   const [linuxdoLoading, setLinuxdoLoading] = useState(false);
   const [emailRegisterLoading, setEmailRegisterLoading] = useState(false);
   const [registerLoading, setRegisterLoading] = useState(false);
@@ -243,15 +239,6 @@ const RegisterForm = () => {
     }
   };
 
-  const handleDiscordClick = () => {
-    setDiscordLoading(true);
-    try {
-      onDiscordOAuthClicked(status.discord_client_id, { shouldLogout: true });
-    } finally {
-      setTimeout(() => setDiscordLoading(false), 3000);
-    }
-  };
-
   const handleLinuxDOClick = () => {
     setLinuxdoLoading(true);
     try {
@@ -271,41 +258,6 @@ const RegisterForm = () => {
     setOtherRegisterOptionsLoading(true);
     setShowEmailRegister(false);
     setOtherRegisterOptionsLoading(false);
-  };
-
-  const onTelegramLoginClicked = async (response) => {
-    const fields = [
-      'id',
-      'first_name',
-      'last_name',
-      'username',
-      'photo_url',
-      'auth_date',
-      'hash',
-      'lang',
-    ];
-    const params = {};
-    fields.forEach((field) => {
-      if (response[field]) {
-        params[field] = response[field];
-      }
-    });
-    try {
-      const res = await API.get(`/api/oauth/telegram/login`, { params });
-      const { success, message, data } = res.data;
-      if (success) {
-        userDispatch({ type: 'login', payload: data });
-        localStorage.setItem('user', JSON.stringify(data));
-        showSuccess('登录成功！');
-        setUserData(data);
-        updateAPI();
-        navigate('/');
-      } else {
-        showError(message);
-      }
-    } catch (error) {
-      showError('登录失败，请重试');
-    }
   };
 
   const renderOAuthOptions = () => {
@@ -341,27 +293,6 @@ const RegisterForm = () => {
                   </Button>
                 )}
 
-                {status.discord_oauth && (
-                  <Button
-                    theme='outline'
-                    className='w-full h-12 flex items-center justify-center !rounded-full border border-gray-200 hover:bg-gray-50 transition-colors'
-                    type='tertiary'
-                    icon={
-                      <SiDiscord
-                        style={{
-                          color: '#5865F2',
-                          width: '20px',
-                          height: '20px',
-                        }}
-                      />
-                    }
-                    onClick={handleDiscordClick}
-                    loading={discordLoading}
-                  >
-                    <span className='ml-3'>{t('使用 Discord 继续')}</span>
-                  </Button>
-                )}
-
                 {status.linuxdo_oauth && (
                   <Button
                     theme='outline'
@@ -381,15 +312,6 @@ const RegisterForm = () => {
                   >
                     <span className='ml-3'>{t('使用 LinuxDO 继续')}</span>
                   </Button>
-                )}
-
-                {status.telegram_oauth && (
-                  <div className='flex justify-center my-2'>
-                    <TelegramLoginButton
-                      dataOnauth={onTelegramLoginClicked}
-                      botName={status.telegram_bot_name}
-                    />
-                  </div>
                 )}
 
                 <Divider margin='12px' align='center'>
@@ -564,10 +486,7 @@ const RegisterForm = () => {
                 </div>
               </Form>
 
-              {(status.github_oauth ||
-                status.discord_oauth ||
-                status.linuxdo_oauth ||
-                status.telegram_oauth) && (
+              {(status.github_oauth || status.linuxdo_oauth) && (
                 <>
                   <Divider margin='12px' align='center'>
                     {t('或')}
@@ -617,13 +536,7 @@ const RegisterForm = () => {
         style={{ top: '50%', left: '-120px' }}
       />
       <div className='w-full max-w-sm mt-[60px]'>
-        {showEmailRegister ||
-        !(
-          status.github_oauth ||
-          status.discord_oauth ||
-          status.linuxdo_oauth ||
-          status.telegram_oauth
-        )
+        {showEmailRegister || !(status.github_oauth || status.linuxdo_oauth)
           ? renderEmailRegisterForm()
           : renderOAuthOptions()}
 

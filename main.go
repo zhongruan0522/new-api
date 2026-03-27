@@ -18,7 +18,6 @@ import (
 	"github.com/zhongruan0522/new-api/logger"
 	"github.com/zhongruan0522/new-api/middleware"
 	"github.com/zhongruan0522/new-api/model"
-	"github.com/zhongruan0522/new-api/oauth"
 	"github.com/zhongruan0522/new-api/router"
 	"github.com/zhongruan0522/new-api/service"
 	_ "github.com/zhongruan0522/new-api/setting/performance_setting"
@@ -286,13 +285,6 @@ func InitResources() error {
 	}
 	// Register user language loader for lazy loading
 	i18n.SetUserLangLoader(model.GetUserLanguage)
-
-	// Load custom OAuth providers from database
-	err = oauth.LoadCustomProviders()
-	if err != nil {
-		common.SysError("failed to load custom OAuth providers: " + err.Error())
-		// Don't return error, custom OAuth is not critical
-	}
 
 	return nil
 }
