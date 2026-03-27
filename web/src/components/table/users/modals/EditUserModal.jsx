@@ -71,8 +71,6 @@ const EditUserModal = (props) => {
     display_name: '',
     password: '',
     github_id: '',
-    discord_id: '',
-    telegram_id: '',
     email: '',
     quota: 0,
     group: 'default',
@@ -331,9 +329,7 @@ const EditUserModal = (props) => {
                     <Row gutter={12}>
                       {[
                         'github_id',
-                        'discord_id',
                         'email',
-                        'telegram_id',
                       ].map((field) => (
                         <Col span={24} key={field}>
                           <Form.Input

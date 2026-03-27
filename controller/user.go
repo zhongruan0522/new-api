@@ -392,8 +392,6 @@ func GetSelf(c *gin.Context) {
 		"status":                user.Status,
 		"email":                 user.Email,
 		"github_id":             user.GitHubId,
-		"discord_id":            user.DiscordId,
-		"telegram_id":           user.TelegramId,
 		"group":                 user.Group,
 		"quota":                 user.Quota,
 		"used_quota":            user.UsedQuota,

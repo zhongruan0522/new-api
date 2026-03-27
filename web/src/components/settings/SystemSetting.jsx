@@ -41,7 +41,6 @@ import {
   toBoolean,
 } from '../../helpers';
 import { useTranslation } from 'react-i18next';
-import CustomOAuthSetting from './CustomOAuthSetting';
 import DatabasePreMigration from './DatabasePreMigration';
 
 const SystemSetting = () => {
@@ -53,9 +52,6 @@ const SystemSetting = () => {
     GitHubOAuthEnabled: '',
     GitHubClientId: '',
     GitHubClientSecret: '',
-    'discord.enabled': '',
-    'discord.client_id': '',
-    'discord.client_secret': '',
     Notice: '',
     SMTPServer: '',
     SMTPPort: '',
@@ -81,9 +77,6 @@ const SystemSetting = () => {
     EmailAliasRestrictionEnabled: '',
     SMTPSSLEnabled: '',
     EmailDomainWhitelist: [],
-    TelegramOAuthEnabled: '',
-    TelegramBotToken: '',
-    TelegramBotName: '',
     LinuxDOOAuthEnabled: '',
     LinuxDOClientId: '',
     LinuxDOClientSecret: '',
@@ -164,14 +157,12 @@ const SystemSetting = () => {
           case 'PasswordRegisterEnabled':
           case 'EmailVerificationEnabled':
           case 'GitHubOAuthEnabled':
-          case 'TelegramOAuthEnabled':
           case 'RegisterEnabled':
           case 'TurnstileCheckEnabled':
           case 'EmailDomainRestrictionEnabled':
           case 'EmailAliasRestrictionEnabled':
           case 'SMTPSSLEnabled':
           case 'LinuxDOOAuthEnabled':
-          case 'discord.enabled':
           case 'passkey.enabled':
           case 'passkey.allow_insecure_origin':
           case 'WorkerAllowHttpImageRequestEnabled':
@@ -430,39 +421,6 @@ const SystemSetting = () => {
     if (options.length > 0) {
       await updateOptions(options);
     }
-  };
-
-  const submitDiscordOAuth = async () => {
-    const options = [];
-
-    if (originInputs['discord.client_id'] !== inputs['discord.client_id']) {
-      options.push({
-        key: 'discord.client_id',
-        value: inputs['discord.client_id'],
-      });
-    }
-    if (
-      originInputs['discord.client_secret'] !==
-        inputs['discord.client_secret'] &&
-      inputs['discord.client_secret'] !== ''
-    ) {
-      options.push({
-        key: 'discord.client_secret',
-        value: inputs['discord.client_secret'],
-      });
-    }
-
-    if (options.length > 0) {
-      await updateOptions(options);
-    }
-  };
-
-  const submitTelegramSettings = async () => {
-    const options = [
-      { key: 'TelegramBotToken', value: inputs.TelegramBotToken },
-      { key: 'TelegramBotName', value: inputs.TelegramBotName },
-    ];
-    await updateOptions(options);
   };
 
   const submitTurnstile = async () => {
@@ -924,15 +882,6 @@ const SystemSetting = () => {
                         {t('允许通过 GitHub 账户登录 & 注册')}
                       </Form.Checkbox>
                       <Form.Checkbox
-                        field='discord.enabled'
-                        noLabel
-                        onChange={(e) =>
-                          handleCheckboxChange('discord.enabled', e)
-                        }
-                      >
-                        {t('允许通过 Discord 账户登录 & 注册')}
-                      </Form.Checkbox>
-                      <Form.Checkbox
                         field='LinuxDOOAuthEnabled'
                         noLabel
                         onChange={(e) =>
@@ -940,15 +889,6 @@ const SystemSetting = () => {
                         }
                       >
                         {t('允许通过 Linux DO 账户登录 & 注册')}
-                      </Form.Checkbox>
-                      <Form.Checkbox
-                        field='TelegramOAuthEnabled'
-                        noLabel
-                        onChange={(e) =>
-                          handleCheckboxChange('TelegramOAuthEnabled', e)
-                        }
-                      >
-                        {t('允许通过 Telegram 进行登录')}
                       </Form.Checkbox>
                     </Col>
                   </Row>
@@ -1234,37 +1174,6 @@ const SystemSetting = () => {
                 </Form.Section>
               </Card>
               <Card>
-                <Form.Section text={t('配置 Discord OAuth')}>
-                  <Text>{t('用以支持通过 Discord 进行登录注册')}</Text>
-                  <Banner
-                    type='info'
-                    description={`${t('Homepage URL 填')} ${inputs.ServerAddress ? inputs.ServerAddress : t('网站地址')}，${t('Authorization callback URL 填')} ${inputs.ServerAddress ? inputs.ServerAddress : t('网站地址')}/oauth/discord`}
-                    style={{ marginBottom: 20, marginTop: 16 }}
-                  />
-                  <Row
-                    gutter={{ xs: 8, sm: 16, md: 24, lg: 24, xl: 24, xxl: 24 }}
-                  >
-                    <Col xs={24} sm={24} md={12} lg={12} xl={12}>
-                      <Form.Input
-                        field="['discord.client_id']"
-                        label={t('Discord Client ID')}
-                      />
-                    </Col>
-                    <Col xs={24} sm={24} md={12} lg={12} xl={12}>
-                      <Form.Input
-                        field="['discord.client_secret']"
-                        label={t('Discord Client Secret')}
-                        type='password'
-                        placeholder={t('敏感信息不会发送到前端显示')}
-                      />
-                    </Col>
-                  </Row>
-                  <Button onClick={submitDiscordOAuth}>
-                    {t('保存 Discord OAuth 设置')}
-                  </Button>
-                </Form.Section>
-              </Card>
-              <Card>
                 <Form.Section text={t('配置 Linux DO OAuth')}>
                   <Text>
                     {t('用以支持通过 Linux DO 进行登录注册')}
@@ -1319,36 +1228,7 @@ const SystemSetting = () => {
                 </Form.Section>
               </Card>
 
-              <CustomOAuthSetting serverAddress={inputs.ServerAddress} />
-
               <DatabasePreMigration />
-
-              <Card>
-                <Form.Section text={t('配置 Telegram 登录')}>
-                  <Text>{t('用以支持通过 Telegram 进行登录注册')}</Text>
-                  <Row
-                    gutter={{ xs: 8, sm: 16, md: 24, lg: 24, xl: 24, xxl: 24 }}
-                  >
-                    <Col xs={24} sm={24} md={12} lg={12} xl={12}>
-                      <Form.Input
-                        field='TelegramBotToken'
-                        label={t('Telegram Bot Token')}
-                        placeholder={t('敏感信息不会发送到前端显示')}
-                        type='password'
-                      />
-                    </Col>
-                    <Col xs={24} sm={24} md={12} lg={12} xl={12}>
-                      <Form.Input
-                        field='TelegramBotName'
-                        label={t('Telegram Bot 名称')}
-                      />
-                    </Col>
-                  </Row>
-                  <Button onClick={submitTelegramSettings}>
-                    {t('保存 Telegram 登录设置')}
-                  </Button>
-                </Form.Section>
-              </Card>
 
               <Card>
                 <Form.Section text={t('配置 Turnstile')}>

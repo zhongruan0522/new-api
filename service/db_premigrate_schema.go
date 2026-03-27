@@ -28,8 +28,6 @@ func autoMigrateTargetMainSchema(db *gorm.DB) error {
 		&model.TwoFA{},
 		&model.TwoFABackupCode{},
 		&model.Checkin{},
-		&model.CustomOAuthProvider{},
-		&model.UserOAuthBinding{},
 	)
 }
 
