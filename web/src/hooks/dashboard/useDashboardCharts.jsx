@@ -40,7 +40,6 @@ export const useDashboardCharts = (
   dataExportDefaultTime,
   setTrendData,
   setConsumeQuota,
-  setTimes,
   setConsumeTokens,
   setPieData,
   setLineData,
@@ -409,7 +408,6 @@ export const useDashboardCharts = (
       setPieData(newPieData);
       setLineData(newLineData);
       setConsumeQuota(totalQuota);
-      setTimes(totalTimes);
       setConsumeTokens(totalTokens);
     },
     [
@@ -420,7 +418,6 @@ export const useDashboardCharts = (
       setPieData,
       setLineData,
       setConsumeQuota,
-      setTimes,
       setConsumeTokens,
       t,
     ],
