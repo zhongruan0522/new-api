@@ -42,6 +42,7 @@ import {
 } from '../../helpers';
 import { useTranslation } from 'react-i18next';
 import DatabasePreMigration from './DatabasePreMigration';
+import DatabaseSameTypeMigration from './DatabaseSameTypeMigration';
 
 const SystemSetting = () => {
   const { t } = useTranslation();
@@ -1229,6 +1230,8 @@ const SystemSetting = () => {
               </Card>
 
               <DatabasePreMigration />
+
+              <DatabaseSameTypeMigration />
 
               <Card>
                 <Form.Section text={t('配置 Turnstile')}>
