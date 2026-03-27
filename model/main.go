@@ -278,6 +278,7 @@ func migrateDB() error {
 	if err := cleanupRemovedChatPlaygroundData(); err != nil {
 		return err
 	}
+	cleanupRemovedOAuth()
 	return nil
 }
 
@@ -337,6 +338,7 @@ func migrateDBFast() error {
 	if err := cleanupRemovedChatPlaygroundData(); err != nil {
 		return err
 	}
+	cleanupRemovedOAuth()
 	common.SysLog("database migrated")
 	return nil
 }
