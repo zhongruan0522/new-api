@@ -79,6 +79,7 @@ const Dashboard = () => {
     dashboardData.consumeQuota,
     dashboardData.consumeTokens,
     dashboardData.times,
+    dashboardData.failCount,
     dashboardData.trendData,
     dashboardData.performanceMetrics,
     dashboardData.navigate,
