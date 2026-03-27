@@ -341,24 +341,20 @@ func GetUserLogs(userId int, logType int, startTimestamp int64, endTimestamp int
 }
 
 type Stat struct {
-	Quota int `json:"quota"`
-	Rpm   int `json:"rpm"`
-	Tpm   int `json:"tpm"`
+	Quota        int `json:"quota"`
+	Rpm          int `json:"rpm"`
+	Tpm          int `json:"tpm"`
+	SuccessCount int `json:"success_count"`
+	FailCount    int `json:"fail_count"`
 }
 
-func SumUsedQuota(logType int, startTimestamp int64, endTimestamp int64, modelName string, username string, tokenName string, channel int, group string) (stat Stat, err error) {
-	tx := LOG_DB.Table("logs").Select("sum(quota) quota")
-
-	// 为rpm和tpm创建单独的查询
-	rpmTpmQuery := LOG_DB.Table("logs").Select("count(*) rpm, sum(prompt_tokens) + sum(completion_tokens) tpm")
-
+// buildStatConditions 构建统计查询的通用 WHERE 条件
+func buildStatConditions(tx *gorm.DB, username string, tokenName string, startTimestamp int64, endTimestamp int64, modelName string, channel int, group string) (*gorm.DB, error) {
 	if username != "" {
 		tx = tx.Where("username = ?", username)
-		rpmTpmQuery = rpmTpmQuery.Where("username = ?", username)
 	}
 	if tokenName != "" {
 		tx = tx.Where("token_name = ?", tokenName)
-		rpmTpmQuery = rpmTpmQuery.Where("token_name = ?", tokenName)
 	}
 	if startTimestamp != 0 {
 		tx = tx.Where("created_at >= ?", startTimestamp)
@@ -369,25 +365,52 @@ func SumUsedQuota(logType int, startTimestamp int64, endTimestamp int64, modelNa
 	if modelName != "" {
 		modelNamePattern, err := sanitizeLikePattern(modelName)
 		if err != nil {
-			return stat, err
+			return nil, err
 		}
 		tx = tx.Where("model_name LIKE ? ESCAPE '!'", modelNamePattern)
-		rpmTpmQuery = rpmTpmQuery.Where("model_name LIKE ? ESCAPE '!'", modelNamePattern)
 	}
 	if channel != 0 {
 		tx = tx.Where("channel_id = ?", channel)
-		rpmTpmQuery = rpmTpmQuery.Where("channel_id = ?", channel)
 	}
 	if group != "" {
 		tx = tx.Where(logGroupCol+" = ?", group)
-		rpmTpmQuery = rpmTpmQuery.Where(logGroupCol+" = ?", group)
 	}
+	return tx, nil
+}
 
+func SumUsedQuota(logType int, startTimestamp int64, endTimestamp int64, modelName string, username string, tokenName string, channel int, group string) (stat Stat, err error) {
+	// 额度统计查询
+	tx := LOG_DB.Table("logs").Select("sum(quota) quota")
+	tx, err = buildStatConditions(tx, username, tokenName, startTimestamp, endTimestamp, modelName, channel, group)
+	if err != nil {
+		return stat, err
+	}
 	tx = tx.Where("type = ?", LogTypeConsume)
-	rpmTpmQuery = rpmTpmQuery.Where("type = ?", LogTypeConsume)
 
-	// 只统计最近60秒的rpm和tpm
+	// rpm和tpm查询（最近60秒）
+	rpmTpmQuery := LOG_DB.Table("logs").Select("count(*) rpm, sum(prompt_tokens) + sum(completion_tokens) tpm")
+	rpmTpmQuery, err = buildStatConditions(rpmTpmQuery, username, tokenName, 0, 0, modelName, channel, group)
+	if err != nil {
+		return stat, err
+	}
+	rpmTpmQuery = rpmTpmQuery.Where("type = ?", LogTypeConsume)
 	rpmTpmQuery = rpmTpmQuery.Where("created_at >= ?", time.Now().Add(-60*time.Second).Unix())
+
+	// 成功次数查询
+	successQuery := LOG_DB.Table("logs").Select("count(*) success_count")
+	successQuery, err = buildStatConditions(successQuery, username, tokenName, startTimestamp, endTimestamp, modelName, channel, group)
+	if err != nil {
+		return stat, err
+	}
+	successQuery = successQuery.Where("type = ?", LogTypeConsume)
+
+	// 失败次数查询
+	failQuery := LOG_DB.Table("logs").Select("count(*) fail_count")
+	failQuery, err = buildStatConditions(failQuery, username, tokenName, startTimestamp, endTimestamp, modelName, channel, group)
+	if err != nil {
+		return stat, err
+	}
+	failQuery = failQuery.Where("type = ?", LogTypeError)
 
 	// 执行查询
 	if err := tx.Scan(&stat).Error; err != nil {
@@ -396,6 +419,14 @@ func SumUsedQuota(logType int, startTimestamp int64, endTimestamp int64, modelNa
 	}
 	if err := rpmTpmQuery.Scan(&stat).Error; err != nil {
 		common.SysError("failed to query rpm/tpm stat: " + err.Error())
+		return stat, errors.New("查询统计数据失败")
+	}
+	if err := successQuery.Scan(&stat).Error; err != nil {
+		common.SysError("failed to query success count stat: " + err.Error())
+		return stat, errors.New("查询统计数据失败")
+	}
+	if err := failQuery.Scan(&stat).Error; err != nil {
+		common.SysError("failed to query fail count stat: " + err.Error())
 		return stat, errors.New("查询统计数据失败")
 	}
 

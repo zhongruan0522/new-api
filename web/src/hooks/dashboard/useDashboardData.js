@@ -57,6 +57,7 @@ export const useDashboardData = (userState, userDispatch, statusState) => {
   const [consumeQuota, setConsumeQuota] = useState(0);
   const [consumeTokens, setConsumeTokens] = useState(0);
   const [times, setTimes] = useState(0);
+  const [failCount, setFailCount] = useState(0);
   const [pieData, setPieData] = useState([{ type: 'null', value: '0' }]);
   const [lineData, setLineData] = useState([]);
   const [modelColors, setModelColors] = useState({});
@@ -213,6 +214,25 @@ export const useDashboardData = (userState, userDispatch, statusState) => {
     }
   }, [activeUptimeTab]);
 
+  // 加载时间段内的成功/失败次数统计
+  const loadStatData = useCallback(async () => {
+    try {
+      const { start_timestamp, end_timestamp } = inputs;
+      const localStartTimestamp = Date.parse(start_timestamp) / 1000;
+      const localEndTimestamp = Date.parse(end_timestamp) / 1000;
+      const url = isAdminUser
+        ? `/api/log/stat?type=2&start_timestamp=${localStartTimestamp}&end_timestamp=${localEndTimestamp}`
+        : `/api/log/self/stat?type=2&start_timestamp=${localStartTimestamp}&end_timestamp=${localEndTimestamp}`;
+      const res = await API.get(url);
+      const { success, data } = res.data;
+      if (success && data) {
+        setFailCount(data.fail_count || 0);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  }, [inputs, isAdminUser]);
+
   const getUserData = useCallback(async () => {
     let res = await API.get(`/api/user/self`);
     const { success, message, data } = res.data;
@@ -225,9 +245,9 @@ export const useDashboardData = (userState, userDispatch, statusState) => {
 
   const refresh = useCallback(async () => {
     const data = await loadQuotaData();
-    await loadUptimeData();
+    await Promise.all([loadUptimeData(), loadStatData()]);
     return data;
-  }, [loadQuotaData, loadUptimeData]);
+  }, [loadQuotaData, loadUptimeData, loadStatData]);
 
   const handleSearchConfirm = useCallback(
     async (updateChartDataCallback) => {
@@ -273,6 +293,8 @@ export const useDashboardData = (userState, userDispatch, statusState) => {
     setConsumeTokens,
     times,
     setTimes,
+    failCount,
+    setFailCount,
     pieData,
     setPieData,
     lineData,
