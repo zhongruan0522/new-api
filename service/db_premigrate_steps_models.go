@@ -23,8 +23,6 @@ var dbPreMigrateMainSteps = []dbPreMigrateStep{
 	gormTableCopyStep[model.TwoFA]{name: "two_fas", batchSize: dbPreMigrateBatchDefault},
 	gormTableCopyStep[model.TwoFABackupCode]{name: "two_fa_backup_codes", batchSize: dbPreMigrateBatchDefault},
 	gormTableCopyStep[model.Checkin]{name: "checkins", batchSize: dbPreMigrateBatchDefault},
-	gormTableCopyStep[model.CustomOAuthProvider]{name: "custom_oauth_providers", batchSize: dbPreMigrateBatchDefault},
-	gormTableCopyStep[model.UserOAuthBinding]{name: "user_oauth_bindings", batchSize: dbPreMigrateBatchDefault},
 }
 
 var dbPreMigrateLogStep = gormTableCopyStep[model.Log]{name: "logs", batchSize: dbPreMigrateBatchLog}

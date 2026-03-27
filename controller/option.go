@@ -11,7 +11,6 @@ import (
 	"github.com/zhongruan0522/new-api/setting/console_setting"
 	"github.com/zhongruan0522/new-api/setting/operation_setting"
 	"github.com/zhongruan0522/new-api/setting/ratio_setting"
-	"github.com/zhongruan0522/new-api/setting/system_setting"
 
 	"github.com/gin-gonic/gin"
 )
@@ -87,14 +86,6 @@ func UpdateOption(c *gin.Context) {
 			})
 			return
 		}
-	case "discord.enabled":
-		if option.Value == "true" && system_setting.GetDiscordSettings().ClientId == "" {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": "无法启用 Discord OAuth，请先填入 Discord Client Id 以及 Discord Client Secret！",
-			})
-			return
-		}
 	case "LinuxDOOAuthEnabled":
 		if option.Value == "true" && common.LinuxDOClientId == "" {
 			c.JSON(http.StatusOK, gin.H{
@@ -118,14 +109,6 @@ func UpdateOption(c *gin.Context) {
 				"message": "无法启用 Turnstile 校验，请先填入 Turnstile 校验相关配置信息！",
 			})
 
-			return
-		}
-	case "TelegramOAuthEnabled":
-		if option.Value == "true" && common.TelegramBotToken == "" {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": "无法启用 Telegram OAuth，请先填入 Telegram Bot Token！",
-			})
 			return
 		}
 	case "GroupRatio":

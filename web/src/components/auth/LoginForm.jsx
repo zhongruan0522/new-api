@@ -31,9 +31,7 @@ import {
   getSystemName,
   setUserData,
   onGitHubOAuthClicked,
-  onDiscordOAuthClicked,
   onLinuxDOOAuthClicked,
-  onCustomOAuthClicked,
   prepareCredentialRequestOptions,
   buildAssertionResult,
   isPasskeySupported,
@@ -49,8 +47,6 @@ import {
 } from '@douyinfe/semi-ui';
 import Title from '@douyinfe/semi-ui/lib/es/typography/title';
 import Text from '@douyinfe/semi-ui/lib/es/typography/text';
-import TelegramLoginButton from 'react-telegram-login';
-
 import {
   IconGithubLogo,
   IconMail,
@@ -60,7 +56,6 @@ import {
 import LinuxDoIcon from '../common/logo/LinuxDoIcon';
 import TwoFAVerification from './TwoFAVerification';
 import { useTranslation } from 'react-i18next';
-import { SiDiscord } from 'react-icons/si';
 
 const LoginForm = () => {
   let navigate = useNavigate();
@@ -84,7 +79,6 @@ const LoginForm = () => {
   const [turnstileToken, setTurnstileToken] = useState('');
   const [showEmailLogin, setShowEmailLogin] = useState(false);
   const [githubLoading, setGithubLoading] = useState(false);
-  const [discordLoading, setDiscordLoading] = useState(false);
   const [linuxdoLoading, setLinuxdoLoading] = useState(false);
   const [emailLoginLoading, setEmailLoginLoading] = useState(false);
   const [loginLoading, setLoginLoading] = useState(false);
@@ -101,7 +95,6 @@ const LoginForm = () => {
   const [githubButtonDisabled, setGithubButtonDisabled] = useState(false);
   const githubTimeoutRef = useRef(null);
   const githubButtonText = t(githubButtonTextKeyByState[githubButtonState]);
-  const [customOAuthLoading, setCustomOAuthLoading] = useState({});
 
   const logo = getLogo();
   const systemName = getSystemName();
@@ -209,46 +202,6 @@ const LoginForm = () => {
     }
   }
 
-  // 添加Telegram登录处理函数
-  const onTelegramLoginClicked = async (response) => {
-    if ((hasUserAgreement || hasPrivacyPolicy) && !agreedToTerms) {
-      showInfo(t('请先阅读并同意用户协议和隐私政策'));
-      return;
-    }
-    const fields = [
-      'id',
-      'first_name',
-      'last_name',
-      'username',
-      'photo_url',
-      'auth_date',
-      'hash',
-      'lang',
-    ];
-    const params = {};
-    fields.forEach((field) => {
-      if (response[field]) {
-        params[field] = response[field];
-      }
-    });
-    try {
-      const res = await API.get(`/api/oauth/telegram/login`, { params });
-      const { success, message, data } = res.data;
-      if (success) {
-        userDispatch({ type: 'login', payload: data });
-        localStorage.setItem('user', JSON.stringify(data));
-        showSuccess('登录成功！');
-        setUserData(data);
-        updateAPI();
-        navigate('/');
-      } else {
-        showError(message);
-      }
-    } catch (error) {
-      showError('登录失败，请重试');
-    }
-  };
-
   // 包装的GitHub登录点击处理
   const handleGitHubClick = () => {
     if ((hasUserAgreement || hasPrivacyPolicy) && !agreedToTerms) {
@@ -277,21 +230,6 @@ const LoginForm = () => {
     }
   };
 
-  // 包装的Discord登录点击处理
-  const handleDiscordClick = () => {
-    if ((hasUserAgreement || hasPrivacyPolicy) && !agreedToTerms) {
-      showInfo(t('请先阅读并同意用户协议和隐私政策'));
-      return;
-    }
-    setDiscordLoading(true);
-    try {
-      onDiscordOAuthClicked(status.discord_client_id, { shouldLogout: true });
-    } finally {
-      // 由于重定向，这里不会执行到，但为了完整性添加
-      setTimeout(() => setDiscordLoading(false), 3000);
-    }
-  };
-
   // 包装的LinuxDO登录点击处理
   const handleLinuxDOClick = () => {
     if ((hasUserAgreement || hasPrivacyPolicy) && !agreedToTerms) {
@@ -304,23 +242,6 @@ const LoginForm = () => {
     } finally {
       // 由于重定向，这里不会执行到，但为了完整性添加
       setTimeout(() => setLinuxdoLoading(false), 3000);
-    }
-  };
-
-  // 包装的自定义OAuth登录点击处理
-  const handleCustomOAuthClick = (provider) => {
-    if ((hasUserAgreement || hasPrivacyPolicy) && !agreedToTerms) {
-      showInfo(t('请先阅读并同意用户协议和隐私政策'));
-      return;
-    }
-    setCustomOAuthLoading((prev) => ({ ...prev, [provider.slug]: true }));
-    try {
-      onCustomOAuthClicked(provider, { shouldLogout: true });
-    } finally {
-      // 由于重定向，这里不会执行到，但为了完整性添加
-      setTimeout(() => {
-        setCustomOAuthLoading((prev) => ({ ...prev, [provider.slug]: false }));
-      }, 3000);
     }
   };
 
@@ -453,27 +374,6 @@ const LoginForm = () => {
                   </Button>
                 )}
 
-                {status.discord_oauth && (
-                  <Button
-                    theme='outline'
-                    className='w-full h-12 flex items-center justify-center !rounded-full border border-gray-200 hover:bg-gray-50 transition-colors'
-                    type='tertiary'
-                    icon={
-                      <SiDiscord
-                        style={{
-                          color: '#5865F2',
-                          width: '20px',
-                          height: '20px',
-                        }}
-                      />
-                    }
-                    onClick={handleDiscordClick}
-                    loading={discordLoading}
-                  >
-                    <span className='ml-3'>{t('使用 Discord 继续')}</span>
-                  </Button>
-                )}
-
                 {status.linuxdo_oauth && (
                   <Button
                     theme='outline'
@@ -493,32 +393,6 @@ const LoginForm = () => {
                   >
                     <span className='ml-3'>{t('使用 LinuxDO 继续')}</span>
                   </Button>
-                )}
-
-                {status.custom_oauth_providers &&
-                  status.custom_oauth_providers.map((provider) => (
-                    <Button
-                      key={provider.slug}
-                      theme='outline'
-                      className='w-full h-12 flex items-center justify-center !rounded-full border border-gray-200 hover:bg-gray-50 transition-colors'
-                      type='tertiary'
-                      icon={<IconLock size='large' />}
-                      onClick={() => handleCustomOAuthClick(provider)}
-                      loading={customOAuthLoading[provider.slug]}
-                    >
-                      <span className='ml-3'>
-                        {t('使用 {{name}} 继续', { name: provider.name })}
-                      </span>
-                    </Button>
-                  ))}
-
-                {status.telegram_oauth && (
-                  <div className='flex justify-center my-2'>
-                    <TelegramLoginButton
-                      dataOnauth={onTelegramLoginClicked}
-                      botName={status.telegram_bot_name}
-                    />
-                  </div>
                 )}
 
                 {status.passkey_login && passkeySupported && (
@@ -719,10 +593,7 @@ const LoginForm = () => {
                 </div>
               </Form>
 
-              {(status.github_oauth ||
-                status.discord_oauth ||
-                status.linuxdo_oauth ||
-                status.telegram_oauth) && (
+              {(status.github_oauth || status.linuxdo_oauth) && (
                 <>
                   <Divider margin='12px' align='center'>
                     {t('或')}
@@ -809,13 +680,7 @@ const LoginForm = () => {
         style={{ top: '50%', left: '-120px' }}
       />
       <div className='w-full max-w-sm mt-[60px]'>
-        {showEmailLogin ||
-        !(
-          status.github_oauth ||
-          status.discord_oauth ||
-          status.linuxdo_oauth ||
-          status.telegram_oauth
-        )
+        {showEmailLogin || !(status.github_oauth || status.linuxdo_oauth)
           ? renderEmailLoginForm()
           : renderOAuthOptions()}
         {render2FAModal()}
