@@ -253,6 +253,7 @@ export const processRawData = (
     totalQuota: 0,
     totalTimes: 0,
     totalTokens: 0,
+    totalFailCount: 0,
     uniqueModels: new Set(),
     timePoints: [],
     timeQuotaMap: new Map(),
@@ -268,6 +269,7 @@ export const processRawData = (
     result.totalTokens += item.token_used;
     result.totalQuota += item.quota;
     result.totalTimes += item.count;
+    result.totalFailCount += item.fail_count || 0;
 
     const timeKey = timestamp2string1(
       item.created_at,
