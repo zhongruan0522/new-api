@@ -214,26 +214,6 @@ export const useDashboardData = (userState, userDispatch, statusState) => {
     }
   }, [activeUptimeTab]);
 
-  // 加载时间段内的成功/失败次数统计（从 logs 表直接查询，与 fail_count 同口径）
-  const loadStatData = useCallback(async () => {
-    try {
-      const { start_timestamp, end_timestamp } = inputs;
-      const localStartTimestamp = Date.parse(start_timestamp) / 1000;
-      const localEndTimestamp = Date.parse(end_timestamp) / 1000;
-      const url = isAdminUser
-        ? `/api/log/stat?type=2&start_timestamp=${localStartTimestamp}&end_timestamp=${localEndTimestamp}`
-        : `/api/log/self/stat?type=2&start_timestamp=${localStartTimestamp}&end_timestamp=${localEndTimestamp}`;
-      const res = await API.get(url);
-      const { success, data } = res.data;
-      if (success && data) {
-        setTimes(data.success_count || 0);
-        setFailCount(data.fail_count || 0);
-      }
-    } catch (err) {
-      console.error(err);
-    }
-  }, [inputs, isAdminUser]);
-
   const getUserData = useCallback(async () => {
     let res = await API.get(`/api/user/self`);
     const { success, message, data } = res.data;
@@ -246,9 +226,9 @@ export const useDashboardData = (userState, userDispatch, statusState) => {
 
   const refresh = useCallback(async () => {
     const data = await loadQuotaData();
-    await Promise.all([loadUptimeData(), loadStatData()]);
+    await loadUptimeData();
     return data;
-  }, [loadQuotaData, loadUptimeData, loadStatData]);
+  }, [loadQuotaData, loadUptimeData]);
 
   const handleSearchConfirm = useCallback(
     async (updateChartDataCallback) => {
@@ -335,7 +315,6 @@ export const useDashboardData = (userState, userDispatch, statusState) => {
     handleCloseModal,
     loadQuotaData,
     loadUptimeData,
-    loadStatData,
     getUserData,
     refresh,
     handleSearchConfirm,

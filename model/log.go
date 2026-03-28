@@ -121,6 +121,11 @@ func RecordErrorLog(c *gin.Context, userId int, channelId int, modelName string,
 	if err != nil {
 		logger.LogError(c, "failed to record log: "+err.Error())
 	}
+	if common.DataExportEnabled {
+		gopool.Go(func() {
+			LogQuotaErrorData(userId, username, modelName, common.GetTimestamp())
+		})
+	}
 }
 
 type RecordConsumeLogParams struct {
