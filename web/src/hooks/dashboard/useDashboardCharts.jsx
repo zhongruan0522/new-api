@@ -44,6 +44,8 @@ export const useDashboardCharts = (
   setPieData,
   setLineData,
   setModelColors,
+  setTimes,
+  setFailCount,
   t,
 ) => {
   // ========== 图表规格状态 ==========
@@ -283,6 +285,7 @@ export const useDashboardCharts = (
         totalQuota,
         totalTimes,
         totalTokens,
+        totalFailCount,
         uniqueModels,
         timePoints,
         timeQuotaMap,
@@ -409,6 +412,8 @@ export const useDashboardCharts = (
       setLineData(newLineData);
       setConsumeQuota(totalQuota);
       setConsumeTokens(totalTokens);
+      setTimes(totalTimes);
+      setFailCount(totalFailCount);
     },
     [
       dataExportDefaultTime,
@@ -419,6 +424,8 @@ export const useDashboardCharts = (
       setLineData,
       setConsumeQuota,
       setConsumeTokens,
+      setTimes,
+      setFailCount,
       t,
     ],
   );

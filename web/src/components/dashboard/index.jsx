@@ -69,6 +69,8 @@ const Dashboard = () => {
     dashboardData.setPieData,
     dashboardData.setLineData,
     dashboardData.setModelColors,
+    dashboardData.setTimes,
+    dashboardData.setFailCount,
     dashboardData.t,
   );
 
@@ -92,10 +94,7 @@ const Dashboard = () => {
         dashboardCharts.updateChartData(data);
       }
     });
-    await Promise.all([
-      dashboardData.loadUptimeData(),
-      dashboardData.loadStatData(),
-    ]);
+    await dashboardData.loadUptimeData();
   };
 
   const handleRefresh = async () => {
