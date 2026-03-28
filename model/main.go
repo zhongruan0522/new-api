@@ -279,6 +279,9 @@ func migrateDB() error {
 		return err
 	}
 	cleanupRemovedOAuth()
+	if err := cleanupRemovedMultimodalTextMode(); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -339,6 +342,9 @@ func migrateDBFast() error {
 		return err
 	}
 	cleanupRemovedOAuth()
+	if err := cleanupRemovedMultimodalTextMode(); err != nil {
+		return err
+	}
 	common.SysLog("database migrated")
 	return nil
 }

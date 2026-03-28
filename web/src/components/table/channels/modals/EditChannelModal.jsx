@@ -608,8 +608,8 @@ const EditChannelModal = (props) => {
             parsedSettings.allow_safety_identifier || false;
           data.claude_beta_query = parsedSettings.claude_beta_query || false;
           const mediaMode = parsedSettings.image_auto_convert_to_url_mode;
-          if (mediaMode) {
-            data.image_auto_convert_to_url_mode = mediaMode;
+          if (mediaMode === 'mcp' || mediaMode === 'third_party_model') {
+            data.image_auto_convert_to_url_mode = 'mcp';
           } else if (parsedSettings.image_auto_convert_to_url === true) {
             data.image_auto_convert_to_url_mode = 'mcp';
           } else {
@@ -1324,7 +1324,7 @@ const EditChannelModal = (props) => {
 
     // Generic: multimodal media handling mode for text-only upstream models
     const mediaMode = localInputs.image_auto_convert_to_url_mode || 'off';
-    if (mediaMode === 'mcp' || mediaMode === 'third_party_model') {
+    if (mediaMode === 'mcp') {
       settings.image_auto_convert_to_url_mode = mediaMode;
     } else if ('image_auto_convert_to_url_mode' in settings) {
       delete settings.image_auto_convert_to_url_mode;
@@ -2260,7 +2260,6 @@ const EditChannelModal = (props) => {
                       optionList={[
                         { label: t('关闭'), value: 'off' },
                         { label: t('MCP方式'), value: 'mcp' },
-                        { label: t('第三方模型方式'), value: 'third_party_model' },
                       ]}
                       style={{ width: '100%' }}
                       onChange={(value) =>
@@ -2270,7 +2269,7 @@ const EditChannelModal = (props) => {
                         )
                       }
                       extraText={t(
-                        '用于非多模态模型：MCP方式会把图片/视频转URL并拼接到user文本末尾；第三方模型方式会先调用系统设置-模型设置中配置的多模态模型，将媒体内容转成文本，然后以“图片1：.../视频1：...”形式回填到user消息。',
+                        '用于非多模态模型：会把图片/视频转为可访问URL并拼接到 user 文本末尾，便于模型自行调用 MCP/工具读取媒体内容。',
                       )}
                     />
 

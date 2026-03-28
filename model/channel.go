@@ -860,6 +860,32 @@ func (channel *Channel) ValidateSettings() error {
 			}
 		}
 	}
+
+	if channel.OtherSettings != "" {
+		otherSettings := &dto.ChannelOtherSettings{}
+		if err := common.UnmarshalJsonStr(channel.OtherSettings, otherSettings); err != nil {
+			return err
+		}
+		if _, ok := otherSettings.ParseImageAutoConvertToURLMode(); !ok {
+			return fmt.Errorf("invalid image_auto_convert_to_url_mode")
+		}
+
+		var rawMap map[string]json.RawMessage
+		if err := common.Unmarshal([]byte(channel.OtherSettings), &rawMap); err == nil {
+			if _, ok := rawMap["image_auto_convert_to_url"]; ok {
+				return fmt.Errorf("channel other setting \"image_auto_convert_to_url\" 已移除，请删除该字段")
+			}
+			if rawMode, ok := rawMap["image_auto_convert_to_url_mode"]; ok {
+				var mode string
+				if err := common.Unmarshal(rawMode, &mode); err != nil {
+					return fmt.Errorf("channel other setting \"image_auto_convert_to_url_mode\" 必须是字符串")
+				}
+				if strings.EqualFold(strings.TrimSpace(mode), "third_party_model") {
+					return fmt.Errorf("channel other setting \"image_auto_convert_to_url_mode=third_party_model\" 已移除，请改用 \"mcp\"")
+				}
+			}
+		}
+	}
 	return nil
 }
 
