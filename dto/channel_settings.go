@@ -64,33 +64,30 @@ type ChannelOtherSettings struct {
 	AllowSafetyIdentifier bool       `json:"allow_safety_identifier,omitempty"`
 	AwsKeyType            AwsKeyType `json:"aws_key_type,omitempty"`
 
-	// ImageAutoConvertToURLMode selects how to handle multimodal media blocks (image_url/video_url)
-	// when the upstream model is text-only.
+	// ImageAutoConvertToURLMode selects how to handle multimodal media blocks
+	// (image_url/video_url) when the upstream model is text-only.
 	//
 	// Supported values:
-	//   - "off"               : disable rewriting
-	//   - "mcp"               : legacy behavior, append media URLs as text and instruct MCP usage
-	//   - "third_party_model" : call a configured multimodal model to convert media into text, then append
+	//   - "off" : disable rewriting
+	//   - "mcp" : append media URLs as text and instruct the model to use MCP/tools
 	//
-	// Backward compatibility:
-	// If this field is empty, ImageAutoConvertToURL (legacy boolean) will be used:
+	// Legacy compatibility:
+	// If this field is empty, ImageAutoConvertToURL will still be read so old
+	// channel records can be migrated cleanly on startup.
 	//   - true  => "mcp"
 	//   - false => "off"
 	ImageAutoConvertToURLMode string `json:"image_auto_convert_to_url_mode,omitempty"`
 
-	// Convert image blocks (type: "image_url") into plain-text URLs and append them
-	// to the end of the corresponding user message. Useful for text-only models to call external multimodal tools (e.g. MCP).
-	//
-	// Note: despite the legacy field name, it also applies to "video_url".
+	// ImageAutoConvertToURL is a removed legacy field that is kept read-only for
+	// compatibility with existing rows before migration cleanup runs.
 	ImageAutoConvertToURL bool `json:"image_auto_convert_to_url,omitempty"`
 }
 
 type ImageAutoConvertToURLMode string
 
 const (
-	ImageAutoConvertToURLModeOff             ImageAutoConvertToURLMode = "off"
-	ImageAutoConvertToURLModeMCP             ImageAutoConvertToURLMode = "mcp"
-	ImageAutoConvertToURLModeThirdPartyModel ImageAutoConvertToURLMode = "third_party_model"
+	ImageAutoConvertToURLModeOff ImageAutoConvertToURLMode = "off"
+	ImageAutoConvertToURLModeMCP ImageAutoConvertToURLMode = "mcp"
 )
 
 func (s ChannelOtherSettings) ParseImageAutoConvertToURLMode() (mode ImageAutoConvertToURLMode, ok bool) {
@@ -103,8 +100,11 @@ func (s ChannelOtherSettings) ParseImageAutoConvertToURLMode() (mode ImageAutoCo
 	}
 
 	switch ImageAutoConvertToURLMode(raw) {
-	case ImageAutoConvertToURLModeOff, ImageAutoConvertToURLModeMCP, ImageAutoConvertToURLModeThirdPartyModel:
+	case ImageAutoConvertToURLModeOff, ImageAutoConvertToURLModeMCP:
 		return ImageAutoConvertToURLMode(raw), true
+	case "third_party_model":
+		// Keep old rows readable until the startup migration rewrites them to "mcp".
+		return ImageAutoConvertToURLModeMCP, true
 	default:
 		return ImageAutoConvertToURLModeOff, false
 	}

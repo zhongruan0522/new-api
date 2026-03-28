@@ -168,7 +168,11 @@ func UpdateOption(key string, value string) error {
 		"WeChatAuthEnabled", "WeChatServerAddress", "WeChatServerToken", "WeChatAccountQRCodeImageURL",
 		"oidc.enabled", "oidc.client_id", "oidc.client_secret", "oidc.well_known", "oidc.authorization_endpoint", "oidc.token_endpoint", "oidc.user_info_endpoint",
 		"CreemApiKey", "CreemProducts", "CreemTestMode", "CreemWebhookSecret",
-		"ExposeRatioEnabled":
+		"ExposeRatioEnabled",
+		"global.third_party_multimodal_model_id", "global.third_party_multimodal_call_api_type",
+		"global.third_party_multimodal_system_prompt", "global.third_party_multimodal_first_user_prompt",
+		"global.third_party_multimodal_user_agent", "global.third_party_multimodal_x_title",
+		"global.third_party_multimodal_http_referer":
 		return errors.New("option removed")
 	}
 	if key == "SidebarModulesAdmin" {
@@ -204,7 +208,11 @@ func updateOptionMap(key string, value string) (err error) {
 		"WeChatAuthEnabled", "WeChatServerAddress", "WeChatServerToken", "WeChatAccountQRCodeImageURL",
 		"oidc.enabled", "oidc.client_id", "oidc.client_secret", "oidc.well_known", "oidc.authorization_endpoint", "oidc.token_endpoint", "oidc.user_info_endpoint",
 		"CreemApiKey", "CreemProducts", "CreemTestMode", "CreemWebhookSecret",
-		"ExposeRatioEnabled":
+		"ExposeRatioEnabled",
+		"global.third_party_multimodal_model_id", "global.third_party_multimodal_call_api_type",
+		"global.third_party_multimodal_system_prompt", "global.third_party_multimodal_first_user_prompt",
+		"global.third_party_multimodal_user_agent", "global.third_party_multimodal_x_title",
+		"global.third_party_multimodal_http_referer":
 		delete(common.OptionMap, key)
 		return nil
 	}

@@ -180,23 +180,13 @@ func TextHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *types
 			return u, nil
 		}
 
-		switch mediaMode {
-		case dto.ImageAutoConvertToURLModeMCP:
-			_, convErr := relaycommon.ApplyImageAutoConvertToURL(request, resolveURL)
-			if convErr != nil {
-				return types.NewError(convErr, types.ErrorCodeInvalidRequest, types.ErrOptionWithSkipRetry())
-			}
-		case dto.ImageAutoConvertToURLModeThirdPartyModel:
-			if err := applyThirdPartyModelMediaToText(thirdPartyMediaToTextInput{
-				ctx:        c,
-				info:       info,
-				req:        request,
-				resolveURL: resolveURL,
-			}); err != nil {
-				return err
-			}
-		default:
+		if mediaMode != dto.ImageAutoConvertToURLModeMCP {
 			return types.NewErrorWithStatusCode(fmt.Errorf("unsupported image_auto_convert_to_url_mode: %s", mediaMode), types.ErrorCodeInvalidRequest, http.StatusBadRequest, types.ErrOptionWithSkipRetry())
+		}
+
+		_, convErr := relaycommon.ApplyImageAutoConvertToURL(request, resolveURL)
+		if convErr != nil {
+			return types.NewError(convErr, types.ErrorCodeInvalidRequest, types.ErrOptionWithSkipRetry())
 		}
 
 		// 异步更新用户的多模态适配转换计数
