@@ -1229,10 +1229,6 @@ const SystemSetting = () => {
                 </Form.Section>
               </Card>
 
-              <DatabasePreMigration />
-
-              <DatabaseSameTypeMigration />
-
               <Card>
                 <Form.Section text={t('配置 Turnstile')}>
                   <Text>{t('用以支持用户校验')}</Text>
@@ -1259,6 +1255,10 @@ const SystemSetting = () => {
                   </Button>
                 </Form.Section>
               </Card>
+
+              <DatabasePreMigration />
+
+              <DatabaseSameTypeMigration />
 
               <Modal
                 title={t('确认取消密码登录')}
