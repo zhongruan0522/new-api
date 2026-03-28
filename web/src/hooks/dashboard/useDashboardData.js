@@ -335,6 +335,7 @@ export const useDashboardData = (userState, userDispatch, statusState) => {
     handleCloseModal,
     loadQuotaData,
     loadUptimeData,
+    loadStatData,
     getUserData,
     refresh,
     handleSearchConfirm,
