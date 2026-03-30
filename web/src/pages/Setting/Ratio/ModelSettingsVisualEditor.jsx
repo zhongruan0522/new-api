@@ -46,13 +46,51 @@ const PER_TOKEN_RATIO_FIELDS = [
   'completionRatio',
   'cacheRatio',
   'createCacheRatio',
+  'audioRatio',
+  'audioCompletionRatio',
 ];
 
 const MODEL_PRICING_FIELDS = ['price', ...PER_TOKEN_RATIO_FIELDS];
+const PER_TOKEN_ZERO_FILL_FIELDS = [...PER_TOKEN_RATIO_FIELDS];
+const DECIMAL_PRECISION = 12;
+const PER_TOKEN_OUTPUT_KEY_MAP = {
+  ratio: 'ModelRatio',
+  completionRatio: 'CompletionRatio',
+  cacheRatio: 'CacheRatio',
+  createCacheRatio: 'CreateCacheRatio',
+  audioRatio: 'AudioRatio',
+  audioCompletionRatio: 'AudioCompletionRatio',
+};
 
-const hasValue = (value) => value !== '' && value !== undefined && value !== null;
+const hasValue = (value) =>
+  value !== '' && value !== undefined && value !== null;
 
 const normalizeEditableValue = (value) => (hasValue(value) ? `${value}` : '');
+
+const normalizeNumberValue = (value) => {
+  if (!Number.isFinite(value)) {
+    return null;
+  }
+  return Number(value.toFixed(DECIMAL_PRECISION));
+};
+
+const formatNumberValue = (value) => {
+  const normalizedValue = normalizeNumberValue(value);
+  return normalizedValue === null ? '' : normalizedValue.toString();
+};
+
+const normalizeNumericEditableValue = (value) => {
+  if (!hasValue(value)) {
+    return '';
+  }
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? formatNumberValue(parsed) : `${value}`;
+};
+
+const isEditableNumberInput = (value) => /^\d*(\.\d*)?$/.test(value);
+
+const shouldDeferNumericSync = (value) =>
+  value === '.' || (typeof value === 'string' && value.endsWith('.'));
 
 const createEmptyModel = (name = '') => ({
   name,
@@ -61,6 +99,8 @@ const createEmptyModel = (name = '') => ({
   completionRatio: '',
   cacheRatio: '',
   createCacheRatio: '',
+  audioRatio: '',
+  audioCompletionRatio: '',
   hasConflict: false,
   isUnset: true,
 });
@@ -81,14 +121,15 @@ const parseInputNumber = (value) => {
     return null;
   }
   const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : null;
+  const normalizedValue = normalizeNumberValue(parsed);
+  return normalizedValue === null ? null : normalizedValue;
 };
 
 // 倍率 → 价格：ratio * 2 = $/1M tokens（因为 ratio 1 = $0.002/1K = $2/1M）
-const ratioToPrice = (ratio) => ratio * 2;
+const ratioToPrice = (ratio) => normalizeNumberValue(ratio * 2);
 
 // 价格 → 倍率
-const priceToRatio = (price) => price / 2;
+const priceToRatio = (price) => normalizeNumberValue(price / 2);
 
 // 相对倍率计算（用于补全、缓存等相对于基础倍率的换算）
 const calculateRelativeRatio = (targetPrice, basePrice) => {
@@ -99,7 +140,7 @@ const calculateRelativeRatio = (targetPrice, basePrice) => {
   ) {
     return '';
   }
-  return (targetPrice / basePrice).toString();
+  return formatNumberValue(targetPrice / basePrice);
 };
 
 const hasPerTokenPricing = (model) =>
@@ -120,18 +161,28 @@ const buildPriceFieldsFromRatios = (model) => {
   const tokenPrice = ratio !== null ? ratioToPrice(ratio) : null;
 
   return {
-    tokenPrice: tokenPrice !== null ? tokenPrice.toString() : '',
+    tokenPrice: tokenPrice !== null ? formatNumberValue(tokenPrice) : '',
     completionTokenPrice:
       tokenPrice !== null && completionRatio !== null
-        ? (tokenPrice * completionRatio).toString()
+        ? formatNumberValue(tokenPrice * completionRatio)
         : '',
     cacheTokenPrice:
       tokenPrice !== null && cacheRatio !== null
-        ? (tokenPrice * cacheRatio).toString()
+        ? formatNumberValue(tokenPrice * cacheRatio)
         : '',
     createCacheTokenPrice:
       tokenPrice !== null && createCacheRatio !== null
-        ? (tokenPrice * createCacheRatio).toString()
+        ? formatNumberValue(tokenPrice * createCacheRatio)
+        : '',
+    audioTokenPrice:
+      tokenPrice !== null && audioRatio !== null
+        ? formatNumberValue(tokenPrice * audioRatio)
+        : '',
+    audioCompletionTokenPrice:
+      tokenPrice !== null &&
+      audioRatio !== null &&
+      audioCompletionRatio !== null
+        ? formatNumberValue(tokenPrice * audioRatio * audioCompletionRatio)
         : '',
   };
 };
@@ -151,25 +202,25 @@ const syncRatioFieldsFromPrices = (model) => {
     ...(model || {}),
     ratio:
       tokenPrice !== null
-        ? priceToRatio(tokenPrice).toString()
+        ? formatNumberValue(priceToRatio(tokenPrice))
         : hasValue(model?.tokenPrice)
           ? ''
-          : normalizeEditableValue(model?.ratio),
+          : normalizeNumericEditableValue(model?.ratio),
     completionRatio: hasValue(model?.completionTokenPrice)
       ? calculateRelativeRatio(completionTokenPrice, tokenPrice)
-      : normalizeEditableValue(model?.completionRatio),
+      : normalizeNumericEditableValue(model?.completionRatio),
     cacheRatio: hasValue(model?.cacheTokenPrice)
       ? calculateRelativeRatio(cacheTokenPrice, tokenPrice)
-      : normalizeEditableValue(model?.cacheRatio),
+      : normalizeNumericEditableValue(model?.cacheRatio),
     createCacheRatio: hasValue(model?.createCacheTokenPrice)
       ? calculateRelativeRatio(createCacheTokenPrice, tokenPrice)
-      : normalizeEditableValue(model?.createCacheRatio),
+      : normalizeNumericEditableValue(model?.createCacheRatio),
     audioRatio: hasValue(model?.audioTokenPrice)
       ? calculateRelativeRatio(audioTokenPrice, tokenPrice)
-      : normalizeEditableValue(model?.audioRatio),
+      : normalizeNumericEditableValue(model?.audioRatio),
     audioCompletionRatio: hasValue(model?.audioCompletionTokenPrice)
       ? calculateRelativeRatio(audioCompletionTokenPrice, audioTokenPrice)
-      : normalizeEditableValue(model?.audioCompletionRatio),
+      : normalizeNumericEditableValue(model?.audioCompletionRatio),
   };
 
   updatedModel.hasConflict = buildConflictState(updatedModel);
@@ -191,14 +242,14 @@ const clearPerTokenPricing = (model) => ({
 const ratioToDisplayPrice = (ratio) => {
   if (!hasValue(ratio)) return '';
   const r = Number(ratio);
-  return Number.isFinite(r) ? (r * 2).toString() : '';
+  return Number.isFinite(r) ? formatNumberValue(r * 2) : '';
 };
 
 // 显示价格 → 倍率（用于表格列输入后存储）
 const displayPriceToRatio = (price) => {
   if (!hasValue(price)) return '';
   const p = Number(price);
-  return Number.isFinite(p) ? (p / 2).toString() : '';
+  return Number.isFinite(p) ? formatNumberValue(p / 2) : '';
 };
 
 export default function ModelSettingsVisualEditor(props) {
@@ -213,6 +264,7 @@ export default function ModelSettingsVisualEditor(props) {
   const [loading, setLoading] = useState(false);
   const [pricingMode, setPricingMode] = useState('per-token'); // 'per-token' or 'per-request'
   const [conflictOnly, setConflictOnly] = useState(false);
+  const [editingValues, setEditingValues] = useState({});
   const formRef = useRef(null);
   const pageSize = 10;
 
@@ -241,9 +293,13 @@ export default function ModelSettingsVisualEditor(props) {
       const modelRatio = JSON.parse(props.options.ModelRatio || '{}');
       const completionRatio = JSON.parse(props.options.CompletionRatio || '{}');
       const cacheRatio = JSON.parse(props.options.CacheRatio || '{}');
-      const createCacheRatio = JSON.parse(props.options.CreateCacheRatio || '{}');
+      const createCacheRatio = JSON.parse(
+        props.options.CreateCacheRatio || '{}',
+      );
       const audioRatio = JSON.parse(props.options.AudioRatio || '{}');
-      const audioCompletionRatio = JSON.parse(props.options.AudioCompletionRatio || '{}');
+      const audioCompletionRatio = JSON.parse(
+        props.options.AudioCompletionRatio || '{}',
+      );
 
       const configuredModelNames = new Set([
         ...Object.keys(modelPrice),
@@ -255,37 +311,43 @@ export default function ModelSettingsVisualEditor(props) {
         ...Object.keys(audioCompletionRatio),
       ]);
 
-      const configuredModelData = Array.from(configuredModelNames).map((name) => {
-        const price = modelPrice[name] === undefined ? '' : modelPrice[name];
-        const ratio = modelRatio[name] === undefined ? '' : modelRatio[name];
-        const comp =
-          completionRatio[name] === undefined ? '' : completionRatio[name];
-        const cache = cacheRatio[name] === undefined ? '' : cacheRatio[name];
-        const createCache = createCacheRatio[name] === undefined ? '' : createCacheRatio[name];
-        const audio = audioRatio[name] === undefined ? '' : audioRatio[name];
-        const audioComp = audioCompletionRatio[name] === undefined ? '' : audioCompletionRatio[name];
+      const configuredModelData = Array.from(configuredModelNames).map(
+        (name) => {
+          const price = modelPrice[name] === undefined ? '' : modelPrice[name];
+          const ratio = modelRatio[name] === undefined ? '' : modelRatio[name];
+          const comp =
+            completionRatio[name] === undefined ? '' : completionRatio[name];
+          const cache = cacheRatio[name] === undefined ? '' : cacheRatio[name];
+          const createCache =
+            createCacheRatio[name] === undefined ? '' : createCacheRatio[name];
+          const audio = audioRatio[name] === undefined ? '' : audioRatio[name];
+          const audioComp =
+            audioCompletionRatio[name] === undefined
+              ? ''
+              : audioCompletionRatio[name];
 
-        return {
-          name,
-          price,
-          ratio,
-          completionRatio: comp,
-          cacheRatio: cache,
-          createCacheRatio: createCache,
-          audioRatio: audio,
-          audioCompletionRatio: audioComp,
-          isUnset: false,
-          hasConflict: buildConflictState({
-            price,
-            ratio,
-              completionRatio: comp,
-              cacheRatio: cache,
-              createCacheRatio: createCache,
-              audioRatio: audio,
-              audioCompletionRatio: audioComp,
+          return {
+            name,
+            price: normalizeNumericEditableValue(price),
+            ratio: normalizeNumericEditableValue(ratio),
+            completionRatio: normalizeNumericEditableValue(comp),
+            cacheRatio: normalizeNumericEditableValue(cache),
+            createCacheRatio: normalizeNumericEditableValue(createCache),
+            audioRatio: normalizeNumericEditableValue(audio),
+            audioCompletionRatio: normalizeNumericEditableValue(audioComp),
+            isUnset: false,
+            hasConflict: buildConflictState({
+              price: normalizeNumericEditableValue(price),
+              ratio: normalizeNumericEditableValue(ratio),
+              completionRatio: normalizeNumericEditableValue(comp),
+              cacheRatio: normalizeNumericEditableValue(cache),
+              createCacheRatio: normalizeNumericEditableValue(createCache),
+              audioRatio: normalizeNumericEditableValue(audio),
+              audioCompletionRatio: normalizeNumericEditableValue(audioComp),
             }),
-        };
-      });
+          };
+        },
+      );
 
       const unsetModelData = Array.from(new Set(enabledModels))
         .filter((name) => !configuredModelNames.has(name))
@@ -323,29 +385,24 @@ export default function ModelSettingsVisualEditor(props) {
       AudioRatio: {},
       AudioCompletionRatio: {},
     };
-    let currentConvertModelName = '';
-
     try {
       models.forEach((model) => {
-        currentConvertModelName = model.name;
         if (model.price !== '') {
-          output.ModelPrice[model.name] = parseFloat(model.price);
+          output.ModelPrice[model.name] = parseInputNumber(model.price);
         } else {
-          if (model.ratio !== '')
-            output.ModelRatio[model.name] = parseFloat(model.ratio);
-          if (model.completionRatio !== '')
-            output.CompletionRatio[model.name] = parseFloat(
-              model.completionRatio,
-            );
+          const hasPerTokenValue = PER_TOKEN_ZERO_FILL_FIELDS.some((field) =>
+            hasValue(model[field]),
+          );
+
+          if (hasPerTokenValue) {
+            PER_TOKEN_ZERO_FILL_FIELDS.forEach((field) => {
+              const targetKey = PER_TOKEN_OUTPUT_KEY_MAP[field];
+              output[targetKey][model.name] = hasValue(model[field])
+                ? parseInputNumber(model[field])
+                : 0;
+            });
+          }
         }
-        if (model.cacheRatio !== '')
-          output.CacheRatio[model.name] = parseFloat(model.cacheRatio);
-        if (model.createCacheRatio !== '')
-          output.CreateCacheRatio[model.name] = parseFloat(model.createCacheRatio);
-        if (model.audioRatio !== '')
-          output.AudioRatio[model.name] = parseFloat(model.audioRatio);
-        if (model.audioCompletionRatio !== '')
-          output.AudioCompletionRatio[model.name] = parseFloat(model.audioCompletionRatio);
       });
 
       const finalOutput = {
@@ -355,7 +412,11 @@ export default function ModelSettingsVisualEditor(props) {
         CacheRatio: JSON.stringify(output.CacheRatio, null, 2),
         CreateCacheRatio: JSON.stringify(output.CreateCacheRatio, null, 2),
         AudioRatio: JSON.stringify(output.AudioRatio, null, 2),
-        AudioCompletionRatio: JSON.stringify(output.AudioCompletionRatio, null, 2),
+        AudioCompletionRatio: JSON.stringify(
+          output.AudioCompletionRatio,
+          null,
+          2,
+        ),
       };
 
       const requestQueue = Object.entries(finalOutput).map(([key, value]) => {
@@ -414,9 +475,21 @@ export default function ModelSettingsVisualEditor(props) {
       key: 'price',
       render: (text, record) => (
         <Input
-          value={text}
+          value={editingValues[`${record.name}:price`] ?? text}
           placeholder={t('按量计费')}
-          onChange={(value) => updateModel(record.name, 'price', value)}
+          onChange={(value) =>
+            handleInlineInputChange(record.name, 'price', value, (current) =>
+              formatNumberValue(Number(current)),
+            )
+          }
+          onBlur={() =>
+            handleInlineInputBlur(
+              record.name,
+              'price',
+              editingValues[`${record.name}:price`] ?? text,
+              (current) => formatNumberValue(Number(current)),
+            )
+          }
         />
       ),
     },
@@ -426,11 +499,27 @@ export default function ModelSettingsVisualEditor(props) {
       key: 'ratio',
       render: (text, record) => (
         <Input
-          value={ratioToDisplayPrice(text)}
+          value={
+            editingValues[`${record.name}:ratio`] ?? ratioToDisplayPrice(text)
+          }
           placeholder={record.price !== '' ? '-' : t('默认补全倍率')}
           disabled={record.price !== ''}
           onChange={(value) =>
-            updateModel(record.name, 'ratio', displayPriceToRatio(value))
+            handleInlineInputChange(
+              record.name,
+              'ratio',
+              value,
+              displayPriceToRatio,
+            )
+          }
+          onBlur={() =>
+            handleInlineInputBlur(
+              record.name,
+              'ratio',
+              editingValues[`${record.name}:ratio`] ??
+                ratioToDisplayPrice(text),
+              displayPriceToRatio,
+            )
           }
         />
       ),
@@ -441,14 +530,27 @@ export default function ModelSettingsVisualEditor(props) {
       key: 'completionRatio',
       render: (text, record) => (
         <Input
-          value={completionRatioToDisplayPrice(text, record.ratio)}
+          value={
+            editingValues[`${record.name}:completionRatio`] ??
+            completionRatioToDisplayPrice(text, record.ratio)
+          }
           placeholder={record.price !== '' ? '-' : t('默认补全倍率')}
           disabled={record.price !== ''}
           onChange={(value) =>
-            updateModel(
+            handleInlineInputChange(
               record.name,
               'completionRatio',
-              displayPriceToCompletionRatio(value, record.ratio),
+              value,
+              (current) => displayPriceToCompletionRatio(current, record.ratio),
+            )
+          }
+          onBlur={() =>
+            handleInlineInputBlur(
+              record.name,
+              'completionRatio',
+              editingValues[`${record.name}:completionRatio`] ??
+                completionRatioToDisplayPrice(text, record.ratio),
+              (current) => displayPriceToCompletionRatio(current, record.ratio),
             )
           }
         />
@@ -460,14 +562,27 @@ export default function ModelSettingsVisualEditor(props) {
       key: 'cacheRatio',
       render: (text, record) => (
         <Input
-          value={relativeRatioToDisplayPrice(text, record.ratio)}
+          value={
+            editingValues[`${record.name}:cacheRatio`] ??
+            relativeRatioToDisplayPrice(text, record.ratio)
+          }
           placeholder={t('缓存读取')}
           disabled={record.price !== ''}
           onChange={(value) =>
-            updateModel(
+            handleInlineInputChange(
               record.name,
               'cacheRatio',
-              displayPriceToRelativeRatio(value, record.ratio),
+              value,
+              (current) => displayPriceToRelativeRatio(current, record.ratio),
+            )
+          }
+          onBlur={() =>
+            handleInlineInputBlur(
+              record.name,
+              'cacheRatio',
+              editingValues[`${record.name}:cacheRatio`] ??
+                relativeRatioToDisplayPrice(text, record.ratio),
+              (current) => displayPriceToRelativeRatio(current, record.ratio),
             )
           }
         />
@@ -479,14 +594,27 @@ export default function ModelSettingsVisualEditor(props) {
       key: 'createCacheRatio',
       render: (text, record) => (
         <Input
-          value={relativeRatioToDisplayPrice(text, record.ratio)}
+          value={
+            editingValues[`${record.name}:createCacheRatio`] ??
+            relativeRatioToDisplayPrice(text, record.ratio)
+          }
           placeholder={t('缓存创建')}
           disabled={record.price !== ''}
           onChange={(value) =>
-            updateModel(
+            handleInlineInputChange(
               record.name,
               'createCacheRatio',
-              displayPriceToRelativeRatio(value, record.ratio),
+              value,
+              (current) => displayPriceToRelativeRatio(current, record.ratio),
+            )
+          }
+          onBlur={() =>
+            handleInlineInputBlur(
+              record.name,
+              'createCacheRatio',
+              editingValues[`${record.name}:createCacheRatio`] ??
+                relativeRatioToDisplayPrice(text, record.ratio),
+              (current) => displayPriceToRelativeRatio(current, record.ratio),
             )
           }
         />
@@ -498,14 +626,27 @@ export default function ModelSettingsVisualEditor(props) {
       key: 'audioRatio',
       render: (text, record) => (
         <Input
-          value={relativeRatioToDisplayPrice(text, record.ratio)}
+          value={
+            editingValues[`${record.name}:audioRatio`] ??
+            relativeRatioToDisplayPrice(text, record.ratio)
+          }
           placeholder={t('音频输入')}
           disabled={record.price !== ''}
           onChange={(value) =>
-            updateModel(
+            handleInlineInputChange(
               record.name,
               'audioRatio',
-              displayPriceToRelativeRatio(value, record.ratio),
+              value,
+              (current) => displayPriceToRelativeRatio(current, record.ratio),
+            )
+          }
+          onBlur={() =>
+            handleInlineInputBlur(
+              record.name,
+              'audioRatio',
+              editingValues[`${record.name}:audioRatio`] ??
+                relativeRatioToDisplayPrice(text, record.ratio),
+              (current) => displayPriceToRelativeRatio(current, record.ratio),
             )
           }
         />
@@ -517,14 +658,45 @@ export default function ModelSettingsVisualEditor(props) {
       key: 'audioCompletionRatio',
       render: (text, record) => (
         <Input
-          value={audioCompletionRatioToDisplayPrice(text, record.ratio, record.audioRatio)}
+          value={
+            editingValues[`${record.name}:audioCompletionRatio`] ??
+            audioCompletionRatioToDisplayPrice(
+              text,
+              record.ratio,
+              record.audioRatio,
+            )
+          }
           placeholder={t('音频输出')}
           disabled={record.price !== ''}
           onChange={(value) =>
-            updateModel(
+            handleInlineInputChange(
               record.name,
               'audioCompletionRatio',
-              displayPriceToAudioCompletionRatio(value, record.ratio, record.audioRatio),
+              value,
+              (current) =>
+                displayPriceToAudioCompletionRatio(
+                  current,
+                  record.ratio,
+                  record.audioRatio,
+                ),
+            )
+          }
+          onBlur={() =>
+            handleInlineInputBlur(
+              record.name,
+              'audioCompletionRatio',
+              editingValues[`${record.name}:audioCompletionRatio`] ??
+                audioCompletionRatioToDisplayPrice(
+                  text,
+                  record.ratio,
+                  record.audioRatio,
+                ),
+              (current) =>
+                displayPriceToAudioCompletionRatio(
+                  current,
+                  record.ratio,
+                  record.audioRatio,
+                ),
             )
           }
         />
@@ -550,22 +722,70 @@ export default function ModelSettingsVisualEditor(props) {
     },
   ];
 
-  const updateModel = (name, field, value) => {
-    if (value !== '' && isNaN(value)) {
+  const handleInlineInputChange = (
+    name,
+    field,
+    rawValue,
+    converter = (current) => current,
+  ) => {
+    if (rawValue !== '' && !isEditableNumberInput(rawValue)) {
       showError('请输入数字');
       return;
     }
+
+    const cacheKey = `${name}:${field}`;
+    setEditingValues((prev) => ({ ...prev, [cacheKey]: rawValue }));
+
+    if (shouldDeferNumericSync(rawValue)) {
+      return;
+    }
+
+    const normalizedValue = rawValue === '' ? '' : converter(rawValue);
     setModels((prev) =>
       prev.map((model) => {
         if (model.name !== name) return model;
-        const updated = { ...model, [field]: value };
+        const updated = { ...model, [field]: normalizedValue };
         updated.hasConflict = buildConflictState(updated);
         return updated;
       }),
     );
   };
 
+  const handleInlineInputBlur = (
+    name,
+    field,
+    value,
+    converter = (current) => current,
+  ) => {
+    const cacheKey = `${name}:${field}`;
+    const normalizedValue = hasValue(value) ? converter(value) : '';
+
+    setModels((prev) =>
+      prev.map((model) => {
+        if (model.name !== name) return model;
+        const updated = { ...model, [field]: normalizedValue };
+        updated.hasConflict = buildConflictState(updated);
+        return updated;
+      }),
+    );
+
+    setEditingValues((prev) => {
+      const next = { ...prev };
+      delete next[cacheKey];
+      return next;
+    });
+  };
+
   const deleteModel = (name) => {
+    setEditingValues((prev) => {
+      const next = { ...prev };
+      Object.keys(next).forEach((key) => {
+        if (key.startsWith(`${name}:`)) {
+          delete next[key];
+        }
+      });
+      return next;
+    });
     setModels((prev) => prev.filter((model) => model.name !== name));
   };
 
@@ -574,9 +794,10 @@ export default function ModelSettingsVisualEditor(props) {
     const newState = {
       ...(currentModel || {}),
       tokenPrice: value,
-      ratio: hasValue(value) && !isNaN(value)
-        ? priceToRatio(Number(value)).toString()
-        : '',
+      ratio:
+        hasValue(value) && !isNaN(value)
+          ? formatNumberValue(priceToRatio(Number(value)))
+          : '',
     };
     setCurrentModel(syncRatioFieldsFromPrices(newState));
   };
@@ -587,7 +808,10 @@ export default function ModelSettingsVisualEditor(props) {
       completionTokenPrice: value,
       completionRatio:
         hasValue(value) && hasValue(currentModel?.tokenPrice)
-          ? calculateRelativeRatio(Number(value), Number(currentModel.tokenPrice))
+          ? calculateRelativeRatio(
+              Number(value),
+              Number(currentModel.tokenPrice),
+            )
           : '',
     };
     setCurrentModel(newState);
@@ -599,7 +823,10 @@ export default function ModelSettingsVisualEditor(props) {
       cacheTokenPrice: value,
       cacheRatio:
         hasValue(value) && hasValue(currentModel?.tokenPrice)
-          ? calculateRelativeRatio(Number(value), Number(currentModel.tokenPrice))
+          ? calculateRelativeRatio(
+              Number(value),
+              Number(currentModel.tokenPrice),
+            )
           : '',
     };
     setCurrentModel(newState);
@@ -611,7 +838,10 @@ export default function ModelSettingsVisualEditor(props) {
       createCacheTokenPrice: value,
       createCacheRatio:
         hasValue(value) && hasValue(currentModel?.tokenPrice)
-          ? calculateRelativeRatio(Number(value), Number(currentModel.tokenPrice))
+          ? calculateRelativeRatio(
+              Number(value),
+              Number(currentModel.tokenPrice),
+            )
           : '',
     };
     setCurrentModel(newState);
@@ -623,7 +853,10 @@ export default function ModelSettingsVisualEditor(props) {
       audioTokenPrice: value,
       audioRatio:
         hasValue(value) && hasValue(currentModel?.tokenPrice)
-          ? calculateRelativeRatio(Number(value), Number(currentModel.tokenPrice))
+          ? calculateRelativeRatio(
+              Number(value),
+              Number(currentModel.tokenPrice),
+            )
           : '',
     };
     setCurrentModel(syncRatioFieldsFromPrices(newState));
@@ -635,7 +868,10 @@ export default function ModelSettingsVisualEditor(props) {
       audioCompletionTokenPrice: value,
       audioCompletionRatio:
         hasValue(value) && hasValue(currentModel?.audioTokenPrice)
-          ? calculateRelativeRatio(Number(value), Number(currentModel.audioTokenPrice))
+          ? calculateRelativeRatio(
+              Number(value),
+              Number(currentModel.audioTokenPrice),
+            )
           : '',
     };
     setCurrentModel(newState);
@@ -654,13 +890,17 @@ export default function ModelSettingsVisualEditor(props) {
             const updated = {
               ...model,
               name: values.name,
-              price: normalizeEditableValue(values.price),
-              ratio: normalizeEditableValue(values.ratio),
-              completionRatio: normalizeEditableValue(values.completionRatio),
-              cacheRatio: normalizeEditableValue(values.cacheRatio),
-              createCacheRatio: normalizeEditableValue(values.createCacheRatio),
-              audioRatio: normalizeEditableValue(values.audioRatio),
-              audioCompletionRatio: normalizeEditableValue(
+              price: normalizeNumericEditableValue(values.price),
+              ratio: normalizeNumericEditableValue(values.ratio),
+              completionRatio: normalizeNumericEditableValue(
+                values.completionRatio,
+              ),
+              cacheRatio: normalizeNumericEditableValue(values.cacheRatio),
+              createCacheRatio: normalizeNumericEditableValue(
+                values.createCacheRatio,
+              ),
+              audioRatio: normalizeNumericEditableValue(values.audioRatio),
+              audioCompletionRatio: normalizeNumericEditableValue(
                 values.audioCompletionRatio,
               ),
             };
@@ -680,14 +920,18 @@ export default function ModelSettingsVisualEditor(props) {
       setModels((prev) => {
         const newModel = {
           name: values.name,
-            price: normalizeEditableValue(values.price),
-            ratio: normalizeEditableValue(values.ratio),
-            completionRatio: normalizeEditableValue(values.completionRatio),
-            cacheRatio: normalizeEditableValue(values.cacheRatio),
-            createCacheRatio: normalizeEditableValue(values.createCacheRatio),
-            audioRatio: normalizeEditableValue(values.audioRatio),
-            audioCompletionRatio: normalizeEditableValue(
-              values.audioCompletionRatio,
+          price: normalizeNumericEditableValue(values.price),
+          ratio: normalizeNumericEditableValue(values.ratio),
+          completionRatio: normalizeNumericEditableValue(
+            values.completionRatio,
+          ),
+          cacheRatio: normalizeNumericEditableValue(values.cacheRatio),
+          createCacheRatio: normalizeNumericEditableValue(
+            values.createCacheRatio,
+          ),
+          audioRatio: normalizeNumericEditableValue(values.audioRatio),
+          audioCompletionRatio: normalizeNumericEditableValue(
+            values.audioCompletionRatio,
           ),
           isUnset: false,
         };
@@ -737,7 +981,8 @@ export default function ModelSettingsVisualEditor(props) {
           formValues.cacheTokenPrice = modelCopy.cacheTokenPrice;
           formValues.createCacheTokenPrice = modelCopy.createCacheTokenPrice;
           formValues.audioTokenPrice = modelCopy.audioTokenPrice;
-          formValues.audioCompletionTokenPrice = modelCopy.audioCompletionTokenPrice;
+          formValues.audioCompletionTokenPrice =
+            modelCopy.audioCompletionTokenPrice;
         }
 
         formRef.current.setValues(formValues);
@@ -859,18 +1104,23 @@ export default function ModelSettingsVisualEditor(props) {
                           updatedModel.price,
                         );
                       } else {
-                        formValues.modelTokenPrice =
-                          normalizeEditableValue(updatedModel.tokenPrice);
+                        formValues.modelTokenPrice = normalizeEditableValue(
+                          updatedModel.tokenPrice,
+                        );
                         formValues.completionTokenPrice =
-                          normalizeEditableValue(updatedModel.completionTokenPrice);
-                        formValues.cacheTokenPrice =
-                          normalizeEditableValue(updatedModel.cacheTokenPrice);
+                          normalizeEditableValue(
+                            updatedModel.completionTokenPrice,
+                          );
+                        formValues.cacheTokenPrice = normalizeEditableValue(
+                          updatedModel.cacheTokenPrice,
+                        );
                         formValues.createCacheTokenPrice =
                           normalizeEditableValue(
                             updatedModel.createCacheTokenPrice,
                           );
-                        formValues.audioTokenPrice =
-                          normalizeEditableValue(updatedModel.audioTokenPrice);
+                        formValues.audioTokenPrice = normalizeEditableValue(
+                          updatedModel.audioTokenPrice,
+                        );
                         formValues.audioCompletionTokenPrice =
                           normalizeEditableValue(
                             updatedModel.audioCompletionTokenPrice,
@@ -988,7 +1238,7 @@ const completionRatioToDisplayPrice = (completionRatio, baseRatio) => {
   const cr = Number(completionRatio);
   const br = Number(baseRatio);
   if (!Number.isFinite(cr) || !Number.isFinite(br)) return '';
-  return (br * 2 * cr).toString();
+  return formatNumberValue(br * 2 * cr);
 };
 
 // 显示价格 → 补全倍率
@@ -997,7 +1247,7 @@ const displayPriceToCompletionRatio = (price, baseRatio) => {
   const p = Number(price);
   const br = Number(baseRatio);
   if (!Number.isFinite(p) || !Number.isFinite(br) || br === 0) return '';
-  return (p / (br * 2)).toString();
+  return formatNumberValue(p / (br * 2));
 };
 
 // 相对倍率（缓存/图片/音频输入等）→ 显示价格
@@ -1006,7 +1256,7 @@ const relativeRatioToDisplayPrice = (relativeRatio, baseRatio) => {
   const rr = Number(relativeRatio);
   const br = Number(baseRatio);
   if (!Number.isFinite(rr) || !Number.isFinite(br)) return '';
-  return (br * 2 * rr).toString();
+  return formatNumberValue(br * 2 * rr);
 };
 
 // 显示价格 → 相对倍率
@@ -1015,25 +1265,42 @@ const displayPriceToRelativeRatio = (price, baseRatio) => {
   const p = Number(price);
   const br = Number(baseRatio);
   if (!Number.isFinite(p) || !Number.isFinite(br) || br === 0) return '';
-  return (p / (br * 2)).toString();
+  return formatNumberValue(p / (br * 2));
 };
 
 // 音频补全倍率 → 显示价格：audioCompletionRatio 相对于 audioRatio，价格 = ratio * 2 * audioRatio * audioCompletionRatio
-const audioCompletionRatioToDisplayPrice = (audioCompletionRatio, baseRatio, audioRatio) => {
-  if (!hasValue(audioCompletionRatio) || !hasValue(baseRatio) || !hasValue(audioRatio)) return '';
+const audioCompletionRatioToDisplayPrice = (
+  audioCompletionRatio,
+  baseRatio,
+  audioRatio,
+) => {
+  if (
+    !hasValue(audioCompletionRatio) ||
+    !hasValue(baseRatio) ||
+    !hasValue(audioRatio)
+  )
+    return '';
   const acr = Number(audioCompletionRatio);
   const br = Number(baseRatio);
   const ar = Number(audioRatio);
-  if (!Number.isFinite(acr) || !Number.isFinite(br) || !Number.isFinite(ar)) return '';
-  return (br * 2 * ar * acr).toString();
+  if (!Number.isFinite(acr) || !Number.isFinite(br) || !Number.isFinite(ar))
+    return '';
+  return formatNumberValue(br * 2 * ar * acr);
 };
 
 // 显示价格 → 音频补全倍率
 const displayPriceToAudioCompletionRatio = (price, baseRatio, audioRatio) => {
-  if (!hasValue(price) || !hasValue(baseRatio) || !hasValue(audioRatio)) return '';
+  if (!hasValue(price) || !hasValue(baseRatio) || !hasValue(audioRatio))
+    return '';
   const p = Number(price);
   const br = Number(baseRatio);
   const ar = Number(audioRatio);
-  if (!Number.isFinite(p) || !Number.isFinite(br) || !Number.isFinite(ar) || (br * ar) === 0) return '';
-  return (p / (br * 2 * ar)).toString();
+  if (
+    !Number.isFinite(p) ||
+    !Number.isFinite(br) ||
+    !Number.isFinite(ar) ||
+    br * ar === 0
+  )
+    return '';
+  return formatNumberValue(p / (br * 2 * ar));
 };
