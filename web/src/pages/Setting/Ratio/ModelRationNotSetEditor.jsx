@@ -42,7 +42,6 @@ import { useTranslation } from 'react-i18next';
 const EXTRA_RATIO_FIELDS = [
   'cacheRatio',
   'createCacheRatio',
-  'imageRatio',
   'audioRatio',
   'audioCompletionRatio',
 ];
@@ -51,7 +50,6 @@ const EXTRA_RATIO_FIELDS = [
 const createEmptyExtraPricing = () => ({
   cacheRatio: '',
   createCacheRatio: '',
-  imageRatio: '',
   audioRatio: '',
   audioCompletionRatio: '',
 });
@@ -75,8 +73,6 @@ const getBatchFillTypeLabel = (type, t) => {
       return t('音频倍率');
     case 'audioCompletionRatio':
       return t('音频补全倍率');
-    case 'imageRatio':
-      return t('图片倍率');
     default:
       return t('模型倍率和补全倍率');
   }
@@ -96,8 +92,6 @@ const getBatchFillValueLabel = (type, t) => {
       return t('音频倍率值');
     case 'audioCompletionRatio':
       return t('音频补全倍率值');
-    case 'imageRatio':
-      return t('图片倍率值');
     default:
       return t('补全倍率值');
   }
@@ -151,7 +145,6 @@ export default function ModelRatioNotSetEditor(props) {
       const completionRatio = JSON.parse(props.options.CompletionRatio || '{}');
       const cacheRatio = JSON.parse(props.options.CacheRatio || '{}');
       const createCacheRatio = JSON.parse(props.options.CreateCacheRatio || '{}');
-      const imageRatio = JSON.parse(props.options.ImageRatio || '{}');
       const audioRatio = JSON.parse(props.options.AudioRatio || '{}');
       const audioCompletionRatio = JSON.parse(
         props.options.AudioCompletionRatio || '{}',
@@ -174,7 +167,6 @@ export default function ModelRatioNotSetEditor(props) {
         completionRatio: normalizeEditableValue(completionRatio[name]),
         cacheRatio: normalizeEditableValue(cacheRatio[name]),
         createCacheRatio: normalizeEditableValue(createCacheRatio[name]),
-        imageRatio: normalizeEditableValue(imageRatio[name]),
         audioRatio: normalizeEditableValue(audioRatio[name]),
         audioCompletionRatio: normalizeEditableValue(audioCompletionRatio[name]),
       }));
@@ -220,7 +212,6 @@ export default function ModelRatioNotSetEditor(props) {
       CompletionRatio: JSON.parse(props.options.CompletionRatio || '{}'),
       CacheRatio: JSON.parse(props.options.CacheRatio || '{}'),
       CreateCacheRatio: JSON.parse(props.options.CreateCacheRatio || '{}'),
-      ImageRatio: JSON.parse(props.options.ImageRatio || '{}'),
       AudioRatio: JSON.parse(props.options.AudioRatio || '{}'),
       AudioCompletionRatio: JSON.parse(
         props.options.AudioCompletionRatio || '{}',
@@ -235,7 +226,6 @@ export default function ModelRatioNotSetEditor(props) {
         delete output.CompletionRatio[model.name];
         delete output.CacheRatio[model.name];
         delete output.CreateCacheRatio[model.name];
-        delete output.ImageRatio[model.name];
         delete output.AudioRatio[model.name];
         delete output.AudioCompletionRatio[model.name];
 
@@ -256,8 +246,6 @@ export default function ModelRatioNotSetEditor(props) {
             output.CreateCacheRatio[model.name] = parseFloat(
               model.createCacheRatio,
             );
-          if (model.imageRatio !== '')
-            output.ImageRatio[model.name] = parseFloat(model.imageRatio);
           if (model.audioRatio !== '')
             output.AudioRatio[model.name] = parseFloat(model.audioRatio);
           if (model.audioCompletionRatio !== '')
@@ -274,7 +262,6 @@ export default function ModelRatioNotSetEditor(props) {
         CompletionRatio: JSON.stringify(output.CompletionRatio, null, 2),
         CacheRatio: JSON.stringify(output.CacheRatio, null, 2),
         CreateCacheRatio: JSON.stringify(output.CreateCacheRatio, null, 2),
-        ImageRatio: JSON.stringify(output.ImageRatio, null, 2),
         AudioRatio: JSON.stringify(output.AudioRatio, null, 2),
         AudioCompletionRatio: JSON.stringify(
           output.AudioCompletionRatio,
@@ -423,19 +410,6 @@ export default function ModelRatioNotSetEditor(props) {
         />
       ),
     },
-    {
-      title: t('图片倍率'),
-      dataIndex: 'imageRatio',
-      key: 'imageRatio',
-      render: (text, record) => (
-        <Input
-          value={text}
-          placeholder={t('输入图片倍率')}
-          disabled={record.price !== ''}
-          onChange={(value) => updateModel(record.name, 'imageRatio', value)}
-        />
-      ),
-    },
   ];
 
   const updateModel = (name, field, value) => {
@@ -464,7 +438,6 @@ export default function ModelRatioNotSetEditor(props) {
         completionRatio: normalizeEditableValue(values.completionRatio),
         cacheRatio: normalizeEditableValue(values.cacheRatio),
         createCacheRatio: normalizeEditableValue(values.createCacheRatio),
-        imageRatio: normalizeEditableValue(values.imageRatio),
         audioRatio: normalizeEditableValue(values.audioRatio),
         audioCompletionRatio: normalizeEditableValue(values.audioCompletionRatio),
       },
@@ -751,14 +724,6 @@ export default function ModelRatioNotSetEditor(props) {
                   }))
                 }
               />
-              <Form.Input
-                field='imageRatio'
-                label={t('图片倍率')}
-                placeholder={t('输入图片倍率')}
-                onChange={(value) =>
-                  setCurrentModel((prev) => ({ ...prev, imageRatio: value }))
-                }
-              />
             </>
           )}
         </Form>
@@ -817,12 +782,6 @@ export default function ModelRatioNotSetEditor(props) {
                   onChange={() => handleBatchTypeChange('audioCompletionRatio')}
                 >
                   {t('音频补全倍率')}
-                </Radio>
-                <Radio
-                  checked={batchFillType === 'imageRatio'}
-                  onChange={() => handleBatchTypeChange('imageRatio')}
-                >
-                  {t('图片倍率')}
                 </Radio>
                 <Radio
                   checked={batchFillType === 'bothRatio'}

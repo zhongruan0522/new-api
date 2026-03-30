@@ -109,7 +109,6 @@ func InitOptionMap() {
 	common.OptionMap["GroupGroupRatio"] = ratio_setting.GroupGroupRatio2JSONString()
 	common.OptionMap["UserUsableGroups"] = setting.UserUsableGroups2JSONString()
 	common.OptionMap["CompletionRatio"] = ratio_setting.CompletionRatio2JSONString()
-	common.OptionMap["ImageRatio"] = ratio_setting.ImageRatio2JSONString()
 	common.OptionMap["AudioRatio"] = ratio_setting.AudioRatio2JSONString()
 	common.OptionMap["AudioCompletionRatio"] = ratio_setting.AudioCompletionRatio2JSONString()
 	common.OptionMap["TopUpLink"] = common.TopUpLink
@@ -168,7 +167,7 @@ func UpdateOption(key string, value string) error {
 		"WeChatAuthEnabled", "WeChatServerAddress", "WeChatServerToken", "WeChatAccountQRCodeImageURL",
 		"oidc.enabled", "oidc.client_id", "oidc.client_secret", "oidc.well_known", "oidc.authorization_endpoint", "oidc.token_endpoint", "oidc.user_info_endpoint",
 		"CreemApiKey", "CreemProducts", "CreemTestMode", "CreemWebhookSecret",
-		"ExposeRatioEnabled",
+		"ExposeRatioEnabled", "ImageRatio",
 		"global.third_party_multimodal_model_id", "global.third_party_multimodal_call_api_type",
 		"global.third_party_multimodal_system_prompt", "global.third_party_multimodal_first_user_prompt",
 		"global.third_party_multimodal_user_agent", "global.third_party_multimodal_x_title",
@@ -208,7 +207,7 @@ func updateOptionMap(key string, value string) (err error) {
 		"WeChatAuthEnabled", "WeChatServerAddress", "WeChatServerToken", "WeChatAccountQRCodeImageURL",
 		"oidc.enabled", "oidc.client_id", "oidc.client_secret", "oidc.well_known", "oidc.authorization_endpoint", "oidc.token_endpoint", "oidc.user_info_endpoint",
 		"CreemApiKey", "CreemProducts", "CreemTestMode", "CreemWebhookSecret",
-		"ExposeRatioEnabled",
+		"ExposeRatioEnabled", "ImageRatio",
 		"global.third_party_multimodal_model_id", "global.third_party_multimodal_call_api_type",
 		"global.third_party_multimodal_system_prompt", "global.third_party_multimodal_first_user_prompt",
 		"global.third_party_multimodal_user_agent", "global.third_party_multimodal_x_title",
@@ -420,8 +419,6 @@ func updateOptionMap(key string, value string) (err error) {
 		err = ratio_setting.UpdateCacheRatioByJSONString(value)
 	case "CreateCacheRatio":
 		err = ratio_setting.UpdateCreateCacheRatioByJSONString(value)
-	case "ImageRatio":
-		err = ratio_setting.UpdateImageRatioByJSONString(value)
 	case "AudioRatio":
 		err = ratio_setting.UpdateAudioRatioByJSONString(value)
 	case "AudioCompletionRatio":

@@ -30,7 +30,6 @@ const EXTRA_PRICE_ITEMS = [
   { key: 'cacheCreatePrice5m', label: '缓存创建 (5m)' },
   { key: 'audioInputPrice', label: '音频输入' },
   { key: 'audioOutputPrice', label: '音频输出' },
-  { key: 'imageInputPrice', label: '图片输入' },
 ];
 
 const ModelPricingTable = ({

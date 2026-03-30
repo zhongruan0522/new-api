@@ -537,7 +537,6 @@ export const calculateModelPrice = ({
     cacheCreatePrice5m: null,
     audioInputPrice: null,
     audioOutputPrice: null,
-    imageInputPrice: null,
   };
 };
 
@@ -657,7 +656,6 @@ export const calculateExtraPrices = ({
     cacheCreatePrice5m: computePrice(record.create_cache_ratio),
     audioInputPrice: computePrice(record.audio_ratio),
     audioOutputPrice: computePrice(audioOutputMultiplier),
-    imageInputPrice: computePrice(record.image_ratio),
     unitLabel,
     usedGroup,
     usedGroupRatio,

@@ -46,9 +46,6 @@ const PER_TOKEN_RATIO_FIELDS = [
   'completionRatio',
   'cacheRatio',
   'createCacheRatio',
-  'imageRatio',
-  'audioRatio',
-  'audioCompletionRatio',
 ];
 
 const MODEL_PRICING_FIELDS = ['price', ...PER_TOKEN_RATIO_FIELDS];
@@ -64,9 +61,6 @@ const createEmptyModel = (name = '') => ({
   completionRatio: '',
   cacheRatio: '',
   createCacheRatio: '',
-  imageRatio: '',
-  audioRatio: '',
-  audioCompletionRatio: '',
   hasConflict: false,
   isUnset: true,
 });
@@ -120,13 +114,10 @@ const buildPriceFieldsFromRatios = (model) => {
   const completionRatio = parseInputNumber(model?.completionRatio);
   const cacheRatio = parseInputNumber(model?.cacheRatio);
   const createCacheRatio = parseInputNumber(model?.createCacheRatio);
-  const imageRatio = parseInputNumber(model?.imageRatio);
   const audioRatio = parseInputNumber(model?.audioRatio);
   const audioCompletionRatio = parseInputNumber(model?.audioCompletionRatio);
 
   const tokenPrice = ratio !== null ? ratioToPrice(ratio) : null;
-  const audioTokenPrice =
-    tokenPrice !== null && audioRatio !== null ? tokenPrice * audioRatio : null;
 
   return {
     tokenPrice: tokenPrice !== null ? tokenPrice.toString() : '',
@@ -142,15 +133,6 @@ const buildPriceFieldsFromRatios = (model) => {
       tokenPrice !== null && createCacheRatio !== null
         ? (tokenPrice * createCacheRatio).toString()
         : '',
-    audioTokenPrice: audioTokenPrice !== null ? audioTokenPrice.toString() : '',
-    audioCompletionTokenPrice:
-      audioTokenPrice !== null && audioCompletionRatio !== null
-        ? (audioTokenPrice * audioCompletionRatio).toString()
-        : '',
-    imageTokenPrice:
-      tokenPrice !== null && imageRatio !== null
-        ? (tokenPrice * imageRatio).toString()
-        : '',
   };
 };
 
@@ -164,7 +146,6 @@ const syncRatioFieldsFromPrices = (model) => {
   const audioCompletionTokenPrice = parseInputNumber(
     model?.audioCompletionTokenPrice,
   );
-  const imageTokenPrice = parseInputNumber(model?.imageTokenPrice);
 
   const updatedModel = {
     ...(model || {}),
@@ -189,9 +170,6 @@ const syncRatioFieldsFromPrices = (model) => {
     audioCompletionRatio: hasValue(model?.audioCompletionTokenPrice)
       ? calculateRelativeRatio(audioCompletionTokenPrice, audioTokenPrice)
       : normalizeEditableValue(model?.audioCompletionRatio),
-    imageRatio: hasValue(model?.imageTokenPrice)
-      ? calculateRelativeRatio(imageTokenPrice, tokenPrice)
-      : normalizeEditableValue(model?.imageRatio),
   };
 
   updatedModel.hasConflict = buildConflictState(updatedModel);
@@ -204,7 +182,6 @@ const clearPerTokenPricing = (model) => ({
   completionRatio: '',
   cacheRatio: '',
   createCacheRatio: '',
-  imageRatio: '',
   audioRatio: '',
   audioCompletionRatio: '',
   hasConflict: false,
@@ -265,7 +242,6 @@ export default function ModelSettingsVisualEditor(props) {
       const completionRatio = JSON.parse(props.options.CompletionRatio || '{}');
       const cacheRatio = JSON.parse(props.options.CacheRatio || '{}');
       const createCacheRatio = JSON.parse(props.options.CreateCacheRatio || '{}');
-      const imageRatio = JSON.parse(props.options.ImageRatio || '{}');
       const audioRatio = JSON.parse(props.options.AudioRatio || '{}');
       const audioCompletionRatio = JSON.parse(props.options.AudioCompletionRatio || '{}');
 
@@ -275,7 +251,6 @@ export default function ModelSettingsVisualEditor(props) {
         ...Object.keys(completionRatio),
         ...Object.keys(cacheRatio),
         ...Object.keys(createCacheRatio),
-        ...Object.keys(imageRatio),
         ...Object.keys(audioRatio),
         ...Object.keys(audioCompletionRatio),
       ]);
@@ -287,7 +262,6 @@ export default function ModelSettingsVisualEditor(props) {
           completionRatio[name] === undefined ? '' : completionRatio[name];
         const cache = cacheRatio[name] === undefined ? '' : cacheRatio[name];
         const createCache = createCacheRatio[name] === undefined ? '' : createCacheRatio[name];
-        const image = imageRatio[name] === undefined ? '' : imageRatio[name];
         const audio = audioRatio[name] === undefined ? '' : audioRatio[name];
         const audioComp = audioCompletionRatio[name] === undefined ? '' : audioCompletionRatio[name];
 
@@ -298,20 +272,18 @@ export default function ModelSettingsVisualEditor(props) {
           completionRatio: comp,
           cacheRatio: cache,
           createCacheRatio: createCache,
-          imageRatio: image,
           audioRatio: audio,
           audioCompletionRatio: audioComp,
           isUnset: false,
           hasConflict: buildConflictState({
             price,
             ratio,
-            completionRatio: comp,
-            cacheRatio: cache,
-            createCacheRatio: createCache,
-            imageRatio: image,
-            audioRatio: audio,
-            audioCompletionRatio: audioComp,
-          }),
+              completionRatio: comp,
+              cacheRatio: cache,
+              createCacheRatio: createCache,
+              audioRatio: audio,
+              audioCompletionRatio: audioComp,
+            }),
         };
       });
 
@@ -348,7 +320,6 @@ export default function ModelSettingsVisualEditor(props) {
       CompletionRatio: {},
       CacheRatio: {},
       CreateCacheRatio: {},
-      ImageRatio: {},
       AudioRatio: {},
       AudioCompletionRatio: {},
     };
@@ -371,8 +342,6 @@ export default function ModelSettingsVisualEditor(props) {
           output.CacheRatio[model.name] = parseFloat(model.cacheRatio);
         if (model.createCacheRatio !== '')
           output.CreateCacheRatio[model.name] = parseFloat(model.createCacheRatio);
-        if (model.imageRatio !== '')
-          output.ImageRatio[model.name] = parseFloat(model.imageRatio);
         if (model.audioRatio !== '')
           output.AudioRatio[model.name] = parseFloat(model.audioRatio);
         if (model.audioCompletionRatio !== '')
@@ -385,7 +354,6 @@ export default function ModelSettingsVisualEditor(props) {
         CompletionRatio: JSON.stringify(output.CompletionRatio, null, 2),
         CacheRatio: JSON.stringify(output.CacheRatio, null, 2),
         CreateCacheRatio: JSON.stringify(output.CreateCacheRatio, null, 2),
-        ImageRatio: JSON.stringify(output.ImageRatio, null, 2),
         AudioRatio: JSON.stringify(output.AudioRatio, null, 2),
         AudioCompletionRatio: JSON.stringify(output.AudioCompletionRatio, null, 2),
       };
@@ -563,25 +531,6 @@ export default function ModelSettingsVisualEditor(props) {
       ),
     },
     {
-      title: `${t('图片输入价格')} ($/1M)`,
-      dataIndex: 'imageRatio',
-      key: 'imageRatio',
-      render: (text, record) => (
-        <Input
-          value={relativeRatioToDisplayPrice(text, record.ratio)}
-          placeholder={t('图片输入')}
-          disabled={record.price !== ''}
-          onChange={(value) =>
-            updateModel(
-              record.name,
-              'imageRatio',
-              displayPriceToRelativeRatio(value, record.ratio),
-            )
-          }
-        />
-      ),
-    },
-    {
       title: t('操作'),
       key: 'action',
       render: (_, record) => (
@@ -692,18 +641,6 @@ export default function ModelSettingsVisualEditor(props) {
     setCurrentModel(newState);
   };
 
-  const handleImageTokenPriceChange = (value) => {
-    const newState = {
-      ...(currentModel || {}),
-      imageTokenPrice: value,
-      imageRatio:
-        hasValue(value) && hasValue(currentModel?.tokenPrice)
-          ? calculateRelativeRatio(Number(value), Number(currentModel.tokenPrice))
-          : '',
-    };
-    setCurrentModel(newState);
-  };
-
   const addOrUpdateModel = (values) => {
     const existingModelIndex = models.findIndex(
       (model) => model.name === values.name,
@@ -722,7 +659,6 @@ export default function ModelSettingsVisualEditor(props) {
               completionRatio: normalizeEditableValue(values.completionRatio),
               cacheRatio: normalizeEditableValue(values.cacheRatio),
               createCacheRatio: normalizeEditableValue(values.createCacheRatio),
-              imageRatio: normalizeEditableValue(values.imageRatio),
               audioRatio: normalizeEditableValue(values.audioRatio),
               audioCompletionRatio: normalizeEditableValue(
                 values.audioCompletionRatio,
@@ -744,15 +680,14 @@ export default function ModelSettingsVisualEditor(props) {
       setModels((prev) => {
         const newModel = {
           name: values.name,
-          price: normalizeEditableValue(values.price),
-          ratio: normalizeEditableValue(values.ratio),
-          completionRatio: normalizeEditableValue(values.completionRatio),
-          cacheRatio: normalizeEditableValue(values.cacheRatio),
-          createCacheRatio: normalizeEditableValue(values.createCacheRatio),
-          imageRatio: normalizeEditableValue(values.imageRatio),
-          audioRatio: normalizeEditableValue(values.audioRatio),
-          audioCompletionRatio: normalizeEditableValue(
-            values.audioCompletionRatio,
+            price: normalizeEditableValue(values.price),
+            ratio: normalizeEditableValue(values.ratio),
+            completionRatio: normalizeEditableValue(values.completionRatio),
+            cacheRatio: normalizeEditableValue(values.cacheRatio),
+            createCacheRatio: normalizeEditableValue(values.createCacheRatio),
+            audioRatio: normalizeEditableValue(values.audioRatio),
+            audioCompletionRatio: normalizeEditableValue(
+              values.audioCompletionRatio,
           ),
           isUnset: false,
         };
@@ -803,7 +738,6 @@ export default function ModelSettingsVisualEditor(props) {
           formValues.createCacheTokenPrice = modelCopy.createCacheTokenPrice;
           formValues.audioTokenPrice = modelCopy.audioTokenPrice;
           formValues.audioCompletionTokenPrice = modelCopy.audioCompletionTokenPrice;
-          formValues.imageTokenPrice = modelCopy.imageTokenPrice;
         }
 
         formRef.current.setValues(formValues);
@@ -941,8 +875,6 @@ export default function ModelSettingsVisualEditor(props) {
                           normalizeEditableValue(
                             updatedModel.audioCompletionTokenPrice,
                           );
-                        formValues.imageTokenPrice =
-                          normalizeEditableValue(updatedModel.imageTokenPrice);
                       }
 
                       formRef.current.setValues(formValues);
@@ -1022,17 +954,6 @@ export default function ModelSettingsVisualEditor(props) {
                 }}
                 initValue={normalizeEditableValue(
                   currentModel?.audioCompletionTokenPrice,
-                )}
-                suffix={t('$/1M tokens')}
-              />
-              <Form.Input
-                field='imageTokenPrice'
-                label={t('图片输入价格')}
-                onChange={(value) => {
-                  handleImageTokenPriceChange(value);
-                }}
-                initValue={normalizeEditableValue(
-                  currentModel?.imageTokenPrice,
                 )}
                 suffix={t('$/1M tokens')}
               />

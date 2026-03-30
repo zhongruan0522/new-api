@@ -328,7 +328,6 @@ func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage 
 	useTimeMs := time.Since(relayInfo.StartTime).Milliseconds()
 	promptTokens := usage.PromptTokens
 	cacheTokens := usage.PromptTokensDetails.CachedTokens
-	imageTokens := usage.PromptTokensDetails.ImageTokens
 	audioTokens := usage.PromptTokensDetails.AudioTokens
 	completionTokens := usage.CompletionTokens
 	cachedCreationTokens := usage.PromptTokensDetails.CachedCreationTokens
@@ -338,7 +337,6 @@ func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage 
 	tokenName := ctx.GetString("token_name")
 	completionRatio := relayInfo.PriceData.CompletionRatio
 	cacheRatio := relayInfo.PriceData.CacheRatio
-	imageRatio := relayInfo.PriceData.ImageRatio
 	modelRatio := relayInfo.PriceData.ModelRatio
 	groupRatio := relayInfo.PriceData.GroupRatioInfo.GroupRatio
 	modelPrice := relayInfo.PriceData.ModelPrice
@@ -347,13 +345,11 @@ func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage 
 	// Convert values to decimal for precise calculation
 	dPromptTokens := decimal.NewFromInt(int64(promptTokens))
 	dCacheTokens := decimal.NewFromInt(int64(cacheTokens))
-	dImageTokens := decimal.NewFromInt(int64(imageTokens))
 	dAudioTokens := decimal.NewFromInt(int64(audioTokens))
 	dCompletionTokens := decimal.NewFromInt(int64(completionTokens))
 	dCachedCreationTokens := decimal.NewFromInt(int64(cachedCreationTokens))
 	dCompletionRatio := decimal.NewFromFloat(completionRatio)
 	dCacheRatio := decimal.NewFromFloat(cacheRatio)
-	dImageRatio := decimal.NewFromFloat(imageRatio)
 	dModelRatio := decimal.NewFromFloat(modelRatio)
 	dGroupRatio := decimal.NewFromFloat(groupRatio)
 	dModelPrice := decimal.NewFromFloat(modelPrice)
@@ -445,13 +441,6 @@ func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage 
 			dCachedCreationTokensWithRatio = dCachedCreationTokens.Mul(dCachedCreationRatio)
 		}
 
-		// 减去 image tokens
-		var imageTokensWithRatio decimal.Decimal
-		if !dImageTokens.IsZero() {
-			baseTokens = baseTokens.Sub(dImageTokens)
-			imageTokensWithRatio = dImageTokens.Mul(dImageRatio)
-		}
-
 		// 减去 Gemini audio tokens
 		if !dAudioTokens.IsZero() {
 			audioInputPrice = operation_setting.GetGeminiInputAudioPricePerMillionTokens(modelName)
@@ -463,7 +452,6 @@ func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage 
 			}
 		}
 		promptQuota := baseTokens.Add(cachedTokensWithRatio).
-			Add(imageTokensWithRatio).
 			Add(dCachedCreationTokensWithRatio)
 
 		completionQuota := dCompletionTokens.Mul(dCompletionRatio)
@@ -535,11 +523,6 @@ func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage 
 	if isClaudeUsageSemantic {
 		other["claude"] = true
 		other["usage_semantic"] = "anthropic"
-	}
-	if imageTokens != 0 {
-		other["image"] = true
-		other["image_ratio"] = imageRatio
-		other["image_output"] = imageTokens
 	}
 	if cachedCreationTokens != 0 {
 		other["cache_creation_tokens"] = cachedCreationTokens
