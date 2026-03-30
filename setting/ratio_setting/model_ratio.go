@@ -335,7 +335,6 @@ func InitRatioSettings() {
 	completionRatioMap.AddAll(defaultCompletionRatio)
 	cacheRatioMap.AddAll(defaultCacheRatio)
 	createCacheRatioMap.AddAll(defaultCreateCacheRatio)
-	imageRatioMap.AddAll(defaultImageRatio)
 	audioRatioMap.AddAll(defaultAudioRatio)
 	audioCompletionRatioMap.AddAll(defaultAudioCompletionRatio)
 }
@@ -600,28 +599,8 @@ func ModelRatio2JSONString() string {
 	return modelRatioMap.MarshalJSONString()
 }
 
-var defaultImageRatio = map[string]float64{
-	"gpt-image-1": 2,
-}
-var imageRatioMap = types.NewRWMap[string, float64]()
 var audioRatioMap = types.NewRWMap[string, float64]()
 var audioCompletionRatioMap = types.NewRWMap[string, float64]()
-
-func ImageRatio2JSONString() string {
-	return imageRatioMap.MarshalJSONString()
-}
-
-func UpdateImageRatioByJSONString(jsonStr string) error {
-	return types.LoadFromJsonString(imageRatioMap, jsonStr)
-}
-
-func GetImageRatio(name string) (float64, bool) {
-	ratio, ok := imageRatioMap.Get(name)
-	if !ok {
-		return 1, false // Default to 1 if not found
-	}
-	return ratio, true
-}
 
 func AudioRatio2JSONString() string {
 	return audioRatioMap.MarshalJSONString()

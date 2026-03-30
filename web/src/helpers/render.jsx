@@ -1096,12 +1096,7 @@ function renderPriceSimpleCore({
     parts.push(i18next.t('缓存创建: {{cacheCreationRatio}}'));
   }
 
-  // image part
-  if (image) {
-    parts.push(i18next.t('图片输入: {{imageRatio}}'));
-  }
-
-  parts.push(`{{ratioType}}: {{groupRatio}}`);
+	parts.push(`{{ratioType}}: {{groupRatio}}`);
 
   let result = i18next.t(parts.join(' * '), {
     ratio: modelRatio,
@@ -1110,9 +1105,8 @@ function renderPriceSimpleCore({
     cacheRatio: cacheRatio,
     cacheCreationRatio: cacheCreationRatio,
     cacheCreationRatio5m: cacheCreationRatio5m,
-    cacheCreationRatio1h: cacheCreationRatio1h,
-    imageRatio: imageRatio,
-  });
+		cacheCreationRatio1h: cacheCreationRatio1h,
+	});
 
   return result;
 }
@@ -1127,9 +1121,6 @@ export function renderModelPrice(
   user_group_ratio,
   cacheTokens = 0,
   cacheRatio = 1.0,
-  image = false,
-  imageRatio = 1.0,
-  imageOutputTokens = 0,
   webSearch = false,
   webSearchCallCount = 0,
   webSearchPrice = 0,
@@ -1171,16 +1162,10 @@ export function renderModelPrice(
     let inputRatioPrice = modelRatio * 2.0;
     let completionRatioPrice = modelRatio * 2.0 * completionRatio;
     let cacheRatioPrice = modelRatio * 2.0 * cacheRatio;
-    let imageRatioPrice = modelRatio * 2.0 * imageRatio;
 
     // Calculate effective input tokens (non-cached + cached with ratio applied)
     let effectiveInputTokens =
       inputTokens - cacheTokens + cacheTokens * cacheRatio;
-    // Handle image tokens if present
-    if (image && imageOutputTokens > 0) {
-      effectiveInputTokens =
-        inputTokens - imageOutputTokens + imageOutputTokens * imageRatio;
-    }
     if (audioInputTokens > 0) {
       effectiveInputTokens -= audioInputTokens;
     }
@@ -1231,20 +1216,6 @@ export function renderModelPrice(
               )}
             </p>
           )}
-          {image && imageOutputTokens > 0 && (
-            <p>
-              {i18next.t(
-                '图片输入价格：{{symbol}}{{price}} * {{ratio}} = {{symbol}}{{total}} / 1M tokens (图片倍率: {{imageRatio}})',
-                {
-                  symbol: symbol,
-                  price: (imageRatioPrice * rate).toFixed(6),
-                  ratio: groupRatio,
-                  total: (imageRatioPrice * groupRatio * rate).toFixed(6),
-                  imageRatio: imageRatio,
-                },
-              )}
-            </p>
-          )}
           {webSearch && webSearchCallCount > 0 && (
             <p>
               {i18next.t('Web搜索价格：{{symbol}}{{price}} / 1K 次', {
@@ -1273,18 +1244,7 @@ export function renderModelPrice(
             {(() => {
               // 构建输入部分描述
               let inputDesc = '';
-              if (image && imageOutputTokens > 0) {
-                inputDesc = i18next.t(
-                  '(输入 {{nonImageInput}} tokens + 图片输入 {{imageInput}} tokens * {{imageRatio}} / 1M tokens * {{symbol}}{{price}}',
-                  {
-                    nonImageInput: inputTokens - imageOutputTokens,
-                    imageInput: imageOutputTokens,
-                    imageRatio: imageRatio,
-                    symbol: symbol,
-                    price: (inputRatioPrice * rate).toFixed(6),
-                  },
-                );
-              } else if (cacheTokens > 0) {
+              if (cacheTokens > 0) {
                 inputDesc = i18next.t(
                   '(输入 {{nonCacheInput}} tokens / 1M tokens * {{symbol}}{{price}} + 缓存 {{cacheInput}} tokens / 1M tokens * {{symbol}}{{cachePrice}}',
                   {
@@ -1394,8 +1354,6 @@ export function renderLogContent(
   groupRatio,
   user_group_ratio,
   cacheRatio = 1.0,
-  image = false,
-  imageRatio = 1.0,
   webSearch = false,
   webSearchCallCount = 0,
   fileSearch = false,
@@ -1418,19 +1376,7 @@ export function renderLogContent(
       ratio,
     });
   } else {
-    if (image) {
-      return i18next.t(
-        '模型倍率 {{modelRatio}}，缓存倍率 {{cacheRatio}}，输出倍率 {{completionRatio}}，图片输入倍率 {{imageRatio}}，{{ratioType}} {{ratio}}',
-        {
-          modelRatio: modelRatio,
-          cacheRatio: cacheRatio,
-          completionRatio: completionRatio,
-          imageRatio: imageRatio,
-          ratioType: ratioLabel,
-          ratio,
-        },
-      );
-    } else if (webSearch) {
+    if (webSearch) {
       return i18next.t(
         '模型倍率 {{modelRatio}}，缓存倍率 {{cacheRatio}}，输出倍率 {{completionRatio}}，{{ratioType}} {{ratio}}，Web 搜索调用 {{webSearchCallCount}} 次',
         {

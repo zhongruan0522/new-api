@@ -38,7 +38,6 @@ const EXTRA_PRICE_LABELS = {
   cacheCreatePrice5m: '缓存创建',
   audioInputPrice: '音频输入',
   audioOutputPrice: '音频输出',
-  imageInputPrice: '图片输入',
 };
 
 function renderQuotaType(type, t) {
@@ -215,7 +214,6 @@ export const getPricingTableColumns = ({
           ['cacheCreatePrice5m', extraPrices.cacheCreatePrice5m],
           ['audioInputPrice', extraPrices.audioInputPrice],
           ['audioOutputPrice', extraPrices.audioOutputPrice],
-          ['imageInputPrice', extraPrices.imageInputPrice],
         ];
 
         return (
