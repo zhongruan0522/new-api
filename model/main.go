@@ -279,6 +279,7 @@ func migrateDB() error {
 		return err
 	}
 	cleanupRemovedOAuth()
+	cleanupRemovedTokenSetting()
 	if err := cleanupRemovedMultimodalTextMode(); err != nil {
 		return err
 	}
@@ -342,6 +343,7 @@ func migrateDBFast() error {
 		return err
 	}
 	cleanupRemovedOAuth()
+	cleanupRemovedTokenSetting()
 	if err := cleanupRemovedMultimodalTextMode(); err != nil {
 		return err
 	}

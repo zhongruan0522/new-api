@@ -5,11 +5,13 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/setting/operation_setting"
 	"github.com/bytedance/gopkg/util/gopool"
+	"github.com/zhongruan0522/new-api/common"
 	"gorm.io/gorm"
 )
+
+// maxUserTokens 每用户最大令牌数量（硬编码）
+const maxUserTokens = 1000
 
 type Token struct {
 	Id                 int            `json:"id"`
@@ -117,7 +119,6 @@ func SearchUserTokens(userId int, keyword string, token string, offset int, limi
 	}
 
 	// 超量用户（令牌数超过上限）只允许精确搜索，禁止模糊搜索
-	maxTokens := operation_setting.GetMaxUserTokens()
 	hasFuzzy := strings.Contains(keyword, "%") || strings.Contains(token, "%")
 	if hasFuzzy {
 		count, err := CountUserTokens(userId)
@@ -125,7 +126,7 @@ func SearchUserTokens(userId int, keyword string, token string, offset int, limi
 			common.SysLog("failed to count user tokens: " + err.Error())
 			return nil, 0, errors.New("获取令牌数量失败")
 		}
-		if int(count) > maxTokens {
+		if int(count) > maxUserTokens {
 			return nil, 0, errors.New("令牌数量超过上限，仅允许精确搜索，请勿使用 % 通配符")
 		}
 	}
@@ -149,7 +150,7 @@ func SearchUserTokens(userId int, keyword string, token string, offset int, limi
 	}
 
 	// 先查匹配总数（用于分页，受 maxTokens 上限保护，避免全表 COUNT）
-	err = baseQuery.Limit(maxTokens).Count(&total).Error
+	err = baseQuery.Limit(maxUserTokens).Count(&total).Error
 	if err != nil {
 		common.SysError("failed to count search tokens: " + err.Error())
 		return nil, 0, errors.New("搜索令牌失败")
