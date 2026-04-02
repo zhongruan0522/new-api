@@ -17,7 +17,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { Button, Col, Form, Row, Spin } from '@douyinfe/semi-ui';
 import { useTranslation } from 'react-i18next';
 import {
@@ -27,6 +27,28 @@ import {
   showSuccess,
   showWarning,
 } from '../../../helpers';
+import {
+  getCurrencyConfig,
+  getQuotaPerUnit,
+} from '../../../helpers/render';
+
+// 将内部 Token 额度转换为当前货币显示值
+function tokenToDisplay(tokenValue) {
+  const quotaPerUnit = getQuotaPerUnit();
+  const { type, rate } = getCurrencyConfig();
+  if (type === 'TOKENS') return tokenValue;
+  const usd = tokenValue / quotaPerUnit;
+  return type === 'USD' ? usd : usd * (rate || 1);
+}
+
+// 将货币显示值转换回内部 Token 额度
+function displayToToken(displayValue) {
+  const quotaPerUnit = getQuotaPerUnit();
+  const { type, rate } = getCurrencyConfig();
+  if (type === 'TOKENS') return displayValue;
+  const usd = type === 'USD' ? displayValue : displayValue / (rate || 1);
+  return Math.round(usd * quotaPerUnit);
+}
 
 export default function SettingsCreditLimit(props) {
   const { t } = useTranslation();
@@ -40,6 +62,21 @@ export default function SettingsCreditLimit(props) {
   });
   const refForm = useRef();
   const [inputsRow, setInputsRow] = useState(inputs);
+
+  const currencySuffix = useMemo(() => {
+    const { symbol, type } = getCurrencyConfig();
+    return type === 'TOKENS' ? 'Token' : symbol;
+  }, []);
+
+  // 将内部 Token 值转为货币显示值用于表单
+  const displayValues = useMemo(() => {
+    return {
+      QuotaForNewUser: inputs.QuotaForNewUser !== '' ? tokenToDisplay(parseFloat(inputs.QuotaForNewUser)) : '',
+      PreConsumedQuota: inputs.PreConsumedQuota !== '' ? tokenToDisplay(parseFloat(inputs.PreConsumedQuota)) : '',
+      QuotaForInviter: inputs.QuotaForInviter !== '' ? tokenToDisplay(parseFloat(inputs.QuotaForInviter)) : '',
+      QuotaForInvitee: inputs.QuotaForInvitee !== '' ? tokenToDisplay(parseFloat(inputs.QuotaForInvitee)) : '',
+    };
+  }, [inputs.QuotaForNewUser, inputs.PreConsumedQuota, inputs.QuotaForInviter, inputs.QuotaForInvitee]);
 
   function onSubmit() {
     const updateArray = compareObjects(inputs, inputsRow);
@@ -101,14 +138,15 @@ export default function SettingsCreditLimit(props) {
                 <Form.InputNumber
                   label={t('新用户初始额度')}
                   field={'QuotaForNewUser'}
-                  step={1}
+                  step={0.01}
                   min={0}
-                  suffix={'Token'}
+                  suffix={currencySuffix}
+                  value={displayValues.QuotaForNewUser}
                   placeholder={''}
                   onChange={(value) =>
                     setInputs({
                       ...inputs,
-                      QuotaForNewUser: String(value),
+                      QuotaForNewUser: String(displayToToken(value)),
                     })
                   }
                 />
@@ -117,15 +155,16 @@ export default function SettingsCreditLimit(props) {
                 <Form.InputNumber
                   label={t('请求预扣费额度')}
                   field={'PreConsumedQuota'}
-                  step={1}
+                  step={0.01}
                   min={0}
-                  suffix={'Token'}
+                  suffix={currencySuffix}
                   extraText={t('请求结束后多退少补')}
+                  value={displayValues.PreConsumedQuota}
                   placeholder={''}
                   onChange={(value) =>
                     setInputs({
                       ...inputs,
-                      PreConsumedQuota: String(value),
+                      PreConsumedQuota: String(displayToToken(value)),
                     })
                   }
                 />
@@ -134,15 +173,16 @@ export default function SettingsCreditLimit(props) {
                 <Form.InputNumber
                   label={t('邀请新用户奖励额度')}
                   field={'QuotaForInviter'}
-                  step={1}
+                  step={0.01}
                   min={0}
-                  suffix={'Token'}
+                  suffix={currencySuffix}
                   extraText={''}
+                  value={displayValues.QuotaForInviter}
                   placeholder={t('例如：2000')}
                   onChange={(value) =>
                     setInputs({
                       ...inputs,
-                      QuotaForInviter: String(value),
+                      QuotaForInviter: String(displayToToken(value)),
                     })
                   }
                 />
@@ -153,15 +193,16 @@ export default function SettingsCreditLimit(props) {
                 <Form.InputNumber
                   label={t('新用户使用邀请码奖励额度')}
                   field={'QuotaForInvitee'}
-                  step={1}
+                  step={0.01}
                   min={0}
-                  suffix={'Token'}
+                  suffix={currencySuffix}
                   extraText={''}
+                  value={displayValues.QuotaForInvitee}
                   placeholder={t('例如：1000')}
                   onChange={(value) =>
                     setInputs({
                       ...inputs,
-                      QuotaForInvitee: String(value),
+                      QuotaForInvitee: String(displayToToken(value)),
                     })
                   }
                 />

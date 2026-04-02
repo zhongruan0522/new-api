@@ -17,7 +17,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { Button, Col, Form, Row, Spin } from '@douyinfe/semi-ui';
 import {
   compareObjects,
@@ -29,6 +29,28 @@ import {
 } from '../../../helpers';
 import { useTranslation } from 'react-i18next';
 import HttpStatusCodeRulesInput from '../../../components/settings/HttpStatusCodeRulesInput';
+import {
+  getCurrencyConfig,
+  getQuotaPerUnit,
+} from '../../../helpers/render';
+
+// 将内部 Token 额度转换为当前货币显示值
+function tokenToDisplay(tokenValue) {
+  const quotaPerUnit = getQuotaPerUnit();
+  const { type, rate } = getCurrencyConfig();
+  if (type === 'TOKENS') return tokenValue;
+  const usd = tokenValue / quotaPerUnit;
+  return type === 'USD' ? usd : usd * (rate || 1);
+}
+
+// 将货币显示值转换回内部 Token 额度
+function displayToToken(displayValue) {
+  const quotaPerUnit = getQuotaPerUnit();
+  const { type, rate } = getCurrencyConfig();
+  if (type === 'TOKENS') return displayValue;
+  const usd = type === 'USD' ? displayValue : displayValue / (rate || 1);
+  return Math.round(usd * quotaPerUnit);
+}
 
 export default function SettingsMonitoring(props) {
   const { t } = useTranslation();
@@ -53,6 +75,16 @@ export default function SettingsMonitoring(props) {
   const parsedAutoRetryStatusCodes = parseHttpStatusCodeRules(
     inputs.AutomaticRetryStatusCodes || '',
   );
+
+  const currencySuffix = useMemo(() => {
+    const { symbol, type } = getCurrencyConfig();
+    return type === 'TOKENS' ? 'Token' : symbol;
+  }, []);
+
+  const quotaRemindDisplayValue = useMemo(() => {
+    if (inputs.QuotaRemindThreshold === '') return '';
+    return tokenToDisplay(parseFloat(inputs.QuotaRemindThreshold));
+  }, [inputs.QuotaRemindThreshold]);
 
   function onSubmit() {
     const updateArray = compareObjects(inputs, inputsRow);
@@ -188,16 +220,17 @@ export default function SettingsMonitoring(props) {
               <Col xs={24} sm={12} md={8} lg={8} xl={8}>
                 <Form.InputNumber
                   label={t('额度提醒阈值')}
-                  step={1}
+                  step={0.01}
                   min={0}
-                  suffix={'Token'}
+                  suffix={currencySuffix}
                   extraText={t('低于此额度时将发送邮件提醒用户')}
+                  value={quotaRemindDisplayValue}
                   placeholder={''}
                   field={'QuotaRemindThreshold'}
                   onChange={(value) =>
                     setInputs({
                       ...inputs,
-                      QuotaRemindThreshold: String(value),
+                      QuotaRemindThreshold: String(displayToToken(value)),
                     })
                   }
                 />
