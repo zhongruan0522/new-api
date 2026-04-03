@@ -36,7 +36,7 @@ import {
   IllustrationNoResultDark,
 } from '@douyinfe/semi-illustrations';
 import { Plus, Edit, Trash2, Save, Settings } from 'lucide-react';
-import { API, showError, showSuccess } from '../../../helpers';
+import { API, showError, showSuccess, isValidUrl } from '../../../helpers';
 import { useTranslation } from 'react-i18next';
 
 const { Text } = Typography;
@@ -153,6 +153,11 @@ const SettingsAPIInfo = ({ options, refresh }) => {
   const handleSaveApi = async () => {
     if (!apiForm.url || !apiForm.route || !apiForm.description) {
       showError('请填写完整的API信息');
+      return;
+    }
+
+    if (!isValidUrl(apiForm.url)) {
+      showError('请输入有效的URL地址（需以 http:// 或 https:// 开头）');
       return;
     }
 
