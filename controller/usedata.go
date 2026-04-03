@@ -93,3 +93,45 @@ func GetUserRegionStats(c *gin.Context) {
 		"data":    stats,
 	})
 }
+
+// GetAllModelRank 管理员查询所有用户的模型调用排行（全部/国内/海外）
+func GetAllModelRank(c *gin.Context) {
+	startTimestamp, _ := strconv.ParseInt(c.Query("start_timestamp"), 10, 64)
+	endTimestamp, _ := strconv.ParseInt(c.Query("end_timestamp"), 10, 64)
+	username := c.Query("username")
+
+	var rank model.ModelRankResponse
+	var err error
+	if username != "" {
+		rank, err = model.GetModelRankByUsername(username, startTimestamp, endTimestamp)
+	} else {
+		rank, err = model.GetAllModelRank(startTimestamp, endTimestamp)
+	}
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "",
+		"data":    rank,
+	})
+}
+
+// GetUserModelRank 普通用户查询自己的模型调用排行（全部/国内/海外）
+func GetUserModelRank(c *gin.Context) {
+	userId := c.GetInt("id")
+	startTimestamp, _ := strconv.ParseInt(c.Query("start_timestamp"), 10, 64)
+	endTimestamp, _ := strconv.ParseInt(c.Query("end_timestamp"), 10, 64)
+
+	rank, err := model.GetModelRankByUserId(userId, startTimestamp, endTimestamp)
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "",
+		"data":    rank,
+	})
+}
