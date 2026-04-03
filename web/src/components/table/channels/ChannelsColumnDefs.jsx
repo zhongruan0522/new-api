@@ -466,35 +466,7 @@ export const getChannelsColumns = ({
             </div>
           );
         } else {
-          return (
-            <InputNumber
-              style={{ width: 70 }}
-              name='priority'
-              keepFocus={true}
-              onBlur={(e) => {
-                Modal.warning({
-                  title: t('修改子渠道优先级'),
-                  content:
-                    t('确定要修改所有子渠道优先级为 ') +
-                    e.target.value +
-                    t(' 吗？'),
-                  onOk: () => {
-                    if (e.target.value === '') {
-                      return;
-                    }
-                    submitTagEdit('priority', {
-                      tag: record.key,
-                      priority: e.target.value,
-                    });
-                  },
-                });
-              }}
-              innerButtons
-              defaultValue={record.priority}
-              min={-999}
-              size='small'
-            />
-          );
+          return null;
         }
       },
     },
@@ -521,35 +493,7 @@ export const getChannelsColumns = ({
             </div>
           );
         } else {
-          return (
-            <InputNumber
-              style={{ width: 70 }}
-              name='weight'
-              keepFocus={true}
-              onBlur={(e) => {
-                Modal.warning({
-                  title: t('修改子渠道权重'),
-                  content:
-                    t('确定要修改所有子渠道权重为 ') +
-                    e.target.value +
-                    t(' 吗？'),
-                  onOk: () => {
-                    if (e.target.value === '') {
-                      return;
-                    }
-                    submitTagEdit('weight', {
-                      tag: record.key,
-                      weight: e.target.value,
-                    });
-                  },
-                });
-              }}
-              innerButtons
-              defaultValue={record.weight}
-              min={-999}
-              size='small'
-            />
-          );
+          return null;
         }
       },
     },
