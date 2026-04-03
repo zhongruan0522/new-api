@@ -651,6 +651,17 @@ export const useChannelsData = () => {
 
   // Row style
   const handleRow = (record, index) => {
+    // 标签聚合行根据子渠道启用状态决定样式
+    if (record.children !== undefined) {
+      if (record._enabledCount === 0) {
+        return {
+          style: {
+            background: 'var(--semi-color-disabled-border)',
+          },
+        };
+      }
+      return {};
+    }
     if (record.status !== 1) {
       return {
         style: {
