@@ -254,6 +254,8 @@ export const useChannelsData = () => {
             response_time: 0,
             priority: -1,
             weight: -1,
+            _enabledCount: 0,
+            _totalCount: 0,
           };
           tagChannelDates.children = [];
           channelDates.push(tagChannelDates);
@@ -289,8 +291,9 @@ export const useChannelsData = () => {
         }
 
         tagChannelDates.children.push(channels[i]);
+        tagChannelDates._totalCount++;
         if (channels[i].status === 1) {
-          tagChannelDates.status = 1;
+          tagChannelDates._enabledCount++;
         }
         tagChannelDates.used_quota += channels[i].used_quota;
         tagChannelDates.response_time += channels[i].response_time;
