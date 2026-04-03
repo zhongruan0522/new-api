@@ -2,6 +2,7 @@ package model
 
 import (
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -184,4 +185,101 @@ func GetAllQuotaStat(startTime int64, endTime int64) (QuotaStat, error) {
 		Where("created_at >= ? and created_at <= ?", startTime, endTime).
 		Scan(&stat).Error
 	return stat, err
+}
+
+// RegionStat 区域统计数据（国内/海外）
+type RegionStat struct {
+	SuccessCount int     `json:"success_count"`
+	FailCount    int     `json:"fail_count"`
+	SuccessRate  float64 `json:"success_rate"`
+}
+
+// regionModelPrefixes 国内模型名前缀（统一小写）
+var domesticPrefixes = []string{"glm", "minimax", "qwen", "kimi"}
+
+// overseasPrefixes 海外模型名前缀（统一小写）
+var overseasPrefixes = []string{"claude", "gemini", "gpt"}
+
+// matchModelPrefix 不区分大小写匹配模型名前缀
+func matchModelPrefix(modelName string, prefixes []string) bool {
+	lower := strings.ToLower(modelName)
+	for _, p := range prefixes {
+		if strings.HasPrefix(lower, p) {
+			return true
+		}
+	}
+	return false
+}
+
+// computeRegionStats 从 quota_data 列表计算国内/海外统计
+func computeRegionStats(quotaDatas []*QuotaData) (domestic RegionStat, overseas RegionStat) {
+	for _, item := range quotaDatas {
+		if matchModelPrefix(item.ModelName, domesticPrefixes) {
+			domestic.SuccessCount += item.Count
+			domestic.FailCount += item.FailCount
+		} else if matchModelPrefix(item.ModelName, overseasPrefixes) {
+			overseas.SuccessCount += item.Count
+			overseas.FailCount += item.FailCount
+		}
+	}
+	total := domestic.SuccessCount + domestic.FailCount
+	if total > 0 {
+		domestic.SuccessRate = float64(domestic.SuccessCount) / float64(total) * 100
+	}
+	total = overseas.SuccessCount + overseas.FailCount
+	if total > 0 {
+		overseas.SuccessRate = float64(overseas.SuccessCount) / float64(total) * 100
+	}
+	return
+}
+
+// RegionStatsResponse 区域统计响应
+type RegionStatsResponse struct {
+	Domestic RegionStat `json:"domestic"`
+	Overseas RegionStat `json:"overseas"`
+}
+
+// GetRegionStatsByUserId 查询指定用户的国内/海外模型成功率
+func GetRegionStatsByUserId(userId int, startTime int64, endTime int64) (RegionStatsResponse, error) {
+	var quotaDatas []*QuotaData
+	err := DB.Table("quota_data").
+		Select("model_name, sum(count) as count, sum(fail_count) as fail_count").
+		Where("user_id = ? and created_at >= ? and created_at <= ?", userId, startTime, endTime).
+		Group("model_name").
+		Find(&quotaDatas).Error
+	if err != nil {
+		return RegionStatsResponse{}, err
+	}
+	domestic, overseas := computeRegionStats(quotaDatas)
+	return RegionStatsResponse{Domestic: domestic, Overseas: overseas}, nil
+}
+
+// GetRegionStatsByUsername 查询指定用户名的国内/海外模型成功率
+func GetRegionStatsByUsername(username string, startTime int64, endTime int64) (RegionStatsResponse, error) {
+	var quotaDatas []*QuotaData
+	err := DB.Table("quota_data").
+		Select("model_name, sum(count) as count, sum(fail_count) as fail_count").
+		Where("username = ? and created_at >= ? and created_at <= ?", username, startTime, endTime).
+		Group("model_name").
+		Find(&quotaDatas).Error
+	if err != nil {
+		return RegionStatsResponse{}, err
+	}
+	domestic, overseas := computeRegionStats(quotaDatas)
+	return RegionStatsResponse{Domestic: domestic, Overseas: overseas}, nil
+}
+
+// GetAllRegionStats 查询所有用户的国内/海外模型成功率
+func GetAllRegionStats(startTime int64, endTime int64) (RegionStatsResponse, error) {
+	var quotaDatas []*QuotaData
+	err := DB.Table("quota_data").
+		Select("model_name, sum(count) as count, sum(fail_count) as fail_count").
+		Where("created_at >= ? and created_at <= ?", startTime, endTime).
+		Group("model_name").
+		Find(&quotaDatas).Error
+	if err != nil {
+		return RegionStatsResponse{}, err
+	}
+	domestic, overseas := computeRegionStats(quotaDatas)
+	return RegionStatsResponse{Domestic: domestic, Overseas: overseas}, nil
 }

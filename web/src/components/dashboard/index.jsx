@@ -85,6 +85,7 @@ const Dashboard = () => {
     dashboardData.performanceMetrics,
     dashboardData.navigate,
     dashboardData.t,
+    dashboardData.regionStats,
   );
 
   // ========== 数据处理 ==========
@@ -94,6 +95,7 @@ const Dashboard = () => {
         dashboardCharts.updateChartData(data);
       }
     });
+    await dashboardData.loadRegionStats();
     await dashboardData.loadUptimeData();
   };
 

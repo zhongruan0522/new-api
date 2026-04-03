@@ -58,6 +58,7 @@ export const useDashboardData = (userState, userDispatch, statusState) => {
   const [consumeTokens, setConsumeTokens] = useState(0);
   const [times, setTimes] = useState(0);
   const [failCount, setFailCount] = useState(0);
+  const [regionStats, setRegionStats] = useState(null);
   const [pieData, setPieData] = useState([{ type: 'null', value: '0' }]);
   const [lineData, setLineData] = useState([]);
   const [modelColors, setModelColors] = useState({});
@@ -214,6 +215,27 @@ export const useDashboardData = (userState, userDispatch, statusState) => {
     }
   }, [activeUptimeTab]);
 
+  const loadRegionStats = useCallback(async () => {
+    try {
+      const { start_timestamp, end_timestamp, username } = inputs;
+      const localStartTimestamp = Date.parse(start_timestamp) / 1000;
+      const localEndTimestamp = Date.parse(end_timestamp) / 1000;
+      let url = '';
+      if (isAdminUser) {
+        url = `/api/data/region_stats?username=${username}&start_timestamp=${localStartTimestamp}&end_timestamp=${localEndTimestamp}`;
+      } else {
+        url = `/api/data/self/region_stats?start_timestamp=${localStartTimestamp}&end_timestamp=${localEndTimestamp}`;
+      }
+      const res = await API.get(url);
+      const { success, data } = res.data;
+      if (success) {
+        setRegionStats(data);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  }, [inputs, isAdminUser]);
+
   const getUserData = useCallback(async () => {
     let res = await API.get(`/api/user/self`);
     const { success, message, data } = res.data;
@@ -227,8 +249,9 @@ export const useDashboardData = (userState, userDispatch, statusState) => {
   const refresh = useCallback(async () => {
     const data = await loadQuotaData();
     await loadUptimeData();
+    loadRegionStats();
     return data;
-  }, [loadQuotaData, loadUptimeData]);
+  }, [loadQuotaData, loadUptimeData, loadRegionStats]);
 
   const handleSearchConfirm = useCallback(
     async (updateChartDataCallback) => {
@@ -276,6 +299,7 @@ export const useDashboardData = (userState, userDispatch, statusState) => {
     setTimes,
     failCount,
     setFailCount,
+    regionStats,
     pieData,
     setPieData,
     lineData,
@@ -314,6 +338,7 @@ export const useDashboardData = (userState, userDispatch, statusState) => {
     showSearchModal,
     handleCloseModal,
     loadQuotaData,
+    loadRegionStats,
     loadUptimeData,
     getUserData,
     refresh,
