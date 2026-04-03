@@ -133,6 +133,28 @@ const renderStatus = (status, channelInfo = undefined, t) => {
   }
 };
 
+const renderTagStatus = (totalCount, enabledCount, t) => {
+  if (enabledCount === totalCount) {
+    return (
+      <Tag color='green' shape='circle'>
+        {t('全部启用')}
+      </Tag>
+    );
+  } else if (enabledCount === 0) {
+    return (
+      <Tag color='red' shape='circle'>
+        {t('全部禁用')}
+      </Tag>
+    );
+  } else {
+    return (
+      <Tag color='yellow' shape='circle'>
+        {t('部分启用')} {enabledCount}/{totalCount}
+      </Tag>
+    );
+  }
+};
+
 const renderMultiKeyStatus = (status, keySize, enabledKeySize, t) => {
   switch (status) {
     case 1:
@@ -349,6 +371,9 @@ export const getChannelsColumns = ({
       title: t('状态'),
       dataIndex: 'status',
       render: (text, record, index) => {
+        if (record.children !== undefined) {
+          return renderTagStatus(record._totalCount, record._enabledCount, t);
+        }
         if (text === 3) {
           if (record.other_info === '') {
             record.other_info = '{}';
