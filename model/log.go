@@ -150,6 +150,8 @@ func RecordConsumeLog(c *gin.Context, userId int, params RecordConsumeLogParams)
 	logger.LogInfo(c, fmt.Sprintf("record consume log: userId=%d, params=%s", userId, common.GetJsonString(params)))
 	username := c.GetString("username")
 	requestId := c.GetString(common.RequestIdKey)
+	createdAt := common.GetTimestamp()
+	clientIP := c.ClientIP()
 	other := params.Other
 	if other == nil {
 		other = make(map[string]interface{})
@@ -160,7 +162,7 @@ func RecordConsumeLog(c *gin.Context, userId int, params RecordConsumeLogParams)
 	log := &Log{
 		UserId:           userId,
 		Username:         username,
-		CreatedAt:        common.GetTimestamp(),
+		CreatedAt:        createdAt,
 		Type:             LogTypeConsume,
 		Content:          params.Content,
 		PromptTokens:     params.PromptTokens,
@@ -173,19 +175,20 @@ func RecordConsumeLog(c *gin.Context, userId int, params RecordConsumeLogParams)
 		UseTime:          params.UseTimeMs,
 		IsStream:         params.IsStream,
 		Group:            params.Group,
-		Ip:               c.ClientIP(),
+		Ip:               clientIP,
 		RequestId:        requestId,
 		Other:            otherStr,
 	}
-	err := LOG_DB.Create(log).Error
-	if err != nil {
-		logger.LogError(c, "failed to record log: "+err.Error())
-	}
-	if common.DataExportEnabled {
-		gopool.Go(func() {
-			LogQuotaData(userId, username, params.ModelName, params.Quota, common.GetTimestamp(), params.PromptTokens+params.CompletionTokens)
-		})
-	}
+	// 消费日志不影响主流程，异步写入以避免高并发下在请求尾部阻塞数据库。
+	gopool.Go(func() {
+		err := LOG_DB.Create(log).Error
+		if err != nil {
+			common.SysError(fmt.Sprintf("failed to record consume log (request_id=%s): %s", requestId, err.Error()))
+		}
+		if common.DataExportEnabled {
+			LogQuotaData(userId, username, params.ModelName, params.Quota, createdAt, params.PromptTokens+params.CompletionTokens)
+		}
+	})
 }
 
 func appendConsumeLogClientHeaders(c *gin.Context, other map[string]interface{}) {
