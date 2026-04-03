@@ -3,6 +3,7 @@ package model
 import (
 	"fmt"
 	"math"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -186,6 +187,107 @@ func GetAllQuotaStat(startTime int64, endTime int64) (QuotaStat, error) {
 		Where("created_at >= ? and created_at <= ?", startTime, endTime).
 		Scan(&stat).Error
 	return stat, err
+}
+
+// ModelRankItem 模型调用排行单项
+type ModelRankItem struct {
+	ModelName    string  `json:"model_name"`
+	SuccessCount int     `json:"success_count"`
+	FailCount    int     `json:"fail_count"`
+	SuccessRate  float64 `json:"success_rate"`
+}
+
+// ModelRankResponse 模型调用排行响应（全部/国内/海外三组排行）
+type ModelRankResponse struct {
+	All      []ModelRankItem `json:"all"`
+	Domestic []ModelRankItem `json:"domestic"`
+	Overseas []ModelRankItem `json:"overseas"`
+}
+
+// computeModelRank 从 quota_data 列表计算按模型分组的排行数据
+func computeModelRank(quotaDatas []*QuotaData) ModelRankResponse {
+	modelMap := make(map[string]*ModelRankItem)
+	for _, item := range quotaDatas {
+		rank, ok := modelMap[item.ModelName]
+		if !ok {
+			rank = &ModelRankItem{ModelName: item.ModelName}
+			modelMap[item.ModelName] = rank
+		}
+		rank.SuccessCount += item.Count
+		rank.FailCount += item.FailCount
+	}
+
+	// 计算成功率并分类
+	var allList, domesticList, overseasList []ModelRankItem
+	for _, rank := range modelMap {
+		total := rank.SuccessCount + rank.FailCount
+		if total > 0 {
+			rank.SuccessRate = math.Floor(float64(rank.SuccessCount)/float64(total)*1000) / 10
+		}
+		allList = append(allList, *rank)
+		if matchModelPrefix(rank.ModelName, domesticPrefixes) {
+			domesticList = append(domesticList, *rank)
+		} else if matchModelPrefix(rank.ModelName, overseasPrefixes) {
+			overseasList = append(overseasList, *rank)
+		}
+	}
+
+	sortModelRank := func(list []ModelRankItem) {
+		sort.Slice(list, func(i, j int) bool {
+			return list[i].SuccessCount+list[i].FailCount > list[j].SuccessCount+list[j].FailCount
+		})
+	}
+	sortModelRank(allList)
+	sortModelRank(domesticList)
+	sortModelRank(overseasList)
+
+	return ModelRankResponse{
+		All:      allList,
+		Domestic: domesticList,
+		Overseas: overseasList,
+	}
+}
+
+// GetModelRankByUserId 查询指定用户的模型调用排行（全部/国内/海外）
+func GetModelRankByUserId(userId int, startTime int64, endTime int64) (ModelRankResponse, error) {
+	var quotaDatas []*QuotaData
+	err := DB.Table("quota_data").
+		Select("model_name, sum(count) as count, sum(fail_count) as fail_count").
+		Where("user_id = ? and created_at >= ? and created_at <= ?", userId, startTime, endTime).
+		Group("model_name").
+		Find(&quotaDatas).Error
+	if err != nil {
+		return ModelRankResponse{}, err
+	}
+	return computeModelRank(quotaDatas), nil
+}
+
+// GetModelRankByUsername 查询指定用户名的模型调用排行（全部/国内/海外）
+func GetModelRankByUsername(username string, startTime int64, endTime int64) (ModelRankResponse, error) {
+	var quotaDatas []*QuotaData
+	err := DB.Table("quota_data").
+		Select("model_name, sum(count) as count, sum(fail_count) as fail_count").
+		Where("username = ? and created_at >= ? and created_at <= ?", username, startTime, endTime).
+		Group("model_name").
+		Find(&quotaDatas).Error
+	if err != nil {
+		return ModelRankResponse{}, err
+	}
+	return computeModelRank(quotaDatas), nil
+}
+
+// GetAllModelRank 查询所有用户的模型调用排行（全部/国内/海外）
+func GetAllModelRank(startTime int64, endTime int64) (ModelRankResponse, error) {
+	var quotaDatas []*QuotaData
+	err := DB.Table("quota_data").
+		Select("model_name, sum(count) as count, sum(fail_count) as fail_count").
+		Where("created_at >= ? and created_at <= ?", startTime, endTime).
+		Group("model_name").
+		Find(&quotaDatas).Error
+	if err != nil {
+		return ModelRankResponse{}, err
+	}
+	return computeModelRank(quotaDatas), nil
 }
 
 // RegionStat 区域统计数据（国内/海外）

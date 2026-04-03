@@ -227,6 +227,8 @@ func SetApiRouter(router *gin.Engine) {
 		dataRoute.GET("/self", middleware.UserAuth(), controller.GetUserQuotaDates)
 		dataRoute.GET("/region_stats", middleware.AdminAuth(), controller.GetAllRegionStats)
 		dataRoute.GET("/self/region_stats", middleware.UserAuth(), controller.GetUserRegionStats)
+		dataRoute.GET("/model_rank", middleware.AdminAuth(), controller.GetAllModelRank)
+		dataRoute.GET("/self/model_rank", middleware.UserAuth(), controller.GetUserModelRank)
 
 		logRoute.Use(middleware.CORS(), middleware.CriticalRateLimit())
 		{
