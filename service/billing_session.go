@@ -161,7 +161,7 @@ func (s *BillingSession) shouldTrust(c *gin.Context) bool {
 
 	tokenTrusted := s.relayInfo.TokenUnlimited
 	if !tokenTrusted {
-		tokenQuota := c.GetInt("token_quota")
+		tokenQuota := s.relayInfo.TokenQuota
 		tokenTrusted = tokenQuota > trustQuota
 	}
 	if !tokenTrusted {
