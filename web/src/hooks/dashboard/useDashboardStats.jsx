@@ -40,10 +40,14 @@ const getRateColor = (stat) => {
   return '#ef4444';
 };
 
-const formatRegionValue = (stat) => {
+const formatRegionRate = (stat) => {
   if (!stat) return '--';
-  const rate = stat.success_rate.toFixed(1);
-  return `${rate}% - ${stat.success_count} / ${stat.fail_count}`;
+  return `${stat.success_rate.toFixed(1)}%`;
+};
+
+const formatRegionCount = (stat) => {
+  if (!stat) return '';
+  return `${stat.success_count} / ${stat.fail_count}`;
 };
 
 export const useDashboardStats = (
@@ -118,13 +122,15 @@ export const useDashboardStats = (
         regionItems: [
           {
             label: t('国内模型'),
-            value: formatRegionValue(regionStats?.domestic),
+            rateValue: formatRegionRate(regionStats?.domestic),
+            countValue: formatRegionCount(regionStats?.domestic),
             color: getRateColor(regionStats?.domestic),
             rate: regionStats?.domestic?.success_rate ?? 0,
           },
           {
             label: t('海外模型'),
-            value: formatRegionValue(regionStats?.overseas),
+            rateValue: formatRegionRate(regionStats?.overseas),
+            countValue: formatRegionCount(regionStats?.overseas),
             color: getRateColor(regionStats?.overseas),
             rate: regionStats?.overseas?.success_rate ?? 0,
           },
