@@ -2,6 +2,7 @@ package model
 
 import (
 	"fmt"
+	"math"
 	"strings"
 	"sync"
 	"time"
@@ -224,11 +225,11 @@ func computeRegionStats(quotaDatas []*QuotaData) (domestic RegionStat, overseas 
 	}
 	total := domestic.SuccessCount + domestic.FailCount
 	if total > 0 {
-		domestic.SuccessRate = float64(domestic.SuccessCount) / float64(total) * 100
+		domestic.SuccessRate = math.Floor(float64(domestic.SuccessCount)/float64(total)*1000) / 10
 	}
 	total = overseas.SuccessCount + overseas.FailCount
 	if total > 0 {
-		overseas.SuccessRate = float64(overseas.SuccessCount) / float64(total) * 100
+		overseas.SuccessRate = math.Floor(float64(overseas.SuccessCount)/float64(total)*1000) / 10
 	}
 	return
 }

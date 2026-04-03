@@ -28,35 +28,38 @@ const RegionCard = ({ group, loading }) => (
     className={`${group.color} border-0 !rounded-2xl w-full`}
     title={group.title}
   >
-    <div className='grid grid-cols-2 gap-4'>
+    <div className='space-y-4'>
       {group.regionItems.map((item, idx) => (
-        <div key={idx} className='space-y-1'>
-          <div className='text-xs text-gray-500 flex items-center gap-1'>
-            <span
-              className='inline-block w-2 h-2 rounded-full'
-              style={{ backgroundColor: item.color }}
-            />
-            {item.label}
-          </div>
-          <Skeleton
-            loading={loading}
-            active
-            placeholder={
-              <Skeleton.Paragraph
+        <div key={idx} className='flex items-center justify-between'>
+          <div className='flex items-center'>
+            <div className='mr-3 flex items-center justify-center w-8 h-8 rounded-full' style={{ backgroundColor: item.color + '20' }}>
+              <span className='inline-block w-3 h-3 rounded-full' style={{ backgroundColor: item.color }} />
+            </div>
+            <div>
+              <div className='text-xs text-gray-500'>{item.label}</div>
+              <Skeleton
+                loading={loading}
                 active
-                rows={1}
-                style={{ width: '120px', height: '20px', marginTop: '4px' }}
-              />
-            }
-          >
-            <div className='text-sm font-semibold'>{item.value}</div>
-          </Skeleton>
-          <Progress
-            percent={parseFloat(item.value) || 0}
-            showInfo={false}
-            stroke={item.color}
-            size='small'
-          />
+                placeholder={
+                  <Skeleton.Paragraph
+                    active
+                    rows={1}
+                    style={{ width: '140px', height: '20px', marginTop: '4px' }}
+                  />
+                }
+              >
+                <div className='text-sm font-semibold'>{item.value}</div>
+              </Skeleton>
+            </div>
+          </div>
+          <div className='w-32'>
+            <Progress
+              percent={item.rate || 0}
+              showInfo
+              stroke={item.color}
+              size='small'
+            />
+          </div>
         </div>
       ))}
     </div>
