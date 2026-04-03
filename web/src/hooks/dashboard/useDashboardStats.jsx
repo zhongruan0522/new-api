@@ -18,7 +18,7 @@ For commercial licensing, please contact support@quantumnous.com
 */
 
 import { useMemo } from 'react';
-import { Wallet, Activity, Zap, Gauge, ImageOff } from 'lucide-react';
+import { Wallet, Activity, Zap, Gauge, ImageOff, Globe } from 'lucide-react';
 import {
   IconMoneyExchangeStroked,
   IconHistogram,
@@ -32,6 +32,12 @@ import {
 import { renderQuota } from '../../helpers';
 import { createSectionTitle } from '../../helpers/dashboard';
 
+const formatRegionValue = (stat) => {
+  if (!stat) return '--';
+  const rate = stat.success_rate.toFixed(1);
+  return `${rate}% - ${stat.success_count} / ${stat.fail_count}`;
+};
+
 export const useDashboardStats = (
   userState,
   consumeQuota,
@@ -42,7 +48,15 @@ export const useDashboardStats = (
   performanceMetrics,
   navigate,
   t,
+  regionStats,
 ) => {
+  const totalRate = useMemo(() => {
+    if (!times && !failCount) return '--';
+    const total = times + failCount;
+    if (total === 0) return '0.0%';
+    return ((times / total) * 100).toFixed(1) + '%';
+  }, [times, failCount]);
+
   const groupedStatsData = useMemo(
     () => [
       {
@@ -81,11 +95,28 @@ export const useDashboardStats = (
           },
           {
             title: t('统计次数'),
-            value: `${times} / ${failCount}`,
+            value: `${times} / ${failCount} - ${totalRate}`,
             icon: <IconPulse />,
             avatarColor: 'cyan',
             trendData: trendData.times,
             trendColor: '#06b6d4',
+          },
+        ],
+      },
+      {
+        title: createSectionTitle(Globe, t('海内外模型成功率')),
+        color: 'bg-emerald-50',
+        colSpan: 2,
+        regionItems: [
+          {
+            label: t('国内模型'),
+            value: formatRegionValue(regionStats?.domestic),
+            color: '#10b981',
+          },
+          {
+            label: t('海外模型'),
+            value: formatRegionValue(regionStats?.overseas),
+            color: '#6366f1',
           },
         ],
       },
@@ -164,12 +195,14 @@ export const useDashboardStats = (
       userState?.user?.video_converted_count,
       times,
       failCount,
+      totalRate,
       consumeQuota,
       consumeTokens,
       trendData,
       performanceMetrics,
       navigate,
       t,
+      regionStats,
     ],
   );
 

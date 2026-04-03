@@ -51,3 +51,45 @@ func GetUserQuotaDates(c *gin.Context) {
 	})
 	return
 }
+
+// GetAllRegionStats 管理员查询所有用户的国内/海外模型成功率
+func GetAllRegionStats(c *gin.Context) {
+	startTimestamp, _ := strconv.ParseInt(c.Query("start_timestamp"), 10, 64)
+	endTimestamp, _ := strconv.ParseInt(c.Query("end_timestamp"), 10, 64)
+	username := c.Query("username")
+
+	var stats model.RegionStatsResponse
+	var err error
+	if username != "" {
+		stats, err = model.GetRegionStatsByUsername(username, startTimestamp, endTimestamp)
+	} else {
+		stats, err = model.GetAllRegionStats(startTimestamp, endTimestamp)
+	}
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "",
+		"data":    stats,
+	})
+}
+
+// GetUserRegionStats 普通用户查询自己的国内/海外模型成功率
+func GetUserRegionStats(c *gin.Context) {
+	userId := c.GetInt("id")
+	startTimestamp, _ := strconv.ParseInt(c.Query("start_timestamp"), 10, 64)
+	endTimestamp, _ := strconv.ParseInt(c.Query("end_timestamp"), 10, 64)
+
+	stats, err := model.GetRegionStatsByUserId(userId, startTimestamp, endTimestamp)
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "",
+		"data":    stats,
+	})
+}
