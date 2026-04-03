@@ -153,6 +153,8 @@ func GetAllQuotaDates(startTime int64, endTime int64, username string) (quotaDat
 
 // QuotaStat 预聚合的统计数据
 type QuotaStat struct {
+	Quota        int `json:"quota"`
+	Tpm          int `json:"tpm"`
 	SuccessCount int `json:"success_count"`
 	FailCount    int `json:"fail_count"`
 }
@@ -160,7 +162,7 @@ type QuotaStat struct {
 // GetQuotaStatByUserId 从 quota_data 表查询指定用户的预聚合成功/失败次数
 func GetQuotaStatByUserId(userId int, startTime int64, endTime int64) (QuotaStat, error) {
 	var stat QuotaStat
-	err := DB.Table("quota_data").Select("coalesce(sum(count), 0) as success_count, coalesce(sum(fail_count), 0) as fail_count").
+	err := DB.Table("quota_data").Select("coalesce(sum(quota), 0) as quota, coalesce(sum(token_used), 0) as tpm, coalesce(sum(count), 0) as success_count, coalesce(sum(fail_count), 0) as fail_count").
 		Where("user_id = ? and created_at >= ? and created_at <= ?", userId, startTime, endTime).
 		Scan(&stat).Error
 	return stat, err
@@ -169,7 +171,7 @@ func GetQuotaStatByUserId(userId int, startTime int64, endTime int64) (QuotaStat
 // GetQuotaStatByUsername 从 quota_data 表查询指定用户的预聚合成功/失败次数
 func GetQuotaStatByUsername(username string, startTime int64, endTime int64) (QuotaStat, error) {
 	var stat QuotaStat
-	err := DB.Table("quota_data").Select("coalesce(sum(count), 0) as success_count, coalesce(sum(fail_count), 0) as fail_count").
+	err := DB.Table("quota_data").Select("coalesce(sum(quota), 0) as quota, coalesce(sum(token_used), 0) as tpm, coalesce(sum(count), 0) as success_count, coalesce(sum(fail_count), 0) as fail_count").
 		Where("username = ? and created_at >= ? and created_at <= ?", username, startTime, endTime).
 		Scan(&stat).Error
 	return stat, err
@@ -178,7 +180,7 @@ func GetQuotaStatByUsername(username string, startTime int64, endTime int64) (Qu
 // GetAllQuotaStat 从 quota_data 表查询所有用户的预聚合成功/失败次数
 func GetAllQuotaStat(startTime int64, endTime int64) (QuotaStat, error) {
 	var stat QuotaStat
-	err := DB.Table("quota_data").Select("coalesce(sum(count), 0) as success_count, coalesce(sum(fail_count), 0) as fail_count").
+	err := DB.Table("quota_data").Select("coalesce(sum(quota), 0) as quota, coalesce(sum(token_used), 0) as tpm, coalesce(sum(count), 0) as success_count, coalesce(sum(fail_count), 0) as fail_count").
 		Where("created_at >= ? and created_at <= ?", startTime, endTime).
 		Scan(&stat).Error
 	return stat, err

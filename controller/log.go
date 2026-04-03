@@ -103,38 +103,38 @@ func GetLogsStat(c *gin.Context) {
 	channel, _ := strconv.Atoi(c.Query("channel"))
 	group := c.Query("group")
 
-	var successCount, failCount int
+	var statData model.Stat
 	if common.DataExportEnabled {
-		var stat model.QuotaStat
+		var qStat model.QuotaStat
 		var err error
 		if username != "" {
-			stat, err = model.GetQuotaStatByUsername(username, startTimestamp, endTimestamp)
+			qStat, err = model.GetQuotaStatByUsername(username, startTimestamp, endTimestamp)
 		} else {
-			stat, err = model.GetAllQuotaStat(startTimestamp, endTimestamp)
+			qStat, err = model.GetAllQuotaStat(startTimestamp, endTimestamp)
 		}
 		if err != nil {
 			common.ApiError(c, err)
 			return
 		}
-		successCount = stat.SuccessCount
-		failCount = stat.FailCount
+		statData = model.Stat{
+			Quota:        qStat.Quota,
+			Tpm:          qStat.Tpm,
+			SuccessCount: qStat.SuccessCount,
+			FailCount:    qStat.FailCount,
+		}
 	} else {
 		stat, err := model.SumUsedQuota(logType, startTimestamp, endTimestamp, modelName, username, tokenName, channel, group)
 		if err != nil {
 			common.ApiError(c, err)
 			return
 		}
-		successCount = stat.SuccessCount
-		failCount = stat.FailCount
+		statData = stat
 	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
-		"data": gin.H{
-			"success_count": successCount,
-			"fail_count":    failCount,
-		},
+		"data":    statData,
 	})
 }
 
@@ -149,32 +149,32 @@ func GetLogsSelfStat(c *gin.Context) {
 	channel, _ := strconv.Atoi(c.Query("channel"))
 	group := c.Query("group")
 
-	var successCount, failCount int
+	var statData model.Stat
 	if common.DataExportEnabled {
-		stat, err := model.GetQuotaStatByUserId(userId, startTimestamp, endTimestamp)
+		qStat, err := model.GetQuotaStatByUserId(userId, startTimestamp, endTimestamp)
 		if err != nil {
 			common.ApiError(c, err)
 			return
 		}
-		successCount = stat.SuccessCount
-		failCount = stat.FailCount
+		statData = model.Stat{
+			Quota:        qStat.Quota,
+			Tpm:          qStat.Tpm,
+			SuccessCount: qStat.SuccessCount,
+			FailCount:    qStat.FailCount,
+		}
 	} else {
-		quotaNum, err := model.SumUsedQuota(logType, startTimestamp, endTimestamp, modelName, username, tokenName, channel, group)
+		stat, err := model.SumUsedQuota(logType, startTimestamp, endTimestamp, modelName, username, tokenName, channel, group)
 		if err != nil {
 			common.ApiError(c, err)
 			return
 		}
-		successCount = quotaNum.SuccessCount
-		failCount = quotaNum.FailCount
+		statData = stat
 	}
 
 	c.JSON(200, gin.H{
 		"success": true,
 		"message": "",
-		"data": gin.H{
-			"success_count": successCount,
-			"fail_count":    failCount,
-		},
+		"data":    statData,
 	})
 }
 
