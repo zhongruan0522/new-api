@@ -34,7 +34,7 @@ import {
   IllustrationNoResultDark,
 } from '@douyinfe/semi-illustrations';
 import { Plus, Edit, Trash2, Save, Activity } from 'lucide-react';
-import { API, showError, showSuccess } from '../../../helpers';
+import { API, showError, showSuccess, isValidUrl } from '../../../helpers';
 import { useTranslation } from 'react-i18next';
 
 const { Text } = Typography;
@@ -210,10 +210,8 @@ const SettingsUptimeKuma = ({ options, refresh }) => {
       return;
     }
 
-    try {
-      new URL(uptimeForm.url);
-    } catch (error) {
-      showError('请输入有效的URL地址');
+    if (!isValidUrl(uptimeForm.url)) {
+      showError('请输入有效的URL地址（需以 http:// 或 https:// 开头）');
       return;
     }
 

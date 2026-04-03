@@ -274,6 +274,21 @@ export function downloadTextAsFile(text, filename) {
   a.click();
 }
 
+/**
+ * 校验字符串是否为合法URL
+ * @param {string} value - 待校验的字符串
+ * @returns {boolean} 是否为合法URL
+ */
+export const isValidUrl = (value) => {
+  if (!value || typeof value !== 'string') return false;
+  try {
+    const url = new URL(value.trim());
+    return ['http:', 'https:'].includes(url.protocol);
+  } catch {
+    return false;
+  }
+};
+
 export const verifyJSON = (str) => {
   try {
     JSON.parse(str);
