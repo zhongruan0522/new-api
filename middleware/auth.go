@@ -354,12 +354,13 @@ func SetupContextForToken(c *gin.Context, token *model.Token, parts ...string) e
 		return fmt.Errorf("token is nil")
 	}
 	c.Set("id", token.UserId)
-	c.Set("token_id", token.Id)
-	c.Set("token_key", token.Key)
+	common.SetContextKey(c, constant.ContextKeyTokenId, token.Id)
+	common.SetContextKey(c, constant.ContextKeyTokenKey, token.Key)
 	c.Set("token_name", token.Name)
-	c.Set("token_unlimited_quota", token.UnlimitedQuota)
+	common.SetContextKey(c, constant.ContextKeyTokenUnlimited, token.UnlimitedQuota)
 	if !token.UnlimitedQuota {
-		c.Set("token_quota", token.RemainQuota)
+		// 将认证阶段读取到的额度快照写入上下文，后续预扣费无需再次查 token。
+		common.SetContextKey(c, constant.ContextKeyTokenQuota, token.RemainQuota)
 	}
 	if token.ModelLimitsEnabled {
 		c.Set("token_model_limit_enabled", true)

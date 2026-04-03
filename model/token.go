@@ -7,11 +7,15 @@ import (
 
 	"github.com/bytedance/gopkg/util/gopool"
 	"github.com/zhongruan0522/new-api/common"
+	"golang.org/x/sync/singleflight"
 	"gorm.io/gorm"
 )
 
 // maxUserTokens 每用户最大令牌数量（硬编码）
 const maxUserTokens = 1000
+
+// tokenLoadGroup 合并并发的冷缓存 token 查询，避免启动瞬间把相同 key 打到数据库上。
+var tokenLoadGroup singleflight.Group
 
 type Token struct {
 	Id                 int            `json:"id"`
@@ -261,8 +265,19 @@ func GetTokenByKey(key string, fromDB bool) (token *Token, err error) {
 		// Don't return error - fall through to DB
 	}
 	fromDB = true
-	err = DB.Where(commonKeyCol+" = ?", key).First(&token).Error
-	return token, err
+	loaded, loadErr, _ := tokenLoadGroup.Do(key, func() (interface{}, error) {
+		var dbToken *Token
+		err := DB.Where(commonKeyCol+" = ?", key).First(&dbToken).Error
+		return dbToken, err
+	})
+	if loadErr != nil {
+		return nil, loadErr
+	}
+	loadedToken, ok := loaded.(*Token)
+	if !ok {
+		return nil, fmt.Errorf("unexpected token cache load type %T", loaded)
+	}
+	return loadedToken, nil
 }
 
 func (token *Token) Insert() error {

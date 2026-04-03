@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"math"
-	"strings"
 	"time"
 
 	"github.com/zhongruan0522/new-api/common"
@@ -95,11 +94,6 @@ func PreWssConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usag
 		return err
 	}
 
-	token, err := model.GetTokenByKey(strings.TrimPrefix(relayInfo.TokenKey, "sk-"), false)
-	if err != nil {
-		return err
-	}
-
 	modelName := relayInfo.OriginModelName
 	textInputTokens := usage.InputTokenDetails.TextTokens
 	textOutTokens := usage.OutputTokenDetails.TextTokens
@@ -142,8 +136,9 @@ func PreWssConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usag
 		return fmt.Errorf("user quota is not enough, user quota: %s, need quota: %s", logger.FormatQuota(userQuota), logger.FormatQuota(quota))
 	}
 
-	if !token.UnlimitedQuota && token.RemainQuota < quota {
-		return fmt.Errorf("token quota is not enough, token remain quota: %s, need quota: %s", logger.FormatQuota(token.RemainQuota), logger.FormatQuota(quota))
+	// 认证阶段已经读取过 token，复用上下文快照避免重复查询数据库。
+	if !relayInfo.TokenUnlimited && relayInfo.TokenQuota < quota {
+		return fmt.Errorf("token quota is not enough, token remain quota: %s, need quota: %s", logger.FormatQuota(relayInfo.TokenQuota), logger.FormatQuota(quota))
 	}
 
 	err = PostConsumeQuota(relayInfo, quota, 0, false)
@@ -448,14 +443,10 @@ func PreConsumeTokenQuota(relayInfo *relaycommon.RelayInfo, quota int) error {
 	//if relayInfo.TokenUnlimited {
 	//	return nil
 	//}
-	token, err := model.GetTokenByKey(relayInfo.TokenKey, false)
-	if err != nil {
-		return err
+	if !relayInfo.TokenUnlimited && relayInfo.TokenQuota < quota {
+		return fmt.Errorf("token quota is not enough, token remain quota: %s, need quota: %s", logger.FormatQuota(relayInfo.TokenQuota), logger.FormatQuota(quota))
 	}
-	if !relayInfo.TokenUnlimited && token.RemainQuota < quota {
-		return fmt.Errorf("token quota is not enough, token remain quota: %s, need quota: %s", logger.FormatQuota(token.RemainQuota), logger.FormatQuota(quota))
-	}
-	err = model.DecreaseTokenQuota(relayInfo.TokenId, relayInfo.TokenKey, quota)
+	err := model.DecreaseTokenQuota(relayInfo.TokenId, relayInfo.TokenKey, quota)
 	if err != nil {
 		return err
 	}
