@@ -6,12 +6,20 @@ import (
 	channelconstant "github.com/zhongruan0522/new-api/constant"
 	relaycommon "github.com/zhongruan0522/new-api/relay/common"
 	"github.com/zhongruan0522/new-api/relay/constant"
+	"github.com/zhongruan0522/new-api/types"
 )
 
 func GetRequestURL(info *relaycommon.RelayInfo) (string, error) {
 	baseUrl := info.ChannelBaseUrl
 	if baseUrl == "" {
 		baseUrl = channelconstant.ChannelBaseURLs[channelconstant.ChannelTypeMiniMax]
+	}
+
+	// CodingPlan 模式下，Claude 格式走专用地址
+	if specialPlan, ok := channelconstant.ChannelSpecialBases[baseUrl]; ok {
+		if info.RelayFormat == types.RelayFormatClaude && specialPlan.ClaudeBaseURL != "" {
+			return fmt.Sprintf("%s/v1/messages", specialPlan.ClaudeBaseURL), nil
+		}
 	}
 
 	switch info.RelayMode {
