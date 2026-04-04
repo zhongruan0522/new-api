@@ -29,21 +29,10 @@ import {
   Gemini,
   Moonshot,
   Zhipu,
-  Qwen,
   DeepSeek,
   Minimax,
-  Spark,
-  Hunyuan,
-  Cohere,
-  Cloudflare,
-  Yi,
-  Jina,
-  Mistral,
-  XAI,
   Ollama,
-  Doubao,
   OpenRouter,
-  Dify,
   SiliconCloud,
 } from '@lobehub/icons';
 
@@ -186,12 +175,6 @@ export const getModelCategories = (() => {
           String(model?.model_name ?? '').toLowerCase().includes('cogview') ||
           String(model?.model_name ?? '').toLowerCase().includes('cogvideo'),
       },
-      qwen: {
-        label: t('通义千问'),
-        icon: <Qwen.Color />,
-        filter: (model) =>
-          String(model?.model_name ?? '').toLowerCase().includes('qwen'),
-      },
       deepseek: {
         label: 'DeepSeek',
         icon: <DeepSeek.Color />,
@@ -205,73 +188,11 @@ export const getModelCategories = (() => {
           String(model?.model_name ?? '').toLowerCase().includes('abab') ||
           String(model?.model_name ?? '').toLowerCase().includes('minimax'),
       },
-      xunfei: {
-        label: t('讯飞星火'),
-        icon: <Spark.Color />,
-        filter: (model) =>
-          String(model?.model_name ?? '').toLowerCase().includes('spark'),
-      },
-      tencent: {
-        label: t('腾讯混元'),
-        icon: <Hunyuan.Color />,
-        filter: (model) =>
-          String(model?.model_name ?? '').toLowerCase().includes('hunyuan'),
-      },
-      cohere: {
-        label: 'Cohere',
-        icon: <Cohere.Color />,
-        filter: (model) =>
-          String(model?.model_name ?? '').toLowerCase().includes('command') ||
-          String(model?.model_name ?? '').toLowerCase().includes('c4ai-') ||
-          String(model?.model_name ?? '').toLowerCase().includes('embed-'),
-      },
-      cloudflare: {
-        label: 'Cloudflare',
-        icon: <Cloudflare.Color />,
-        filter: (model) =>
-          String(model?.model_name ?? '').toLowerCase().includes('@cf/'),
-      },
-      jina: {
-        label: 'Jina',
-        icon: <Jina />,
-        filter: (model) =>
-          String(model?.model_name ?? '').toLowerCase().includes('jina'),
-      },
-      mistral: {
-        label: 'Mistral AI',
-        icon: <Mistral.Color />,
-        filter: (model) =>
-          String(model?.model_name ?? '').toLowerCase().includes('mistral') ||
-          String(model?.model_name ?? '').toLowerCase().includes('codestral') ||
-          String(model?.model_name ?? '').toLowerCase().includes('pixtral') ||
-          String(model?.model_name ?? '').toLowerCase().includes('voxtral') ||
-          String(model?.model_name ?? '')
-            .toLowerCase()
-            .includes('magistral'),
-      },
-      xai: {
-        label: 'xAI',
-        icon: <XAI />,
-        filter: (model) =>
-          String(model?.model_name ?? '').toLowerCase().includes('grok'),
-      },
       llama: {
         label: 'Llama',
         icon: <Ollama />,
         filter: (model) =>
           String(model?.model_name ?? '').toLowerCase().includes('llama'),
-      },
-      doubao: {
-        label: t('豆包'),
-        icon: <Doubao.Color />,
-        filter: (model) =>
-          String(model?.model_name ?? '').toLowerCase().includes('doubao'),
-      },
-      yi: {
-        label: t('零一万物'),
-        icon: <Yi.Color />,
-        filter: (model) =>
-          String(model?.model_name ?? '').toLowerCase().includes('yi'),
       },
     };
 
@@ -299,46 +220,23 @@ export function getChannelIcon(channelType) {
       return <Claude.Color size={iconSize} />;
     case 41: // Vertex AI
       return <Gemini.Color size={iconSize} />;
-    case 34: // Cohere
-      return <Cohere.Color size={iconSize} />;
-    case 39: // Cloudflare
-      return <Cloudflare.Color size={iconSize} />;
     case 43: // DeepSeek
       return <DeepSeek.Color size={iconSize} />;
-    case 17: // 阿里通义千问
-      return <Qwen.Color size={iconSize} />;
-    case 18: // 讯飞星火认知
-      return <Spark.Color size={iconSize} />;
     case 26: // 智谱 GLM-4V
       return <Zhipu.Color size={iconSize} />;
     case 24: // Google Gemini
-    case 11: // Google PaLM2
       return <Gemini.Color size={iconSize} />;
     case 25: // Moonshot
       return <Moonshot size={iconSize} />;
     case 20: // OpenRouter
       return <OpenRouter size={iconSize} />;
-    case 23: // 腾讯混元
-      return <Hunyuan.Color size={iconSize} />;
-    case 31: // 零一万物
-      return <Yi.Color size={iconSize} />;
     case 35: // MiniMax
       return <Minimax.Color size={iconSize} />;
-    case 37: // Dify
-      return <Dify.Color size={iconSize} />;
-    case 38: // Jina
-      return <Jina size={iconSize} />;
     case 40: // SiliconCloud
       return <SiliconCloud.Color size={iconSize} />;
-    case 42: // Mistral AI
-      return <Mistral.Color size={iconSize} />;
-    case 45: // 字节火山方舟、豆包通用
-      return <Doubao.Color size={iconSize} />;
-    case 48: // xAI
-      return <XAI size={iconSize} />;
     case 8: // 自定义渠道
     default:
-      return null; // 未知类型或自定义渠道不显示图标
+      return null;
   }
 }
 

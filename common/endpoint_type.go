@@ -6,16 +6,6 @@ import "github.com/zhongruan0522/new-api/constant"
 func GetEndpointTypesByChannelType(channelType int, modelName string) []constant.EndpointType {
 	var endpointTypes []constant.EndpointType
 	switch channelType {
-	case constant.ChannelTypeJina:
-		endpointTypes = []constant.EndpointType{constant.EndpointTypeJinaRerank}
-	//case constant.ChannelTypeMidjourney, constant.ChannelTypeMidjourneyPlus:
-	//	endpointTypes = []constant.EndpointType{constant.EndpointTypeMidjourney}
-	//case constant.ChannelTypeSunoAPI:
-	//	endpointTypes = []constant.EndpointType{constant.EndpointTypeSuno}
-	//case constant.ChannelTypeKling:
-	//	endpointTypes = []constant.EndpointType{constant.EndpointTypeKling}
-	//case constant.ChannelTypeJimeng:
-	//	endpointTypes = []constant.EndpointType{constant.EndpointTypeJimeng}
 	case constant.ChannelTypeAws:
 		fallthrough
 	case constant.ChannelTypeAnthropic:
@@ -25,13 +15,12 @@ func GetEndpointTypesByChannelType(channelType int, modelName string) []constant
 	case constant.ChannelTypeGemini:
 		endpointTypes = []constant.EndpointType{constant.EndpointTypeGemini, constant.EndpointTypeOpenAI}
 	case constant.ChannelTypeOllama:
-		// Ollama 已支持 OpenAI Responses 与 Anthropic Messages 标准兼容接口。
 		endpointTypes = []constant.EndpointType{
 			constant.EndpointTypeOpenAI,
 			constant.EndpointTypeOpenAIResponse,
 			constant.EndpointTypeAnthropic,
 		}
-	case constant.ChannelTypeOpenRouter: // OpenRouter 只支持 OpenAI 端点
+	case constant.ChannelTypeOpenRouter:
 		endpointTypes = []constant.EndpointType{constant.EndpointTypeOpenAI}
 	default:
 		if IsOpenAIResponseOnlyModel(modelName) {
@@ -41,7 +30,6 @@ func GetEndpointTypesByChannelType(channelType int, modelName string) []constant
 		}
 	}
 	if IsImageGenerationModel(modelName) {
-		// add to first
 		endpointTypes = append([]constant.EndpointType{constant.EndpointTypeImageGeneration}, endpointTypes...)
 	}
 	return endpointTypes

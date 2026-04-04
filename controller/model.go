@@ -5,20 +5,19 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/gin-gonic/gin"
+	"github.com/samber/lo"
 	"github.com/zhongruan0522/new-api/common"
 	"github.com/zhongruan0522/new-api/constant"
 	"github.com/zhongruan0522/new-api/dto"
 	"github.com/zhongruan0522/new-api/model"
 	"github.com/zhongruan0522/new-api/relay"
-	"github.com/zhongruan0522/new-api/relay/channel/lingyiwanwu"
 	"github.com/zhongruan0522/new-api/relay/channel/minimax"
 	"github.com/zhongruan0522/new-api/relay/channel/moonshot"
 	relaycommon "github.com/zhongruan0522/new-api/relay/common"
 	"github.com/zhongruan0522/new-api/service"
 	"github.com/zhongruan0522/new-api/setting/ratio_setting"
 	"github.com/zhongruan0522/new-api/types"
-	"github.com/gin-gonic/gin"
-	"github.com/samber/lo"
 )
 
 // https://platform.openai.com/docs/api-reference/models/list
@@ -32,25 +31,14 @@ func init() {
 	allAPITypes := []int{
 		constant.APITypeOpenAI,
 		constant.APITypeAnthropic,
-		constant.APITypePaLM,
-		constant.APITypeAli,
-		constant.APITypeXunfei,
-		constant.APITypeTencent,
 		constant.APITypeGemini,
 		constant.APITypeZhipuV4,
 		constant.APITypeOllama,
 		constant.APITypeAws,
-		constant.APITypeCohere,
-		constant.APITypeDify,
-		constant.APITypeJina,
-		constant.APITypeCloudflare,
 		constant.APITypeSiliconFlow,
 		constant.APITypeVertexAi,
-		constant.APITypeMistral,
 		constant.APITypeDeepSeek,
-		constant.APITypeVolcEngine,
 		constant.APITypeOpenRouter,
-		constant.APITypeXai,
 		constant.APITypeMoonshot,
 		constant.APITypeMiniMax,
 	}
@@ -73,14 +61,6 @@ func init() {
 			Object:  "model",
 			Created: 1626777600,
 			OwnedBy: moonshot.ChannelName,
-		})
-	}
-	for _, modelName := range lingyiwanwu.ModelList {
-		openAIModels = append(openAIModels, dto.OpenAIModels{
-			Id:      modelName,
-			Object:  "model",
-			Created: 1626777600,
-			OwnedBy: lingyiwanwu.ChannelName,
 		})
 	}
 	for _, modelName := range minimax.ModelList {
