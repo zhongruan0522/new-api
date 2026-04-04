@@ -164,7 +164,6 @@ var defaultModelRatio = map[string]float64{
 	"bge-large-zh":                              0.002 * RMB,
 	"bge-large-en":                              0.002 * RMB,
 	"tao-8k":                                    0.002 * RMB,
-	"PaLM-2":                                    1,
 	"gemini-1.5-pro-latest":                     1.25, // $3.5 / 1M tokens
 	"gemini-1.5-flash-latest":                   0.075,
 	"gemini-2.0-flash":                          0.05,
@@ -200,14 +199,6 @@ var defaultModelRatio = map[string]float64{
 	"glm-4-long":                                0.001 * RMB,
 	"glm-4-flash":                               0,
 	"glm-4v-plus":                               0.01 * RMB,
-	"qwen-turbo":                                0.8572, // ￥0.012 / 1k tokens
-	"qwen-plus":                                 10,     // ￥0.14 / 1k tokens
-	"text-embedding-v1":                         0.05,   // ￥0.0007 / 1k tokens
-	"SparkDesk-v1.1":                            1.2858, // ￥0.018 / 1k tokens
-	"SparkDesk-v2.1":                            1.2858, // ￥0.018 / 1k tokens
-	"SparkDesk-v3.1":                            1.2858, // ￥0.018 / 1k tokens
-	"SparkDesk-v3.5":                            1.2858, // ￥0.018 / 1k tokens
-	"SparkDesk-v4.0":                            1.2858,
 	"360GPT_S2_V9":                              0.8572, // ¥0.012 / 1k tokens
 	"360gpt-turbo":                              0.0858, // ¥0.0012 / 1k tokens
 	"360gpt-turbo-responsibility-8k":            0.8572, // ¥0.012 / 1k tokens
@@ -216,57 +207,22 @@ var defaultModelRatio = map[string]float64{
 	"embedding-bert-512-v1":                     0.0715, // ¥0.001 / 1k tokens
 	"embedding_s1_v1":                           0.0715, // ¥0.001 / 1k tokens
 	"semantic_similarity_s1_v1":                 0.0715, // ¥0.001 / 1k tokens
-	"hunyuan":                                   7.143,  // ¥0.1 / 1k tokens  // https://cloud.tencent.com/document/product/1729/97731#e0e6be58-60c8-469f-bdeb-6c264ce3b4d0
-	// https://platform.lingyiwanwu.com/docs#-计费单元
-	// 已经按照 7.2 来换算美元价格
-	"yi-34b-chat-0205":       0.18,
-	"yi-34b-chat-200k":       0.864,
-	"yi-vl-plus":             0.432,
-	"yi-large":               20.0 / 1000 * RMB,
-	"yi-medium":              2.5 / 1000 * RMB,
-	"yi-vision":              6.0 / 1000 * RMB,
-	"yi-medium-200k":         12.0 / 1000 * RMB,
-	"yi-spark":               1.0 / 1000 * RMB,
-	"yi-large-rag":           25.0 / 1000 * RMB,
-	"yi-large-turbo":         12.0 / 1000 * RMB,
-	"yi-large-preview":       20.0 / 1000 * RMB,
-	"yi-large-rag-preview":   25.0 / 1000 * RMB,
-	"command":                0.5,
-	"command-nightly":        0.5,
-	"command-light":          0.5,
-	"command-light-nightly":  0.5,
-	"command-r":              0.25,
-	"command-r-plus":         1.5,
-	"command-r-08-2024":      0.075,
-	"command-r-plus-08-2024": 1.25,
-	"deepseek-chat":          0.27 / 2,
-	"deepseek-coder":         0.27 / 2,
-	"deepseek-reasoner":      0.55 / 2, // 0.55 / 1k tokens
+	"deepseek-chat":                             0.27 / 2,
+	"deepseek-coder":                            0.27 / 2,
+	"deepseek-reasoner":                         0.55 / 2, // 0.55 / 1k tokens
 	// Perplexity online 模型对搜索额外收费，有需要应自行调整，此处不计入搜索费用
 	"llama-3-sonar-small-32k-chat":   0.2 / 1000 * USD,
 	"llama-3-sonar-small-32k-online": 0.2 / 1000 * USD,
 	"llama-3-sonar-large-32k-chat":   1 / 1000 * USD,
 	"llama-3-sonar-large-32k-online": 1 / 1000 * USD,
-	// grok
-	"grok-3-beta":           1.5,
-	"grok-3-mini-beta":      0.15,
-	"grok-2":                1,
-	"grok-2-vision":         1,
-	"grok-beta":             2.5,
-	"grok-vision-beta":      2.5,
-	"grok-3-fast-beta":      2.5,
-	"grok-3-mini-fast-beta": 0.3,
 	// submodel
-	"NousResearch/Hermes-4-405B-FP8":          0.8,
-	"Qwen/Qwen3-235B-A22B-Thinking-2507":      0.6,
-	"Qwen/Qwen3-Coder-480B-A35B-Instruct-FP8": 0.8,
-	"Qwen/Qwen3-235B-A22B-Instruct-2507":      0.3,
-	"zai-org/GLM-4.5-FP8":                     0.8,
-	"openai/gpt-oss-120b":                     0.5,
-	"deepseek-ai/DeepSeek-R1-0528":            0.8,
-	"deepseek-ai/DeepSeek-R1":                 0.8,
-	"deepseek-ai/DeepSeek-V3-0324":            0.8,
-	"deepseek-ai/DeepSeek-V3.1":               0.8,
+	"NousResearch/Hermes-4-405B-FP8": 0.8,
+	"zai-org/GLM-4.5-FP8":            0.8,
+	"openai/gpt-oss-120b":            0.5,
+	"deepseek-ai/DeepSeek-R1-0528":   0.8,
+	"deepseek-ai/DeepSeek-R1":        0.8,
+	"deepseek-ai/DeepSeek-V3-0324":   0.8,
+	"deepseek-ai/DeepSeek-V3.1":      0.8,
 }
 
 var defaultModelPrice = map[string]float64{
@@ -501,9 +457,6 @@ func getHardcodedCompletionModelRatio(name string) (float64, bool) {
 		}
 		return 4.0 / 3.0, true
 	}
-	if strings.HasPrefix(name, "mistral-") {
-		return 3, true
-	}
 	if strings.HasPrefix(name, "gemini-") {
 		if strings.HasPrefix(name, "gemini-1.5") {
 			return 4, true
@@ -532,21 +485,7 @@ func getHardcodedCompletionModelRatio(name string) (float64, bool) {
 		}
 		return 4, false
 	}
-	if strings.HasPrefix(name, "command") {
-		switch name {
-		case "command-r":
-			return 3, true
-		case "command-r-plus":
-			return 5, true
-		case "command-r-08-2024":
-			return 4, true
-		case "command-r-plus-08-2024":
-			return 4, true
-		default:
-			return 4, false
-		}
-	}
-	// hint 只给官方上4倍率，由于开源模型供应商自行定价，不对其进行补全倍率进行强制对齐
+	// hint only applies official 4x ratio, since open-source model providers set their own prices
 	if strings.HasPrefix(name, "ERNIE-Speed-") {
 		return 2, true
 	} else if strings.HasPrefix(name, "ERNIE-Lite-") {

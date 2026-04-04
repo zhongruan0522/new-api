@@ -95,24 +95,17 @@ const REGION_EXAMPLE = {
 
 // 支持并且已适配通过接口获取模型列表的渠道类型
 const MODEL_FETCHABLE_TYPES = new Set([
-  1, 4, 14, 34, 17, 26, 27, 24, 47, 25, 20, 23, 31, 40, 42, 48, 43,
+  1, 4, 14, 34, 26, 24, 47, 25, 20, 23, 40, 43,
 ]);
 
 function type2secretPrompt(type) {
-  // inputs.type === 15 ? '按照如下格式输入：APIKey|SecretKey' : (inputs.type === 18 ? '按照如下格式输入：APPID|APISecret|APIKey' : '请输入渠道对应的鉴权密钥')
   switch (type) {
-    case 15:
-      return '按照如下格式输入：APIKey|SecretKey';
-    case 18:
-      return '按照如下格式输入：APPID|APISecret|APIKey';
     case 22:
       return '按照如下格式输入：APIKey-AppId，例如：fastgpt-0sp2gtvfdgyi4k30jwlgwf1i-64f335d84283f05518e9e041';
     case 23:
       return '按照如下格式输入：AppId|SecretId|SecretKey';
     case 33:
       return '按照如下格式输入：Ak|Sk|Region';
-    case 45:
-      return '请输入渠道对应的鉴权密钥, 豆包语音输入：AppId|AccessToken';
     case 50:
       return '按照如下格式输入: AccessKey|SecretKey, 如果上游是New API，则直接输ApiKey';
     case 51:
@@ -204,8 +197,7 @@ const EditChannelModal = (props) => {
   const [channelSearchValue, setChannelSearchValue] = useState('');
   const [useManualInput, setUseManualInput] = useState(false); // 是否使用手动输入模式
   const [keyMode, setKeyMode] = useState('append'); // 密钥模式：replace（覆盖）或 append（追加）
-  const [isEnterpriseAccount, setIsEnterpriseAccount] = useState(false); // 是否为企业账户
-  const [doubaoApiEditUnlocked, setDoubaoApiEditUnlocked] = useState(false); // 豆包渠道自定义 API 地址隐藏入口
+  const [isEnterpriseAccount, setIsEnterpriseAccount] = useState(false);
   const redirectModelList = useMemo(() => {
     const mapping = inputs.model_mapping;
     if (typeof mapping !== 'string') return [];
@@ -253,7 +245,6 @@ const EditChannelModal = (props) => {
     'channelExtraSettings',
   ];
   const formContainerRef = useRef(null);
-  const doubaoApiClickCountRef = useRef(0);
   const initialModelsRef = useRef([]);
   const initialModelMappingRef = useRef('');
 
@@ -342,20 +333,6 @@ const EditChannelModal = (props) => {
 
     setCurrentSectionIndex(newIndex);
     scrollToSection(availableSections[newIndex]);
-  };
-
-  const handleApiConfigSecretClick = () => {
-    if (inputs.type !== 45) return;
-    const next = doubaoApiClickCountRef.current + 1;
-    doubaoApiClickCountRef.current = next;
-    if (next >= 10) {
-      setDoubaoApiEditUnlocked((unlocked) => {
-        if (!unlocked) {
-          showInfo(t('已解锁豆包自定义 API 地址编辑'));
-        }
-        return true;
-      });
-    }
   };
 
   // 渠道额外设置状态
@@ -640,14 +617,6 @@ const EditChannelModal = (props) => {
         data.image_auto_convert_to_url_mode = 'off';
       }
 
-      if (
-        data.type === 45 &&
-        (!data.base_url ||
-          (typeof data.base_url === 'string' && data.base_url.trim() === ''))
-      ) {
-        data.base_url = 'https://ark.cn-beijing.volces.com';
-      }
-
       setInputs(data);
       if (formApiRef.current) {
         formApiRef.current.setValues(data);
@@ -884,13 +853,6 @@ const EditChannelModal = (props) => {
   };
 
   useEffect(() => {
-    if (inputs.type !== 45) {
-      doubaoApiClickCountRef.current = 0;
-      setDoubaoApiEditUnlocked(false);
-    }
-  }, [inputs.type]);
-
-  useEffect(() => {
     const modelMap = new Map();
 
     originModelOptions.forEach((option) => {
@@ -995,9 +957,6 @@ const EditChannelModal = (props) => {
     setKeyMode('append');
     // 重置企业账户状态
     setIsEnterpriseAccount(false);
-    // 重置豆包隐藏入口状态
-    setDoubaoApiEditUnlocked(false);
-    doubaoApiClickCountRef.current = 0;
     // 清空表单中的key_mode字段
     if (formApiRef.current) {
       formApiRef.current.setValue('key_mode', undefined);
@@ -1202,13 +1161,6 @@ const EditChannelModal = (props) => {
       showInfo(t('请至少选择一个模型！'));
       return;
     }
-    if (
-      localInputs.type === 45 &&
-      (!localInputs.base_url || localInputs.base_url.trim() === '')
-    ) {
-      showInfo(t('请输入API地址！'));
-      return;
-    }
     const hasModelMapping =
       typeof localInputs.model_mapping === 'string' &&
       localInputs.model_mapping.trim() !== '';
@@ -1263,9 +1215,6 @@ const EditChannelModal = (props) => {
         0,
         localInputs.base_url.length - 1,
       );
-    }
-    if (localInputs.type === 18 && localInputs.other === '') {
-      localInputs.other = 'v2.1';
     }
 
     // 生成渠道额外设置JSON
@@ -2198,18 +2147,6 @@ const EditChannelModal = (props) => {
                       </>
                     )}
 
-                    {inputs.type === 18 && (
-                      <Form.Input
-                        field='other'
-                        label={t('模型版本')}
-                        placeholder={
-                          '请输入星火大模型版本，注意是接口地址中的版本号，例如：v2.1'
-                        }
-                        onChange={(value) => handleInputChange('other', value)}
-                        showClear
-                      />
-                    )}
-
                     {inputs.type === 41 && (
                       <JSONEditor
                         key={`region-${isEdit ? channelId : 'new'}`}
@@ -2241,16 +2178,6 @@ const EditChannelModal = (props) => {
                       />
                     )}
 
-                    {inputs.type === 39 && (
-                      <Form.Input
-                        field='other'
-                        label='Account ID'
-                        placeholder={
-                          '请输入Account ID，例如：d6b5da8hk1awo8nap34ube6gh'
-                        }
-                        onChange={(value) => handleInputChange('other', value)}
-                        showClear
-                      />
                     )}
 
                     <Form.Select
@@ -2295,7 +2222,6 @@ const EditChannelModal = (props) => {
                       {/* Header: API Config */}
                       <div
                         className='flex items-center mb-2'
-                        onClick={handleApiConfigSecretClick}
                       >
                         <Avatar
                           size='small'
@@ -2417,23 +2343,12 @@ const EditChannelModal = (props) => {
                             />
                           </div>
                         </>
-                      )}
+                        )}
 
-                      {inputs.type === 37 && (
-                        <Banner
-                          type='warning'
-                          description={t(
-                            'Dify渠道只适配chatflow和agent，并且agent不支持图片！',
-                          )}
-                          className='!rounded-lg'
-                        />
-                      )}
-
-                      {inputs.type !== 3 &&
+                        {inputs.type !== 3 &&
                         inputs.type !== 8 &&
                         inputs.type !== 22 &&
-                        inputs.type !== 36 &&
-                        (inputs.type !== 45 || doubaoApiEditUnlocked) && (
+                        inputs.type !== 36 && (
                           <div>
                             <Form.Input
                               field='base_url'
@@ -2484,37 +2399,6 @@ const EditChannelModal = (props) => {
                               handleInputChange('base_url', value)
                             }
                             showClear
-                            disabled={false}
-                          />
-                        </div>
-                      )}
-
-                      {inputs.type === 45 && !doubaoApiEditUnlocked && (
-                        <div>
-                          <Form.Select
-                            field='base_url'
-                            label={t('API地址')}
-                            placeholder={t('请选择API地址')}
-                            onChange={(value) =>
-                              handleInputChange('base_url', value)
-                            }
-                            optionList={[
-                              {
-                                value: 'https://ark.cn-beijing.volces.com',
-                                label: 'https://ark.cn-beijing.volces.com',
-                              },
-                              {
-                                value:
-                                  'https://ark.ap-southeast.bytepluses.com',
-                                label:
-                                  'https://ark.ap-southeast.bytepluses.com',
-                              },
-                              {
-                                value: 'doubao-coding-plan',
-                                label: 'Doubao Coding Plan',
-                              },
-                            ]}
-                            defaultValue='https://ark.cn-beijing.volces.com'
                             disabled={false}
                           />
                         </div>
