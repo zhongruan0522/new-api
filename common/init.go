@@ -125,7 +125,6 @@ func InitEnv() {
 
 func initConstantEnv() {
 	constant.StreamingTimeout = GetEnvOrDefault("STREAMING_TIMEOUT", 300)
-	constant.DifyDebug = GetEnvOrDefaultBool("DIFY_DEBUG", true)
 	constant.MaxFileDownloadMB = GetEnvOrDefault("MAX_FILE_DOWNLOAD_MB", 64)
 	// For multimodal auto-convert-to-URL storage.
 	constant.MaxImageUploadMB = GetEnvOrDefault("MAX_IMAGE_UPLOAD_MB", 64)

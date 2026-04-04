@@ -75,14 +75,14 @@ type GeneralOpenAIRequest struct {
 	Prediction           json.RawMessage `json:"prediction,omitempty"`
 	// gemini
 	ExtraBody json.RawMessage `json:"extra_body,omitempty"`
-	//xai
+	// web search parameters
 	SearchParameters json.RawMessage `json:"search_parameters,omitempty"`
 	// claude
 	WebSearchOptions *WebSearchOptions `json:"web_search_options,omitempty"`
 	// OpenRouter Params
 	Usage     json.RawMessage `json:"usage,omitempty"`
 	Reasoning json.RawMessage `json:"reasoning,omitempty"`
-	// Ali Qwen Params
+	// Ali Qwen Params (passthrough)
 	VlHighResolutionImages json.RawMessage `json:"vl_high_resolution_images,omitempty"`
 	EnableThinking         json.RawMessage `json:"enable_thinking,omitempty"`
 	ChatTemplateKwargs     json.RawMessage `json:"chat_template_kwargs,omitempty"`
@@ -91,7 +91,7 @@ type GeneralOpenAIRequest struct {
 	Think json.RawMessage `json:"think,omitempty"`
 	// baidu v2
 	WebSearch json.RawMessage `json:"web_search,omitempty"`
-	// doubao,zhipu_v4
+	// zhipu_v4
 	THINKING json.RawMessage `json:"thinking,omitempty"`
 	// pplx Params
 	SearchDomainFilter     json.RawMessage `json:"search_domain_filter,omitempty"`
@@ -830,7 +830,7 @@ type OpenAIResponsesRequest struct {
 	User                 string          `json:"user,omitempty"`
 	MaxToolCalls         uint            `json:"max_tool_calls,omitempty"`
 	Prompt               json.RawMessage `json:"prompt,omitempty"`
-	// qwen
+	// passthrough
 	EnableThinking json.RawMessage `json:"enable_thinking,omitempty"`
 	// perplexity
 	Preset json.RawMessage `json:"preset,omitempty"`

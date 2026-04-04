@@ -36,23 +36,7 @@ export const CHANNEL_OPTIONS = [
     color: 'teal',
     label: 'Azure OpenAI',
   },
-  {
-    value: 34,
-    color: 'purple',
-    label: 'Cohere',
-  },
-  { value: 39, color: 'grey', label: 'Cloudflare' },
   { value: 43, color: 'blue', label: 'DeepSeek' },
-  {
-    value: 17,
-    color: 'orange',
-    label: '阿里通义千问',
-  },
-  {
-    value: 18,
-    color: 'blue',
-    label: '讯飞星火认知',
-  },
   {
     value: 26,
     color: 'purple',
@@ -63,31 +47,11 @@ export const CHANNEL_OPTIONS = [
     color: 'orange',
     label: 'Google Gemini',
   },
-  {
-    value: 11,
-    color: 'orange',
-    label: 'Google PaLM2',
-  },
   { value: 25, color: 'green', label: 'Moonshot' },
   { value: 20, color: 'green', label: 'OpenRouter' },
-  { value: 23, color: 'teal', label: '腾讯混元' },
-  { value: 31, color: 'green', label: '零一万物' },
   { value: 35, color: 'green', label: 'MiniMax' },
-  { value: 37, color: 'teal', label: 'Dify' },
-  { value: 38, color: 'blue', label: 'Jina' },
   { value: 40, color: 'purple', label: 'SiliconCloud' },
-  { value: 42, color: 'blue', label: 'Mistral AI' },
   { value: 8, color: 'pink', label: '自定义渠道' },
-  {
-    value: 45,
-    color: 'blue',
-    label: '字节火山方舟、豆包通用',
-  },
-  {
-    value: 48,
-    color: 'blue',
-    label: 'xAI',
-  },
 ];
 
 export const MODEL_TABLE_PAGE_SIZE = 10;

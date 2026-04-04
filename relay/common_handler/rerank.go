@@ -22,14 +22,14 @@ func RerankHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Respo
 	if common.DebugEnabled {
 		println("reranker response body: ", string(responseBody))
 	}
-	var jinaResp dto.RerankResponse
-	err = common.Unmarshal(responseBody, &jinaResp)
+	var rerankResp dto.RerankResponse
+	err = common.Unmarshal(responseBody, &rerankResp)
 	if err != nil {
 		return nil, types.NewOpenAIError(err, types.ErrorCodeBadResponseBody, http.StatusInternalServerError)
 	}
-	jinaResp.Usage.PromptTokens = jinaResp.Usage.TotalTokens
+	rerankResp.Usage.PromptTokens = rerankResp.Usage.TotalTokens
 
 	c.Writer.Header().Set("Content-Type", "application/json")
-	c.JSON(http.StatusOK, jinaResp)
-	return &jinaResp.Usage, nil
+	c.JSON(http.StatusOK, rerankResp)
+	return &rerankResp.Usage, nil
 }

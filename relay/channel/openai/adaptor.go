@@ -17,9 +17,7 @@ import (
 	"github.com/zhongruan0522/new-api/dto"
 	"github.com/zhongruan0522/new-api/logger"
 	"github.com/zhongruan0522/new-api/relay/channel"
-	"github.com/zhongruan0522/new-api/relay/channel/lingyiwanwu"
 
-	//"github.com/zhongruan0522/new-api/relay/channel/minimax"
 	"github.com/zhongruan0522/new-api/relay/channel/openrouter"
 	relaycommon "github.com/zhongruan0522/new-api/relay/common"
 	"github.com/zhongruan0522/new-api/relay/common_handler"
@@ -609,10 +607,6 @@ func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, info *relaycom
 
 func (a *Adaptor) GetModelList() []string {
 	switch a.ChannelType {
-	case constant.ChannelTypeLingYiWanWu:
-		return lingyiwanwu.ModelList
-	//case constant.ChannelTypeMiniMax:
-	//	return minimax.ModelList
 	case constant.ChannelTypeOpenRouter:
 		return openrouter.ModelList
 	default:
@@ -622,10 +616,6 @@ func (a *Adaptor) GetModelList() []string {
 
 func (a *Adaptor) GetChannelName() string {
 	switch a.ChannelType {
-	case constant.ChannelTypeLingYiWanWu:
-		return lingyiwanwu.ChannelName
-	//case constant.ChannelTypeMiniMax:
-	//	return minimax.ChannelName
 	case constant.ChannelTypeOpenRouter:
 		return openrouter.ChannelName
 	default:
