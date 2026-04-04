@@ -393,7 +393,11 @@ func SumUsedQuota(logType int, startTimestamp int64, endTimestamp int64, modelNa
 	if err != nil {
 		return stat, err
 	}
-	tx = tx.Where("type = ?", LogTypeConsume)
+	if logType != LogTypeUnknown {
+		tx = tx.Where("type = ?", logType)
+	} else {
+		tx = tx.Where("type = ?", LogTypeConsume)
+	}
 
 	// rpm和tpm查询（最近60秒）
 	rpmTpmQuery := LOG_DB.Table("logs").Select("count(*) rpm, sum(prompt_tokens) + sum(completion_tokens) tpm")
@@ -410,7 +414,11 @@ func SumUsedQuota(logType int, startTimestamp int64, endTimestamp int64, modelNa
 	if err != nil {
 		return stat, err
 	}
-	successQuery = successQuery.Where("type = ?", LogTypeConsume)
+	if logType != LogTypeUnknown {
+		successQuery = successQuery.Where("type = ?", logType)
+	} else {
+		successQuery = successQuery.Where("type = ?", LogTypeConsume)
+	}
 
 	// 失败次数查询
 	failQuery := LOG_DB.Table("logs").Select("count(*) fail_count")
@@ -439,6 +447,27 @@ func SumUsedQuota(logType int, startTimestamp int64, endTimestamp int64, modelNa
 	}
 
 	return stat, nil
+}
+
+// QueryRpmTpm 实时查询最近60秒的 RPM 和 TPM，供 DataExport 模式复用
+func QueryRpmTpm(username string, tokenName string, modelName string, channel int, group string) (rpm int, tpm int, err error) {
+	q := LOG_DB.Table("logs").Select("count(*) rpm, sum(prompt_tokens) + sum(completion_tokens) tpm")
+	q, buildErr := buildStatConditions(q, username, tokenName, 0, 0, modelName, channel, group)
+	if buildErr != nil {
+		return 0, 0, buildErr
+	}
+	q = q.Where("type = ?", LogTypeConsume)
+	q = q.Where("created_at >= ?", time.Now().Add(-60*time.Second).Unix())
+
+	var result struct {
+		Rpm int `json:"rpm"`
+		Tpm int `json:"tpm"`
+	}
+	if err := q.Scan(&result).Error; err != nil {
+		common.SysError("failed to query rpm/tpm stat: " + err.Error())
+		return 0, 0, errors.New("查询RPM/TPM统计数据失败")
+	}
+	return result.Rpm, result.Tpm, nil
 }
 
 func SumUsedToken(logType int, startTimestamp int64, endTimestamp int64, modelName string, username string, tokenName string) (token int) {
