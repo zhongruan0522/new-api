@@ -116,9 +116,16 @@ func GetLogsStat(c *gin.Context) {
 			common.ApiError(c, err)
 			return
 		}
+		// 从 logs 表实时查询 RPM/TPM（最近60秒），quota_data 是小时级预聚合无法提供实时指标
+		rpm, tpm, err := model.QueryRpmTpm(username, tokenName, modelName, channel, group)
+		if err != nil {
+			common.ApiError(c, err)
+			return
+		}
 		statData = model.Stat{
 			Quota:        qStat.Quota,
-			Tpm:          qStat.Tpm,
+			Rpm:          rpm,
+			Tpm:          tpm,
 			SuccessCount: qStat.SuccessCount,
 			FailCount:    qStat.FailCount,
 		}
@@ -156,9 +163,16 @@ func GetLogsSelfStat(c *gin.Context) {
 			common.ApiError(c, err)
 			return
 		}
+		// 从 logs 表实时查询 RPM/TPM（最近60秒）
+		rpm, tpm, err := model.QueryRpmTpm(username, tokenName, modelName, channel, group)
+		if err != nil {
+			common.ApiError(c, err)
+			return
+		}
 		statData = model.Stat{
 			Quota:        qStat.Quota,
-			Tpm:          qStat.Tpm,
+			Rpm:          rpm,
+			Tpm:          tpm,
 			SuccessCount: qStat.SuccessCount,
 			FailCount:    qStat.FailCount,
 		}
