@@ -44,13 +44,12 @@ const StoredMediaTable = ({
         title: t('ID'),
         dataIndex: 'id',
         key: 'id',
-        width: 220,
         render: (text, record) => {
           const id = record?.id || '';
           return (
             <Tooltip content={id} position='top'>
               <Paragraph
-                style={{ marginBottom: 0, maxWidth: 260 }}
+                style={{ marginBottom: 0 }}
                 ellipsis={{ rows: 1, showTooltip: false }}
                 copyable={{ content: id }}
               >
@@ -64,7 +63,6 @@ const StoredMediaTable = ({
         title: t('时间'),
         dataIndex: 'created_at',
         key: 'created_at',
-        width: 170,
         render: (text, record) => {
           return <>{record?.created_at ? timestamp2string(record.created_at) : '-'}</>;
         },
@@ -78,7 +76,7 @@ const StoredMediaTable = ({
           if (!url) return <Text type='tertiary'>-</Text>;
           return (
             <Paragraph
-              style={{ marginBottom: 0, maxWidth: 520 }}
+              style={{ marginBottom: 0 }}
               ellipsis={{ rows: 1, showTooltip: true }}
               copyable={{ content: url }}
             >
@@ -90,7 +88,6 @@ const StoredMediaTable = ({
       {
         title: t('操作'),
         key: 'actions',
-        width: 220,
         render: (text, record) => {
           const viewing = viewLoadingKey && record?.key === viewLoadingKey;
 
