@@ -146,7 +146,6 @@ const StoredMediaTable = ({
       rowKey='key'
       loading={loading}
       rowSelection={rowSelection}
-      scroll={{ x: 'max-content' }}
       className='rounded-xl overflow-hidden'
       size='middle'
       empty={
