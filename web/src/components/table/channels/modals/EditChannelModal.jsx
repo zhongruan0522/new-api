@@ -2178,8 +2178,6 @@ const EditChannelModal = (props) => {
                       />
                     )}
 
-                    )}
-
                     <Form.Select
                       field='image_auto_convert_to_url_mode'
                       label={t('多模态处理方式')}
