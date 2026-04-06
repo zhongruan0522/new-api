@@ -24,9 +24,10 @@ func GetRequestURL(info *relaycommon.RelayInfo) (string, error) {
 
 	switch info.RelayMode {
 	case constant.RelayModeChatCompletions:
-		return fmt.Sprintf("%s/v1/text/chatcompletion_v2", baseUrl), nil
+		// MiniMax 已兼容 OpenAI Chat 规范，直接使用标准路径
+		return fmt.Sprintf("%s/chat/completions", baseUrl), nil
 	case constant.RelayModeAudioSpeech:
-		return fmt.Sprintf("%s/v1/t2a_v2", baseUrl), nil
+		return fmt.Sprintf("%s/t2a_v2", baseUrl), nil
 	default:
 		return "", fmt.Errorf("unsupported relay mode: %d", info.RelayMode)
 	}

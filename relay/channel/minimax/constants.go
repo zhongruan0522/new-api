@@ -1,8 +1,16 @@
 package minimax
 
-// https://www.minimaxi.com/document/guides/chat-model/V2?id=65e0736ab2845de20908e2dd
+// MiniMax 模型列表
+// 文档: https://platform.minimaxi.com/docs/api-reference/text-openai-api
 
 var ModelList = []string{
+	"MiniMax-M2.7",
+	"MiniMax-M2.7-highspeed",
+	"MiniMax-M2.5",
+	"MiniMax-M2.5-highspeed",
+	"MiniMax-M2.1",
+	"MiniMax-M2.1-highspeed",
+	"MiniMax-M2",
 	"abab6.5-chat",
 	"abab6.5s-chat",
 	"abab6-chat",
@@ -14,9 +22,6 @@ var ModelList = []string{
 	"speech-02-turbo",
 	"speech-01-hd",
 	"speech-01-turbo",
-	"MiniMax-M2.1",
-	"MiniMax-M2.1-lightning",
-	"MiniMax-M2",
 }
 
 var ChannelName = "minimax"
