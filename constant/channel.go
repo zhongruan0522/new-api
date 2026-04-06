@@ -58,7 +58,7 @@ var ChannelBaseURLs = []string{
 	"",                                          // 32
 	"",                                          // 33 AWS
 	"",                                          // 34 (removed)
-	"https://api.minimax.chat",                  // 35 MiniMax
+	"https://api.minimaxi.com/v1",               // 35 MiniMax
 	"",                                          // 36 SunoAPI
 	"",                                          // 37 (removed)
 	"",                                          // 38 (removed)
