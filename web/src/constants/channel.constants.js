@@ -18,39 +18,19 @@ For commercial licensing, please contact support@quantumnous.com
 */
 
 export const CHANNEL_OPTIONS = [
-  { value: 1, color: 'green', label: 'OpenAI' },
-  { value: 4, color: 'grey', label: 'Ollama' },
-  {
-    value: 14,
-    color: 'indigo',
-    label: 'Anthropic Claude',
-  },
-  {
-    value: 33,
-    color: 'indigo',
-    label: 'AWS Claude',
-  },
-  { value: 41, color: 'blue', label: 'Vertex AI' },
-  {
-    value: 3,
-    color: 'teal',
-    label: 'Azure OpenAI',
-  },
+  { value: 14, color: 'indigo', label: 'Anthropic Claude' },
+  { value: 33, color: 'indigo', label: 'AWS Claude' },
+  { value: 3, color: 'teal', label: 'Azure OpenAI' },
   { value: 43, color: 'blue', label: 'DeepSeek' },
-  {
-    value: 26,
-    color: 'purple',
-    label: '智谱 GLM-4V',
-  },
-  {
-    value: 24,
-    color: 'orange',
-    label: 'Google Gemini',
-  },
-  { value: 25, color: 'green', label: 'Moonshot' },
-  { value: 20, color: 'green', label: 'OpenRouter' },
+  { value: 24, color: 'orange', label: 'Google Gemini' },
   { value: 35, color: 'green', label: 'MiniMax' },
+  { value: 25, color: 'green', label: 'Moonshot' },
+  { value: 4, color: 'grey', label: 'Ollama' },
+  { value: 1, color: 'green', label: 'OpenAI' },
+  { value: 20, color: 'green', label: 'OpenRouter' },
   { value: 40, color: 'purple', label: 'SiliconCloud' },
+  { value: 41, color: 'blue', label: 'Vertex AI' },
+  { value: 26, color: 'purple', label: '智谱 GLM-4V' },
   { value: 8, color: 'pink', label: '自定义渠道' },
 ];
 
