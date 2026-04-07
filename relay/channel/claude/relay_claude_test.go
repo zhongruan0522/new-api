@@ -29,8 +29,8 @@ func TestFormatClaudeResponseInfo_MessageStart(t *testing.T) {
 	if !ok {
 		t.Fatal("expected true")
 	}
-	if claudeInfo.Usage.PromptTokens != 100 {
-		t.Errorf("PromptTokens = %d, want 100", claudeInfo.Usage.PromptTokens)
+	if claudeInfo.Usage.PromptTokens != 180 {
+		t.Errorf("PromptTokens = %d, want 180", claudeInfo.Usage.PromptTokens)
 	}
 	if claudeInfo.Usage.PromptTokensDetails.CachedTokens != 30 {
 		t.Errorf("CachedTokens = %d, want 30", claudeInfo.Usage.PromptTokensDetails.CachedTokens)
@@ -50,7 +50,7 @@ func TestFormatClaudeResponseInfo_MessageDelta_FullUsage(t *testing.T) {
 	// message_start 先积累 usage
 	claudeInfo := &ClaudeResponseInfo{
 		Usage: &dto.Usage{
-			PromptTokens: 100,
+			PromptTokens: 180,
 			PromptTokensDetails: dto.InputTokenDetails{
 				CachedTokens:         30,
 				CachedCreationTokens: 50,
@@ -74,14 +74,14 @@ func TestFormatClaudeResponseInfo_MessageDelta_FullUsage(t *testing.T) {
 	if !ok {
 		t.Fatal("expected true")
 	}
-	if claudeInfo.Usage.PromptTokens != 100 {
-		t.Errorf("PromptTokens = %d, want 100", claudeInfo.Usage.PromptTokens)
+	if claudeInfo.Usage.PromptTokens != 180 {
+		t.Errorf("PromptTokens = %d, want 180", claudeInfo.Usage.PromptTokens)
 	}
 	if claudeInfo.Usage.CompletionTokens != 200 {
 		t.Errorf("CompletionTokens = %d, want 200", claudeInfo.Usage.CompletionTokens)
 	}
-	if claudeInfo.Usage.TotalTokens != 300 {
-		t.Errorf("TotalTokens = %d, want 300", claudeInfo.Usage.TotalTokens)
+	if claudeInfo.Usage.TotalTokens != 380 {
+		t.Errorf("TotalTokens = %d, want 380", claudeInfo.Usage.TotalTokens)
 	}
 	if !claudeInfo.Done {
 		t.Error("expected Done = true")
@@ -92,7 +92,7 @@ func TestFormatClaudeResponseInfo_MessageDelta_OnlyOutputTokens(t *testing.T) {
 	// 模拟 Bedrock: message_start 已积累 usage
 	claudeInfo := &ClaudeResponseInfo{
 		Usage: &dto.Usage{
-			PromptTokens: 100,
+			PromptTokens: 180,
 			PromptTokensDetails: dto.InputTokenDetails{
 				CachedTokens:         30,
 				CachedCreationTokens: 50,
@@ -117,14 +117,14 @@ func TestFormatClaudeResponseInfo_MessageDelta_OnlyOutputTokens(t *testing.T) {
 		t.Fatal("expected true")
 	}
 	// PromptTokens 应保持 message_start 的值（因为 message_delta 的 InputTokens=0，不更新）
-	if claudeInfo.Usage.PromptTokens != 100 {
-		t.Errorf("PromptTokens = %d, want 100", claudeInfo.Usage.PromptTokens)
+	if claudeInfo.Usage.PromptTokens != 180 {
+		t.Errorf("PromptTokens = %d, want 180", claudeInfo.Usage.PromptTokens)
 	}
 	if claudeInfo.Usage.CompletionTokens != 200 {
 		t.Errorf("CompletionTokens = %d, want 200", claudeInfo.Usage.CompletionTokens)
 	}
-	if claudeInfo.Usage.TotalTokens != 300 {
-		t.Errorf("TotalTokens = %d, want 300", claudeInfo.Usage.TotalTokens)
+	if claudeInfo.Usage.TotalTokens != 380 {
+		t.Errorf("TotalTokens = %d, want 380", claudeInfo.Usage.TotalTokens)
 	}
 	// cache 字段应保持 message_start 的值
 	if claudeInfo.Usage.PromptTokensDetails.CachedTokens != 30 {

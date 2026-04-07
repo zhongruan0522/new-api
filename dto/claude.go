@@ -26,6 +26,7 @@ type ClaudeMediaMessage struct {
 	Role         string               `json:"role,omitempty"`
 	Thinking     *string              `json:"thinking,omitempty"`
 	Signature    string               `json:"signature,omitempty"`
+	Data         string               `json:"data,omitempty"`
 	Delta        string               `json:"delta,omitempty"`
 	CacheControl json.RawMessage      `json:"cache_control,omitempty"`
 	// tool_calls
@@ -34,6 +35,7 @@ type ClaudeMediaMessage struct {
 	Input     any    `json:"input,omitempty"`
 	Content   any    `json:"content,omitempty"`
 	ToolUseId string `json:"tool_use_id,omitempty"`
+	IsError   *bool  `json:"is_error,omitempty"`
 }
 
 func (c *ClaudeMediaMessage) SetText(s string) {
@@ -425,6 +427,11 @@ func ProcessTools(tools []any) ([]*Tool, []*ClaudeWebSearchTool) {
 type Thinking struct {
 	Type         string `json:"type"`
 	BudgetTokens *int   `json:"budget_tokens,omitempty"`
+	Display      string `json:"display,omitempty"`
+}
+
+type ClaudeOutputConfig struct {
+	Effort string `json:"effort,omitempty"`
 }
 
 func (c *Thinking) GetBudgetTokens() int {
@@ -569,4 +576,82 @@ func (u *ClaudeUsage) GetCacheCreationTotalTokens() int {
 
 type ClaudeServerToolUse struct {
 	WebSearchRequests int `json:"web_search_requests"`
+}
+
+// ClaudeUsageToOpenAIUsage normalizes Claude's split prompt accounting into OpenAI-style usage fields.
+func ClaudeUsageToOpenAIUsage(claudeUsage *ClaudeUsage) *Usage {
+	if claudeUsage == nil {
+		return nil
+	}
+
+	cacheCreationTokens := claudeUsage.GetCacheCreationTotalTokens()
+	promptTokens := claudeUsage.InputTokens + claudeUsage.CacheReadInputTokens + cacheCreationTokens
+	completionTokens := claudeUsage.OutputTokens
+
+	usage := &Usage{
+		PromptTokens:         promptTokens,
+		CompletionTokens:     completionTokens,
+		TotalTokens:          promptTokens + completionTokens,
+		PromptCacheHitTokens: claudeUsage.CacheReadInputTokens,
+		InputTokens:          promptTokens,
+		OutputTokens:         completionTokens,
+		PromptTokensDetails: InputTokenDetails{
+			CachedTokens:         claudeUsage.CacheReadInputTokens,
+			CachedCreationTokens: cacheCreationTokens,
+		},
+		CompletionTokenDetails:      OutputTokenDetails{},
+		ClaudeCacheCreation5mTokens: claudeUsage.GetCacheCreation5mTokens(),
+		ClaudeCacheCreation1hTokens: claudeUsage.GetCacheCreation1hTokens(),
+	}
+
+	usage.InputTokensDetails = &InputTokenDetails{
+		CachedTokens:         claudeUsage.CacheReadInputTokens,
+		CachedCreationTokens: cacheCreationTokens,
+	}
+
+	return usage
+}
+
+// OpenAIUsageToClaudeUsage converts OpenAI-style total prompt usage back into Claude's split usage fields.
+func OpenAIUsageToClaudeUsage(openAIUsage *Usage) *ClaudeUsage {
+	if openAIUsage == nil {
+		return nil
+	}
+
+	promptTokens := openAIUsage.PromptTokens
+	if promptTokens == 0 {
+		promptTokens = openAIUsage.InputTokens
+	}
+
+	completionTokens := openAIUsage.CompletionTokens
+	if completionTokens == 0 {
+		completionTokens = openAIUsage.OutputTokens
+	}
+
+	cacheReadTokens := openAIUsage.PromptTokensDetails.CachedTokens
+	cacheCreationTokens := openAIUsage.PromptTokensDetails.CachedCreationTokens
+	if cacheCreationTokens == 0 {
+		cacheCreationTokens = openAIUsage.ClaudeCacheCreation5mTokens + openAIUsage.ClaudeCacheCreation1hTokens
+	}
+
+	inputTokens := promptTokens - cacheReadTokens - cacheCreationTokens
+	if inputTokens < 0 {
+		inputTokens = 0
+	}
+
+	usage := &ClaudeUsage{
+		InputTokens:              inputTokens,
+		CacheCreationInputTokens: cacheCreationTokens,
+		CacheReadInputTokens:     cacheReadTokens,
+		OutputTokens:             completionTokens,
+	}
+
+	if openAIUsage.ClaudeCacheCreation5mTokens > 0 || openAIUsage.ClaudeCacheCreation1hTokens > 0 {
+		usage.CacheCreation = &ClaudeCacheCreationUsage{
+			Ephemeral5mInputTokens: openAIUsage.ClaudeCacheCreation5mTokens,
+			Ephemeral1hInputTokens: openAIUsage.ClaudeCacheCreation1hTokens,
+		}
+	}
+
+	return usage
 }

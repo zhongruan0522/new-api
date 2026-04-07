@@ -37,6 +37,9 @@ type ClaudeConvertInfo struct {
 	Usage            *dto.Usage
 	FinishReason     string
 	Done             bool
+	// PendingReasoningSignature buffers a Claude/OpenAI reasoning signature until
+	// a thinking block is available to attach it to.
+	PendingReasoningSignature string
 
 	ToolCallBaseIndex      int
 	ToolCallMaxIndexOffset int
