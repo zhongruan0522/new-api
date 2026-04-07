@@ -782,12 +782,8 @@ func extractTextFromGeminiParts(parts []dto.GeminiPart) string {
 // ResponseOpenAI2Gemini 将 OpenAI 响应转换为 Gemini 格式
 func ResponseOpenAI2Gemini(openAIResponse *dto.OpenAITextResponse, info *relaycommon.RelayInfo) *dto.GeminiChatResponse {
 	geminiResponse := &dto.GeminiChatResponse{
-		Candidates: make([]dto.GeminiChatCandidate, 0, len(openAIResponse.Choices)),
-		UsageMetadata: dto.GeminiUsageMetadata{
-			PromptTokenCount:     openAIResponse.PromptTokens,
-			CandidatesTokenCount: openAIResponse.CompletionTokens,
-			TotalTokenCount:      openAIResponse.PromptTokens + openAIResponse.CompletionTokens,
-		},
+		Candidates:    make([]dto.GeminiChatCandidate, 0, len(openAIResponse.Choices)),
+		UsageMetadata: OpenAIUsageToGeminiUsage(openAIResponse.Usage),
 	}
 
 	for _, choice := range openAIResponse.Choices {
@@ -818,37 +814,28 @@ func ResponseOpenAI2Gemini(openAIResponse *dto.OpenAITextResponse, info *relayco
 			Parts: make([]dto.GeminiPart, 0),
 		}
 
-		// 处理工具调用
-		toolCalls := choice.Message.ParseToolCalls()
-		if len(toolCalls) > 0 {
-			for _, toolCall := range toolCalls {
-				// 解析参数
-				var args map[string]interface{}
-				if toolCall.Function.Arguments != "" {
-					if err := json.Unmarshal([]byte(toolCall.Function.Arguments), &args); err != nil {
-						args = map[string]interface{}{"arguments": toolCall.Function.Arguments}
-					}
-				} else {
-					args = make(map[string]interface{})
-				}
+		reasoningContent := choice.Message.ReasoningContent
+		if reasoningContent == "" {
+			reasoningContent = choice.Message.Reasoning
+		}
+		if reasoningContent != "" {
+			content.Parts = append(content.Parts, dto.GeminiPart{
+				Text:    reasoningContent,
+				Thought: true,
+			})
+		}
 
-				part := dto.GeminiPart{
-					FunctionCall: &dto.FunctionCall{
-						FunctionName: toolCall.Function.Name,
-						Arguments:    args,
-					},
-				}
-				content.Parts = append(content.Parts, part)
-			}
-		} else {
-			// 处理文本内容
-			textContent := choice.Message.StringContent()
-			if textContent != "" {
-				part := dto.GeminiPart{
-					Text: textContent,
-				}
-				content.Parts = append(content.Parts, part)
-			}
+		if textContent := choice.Message.StringContent(); textContent != "" {
+			content.Parts = append(content.Parts, dto.GeminiPart{Text: textContent})
+		}
+
+		for _, toolCall := range choice.Message.ParseToolCalls() {
+			content.Parts = append(content.Parts, dto.GeminiPart{
+				FunctionCall: &dto.FunctionCall{
+					FunctionName: toolCall.Function.Name,
+					Arguments:    parseOpenAIFunctionArguments(toolCall.Function.Arguments),
+				},
+			})
 		}
 
 		candidate.Content = content
@@ -864,7 +851,7 @@ func StreamResponseOpenAI2Gemini(openAIResponse *dto.ChatCompletionsStreamRespon
 	hasContent := false
 	hasFinishReason := false
 	for _, choice := range openAIResponse.Choices {
-		if len(choice.Delta.GetContentString()) > 0 || (choice.Delta.ToolCalls != nil && len(choice.Delta.ToolCalls) > 0) {
+		if len(choice.Delta.GetContentString()) > 0 || len(choice.Delta.GetReasoningContent()) > 0 || (choice.Delta.ToolCalls != nil && len(choice.Delta.ToolCalls) > 0) {
 			hasContent = true
 		}
 		if choice.FinishReason != nil {
@@ -887,9 +874,9 @@ func StreamResponseOpenAI2Gemini(openAIResponse *dto.ChatCompletionsStreamRespon
 	}
 
 	if openAIResponse.Usage != nil {
-		geminiResponse.UsageMetadata.PromptTokenCount = openAIResponse.Usage.PromptTokens
-		geminiResponse.UsageMetadata.CandidatesTokenCount = openAIResponse.Usage.CompletionTokens
-		geminiResponse.UsageMetadata.TotalTokenCount = openAIResponse.Usage.TotalTokens
+		if usageMetadata := OpenAIUsageToGeminiUsage(*openAIResponse.Usage); HasGeminiUsageMetadata(usageMetadata) {
+			geminiResponse.UsageMetadata = usageMetadata
+		}
 	}
 
 	for _, choice := range openAIResponse.Choices {
@@ -922,36 +909,24 @@ func StreamResponseOpenAI2Gemini(openAIResponse *dto.ChatCompletionsStreamRespon
 			Parts: make([]dto.GeminiPart, 0),
 		}
 
-		// 处理工具调用
-		if choice.Delta.ToolCalls != nil {
-			for _, toolCall := range choice.Delta.ToolCalls {
-				// 解析参数
-				var args map[string]interface{}
-				if toolCall.Function.Arguments != "" {
-					if err := json.Unmarshal([]byte(toolCall.Function.Arguments), &args); err != nil {
-						args = map[string]interface{}{"arguments": toolCall.Function.Arguments}
-					}
-				} else {
-					args = make(map[string]interface{})
-				}
+		if reasoningContent := choice.Delta.GetReasoningContent(); reasoningContent != "" {
+			content.Parts = append(content.Parts, dto.GeminiPart{
+				Text:    reasoningContent,
+				Thought: true,
+			})
+		}
 
-				part := dto.GeminiPart{
-					FunctionCall: &dto.FunctionCall{
-						FunctionName: toolCall.Function.Name,
-						Arguments:    args,
-					},
-				}
-				content.Parts = append(content.Parts, part)
-			}
-		} else {
-			// 处理文本内容
-			textContent := choice.Delta.GetContentString()
-			if textContent != "" {
-				part := dto.GeminiPart{
-					Text: textContent,
-				}
-				content.Parts = append(content.Parts, part)
-			}
+		if textContent := choice.Delta.GetContentString(); textContent != "" {
+			content.Parts = append(content.Parts, dto.GeminiPart{Text: textContent})
+		}
+
+		for _, toolCall := range choice.Delta.ToolCalls {
+			content.Parts = append(content.Parts, dto.GeminiPart{
+				FunctionCall: &dto.FunctionCall{
+					FunctionName: toolCall.Function.Name,
+					Arguments:    parseOpenAIFunctionArguments(toolCall.Function.Arguments),
+				},
+			})
 		}
 
 		candidate.Content = content
@@ -959,4 +934,17 @@ func StreamResponseOpenAI2Gemini(openAIResponse *dto.ChatCompletionsStreamRespon
 	}
 
 	return geminiResponse
+}
+
+// parseOpenAIFunctionArguments keeps Gemini function-call args structured when the OpenAI payload is valid JSON.
+func parseOpenAIFunctionArguments(arguments string) any {
+	if strings.TrimSpace(arguments) == "" {
+		return map[string]interface{}{}
+	}
+
+	var args any
+	if err := common.Unmarshal([]byte(arguments), &args); err == nil {
+		return args
+	}
+	return map[string]interface{}{"arguments": arguments}
 }
