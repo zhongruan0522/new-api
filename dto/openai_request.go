@@ -290,15 +290,18 @@ func (r *GeneralOpenAIRequest) ParseInput() []string {
 }
 
 type Message struct {
-	Role             string          `json:"role"`
-	Content          any             `json:"content"`
-	Name             *string         `json:"name,omitempty"`
-	Prefix           *bool           `json:"prefix,omitempty"`
-	ReasoningContent string          `json:"reasoning_content,omitempty"`
-	Reasoning        string          `json:"reasoning,omitempty"`
-	ToolCalls        json.RawMessage `json:"tool_calls,omitempty"`
-	ToolCallId       string          `json:"tool_call_id,omitempty"`
-	parsedContent    []MediaContent
+	Role                     string          `json:"role"`
+	Content                  any             `json:"content"`
+	Name                     *string         `json:"name,omitempty"`
+	Prefix                   *bool           `json:"prefix,omitempty"`
+	ReasoningContent         string          `json:"reasoning_content,omitempty"`
+	Reasoning                string          `json:"reasoning,omitempty"`
+	ReasoningSignature       string          `json:"reasoning_signature,omitempty"`
+	RedactedReasoningContent string          `json:"redacted_reasoning_content,omitempty"`
+	ToolCalls                json.RawMessage `json:"tool_calls,omitempty"`
+	ToolCallId               string          `json:"tool_call_id,omitempty"`
+	ToolCallIsError          *bool           `json:"tool_call_is_error,omitempty"`
+	parsedContent            []MediaContent
 	//parsedStringContent *string
 }
 

@@ -160,6 +160,11 @@ func RequestOpenAI2ClaudeMessage(c *gin.Context, textRequest dto.GeneralOpenAIRe
 				Type:         "enabled",
 				BudgetTokens: common.GetPointer[int](4096),
 			}
+		case "xhigh", "max":
+			claudeRequest.Thinking = &dto.Thinking{
+				Type:         "enabled",
+				BudgetTokens: common.GetPointer[int](8192),
+			}
 		}
 	}
 
@@ -216,9 +221,6 @@ func RequestOpenAI2ClaudeMessage(c *gin.Context, textRequest dto.GeneralOpenAIRe
 				// delete last message
 				formatMessages = formatMessages[:len(formatMessages)-1]
 			}
-		}
-		if fmtMessage.Content == nil {
-			fmtMessage.SetStringContent("...")
 		}
 		formatMessages = append(formatMessages, fmtMessage)
 		lastMessage = fmtMessage
@@ -284,6 +286,7 @@ func RequestOpenAI2ClaudeMessage(c *gin.Context, textRequest dto.GeneralOpenAIRe
 						Type:      "tool_result",
 						ToolUseId: message.ToolCallId,
 						Content:   message.Content,
+						IsError:   message.ToolCallIsError,
 					})
 					claudeMessages[len(claudeMessages)-1] = lastMessage
 					continue
@@ -294,13 +297,27 @@ func RequestOpenAI2ClaudeMessage(c *gin.Context, textRequest dto.GeneralOpenAIRe
 							Type:      "tool_result",
 							ToolUseId: message.ToolCallId,
 							Content:   message.Content,
+							IsError:   message.ToolCallIsError,
 						},
 					}
 				}
-			} else if message.IsStringContent() && message.ToolCalls == nil {
+			} else if message.IsStringContent() && message.ToolCalls == nil && message.ReasoningContent == "" && message.ReasoningSignature == "" && message.RedactedReasoningContent == "" {
 				claudeMessage.Content = message.StringContent()
 			} else {
 				claudeMediaMessages := make([]dto.ClaudeMediaMessage, 0)
+				if message.Role == "assistant" {
+					if message.ReasoningContent != "" || message.ReasoningSignature != "" {
+						claudeThinking := dto.ClaudeMediaMessage{Type: "thinking", Signature: message.ReasoningSignature}
+						claudeThinking.Thinking = common.GetPointer[string](message.ReasoningContent)
+						claudeMediaMessages = append(claudeMediaMessages, claudeThinking)
+					}
+					if message.RedactedReasoningContent != "" {
+						claudeMediaMessages = append(claudeMediaMessages, dto.ClaudeMediaMessage{
+							Type: "redacted_thinking",
+							Data: message.RedactedReasoningContent,
+						})
+					}
+				}
 				for _, mediaMessage := range message.ParseContent() {
 					claudeMediaMessage := dto.ClaudeMediaMessage{
 						Type: mediaMessage.Type,
@@ -388,6 +405,9 @@ func StreamResponseClaude2OpenAI(claudeResponse *dto.ClaudeResponse) *dto.ChatCo
 			if claudeResponse.ContentBlock.Type == "text" && claudeResponse.ContentBlock.Text != nil {
 				choice.Delta.SetContentString(*claudeResponse.ContentBlock.Text)
 			}
+			if claudeResponse.ContentBlock.Type == "redacted_thinking" && claudeResponse.ContentBlock.Data != "" {
+				choice.Delta.RedactedReasoningContent = common.GetPointer[string](claudeResponse.ContentBlock.Data)
+			}
 			if claudeResponse.ContentBlock.Type == "tool_use" {
 				tools = append(tools, dto.ToolCallResponse{
 					Index: common.GetPointer(fcIdx),
@@ -415,9 +435,9 @@ func StreamResponseClaude2OpenAI(claudeResponse *dto.ClaudeResponse) *dto.ChatCo
 					},
 				})
 			case "signature_delta":
-				// 加密的不处理
-				signatureContent := "\n"
-				choice.Delta.ReasoningContent = &signatureContent
+				if claudeResponse.Delta.Signature != "" {
+					choice.Delta.ReasoningSignature = common.GetPointer[string](claudeResponse.Delta.Signature)
+				}
 			case "thinking_delta":
 				choice.Delta.ReasoningContent = claudeResponse.Delta.Thinking
 			}
@@ -451,16 +471,11 @@ func ResponseClaude2OpenAI(claudeResponse *dto.ClaudeResponse) *dto.OpenAITextRe
 		Object:  "chat.completion",
 		Created: common.GetTimestamp(),
 	}
-	var responseText string
-	var responseThinking string
-	if len(claudeResponse.Content) > 0 {
-		responseText = claudeResponse.Content[0].GetText()
-		if claudeResponse.Content[0].Thinking != nil {
-			responseThinking = *claudeResponse.Content[0].Thinking
-		}
-	}
 	tools := make([]dto.ToolCallResponse, 0)
-	thinkingContent := ""
+	var responseText strings.Builder
+	var thinkingContent strings.Builder
+	var thinkingSignature string
+	var redactedReasoning strings.Builder
 
 	fullTextResponse.Id = claudeResponse.Id
 	for _, message := range claudeResponse.Content {
@@ -476,12 +491,16 @@ func ResponseClaude2OpenAI(claudeResponse *dto.ClaudeResponse) *dto.OpenAITextRe
 				},
 			})
 		case "thinking":
-			// 加密的不管， 只输出明文的推理过程
 			if message.Thinking != nil {
-				thinkingContent = *message.Thinking
+				thinkingContent.WriteString(*message.Thinking)
 			}
+			if message.Signature != "" {
+				thinkingSignature = message.Signature
+			}
+		case "redacted_thinking":
+			redactedReasoning.WriteString(message.Data)
 		case "text":
-			responseText = message.GetText()
+			responseText.WriteString(message.GetText())
 		}
 	}
 	choice := dto.OpenAITextResponseChoice{
@@ -491,17 +510,19 @@ func ResponseClaude2OpenAI(claudeResponse *dto.ClaudeResponse) *dto.OpenAITextRe
 		},
 		FinishReason: stopReasonClaude2OpenAI(claudeResponse.StopReason),
 	}
-	choice.SetStringContent(responseText)
-	if len(responseThinking) > 0 {
-		choice.ReasoningContent = responseThinking
-	}
+	choice.SetStringContent(responseText.String())
 	if len(tools) > 0 {
 		choice.Message.SetToolCalls(tools)
 	}
-	choice.Message.ReasoningContent = thinkingContent
+	choice.Message.ReasoningContent = thinkingContent.String()
+	choice.Message.ReasoningSignature = thinkingSignature
+	choice.Message.RedactedReasoningContent = redactedReasoning.String()
 	fullTextResponse.Model = claudeResponse.Model
 	choices = append(choices, choice)
 	fullTextResponse.Choices = choices
+	if usage := dto.ClaudeUsageToOpenAIUsage(claudeResponse.Usage); usage != nil {
+		fullTextResponse.Usage = *usage
+	}
 	return &fullTextResponse
 }
 
@@ -523,20 +544,24 @@ func buildMessageDeltaPatchUsage(claudeResponse *dto.ClaudeResponse, claudeInfo 
 	if claudeInfo == nil || claudeInfo.Usage == nil {
 		return usage
 	}
+	localUsage := dto.OpenAIUsageToClaudeUsage(claudeInfo.Usage)
+	if localUsage == nil {
+		return usage
+	}
 
-	if usage.InputTokens == 0 && claudeInfo.Usage.PromptTokens > 0 {
-		usage.InputTokens = claudeInfo.Usage.PromptTokens
+	if usage.InputTokens == 0 && localUsage.InputTokens > 0 {
+		usage.InputTokens = localUsage.InputTokens
 	}
-	if usage.CacheReadInputTokens == 0 && claudeInfo.Usage.PromptTokensDetails.CachedTokens > 0 {
-		usage.CacheReadInputTokens = claudeInfo.Usage.PromptTokensDetails.CachedTokens
+	if usage.CacheReadInputTokens == 0 && localUsage.CacheReadInputTokens > 0 {
+		usage.CacheReadInputTokens = localUsage.CacheReadInputTokens
 	}
-	if usage.CacheCreationInputTokens == 0 && claudeInfo.Usage.PromptTokensDetails.CachedCreationTokens > 0 {
-		usage.CacheCreationInputTokens = claudeInfo.Usage.PromptTokensDetails.CachedCreationTokens
+	if usage.CacheCreationInputTokens == 0 && localUsage.CacheCreationInputTokens > 0 {
+		usage.CacheCreationInputTokens = localUsage.CacheCreationInputTokens
 	}
-	if usage.CacheCreation == nil && (claudeInfo.Usage.ClaudeCacheCreation5mTokens > 0 || claudeInfo.Usage.ClaudeCacheCreation1hTokens > 0) {
+	if usage.CacheCreation == nil && localUsage.CacheCreation != nil {
 		usage.CacheCreation = &dto.ClaudeCacheCreationUsage{
-			Ephemeral5mInputTokens: claudeInfo.Usage.ClaudeCacheCreation5mTokens,
-			Ephemeral1hInputTokens: claudeInfo.Usage.ClaudeCacheCreation1hTokens,
+			Ephemeral5mInputTokens: localUsage.CacheCreation.Ephemeral5mInputTokens,
+			Ephemeral1hInputTokens: localUsage.CacheCreation.Ephemeral1hInputTokens,
 		}
 	}
 	return usage
@@ -601,12 +626,7 @@ func FormatClaudeResponseInfo(claudeResponse *dto.ClaudeResponse, oaiResponse *d
 
 		// message_start, 获取usage
 		if claudeResponse.Message != nil && claudeResponse.Message.Usage != nil {
-			claudeInfo.Usage.PromptTokens = claudeResponse.Message.Usage.InputTokens
-			claudeInfo.Usage.PromptTokensDetails.CachedTokens = claudeResponse.Message.Usage.CacheReadInputTokens
-			claudeInfo.Usage.PromptTokensDetails.CachedCreationTokens = claudeResponse.Message.Usage.CacheCreationInputTokens
-			claudeInfo.Usage.ClaudeCacheCreation5mTokens = claudeResponse.Message.Usage.GetCacheCreation5mTokens()
-			claudeInfo.Usage.ClaudeCacheCreation1hTokens = claudeResponse.Message.Usage.GetCacheCreation1hTokens()
-			claudeInfo.Usage.CompletionTokens = claudeResponse.Message.Usage.OutputTokens
+			claudeInfo.Usage = dto.ClaudeUsageToOpenAIUsage(claudeResponse.Message.Usage)
 		}
 	} else if claudeResponse.Type == "content_block_delta" {
 		if claudeResponse.Delta != nil {
@@ -620,26 +640,20 @@ func FormatClaudeResponseInfo(claudeResponse *dto.ClaudeResponse, oaiResponse *d
 	} else if claudeResponse.Type == "message_delta" {
 		// 最终的usage获取
 		if claudeResponse.Usage != nil {
-			if claudeResponse.Usage.InputTokens > 0 {
-				// 不叠加，只取最新的
-				claudeInfo.Usage.PromptTokens = claudeResponse.Usage.InputTokens
+			updatedUsage := dto.ClaudeUsageToOpenAIUsage(claudeResponse.Usage)
+			if updatedUsage != nil {
+				if updatedUsage.PromptTokens == 0 && claudeInfo.Usage != nil && claudeInfo.Usage.PromptTokens > 0 {
+					updatedUsage.PromptTokens = claudeInfo.Usage.PromptTokens
+					updatedUsage.InputTokens = claudeInfo.Usage.InputTokens
+					updatedUsage.PromptCacheHitTokens = claudeInfo.Usage.PromptCacheHitTokens
+					updatedUsage.PromptTokensDetails = claudeInfo.Usage.PromptTokensDetails
+					updatedUsage.InputTokensDetails = claudeInfo.Usage.InputTokensDetails
+					updatedUsage.ClaudeCacheCreation5mTokens = claudeInfo.Usage.ClaudeCacheCreation5mTokens
+					updatedUsage.ClaudeCacheCreation1hTokens = claudeInfo.Usage.ClaudeCacheCreation1hTokens
+				}
+				updatedUsage.TotalTokens = updatedUsage.PromptTokens + updatedUsage.CompletionTokens
+				claudeInfo.Usage = updatedUsage
 			}
-			if claudeResponse.Usage.CacheReadInputTokens > 0 {
-				claudeInfo.Usage.PromptTokensDetails.CachedTokens = claudeResponse.Usage.CacheReadInputTokens
-			}
-			if claudeResponse.Usage.CacheCreationInputTokens > 0 {
-				claudeInfo.Usage.PromptTokensDetails.CachedCreationTokens = claudeResponse.Usage.CacheCreationInputTokens
-			}
-			if cacheCreation5m := claudeResponse.Usage.GetCacheCreation5mTokens(); cacheCreation5m > 0 {
-				claudeInfo.Usage.ClaudeCacheCreation5mTokens = cacheCreation5m
-			}
-			if cacheCreation1h := claudeResponse.Usage.GetCacheCreation1hTokens(); cacheCreation1h > 0 {
-				claudeInfo.Usage.ClaudeCacheCreation1hTokens = cacheCreation1h
-			}
-			if claudeResponse.Usage.OutputTokens > 0 {
-				claudeInfo.Usage.CompletionTokens = claudeResponse.Usage.OutputTokens
-			}
-			claudeInfo.Usage.TotalTokens = claudeInfo.Usage.PromptTokens + claudeInfo.Usage.CompletionTokens
 		}
 
 		// 判断是否完整
@@ -766,13 +780,7 @@ func HandleClaudeResponseData(c *gin.Context, info *relaycommon.RelayInfo, claud
 		claudeInfo.Usage = &dto.Usage{}
 	}
 	if claudeResponse.Usage != nil {
-		claudeInfo.Usage.PromptTokens = claudeResponse.Usage.InputTokens
-		claudeInfo.Usage.CompletionTokens = claudeResponse.Usage.OutputTokens
-		claudeInfo.Usage.TotalTokens = claudeResponse.Usage.InputTokens + claudeResponse.Usage.OutputTokens
-		claudeInfo.Usage.PromptTokensDetails.CachedTokens = claudeResponse.Usage.CacheReadInputTokens
-		claudeInfo.Usage.PromptTokensDetails.CachedCreationTokens = claudeResponse.Usage.CacheCreationInputTokens
-		claudeInfo.Usage.ClaudeCacheCreation5mTokens = claudeResponse.Usage.GetCacheCreation5mTokens()
-		claudeInfo.Usage.ClaudeCacheCreation1hTokens = claudeResponse.Usage.GetCacheCreation1hTokens()
+		claudeInfo.Usage = dto.ClaudeUsageToOpenAIUsage(claudeResponse.Usage)
 	}
 	var responseData []byte
 	switch info.RelayFormat {

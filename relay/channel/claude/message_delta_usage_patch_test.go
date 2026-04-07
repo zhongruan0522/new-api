@@ -3,12 +3,12 @@ package claude
 import (
 	"testing"
 
-	"github.com/zhongruan0522/new-api/dto"
-	relaycommon "github.com/zhongruan0522/new-api/relay/common"
-	"github.com/zhongruan0522/new-api/setting/model_setting"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/tidwall/gjson"
+	"github.com/zhongruan0522/new-api/dto"
+	relaycommon "github.com/zhongruan0522/new-api/relay/common"
+	"github.com/zhongruan0522/new-api/setting/model_setting"
 )
 
 func TestPatchClaudeMessageDeltaUsageDataPreserveUnknownFields(t *testing.T) {
@@ -68,7 +68,7 @@ func TestBuildMessageDeltaPatchUsage(t *testing.T) {
 		claudeResponse := &dto.ClaudeResponse{Usage: &dto.ClaudeUsage{OutputTokens: 53}}
 		claudeInfo := &ClaudeResponseInfo{
 			Usage: &dto.Usage{
-				PromptTokens: 100,
+				PromptTokens: 180,
 				PromptTokensDetails: dto.InputTokenDetails{
 					CachedTokens:         30,
 					CachedCreationTokens: 50,
@@ -96,7 +96,7 @@ func TestBuildMessageDeltaPatchUsage(t *testing.T) {
 			CacheCreationInputTokens: 6,
 		}}
 		claudeInfo := &ClaudeResponseInfo{Usage: &dto.Usage{
-			PromptTokens: 100,
+			PromptTokens: 180,
 			PromptTokensDetails: dto.InputTokenDetails{
 				CachedTokens:         30,
 				CachedCreationTokens: 50,
