@@ -1,0 +1,224 @@
+package anthropic
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"net/http"
+	"strings"
+
+	"github.com/looplj/axonhub/llm"
+	"github.com/looplj/axonhub/llm/httpclient"
+	"github.com/looplj/axonhub/llm/internal/pkg/xjson"
+	transformer "github.com/looplj/axonhub/llm/transformer"
+)
+
+// InboundTransformer implements transformer.Inbound for Anthropic format.
+type InboundTransformer struct{}
+
+// NewInboundTransformer creates a new Anthropic InboundTransformer.
+func NewInboundTransformer() *InboundTransformer {
+	return &InboundTransformer{}
+}
+
+func (t *InboundTransformer) APIFormat() llm.APIFormat {
+	return llm.APIFormatAnthropicMessage
+}
+
+// TransformRequest transforms Anthropic HTTP request to ChatCompletionRequest.
+//
+//nolint:maintidx
+func (t *InboundTransformer) TransformRequest(ctx context.Context, httpReq *httpclient.Request) (*llm.Request, error) {
+	if httpReq == nil {
+		return nil, fmt.Errorf("%w: http request is nil", transformer.ErrInvalidRequest)
+	}
+
+	if len(httpReq.Body) == 0 {
+		return nil, fmt.Errorf("%w: request body is empty", transformer.ErrInvalidRequest)
+	}
+
+	// Check content type
+	contentType := httpReq.Headers.Get("Content-Type")
+	if contentType == "" {
+		contentType = httpReq.Headers.Get("Content-Type")
+	}
+
+	if !strings.Contains(strings.ToLower(contentType), "application/json") {
+		return nil, fmt.Errorf("%w: unsupported content type: %s", transformer.ErrInvalidRequest, contentType)
+	}
+
+	var anthropicReq MessageRequest
+
+	err := json.Unmarshal(httpReq.Body, &anthropicReq)
+	if err != nil {
+		return nil, fmt.Errorf("%w: failed to decode anthropic request: %w", transformer.ErrInvalidRequest, err)
+	}
+
+	// Validate required fields
+	if anthropicReq.Model == "" {
+		return nil, fmt.Errorf("%w: model is required", transformer.ErrInvalidRequest)
+	}
+
+	if len(anthropicReq.Messages) == 0 {
+		return nil, fmt.Errorf("%w: messages are required", transformer.ErrInvalidRequest)
+	}
+
+	if anthropicReq.MaxTokens <= 0 {
+		return nil, fmt.Errorf("%w: max_tokens is required and must be positive", transformer.ErrInvalidRequest)
+	}
+
+	// Validate system prompt format
+	if anthropicReq.System != nil {
+		if anthropicReq.System.Prompt == nil && len(anthropicReq.System.MultiplePrompts) > 0 {
+			// Validate that all system prompts are text type
+			for _, prompt := range anthropicReq.System.MultiplePrompts {
+				if prompt.Type != "text" {
+					return nil, fmt.Errorf("%w: system prompt must be text", transformer.ErrInvalidRequest)
+				}
+			}
+		}
+	}
+
+	// Validate thinking configuration
+	if anthropicReq.Thinking != nil {
+		switch anthropicReq.Thinking.Type {
+		case "disabled":
+			// valid
+		case "enabled":
+			if anthropicReq.Thinking.BudgetTokens <= 0 {
+				return nil, fmt.Errorf("%w: budget_tokens is required and must be positive when thinking type is enabled", transformer.ErrInvalidRequest)
+			}
+		case "adaptive":
+			// output_config is optional for adaptive thinking (defaults to "high" effort upstream)
+			if anthropicReq.OutputConfig != nil && anthropicReq.OutputConfig.Effort != "" {
+				switch anthropicReq.OutputConfig.Effort {
+				case "low", "medium", "high", "max":
+					// valid
+				default:
+					return nil, fmt.Errorf("%w: output_config.effort must be one of: low, medium, high, max", transformer.ErrInvalidRequest)
+				}
+			}
+		default:
+			return nil, fmt.Errorf("%w: thinking.type must be one of: enabled, disabled, adaptive", transformer.ErrInvalidRequest)
+		}
+	}
+
+	// Validate tool_choice
+	if anthropicReq.ToolChoice != nil {
+		switch anthropicReq.ToolChoice.Type {
+		case "auto", "none", "any", "tool":
+			// valid
+		default:
+			return nil, fmt.Errorf("%w: tool_choice.type must be one of: auto, none, any, tool", transformer.ErrInvalidRequest)
+		}
+
+		if anthropicReq.ToolChoice.Type == "tool" {
+			if anthropicReq.ToolChoice.Name == nil || *anthropicReq.ToolChoice.Name == "" {
+				return nil, fmt.Errorf("%w: tool_choice.name is required when type is tool", transformer.ErrInvalidRequest)
+			}
+		}
+	}
+
+	return convertToLLMRequest(&anthropicReq)
+}
+
+// TransformResponse transforms ChatCompletionResponse to Anthropic HTTP response.
+func (t *InboundTransformer) TransformResponse(ctx context.Context, chatResp *llm.Response) (*httpclient.Response, error) {
+	if chatResp == nil {
+		return nil, fmt.Errorf("chat completion response is nil")
+	}
+
+	// Convert to Anthropic response format
+	anthropicResp := convertToAnthropicResponse(chatResp)
+
+	body, err := json.Marshal(anthropicResp)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal anthropic response: %w", err)
+	}
+
+	return &httpclient.Response{
+		StatusCode: http.StatusOK,
+		Body:       body,
+		Headers: http.Header{
+			"Content-Type":  []string{"application/json"},
+			"Cache-Control": []string{"no-cache"},
+		},
+	}, nil
+}
+
+func (t *InboundTransformer) AggregateStreamChunks(ctx context.Context, chunks []*httpclient.StreamEvent) ([]byte, llm.ResponseMeta, error) {
+	// InboundTransformer doesn't have platform type info, default to Direct (Anthropic official)
+	return AggregateStreamChunks(ctx, chunks, PlatformDirect)
+}
+
+// TransformError transforms LLM error response to HTTP error response in Anthropic format.
+func (t *InboundTransformer) TransformError(ctx context.Context, rawErr error) *httpclient.Error {
+	if rawErr == nil {
+		return &httpclient.Error{
+			StatusCode: http.StatusInternalServerError,
+			Status:     http.StatusText(http.StatusInternalServerError),
+			Body: xjson.MustMarshal(
+				&AnthropicError{Type: "error", StatusCode: http.StatusInternalServerError, RequestID: "", Error: ErrorDetail{Message: "internal server error"}},
+			),
+		}
+	}
+
+	if errors.Is(rawErr, transformer.ErrInvalidModel) {
+		return &httpclient.Error{
+			StatusCode: http.StatusUnprocessableEntity,
+			Status:     http.StatusText(http.StatusUnprocessableEntity),
+			Body: xjson.MustMarshal(
+				&AnthropicError{Type: "invalid_model_error", StatusCode: http.StatusUnprocessableEntity, RequestID: "", Error: ErrorDetail{Message: rawErr.Error()}},
+			),
+		}
+	}
+
+	if llmErr, ok := errors.AsType[*llm.ResponseError](rawErr); ok {
+		return &httpclient.Error{
+			StatusCode: llmErr.StatusCode,
+			Status:     http.StatusText(llmErr.StatusCode),
+			Body: xjson.MustMarshal(
+				&AnthropicError{
+					Type:       llmErr.Detail.Type,
+					StatusCode: llmErr.StatusCode,
+					RequestID:  llmErr.Detail.RequestID,
+					Error:      ErrorDetail{Type: llmErr.Detail.Type, Message: llmErr.Detail.Message},
+				},
+			),
+		}
+	}
+
+	if httpErr, ok := errors.AsType[*httpclient.Error](rawErr); ok {
+		return httpErr
+	}
+
+	// Handle validation errors
+	if errors.Is(rawErr, transformer.ErrInvalidRequest) {
+		return &httpclient.Error{
+			StatusCode: http.StatusBadRequest,
+			Status:     http.StatusText(http.StatusBadRequest),
+			Body: xjson.MustMarshal(
+				&AnthropicError{
+					Type:       "invalid_request_error",
+					StatusCode: http.StatusBadRequest,
+					RequestID:  "",
+					Error:      ErrorDetail{Type: "invalid_request_error", Message: rawErr.Error()},
+				},
+			),
+		}
+	}
+
+	return &httpclient.Error{
+		StatusCode: http.StatusInternalServerError,
+		Status:     http.StatusText(http.StatusInternalServerError),
+		Body: xjson.MustMarshal(
+			&AnthropicError{
+				Type:       "internal_server_error",
+				StatusCode: http.StatusInternalServerError,
+				RequestID:  "",
+				Error:      ErrorDetail{Type: "internal_server_error", Message: rawErr.Error()},
+			},
+		),
+	}
+}

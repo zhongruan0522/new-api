@@ -1,0 +1,46 @@
+import Cookies from 'js-cookie';
+import { Outlet } from '@tanstack/react-router';
+import { cn } from '@/lib/utils';
+import { useVersionCheck } from '@/hooks/use-version-check';
+import { SidebarProvider } from '@/components/ui/sidebar';
+import { AppHeader } from '@/components/layout/app-header';
+import { AppSidebar } from '@/components/layout/app-sidebar';
+import SkipToMain from '@/components/skip-to-main';
+import { OnboardingProvider } from '@/features/onboarding';
+import { useSidebarData } from './sidebar';
+
+interface Props {
+  children?: React.ReactNode;
+}
+
+export function AuthenticatedLayout({ children }: Props) {
+  const defaultOpen = Cookies.get('sidebar_state') !== 'false';
+  const sidebarData = useSidebarData();
+
+  // Check for new version on mount (only for owners)
+  useVersionCheck();
+
+  return (
+    <SidebarProvider defaultOpen={defaultOpen} className='h-screen flex-col overflow-hidden'>
+      <AppHeader />
+      <div className='flex flex-1 overflow-hidden'>
+        <SkipToMain />
+        <AppSidebar sidebarData={sidebarData} />
+        <div
+          id='content'
+          className={cn(
+            'ml-auto w-full max-w-full',
+            'peer-data-[state=collapsed]:w-[calc(100%-var(--sidebar-width-icon)-1rem)]',
+            'peer-data-[state=expanded]:w-[calc(100%-var(--sidebar-width))]',
+            'sm:transition-[width] sm:duration-200 sm:ease-linear',
+            'flex min-h-0 min-w-0 flex-1 flex-col overflow-auto pt-14 has-[main.fixed-main]:overflow-hidden',
+            'group-data-[scroll-locked=1]/body:h-full',
+            'has-[main.fixed-main]:group-data-[scroll-locked=1]/body:h-svh'
+          )}
+        >
+          <OnboardingProvider>{children ? children : <Outlet />}</OnboardingProvider>
+        </div>
+      </div>
+    </SidebarProvider>
+  );
+}

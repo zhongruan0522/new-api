@@ -1,0 +1,126 @@
+package schema
+
+import (
+	"entgo.io/contrib/entgql"
+	"entgo.io/ent"
+	"entgo.io/ent/schema"
+	"entgo.io/ent/schema/edge"
+	"entgo.io/ent/schema/field"
+	"entgo.io/ent/schema/index"
+
+	"github.com/looplj/axonhub/internal/ent/schema/schematype"
+	"github.com/looplj/axonhub/internal/objects"
+	"github.com/looplj/axonhub/internal/scopes"
+)
+
+type APIKey struct {
+	ent.Schema
+}
+
+func (APIKey) Mixin() []ent.Mixin {
+	return []ent.Mixin{
+		TimeMixin{},
+		schematype.SoftDeleteMixin{},
+	}
+}
+
+func (APIKey) Indexes() []ent.Index {
+	return []ent.Index{
+		index.Fields("user_id").
+			StorageKey("api_keys_by_user_id"),
+		index.Fields("project_id").
+			StorageKey("api_keys_by_project_id"),
+		index.Fields("key").
+			StorageKey("api_keys_by_key").
+			Unique(),
+	}
+}
+
+func (APIKey) Fields() []ent.Field {
+	return []ent.Field{
+		field.Int("user_id").Optional().Immutable().
+			Annotations(
+				entgql.Skip(entgql.SkipMutationCreateInput, entgql.SkipMutationUpdateInput),
+			).Comment("The creator of the API key"),
+		field.Int("project_id").
+			Immutable().
+			Default(1).
+			Comment("Project ID, default to 1 for backward compatibility").
+			Annotations(
+				entgql.Skip(entgql.SkipMutationUpdateInput),
+			),
+		field.String("key").Immutable().
+			Annotations(
+				entgql.Skip(entgql.SkipMutationCreateInput, entgql.SkipMutationUpdateInput),
+			),
+		field.String("name"),
+		field.Enum("type").
+			Values("user", "service_account", "noauth").
+			Default("user").
+			Comment("API Key type: user, service_account, or noauth").Annotations(
+			entgql.Skip(entgql.SkipMutationUpdateInput),
+		),
+		field.Enum("status").Values("enabled", "disabled", "archived").Default("enabled").Annotations(
+			entgql.Skip(entgql.SkipMutationCreateInput, entgql.SkipMutationUpdateInput),
+		),
+		field.Strings("scopes").
+			Comment("API Key specific scopes. For user type: default read_channels, write_requests (immutable). For service_account: custom scopes.").
+			Default([]string{"read_channels", "write_requests"}).
+			Optional(),
+		field.JSON("profiles", &objects.APIKeyProfiles{}).
+			Default(&objects.APIKeyProfiles{}).
+			Optional().
+			Annotations(
+				entgql.Skip(entgql.SkipMutationCreateInput, entgql.SkipMutationUpdateInput),
+			),
+	}
+}
+
+func (APIKey) Edges() []ent.Edge {
+	return []ent.Edge{
+		edge.From("user", User.Type).
+			Unique().
+			Immutable().
+			Annotations(
+				entgql.Skip(entgql.SkipMutationCreateInput, entgql.SkipMutationUpdateInput),
+				entgql.Directives(forceResolver()),
+			).
+			Ref("api_keys").Field("user_id"),
+		edge.From("project", Project.Type).
+			Unique().
+			Immutable().
+			Required().
+			Annotations(
+				entgql.Skip(entgql.SkipMutationUpdateInput),
+			).
+			Ref("api_keys").Field("project_id"),
+		edge.To("requests", Request.Type).
+			Annotations(
+				entgql.Skip(entgql.SkipMutationCreateInput, entgql.SkipMutationUpdateInput),
+				entgql.RelayConnection(),
+			),
+	}
+}
+
+func (APIKey) Annotations() []schema.Annotation {
+	return []schema.Annotation{
+		entgql.QueryField(),
+		entgql.RelayConnection(),
+		entgql.Mutations(entgql.MutationCreate(), entgql.MutationUpdate()),
+	}
+}
+
+// Policy 定义 APIKey 的权限策略.
+func (APIKey) Policy() ent.Policy {
+	return scopes.Policy{
+		Query: scopes.QueryPolicy{
+			scopes.UserProjectScopeReadRule(scopes.ScopeReadAPIKeys), // 需要 API Keys 读取权限
+			scopes.OwnerRule(), // owner 用户可以访问所有 API Keys
+		},
+		Mutation: scopes.MutationPolicy{
+			scopes.UserProjectScopeWriteRule(scopes.ScopeWriteAPIKeys),   // 需要 API Keys 写入权限
+			scopes.APIKeyProjectScopeWriteRule(scopes.ScopeWriteAPIKeys), // API key scope + project 校验
+			scopes.OwnerRule(), // owner 用户可以修改所有 API Keys
+		},
+	}
+}
