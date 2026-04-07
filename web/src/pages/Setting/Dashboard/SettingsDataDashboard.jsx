@@ -104,7 +104,7 @@ export default function DataDashboard(props) {
           getFormApi={(formAPI) => (refForm.current = formAPI)}
           style={{ marginBottom: 15 }}
         >
-          <Form.Section text={t('数据看板设置')}>
+          <Form.Section text={t('数据看板基础配置')}>
             <Row gutter={16}>
               <Col xs={24} sm={12} md={8} lg={8} xl={8}>
                 <Form.Switch
