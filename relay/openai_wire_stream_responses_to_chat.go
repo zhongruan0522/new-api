@@ -19,21 +19,24 @@ type responsesToChatStreamConverter struct {
 	sentRole     bool
 	sawToolCalls bool
 	usage        *dto.Usage
+	status       string
 
-	toolCallIndexByID map[string]int
-	toolCallNameByID  map[string]string
+	toolCallIndexByID   map[string]int
+	toolCallNameByID    map[string]string
+	toolCallStartedByID map[string]bool
 
 	err error
 }
 
 func newResponsesToChatStreamConverter(includeUsage bool) *responsesToChatStreamConverter {
 	return &responsesToChatStreamConverter{
-		includeUsage:      includeUsage,
-		toolCallIndexByID: make(map[string]int),
-		toolCallNameByID:  make(map[string]string),
-		sentRole:          false,
-		sawToolCalls:      false,
-		created:           0,
+		includeUsage:        includeUsage,
+		toolCallIndexByID:   make(map[string]int),
+		toolCallNameByID:    make(map[string]string),
+		toolCallStartedByID: make(map[string]bool),
+		sentRole:            false,
+		sawToolCalls:        false,
+		created:             0,
 	}
 }
 
@@ -64,16 +67,28 @@ func (c *responsesToChatStreamConverter) ConvertFrame(event string, data string,
 	c.hydrateFromResponse(stream.Response)
 
 	switch event {
+	case "response.created":
+		return "", nil
 	case "response.output_text.delta":
 		return c.emitTextDelta(stream.Delta)
+	case "response.reasoning_summary_text.delta":
+		return c.emitReasoningDelta(stream.Delta)
 	case "response.output_item.added":
 		c.captureToolCallMeta(stream)
-		return "", nil
+		return c.emitToolCallAdded(stream)
 	case "response.function_call_arguments.delta":
 		return c.emitToolCallDelta(stream)
 	case "response.output_item.done":
 		c.captureToolCallMeta(stream)
 		return "", nil
+	case "response.incomplete":
+		c.hydrateFromResponse(stream.Response)
+		c.status = "incomplete"
+		return c.emitFinal()
+	case "response.failed":
+		c.hydrateFromResponse(stream.Response)
+		c.status = "failed"
+		return c.emitFinal()
 	case "response.completed":
 		c.hydrateFromResponse(stream.Response)
 		return c.emitFinal()
@@ -132,6 +147,9 @@ func (c *responsesToChatStreamConverter) hydrateFromResponse(resp *dto.OpenAIRes
 		}
 		c.usage = u
 	}
+	if strings.TrimSpace(resp.Status) != "" {
+		c.status = resp.Status
+	}
 	if len(resp.Output) > 0 {
 		for _, item := range resp.Output {
 			if strings.TrimSpace(item.Type) == "function_call" {
@@ -162,9 +180,63 @@ func (c *responsesToChatStreamConverter) emitTextDelta(delta string) (string, er
 	return encodeChatSSEChunk(chunk)
 }
 
+// emitReasoningDelta maps Responses reasoning summaries onto chat chunk
+// reasoning_content so downstream clients keep intermediate thinking text.
+func (c *responsesToChatStreamConverter) emitReasoningDelta(delta string) (string, error) {
+	if strings.TrimSpace(delta) == "" {
+		return "", nil
+	}
+
+	chunk := c.newChatChunk()
+	choice := dto.ChatCompletionsStreamResponseChoice{
+		Index: 0,
+		Delta: dto.ChatCompletionsStreamResponseChoiceDelta{},
+	}
+	if !c.sentRole {
+		choice.Delta.Role = "assistant"
+		c.sentRole = true
+	}
+	choice.Delta.SetReasoningContent(delta)
+	chunk.Choices = []dto.ChatCompletionsStreamResponseChoice{choice}
+	return encodeChatSSEChunk(chunk)
+}
+
+func (c *responsesToChatStreamConverter) emitToolCallAdded(stream dto.ResponsesStreamResponse) (string, error) {
+	callID, name, ok := c.getToolCallMeta(stream)
+	if !ok {
+		return "", nil
+	}
+	if c.toolCallStartedByID[callID] {
+		return "", nil
+	}
+	c.toolCallStartedByID[callID] = true
+	c.sawToolCalls = true
+	idx := c.getToolCallIndex(callID)
+
+	chunk := c.newChatChunk()
+	choice := dto.ChatCompletionsStreamResponseChoice{
+		Index: 0,
+		Delta: dto.ChatCompletionsStreamResponseChoiceDelta{},
+	}
+	if !c.sentRole {
+		choice.Delta.Role = "assistant"
+		c.sentRole = true
+	}
+	choice.Delta.ToolCalls = []dto.ToolCallResponse{{
+		Index: common.GetPointer(idx),
+		ID:    callID,
+		Type:  "function",
+		Function: dto.FunctionResponse{
+			Name: name,
+		},
+	}}
+	chunk.Choices = []dto.ChatCompletionsStreamResponseChoice{choice}
+	return encodeChatSSEChunk(chunk)
+}
+
 func (c *responsesToChatStreamConverter) emitToolCallDelta(stream dto.ResponsesStreamResponse) (string, error) {
-	callID := strings.TrimSpace(stream.ItemID)
-	if callID == "" {
+	callID, name, ok := c.getToolCallMeta(stream)
+	if !ok {
 		return "", nil
 	}
 	delta := stream.Delta
@@ -173,8 +245,16 @@ func (c *responsesToChatStreamConverter) emitToolCallDelta(stream dto.ResponsesS
 	}
 	c.sawToolCalls = true
 
+	var builder strings.Builder
+	if !c.toolCallStartedByID[callID] {
+		started, err := c.emitToolCallAdded(stream)
+		if err != nil {
+			return "", err
+		}
+		builder.WriteString(started)
+	}
+
 	idx := c.getToolCallIndex(callID)
-	name := c.toolCallNameByID[callID]
 
 	chunk := c.newChatChunk()
 	choice := dto.ChatCompletionsStreamResponseChoice{
@@ -188,8 +268,6 @@ func (c *responsesToChatStreamConverter) emitToolCallDelta(stream dto.ResponsesS
 	choice.Delta.ToolCalls = []dto.ToolCallResponse{
 		{
 			Index: common.GetPointer(idx),
-			ID:    callID,
-			Type:  "function",
 			Function: dto.FunctionResponse{
 				Name:      name,
 				Arguments: delta,
@@ -198,14 +276,16 @@ func (c *responsesToChatStreamConverter) emitToolCallDelta(stream dto.ResponsesS
 	}
 	chunk.Choices = []dto.ChatCompletionsStreamResponseChoice{choice}
 
-	return encodeChatSSEChunk(chunk)
+	frame, err := encodeChatSSEChunk(chunk)
+	if err != nil {
+		return "", err
+	}
+	builder.WriteString(frame)
+	return builder.String(), nil
 }
 
 func (c *responsesToChatStreamConverter) emitFinal() (string, error) {
-	finishReason := "stop"
-	if c.sawToolCalls {
-		finishReason = "tool_calls"
-	}
+	finishReason := c.finishReason()
 
 	stop := c.newChatChunk()
 	stop.Choices = []dto.ChatCompletionsStreamResponseChoice{
@@ -237,6 +317,20 @@ func (c *responsesToChatStreamConverter) emitFinal() (string, error) {
 	return builder.String(), nil
 }
 
+func (c *responsesToChatStreamConverter) finishReason() string {
+	switch strings.ToLower(strings.TrimSpace(c.status)) {
+	case "failed":
+		return "error"
+	case "incomplete":
+		return "length"
+	default:
+		if c.sawToolCalls {
+			return "tool_calls"
+		}
+		return "stop"
+	}
+}
+
 func (c *responsesToChatStreamConverter) newChatChunk() *dto.ChatCompletionsStreamResponse {
 	if c.id == "" {
 		c.id = "chatcmpl-" + common.GetRandomString(12)
@@ -259,6 +353,25 @@ func (c *responsesToChatStreamConverter) getToolCallIndex(callID string) int {
 	idx := len(c.toolCallIndexByID)
 	c.toolCallIndexByID[callID] = idx
 	return idx
+}
+
+func (c *responsesToChatStreamConverter) getToolCallMeta(stream dto.ResponsesStreamResponse) (string, string, bool) {
+	callID := strings.TrimSpace(stream.ItemID)
+	if callID == "" && stream.Item != nil {
+		callID = strings.TrimSpace(stream.Item.CallId)
+		if callID == "" {
+			callID = strings.TrimSpace(stream.Item.ID)
+		}
+	}
+	if callID == "" {
+		return "", "", false
+	}
+	name := c.toolCallNameByID[callID]
+	if stream.Item != nil && strings.TrimSpace(stream.Item.Name) != "" {
+		name = stream.Item.Name
+		c.toolCallNameByID[callID] = name
+	}
+	return callID, name, true
 }
 
 func encodeChatSSEChunk(chunk *dto.ChatCompletionsStreamResponse) (string, error) {

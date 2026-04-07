@@ -41,16 +41,28 @@ func ConvertChatCompletionsRequestToResponsesRequest(chatReq *dto.GeneralOpenAIR
 }
 
 func newResponsesRequestFromChat(chatReq *dto.GeneralOpenAIRequest, input json.RawMessage) *dto.OpenAIResponsesRequest {
-	return &dto.OpenAIResponsesRequest{
-		Model:           chatReq.Model,
-		Input:           input,
-		MaxOutputTokens: chatReq.GetMaxTokens(),
-		Stream:          chatReq.Stream,
-		Temperature:     chatReq.Temperature,
-		User:            chatReq.User,
-		Metadata:        chatReq.Metadata,
-		Store:           chatReq.Store,
+	out := &dto.OpenAIResponsesRequest{
+		Model:            chatReq.Model,
+		Input:            input,
+		MaxOutputTokens:  chatReq.GetMaxTokens(),
+		Stream:           chatReq.Stream,
+		Temperature:      chatReq.Temperature,
+		TopLogprobs:      chatReq.TopLogProbs,
+		SafetyIdentifier: chatReq.SafetyIdentifier,
+		ServiceTier:      "",
+		User:             chatReq.User,
+		Metadata:         chatReq.Metadata,
+		Store:            chatReq.Store,
 	}
+	if strings.TrimSpace(chatReq.PromptCacheKey) != "" {
+		if raw, err := common.Marshal(chatReq.PromptCacheKey); err == nil {
+			out.PromptCacheKey = raw
+		}
+	}
+	if len(chatReq.PromptCacheRetention) > 0 {
+		out.PromptCacheRetention = chatReq.PromptCacheRetention
+	}
+	return out
 }
 
 func applyChatToResponsesInstructions(out *dto.OpenAIResponsesRequest, instructions string) error {
@@ -104,15 +116,67 @@ func applyChatToResponsesSampling(out *dto.OpenAIResponsesRequest, chatReq *dto.
 }
 
 func applyChatToResponsesTextFormat(out *dto.OpenAIResponsesRequest, chatReq *dto.GeneralOpenAIRequest) error {
-	if chatReq.ResponseFormat == nil || strings.TrimSpace(chatReq.ResponseFormat.Type) == "" {
+	payload := make(map[string]any)
+	if chatReq.ResponseFormat != nil && strings.TrimSpace(chatReq.ResponseFormat.Type) != "" {
+		format, err := buildResponsesTextFormatFromChat(chatReq.ResponseFormat)
+		if err != nil {
+			return err
+		}
+		payload["format"] = format
+	}
+	if len(chatReq.Verbosity) > 0 {
+		var verbosity any
+		if err := common.Unmarshal(chatReq.Verbosity, &verbosity); err != nil {
+			return fmt.Errorf("unmarshal verbosity failed: %w", err)
+		}
+		payload["verbosity"] = verbosity
+	}
+	if len(payload) == 0 {
 		return nil
 	}
-	raw, err := common.Marshal(map[string]any{"format": chatReq.ResponseFormat})
+	raw, err := common.Marshal(payload)
 	if err != nil {
 		return fmt.Errorf("marshal text.format failed: %w", err)
 	}
 	out.Text = raw
 	return nil
+}
+
+// buildResponsesTextFormatFromChat flattens Chat json_schema into Responses text.format.
+func buildResponsesTextFormatFromChat(format *dto.ResponseFormat) (map[string]any, error) {
+	if format == nil || strings.TrimSpace(format.Type) == "" {
+		return nil, nil
+	}
+	out := map[string]any{"type": format.Type}
+	if !strings.EqualFold(strings.TrimSpace(format.Type), "json_schema") {
+		return out, nil
+	}
+
+	var schema dto.FormatJsonSchema
+	if len(format.JsonSchema) == 0 {
+		return nil, fmt.Errorf("response_format.json_schema is required when type=json_schema")
+	}
+	if err := common.Unmarshal(format.JsonSchema, &schema); err != nil {
+		return nil, fmt.Errorf("unmarshal response_format.json_schema failed: %w", err)
+	}
+	if strings.TrimSpace(schema.Name) == "" {
+		return nil, fmt.Errorf("response_format.json_schema.name is required")
+	}
+	out["name"] = schema.Name
+	if strings.TrimSpace(schema.Description) != "" {
+		out["description"] = schema.Description
+	}
+	if schema.Schema != nil {
+		out["schema"] = schema.Schema
+	}
+	if len(schema.Strict) > 0 {
+		var strict any
+		if err := common.Unmarshal(schema.Strict, &strict); err != nil {
+			return nil, fmt.Errorf("unmarshal response_format.json_schema.strict failed: %w", err)
+		}
+		out["strict"] = strict
+	}
+	return out, nil
 }
 
 func splitChatInstructions(messages []dto.Message) (instructions string, remaining []dto.Message, err error) {

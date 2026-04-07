@@ -815,6 +815,8 @@ type OpenAIResponsesRequest struct {
 	ParallelToolCalls  json.RawMessage `json:"parallel_tool_calls,omitempty"`
 	PreviousResponseID string          `json:"previous_response_id,omitempty"`
 	Reasoning          *Reasoning      `json:"reasoning,omitempty"`
+	TopLogprobs        int             `json:"top_logprobs,omitempty"`
+	SafetyIdentifier   string          `json:"safety_identifier,omitempty"`
 	// 服务层级字段，用于指定 API 服务等级。允许透传可能导致实际计费高于预期，默认应过滤
 	ServiceTier          string          `json:"service_tier,omitempty"`
 	Store                json.RawMessage `json:"store,omitempty"`
@@ -914,8 +916,9 @@ func (r *OpenAIResponsesRequest) GetToolsMap() []map[string]any {
 }
 
 type Reasoning struct {
-	Effort  string `json:"effort,omitempty"`
-	Summary string `json:"summary,omitempty"`
+	Effort    string `json:"effort,omitempty"`
+	Summary   string `json:"summary,omitempty"`
+	MaxTokens uint   `json:"max_tokens,omitempty"`
 }
 
 type Input struct {
