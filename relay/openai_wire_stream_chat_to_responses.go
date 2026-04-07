@@ -32,11 +32,12 @@ type chatToResponsesStreamConverter struct {
 }
 
 type chatToResponsesToolCallState struct {
-	id        string
-	index     int
-	name      string
-	args      strings.Builder
-	sentAdded bool
+	id             string
+	index          int
+	name           string
+	args           strings.Builder
+	emittedArgsLen int
+	sentAdded      bool
 }
 
 func newChatToResponsesStreamConverter() *chatToResponsesStreamConverter {
@@ -286,8 +287,12 @@ func (c *chatToResponsesStreamConverter) emitToolCallDeltas(calls []dto.ToolCall
 		if strings.TrimSpace(call.Function.Name) != "" {
 			state.name = call.Function.Name
 		}
+		delta := call.Function.Arguments
+		if strings.TrimSpace(delta) != "" {
+			state.args.WriteString(delta)
+		}
 
-		if !state.sentAdded {
+		if !state.sentAdded && strings.TrimSpace(state.name) != "" {
 			frame, err := encodeResponsesStreamEvent(dto.ResponsesStreamResponse{
 				Type: "response.output_item.added",
 				Item: &dto.ResponsesOutput{
@@ -307,9 +312,13 @@ func (c *chatToResponsesStreamConverter) emitToolCallDeltas(calls []dto.ToolCall
 			state.sentAdded = true
 		}
 
-		delta := call.Function.Arguments
-		if strings.TrimSpace(delta) != "" {
-			state.args.WriteString(delta)
+		if !state.sentAdded {
+			continue
+		}
+
+		pendingArgs := state.args.String()
+		if len(pendingArgs) > state.emittedArgsLen {
+			delta = pendingArgs[state.emittedArgsLen:]
 			frame, err := encodeResponsesStreamEvent(dto.ResponsesStreamResponse{
 				Type:   "response.function_call_arguments.delta",
 				Delta:  delta,
@@ -319,6 +328,7 @@ func (c *chatToResponsesStreamConverter) emitToolCallDeltas(calls []dto.ToolCall
 				return "", err
 			}
 			out.WriteString(frame)
+			state.emittedArgsLen = len(pendingArgs)
 		}
 	}
 	return out.String(), nil
@@ -351,6 +361,9 @@ func (c *chatToResponsesStreamConverter) emitCompleted() (string, error) {
 		state := c.toolCallsByID[call]
 		if state == nil {
 			continue
+		}
+		if strings.TrimSpace(state.name) == "" {
+			return "", fmt.Errorf("tool call %q is missing function name", state.id)
 		}
 		frame, err := encodeResponsesStreamEvent(dto.ResponsesStreamResponse{
 			Type: "response.output_item.done",
