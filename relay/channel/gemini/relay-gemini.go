@@ -12,6 +12,7 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"github.com/gin-gonic/gin"
 	"github.com/zhongruan0522/new-api/common"
 	"github.com/zhongruan0522/new-api/constant"
 	"github.com/zhongruan0522/new-api/dto"
@@ -22,7 +23,6 @@ import (
 	"github.com/zhongruan0522/new-api/service"
 	"github.com/zhongruan0522/new-api/setting/model_setting"
 	"github.com/zhongruan0522/new-api/types"
-	"github.com/gin-gonic/gin"
 )
 
 const thoughtSignatureBypassValue = "context_engineering_is_the_way_to_go"
@@ -860,9 +860,9 @@ func unescapeMapOrSlice(data interface{}) interface{} {
 func getResponseToolCall(item *dto.GeminiPart) *dto.ToolCallResponse {
 	var argsBytes []byte
 	var err error
-	// 移除 unescapeMapOrSlice 调用，直接使用 json.Marshal
+	// 直接序列化结构化参数，避免把 Gemini 的函数参数再额外转义一次。
 	// JSON 序列化/反序列化已经正确处理了转义字符
-	argsBytes, err = json.Marshal(item.FunctionCall.Arguments)
+	argsBytes, err = common.Marshal(item.FunctionCall.Arguments)
 
 	if err != nil {
 		return nil
@@ -884,7 +884,6 @@ func responseGeminiChat2OpenAI(c *gin.Context, response *dto.GeminiChatResponse)
 		Created: common.GetTimestamp(),
 		Choices: make([]dto.OpenAITextResponseChoice, 0, len(response.Candidates)),
 	}
-	isToolCall := false
 	for _, candidate := range response.Candidates {
 		choice := dto.OpenAITextResponseChoice{
 			Index: int(candidate.Index),
@@ -894,8 +893,10 @@ func responseGeminiChat2OpenAI(c *gin.Context, response *dto.GeminiChatResponse)
 			},
 			FinishReason: constant.FinishReasonStop,
 		}
+		hasToolCalls := false
 		if len(candidate.Content.Parts) > 0 {
 			var texts []string
+			var reasoningTexts []string
 			var toolCalls []dto.ToolCallResponse
 			for _, part := range candidate.Content.Parts {
 				if part.InlineData != nil {
@@ -913,7 +914,7 @@ func responseGeminiChat2OpenAI(c *gin.Context, response *dto.GeminiChatResponse)
 						toolCalls = append(toolCalls, *call)
 					}
 				} else if part.Thought {
-					choice.Message.ReasoningContent = part.Text
+					reasoningTexts = append(reasoningTexts, part.Text)
 				} else {
 					if part.ExecutableCode != nil {
 						texts = append(texts, "```"+part.ExecutableCode.Language+"\n"+part.ExecutableCode.Code+"\n```")
@@ -929,7 +930,11 @@ func responseGeminiChat2OpenAI(c *gin.Context, response *dto.GeminiChatResponse)
 			}
 			if len(toolCalls) > 0 {
 				choice.Message.SetToolCalls(toolCalls)
-				isToolCall = true
+				hasToolCalls = true
+				choice.FinishReason = constant.FinishReasonToolCalls
+			}
+			if len(reasoningTexts) > 0 {
+				choice.Message.ReasoningContent = strings.Join(reasoningTexts, "\n")
 			}
 			choice.Message.SetStringContent(strings.Join(texts, "\n"))
 
@@ -962,10 +967,9 @@ func responseGeminiChat2OpenAI(c *gin.Context, response *dto.GeminiChatResponse)
 				choice.FinishReason = constant.FinishReasonContentFilter
 			}
 		}
-		if isToolCall {
+		if hasToolCalls {
 			choice.FinishReason = constant.FinishReasonToolCalls
 		}
-
 		fullTextResponse.Choices = append(fullTextResponse.Choices, choice)
 	}
 	return &fullTextResponse
@@ -975,9 +979,13 @@ func streamResponseGeminiChat2OpenAI(geminiResponse *dto.GeminiChatResponse) (*d
 	choices := make([]dto.ChatCompletionsStreamResponseChoice, 0, len(geminiResponse.Candidates))
 	isStop := false
 	for _, candidate := range geminiResponse.Candidates {
-		if candidate.FinishReason != nil && *candidate.FinishReason == "STOP" {
+		finishReason := ""
+		if candidate.FinishReason != nil {
+			finishReason = *candidate.FinishReason
+		}
+		if finishReason == "STOP" {
 			isStop = true
-			candidate.FinishReason = nil
+			finishReason = ""
 		}
 		choice := dto.ChatCompletionsStreamResponseChoice{
 			Index: int(candidate.Index),
@@ -986,11 +994,11 @@ func streamResponseGeminiChat2OpenAI(geminiResponse *dto.GeminiChatResponse) (*d
 			},
 		}
 		var texts []string
+		var reasoningTexts []string
 		isTools := false
-		isThought := false
-		if candidate.FinishReason != nil {
+		if finishReason != "" {
 			// Map Gemini FinishReason to OpenAI finish_reason
-			switch *candidate.FinishReason {
+			switch finishReason {
 			case "STOP":
 				// Normal completion
 				choice.FinishReason = &constant.FinishReasonStop
@@ -1034,8 +1042,7 @@ func streamResponseGeminiChat2OpenAI(geminiResponse *dto.GeminiChatResponse) (*d
 				}
 
 			} else if part.Thought {
-				isThought = true
-				texts = append(texts, part.Text)
+				reasoningTexts = append(reasoningTexts, part.Text)
 			} else {
 				if part.ExecutableCode != nil {
 					texts = append(texts, "```"+part.ExecutableCode.Language+"\n"+part.ExecutableCode.Code+"\n```\n")
@@ -1048,10 +1055,11 @@ func streamResponseGeminiChat2OpenAI(geminiResponse *dto.GeminiChatResponse) (*d
 				}
 			}
 		}
-		if isThought {
-			choice.Delta.SetReasoningContent(strings.Join(texts, "\n"))
-		} else {
+		if len(texts) > 0 {
 			choice.Delta.SetContentString(strings.Join(texts, "\n"))
+		}
+		if len(reasoningTexts) > 0 {
+			choice.Delta.SetReasoningContent(strings.Join(reasoningTexts, "\n"))
 		}
 		if isTools {
 			choice.FinishReason = &constant.FinishReasonToolCalls
@@ -1115,20 +1123,10 @@ func geminiStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http
 			}
 		}
 
-		// 更新使用量统计
-		if geminiResponse.UsageMetadata.TotalTokenCount != 0 {
-			usage.PromptTokens = geminiResponse.UsageMetadata.PromptTokenCount
-			usage.CompletionTokens = geminiResponse.UsageMetadata.CandidatesTokenCount + geminiResponse.UsageMetadata.ThoughtsTokenCount
-			usage.CompletionTokenDetails.ReasoningTokens = geminiResponse.UsageMetadata.ThoughtsTokenCount
-			usage.TotalTokens = geminiResponse.UsageMetadata.TotalTokenCount
-			usage.PromptTokensDetails.CachedTokens = geminiResponse.UsageMetadata.CachedContentTokenCount
-			for _, detail := range geminiResponse.UsageMetadata.PromptTokensDetails {
-				if detail.Modality == "AUDIO" {
-					usage.PromptTokensDetails.AudioTokens = detail.TokenCount
-				} else if detail.Modality == "TEXT" {
-					usage.PromptTokensDetails.TextTokens = detail.TokenCount
-				}
-			}
+		// Gemini 兼容实现可能返回 snake_case usage，这里统一走标准化映射。
+		if service.HasGeminiUsageMetadata(geminiResponse.UsageMetadata) {
+			convertedUsage := service.GeminiUsageMetadataToOpenAIUsage(geminiResponse.UsageMetadata)
+			*usage = convertedUsage
 		}
 
 		return callback(data, &geminiResponse)
@@ -1138,11 +1136,6 @@ func geminiStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http
 		if usage.CompletionTokens == 0 {
 			usage.CompletionTokens = imageCount * 1400
 		}
-	}
-
-	usage.PromptTokensDetails.TextTokens = usage.PromptTokens
-	if usage.TotalTokens > 0 {
-		usage.CompletionTokens = usage.TotalTokens - usage.PromptTokens
 	}
 
 	if usage.CompletionTokens <= 0 {
@@ -1261,20 +1254,12 @@ func GeminiChatHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.R
 		return nil, types.NewOpenAIError(err, types.ErrorCodeBadResponseBody, http.StatusInternalServerError)
 	}
 	if len(geminiResponse.Candidates) == 0 {
-		usage := dto.Usage{
-			PromptTokens: geminiResponse.UsageMetadata.PromptTokenCount,
-		}
-		usage.CompletionTokenDetails.ReasoningTokens = geminiResponse.UsageMetadata.ThoughtsTokenCount
-		usage.PromptTokensDetails.CachedTokens = geminiResponse.UsageMetadata.CachedContentTokenCount
-		for _, detail := range geminiResponse.UsageMetadata.PromptTokensDetails {
-			if detail.Modality == "AUDIO" {
-				usage.PromptTokensDetails.AudioTokens = detail.TokenCount
-			} else if detail.Modality == "TEXT" {
-				usage.PromptTokensDetails.TextTokens = detail.TokenCount
-			}
-		}
+		usage := service.GeminiUsageMetadataToOpenAIUsage(geminiResponse.UsageMetadata)
 		if usage.PromptTokens <= 0 {
 			usage.PromptTokens = info.GetEstimatePromptTokens()
+			if usage.TotalTokens < usage.PromptTokens {
+				usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
+			}
 		}
 
 		var newAPIError *types.NewAPIError
@@ -1311,23 +1296,7 @@ func GeminiChatHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.R
 	}
 	fullTextResponse := responseGeminiChat2OpenAI(c, &geminiResponse)
 	fullTextResponse.Model = info.UpstreamModelName
-	usage := dto.Usage{
-		PromptTokens:     geminiResponse.UsageMetadata.PromptTokenCount,
-		CompletionTokens: geminiResponse.UsageMetadata.CandidatesTokenCount,
-		TotalTokens:      geminiResponse.UsageMetadata.TotalTokenCount,
-	}
-
-	usage.CompletionTokenDetails.ReasoningTokens = geminiResponse.UsageMetadata.ThoughtsTokenCount
-	usage.PromptTokensDetails.CachedTokens = geminiResponse.UsageMetadata.CachedContentTokenCount
-	usage.CompletionTokens = usage.TotalTokens - usage.PromptTokens
-
-	for _, detail := range geminiResponse.UsageMetadata.PromptTokensDetails {
-		if detail.Modality == "AUDIO" {
-			usage.PromptTokensDetails.AudioTokens = detail.TokenCount
-		} else if detail.Modality == "TEXT" {
-			usage.PromptTokensDetails.TextTokens = detail.TokenCount
-		}
-	}
+	usage := service.GeminiUsageMetadataToOpenAIUsage(geminiResponse.UsageMetadata)
 
 	fullTextResponse.Usage = usage
 
@@ -1429,7 +1398,7 @@ func GeminiImageHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.
 		})
 	}
 
-	jsonResponse, jsonErr := json.Marshal(openAIResponse)
+	jsonResponse, jsonErr := common.Marshal(openAIResponse)
 	if jsonErr != nil {
 		return nil, types.NewError(jsonErr, types.ErrorCodeBadResponseBody)
 	}
