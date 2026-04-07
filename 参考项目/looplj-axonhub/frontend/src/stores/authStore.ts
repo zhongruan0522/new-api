@@ -1,0 +1,128 @@
+import { create } from 'zustand';
+
+export const ACCESS_TOKEN = 'axonhub_access_token';
+const USER_INFO = 'axonhub_user_info';
+
+interface Role {
+  code: string;
+  name: string;
+}
+
+interface Project {
+  projectID: string;
+  isOwner: boolean;
+  scopes: string[];
+  roles: Role[];
+}
+
+export interface AuthUser {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  isOwner: boolean;
+  preferLanguage: string;
+  avatar?: string;
+  scopes: string[];
+  roles: Role[];
+  projects: Project[];
+}
+
+interface AuthState {
+  auth: {
+    user: AuthUser | null;
+    setUser: (user: AuthUser | null) => void;
+    accessToken: string;
+    setAccessToken: (accessToken: string) => void;
+    resetAccessToken: () => void;
+    reset: () => void;
+  };
+}
+
+// Helper functions for localStorage
+export const getTokenFromStorage = (): string => {
+  try {
+    return localStorage.getItem(ACCESS_TOKEN) || '';
+    } catch (error) {
+      return '';
+    }
+  };
+
+export const setTokenToStorage = (token: string): void => {
+  try {
+    localStorage.setItem(ACCESS_TOKEN, token);
+  } catch (error) {
+  }
+};
+
+export const removeTokenFromStorage = (): void => {
+  try {
+    localStorage.removeItem(ACCESS_TOKEN);
+  } catch (error) {
+  }
+};
+
+const getUserFromStorage = (): AuthUser | null => {
+  try {
+    const userStr = localStorage.getItem(USER_INFO);
+    return userStr ? JSON.parse(userStr) : null;
+  } catch (error) {
+    return null;
+  }
+};
+
+const setUserToStorage = (user: AuthUser | null): void => {
+  try {
+    if (user) {
+      localStorage.setItem(USER_INFO, JSON.stringify(user));
+    } else {
+      localStorage.removeItem(USER_INFO);
+    }
+  } catch (error) {
+  }
+};
+
+const removeUserFromStorage = (): void => {
+  try {
+    localStorage.removeItem(USER_INFO);
+  } catch (error) {
+  }
+};
+
+export const useAuthStore = create<AuthState>()((set) => {
+  const initToken = getTokenFromStorage();
+  const initUser = getUserFromStorage();
+
+  return {
+    auth: {
+      user: initUser,
+      setUser: (user) =>
+        set((state) => {
+          setUserToStorage(user);
+          return { ...state, auth: { ...state.auth, user } };
+        }),
+      accessToken: initToken,
+      setAccessToken: (accessToken) =>
+        set((state) => {
+          setTokenToStorage(accessToken);
+          return { ...state, auth: { ...state.auth, accessToken } };
+        }),
+      resetAccessToken: () =>
+        set((state) => {
+          removeTokenFromStorage();
+          return { ...state, auth: { ...state.auth, accessToken: '' } };
+        }),
+      reset: () =>
+        set((state) => {
+          removeTokenFromStorage();
+          removeUserFromStorage();
+          return {
+            ...state,
+            auth: { ...state.auth, user: null, accessToken: '' },
+          };
+        }),
+    },
+  };
+});
+
+// export const useAuth = () => useAuthStore((state) => state.auth)

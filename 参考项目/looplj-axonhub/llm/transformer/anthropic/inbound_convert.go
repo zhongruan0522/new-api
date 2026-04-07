@@ -1,0 +1,551 @@
+package anthropic
+
+import (
+	"encoding/json"
+	"fmt"
+
+	"github.com/samber/lo"
+
+	"github.com/looplj/axonhub/llm"
+	"github.com/looplj/axonhub/llm/internal/pkg/xjson"
+	"github.com/looplj/axonhub/llm/internal/pkg/xurl"
+)
+
+func convertImageSourceToLLMImageURLPart(source *ImageSource, cacheControl *CacheControl) (llm.MessageContentPart, bool) {
+	if source == nil {
+		return llm.MessageContentPart{}, false
+	}
+
+	part := llm.MessageContentPart{
+		Type:         "image_url",
+		CacheControl: convertToLLMCacheControl(cacheControl),
+	}
+
+	if source.Type == "base64" {
+		if source.Data == "" {
+			return llm.MessageContentPart{}, false
+		}
+
+		mediaType := source.MediaType
+		if mediaType == "" {
+			mediaType = "application/octet-stream"
+		}
+
+		// Convert Anthropic image format to OpenAI format
+		imageURL := fmt.Sprintf("data:%s;base64,%s", mediaType, source.Data)
+		part.ImageURL = &llm.ImageURL{URL: imageURL}
+
+		return part, true
+	}
+
+	if source.URL == "" {
+		return llm.MessageContentPart{}, false
+	}
+
+	part.ImageURL = &llm.ImageURL{URL: source.URL}
+
+	return part, true
+}
+
+// convertToLLMRequest converts Anthropic MessageRequest to ChatCompletionRequest.
+//
+//nolint:maintidx // TODO: fix.
+func convertToLLMRequest(anthropicReq *MessageRequest) (*llm.Request, error) {
+	chatReq := &llm.Request{
+		Model:               anthropicReq.Model,
+		MaxTokens:           &anthropicReq.MaxTokens,
+		Temperature:         anthropicReq.Temperature,
+		TopP:                anthropicReq.TopP,
+		Stream:              anthropicReq.Stream,
+		Metadata:            map[string]string{},
+		RequestType:         llm.RequestTypeChat,
+		APIFormat:           llm.APIFormatAnthropicMessage,
+		TransformerMetadata: map[string]any{},
+		TransformOptions:    llm.TransformOptions{},
+	}
+	if anthropicReq.Metadata != nil {
+		chatReq.Metadata["user_id"] = anthropicReq.Metadata.UserID
+	}
+
+	// Convert messages
+	messages := make([]llm.Message, 0, len(anthropicReq.Messages))
+
+	// Add system message if present
+	if anthropicReq.System != nil {
+		if anthropicReq.System.Prompt != nil {
+			systemContent := anthropicReq.System.Prompt
+			messages = append(messages, llm.Message{
+				Role: "system",
+				Content: llm.MessageContent{
+					Content: systemContent,
+				},
+			})
+		} else if len(anthropicReq.System.MultiplePrompts) > 0 {
+			// Mark that system was originally in array format
+			chatReq.TransformOptions.ArrayInstructions = lo.ToPtr(true)
+
+			for _, prompt := range anthropicReq.System.MultiplePrompts {
+				msg := llm.Message{
+					Role: "system",
+					Content: llm.MessageContent{
+						Content: &prompt.Text,
+					},
+					CacheControl: convertToLLMCacheControl(prompt.CacheControl),
+				}
+				messages = append(messages, msg)
+			}
+		}
+	}
+
+	// Convert Anthropic messages to ChatCompletionMessage
+	for msgIndex, msg := range anthropicReq.Messages {
+		chatMsg := llm.Message{
+			Role: msg.Role,
+		}
+
+		var (
+			hasContent    bool
+			hasToolResult bool
+		)
+
+		// Convert content
+
+		if msg.Content.Content != nil {
+			chatMsg.Content = llm.MessageContent{
+				Content: msg.Content.Content,
+			}
+			hasContent = true
+		} else if len(msg.Content.MultipleContent) > 0 {
+			contentParts := make([]llm.MessageContentPart, 0, len(msg.Content.MultipleContent))
+
+			var (
+				reasoningContent         string
+				hasReasoningInContent    bool
+				redactedReasoningContent string
+			)
+
+			var reasoningSignature string
+
+			for _, block := range msg.Content.MultipleContent {
+				switch block.Type {
+				case "thinking":
+					// Keep thinking content in MultipleContent to preserve order
+					if block.Thinking != nil && *block.Thinking != "" {
+						reasoningContent = *block.Thinking
+						hasReasoningInContent = true
+					}
+
+					if block.Signature != nil && *block.Signature != "" {
+						reasoningSignature = *block.Signature
+					}
+				case "redacted_thinking":
+					// Handle redacted thinking content - store the encrypted data
+					if block.Data != "" {
+						redactedReasoningContent = block.Data
+					}
+				case "text":
+					contentParts = append(contentParts, llm.MessageContentPart{
+						Type:         "text",
+						Text:         block.Text,
+						CacheControl: convertToLLMCacheControl(block.CacheControl),
+					})
+					hasContent = true
+				case "image":
+					if part, ok := convertImageSourceToLLMImageURLPart(block.Source, block.CacheControl); ok {
+						contentParts = append(contentParts, part)
+						hasContent = true
+					}
+				case "tool_result":
+					hasToolResult = true
+					// TODO: support other result types
+					if block.Content != nil {
+						toolMsg := llm.Message{
+							Role:            "tool",
+							MessageIndex:    lo.ToPtr(msgIndex),
+							ToolCallID:      block.ToolUseID,
+							CacheControl:    convertToLLMCacheControl(block.CacheControl),
+							ToolCallIsError: block.IsError,
+						}
+
+						if block.Content.Content != nil {
+							toolMsg.Content = llm.MessageContent{
+								Content: block.Content.Content,
+							}
+						} else if len(block.Content.MultipleContent) > 0 {
+							// Handle multiple content blocks in tool_result
+							// Keep as MultipleContent to preserve the original format
+							toolContentParts := make([]llm.MessageContentPart, 0, len(block.Content.MultipleContent))
+							for _, contentBlock := range block.Content.MultipleContent {
+								switch contentBlock.Type {
+								case "text":
+									toolContentParts = append(toolContentParts, llm.MessageContentPart{
+										Type:         "text",
+										Text:         contentBlock.Text,
+										CacheControl: convertToLLMCacheControl(contentBlock.CacheControl),
+									})
+								case "image":
+									if part, ok := convertImageSourceToLLMImageURLPart(contentBlock.Source, contentBlock.CacheControl); ok {
+										toolContentParts = append(toolContentParts, part)
+									}
+								}
+							}
+
+							if len(toolContentParts) > 0 {
+								toolMsg.Content = llm.MessageContent{
+									MultipleContent: toolContentParts,
+								}
+							} else {
+								// Ensure tool message content is not null for downstream conversions.
+								toolMsg.Content = llm.MessageContent{
+									Content: lo.ToPtr(""),
+								}
+							}
+						}
+
+						messages = append(messages, toolMsg)
+					}
+				case "tool_use":
+					chatMsg.ToolCalls = append(chatMsg.ToolCalls, llm.ToolCall{
+						ID:   block.ID,
+						Type: "function",
+						Function: llm.FunctionCall{
+							Name:      lo.FromPtr(block.Name),
+							Arguments: string(block.Input),
+						},
+						CacheControl: convertToLLMCacheControl(block.CacheControl),
+					})
+					hasContent = true
+				}
+			}
+
+			// Check if it's a simple text-only message (single text block)
+			if len(contentParts) == 1 && contentParts[0].Type == "text" {
+				// Convert single text block to simple content format for compatibility
+				chatMsg.Content = llm.MessageContent{
+					Content: contentParts[0].Text,
+				}
+				// Preserve cache control at message level when simplifying
+				if contentParts[0].CacheControl != nil {
+					chatMsg.CacheControl = contentParts[0].CacheControl
+				}
+
+				hasContent = true
+			} else if len(contentParts) > 0 {
+				chatMsg.Content = llm.MessageContent{
+					MultipleContent: contentParts,
+				}
+				hasContent = true
+			}
+
+			// Assign reasoning content and signature if present
+			if reasoningContent != "" && hasReasoningInContent {
+				chatMsg.ReasoningContent = &reasoningContent
+				hasContent = true
+			}
+
+			if reasoningSignature != "" {
+				chatMsg.ReasoningSignature = &reasoningSignature
+			}
+
+			if redactedReasoningContent != "" {
+				chatMsg.RedactedReasoningContent = &redactedReasoningContent
+				hasContent = true
+			}
+		}
+
+		if !hasContent {
+			continue
+		}
+
+		// If this message had tool_result blocks, set MessageIndex so we can match it later
+		if hasToolResult {
+			chatMsg.MessageIndex = lo.ToPtr(msgIndex)
+		}
+
+		messages = append(messages, chatMsg)
+	}
+
+	chatReq.Messages = messages
+
+	// Convert tools
+	if len(anthropicReq.Tools) > 0 {
+		tools := make([]llm.Tool, 0, len(anthropicReq.Tools))
+		for _, tool := range anthropicReq.Tools {
+			llmTool, ok := convertToolToLLM(tool)
+			if ok {
+				tools = append(tools, llmTool)
+			}
+		}
+
+		chatReq.Tools = tools
+	}
+
+	// Convert stop sequences
+	if len(anthropicReq.StopSequences) > 0 {
+		if len(anthropicReq.StopSequences) == 1 {
+			chatReq.Stop = &llm.Stop{
+				Stop: &anthropicReq.StopSequences[0],
+			}
+		} else {
+			chatReq.Stop = &llm.Stop{
+				MultipleStop: anthropicReq.StopSequences,
+			}
+		}
+	}
+
+	// Convert tool_choice
+	if anthropicReq.ToolChoice != nil {
+		chatReq.ToolChoice = convertAnthropicToolChoiceToLLM(anthropicReq.ToolChoice)
+	}
+
+	// Convert thinking configuration to reasoning effort and preserve budget
+	if anthropicReq.Thinking != nil {
+		switch anthropicReq.Thinking.Type {
+		case "enabled":
+			chatReq.ReasoningEffort = thinkingBudgetToReasoningEffort(anthropicReq.Thinking.BudgetTokens)
+			chatReq.ReasoningBudget = lo.ToPtr(anthropicReq.Thinking.BudgetTokens)
+
+			if anthropicReq.Thinking.Display != "" {
+				chatReq.TransformerMetadata[TransformerMetadataKeyThinkingDisplay] = anthropicReq.Thinking.Display
+			}
+		case "adaptive":
+			// Adaptive thinking doesn't require a budget; preserve the type marker via TransformerMetadata.
+			chatReq.TransformerMetadata[TransformerMetadataKeyThinkingType] = "adaptive"
+			// Set a default reasoning effort so other outbound transformers (e.g., OpenAI) can use it.
+			// Anthropic's official default for adaptive thinking is "high".
+			chatReq.ReasoningEffort = "high"
+
+			if anthropicReq.Thinking.Display != "" {
+				chatReq.TransformerMetadata[TransformerMetadataKeyThinkingDisplay] = anthropicReq.Thinking.Display
+			}
+		}
+	}
+
+	// Convert output_config
+	if anthropicReq.OutputConfig != nil && anthropicReq.OutputConfig.Effort != "" {
+		chatReq.TransformerMetadata[TransformerMetadataKeyOutputConfigEffort] = anthropicReq.OutputConfig.Effort
+		// Map output_config effort to reasoning_effort so other outbound transformers can use it.
+		// Anthropic "max" has no direct equivalent in other providers; map to "xhigh"
+		// so downstream transformers can handle it explicitly.
+		if anthropicReq.OutputConfig.Effort == "max" {
+			chatReq.ReasoningEffort = "xhigh"
+		} else {
+			chatReq.ReasoningEffort = anthropicReq.OutputConfig.Effort
+		}
+	}
+
+	return chatReq, nil
+}
+
+// convertAnthropicToolChoiceToLLM converts Anthropic ToolChoice to llm.ToolChoice.
+func convertAnthropicToolChoiceToLLM(src *ToolChoice) *llm.ToolChoice {
+	if src == nil {
+		return nil
+	}
+
+	switch src.Type {
+	case "auto", "none":
+		return &llm.ToolChoice{
+			ToolChoice: lo.ToPtr(src.Type),
+		}
+	case "any":
+		// Anthropic "any" is equivalent to OpenAI "required"
+		return &llm.ToolChoice{
+			ToolChoice: lo.ToPtr("required"),
+		}
+	case "tool":
+		if src.Name != nil {
+			return &llm.ToolChoice{
+				NamedToolChoice: &llm.NamedToolChoice{
+					Type: "function",
+					Function: llm.ToolFunction{
+						Name: *src.Name,
+					},
+				},
+			}
+		}
+	}
+
+	return nil
+}
+
+func convertToAnthropicResponse(chatResp *llm.Response) *Message {
+	resp := &Message{
+		ID:    chatResp.ID,
+		Type:  "message",
+		Role:  "assistant",
+		Model: chatResp.Model,
+	}
+
+	// Convert choices to content blocks
+	if len(chatResp.Choices) > 0 {
+		choice := chatResp.Choices[0]
+
+		var message *llm.Message
+
+		if choice.Message != nil {
+			message = choice.Message
+		} else if choice.Delta != nil {
+			message = choice.Delta
+		}
+
+		if message != nil {
+			var contentBlocks []MessageContentBlock
+
+			// Handle reasoning content (thinking) first if present
+			if (message.ReasoningContent != nil && *message.ReasoningContent != "") || (message.ReasoningSignature != nil && *message.ReasoningSignature != "") {
+				thinkingContent := message.ReasoningContent
+				if thinkingContent == nil {
+					thinkingContent = lo.ToPtr("")
+				}
+				thinkingBlock := MessageContentBlock{
+					Type:     "thinking",
+					Thinking: thinkingContent,
+				}
+				if message.ReasoningSignature != nil {
+					thinkingBlock.Signature = message.ReasoningSignature
+				} else {
+					thinkingBlock.Signature = lo.ToPtr("")
+				}
+
+				contentBlocks = append(contentBlocks, thinkingBlock)
+			}
+
+			// Handle redacted reasoning content if present
+			if message.RedactedReasoningContent != nil && *message.RedactedReasoningContent != "" {
+				contentBlocks = append(contentBlocks, MessageContentBlock{
+					Type: "redacted_thinking",
+					Data: *message.RedactedReasoningContent,
+				})
+			}
+
+			// Handle regular content
+			if message.Content.Content != nil && *message.Content.Content != "" {
+				contentBlocks = append(contentBlocks, MessageContentBlock{
+					Type: "text",
+					Text: message.Content.Content,
+				})
+			} else if len(message.Content.MultipleContent) > 0 {
+				for _, part := range message.Content.MultipleContent {
+					switch part.Type {
+					case "text":
+						if part.Text != nil {
+							contentBlocks = append(contentBlocks, MessageContentBlock{
+								Type: "text",
+								Text: part.Text,
+							})
+						}
+					case "image_url":
+						if part.ImageURL != nil && part.ImageURL.URL != "" {
+							// Convert OpenAI image format to Anthropic format
+							url := part.ImageURL.URL
+							if parsed := xurl.ParseDataURL(url); parsed != nil {
+								contentBlocks = append(contentBlocks, MessageContentBlock{
+									Type: "image",
+									Source: &ImageSource{
+										Type:      "base64",
+										MediaType: parsed.MediaType,
+										Data:      parsed.Data,
+									},
+								})
+							} else {
+								contentBlocks = append(contentBlocks, MessageContentBlock{
+									Type: "image",
+									Source: &ImageSource{
+										Type: "url",
+										URL:  part.ImageURL.URL,
+									},
+								})
+							}
+						}
+					}
+				}
+			}
+
+			// Handle tool calls
+			if len(message.ToolCalls) > 0 {
+				for _, toolCall := range message.ToolCalls {
+					var input json.RawMessage
+					if toolCall.Function.Arguments != "" {
+						// Attempt to use the provided arguments; repair if invalid, fallback to {}
+						input = xjson.SafeJSONRawMessage(toolCall.Function.Arguments)
+					} else {
+						input = json.RawMessage("{}")
+					}
+
+					contentBlocks = append(contentBlocks, MessageContentBlock{
+						Type:  "tool_use",
+						ID:    toolCall.ID,
+						Name:  &toolCall.Function.Name,
+						Input: input,
+					})
+				}
+			}
+
+			resp.Content = contentBlocks
+		}
+
+		// Convert finish reason
+		if choice.FinishReason != nil {
+			switch *choice.FinishReason {
+			case "stop":
+				stopReason := "end_turn"
+				resp.StopReason = &stopReason
+			case "length":
+				stopReason := "max_tokens"
+				resp.StopReason = &stopReason
+			case "tool_calls":
+				stopReason := "tool_use"
+				resp.StopReason = &stopReason
+			default:
+				resp.StopReason = choice.FinishReason
+			}
+		}
+	}
+
+	// Convert usage
+	if chatResp.Usage != nil {
+		resp.Usage = convertToAnthropicUsage(chatResp.Usage)
+	}
+
+	return resp
+}
+
+// convertToolToLLM converts an Anthropic Tool to llm.Tool.
+// For web_search_20250305 native tools, it converts to llm.ToolTypeWebSearch type.
+// For regular function tools, it converts to llm.ToolTypeFunction type.
+func convertToolToLLM(tool Tool) (llm.Tool, bool) {
+	switch tool.Type {
+	case ToolTypeWebSearch20250305, WebSearchFunctionName:
+		return llm.Tool{
+			Type:         llm.ToolTypeWebSearch,
+			CacheControl: convertToLLMCacheControl(tool.CacheControl),
+			WebSearch: &llm.WebSearch{
+				MaxUses:        tool.MaxUses,
+				Strict:         tool.Strict,
+				AllowedDomains: tool.AllowedDomains,
+				BlockedDomains: tool.BlockedDomains,
+				UserLocation: llm.WebSearchToolUserLocation{
+					City:     tool.UserLocation.City,
+					Country:  tool.UserLocation.Country,
+					Region:   tool.UserLocation.Region,
+					Timezone: tool.UserLocation.Timezone,
+					Type:     tool.UserLocation.Type,
+				},
+			},
+		}, true
+	case "", "custom":
+		return llm.Tool{
+			Type: llm.ToolTypeFunction,
+			Function: llm.Function{
+				Name:        tool.Name,
+				Description: tool.Description,
+				Parameters:  tool.InputSchema,
+			},
+			CacheControl: convertToLLMCacheControl(tool.CacheControl),
+		}, true
+	default:
+		// Ignore other native tools (image_generation, google_*, etc.)
+		return llm.Tool{}, false
+	}
+}

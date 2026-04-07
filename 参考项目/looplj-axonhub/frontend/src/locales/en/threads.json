@@ -1,0 +1,17 @@
+{
+  "threads.title": "Threads",
+  "threads.description": "Browse conversation threads and their associated traces.",
+  "threads.filters.filterThreadId": "Filter by thread ID...",
+  "threads.columns.threadId": "Thread ID",
+  "threads.columns.project": "Project",
+  "threads.columns.unknownProject": "Unknown Project",
+  "threads.columns.traceCount": "Trace Count",
+  "threads.columns.firstUserQuery": "User Query",
+  "threads.columns.details": "Details",
+  "threads.actions.viewDetails": "View Details",
+  "threads.detail.title": "Thread Details",
+  "threads.detail.notFound": "Thread not found",
+  "threads.detail.noTraces": "No traces found",
+  "threads.detail.viewTrace": "View trace",
+  "threads.errors.notFound": "Thread not found"
+}

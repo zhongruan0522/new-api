@@ -1,0 +1,390 @@
+'use client';
+
+import React from 'react';
+import { z } from 'zod';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useTranslation } from 'react-i18next';
+import { IconAlertTriangle } from '@tabler/icons-react';
+import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Label } from '@/components/ui/label';
+import { ConfirmDialog } from '@/components/confirm-dialog';
+import { useProjectsContext } from '../context/projects-context';
+import { useCreateProject, useUpdateProject, useArchiveProject, useActivateProject, useDeleteProject, useUpdateProjectProfiles } from '../data/projects';
+import { createProjectInputSchema, updateProjectInputSchema, type UpdateProjectProfilesInput } from '../data/schema';
+import { ProjectProfilesDialog } from './project-profiles-dialog';
+
+// Create Project Dialog
+export function CreateProjectDialog() {
+  const { t } = useTranslation();
+  const { isCreateDialogOpen, setIsCreateDialogOpen } = useProjectsContext();
+  const createProject = useCreateProject();
+
+  const form = useForm<z.infer<typeof createProjectInputSchema>>({
+    resolver: zodResolver(createProjectInputSchema),
+    defaultValues: {
+      name: '',
+      description: '',
+    },
+  });
+
+  const onSubmit = async (values: z.infer<typeof createProjectInputSchema>) => {
+    try {
+      await createProject.mutateAsync(values);
+      setIsCreateDialogOpen(false);
+      form.reset();
+    } catch (error) {
+      // Error is handled by the mutation
+    }
+  };
+
+  const handleClose = () => {
+    setIsCreateDialogOpen(false);
+    form.reset();
+  };
+
+  return (
+    <Dialog open={isCreateDialogOpen} onOpenChange={handleClose}>
+      <DialogContent className='max-w-2xl'>
+        <DialogHeader>
+          <DialogTitle>{t('projects.dialogs.create.title')}</DialogTitle>
+          <DialogDescription>{t('projects.dialogs.create.description')}</DialogDescription>
+        </DialogHeader>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-6'>
+            <FormField
+              control={form.control}
+              name='name'
+              render={({ field, fieldState }) => (
+                <FormItem>
+                  <FormLabel>{t('projects.dialogs.fields.name.label')}</FormLabel>
+                  <FormControl>
+                    <Input placeholder={t('projects.dialogs.fields.name.placeholder')} aria-invalid={!!fieldState.error} {...field} />
+                  </FormControl>
+                  <FormDescription>{t('projects.dialogs.fields.name.description')}</FormDescription>
+                  <div className='min-h-[1.25rem]'>
+                    <FormMessage />
+                  </div>
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name='description'
+              render={({ field, fieldState }) => (
+                <FormItem>
+                  <FormLabel>{t('projects.dialogs.fields.description.label')}</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder={t('projects.dialogs.fields.description.placeholder')}
+                      aria-invalid={!!fieldState.error}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormDescription>{t('projects.dialogs.fields.description.description')}</FormDescription>
+                  <div className='min-h-[1.25rem]'>
+                    <FormMessage />
+                  </div>
+                </FormItem>
+              )}
+            />
+
+            <DialogFooter>
+              <Button type='button' variant='outline' onClick={handleClose}>
+                {t('common.buttons.cancel')}
+              </Button>
+              <Button type='submit' disabled={createProject.isPending}>
+                {createProject.isPending ? t('common.buttons.creating') : t('common.buttons.create')}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// Edit Project Dialog
+export function EditProjectDialog() {
+  const { t } = useTranslation();
+  const { editingProject, setEditingProject } = useProjectsContext();
+  const updateProject = useUpdateProject();
+
+  const form = useForm<z.infer<typeof updateProjectInputSchema>>({
+    resolver: zodResolver(updateProjectInputSchema),
+    defaultValues: {
+      name: '',
+      description: '',
+    },
+  });
+
+  React.useEffect(() => {
+    if (editingProject) {
+      form.reset({
+        name: editingProject.name,
+        description: editingProject.description || '',
+      });
+    }
+  }, [editingProject, form]);
+
+  const onSubmit = async (values: z.infer<typeof updateProjectInputSchema>) => {
+    if (!editingProject) return;
+
+    try {
+      await updateProject.mutateAsync({ id: editingProject.id, input: values });
+      setEditingProject(null);
+    } catch (error) {
+      // Error is handled by the mutation
+    }
+  };
+
+  const handleClose = () => {
+    setEditingProject(null);
+    form.reset();
+  };
+
+  if (!editingProject) return null;
+
+  return (
+    <Dialog open={!!editingProject} onOpenChange={handleClose}>
+      <DialogContent className='max-w-2xl'>
+        <DialogHeader>
+          <DialogTitle>{t('projects.dialogs.edit.title')}</DialogTitle>
+          <DialogDescription>{t('projects.dialogs.edit.description')}</DialogDescription>
+        </DialogHeader>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-6'>
+            <FormField
+              control={form.control}
+              name='name'
+              render={({ field, fieldState }) => (
+                <FormItem>
+                  <FormLabel>{t('projects.dialogs.fields.name.label')}</FormLabel>
+                  <FormControl>
+                    <Input placeholder={t('projects.dialogs.fields.name.placeholder')} aria-invalid={!!fieldState.error} {...field} />
+                  </FormControl>
+                  <FormDescription>{t('projects.dialogs.fields.name.description')}</FormDescription>
+                  <div className='min-h-[1.25rem]'>
+                    <FormMessage />
+                  </div>
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name='description'
+              render={({ field, fieldState }) => (
+                <FormItem>
+                  <FormLabel>{t('projects.dialogs.fields.description.label')}</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder={t('projects.dialogs.fields.description.placeholder')}
+                      aria-invalid={!!fieldState.error}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormDescription>{t('projects.dialogs.fields.description.description')}</FormDescription>
+                  <div className='min-h-[1.25rem]'>
+                    <FormMessage />
+                  </div>
+                </FormItem>
+              )}
+            />
+
+            <DialogFooter>
+              <Button type='button' variant='outline' onClick={handleClose}>
+                {t('common.buttons.cancel')}
+              </Button>
+              <Button type='submit' disabled={updateProject.isPending}>
+                {updateProject.isPending ? t('common.buttons.saving') : t('common.buttons.save')}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// Archive Project Dialog
+export function ArchiveProjectDialog() {
+  const { t } = useTranslation();
+  const { archivingProject, setArchivingProject } = useProjectsContext();
+  const archiveProject = useArchiveProject();
+
+  const handleConfirm = async () => {
+    if (!archivingProject) return;
+
+    try {
+      await archiveProject.mutateAsync(archivingProject.id);
+      setArchivingProject(null);
+    } catch (error) {
+      // Error is handled by the mutation
+    }
+  };
+
+  return (
+    <ConfirmDialog
+      open={!!archivingProject}
+      onOpenChange={() => setArchivingProject(null)}
+      title={t('projects.dialogs.archive.title')}
+      desc={t('projects.dialogs.archive.description', { name: archivingProject?.name })}
+      confirmText={t('common.buttons.archive')}
+      cancelBtnText={t('common.buttons.cancel')}
+      handleConfirm={handleConfirm}
+      isLoading={archiveProject.isPending}
+      destructive
+    />
+  );
+}
+
+// Activate Project Dialog
+export function ActivateProjectDialog() {
+  const { t } = useTranslation();
+  const { activatingProject, setActivatingProject } = useProjectsContext();
+  const activateProject = useActivateProject();
+
+  const handleConfirm = async () => {
+    if (!activatingProject) return;
+
+    try {
+      await activateProject.mutateAsync(activatingProject.id);
+      setActivatingProject(null);
+    } catch (error) {
+      // Error is handled by the mutation
+    }
+  };
+
+  return (
+    <ConfirmDialog
+      open={!!activatingProject}
+      onOpenChange={() => setActivatingProject(null)}
+      title={t('projects.dialogs.activate.title')}
+      desc={t('projects.dialogs.activate.description', { name: activatingProject?.name })}
+      confirmText={t('common.buttons.activate')}
+      cancelBtnText={t('common.buttons.cancel')}
+      handleConfirm={handleConfirm}
+      isLoading={activateProject.isPending}
+    />
+  );
+}
+
+// Delete Project Dialog
+export function DeleteProjectDialog() {
+  const { t } = useTranslation();
+  const { deletingProject, setDeletingProject } = useProjectsContext();
+  const deleteProject = useDeleteProject();
+  const [value, setValue] = React.useState('');
+
+  const handleDelete = async () => {
+    if (!deletingProject || value.trim() !== deletingProject.name) return;
+
+    try {
+      await deleteProject.mutateAsync(deletingProject.id);
+      setDeletingProject(null);
+      setValue('');
+    } catch (error) {
+      // Error is handled by the mutation
+    }
+  };
+
+  return (
+    <ConfirmDialog
+      open={!!deletingProject}
+      onOpenChange={(state) => {
+        if (!state) setValue('');
+        setDeletingProject(state ? deletingProject : null);
+      }}
+      handleConfirm={handleDelete}
+      disabled={!deletingProject || value.trim() !== deletingProject.name || deleteProject.isPending}
+      title={
+        <span className='text-destructive'>
+          <IconAlertTriangle className='stroke-destructive mr-1 inline-block' size={18} /> {t('projects.dialogs.delete.title')}
+        </span>
+      }
+      desc={
+        <div className='space-y-4'>
+          <Alert variant='destructive'>
+            <IconAlertTriangle className='h-4 w-4' />
+            <AlertTitle>{t('projects.dialogs.delete.warning')}</AlertTitle>
+            <AlertDescription>{t('projects.dialogs.delete.warningTitle')}</AlertDescription>
+          </Alert>
+          <div className='space-y-2'>
+            <Label htmlFor='project-name'>
+              {t('projects.dialogs.delete.confirmLabel')} <strong>{deletingProject?.name}</strong> {t('projects.dialogs.delete.confirmLabelSuffix')}
+            </Label>
+            <Input
+              id='project-name'
+              placeholder={deletingProject?.name}
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+              data-testid='delete-confirmation-input'
+            />
+          </div>
+        </div>
+      }
+      confirmText={deleteProject.isPending ? t('projects.dialogs.delete.deletingButton') : t('projects.dialogs.delete.confirmButton')}
+      cancelBtnText={t('common.buttons.cancel')}
+      destructive
+      data-testid='delete-dialog'
+    />
+  );
+}
+
+// Project Profiles Dialog Wrapper
+function ProjectProfilesDialogWrapper() {
+  const { profilesProject, setProfilesProject } = useProjectsContext();
+  const updateProfilesMutation = useUpdateProjectProfiles();
+
+  const handleSubmit = (data: UpdateProjectProfilesInput) => {
+    if (!profilesProject?.id) return;
+
+    updateProfilesMutation.mutate(
+      { id: profilesProject.id, input: data },
+      {
+        onSuccess: () => {
+          setProfilesProject(null);
+        },
+      }
+    );
+  };
+
+  return (
+    <ProjectProfilesDialog
+      open={!!profilesProject}
+      onOpenChange={(open) => !open && setProfilesProject(null)}
+      onSubmit={handleSubmit}
+      loading={updateProfilesMutation.isPending}
+      initialData={
+        profilesProject?.profiles
+          ? {
+              activeProfile: profilesProject.profiles.activeProfile || '',
+              profiles: profilesProject.profiles.profiles || [],
+            }
+          : undefined
+      }
+    />
+  );
+}
+
+// Combined Dialogs Component
+export function ProjectsDialogs() {
+  return (
+    <>
+      <CreateProjectDialog />
+      <EditProjectDialog />
+      <ArchiveProjectDialog />
+      <ActivateProjectDialog />
+      <DeleteProjectDialog />
+      <ProjectProfilesDialogWrapper />
+    </>
+  );
+}
