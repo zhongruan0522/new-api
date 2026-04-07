@@ -28,7 +28,19 @@ func (c *chatToResponsesStreamConverter) hydrateFromChunk(chunk *dto.ChatComplet
 }
 
 func (c *chatToResponsesStreamConverter) buildOutput() []dto.ResponsesOutput {
-	output := make([]dto.ResponsesOutput, 0, 1+len(c.toolCallsByID))
+	output := make([]dto.ResponsesOutput, 0, 2+len(c.toolCallsByID))
+	reasoning := strings.TrimSpace(c.reasoningBuilder.String())
+	if reasoning != "" {
+		output = append(output, dto.ResponsesOutput{
+			Type:   "reasoning",
+			ID:     chatToResponsesReasoningItemID,
+			Status: "completed",
+			Summary: []dto.ResponsesContentPart{{
+				Type: "summary_text",
+				Text: reasoning,
+			}},
+		})
+	}
 	text := strings.TrimSpace(c.textBuilder.String())
 	if text != "" {
 		output = append(output, dto.ResponsesOutput{
@@ -81,6 +93,8 @@ func (c *chatToResponsesStreamConverter) mapStatus() string {
 	switch strings.TrimSpace(strings.ToLower(c.finishReason)) {
 	case "length":
 		return "incomplete"
+	case "error":
+		return "failed"
 	default:
 		return "completed"
 	}
@@ -133,6 +147,29 @@ func (c *chatToResponsesStreamConverter) emitMessageDoneIfAny() (string, error) 
 			},
 		},
 		ItemID: chatToResponsesAssistantMessageID,
+	})
+}
+
+// emitReasoningDoneIfAny closes the reasoning item once text/tool output starts
+// or the chat stream finishes.
+func (c *chatToResponsesStreamConverter) emitReasoningDoneIfAny() (string, error) {
+	reasoning := strings.TrimSpace(c.reasoningBuilder.String())
+	if reasoning == "" || !c.sentReasoningAdded || c.reasoningDone {
+		return "", nil
+	}
+	c.reasoningDone = true
+	return encodeResponsesStreamEvent(dto.ResponsesStreamResponse{
+		Type: "response.output_item.done",
+		Item: &dto.ResponsesOutput{
+			Type:   "reasoning",
+			ID:     chatToResponsesReasoningItemID,
+			Status: "completed",
+			Summary: []dto.ResponsesContentPart{{
+				Type: "summary_text",
+				Text: reasoning,
+			}},
+		},
+		ItemID: chatToResponsesReasoningItemID,
 	})
 }
 

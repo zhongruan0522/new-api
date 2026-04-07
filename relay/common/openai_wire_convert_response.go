@@ -12,6 +12,7 @@ import (
 
 const (
 	openAIResponsesOutputTypeMessage      = "message"
+	openAIResponsesOutputTypeReasoning    = "reasoning"
 	openAIResponsesOutputTypeFunctionCall = "function_call"
 
 	openAIResponsesOutputContentTypeText = "output_text"
@@ -22,13 +23,13 @@ func ConvertResponsesResponseToChatCompletionResponse(responsesResp *dto.OpenAIR
 		return nil, fmt.Errorf("responses response is nil")
 	}
 
-	content, toolCalls, err := extractChatMessageFromResponsesOutput(responsesResp.Output)
+	content, reasoning, toolCalls, err := extractChatMessageFromResponsesOutput(responsesResp.Output)
 	if err != nil {
 		return nil, err
 	}
 
 	finishReason := mapResponsesStatusToChatFinishReason(responsesResp.Status, len(toolCalls) > 0)
-	assistantMsg, err := buildChatAssistantMessage(content, toolCalls)
+	assistantMsg, err := buildChatAssistantMessage(content, reasoning, toolCalls)
 	if err != nil {
 		return nil, err
 	}
@@ -57,7 +58,7 @@ func ConvertChatCompletionResponseToResponsesResponse(chatResp *dto.OpenAITextRe
 	if err != nil {
 		return nil, err
 	}
-	output, err := buildResponsesOutputFromChat(assistantText, choice.Message.ToolCalls)
+	output, err := buildResponsesOutputFromChat(choice.Message, assistantText, choice.Message.ToolCalls)
 	if err != nil {
 		return nil, err
 	}
@@ -84,16 +85,29 @@ func getSingleChatChoice(choices []dto.OpenAITextResponseChoice) (dto.OpenAIText
 	return choices[0], nil
 }
 
-func extractChatMessageFromResponsesOutput(output []dto.ResponsesOutput) (content string, toolCalls []dto.ToolCallResponse, err error) {
+// extractChatMessageFromResponsesOutput merges Responses output items into a
+// single Chat assistant message while preserving reasoning and tool calls.
+func extractChatMessageFromResponsesOutput(output []dto.ResponsesOutput) (content string, reasoning string, toolCalls []dto.ToolCallResponse, err error) {
 	var builder strings.Builder
+	var reasoningBuilder strings.Builder
 	var calls []dto.ToolCallResponse
 	for _, item := range output {
 		itemType := strings.TrimSpace(item.Type)
 		switch itemType {
+		case openAIResponsesOutputTypeReasoning:
+			for _, part := range item.Summary {
+				if strings.TrimSpace(part.Text) == "" {
+					continue
+				}
+				if reasoningBuilder.Len() > 0 {
+					reasoningBuilder.WriteString("\n")
+				}
+				reasoningBuilder.WriteString(part.Text)
+			}
 		case openAIResponsesOutputTypeMessage:
 			for _, part := range item.Content {
 				if strings.TrimSpace(part.Type) != openAIResponsesOutputContentTypeText {
-					return "", nil, fmt.Errorf("unsupported responses message content type: %q", part.Type)
+					return "", "", nil, fmt.Errorf("unsupported responses message content type: %q", part.Type)
 				}
 				builder.WriteString(part.Text)
 			}
@@ -114,13 +128,16 @@ func extractChatMessageFromResponsesOutput(output []dto.ResponsesOutput) (conten
 				},
 			})
 		default:
-			return "", nil, fmt.Errorf("unsupported responses output item type: %q", itemType)
+			return "", "", nil, fmt.Errorf("unsupported responses output item type: %q", itemType)
 		}
 	}
-	return builder.String(), calls, nil
+	return builder.String(), reasoningBuilder.String(), calls, nil
 }
 
 func mapResponsesStatusToChatFinishReason(status string, sawToolCalls bool) string {
+	if strings.EqualFold(strings.TrimSpace(status), "failed") {
+		return "error"
+	}
 	if strings.EqualFold(strings.TrimSpace(status), "incomplete") {
 		return "length"
 	}
@@ -130,8 +147,11 @@ func mapResponsesStatusToChatFinishReason(status string, sawToolCalls bool) stri
 	return "stop"
 }
 
-func buildChatAssistantMessage(content string, toolCalls []dto.ToolCallResponse) (dto.Message, error) {
-	msg := dto.Message{Role: "assistant", Content: content}
+func buildChatAssistantMessage(content string, reasoning string, toolCalls []dto.ToolCallResponse) (dto.Message, error) {
+	msg := dto.Message{Role: "assistant", Content: content, ReasoningContent: reasoning}
+	if strings.TrimSpace(content) == "" {
+		msg.Content = nil
+	}
 	if len(toolCalls) == 0 {
 		return msg, nil
 	}
@@ -184,8 +204,19 @@ func extractChatMessageTextOnly(msg dto.Message) (string, error) {
 	return strings.TrimSpace(builder.String()), nil
 }
 
-func buildResponsesOutputFromChat(text string, rawToolCalls json.RawMessage) ([]dto.ResponsesOutput, error) {
-	output := make([]dto.ResponsesOutput, 0, 1)
+func buildResponsesOutputFromChat(msg dto.Message, text string, rawToolCalls json.RawMessage) ([]dto.ResponsesOutput, error) {
+	output := make([]dto.ResponsesOutput, 0, 2)
+	if reasoning := normalizeChatResponseReasoning(msg); reasoning != "" {
+		output = append(output, dto.ResponsesOutput{
+			Type:   openAIResponsesOutputTypeReasoning,
+			ID:     "rs_0",
+			Status: "completed",
+			Summary: []dto.ResponsesContentPart{{
+				Type: openAIResponsesSummaryTextType,
+				Text: reasoning,
+			}},
+		})
+	}
 	if strings.TrimSpace(text) != "" {
 		output = append(output, dto.ResponsesOutput{
 			Type:   openAIResponsesOutputTypeMessage,
@@ -202,14 +233,37 @@ func buildResponsesOutputFromChat(text string, rawToolCalls json.RawMessage) ([]
 	if err != nil {
 		return nil, err
 	}
-	return append(output, toolOutputs...), nil
+	output = append(output, toolOutputs...)
+	if len(output) == 0 {
+		output = append(output, dto.ResponsesOutput{
+			Type:   openAIResponsesOutputTypeMessage,
+			ID:     "msg_0",
+			Status: "completed",
+			Role:   "assistant",
+			Content: []dto.ResponsesOutputContent{{
+				Type: openAIResponsesOutputContentTypeText,
+				Text: "",
+			}},
+		})
+	}
+	return output, nil
 }
 
 func mapChatFinishReasonToResponsesStatus(finishReason string) string {
+	if strings.EqualFold(strings.TrimSpace(finishReason), "error") {
+		return "failed"
+	}
 	if strings.EqualFold(strings.TrimSpace(finishReason), "length") {
 		return "incomplete"
 	}
 	return "completed"
+}
+
+func normalizeChatResponseReasoning(msg dto.Message) string {
+	if strings.TrimSpace(msg.ReasoningContent) != "" {
+		return strings.TrimSpace(msg.ReasoningContent)
+	}
+	return strings.TrimSpace(msg.Reasoning)
 }
 
 func coerceCreatedAtFromChat(v any) int {
