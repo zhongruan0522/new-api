@@ -13,6 +13,105 @@ import (
 	"github.com/zhongruan0522/new-api/relay/reasonmap"
 )
 
+func claudeThinkingBudgetToReasoningEffort(budget int) string {
+	switch {
+	case budget <= 0:
+		return ""
+	case budget <= 1280:
+		return "low"
+	case budget <= 2048:
+		return "medium"
+	default:
+		return "high"
+	}
+}
+
+func claudeWebSearchMaxUsesToContextSize(maxUses int) string {
+	switch {
+	case maxUses <= 0:
+		return ""
+	case maxUses <= 1:
+		return "low"
+	case maxUses <= 5:
+		return "medium"
+	default:
+		return "high"
+	}
+}
+
+func extractClaudeOutputConfigEffort(outputConfig json.RawMessage) string {
+	if len(outputConfig) == 0 {
+		return ""
+	}
+
+	var config dto.ClaudeOutputConfig
+	if err := common.Unmarshal(outputConfig, &config); err != nil {
+		return ""
+	}
+	if config.Effort == "max" {
+		return "xhigh"
+	}
+	return config.Effort
+}
+
+func extractClaudeReasoningEffort(claudeRequest dto.ClaudeRequest) string {
+	if effort := extractClaudeOutputConfigEffort(claudeRequest.OutputConfig); effort != "" {
+		return effort
+	}
+	if claudeRequest.Thinking == nil {
+		return ""
+	}
+	if claudeRequest.Thinking.Type == "adaptive" {
+		return "high"
+	}
+	return claudeThinkingBudgetToReasoningEffort(claudeRequest.Thinking.GetBudgetTokens())
+}
+
+func buildOpenAIWebSearchOptions(tool *dto.ClaudeWebSearchTool) *dto.WebSearchOptions {
+	if tool == nil {
+		return nil
+	}
+
+	options := &dto.WebSearchOptions{
+		SearchContextSize: claudeWebSearchMaxUsesToContextSize(tool.MaxUses),
+	}
+	if tool.UserLocation != nil {
+		payload, err := common.Marshal(map[string]any{
+			"approximate": tool.UserLocation,
+		})
+		if err == nil {
+			options.UserLocation = payload
+		}
+	}
+	return options
+}
+
+func appendOpenAIToolMessage(openAIMessages *[]dto.Message, claudeRequest dto.ClaudeRequest, mediaMsg dto.ClaudeMediaMessage) {
+	toolName := mediaMsg.Name
+	if toolName == "" {
+		toolName = claudeRequest.SearchToolNameByToolCallId(mediaMsg.ToolUseId)
+	}
+
+	oaiToolMessage := dto.Message{
+		Role:            "tool",
+		Name:            &toolName,
+		ToolCallId:      mediaMsg.ToolUseId,
+		ToolCallIsError: mediaMsg.IsError,
+	}
+	if mediaMsg.IsStringContent() {
+		oaiToolMessage.SetStringContent(mediaMsg.GetStringContent())
+	} else {
+		mediaContents := mediaMsg.ParseMediaContent()
+		if len(mediaContents) == 0 {
+			oaiToolMessage.SetStringContent("")
+		} else {
+			encodeJSON, _ := common.Marshal(mediaContents)
+			oaiToolMessage.SetStringContent(string(encodeJSON))
+		}
+	}
+	*openAIMessages = append(*openAIMessages, oaiToolMessage)
+}
+
 func ClaudeToOpenAIRequest(claudeRequest dto.ClaudeRequest, info *relaycommon.RelayInfo) (*dto.GeneralOpenAIRequest, error) {
 	openAIRequest := dto.GeneralOpenAIRequest{
 		Model:       claudeRequest.Model,
@@ -23,13 +122,14 @@ func ClaudeToOpenAIRequest(claudeRequest dto.ClaudeRequest, info *relaycommon.Re
 	}
 
 	isOpenRouter := info.ChannelType == constant.ChannelTypeOpenRouter
+	openAIRequest.ReasoningEffort = extractClaudeReasoningEffort(claudeRequest)
 
 	if claudeRequest.Thinking != nil && claudeRequest.Thinking.Type == "enabled" {
 		if isOpenRouter {
 			reasoning := openrouter.RequestReasoning{
 				MaxTokens: claudeRequest.Thinking.GetBudgetTokens(),
 			}
-			reasoningJSON, err := json.Marshal(reasoning)
+			reasoningJSON, err := common.Marshal(reasoning)
 			if err != nil {
 				return nil, fmt.Errorf("failed to marshal reasoning: %w", err)
 			}
@@ -42,6 +142,11 @@ func ClaudeToOpenAIRequest(claudeRequest dto.ClaudeRequest, info *relaycommon.Re
 			}
 		}
 	}
+	if claudeRequest.Thinking != nil && claudeRequest.Thinking.Type == "adaptive" && openAIRequest.ReasoningEffort == "" {
+		// Claude adaptive thinking has no direct Chat Completions equivalent, so we
+		// expose it as high effort to preserve the intent when routing through OpenAI-style channels.
+		openAIRequest.ReasoningEffort = "high"
+	}
 
 	// Convert stop sequences
 	if len(claudeRequest.StopSequences) == 1 {
@@ -51,9 +156,9 @@ func ClaudeToOpenAIRequest(claudeRequest dto.ClaudeRequest, info *relaycommon.Re
 	}
 
 	// Convert tools
-	tools, _ := common.Any2Type[[]dto.Tool](claudeRequest.Tools)
 	openAITools := make([]dto.ToolCallRequest, 0)
-	for _, claudeTool := range tools {
+	normalTools, webSearchTools := dto.ProcessTools(claudeRequest.GetTools())
+	for _, claudeTool := range normalTools {
 		openAITool := dto.ToolCallRequest{
 			Type: "function",
 			Function: dto.FunctionRequest{
@@ -65,6 +170,9 @@ func ClaudeToOpenAIRequest(claudeRequest dto.ClaudeRequest, info *relaycommon.Re
 		openAITools = append(openAITools, openAITool)
 	}
 	openAIRequest.Tools = openAITools
+	if len(webSearchTools) > 0 {
+		openAIRequest.WebSearchOptions = buildOpenAIWebSearchOptions(webSearchTools[0])
+	}
 
 	// Convert messages
 	openAIMessages := make([]dto.Message, 0)
@@ -113,7 +221,6 @@ func ClaudeToOpenAIRequest(claudeRequest dto.ClaudeRequest, info *relaycommon.Re
 			Role: claudeMessage.Role,
 		}
 
-		//log.Printf("claudeMessage.Content: %v", claudeMessage.Content)
 		if claudeMessage.IsStringContent() {
 			openAIMessage.SetStringContent(claudeMessage.GetStringContent())
 		} else {
@@ -124,9 +231,21 @@ func ClaudeToOpenAIRequest(claudeRequest dto.ClaudeRequest, info *relaycommon.Re
 			contents := content
 			var toolCalls []dto.ToolCallRequest
 			mediaMessages := make([]dto.MediaContent, 0, len(contents))
+			var reasoningBuilder strings.Builder
+			var reasoningSignature string
+			var redactedReasoningBuilder strings.Builder
 
 			for _, mediaMsg := range contents {
 				switch mediaMsg.Type {
+				case "thinking":
+					if mediaMsg.Thinking != nil {
+						reasoningBuilder.WriteString(*mediaMsg.Thinking)
+					}
+					if mediaMsg.Signature != "" {
+						reasoningSignature = mediaMsg.Signature
+					}
+				case "redacted_thinking":
+					redactedReasoningBuilder.WriteString(mediaMsg.Data)
 				case "text":
 					message := dto.MediaContent{
 						Type:         "text",
@@ -135,12 +254,17 @@ func ClaudeToOpenAIRequest(claudeRequest dto.ClaudeRequest, info *relaycommon.Re
 					}
 					mediaMessages = append(mediaMessages, message)
 				case "image":
-					// Handle image conversion (base64 to URL or keep as is)
-					imageData := fmt.Sprintf("data:%s;base64,%s", mediaMsg.Source.MediaType, mediaMsg.Source.Data)
-					//textContent += fmt.Sprintf("[Image: %s]", imageData)
+					if mediaMsg.Source == nil {
+						continue
+					}
+					imageURL := mediaMsg.Source.Url
+					if imageURL == "" {
+						// Claude base64 images are converted back into OpenAI data URLs.
+						imageURL = fmt.Sprintf("data:%s;base64,%s", mediaMsg.Source.MediaType, mediaMsg.Source.Data)
+					}
 					mediaMessage := dto.MediaContent{
 						Type:     "image_url",
-						ImageUrl: &dto.MessageImageUrl{Url: imageData},
+						ImageUrl: &dto.MessageImageUrl{Url: imageURL},
 					}
 					mediaMessages = append(mediaMessages, mediaMessage)
 				case "tool_use":
@@ -154,26 +278,18 @@ func ClaudeToOpenAIRequest(claudeRequest dto.ClaudeRequest, info *relaycommon.Re
 					}
 					toolCalls = append(toolCalls, toolCall)
 				case "tool_result":
-					// Add tool result as a separate message
-					toolName := mediaMsg.Name
-					if toolName == "" {
-						toolName = claudeRequest.SearchToolNameByToolCallId(mediaMsg.ToolUseId)
-					}
-					oaiToolMessage := dto.Message{
-						Role:       "tool",
-						Name:       &toolName,
-						ToolCallId: mediaMsg.ToolUseId,
-					}
-					//oaiToolMessage.SetStringContent(*mediaMsg.GetMediaContent().Text)
-					if mediaMsg.IsStringContent() {
-						oaiToolMessage.SetStringContent(mediaMsg.GetStringContent())
-					} else {
-						mediaContents := mediaMsg.ParseMediaContent()
-						encodeJson, _ := common.Marshal(mediaContents)
-						oaiToolMessage.SetStringContent(string(encodeJson))
-					}
-					openAIMessages = append(openAIMessages, oaiToolMessage)
+					appendOpenAIToolMessage(&openAIMessages, claudeRequest, mediaMsg)
 				}
+			}
+
+			if reasoningBuilder.Len() > 0 {
+				openAIMessage.ReasoningContent = reasoningBuilder.String()
+			}
+			if reasoningSignature != "" {
+				openAIMessage.ReasoningSignature = reasoningSignature
+			}
+			if redactedReasoningBuilder.Len() > 0 {
+				openAIMessage.RedactedReasoningContent = redactedReasoningBuilder.String()
 			}
 
 			if len(toolCalls) > 0 {
@@ -184,7 +300,7 @@ func ClaudeToOpenAIRequest(claudeRequest dto.ClaudeRequest, info *relaycommon.Re
 				openAIMessage.SetMediaContent(mediaMessages)
 			}
 		}
-		if len(openAIMessage.ParseContent()) > 0 || len(openAIMessage.ToolCalls) > 0 {
+		if len(openAIMessage.ParseContent()) > 0 || len(openAIMessage.ToolCalls) > 0 || openAIMessage.ReasoningContent != "" || openAIMessage.ReasoningSignature != "" || openAIMessage.RedactedReasoningContent != "" {
 			openAIMessages = append(openAIMessages, openAIMessage)
 		}
 	}
@@ -244,6 +360,38 @@ func StreamResponseOpenAI2Claude(openAIResponse *dto.ChatCompletionsStreamRespon
 			info.ClaudeConvertInfo.Index++
 		}
 		info.ClaudeConvertInfo.LastMessagesType = relaycommon.LastMessageTypeNone
+	}
+	flushPendingThinkingSignature := func(closeImmediately bool) {
+		if info.ClaudeConvertInfo.PendingReasoningSignature == "" {
+			return
+		}
+		if info.ClaudeConvertInfo.LastMessagesType != relaycommon.LastMessageTypeThinking {
+			stopOpenBlocksAndAdvance()
+			idx := info.ClaudeConvertInfo.Index
+			claudeResponses = append(claudeResponses, &dto.ClaudeResponse{
+				Index: &idx,
+				Type:  "content_block_start",
+				ContentBlock: &dto.ClaudeMediaMessage{
+					Type:     "thinking",
+					Thinking: common.GetPointer[string](""),
+				},
+			})
+			info.ClaudeConvertInfo.LastMessagesType = relaycommon.LastMessageTypeThinking
+		}
+		idx := info.ClaudeConvertInfo.Index
+		signature := info.ClaudeConvertInfo.PendingReasoningSignature
+		claudeResponses = append(claudeResponses, &dto.ClaudeResponse{
+			Index: &idx,
+			Type:  "content_block_delta",
+			Delta: &dto.ClaudeMediaMessage{
+				Type:      "signature_delta",
+				Signature: signature,
+			},
+		})
+		info.ClaudeConvertInfo.PendingReasoningSignature = ""
+		if closeImmediately {
+			stopOpenBlocksAndAdvance()
+		}
 	}
 	if info.SendResponseCount == 1 {
 		msg := &dto.ClaudeMediaMessage{
@@ -308,6 +456,14 @@ func StreamResponseOpenAI2Claude(openAIResponse *dto.ChatCompletionsStreamRespon
 		// 判断首个响应是否存在内容（非标准的 OpenAI 响应）
 		if len(openAIResponse.Choices) > 0 {
 			reasoning := openAIResponse.Choices[0].Delta.GetReasoningContent()
+			reasoningSignature := ""
+			if openAIResponse.Choices[0].Delta.ReasoningSignature != nil {
+				reasoningSignature = *openAIResponse.Choices[0].Delta.ReasoningSignature
+			}
+			redactedReasoning := ""
+			if openAIResponse.Choices[0].Delta.RedactedReasoningContent != nil {
+				redactedReasoning = *openAIResponse.Choices[0].Delta.RedactedReasoningContent
+			}
 			content := openAIResponse.Choices[0].Delta.GetContentString()
 
 			if reasoning != "" {
@@ -332,50 +488,71 @@ func StreamResponseOpenAI2Claude(openAIResponse *dto.ChatCompletionsStreamRespon
 						Thinking: &reasoning,
 					},
 				})
-				info.ClaudeConvertInfo.LastMessagesType = relaycommon.LastMessageTypeThinking
-			} else if content != "" {
-				if info.ClaudeConvertInfo.LastMessagesType != relaycommon.LastMessageTypeText {
-					stopOpenBlocksAndAdvance()
+				if reasoningSignature != "" {
+					info.ClaudeConvertInfo.PendingReasoningSignature = reasoningSignature
+					flushPendingThinkingSignature(false)
 				}
-				idx := info.ClaudeConvertInfo.Index
-				claudeResponses = append(claudeResponses, &dto.ClaudeResponse{
-					Index: &idx,
-					Type:  "content_block_start",
-					ContentBlock: &dto.ClaudeMediaMessage{
-						Type: "text",
-						Text: common.GetPointer[string](""),
-					},
-				})
-				idx2 := idx
-				claudeResponses = append(claudeResponses, &dto.ClaudeResponse{
-					Index: &idx2,
-					Type:  "content_block_delta",
-					Delta: &dto.ClaudeMediaMessage{
-						Type: "text_delta",
-						Text: common.GetPointer[string](content),
-					},
-				})
-				info.ClaudeConvertInfo.LastMessagesType = relaycommon.LastMessageTypeText
+				info.ClaudeConvertInfo.LastMessagesType = relaycommon.LastMessageTypeThinking
+			} else {
+				if reasoningSignature != "" {
+					info.ClaudeConvertInfo.PendingReasoningSignature = reasoningSignature
+				}
+				if redactedReasoning != "" {
+					flushPendingThinkingSignature(true)
+					stopOpenBlocksAndAdvance()
+					idx := info.ClaudeConvertInfo.Index
+					claudeResponses = append(claudeResponses, &dto.ClaudeResponse{
+						Index: &idx,
+						Type:  "content_block_start",
+						ContentBlock: &dto.ClaudeMediaMessage{
+							Type: "redacted_thinking",
+							Data: redactedReasoning,
+						},
+					})
+					claudeResponses = append(claudeResponses, generateStopBlock(idx))
+					info.ClaudeConvertInfo.Index++
+				}
+				if content != "" {
+					if info.ClaudeConvertInfo.LastMessagesType != relaycommon.LastMessageTypeText {
+						stopOpenBlocksAndAdvance()
+					}
+					idx := info.ClaudeConvertInfo.Index
+					claudeResponses = append(claudeResponses, &dto.ClaudeResponse{
+						Index: &idx,
+						Type:  "content_block_start",
+						ContentBlock: &dto.ClaudeMediaMessage{
+							Type: "text",
+							Text: common.GetPointer[string](""),
+						},
+					})
+					idx2 := idx
+					claudeResponses = append(claudeResponses, &dto.ClaudeResponse{
+						Index: &idx2,
+						Type:  "content_block_delta",
+						Delta: &dto.ClaudeMediaMessage{
+							Type: "text_delta",
+							Text: common.GetPointer[string](content),
+						},
+					})
+					info.ClaudeConvertInfo.LastMessagesType = relaycommon.LastMessageTypeText
+				}
 			}
 		}
 
 		// 如果首块就带 finish_reason，需要立即发送停止块
 		if len(openAIResponse.Choices) > 0 && openAIResponse.Choices[0].FinishReason != nil && *openAIResponse.Choices[0].FinishReason != "" {
 			info.FinishReason = *openAIResponse.Choices[0].FinishReason
+			flushPendingThinkingSignature(true)
 			stopOpenBlocks()
 			oaiUsage := openAIResponse.Usage
 			if oaiUsage == nil {
 				oaiUsage = info.ClaudeConvertInfo.Usage
 			}
 			if oaiUsage != nil {
+				claudeUsage := dto.OpenAIUsageToClaudeUsage(oaiUsage)
 				claudeResponses = append(claudeResponses, &dto.ClaudeResponse{
-					Type: "message_delta",
-					Usage: &dto.ClaudeUsage{
-						InputTokens:              oaiUsage.PromptTokens,
-						OutputTokens:             oaiUsage.CompletionTokens,
-						CacheCreationInputTokens: oaiUsage.PromptTokensDetails.CachedCreationTokens,
-						CacheReadInputTokens:     oaiUsage.PromptTokensDetails.CachedTokens,
-					},
+					Type:  "message_delta",
+					Usage: claudeUsage,
 					Delta: &dto.ClaudeMediaMessage{
 						StopReason: common.GetPointer[string](stopReasonOpenAI2Claude(info.FinishReason)),
 					},
@@ -393,17 +570,14 @@ func StreamResponseOpenAI2Claude(openAIResponse *dto.ChatCompletionsStreamRespon
 		// no choices
 		// 可能为非标准的 OpenAI 响应，判断是否已经完成
 		if info.ClaudeConvertInfo.Done {
+			flushPendingThinkingSignature(true)
 			stopOpenBlocks()
 			oaiUsage := info.ClaudeConvertInfo.Usage
 			if oaiUsage != nil {
+				claudeUsage := dto.OpenAIUsageToClaudeUsage(oaiUsage)
 				claudeResponses = append(claudeResponses, &dto.ClaudeResponse{
-					Type: "message_delta",
-					Usage: &dto.ClaudeUsage{
-						InputTokens:              oaiUsage.PromptTokens,
-						OutputTokens:             oaiUsage.CompletionTokens,
-						CacheCreationInputTokens: oaiUsage.PromptTokensDetails.CachedCreationTokens,
-						CacheReadInputTokens:     oaiUsage.PromptTokensDetails.CachedTokens,
-					},
+					Type:  "message_delta",
+					Usage: claudeUsage,
 					Delta: &dto.ClaudeMediaMessage{
 						StopReason: common.GetPointer[string](stopReasonOpenAI2Claude(info.FinishReason)),
 					},
@@ -420,11 +594,15 @@ func StreamResponseOpenAI2Claude(openAIResponse *dto.ChatCompletionsStreamRespon
 		if doneChunk {
 			info.FinishReason = *chosenChoice.FinishReason
 		}
+		if chosenChoice.Delta.ReasoningSignature != nil && *chosenChoice.Delta.ReasoningSignature != "" && chosenChoice.Delta.GetReasoningContent() == "" {
+			info.ClaudeConvertInfo.PendingReasoningSignature = *chosenChoice.Delta.ReasoningSignature
+		}
 
 		var claudeResponse dto.ClaudeResponse
 		var isEmpty bool
 		claudeResponse.Type = "content_block_delta"
 		if len(chosenChoice.Delta.ToolCalls) > 0 {
+			flushPendingThinkingSignature(true)
 			toolCalls := chosenChoice.Delta.ToolCalls
 			if info.ClaudeConvertInfo.LastMessagesType != relaycommon.LastMessageTypeTools {
 				stopOpenBlocksAndAdvance()
@@ -476,8 +654,12 @@ func StreamResponseOpenAI2Claude(openAIResponse *dto.ChatCompletionsStreamRespon
 			info.ClaudeConvertInfo.Index = base + maxOffset
 		} else {
 			reasoning := chosenChoice.Delta.GetReasoningContent()
+			redactedReasoning := ""
+			if chosenChoice.Delta.RedactedReasoningContent != nil {
+				redactedReasoning = *chosenChoice.Delta.RedactedReasoningContent
+			}
 			textContent := chosenChoice.Delta.GetContentString()
-			if reasoning != "" || textContent != "" {
+			if reasoning != "" || redactedReasoning != "" || textContent != "" {
 				if reasoning != "" {
 					if info.ClaudeConvertInfo.LastMessagesType != relaycommon.LastMessageTypeThinking {
 						stopOpenBlocksAndAdvance()
@@ -496,7 +678,25 @@ func StreamResponseOpenAI2Claude(openAIResponse *dto.ChatCompletionsStreamRespon
 						Type:     "thinking_delta",
 						Thinking: &reasoning,
 					}
+					if chosenChoice.Delta.ReasoningSignature != nil && *chosenChoice.Delta.ReasoningSignature != "" {
+						info.ClaudeConvertInfo.PendingReasoningSignature = *chosenChoice.Delta.ReasoningSignature
+					}
+				} else if redactedReasoning != "" {
+					flushPendingThinkingSignature(true)
+					stopOpenBlocksAndAdvance()
+					idx := info.ClaudeConvertInfo.Index
+					claudeResponses = append(claudeResponses, &dto.ClaudeResponse{
+						Index: &idx,
+						Type:  "content_block_start",
+						ContentBlock: &dto.ClaudeMediaMessage{
+							Type: "redacted_thinking",
+							Data: redactedReasoning,
+						},
+					})
+					claudeResponses = append(claudeResponses, generateStopBlock(idx))
+					info.ClaudeConvertInfo.Index++
 				} else {
+					flushPendingThinkingSignature(true)
 					if info.ClaudeConvertInfo.LastMessagesType != relaycommon.LastMessageTypeText {
 						stopOpenBlocksAndAdvance()
 						idx := info.ClaudeConvertInfo.Index
@@ -523,23 +723,23 @@ func StreamResponseOpenAI2Claude(openAIResponse *dto.ChatCompletionsStreamRespon
 		claudeResponse.Index = common.GetPointer[int](info.ClaudeConvertInfo.Index)
 		if !isEmpty && claudeResponse.Delta != nil {
 			claudeResponses = append(claudeResponses, &claudeResponse)
+			if claudeResponse.Delta.Type == "thinking_delta" {
+				flushPendingThinkingSignature(false)
+			}
 		}
 
 		if doneChunk || info.ClaudeConvertInfo.Done {
+			flushPendingThinkingSignature(true)
 			stopOpenBlocks()
 			oaiUsage := openAIResponse.Usage
 			if oaiUsage == nil {
 				oaiUsage = info.ClaudeConvertInfo.Usage
 			}
 			if oaiUsage != nil {
+				claudeUsage := dto.OpenAIUsageToClaudeUsage(oaiUsage)
 				claudeResponses = append(claudeResponses, &dto.ClaudeResponse{
-					Type: "message_delta",
-					Usage: &dto.ClaudeUsage{
-						InputTokens:              oaiUsage.PromptTokens,
-						OutputTokens:             oaiUsage.CompletionTokens,
-						CacheCreationInputTokens: oaiUsage.PromptTokensDetails.CachedCreationTokens,
-						CacheReadInputTokens:     oaiUsage.PromptTokensDetails.CachedTokens,
-					},
+					Type:  "message_delta",
+					Usage: claudeUsage,
 					Delta: &dto.ClaudeMediaMessage{
 						StopReason: common.GetPointer[string](stopReasonOpenAI2Claude(info.FinishReason)),
 					},
@@ -567,33 +767,80 @@ func ResponseOpenAI2Claude(openAIResponse *dto.OpenAITextResponse, info *relayco
 	}
 	for _, choice := range openAIResponse.Choices {
 		stopReason = stopReasonOpenAI2Claude(choice.FinishReason)
-		if choice.FinishReason == "tool_calls" {
-			for _, toolUse := range choice.Message.ParseToolCalls() {
-				claudeContent := dto.ClaudeMediaMessage{}
-				claudeContent.Type = "tool_use"
-				claudeContent.Id = toolUse.ID
-				claudeContent.Name = toolUse.Function.Name
-				var mapParams map[string]interface{}
-				if err := common.Unmarshal([]byte(toolUse.Function.Arguments), &mapParams); err == nil {
-					claudeContent.Input = mapParams
+
+		reasoningText := choice.Message.ReasoningContent
+		if reasoningText == "" {
+			reasoningText = choice.Message.Reasoning
+		}
+		if reasoningText != "" || choice.Message.ReasoningSignature != "" {
+			claudeContent := dto.ClaudeMediaMessage{Type: "thinking", Signature: choice.Message.ReasoningSignature}
+			claudeContent.Thinking = common.GetPointer[string](reasoningText)
+			contents = append(contents, claudeContent)
+		}
+		if choice.Message.RedactedReasoningContent != "" {
+			contents = append(contents, dto.ClaudeMediaMessage{
+				Type: "redacted_thinking",
+				Data: choice.Message.RedactedReasoningContent,
+			})
+		}
+
+		for _, toolUse := range choice.Message.ParseToolCalls() {
+			claudeContent := dto.ClaudeMediaMessage{Type: "tool_use", Id: toolUse.ID, Name: toolUse.Function.Name}
+			var mapParams map[string]interface{}
+			if err := common.Unmarshal([]byte(toolUse.Function.Arguments), &mapParams); err == nil {
+				claudeContent.Input = mapParams
+			} else {
+				claudeContent.Input = toolUse.Function.Arguments
+			}
+			contents = append(contents, claudeContent)
+		}
+
+		if choice.Message.IsStringContent() {
+			text := choice.Message.StringContent()
+			if text != "" {
+				claudeContent := dto.ClaudeMediaMessage{Type: "text"}
+				claudeContent.SetText(text)
+				contents = append(contents, claudeContent)
+			}
+			continue
+		}
+
+		for _, media := range choice.Message.ParseContent() {
+			switch media.Type {
+			case "text":
+				claudeContent := dto.ClaudeMediaMessage{Type: "text"}
+				claudeContent.SetText(media.Text)
+				contents = append(contents, claudeContent)
+			case "image_url":
+				imageURL := media.GetImageMedia()
+				if imageURL == nil || imageURL.Url == "" {
+					continue
+				}
+				claudeContent := dto.ClaudeMediaMessage{Type: "image", Source: &dto.ClaudeMessageSource{}}
+				if strings.HasPrefix(imageURL.Url, "data:") {
+					mimeType := imageURL.MimeType
+					base64Data := imageURL.Url
+					if strings.Contains(imageURL.Url, ",") {
+						parts := strings.SplitN(imageURL.Url, ",", 2)
+						base64Data = parts[1]
+						if mimeType == "" && strings.HasPrefix(parts[0], "data:") {
+							mimeType = strings.TrimPrefix(strings.TrimSuffix(parts[0], ";base64"), "data:")
+						}
+					}
+					claudeContent.Source.Type = "base64"
+					claudeContent.Source.MediaType = mimeType
+					claudeContent.Source.Data = base64Data
 				} else {
-					claudeContent.Input = toolUse.Function.Arguments
+					claudeContent.Source.Type = "url"
+					claudeContent.Source.Url = imageURL.Url
 				}
 				contents = append(contents, claudeContent)
 			}
-		} else {
-			claudeContent := dto.ClaudeMediaMessage{}
-			claudeContent.Type = "text"
-			claudeContent.SetText(choice.Message.StringContent())
-			contents = append(contents, claudeContent)
 		}
 	}
 	claudeResponse.Content = contents
 	claudeResponse.StopReason = stopReason
-	claudeResponse.Usage = &dto.ClaudeUsage{
-		InputTokens:  openAIResponse.PromptTokens,
-		OutputTokens: openAIResponse.CompletionTokens,
-	}
+	claudeResponse.Usage = dto.OpenAIUsageToClaudeUsage(&openAIResponse.Usage)
 
 	return claudeResponse
 }
