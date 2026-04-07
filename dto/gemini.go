@@ -436,6 +436,29 @@ type GeminiChatCandidate struct {
 	SafetyRatings []GeminiChatSafetyRating `json:"safetyRatings"`
 }
 
+// UnmarshalJSON allows GeminiChatCandidate to accept both snake_case and camelCase fields.
+func (c *GeminiChatCandidate) UnmarshalJSON(data []byte) error {
+	type Alias GeminiChatCandidate
+	var aux struct {
+		Alias
+		FinishReasonSnake  *string                  `json:"finish_reason,omitempty"`
+		SafetyRatingsSnake []GeminiChatSafetyRating `json:"safety_ratings,omitempty"`
+	}
+
+	if err := common.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+
+	*c = GeminiChatCandidate(aux.Alias)
+	if aux.FinishReasonSnake != nil {
+		c.FinishReason = aux.FinishReasonSnake
+	}
+	if len(aux.SafetyRatingsSnake) > 0 {
+		c.SafetyRatings = aux.SafetyRatingsSnake
+	}
+	return nil
+}
+
 type GeminiChatSafetyRating struct {
 	Category    string `json:"category"`
 	Probability string `json:"probability"`
@@ -446,10 +469,56 @@ type GeminiChatPromptFeedback struct {
 	BlockReason   *string                  `json:"blockReason,omitempty"`
 }
 
+// UnmarshalJSON allows GeminiChatPromptFeedback to accept both snake_case and camelCase fields.
+func (f *GeminiChatPromptFeedback) UnmarshalJSON(data []byte) error {
+	type Alias GeminiChatPromptFeedback
+	var aux struct {
+		Alias
+		SafetyRatingsSnake []GeminiChatSafetyRating `json:"safety_ratings,omitempty"`
+		BlockReasonSnake   *string                  `json:"block_reason,omitempty"`
+	}
+
+	if err := common.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+
+	*f = GeminiChatPromptFeedback(aux.Alias)
+	if len(aux.SafetyRatingsSnake) > 0 {
+		f.SafetyRatings = aux.SafetyRatingsSnake
+	}
+	if aux.BlockReasonSnake != nil {
+		f.BlockReason = aux.BlockReasonSnake
+	}
+	return nil
+}
+
 type GeminiChatResponse struct {
 	Candidates     []GeminiChatCandidate     `json:"candidates"`
 	PromptFeedback *GeminiChatPromptFeedback `json:"promptFeedback,omitempty"`
 	UsageMetadata  GeminiUsageMetadata       `json:"usageMetadata"`
+}
+
+// UnmarshalJSON allows GeminiChatResponse to accept both snake_case and camelCase fields.
+func (r *GeminiChatResponse) UnmarshalJSON(data []byte) error {
+	type Alias GeminiChatResponse
+	var aux struct {
+		Alias
+		PromptFeedbackSnake *GeminiChatPromptFeedback `json:"prompt_feedback,omitempty"`
+		UsageMetadataSnake  *GeminiUsageMetadata      `json:"usage_metadata,omitempty"`
+	}
+
+	if err := common.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+
+	*r = GeminiChatResponse(aux.Alias)
+	if aux.PromptFeedbackSnake != nil {
+		r.PromptFeedback = aux.PromptFeedbackSnake
+	}
+	if aux.UsageMetadataSnake != nil {
+		r.UsageMetadata = *aux.UsageMetadataSnake
+	}
+	return nil
 }
 
 type GeminiUsageMetadata struct {
@@ -459,11 +528,74 @@ type GeminiUsageMetadata struct {
 	ThoughtsTokenCount      int                         `json:"thoughtsTokenCount"`
 	CachedContentTokenCount int                         `json:"cachedContentTokenCount"`
 	PromptTokensDetails     []GeminiPromptTokensDetails `json:"promptTokensDetails"`
+	CandidatesTokensDetails []GeminiPromptTokensDetails `json:"candidatesTokensDetails"`
+}
+
+// UnmarshalJSON allows GeminiUsageMetadata to accept both snake_case and camelCase fields.
+func (m *GeminiUsageMetadata) UnmarshalJSON(data []byte) error {
+	type Alias GeminiUsageMetadata
+	var aux struct {
+		Alias
+		PromptTokenCountSnake        int                         `json:"prompt_token_count,omitempty"`
+		CandidatesTokenCountSnake    int                         `json:"candidates_token_count,omitempty"`
+		TotalTokenCountSnake         int                         `json:"total_token_count,omitempty"`
+		ThoughtsTokenCountSnake      int                         `json:"thoughts_token_count,omitempty"`
+		CachedContentTokenCountSnake int                         `json:"cached_content_token_count,omitempty"`
+		PromptTokensDetailsSnake     []GeminiPromptTokensDetails `json:"prompt_tokens_details,omitempty"`
+		CandidatesTokensDetailsSnake []GeminiPromptTokensDetails `json:"candidates_tokens_details,omitempty"`
+	}
+
+	if err := common.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+
+	*m = GeminiUsageMetadata(aux.Alias)
+	if aux.PromptTokenCountSnake != 0 {
+		m.PromptTokenCount = aux.PromptTokenCountSnake
+	}
+	if aux.CandidatesTokenCountSnake != 0 {
+		m.CandidatesTokenCount = aux.CandidatesTokenCountSnake
+	}
+	if aux.TotalTokenCountSnake != 0 {
+		m.TotalTokenCount = aux.TotalTokenCountSnake
+	}
+	if aux.ThoughtsTokenCountSnake != 0 {
+		m.ThoughtsTokenCount = aux.ThoughtsTokenCountSnake
+	}
+	if aux.CachedContentTokenCountSnake != 0 {
+		m.CachedContentTokenCount = aux.CachedContentTokenCountSnake
+	}
+	if len(aux.PromptTokensDetailsSnake) > 0 {
+		m.PromptTokensDetails = aux.PromptTokensDetailsSnake
+	}
+	if len(aux.CandidatesTokensDetailsSnake) > 0 {
+		m.CandidatesTokensDetails = aux.CandidatesTokensDetailsSnake
+	}
+	return nil
 }
 
 type GeminiPromptTokensDetails struct {
 	Modality   string `json:"modality"`
 	TokenCount int    `json:"tokenCount"`
+}
+
+// UnmarshalJSON allows GeminiPromptTokensDetails to accept both snake_case and camelCase fields.
+func (d *GeminiPromptTokensDetails) UnmarshalJSON(data []byte) error {
+	type Alias GeminiPromptTokensDetails
+	var aux struct {
+		Alias
+		TokenCountSnake int `json:"token_count,omitempty"`
+	}
+
+	if err := common.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+
+	*d = GeminiPromptTokensDetails(aux.Alias)
+	if aux.TokenCountSnake != 0 {
+		d.TokenCount = aux.TokenCountSnake
+	}
+	return nil
 }
 
 // Imagen related structs
