@@ -9,18 +9,23 @@ import (
 )
 
 const chatToResponsesAssistantMessageID = "msg_0"
+const chatToResponsesReasoningItemID = "rs_0"
 
 type chatToResponsesStreamConverter struct {
 	id      string
 	model   string
 	created int64
 
-	sentCreated   bool
-	sentMsgAdded  bool
-	finishReason  string
-	textBuilder   strings.Builder
-	toolCallsByID map[string]*chatToResponsesToolCallState
-	toolCallOrder []string
+	sentCreated        bool
+	sentInProgress     bool
+	sentMsgAdded       bool
+	sentReasoningAdded bool
+	reasoningDone      bool
+	finishReason       string
+	reasoningBuilder   strings.Builder
+	textBuilder        strings.Builder
+	toolCallsByID      map[string]*chatToResponsesToolCallState
+	toolCallOrder      []string
 
 	usage *dto.Usage
 	err   error
@@ -98,6 +103,14 @@ func (c *chatToResponsesStreamConverter) convertChunk(chunk *dto.ChatCompletions
 		out.WriteString(frame)
 		c.sentCreated = true
 	}
+	if !c.sentInProgress {
+		frame, err := c.emitInProgress()
+		if err != nil {
+			return "", err
+		}
+		out.WriteString(frame)
+		c.sentInProgress = true
+	}
 
 	for _, choice := range chunk.Choices {
 		frame, err := c.convertChoice(choice)
@@ -122,7 +135,21 @@ func (c *chatToResponsesStreamConverter) convertChoice(choice dto.ChatCompletion
 	c.captureFinishReason(choice)
 
 	var out strings.Builder
+	if delta := strings.TrimSpace(choice.Delta.GetReasoningContent()); delta != "" {
+		frame, err := c.emitReasoningDelta(delta)
+		if err != nil {
+			return "", err
+		}
+		out.WriteString(frame)
+	}
 	if delta := strings.TrimSpace(choice.Delta.GetContentString()); delta != "" {
+		if !c.reasoningDone {
+			doneFrame, err := c.emitReasoningDoneIfAny()
+			if err != nil {
+				return "", err
+			}
+			out.WriteString(doneFrame)
+		}
 		frame, err := c.emitAssistantTextDelta(delta)
 		if err != nil {
 			return "", err
@@ -130,6 +157,13 @@ func (c *chatToResponsesStreamConverter) convertChoice(choice dto.ChatCompletion
 		out.WriteString(frame)
 	}
 	if len(choice.Delta.ToolCalls) > 0 {
+		if !c.reasoningDone {
+			doneFrame, err := c.emitReasoningDoneIfAny()
+			if err != nil {
+				return "", err
+			}
+			out.WriteString(doneFrame)
+		}
 		frames, err := c.emitToolCallDeltas(choice.Delta.ToolCalls)
 		if err != nil {
 			return "", err
@@ -187,6 +221,59 @@ func (c *chatToResponsesStreamConverter) emitMessageAdded() (string, error) {
 	})
 }
 
+func (c *chatToResponsesStreamConverter) emitInProgress() (string, error) {
+	resp := &dto.OpenAIResponsesResponse{
+		ID:        c.ensureID(),
+		Object:    "response",
+		CreatedAt: int(c.ensureCreated()),
+		Status:    "in_progress",
+		Model:     c.model,
+		Output:    make([]dto.ResponsesOutput, 0),
+	}
+	return encodeResponsesStreamEvent(dto.ResponsesStreamResponse{
+		Type:     "response.in_progress",
+		Response: resp,
+	})
+}
+
+// emitReasoningDelta preserves chat reasoning deltas as Responses reasoning
+// summary events so Responses clients can continue consuming thinking streams.
+func (c *chatToResponsesStreamConverter) emitReasoningDelta(delta string) (string, error) {
+	c.reasoningBuilder.WriteString(delta)
+
+	var out strings.Builder
+	if !c.sentReasoningAdded {
+		added, err := encodeResponsesStreamEvent(dto.ResponsesStreamResponse{
+			Type: "response.output_item.added",
+			Item: &dto.ResponsesOutput{
+				Type:   "reasoning",
+				ID:     chatToResponsesReasoningItemID,
+				Status: "in_progress",
+				Summary: []dto.ResponsesContentPart{{
+					Type: "summary_text",
+				}},
+			},
+			ItemID: chatToResponsesReasoningItemID,
+		})
+		if err != nil {
+			return "", err
+		}
+		out.WriteString(added)
+		c.sentReasoningAdded = true
+	}
+
+	frame, err := encodeResponsesStreamEvent(dto.ResponsesStreamResponse{
+		Type:   "response.reasoning_summary_text.delta",
+		Delta:  delta,
+		ItemID: chatToResponsesReasoningItemID,
+	})
+	if err != nil {
+		return "", err
+	}
+	out.WriteString(frame)
+	return out.String(), nil
+}
+
 func (c *chatToResponsesStreamConverter) emitToolCallDeltas(calls []dto.ToolCallResponse) (string, error) {
 	var out strings.Builder
 	for _, call := range calls {
@@ -238,6 +325,10 @@ func (c *chatToResponsesStreamConverter) emitToolCallDeltas(calls []dto.ToolCall
 }
 
 func (c *chatToResponsesStreamConverter) emitCompleted() (string, error) {
+	reasoningDoneFrame, err := c.emitReasoningDoneIfAny()
+	if err != nil {
+		return "", err
+	}
 	messageDoneFrame, err := c.emitMessageDoneIfAny()
 	if err != nil {
 		return "", err
@@ -254,6 +345,7 @@ func (c *chatToResponsesStreamConverter) emitCompleted() (string, error) {
 	}
 
 	var out strings.Builder
+	out.WriteString(reasoningDoneFrame)
 	out.WriteString(messageDoneFrame)
 	for _, call := range c.toolCallOrder {
 		state := c.toolCallsByID[call]
@@ -279,8 +371,14 @@ func (c *chatToResponsesStreamConverter) emitCompleted() (string, error) {
 		out.WriteString(frame)
 	}
 
+	eventType := "response.completed"
+	if resp.Status == "incomplete" {
+		eventType = "response.incomplete"
+	} else if resp.Status == "failed" {
+		eventType = "response.failed"
+	}
 	frame, err := encodeResponsesStreamEvent(dto.ResponsesStreamResponse{
-		Type:     "response.completed",
+		Type:     eventType,
 		Response: resp,
 	})
 	if err != nil {
