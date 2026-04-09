@@ -248,6 +248,36 @@ type GeminiFunctionResponse struct {
 	ID           json.RawMessage        `json:"id,omitempty"`
 }
 
+// GetID returns Gemini's optional function response id as a plain string.
+func (r *GeminiFunctionResponse) GetID() string {
+	if r == nil || len(r.ID) == 0 {
+		return ""
+	}
+
+	var id string
+	if err := common.Unmarshal(r.ID, &id); err == nil {
+		return id
+	}
+	return strings.Trim(string(r.ID), `"`)
+}
+
+// SetID stores a function response id using Gemini's raw JSON field shape.
+func (r *GeminiFunctionResponse) SetID(id string) {
+	if r == nil {
+		return
+	}
+	if strings.TrimSpace(id) == "" {
+		r.ID = nil
+		return
+	}
+
+	payload, err := common.Marshal(id)
+	if err != nil {
+		return
+	}
+	r.ID = payload
+}
+
 type GeminiPartExecutableCode struct {
 	Language string `json:"language,omitempty"`
 	Code     string `json:"code,omitempty"`
@@ -276,6 +306,36 @@ type GeminiPart struct {
 	FileData            *GeminiFileData                `json:"fileData,omitempty"`
 	ExecutableCode      *GeminiPartExecutableCode      `json:"executableCode,omitempty"`
 	CodeExecutionResult *GeminiPartCodeExecutionResult `json:"codeExecutionResult,omitempty"`
+}
+
+// GetThoughtSignature returns Gemini's optional thought signature as a plain string.
+func (p GeminiPart) GetThoughtSignature() string {
+	if len(p.ThoughtSignature) == 0 {
+		return ""
+	}
+
+	var signature string
+	if err := common.Unmarshal(p.ThoughtSignature, &signature); err == nil {
+		return signature
+	}
+	return strings.Trim(string(p.ThoughtSignature), `"`)
+}
+
+// SetThoughtSignature stores a thought signature using Gemini's raw JSON field shape.
+func (p *GeminiPart) SetThoughtSignature(signature string) {
+	if p == nil {
+		return
+	}
+	if strings.TrimSpace(signature) == "" {
+		p.ThoughtSignature = nil
+		return
+	}
+
+	payload, err := common.Marshal(signature)
+	if err != nil {
+		return
+	}
+	p.ThoughtSignature = payload
 }
 
 // UnmarshalJSON custom unmarshaler for GeminiPart to support snake_case and camelCase for InlineData

@@ -9,6 +9,7 @@ import (
 	"github.com/zhongruan0522/new-api/dto"
 	"github.com/zhongruan0522/new-api/relay/channel"
 	relaycommon "github.com/zhongruan0522/new-api/relay/common"
+	"github.com/zhongruan0522/new-api/service"
 	"github.com/zhongruan0522/new-api/types"
 
 	"github.com/gin-gonic/gin"
@@ -17,9 +18,16 @@ import (
 type Adaptor struct {
 }
 
-func (a *Adaptor) ConvertGeminiRequest(*gin.Context, *relaycommon.RelayInfo, *dto.GeminiChatRequest) (any, error) {
-	//TODO implement me
-	return nil, errors.New("not implemented")
+func (a *Adaptor) ConvertGeminiRequest(c *gin.Context, info *relaycommon.RelayInfo, request *dto.GeminiChatRequest) (any, error) {
+	if request == nil {
+		return nil, errors.New("request is nil")
+	}
+
+	openAIRequest, err := service.GeminiToOpenAIRequest(request, info)
+	if err != nil {
+		return nil, err
+	}
+	return a.ConvertOpenAIRequest(c, info, openAIRequest)
 }
 
 func (a *Adaptor) ConvertClaudeRequest(c *gin.Context, info *relaycommon.RelayInfo, request *dto.ClaudeRequest) (any, error) {

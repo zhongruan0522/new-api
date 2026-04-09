@@ -7,11 +7,13 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/zhongruan0522/new-api/common"
 	"github.com/zhongruan0522/new-api/dto"
 	"github.com/zhongruan0522/new-api/relay/channel"
-	"github.com/zhongruan0522/new-api/relay/channel/openai"
+	"github.com/zhongruan0522/new-api/relay/channel/openrouter"
 	relaycommon "github.com/zhongruan0522/new-api/relay/common"
 	"github.com/zhongruan0522/new-api/relay/constant"
+	"github.com/zhongruan0522/new-api/service"
 	"github.com/zhongruan0522/new-api/setting/model_setting"
 	"github.com/zhongruan0522/new-api/types"
 
@@ -42,12 +44,18 @@ func (a *Adaptor) ConvertGeminiRequest(c *gin.Context, info *relaycommon.RelayIn
 }
 
 func (a *Adaptor) ConvertClaudeRequest(c *gin.Context, info *relaycommon.RelayInfo, req *dto.ClaudeRequest) (any, error) {
-	adaptor := openai.Adaptor{}
-	oaiReq, err := adaptor.ConvertClaudeRequest(c, info, req)
+	oaiReq, err := service.ClaudeToOpenAIRequest(*req, info)
 	if err != nil {
 		return nil, err
 	}
-	return a.ConvertOpenAIRequest(c, info, oaiReq.(*dto.GeneralOpenAIRequest))
+	if req != nil && req.Thinking != nil && req.Thinking.Type == "enabled" && len(oaiReq.Reasoning) == 0 {
+		reasoningPayload, marshalErr := common.Marshal(openrouter.RequestReasoning{MaxTokens: req.Thinking.GetBudgetTokens()})
+		if marshalErr != nil {
+			return nil, marshalErr
+		}
+		oaiReq.Reasoning = reasoningPayload
+	}
+	return a.ConvertOpenAIRequest(c, info, oaiReq)
 }
 
 func (a *Adaptor) ConvertAudioRequest(c *gin.Context, info *relaycommon.RelayInfo, request dto.AudioRequest) (io.Reader, error) {

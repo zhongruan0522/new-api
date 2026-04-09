@@ -206,8 +206,12 @@ func RequestOpenAI2ClaudeMessage(c *gin.Context, textRequest dto.GeneralOpenAIRe
 			textRequest.Messages[i].Role = "user"
 		}
 		fmtMessage := dto.Message{
-			Role:    message.Role,
-			Content: message.Content,
+			Role:                     message.Role,
+			Content:                  message.Content,
+			ReasoningContent:         message.ReasoningContent,
+			Reasoning:                message.Reasoning,
+			ReasoningSignature:       message.ReasoningSignature,
+			RedactedReasoningContent: message.RedactedReasoningContent,
 		}
 		if message.Role == "tool" {
 			fmtMessage.ToolCallId = message.ToolCallId
@@ -713,6 +717,27 @@ func HandleStreamResponseData(c *gin.Context, info *relaycommon.RelayInfo, claud
 		if err != nil {
 			logger.LogError(c, "send_stream_response_failed: "+err.Error())
 		}
+	} else if info.RelayFormat == types.RelayFormatGemini {
+		response := StreamResponseClaude2OpenAI(&claudeResponse)
+
+		if !FormatClaudeResponseInfo(&claudeResponse, response, claudeInfo) {
+			return nil
+		}
+		if response == nil {
+			return nil
+		}
+
+		geminiResponse := service.StreamResponseOpenAI2Gemini(response, info)
+		if geminiResponse == nil {
+			return nil
+		}
+
+		geminiResponseStr, marshalErr := common.Marshal(geminiResponse)
+		if marshalErr != nil {
+			return types.NewError(marshalErr, types.ErrorCodeBadResponseBody)
+		}
+		c.Render(-1, common.CustomEvent{Data: "data: " + string(geminiResponseStr)})
+		_ = helper.FlushWriter(c)
 	}
 	return nil
 }
@@ -739,6 +764,19 @@ func HandleStreamFinalResponse(c *gin.Context, info *relaycommon.RelayInfo, clau
 			}
 		}
 		helper.Done(c)
+	} else if info.RelayFormat == types.RelayFormatGemini {
+		response := helper.GenerateFinalUsageResponse(claudeInfo.ResponseId, claudeInfo.Created, info.UpstreamModelName, *claudeInfo.Usage)
+		geminiResponse := service.StreamResponseOpenAI2Gemini(response, info)
+		if geminiResponse == nil {
+			return
+		}
+		geminiResponseStr, err := common.Marshal(geminiResponse)
+		if err != nil {
+			common.SysLog("send final gemini response failed: " + err.Error())
+			return
+		}
+		c.Render(-1, common.CustomEvent{Data: "data: " + string(geminiResponseStr)})
+		_ = helper.FlushWriter(c)
 	}
 }
 
@@ -793,6 +831,14 @@ func HandleClaudeResponseData(c *gin.Context, info *relaycommon.RelayInfo, claud
 		}
 	case types.RelayFormatClaude:
 		responseData = data
+	case types.RelayFormatGemini:
+		openaiResponse := ResponseClaude2OpenAI(&claudeResponse)
+		openaiResponse.Usage = *claudeInfo.Usage
+		geminiResponse := service.ResponseOpenAI2Gemini(openaiResponse, info)
+		responseData, err = common.Marshal(geminiResponse)
+		if err != nil {
+			return types.NewError(err, types.ErrorCodeBadResponseBody)
+		}
 	}
 
 	if claudeResponse.Usage != nil && claudeResponse.Usage.ServerToolUse != nil && claudeResponse.Usage.ServerToolUse.WebSearchRequests > 0 {
