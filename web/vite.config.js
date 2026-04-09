@@ -41,9 +41,6 @@ export default defineConfig({
         if (!/src\/.*\.js$/.test(id)) {
           return null;
         }
-
-        // Use the exposed transform from vite, instead of directly
-        // transforming with esbuild
         return transformWithEsbuild(code, id, {
           loader: 'jsx',
           jsx: 'automatic',
