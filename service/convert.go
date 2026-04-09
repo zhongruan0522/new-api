@@ -67,6 +67,108 @@ func extractClaudeReasoningEffort(claudeRequest dto.ClaudeRequest) string {
 	return claudeThinkingBudgetToReasoningEffort(claudeRequest.Thinking.GetBudgetTokens())
 }
 
+func geminiThinkingBudgetToReasoningEffort(budget int) string {
+	switch {
+	case budget <= 0:
+		return ""
+	case budget <= 1024:
+		return "low"
+	case budget <= 8192:
+		return "medium"
+	default:
+		return "high"
+	}
+}
+
+func geminiThinkingLevelToReasoningEffort(level string) string {
+	switch strings.ToLower(strings.TrimSpace(level)) {
+	case "", "none":
+		return ""
+	case "minimal", "low":
+		return "low"
+	case "medium":
+		return "medium"
+	case "high", "xhigh", "max":
+		return "high"
+	default:
+		return strings.ToLower(strings.TrimSpace(level))
+	}
+}
+
+func buildOpenAIReasoningPayload(maxTokens int) (json.RawMessage, error) {
+	if maxTokens <= 0 {
+		return nil, nil
+	}
+
+	payload, err := common.Marshal(openrouter.RequestReasoning{MaxTokens: maxTokens})
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal reasoning payload: %w", err)
+	}
+	return payload, nil
+}
+
+func convertClaudeToolChoiceToOpenAI(toolChoice any) (any, *bool) {
+	var claudeToolChoice *dto.ClaudeToolChoice
+	switch v := toolChoice.(type) {
+	case *dto.ClaudeToolChoice:
+		claudeToolChoice = v
+	case dto.ClaudeToolChoice:
+		claudeToolChoice = &v
+	}
+	if claudeToolChoice == nil {
+		return nil, nil
+	}
+
+	var openAIToolChoice any
+	switch claudeToolChoice.Type {
+	case "auto":
+		openAIToolChoice = "auto"
+	case "any":
+		openAIToolChoice = "required"
+	case "none":
+		openAIToolChoice = "none"
+	case "tool":
+		openAIToolChoice = map[string]any{
+			"type": "function",
+			"function": map[string]any{
+				"name": claudeToolChoice.Name,
+			},
+		}
+	}
+
+	var parallelToolCalls *bool
+	if claudeToolChoice.Type != "none" && claudeToolChoice.DisableParallelToolUse {
+		parallelToolCalls = common.GetPointer(false)
+	}
+	return openAIToolChoice, parallelToolCalls
+}
+
+func convertGeminiToolConfigToOpenAI(toolConfig *dto.ToolConfig) any {
+	if toolConfig == nil || toolConfig.FunctionCallingConfig == nil {
+		return nil
+	}
+
+	config := toolConfig.FunctionCallingConfig
+	switch strings.ToUpper(string(config.Mode)) {
+	case "AUTO":
+		return "auto"
+	case "NONE":
+		return "none"
+	case "ANY":
+		if len(config.AllowedFunctionNames) == 1 {
+			return map[string]any{
+				"type": "function",
+				"function": map[string]any{
+					"name": config.AllowedFunctionNames[0],
+				},
+			}
+		}
+		return "required"
+	default:
+		return nil
+	}
+}
+
 func buildOpenAIWebSearchOptions(tool *dto.ClaudeWebSearchTool) *dto.WebSearchOptions {
 	if tool == nil {
 		return nil
@@ -170,6 +272,7 @@ func ClaudeToOpenAIRequest(claudeRequest dto.ClaudeRequest, info *relaycommon.Re
 		openAITools = append(openAITools, openAITool)
 	}
 	openAIRequest.Tools = openAITools
+	openAIRequest.ToolChoice, openAIRequest.ParallelTooCalls = convertClaudeToolChoiceToOpenAI(claudeRequest.ToolChoice)
 	if len(webSearchTools) > 0 {
 		openAIRequest.WebSearchOptions = buildOpenAIWebSearchOptions(webSearchTools[0])
 	}
@@ -862,9 +965,26 @@ func GeminiToOpenAIRequest(geminiRequest *dto.GeminiChatRequest, info *relaycomm
 		Model:  info.UpstreamModelName,
 		Stream: info.IsStream,
 	}
+	if geminiRequest.GenerationConfig.ThinkingConfig != nil && geminiRequest.GenerationConfig.ThinkingConfig.IncludeThoughts {
+		if effort := geminiThinkingLevelToReasoningEffort(geminiRequest.GenerationConfig.ThinkingConfig.ThinkingLevel); effort != "" {
+			openaiRequest.ReasoningEffort = effort
+		}
+		if geminiRequest.GenerationConfig.ThinkingConfig.ThinkingBudget != nil {
+			if openaiRequest.ReasoningEffort == "" {
+				openaiRequest.ReasoningEffort = geminiThinkingBudgetToReasoningEffort(*geminiRequest.GenerationConfig.ThinkingConfig.ThinkingBudget)
+			}
+			reasoningPayload, err := buildOpenAIReasoningPayload(*geminiRequest.GenerationConfig.ThinkingConfig.ThinkingBudget)
+			if err != nil {
+				return nil, err
+			}
+			openaiRequest.Reasoning = reasoningPayload
+		}
+	}
 
 	// 转换 messages
 	var messages []dto.Message
+	toolCallCounter := 0
+	toolCallIDsByName := make(map[string][]string)
 	for _, content := range geminiRequest.Contents {
 		message := dto.Message{
 			Role: convertGeminiRoleToOpenAI(content.Role),
@@ -873,7 +993,18 @@ func GeminiToOpenAIRequest(geminiRequest *dto.GeminiChatRequest, info *relaycomm
 		// 处理 parts
 		var mediaContents []dto.MediaContent
 		var toolCalls []dto.ToolCallRequest
+		var reasoningTexts []string
+		reasoningSignature := ""
 		for _, part := range content.Parts {
+			if signature := part.GetThoughtSignature(); signature != "" && reasoningSignature == "" {
+				reasoningSignature = signature
+			}
+			if part.Thought {
+				if part.Text != "" {
+					reasoningTexts = append(reasoningTexts, part.Text)
+				}
+				continue
+			}
 			if part.Text != "" {
 				mediaContent := dto.MediaContent{
 					Type: "text",
@@ -902,24 +1033,42 @@ func GeminiToOpenAIRequest(geminiRequest *dto.GeminiChatRequest, info *relaycomm
 				mediaContents = append(mediaContents, mediaContent)
 			} else if part.FunctionCall != nil {
 				// 处理 Gemini 的工具调用
+				toolCallCounter++
+				toolCallID := fmt.Sprintf("call_%d", toolCallCounter)
 				toolCall := dto.ToolCallRequest{
-					ID:   fmt.Sprintf("call_%d", len(toolCalls)+1), // 生成唯一ID
+					ID:   toolCallID,
 					Type: "function",
 					Function: dto.FunctionRequest{
 						Name:      part.FunctionCall.FunctionName,
 						Arguments: toJSONString(part.FunctionCall.Arguments),
 					},
 				}
+				toolCallIDsByName[part.FunctionCall.FunctionName] = append(toolCallIDsByName[part.FunctionCall.FunctionName], toolCallID)
 				toolCalls = append(toolCalls, toolCall)
 			} else if part.FunctionResponse != nil {
 				// 处理 Gemini 的工具响应，创建单独的 tool 消息
+				toolCallID := part.FunctionResponse.GetID()
+				if toolCallID == "" {
+					queuedIDs := toolCallIDsByName[part.FunctionResponse.Name]
+					if len(queuedIDs) == 0 {
+						return nil, fmt.Errorf("functionResponse for %s is missing a matching tool call id", part.FunctionResponse.Name)
+					}
+					toolCallID = queuedIDs[0]
+					toolCallIDsByName[part.FunctionResponse.Name] = queuedIDs[1:]
+				}
 				toolMessage := dto.Message{
 					Role:       "tool",
-					ToolCallId: fmt.Sprintf("call_%d", len(toolCalls)), // 使用对应的调用ID
+					ToolCallId: toolCallID,
 				}
 				toolMessage.SetStringContent(toJSONString(part.FunctionResponse.Response))
 				messages = append(messages, toolMessage)
 			}
+		}
+		if len(reasoningTexts) > 0 {
+			message.ReasoningContent = strings.Join(reasoningTexts, "\n")
+		}
+		if reasoningSignature != "" {
+			message.ReasoningSignature = reasoningSignature
 		}
 
 		// 设置消息内容
@@ -935,7 +1084,7 @@ func GeminiToOpenAIRequest(geminiRequest *dto.GeminiChatRequest, info *relaycomm
 		}
 
 		// 只有当消息有内容或工具调用时才添加
-		if len(message.ParseContent()) > 0 || len(message.ToolCalls) > 0 {
+		if len(message.ParseContent()) > 0 || len(message.ToolCalls) > 0 || message.ReasoningContent != "" || message.ReasoningSignature != "" {
 			messages = append(messages, message)
 		}
 	}
@@ -989,6 +1138,7 @@ func GeminiToOpenAIRequest(geminiRequest *dto.GeminiChatRequest, info *relaycomm
 			openaiRequest.Tools = tools
 		}
 	}
+	openaiRequest.ToolChoice = convertGeminiToolConfigToOpenAI(geminiRequest.ToolConfig)
 
 	// gemini system instructions
 	if geminiRequest.SystemInstructions != nil {
@@ -1065,11 +1215,13 @@ func ResponseOpenAI2Gemini(openAIResponse *dto.OpenAITextResponse, info *relayco
 		if reasoningContent == "" {
 			reasoningContent = choice.Message.Reasoning
 		}
-		if reasoningContent != "" {
-			content.Parts = append(content.Parts, dto.GeminiPart{
+		if reasoningContent != "" || choice.Message.ReasoningSignature != "" {
+			thoughtPart := dto.GeminiPart{
 				Text:    reasoningContent,
 				Thought: true,
-			})
+			}
+			thoughtPart.SetThoughtSignature(choice.Message.ReasoningSignature)
+			content.Parts = append(content.Parts, thoughtPart)
 		}
 
 		if textContent := choice.Message.StringContent(); textContent != "" {
@@ -1092,25 +1244,40 @@ func ResponseOpenAI2Gemini(openAIResponse *dto.OpenAITextResponse, info *relayco
 	return geminiResponse
 }
 
+func ensureGeminiConvertInfo(info *relaycommon.RelayInfo) *relaycommon.GeminiConvertInfo {
+	if info == nil {
+		return &relaycommon.GeminiConvertInfo{
+			ToolCallArguments: make(map[int]map[int]string),
+			ToolCallNames:     make(map[int]map[int]string),
+			ToolCallIDs:       make(map[int]map[int]string),
+		}
+	}
+	if info.GeminiConvertInfo == nil {
+		info.GeminiConvertInfo = &relaycommon.GeminiConvertInfo{}
+	}
+	if info.GeminiConvertInfo.ToolCallArguments == nil {
+		info.GeminiConvertInfo.ToolCallArguments = make(map[int]map[int]string)
+	}
+	if info.GeminiConvertInfo.ToolCallNames == nil {
+		info.GeminiConvertInfo.ToolCallNames = make(map[int]map[int]string)
+	}
+	if info.GeminiConvertInfo.ToolCallIDs == nil {
+		info.GeminiConvertInfo.ToolCallIDs = make(map[int]map[int]string)
+	}
+	return info.GeminiConvertInfo
+}
+
+func ensureGeminiChoiceToolCallState[K any](state map[int]map[int]K, choiceIndex int) map[int]K {
+	choiceState := state[choiceIndex]
+	if choiceState == nil {
+		choiceState = make(map[int]K)
+		state[choiceIndex] = choiceState
+	}
+	return choiceState
+}
+
 // StreamResponseOpenAI2Gemini 将 OpenAI 流式响应转换为 Gemini 格式
 func StreamResponseOpenAI2Gemini(openAIResponse *dto.ChatCompletionsStreamResponse, info *relaycommon.RelayInfo) *dto.GeminiChatResponse {
-	// 检查是否有实际内容或结束标志
-	hasContent := false
-	hasFinishReason := false
-	for _, choice := range openAIResponse.Choices {
-		if len(choice.Delta.GetContentString()) > 0 || len(choice.Delta.GetReasoningContent()) > 0 || (choice.Delta.ToolCalls != nil && len(choice.Delta.ToolCalls) > 0) {
-			hasContent = true
-		}
-		if choice.FinishReason != nil {
-			hasFinishReason = true
-		}
-	}
-
-	// 如果没有实际内容且没有结束标志，跳过。主要针对 openai 流响应开头的空数据
-	if !hasContent && !hasFinishReason {
-		return nil
-	}
-
 	geminiResponse := &dto.GeminiChatResponse{
 		Candidates: make([]dto.GeminiChatCandidate, 0, len(openAIResponse.Choices)),
 		UsageMetadata: dto.GeminiUsageMetadata{
@@ -1125,6 +1292,8 @@ func StreamResponseOpenAI2Gemini(openAIResponse *dto.ChatCompletionsStreamRespon
 			geminiResponse.UsageMetadata = usageMetadata
 		}
 	}
+
+	toolState := ensureGeminiConvertInfo(info)
 
 	for _, choice := range openAIResponse.Choices {
 		candidate := dto.GeminiChatCandidate{
@@ -1156,30 +1325,78 @@ func StreamResponseOpenAI2Gemini(openAIResponse *dto.ChatCompletionsStreamRespon
 			Parts: make([]dto.GeminiPart, 0),
 		}
 
-		if reasoningContent := choice.Delta.GetReasoningContent(); reasoningContent != "" {
-			content.Parts = append(content.Parts, dto.GeminiPart{
+		reasoningContent := choice.Delta.GetReasoningContent()
+		reasoningSignature := ""
+		if choice.Delta.ReasoningSignature != nil {
+			reasoningSignature = *choice.Delta.ReasoningSignature
+		}
+		if reasoningContent != "" || reasoningSignature != "" {
+			thoughtPart := dto.GeminiPart{
 				Text:    reasoningContent,
 				Thought: true,
-			})
+			}
+			thoughtPart.SetThoughtSignature(reasoningSignature)
+			content.Parts = append(content.Parts, thoughtPart)
 		}
 
 		if textContent := choice.Delta.GetContentString(); textContent != "" {
 			content.Parts = append(content.Parts, dto.GeminiPart{Text: textContent})
 		}
 
-		for _, toolCall := range choice.Delta.ToolCalls {
+		argsState := ensureGeminiChoiceToolCallState(toolState.ToolCallArguments, choice.Index)
+		nameState := ensureGeminiChoiceToolCallState(toolState.ToolCallNames, choice.Index)
+		idState := ensureGeminiChoiceToolCallState(toolState.ToolCallIDs, choice.Index)
+		for toolOffset, toolCall := range choice.Delta.ToolCalls {
+			toolIndex := toolOffset
+			if toolCall.Index != nil {
+				toolIndex = *toolCall.Index
+			}
+			if toolCall.Function.Name != "" {
+				nameState[toolIndex] = toolCall.Function.Name
+			}
+			if toolCall.ID != "" {
+				idState[toolIndex] = toolCall.ID
+			}
+			if toolCall.Function.Arguments != "" {
+				argsState[toolIndex] += toolCall.Function.Arguments
+			}
+
+			aggregatedArgs := strings.TrimSpace(argsState[toolIndex])
+			shouldFlush := aggregatedArgs == "" || json.Valid([]byte(aggregatedArgs))
+			if choice.FinishReason != nil && *choice.FinishReason == "tool_calls" {
+				shouldFlush = true
+			}
+			if !shouldFlush {
+				continue
+			}
+
+			functionName := nameState[toolIndex]
+			if functionName == "" {
+				functionName = toolCall.Function.Name
+			}
+			if functionName == "" {
+				continue
+			}
+
 			content.Parts = append(content.Parts, dto.GeminiPart{
 				FunctionCall: &dto.FunctionCall{
-					FunctionName: toolCall.Function.Name,
-					Arguments:    parseOpenAIFunctionArguments(toolCall.Function.Arguments),
+					FunctionName: functionName,
+					Arguments:    parseOpenAIFunctionArguments(aggregatedArgs),
 				},
 			})
+			delete(argsState, toolIndex)
 		}
 
+		if len(content.Parts) == 0 && candidate.FinishReason == nil {
+			continue
+		}
 		candidate.Content = content
 		geminiResponse.Candidates = append(geminiResponse.Candidates, candidate)
 	}
 
+	if len(geminiResponse.Candidates) == 0 && !HasGeminiUsageMetadata(geminiResponse.UsageMetadata) {
+		return nil
+	}
 	return geminiResponse
 }
 

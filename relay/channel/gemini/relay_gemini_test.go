@@ -8,14 +8,13 @@ import (
 
 func TestStreamResponseGeminiChat2OpenAIPreservesThoughtAndText(t *testing.T) {
 	stop := "STOP"
+	thought := dto.GeminiPart{Text: "thinking", Thought: true}
+	thought.SetThoughtSignature("sig_123")
 	resp, isStop := streamResponseGeminiChat2OpenAI(&dto.GeminiChatResponse{
 		Candidates: []dto.GeminiChatCandidate{{
 			Index:        0,
 			FinishReason: &stop,
-			Content: dto.GeminiChatContent{Parts: []dto.GeminiPart{{
-				Text:    "thinking",
-				Thought: true,
-			}, {
+			Content: dto.GeminiChatContent{Parts: []dto.GeminiPart{thought, {
 				Text: "answer",
 			}}},
 		}},
@@ -30,6 +29,9 @@ func TestStreamResponseGeminiChat2OpenAIPreservesThoughtAndText(t *testing.T) {
 	choice := resp.Choices[0]
 	if choice.Delta.GetReasoningContent() != "thinking" {
 		t.Fatalf("reasoning content = %q, want thinking", choice.Delta.GetReasoningContent())
+	}
+	if choice.Delta.ReasoningSignature == nil || *choice.Delta.ReasoningSignature != "sig_123" {
+		t.Fatalf("reasoning signature = %v, want sig_123", choice.Delta.ReasoningSignature)
 	}
 	if choice.Delta.GetContentString() != "answer" {
 		t.Fatalf("content = %q, want answer", choice.Delta.GetContentString())

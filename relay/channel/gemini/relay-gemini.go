@@ -18,6 +18,7 @@ import (
 	"github.com/zhongruan0522/new-api/dto"
 	"github.com/zhongruan0522/new-api/logger"
 	"github.com/zhongruan0522/new-api/relay/channel/openai"
+	"github.com/zhongruan0522/new-api/relay/channel/openrouter"
 	relaycommon "github.com/zhongruan0522/new-api/relay/common"
 	"github.com/zhongruan0522/new-api/relay/helper"
 	"github.com/zhongruan0522/new-api/service"
@@ -26,6 +27,44 @@ import (
 )
 
 const thoughtSignatureBypassValue = "context_engineering_is_the_way_to_go"
+
+func reasoningEffortToGeminiThinkingLevel(effort string) string {
+	switch strings.ToLower(strings.TrimSpace(effort)) {
+	case "", "none":
+		return ""
+	case "minimal", "low":
+		return "low"
+	case "medium":
+		return "medium"
+	case "high", "xhigh", "max":
+		return "high"
+	default:
+		return strings.ToLower(strings.TrimSpace(effort))
+	}
+}
+
+func openAIReasoningToGeminiThinkingConfig(textRequest dto.GeneralOpenAIRequest) (*dto.GeminiThinkingConfig, error) {
+	if len(textRequest.Reasoning) > 0 {
+		var reasoning openrouter.RequestReasoning
+		if err := common.Unmarshal(textRequest.Reasoning, &reasoning); err != nil {
+			return nil, fmt.Errorf("invalid reasoning payload: %w", err)
+		}
+		if reasoning.MaxTokens > 0 {
+			return &dto.GeminiThinkingConfig{
+				IncludeThoughts: true,
+				ThinkingBudget:  common.GetPointer(reasoning.MaxTokens),
+			}, nil
+		}
+	}
+
+	if level := reasoningEffortToGeminiThinkingLevel(textRequest.ReasoningEffort); level != "" {
+		return &dto.GeminiThinkingConfig{
+			IncludeThoughts: true,
+			ThinkingLevel:   level,
+		}, nil
+	}
+	return nil, nil
+}
 
 // https://cloud.google.com/vertex-ai/generative-ai/docs/model-reference/inference?hl=zh-cn#blob
 var geminiSupportedMimeTypes = map[string]bool{
@@ -158,6 +197,15 @@ func CovertOpenAI2Gemini(c *gin.Context, textRequest dto.GeneralOpenAIRequest, i
 			}
 		}
 	}
+	if geminiRequest.GenerationConfig.ThinkingConfig == nil {
+		thinkingConfig, err := openAIReasoningToGeminiThinkingConfig(textRequest)
+		if err != nil {
+			return nil, err
+		}
+		if thinkingConfig != nil {
+			geminiRequest.GenerationConfig.ThinkingConfig = thinkingConfig
+		}
+	}
 
 	safetySettings := make([]dto.GeminiChatSafetySettings, 0, len(SafetySettingList))
 	for _, category := range SafetySettingList {
@@ -286,6 +334,7 @@ func CovertOpenAI2Gemini(c *gin.Context, textRequest dto.GeneralOpenAIRequest, i
 				Name:     name,
 				Response: contentMap,
 			}
+			functionResp.SetID(message.ToolCallId)
 
 			*parts = append(*parts, dto.GeminiPart{
 				FunctionResponse: functionResp,
@@ -295,6 +344,18 @@ func CovertOpenAI2Gemini(c *gin.Context, textRequest dto.GeneralOpenAIRequest, i
 		var parts []dto.GeminiPart
 		content := dto.GeminiChatContent{
 			Role: message.Role,
+		}
+		reasoningText := message.ReasoningContent
+		if reasoningText == "" {
+			reasoningText = message.Reasoning
+		}
+		if reasoningText != "" || message.ReasoningSignature != "" {
+			reasoningPart := dto.GeminiPart{
+				Text:    reasoningText,
+				Thought: true,
+			}
+			reasoningPart.SetThoughtSignature(message.ReasoningSignature)
+			parts = append(parts, reasoningPart)
 		}
 		shouldAttachThoughtSignature := attachThoughtSignature && (message.Role == "assistant" || message.Role == "model")
 		signatureAttached := false
@@ -897,8 +958,12 @@ func responseGeminiChat2OpenAI(c *gin.Context, response *dto.GeminiChatResponse)
 		if len(candidate.Content.Parts) > 0 {
 			var texts []string
 			var reasoningTexts []string
+			reasoningSignature := ""
 			var toolCalls []dto.ToolCallResponse
 			for _, part := range candidate.Content.Parts {
+				if signature := part.GetThoughtSignature(); signature != "" && reasoningSignature == "" {
+					reasoningSignature = signature
+				}
 				if part.InlineData != nil {
 					// 媒体内容
 					if strings.HasPrefix(part.InlineData.MimeType, "image") {
@@ -935,6 +1000,9 @@ func responseGeminiChat2OpenAI(c *gin.Context, response *dto.GeminiChatResponse)
 			}
 			if len(reasoningTexts) > 0 {
 				choice.Message.ReasoningContent = strings.Join(reasoningTexts, "\n")
+			}
+			if reasoningSignature != "" {
+				choice.Message.ReasoningSignature = reasoningSignature
 			}
 			choice.Message.SetStringContent(strings.Join(texts, "\n"))
 
@@ -995,6 +1063,7 @@ func streamResponseGeminiChat2OpenAI(geminiResponse *dto.GeminiChatResponse) (*d
 		}
 		var texts []string
 		var reasoningTexts []string
+		reasoningSignature := ""
 		isTools := false
 		if finishReason != "" {
 			// Map Gemini FinishReason to OpenAI finish_reason
@@ -1029,6 +1098,9 @@ func streamResponseGeminiChat2OpenAI(geminiResponse *dto.GeminiChatResponse) (*d
 			}
 		}
 		for _, part := range candidate.Content.Parts {
+			if signature := part.GetThoughtSignature(); signature != "" && reasoningSignature == "" {
+				reasoningSignature = signature
+			}
 			if part.InlineData != nil {
 				if strings.HasPrefix(part.InlineData.MimeType, "image") {
 					imgText := "![image](data:" + part.InlineData.MimeType + ";base64," + part.InlineData.Data + ")"
@@ -1060,6 +1132,9 @@ func streamResponseGeminiChat2OpenAI(geminiResponse *dto.GeminiChatResponse) (*d
 		}
 		if len(reasoningTexts) > 0 {
 			choice.Delta.SetReasoningContent(strings.Join(reasoningTexts, "\n"))
+		}
+		if reasoningSignature != "" {
+			choice.Delta.ReasoningSignature = common.GetPointer(reasoningSignature)
 		}
 		if isTools {
 			choice.FinishReason = &constant.FinishReasonToolCalls
@@ -1153,8 +1228,7 @@ func GeminiChatStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *
 	id := helper.GetResponseID(c)
 	createAt := common.GetTimestamp()
 	finishReason := constant.FinishReasonStop
-	toolCallIndexByChoice := make(map[int]map[string]int)
-	nextToolCallIndexByChoice := make(map[int]int)
+	toolCallIDByChoice := make(map[int]map[int]string)
 
 	usage, err := geminiStreamHandler(c, info, resp, func(data string, geminiResponse *dto.GeminiChatResponse) bool {
 		response, isStop := streamResponseGeminiChat2OpenAI(geminiResponse)
@@ -1164,24 +1238,23 @@ func GeminiChatStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *
 		response.Model = info.UpstreamModelName
 		for choiceIdx := range response.Choices {
 			choiceKey := response.Choices[choiceIdx].Index
+			idState := toolCallIDByChoice[choiceKey]
+			if idState == nil {
+				idState = make(map[int]string)
+				toolCallIDByChoice[choiceKey] = idState
+			}
 			for toolIdx := range response.Choices[choiceIdx].Delta.ToolCalls {
 				tool := &response.Choices[choiceIdx].Delta.ToolCalls[toolIdx]
-				if tool.ID == "" {
-					continue
+				stableID := idState[toolIdx]
+				if stableID == "" {
+					stableID = tool.ID
+					if stableID == "" {
+						stableID = fmt.Sprintf("call_%s", common.GetUUID())
+					}
+					idState[toolIdx] = stableID
 				}
-				m := toolCallIndexByChoice[choiceKey]
-				if m == nil {
-					m = make(map[string]int)
-					toolCallIndexByChoice[choiceKey] = m
-				}
-				if idx, ok := m[tool.ID]; ok {
-					tool.SetIndex(idx)
-					continue
-				}
-				idx := nextToolCallIndexByChoice[choiceKey]
-				nextToolCallIndexByChoice[choiceKey] = idx + 1
-				m[tool.ID] = idx
-				tool.SetIndex(idx)
+				tool.ID = stableID
+				tool.SetIndex(toolIdx)
 			}
 		}
 

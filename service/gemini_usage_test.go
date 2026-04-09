@@ -3,6 +3,7 @@ package service
 import (
 	"testing"
 
+	"github.com/zhongruan0522/new-api/common"
 	"github.com/zhongruan0522/new-api/dto"
 	relaycommon "github.com/zhongruan0522/new-api/relay/common"
 )
@@ -66,9 +67,10 @@ func TestResponseOpenAI2GeminiPreservesReasoningAndUsage(t *testing.T) {
 		Choices: []dto.OpenAITextResponseChoice{{
 			Index: 0,
 			Message: dto.Message{
-				Role:             "assistant",
-				Content:          "answer",
-				ReasoningContent: "thinking",
+				Role:               "assistant",
+				Content:            "answer",
+				ReasoningContent:   "thinking",
+				ReasoningSignature: "sig_123",
 			},
 			FinishReason: "stop",
 		}},
@@ -90,6 +92,9 @@ func TestResponseOpenAI2GeminiPreservesReasoningAndUsage(t *testing.T) {
 	}
 	if !resp.Candidates[0].Content.Parts[0].Thought || resp.Candidates[0].Content.Parts[0].Text != "thinking" {
 		t.Fatalf("first part = %+v, want thought part", resp.Candidates[0].Content.Parts[0])
+	}
+	if resp.Candidates[0].Content.Parts[0].GetThoughtSignature() != "sig_123" {
+		t.Fatalf("thought signature = %q, want sig_123", resp.Candidates[0].Content.Parts[0].GetThoughtSignature())
 	}
 	if resp.Candidates[0].Content.Parts[1].Text != "answer" {
 		t.Fatalf("second part = %+v, want text part", resp.Candidates[0].Content.Parts[1])
@@ -120,5 +125,59 @@ func TestStreamResponseOpenAI2GeminiPreservesReasoningDelta(t *testing.T) {
 	}
 	if resp.Candidates[0].Content.Parts[1].Text != "answer" {
 		t.Fatalf("second part = %+v, want text delta", resp.Candidates[0].Content.Parts[1])
+	}
+}
+
+func TestStreamResponseOpenAI2GeminiBuffersToolCallArguments(t *testing.T) {
+	info := &relaycommon.RelayInfo{}
+	firstChunk := StreamResponseOpenAI2Gemini(&dto.ChatCompletionsStreamResponse{
+		Choices: []dto.ChatCompletionsStreamResponseChoice{{
+			Index: 0,
+			Delta: dto.ChatCompletionsStreamResponseChoiceDelta{
+				ToolCalls: []dto.ToolCallResponse{{
+					Index: common.GetPointer(0),
+					ID:    "call_1",
+					Type:  "function",
+					Function: dto.FunctionResponse{
+						Name:      "weather",
+						Arguments: `{"city":"Shang`,
+					},
+				}},
+			},
+		}},
+	}, info)
+
+	if firstChunk != nil {
+		t.Fatalf("first chunk = %+v, want nil until tool arguments become valid JSON", firstChunk)
+	}
+
+	finishReason := "tool_calls"
+	secondChunk := StreamResponseOpenAI2Gemini(&dto.ChatCompletionsStreamResponse{
+		Choices: []dto.ChatCompletionsStreamResponseChoice{{
+			Index: 0,
+			Delta: dto.ChatCompletionsStreamResponseChoiceDelta{
+				ToolCalls: []dto.ToolCallResponse{{
+					Index: common.GetPointer(0),
+					ID:    "call_1",
+					Type:  "function",
+					Function: dto.FunctionResponse{
+						Arguments: `hai"}`,
+					},
+				}},
+			},
+			FinishReason: &finishReason,
+		}},
+	}, info)
+
+	if secondChunk == nil || len(secondChunk.Candidates) != 1 || len(secondChunk.Candidates[0].Content.Parts) != 1 {
+		t.Fatalf("second chunk = %+v, want one emitted function call", secondChunk)
+	}
+	part := secondChunk.Candidates[0].Content.Parts[0]
+	if part.FunctionCall == nil || part.FunctionCall.FunctionName != "weather" {
+		t.Fatalf("function call = %+v, want weather call", part.FunctionCall)
+	}
+	args, ok := part.FunctionCall.Arguments.(map[string]interface{})
+	if !ok || args["city"] != "Shanghai" {
+		t.Fatalf("function call args = %#v, want {city: Shanghai}", part.FunctionCall.Arguments)
 	}
 }

@@ -45,6 +45,12 @@ type ClaudeConvertInfo struct {
 	ToolCallMaxIndexOffset int
 }
 
+type GeminiConvertInfo struct {
+	ToolCallArguments map[int]map[int]string
+	ToolCallNames     map[int]map[int]string
+	ToolCallIDs       map[int]map[int]string
+}
+
 type RerankerInfo struct {
 	Documents       []any
 	ReturnDocuments bool
@@ -145,6 +151,7 @@ type RelayInfo struct {
 	ThinkingContentInfo
 	TokenCountMeta
 	*ClaudeConvertInfo
+	*GeminiConvertInfo
 	*RerankerInfo
 	*ResponsesUsageInfo
 	*ChannelMeta
@@ -444,6 +451,11 @@ func genBaseRelayInfo(c *gin.Context, request dto.Request) *RelayInfo {
 		ThinkingContentInfo: ThinkingContentInfo{
 			IsFirstThinkingContent:  true,
 			SendLastThinkingContent: false,
+		},
+		GeminiConvertInfo: &GeminiConvertInfo{
+			ToolCallArguments: make(map[int]map[int]string),
+			ToolCallNames:     make(map[int]map[int]string),
+			ToolCallIDs:       make(map[int]map[int]string),
 		},
 		TokenCountMeta: TokenCountMeta{
 			//promptTokens: common.GetContextKeyInt(c, constant.ContextKeyPromptTokens),
