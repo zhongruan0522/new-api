@@ -17,8 +17,36 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 
-import React, { useRef } from 'react';
-import { Modal, Form } from '@douyinfe/semi-ui';
+import React, { useRef, useMemo } from 'react';
+import { Modal, Form, ButtonGroup, Button } from '@douyinfe/semi-ui';
+
+const DATE_SHORTCUTS = [
+  { key: 'today', label: '当日' },
+  { key: 'week', label: '近一周' },
+  { key: 'month', label: '近一月' },
+  { key: 'currentMonth', label: '当月' },
+];
+
+const getShortcutTimestamp = (key) => {
+  const now = new Date();
+  switch (key) {
+    case 'today':
+      return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    case 'week':
+      return new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7);
+    case 'month':
+      return new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+    case 'currentMonth':
+      return new Date(now.getFullYear(), now.getMonth(), 1);
+    default:
+      return null;
+  }
+};
+
+const formatDateTime = (date) => {
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+};
 
 const SearchModal = ({
   searchModalVisible,
@@ -44,6 +72,27 @@ const SearchModal = ({
 
   const { start_timestamp, end_timestamp, username } = inputs;
 
+  // 判断当前选中的快捷按钮
+  const activeShortcut = useMemo(() => {
+    const now = new Date();
+    for (const shortcut of DATE_SHORTCUTS) {
+      const targetDate = getShortcutTimestamp(shortcut.key);
+      if (!targetDate) continue;
+      const expected = formatDateTime(targetDate);
+      if (start_timestamp === expected) {
+        return shortcut.key;
+      }
+    }
+    return null;
+  }, [start_timestamp]);
+
+  const handleShortcutClick = (key) => {
+    const date = getShortcutTimestamp(key);
+    if (date) {
+      handleInputChange(formatDateTime(date), 'start_timestamp');
+    }
+  };
+
   return (
     <Modal
       title={t('搜索条件')}
@@ -55,6 +104,24 @@ const SearchModal = ({
       centered
     >
       <Form ref={formRef} layout='vertical' className='w-full'>
+        <div className='mb-3'>
+          <label className='text-sm font-medium text-gray-600 mb-2 block'>
+            {t('快捷选择')}
+          </label>
+          <ButtonGroup size='small'>
+            {DATE_SHORTCUTS.map((shortcut) => (
+              <Button
+                key={shortcut.key}
+                theme={activeShortcut === shortcut.key ? 'solid' : 'light'}
+                type={activeShortcut === shortcut.key ? 'primary' : 'tertiary'}
+                onClick={() => handleShortcutClick(shortcut.key)}
+              >
+                {t(shortcut.label)}
+              </Button>
+            ))}
+          </ButtonGroup>
+        </div>
+
         {createFormField(Form.DatePicker, {
           field: 'start_timestamp',
           label: t('起始时间'),
