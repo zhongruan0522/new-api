@@ -18,13 +18,19 @@ For commercial licensing, please contact support@quantumnous.com
 */
 
 import React from 'react';
-import { Typography } from '@douyinfe/semi-ui';
+import { Typography, Switch } from '@douyinfe/semi-ui';
 import { Key } from 'lucide-react';
 import CompactModeToggle from '../../common/ui/CompactModeToggle';
 
 const { Text } = Typography;
 
-const TokensDescription = ({ compactMode, setCompactMode, t }) => {
+const TokensDescription = ({
+  compactMode,
+  setCompactMode,
+  nameSort,
+  handleNameSortChange,
+  t,
+}) => {
   return (
     <div className='flex flex-col md:flex-row justify-between items-start md:items-center gap-2 w-full'>
       <div className='flex items-center text-blue-500'>
@@ -32,11 +38,21 @@ const TokensDescription = ({ compactMode, setCompactMode, t }) => {
         <Text>{t('令牌管理')}</Text>
       </div>
 
-      <CompactModeToggle
-        compactMode={compactMode}
-        setCompactMode={setCompactMode}
-        t={t}
-      />
+      <div className='flex items-center gap-4'>
+        <div className='flex items-center gap-1'>
+          <Text strong>{t('名称排序')}</Text>
+          <Switch
+            size='small'
+            checked={nameSort}
+            onChange={handleNameSortChange}
+          />
+        </div>
+        <CompactModeToggle
+          compactMode={compactMode}
+          setCompactMode={setCompactMode}
+          t={t}
+        />
+      </div>
     </div>
   );
 };

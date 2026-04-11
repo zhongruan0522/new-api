@@ -17,9 +17,10 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Modal } from '@douyinfe/semi-ui';
+import { pinyin } from 'pinyin-pro';
 import {
   API,
   copy,
@@ -53,6 +54,9 @@ export const useTokensData = () => {
   // UI state
   const [compactMode, setCompactMode] = useTableCompactMode('tokens');
   const [showKeys, setShowKeys] = useState({});
+  const [nameSort, setNameSort] = useState(
+    localStorage.getItem('token-name-sort') === 'true',
+  );
 
   // Form state
   const [formApi, setFormApi] = useState(null);
@@ -82,7 +86,8 @@ export const useTokensData = () => {
 
   // Sync page data from API response
   const syncPageData = (payload) => {
-    setTokens(payload.items || []);
+    const items = payload.items || [];
+    setTokens(nameSort ? applySort(items, true) : items);
     setTokenCount(payload.total || 0);
     setActivePage(payload.page || 1);
     setPageSize(payload.page_size || pageSize);
@@ -176,19 +181,39 @@ export const useTokensData = () => {
     setSearching(false);
   };
 
-  // Sort tokens function
-  const sortToken = (key) => {
-    if (tokens.length === 0) return;
-    setLoading(true);
-    let sortedTokens = [...tokens];
-    sortedTokens.sort((a, b) => {
-      return ('' + a[key]).localeCompare(b[key]);
-    });
-    if (sortedTokens[0].id === tokens[0].id) {
-      sortedTokens.reverse();
+  // 按名称排序的比较函数：数字 → 中文拼音 → 英文字母，不区分大小写
+  const compareByName = (a, b) => {
+    const nameA = (a.name || '').trim().toLowerCase();
+    const nameB = (b.name || '').trim().toLowerCase();
+    const pinyinA = pinyin(nameA, { toneType: 'none' }).toLowerCase();
+    const pinyinB = pinyin(nameB, { toneType: 'none' }).toLowerCase();
+
+    // 数字优先：检查首字符是否为数字
+    const aStartsDigit = /^\d/.test(pinyinA);
+    const bStartsDigit = /^\d/.test(pinyinB);
+    if (aStartsDigit && !bStartsDigit) return -1;
+    if (!aStartsDigit && bStartsDigit) return 1;
+
+    // 按拼音/字母自然排序
+    return pinyinA.localeCompare(pinyinB, 'zh-CN');
+  };
+
+  // 对当前页面的 tokens 应用排序
+  const applySort = (tokensList, shouldSort) => {
+    if (!shouldSort || tokensList.length === 0) return tokensList;
+    return [...tokensList].sort(compareByName);
+  };
+
+  // 切换名称排序
+  const handleNameSortChange = (value) => {
+    localStorage.setItem('token-name-sort', value + '');
+    setNameSort(value);
+    if (value) {
+      setTokens((prev) => applySort(prev, true));
+    } else {
+      // 关闭排序时重新加载原始数据
+      loadTokens(activePage);
     }
-    setTokens(sortedTokens);
-    setLoading(false);
   };
 
   // Page handlers
@@ -339,6 +364,8 @@ export const useTokensData = () => {
     setCompactMode,
     showKeys,
     setShowKeys,
+    nameSort,
+    handleNameSortChange,
 
     // Form state
     formApi,
@@ -352,7 +379,6 @@ export const useTokensData = () => {
     copyText,
     manageToken,
     searchTokens,
-    sortToken,
     handlePageChange,
     handlePageSizeChange,
     rowSelection,
