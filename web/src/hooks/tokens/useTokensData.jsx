@@ -17,7 +17,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Modal } from '@douyinfe/semi-ui';
 import { pinyin } from 'pinyin-pro';
@@ -54,9 +54,6 @@ export const useTokensData = () => {
   // UI state
   const [compactMode, setCompactMode] = useTableCompactMode('tokens');
   const [showKeys, setShowKeys] = useState({});
-  const [nameSort, setNameSort] = useState(
-    localStorage.getItem('token-name-sort') === 'true',
-  );
 
   // Form state
   const [formApi, setFormApi] = useState(null);
@@ -84,10 +81,10 @@ export const useTokensData = () => {
     }, 500);
   };
 
-  // Sync page data from API response
+  // Sync page data from API response, always sort by name
   const syncPageData = (payload) => {
     const items = payload.items || [];
-    setTokens(nameSort ? applySort(items, true) : items);
+    setTokens(items.length > 0 ? [...items].sort(compareByName) : items);
     setTokenCount(payload.total || 0);
     setActivePage(payload.page || 1);
     setPageSize(payload.page_size || pageSize);
@@ -196,24 +193,6 @@ export const useTokensData = () => {
 
     // 按拼音/字母自然排序
     return pinyinA.localeCompare(pinyinB, 'zh-CN');
-  };
-
-  // 对当前页面的 tokens 应用排序
-  const applySort = (tokensList, shouldSort) => {
-    if (!shouldSort || tokensList.length === 0) return tokensList;
-    return [...tokensList].sort(compareByName);
-  };
-
-  // 切换名称排序
-  const handleNameSortChange = (value) => {
-    localStorage.setItem('token-name-sort', value + '');
-    setNameSort(value);
-    if (value) {
-      setTokens((prev) => applySort(prev, true));
-    } else {
-      // 关闭排序时重新加载原始数据
-      loadTokens(activePage);
-    }
   };
 
   // Page handlers
@@ -364,8 +343,6 @@ export const useTokensData = () => {
     setCompactMode,
     showKeys,
     setShowKeys,
-    nameSort,
-    handleNameSortChange,
 
     // Form state
     formApi,
