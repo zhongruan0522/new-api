@@ -57,8 +57,6 @@ function TokensPage() {
     // Description state
     compactMode,
     setCompactMode,
-    nameSort,
-    handleNameSortChange,
 
     // Translation
     t,
@@ -79,8 +77,6 @@ function TokensPage() {
           <TokensDescription
             compactMode={compactMode}
             setCompactMode={setCompactMode}
-            nameSort={nameSort}
-            handleNameSortChange={handleNameSortChange}
             t={t}
           />
         }
