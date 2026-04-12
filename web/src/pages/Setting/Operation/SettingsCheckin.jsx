@@ -17,7 +17,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { Button, Col, Form, Row, Spin, Typography } from '@douyinfe/semi-ui';
 import {
   compareObjects,
@@ -27,6 +27,26 @@ import {
   showWarning,
 } from '../../../helpers';
 import { useTranslation } from 'react-i18next';
+import {
+  getCurrencyConfig,
+  getQuotaPerUnit,
+} from '../../../helpers/render';
+
+function tokenToDisplay(tokenValue) {
+  const quotaPerUnit = getQuotaPerUnit();
+  const { type, rate } = getCurrencyConfig();
+  if (type === 'TOKENS') return tokenValue;
+  const usd = tokenValue / quotaPerUnit;
+  return type === 'USD' ? usd : usd * (rate || 1);
+}
+
+function displayToToken(displayValue) {
+  const quotaPerUnit = getQuotaPerUnit();
+  const { type, rate } = getCurrencyConfig();
+  if (type === 'TOKENS') return displayValue;
+  const usd = type === 'USD' ? displayValue : displayValue / (rate || 1);
+  return Math.round(usd * quotaPerUnit);
+}
 
 export default function SettingsCheckin(props) {
   const { t } = useTranslation();
@@ -39,22 +59,27 @@ export default function SettingsCheckin(props) {
   const refForm = useRef();
   const [inputsRow, setInputsRow] = useState(inputs);
 
-  function handleFieldChange(fieldName) {
-    return (value) => {
-      setInputs((inputs) => ({ ...inputs, [fieldName]: value }));
+  const currencySuffix = useMemo(() => {
+    const { symbol, type } = getCurrencyConfig();
+    return type === 'TOKENS' ? 'Token' : symbol;
+  }, []);
+
+  const displayValues = useMemo(() => {
+    const minQ = inputs['checkin_setting.min_quota'];
+    const maxQ = inputs['checkin_setting.max_quota'];
+    return {
+      'checkin_setting.min_quota':
+        minQ !== '' && minQ !== undefined ? tokenToDisplay(parseFloat(minQ)) : '',
+      'checkin_setting.max_quota':
+        maxQ !== '' && maxQ !== undefined ? tokenToDisplay(parseFloat(maxQ)) : '',
     };
-  }
+  }, [inputs['checkin_setting.min_quota'], inputs['checkin_setting.max_quota']]);
 
   function onSubmit() {
     const updateArray = compareObjects(inputs, inputsRow);
     if (!updateArray.length) return showWarning(t('你似乎并没有修改什么'));
     const requestQueue = updateArray.map((item) => {
-      let value = '';
-      if (typeof inputs[item.key] === 'boolean') {
-        value = String(inputs[item.key]);
-      } else {
-        value = String(inputs[item.key]);
-      }
+      const value = String(inputs[item.key]);
       return API.put('/api/option/', {
         key: item.key,
         value,
@@ -115,26 +140,45 @@ export default function SettingsCheckin(props) {
                   size='default'
                   checkedText='｜'
                   uncheckedText='〇'
-                  onChange={handleFieldChange('checkin_setting.enabled')}
+                  onChange={(value) =>
+                    setInputs((prev) => ({
+                      ...prev,
+                      'checkin_setting.enabled': value,
+                    }))
+                  }
                 />
               </Col>
               <Col xs={24} sm={12} md={8} lg={8} xl={8}>
                 <Form.InputNumber
-                  field={'checkin_setting.min_quota'}
                   label={t('签到最小额度')}
-                  placeholder={t('签到奖励的最小额度')}
-                  onChange={handleFieldChange('checkin_setting.min_quota')}
+                  step={0.01}
                   min={0}
+                  suffix={currencySuffix}
+                  value={displayValues['checkin_setting.min_quota']}
+                  placeholder={t('签到奖励的最小额度')}
+                  onChange={(value) =>
+                    setInputs((prev) => ({
+                      ...prev,
+                      'checkin_setting.min_quota': displayToToken(value),
+                    }))
+                  }
                   disabled={!inputs['checkin_setting.enabled']}
                 />
               </Col>
               <Col xs={24} sm={12} md={8} lg={8} xl={8}>
                 <Form.InputNumber
-                  field={'checkin_setting.max_quota'}
                   label={t('签到最大额度')}
-                  placeholder={t('签到奖励的最大额度')}
-                  onChange={handleFieldChange('checkin_setting.max_quota')}
+                  step={0.01}
                   min={0}
+                  suffix={currencySuffix}
+                  value={displayValues['checkin_setting.max_quota']}
+                  placeholder={t('签到奖励的最大额度')}
+                  onChange={(value) =>
+                    setInputs((prev) => ({
+                      ...prev,
+                      'checkin_setting.max_quota': displayToToken(value),
+                    }))
+                  }
                   disabled={!inputs['checkin_setting.enabled']}
                 />
               </Col>
