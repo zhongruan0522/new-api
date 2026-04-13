@@ -17,7 +17,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useCallback } from 'react';
 import { Empty } from '@douyinfe/semi-ui';
 import CardTable from '../../common/ui/CardTable';
 import {
@@ -38,6 +38,7 @@ const ChannelsTable = (channelsData) => {
     compactMode,
     visibleColumns,
     setSelectedChannels,
+    enableTagMode,
     handlePageChange,
     handlePageSizeChange,
     handleRow,
@@ -62,6 +63,39 @@ const ChannelsTable = (channelsData) => {
     setShowMultiKeyManageModal,
     setCurrentMultiKeyChannel,
   } = channelsData;
+
+  const isTagParent = useCallback((record) => {
+    return record.children !== undefined;
+  }, []);
+
+  // 处理行选择变化：标签父行的选中/取消选中会作用于其所有子渠道
+  const handleSelectionChange = useCallback(
+    (selectedRowKeys, selectedRows) => {
+      if (!enableTagMode) {
+        setSelectedChannels(selectedRows);
+        return;
+      }
+
+      // 提取所有被选中的真实渠道行（展开标签父行）
+      const realSelected = [];
+      for (const row of selectedRows) {
+        if (isTagParent(row)) {
+          realSelected.push(...row.children);
+        } else {
+          realSelected.push(row);
+        }
+      }
+      setSelectedChannels(realSelected);
+    },
+    [enableTagMode, isTagParent, setSelectedChannels],
+  );
+
+  const rowSelection = useMemo(() => {
+    if (!enableBatchDelete) return null;
+    return {
+      onChange: handleSelectionChange,
+    };
+  }, [enableBatchDelete, handleSelectionChange]);
 
   // Get all columns
   const allColumns = useMemo(() => {
@@ -142,15 +176,7 @@ const ChannelsTable = (channelsData) => {
       hidePagination={true}
       expandAllRows={false}
       onRow={handleRow}
-      rowSelection={
-        enableBatchDelete
-          ? {
-              onChange: (selectedRowKeys, selectedRows) => {
-                setSelectedChannels(selectedRows);
-              },
-            }
-          : null
-      }
+      rowSelection={rowSelection}
       empty={
         <Empty
           image={<IllustrationNoResult style={{ width: 150, height: 150 }} />}
