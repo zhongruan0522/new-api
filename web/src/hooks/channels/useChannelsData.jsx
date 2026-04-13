@@ -674,8 +674,33 @@ export const useChannelsData = () => {
   };
 
   // Batch operations
+
+  // 从 selectedChannels 中提取所有真实渠道的数字 ID
+  // 在标签聚合模式下，selectedChannels 可能包含标签父行（id 为字符串），需展开其 children
+  const getRealChannelIds = () => {
+    const ids = [];
+    for (const item of selectedChannels) {
+      if (item.children !== undefined) {
+        // 标签父行：提取所有子渠道的 ID
+        for (const child of item.children) {
+          ids.push(child.id);
+        }
+      } else {
+        ids.push(item.id);
+      }
+    }
+    // 去重
+    return [...new Set(ids)];
+  };
+
+  // 获取已选中的真实渠道数量（排除标签父行，展开其子渠道）
+  const getRealChannelCount = () => {
+    return getRealChannelIds().length;
+  };
+
   const batchSetChannelTag = async () => {
-    if (selectedChannels.length === 0) {
+    const ids = getRealChannelIds();
+    if (ids.length === 0) {
       showError(t('请先选择要设置标签的渠道！'));
       return;
     }
@@ -683,7 +708,6 @@ export const useChannelsData = () => {
       showError(t('标签不能为空！'));
       return;
     }
-    let ids = selectedChannels.map((channel) => channel.id);
     const res = await API.post('/api/channel/batch/tag', {
       ids: ids,
       tag: batchSetTagValue === '' ? null : batchSetTagValue,
@@ -700,15 +724,12 @@ export const useChannelsData = () => {
   };
 
   const batchDeleteChannels = async () => {
-    if (selectedChannels.length === 0) {
+    const ids = getRealChannelIds();
+    if (ids.length === 0) {
       showError(t('请先选择要删除的通道！'));
       return;
     }
     setLoading(true);
-    let ids = [];
-    selectedChannels.forEach((channel) => {
-      ids.push(channel.id);
-    });
     const res = await API.post(`/api/channel/batch`, { ids: ids });
     const { success, message, data } = res.data;
     if (success) {
@@ -1229,6 +1250,7 @@ export const useChannelsData = () => {
     batchTestModels,
     handleCloseModal,
     getFormValues,
+    getRealChannelCount,
 
     // Column functions
     handleColumnVisibilityChange,
