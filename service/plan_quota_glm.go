@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
@@ -54,6 +55,93 @@ type GlmToolDetail struct {
 	Usage int    `json:"usage"`
 }
 
+// glmResetTime 兼容智谱 nextResetTime 既可能返回字符串，也可能返回 Unix 时间戳。
+// 统一规范成 RFC3339 字符串后，再交给前端按 zaicontrol 的展示逻辑格式化。
+type glmResetTime string
+
+// UnmarshalJSON 兼容字符串和数字两种时间表示，避免严格 string 反序列化失败。
+func (t *glmResetTime) UnmarshalJSON(data []byte) error {
+	raw := strings.TrimSpace(string(data))
+	if raw == "" || raw == "null" {
+		*t = ""
+		return nil
+	}
+
+	var text string
+	if err := common.Unmarshal(data, &text); err == nil {
+		normalized, err := normalizeGlmResetTime(text)
+		if err != nil {
+			return err
+		}
+		*t = glmResetTime(normalized)
+		return nil
+	}
+
+	var number json.Number
+	if err := common.Unmarshal(data, &number); err == nil {
+		normalized, err := normalizeGlmResetTime(number.String())
+		if err != nil {
+			return err
+		}
+		*t = glmResetTime(normalized)
+		return nil
+	}
+
+	return fmt.Errorf("nextResetTime 字段格式不支持: %s", raw)
+}
+
+// normalizeGlmResetTime 将时间字符串统一整理成前端稳定可识别的格式。
+func normalizeGlmResetTime(value string) (string, error) {
+	trimmed := strings.TrimSpace(value)
+	if trimmed == "" {
+		return "", nil
+	}
+	if !isNumericTimestamp(trimmed) {
+		return trimmed, nil
+	}
+
+	parsed, err := strconv.ParseInt(trimmed, 10, 64)
+	if err != nil {
+		return "", fmt.Errorf("解析 nextResetTime 时间戳失败: %w", err)
+	}
+
+	return normalizeUnixTimestamp(parsed).Format(time.RFC3339), nil
+}
+
+// isNumericTimestamp 判断字符串是否是纯数字时间戳，便于兼容被包装成字符串的时间戳。
+func isNumericTimestamp(value string) bool {
+	hasDigit := false
+	for i, r := range value {
+		if r == '-' && i == 0 {
+			continue
+		}
+		if r < '0' || r > '9' {
+			return false
+		}
+		hasDigit = true
+	}
+	return hasDigit
+}
+
+// normalizeUnixTimestamp 按位数推断秒/毫秒/微秒/纳秒时间戳，保持与 JS Date 的时间点语义一致。
+func normalizeUnixTimestamp(value int64) time.Time {
+	absValue := value
+	if absValue < 0 {
+		absValue = -absValue
+	}
+
+	switch {
+	case absValue >= 1_000_000_000_000_000_000:
+		return time.Unix(0, value).UTC()
+	case absValue >= 1_000_000_000_000_000:
+		return time.Unix(0, value*int64(time.Microsecond)).UTC()
+	case absValue >= 1_000_000_000_000:
+		return time.UnixMilli(value).UTC()
+	default:
+		return time.Unix(value, 0).UTC()
+	}
+}
+
 // glmSubscriptionResp 智谱订阅接口返回格式
 type glmSubscriptionResp struct {
 	Data []struct {
@@ -68,12 +156,12 @@ type glmSubscriptionResp struct {
 type glmLimitResp struct {
 	Data struct {
 		Limits []struct {
-			Type          string `json:"type"`
-			Unit          int    `json:"unit"`
-			Percentage    int    `json:"percentage"`
-			CurrentValue  int    `json:"currentValue"`
-			Usage         int    `json:"usage"`
-			NextResetTime string `json:"nextResetTime"`
+			Type          string       `json:"type"`
+			Unit          int          `json:"unit"`
+			Percentage    int          `json:"percentage"`
+			CurrentValue  int          `json:"currentValue"`
+			Usage         int          `json:"usage"`
+			NextResetTime glmResetTime `json:"nextResetTime"`
 			UsageDetails  []struct {
 				ModelCode string `json:"modelCode"`
 				Usage     int    `json:"usage"`
@@ -204,17 +292,16 @@ func buildGlmPlanQuotaData(sub *glmSubscriptionResp, lim *glmLimitResp) *GlmPlan
 			switch {
 			case l.Unit == 6:
 				// 每周限额（新套餐特有）
-				// 每周限额
 				data.WeeklyLimit = &GlmLimitInfo{
 					Percentage:    l.Percentage,
-					NextResetTime: l.NextResetTime,
+					NextResetTime: string(l.NextResetTime),
 					Status:        getGlmUsageStatus(l.Percentage),
 				}
 			case l.Type == "TOKENS_LIMIT":
 				// 每5小时限额
 				data.TokenLimit = &GlmLimitInfo{
 					Percentage:    l.Percentage,
-					NextResetTime: l.NextResetTime,
+					NextResetTime: string(l.NextResetTime),
 					Status:        getGlmUsageStatus(l.Percentage),
 				}
 			case l.Type == "TIME_LIMIT":
@@ -222,7 +309,7 @@ func buildGlmPlanQuotaData(sub *glmSubscriptionResp, lim *glmLimitResp) *GlmPlan
 				mcp := &GlmMcpLimitInfo{
 					Percentage:    l.Percentage,
 					CurrentUsage:  fmt.Sprintf("%d/%d", l.CurrentValue, l.Usage),
-					NextResetTime: l.NextResetTime,
+					NextResetTime: string(l.NextResetTime),
 					Status:        getGlmUsageStatus(l.Percentage),
 				}
 				toolNameMap := map[string]string{
