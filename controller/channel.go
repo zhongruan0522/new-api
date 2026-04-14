@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/zhongruan0522/new-api/common"
 	"github.com/zhongruan0522/new-api/constant"
@@ -2289,6 +2290,36 @@ func QueryGlmUsage(c *gin.Context) {
 	}
 	startTime := c.Query("startTime")
 	endTime := c.Query("endTime")
+
+	// 校验时间范围不超过31天，防止滥用
+	if startTime != "" && endTime != "" {
+		layout := "2006-01-02 15:04:05"
+		s := strings.ReplaceAll(startTime, "+", " ")
+		e := strings.ReplaceAll(endTime, "+", " ")
+		tStart, err1 := time.Parse(layout, s)
+		tEnd, err2 := time.Parse(layout, e)
+		if err1 != nil || err2 != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": "时间格式错误，应为 YYYY-MM-DD HH:MM:SS",
+			})
+			return
+		}
+		if tEnd.Before(tStart) {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": "结束时间不能早于开始时间",
+			})
+			return
+		}
+		if tEnd.Sub(tStart).Hours() > 31*24 {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": "查询时间范围不能超过31天",
+			})
+			return
+		}
+	}
 
 	key := strings.Split(channel.Key, "\n")[0]
 	rawData, err := service.FetchGlmUsageData(key, planName, dataType, startTime, endTime)
