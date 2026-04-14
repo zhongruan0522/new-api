@@ -2253,3 +2253,52 @@ func QueryPlanQuota(c *gin.Context) {
 		})
 	}
 }
+
+// QueryGlmUsage 代理查询 GLM 套餐的用量图表数据
+func QueryGlmUsage(c *gin.Context) {
+	id, _ := strconv.Atoi(c.Param("id"))
+	if id == 0 {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": "参数错误",
+		})
+		return
+	}
+
+	channel, err := model.GetChannelById(id, true)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": "渠道不存在",
+		})
+		return
+	}
+
+	planName := channel.ChannelInfo.PlanName
+	if planName != "glm-coding-plan" && planName != "glm-coding-plan-international" {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": "该渠道不支持用量查询",
+		})
+		return
+	}
+
+	dataType := c.Query("type")
+	if dataType == "" {
+		dataType = "model"
+	}
+	startTime := c.Query("startTime")
+	endTime := c.Query("endTime")
+
+	key := strings.Split(channel.Key, "\n")[0]
+	rawData, err := service.FetchGlmUsageData(key, planName, dataType, startTime, endTime)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": "查询用量失败: " + err.Error(),
+		})
+		return
+	}
+
+	c.Data(http.StatusOK, "application/json", rawData)
+}
