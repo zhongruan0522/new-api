@@ -65,6 +65,8 @@ type ChannelInfo struct {
 	MultiKeyDisabledTime   map[int]int64         `json:"multi_key_disabled_time,omitempty"`   // key禁用时间列表，key index -> time
 	MultiKeyPollingIndex   int                   `json:"multi_key_polling_index"`             // 多Key模式下轮询的key索引
 	MultiKeyMode           constant.MultiKeyMode `json:"multi_key_mode"`
+	IsPlan                 bool                  `json:"is_plan"`   // 是否为套餐渠道
+	PlanName               string                `json:"plan_name"` // 套餐标识名称，对应 ChannelSpecialBases 的 key
 }
 
 // Value implements driver.Valuer interface
@@ -100,6 +102,17 @@ func (channel *Channel) GetKeys() []string {
 	// Otherwise, fall back to splitting by newline
 	keys := strings.Split(strings.Trim(channel.Key, "\n"), "\n")
 	return keys
+}
+
+// DetectPlan 检测渠道的 BaseURL 是否为内置套餐地址，并更新 ChannelInfo
+func (channel *Channel) DetectPlan() {
+	baseURL := ""
+	if channel.BaseURL != nil {
+		baseURL = strings.TrimSpace(*channel.BaseURL)
+	}
+	planName, isPlan := constant.IsChannelPlan(baseURL)
+	channel.ChannelInfo.IsPlan = isPlan
+	channel.ChannelInfo.PlanName = planName
 }
 
 func (channel *Channel) GetNextEnabledKey() (string, int, *types.NewAPIError) {
