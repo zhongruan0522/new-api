@@ -2221,17 +2221,35 @@ func QueryPlanQuota(c *gin.Context) {
 		return
 	}
 
-	// 返回套餐信息和是否支持额度查询
 	planName := channel.ChannelInfo.PlanName
-	supported := constant.SupportedPlanQuotaProviders[planName]
 
-	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"data": gin.H{
-			"plan_name":       planName,
-			"quota_supported": supported,
-			"channel_id":      channel.Id,
-			"channel_name":    channel.Name,
-		},
-	})
+	switch planName {
+	case "glm-coding-plan", "glm-coding-plan-international":
+		key := strings.Split(channel.Key, "\n")[0]
+		quotaData, err := service.FetchGlmPlanQuota(key, planName)
+		if err != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": "查询额度失败: " + err.Error(),
+			})
+			return
+		}
+		quotaData.PlanName = planName
+		c.JSON(http.StatusOK, gin.H{
+			"success": true,
+			"data":    quotaData,
+		})
+		return
+	default:
+		// 暂未支持实际查询的套餐
+		c.JSON(http.StatusOK, gin.H{
+			"success": true,
+			"data": gin.H{
+				"plan_name":       planName,
+				"quota_supported": false,
+				"channel_id":      channel.Id,
+				"channel_name":    channel.Name,
+			},
+		})
+	}
 }
