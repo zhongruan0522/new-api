@@ -1,6 +1,7 @@
 package service
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -19,6 +20,7 @@ const (
 // GlmPlanQuotaData 聚合了智谱 GLM 套餐的所有可展示信息
 type GlmPlanQuotaData struct {
 	PlanName      string           `json:"plan_name"`
+	PlanVersion   string           `json:"plan_version"` // "新" 或 "旧"，unit=6 为新套餐
 	ProductLevel  string           `json:"product_level"`
 	ProductName   string           `json:"product_name"`
 	EffectiveDate string           `json:"effective_date"`
@@ -191,11 +193,16 @@ func buildGlmPlanQuotaData(sub *glmSubscriptionResp, lim *glmLimitResp) *GlmPlan
 		data.AutoRenew = pkg.AutoRenew
 	}
 
-	// 解析限额信息
-	if lim != nil {
+	// 解析限额信息，同时判断新老套餐
+	if lim != nil && len(lim.Data.Limits) > 0 {
+		hasWeekly := false
 		for _, l := range lim.Data.Limits {
+			if l.Unit == 6 {
+				hasWeekly = true
+			}
 			switch {
 			case l.Unit == 6:
+				// 每周限额（新套餐特有）
 				// 每周限额
 				data.WeeklyLimit = &GlmLimitInfo{
 					Percentage:    l.Percentage,
@@ -235,6 +242,11 @@ func buildGlmPlanQuotaData(sub *glmSubscriptionResp, lim *glmLimitResp) *GlmPlan
 				data.McpToolLimit = mcp
 			}
 		}
+		if hasWeekly {
+			data.PlanVersion = "新"
+		} else {
+			data.PlanVersion = "旧"
+		}
 	}
 
 	return data
@@ -264,4 +276,35 @@ func getGlmUsageStatus(percentage int) string {
 		return "适中"
 	}
 	return "充裕"
+}
+
+// FetchGlmUsageData 代理拉取 GLM 用量图表数据，直接透传原始 JSON
+func FetchGlmUsageData(apiKey string, planBaseURL string, dataType string, startTime string, endTime string) (json.RawMessage, error) {
+	apiBase := getGlmApiBase(planBaseURL)
+	if apiBase == "" {
+		return nil, fmt.Errorf("无法确定套餐对应的 API 地址")
+	}
+
+	var path string
+	switch dataType {
+	case "model":
+		path = "/api/monitor/usage/model-usage"
+	case "tool":
+		path = "/api/monitor/usage/tool-usage"
+	case "performance":
+		path = "/api/monitor/usage/model-performance-day"
+	default:
+		return nil, fmt.Errorf("不支持的数据类型: %s", dataType)
+	}
+
+	if startTime != "" && endTime != "" {
+		path += fmt.Sprintf("?startTime=%s&endTime=%s", startTime, endTime)
+	}
+
+	body, err := fetchGlmAPI(apiBase, path, apiKey)
+	if err != nil {
+		return nil, err
+	}
+
+	return json.RawMessage(body), nil
 }
