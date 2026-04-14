@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -298,7 +299,7 @@ func FetchGlmUsageData(apiKey string, planBaseURL string, dataType string, start
 	}
 
 	if startTime != "" && endTime != "" {
-		path += fmt.Sprintf("?startTime=%s&endTime=%s", startTime, endTime)
+		path += fmt.Sprintf("?startTime=%s&endTime=%s", url.QueryEscape(startTime), url.QueryEscape(endTime))
 	}
 
 	body, err := fetchGlmAPI(apiBase, path, apiKey)

@@ -100,7 +100,7 @@ const McpLimitCard = ({ data }) => {
   );
 };
 
-// 时间参数生成，与 zaicontrol 保持一致（延迟10分钟）
+// 时间参数生成，与 zaicontrol 保持一致（延迟10分钟，北京时间）
 const getTimeParams = (days) => {
   const now = new Date();
   const end = new Date(now.getTime() - 600000);
@@ -110,9 +110,15 @@ const getTimeParams = (days) => {
   } else {
     start.setTime(now.getTime() - days * 86400000);
   }
+  // 按北京时间 (UTC+8) 格式化
+  const toBJ = (d) => {
+    const utc = d.getTime() + d.getTimezoneOffset() * 60000;
+    return new Date(utc + 8 * 3600000);
+  };
   const fmt = (d) => {
+    const bj = toBJ(d);
     const z = (n) => n.toString().padStart(2, '0');
-    return `${d.getFullYear()}-${z(d.getMonth() + 1)}-${z(d.getDate())}+${z(d.getHours())}:${z(d.getMinutes())}:${z(d.getSeconds())}`;
+    return `${bj.getFullYear()}-${z(bj.getMonth() + 1)}-${z(bj.getDate())}+${z(bj.getHours())}:${z(bj.getMinutes())}:${z(bj.getSeconds())}`;
   };
   return `startTime=${fmt(start)}&endTime=${fmt(end)}`;
 };
@@ -161,7 +167,7 @@ const flattenUsageData = (rawData, usageType) => {
 
 const UsageChart = ({ channelId }) => {
   const [usageType, setUsageType] = useState('model');
-  const [range, setRange] = useState(0);
+  const [range, setRange] = useState(7);
   const [loading, setLoading] = useState(false);
   const [rawData, setRawData] = useState(null);
 

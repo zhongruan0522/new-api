@@ -593,40 +593,7 @@ export const getChannelsColumns = ({
                 </Button>
               )}
 
-              {record.channel_info?.is_multi_key ? (
-                <SplitButtonGroup aria-label={t('多密钥渠道操作项目组')}>
-                  <Button
-                    type='tertiary'
-                    size='small'
-                    onClick={() => {
-                      setEditingChannel(record);
-                      setShowEdit(true);
-                    }}
-                  >
-                    {t('编辑')}
-                  </Button>
-                  <Dropdown
-                    trigger='click'
-                    position='bottomRight'
-                    menu={[
-                      {
-                        node: 'item',
-                        name: t('多密钥管理'),
-                        onClick: () => {
-                          setCurrentMultiKeyChannel(record);
-                          setShowMultiKeyManageModal(true);
-                        },
-                      },
-                    ]}
-                  >
-                    <Button
-                      type='tertiary'
-                      size='small'
-                      icon={<IconTreeTriangleDown />}
-                    />
-                  </Dropdown>
-                </SplitButtonGroup>
-              ) : record.channel_info?.is_plan ? (
+              {(record.channel_info?.is_multi_key || record.channel_info?.is_plan) ? (
                 <SplitButtonGroup aria-label={t('套餐渠道操作项目组')}>
                   <Button
                     type='tertiary'
@@ -642,14 +609,22 @@ export const getChannelsColumns = ({
                     trigger='click'
                     position='bottomRight'
                     menu={[
-                      {
+                      ...(record.channel_info?.is_multi_key ? [{
+                        node: 'item',
+                        name: t('多密钥管理'),
+                        onClick: () => {
+                          setCurrentMultiKeyChannel(record);
+                          setShowMultiKeyManageModal(true);
+                        },
+                      }] : []),
+                      ...(record.channel_info?.is_plan ? [{
                         node: 'item',
                         name: t('额度查询'),
                         onClick: () => {
                           setCurrentPlanChannel(record);
                           setShowPlanQuotaModal(true);
                         },
-                      },
+                      }] : []),
                     ]}
                   >
                     <Button
