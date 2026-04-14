@@ -63,6 +63,7 @@ func clearChannelInfo(channel *model.Channel) {
 		channel.ChannelInfo.MultiKeyDisabledReason = nil
 		channel.ChannelInfo.MultiKeyDisabledTime = nil
 	}
+	// 套餐信息保留返回给前端（IsPlan 和 PlanName 不包含敏感信息）
 }
 
 func GetAllChannels(c *gin.Context) {
@@ -759,6 +760,8 @@ func AddChannel(c *gin.Context) {
 	}
 
 	addChannelRequest.Channel.CreatedTime = common.GetTimestamp()
+	// 检测套餐渠道
+	addChannelRequest.Channel.DetectPlan()
 	keys := make([]string, 0)
 	switch addChannelRequest.Mode {
 	case "multi_to_single":
@@ -1058,6 +1061,14 @@ func UpdateChannel(c *gin.Context) {
 
 	// Always copy the original ChannelInfo so that fields like IsMultiKey and MultiKeySize are retained.
 	channel.ChannelInfo = originChannel.ChannelInfo
+
+	// 检测套餐渠道（如果 BaseURL 发生变化则更新套餐标记）
+	if channel.BaseURL != nil {
+		channel.DetectPlan()
+	} else {
+		channel.ChannelInfo.IsPlan = originChannel.ChannelInfo.IsPlan
+		channel.ChannelInfo.PlanName = originChannel.ChannelInfo.PlanName
+	}
 
 	// If the request explicitly specifies a new MultiKeyMode, apply it on top of the original info.
 	if channel.MultiKeyMode != nil && *channel.MultiKeyMode != "" {
@@ -2178,6 +2189,49 @@ func OllamaVersion(c *gin.Context) {
 		"success": true,
 		"data": gin.H{
 			"version": version,
+		},
+	})
+}
+
+// QueryPlanQuota 查询套餐渠道的额度使用情况
+func QueryPlanQuota(c *gin.Context) {
+	id, _ := strconv.Atoi(c.Param("id"))
+	if id == 0 {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": "参数错误",
+		})
+		return
+	}
+
+	channel, err := model.GetChannelById(id, true)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": "渠道不存在",
+		})
+		return
+	}
+
+	if !channel.ChannelInfo.IsPlan {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": "该渠道不是套餐渠道",
+		})
+		return
+	}
+
+	// 返回套餐信息和是否支持额度查询
+	planName := channel.ChannelInfo.PlanName
+	supported := constant.SupportedPlanQuotaProviders[planName]
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data": gin.H{
+			"plan_name":       planName,
+			"quota_supported": supported,
+			"channel_id":      channel.Id,
+			"channel_name":    channel.Name,
 		},
 	})
 }
