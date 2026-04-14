@@ -263,6 +263,8 @@ export const getChannelsColumns = ({
   checkOllamaVersion,
   setShowMultiKeyManageModal,
   setCurrentMultiKeyChannel,
+  setShowPlanQuotaModal,
+  setCurrentPlanChannel,
 }) => {
   return [
     {
@@ -613,6 +615,39 @@ export const getChannelsColumns = ({
                         onClick: () => {
                           setCurrentMultiKeyChannel(record);
                           setShowMultiKeyManageModal(true);
+                        },
+                      },
+                    ]}
+                  >
+                    <Button
+                      type='tertiary'
+                      size='small'
+                      icon={<IconTreeTriangleDown />}
+                    />
+                  </Dropdown>
+                </SplitButtonGroup>
+              ) : record.channel_info?.is_plan ? (
+                <SplitButtonGroup aria-label={t('套餐渠道操作项目组')}>
+                  <Button
+                    type='tertiary'
+                    size='small'
+                    onClick={() => {
+                      setEditingChannel(record);
+                      setShowEdit(true);
+                    }}
+                  >
+                    {t('编辑')}
+                  </Button>
+                  <Dropdown
+                    trigger='click'
+                    position='bottomRight'
+                    menu={[
+                      {
+                        node: 'item',
+                        name: t('额度查询'),
+                        onClick: () => {
+                          setCurrentPlanChannel(record);
+                          setShowPlanQuotaModal(true);
                         },
                       },
                     ]}

@@ -115,6 +115,10 @@ export const useChannelsData = () => {
   const [showMultiKeyManageModal, setShowMultiKeyManageModal] = useState(false);
   const [currentMultiKeyChannel, setCurrentMultiKeyChannel] = useState(null);
 
+  // Plan quota query states
+  const [showPlanQuotaModal, setShowPlanQuotaModal] = useState(false);
+  const [currentPlanChannel, setCurrentPlanChannel] = useState(null);
+
   // Refs
   const requestCounter = useRef(0);
   const allSelectingRef = useRef(false);
@@ -1215,6 +1219,12 @@ export const useChannelsData = () => {
     setShowMultiKeyManageModal,
     currentMultiKeyChannel,
     setCurrentMultiKeyChannel,
+
+    // Plan quota query states
+    showPlanQuotaModal,
+    setShowPlanQuotaModal,
+    currentPlanChannel,
+    setCurrentPlanChannel,
 
     // Form
     formApi,
