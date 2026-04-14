@@ -59,7 +59,7 @@ type glmSubscriptionResp struct {
 		ProductName      string `json:"productName"`
 		CurrentRenewTime string `json:"currentRenewTime"`
 		NextRenewTime    string `json:"nextRenewTime"`
-		AutoRenew        bool   `json:"autoRenew"`
+		AutoRenew        int    `json:"autoRenew"`
 	} `json:"data"`
 }
 
@@ -190,7 +190,7 @@ func buildGlmPlanQuotaData(sub *glmSubscriptionResp, lim *glmLimitResp) *GlmPlan
 		data.ProductLevel = getGlmPackageLevel(pkg.ProductName)
 		data.EffectiveDate = pkg.CurrentRenewTime
 		data.ExpiryDate = pkg.NextRenewTime
-		data.AutoRenew = pkg.AutoRenew
+		data.AutoRenew = pkg.AutoRenew != 0
 	}
 
 	// 解析限额信息，同时判断新老套餐
