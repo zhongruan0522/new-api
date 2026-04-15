@@ -43,6 +43,7 @@ import {
   IconTreeTriangleDown,
   IconMore,
   IconAlertTriangle,
+  IconShield,
 } from '@douyinfe/semi-icons';
 import { FaRandom } from 'react-icons/fa';
 
@@ -265,6 +266,7 @@ export const getChannelsColumns = ({
   setCurrentMultiKeyChannel,
   setShowPlanQuotaModal,
   setCurrentPlanChannel,
+  checkGlmRiskStatus,
 }) => {
   return [
     {
@@ -623,6 +625,12 @@ export const getChannelsColumns = ({
                         onClick: () => {
                           setCurrentPlanChannel(record);
                           setShowPlanQuotaModal(true);
+                        },
+                      }, {
+                        node: 'item',
+                        name: t('风控检测'),
+                        onClick: () => {
+                          checkGlmRiskStatus(record);
                         },
                       }] : []),
                     ]}
