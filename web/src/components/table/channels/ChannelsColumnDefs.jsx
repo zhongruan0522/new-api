@@ -43,6 +43,7 @@ import {
   IconTreeTriangleDown,
   IconMore,
   IconAlertTriangle,
+  IconShield,
 } from '@douyinfe/semi-icons';
 import { FaRandom } from 'react-icons/fa';
 
@@ -263,6 +264,9 @@ export const getChannelsColumns = ({
   checkOllamaVersion,
   setShowMultiKeyManageModal,
   setCurrentMultiKeyChannel,
+  setShowPlanQuotaModal,
+  setCurrentPlanChannel,
+  checkGlmRiskStatus,
 }) => {
   return [
     {
@@ -591,8 +595,8 @@ export const getChannelsColumns = ({
                 </Button>
               )}
 
-              {record.channel_info?.is_multi_key ? (
-                <SplitButtonGroup aria-label={t('多密钥渠道操作项目组')}>
+              {(record.channel_info?.is_multi_key || record.channel_info?.is_plan) ? (
+                <SplitButtonGroup aria-label={t('套餐渠道操作项目组')}>
                   <Button
                     type='tertiary'
                     size='small'
@@ -607,14 +611,28 @@ export const getChannelsColumns = ({
                     trigger='click'
                     position='bottomRight'
                     menu={[
-                      {
+                      ...(record.channel_info?.is_multi_key ? [{
                         node: 'item',
                         name: t('多密钥管理'),
                         onClick: () => {
                           setCurrentMultiKeyChannel(record);
                           setShowMultiKeyManageModal(true);
                         },
-                      },
+                      }] : []),
+                      ...(record.channel_info?.is_plan ? [{
+                        node: 'item',
+                        name: t('额度查询'),
+                        onClick: () => {
+                          setCurrentPlanChannel(record);
+                          setShowPlanQuotaModal(true);
+                        },
+                      }, {
+                        node: 'item',
+                        name: t('风控检测'),
+                        onClick: () => {
+                          checkGlmRiskStatus(record);
+                        },
+                      }] : []),
                     ]}
                   >
                     <Button

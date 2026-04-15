@@ -104,6 +104,24 @@ type ChannelSpecialBase struct {
 	OpenAIBaseURL string
 }
 
+// IsChannelPlan 检测给定的 BaseURL 是否为内置套餐地址
+func IsChannelPlan(baseURL string) (string, bool) {
+	if baseURL == "" {
+		return "", false
+	}
+	_, ok := ChannelSpecialBases[baseURL]
+	return baseURL, ok
+}
+
+// GetSupportedPlanQuotaProviders 返回支持额度查询的套餐 key 列表
+var SupportedPlanQuotaProviders = map[string]bool{
+	"glm-coding-plan":                   true,
+	"glm-coding-plan-international":     true,
+	"kimi-coding-plan":                  true,
+	"minimax-coding-plan":               true,
+	"minimax-coding-plan-international": true,
+}
+
 var ChannelSpecialBases = map[string]ChannelSpecialBase{
 	"glm-coding-plan": {
 		ClaudeBaseURL: "https://open.bigmodel.cn/api/anthropic",

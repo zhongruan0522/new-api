@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/zhongruan0522/new-api/common"
 	"github.com/zhongruan0522/new-api/constant"
@@ -63,6 +64,7 @@ func clearChannelInfo(channel *model.Channel) {
 		channel.ChannelInfo.MultiKeyDisabledReason = nil
 		channel.ChannelInfo.MultiKeyDisabledTime = nil
 	}
+	// 套餐信息保留返回给前端（IsPlan 和 PlanName 不包含敏感信息）
 }
 
 func GetAllChannels(c *gin.Context) {
@@ -759,6 +761,8 @@ func AddChannel(c *gin.Context) {
 	}
 
 	addChannelRequest.Channel.CreatedTime = common.GetTimestamp()
+	// 检测套餐渠道
+	addChannelRequest.Channel.DetectPlan()
 	keys := make([]string, 0)
 	switch addChannelRequest.Mode {
 	case "multi_to_single":
@@ -1058,6 +1062,14 @@ func UpdateChannel(c *gin.Context) {
 
 	// Always copy the original ChannelInfo so that fields like IsMultiKey and MultiKeySize are retained.
 	channel.ChannelInfo = originChannel.ChannelInfo
+
+	// 检测套餐渠道（如果 BaseURL 发生变化则更新套餐标记）
+	if channel.BaseURL != nil {
+		channel.DetectPlan()
+	} else {
+		channel.ChannelInfo.IsPlan = originChannel.ChannelInfo.IsPlan
+		channel.ChannelInfo.PlanName = originChannel.ChannelInfo.PlanName
+	}
 
 	// If the request explicitly specifies a new MultiKeyMode, apply it on top of the original info.
 	if channel.MultiKeyMode != nil && *channel.MultiKeyMode != "" {
@@ -2179,5 +2191,198 @@ func OllamaVersion(c *gin.Context) {
 		"data": gin.H{
 			"version": version,
 		},
+	})
+}
+
+// QueryPlanQuota 查询套餐渠道的额度使用情况
+func QueryPlanQuota(c *gin.Context) {
+	id, _ := strconv.Atoi(c.Param("id"))
+	if id == 0 {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": "参数错误",
+		})
+		return
+	}
+
+	channel, err := model.GetChannelById(id, true)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": "渠道不存在",
+		})
+		return
+	}
+
+	if !channel.ChannelInfo.IsPlan {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": "该渠道不是套餐渠道",
+		})
+		return
+	}
+
+	planName := channel.ChannelInfo.PlanName
+
+	switch planName {
+	case "glm-coding-plan", "glm-coding-plan-international":
+		key := strings.Split(channel.Key, "\n")[0]
+		quotaData, err := service.FetchGlmPlanQuota(key, planName)
+		if err != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": "查询额度失败: " + err.Error(),
+			})
+			return
+		}
+		quotaData.PlanName = planName
+		c.JSON(http.StatusOK, gin.H{
+			"success": true,
+			"data":    quotaData,
+		})
+		return
+	default:
+		// 暂未支持实际查询的套餐
+		c.JSON(http.StatusOK, gin.H{
+			"success": true,
+			"data": gin.H{
+				"plan_name":       planName,
+				"quota_supported": false,
+				"channel_id":      channel.Id,
+				"channel_name":    channel.Name,
+			},
+		})
+	}
+}
+
+// QueryGlmUsage 代理查询 GLM 套餐的用量图表数据
+func QueryGlmUsage(c *gin.Context) {
+	id, _ := strconv.Atoi(c.Param("id"))
+	if id == 0 {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": "参数错误",
+		})
+		return
+	}
+
+	channel, err := model.GetChannelById(id, true)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": "渠道不存在",
+		})
+		return
+	}
+
+	planName := channel.ChannelInfo.PlanName
+	if planName != "glm-coding-plan" && planName != "glm-coding-plan-international" {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": "该渠道不支持用量查询",
+		})
+		return
+	}
+
+	dataType := c.Query("type")
+	if dataType == "" {
+		dataType = "model"
+	}
+	startTime := c.Query("startTime")
+	endTime := c.Query("endTime")
+
+	// 校验时间范围不超过31天，防止滥用
+	if startTime != "" && endTime != "" {
+		layout := "2006-01-02 15:04:05"
+		s := strings.ReplaceAll(startTime, "+", " ")
+		e := strings.ReplaceAll(endTime, "+", " ")
+		tStart, err1 := time.Parse(layout, s)
+		tEnd, err2 := time.Parse(layout, e)
+		if err1 != nil || err2 != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": "时间格式错误，应为 YYYY-MM-DD HH:MM:SS",
+			})
+			return
+		}
+		if tEnd.Before(tStart) {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": "结束时间不能早于开始时间",
+			})
+			return
+		}
+		if tEnd.Sub(tStart).Hours() > 31*24 {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": "查询时间范围不能超过31天",
+			})
+			return
+		}
+	}
+
+	key := strings.Split(channel.Key, "\n")[0]
+	rawData, err := service.FetchGlmUsageData(key, planName, dataType, startTime, endTime)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": "查询用量失败: " + err.Error(),
+		})
+		return
+	}
+
+	c.Data(http.StatusOK, "application/json", rawData)
+}
+
+// QueryRiskStatus 查询智谱 GLM 套餐渠道的风控状态
+func QueryRiskStatus(c *gin.Context) {
+	id, _ := strconv.Atoi(c.Param("id"))
+	if id == 0 {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": "参数错误",
+		})
+		return
+	}
+
+	channel, err := model.GetChannelById(id, true)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": "渠道不存在",
+		})
+		return
+	}
+
+	if !channel.ChannelInfo.IsPlan {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": "该渠道不是套餐渠道",
+		})
+		return
+	}
+
+	planName := channel.ChannelInfo.PlanName
+	if planName != "glm-coding-plan" && planName != "glm-coding-plan-international" {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": "该渠道不支持风控检测",
+		})
+		return
+	}
+
+	key := strings.Split(channel.Key, "\n")[0]
+	result, err := service.CheckGlmRiskStatus(key)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": "风控检测失败: " + err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data":    result,
 	})
 }
