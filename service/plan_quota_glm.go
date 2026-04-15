@@ -170,6 +170,64 @@ type glmLimitResp struct {
 	} `json:"data"`
 }
 
+// GlmRiskCheckResult 风控检测结果
+type GlmRiskCheckResult struct {
+	IsRisk bool   `json:"is_risk"`
+	RawMsg string `json:"raw_msg,omitempty"`
+}
+
+// CheckGlmRiskStatus 检测智谱账号是否被风控
+// 调用 https://open.bigmodel.cn/api/biz/labelCustomer/isRiskCustomer
+func CheckGlmRiskStatus(apiKey string) (*GlmRiskCheckResult, error) {
+	url := "https://open.bigmodel.cn/api/biz/labelCustomer/isRiskCustomer"
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// Key 放在 Authorization 头中做身份验证
+	req.Header.Set("Authorization", strings.TrimSpace(apiKey))
+
+	client := &http.Client{Timeout: 15 * time.Second}
+	res, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	if res.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("HTTP %d: %s", res.StatusCode, string(body))
+	}
+
+	// 解析响应，期望格式: {"code":200,"msg":"操作成功","data":false,"success":true}
+	var resp struct {
+		Code    int         `json:"code"`
+		Msg     string      `json:"msg"`
+		Data    interface{} `json:"data"`
+		Success bool        `json:"success"`
+	}
+	if err := common.Unmarshal(body, &resp); err != nil {
+		return nil, fmt.Errorf("解析响应失败: %w", err)
+	}
+
+	// data 不是 false 就视为风控
+	isRisk := true
+	if boolVal, ok := resp.Data.(bool); ok && !boolVal {
+		isRisk = false
+	}
+
+	return &GlmRiskCheckResult{
+		IsRisk: isRisk,
+		RawMsg: resp.Msg,
+	}, nil
+}
+
 // FetchGlmPlanQuota 从智谱后端拉取套餐额度数据
 // apiKey: 渠道的 API Key
 // baseURL: 套餐的基础 URL (glm-coding-plan 或 glm-coding-plan-international)
