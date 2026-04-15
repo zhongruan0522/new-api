@@ -1,0 +1,144 @@
+---
+title: Docker Compose Deployment
+---
+
+This document provides detailed steps for deploying New API using Docker Compose.
+
+## Prerequisites
+
+- Docker and Docker Compose installed
+- Recommended OS: Linux (Ubuntu/CentOS/Debian, etc.)
+
+## Deploy with Docker Compose
+
+### Method One: Clone the Project with Git (Recommended)
+
+If you have normal access to GitHub, this method is recommended. The project already includes a complete `docker-compose.yml` configuration file:
+
+```shell
+# Download project source code
+git clone https://github.com/QuantumNous/new-api.git
+
+# Enter project directory
+cd new-api
+
+# Edit docker-compose.yml file as needed
+# Use nano editor
+nano docker-compose.yml
+# Or use vim editor
+# vim docker-compose.yml
+```
+
+<Callout type="info" title="Tip">
+  The `docker-compose.yml` file included with the project has already configured
+  all necessary services (including MySQL and Redis). You only need to modify
+  parameters such as ports and passwords according to your actual situation to
+  use it.
+</Callout>
+
+### Method Two: Manually Create Configuration File
+
+If you cannot access GitHub or clone the repository, you can manually create the configuration file:
+
+1. Create a directory for New API deployment:
+
+```shell
+mkdir new-api
+cd new-api
+```
+
+2. Create the `docker-compose.yml` file in this directory
+
+   You can refer to the configuration examples in the [Docker Compose Configuration Guide](/en/docs/installation/config-maintenance/docker-compose-yml) document and choose according to your needs:
+   - For production environments, a complete configuration (including MySQL and Redis) is recommended.
+   - For testing environments, a simplified configuration can be used.
+
+3. Use a text editor to create the file:
+
+```shell
+# Use nano editor
+nano docker-compose.yml
+
+# Or use vim editor
+vim docker-compose.yml
+```
+
+Copy the selected configuration content into this file and customize it as needed.
+
+## Start Services
+
+Once the configuration file is ready, whether you cloned it with Git or created it manually, you can use the following command to start the services:
+
+```shell
+# Start services using Docker Compose
+docker compose up -d
+```
+
+This command will automatically pull the required images and start the services in the background.
+
+## View Logs
+
+- **Real-time logs for all services**
+
+```bash
+docker compose logs -f
+```
+
+- **Logs for a specific service** (Examples: `new-api`, `mysql`, `redis`)
+
+```bash
+docker compose logs -f new-api
+docker compose logs -f mysql
+docker compose logs -f redis
+```
+
+- **View only the last N lines**
+
+```bash
+docker compose logs --tail=100 new-api
+```
+
+- **View logs from a recent period**
+
+```bash
+docker compose logs --since=10m new-api
+```
+
+- **Show timestamps**
+
+```bash
+docker compose logs -f -t new-api
+```
+
+- **Foreground mode debugging (real-time log output with startup)**
+
+```bash
+docker compose up
+# Or only start and follow a specific service
+docker compose up new-api
+```
+
+Press Ctrl+C to exit foreground mode (this will stop the corresponding service). For background operation, use `-d`.
+
+- **View service list/status**
+
+```bash
+docker compose ps
+```
+
+- **View logs using container name** (when `container_name` is set, e.g., `new-api` in the configuration)
+
+```bash
+docker logs -f new-api
+```
+
+## Stop Services
+
+```shell
+# Stop services
+docker compose down
+```
+
+## Access the System
+
+After the services start successfully, accessing `http://Server_IP:3000` will automatically redirect to the initialization page. Follow the on-screen instructions to manually set up the administrator account and password (only required for the first installation). After initialization, you can log in to the system using the administrator account you set.
