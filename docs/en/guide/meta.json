@@ -1,0 +1,23 @@
+{
+  "title": "User Guide",
+  "description": "Quick start and basic tutorials",
+  "icon": "BookOpen",
+  "root": true,
+  "pages": [
+    "---Introduction---",
+    "../index",
+    "wiki/basic-concepts/project-introduction",
+    "wiki/basic-concepts/features-introduction",
+    "wiki/basic-concepts/technical-architecture",
+    "wiki/basic-concepts/analytics-setup",
+    "wiki/basic-concepts/performance-analysis",
+    "wiki/changelog",
+    "wiki/special-thanks",
+    "---Feature Guide---",
+    "home",
+    "console",
+    "pricing",
+    "document",
+    "about"
+  ]
+}

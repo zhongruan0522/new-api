@@ -1,0 +1,213 @@
+---
+title: System Update Guide
+---
+
+This document provides methods and best practices for updating the New API system to ensure a smooth upgrade to the latest version.
+
+## Pre-update Preparations
+
+Before updating the system, it is recommended to perform the following preparations:
+
+1.  **Back up data**: Back up your database and important configuration files
+2.  **Check update logs**: Review the update content for the latest version on [GitHub Releases](https://github.com/Calcium-Ion/new-api/releases)
+3.  **Check compatibility**: Confirm whether the new version is compatible with your existing plugins, integrations, or custom configurations
+4.  **Choose an appropriate time**: Perform the update during off-peak hours to minimize impact on users
+
+## Docker Deployment Update Methods
+
+### Method One: Single Container Deployment Update
+
+If you have deployed New API using a single Docker container, you can update by following these steps:
+
+```shell
+# 拉取最新镜像
+docker pull calciumion/new-api:latest
+
+# 停止并移除旧容器
+docker stop new-api
+docker rm new-api
+
+# 使用相同的参数重新运行容器
+docker run --name new-api -d --restart always \
+  -p 3000:3000 \
+  -e TZ=Asia/Shanghai \
+  -v /your/data/path:/data \
+  calciumion/new-api:latest
+```
+
+<Callout type="warn" title="Please Note">
+  Please ensure that you use the same parameters as the original container when
+  starting the new container, especially for data volume mounts and environment
+  variable configurations.
+</Callout>
+
+### Method Two: Update using Docker Compose
+
+If you are deploying using Docker Compose (see [Docker Compose Configuration Instructions](/en/docs/installation/config-maintenance/docker-compose-yml)), the update process is simpler:
+
+```shell
+# 进入项目目录
+cd new-api
+
+# 拉取最新镜像
+docker compose pull
+
+# 停止并重启服务
+docker compose down
+docker compose up -d
+```
+
+Or use a more concise command:
+
+```shell
+docker compose pull && docker compose down && docker compose up -d
+```
+
+### Method Three: Update using 1Panel Panel
+
+If you are deploying using the 1Panel panel, you can update by following these steps:
+
+1.  Log in to the 1Panel panel, go to **App Store** -> **Upgradable Page**
+2.  Find the New API application and click the **Upgrade** button
+3.  Select the **Target version to upgrade to**
+4.  Click the **Confirm** button, and the system will automatically pull the latest image to upgrade the application
+
+### Method Four: Update using Baota Panel
+
+If you are deploying using the Baota Panel, you can update by following these steps:
+
+1.  Log in to the Baota Panel, go to **Docker Management** -> **Container List**
+2.  Find the New API container, click **More** -> **Recreate**
+3.  Check the **Pull latest image** option, ensuring other configurations remain unchanged
+4.  Click **Submit**, and the system will automatically pull the latest image and recreate the container
+
+## Update Method from Source Code Compilation
+
+If you have deployed New API by compiling from source code, the update steps are as follows:
+
+```shell
+# 进入项目目录
+cd new-api
+
+# 拉取最新代码
+git pull
+
+# 编译后端
+go build -o new-api
+
+# 更新并编译前端
+cd web
+bun install
+bun run build
+cd ..
+
+# 重启服务
+./new-api --port 3000
+```
+
+## Multi-node Deployment Update Strategy
+
+For multi-node deployment environments, the following update strategy is recommended:
+
+1.  **Update secondary nodes first**: First update one secondary node and test its stability
+2.  **Gradual rollout**: After confirming the stability of the secondary node, update the remaining secondary nodes one by one
+3.  **Finally update the primary node**: After all secondary nodes are running stably, update the primary node
+
+This strategy can minimize the risk of service interruption.
+
+<Callout title="Detailed Guide">
+  For a complete guide on cluster deployment, please refer to the [Cluster
+  Deployment
+  Documentation](/en/docs/installation/deployment-methods/cluster-deployment).
+</Callout>
+
+## Post-update Checklist
+
+After the system update, please check the following items to ensure the system is running correctly:
+
+1.  **Access management interface**: Confirm that you can log in and access the management interface normally
+2.  **Check logs**: Review system logs for errors or warnings
+3.  **Test API calls**: Test some API calls to ensure functionality is normal
+4.  **Check database migration**: Confirm whether the database structure update was successful
+5.  **Check channel status**: Confirm whether all channel connections are normal
+
+## Version Rollback
+
+If issues arise after an update, you can roll back to a previous stable version:
+
+### Docker Rollback
+
+```shell
+# 拉取特定版本的镜像
+docker pull calciumion/new-api:v1.x.x
+
+# 停止并移除当前容器
+docker stop new-api
+docker rm new-api
+
+# 使用旧版本镜像重新创建容器
+docker run --name new-api -d --restart always \
+  -p 3000:3000 \
+  -e TZ=Asia/Shanghai \
+  -v /your/data/path:/data \
+  calciumion/new-api:v1.x.x
+```
+
+### Source Code Rollback
+
+```shell
+# 进入项目目录
+cd new-api
+
+# 切换到特定版本
+git checkout v1.x.x
+
+# 重新编译
+go build -o new-api
+
+# 更新并编译前端
+cd web
+bun install
+bun run build
+cd ..
+
+# 重启服务
+./new-api --port 3000
+```
+
+## Common Issues
+
+### Service Fails to Start After Update
+
+- Check logs for error messages
+- Confirm database connection is normal
+- Confirm environment variable configuration is correct
+
+### Abnormal Functionality After Update
+
+- Check for any API format changes
+- Check if frontend and backend versions match
+- Confirm if the new version requires additional configuration
+
+### Database Structure Incompatibility
+
+- Check update logs for database migration instructions
+- Check if manual execution of database migration scripts is required
+- Contact developers for database upgrade guidance
+
+## Automatic Update Tools (Use with Caution)
+
+For users who wish to automate updates, Watchtower can be used to automatically update containers:
+
+```shell
+docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+  containrrr/watchtower -c \
+  --run-once new-api
+```
+
+<Callout type="warn" title="Please Note">
+  Automatic updates may lead to unexpected issues, especially when database
+  structures change. It is recommended to use automatic updates only in testing
+  environments; production environments should control the update process
+  manually.
+</Callout>

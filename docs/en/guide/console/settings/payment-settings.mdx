@@ -1,0 +1,95 @@
+---
+title: Payment Settings
+---
+
+Here you can configure settings related to the top-up function.
+
+![Payment Settings](/assets/guide/payment-setting.png)
+
+![Stripe](/assets/guide/stripe.png)
+
+## Supported Payment Gateways
+
+- **EPay**
+  - Required fields: `API Address`, `Merchant ID (PID)`, `Merchant Key (KEY)`
+  - The platform callback parameters include a signature, which the system will verify and automatically credit.
+- **Stripe (Optional)**
+  - Required fields: `API Key` `WebHook Signing Secret` `Product Price ID`
+
+## What is EPay
+
+`EPay` is a general term for the "third-party aggregated collection gateway/interface" model, not a specific website or company. It can refer to commercial aggregated payment services, or self-built/open-source gateway implementations that follow the "EPay protocol style".
+
+- **Core Function**: Aggregates channels such as WeChat Pay, Alipay, and bank cards, providing merchants with unified order placement, signature verification, and callback interfaces.
+- **Compliance Notice**: The gateway itself is not equivalent to a licensed payment institution; fund clearing, settlement, and compliance depend on the licensed channels it integrates with. Please adhere to local regulatory and risk control requirements.
+
+## Top-up Method Settings Template
+
+In "Top-up Methods", you can configure according to the following structure:
+
+```json
+[
+  {
+    "color": "rgba(var(--semi-blue-5), 1)",
+    "name": "支付宝",
+    "type": "alipay"
+  },
+  {
+    "color": "rgba(var(--semi-green-5), 1)",
+    "name": "微信",
+    "type": "wxpay"
+  },
+  {
+    "color": "rgba(var(--semi-green-5), 1)",
+    "name": "Stripe",
+    "type": "stripe",
+    "min_topup": "50"
+  },
+  {
+    "name": "自定义1",
+    "color": "black",
+    "type": "custom1",
+    "min_topup": "50"
+  }
+]
+```
+
+### Field Description
+
+- name: Display text. Shown on the "Select Payment Method" button (e.g., "Alipay/WeChat/Stripe/Custom1").
+- color: Theme color or border color for buttons/badges. Supports any CSS color value, recommending existing design tokens (e.g., `rgba(var(--semi-blue-5), 1)`).
+- type: Channel identifier, used for backend routing and order placement.
+  - `stripe` → Uses Stripe gateway.
+  - Others (e.g., `alipay`, `wxpay`, `custom1`, etc.) → Uses EPay-style gateway, and passes this value as a channel parameter.
+  - Detailed logic can be found in the backend controller `controller/topup.go` (Reference: [controller/topup.go](https://github.com/QuantumNous/new-api/blob/main/controller/topup.go)).
+- min_topup: Minimum top-up amount (unit consistent with page currency). If the entered amount is less than this value, the page will prompt "The minimum top-up amount for this payment method is X" and restrict initiating payment; the backend will also perform validation.
+- Order: Rendered from left to right according to array order.
+
+## Top-up Amount Configuration
+
+### Custom Top-up Amount Options
+
+Set the top-up amount options available for users to choose, for example:
+
+```json
+[10, 20, 50, 100, 200, 500]
+```
+
+These values will be displayed in the "Select Top-up Quota" area, and users can directly click to select the corresponding top-up amount.
+
+### Top-up Amount Discount Configuration
+
+Set discounts corresponding to different top-up amounts, where the key is the top-up amount and the value is the discount rate, for example:
+
+```json
+{
+  "100": 0.95,
+  "200": 0.9,
+  "500": 0.85
+}
+```
+
+- Key: Top-up amount (string format)
+- Value: Discount rate (decimal between 0-1, e.g., 0.95 means 95% of the price, i.e., 5% discount)
+- The system will automatically calculate the actual payment amount and savings based on the configuration.
+- Detailed implementation logic can be found in the backend controller [controller/topup.go](https://github.com/QuantumNous/new-api/blob/main/controller/topup.go)

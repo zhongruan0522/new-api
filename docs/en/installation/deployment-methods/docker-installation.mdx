@@ -1,0 +1,54 @@
+---
+title: Docker Deployment
+---
+
+This document provides detailed steps for deploying New API using Docker.
+
+<Callout type="warn" title="Highly Recommended">
+  We highly recommend using the [Docker Compose installation
+  method](/en/docs/installation/deployment-methods/docker-compose-installation)
+  instead of manually starting Docker containers. The Docker Compose method
+  offers better configuration management, service orchestration, and deployment
+  experience.
+</Callout>
+
+## Basic Requirements
+
+- Docker environment installed
+- Port: Default port 3000 is used
+
+## Deploy Directly Using Docker Image
+
+### Using SQLite Database (Not Recommended)
+
+```shell
+docker run --name new-api -d --restart always \
+  -p 3000:3000 \
+  -e TZ=Asia/Shanghai \
+  -v /your/data/path:/data \
+  calciumion/new-api:latest
+```
+
+<Callout type="warn" title="Note">
+  Please replace `/your/data/path` with your desired local path for data
+  storage.
+</Callout>
+
+### Using MySQL Database
+
+```shell
+docker run --name new-api -d --restart always \
+  -p 3000:3000 \
+  -e SQL_DSN="用户名:密码@tcp(数据库地址:3306)/数据库名" \
+  -e TZ=Asia/Shanghai \
+  -v /your/data/path:/data \
+  calciumion/new-api:latest
+```
+
+<Callout type="warn" title="Note">
+  Please replace the database connection information in the parameters.
+</Callout>
+
+## Accessing the System
+
+After deployment, accessing `http://Server_IP:3000` will automatically redirect you to the initialization page. Follow the on-screen instructions to manually set up the administrator account and password (only required for the first installation), and upon completion, you can log in to the system with the newly set administrator account.

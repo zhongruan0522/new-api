@@ -1,0 +1,84 @@
+---
+title: インストールとデプロイ
+description: 適切なデプロイ方法を選択
+---
+
+import { Card, Cards } from 'fumadocs-ui/components/card';
+import {
+  Container,
+  Boxes,
+  Server,
+  Network,
+  Code2,
+  Settings,
+  RefreshCw,
+  FileCode,
+} from 'lucide-react';
+
+## 概要
+
+New API は複数のデプロイ方法をサポートしています。技術的な背景と使用シナリオに基づいて、最適なソリューションを選択できます。
+
+## デプロイ方法
+
+<Cards>
+  <Card
+    icon={<Boxes />}
+    title="Docker Compose デプロイ"
+    description="Docker Compose を使用して複数のサービスをオーケストレーション、本番環境に適しています。"
+    href="/ja/docs/installation/deployment-methods/docker-compose-installation"
+  />
+  <Card
+    icon={<Container />}
+    title="Docker 単一コンテナデプロイ"
+    description="Docker イメージを使用した迅速なデプロイ、個人利用に適しています。"
+    href="/ja/docs/installation/deployment-methods/docker-installation"
+  />
+  <Card
+    icon={<Server />}
+    title="1Panel デプロイ"
+    description="1Panel グラフィカルインターフェースによる迅速なデプロイ。"
+    href="/ja/docs/installation/deployment-methods/1panel-installation"
+  />
+  <Card
+    icon={<Server />}
+    title="宝塔パネルデプロイ"
+    description="宝塔パネルグラフィカルインターフェースによる迅速なデプロイ。"
+    href="/ja/docs/installation/deployment-methods/bt-docker-installation"
+  />
+  <Card
+    icon={<Network />}
+    title="クラスターデプロイモード"
+    description="マルチノード分散デプロイで高可用性とロードバランシングを実現。"
+    href="/ja/docs/installation/deployment-methods/cluster-deployment"
+  />
+  <Card
+    icon={<Code2 />}
+    title="ローカル開発デプロイ"
+    description="コード貢献や機能カスタマイズを行う開発者に適しています。"
+    href="/ja/docs/installation/deployment-methods/local-development"
+  />
+</Cards>
+
+## 設定とメンテナンス
+
+<Cards>
+  <Card
+    icon={<FileCode />}
+    title="docker-compose.yml 設定"
+    description="Docker Compose 設定ファイルのパラメータの詳細説明。"
+    href="/ja/docs/installation/config-maintenance/docker-compose-yml"
+  />
+  <Card
+    icon={<Settings />}
+    title="環境変数設定"
+    description="完全な環境変数設定ガイドとベストプラクティス。"
+    href="/ja/docs/installation/config-maintenance/environment-variables"
+  />
+  <Card
+    icon={<RefreshCw />}
+    title="システム更新"
+    description="New API を最新バージョンに安全に更新する方法を学びます。"
+    href="/ja/docs/installation/config-maintenance/system-update"
+  />
+</Cards>

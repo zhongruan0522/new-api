@@ -1,0 +1,7 @@
+{
+  "title": "ビジネス協力",
+  "description": "ビジネス協力とお問い合わせ",
+  "root": true,
+  "icon": "Handshake",
+  "pages": ["index"]
+}
