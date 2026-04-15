@@ -1,0 +1,43 @@
+---
+title: Feature Description
+---
+
+1.  🎨 Brand new UI interface (some interfaces are still pending updates)
+2.  🌍 Multi-language support (to be improved)
+3.  🎨 Added [Midjourney-Proxy(Plus)](https://github.com/novicezk/midjourney-proxy) API support
+4.  💰 Supports online top-up functionality, configurable in System Settings:
+    - - [x] Epay
+5.  🔍 Supports querying usage Quota by key:
+    - In conjunction with the project [neko-api-key-tool](https://github.com/Calcium-Ion/neko-api-key-tool), querying usage by key can be achieved.
+6.  📑 Pagination supports selecting the number of items displayed per page
+7.  🔄 SQLite database storage support, ready to use out of the box, lightweight and convenient
+8.  💵 Supports model billing by usage count, configurable in System Settings - Operation Settings
+9.  ⚖️ Supports **weighted random** Channel selection
+10. 📈 Data Dashboard (Console)
+11. 🔒 Configurable models that a Token can call
+12. 🤖 Supports Telegram authorized login:
+    1.  System Settings - Configure Login & Registration - Allow login via Telegram
+    2.  Enter command /setdomain to [@Botfather](https://t.me/botfather)
+    3.  Select your bot, then enter http(s)://your_website_address/login
+    4.  The Telegram Bot Name is the bot username string without the @
+13. 🎵 Added [Suno API](https://github.com/Suno-API/Suno-API) API support
+14. 🔄 Supports Rerank models, currently compatible with Cohere and Jina, and can be integrated with Dify
+15. ⚡ **[OpenAI Realtime API](https://platform.openai.com/docs/guides/realtime/integration)** - Supports OpenAI's Realtime API, supports Azure Channel
+16. Supports using the route /chat2link to enter the chat interface
+17. 🧠 Supports setting reasoning effort via model name suffix:
+    1.  OpenAI o-series models
+        - - Add suffix `-high` to set as high reasoning effort (e.g.: `o3-mini-high`)
+        - - Add suffix `-medium` to set as medium reasoning effort (e.g.: `o3-mini-medium`)
+        - - Add suffix `-low` to set as low reasoning effort (e.g.: `o3-mini-low`)
+    2.  Claude thinking models
+        - - Add suffix `-thinking` to enable thinking mode (e.g.: `claude-3-7-sonnet-20250219-thinking`)
+18. 🔄 Thinking to Content, supports setting the `thinking_to_content` option in `Channel - Edit - Channel Extra Settings`, default `false`. When enabled, it will convert the thinking content `reasoning_content` into a `<think>` tag and append it to the returned content.
+19. 🔄 Model Rate Limiting, supports setting model rate limits in `System Settings - Rate Limit Settings`, including total request count limit and successful request count limit.
+20. 💰 Cache Billing Support, when enabled, billing can occur at a set Ratio upon cache hit:
+    1.  Set the Prompt Cache Ratio option in `System Settings - Operation Settings`
+    2.  Set the Prompt Cache Ratio in the Channel, range 0-1. For example, setting it to 0.5 means billing at 50% upon cache hit.
+    3.  Supported Channels:
+        - - [x] OpenAI
+        - - [x] Azure
+        - - [x] DeepSeek
+        - - [ ] Claude

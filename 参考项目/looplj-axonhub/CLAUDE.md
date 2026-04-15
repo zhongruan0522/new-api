@@ -1,1 +1,0 @@
-@AGENTS.md read and follow its instructions.

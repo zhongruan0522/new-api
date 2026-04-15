@@ -1,0 +1,83 @@
+---
+title: Deploying with Baota Panel
+---
+
+This document provides a graphical tutorial for deploying New API using the Baota Panel Docker feature.
+
+## Prerequisites
+
+- Install Baota Panel version 9.2.0 or higher
+- Recommended OS: CentOS 7+, Ubuntu 18.04+, Debian 10+
+- Server Configuration: At least 1 core and 2GB RAM
+
+## Install Baota Panel
+
+1.  Go to the [Baota Panel Official Website](https://www.bt.cn/new/download.html) to download the installation script suitable for your system.
+2.  Run the installation script to install Baota Panel.
+3.  After installation, use the provided address, username, and password to log in to Baota Panel.
+
+## Install Docker
+
+1.  After logging in to Baota Panel, find and click **Docker** in the left sidebar.
+2.  The first time you enter, you will be prompted to install the Docker service. Click **Install Now**.
+3.  Follow the prompts to complete the Docker service installation.
+
+## Install New API
+
+### Method One: Using Baota App Store (Recommended)
+
+1.  In the Baota Panel Docker feature, click **App Store**.
+2.  Search for and find **New-API**.
+3.  Click **Install**.
+4.  Configure the following basic options:
+    - Container Name: Customizable, defaults to `new-api`
+    - Port Mapping: Defaults to `3000:3000`
+    - Environment Variables: Add as needed (e.g., TZ=Asia/Shanghai)
+    - Directory Mapping: Ensure the `/data` directory is mapped to a host directory.
+5.  Click **Submit** to complete the installation.
+
+### Method Two: Using a Custom Image
+
+> It is strongly recommended to install via the "App Store" for automatic configuration. This section is for advanced users who have a clear understanding of Docker and Baota container configuration.
+
+<Callout
+  type="warn"
+  title="I confirm that I want to manually set up the image and will resolve any issues myself."
+>
+  Only refer to the following steps to manually configure a custom image after
+  you have checked and agreed to the above confirmation:
+</Callout>
+
+    1. In the Baota Panel Docker feature, click **Image Management**.
+    2. Click **Get Image** -> **Pull Image**.
+    3. Enter Image Name: `calciumion/new-api:latest`
+    4. Click **Submit** and wait for the image pull to complete.
+    5. After the pull is complete, go to **Container List** and click **Create Container**.
+    6. Fill in the following information:
+       - Container Name: `new-api` (customizable)
+       - Image: Select the `calciumion/new-api:latest` image you just pulled.
+       - Port Mapping: Add `3000:3000`
+       - Directory Mapping: Add `/your/host/path:/data` (replace with your host path)
+       - Environment Variables: Add as needed (e.g., TZ=Asia/Shanghai)
+    7. Click **Submit** to complete the installation.
+
+## Configuration and Access
+
+After installation, you can access New API at the following address:
+
+    http://服务器IP:3000
+
+The first visit will automatically guide you to the initialization page. Follow the on-screen instructions to set up an administrator account and password (only required for the first installation), then log in using the administrator account you set.
+
+## Common Issues
+
+### 1. Unable to access New API interface
+
+- Check if port mapping is correct.
+- Confirm if the server firewall allows port 3000.
+- Check if the container is running normally.
+
+### 2. Data cannot be persisted
+
+- Confirm if the `/data` directory is correctly mapped.
+- Check if host directory permissions are correct.

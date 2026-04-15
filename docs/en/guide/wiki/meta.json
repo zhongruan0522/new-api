@@ -1,0 +1,6 @@
+{
+  "title": "Wiki",
+  "description": "New API project documentation and basics",
+  "icon": "BookOpen",
+  "pages": ["basic-concepts", "project-records"]
+}

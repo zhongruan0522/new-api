@@ -1,0 +1,40 @@
+---
+title: Help & Support
+description: Get help and participate in community discussions
+---
+
+import { Card, Cards } from 'fumadocs-ui/components/card';
+import { HelpCircle, MessageCircle, Bug, Coffee } from 'lucide-react';
+
+## Overview
+
+Having issues? Need help? We provide multiple support channels to help you solve various problems during use.
+
+## Get Help
+
+<Cards>
+  <Card
+    icon={<HelpCircle />}
+    title="FAQ"
+    description="Check answers to frequently asked questions for quick problem resolution."
+    href="/en/docs/support/faq"
+  />
+  <Card
+    icon={<MessageCircle />}
+    title="Community"
+    description="Join the community to exchange experiences and tips with other users."
+    href="/en/docs/support/community-interaction"
+  />
+  <Card
+    icon={<Bug />}
+    title="Feedback"
+    description="Found a bug or have a feature suggestion? Let us know!"
+    href="/en/docs/support/feedback-issues"
+  />
+  <Card
+    icon={<Coffee />}
+    title="Sponsor"
+    description="If New API has been helpful to you, feel free to buy us a coffee."
+    href="/en/docs/support/buy-us-a-coffee"
+  />
+</Cards>
