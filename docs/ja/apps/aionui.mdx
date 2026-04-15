@@ -1,0 +1,85 @@
+---
+title: AionUi - 無料オープンソースデスクトップオフィスAgent
+---
+
+<Callout type="info">
+  🚀 AionUiは、Gemini CLI、Claude Code、Codex、OpenCode、Qwen Code、Goose CLI、Auggieなど、複数のAIエージェントをサポートする無料のローカルオープンソースCoworkです。完全なGUIインターフェースとWebUIリモートアクセス機能を提供し、Coworkのオープンソース代替として機能します。
+</Callout>
+
+    - 公式サイト：`<https://www.aionui.com>`
+    - GitHubリポジトリ：`<https://github.com/iOfficeAI/AionUi>`
+    - ダウンロードURL：`<https://github.com/iOfficeAI/AionUi/releases>`
+
+![AionUi Logo](/assets/aionui/aionui—logo.png)
+
+## コア機能
+
+### 💬 マルチセッションチャット
+- **マルチセッション + 独立コンテキスト** - 複数のチャットセッションを同時に開くことができ、各セッションは独立したコンテキストメモリを持ちます
+- **ローカルストレージ** - すべての会話データはローカルのSQLiteデータベースに保存され、失われることはありません
+
+### 🤖 マルチモデルサポート
+- **マルチプラットフォームサポート** - Gemini、OpenAI、Claude、Qwenなどの主流モデルをサポートし、柔軟に切り替え可能
+- **ローカルモデルサポート** - Ollama、LM Studioなどのローカルモデルデプロイメントをサポート
+
+### 🤝 マルチエージェントモード
+- **複数のAIエージェントを同時実行** - 複数のAIエージェントを同時に実行できます（Gemini CLI、Claude Code、Codex、OpenCode、Qwen Code、Goose CLI、Auggieなど）
+- **MCP統一管理** - Model Context Protocol (MCP) を通じてすべてのエージェントを統一管理・設定し、操作を簡素化
+- **Skills設定** - 異なるエージェントに専用のSkillsを設定して、エージェントの機能を拡張
+- **アシスタントカスタマイズ** - カスタムアシスタント設定をサポートし、パーソナライズされたAIワークフローを作成
+- **独立設定** - 各エージェントは独立して設定・使用でき、相互に干渉しません
+- **柔軟な切り替え** - 異なるエージェント間で柔軟に切り替えて、さまざまなシナリオのニーズに対応
+
+### 🗂️ ファイル管理
+- **ファイルツリーブラウジング + ドラッグ&ドロップアップロード** - フォルダのようにファイルを閲覧し、ファイルやフォルダをドラッグ&ドロップしてワンクリックでインポート
+- **スマート整理** - AIにフォルダの整理を任せ、自動分類
+
+### 📄 プレビューパネル
+- **9+ フォーマットプレビュー** - PDF、Word、Excel、PPT、コード、Markdown、画像などのフォーマットをサポート
+- **リアルタイム追跡 + 編集可能** - ファイルの変更を自動追跡し、Markdown、コード、HTMLのリアルタイム編集とデバッグをサポート
+
+### 🎨 AI画像生成と編集
+- **インテリジェント画像生成** - Gemini 2.5 Flash Image Preview、Nano、Bananaなどの複数の画像生成モデルをサポート
+- **画像認識と編集** - AI駆動の画像分析と編集機能
+
+### 🌐 マルチチャネルアクセス
+- **WebUIリモートアクセス** - ブラウザ経由でネットワーク上の任意のデバイスからアクセス可能、モバイルデバイスをサポート
+- **Telegram統合** - Telegramボットを通じた対話をサポート
+- **飛書統合** - 飛書を通じたアクセスと対話をサポート
+- **ローカルデータセキュリティ** - すべてのデータはローカルのSQLiteデータベースに保存され、サーバーデプロイメントに適しています
+
+## NewAPI設定手順
+
+1. **NewAPIでAPIキーをコピー**
+   ![APIキーをコピー](/assets/aionui/copy_apikey.png)
+
+2. **AionUi設定を開く**
+   - AionUiで設定ページに入る
+   - モデル設定タブを見つける
+   - 「モデルを追加」をクリック
+   ![設定を開く](/assets/aionui/add-model-1.png)
+
+3. **新しいプロバイダーを追加**
+   - 「モデルを追加」をクリック
+   - NewAPIを選択
+   ![NewAPIプロバイダーを追加](/assets/aionui/newapi_provider.png)
+
+4. **API情報を設定**
+   - APIアドレス：NewAPIサイトアドレスを入力（形式：`https://your-domain.com/v1`）
+   - APIキー：NewAPIコンソールからコピーしたAPIキーを貼り付け
+
+5. **モデルを追加**
+   - ドロップダウンから追加するモデルを選択
+   - モデル名はNewAPIで設定したモデル名と一致する必要があります
+   - 適切なリクエストプロトコルを選択
+
+6. **使用開始**
+   - チャットページに戻る
+   - 設定したNewAPIモデルを選択して会話を開始
+
+
+## 関連リンク
+
+- [GitHubリポジトリ](https://github.com/iOfficeAI/AionUi)
+- [完全使用ガイド](https://github.com/iOfficeAI/AionUi#-detailed-usage-guide)
+- [FAQ](https://github.com/iOfficeAI/AionUi#-support--help)

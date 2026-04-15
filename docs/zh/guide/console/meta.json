@@ -1,0 +1,18 @@
+{
+  "title": "控制台",
+  "pages": [
+    "dashboard",
+    "api-token",
+    "channel-management",
+    "chat",
+    "playground",
+    "usage-log",
+    "drawing-log",
+    "task-log",
+    "user-management",
+    "redeem-code-management",
+    "wallet",
+    "profile",
+    "settings"
+  ]
+}

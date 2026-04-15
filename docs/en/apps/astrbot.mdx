@@ -1,0 +1,56 @@
+---
+title: AstrBot - Agent Chatbot
+---
+
+<Callout type="info">
+  AstrBot is an open-source, all-in-one Agent chatbot platform that seamlessly
+  integrates large model capabilities into mainstream instant messaging software
+  such as QQ, Feishu, DingTalk, and WeChat Work, building reliable and scalable
+  conversational AI infrastructure for individuals, developers, and teams.
+  Whether it's a personal AI companion, smart customer service, automation
+  assistant, or enterprise knowledge base, AstrBot can quickly build
+  production-ready AI applications within your instant messaging software
+  platform's workflow.
+</Callout>
+
+    - Official Website: `https://astrbot.app`
+    - Official Documentation: `https://docs.astrbot.app`
+    - Project Homepage: `https://github.com/astrbotdevs/astrbot`
+
+## NewAPI Integration Method
+
+AstrBot supports integrating NewAPI as a model provider, allowing users to access and use various AI model services through NewAPI.
+
+### Configuration Steps
+
+#### Obtain NewAPI API Key
+
+After registering and logging in to NewAPI, click 'Console' in the top navigation bar, click 'Token Management', then click the 'Add Token' button to create a new API Key, select appropriate permissions, and then click 'Create'.
+
+![create-api-key](/assets/astrbot/image.png)
+
+After successful creation, click the 'Copy Key' button to copy the generated API Key.
+
+![copy-api-key](/assets/astrbot/image-1.png)
+
+#### Configure NewAPI Service Provider in AstrBot
+
+Open the AstrBot management panel, go to the 'Model Providers' page, then click the 'Add Model Provider' button.
+
+NewAPI perfectly supports OpenAI Chat Completion and Responses interfaces. We click 'OpenAI' to enter the OpenAI provider's configuration page.
+
+In the pop-up dialog box, set the API Base URL to NewAPI's interface address. If you have deployed NewAPI locally, fill in the local address, for example, `http://localhost:3000/v1`. If you are using NewAPI services provided by a third-party service provider, fill in the corresponding URL address, for example, `https://api.example.com/v1`.
+
+Then, enter the API Key into the 'API Key' field and click the 'Save' button.
+
+![astrbot-provider-config](/assets/astrbot/image-2.png)
+
+Then click Save to complete the NewAPI provider configuration.
+
+#### Apply Service Provider
+
+Go to the 'Configuration File' page, find the 'Models' section, change 'Default Chat Model' to the NewAPI provider you just created, and click the 'Save' button.
+
+![apply](/assets/astrbot/image-3.png)
+
+At this point, you have successfully configured NewAPI as AstrBot's model provider. Now, you can access and use various AI model services provided by NewAPI through AstrBot.

@@ -1,0 +1,747 @@
+---
+title: Local Development and Deployment
+---
+
+This document provides detailed steps for setting up and developing the New API project in a local environment, suitable for developers who wish to contribute to the project or perform custom development.
+
+## Development Environment Requirements
+
+Before starting local development, please ensure that the following software is installed on your system:
+
+- **Go** 1.21 or higher (for backend development)
+- **Node.js** 18 or higher (for frontend development)
+- **Bun** latest version (recommended package manager, 25x faster than npm/yarn)
+- **Git** (for version control)
+- **MySQL** (optional, SQLite is used by default)
+- **Redis** (optional, for performance enhancement)
+- **Visual Studio Code** or other code editor
+
+<Callout type="info" title="About Bun">
+  Bun is an incredibly fast JavaScript package manager, test runner, and
+  bundler. Compared to traditional npm or yarn, Bun installs packages 25 times
+  faster and is the most recommended JavaScript package management tool for
+  2024.
+</Callout>
+
+## Clone Project
+
+First, clone the New API repository from GitHub to your local machine:
+
+```bash
+git clone https://github.com/Calcium-Ion/new-api.git
+cd new-api
+```
+
+## Backend Development Setup
+
+### Install Go Dependencies
+
+```bash
+go mod download
+```
+
+### Configure Development Environment
+
+New API supports configuring environment variables via a `.env` file. Create a `.env` file (you can copy from `.env.example`):
+
+```bash
+cp .env.example .env
+```
+
+Edit the `.env` file and modify the configuration as needed. The following are common configurations for the development environment:
+
+```bash
+PORT=3000
+SQL_DSN=root:password@tcp(localhost:3306)/new-api   # If using MySQL, uncomment and modify
+# REDIS_CONN_STRING=redis://localhost:6379         # If using Redis, uncomment and modify
+```
+
+<Callout type="info" title="Hint">
+  If `SQL_DSN` is not configured, the system will default to using an SQLite
+  database, stored in the `one-api.db` file.
+</Callout>
+
+### Run Backend Service
+
+```bash
+# Run directly
+go run main.go
+
+# Or compile and run
+go build -o new-api
+./new-api
+```
+
+The service runs on `http://localhost:3000` by default.
+
+## Frontend Development Setup
+
+The frontend code for New API is located in the `web` directory and is developed using React and the [semi design component library](https://semi.design/zh-CN).
+
+### Install Bun (Recommended)
+
+If you haven't installed Bun yet, please use the following commands to install it:
+
+**macOS/Linux:**
+
+```bash
+curl -fsSL https://bun.sh/install | bash
+```
+
+**Windows (using WSL):**
+
+```bash
+curl -fsSL https://bun.sh/install | bash
+```
+
+**macOS (using Homebrew):**
+
+```bash
+brew tap oven-sh/bun
+brew install bun
+```
+
+After installation, restart your terminal or run `source ~/.bashrc` (or `~/.zshrc`) to make the Bun command available.
+
+### Install Frontend Dependencies
+
+```bash
+cd web
+bun install   # Install frontend dependencies using bun
+```
+
+### Run Development Server
+
+```bash
+bun run dev   # Run development server using bun
+```
+
+The frontend development server runs on `http://localhost:5173` by default and is configured with a proxy that forwards API requests to the backend service.
+
+### Build Frontend Assets
+
+```bash
+bun run build   # Build frontend assets using bun
+```
+
+The built files will be generated into the `web/dist` directory, and the backend service will automatically load these static assets.
+
+7.  **Create a Pull Request**: Create a PR on GitHub, describing your changes.
+
+## Debugging Tips
+
+### Backend Debugging
+
+1.  **View Logs**:
+
+    ```bash
+    go run main.go --log-dir ./logs
+    ```
+
+2.  **Debug with Delve**:
+    ```bash
+    go install github.com/go-delve/delve/cmd/dlv@latest
+    dlv debug main.go
+    ```
+
+### Frontend Debugging
+
+1.  **Use Chrome DevTools**:
+    - Open Chrome Developer Tools (F12)
+    - Check the Console and Network tabs
+
+2.  **React Developer Tools**:
+    - Install the React Developer Tools extension in Chrome
+    - Use it to inspect component structure and state
+
+## Project Structure
+
+The directory structure of the New API project:
+
+```
+new-api/                                 # Project root directory
+│  .dockerignore                         # Files to ignore during Docker build configuration
+│  .env.example                          # Example environment variables file
+│  .gitignore                            # Git ignore file configuration
+│  BT.md                                 # BT (possibly Baota panel) related documentation
+│  docker-compose.yml                    # Docker Compose configuration file for container orchestration
+│  Dockerfile                            # Docker image build configuration
+│  go.mod                                # Go module dependency configuration file
+│  go.sum                                # Go module dependency checksum file
+│  LICENSE                               # Project license file
+│  main.go                               # Project main entry file
+│  makefile                              # Project build script
+│  Midjourney.md                         # Midjourney service related documentation
+│  one-api.service                       # systemd service configuration file
+│  README.en.md                          # English version project README
+│  README.md                             # Chinese version project README
+│  Rerank.md                             # Rerank feature related documentation
+│  Suno.md                               # Suno API related documentation
+│  VERSION                               # Project version information file
+│
+├─.github                                # GitHub related configuration directory
+│  │  FUNDING.yml                        # GitHub funding configuration file
+│  │
+│  ├─ISSUE_TEMPLATE                      # GitHub Issue template directory
+│  │      bug_report.md                  # Bug report template
+│  │      config.yml                     # Issue configuration file
+│  │      feature_request.md             # Feature request template
+│  │
+│  └─workflows                           # GitHub Actions workflow configuration directory
+│          docker-image-amd64.yml        # AMD64 architecture Docker image build workflow
+│          docker-image-arm64.yml        # ARM64 architecture Docker image build workflow
+│          linux-release.yml             # Linux platform release workflow
+│          macos-release.yml             # macOS platform release workflow
+│          windows-release.yml           # Windows platform release workflow
+│
+├─bin                                    # Binary files and scripts directory
+│      migration_v0.2-v0.3.sql           # Database v0.2 to v0.3 migration script
+│      migration_v0.3 to v0.4.sql        # Database v0.3 to v0.4 migration script
+│      time_test.sh                      # Time test script
+│
+├─common                                 # Common functional modules directory
+│      constants.go                      # Common constants definition
+│      crypto.go                         # Cryptography related functions
+│      custom-event.go                   # Custom event handling
+│      database.go                       # Database connection and operations
+│      email-outlook-auth.go             # Outlook email authentication
+│      email.go                          # Email functions
+│      embed-file-system.go              # Embedded file system
+│      env.go                            # Environment variable handling
+│      gin.go                            # Gin framework related functions
+│      go-channel.go                     # Go channel management
+│      gopool.go                         # Go goroutine pool
+│      init.go                           # Initialization functions
+│      logger.go                         # Logging functions
+│      pprof.go                          # Performance profiling tools
+│      rate-limit.go                     # Rate limiting functions
+│      redis.go                          # Redis client
+│      str.go                            # String utility functions
+│      topup-ratio.go                    # Top-up ratio calculation
+│      utils.go                          # General utility functions
+│      validate.go                       # Data validation functions
+│      verification.go                   # Verification code related functions
+│
+├─constant                               # Constants definition directory
+│      cache_key.go                      # Cache key constants
+│      channel_setting.go                # Channel settings constants
+│      context_key.go                    # Context key constants
+│      env.go                            # Environment variable constants
+│      finish_reason.go                  # Finish reason constants
+│      midjourney.go                     # Midjourney related constants
+│      task.go                           # Task related constants
+│      user_setting.go                   # User settings constants
+│
+├─controller                             # Controller layer, handles HTTP requests
+│      billing.go                        # Billing controller
+│      channel-billing.go                # Channel billing controller
+│      channel-test.go                   # Channel test controller
+│      channel.go                        # Channel management controller
+│      github.go                         # GitHub related controller
+│      group.go                          # User group controller
+│      linuxdo.go                        # LinuxDo related controller
+│      log.go                            # Log controller
+│      midjourney.go                     # Midjourney service controller
+│      misc.go                           # Miscellaneous functions controller
+│      model.go                          # Model management controller
+│      oidc.go                           # OpenID Connect authentication controller
+│      option.go                         # Option settings controller
+│      playground.go                     # Playground controller
+│      pricing.go                        # Pricing management controller
+│      redemption.go                     # Redemption code controller
+│      relay.go                          # Request forwarding controller
+│      task.go                           # Task management controller
+│      telegram.go                       # Telegram related controller
+│      token.go                          # Token management controller
+│      topup.go                          # Top-up controller
+│      usedata.go                        # User data controller
+│      user.go                           # User management controller
+│      wechat.go                         # WeChat related controller
+│
+├─docs                                   # Documentation directory
+│  ├─api                                 # API documentation
+│  │      api_auth.md                    # API authentication documentation
+│  │      user.md                        # User related API documentation
+│  │
+│  └─channel                             # Channel documentation
+│          other_setting.md              # Other settings documentation
+│
+├─dto                                    # Data Transfer Object directory
+│      audio.go                          # Audio related DTO
+│      dalle.go                          # DALL-E related DTO
+│      embedding.go                      # Embedding related DTO
+│      error.go                          # Error response DTO
+│      file_data.go                      # File data DTO
+│      midjourney.go                     # Midjourney related DTO
+│      notify.go                         # Notification related DTO
+│      openai_request.go                 # OpenAI request DTO
+│      openai_response.go                # OpenAI response DTO
+│      playground.go                     # Playground DTO
+│      pricing.go                        # Pricing related DTO
+│      realtime.go                       # Realtime data DTO
+│      rerank.go                         # Rerank related DTO
+│      sensitive.go                      # Sensitive content related DTO
+│      suno.go                           # Suno related DTO
+│      task.go                           # Task related DTO
+│
+├─middleware                             # Middleware directory
+│      auth.go                           # Authentication middleware
+│      cache.go                          # Cache middleware
+│      cors.go                           # Cross-Origin Resource Sharing middleware
+│      distributor.go                    # Request distributor middleware
+│      gzip.go                           # Gzip compression middleware
+│      logger.go                         # Logging middleware
+│      model-rate-limit.go               # Model-level rate limit middleware
+│      rate-limit.go                     # General rate limit middleware
+│      recover.go                        # Exception recovery middleware
+│      request-id.go                     # Request ID middleware
+│      turnstile-check.go                # Cloudflare Turnstile check middleware
+│      utils.go                          # Middleware utility functions
+│
+├─model                                  # Data model directory
+│      ability.go                        # Ability model
+│      cache.go                          # Cache model
+│      channel.go                        # Channel model
+│      log.go                            # Log model
+│      main.go                           # Main models and ORM configuration
+│      midjourney.go                     # Midjourney related model
+│      option.go                         # Option settings model
+│      pricing.go                        # Pricing model
+│      redemption.go                     # Redemption code model
+│      task.go                           # Task model
+│      token.go                          # Token model
+│      token_cache.go                    # Token cache model
+│      topup.go                          # Top-up model
+│      usedata.go                        # User data model
+│      user.go                           # User model
+│      user_cache.go                     # User cache model
+│      utils.go                          # Model utility functions
+│
+├─relay                                  # Request forwarding module directory
+│  │  relay-audio.go                     # Audio request forwarding
+│  │  relay-image.go                     # Image request forwarding
+│  │  relay-mj.go                        # Midjourney request forwarding
+│  │  relay-text.go                      # Text request forwarding
+│  │  relay_adaptor.go                   # Forwarding adaptor
+│  │  relay_embedding.go                 # Embedding request forwarding
+│  │  relay_rerank.go                    # Rerank request forwarding
+│  │  relay_task.go                      # Task request forwarding
+│  │  websocket.go                       # WebSocket communication handling
+│  │
+│  ├─channel                             # Forwarding channel directory
+│  │  │  adapter.go                      # General channel adaptor
+│  │  │  api_request.go                  # API request handling
+│  │  │
+│  │  ├─ai360                            # 360 AI Channel
+│  │  │      constants.go                # 360 AI constants definition
+│  │  │
+│  │  ├─ali                              # Alibaba Cloud AI Channel
+│  │  │      adaptor.go                  # Alibaba Cloud adaptor
+│  │  │      constants.go                # Alibaba Cloud constants definition
+│  │  │      dto.go                      # Alibaba Cloud Data Transfer Object
+│  │  │      image.go                    # Alibaba Cloud image processing
+│  │  │      text.go                     # Alibaba Cloud text processing
+│  │  │
+│  │  ├─aws                              # AWS AI Channel
+│  │  │      adaptor.go                  # AWS adaptor
+│  │  │      constants.go                # AWS constants definition
+│  │  │      dto.go                      # AWS Data Transfer Object
+│  │  │      relay-aws.go                # AWS request forwarding
+│  │  │
+│  │  ├─baidu                            # Baidu AI Channel
+│  │  │      adaptor.go                  # Baidu adaptor
+│  │  │      constants.go                # Baidu constants definition
+│  │  │      dto.go                      # Baidu Data Transfer Object
+│  │  │      relay-baidu.go              # Baidu request forwarding
+│  │  │
+│  │  ├─baidu_v2                         # Baidu AI v2 Version Channel
+│  │  │      adaptor.go                  # Baidu v2 adaptor
+│  │  │      constants.go                # Baidu v2 constants definition
+│  │  │
+│  │  ├─claude                           # Claude AI Channel
+│  │  │      adaptor.go                  # Claude adaptor
+│  │  │      constants.go                # Claude constants definition
+│  │  │      dto.go                      # Claude Data Transfer Object
+│  │  │      relay-claude.go             # Claude request forwarding
+│  │  │
+│  │  ├─cloudflare                       # Cloudflare AI Channel
+│  │  │      adaptor.go                  # Cloudflare adaptor
+│  │  │      constant.go                 # Cloudflare constants definition
+│  │  │      dto.go                      # Cloudflare Data Transfer Object
+│  │  │      relay_cloudflare.go         # Cloudflare request forwarding
+│  │  │
+│  │  ├─cohere                           # Cohere AI Channel
+│  │  │      adaptor.go                  # Cohere adaptor
+│  │  │      constant.go                 # Cohere constants definition
+│  │  │      dto.go                      # Cohere Data Transfer Object
+│  │  │      relay-cohere.go             # Cohere request forwarding
+│  │  │
+│  │  ├─deepseek                         # DeepSeek AI Channel
+│  │  │      adaptor.go                  # DeepSeek adaptor
+│  │  │      constants.go                # DeepSeek constants definition
+│  │  │
+│  │  ├─dify                             # Dify AI Channel
+│  │  │      adaptor.go                  # Dify adaptor
+│  │  │      constants.go                # Dify constants definition
+│  │  │      dto.go                      # Dify Data Transfer Object
+│  │  │      relay-dify.go               # Dify request forwarding
+│  │  │
+│  │  ├─gemini                           # Google Gemini AI Channel
+│  │  │      adaptor.go                  # Gemini adaptor
+│  │  │      constant.go                 # Gemini constants definition
+│  │  │      dto.go                      # Gemini Data Transfer Object
+│  │  │      relay-gemini.go             # Gemini request forwarding
+│  │  │
+│  │  ├─jina                             # Jina AI Channel
+│  │  │      adaptor.go                  # Jina adaptor
+│  │  │      constant.go                 # Jina constants definition
+│  │  │      relay-jina.go               # Jina request forwarding
+│  │  │
+│  │  ├─lingyiwanwu                      # Lingyiwanwu AI Channel
+│  │  │      constrants.go               # Lingyiwanwu constants definition
+│  │  │
+│  │  ├─minimax                          # MiniMax AI Channel
+│  │  │      constants.go                # MiniMax constants definition
+│  │  │      relay-minimax.go            # MiniMax request forwarding
+│  │  │
+│  │  ├─mistral                          # Mistral AI Channel
+│  │  │      adaptor.go                  # Mistral adaptor
+│  │  │      constants.go                # Mistral constants definition
+│  │  │      text.go                     # Mistral text processing
+│  │  │
+│  │  ├─mokaai                           # MokaAI Channel
+│  │  │      adaptor.go                  # MokaAI adaptor
+│  │  │      constants.go                # MokaAI constants definition
+│  │  │      relay-mokaai.go             # MokaAI request forwarding
+│  │  │
+│  │  ├─moonshot                         # Moonshot AI Channel
+│  │  │      constants.go                # Moonshot constants definition
+│  │  │
+│  │  ├─ollama                           # Ollama AI Channel
+│  │  │      adaptor.go                  # Ollama adaptor
+│  │  │      constants.go                # Ollama constants definition
+│  │  │      dto.go                      # Ollama Data Transfer Object
+│  │  │      relay-ollama.go             # Ollama request forwarding
+│  │  │
+│  │  ├─openai                           # OpenAI Channel
+│  │  │      adaptor.go                  # OpenAI adaptor
+│  │  │      constant.go                 # OpenAI constants definition
+│  │  │      relay-openai.go             # OpenAI request forwarding
+│  │  │
+│  │  ├─openrouter                       # OpenRouter AI Channel
+│  │  │      adaptor.go                  # OpenRouter adaptor
+│  │  │      constant.go                 # OpenRouter constants definition
+│  │  │
+│  │  ├─palm                             # Google PaLM AI Channel
+│  │  │      adaptor.go                  # PaLM adaptor
+│  │  │      constants.go                # PaLM constants definition
+│  │  │      dto.go                      # PaLM Data Transfer Object
+│  │  │      relay-palm.go               # PaLM request forwarding
+│  │  │
+│  │  ├─perplexity                       # Perplexity AI Channel
+│  │  │      adaptor.go                  # Perplexity adaptor
+│  │  │      constants.go                # Perplexity constants definition
+│  │  │      relay-perplexity.go         # Perplexity request forwarding
+│  │  │
+│  │  ├─siliconflow                      # SiliconFlow AI Channel
+│  │  │      adaptor.go                  # SiliconFlow adaptor
+│  │  │      constant.go                 # SiliconFlow constants definition
+│  │  │      dto.go                      # SiliconFlow Data Transfer Object
+│  │  │      relay-siliconflow.go        # SiliconFlow request forwarding
+│  │  │
+│  │  ├─task                             # Task related channel
+│  │  │  └─suno                          # Suno audio generation task
+│  │  │          adaptor.go              # Suno adaptor
+│  │  │          models.go               # Suno model definition
+│  │  │
+│  │  ├─tencent                          # Tencent AI Channel
+│  │  │      adaptor.go                  # Tencent adaptor
+│  │  │      constants.go                # Tencent constants definition
+│  │  │      dto.go                      # Tencent Data Transfer Object
+│  │  │      relay-tencent.go            # Tencent request forwarding
+│  │  │
+│  │  ├─vertex                           # Google Vertex AI Channel
+│  │  │      adaptor.go                  # Vertex adaptor
+│  │  │      constants.go                # Vertex constants definition
+│  │  │      dto.go                      # Vertex Data Transfer Object
+│  │  │      relay-vertex.go             # Vertex request forwarding
+│  │  │      service_account.go          # Vertex service account
+│  │  │
+│  │  ├─volcengine                       # Volcengine AI Channel
+│  │  │      adaptor.go                  # Volcengine adaptor
+│  │  │      constants.go                # Volcengine constants definition
+│  │  │
+│  │  ├─xunfei                           # Xunfei AI Channel
+│  │  │      adaptor.go                  # Xunfei adaptor
+│  │  │      constants.go                # Xunfei constants definition
+│  │  │      dto.go                      # Xunfei Data Transfer Object
+│  │  │      relay-xunfei.go             # Xunfei request forwarding
+│  │  │
+│  │  ├─zhipu                            # Zhipu AI Channel
+│  │  │      adaptor.go                  # Zhipu adaptor
+│  │  │      constants.go                # Zhipu constants definition
+│  │  │      dto.go                      # Zhipu Data Transfer Object
+│  │  │      relay-zhipu.go              # Zhipu request forwarding
+│  │  │
+│  │  └─zhipu_4v                         # Zhipu 4.0 Version Channel
+│  │          adaptor.go                 # Zhipu 4.0 adaptor
+│  │          constants.go               # Zhipu 4.0 constants definition
+│  │          dto.go                     # Zhipu 4.0 Data Transfer Object
+│  │          relay-zhipu_v4.go          # Zhipu 4.0 request forwarding
+│  │
+│  ├─common                              # Forwarding common module
+│  │      relay_info.go                  # Forwarding information
+│  │      relay_utils.go                 # Forwarding utility functions
+│  │
+│  ├─constant                            # Forwarding constants directory
+│  │      api_type.go                    # API type constants
+│  │      relay_mode.go                  # Forwarding mode constants
+│  │
+│  └─helper                              # Forwarding helper functions
+│          common.go                     # Common helper functions
+│          model_mapped.go               # Model mapping
+│          price.go                      # Price calculation
+│          stream_scanner.go             # Stream data scanner
+│
+├─router                                 # Router configuration directory
+│      api-router.go                     # API router configuration
+│      dashboard.go                      # Dashboard router
+│      main.go                           # Main router configuration
+│      relay-router.go                   # Relay router configuration
+│      web-router.go                     # Web interface router configuration
+│
+├─service                                # Service layer directory
+│      audio.go                          # Audio service
+│      cf_worker.go                      # Cloudflare Worker service
+│      channel.go                        # Channel service
+│      epay.go                           # E-payment service
+│      error.go                          # Error handling service
+│      file_decoder.go                   # File decoder service
+│      http_client.go                    # HTTP client service
+│      image.go                          # Image processing service
+│      log_info_generate.go              # Log information generation service
+│      midjourney.go                     # Midjourney service
+│      notify-limit.go                   # Notification limit service
+│      quota.go                          # Quota management service
+│      sensitive.go                      # Sensitive content filtering service
+│      str.go                            # String processing service
+│      task.go                           # Task management service
+│      token_counter.go                  # Token counting service
+│      usage_helpr.go                    # Usage statistics helper service
+│      user_notify.go                    # User notification service
+│      webhook.go                        # WebHook service
+│
+├─setting                                # Settings management directory
+│  │  chat.go                            # Chat settings
+│  │  group_ratio.go                     # User group ratio settings
+│  │  midjourney.go                      # Midjourney settings
+│  │  payment.go                         # Payment settings
+│  │  rate_limit.go                      # Rate limit settings
+│  │  sensitive.go                       # Sensitive content settings
+│  │  system_setting.go                  # System settings
+│  │  user_usable_group.go               # User usable group settings
+│  │
+│  ├─config                              # Configuration directory
+│  │      config.go                      # Configuration loading and processing
+│  │
+│  ├─model_setting                       # Model settings directory
+│  │      claude.go                      # Claude model settings
+│  │      gemini.go                      # Gemini model settings
+│  │      global.go                      # Global model settings
+│  │
+│  ├─operation_setting                   # Operation settings directory
+│  │      cache_ratio.go                 # Cache ratio settings
+│  │      general_setting.go             # General settings
+│  │      model-ratio.go                 # Model ratio settings
+│  │      operation_setting.go           # Operation settings
+│  │
+│  └─system_setting                      # System settings directory
+│          oidc.go                       # OpenID Connect settings
+│
+└─web                                    # Frontend Web interface directory
+    │  .gitignore                        # Frontend Git ignore file configuration
+    │  .prettierrc.mjs                   # Prettier code formatting configuration
+    │  bun.lockb                         # Bun package manager lock file
+    │  index.html                        # Main HTML file
+    │  package.json                      # Frontend dependencies configuration
+    │  bun.lockb                         # Bun package manager lock file (binary format, faster)
+    │  README.md                         # Frontend README
+    │  vercel.json                       # Vercel deployment configuration
+    │  vite.config.js                    # Vite build configuration
+    │
+    ├─public                             # Static assets directory
+    │      favicon.ico                   # Website icon
+    │      logo.png                      # Website Logo
+    │      ratio.png                     # Ratio image
+    │      robots.txt                    # Search engine crawler configuration
+    │
+    └─src                                # Frontend source code directory
+        │  App.js                        # Application main component
+        │  index.css                     # Main stylesheet
+        │  index.js                      # Application entry JS
+        │
+        ├─components                     # Components directory
+        │  │  ChannelsTable.js           # Channels table component
+        │  │  fetchTokenKeys.js          # Tool to fetch token keys
+        │  │  Footer.js                  # Footer component
+        │  │  HeaderBar.js               # Header bar component
+        │  │  LinuxDoIcon.js             # LinuxDo icon component
+        │  │  Loading.js                 # Loading component
+        │  │  LoginForm.js               # Login form component
+        │  │  LogsTable.js               # Logs table component
+        │  │  MjLogsTable.js             # Midjourney logs table component
+        │  │  ModelPricing.js            # Model pricing component
+        │  │  ModelSetting.js            # Model settings component
+        │  │  OAuth2Callback.js          # OAuth2 callback component
+        │  │  OIDCIcon.js                # OIDC icon component
+        │  │  OperationSetting.js        # Operation settings component
+        │  │  OtherSetting.js            # Other settings component
+        │  │  PageLayout.js              # Page layout component
+        │  │  PasswordResetConfirm.js    # Password reset confirmation component
+        │  │  PasswordResetForm.js       # Password reset form component
+        │  │  PersonalSetting.js         # Personal settings component
+        │  │  PrivateRoute.js            # Private route component
+        │  │  RateLimitSetting.js        # Rate limit settings component
+        │  │  RedemptionsTable.js        # Redemptions table component
+        │  │  RegisterForm.js            # Register form component
+        │  │  SafetySetting.js           # Security settings component
+        │  │  SiderBar.js                # Sidebar component
+        │  │  SystemSetting.js           # System settings component
+        │  │  TaskLogsTable.js           # Task logs table component
+        │  │  TokensTable.js             # Token management table component
+        │  │  UsersTable.js              # User management table component
+        │  │  utils.js                   # General utility functions
+        │  │  WeChatIcon.js              # WeChat icon component
+        │  │
+        │  └─custom                      # Custom components directory
+        │          TextInput.js          # Text input component
+        │          TextNumberInput.js    # Number input component
+        │
+        ├─constants                      # Constants definition directory
+        │      channel.constants.js      # Channel related constants
+        │      common.constant.js        # Common constants
+        │      index.js                  # Constants export index
+        │      toast.constants.js        # Toast message constants
+        │      user.constants.js         # User related constants
+        │
+        ├─context                        # React Context directory
+        │  ├─Status                      # Status context
+        │  │      index.js               # Status context entry
+        │  │      reducer.js             # Status context reducer
+        │  │
+        │  ├─Style                       # Style context
+        │  │      index.js               # Style context entry
+        │  │
+        │  ├─Theme                       # Theme context
+        │  │      index.js               # Theme context entry
+        │  │
+        │  └─User                        # User context
+        │          index.js              # User context entry
+        │          reducer.js            # User context reducer
+        │
+        ├─helpers                        # Helper functions directory
+        │      api.js                    # API request helper functions
+        │      auth-header.js            # Authentication header handling
+        │      data.js                   # Data processing functions
+        │      history.js                # Route history management
+        │      index.js                  # Helper functions export index
+        │      other.js                  # Other helper functions
+        │      render.js                 # Render helper functions
+        │      utils.js                   # Utility functions
+        │
+        ├─i18n                           # Internationalization directory
+        │  │  i18n.js                    # Internationalization configuration file
+        │  │
+        │  └─locales                     # Locales directory
+        │          en.json               # English language pack
+        │          zh.json               # Chinese language pack
+        │
+        └─pages                          # Page components directory
+            ├─About                      # About page
+            │      index.js              # About page entry
+            │
+            ├─Channel                    # Channel management page
+            │      EditChannel.js        # Edit channel component
+            │      EditTagModal.js       # Edit tag modal
+            │      index.js              # Channel management page entry
+            │
+            ├─Chat                       # Chat page
+            │      index.js              # Chat page entry
+            │
+            ├─Chat2Link                  # Chat link sharing page
+            │      index.js              # Chat link entry
+            │
+            ├─Detail                     # Detail page
+            │      index.js              # Detail page entry
+            │
+            ├─Home                       # Home page
+            │      index.js              # Home page entry
+            │
+            ├─Log                        # Log page
+            │      index.js              # Log page entry
+            │
+            ├─Midjourney                 # Midjourney management page
+            │      index.js              # Midjourney page entry
+            │
+            ├─NotFound                   # 404 page
+            │      index.js              # 404 page entry
+            │
+            ├─Playground                 # Playground page
+            │      Playground.js         # Playground component
+            │
+            ├─Pricing                    # Pricing management page
+            │      index.js              # Pricing management page entry
+            │
+            ├─Redemption                 # Redemption code management page
+            │      EditRedemption.js     # Edit redemption code component
+            │      index.js              # Redemption code management page entry
+            │
+            ├─Setting                    # Settings page
+            │  │  index.js               # Settings page entry
+            │  │
+            │  ├─Model                   # Model settings page
+            │  │      SettingClaudeModel.js # Claude model settings component
+            │  │      SettingGeminiModel.js # Gemini model settings component
+            │  │      SettingGlobalModel.js # Global model settings component
+            │  │
+            │  ├─Operation               # Operation settings page
+            │  │      GroupRatioSettings.js       # User group ratio settings component
+            │  │      ModelRationNotSetEditor.js  # Model ratio not set editor
+            │  │      ModelRatioSettings.js       # Model ratio settings component
+            │  │      ModelSettingsVisualEditor.js # Model settings visual editor
+            │  │      SettingsChats.js            # Chat settings component
+            │  │      SettingsCreditLimit.js      # Quota limit settings component
+            │  │      SettingsDataDashboard.js    # Data dashboard settings component
+            │  │      SettingsDrawing.js          # Drawing settings component
+            │  │      SettingsGeneral.js          # General settings component
+            │  │      SettingsLog.js              # Log settings component
+            │  │      SettingsMonitoring.js       # Monitoring settings component
+            │  │      SettingsSensitiveWords.js   # Sensitive words settings component
+            │  │
+            │  └─RateLimit                   # Rate limit settings page
+            │          SettingsRequestRateLimit.js # Request rate limit settings component
+            │
+            ├─Task                           # Task management page
+            │      index.js                  # Task management page entry
+            │
+            ├─Token                          # Token management page
+            │      EditToken.js              # Edit token component
+            │      index.js                  # Token management page entry
+            │
+            ├─TopUp                          # Top-up page
+            │      index.js                  # Top-up page entry
+            │
+            └─User                           # User management page
+                    AddUser.js               # Add user component
+                    EditUser.js              # Edit user component
+                    index.js                 # User management page entry
+```
+
+<Callout type="info" title="Need Help?">
+If you encounter problems during development, you can:
+
+1.  Check [GitHub Issues](https://github.com/Calcium-Ion/new-api/issues)
+2.  Join the [QQ communication group](/en/docs/support/community-interaction)
+3.  Submit issues via the [Problem Feedback](/en/docs/support/feedback-issues) page
+
+</Callout>
