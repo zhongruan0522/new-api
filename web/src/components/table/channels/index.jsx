@@ -33,6 +33,7 @@ import ColumnSelectorModal from './modals/ColumnSelectorModal';
 import EditChannelModal from './modals/EditChannelModal';
 import EditTagModal from './modals/EditTagModal';
 import MultiKeyManageModal from './modals/MultiKeyManageModal';
+import PlanQuotaModal from './modals/PlanQuotaModal';
 import { createCardProPagination } from '../../../helpers/utils';
 
 const ChannelsPage = () => {
@@ -61,6 +62,12 @@ const ChannelsPage = () => {
         visible={channelsData.showMultiKeyManageModal}
         onCancel={() => channelsData.setShowMultiKeyManageModal(false)}
         channel={channelsData.currentMultiKeyChannel}
+        onRefresh={channelsData.refresh}
+      />
+      <PlanQuotaModal
+        visible={channelsData.showPlanQuotaModal}
+        onCancel={() => channelsData.setShowPlanQuotaModal(false)}
+        channel={channelsData.currentPlanChannel}
         onRefresh={channelsData.refresh}
       />
 
