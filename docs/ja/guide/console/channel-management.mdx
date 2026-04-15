@@ -1,0 +1,580 @@
+---
+title: チャネル
+---
+
+ここでは、NewAPI のアップストリームチャネルを管理できます。
+
+![チャネル](/assets/guide/channel.png)
+
+## チャネル作成/編集ページ
+
+![チャネル管理1](/assets/guide/create-channel-1.png)
+
+![チャネル管理2](/assets/guide/create-channel-2.png)
+
+![チャネル管理3](/assets/guide/create-channel-3.png)
+
+## Coding Plan プランの特殊チャネルパラメータ
+
+Coding Plan プランを使用する場合、「API アドレス」フィールドには実際の URL ではなく、対応する特殊な識別子を入力してください。
+
+| プラン名 | チャネルタイプ選択 | API アドレス（識別子を入力） |
+| --- | --- | --- |
+| GLM Coding Plan | 智譜 GLM 4V | `glm-coding-plan` |
+| GLM Coding Plan (国際版) | 智譜 GLM 4V | `glm-coding-plan-international` |
+| Kimi Coding Plan | Moonshot | `kimi-coding-plan` |
+| Doubao Coding Plan | バイトダンス火山方舟、豆包汎用 | ドロップダウン選択`doubao-coding-plan` |
+
+# パラメータ上書き設定ドキュメント
+
+## 概要
+
+パラメータ上書きシステムは、シンプル上書きモード（前方互換性あり）と高度な操作モードの2つのモードをサポートしています。柔軟な条件判断と操作タイプにより、複雑なパラメータの動的な調整が可能です。
+
+## 使用方法
+
+### シンプル上書きモード
+
+前方互換性があり、上書きするフィールドと値を直接指定すると、システムはこれらのフィールドを元のリクエストにマージします。
+
+```json
+{
+  "temperature": 0.8,
+  "max_tokens": 2000,
+  "model": "gpt-4"
+}
+```
+
+### 高度な操作モード
+
+`operations` 配列を介して複雑なパラメータ操作を定義し、条件判断、配列操作、文字列結合、文字列正規化などの高度な機能をサポートします。
+
+#### 基本構造
+
+```json
+{
+  "operations": [
+    {
+      "path": "temperature",
+      "mode": "set",
+      "value": 0.8,
+      "conditions": [...],
+      "logic": "AND"
+    }
+  ]
+}
+```
+
+**フィールドの説明（必要に応じて記入）：**
+
+- `mode`: 必須
+- `path`: `set` / `delete` / `append` / `prepend` / `trim_prefix` / `trim_suffix` / `ensure_prefix` / `ensure_suffix` / `trim_space` / `to_lower` / `to_upper` / `replace` / `regex_replace` に適用
+- `value`: `set` / `append` / `prepend` / `trim_prefix` / `trim_suffix` / `ensure_prefix` / `ensure_suffix` でよく使用
+- `from` / `to`: `move` / `copy` / `replace` / `regex_replace` に適用
+- `keep_origin`: `set`（既存の値がある場合はスキップ）およびオブジェクトマージ時の `append` / `prepend` に使用
+
+## 操作モード (mode)
+
+### 1. set - 値の設定
+
+指定されたパスの値を設定します。
+
+```json
+{
+  "path": "temperature",
+  "mode": "set",
+  "value": 0.8,
+  "keep_origin": false
+}
+```
+
+**パラメータの説明：**
+
+- `keep_origin`: `true` の場合、ターゲットパスに既に値が存在すれば設定をスキップします。
+
+### 2. delete - フィールドの削除
+
+指定されたパスのフィールドを削除します。
+
+```json
+{
+  "path": "messages.0",
+  "mode": "delete"
+}
+```
+
+### 3. move - フィールドの移動
+
+あるフィールドの値を別の位置に移動します。
+
+```json
+{
+  "mode": "move",
+  "from": "messages.0.content",
+  "to": "system"
+}
+```
+
+### 4. append - 内容の追加
+
+既存の内容の後に新しい内容を追加します。
+
+```json
+{
+  "path": "messages.0.content",
+  "mode": "append",
+  "value": "\n\n請用中文回答。"
+}
+```
+
+**サポートされるデータ型：**
+
+- **文字列**: 元の文字列の末尾に追加
+- **配列**: 配列の末尾に要素を追加（単一要素または配列の追加をサポート）
+- **オブジェクト**: オブジェクト属性をマージ
+
+### 5. prepend - 内容の先頭追加
+
+既存の内容の前に新しい内容を追加します。
+
+```json
+{
+  "path": "messages.0.content",
+  "mode": "prepend",
+  "value": "重要提示：請仔細閱讀以下內容。\n\n"
+}
+```
+
+**サポートされるデータ型：**
+
+- **文字列**: 元の文字列の先頭に追加
+- **配列**: 配列の先頭に要素を追加（単一要素または配列の追加をサポート）
+- **オブジェクト**: オブジェクト属性をマージ
+
+### 6. copy - フィールドのコピー
+
+`from` で指定されたパスの値を `to` で指定されたパスにコピーします（ソースフィールドは削除されません）。
+
+```json
+{
+  "mode": "copy",
+  "from": "model",
+  "to": "original_model"
+}
+```
+
+**パラメータ要件：**
+
+- `from` / `to`: 必須
+- ソースパスが存在しない場合はエラーが発生します。
+
+### 7. trim_prefix - プレフィックスの削除
+
+文字列フィールドから指定されたプレフィックスを削除します（一致しない場合は変更なし）。
+
+```json
+{
+  "path": "model",
+  "mode": "trim_prefix",
+  "value": "openai/"
+}
+```
+
+**パラメータ要件：**
+
+- `value`: 必須
+
+### 8. trim_suffix - サフィックスの削除
+
+文字列フィールドから指定されたサフィックスを削除します（一致しない場合は変更なし）。
+
+```json
+{
+  "path": "model",
+  "mode": "trim_suffix",
+  "value": "-latest"
+}
+```
+
+**パラメータ要件：**
+
+- `value`: 必須
+
+### 9. ensure_prefix - プレフィックスの保証
+
+文字列フィールドが指定されたプレフィックスで始まることを保証します（既に存在する場合は変更なし）。
+
+```json
+{
+  "path": "model",
+  "mode": "ensure_prefix",
+  "value": "openai/"
+}
+```
+
+**パラメータ要件：**
+
+- `value`: 必須であり、空文字列であってはなりません。
+
+### 10. ensure_suffix - サフィックスの保証
+
+文字列フィールドが指定されたサフィックスで終わることを保証します（既に存在する場合は変更なし）。
+
+```json
+{
+  "path": "model",
+  "mode": "ensure_suffix",
+  "value": "-latest"
+}
+```
+
+**パラメータ要件：**
+
+- `value`: 必須であり、空文字列であってはなりません。
+
+### 11. trim_space - 先頭と末尾の空白の削除
+
+文字列フィールドに対して `TrimSpace` を実行します（スペース、改行、タブなどがすべて削除されます）。
+
+```json
+{
+  "path": "model",
+  "mode": "trim_space"
+}
+```
+
+### 12. to_lower - 小文字に変換
+
+文字列フィールドを小文字に変換します。
+
+```json
+{
+  "path": "model",
+  "mode": "to_lower"
+}
+```
+
+### 13. to_upper - 大文字に変換
+
+文字列フィールドを大文字に変換します。
+
+```json
+{
+  "path": "model",
+  "mode": "to_upper"
+}
+```
+
+### 14. replace - 文字列の置換
+
+文字列フィールドに対して部分文字列の置換を実行します。
+
+```json
+{
+  "path": "model",
+  "mode": "replace",
+  "from": "openai/",
+  "to": ""
+}
+```
+
+**パラメータ要件：**
+
+- `from`: 必須であり、空文字列であってはなりません。
+- `to`: オプション。省略した場合、空文字列と同等です。
+
+### 15. regex_replace - 正規表現による置換
+
+文字列フィールドに対して正規表現によるマッチング置換を実行します。
+
+```json
+{
+  "path": "model",
+  "mode": "regex_replace",
+  "from": "^gpt-",
+  "to": "openai/gpt-"
+}
+```
+
+**パラメータ要件：**
+
+- `from`: 必須（正規表現、Go regexp 構文）
+- `to`: オプション。省略した場合、空文字列と同等です。
+
+## 条件判断
+
+`conditions` 配列を介して操作実行の条件を設定します。条件が満たされた場合にのみ、対応する操作が実行されます。
+
+### 条件構造
+
+```json
+{
+  "conditions": [
+    {
+      "path": "model",
+      "mode": "contains",
+      "value": "gpt-4",
+      "invert": false,
+      "pass_missing_key": false
+    }
+  ],
+  "logic": "AND"
+}
+```
+
+### 条件マッチングモード
+
+- `full`: 完全一致（デフォルト）
+- `prefix`: プレフィックス一致
+- `suffix`: サフィックス一致
+- `contains`: 包含一致
+- `gt`: より大きい（数値型のみ）
+- `gte`: 以上（数値型のみ）
+- `lt`: より小さい（数値型のみ）
+- `lte`: 以下（数値型のみ）
+
+- 注意：
+
+* 数値比較は数値型にのみ使用できます。
+* 文字列操作（prefix、suffix、contains）は、値を文字列に変換して比較します。
+
+### 条件パラメータの説明
+
+- `invert`: 反転機能。`true` は結果を反転することを意味します。
+- `pass_missing_key`: 指定されたパスが存在しない場合の動作
+  - `true`: パスが存在しない場合、条件は満たされます。
+  - `false`: パスが存在しない場合、条件は満たされません（デフォルト）。
+
+### 論理関係 (logic)
+
+- `AND`: すべての条件が満たされる必要があります。
+- `OR`: いずれかの条件が満たされれば十分です（デフォルト）。
+
+## パス構文
+
+JSON パス構文を使用してネストされたフィールドにアクセスします。
+
+- `temperature` - ルートレベルのフィールド
+- `messages.0.content` - 配列の最初の要素の content フィールド
+- `messages.-1.content` - 配列の最後の要素の content フィールド
+- `metadata.user.name` - ネストされたオブジェクトフィールド
+
+同時に、`path` は以下の組み込み変数（リクエストボディに明示的に存在する必要はありません）をサポートしており、条件判断に直接使用できます。
+
+| 変数 | 意味 | 典型的な用途 |
+| --- | --- | --- |
+| `model` / `upstream_model` | リダイレクト後のターゲットモデル | 実際に呼び出されたアップストリームモデルに基づいて条件をマッチング |
+| `original_model` | リダイレクト前のターゲットモデル | ユーザーがリクエストした元のモデルに基づいて条件をマッチング |
+
+## 実用例
+
+### 1. モデルパラメータの動的調整
+
+メッセージの内容に基づいて温度パラメータを動的に調整します。
+
+```json
+{
+  "operations": [
+    {
+      "path": "temperature",
+      "mode": "set",
+      "value": 0.3,
+      "conditions": [
+        {
+          "path": "messages.0.content",
+          "mode": "contains",
+          "value": "コード"
+        }
+      ]
+    },
+    {
+      "path": "temperature",
+      "mode": "set",
+      "value": 0.9,
+      "conditions": [
+        {
+          "path": "messages.0.content",
+          "mode": "contains",
+          "value": "クリエイティブ"
+        }
+      ]
+    }
+  ]
+}
+```
+
+### 2. システムプロンプトの追加
+
+メッセージ配列の先頭にシステムメッセージを追加します。
+
+```json
+{
+  "operations": [
+    {
+      "path": "messages",
+      "mode": "prepend",
+      "value": [
+        {
+          "role": "system",
+          "content": "あなたはプロのAIアシスタントです。常に丁寧でプロフェッショナルな態度を保ってください。"
+        }
+      ]
+    }
+  ]
+}
+```
+
+### 3. モデルタイプに応じたパラメータ調整
+
+異なるモデルに応じて異なる max_tokens を設定します。
+
+```json
+{
+  "operations": [
+    {
+      "path": "max_tokens",
+      "mode": "set",
+      "value": 4000,
+      "conditions": [
+        {
+          "path": "model",
+          "mode": "prefix",
+          "value": "gpt-4"
+        }
+      ]
+    },
+    {
+      "path": "max_tokens",
+      "mode": "set",
+      "value": 2000,
+      "conditions": [
+        {
+          "path": "model",
+          "mode": "prefix",
+          "value": "gpt-3.5"
+        }
+      ]
+    }
+  ]
+}
+```
+
+### 4. 複数条件の組み合わせ（ANDロジック）
+
+複数の条件が同時に満たされた場合にのみ操作を実行します。
+
+```json
+{
+  "operations": [
+    {
+      "path": "stream",
+      "mode": "set",
+      "value": false,
+      "conditions": [
+        {
+          "path": "model",
+          "mode": "contains",
+          "value": "claude"
+        },
+        {
+          "path": "messages.0.content",
+          "mode": "contains",
+          "value": "長文"
+        }
+      ],
+      "logic": "AND"
+    }
+  ]
+}
+```
+
+### 5. 数値比較条件
+
+数値の大小に基づいて条件を判断します。
+
+```json
+{
+  "operations": [
+    {
+      "path": "temperature",
+      "mode": "set",
+      "value": 0.1,
+      "conditions": [
+        {
+          "path": "max_tokens",
+          "mode": "gt",
+          "value": 1000
+        }
+      ]
+    }
+  ]
+}
+```
+
+### 6. 条件の反転
+
+`invert` を使用して反転ロジックを実装します。
+
+```json
+{
+  "operations": [
+    {
+      "path": "stream",
+      "mode": "set",
+      "value": true,
+      "conditions": [
+        {
+          "path": "model",
+          "mode": "contains",
+          "value": "gpt-3.5",
+          "invert": true
+        }
+      ]
+    }
+  ]
+}
+```
+
+### 7. 欠落フィールドの処理
+
+`pass_missing_key` を使用して、存在しない可能性のあるフィールドを処理します。
+
+```json
+{
+  "operations": [
+    {
+      "path": "temperature",
+      "mode": "set",
+      "value": 0.7,
+      "conditions": [
+        {
+          "path": "custom_field",
+          "mode": "full",
+          "value": "special",
+          "pass_missing_key": true
+        }
+      ]
+    }
+  ]
+}
+```
+
+### 8. 文字列結合の例
+
+ユーザーメッセージの後に指示を追加します。
+
+```json
+{
+  "operations": [
+    {
+      "path": "messages.-1.content",
+      "mode": "append",
+      "value": "\n\nあなたの思考プロセスを詳しく説明してください。"
+    }
+  ]
+}
+```
+
+## 注意事項
+
+**実行順序**: 操作は `operations` 配列内の順序で順次実行され、前の操作が後続の操作に影響を与えます。

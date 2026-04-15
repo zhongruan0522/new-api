@@ -1,0 +1,88 @@
+---
+title: AI アプリケーション
+description: サポートされているAIアプリケーションと統合ソリューション
+---
+
+import { Card, Cards } from 'fumadocs-ui/components/card';
+import {
+  Cherry,
+  Sparkles,
+  Terminal,
+  BookOpen,
+  MessageCircle,
+  Languages,
+  Bot,
+} from 'lucide-react';
+
+## 概要
+
+New API は、さまざまな人気のあるAIアプリケーションおよびツールと互換性があります。以下は、検証済みのサポートされているアプリケーションのリストと設定ガイドです。
+
+## サポートされているアプリケーション
+
+<Cards>
+  <Card
+    icon={<Sparkles />}
+    title="AionUi"
+    description="無料のオープンソースAIオフィスツール。マルチモデル対応、ファイル管理、リアルタイムプレビューをサポート。"
+    href="/ja/docs/apps/aionui"
+  />
+  <Card
+    icon={<Cherry />}
+    title="Cherry Studio"
+    description="多モデル対話に対応した、強力なAIアシスタントクライアント。"
+    href="/ja/docs/apps/cherry-studio"
+  />
+  <Card
+    icon={<Terminal />}
+    title="Claude Code"
+    description="Anthropic Claude を搭載したコードエディタ統合。"
+    href="/ja/docs/apps/claude-code"
+  />
+  <Card
+    icon={<Terminal />}
+    title="Codex CLI"
+    description="コマンドラインインターフェースのAIコードアシスタントツール。"
+    href="/ja/docs/apps/codex-cli"
+  />
+  <Card
+    icon={<Bot />}
+    title="Factory Droid CLI"
+    description="ワークフローを自動化するAIエージェントツール。"
+    href="/ja/docs/apps/factory-droid-cli"
+  />
+  <Card
+    icon={<BookOpen />}
+    title="Fluent Read"
+    description="AIを搭載したスマート読書・翻訳アシスタント。"
+    href="/ja/docs/apps/fluent-read"
+  />
+  <Card
+    icon={<MessageCircle />}
+    title="LangBot"
+    description="大規模言語モデルに基づいたチャットボットフレームワーク。"
+    href="/ja/docs/apps/langbot"
+  />
+  <Card
+    icon={<Languages />}
+    title="Luna Translator"
+    description="ゲームやドキュメントのリアルタイム翻訳ツール。"
+    href="/ja/docs/apps/luna-translator"
+  />
+  <Card
+    icon={<Bot />}
+    title="AstrBot"
+    description="オープンソースのワンストップAgentチャットボットプラットフォーム。"
+    href="/ja/docs/apps/astrbot"
+  />
+</Cards>
+
+## 統合ガイド
+
+ほとんどのアプリケーションは、New API に接続するために以下の情報を設定するだけで済みます。
+
+1.  **API アドレス**：お使いの New API サービスアドレス
+2.  **API Key**：New API コンソールで生成されたトークン
+3.  **モデル名**：使用するモデルを選択
+
+具体的な設定手順については、各アプリケーションの詳細ドキュメントをご参照ください。

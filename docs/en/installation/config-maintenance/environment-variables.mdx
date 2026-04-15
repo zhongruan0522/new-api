@@ -1,0 +1,243 @@
+---
+title: Environment Variable Configuration Guide
+---
+
+This document provides all environment variables supported by New API and their configuration instructions. You can customize the system's behavior by setting these environment variables.
+
+<Callout type="info" title="Tip">
+  New API supports reading environment variables from `.env` files. Please refer to the `.env.example`
+  file and rename it to `.env` when using it.
+</Callout>
+
+## Basic Configuration
+
+| Environment Variable | Description                 | Default Value | Example               |
+| -------------------- | --------------------------- | ------------- | --------------------- |
+| `PORT`               | Service Listening Port      | `3000`        | `PORT=8080`           |
+| `TZ`                 | Time Zone Setting           | -             | `TZ=America/New_York` |
+| `VERSION`            | Override Running Version Number | -           | `VERSION=1.2.3`       |
+
+## Database Configuration
+
+| Environment Variable    | Description                                  | Default Value            | Example                                                                                                                             |
+| ----------------------- | -------------------------------------------- | ------------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
+| `SQL_DSN`               | Database Connection String                   | SQLite (data/one-api.db) | MySQL: `SQL_DSN=root:123456@tcp(localhost:3306)/new-api` \| PostgreSQL: `SQL_DSN=postgresql://root:123456@postgres:5432/new-api` |
+| `SQL_MAX_IDLE_CONNS`    | Maximum Number of Idle Connections in Connection Pool | `100`                    | `SQL_MAX_IDLE_CONNS=50`                                                                                                          |
+| `SQL_MAX_OPEN_CONNS`    | Maximum Number of Open Connections in Connection Pool | `1000`                   | `SQL_MAX_OPEN_CONNS=500`                                                                                                         |
+| `SQL_MAX_LIFETIME`      | Maximum Connection Lifetime (minutes)        | `60`                     | `SQL_MAX_LIFETIME=120`                                                                                                          |
+| `LOG_SQL_DSN`           | Separate Database Connection String for Log Table | -                        | `LOG_SQL_DSN=root:123456@tcp(localhost:3306)/oneapi_logs`                                                                        |
+| `SQLITE_PATH`           | SQLite Database Path                         | `/path/to/sqlite.db`     | `SQLITE_PATH=/var/lib/new-api/new-api.db`                                                                                        |
+
+## Cache Configuration
+
+| Environment Variable    | Description                                | Default Value | Example                                                    |
+| ----------------------- | ------------------------------------------ | ------------- | ---------------------------------------------------------- |
+| `REDIS_CONN_STRING`     | Redis Connection String                    | -             | `REDIS_CONN_STRING=redis://default:redispw@localhost:6379` |
+| `MEMORY_CACHE_ENABLED`  | Enable Memory Cache                        | `false`       | `MEMORY_CACHE_ENABLED=true`                                |
+| `REDIS_POOL_SIZE`       | Redis Connection Pool Size                 | `10`          | `REDIS_POOL_SIZE=20`                                      |
+| `BATCH_UPDATE_ENABLED`  | Enable Database Batch Update Aggregation   | `false`       | `BATCH_UPDATE_ENABLED=true`                                |
+| `BATCH_UPDATE_INTERVAL` | Batch Update Aggregation Interval (seconds) | `5`           | `BATCH_UPDATE_INTERVAL=10`                                 |
+
+## Multi-Node and Security Configuration
+
+| Environment Variable    | Description                                  | Default Value | Example                             |
+| ----------------------- | -------------------------------------------- | ------------- | ----------------------------------- |
+| `SESSION_SECRET`        | Session Secret (Required for multi-machine deployment) | -             | `SESSION_SECRET=random_string`      |
+| `CRYPTO_SECRET`         | Encryption Secret (Encrypts database content) | -             | `CRYPTO_SECRET=your_crypto_secret`  |
+| `FRONTEND_BASE_URL`     | Frontend Base URL                            | -             | `FRONTEND_BASE_URL=https://your-domain.com` |
+| `SYNC_FREQUENCY`        | Cache and Database Sync Frequency (seconds)  | `60`          | `SYNC_FREQUENCY=60`                 |
+| `NODE_TYPE`             | Node Type                                    | `master`      | `NODE_TYPE=slave`                   |
+
+<Callout type="info" title="Cluster Deployment">
+  For information on how to use these environment variables to build a complete cluster deployment, please refer to the [Cluster Deployment Guide](/en/docs/installation/deployment-methods/cluster-deployment).
+</Callout>
+
+## User and Token Configuration
+
+| Environment Variable                 | Description                                  | Default Value | Example                             |
+| ------------------------------------ | -------------------------------------------- | ------------- | ----------------------------------- |
+| `GENERATE_DEFAULT_TOKEN`             | Generate Initial Token for New Registered Users | `false`       | `GENERATE_DEFAULT_TOKEN=true`       |
+| `NOTIFICATION_LIMIT_DURATION_MINUTE` | Notification Limit Duration (minutes)        | `10`          | `NOTIFICATION_LIMIT_DURATION_MINUTE=15` |
+| `NOTIFY_LIMIT_COUNT`                 | Maximum Number of Notifications within Specified Duration | `2`           | `NOTIFY_LIMIT_COUNT=3`              |
+
+## Request Limit Configuration
+
+| Environment Variable             | Description                                                  | Default Value | Example                              |
+| -------------------------------- | ------------------------------------------------------------ | ------------- | ------------------------------------ |
+| `GLOBAL_API_RATE_LIMIT`          | Global API Rate Limit (per IP, three minutes)                | `180`         | `GLOBAL_API_RATE_LIMIT=100`          |
+| `GLOBAL_WEB_RATE_LIMIT`          | Global Web Rate Limit (per IP, three minutes)                | `60`          | `GLOBAL_WEB_RATE_LIMIT=30`           |
+| `RELAY_TIMEOUT`                  | Relay Request Timeout (seconds)                              | `0`           | `RELAY_TIMEOUT=60`                   |
+| `STREAMING_TIMEOUT`              | Streaming Single Reply Timeout (seconds)                     | `300`         | `STREAMING_TIMEOUT=120`              |
+| `MAX_FILE_DOWNLOAD_MB`           | Maximum File Download Size (MB)                              | `20`          | `MAX_FILE_DOWNLOAD_MB=50`            |
+| `MAX_REQUEST_BODY_MB`            | Maximum Request Body Size (MB, calculated after decompression; prevents excessively large requests/zip bombs causing memory spikes) | `64`          | `MAX_REQUEST_BODY_MB=100`            |
+| `GLOBAL_API_RATE_LIMIT_ENABLE`   | Global API Rate Limit Switch                                 | `true`        | `GLOBAL_API_RATE_LIMIT_ENABLE=false` |
+| `GLOBAL_API_RATE_LIMIT_DURATION` | Global API Rate Limit Window (seconds)                       | `180`         | `GLOBAL_API_RATE_LIMIT_DURATION=120` |
+| `GLOBAL_WEB_RATE_LIMIT_ENABLE`   | Global Web Rate Limit Switch                                 | `true`        | `GLOBAL_WEB_RATE_LIMIT_ENABLE=false` |
+| `GLOBAL_WEB_RATE_LIMIT_DURATION` | Global Web Rate Limit Window (seconds)                       | `180`         | `GLOBAL_WEB_RATE_LIMIT_DURATION=120` |
+| `CRITICAL_RATE_LIMIT_ENABLE`     | Critical Operation Rate Limit Switch                         | `true`        | `CRITICAL_RATE_LIMIT_ENABLE=false` |
+| `CRITICAL_RATE_LIMIT`            | Critical Operation Rate Limit Count                          | `20`          | `CRITICAL_RATE_LIMIT=10`           |
+| `CRITICAL_RATE_LIMIT_DURATION`   | Critical Operation Rate Limit Window (seconds)               | `1200`        | `CRITICAL_RATE_LIMIT_DURATION=600` |
+
+<Callout type="warn" title="RELAY_TIMEOUT Setting Warning">
+  Please be cautious when setting the `RELAY_TIMEOUT` environment variable. Setting it too short may lead to the following issues:
+</Callout>
+
+    - Upstream API has completed the request and charged, but local billing was not completed due to timeout.
+
+    - Causing billing desynchronization, which may lead to system losses.
+
+    - It is recommended not to set it unless you know what you are doing.
+
+## Channel Management Configuration
+
+| Environment Variable            | Description                                  | Default Value                      | Example                             |
+| ------------------------------- | -------------------------------------------- | ---------------------------------- | ----------------------------------- |
+| `CHANNEL_UPDATE_FREQUENCY`      | Periodically Update Channel Balance (minutes) | -                                  | `CHANNEL_UPDATE_FREQUENCY=1440`     |
+| `CHANNEL_TEST_FREQUENCY`        | Periodically Check Channels (minutes)        | -                                  | `CHANNEL_TEST_FREQUENCY=1440`       |
+| `POLLING_INTERVAL`              | Request Interval when Batch Updating Channels (seconds) | `0`                                | `POLLING_INTERVAL=5`                |
+| `ENABLE_METRIC`                 | Disable Channels Based on Request Success Rate | `false`                            | `ENABLE_METRIC=true`                |
+| `METRIC_QUEUE_SIZE`             | Request Success Rate Statistics Queue Size   | `10`                               | `METRIC_QUEUE_SIZE=20`              |
+| `METRIC_SUCCESS_RATE_THRESHOLD` | Request Success Rate Threshold               | `0.8`                              | `METRIC_SUCCESS_RATE_THRESHOLD=0.7` |
+| `TEST_PROMPT`                   | User prompt when testing models              | `Print your model name exactly...` | `TEST_PROMPT=Hello`                 |
+
+## Model and Request Processing Configuration
+
+| Environment Variable         | Description                                                  | Default Value | Example                            |
+| ---------------------------- | ------------------------------------------------------------ | ------------- | ---------------------------------- |
+| `FORCE_STREAM_OPTION`        | Override Client stream_options Parameter                     | `true`        | `FORCE_STREAM_OPTION=false`        |
+| `GET_MEDIA_TOKEN`            | Count Image Tokens                                           | `true`        | `GET_MEDIA_TOKEN=false`            |
+| `GET_MEDIA_TOKEN_NOT_STREAM` | Count Image Tokens in Non-Streaming Mode                     | `false`       | `GET_MEDIA_TOKEN_NOT_STREAM=false` |
+| `UPDATE_TASK`                | Update Asynchronous Tasks (MJ, Suno)                         | `true`        | `UPDATE_TASK=false`                |
+| `CountToken`                 | Count Text Tokens                                            | `true`        | `CountToken=false`                 |
+| `TASK_PRICE_PATCH`           | Task Price Patch, models set here are billed per-use only, model names separated by English commas `,` | `""`          | `TASK_PRICE_PATCH=sora-2,sora-2-pro` |
+
+## Specific Model Configuration
+
+| Environment Variable          | Description                                  | Default Value        | Example                            |
+| ----------------------------- | -------------------------------------------- | -------------------- | ---------------------------------- |
+| `AZURE_DEFAULT_API_VERSION`   | Azure Channel Default API Version            | `2025-04-01-preview` | `AZURE_DEFAULT_API_VERSION=2023-05-15` |
+| `COHERE_SAFETY_SETTING`       | Cohere Model Safety Setting                  | `NONE`               | `COHERE_SAFETY_SETTING=CONTEXTUAL` |
+| `GEMINI_VISION_MAX_IMAGE_NUM` | Gemini Model Maximum Image Count             | `16`                 | `GEMINI_VISION_MAX_IMAGE_NUM=8`    |
+| `DIFY_DEBUG`                  | Dify Channel Output Workflow and Node Information | `true`               | `DIFY_DEBUG=false`                 |
+
+## Other Configuration
+
+| Environment Variable | Description                          | Default Value | Example                    |
+| ------------------- | ------------------------------------ | ------------- | -------------------------- |
+| `ERROR_LOG_ENABLED` | Record and Display Error Logs in Frontend | false         | `ERROR_LOG_ENABLED=true` |
+
+## Analytics and Statistics
+
+| Environment Variable | Description                | Default Value                      | Example                                        |
+| -------------------- | -------------------------- | ---------------------------------- | ---------------------------------------------- |
+| `UMAMI_WEBSITE_ID`   | Umami Website ID           | -                                  | `UMAMI_WEBSITE_ID=xxxx-xxxx`                   |
+| `UMAMI_SCRIPT_URL`   | Umami Script URL           | `https://analytics.umami.is/script.js` | `UMAMI_SCRIPT_URL=https://umami.example.com/script.js` |
+| `GOOGLE_ANALYTICS_ID`| Google Analytics Website ID | -                                  | `GOOGLE_ANALYTICS_ID=G-XXXXXXX`                |
+
+## Metadata Synchronization
+
+| Environment Variable        | Description                       | Default Value                            | Example                                            |
+| --------------------------- | --------------------------------- | ---------------------------------------- | -------------------------------------------------- |
+| `SYNC_UPSTREAM_BASE`        | Model/Vendor Metadata Upstream Address | `https://basellm.github.io/llm-metadata` | `SYNC_UPSTREAM_BASE=https://mirror.example.com/llm-metadata` |
+| `SYNC_HTTP_TIMEOUT_SECONDS` | Sync HTTP Timeout (seconds)       | `10`                                     | `SYNC_HTTP_TIMEOUT_SECONDS=15`                     |
+| `SYNC_HTTP_RETRY`           | Sync Retry Count                  | `3`                                      | `SYNC_HTTP_RETRY=5`                                |
+| `SYNC_HTTP_MAX_MB`          | Maximum Response Body Size (MB)   | `10`                                     | `SYNC_HTTP_MAX_MB=20`                              |
+
+## Frontend Configuration
+
+| Environment Variable        | Description                     | Default Value | Example                                    |
+| --------------------------- | ------------------------------- | ------------- | ------------------------------------------ |
+| `VITE_REACT_APP_SERVER_URL` | Frontend Request Backend Base Address | -             | `VITE_REACT_APP_SERVER_URL=https://api.example.com` |
+
+## Deprecated Environment Variables
+
+The following environment variables have been deprecated. Please use the corresponding options in the system settings interface:
+
+| Environment Variable    | Replacement Method                        |
+| ----------------------- | ----------------------------------------- |
+| `GEMINI_MODEL_MAP`      | Please set in System Settings - Model Related Settings |
+| `GEMINI_SAFETY_SETTING` | Please set in System Settings - Model Related Settings |
+
+## Multi-Machine Deployment Example
+
+In multi-machine deployment scenarios, the following environment variables must be set:
+
+### Master Node Configuration
+
+```bash
+# Database Configuration - Use remote database
+SQL_DSN=root:password@tcp(db-server:3306)/oneapi
+
+# Security Configuration
+SESSION_SECRET=your_unique_session_secret
+CRYPTO_SECRET=your_unique_crypto_secret
+
+# Redis Cache Configuration
+REDIS_CONN_STRING=redis://default:password@redis-server:6379
+```
+
+### Slave Node Configuration
+
+```bash
+# Database Configuration - Use the same remote database
+SQL_DSN=root:password@tcp(db-server:3306)/oneapi
+
+# Security Configuration - Use the same secret as the master node
+SESSION_SECRET=your_unique_session_secret
+CRYPTO_SECRET=your_unique_crypto_secret
+
+# Redis Cache Configuration - Use the same Redis as the master node
+REDIS_CONN_STRING=redis://default:password@redis-server:6379
+
+# Node Type Setting
+NODE_TYPE=slave
+
+# Optional: Frontend Base URL
+FRONTEND_BASE_URL=https://your-domain.com
+
+# Optional: Sync Frequency
+SYNC_FREQUENCY=60
+```
+
+<Callout type="info" title="Complete Cluster Configuration">
+  This is just a basic multi-node configuration example. For complete cluster deployment configuration, architecture description, and best practices, please refer to the [Cluster Deployment Guide](/en/docs/installation/deployment-methods/cluster-deployment).
+</Callout>
+
+## Docker Compose Environment Variable Example
+
+Below is a brief example of setting environment variables in a Docker Compose configuration file:
+
+```yaml
+services:
+  new-api:
+    image: calciumion/new-api:latest
+    environment:
+      - TZ=Asia/Shanghai
+      - SQL_DSN=root:123456@tcp(mysql:3306)/oneapi
+      - REDIS_CONN_STRING=redis://default:redispw@redis:6379
+      - SESSION_SECRET=your_unique_session_secret
+      - CRYPTO_SECRET=your_unique_crypto_secret
+      - MEMORY_CACHE_ENABLED=true
+      - GENERATE_DEFAULT_TOKEN=true
+      - STREAMING_TIMEOUT=120
+      - CHANNEL_UPDATE_FREQUENCY=1440
+```
+
+For complete Docker Compose configuration, including more environment variable setting options, please refer to the [Docker Compose Configuration Instructions](/en/docs/installation/config-maintenance/docker-compose-yml) document.
+
+## LinuxDo Related
+
+No modification is required under normal circumstances
+
+| Environment Variable      | Description             | Default Value                            | Example                                        |
+| ------------------------- | ----------------------- | ---------------------------------------- | ---------------------------------------------- |
+| `LINUX_DO_TOKEN_ENDPOINT` | LinuxDo Token Endpoint  | `https://connect.linux.do/oauth2/token`  | `LINUX_DO_TOKEN_ENDPOINT=https://connect.linux.do/oauth2/token` |
+| `LINUX_DO_USER_ENDPOINT`  | LinuxDo User Endpoint   | `https://connect.linux.do/api/user`      | `LINUX_DO_USER_ENDPOINT=https://connect.linux.do/api/user` |
+
+## Debugging Related
+
+| Environment Variable | Description                     | Default Value | Example             |
+| -------------------- | ------------------------------- | ------------- | ------------------- |
+| `ENABLE_PPROF`       | Enable pprof Performance Analysis | `false`       | `ENABLE_PPROF=true` |
+| `DEBUG`              | Enable Debug Mode               | `false`       | `DEBUG=true`        |
+| `GIN_MODE`           | Gin Running Mode                | -             | `GIN_MODE=release`  |

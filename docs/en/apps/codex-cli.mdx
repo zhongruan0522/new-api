@@ -1,0 +1,446 @@
+---
+title: OpenAI Codex CLI
+---
+
+<Callout type="info" title="Project Introduction">
+  Codex CLI is a coding agent from OpenAI that runs locally on your computer.
+
+  - Official Homepage: [https://chatgpt.com/codex](https://chatgpt.com/codex)
+  - Project Homepage: [https://github.com/openai/codex](https://github.com/openai/codex)
+</Callout>
+
+## Demo
+
+![introduce-01.webp](/assets/codex/introduce-01.webp)
+
+### Features
+
+| **Feature Category**            | **Feature**                                                                                                                                                                          |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Terminal-based Coding Assistant | Codex CLI is a terminal-based interactive coding assistant for editing code, generating patches, and running commands in the command line.                                           |
+| Tool-driven Architecture        | Provides tools such as `apply_patch`, `shell`, `update_plan`, and `multi_tool_use` for controlled modifications to repository files and operations.                                  |
+| Atomic Patch Editing            | Uses a dedicated patch format to atomically add/update/delete files via `apply_patch`, facilitating auditing and rollback.                                                           |
+| Sandboxing and Approval         | Supports sandboxing policies (e.g., `workspace-write`, `read-only`) and approval modes (`on-request`, `on-failure`, `never`) to control write and network access permissions.        |
+| Plan Tracking                   | `update_plan` is used to list steps and track status, requiring only one `in_progress` step at all times to maintain clear progress.                                                 |
+| Interaction Protocol            | Sends brief introductory explanations before important operations, maintaining a friendly, concise tone and providing progress updates.                                              |
+| Security Constraints            | Adheres to strict rules (no arbitrary changes to unrelated files, no adding copyright headers, no executing destructive commands), requiring user approval for sensitive operations. |
+| Testing and Formatting          | Recommends running relevant tests and formatting tools after modifications, but is not responsible for fixing issues unrelated to the current task.                                  |
+| Output and Style                | Final output follows CLI rendering specifications (e.g., `**` for headings, backticks for paths/commands), maintaining a scannable, concise structure.                               |
+| Parallel Execution              | Supports running multiple tools in parallel via `multi_tool_use.parallel` to improve efficiency.                                                                                     |
+
+## AI Model Configuration Method
+
+### Windows Graphical Guide
+
+#### 1. Open Terminal
+
+![windows_open_terminal](/assets/codex/windows_open_terminal.png)
+
+#### 2. Install WSL
+
+For optimal performance on Windows, install and use Windows Subsystem for Linux (WSL2).
+
+<Callout type="info" title="Install WSL2, Restart Windows Computer">
+  ```powershell
+  wsl --install
+  ```
+
+  Restart your Windows computer after installation.
+</Callout>
+
+<Callout type="warn" title="Windows Notes">
+  - It is recommended to use PowerShell instead of CMD
+  - If you encounter permission issues, try running as administrator
+  - Some antivirus software may falsely flag it; you need to add it to the whitelist
+</Callout>
+
+![windows-img-03.webp](/assets/codex/windows-img-03.webp)
+
+<Callout type="info" title="Download Node Version Manager (NVM)">
+  ```bash
+  curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/master/install.sh | bash
+  ```
+</Callout>
+
+![windows-img-04.webp](/assets/codex/windows-img-04.webp)
+
+<Callout type="info" title="NVM Installs Node.js 22">
+  Open a new PowerShell window in the tab bar, then open WSL:
+
+  ```bash
+  wsl
+  ```
+
+  Install Node.js (version numbers are time-sensitive; please install the corresponding version according to [OpenAI's official website](https://developers.openai.com/codex/windows) requirements):
+
+  ```bash
+  nvm install 22
+  ```
+</Callout>
+
+![windows-img-05.webp](/assets/codex/windows-img-05.webp)
+
+#### 3. Install Codex CLI
+
+<Callout type="info" title="Install Codex CLI">
+  ```bash
+  npm i -g @openai/codex
+  ```
+
+  This command downloads and installs the latest version of Codex CLI from the official npm repository.
+</Callout>
+
+![windows-img-06.webp](/assets/codex/windows-img-06.webp)
+
+#### 4. Modify Configuration File
+
+<Callout type="info" title="One-click Modification of Codex CLI Configuration File">
+  ```powershell
+  iex (irm 'https://raw.githubusercontent.com/QuantumNous/new-api-docs/refs/heads/main/helper/codex-cli-setup.ps1')
+  ```
+</Callout>
+
+![windows-configure](/assets/codex/windows_configure.png)
+
+#### 5. Start Using Codex CLI
+
+Now you can start using Codex CLI!
+
+<Callout type="info" title="Launch Codex CLI">
+  Launch WSL2:
+
+  ```bash
+  wsl
+  ```
+
+  Launch Codex CLI directly:
+
+  ```bash
+  codex
+  ```
+
+  Use in a specific project:
+
+  ```bash
+  cd mnt/c/path/to/your/project
+  codex
+  ```
+
+  Press Enter to launch Codex CLI.
+</Callout>
+
+![windows-img-09.webp](/assets/codex/windows-img-09.webp)
+
+![windows-img-10.webp](/assets/codex/windows-img-10.webp)
+
+> Set Codex CLI permissions: 1. Allow Codex to modify files directly; 2. Codex requires manual authorization to modify files
+
+<Callout type="info" title="Select Model">
+  ```bash
+  /model
+  ```
+</Callout>
+
+![windows-img-11.webp](/assets/codex/windows-img-11.webp)
+
+![windows-img-12.webp](/assets/codex/windows-img-12.webp)
+
+![windows-img-13.webp](/assets/codex/windows-img-13.webp)
+
+![windows-img-14.webp](/assets/codex/windows-img-14.webp)
+
+> Note: After modifying the API address, all models (including officially preset models) will call the custom access point and will not use the official account quota.
+
+### macOS Graphical Guide
+
+#### 1. Install Homebrew (Skip if already installed)
+
+Homebrew is the missing package manager for macOS.
+
+Official Website: https://brew.sh
+
+![macos-img-01.webp](/assets/codex/macos-img-01.webp)
+
+<Callout type="info" title="Install Homebrew">
+  ```bash
+  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+  ```
+</Callout>
+
+![macos-img-02.webp](/assets/codex/macos-img-02.webp)
+
+![macos-img-03.webp](/assets/codex/macos-img-03.webp)
+
+![macos-img-04.webp](/assets/codex/macos-img-04.webp)
+
+#### 2. Install Node.js Environment
+
+<Callout type="info" title="Node.js Environment Installation Steps">
+  Update Homebrew:
+
+  ```bash
+  brew update
+  ```
+
+  Install Node.js:
+
+  ```bash
+  brew install node
+  ```
+</Callout>
+
+<Callout type="warn" title="macOS Notes">
+  - If you encounter permission issues, you might need to use `sudo`
+  - The first run might require permission in System Preferences
+  - It is recommended to use Terminal or iTerm2
+</Callout>
+
+![macos-img-05.webp](/assets/codex/macos-img-05.webp)
+
+![macos-img-06.webp](/assets/codex/macos-img-06.webp)
+
+<Callout type="info" title="Verify Installation Success">
+  After installation, open the terminal and enter the following commands:
+
+  ```bash
+  node --version
+  npm --version
+  ```
+
+  If version numbers are displayed, the installation was successful.
+</Callout>
+
+#### 3. Install Codex CLI
+
+<Callout type="info" title="Install Codex CLI">
+  Open the terminal and run the following commands:
+
+  ```bash
+  # Install Codex CLI globally
+  npm install -g @openai/codex
+  ```
+
+  If you encounter permission issues, you can use sudo:
+
+  ```bash
+  sudo npm install -g @openai/codex
+  ```
+</Callout>
+
+![macos-img-07.webp](/assets/codex/macos-img-07.webp)
+
+<Callout type="info" title="Verify Codex CLI Installation">
+  After installation, enter the following command to check if the installation was successful:
+
+  ```bash
+  codex --version
+  ```
+
+  If a version number is displayed, congratulations! Codex CLI has been successfully installed.
+</Callout>
+
+#### 4. Modify Configuration File
+
+<Callout type="info" title="One-click Modification of Codex CLI Configuration File">
+  ```bash
+  curl -fsSL https://raw.githubusercontent.com/QuantumNous/new-api-docs/refs/heads/main/helper/codex-cli-setup.sh | bash
+  ```
+</Callout>
+
+![macos-configure](/assets/codex/macos_configure.png)
+
+#### 5. Start Using Codex CLI
+
+Now you can start using Codex CLI!
+
+<Callout type="info" title="Launch Codex CLI">
+  Launch Codex CLI directly:
+
+  ```bash
+  codex
+  ```
+
+  Use in a specific project:
+
+  ```bash
+  cd /path/to/your/project
+  codex
+  ```
+
+  Press Enter to launch Codex CLI.
+</Callout>
+
+![macos-img-09.webp](/assets/codex/macos-img-09.webp)
+
+![macos-img-10.webp](/assets/codex/macos-img-10.webp)
+
+> Set Codex CLI permissions: 1. Allow Codex to modify files directly; 2. Codex requires manual authorization to modify files
+
+![macos-img-11.webp](/assets/codex/macos-img-11.webp)
+
+![macos-img-12.webp](/assets/codex/macos-img-12.webp)
+
+![macos-img-13.webp](/assets/codex/macos-img-13.webp)
+
+![macos-img-14.webp](/assets/codex/macos-img-14.webp)
+
+> Note: After modifying the API address, all models (including officially preset models) will call the custom access point and will not use the official account quota.
+
+#### 6. macOS Common Issues Troubleshooting
+
+<Callout type="info" title="Permission Error During Installation">
+  Try the following solutions:
+
+  - Install with `sudo`: `sudo npm install -g @openai/codex`
+  - Or configure `npm` to use the user directory: `npm config set prefix ~/.npm-global`
+</Callout>
+
+<Callout type="info" title="macOS Security Settings Prevent Running">
+  If the system prevents Codex CLI from running:
+
+  - Open "System Preferences" → "Security & Privacy"
+  - Click "Open Anyway" or "Allow"
+  - Or run in Terminal: `sudo spctl --master-disable`
+</Callout>
+
+### Linux Graphical Guide
+
+#### 1. Install Node.js Environment
+
+Codex CLI requires a Node.js environment to run.
+
+<Callout type="info" title="Node.js Environment Installation Steps">
+  Add NodeSource repository:
+
+  ```bash
+  sudo curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
+  ```
+
+  Install Node.js:
+
+  ```bash
+  sudo apt-get install -y nodejs
+  ```
+</Callout>
+
+<Callout type="warn" title="Linux Notes">
+  - Some distributions may require additional dependencies
+  - If you encounter permission issues, use sudo
+  - Ensure your user has write permissions in npm's global directory
+</Callout>
+
+![linux-img-01.webp](/assets/codex/linux-img-01.webp)
+
+![linux-img-02.webp](/assets/codex/linux-img-02.webp)
+
+<Callout type="info" title="Verify Installation Success">
+  After installation, open the terminal and enter the following commands:
+
+  ```bash
+  node --version
+  npm --version
+  ```
+
+  If version numbers are displayed, the installation was successful.
+</Callout>
+
+#### 2. Install Codex CLI
+
+<Callout type="info" title="Install Codex CLI">
+  Open the terminal and run the following commands:
+
+  ```bash
+  # Install Codex CLI globally
+  npm install -g @openai/codex
+  ```
+
+  If you encounter permission issues, you can use sudo:
+
+  ```bash
+  sudo npm install -g @openai/codex
+  ```
+</Callout>
+
+![linux-img-03.webp](/assets/codex/linux-img-03.webp)
+
+<Callout type="info" title="Verify Codex CLI Installation">
+  After installation, enter the following command to check if the installation was successful:
+
+  ```bash
+  codex --version
+  ```
+
+  If a version number is displayed, congratulations! Codex CLI has been successfully installed.
+</Callout>
+
+#### 3. Modify Configuration File
+
+<Callout type="info" title="One-click Modification of Codex CLI Configuration File">
+  ```bash
+  curl -fsSL https://raw.githubusercontent.com/QuantumNous/new-api-docs/refs/heads/main/helper/codex-cli-setup.sh | bash
+  ```
+</Callout>
+
+![macos-configure](/assets/codex/macos_configure.png)
+
+#### 4. Start Using Codex CLI
+
+Now you can start using Codex CLI!
+
+<Callout type="info" title="Launch Codex CLI">
+  Launch Codex CLI directly:
+
+  ```bash
+  codex
+  ```
+
+  Use in a specific project:
+
+  ```bash
+  # Navigate to your project directory
+  cd /path/to/your/project
+
+  # Launch Codex CLI
+  codex
+  ```
+
+  Press Enter to launch Codex CLI.
+</Callout>
+
+![linux-img-05.webp](/assets/codex/linux-img-05.webp)
+
+![linux-img-06.webp](/assets/codex/linux-img-06.webp)
+
+> Set Codex CLI permissions: 1. Allow Codex to modify files directly; 2. Codex requires manual authorization to modify files
+
+![linux-img-07.webp](/assets/codex/linux-img-07.webp)
+
+![linux-img-08.webp](/assets/codex/linux-img-08.webp)
+
+![linux-img-09.webp](/assets/codex/linux-img-09.webp)
+
+![linux-img-10.webp](/assets/codex/linux-img-10.webp)
+
+> Note: After modifying the API address, all models (including officially preset models) will call the custom access point and will not use the official account quota.
+
+#### 5. Linux Common Issues Troubleshooting
+
+<Callout type="info" title="Permission Error During Installation">
+  Try the following solutions:
+
+  - Install with `sudo`: `sudo npm install -g @openai/codex`
+  - Or configure `npm` to use the user directory: `npm config set prefix ~/.npm-global`
+  - Then add to PATH: `export PATH=~/.npm-global/bin:$PATH`
+</Callout>
+
+<Callout type="info" title="Missing Dependency Libraries">
+  Some Linux distributions require additional dependencies:
+
+  ```bash
+  # Ubuntu/Debian
+  sudo apt install build-essential
+
+  # CentOS/RHEL
+  sudo dnf groupinstall "Development Tools"
+  ```
+</Callout>
