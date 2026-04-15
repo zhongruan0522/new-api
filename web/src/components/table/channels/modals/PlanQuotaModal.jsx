@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Modal,
@@ -55,10 +55,20 @@ const PlanVersionTag = ({ version }) => {
   return <Tag color={version === '新' ? 'green' : 'orange'}>{version}套餐</Tag>;
 };
 
+const formatCompactNumber = (num) => {
+  if (num == null || isNaN(num)) return '0';
+  const abs = Math.abs(num);
+  const sign = num < 0 ? '-' : '';
+  if (abs >= 1_000_000_000) return sign + (abs / 1_000_000_000).toFixed(1).replace(/\.0$/, '') + 'B';
+  if (abs >= 1_000_000) return sign + (abs / 1_000_000).toFixed(1).replace(/\.0$/, '') + 'M';
+  if (abs >= 1_000) return sign + (abs / 1_000).toFixed(1).replace(/\.0$/, '') + 'K';
+  return sign + abs.toString();
+};
+
 const LimitCard = ({ title, data, resetLabel }) => {
   if (!data) return null;
   return (
-    <div style={{ padding: 12, border: '1px solid var(--semi-color-border)', borderRadius: 8, marginBottom: 12 }}>
+    <div className="plan-quota-card">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
         <Text strong>{title}</Text>
         <Tag color={getStatusColor(data.status)} size='small'>{data.status}</Tag>
@@ -75,7 +85,7 @@ const LimitCard = ({ title, data, resetLabel }) => {
 const McpLimitCard = ({ data }) => {
   if (!data) return null;
   return (
-    <div style={{ padding: 12, border: '1px solid var(--semi-color-border)', borderRadius: 8, marginBottom: 12 }}>
+    <div className="plan-quota-card">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
         <Text strong>MCP 工具限额</Text>
         <Tag color={getStatusColor(data.status)} size='small'>{data.status}</Tag>
@@ -100,7 +110,6 @@ const McpLimitCard = ({ data }) => {
   );
 };
 
-// 时间参数生成，与 zaicontrol 保持一致（延迟10分钟，北京时间）
 const getTimeParams = (days) => {
   const now = new Date();
   const end = new Date(now.getTime() - 600000);
@@ -110,7 +119,6 @@ const getTimeParams = (days) => {
   } else {
     start.setTime(now.getTime() - days * 86400000);
   }
-  // 按北京时间 (UTC+8) 格式化
   const toBJ = (d) => {
     const utc = d.getTime() + d.getTimezoneOffset() * 60000;
     return new Date(utc + 8 * 3600000);
@@ -123,7 +131,37 @@ const getTimeParams = (days) => {
   return `startTime=${fmt(start)}&endTime=${fmt(end)}`;
 };
 
-// 将智谱原始数据转为 VChart 长格式
+const formatTimeLabel = (timeStr) => {
+  if (!timeStr) return '';
+  // 尝试解析 "2026-01-15 10:00" 或 "2026-01-15" 格式
+  const match = timeStr.match(/^(\d{4})-(\d{2})-(\d{2})\s*(.*)?$/);
+  if (match) {
+    const date = `${match[2]}-${match[3]}`;
+    const time = match[4] || '';
+    if (time) {
+      // 提取 HH:MM
+      const timeMatch = time.match(/^(\d{2}):(\d{2})/);
+      if (timeMatch) {
+        return `${date} ${timeMatch[1]}:${timeMatch[2]}`;
+      }
+    }
+    return date;
+  }
+  return timeStr;
+};
+
+// 均匀采样时间标签，保留最多 maxLabels 个
+const sampleTimeLabels = (times, maxLabels = 4) => {
+  if (!times || times.length <= maxLabels) return times;
+  const step = (times.length - 1) / (maxLabels - 1);
+  const result = [];
+  for (let i = 0; i < maxLabels; i++) {
+    const idx = Math.round(i * step);
+    result.push(times[idx]);
+  }
+  return result;
+};
+
 const flattenUsageData = (rawData, usageType) => {
   const d = rawData?.data || {};
   const x = d.x_time || [];
@@ -138,19 +176,16 @@ const flattenUsageData = (rawData, usageType) => {
     const allFields = ['总用量', ...modelList.map((m) => m.modelName)];
     const flatValues = [];
     x.forEach((t, i) => {
-      // 总用量行
       flatValues.push({ time: t, value: totalArr[i] || 0, type: '总用量' });
-      // 各模型行
       modelList.forEach((m) => {
         const arr = (m.tokensUsage || []).map((v) => v || 0);
         flatValues.push({ time: t, value: arr[i] || 0, type: m.modelName });
       });
     });
 
-    return { values: flatValues, total: totalTokens, summary: summaryList, fields: allFields };
+    return { values: flatValues, total: totalTokens, summary: summaryList, fields: allFields, times: x };
   }
 
-  // tool mode
   const s1 = (d.networkSearchCount || []).map((v) => v || 0);
   const s2 = (d.webReadMcpCount || []).map((v) => v || 0);
   const s3 = (d.zreadMcpCount || []).map((v) => v || 0);
@@ -162,7 +197,13 @@ const flattenUsageData = (rawData, usageType) => {
     flatValues.push({ time: t, value: s3[i], type: '开源仓库' });
   });
 
-  return { values: flatValues, total, summary: [], fields: ['联网搜索', '网页读取', '开源仓库'] };
+  return { values: flatValues, total, summary: [], fields: ['联网搜索', '网页读取', '开源仓库'], times: x };
+};
+
+const buildYAxisFormatter = (maxValue) => {
+  if (maxValue >= 1_000_000) return (v) => formatCompactNumber(v);
+  if (maxValue >= 1_000) return (v) => formatCompactNumber(v);
+  return (v) => v?.toString();
 };
 
 const UsageChart = ({ channelId }) => {
@@ -192,7 +233,7 @@ const UsageChart = ({ channelId }) => {
     fetchUsage();
   }, [fetchUsage]);
 
-  const { values, total, summary, fields } = useMemo(
+  const { values, total, summary, fields, times } = useMemo(
     () => flattenUsageData(rawData, usageType),
     [rawData, usageType],
   );
@@ -200,7 +241,6 @@ const UsageChart = ({ channelId }) => {
   const vchartSpec = useMemo(() => {
     if (!values.length) return null;
 
-    // 给不同系列分配颜色和线型
     const colorMap = {};
     fields.forEach((f, i) => {
       if (f === '总用量') {
@@ -209,6 +249,15 @@ const UsageChart = ({ channelId }) => {
         colorMap[f] = MODEL_COLORS[i % MODEL_COLORS.length];
       }
     });
+
+    // 计算最大值用于格式化
+    const maxVal = Math.max(...values.map((v) => v.value || 0));
+    const tickCount = 5;
+    const tickStep = maxVal > 0 ? maxVal / (tickCount - 1) : 1;
+
+    // 生成均匀采样的时间标签索引
+    const sampledLabels = sampleTimeLabels(times, 4);
+    const allTimes = times || [];
 
     return {
       type: 'common',
@@ -223,16 +272,39 @@ const UsageChart = ({ channelId }) => {
         point: { visible: false },
       }],
       axes: [
-        { orient: 'bottom', type: 'band', bandField: 'time', label: { style: { fontSize: 10 }, autoRotate: true, autoRotateAngle: [-45, 45] } },
-        { orient: 'left', type: 'linear', field: 'value', label: { style: { fontSize: 10 } }, grid: { visible: true, style: { lineDash: [3, 3], stroke: 'var(--semi-color-border)' } } },
+        {
+          orient: 'bottom',
+          type: 'band',
+          bandField: 'time',
+          label: {
+            style: { fontSize: 11 },
+            autoRotate: false,
+            formatter: (v) => {
+              if (sampledLabels.includes(v)) return formatTimeLabel(v);
+              return '';
+            },
+          },
+          tick: { visible: false },
+        },
+        {
+          orient: 'left',
+          type: 'linear',
+          field: 'value',
+          tick: { count: tickCount },
+          label: {
+            style: { fontSize: 10 },
+            formatter: (v) => formatCompactNumber(v),
+          },
+          grid: { visible: true, style: { lineDash: [3, 3], stroke: 'var(--semi-color-border)' } },
+        },
       ],
       color: { type: 'ordinal', range: fields.map((f) => colorMap[f]), domain: fields },
       legends: { visible: true, position: 'top', item: { label: { style: { fontSize: 11 } } }, autoPage: true, maxRow: 1 },
-      tooltip: { visible: true, mark: { content: [{ key: (d) => d.type, value: (d) => d.value?.toLocaleString() }] } },
-      height: 260,
+      tooltip: { visible: true, mark: { content: [{ key: (d) => d.type, value: (d) => (d.value ?? 0).toLocaleString() }] } },
+      height: 240,
       padding: { top: 10, bottom: 5, left: 10, right: 10 },
     };
-  }, [values, fields]);
+  }, [values, fields, times]);
 
   const ranges = [
     { key: 0, label: '当日' },
@@ -242,8 +314,8 @@ const UsageChart = ({ channelId }) => {
   ];
 
   return (
-    <div style={{ borderTop: '1px solid var(--semi-color-border)', paddingTop: 12, marginTop: 4 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+    <div className="plan-quota-section">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, flexWrap: 'wrap', gap: 8 }}>
         <ButtonGroup size='small'>
           <Button onClick={() => setUsageType('model')} type={usageType === 'model' ? 'primary' : 'tertiary'}>模型</Button>
           <Button onClick={() => setUsageType('tool')} type={usageType === 'tool' ? 'primary' : 'tertiary'}>工具</Button>
@@ -259,7 +331,7 @@ const UsageChart = ({ channelId }) => {
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 8, flexWrap: 'wrap' }}>
         <div>
           <Text type='tertiary' size='small'>{usageType === 'model' ? 'Tokens总量' : '工具调用次'}</Text>
-          <span style={{ fontSize: 20, fontWeight: 600, marginLeft: 8 }}>{total.toLocaleString()}</span>
+          <span style={{ fontSize: 20, fontWeight: 600, marginLeft: 8 }}>{formatCompactNumber(total)}</span>
         </div>
         {usageType === 'model' && summary.length > 0 && (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
@@ -267,7 +339,7 @@ const UsageChart = ({ channelId }) => {
               <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, marginRight: 8 }}>
                 <span style={{ width: 8, height: 8, borderRadius: '50%', background: MODEL_COLORS[(i + 1) % MODEL_COLORS.length], display: 'inline-block' }} />
                 <span style={{ fontSize: 12 }}>{m.modelName}</span>
-                <span style={{ fontSize: 12, color: 'var(--semi-color-text-2)' }}>{(m.totalTokens || 0).toLocaleString()}</span>
+                <span style={{ fontSize: 12, color: 'var(--semi-color-text-2)' }}>{formatCompactNumber(m.totalTokens || 0)}</span>
               </span>
             ))}
           </div>
@@ -287,12 +359,179 @@ const UsageChart = ({ channelId }) => {
   );
 };
 
+// 系统健康度图表
+const PerformanceChart = ({ channelId }) => {
+  const [range, setRange] = useState(7);
+  const [loading, setLoading] = useState(false);
+  const [rawData, setRawData] = useState(null);
+
+  const fetchPerf = useCallback(async () => {
+    if (!channelId) return;
+    setLoading(true);
+    try {
+      const params = getTimeParams(range);
+      const res = await API.get(
+        `/api/channel/plan/glm/usage/${channelId}?type=performance&${params}`,
+        { skipErrorHandler: true },
+      );
+      setRawData(res.data);
+    } catch {
+      setRawData(null);
+    } finally {
+      setLoading(false);
+    }
+  }, [channelId, range]);
+
+  useEffect(() => {
+    fetchPerf();
+  }, [fetchPerf]);
+
+  const { perfValues, avgSpeed, avgRate, perfTimes } = useMemo(() => {
+    const d = rawData?.data || {};
+    const x = d.x_time || [];
+    if (!x.length) return { perfValues: [], avgSpeed: '--', avgRate: '--', perfTimes: [] };
+
+    const liteSpeed = (d.liteDecodeSpeed || []).map((v) => (v ? parseFloat(v.toFixed(2)) : 0));
+    const proMaxSpeed = (d.proMaxDecodeSpeed || []).map((v) => (v ? parseFloat(v.toFixed(2)) : 0));
+    const liteRate = (d.liteSuccessRate || []).map((v) => (v ? parseFloat((v * 100).toFixed(2)) : 0));
+    const proMaxRate = (d.proMaxSuccessRate || []).map((v) => (v ? parseFloat((v * 100).toFixed(2)) : 0));
+
+    const flatValues = [];
+    x.forEach((t, i) => {
+      flatValues.push({ time: t, value: liteSpeed[i], type: 'Lite速度' });
+      flatValues.push({ time: t, value: proMaxSpeed[i], type: 'Pro/Max速度' });
+      flatValues.push({ time: t, value: liteRate[i], type: 'Lite成功率' });
+      flatValues.push({ time: t, value: proMaxRate[i], type: 'Pro/Max成功率' });
+    });
+
+    const avg = (arr) => (arr.length ? (arr.reduce((a, b) => a + b, 0) / arr.length).toFixed(1) : 0);
+    const speed = ((parseFloat(avg(liteSpeed)) + parseFloat(avg(proMaxSpeed))) / 2).toFixed(1);
+    const rate = ((parseFloat(avg(liteRate)) + parseFloat(avg(proMaxRate))) / 2).toFixed(1);
+
+    return { perfValues: flatValues, avgSpeed: speed, avgRate: rate, perfTimes: x };
+  }, [rawData]);
+
+  const vchartSpec = useMemo(() => {
+    if (!perfValues.length) return null;
+
+    const sampledLabels = sampleTimeLabels(perfTimes, 4);
+
+    const colorMap = {
+      'Lite速度': '#d97757',
+      'Pro/Max速度': '#6a9bcc',
+      'Lite成功率': '#d97757',
+      'Pro/Max成功率': '#788c5d',
+    };
+    const fields = ['Lite速度', 'Pro/Max速度', 'Lite成功率', 'Pro/Max成功率'];
+
+    return {
+      type: 'common',
+      data: [{ id: 'perf', values: perfValues }],
+      series: [
+        {
+          type: 'line',
+          xField: 'time',
+          yField: 'value',
+          seriesField: 'type',
+          smooth: true,
+          line: {
+            style: {
+              lineWidth: (d) => (d.type.includes('成功率') ? 2 : 2),
+              lineDash: (d) => (d.type.includes('成功率') ? [4, 4] : [0]),
+            },
+          },
+          point: { visible: false },
+        },
+      ],
+      axes: [
+        {
+          orient: 'bottom',
+          type: 'band',
+          bandField: 'time',
+          label: {
+            style: { fontSize: 11 },
+            autoRotate: false,
+            formatter: (v) => {
+              if (sampledLabels.includes(v)) return formatTimeLabel(v);
+              return '';
+            },
+          },
+          tick: { visible: false },
+        },
+        {
+          orient: 'left',
+          type: 'linear',
+          field: 'value',
+          label: {
+            style: { fontSize: 10 },
+            formatter: (v) => formatCompactNumber(v),
+          },
+          grid: { visible: true, style: { lineDash: [3, 3], stroke: 'var(--semi-color-border)' } },
+        },
+      ],
+      color: { type: 'ordinal', range: fields.map((f) => colorMap[f]), domain: fields },
+      legends: { visible: true, position: 'top', item: { label: { style: { fontSize: 11 } } }, autoPage: true, maxRow: 1 },
+      tooltip: {
+        visible: true,
+        mark: {
+          content: [{
+            key: (d) => d.type,
+            value: (d) => d.type.includes('成功率') ? `${d.value?.toFixed(1)}%` : `${d.value?.toFixed(1)} tokens/s`,
+          }],
+        },
+      },
+      height: 240,
+      padding: { top: 10, bottom: 5, left: 10, right: 10 },
+    };
+  }, [perfValues, perfTimes]);
+
+  const ranges = [
+    { key: 7, label: '7天' },
+    { key: 15, label: '15天' },
+    { key: 30, label: '30天' },
+  ];
+
+  return (
+    <div className="plan-quota-section">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, flexWrap: 'wrap', gap: 8 }}>
+        <Text strong style={{ fontSize: 14 }}>系统健康度</Text>
+        <div style={{ display: 'flex', gap: 4 }}>
+          {ranges.map((r) => (
+            <Button key={r.key} size='small' type={range === r.key ? 'primary' : 'tertiary'} onClick={() => setRange(r.key)}>
+              {r.label}
+            </Button>
+          ))}
+        </div>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 24, marginBottom: 8 }}>
+        <div>
+          <Text type='tertiary' size='small'>平均速度</Text>
+          <span style={{ fontSize: 20, fontWeight: 600, marginLeft: 8 }}>{avgSpeed}</span>
+          <Text type='tertiary' size='small'> tokens/s</Text>
+        </div>
+        <div>
+          <Text type='tertiary' size='small'>成功率</Text>
+          <span style={{ fontSize: 20, fontWeight: 600, marginLeft: 8 }}>{avgRate}%</span>
+        </div>
+      </div>
+      {loading ? (
+        <div style={{ textAlign: 'center', padding: '40px 0' }}><Spin /></div>
+      ) : vchartSpec ? (
+        <VChart spec={vchartSpec} />
+      ) : (
+        <div style={{ textAlign: 'center', padding: '20px 0', color: 'var(--semi-color-text-2)' }}>暂无数据</div>
+      )}
+    </div>
+  );
+};
+
 const isGlmPlan = (planName) => planName === 'glm-coding-plan' || planName === 'glm-coding-plan-international';
 
 const PlanQuotaModal = ({ visible, onCancel, channel, onRefresh }) => {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [quotaData, setQuotaData] = useState(null);
+  const bodyRef = useRef(null);
 
   const fetchQuotaData = useCallback(async () => {
     if (!channel?.id) return;
@@ -324,6 +563,11 @@ const PlanQuotaModal = ({ visible, onCancel, channel, onRefresh }) => {
   const planDisplayName = quotaData?.plan_name ? PLAN_DISPLAY_NAMES[quotaData.plan_name] || quotaData.plan_name : '';
   const hasRealData = quotaData && isGlmPlan(quotaData.plan_name) && quotaData.product_name;
 
+  const isNewPlan = quotaData?.plan_version === '新';
+
+  // 根据套餐版本决定卡片列数
+  const cardColumns = isNewPlan ? 4 : 3;
+
   const formatResetTime = (timeStr) => {
     if (!timeStr) return '';
     try {
@@ -353,16 +597,18 @@ const PlanQuotaModal = ({ visible, onCancel, channel, onRefresh }) => {
           <Button type='primary' onClick={onCancel}>{t('关闭')}</Button>
         </div>
       }
-      width={580}
+      width='50vw'
       centered
+      style={{ minWidth: 360, maxWidth: 900 }}
+      bodyStyle={{ maxHeight: 'calc(85vh - 120px)', overflowY: 'auto', padding: '16px 20px' }}
     >
       {loading ? (
         <div style={{ textAlign: 'center', padding: '40px 0' }}><Spin size='large' /></div>
       ) : hasRealData ? (
-        <div style={{ padding: '8px 0' }}>
+        <div className="plan-quota-body" ref={bodyRef}>
           {/* 套餐基本信息 */}
-          <div style={{ padding: 16, border: '1px solid var(--semi-color-border)', borderRadius: 8, marginBottom: 12 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+          <div className="plan-quota-info-card">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, flexWrap: 'wrap', gap: 8 }}>
               <Title heading={5} style={{ margin: 0 }}>{quotaData.product_name}</Title>
               <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                 <PlanVersionTag version={quotaData.plan_version} />
@@ -380,19 +626,26 @@ const PlanQuotaModal = ({ visible, onCancel, channel, onRefresh }) => {
             </div>
           </div>
 
-          {/* 限额卡片 */}
-          {quotaData.weekly_limit && (
-            <LimitCard title='每周限额' data={quotaData.weekly_limit}
-              resetLabel={formatResetTime(quotaData.weekly_limit.next_reset_time) ? `下次重置: ${formatResetTime(quotaData.weekly_limit.next_reset_time)}` : ''} />
-          )}
-          {quotaData.token_limit && (
-            <LimitCard title='每5小时限额' data={quotaData.token_limit}
-              resetLabel={formatHourReset(quotaData.token_limit.next_reset_time)} />
-          )}
-          <McpLimitCard data={quotaData.mcp_tool_limit} />
+          {/* 限额卡片网格 */}
+          <div className={`plan-quota-grid plan-quota-grid-${cardColumns}`}>
+            {quotaData.weekly_limit && (
+              <LimitCard title='每周限额' data={quotaData.weekly_limit}
+                resetLabel={formatResetTime(quotaData.weekly_limit.next_reset_time) ? `下次重置: ${formatResetTime(quotaData.weekly_limit.next_reset_time)}` : ''} />
+            )}
+            {quotaData.token_limit && (
+              <LimitCard title='每5小时限额' data={quotaData.token_limit}
+                resetLabel={formatHourReset(quotaData.token_limit.next_reset_time)} />
+            )}
+            {quotaData.mcp_tool_limit && (
+              <McpLimitCard data={quotaData.mcp_tool_limit} />
+            )}
+          </div>
 
           {/* 用量图表 */}
           <UsageChart channelId={channel?.id} />
+
+          {/* 系统健康度图表 */}
+          <PerformanceChart channelId={channel?.id} />
         </div>
       ) : (
         <div style={{ padding: '16px 0' }}>
