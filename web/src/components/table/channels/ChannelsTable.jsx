@@ -62,6 +62,11 @@ const ChannelsTable = (channelsData) => {
     // Multi-key management
     setShowMultiKeyManageModal,
     setCurrentMultiKeyChannel,
+    // Plan quota query
+    setShowPlanQuotaModal,
+    setCurrentPlanChannel,
+    // 风控检测
+    checkGlmRiskStatus,
   } = channelsData;
 
   const isTagParent = useCallback((record) => {
@@ -120,6 +125,9 @@ const ChannelsTable = (channelsData) => {
       checkOllamaVersion,
       setShowMultiKeyManageModal,
       setCurrentMultiKeyChannel,
+      setShowPlanQuotaModal,
+      setCurrentPlanChannel,
+      checkGlmRiskStatus,
     });
   }, [
     t,
@@ -142,6 +150,9 @@ const ChannelsTable = (channelsData) => {
     checkOllamaVersion,
     setShowMultiKeyManageModal,
     setCurrentMultiKeyChannel,
+    setShowPlanQuotaModal,
+    setCurrentPlanChannel,
+    checkGlmRiskStatus,
   ]);
 
   // Filter columns based on visibility settings
