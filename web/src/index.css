@@ -922,3 +922,69 @@ html.dark .with-pastel-balls::before {
   align-items: center;
   justify-content: center;
 }
+
+/* ==================== 套餐额度查询模态框 ==================== */
+
+/* 限额卡片 */
+.plan-quota-card {
+  padding: 12px;
+  border: 1px solid var(--semi-color-border);
+  border-radius: 8px;
+  background: var(--semi-color-bg-1);
+  transition: box-shadow 0.2s ease;
+}
+
+.plan-quota-card:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+/* 套餐基本信息卡片 */
+.plan-quota-info-card {
+  padding: 16px;
+  border: 1px solid var(--semi-color-border);
+  border-radius: 8px;
+  margin-bottom: 12px;
+  background: var(--semi-color-bg-1);
+}
+
+/* 限额卡片网格 - 默认4列(新套餐) */
+.plan-quota-grid {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.plan-quota-grid-4 {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.plan-quota-grid-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+/* 图表区域分隔 */
+.plan-quota-section {
+  border-top: 1px solid var(--semi-color-border);
+  padding-top: 12px;
+  margin-top: 4px;
+}
+
+/* ==================== 套餐额度查询响应式 ==================== */
+
+/* 中等屏幕 (平板) */
+@media (max-width: 1024px) {
+  .plan-quota-grid-4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .plan-quota-grid-3 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* 小屏幕 (手机) */
+@media (max-width: 640px) {
+  .plan-quota-grid-4,
+  .plan-quota-grid-3 {
+    grid-template-columns: 1fr;
+  }
+}
