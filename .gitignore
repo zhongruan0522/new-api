@@ -28,3 +28,6 @@ data/
 .gomodcache*/
 null
 nul
+
+# Keep reference projects local-only and out of Git.
+参考项目/
