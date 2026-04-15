@@ -1,0 +1,6 @@
+{
+  "title": "ウィキ",
+  "description": "New APIプロジェクトドキュメントと基礎知識",
+  "icon": "BookOpen",
+  "pages": ["basic-concepts", "project-records"]
+}

@@ -1,0 +1,53 @@
+---
+title: LangBot - インスタントメッセージングボット開発プラットフォーム
+---
+
+<Callout type="info">
+  LangBot
+  はオープンソースのインスタントメッセージングボット開発プラットフォームで、飛書、釘釘、微信、QQ、Telegram、Discord、Slack
+  など、様々なインスタントメッセージングプラットフォームをサポートしています。世界の主要なAIモデルに接続し、ナレッジベース、エージェント、MCPなどの多様なAI
+  アプリケーション機能をサポートし、NewAPIに完全に適合しています。
+</Callout>
+
+    - 公式サイト：`<https://langbot.app/>`
+    - ダウンロード：`<https://github.com/langbot-app/LangBot/releases>`
+    - 公式ドキュメント：`<https://docs.langbot.app/>`
+    - オープンソースリポジトリ：`<https://github.com/langbot-app/LangBot>`
+
+## NewAPIとの連携
+
+LangBot は、ローカルにデプロイされたNewAPIと、NewAPIを使用して構築されたサードパーティのNewAPIサービスへの連携をサポートしています。
+
+### 使用方法
+
+1.  NewAPIからAPIキーを取得します
+    ![获取 API key](/assets/langbot/get_api_key.png)
+
+        ローカルにデプロイされたNewAPIの場合は、ご自身でAPIアドレスを設定してください（[コンテナネットワーク接続](https://docs.langbot.app/ja/workshop/network-details.html)を参照）。サードパーティのNewAPIサービスを使用する場合は、ページからアドレスをコピーできます。注意：アドレスの後に`/v1`を追加する必要があります。
+
+2.  LangBotでモデルを追加し、NewAPIプロバイダーを選択し、対応するAPIキーとAPIアドレスを入力します
+    ![添加 NewAPI 模型](/assets/langbot/add_newapi_model.png)
+
+3.  パイプラインでモデルを選択します
+
+    ![选择模型](/assets/langbot/select_model.png)
+
+4.  会話デバッグで会話するか、パイプラインにバインドされたボットと会話することで使用できます
+
+    ![对话](/assets/langbot/debug_chat.png)
+
+    ![微信对话](/assets/langbot/wechat.png)
+
+    ボットのデプロイと設定については、[ボットのデプロイ](https://docs.langbot.app/ja/deploy/platforms/readme.html)を参照してください。
+
+### LangBotナレッジベースの使用
+
+LangBot はNewAPIの埋め込みモデルの使用をサポートしており、これをナレッジベースのベクトルモデルとして利用できます。
+
+1. LangBotで埋め込みモデルを追加し、NewAPIプロバイダーを選択します
+   ![添加嵌入模型](/assets/langbot/add_embedding_model.png)
+
+2. 新しいナレッジベースを作成する際に埋め込みモデルを選択します
+   ![使用嵌入模型](/assets/langbot/use_embedding_model.png)
+
+その他の使用方法については、LangBot公式ドキュメントを参照してください：`<https://docs.langbot.app/>`

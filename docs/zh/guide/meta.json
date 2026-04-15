@@ -1,0 +1,23 @@
+{
+  "title": "使用指南",
+  "description": "快速开始和基础使用教程",
+  "icon": "BookOpen",
+  "root": true,
+  "pages": [
+    "---介绍---",
+    "../index",
+    "wiki/basic-concepts/project-introduction",
+    "wiki/basic-concepts/features-introduction",
+    "wiki/basic-concepts/technical-architecture",
+    "wiki/basic-concepts/analytics-setup",
+    "wiki/basic-concepts/performance-analysis",
+    "wiki/changelog",
+    "wiki/special-thanks",
+    "---功能指南---",
+    "home",
+    "console",
+    "pricing",
+    "document",
+    "about"
+  ]
+}

@@ -1,0 +1,88 @@
+---
+title: AI Applications
+description: Supported AI applications and integration solutions
+---
+
+import { Card, Cards } from 'fumadocs-ui/components/card';
+import {
+  Cherry,
+  Sparkles,
+  Terminal,
+  BookOpen,
+  MessageCircle,
+  Languages,
+  Bot,
+} from 'lucide-react';
+
+## Overview
+
+New API is compatible with various popular AI applications and tools. Below is a list of verified supported applications and their configuration guides.
+
+## Supported Applications
+
+<Cards>
+  <Card
+    icon={<Sparkles />}
+    title="AionUi"
+    description="Free, local, open-source 24/7 Cowork and OpenClaw for Gemini CLI, Claude Code, Codex, OpenCode, Qwen Code, Goose CLI, Auggie, and more."
+    href="/en/docs/apps/aionui"
+  />
+  <Card
+    icon={<Cherry />}
+    title="Cherry Studio"
+    description="A powerful AI assistant client that supports multi-model conversations."
+    href="/en/docs/apps/cherry-studio"
+  />
+  <Card
+    icon={<Terminal />}
+    title="Claude Code"
+    description="An Anthropic Claude-powered code editor integration."
+    href="/en/docs/apps/claude-code"
+  />
+  <Card
+    icon={<Terminal />}
+    title="Codex CLI"
+    description="A command-line interface AI code assistant tool."
+    href="/en/docs/apps/codex-cli"
+  />
+  <Card
+    icon={<Bot />}
+    title="Factory Droid CLI"
+    description="An AI agent tool for automating workflows."
+    href="/en/docs/apps/factory-droid-cli"
+  />
+  <Card
+    icon={<BookOpen />}
+    title="Fluent Read"
+    description="An AI-powered smart reading and translation assistant."
+    href="/en/docs/apps/fluent-read"
+  />
+  <Card
+    icon={<MessageCircle />}
+    title="LangBot"
+    description="A large language model-based chatbot framework."
+    href="/en/docs/apps/langbot"
+  />
+  <Card
+    icon={<Languages />}
+    title="Luna Translator"
+    description="A real-time translation tool for games and documents."
+    href="/en/docs/apps/luna-translator"
+  />
+  <Card
+    icon={<Bot />}
+    title="AstrBot"
+    description="An open-source, all-in-one Agent chatbot platform."
+    href="/en/docs/apps/astrbot"
+  />
+</Cards>
+
+## Integration Guide
+
+Most applications only require configuring the following information to connect to New API:
+
+1.  **API Address**: Your New API service address
+2.  **API Key**: The Token generated in the New API console
+3.  **Model Name**: Select the model to use
+
+For specific configuration steps, please refer to the detailed documentation of each application.

@@ -1,0 +1,15 @@
+{
+  "title": "设置",
+  "pages": [
+    "system-settings",
+    "model-settings",
+    "rate-settings",
+    "rate-limit-settings",
+    "dashboard-settings",
+    "chat-settings",
+    "drawing-settings",
+    "payment-settings",
+    "operation-settings",
+    "other-settings"
+  ]
+}

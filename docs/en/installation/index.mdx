@@ -1,0 +1,84 @@
+---
+title: Installation & Deployment
+description: Choose the deployment method that suits you
+---
+
+import { Card, Cards } from 'fumadocs-ui/components/card';
+import {
+  Container,
+  Boxes,
+  Server,
+  Network,
+  Code2,
+  Settings,
+  RefreshCw,
+  FileCode,
+} from 'lucide-react';
+
+## Overview
+
+New API supports multiple deployment methods. You can choose the most suitable solution based on your technical background and usage scenario.
+
+## Deployment Methods
+
+<Cards>
+  <Card
+    icon={<Boxes />}
+    title="Docker Compose Deployment"
+    description="Orchestrate multiple services using Docker Compose, suitable for production environments."
+    href="/en/docs/installation/deployment-methods/docker-compose-installation"
+  />
+  <Card
+    icon={<Container />}
+    title="Docker Single Container Deployment"
+    description="Quick deployment using Docker image, suitable for personal use."
+    href="/en/docs/installation/deployment-methods/docker-installation"
+  />
+  <Card
+    icon={<Server />}
+    title="1Panel Deployment"
+    description="Quick deployment via 1Panel graphical interface."
+    href="/en/docs/installation/deployment-methods/1panel-installation"
+  />
+  <Card
+    icon={<Server />}
+    title="Baota Panel Deployment"
+    description="Quick deployment via Baota Panel graphical interface."
+    href="/en/docs/installation/deployment-methods/bt-docker-installation"
+  />
+  <Card
+    icon={<Network />}
+    title="Cluster Deployment Mode"
+    description="Multi-node distributed deployment for high availability and load balancing."
+    href="/en/docs/installation/deployment-methods/cluster-deployment"
+  />
+  <Card
+    icon={<Code2 />}
+    title="Local Development Deployment"
+    description="Suitable for developers contributing code and customizing features."
+    href="/en/docs/installation/deployment-methods/local-development"
+  />
+</Cards>
+
+## Configuration & Maintenance
+
+<Cards>
+  <Card
+    icon={<FileCode />}
+    title="docker-compose.yml Configuration"
+    description="Detailed explanation of Docker Compose configuration file parameters."
+    href="/en/docs/installation/config-maintenance/docker-compose-yml"
+  />
+  <Card
+    icon={<Settings />}
+    title="Environment Variables Configuration"
+    description="Complete environment variables configuration guide and best practices."
+    href="/en/docs/installation/config-maintenance/environment-variables"
+  />
+  <Card
+    icon={<RefreshCw />}
+    title="System Update"
+    description="Learn how to safely update New API to the latest version."
+    href="/en/docs/installation/config-maintenance/system-update"
+  />
+</Cards>

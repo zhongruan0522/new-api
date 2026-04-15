@@ -1,0 +1,223 @@
+---
+title: Docker Compose 設定説明
+---
+
+このドキュメントでは、New API の Docker Compose 設定オプションについて詳しく説明します。これらのオプションは、さまざまなデプロイシナリオで使用できます。
+
+## 基本的な設定構造
+
+Docker Compose 設定ファイル `docker-compose.yml` は、New API サービスとその依存サービス（MySQL、Redis など）のデプロイ方法を定義します。
+
+## 標準設定（本番環境推奨）
+
+以下は、ほとんどの本番環境に適した標準的な Docker Compose 設定です。
+
+```yaml
+# New-API Docker Compose 設定
+#
+# クイックスタート:
+#   1. docker-compose up -d
+#   2. http://localhost:3000 でアクセス
+#
+# PostgreSQL の代わりに MySQL を使用する場合:
+#   1. postgres サービスと SQL_DSN 15行目をコメントアウト
+#   2. mysql サービスと SQL_DSN 16行目をコメント解除
+#   3. depends_on (28行目) の mysql をコメント解除
+#   4. volumes セクション (64行目) の mysql_data をコメント解除
+#
+# ⚠️ 重要: 本番環境にデプロイする前に、すべてのデフォルトパスワードを変更してください！
+
+version: '3.4' # 古い Docker バージョンとの互換性のため
+
+services:
+  new-api:
+    image: calciumion/new-api:latest
+    container_name: new-api
+    restart: always
+    command: --log-dir /app/logs
+    ports:
+      - '3000:3000'
+    volumes:
+      - ./data:/data
+      - ./logs:/app/logs
+    environment:
+      - SQL_DSN=postgresql://root:123456@postgres:5432/new-api # ⚠️ 重要: 本番環境ではこのパスワードを変更してください！
+      #      - SQL_DSN=root:123456@tcp(mysql:3306)/new-api  # mysql サービスを指します。MySQL を使用する場合はコメント解除してください
+      - REDIS_CONN_STRING=redis://redis
+      - TZ=Asia/Shanghai
+      - ERROR_LOG_ENABLED=true # エラーログ記録を有効にするかどうか
+      - BATCH_UPDATE_ENABLED=true # バッチ更新を有効にするかどうか
+    #      - STREAMING_TIMEOUT=300  # ストリーミングモードの無応答タイムアウト時間（秒単位）、デフォルトは120秒。空の補完が発生する場合は、より大きな値に設定してみてください。
+    #      - SESSION_SECRET=random_string  # マルチノードデプロイメント時に設定。このランダム文字列は必ず変更してください！！
+    #      - SYNC_FREQUENCY=60  # 定期的なデータベース同期が必要な場合はコメント解除してください
+
+    depends_on:
+      - redis
+      - postgres
+    #      - mysql  # MySQL を使用する場合はコメント解除してください
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          "wget -q -O - http://localhost:3000/api/status | grep -o '\"success\":\\s*true' || exit 1",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  redis:
+    image: redis:latest
+    container_name: redis
+    restart: always
+
+  postgres:
+    image: postgres:15
+    container_name: postgres
+    restart: always
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: 123456 # ⚠️ 重要: 本番環境ではこのパスワードを変更してください！
+      POSTGRES_DB: new-api
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+#    ports:
+#      - "5432:5432"  # Docker の外部から PostgreSQL にアクセスする必要がある場合はコメント解除してください
+
+#  mysql:
+#    image: mysql:8.2
+#    container_name: mysql
+#    restart: always
+#    environment:
+#      MYSQL_ROOT_PASSWORD: 123456  # ⚠️ 重要: 本番環境ではこのパスワードを変更してください！
+#      MYSQL_DATABASE: new-api
+#    volumes:
+#      - mysql_data:/var/lib/mysql
+#    ports:
+#      - "3306:3306"  # Docker の外部から MySQL にアクセスする必要がある場合はコメント解除してください
+
+volumes:
+  pg_data:
+#  mysql_data:
+```
+
+## 簡易設定（テスト環境向け）
+
+テスト目的のみの場合は、New API サービス自体のみを含む以下の簡易バージョンを使用できます。
+
+```yaml
+services:
+  new-api:
+    image: calciumion/new-api:latest
+    container_name: new-api
+    restart: always
+    ports:
+      - '3000:3000'
+    environment:
+      - TZ=Asia/Shanghai
+    volumes:
+      - ./data:/data
+```
+
+## 設定説明
+
+### New API サービス設定
+
+| パラメータ       | 説明                                                                                                 |
+| ---------------- | ---------------------------------------------------------------------------------------------------- |
+| `image`          | イメージ名。通常は最新バージョンを取得するために`calciumion/new-api:latest`を使用します。            |
+| `container_name` | コンテナ名。カスタマイズ可能です。                                                                   |
+| `restart`        | コンテナの再起動ポリシー。サービスの自動再起動を確実にするため、`always`に設定することを推奨します。 |
+| `command`        | 起動コマンド。起動パラメータをカスタマイズできます。                                                 |
+| `ports`          | ポートマッピング。デフォルトでは、コンテナ内の3000番ポートをホストの3000番ポートにマッピングします。 |
+| `volumes`        | データボリュームマッピング。データの永続化を保証します。                                             |
+| `environment`    | 環境変数設定。New API の動作を設定するために使用します。                                             |
+| `depends_on`     | 依存サービス。正しい順序で起動することを保証します。                                                 |
+| `healthcheck`    | ヘルスチェック設定。サービスの状態を監視するために使用します。                                       |
+
+### 環境変数説明
+
+New API は複数の環境変数設定をサポートしており、以下はよく使用されるものです。
+
+| 環境変数            | 説明                                                 | 示例                                  |
+| ------------------- | ---------------------------------------------------- | ------------------------------------- |
+| `SQL_DSN`           | データベース接続文字列                               | `root:123456@tcp(mysql:3306)/new-api` |
+| `REDIS_CONN_STRING` | Redis 接続文字列                                     | `redis://redis`                       |
+| `TZ`                | タイムゾーン設定                                     | `Asia/Shanghai`                       |
+| `SESSION_SECRET`    | セッションキー（マルチノードデプロイメントでは必須） | `your_random_string`                  |
+| `NODE_TYPE`         | ノードタイプ（マスター/スレーブ）                    | `master`または`slave`                 |
+| `SYNC_FREQUENCY`    | 同期頻度（秒）                                       | `60`                                  |
+
+より完全な環境変数リストについては、[環境変数設定ガイド](/ja/docs/installation/config-maintenance/environment-variables)を参照してください。
+
+## マルチノードデプロイメント設定
+
+マルチノードデプロイメントシナリオでは、マスターノードとスレーブノードの設定が若干異なります。
+
+### マスターノード設定
+
+```yaml
+services:
+  new-api-master:
+    image: calciumion/new-api:latest
+    container_name: new-api-master
+    restart: always
+    ports:
+      - '3000:3000'
+    environment:
+      - SQL_DSN=root:123456@tcp(mysql:3306)/new-api
+      - REDIS_CONN_STRING=redis://redis
+      - SESSION_SECRET=your_unique_session_secret
+      - CRYPTO_SECRET=your_unique_crypto_secret
+      - TZ=Asia/Shanghai
+    volumes:
+      - ./data:/data
+```
+
+### スレーブノード設定
+
+```yaml
+services:
+  new-api-slave:
+    image: calciumion/new-api:latest
+    container_name: new-api-slave
+    restart: always
+    ports:
+      - '3001:3000' # ポートマッピングが異なることに注意
+    environment:
+      - SQL_DSN=root:123456@tcp(mysql:3306)/new-api
+      - REDIS_CONN_STRING=redis://redis
+      - SESSION_SECRET=your_unique_session_secret # マスターノードと同じである必要があります
+      - CRYPTO_SECRET=your_unique_crypto_secret # マスターノードと同じである必要があります
+      - NODE_TYPE=slave # スレーブノードとして設定
+      - SYNC_FREQUENCY=60
+      - TZ=Asia/Shanghai
+    volumes:
+      - ./data-slave:/data
+```
+
+## 使用方法
+
+### インストール
+
+設定を`docker-compose.yml`ファイルとして保存し、同じディレクトリで以下を実行します。
+
+```bash
+docker compose up -d
+```
+
+### ログの確認
+
+```bash
+docker compose logs -f
+```
+
+### サービスの停止
+
+```bash
+docker compose down
+```
+
+<Callout type="info" title="ヒント">
+  Docker Compose のより詳しい使用方法については、[Docker Compose
+  インストールガイド](/ja/docs/installation/deployment-methods/docker-compose-installation)を参照してください。
+</Callout>

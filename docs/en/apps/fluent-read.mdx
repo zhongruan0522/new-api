@@ -1,0 +1,78 @@
+---
+title: FluentRead - Open Source Translation Plugin
+---
+
+<Callout type="info" title="Chat Settings Options">
+  In the System Settings -> Chat Settings of the New API console, you can add
+  the following shortcut options for easy one-click population to FluentRead on
+  the Token Management page:
+</Callout>
+
+    ```json
+    { "流畅阅读": "fluentread" }
+    ```
+
+<Callout type="info">
+  🌊 FluentRead is an open-source browser translation plugin dedicated to
+  providing a native-like reading experience.
+</Callout>
+
+    - Project Address: `<https://github.com/Bistutu/FluentRead>`
+
+## 🌟 Core Features
+
+### Smart Translation Engine
+
+- **Multi-Engine Support**: Supports 20+ translation engines
+- **Traditional Translation**: Microsoft Translate, Google Translate, DeepL Translate, etc.
+- **AI Large Models**: OpenAI, DeepSeek, Kimi, Ollama, etc.
+- **Custom Engine**: Supports custom translation service configuration
+
+### Immersive Reading Experience
+
+- **Bilingual Comparison**: Original and translated text displayed side-by-side for easier reading
+- **Selection Translation**: Select any text to get instant translation results
+- **One-Click Copy**: Quickly copy translated text to improve reading efficiency
+- **Full-Page Translation**: One-click translation of the entire webpage with a floating button, no page refresh required
+
+### Privacy and Customization
+
+- **Privacy Protection**: All data stored locally, open-source and transparent code
+- **High Customization**: Rich customization options to meet different scenario needs
+- **Completely Free**: Open-source and free, non-commercial project
+
+## 📦 Installation Methods
+
+| Browser     | Installation Method                                                                                                                                                                                                                                   |
+| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Chrome**  | [Chrome Web Store](https://chromewebstore.google.com/detail/%E6%B5%81%E7%95%85%E9%98%85%E8%AF%BB/djnlaiohfaaifbibleebjggkghlmcpcj?hl=zh-CN&authuser=0) \| [Domestic Mirror](https://www.crxsoso.com/webstore/detail/djnlaiohfaaifbibleebjggkghlmcpcj) |
+| **Edge**    | [Edge Add-ons Store](https://microsoftedge.microsoft.com/addons/detail/%E6%B5%81%E7%95%85%E9%98%85%E8%AF%BB/kakgmllfpjldjhcnkghpplmlbnmcoflp?hl=zh-CN)                                                                                                |
+| **Firefox** | [Firefox Add-ons Store](https://addons.mozilla.org/zh-CN/firefox/addon/%E6%B5%81%E7%95%85%E9%98%85%E8%AF%BB/)                                                                                                                                         |
+
+## 🚀 Configuration Methods
+
+### Import Configuration from New API Console (Recommended)
+
+After the FluentRead plugin is installed in your browser, opening the New API console -> Token Management page will display a prompt to add FluentRead.
+
+![添加提示](/assets/fluentread/hint.png)
+
+After selecting a model, click 'One-click fill to FluentRead', and a confirmation window will pop up. Check if the corresponding information is correct.
+
+![确认](/assets/fluentread/confirm.png)
+
+After confirming the import, the New API configuration in FluentRead will be enabled.
+
+![配置结果](/assets/fluentread/fluentread.png)
+
+### Manually Fill in Configuration in FluentRead
+
+![手动配置](/assets/fluentread/configuration.png)
+
+| Configuration Item  | Content                                 |
+| ------------------- | --------------------------------------- |
+| Translation Service | NewAPI                                  |
+| Access Token        | NewAPI Key                              |
+| NewAPI Endpoint     | NewAPI Deployment Address (without /v1) |
+| Model               | Select from list, or custom model       |
+| Custom Model        | Model Name                              |
