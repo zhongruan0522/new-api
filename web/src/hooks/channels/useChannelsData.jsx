@@ -119,6 +119,51 @@ export const useChannelsData = () => {
   const [showPlanQuotaModal, setShowPlanQuotaModal] = useState(false);
   const [currentPlanChannel, setCurrentPlanChannel] = useState(null);
 
+  // 风控检测
+  const checkGlmRiskStatus = async (record) => {
+    try {
+      const res = await API.get(`/api/channel/plan/glm/risk/${record.id}`);
+      const { success, message, data } = res.data;
+      if (success && data) {
+        if (data.is_risk) {
+          Modal.warning({
+            title: t('风控检测'),
+            content: (
+              <div>
+                <p style={{ marginBottom: 8 }}>
+                  检测到账号存在多人使用行为，部分订阅权益已被限制。恢复正常使用后，系统将在2个工作日内自动解除。
+                </p>
+                <p>
+                  申诉表单：
+                  <a
+                    href="https://zhipu-ai.feishu.cn/share/base/form/shrcnPhrmp7eeMttK2M50Y4i0oc"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    https://zhipu-ai.feishu.cn/share/base/form/shrcnPhrmp7eeMttK2M50Y4i0oc
+                  </a>
+                </p>
+              </div>
+            ),
+            centered: true,
+            okText: t('知道了'),
+          });
+        } else {
+          Modal.success({
+            title: t('风控检测'),
+            content: t('账户良好'),
+            centered: true,
+            okText: t('确定'),
+          });
+        }
+      } else {
+        showError(message || t('风控检测失败'));
+      }
+    } catch (error) {
+      showError(error.message || t('网络错误'));
+    }
+  };
+
   // Refs
   const requestCounter = useRef(0);
   const allSelectingRef = useRef(false);
@@ -1225,6 +1270,9 @@ export const useChannelsData = () => {
     setShowPlanQuotaModal,
     currentPlanChannel,
     setCurrentPlanChannel,
+
+    // 风控检测
+    checkGlmRiskStatus,
 
     // Form
     formApi,

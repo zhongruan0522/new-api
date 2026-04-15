@@ -65,6 +65,8 @@ const ChannelsTable = (channelsData) => {
     // Plan quota query
     setShowPlanQuotaModal,
     setCurrentPlanChannel,
+    // 风控检测
+    checkGlmRiskStatus,
   } = channelsData;
 
   const isTagParent = useCallback((record) => {
@@ -125,6 +127,7 @@ const ChannelsTable = (channelsData) => {
       setCurrentMultiKeyChannel,
       setShowPlanQuotaModal,
       setCurrentPlanChannel,
+      checkGlmRiskStatus,
     });
   }, [
     t,
@@ -149,6 +152,7 @@ const ChannelsTable = (channelsData) => {
     setCurrentMultiKeyChannel,
     setShowPlanQuotaModal,
     setCurrentPlanChannel,
+    checkGlmRiskStatus,
   ]);
 
   // Filter columns based on visibility settings
