@@ -519,13 +519,6 @@ const EditModelModal = (props) => {
                       size='large'
                     />
                   </Col>
-                  <Col span={24}>
-                    <Form.Switch
-                      field='status'
-                      label={t('状态')}
-                      size='large'
-                    />
-                  </Col>
                 </Row>
               </Card>
             </div>
