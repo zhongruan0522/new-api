@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync"
 
 	"github.com/bytedance/gopkg/util/gopool"
 	"github.com/zhongruan0522/new-api/common"
@@ -16,6 +17,15 @@ const maxUserTokens = 1000
 
 // tokenLoadGroup 合并并发的冷缓存 token 查询，避免启动瞬间把相同 key 打到数据库上。
 var tokenLoadGroup singleflight.Group
+
+// tokenResetLocks 令牌密钥重置互斥锁，按 token ID 串行化并发重置请求，
+// 防止同一令牌同时出现多个有效 key。
+var tokenResetLocks sync.Map
+
+func getTokenResetLock(id int) *sync.Mutex {
+	v, _ := tokenResetLocks.LoadOrStore(id, &sync.Mutex{})
+	return v.(*sync.Mutex)
+}
 
 type Token struct {
 	Id                 int            `json:"id"`
@@ -449,6 +459,12 @@ func ResetTokenKey(id int, userId int) (newKey string, err error) {
 	if id == 0 || userId == 0 {
 		return "", errors.New("id 或 userId 为空！")
 	}
+
+	// 按 token ID 加锁，串行化同一令牌的并发重置请求
+	mu := getTokenResetLock(id)
+	mu.Lock()
+	defer mu.Unlock()
+
 	// 先通过 id+userId 查询，验证令牌归属
 	token := Token{Id: id, UserId: userId}
 	err = DB.First(&token, "id = ? and user_id = ?", id, userId).Error
@@ -467,10 +483,17 @@ func ResetTokenKey(id int, userId int) (newKey string, err error) {
 		return "", err
 	}
 	token.Key = newKey
-	// 异步清理旧 Redis 缓存并设置新缓存
-	if shouldUpdateRedis(true, err) {
+
+	// 同步删除旧 key 的 Redis 缓存，确保泄露的旧密钥立即失效
+	if common.RedisEnabled {
+		if delErr := cacheDeleteToken(oldKey); delErr != nil {
+			common.SysError("failed to delete old token cache after reset key: " + delErr.Error())
+		}
+	}
+
+	// 异步写入新缓存
+	if shouldUpdateRedis(true, nil) {
 		gopool.Go(func() {
-			_ = cacheDeleteToken(oldKey)
 			if e := cacheSetToken(token); e != nil {
 				common.SysLog("failed to update token cache after reset key: " + e.Error())
 			}
