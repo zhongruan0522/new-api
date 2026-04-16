@@ -413,10 +413,6 @@ func SyncUpstreamModels(c *gin.Context) {
 			// 应用字段覆盖（事务）
 			_ = model.DB.Transaction(func(tx *gorm.DB) error {
 				needUpdate := false
-				if containsField(ow.Fields, "description") {
-					local.Description = up.Description
-					needUpdate = true
-				}
 				if containsField(ow.Fields, "icon") {
 					local.Icon = up.Icon
 					needUpdate = true
@@ -594,9 +590,6 @@ func SyncUpstreamPreview(c *gin.Context) {
 			continue
 		}
 		fields := make([]conflictField, 0, 6)
-		if strings.TrimSpace(local.Description) != strings.TrimSpace(up.Description) {
-			fields = append(fields, conflictField{Field: "description", Local: local.Description, Upstream: up.Description})
-		}
 		if strings.TrimSpace(local.Icon) != strings.TrimSpace(up.Icon) {
 			fields = append(fields, conflictField{Field: "icon", Local: local.Icon, Upstream: up.Icon})
 		}

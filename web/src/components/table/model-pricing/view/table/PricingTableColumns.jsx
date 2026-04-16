@@ -28,7 +28,6 @@ import {
 } from '../../../../../helpers';
 import {
   renderLimitedItems,
-  renderDescription,
 } from '../../../../common/ui/RenderUtils';
 import { useIsMobile } from '../../../../../hooks/common/useIsMobile';
 
@@ -167,12 +166,6 @@ export const getPricingTableColumns = ({
     sorter: (a, b) => a.quota_type - b.quota_type,
   };
 
-  const descriptionColumn = {
-    title: t('描述'),
-    dataIndex: 'description',
-    render: (text) => renderDescription(text, 200),
-  };
-
   const tagsColumn = {
     title: t('标签'),
     dataIndex: 'tags',
@@ -188,7 +181,6 @@ export const getPricingTableColumns = ({
   const baseColumns = [
     modelNameColumn,
     vendorColumn,
-    descriptionColumn,
     tagsColumn,
     quotaColumn,
   ];

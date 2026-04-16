@@ -15,7 +15,7 @@ import (
 type Vendor struct {
 	Id          int            `json:"id"`
 	Name        string         `json:"name" gorm:"size:128;not null;uniqueIndex:uk_vendor_name_delete_at,priority:1"`
-	Description string         `json:"description,omitempty" gorm:"type:text"`
+	Description string         `json:"-" gorm:"type:text"`
 	Icon        string         `json:"icon,omitempty" gorm:"type:varchar(128)"`
 	Status      int            `json:"status" gorm:"default:1"`
 	CreatedTime int64          `json:"created_time" gorm:"bigint"`
@@ -74,7 +74,7 @@ func SearchVendors(keyword string, offset int, limit int) ([]*Vendor, int64, err
 	db := DB.Model(&Vendor{})
 	if keyword != "" {
 		like := "%" + keyword + "%"
-		db = db.Where("name LIKE ? OR description LIKE ?", like, like)
+		db = db.Where("name LIKE ?", like)
 	}
 	var total int64
 	if err := db.Count(&total).Error; err != nil {
