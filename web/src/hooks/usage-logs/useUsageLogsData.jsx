@@ -388,18 +388,15 @@ export const useLogsData = () => {
           value: other.text_output,
         });
       }
-      if (other?.cache_tokens > 0) {
-        expandDataLocal.push({
-          key: t('缓存 Tokens'),
-          value: other.cache_tokens,
-        });
-      }
-      if (other?.cache_creation_tokens > 0) {
-        expandDataLocal.push({
-          key: t('缓存创建 Tokens'),
-          value: other.cache_creation_tokens,
-        });
-      }
+      expandDataLocal.push({
+        key: t('Tokens'),
+        value: t('输入:{{input}} | 缓存创建: {{cacheCreation}} | 缓存读取: {{cacheRead}} | 输出:{{output}}', {
+          input: logs[i].prompt_tokens || 0,
+          cacheCreation: other?.cache_creation_tokens || 0,
+          cacheRead: other?.cache_tokens || 0,
+          output: logs[i].completion_tokens || 0,
+        }),
+      });
       if (logs[i].type === 2) {
         expandDataLocal.push({
           key: t('日志详情'),
