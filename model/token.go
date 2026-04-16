@@ -484,20 +484,14 @@ func ResetTokenKey(id int, userId int) (newKey string, err error) {
 	}
 	token.Key = newKey
 
-	// 同步删除旧 key 的 Redis 缓存，确保泄露的旧密钥立即失效
+	// 在锁内同步完成旧缓存删除 + 新缓存写入，确保任意时刻只有一个有效 key
 	if common.RedisEnabled {
 		if delErr := cacheDeleteToken(oldKey); delErr != nil {
 			common.SysError("failed to delete old token cache after reset key: " + delErr.Error())
 		}
-	}
-
-	// 异步写入新缓存
-	if shouldUpdateRedis(true, nil) {
-		gopool.Go(func() {
-			if e := cacheSetToken(token); e != nil {
-				common.SysLog("failed to update token cache after reset key: " + e.Error())
-			}
-		})
+		if setErr := cacheSetToken(token); setErr != nil {
+			common.SysError("failed to update token cache after reset key: " + setErr.Error())
+		}
 	}
 	return newKey, nil
 }
