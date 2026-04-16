@@ -443,6 +443,42 @@ func CountUserTokens(userId int) (int64, error) {
 	return total, err
 }
 
+// ResetTokenKey 重置令牌密钥，仅更新 key 字段，其他字段不变
+// 需要 userId 参数以验证令牌归属，防止越权操作
+func ResetTokenKey(id int, userId int) (newKey string, err error) {
+	if id == 0 || userId == 0 {
+		return "", errors.New("id 或 userId 为空！")
+	}
+	// 先通过 id+userId 查询，验证令牌归属
+	token := Token{Id: id, UserId: userId}
+	err = DB.First(&token, "id = ? and user_id = ?", id, userId).Error
+	if err != nil {
+		return "", err
+	}
+	// 生成新 key
+	newKey, err = common.GenerateKey()
+	if err != nil {
+		return "", err
+	}
+	oldKey := token.Key
+	// 更新数据库中的 key
+	err = DB.Model(&token).Update("key", newKey).Error
+	if err != nil {
+		return "", err
+	}
+	token.Key = newKey
+	// 异步清理旧 Redis 缓存并设置新缓存
+	if shouldUpdateRedis(true, err) {
+		gopool.Go(func() {
+			_ = cacheDeleteToken(oldKey)
+			if e := cacheSetToken(token); e != nil {
+				common.SysLog("failed to update token cache after reset key: " + e.Error())
+			}
+		})
+	}
+	return newKey, nil
+}
+
 // BatchDeleteTokens 删除指定用户的一组令牌，返回成功删除数量
 func BatchDeleteTokens(ids []int, userId int) (int, error) {
 	if len(ids) == 0 {

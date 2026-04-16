@@ -123,6 +123,28 @@ export const useTokensData = () => {
     }
   };
 
+  // Reset token key function
+  const resetTokenKey = async (id) => {
+    setLoading(true);
+    try {
+      const res = await API.put(`/api/token/${id}/key`);
+      const { success, message, data } = res.data;
+      if (success) {
+        showSuccess(t('密钥已重置！新密钥已生成'));
+        await refresh();
+        return data?.key || null;
+      } else {
+        showError(message);
+        return null;
+      }
+    } catch (error) {
+      showError(error.message);
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Manage token function (delete, enable, disable)
   const manageToken = async (id, action, record) => {
     setLoading(true);
@@ -355,6 +377,7 @@ export const useTokensData = () => {
     refresh,
     copyText,
     manageToken,
+    resetTokenKey,
     searchTokens,
     handlePageChange,
     handlePageSizeChange,
