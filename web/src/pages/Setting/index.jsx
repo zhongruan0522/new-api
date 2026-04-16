@@ -27,7 +27,6 @@ import {
   Gauge,
   Shapes,
   Cog,
-  MoreHorizontal,
   LayoutDashboard,
   Palette,
   CreditCard,
@@ -36,7 +35,6 @@ import {
 
 import SystemSetting from '../../components/settings/SystemSetting';
 import { isRoot } from '../../helpers';
-import OtherSetting from '../../components/settings/OtherSetting';
 import OperationSetting from '../../components/settings/OperationSetting';
 import RateLimitSetting from '../../components/settings/RateLimitSetting';
 import ModelSetting from '../../components/settings/ModelSetting';
@@ -144,16 +142,6 @@ const Setting = () => {
       ),
       content: <SystemSetting />,
       itemKey: 'system',
-    });
-    panes.push({
-      tab: (
-        <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-          <MoreHorizontal size={18} />
-          {t('其他设置')}
-        </span>
-      ),
-      content: <OtherSetting />,
-      itemKey: 'other',
     });
   }
   const onChangeTab = (key) => {

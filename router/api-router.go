@@ -192,6 +192,7 @@ func SetApiRouter(router *gin.Engine) {
 			tokenRoute.PUT("/", controller.UpdateToken)
 			tokenRoute.DELETE("/:id", controller.DeleteToken)
 			tokenRoute.POST("/batch", controller.DeleteTokenBatch)
+			tokenRoute.PUT("/:id/key", middleware.CriticalRateLimit(), controller.ResetTokenKey)
 		}
 
 		usageRoute := apiRouter.Group("/usage")

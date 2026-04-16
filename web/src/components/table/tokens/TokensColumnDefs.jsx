@@ -309,6 +309,7 @@ const renderOperations = (
   setEditingToken,
   setShowEdit,
   manageToken,
+  resetTokenKey,
   refresh,
   t,
 ) => {
@@ -336,6 +337,22 @@ const renderOperations = (
           {t('启用')}
         </Button>
       )}
+
+      <Button
+        type='warning'
+        size='small'
+        onClick={() => {
+          Modal.confirm({
+            title: t('确定是否要重置此令牌密钥？'),
+            content: t('重置后旧密钥将立即失效，此操作不可逆'),
+            onOk: async () => {
+              await resetTokenKey(record.id);
+            },
+          });
+        }}
+      >
+        {t('重置')}
+      </Button>
 
       <Button
         type='tertiary'
@@ -376,6 +393,7 @@ export const getTokensColumns = ({
   setShowKeys,
   copyText,
   manageToken,
+  resetTokenKey,
   setEditingToken,
   setShowEdit,
   refresh,
@@ -447,6 +465,7 @@ export const getTokensColumns = ({
           setEditingToken,
           setShowEdit,
           manageToken,
+          resetTokenKey,
           refresh,
           t,
         ),

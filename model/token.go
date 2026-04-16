@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync"
 
 	"github.com/bytedance/gopkg/util/gopool"
 	"github.com/zhongruan0522/new-api/common"
@@ -16,6 +17,15 @@ const maxUserTokens = 1000
 
 // tokenLoadGroup 合并并发的冷缓存 token 查询，避免启动瞬间把相同 key 打到数据库上。
 var tokenLoadGroup singleflight.Group
+
+// tokenResetLocks 令牌密钥重置互斥锁，按 token ID 串行化并发重置请求，
+// 防止同一令牌同时出现多个有效 key。
+var tokenResetLocks sync.Map
+
+func getTokenResetLock(id int) *sync.Mutex {
+	v, _ := tokenResetLocks.LoadOrStore(id, &sync.Mutex{})
+	return v.(*sync.Mutex)
+}
 
 type Token struct {
 	Id                 int            `json:"id"`
@@ -441,6 +451,49 @@ func CountUserTokens(userId int) (int64, error) {
 	var total int64
 	err := DB.Model(&Token{}).Where("user_id = ?", userId).Count(&total).Error
 	return total, err
+}
+
+// ResetTokenKey 重置令牌密钥，仅更新 key 字段，其他字段不变
+// 需要 userId 参数以验证令牌归属，防止越权操作
+func ResetTokenKey(id int, userId int) (newKey string, err error) {
+	if id == 0 || userId == 0 {
+		return "", errors.New("id 或 userId 为空！")
+	}
+
+	// 按 token ID 加锁，串行化同一令牌的并发重置请求
+	mu := getTokenResetLock(id)
+	mu.Lock()
+	defer mu.Unlock()
+
+	// 先通过 id+userId 查询，验证令牌归属
+	token := Token{Id: id, UserId: userId}
+	err = DB.First(&token, "id = ? and user_id = ?", id, userId).Error
+	if err != nil {
+		return "", err
+	}
+	// 生成新 key
+	newKey, err = common.GenerateKey()
+	if err != nil {
+		return "", err
+	}
+	oldKey := token.Key
+	// 更新数据库中的 key
+	err = DB.Model(&token).Update("key", newKey).Error
+	if err != nil {
+		return "", err
+	}
+	token.Key = newKey
+
+	// 在锁内同步完成旧缓存删除 + 新缓存写入，确保任意时刻只有一个有效 key
+	if common.RedisEnabled {
+		if delErr := cacheDeleteToken(oldKey); delErr != nil {
+			common.SysError("failed to delete old token cache after reset key: " + delErr.Error())
+		}
+		if setErr := cacheSetToken(token); setErr != nil {
+			common.SysError("failed to update token cache after reset key: " + setErr.Error())
+		}
+	}
+	return newKey, nil
 }
 
 // BatchDeleteTokens 删除指定用户的一组令牌，返回成功删除数量
