@@ -76,6 +76,24 @@ var passthroughSkipHeaderNamesLower = map[string]struct{}{
 	"sec-websocket-protocol":   {},
 	"sec-websocket-version":    {},
 	"sec-websocket-extensions": {},
+
+	// IP-identifying headers — never forward client IPs to upstream providers to prevent privacy leaks.
+	"x-forwarded-for":     {},
+	"x-real-ip":           {},
+	"cf-connecting-ip":    {},
+	"true-client-ip":      {},
+	"forwarded":           {},
+	"x-forwarded-host":    {},
+	"x-forwarded-proto":   {},
+	"x-client-ip":         {},
+	"x-cluster-client-ip": {},
+	"x-originating-ip":    {},
+	"x-remote-ip":         {},
+	"x-remote-addr":       {},
+	"x-forwarded-server":  {},
+	"x-host":              {},
+	"x-proxy-user-ip":     {},
+	"via":                 {},
 }
 
 var headerPassthroughRegexCache sync.Map // map[string]*regexp.Regexp
