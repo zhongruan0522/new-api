@@ -35,7 +35,6 @@ const EditVendorModal = ({ visible, handleClose, refresh, editingVendor }) => {
 
   const getInitValues = () => ({
     name: '',
-    description: '',
     icon: '',
     status: true,
   });
@@ -137,15 +136,6 @@ const EditVendorModal = ({ visible, handleClose, refresh, editingVendor }) => {
               label={t('供应商名称')}
               placeholder={t('请输入供应商名称，如：OpenAI')}
               rules={[{ required: true, message: t('请输入供应商名称') }]}
-              showClear
-            />
-          </Col>
-          <Col span={24}>
-            <Form.TextArea
-              field='description'
-              label={t('描述')}
-              placeholder={t('请输入供应商描述')}
-              rows={3}
               showClear
             />
           </Col>

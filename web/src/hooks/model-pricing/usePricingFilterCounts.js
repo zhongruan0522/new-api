@@ -91,8 +91,6 @@ export const usePricingFilterCounts = ({
       if (
         !(
           model.model_name.toLowerCase().includes(term) ||
-          (model.description &&
-            model.description.toLowerCase().includes(term)) ||
           tags.includes(term) ||
           (model.vendor_name && model.vendor_name.toLowerCase().includes(term))
         )

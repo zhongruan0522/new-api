@@ -151,11 +151,6 @@ const PricingCardView = ({
     );
   };
 
-  // 获取模型描述
-  const getModelDescription = (record) => {
-    return record.description || '';
-  };
-
   // 渲染标签
   const renderTags = (record) => {
     // 计费类型标签（左边）
@@ -309,16 +304,6 @@ const PricingCardView = ({
                       />
                     )}
                   </div>
-                </div>
-
-                {/* 模型描述 - 占据剩余空间 */}
-                <div className='flex-1 mb-4'>
-                  <p
-                    className='text-xs line-clamp-2 leading-relaxed'
-                    style={{ color: 'var(--semi-color-text-2)' }}
-                  >
-                    {getModelDescription(model)}
-                  </p>
                 </div>
 
                 {/* 底部区域 */}

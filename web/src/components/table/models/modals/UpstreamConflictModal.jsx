@@ -36,7 +36,6 @@ import { IconSearch } from '@douyinfe/semi-icons';
 const { Text } = Typography;
 
 const FIELD_LABELS = {
-  description: '描述',
   icon: '图标',
   tags: '标签',
   vendor: '供应商',
