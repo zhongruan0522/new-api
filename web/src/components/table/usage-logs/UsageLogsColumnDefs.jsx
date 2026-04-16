@@ -36,7 +36,6 @@ import {
   renderModelTag,
   renderClaudeLogContent,
   renderLogContent,
-  renderModelPriceSimple,
   renderAudioModelPrice,
   renderClaudeModelPrice,
   renderModelPrice,
@@ -688,45 +687,28 @@ export const getLogsColumns = ({
           );
         }
 
-        let content = other?.claude
-          ? renderModelPriceSimple(
-              other.model_ratio,
-              other.model_price,
-              other.group_ratio,
-              other?.user_group_ratio,
-              other.cache_tokens || 0,
-              other.cache_ratio || 1.0,
-              other.cache_creation_tokens || 0,
-              other.cache_creation_ratio || 1.0,
-              other.cache_creation_tokens_5m || 0,
-              other.cache_creation_ratio_5m ||
-                other.cache_creation_ratio ||
-                1.0,
-              other.cache_creation_tokens_1h || 0,
-              other.cache_creation_ratio_1h ||
-                other.cache_creation_ratio ||
-                1.0,
-              false,
-              1.0,
-              'claude',
-            )
-          : renderModelPriceSimple(
-              other.model_ratio,
-              other.model_price,
-              other.group_ratio,
-              other?.user_group_ratio,
-              other.cache_tokens || 0,
-              other.cache_ratio || 1.0,
-              0,
-              1.0,
-              0,
-              1.0,
-              0,
-              1.0,
-              false,
-              1.0,
-              'openai',
-            );
+        // Determine billing type and group ratio
+        const groupRatio = other.group_ratio;
+        const userGroupRatio = other?.user_group_ratio;
+        const effectiveGroupRatio =
+          Number.isFinite(userGroupRatio) && userGroupRatio !== -1
+            ? userGroupRatio
+            : groupRatio;
+        const groupRatioText = formatRatio(effectiveGroupRatio) + 'x';
+        const hasCache = (other.cache_tokens || 0) > 0;
+
+        let content;
+        if (other.model_price != null && other.model_price !== -1) {
+          // 按次计费
+          content = `${t('按次计费')}，${t('分组')}${groupRatioText}`;
+        } else if (hasCache) {
+          // 按量计费，支持缓存
+          content = `${t('按量计费')}，${t('缓存')}√，${t('分组')}${groupRatioText}`;
+        } else {
+          // 按量计费，不支持缓存
+          content = `${t('按量计费')}，${t('缓存')}×，${t('分组')}${groupRatioText}`;
+        }
+
         return (
             <Typography.Paragraph
                 ellipsis={{
