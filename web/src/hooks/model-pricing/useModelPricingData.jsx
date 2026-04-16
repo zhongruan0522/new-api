@@ -142,8 +142,6 @@ export const useModelPricingData = () => {
         (model) =>
           (model.model_name &&
             model.model_name.toLowerCase().includes(searchTerm)) ||
-          (model.description &&
-            model.description.toLowerCase().includes(searchTerm)) ||
           (model.tags && model.tags.toLowerCase().includes(searchTerm)) ||
           (model.vendor_name &&
             model.vendor_name.toLowerCase().includes(searchTerm)),
@@ -195,7 +193,6 @@ export const useModelPricingData = () => {
         const vendor = vendorMap[m.vendor_id];
         m.vendor_name = vendor.name;
         m.vendor_icon = vendor.icon;
-        m.vendor_description = vendor.description;
       }
     }
     models.sort((a, b) => {

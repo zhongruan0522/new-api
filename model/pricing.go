@@ -16,7 +16,7 @@ import (
 
 type Pricing struct {
 	ModelName              string                  `json:"model_name"`
-	Description            string                  `json:"description,omitempty"`
+	Description            string                  `json:"-" gorm:"type:text"`
 	Icon                   string                  `json:"icon,omitempty"`
 	Tags                   string                  `json:"tags,omitempty"`
 	VendorID               int                     `json:"vendor_id,omitempty"`
@@ -36,7 +36,7 @@ type Pricing struct {
 type PricingVendor struct {
 	ID          int    `json:"id"`
 	Name        string `json:"name"`
-	Description string `json:"description,omitempty"`
+	Description string `json:"-" gorm:"type:text"`
 	Icon        string `json:"icon,omitempty"`
 }
 

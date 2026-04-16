@@ -33,7 +33,6 @@ import {
 } from '../../../helpers';
 import {
   renderLimitedItems,
-  renderDescription,
 } from '../../common/ui/RenderUtils';
 
 const { Text } = Typography;
@@ -303,20 +302,7 @@ export const getModelsColumns = ({
       dataIndex: 'name_rule',
       render: (val, record) => renderNameRule(val, record, t),
     },
-    {
-      title: t('参与官方同步'),
-      dataIndex: 'sync_official',
-      render: (val) => (
-        <Tag size='small' shape='circle' color={val === 1 ? 'green' : 'orange'}>
-          {val === 1 ? t('是') : t('否')}
-        </Tag>
-      ),
-    },
-    {
-      title: t('描述'),
-      dataIndex: 'description',
-      render: (text) => renderDescription(text, 200),
-    },
+
     {
       title: t('供应商'),
       dataIndex: 'vendor_id',
