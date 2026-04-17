@@ -563,10 +563,12 @@ const PlanQuotaModal = ({ visible, onCancel, channel, onRefresh }) => {
   const planDisplayName = quotaData?.plan_name ? PLAN_DISPLAY_NAMES[quotaData.plan_name] || quotaData.plan_name : '';
   const hasRealData = quotaData && isGlmPlan(quotaData.plan_name) && quotaData.product_name;
 
-  const isNewPlan = quotaData?.plan_version === '新';
-
-  // 根据套餐版本决定卡片列数
-  const cardColumns = isNewPlan ? 4 : 3;
+  // 根据实际可见的卡片数量动态决定列数
+  const visibleCardCount = [
+    quotaData?.token_limit,
+    quotaData?.weekly_limit,
+    quotaData?.mcp_tool_limit,
+  ].filter(Boolean).length || 2;
 
   const formatResetTime = (timeStr) => {
     if (!timeStr) return '';
@@ -627,14 +629,14 @@ const PlanQuotaModal = ({ visible, onCancel, channel, onRefresh }) => {
           </div>
 
           {/* 限额卡片网格 */}
-          <div className={`plan-quota-grid plan-quota-grid-${cardColumns}`}>
-            {quotaData.weekly_limit && (
-              <LimitCard title='每周限额' data={quotaData.weekly_limit}
-                resetLabel={formatResetTime(quotaData.weekly_limit.next_reset_time) ? `下次重置: ${formatResetTime(quotaData.weekly_limit.next_reset_time)}` : ''} />
-            )}
+          <div className={`plan-quota-grid plan-quota-grid-${visibleCardCount}`}>
             {quotaData.token_limit && (
               <LimitCard title='每5小时限额' data={quotaData.token_limit}
                 resetLabel={formatHourReset(quotaData.token_limit.next_reset_time)} />
+            )}
+            {quotaData.weekly_limit && (
+              <LimitCard title='每周限额' data={quotaData.weekly_limit}
+                resetLabel={formatResetTime(quotaData.weekly_limit.next_reset_time) ? `下次重置: ${formatResetTime(quotaData.weekly_limit.next_reset_time)}` : ''} />
             )}
             {quotaData.mcp_tool_limit && (
               <McpLimitCard data={quotaData.mcp_tool_limit} />
