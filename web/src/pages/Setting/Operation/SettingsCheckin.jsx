@@ -48,13 +48,17 @@ function displayToToken(displayValue) {
   return Math.round(usd * quotaPerUnit);
 }
 
+// 需要额度转换的字段
+const QUOTA_FIELDS = ['checkin_setting.min_quota', 'checkin_setting.max_quota'];
+
 export default function SettingsCheckin(props) {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
+  // inputs 存储显示值（货币转换后的值），提交时再转换回内部 Token 值
   const [inputs, setInputs] = useState({
     'checkin_setting.enabled': false,
-    'checkin_setting.min_quota': 1000,
-    'checkin_setting.max_quota': 10000,
+    'checkin_setting.min_quota': '',
+    'checkin_setting.max_quota': '',
   });
   const refForm = useRef();
   const [inputsRow, setInputsRow] = useState(inputs);
@@ -64,22 +68,27 @@ export default function SettingsCheckin(props) {
     return type === 'TOKENS' ? 'Token' : symbol;
   }, []);
 
-  const displayValues = useMemo(() => {
-    const minQ = inputs['checkin_setting.min_quota'];
-    const maxQ = inputs['checkin_setting.max_quota'];
-    return {
-      'checkin_setting.min_quota':
-        minQ !== '' && minQ !== undefined ? tokenToDisplay(parseFloat(minQ)) : '',
-      'checkin_setting.max_quota':
-        maxQ !== '' && maxQ !== undefined ? tokenToDisplay(parseFloat(maxQ)) : '',
-    };
-  }, [inputs['checkin_setting.min_quota'], inputs['checkin_setting.max_quota']]);
+  // 将 inputs 中的显示值转换为内部 Token 值用于提交
+  function toRawValues(displayState) {
+    const raw = {};
+    for (const key in displayState) {
+      const val = displayState[key];
+      if (QUOTA_FIELDS.includes(key) && val !== '' && val !== undefined) {
+        raw[key] = displayToToken(val);
+      } else {
+        raw[key] = val;
+      }
+    }
+    return raw;
+  }
 
   function onSubmit() {
-    const updateArray = compareObjects(inputs, inputsRow);
+    const rawInputs = toRawValues(inputs);
+    const rawInputsRow = toRawValues(inputsRow);
+    const updateArray = compareObjects(rawInputs, rawInputsRow);
     if (!updateArray.length) return showWarning(t('你似乎并没有修改什么'));
     const requestQueue = updateArray.map((item) => {
-      const value = String(inputs[item.key]);
+      const value = String(rawInputs[item.key]);
       return API.put('/api/option/', {
         key: item.key,
         value,
@@ -109,12 +118,17 @@ export default function SettingsCheckin(props) {
     const currentInputs = {};
     for (let key in props.options) {
       if (Object.keys(inputs).includes(key)) {
-        currentInputs[key] = props.options[key];
+        let val = props.options[key];
+        // 将内部 Token 值转为显示值存入 state
+        if (QUOTA_FIELDS.includes(key) && val !== '' && val !== undefined) {
+          val = tokenToDisplay(parseFloat(val));
+        }
+        currentInputs[key] = val;
       }
     }
     setInputs(currentInputs);
     setInputsRow(structuredClone(currentInputs));
-    refForm.current.setValues(currentInputs);
+    refForm.current?.setValues(currentInputs);
   }, [props.options]);
 
   return (
@@ -150,16 +164,16 @@ export default function SettingsCheckin(props) {
               </Col>
               <Col xs={24} sm={12} md={8} lg={8} xl={8}>
                 <Form.InputNumber
+                  field='checkin_setting.min_quota'
                   label={t('签到最小额度')}
                   step={0.01}
                   min={0}
                   suffix={currencySuffix}
-                  value={displayValues['checkin_setting.min_quota']}
                   placeholder={t('签到奖励的最小额度')}
                   onChange={(value) =>
                     setInputs((prev) => ({
                       ...prev,
-                      'checkin_setting.min_quota': displayToToken(value),
+                      'checkin_setting.min_quota': value,
                     }))
                   }
                   disabled={!inputs['checkin_setting.enabled']}
@@ -167,16 +181,16 @@ export default function SettingsCheckin(props) {
               </Col>
               <Col xs={24} sm={12} md={8} lg={8} xl={8}>
                 <Form.InputNumber
+                  field='checkin_setting.max_quota'
                   label={t('签到最大额度')}
                   step={0.01}
                   min={0}
                   suffix={currencySuffix}
-                  value={displayValues['checkin_setting.max_quota']}
                   placeholder={t('签到奖励的最大额度')}
                   onChange={(value) =>
                     setInputs((prev) => ({
                       ...prev,
-                      'checkin_setting.max_quota': displayToToken(value),
+                      'checkin_setting.max_quota': value,
                     }))
                   }
                   disabled={!inputs['checkin_setting.enabled']}

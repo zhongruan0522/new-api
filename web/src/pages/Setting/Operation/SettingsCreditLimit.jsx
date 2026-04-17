@@ -50,9 +50,18 @@ function displayToToken(displayValue) {
   return Math.round(usd * quotaPerUnit);
 }
 
+// 需要额度转换的字段
+const QUOTA_FIELDS = [
+  'QuotaForNewUser',
+  'PreConsumedQuota',
+  'QuotaForInviter',
+  'QuotaForInvitee',
+];
+
 export default function SettingsCreditLimit(props) {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
+  // inputs 存储显示值（货币转换后的值），提交时再转换回内部 Token 值
   const [inputs, setInputs] = useState({
     QuotaForNewUser: '',
     PreConsumedQuota: '',
@@ -68,25 +77,31 @@ export default function SettingsCreditLimit(props) {
     return type === 'TOKENS' ? 'Token' : symbol;
   }, []);
 
-  // 将内部 Token 值转为货币显示值用于表单
-  const displayValues = useMemo(() => {
-    return {
-      QuotaForNewUser: inputs.QuotaForNewUser !== '' ? tokenToDisplay(parseFloat(inputs.QuotaForNewUser)) : '',
-      PreConsumedQuota: inputs.PreConsumedQuota !== '' ? tokenToDisplay(parseFloat(inputs.PreConsumedQuota)) : '',
-      QuotaForInviter: inputs.QuotaForInviter !== '' ? tokenToDisplay(parseFloat(inputs.QuotaForInviter)) : '',
-      QuotaForInvitee: inputs.QuotaForInvitee !== '' ? tokenToDisplay(parseFloat(inputs.QuotaForInvitee)) : '',
-    };
-  }, [inputs.QuotaForNewUser, inputs.PreConsumedQuota, inputs.QuotaForInviter, inputs.QuotaForInvitee]);
+  // 将 inputs 中的显示值转换为内部 Token 值用于提交
+  function toRawValues(displayState) {
+    const raw = {};
+    for (const key in displayState) {
+      const val = displayState[key];
+      if (QUOTA_FIELDS.includes(key) && val !== '' && val !== undefined) {
+        raw[key] = String(displayToToken(val));
+      } else {
+        raw[key] = typeof val === 'boolean' ? val : val;
+      }
+    }
+    return raw;
+  }
 
   function onSubmit() {
-    const updateArray = compareObjects(inputs, inputsRow);
+    const rawInputs = toRawValues(inputs);
+    const rawInputsRow = toRawValues(inputsRow);
+    const updateArray = compareObjects(rawInputs, rawInputsRow);
     if (!updateArray.length) return showWarning(t('你似乎并没有修改什么'));
     const requestQueue = updateArray.map((item) => {
       let value = '';
-      if (typeof inputs[item.key] === 'boolean') {
-        value = String(inputs[item.key]);
+      if (typeof rawInputs[item.key] === 'boolean') {
+        value = String(rawInputs[item.key]);
       } else {
-        value = inputs[item.key];
+        value = rawInputs[item.key];
       }
       return API.put('/api/option/', {
         key: item.key,
@@ -117,12 +132,17 @@ export default function SettingsCreditLimit(props) {
     const currentInputs = {};
     for (let key in props.options) {
       if (Object.keys(inputs).includes(key)) {
-        currentInputs[key] = props.options[key];
+        let val = props.options[key];
+        // 将内部 Token 值转为显示值存入 state
+        if (QUOTA_FIELDS.includes(key) && val !== '') {
+          val = tokenToDisplay(parseFloat(val));
+        }
+        currentInputs[key] = val;
       }
     }
     setInputs(currentInputs);
     setInputsRow(structuredClone(currentInputs));
-    refForm.current.setValues(currentInputs);
+    refForm.current?.setValues(currentInputs);
   }, [props.options]);
   return (
     <>
@@ -136,51 +156,48 @@ export default function SettingsCreditLimit(props) {
             <Row gutter={16}>
               <Col xs={24} sm={12} md={8} lg={8} xl={8}>
                 <Form.InputNumber
+                  field='QuotaForNewUser'
                   label={t('新用户初始额度')}
                   step={0.01}
                   min={0}
                   suffix={currencySuffix}
-                  value={displayValues.QuotaForNewUser}
                   placeholder={''}
                   onChange={(value) =>
-                    setInputs({
-                      ...inputs,
-                      QuotaForNewUser: String(displayToToken(value)),
-                    })
+                    setInputs((prev) => ({ ...prev, QuotaForNewUser: value }))
                   }
                 />
               </Col>
               <Col xs={24} sm={12} md={8} lg={8} xl={8}>
                 <Form.InputNumber
+                  field='PreConsumedQuota'
                   label={t('请求预扣费额度')}
                   step={0.01}
                   min={0}
                   suffix={currencySuffix}
                   extraText={t('请求结束后多退少补')}
-                  value={displayValues.PreConsumedQuota}
                   placeholder={''}
                   onChange={(value) =>
-                    setInputs({
-                      ...inputs,
-                      PreConsumedQuota: String(displayToToken(value)),
-                    })
+                    setInputs((prev) => ({
+                      ...prev,
+                      PreConsumedQuota: value,
+                    }))
                   }
                 />
               </Col>
               <Col xs={24} sm={12} md={8} lg={8} xl={8}>
                 <Form.InputNumber
+                  field='QuotaForInviter'
                   label={t('邀请新用户奖励额度')}
                   step={0.01}
                   min={0}
                   suffix={currencySuffix}
                   extraText={''}
-                  value={displayValues.QuotaForInviter}
                   placeholder={t('例如：2000')}
                   onChange={(value) =>
-                    setInputs({
-                      ...inputs,
-                      QuotaForInviter: String(displayToToken(value)),
-                    })
+                    setInputs((prev) => ({
+                      ...prev,
+                      QuotaForInviter: value,
+                    }))
                   }
                 />
               </Col>
@@ -188,18 +205,18 @@ export default function SettingsCreditLimit(props) {
             <Row>
               <Col xs={24} sm={12} md={8} lg={8} xl={6}>
                 <Form.InputNumber
+                  field='QuotaForInvitee'
                   label={t('新用户使用邀请码奖励额度')}
                   step={0.01}
                   min={0}
                   suffix={currencySuffix}
                   extraText={''}
-                  value={displayValues.QuotaForInvitee}
                   placeholder={t('例如：1000')}
                   onChange={(value) =>
-                    setInputs({
-                      ...inputs,
-                      QuotaForInvitee: String(displayToToken(value)),
-                    })
+                    setInputs((prev) => ({
+                      ...prev,
+                      QuotaForInvitee: value,
+                    }))
                   }
                 />
               </Col>
@@ -213,10 +230,10 @@ export default function SettingsCreditLimit(props) {
                     '开启后，对免费模型（倍率为0，或者价格为0）的模型也会预消耗额度',
                   )}
                   onChange={(value) =>
-                    setInputs({
-                      ...inputs,
+                    setInputs((prev) => ({
+                      ...prev,
                       'quota_setting.enable_free_model_pre_consume': value,
-                    })
+                    }))
                   }
                 />
               </Col>
