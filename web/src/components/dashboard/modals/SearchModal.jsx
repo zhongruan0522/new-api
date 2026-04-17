@@ -89,7 +89,12 @@ const SearchModal = ({
   const handleShortcutClick = (key) => {
     const date = getShortcutTimestamp(key);
     if (date) {
-      handleInputChange(formatDateTime(date), 'start_timestamp');
+      const formatted = formatDateTime(date);
+      handleInputChange(formatted, 'start_timestamp');
+      // 同步更新 Form 内部状态，使 DatePicker 立即显示新值
+      if (formRef.current) {
+        formRef.current.formApi.setValue('start_timestamp', formatted);
+      }
     }
   };
 
