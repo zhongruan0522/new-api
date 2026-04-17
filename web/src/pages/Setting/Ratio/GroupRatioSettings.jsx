@@ -38,6 +38,16 @@ import { useTranslation } from 'react-i18next';
 
 const PAGE_SIZE = 5;
 
+// Normalize JSON for semantic comparison: parse → re-stringify compact
+const normalizeJSON = (str) => {
+  if (!str) return '';
+  try {
+    return JSON.stringify(JSON.parse(str));
+  } catch {
+    return str;
+  }
+};
+
 // ============================================================
 // 1. SimpleKeyValueTable — for GroupRatio & UserUsableGroups
 // Data shape: { "key": "value", ... }
@@ -59,8 +69,9 @@ function SimpleKeyValueTable({
   // Track local edits to avoid cursor jumping
   const [editCache, setEditCache] = useState({});
 
-  const entries = Object.entries(data);
-  const totalPages = Math.max(1, Math.ceil(entries.length / PAGE_SIZE));
+  // Maintain insertion order as an array of keys
+  const orderedKeys = Object.keys(data);
+  const totalPages = Math.max(1, Math.ceil(orderedKeys.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
 
   const handleAdd = () => {
@@ -79,7 +90,7 @@ function SimpleKeyValueTable({
           ? 0
           : Number(newValue)
         : newValue;
-    if (valueMode === 'number' && isNaN(val)) {
+    if (valueMode === 'number' && (isNaN(val) || newValue === '')) {
       showError(t('请输入有效的数字'));
       return;
     }
@@ -92,25 +103,35 @@ function SimpleKeyValueTable({
     const updated = { ...data };
     delete updated[key];
     onChange(updated);
-    // Adjust page if necessary
     const remaining = Object.keys(updated).length;
     const newTotalPages = Math.max(1, Math.ceil(remaining / PAGE_SIZE));
     if (page > newTotalPages) setPage(newTotalPages);
   };
 
-  const handleValueChange = (key, rawValue) => {
-    setEditCache((prev) => ({ ...prev, [key]: rawValue }));
-  };
-
   const handleValueBlur = (key, rawValue) => {
-    const val =
-      valueMode === 'number'
-        ? rawValue === ''
-          ? ''
-          : Number(rawValue)
-        : rawValue;
-    if (valueMode === 'number' && rawValue !== '' && isNaN(val)) return;
-    onChange({ ...data, [key]: val });
+    if (valueMode === 'number') {
+      if (rawValue.trim() === '') {
+        // Reject blank — revert to current data value
+        setEditCache((prev) => {
+          const next = { ...prev };
+          delete next[key];
+          return next;
+        });
+        return;
+      }
+      const val = Number(rawValue);
+      if (isNaN(val)) {
+        setEditCache((prev) => {
+          const next = { ...prev };
+          delete next[key];
+          return next;
+        });
+        return;
+      }
+      onChange({ ...data, [key]: val });
+    } else {
+      onChange({ ...data, [key]: rawValue });
+    }
     setEditCache((prev) => {
       const next = { ...prev };
       delete next[key];
@@ -118,14 +139,32 @@ function SimpleKeyValueTable({
     });
   };
 
-  const pagedEntries = entries.slice(
-    (safePage - 1) * PAGE_SIZE,
-    safePage * PAGE_SIZE,
-  );
+  const handleMoveUp = (index) => {
+    if (index <= 0) return;
+    const keys = [...orderedKeys];
+    [keys[index - 1], keys[index]] = [keys[index], keys[index - 1]];
+    const updated = {};
+    keys.forEach((k) => (updated[k] = data[k]));
+    onChange(updated);
+  };
 
-  const dataSource = pagedEntries.map(([key, value]) => ({
+  const handleMoveDown = (index) => {
+    if (index >= orderedKeys.length - 1) return;
+    const keys = [...orderedKeys];
+    [keys[index], keys[index + 1]] = [keys[index + 1], keys[index]];
+    const updated = {};
+    keys.forEach((k) => (updated[k] = data[k]));
+    onChange(updated);
+  };
+
+  const pagedEntries = orderedKeys
+    .slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE)
+    .map((key) => [key, data[key]]);
+
+  const dataSource = pagedEntries.map(([key, value], idx) => ({
     key,
     value: String(value),
+    realIndex: (safePage - 1) * PAGE_SIZE + idx,
   }));
 
   const columns = [
@@ -143,22 +182,42 @@ function SimpleKeyValueTable({
         <Input
           value={editCache[record.key] ?? text}
           placeholder={valuePlaceholder || valueLabel}
-          onChange={(v) => handleValueChange(record.key, v)}
-          onBlur={() => handleValueBlur(record.key, editCache[record.key] ?? text)}
+          onChange={(v) =>
+            setEditCache((prev) => ({ ...prev, [record.key]: v }))
+          }
+          onBlur={() =>
+            handleValueBlur(record.key, editCache[record.key] ?? text)
+          }
         />
       ),
     },
     {
       title: t('操作'),
       key: 'action',
-      width: 80,
+      width: 180,
       render: (_, record) => (
-        <Button
-          icon={<IconDelete />}
-          type='danger'
-          size='small'
-          onClick={() => handleDelete(record.key)}
-        />
+        <Space>
+          <Button
+            size='small'
+            disabled={record.realIndex === 0}
+            onClick={() => handleMoveUp(record.realIndex)}
+          >
+            ↑
+          </Button>
+          <Button
+            size='small'
+            disabled={record.realIndex === orderedKeys.length - 1}
+            onClick={() => handleMoveDown(record.realIndex)}
+          >
+            ↓
+          </Button>
+          <Button
+            icon={<IconDelete />}
+            type='danger'
+            size='small'
+            onClick={() => handleDelete(record.key)}
+          />
+        </Space>
       ),
     },
   ];
@@ -180,7 +239,7 @@ function SimpleKeyValueTable({
         pagination={{
           currentPage: safePage,
           pageSize: PAGE_SIZE,
-          total: entries.length,
+          total: orderedKeys.length,
           onPageChange: (p) => setPage(p),
           showTotal: (total) => t('共 {{total}} 条', { total }),
           showSizeChanger: false,
@@ -217,19 +276,35 @@ function NestedKeyValueTable({ title, description, data, onChange }) {
   const { t } = useTranslation();
   const [page, setPage] = useState(1);
   const [newOuterKey, setNewOuterKey] = useState('');
-  // Add inner row state
   const [innerAddKey, setInnerAddKey] = useState('');
   const [innerAddGroup, setInnerAddGroup] = useState('');
   const [innerAddValue, setInnerAddValue] = useState('');
-  // Track edits
   const [editCache, setEditCache] = useState({});
 
-  // Flatten nested structure to rows
+  // Flatten nested structure to rows, including empty groups
   const flatRows = [];
   for (const [outerKey, innerObj] of Object.entries(data)) {
     if (typeof innerObj === 'object' && innerObj !== null) {
-      for (const [innerKey, val] of Object.entries(innerObj)) {
-        flatRows.push({ outerKey, innerKey, value: val, rowId: `${outerKey}::${innerKey}` });
+      const innerEntries = Object.entries(innerObj);
+      if (innerEntries.length === 0) {
+        // Render a placeholder row for empty groups so they're visible
+        flatRows.push({
+          outerKey,
+          innerKey: '',
+          value: '',
+          rowId: `${outerKey}::__empty__`,
+          isEmpty: true,
+        });
+      } else {
+        for (const [innerKey, val] of Object.entries(innerObj)) {
+          flatRows.push({
+            outerKey,
+            innerKey,
+            value: val,
+            rowId: `${outerKey}::${innerKey}`,
+            isEmpty: false,
+          });
+        }
       }
     }
   }
@@ -259,12 +334,7 @@ function NestedKeyValueTable({ title, description, data, onChange }) {
     const updated = { ...data };
     delete updated[outerKey];
     onChange(updated);
-    const remaining = Object.keys(updated).reduce(
-      (sum, k) => sum + Object.keys(updated[k] || {}).length,
-      0,
-    );
-    const newTotalPages = Math.max(1, Math.ceil(remaining / PAGE_SIZE));
-    if (page > newTotalPages) setPage(newTotalPages);
+    adjustPage(updated);
   };
 
   const handleAddInner = () => {
@@ -279,7 +349,7 @@ function NestedKeyValueTable({ title, description, data, onChange }) {
       return;
     }
     const val = Number(innerAddValue);
-    if (isNaN(val)) {
+    if (isNaN(val) || innerAddValue.trim() === '') {
       showError(t('请输入有效的数字'));
       return;
     }
@@ -290,7 +360,12 @@ function NestedKeyValueTable({ title, description, data, onChange }) {
     setInnerAddValue('');
   };
 
-  const handleDeleteInner = (outerKey, innerKey) => {
+  const handleDeleteInner = (outerKey, innerKey, isEmpty) => {
+    if (isEmpty) {
+      // Deleting the placeholder row means delete the whole empty group
+      handleDeleteGroup(outerKey);
+      return;
+    }
     const updated = { ...data };
     if (updated[outerKey]) {
       updated[outerKey] = { ...updated[outerKey] };
@@ -300,23 +375,30 @@ function NestedKeyValueTable({ title, description, data, onChange }) {
       }
     }
     onChange(updated);
-    const remaining = Object.keys(updated).reduce(
-      (sum, k) => sum + Object.keys(updated[k] || {}).length,
-      0,
-    );
-    const newTotalPages = Math.max(1, Math.ceil(remaining / PAGE_SIZE));
-    if (page > newTotalPages) setPage(newTotalPages);
-  };
-
-  const handleEditValue = (rowId, rawValue) => {
-    setEditCache((prev) => ({ ...prev, [rowId]: rawValue }));
+    adjustPage(updated);
   };
 
   const handleEditBlur = (outerKey, innerKey, rowId) => {
     const rawValue = editCache[rowId];
     if (rawValue === undefined) return;
+    if (rawValue.trim() === '') {
+      // Reject blank values
+      setEditCache((prev) => {
+        const next = { ...prev };
+        delete next[rowId];
+        return next;
+      });
+      return;
+    }
     const val = Number(rawValue);
-    if (isNaN(val)) return;
+    if (isNaN(val)) {
+      setEditCache((prev) => {
+        const next = { ...prev };
+        delete next[rowId];
+        return next;
+      });
+      return;
+    }
     const updated = { ...data };
     updated[outerKey] = { ...(updated[outerKey] || {}), [innerKey]: val };
     onChange(updated);
@@ -325,6 +407,53 @@ function NestedKeyValueTable({ title, description, data, onChange }) {
       delete next[rowId];
       return next;
     });
+  };
+
+  const handleMoveUp = (index) => {
+    if (index <= 0) return;
+    // Move inner entry within its group
+    const row = flatRows[index];
+    const prevRow = flatRows[index - 1];
+    if (row.outerKey !== prevRow.outerKey) return;
+    const outerKey = row.outerKey;
+    const innerKeys = Object.keys(data[outerKey] || {});
+    const innerIdx1 = innerKeys.indexOf(row.innerKey);
+    const innerIdx2 = innerKeys.indexOf(prevRow.innerKey);
+    if (innerIdx1 < 0 || innerIdx2 < 0) return;
+    const newKeys = [...innerKeys];
+    [newKeys[innerIdx2], newKeys[innerIdx1]] = [newKeys[innerIdx1], newKeys[innerIdx2]];
+    const newInner = {};
+    newKeys.forEach((k) => (newInner[k] = data[outerKey][k]));
+    onChange({ ...data, [outerKey]: newInner });
+  };
+
+  const handleMoveDown = (index) => {
+    if (index >= flatRows.length - 1) return;
+    const row = flatRows[index];
+    const nextRow = flatRows[index + 1];
+    if (row.outerKey !== nextRow.outerKey) return;
+    const outerKey = row.outerKey;
+    const innerKeys = Object.keys(data[outerKey] || {});
+    const innerIdx1 = innerKeys.indexOf(row.innerKey);
+    const innerIdx2 = innerKeys.indexOf(nextRow.innerKey);
+    if (innerIdx1 < 0 || innerIdx2 < 0) return;
+    const newKeys = [...innerKeys];
+    [newKeys[innerIdx1], newKeys[innerIdx2]] = [newKeys[innerIdx2], newKeys[innerIdx1]];
+    const newInner = {};
+    newKeys.forEach((k) => (newInner[k] = data[outerKey][k]));
+    onChange({ ...data, [outerKey]: newInner });
+  };
+
+  const adjustPage = (updatedData) => {
+    const remaining = Object.keys(updatedData).reduce(
+      (sum, k) => {
+        const innerLen = Object.keys(updatedData[k] || {}).length;
+        return sum + (innerLen === 0 ? 1 : innerLen);
+      },
+      0,
+    );
+    const newTotalPages = Math.max(1, Math.ceil(remaining / PAGE_SIZE));
+    if (page > newTotalPages) setPage(newTotalPages);
   };
 
   const columns = [
@@ -355,32 +484,62 @@ function NestedKeyValueTable({ title, description, data, onChange }) {
       title: t('令牌分组'),
       dataIndex: 'innerKey',
       key: 'innerKey',
-      render: (text) => <Typography.Text>{text}</Typography.Text>,
+      render: (text, record) =>
+        record.isEmpty ? (
+          <Typography.Text type='quaternary'>{t('（空）')}</Typography.Text>
+        ) : (
+          <Typography.Text>{text}</Typography.Text>
+        ),
     },
     {
       title: t('倍率'),
       dataIndex: 'value',
       key: 'value',
-      render: (text, record) => (
-        <Input
-          value={editCache[record.rowId] ?? String(text)}
-          style={{ width: 100 }}
-          onChange={(v) => handleEditValue(record.rowId, v)}
-          onBlur={() => handleEditBlur(record.outerKey, record.innerKey, record.rowId)}
-        />
-      ),
+      render: (text, record) =>
+        record.isEmpty ? (
+          <Typography.Text type='quaternary'>—</Typography.Text>
+        ) : (
+          <Input
+            value={editCache[record.rowId] ?? String(text)}
+            style={{ width: 100 }}
+            onChange={(v) =>
+              setEditCache((prev) => ({ ...prev, [record.rowId]: v }))
+            }
+            onBlur={() =>
+              handleEditBlur(record.outerKey, record.innerKey, record.rowId)
+            }
+          />
+        ),
     },
     {
       title: t('操作'),
       key: 'action',
-      width: 80,
-      render: (_, record) => (
-        <Button
-          icon={<IconDelete />}
-          type='danger'
-          size='small'
-          onClick={() => handleDeleteInner(record.outerKey, record.innerKey)}
-        />
+      width: 180,
+      render: (_, record, index) => (
+        <Space>
+          <Button
+            size='small'
+            disabled={record.isEmpty || index === 0 || pagedRows[index - 1]?.outerKey !== record.outerKey}
+            onClick={() => handleMoveUp((safePage - 1) * PAGE_SIZE + index)}
+          >
+            ↑
+          </Button>
+          <Button
+            size='small'
+            disabled={record.isEmpty || index === pagedRows.length - 1 || pagedRows[index + 1]?.outerKey !== record.outerKey}
+            onClick={() => handleMoveDown((safePage - 1) * PAGE_SIZE + index)}
+          >
+            ↓
+          </Button>
+          <Button
+            icon={<IconDelete />}
+            type='danger'
+            size='small'
+            onClick={() =>
+              handleDeleteInner(record.outerKey, record.innerKey, record.isEmpty)
+            }
+          />
+        </Space>
       ),
     },
   ];
@@ -457,36 +616,48 @@ function SpecialUsableGroupTable({ title, description, data, onChange }) {
   const { t } = useTranslation();
   const [page, setPage] = useState(1);
   const [newOuterKey, setNewOuterKey] = useState('');
-  // Add entry state
   const [addOuterKey, setAddOuterKey] = useState('');
   const [addGroup, setAddGroup] = useState('');
   const [addDesc, setAddDesc] = useState('');
   const [addOp, setAddOp] = useState('add');
-  // Track edits for group name and desc
   const [editCache, setEditCache] = useState({});
 
-  // Flatten
+  // Flatten, including empty groups
   const flatRows = [];
   for (const [outerKey, innerObj] of Object.entries(data)) {
     if (typeof innerObj === 'object' && innerObj !== null) {
-      for (const [rawKey, val] of Object.entries(innerObj)) {
-        let operation = 'add';
-        let group = rawKey;
-        if (rawKey.startsWith('+:')) {
-          operation = 'add';
-          group = rawKey.slice(2);
-        } else if (rawKey.startsWith('-:')) {
-          operation = 'remove';
-          group = rawKey.slice(2);
-        }
+      const innerEntries = Object.entries(innerObj);
+      if (innerEntries.length === 0) {
         flatRows.push({
           outerKey,
-          rawKey,
-          operation,
-          group,
-          value: val,
-          rowId: `${outerKey}::${rawKey}`,
+          rawKey: '',
+          operation: '',
+          group: '',
+          value: '',
+          rowId: `${outerKey}::__empty__`,
+          isEmpty: true,
         });
+      } else {
+        for (const [rawKey, val] of Object.entries(innerObj)) {
+          let operation = 'add';
+          let group = rawKey;
+          if (rawKey.startsWith('+:')) {
+            operation = 'add';
+            group = rawKey.slice(2);
+          } else if (rawKey.startsWith('-:')) {
+            operation = 'remove';
+            group = rawKey.slice(2);
+          }
+          flatRows.push({
+            outerKey,
+            rawKey,
+            operation,
+            group,
+            value: val,
+            rowId: `${outerKey}::${rawKey}`,
+            isEmpty: false,
+          });
+        }
       }
     }
   }
@@ -538,7 +709,11 @@ function SpecialUsableGroupTable({ title, description, data, onChange }) {
     setAddDesc('');
   };
 
-  const handleDeleteEntry = (outerKey, rawKey) => {
+  const handleDeleteEntry = (outerKey, rawKey, isEmpty) => {
+    if (isEmpty) {
+      handleDeleteGroup(outerKey);
+      return;
+    }
     const updated = { ...data };
     if (updated[outerKey]) {
       updated[outerKey] = { ...updated[outerKey] };
@@ -551,15 +726,52 @@ function SpecialUsableGroupTable({ title, description, data, onChange }) {
     adjustPage(updated);
   };
 
-  const handleFieldBlur = (outerKey, rawKey, field, newValue, operation, currentGroup, currentDesc) => {
-    let newGroup = field === 'group' ? newValue : currentGroup;
+  const handleFieldBlur = (
+    outerKey,
+    rawKey,
+    field,
+    newValue,
+    operation,
+    currentGroup,
+    currentDesc,
+  ) => {
+    let newGroup = field === 'group' ? newValue.trim() : currentGroup;
     let newDesc = field === 'desc' ? newValue : currentDesc;
+
+    // Validate: reject empty group name
+    if (field === 'group' && !newGroup) {
+      setEditCache((prev) => {
+        const next = { ...prev };
+        delete next[`${outerKey}::${rawKey}::group`];
+        delete next[`${outerKey}::${rawKey}::desc`];
+        return next;
+      });
+      showError(t('分组名称不能为空'));
+      return;
+    }
+
     const prefix = operation === 'remove' ? '-:' : '+:';
+    const newRawKey = prefix + newGroup;
+
+    // Check if new key conflicts with an existing different entry
+    if (newRawKey !== rawKey && data[outerKey]?.hasOwnProperty(newRawKey)) {
+      showError(t('该分组名称已存在'));
+      setEditCache((prev) => {
+        const next = { ...prev };
+        delete next[`${outerKey}::${rawKey}::group`];
+        delete next[`${outerKey}::${rawKey}::desc`];
+        return next;
+      });
+      return;
+    }
+
     const updated = { ...data };
     if (updated[outerKey]) {
       updated[outerKey] = { ...updated[outerKey] };
-      delete updated[outerKey][rawKey];
-      updated[outerKey][prefix + newGroup] = newDesc;
+      if (newRawKey !== rawKey) {
+        delete updated[outerKey][rawKey];
+      }
+      updated[outerKey][newRawKey] = newDesc;
     }
     onChange(updated);
     setEditCache((prev) => {
@@ -570,11 +782,45 @@ function SpecialUsableGroupTable({ title, description, data, onChange }) {
     });
   };
 
+  const handleMoveUp = (index) => {
+    if (index <= 0) return;
+    const row = flatRows[index];
+    const prevRow = flatRows[index - 1];
+    if (row.outerKey !== prevRow.outerKey || row.isEmpty || prevRow.isEmpty) return;
+    const outerKey = row.outerKey;
+    const innerKeys = Object.keys(data[outerKey] || {});
+    const idx1 = innerKeys.indexOf(row.rawKey);
+    const idx2 = innerKeys.indexOf(prevRow.rawKey);
+    if (idx1 < 0 || idx2 < 0) return;
+    const newKeys = [...innerKeys];
+    [newKeys[idx2], newKeys[idx1]] = [newKeys[idx1], newKeys[idx2]];
+    const newInner = {};
+    newKeys.forEach((k) => (newInner[k] = data[outerKey][k]));
+    onChange({ ...data, [outerKey]: newInner });
+  };
+
+  const handleMoveDown = (index) => {
+    if (index >= flatRows.length - 1) return;
+    const row = flatRows[index];
+    const nextRow = flatRows[index + 1];
+    if (row.outerKey !== nextRow.outerKey || row.isEmpty || nextRow.isEmpty) return;
+    const outerKey = row.outerKey;
+    const innerKeys = Object.keys(data[outerKey] || {});
+    const idx1 = innerKeys.indexOf(row.rawKey);
+    const idx2 = innerKeys.indexOf(nextRow.rawKey);
+    if (idx1 < 0 || idx2 < 0) return;
+    const newKeys = [...innerKeys];
+    [newKeys[idx1], newKeys[idx2]] = [newKeys[idx2], newKeys[idx1]];
+    const newInner = {};
+    newKeys.forEach((k) => (newInner[k] = data[outerKey][k]));
+    onChange({ ...data, [outerKey]: newInner });
+  };
+
   const adjustPage = (updatedData) => {
-    const remaining = Object.values(updatedData).reduce(
-      (sum, obj) => sum + (typeof obj === 'object' ? Object.keys(obj).length : 0),
-      0,
-    );
+    const remaining = Object.keys(updatedData).reduce((sum, k) => {
+      const innerLen = Object.keys(updatedData[k] || {}).length;
+      return sum + (innerLen === 0 ? 1 : innerLen);
+    }, 0);
     const newTotalPages = Math.max(1, Math.ceil(remaining / PAGE_SIZE));
     if (page > newTotalPages) setPage(newTotalPages);
   };
@@ -613,81 +859,108 @@ function SpecialUsableGroupTable({ title, description, data, onChange }) {
       dataIndex: 'operation',
       key: 'operation',
       width: 80,
-      render: (text, record) => (
-        <Typography.Text
-          type={record.operation === 'remove' ? 'danger' : 'success'}
-        >
-          {operationLabel[record.operation] || record.operation}
-        </Typography.Text>
-      ),
+      render: (text, record) =>
+        record.isEmpty ? (
+          <Typography.Text type='quaternary'>—</Typography.Text>
+        ) : (
+          <Typography.Text
+            type={record.operation === 'remove' ? 'danger' : 'success'}
+          >
+            {operationLabel[record.operation] || record.operation}
+          </Typography.Text>
+        ),
     },
     {
       title: t('分组名称'),
       dataIndex: 'group',
       key: 'group',
-      render: (text, record) => (
-        <Input
-          value={editCache[record.rowId + '::group'] ?? text}
-          style={{ width: 120 }}
-          onChange={(v) =>
-            setEditCache((prev) => ({
-              ...prev,
-              [record.rowId + '::group']: v,
-            }))
-          }
-          onBlur={() =>
-            handleFieldBlur(
-              record.outerKey,
-              record.rawKey,
-              'group',
-              editCache[record.rowId + '::group'] ?? text,
-              record.operation,
-              text,
-              record.value,
-            )
-          }
-        />
-      ),
+      render: (text, record) =>
+        record.isEmpty ? (
+          <Typography.Text type='quaternary'>{t('（空）')}</Typography.Text>
+        ) : (
+          <Input
+            value={editCache[record.rowId + '::group'] ?? text}
+            style={{ width: 120 }}
+            onChange={(v) =>
+              setEditCache((prev) => ({
+                ...prev,
+                [record.rowId + '::group']: v,
+              }))
+            }
+            onBlur={() =>
+              handleFieldBlur(
+                record.outerKey,
+                record.rawKey,
+                'group',
+                editCache[record.rowId + '::group'] ?? text,
+                record.operation,
+                text,
+                record.value,
+              )
+            }
+          />
+        ),
     },
     {
       title: t('描述'),
       dataIndex: 'value',
       key: 'value',
-      render: (text, record) => (
-        <Input
-          value={editCache[record.rowId + '::desc'] ?? text}
-          style={{ width: 150 }}
-          onChange={(v) =>
-            setEditCache((prev) => ({
-              ...prev,
-              [record.rowId + '::desc']: v,
-            }))
-          }
-          onBlur={() =>
-            handleFieldBlur(
-              record.outerKey,
-              record.rawKey,
-              'desc',
-              editCache[record.rowId + '::desc'] ?? text,
-              record.operation,
-              record.group,
-              text,
-            )
-          }
-        />
-      ),
+      render: (text, record) =>
+        record.isEmpty ? (
+          <Typography.Text type='quaternary'>—</Typography.Text>
+        ) : (
+          <Input
+            value={editCache[record.rowId + '::desc'] ?? text}
+            style={{ width: 150 }}
+            onChange={(v) =>
+              setEditCache((prev) => ({
+                ...prev,
+                [record.rowId + '::desc']: v,
+              }))
+            }
+            onBlur={() =>
+              handleFieldBlur(
+                record.outerKey,
+                record.rawKey,
+                'desc',
+                editCache[record.rowId + '::desc'] ?? text,
+                record.operation,
+                record.group,
+                text,
+              )
+            }
+          />
+        ),
     },
     {
       title: t('操作'),
       key: 'action',
-      width: 80,
-      render: (_, record) => (
-        <Button
-          icon={<IconDelete />}
-          type='danger'
-          size='small'
-          onClick={() => handleDeleteEntry(record.outerKey, record.rawKey)}
-        />
+      width: 180,
+      render: (_, record, index) => (
+        <Space>
+          <Button
+            size='small'
+            disabled={record.isEmpty || index === 0 || pagedRows[index - 1]?.outerKey !== record.outerKey || pagedRows[index - 1]?.isEmpty}
+            onClick={() => handleMoveUp((safePage - 1) * PAGE_SIZE + index)}
+          >
+            ↑
+          </Button>
+          <Button
+            size='small'
+            disabled={record.isEmpty || index === pagedRows.length - 1 || pagedRows[index + 1]?.outerKey !== record.outerKey || pagedRows[index + 1]?.isEmpty}
+            onClick={() => handleMoveDown((safePage - 1) * PAGE_SIZE + index)}
+          >
+            ↓
+          </Button>
+          <Button
+            icon={<IconDelete />}
+            type='danger'
+            size='small'
+            onClick={() =>
+              handleDeleteEntry(record.outerKey, record.rawKey, record.isEmpty)
+            }
+          />
+        </Space>
       ),
     },
   ];
@@ -772,6 +1045,7 @@ function StringListTable({ title, description, data, onChange }) {
   const { t } = useTranslation();
   const [page, setPage] = useState(1);
   const [newItem, setNewItem] = useState('');
+  const [editCache, setEditCache] = useState({});
 
   const list = Array.isArray(data) ? data : [];
   const totalPages = Math.max(1, Math.ceil(list.length / PAGE_SIZE));
@@ -813,6 +1087,37 @@ function StringListTable({ title, description, data, onChange }) {
     onChange(updated);
   };
 
+  const handleEditBlur = (index, rawValue) => {
+    const trimmed = rawValue.trim();
+    if (!trimmed) {
+      // Reject blank — revert
+      setEditCache((prev) => {
+        const next = { ...prev };
+        delete next[index];
+        return next;
+      });
+      showError(t('分组名称不能为空'));
+      return;
+    }
+    if (trimmed !== list[index] && list.includes(trimmed)) {
+      showError(t('该分组已存在'));
+      setEditCache((prev) => {
+        const next = { ...prev };
+        delete next[index];
+        return next;
+      });
+      return;
+    }
+    const updated = [...list];
+    updated[index] = trimmed;
+    onChange(updated);
+    setEditCache((prev) => {
+      const next = { ...prev };
+      delete next[index];
+      return next;
+    });
+  };
+
   const pagedItems = list.slice(
     (safePage - 1) * PAGE_SIZE,
     safePage * PAGE_SIZE,
@@ -835,7 +1140,18 @@ function StringListTable({ title, description, data, onChange }) {
       title: t('分组名称'),
       dataIndex: 'name',
       key: 'name',
-      render: (text) => <Typography.Text strong>{text}</Typography.Text>,
+      render: (text, record) => (
+        <Input
+          value={editCache[record.realIndex] ?? text}
+          style={{ width: 150 }}
+          onChange={(v) =>
+            setEditCache((prev) => ({ ...prev, [record.realIndex]: v }))
+          }
+          onBlur={() =>
+            handleEditBlur(record.realIndex, editCache[record.realIndex] ?? text)
+          }
+        />
+      ),
     },
     {
       title: t('操作'),
@@ -961,6 +1277,7 @@ export default function GroupRatioSettings(props) {
   }, [props.options]);
 
   async function onSubmit() {
+    // Use semantic JSON comparison: normalize both sides before comparing
     const changedFields = [];
     for (const key of Object.keys(inputs)) {
       const currentVal =
@@ -971,8 +1288,21 @@ export default function GroupRatioSettings(props) {
         typeof inputsRow[key] === 'boolean'
           ? String(inputsRow[key])
           : inputsRow[key];
-      if (currentVal !== originalVal) {
-        changedFields.push({ key, value: currentVal });
+
+      // For boolean, simple string compare
+      if (typeof inputs[key] === 'boolean') {
+        if (currentVal !== originalVal) {
+          changedFields.push({ key, value: currentVal });
+        }
+        continue;
+      }
+
+      // For JSON fields, normalize both sides for comparison
+      const normCurrent = normalizeJSON(currentVal);
+      const normOriginal = normalizeJSON(originalVal);
+      if (normCurrent !== normOriginal) {
+        // Send compact JSON to backend
+        changedFields.push({ key, value: normCurrent });
       }
     }
 
