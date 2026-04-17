@@ -76,7 +76,7 @@ func statusCodeRangesToString(ranges []StatusCodeRange) string {
 }
 
 func shouldMatchStatusCodeRanges(ranges []StatusCodeRange, code int) bool {
-	if code < 100 || code > 599 {
+	if code < 100 || code > 9999 {
 		return false
 	}
 	for _, r := range ranges {
@@ -167,7 +167,7 @@ func parseHTTPStatusCodeToken(token string) (StatusCodeRange, error) {
 		if start > end {
 			return StatusCodeRange{}, fmt.Errorf("range start > end: %s", token)
 		}
-		if start < 100 || end > 599 {
+		if start < 100 || end > 9999 {
 			return StatusCodeRange{}, fmt.Errorf("range out of bounds: %s", token)
 		}
 		return StatusCodeRange{Start: start, End: end}, nil
@@ -177,7 +177,7 @@ func parseHTTPStatusCodeToken(token string) (StatusCodeRange, error) {
 	if err != nil {
 		return StatusCodeRange{}, fmt.Errorf("invalid status code: %s", token)
 	}
-	if code < 100 || code > 599 {
+	if code < 100 || code > 9999 {
 		return StatusCodeRange{}, fmt.Errorf("status code out of bounds: %s", token)
 	}
 	return StatusCodeRange{Start: code, End: code}, nil

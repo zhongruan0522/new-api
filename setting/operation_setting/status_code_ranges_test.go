@@ -26,7 +26,7 @@ func TestParseHTTPStatusCodeRanges_MergeAndNormalize(t *testing.T) {
 }
 
 func TestParseHTTPStatusCodeRanges_Invalid(t *testing.T) {
-	_, err := ParseHTTPStatusCodeRanges("99,600,foo,500-400,500-")
+	_, err := ParseHTTPStatusCodeRanges("99,10000,foo,500-400,500-")
 	require.Error(t, err)
 }
 
@@ -76,4 +76,37 @@ func TestShouldRetryByStatusCode_DefaultMatchesLegacyBehavior(t *testing.T) {
 	require.False(t, ShouldRetryByStatusCode(504))
 	require.False(t, ShouldRetryByStatusCode(524))
 	require.True(t, ShouldRetryByStatusCode(599))
+}
+
+func TestParseHTTPStatusCodeRanges_BusinessErrorCodes(t *testing.T) {
+	// Zhipu AI business error codes (1000-1313)
+	ranges, err := ParseHTTPStatusCodeRanges("1000-1313")
+	require.NoError(t, err)
+	require.Equal(t, []StatusCodeRange{
+		{Start: 1000, End: 1313},
+	}, ranges)
+}
+
+func TestShouldRetryByStatusCode_BusinessErrorCodes(t *testing.T) {
+	orig := AutomaticRetryStatusCodeRanges
+	t.Cleanup(func() { AutomaticRetryStatusCodeRanges = orig })
+
+	AutomaticRetryStatusCodeRanges = []StatusCodeRange{
+		{Start: 500, End: 599},
+		{Start: 1300, End: 1313},
+	}
+
+	// Zhipu AI specific business error codes
+	require.True(t, ShouldRetryByStatusCode(1302))   // concurrent limit
+	require.True(t, ShouldRetryByStatusCode(1303))   // rate limit
+	require.True(t, ShouldRetryByStatusCode(1312))   // model overloaded
+	require.False(t, ShouldRetryByStatusCode(1000))  // auth failure - should not retry
+	require.False(t, ShouldRetryByStatusCode(1210))  // param error - should not retry
+	require.False(t, ShouldRetryByStatusCode(100))   // below min
+	require.False(t, ShouldRetryByStatusCode(10000)) // above max
+}
+
+func TestShouldRetryByStatusCode_OutOfBounds(t *testing.T) {
+	require.False(t, ShouldRetryByStatusCode(99))
+	require.False(t, ShouldRetryByStatusCode(10000))
 }
