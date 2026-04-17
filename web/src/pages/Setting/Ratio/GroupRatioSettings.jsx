@@ -370,9 +370,7 @@ function NestedKeyValueTable({ title, description, data, onChange }) {
     if (updated[outerKey]) {
       updated[outerKey] = { ...updated[outerKey] };
       delete updated[outerKey][innerKey];
-      if (Object.keys(updated[outerKey]).length === 0) {
-        delete updated[outerKey];
-      }
+      // Keep the empty outer group — it stays visible as a placeholder
     }
     onChange(updated);
     adjustPage(updated);
@@ -519,14 +517,14 @@ function NestedKeyValueTable({ title, description, data, onChange }) {
         <Space>
           <Button
             size='small'
-            disabled={record.isEmpty || index === 0 || pagedRows[index - 1]?.outerKey !== record.outerKey}
+            disabled={record.isEmpty || record.innerKey === '' || (() => { const fullIdx = (safePage - 1) * PAGE_SIZE + index; return fullIdx <= 0 || flatRows[fullIdx - 1]?.outerKey !== record.outerKey || flatRows[fullIdx - 1]?.isEmpty; })()}
             onClick={() => handleMoveUp((safePage - 1) * PAGE_SIZE + index)}
           >
             ↑
           </Button>
           <Button
             size='small'
-            disabled={record.isEmpty || index === pagedRows.length - 1 || pagedRows[index + 1]?.outerKey !== record.outerKey}
+            disabled={record.isEmpty || record.innerKey === '' || (() => { const fullIdx = (safePage - 1) * PAGE_SIZE + index; return fullIdx >= flatRows.length - 1 || flatRows[fullIdx + 1]?.outerKey !== record.outerKey || flatRows[fullIdx + 1]?.isEmpty; })()}
             onClick={() => handleMoveDown((safePage - 1) * PAGE_SIZE + index)}
           >
             ↓
@@ -702,8 +700,21 @@ function SpecialUsableGroupTable({ title, description, data, onChange }) {
       return;
     }
     const prefix = addOp === 'remove' ? '-:' : '+:';
+    const rawKey = prefix + grp;
+    const oppositePrefix = addOp === 'remove' ? '+:' : '-:';
+    const oppositeKey = oppositePrefix + grp;
+    // Check direct duplicate
+    if (data[outer]?.hasOwnProperty(rawKey)) {
+      showError(t('该分组名称已存在'));
+      return;
+    }
+    // Check opposite prefix conflict
+    if (data[outer]?.hasOwnProperty(oppositeKey)) {
+      showError(t('该分组已存在相反操作规则，请先删除'));
+      return;
+    }
     const updated = { ...data };
-    updated[outer] = { ...(updated[outer] || {}), [prefix + grp]: addDesc || grp };
+    updated[outer] = { ...(updated[outer] || {}), [rawKey]: addDesc || grp };
     onChange(updated);
     setAddGroup('');
     setAddDesc('');
@@ -718,9 +729,7 @@ function SpecialUsableGroupTable({ title, description, data, onChange }) {
     if (updated[outerKey]) {
       updated[outerKey] = { ...updated[outerKey] };
       delete updated[outerKey][rawKey];
-      if (Object.keys(updated[outerKey]).length === 0) {
-        delete updated[outerKey];
-      }
+      // Keep the empty outer group — it stays visible as a placeholder
     }
     onChange(updated);
     adjustPage(updated);
@@ -752,17 +761,31 @@ function SpecialUsableGroupTable({ title, description, data, onChange }) {
 
     const prefix = operation === 'remove' ? '-:' : '+:';
     const newRawKey = prefix + newGroup;
-
-    // Check if new key conflicts with an existing different entry
-    if (newRawKey !== rawKey && data[outerKey]?.hasOwnProperty(newRawKey)) {
-      showError(t('该分组名称已存在'));
-      setEditCache((prev) => {
-        const next = { ...prev };
-        delete next[`${outerKey}::${rawKey}::group`];
-        delete next[`${outerKey}::${rawKey}::desc`];
-        return next;
-      });
-      return;
+    // Check if the bare group name already exists with the OPPOSITE prefix
+    const oppositePrefix = operation === 'remove' ? '+:' : '-:';
+    const oppositeKey = oppositePrefix + newGroup;
+    // Also check the same prefix (direct duplicate) and the opposite prefix (conflict)
+    if (newRawKey !== rawKey) {
+      if (data[outerKey]?.hasOwnProperty(newRawKey)) {
+        showError(t('该分组名称已存在'));
+        setEditCache((prev) => {
+          const next = { ...prev };
+          delete next[`${outerKey}::${rawKey}::group`];
+          delete next[`${outerKey}::${rawKey}::desc`];
+          return next;
+        });
+        return;
+      }
+      if (data[outerKey]?.hasOwnProperty(oppositeKey)) {
+        showError(t('该分组已存在相反操作规则，请先删除'));
+        setEditCache((prev) => {
+          const next = { ...prev };
+          delete next[`${outerKey}::${rawKey}::group`];
+          delete next[`${outerKey}::${rawKey}::desc`];
+          return next;
+        });
+        return;
+      }
     }
 
     const updated = { ...data };
@@ -940,14 +963,14 @@ function SpecialUsableGroupTable({ title, description, data, onChange }) {
         <Space>
           <Button
             size='small'
-            disabled={record.isEmpty || index === 0 || pagedRows[index - 1]?.outerKey !== record.outerKey || pagedRows[index - 1]?.isEmpty}
+            disabled={record.isEmpty || (() => { const fi = (safePage - 1) * PAGE_SIZE + index; return fi <= 0 || flatRows[fi - 1]?.outerKey !== record.outerKey || flatRows[fi - 1]?.isEmpty; })()}
             onClick={() => handleMoveUp((safePage - 1) * PAGE_SIZE + index)}
           >
             ↑
           </Button>
           <Button
             size='small'
-            disabled={record.isEmpty || index === pagedRows.length - 1 || pagedRows[index + 1]?.outerKey !== record.outerKey || pagedRows[index + 1]?.isEmpty}
+            disabled={record.isEmpty || (() => { const fi = (safePage - 1) * PAGE_SIZE + index; return fi >= flatRows.length - 1 || flatRows[fi + 1]?.outerKey !== record.outerKey || flatRows[fi + 1]?.isEmpty; })()}
             onClick={() => handleMoveDown((safePage - 1) * PAGE_SIZE + index)}
           >
             ↓
