@@ -344,6 +344,43 @@ export const useLogsData = () => {
       let other = getLogOther(logs[i].other);
       let expandDataLocal = [];
 
+      // Error logs (type 5) - dedicated expanded view
+      if (logs[i].type === 5) {
+        if (isAdminUser) {
+          expandDataLocal.push({
+            key: t('渠道信息'),
+            value: `${logs[i].channel} - ${logs[i].channel_name || '[未知]'}`,
+          });
+        }
+        if (logs[i].request_id) {
+          expandDataLocal.push({
+            key: t('Request ID'),
+            value: logs[i].request_id,
+          });
+        }
+        if (other?.request_path) {
+          expandDataLocal.push({
+            key: t('请求路径'),
+            value: other.request_path,
+          });
+        }
+        if (isAdminUser) {
+          expandDataLocal.push({
+            key: t('请求转换'),
+            value: requestConversionDisplayValue(other?.request_conversion),
+          });
+        }
+        if (logs[i].content) {
+          expandDataLocal.push({
+            key: t('错误信息原文'),
+            value: logs[i].content,
+          });
+        }
+        expandDatesLocal[logs[i].key] = expandDataLocal;
+        continue;
+      }
+
+      // Non-error logs
       if (isAdminUser && (logs[i].type === 0 || logs[i].type === 2)) {
         expandDataLocal.push({
           key: t('渠道信息'),
@@ -388,12 +425,16 @@ export const useLogsData = () => {
           value: other.text_output,
         });
       }
+      const _promptTokens = logs[i].prompt_tokens || 0;
+      const _cacheCreationTokens = other?.cache_creation_tokens || 0;
+      const _cacheTokens = other?.cache_tokens || 0;
+      const _inputTokens = _promptTokens - _cacheCreationTokens - _cacheTokens;
       expandDataLocal.push({
         key: t('Tokens'),
         value: t('输入:{{input}} | 缓存创建: {{cacheCreation}} | 缓存读取: {{cacheRead}} | 输出:{{output}}', {
-          input: logs[i].prompt_tokens || 0,
-          cacheCreation: other?.cache_creation_tokens || 0,
-          cacheRead: other?.cache_tokens || 0,
+          input: _inputTokens >= 0 ? _inputTokens : _promptTokens,
+          cacheCreation: _cacheCreationTokens,
+          cacheRead: _cacheTokens,
           output: logs[i].completion_tokens || 0,
         }),
       });
