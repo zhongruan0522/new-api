@@ -80,14 +80,14 @@ function parseToken(token) {
     const end = Number.parseInt(b, 10);
     if (!Number.isFinite(start) || !Number.isFinite(end)) return null;
     if (start > end) return null;
-    if (start < 100 || end > 599) return null;
+    if (start < 100 || end > 9999) return null;
     return { start, end };
   }
 
   if (!isNumber(cleaned)) return null;
   const code = Number.parseInt(cleaned, 10);
   if (!Number.isFinite(code)) return null;
-  if (code < 100 || code > 599) return null;
+  if (code < 100 || code > 9999) return null;
   return { start: code, end: code };
 }
 

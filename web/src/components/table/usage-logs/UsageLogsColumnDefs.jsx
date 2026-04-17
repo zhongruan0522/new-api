@@ -640,10 +640,15 @@ export const getLogsColumns = ({
       render: (text, record, index) => {
         let other = getLogOther(record.other);
         if (other == null || record.type !== 2) {
+          // For error logs (type 5), compress to single line and simplify status_code -> code
+          let displayText = text || '';
+          if (record.type === 5 && displayText) {
+            displayText = displayText.replace(/status_code=/g, 'code=');
+          }
           return (
             <Typography.Paragraph
               ellipsis={{
-                rows: 2,
+                rows: record.type === 5 ? 1 : 2,
                 showTooltip: {
                   type: 'popover',
                   opts: { style: { width: 240 } },
@@ -651,7 +656,7 @@ export const getLogsColumns = ({
               }}
               style={{ maxWidth: 240 }}
             >
-              {text}
+              {displayText}
             </Typography.Paragraph>
           );
         }
