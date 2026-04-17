@@ -344,6 +344,43 @@ export const useLogsData = () => {
       let other = getLogOther(logs[i].other);
       let expandDataLocal = [];
 
+      // Error logs (type 5) - dedicated expanded view
+      if (logs[i].type === 5) {
+        if (isAdminUser) {
+          expandDataLocal.push({
+            key: t('渠道信息'),
+            value: `${logs[i].channel} - ${logs[i].channel_name || '[未知]'}`,
+          });
+        }
+        if (logs[i].request_id) {
+          expandDataLocal.push({
+            key: t('Request ID'),
+            value: logs[i].request_id,
+          });
+        }
+        if (other?.request_path) {
+          expandDataLocal.push({
+            key: t('请求路径'),
+            value: other.request_path,
+          });
+        }
+        if (isAdminUser) {
+          expandDataLocal.push({
+            key: t('请求转换'),
+            value: requestConversionDisplayValue(other?.request_conversion),
+          });
+        }
+        if (logs[i].content) {
+          expandDataLocal.push({
+            key: t('错误信息原文'),
+            value: logs[i].content,
+          });
+        }
+        expandDatesLocal[logs[i].key] = expandDataLocal;
+        continue;
+      }
+
+      // Non-error logs
       if (isAdminUser && (logs[i].type === 0 || logs[i].type === 2)) {
         expandDataLocal.push({
           key: t('渠道信息'),
