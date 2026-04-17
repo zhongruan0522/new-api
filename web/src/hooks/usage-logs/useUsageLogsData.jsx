@@ -425,12 +425,16 @@ export const useLogsData = () => {
           value: other.text_output,
         });
       }
+      const _promptTokens = logs[i].prompt_tokens || 0;
+      const _cacheCreationTokens = other?.cache_creation_tokens || 0;
+      const _cacheTokens = other?.cache_tokens || 0;
+      const _inputTokens = _promptTokens - _cacheCreationTokens - _cacheTokens;
       expandDataLocal.push({
         key: t('Tokens'),
         value: t('输入:{{input}} | 缓存创建: {{cacheCreation}} | 缓存读取: {{cacheRead}} | 输出:{{output}}', {
-          input: logs[i].prompt_tokens || 0,
-          cacheCreation: other?.cache_creation_tokens || 0,
-          cacheRead: other?.cache_tokens || 0,
+          input: _inputTokens >= 0 ? _inputTokens : _promptTokens,
+          cacheCreation: _cacheCreationTokens,
+          cacheRead: _cacheTokens,
           output: logs[i].completion_tokens || 0,
         }),
       });
