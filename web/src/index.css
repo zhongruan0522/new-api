@@ -962,6 +962,10 @@ html.dark .with-pastel-balls::before {
   grid-template-columns: repeat(3, 1fr);
 }
 
+.plan-quota-grid-2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+
 /* 图表区域分隔 */
 .plan-quota-section {
   border-top: 1px solid var(--semi-color-border);
@@ -984,7 +988,8 @@ html.dark .with-pastel-balls::before {
 /* 小屏幕 (手机) */
 @media (max-width: 640px) {
   .plan-quota-grid-4,
-  .plan-quota-grid-3 {
+  .plan-quota-grid-3,
+  .plan-quota-grid-2 {
     grid-template-columns: 1fr;
   }
 }
