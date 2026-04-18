@@ -10,11 +10,11 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"github.com/zhongruan0522/new-api/common"
 	"github.com/zhongruan0522/new-api/i18n"
 	"github.com/zhongruan0522/new-api/logger"
 	"github.com/zhongruan0522/new-api/model"
-	"github.com/gin-gonic/gin"
 )
 
 func init() {
@@ -171,8 +171,4 @@ func (p *GitHubProvider) FillUserByProviderID(user *model.User, providerUserID s
 
 func (p *GitHubProvider) SetProviderUserID(user *model.User, providerUserID string) {
 	user.GitHubId = providerUserID
-}
-
-func (p *GitHubProvider) GetProviderPrefix() string {
-	return "github_"
 }

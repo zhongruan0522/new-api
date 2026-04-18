@@ -3,8 +3,8 @@ package oauth
 import (
 	"context"
 
-	"github.com/zhongruan0522/new-api/model"
 	"github.com/gin-gonic/gin"
+	"github.com/zhongruan0522/new-api/model"
 )
 
 // Provider defines the interface for OAuth providers
@@ -30,7 +30,4 @@ type Provider interface {
 
 	// SetProviderUserID sets the provider user ID on the user model
 	SetProviderUserID(user *model.User, providerUserID string)
-
-	// GetProviderPrefix returns the prefix for auto-generated usernames (e.g., "github_")
-	GetProviderPrefix() string
 }
