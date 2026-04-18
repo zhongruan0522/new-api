@@ -16,7 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { API, showError, showSuccess } from '../../helpers';
+import { API, showError } from '../../helpers';
 import {
   Button,
   Card,
@@ -55,7 +55,6 @@ const TwoFAVerification = ({ onSuccess, onBack, isModal = false }) => {
       });
 
       if (res.data.success) {
-        showSuccess('登录成功');
         // 保存用户信息到本地存储
         localStorage.setItem('user', JSON.stringify(res.data.data));
         if (onSuccess) {
