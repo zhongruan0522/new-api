@@ -63,7 +63,38 @@ function patchAPIInstance(instance) {
 
 patchAPIInstance(API);
 
+function setupInterceptors(instance) {
+  instance.interceptors.response.use(
+    (response) => response,
+    (error) => {
+      // 如果请求配置中显式要求跳过全局错误处理，则不弹出默认错误提示
+      if (error.config && error.config.skipErrorHandler) {
+        return Promise.reject(error);
+      }
+      // 401 只处理一次，跳过后续的并发 401 错误弹窗
+      if (error.response?.status === 401) {
+        if (isRedirecting401) {
+          return Promise.reject(error);
+        }
+        isRedirecting401 = true;
+      }
+      showError(error);
+      return Promise.reject(error);
+    },
+  );
+}
+
+// 401 重定向标记，防止多个并发请求同时 401 时弹出大量重复错误通知
+let isRedirecting401 = false;
+
+setupInterceptors(API);
+
+export function reset401State() {
+  isRedirecting401 = false;
+}
+
 export function updateAPI() {
+  isRedirecting401 = false;
   API = axios.create({
     baseURL: import.meta.env.VITE_REACT_APP_SERVER_URL
       ? import.meta.env.VITE_REACT_APP_SERVER_URL
@@ -75,19 +106,8 @@ export function updateAPI() {
   });
 
   patchAPIInstance(API);
+  setupInterceptors(API);
 }
-
-API.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    // 如果请求配置中显式要求跳过全局错误处理，则不弹出默认错误提示
-    if (error.config && error.config.skipErrorHandler) {
-      return Promise.reject(error);
-    }
-    showError(error);
-    return Promise.reject(error);
-  },
-);
 
 export async function getOAuthState() {
   let path = '/api/oauth/state';
