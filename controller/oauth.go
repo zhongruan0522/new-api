@@ -224,26 +224,42 @@ func findOrCreateOAuthUser(c *gin.Context, provider oauth.Provider, oauthUser *o
 		return nil, &OAuthRegistrationDisabledError{}
 	}
 
-	// If provider returned an email, try to find an existing user with that email
+	// If provider returned an email, try to find exactly one existing user with that email
 	// and merge by binding the OAuth provider ID to the existing account.
-	if oauthUser.Email != "" {
+	// We only merge when the email is unique in the system to avoid binding to the wrong account.
+	if oauthUser.Email != "" && model.IsEmailAlreadyTaken(oauthUser.Email) {
 		existingUser := &model.User{}
 		existingUser.Email = oauthUser.Email
 		if err := existingUser.FillUserByEmail(); err == nil && existingUser.Id != 0 {
-			if existingUser.Status != common.UserStatusEnabled {
-				return nil, &OAuthUserDeletedError{}
+			// Verify this email belongs to exactly one active user
+			var count int64
+			model.DB.Unscoped().Model(&model.User{}).Where("email = ?", oauthUser.Email).Count(&count)
+			if count != 1 {
+				// Multiple users share this email — skip merge, create new user instead
+				common.SysLog(fmt.Sprintf("[OAuth] Skipping email merge for %s: %d users share this email",
+					oauthUser.Email, count))
+			} else {
+				if existingUser.Status != common.UserStatusEnabled {
+					return nil, &OAuthUserDeletedError{}
+				}
+				// Check if this provider is already bound to a different user
+				if provider.IsUserIDTaken(oauthUser.ProviderUserID) {
+					common.SysLog(fmt.Sprintf("[OAuth] Skipping email merge: provider ID %s already bound to another user",
+						oauthUser.ProviderUserID))
+				} else {
+					// Bind OAuth to the existing account
+					provider.SetProviderUserID(existingUser, oauthUser.ProviderUserID)
+					if err := model.DB.Model(existingUser).Updates(map[string]interface{}{
+						"github_id":   existingUser.GitHubId,
+						"linux_do_id": existingUser.LinuxDOId,
+					}).Error; err != nil {
+						return nil, err
+					}
+					common.SysLog(fmt.Sprintf("[OAuth] Merged OAuth account (provider=%s, provider_uid=%s) into existing user %d by email match",
+						provider.GetName(), oauthUser.ProviderUserID, existingUser.Id))
+					return existingUser, nil
+				}
 			}
-			// Bind OAuth to the existing account
-			provider.SetProviderUserID(existingUser, oauthUser.ProviderUserID)
-			if err := model.DB.Model(existingUser).Updates(map[string]interface{}{
-				"github_id":   existingUser.GitHubId,
-				"linux_do_id": existingUser.LinuxDOId,
-			}).Error; err != nil {
-				return nil, err
-			}
-			common.SysLog(fmt.Sprintf("[OAuth] Merged OAuth account (provider=%s, provider_uid=%s) into existing user %d by email match",
-				provider.GetName(), oauthUser.ProviderUserID, existingUser.Id))
-			return existingUser, nil
 		}
 	}
 
@@ -325,7 +341,8 @@ func handleOAuthError(c *gin.Context, err error) {
 const maxUsernameLen = 20
 
 // buildOAuthUsername creates a unique username from the provider username and provider user ID.
-// Format: "providerUsername_providerUserID", truncated to maxUsernameLen characters.
+// Format: "providerUsername_providerUserID". When truncation is needed, the providerUserID
+// suffix is preserved because it is the source of uniqueness.
 func buildOAuthUsername(providerUsername string, providerUserID string) string {
 	// Use "user" as fallback when provider username is empty
 	if providerUsername == "" {
@@ -339,9 +356,19 @@ func buildOAuthUsername(providerUsername string, providerUserID string) string {
 		return '_'
 	}, providerUsername)
 
-	candidate := cleaned + "_" + providerUserID
-	if len(candidate) > maxUsernameLen {
-		candidate = candidate[:maxUsernameLen]
+	separator := "_"
+	suffix := separator + providerUserID
+	suffixLen := len(suffix)
+
+	if suffixLen >= maxUsernameLen {
+		// Provider ID alone exceeds max length — use it directly (still unique)
+		return suffix[1:suffixLen] // trim leading underscore
 	}
-	return candidate
+
+	available := maxUsernameLen - suffixLen
+	if len(cleaned) > available {
+		cleaned = cleaned[:available]
+	}
+
+	return cleaned + suffix
 }
