@@ -3,7 +3,7 @@ package controller
 import (
 	"fmt"
 	"net/http"
-	"strconv"
+	"strings"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
@@ -224,8 +224,31 @@ func findOrCreateOAuthUser(c *gin.Context, provider oauth.Provider, oauthUser *o
 		return nil, &OAuthRegistrationDisabledError{}
 	}
 
-	// Set up new user
-	user.Username = provider.GetProviderPrefix() + strconv.Itoa(model.GetMaxUserId()+1)
+	// If provider returned an email, try to find an existing user with that email
+	// and merge by binding the OAuth provider ID to the existing account.
+	if oauthUser.Email != "" {
+		existingUser := &model.User{}
+		existingUser.Email = oauthUser.Email
+		if err := existingUser.FillUserByEmail(); err == nil && existingUser.Id != 0 {
+			if existingUser.Status != common.UserStatusEnabled {
+				return nil, &OAuthUserDeletedError{}
+			}
+			// Bind OAuth to the existing account
+			provider.SetProviderUserID(existingUser, oauthUser.ProviderUserID)
+			if err := model.DB.Model(existingUser).Updates(map[string]interface{}{
+				"github_id":   existingUser.GitHubId,
+				"linux_do_id": existingUser.LinuxDOId,
+			}).Error; err != nil {
+				return nil, err
+			}
+			common.SysLog(fmt.Sprintf("[OAuth] Merged OAuth account (provider=%s, provider_uid=%s) into existing user %d by email match",
+				provider.GetName(), oauthUser.ProviderUserID, existingUser.Id))
+			return existingUser, nil
+		}
+	}
+
+	// Build username from provider username + provider user ID, truncated to 20 chars
+	user.Username = buildOAuthUsername(oauthUser.Username, oauthUser.ProviderUserID)
 	if oauthUser.DisplayName != "" {
 		user.DisplayName = oauthUser.DisplayName
 	} else if oauthUser.Username != "" {
@@ -297,4 +320,28 @@ func handleOAuthError(c *gin.Context, err error) {
 	default:
 		common.ApiError(c, err)
 	}
+}
+
+const maxUsernameLen = 20
+
+// buildOAuthUsername creates a unique username from the provider username and provider user ID.
+// Format: "providerUsername_providerUserID", truncated to maxUsernameLen characters.
+func buildOAuthUsername(providerUsername string, providerUserID string) string {
+	// Use "user" as fallback when provider username is empty
+	if providerUsername == "" {
+		providerUsername = "user"
+	}
+	// Only keep ASCII alphanumeric and underscore from provider username
+	cleaned := strings.Map(func(r rune) rune {
+		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r == '_' {
+			return r
+		}
+		return '_'
+	}, providerUsername)
+
+	candidate := cleaned + "_" + providerUserID
+	if len(candidate) > maxUsernameLen {
+		candidate = candidate[:maxUsernameLen]
+	}
+	return candidate
 }
