@@ -527,7 +527,7 @@ func UpdateSelf(c *gin.Context) {
 		return
 	}
 
-	// 检查是否是用户设置更新请求 (sidebar_modules 或 language)
+	// 检查是否是用户设置更新请求 (sidebar_modules)
 	if sidebarModules, sidebarExists := requestData["sidebar_modules"]; sidebarExists {
 		userId := c.GetInt("id")
 		user, err := model.GetUserById(userId, false)
@@ -558,34 +558,6 @@ func UpdateSelf(c *gin.Context) {
 			return
 		}
 		currentSetting.SidebarModules = sanitized
-
-		// 保存更新后的设置
-		user.SetSetting(currentSetting)
-		if err := user.Update(false); err != nil {
-			common.ApiErrorI18n(c, i18n.MsgUpdateFailed)
-			return
-		}
-
-		common.ApiSuccessI18n(c, i18n.MsgUpdateSuccess, nil)
-		return
-	}
-
-	// 检查是否是语言偏好更新请求
-	if language, langExists := requestData["language"]; langExists {
-		userId := c.GetInt("id")
-		user, err := model.GetUserById(userId, false)
-		if err != nil {
-			common.ApiError(c, err)
-			return
-		}
-
-		// 获取当前用户设置
-		currentSetting := user.GetSetting()
-
-		// 更新language字段
-		if langStr, ok := language.(string); ok {
-			currentSetting.Language = langStr
-		}
 
 		// 保存更新后的设置
 		user.SetSetting(currentSetting)
