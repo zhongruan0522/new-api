@@ -383,6 +383,13 @@ func GetSelf(c *gin.Context) {
 	// 获取用户设置并提取sidebar_modules
 	userSetting := user.GetSetting()
 
+	// 重新序列化用户设置，确保已移除的字段不会出现在响应中
+	settingJSON, err := common.Marshal(userSetting)
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+
 	// 构建响应数据，包含用户信息和权限
 	responseData := map[string]interface{}{
 		"id":                    user.Id,
@@ -402,7 +409,7 @@ func GetSelf(c *gin.Context) {
 		"aff_history_quota":     user.AffHistoryQuota,
 		"inviter_id":            user.InviterId,
 		"linux_do_id":           user.LinuxDOId,
-		"setting":               user.Setting,
+		"setting":               string(settingJSON),
 		"stripe_customer":       user.StripeCustomer,
 		"sidebar_modules":       userSetting.SidebarModules,
 		"permissions":           permissions,

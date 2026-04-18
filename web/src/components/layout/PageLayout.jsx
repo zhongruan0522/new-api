@@ -111,10 +111,6 @@ const PageLayout = () => {
         linkElement.href = logo;
       }
     }
-    const savedLang = localStorage.getItem('i18nextLng');
-    if (savedLang) {
-      i18n.changeLanguage(savedLang);
-    }
   }, [i18n]);
 
   return (
