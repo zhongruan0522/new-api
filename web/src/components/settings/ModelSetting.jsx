@@ -26,7 +26,6 @@ import SettingsChannelAffinity from '../../pages/Setting/Operation/SettingsChann
 
 const ModelSetting = () => {
   let [inputs, setInputs] = useState({
-    'global.pass_through_request_enabled': false,
     'general_setting.ping_interval_enabled': false,
     'general_setting.ping_interval_seconds': 60,
   });

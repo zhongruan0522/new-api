@@ -13,7 +13,6 @@ import (
 	relaycommon "github.com/zhongruan0522/new-api/relay/common"
 	"github.com/zhongruan0522/new-api/relay/helper"
 	"github.com/zhongruan0522/new-api/service"
-	"github.com/zhongruan0522/new-api/setting/model_setting"
 	"github.com/zhongruan0522/new-api/types"
 
 	"github.com/gin-gonic/gin"
@@ -60,7 +59,7 @@ func GeminiHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *typ
 	}
 
 	var requestBody io.Reader
-	if model_setting.GetGlobalSettings().PassThroughRequestEnabled || info.ChannelSetting.PassThroughBodyEnabled {
+	if info.ChannelSetting.PassThroughBodyEnabled {
 		body, err := common.GetRequestBody(c)
 		if err != nil {
 			return types.NewErrorWithStatusCode(err, types.ErrorCodeReadRequestBodyFailed, http.StatusBadRequest, types.ErrOptionWithSkipRetry())

@@ -26,7 +26,6 @@ import {
   showSuccess,
   loadChannelModels,
   copy,
-  toBoolean,
 } from '../../helpers';
 import {
   CHANNEL_OPTIONS,
@@ -87,26 +86,6 @@ export const useChannelsData = () => {
   const [modelTablePage, setModelTablePage] = useState(1);
   const [selectedEndpointType, setSelectedEndpointType] = useState('');
   const [isStreamTest, setIsStreamTest] = useState(false);
-  const [globalPassThroughEnabled, setGlobalPassThroughEnabled] =
-    useState(false);
-
-  const fetchGlobalPassThroughEnabled = async () => {
-    try {
-      const res = await API.get('/api/option/');
-      const { success, data } = res?.data || {};
-      if (!success || !Array.isArray(data)) {
-        return;
-      }
-      const option = data.find(
-        (item) => item?.key === 'global.pass_through_request_enabled',
-      );
-      if (option) {
-        setGlobalPassThroughEnabled(toBoolean(option.value));
-      }
-    } catch (error) {
-      setGlobalPassThroughEnabled(false);
-    }
-  };
 
   // 使用 ref 来避免闭包问题，类似旧版实现
   const shouldStopBatchTestingRef = useRef(false);
@@ -211,7 +190,6 @@ export const useChannelsData = () => {
       });
     fetchGroups().then();
     loadChannelModels().then();
-    fetchGlobalPassThroughEnabled().then();
   }, []);
 
   // Column visibility management
@@ -1208,7 +1186,6 @@ export const useChannelsData = () => {
     enableBatchDelete,
     statusFilter,
     compactMode,
-    globalPassThroughEnabled,
 
     // UI states
     showEdit,
