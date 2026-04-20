@@ -56,6 +56,7 @@ const QUOTA_FIELDS = [
   'PreConsumedQuota',
   'QuotaForInviter',
   'QuotaForInvitee',
+  'quota_setting.free_model_pre_consumed_quota',
 ];
 
 export default function SettingsCreditLimit(props) {
@@ -68,6 +69,7 @@ export default function SettingsCreditLimit(props) {
     QuotaForInviter: '',
     QuotaForInvitee: '',
     'quota_setting.enable_free_model_pre_consume': true,
+    'quota_setting.free_model_pre_consumed_quota': '',
   });
   const refForm = useRef();
   const [inputsRow, setInputsRow] = useState(inputs);
@@ -233,6 +235,27 @@ export default function SettingsCreditLimit(props) {
                     setInputs((prev) => ({
                       ...prev,
                       'quota_setting.enable_free_model_pre_consume': value,
+                    }))
+                  }
+                />
+              </Col>
+            </Row>
+            <Row gutter={16}>
+              <Col xs={24} sm={12} md={8} lg={8} xl={8}>
+                <Form.InputNumber
+                  field='quota_setting.free_model_pre_consumed_quota'
+                  label={t('免费模型预消耗额度')}
+                  step={0.01}
+                  min={0}
+                  suffix={currencySuffix}
+                  extraText={t(
+                    '开启预消耗后，免费模型预扣费的额度，独立于请求预扣费额度',
+                  )}
+                  placeholder={''}
+                  onChange={(value) =>
+                    setInputs((prev) => ({
+                      ...prev,
+                      'quota_setting.free_model_pre_consumed_quota': value,
                     }))
                   }
                 />
