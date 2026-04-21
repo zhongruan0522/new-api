@@ -77,9 +77,13 @@ const renderType = (type, record = {}, t) => {
       );
   }
 
+  const label = channelInfo?.is_plan
+    ? `${typeOption?.label}${t('套餐')}`
+    : typeOption?.label;
+
   const typeTag = (
     <Tag color={typeOption?.color} shape='circle' prefixIcon={icon}>
-      {typeOption?.label}
+      {label}
     </Tag>
   );
 
