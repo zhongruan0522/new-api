@@ -77,15 +77,22 @@ const renderType = (type, record = {}, t) => {
       );
   }
 
-  const label = channelInfo?.is_plan
-    ? `${typeOption?.label}${t('套餐')}`
-    : typeOption?.label;
-
   const typeTag = (
     <Tag color={typeOption?.color} shape='circle' prefixIcon={icon}>
-      {label}
+      {typeOption?.label}
     </Tag>
   );
+
+  if (channelInfo?.is_plan) {
+    return (
+      <Space spacing={4}>
+        {typeTag}
+        <Tag color='violet' shape='circle'>
+          {t('套餐')}
+        </Tag>
+      </Space>
+    );
+  }
 
   return typeTag;
 };
