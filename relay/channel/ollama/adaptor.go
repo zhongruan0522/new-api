@@ -2,9 +2,12 @@ package ollama
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
+	"strings"
 
+	channelconstant "github.com/zhongruan0522/new-api/constant"
 	"github.com/zhongruan0522/new-api/dto"
 	"github.com/zhongruan0522/new-api/relay/channel"
 	"github.com/zhongruan0522/new-api/relay/channel/claude"
@@ -46,8 +49,25 @@ func (a *Adaptor) Init(info *relaycommon.RelayInfo) {
 }
 
 func (a *Adaptor) GetRequestURL(info *relaycommon.RelayInfo) (string, error) {
+	baseURL := strings.TrimSpace(info.ChannelBaseUrl)
+	if baseURL == "" {
+		baseURL = channelconstant.ChannelBaseURLs[channelconstant.ChannelTypeOllama]
+	}
+	specialPlan, hasSpecialPlan := channelconstant.ChannelSpecialBases[baseURL]
+	if hasSpecialPlan {
+		switch info.RelayFormat {
+		case types.RelayFormatClaude:
+			if specialPlan.ClaudeBaseURL != "" {
+				return fmt.Sprintf("%s/v1/messages", specialPlan.ClaudeBaseURL), nil
+			}
+		default:
+			if specialPlan.OpenAIBaseURL != "" {
+				return fmt.Sprintf("%s%s", specialPlan.OpenAIBaseURL, info.RequestURLPath), nil
+			}
+		}
+	}
 	// Ollama 现已支持标准兼容端点，直接转发到客户端请求的原始规范路径。
-	return relaycommon.GetFullRequestURL(info.ChannelBaseUrl, info.RequestURLPath, info.ChannelType), nil
+	return relaycommon.GetFullRequestURL(baseURL, info.RequestURLPath, info.ChannelType), nil
 }
 
 func (a *Adaptor) SetupRequestHeader(c *gin.Context, req *http.Header, info *relaycommon.RelayInfo) error {
