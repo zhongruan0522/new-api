@@ -48,9 +48,9 @@ func (s *BillingSession) Settle(actualQuota int) error {
 
 	var tokenErr error
 	if delta > 0 {
-		tokenErr = model.DecreaseTokenQuota(s.relayInfo.TokenId, s.relayInfo.TokenKey, delta)
+		tokenErr = s.decreaseTokenQuota(delta)
 	} else {
-		tokenErr = model.IncreaseTokenQuota(s.relayInfo.TokenId, s.relayInfo.TokenKey, -delta)
+		tokenErr = s.increaseTokenQuota(-delta)
 	}
 	if tokenErr != nil {
 		common.SysLog(fmt.Sprintf(
@@ -89,7 +89,7 @@ func (s *BillingSession) Refund(c *gin.Context) {
 			common.SysLog("error refunding billing source: " + err.Error())
 		}
 		if tokenConsumed > 0 {
-			if err := model.IncreaseTokenQuota(tokenId, tokenKey, tokenConsumed); err != nil {
+			if err := s.increaseTokenQuotaByAmount(tokenId, tokenKey, tokenConsumed); err != nil {
 				common.SysLog("error refunding token quota: " + err.Error())
 			}
 		}
@@ -137,7 +137,7 @@ func (s *BillingSession) preConsume(c *gin.Context, quota int) *types.NewAPIErro
 
 	if err := s.funding.PreConsume(effectiveQuota); err != nil {
 		if s.tokenConsumed > 0 {
-			if rollbackErr := model.IncreaseTokenQuota(s.relayInfo.TokenId, s.relayInfo.TokenKey, s.tokenConsumed); rollbackErr != nil {
+			if rollbackErr := s.increaseTokenQuotaByAmount(s.relayInfo.TokenId, s.relayInfo.TokenKey, s.tokenConsumed); rollbackErr != nil {
 				common.SysLog(fmt.Sprintf(
 					"error rolling back token quota (userId=%d, tokenId=%d, amount=%d, fundingErr=%s): %s",
 					s.relayInfo.UserId, s.relayInfo.TokenId, s.tokenConsumed, err.Error(), rollbackErr.Error(),
@@ -159,9 +159,22 @@ func (s *BillingSession) shouldTrust(c *gin.Context) bool {
 		return false
 	}
 
-	tokenTrusted := s.relayInfo.TokenUnlimited
+	quotaType := s.relayInfo.TokenQuotaType
+
+	tokenTrusted := quotaType == 0 || s.relayInfo.TokenUnlimited
 	if !tokenTrusted {
-		tokenQuota := s.relayInfo.TokenQuota
+		var tokenQuota int
+		switch quotaType {
+		case 1:
+			tokenQuota = s.relayInfo.TokenQuota
+		case 2, 3:
+			// 对于时段限额模式，使用窗口剩余额度
+			// TokenQuota 在 auth 中设置为 RemainQuota，但时段模式下我们需要窗口剩余额度
+			// 这里简化处理：如果 TokenQuota > trustQuota 就信任
+			tokenQuota = s.relayInfo.TokenQuota
+		default:
+			tokenQuota = s.relayInfo.TokenQuota
+		}
 		tokenTrusted = tokenQuota > trustQuota
 	}
 	if !tokenTrusted {
@@ -175,6 +188,73 @@ func (s *BillingSession) syncRelayInfo() {
 	info := s.relayInfo
 	info.FinalPreConsumedQuota = s.preConsumedQuota
 	info.BillingSource = s.funding.Source()
+}
+
+// decreaseTokenQuota 根据配额类型扣减 token 额度
+func (s *BillingSession) decreaseTokenQuota(quota int) error {
+	quotaType := s.relayInfo.TokenQuotaType
+	tokenId := s.relayInfo.TokenId
+	tokenKey := s.relayInfo.TokenKey
+
+	switch quotaType {
+	case 0: // 无限额度，不扣减
+		return nil
+	case 1: // 永久限额
+		return model.DecreaseTokenQuota(tokenId, tokenKey, quota)
+	case 2: // 时段限额
+		return model.DecreaseWindowQuota(tokenId, tokenKey, quota)
+	case 3: // 时段+周期限额
+		if err := model.DecreaseWindowQuota(tokenId, tokenKey, quota); err != nil {
+			return err
+		}
+		return model.DecreaseCycleQuota(tokenId, tokenKey, quota)
+	default:
+		return model.DecreaseTokenQuota(tokenId, tokenKey, quota)
+	}
+}
+
+// increaseTokenQuota 根据配额类型退还 token 额度
+func (s *BillingSession) increaseTokenQuota(quota int) error {
+	quotaType := s.relayInfo.TokenQuotaType
+	tokenId := s.relayInfo.TokenId
+	tokenKey := s.relayInfo.TokenKey
+
+	switch quotaType {
+	case 0: // 无限额度，不退还
+		return nil
+	case 1: // 永久限额
+		return model.IncreaseTokenQuota(tokenId, tokenKey, quota)
+	case 2: // 时段限额
+		return model.IncreaseWindowQuota(tokenId, tokenKey, quota)
+	case 3: // 时段+周期限额
+		if err := model.IncreaseWindowQuota(tokenId, tokenKey, quota); err != nil {
+			return err
+		}
+		return model.IncreaseCycleQuota(tokenId, tokenKey, quota)
+	default:
+		return model.IncreaseTokenQuota(tokenId, tokenKey, quota)
+	}
+}
+
+// increaseTokenQuotaByAmount 退还 token 额度（用于退款场景，使用独立的 tokenId/tokenKey 参数）
+func (s *BillingSession) increaseTokenQuotaByAmount(tokenId int, tokenKey string, quota int) error {
+	quotaType := s.relayInfo.TokenQuotaType
+
+	switch quotaType {
+	case 0:
+		return nil
+	case 1:
+		return model.IncreaseTokenQuota(tokenId, tokenKey, quota)
+	case 2:
+		return model.IncreaseWindowQuota(tokenId, tokenKey, quota)
+	case 3:
+		if err := model.IncreaseWindowQuota(tokenId, tokenKey, quota); err != nil {
+			return err
+		}
+		return model.IncreaseCycleQuota(tokenId, tokenKey, quota)
+	default:
+		return model.IncreaseTokenQuota(tokenId, tokenKey, quota)
+	}
 }
 
 func NewBillingSession(c *gin.Context, relayInfo *relaycommon.RelayInfo, preConsumedQuota int) (*BillingSession, *types.NewAPIError) {

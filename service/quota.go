@@ -440,15 +440,41 @@ func PreConsumeTokenQuota(relayInfo *relaycommon.RelayInfo, quota int) error {
 	if quota < 0 {
 		return errors.New("quota 不能为负数！")
 	}
-	//if relayInfo.TokenUnlimited {
-	//	return nil
-	//}
-	if !relayInfo.TokenUnlimited && relayInfo.TokenQuota < quota {
+
+	quotaType := relayInfo.TokenQuotaType
+
+	// 无限额度模式不预扣
+	if quotaType == 0 {
+		return nil
+	}
+
+	// 永久限额模式：检查 TokenQuota（即 RemainQuota）
+	if quotaType == 1 && relayInfo.TokenQuota < quota {
 		return fmt.Errorf("token quota is not enough, token remain quota: %s, need quota: %s", logger.FormatQuota(relayInfo.TokenQuota), logger.FormatQuota(quota))
 	}
-	err := model.DecreaseTokenQuota(relayInfo.TokenId, relayInfo.TokenKey, quota)
-	if err != nil {
-		return err
+
+	// 时段限额模式 (2, 3)：预扣减窗口额度
+	switch quotaType {
+	case 2:
+		err := model.DecreaseWindowQuota(relayInfo.TokenId, relayInfo.TokenKey, quota)
+		if err != nil {
+			return err
+		}
+	case 3:
+		err := model.DecreaseWindowQuota(relayInfo.TokenId, relayInfo.TokenKey, quota)
+		if err != nil {
+			return err
+		}
+		err = model.DecreaseCycleQuota(relayInfo.TokenId, relayInfo.TokenKey, quota)
+		if err != nil {
+			return err
+		}
+	default:
+		// quotaType == 1 或其他：使用原有的 RemainQuota 扣减
+		err := model.DecreaseTokenQuota(relayInfo.TokenId, relayInfo.TokenKey, quota)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -468,10 +494,32 @@ func PostConsumeQuota(relayInfo *relaycommon.RelayInfo, quota int, preConsumedQu
 		return err
 	}
 
+	// Token quota deduction based on quota type
+	quotaType := relayInfo.TokenQuotaType
 	if quota > 0 {
-		err = model.DecreaseTokenQuota(relayInfo.TokenId, relayInfo.TokenKey, quota)
+		switch quotaType {
+		case 0: // 无限额度，不扣
+		case 2:
+			err = model.DecreaseWindowQuota(relayInfo.TokenId, relayInfo.TokenKey, quota)
+		case 3:
+			if err = model.DecreaseWindowQuota(relayInfo.TokenId, relayInfo.TokenKey, quota); err == nil {
+				err = model.DecreaseCycleQuota(relayInfo.TokenId, relayInfo.TokenKey, quota)
+			}
+		default: // 1 或其他
+			err = model.DecreaseTokenQuota(relayInfo.TokenId, relayInfo.TokenKey, quota)
+		}
 	} else {
-		err = model.IncreaseTokenQuota(relayInfo.TokenId, relayInfo.TokenKey, -quota)
+		switch quotaType {
+		case 0: // 无限额度，不退还
+		case 2:
+			err = model.IncreaseWindowQuota(relayInfo.TokenId, relayInfo.TokenKey, -quota)
+		case 3:
+			if err = model.IncreaseWindowQuota(relayInfo.TokenId, relayInfo.TokenKey, -quota); err == nil {
+				err = model.IncreaseCycleQuota(relayInfo.TokenId, relayInfo.TokenKey, -quota)
+			}
+		default: // 1 或其他
+			err = model.IncreaseTokenQuota(relayInfo.TokenId, relayInfo.TokenKey, -quota)
+		}
 	}
 	if err != nil {
 		return err

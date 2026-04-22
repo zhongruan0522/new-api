@@ -42,6 +42,11 @@ const (
 	MsgTokenExhausted            = "token.exhausted"
 	MsgTokenStatusUnavailable    = "token.status_unavailable"
 	MsgTokenDbError              = "token.db_error"
+	MsgTokenWindowExhausted      = "token.window_exhausted"
+	MsgTokenCycleExhausted       = "token.cycle_exhausted"
+	MsgTokenInvalidQuotaType     = "token.invalid_quota_type"
+	MsgTokenInvalidWindowParams  = "token.invalid_window_params"
+	MsgTokenInvalidCycleParams   = "token.invalid_cycle_params"
 )
 
 // Redemption related messages
