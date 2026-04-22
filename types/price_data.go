@@ -9,7 +9,7 @@ type GroupRatioInfo struct {
 }
 
 type PriceData struct {
-	FreeModel            bool
+	FreeModel            bool // true when the model is genuinely free and no pre-consumption is needed
 	ModelPrice           float64
 	ModelRatio           float64
 	CompletionRatio      float64

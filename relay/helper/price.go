@@ -94,22 +94,29 @@ func ModelPriceHelper(c *gin.Context, info *relaycommon.RelayInfo, promptTokens 
 		preConsumedQuota = int(modelPrice * common.QuotaPerUnit * groupRatioInfo.GroupRatio)
 	}
 
-	// check if free model pre-consume is disabled
-	if !operation_setting.GetQuotaSetting().EnableFreeModelPreConsume {
-		// if model price or ratio is 0, do not pre-consume quota
-		if groupRatioInfo.GroupRatio == 0 {
-			preConsumedQuota = 0
+	// check free model pre-consume setting
+	quotaSetting := operation_setting.GetQuotaSetting()
+	isFreeModel := false
+	if usePrice {
+		if modelPrice == 0 && groupRatioInfo.GroupRatio > 0 {
+			isFreeModel = true
+		}
+	} else {
+		if modelRatio == 0 && groupRatioInfo.GroupRatio > 0 {
+			isFreeModel = true
+		}
+	}
+
+	// GroupRatio == 0 means the group itself is free; preConsumedQuota is naturally 0
+	if groupRatioInfo.GroupRatio == 0 {
+		// keep preConsumedQuota as-is (already 0 from multiplication)
+		if quotaSetting.FreeModelPreConsumedQuota <= 0 {
 			freeModel = true
-		} else if usePrice {
-			if modelPrice == 0 {
-				preConsumedQuota = 0
-				freeModel = true
-			}
-		} else {
-			if modelRatio == 0 {
-				preConsumedQuota = 0
-				freeModel = true
-			}
+		}
+	} else if isFreeModel {
+		preConsumedQuota = quotaSetting.FreeModelPreConsumedQuota
+		if preConsumedQuota <= 0 {
+			freeModel = true
 		}
 	}
 

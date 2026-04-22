@@ -83,6 +83,17 @@ const renderType = (type, record = {}, t) => {
     </Tag>
   );
 
+  if (channelInfo?.is_plan) {
+    return (
+      <Space spacing={4}>
+        {typeTag}
+        <Tag color='violet' shape='circle'>
+          {t('套餐')}
+        </Tag>
+      </Space>
+    );
+  }
+
   return typeTag;
 };
 

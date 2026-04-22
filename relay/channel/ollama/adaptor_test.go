@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	channelconstant "github.com/zhongruan0522/new-api/constant"
 	"github.com/zhongruan0522/new-api/dto"
 	relaycommon "github.com/zhongruan0522/new-api/relay/common"
 	"github.com/zhongruan0522/new-api/types"
@@ -18,19 +19,43 @@ func TestGetRequestURLUsesCompatiblePath(t *testing.T) {
 		name           string
 		channelBaseURL string
 		requestPath    string
+		relayFormat    types.RelayFormat
 		expectURL      string
 	}{
 		{
 			name:           "chat completions",
 			channelBaseURL: "http://ollama.local",
 			requestPath:    "/v1/chat/completions",
+			relayFormat:    types.RelayFormatOpenAI,
 			expectURL:      "http://ollama.local/v1/chat/completions",
 		},
 		{
 			name:           "anthropic messages with query",
 			channelBaseURL: "http://ollama.local",
 			requestPath:    "/v1/messages?beta=true",
+			relayFormat:    types.RelayFormatClaude,
 			expectURL:      "http://ollama.local/v1/messages?beta=true",
+		},
+		{
+			name:           "coding plan openai chat",
+			channelBaseURL: "ollama-coding-plan",
+			requestPath:    "/v1/chat/completions",
+			relayFormat:    types.RelayFormatOpenAI,
+			expectURL:      "https://ollama.com/v1/chat/completions",
+		},
+		{
+			name:           "coding plan claude messages",
+			channelBaseURL: "ollama-coding-plan",
+			requestPath:    "/v1/messages",
+			relayFormat:    types.RelayFormatClaude,
+			expectURL:      "https://ollama.com/v1/messages",
+		},
+		{
+			name:           "coding plan openai embeddings",
+			channelBaseURL: "ollama-coding-plan",
+			requestPath:    "/v1/embeddings",
+			relayFormat:    types.RelayFormatOpenAI,
+			expectURL:      "https://ollama.com/v1/embeddings",
 		},
 	}
 
@@ -40,6 +65,7 @@ func TestGetRequestURLUsesCompatiblePath(t *testing.T) {
 			info := &relaycommon.RelayInfo{
 				ChannelMeta:    &relaycommon.ChannelMeta{ChannelBaseUrl: tt.channelBaseURL},
 				RequestURLPath: tt.requestPath,
+				RelayFormat:    tt.relayFormat,
 			}
 
 			got, err := adaptor.GetRequestURL(info)
@@ -164,5 +190,102 @@ func TestFetchOllamaModelsUsesOpenAICompatibleEndpoint(t *testing.T) {
 	}
 	if _, err := time.Parse(time.RFC3339, models[0].ModifiedAt); err != nil {
 		t.Fatalf("modified_at = %q is not RFC3339: %v", models[0].ModifiedAt, err)
+	}
+}
+
+func TestResolveBaseURL(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name:     "coding plan resolves to real URL",
+			input:    "ollama-coding-plan",
+			expected: "https://ollama.com",
+		},
+		{
+			name:     "normal URL passes through",
+			input:    "http://localhost:11434",
+			expected: "http://localhost:11434",
+		},
+		{
+			name:     "https URL passes through",
+			input:    "https://ollama.example.com",
+			expected: "https://ollama.example.com",
+		},
+		{
+			name:     "empty string passes through",
+			input:    "",
+			expected: "",
+		},
+		{
+			name:     "whitespace is trimmed before lookup",
+			input:    " ollama-coding-plan ",
+			expected: "https://ollama.com",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := resolveBaseURL(tt.input)
+			if got != tt.expected {
+				t.Fatalf("resolveBaseURL(%q) = %q, want %q", tt.input, got, tt.expected)
+			}
+		})
+	}
+}
+
+func TestFetchOllamaModelsResolvesPlanBaseURL(t *testing.T) {
+	var requestHost string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requestHost = r.Host
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"data":[{"id":"llama3","created":1710000000}]}`))
+	}))
+	defer server.Close()
+
+	// Temporarily override the plan mapping to point to our test server.
+	origURL := channelconstant.ChannelSpecialBases["ollama-coding-plan"]
+	channelconstant.ChannelSpecialBases["ollama-coding-plan"] = channelconstant.ChannelSpecialBase{
+		OpenAIBaseURL: server.URL,
+	}
+	defer func() { channelconstant.ChannelSpecialBases["ollama-coding-plan"] = origURL }()
+
+	models, err := FetchOllamaModels("ollama-coding-plan", "test-key")
+	if err != nil {
+		t.Fatalf("FetchOllamaModels returned error: %v", err)
+	}
+	if len(models) != 1 || models[0].Name != "llama3" {
+		t.Fatalf("models = %+v, want one model named llama3", models)
+	}
+	// Verify the request actually went to the test server, not to "ollama-coding-plan".
+	if requestHost == "" {
+		t.Fatal("requestHost is empty — request may not have reached the test server")
+	}
+}
+
+func TestFetchOllamaVersionResolvesPlanBaseURL(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/version" {
+			t.Fatalf("request path = %q, want /api/version", r.URL.Path)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"version":"0.6.5"}`))
+	}))
+	defer server.Close()
+
+	origURL := channelconstant.ChannelSpecialBases["ollama-coding-plan"]
+	channelconstant.ChannelSpecialBases["ollama-coding-plan"] = channelconstant.ChannelSpecialBase{
+		OpenAIBaseURL: server.URL,
+	}
+	defer func() { channelconstant.ChannelSpecialBases["ollama-coding-plan"] = origURL }()
+
+	version, err := FetchOllamaVersion("ollama-coding-plan", "test-key")
+	if err != nil {
+		t.Fatalf("FetchOllamaVersion returned error: %v", err)
+	}
+	if version != "0.6.5" {
+		t.Fatalf("version = %q, want %q", version, "0.6.5")
 	}
 }
