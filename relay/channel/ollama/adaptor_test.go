@@ -18,19 +18,43 @@ func TestGetRequestURLUsesCompatiblePath(t *testing.T) {
 		name           string
 		channelBaseURL string
 		requestPath    string
+		relayFormat    types.RelayFormat
 		expectURL      string
 	}{
 		{
 			name:           "chat completions",
 			channelBaseURL: "http://ollama.local",
 			requestPath:    "/v1/chat/completions",
+			relayFormat:    types.RelayFormatOpenAI,
 			expectURL:      "http://ollama.local/v1/chat/completions",
 		},
 		{
 			name:           "anthropic messages with query",
 			channelBaseURL: "http://ollama.local",
 			requestPath:    "/v1/messages?beta=true",
+			relayFormat:    types.RelayFormatClaude,
 			expectURL:      "http://ollama.local/v1/messages?beta=true",
+		},
+		{
+			name:           "coding plan openai chat",
+			channelBaseURL: "ollama-coding-plan",
+			requestPath:    "/v1/chat/completions",
+			relayFormat:    types.RelayFormatOpenAI,
+			expectURL:      "https://ollama.com/v1/chat/completions",
+		},
+		{
+			name:           "coding plan claude messages",
+			channelBaseURL: "ollama-coding-plan",
+			requestPath:    "/v1/messages",
+			relayFormat:    types.RelayFormatClaude,
+			expectURL:      "https://ollama.com/v1/messages",
+		},
+		{
+			name:           "coding plan openai embeddings",
+			channelBaseURL: "ollama-coding-plan",
+			requestPath:    "/v1/embeddings",
+			relayFormat:    types.RelayFormatOpenAI,
+			expectURL:      "https://ollama.com/v1/embeddings",
 		},
 	}
 
@@ -40,6 +64,7 @@ func TestGetRequestURLUsesCompatiblePath(t *testing.T) {
 			info := &relaycommon.RelayInfo{
 				ChannelMeta:    &relaycommon.ChannelMeta{ChannelBaseUrl: tt.channelBaseURL},
 				RequestURLPath: tt.requestPath,
+				RelayFormat:    tt.relayFormat,
 			}
 
 			got, err := adaptor.GetRequestURL(info)
