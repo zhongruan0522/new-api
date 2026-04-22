@@ -528,7 +528,7 @@ func IncreaseWindowQuota(id int, key string, quota int) (err error) {
 		})
 	}
 	if common.BatchUpdateEnabled {
-		addNewRecord(BatchUpdateTypeTokenQuota, id, -quota)
+		addNewRecord(BatchUpdateTypeWindowQuota, id, -quota)
 		return nil
 	}
 	return increaseWindowQuota(id, -quota)
@@ -548,7 +548,7 @@ func DecreaseWindowQuota(id int, key string, quota int) (err error) {
 		})
 	}
 	if common.BatchUpdateEnabled {
-		addNewRecord(BatchUpdateTypeTokenQuota, id, quota)
+		addNewRecord(BatchUpdateTypeWindowQuota, id, quota)
 		return nil
 	}
 	return increaseWindowQuota(id, quota)
@@ -577,7 +577,7 @@ func IncreaseCycleQuota(id int, key string, quota int) (err error) {
 		})
 	}
 	if common.BatchUpdateEnabled {
-		addNewRecord(BatchUpdateTypeTokenQuota, id, -quota)
+		addNewRecord(BatchUpdateTypeCycleQuota, id, -quota)
 		return nil
 	}
 	return increaseCycleQuota(id, -quota)
@@ -597,7 +597,7 @@ func DecreaseCycleQuota(id int, key string, quota int) (err error) {
 		})
 	}
 	if common.BatchUpdateEnabled {
-		addNewRecord(BatchUpdateTypeTokenQuota, id, quota)
+		addNewRecord(BatchUpdateTypeCycleQuota, id, quota)
 		return nil
 	}
 	return increaseCycleQuota(id, quota)
