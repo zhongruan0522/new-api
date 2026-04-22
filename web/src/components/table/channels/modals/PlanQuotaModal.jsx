@@ -26,6 +26,7 @@ const PLAN_DISPLAY_NAMES = {
   'kimi-coding-plan': 'Kimi 官方套餐',
   'minimax-coding-plan': 'MiniMax 官方套餐',
   'minimax-coding-plan-international': 'MiniMax 国际套餐',
+  'ollama-coding-plan': 'Ollama 官方套餐',
 };
 
 const MODEL_COLORS = ['#d97757', '#6a9bcc', '#788c5d', '#9b6db7', '#c4a44e', '#5bb8a9'];
