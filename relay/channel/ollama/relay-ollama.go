@@ -9,10 +9,23 @@ import (
 	"time"
 
 	"github.com/zhongruan0522/new-api/common"
+	channelconstant "github.com/zhongruan0522/new-api/constant"
 )
 
+// resolveBaseURL 将套餐简写（如 "ollama-coding-plan"）解析为实际 URL。
+// 若非套餐地址则原样返回。
+func resolveBaseURL(baseURL string) string {
+	baseURL = strings.TrimSpace(baseURL)
+	if plan, ok := channelconstant.ChannelSpecialBases[baseURL]; ok {
+		if plan.OpenAIBaseURL != "" {
+			return plan.OpenAIBaseURL
+		}
+	}
+	return baseURL
+}
+
 func FetchOllamaModels(baseURL, apiKey string) ([]OllamaModel, error) {
-	trimmedBase := strings.TrimRight(baseURL, "/")
+	trimmedBase := strings.TrimRight(resolveBaseURL(baseURL), "/")
 	url := fmt.Sprintf("%s/v1/models", trimmedBase)
 
 	client := &http.Client{}
@@ -66,7 +79,7 @@ func FetchOllamaModels(baseURL, apiKey string) ([]OllamaModel, error) {
 
 // 拉取 Ollama 模型 (非流式)
 func PullOllamaModel(baseURL, apiKey, modelName string) error {
-	url := fmt.Sprintf("%s/api/pull", baseURL)
+	url := fmt.Sprintf("%s/api/pull", resolveBaseURL(baseURL))
 
 	pullRequest := OllamaPullRequest{
 		Name:   modelName,
@@ -107,7 +120,7 @@ func PullOllamaModel(baseURL, apiKey, modelName string) error {
 
 // 流式拉取 Ollama 模型 (支持进度回调)
 func PullOllamaModelStream(baseURL, apiKey, modelName string, progressCallback func(OllamaPullResponse)) error {
-	url := fmt.Sprintf("%s/api/pull", baseURL)
+	url := fmt.Sprintf("%s/api/pull", resolveBaseURL(baseURL))
 
 	pullRequest := OllamaPullRequest{
 		Name:   modelName,
@@ -184,7 +197,7 @@ func PullOllamaModelStream(baseURL, apiKey, modelName string, progressCallback f
 
 // 删除 Ollama 模型
 func DeleteOllamaModel(baseURL, apiKey, modelName string) error {
-	url := fmt.Sprintf("%s/api/delete", baseURL)
+	url := fmt.Sprintf("%s/api/delete", resolveBaseURL(baseURL))
 
 	deleteRequest := OllamaDeleteRequest{
 		Name: modelName,
@@ -221,7 +234,7 @@ func DeleteOllamaModel(baseURL, apiKey, modelName string) error {
 }
 
 func FetchOllamaVersion(baseURL, apiKey string) (string, error) {
-	trimmedBase := strings.TrimRight(baseURL, "/")
+	trimmedBase := strings.TrimRight(resolveBaseURL(baseURL), "/")
 	if trimmedBase == "" {
 		return "", fmt.Errorf("baseURL 为空")
 	}

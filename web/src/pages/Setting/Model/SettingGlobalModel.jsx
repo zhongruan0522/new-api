@@ -29,7 +29,6 @@ import {
 import { useTranslation } from 'react-i18next';
 
 const defaultGlobalSettingInputs = {
-  'global.pass_through_request_enabled': false,
   'general_setting.ping_interval_enabled': false,
   'general_setting.ping_interval_seconds': 60,
 };
@@ -122,24 +121,6 @@ export default function SettingGlobalModel(props) {
           style={{ marginBottom: 15 }}
         >
           <Form.Section text={t('全局设置')}>
-            <Row>
-              <Col xs={24} sm={12} md={8} lg={8} xl={8}>
-                <Form.Switch
-                  label={t('启用请求透传')}
-                  field={'global.pass_through_request_enabled'}
-                  onChange={(value) =>
-                    setInputs({
-                      ...inputs,
-                      'global.pass_through_request_enabled': value,
-                    })
-                  }
-                  extraText={t(
-                    '开启后，所有请求将直接透传给上游，不会进行任何处理（重定向和渠道适配也将失效）,请谨慎开启',
-                  )}
-                />
-              </Col>
-            </Row>
-
             <Form.Section
               text={
                 <span style={{ fontSize: 14, fontWeight: 600 }}>

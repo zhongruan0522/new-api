@@ -19,7 +19,6 @@ import (
 	relaycommon "github.com/zhongruan0522/new-api/relay/common"
 	"github.com/zhongruan0522/new-api/relay/helper"
 	"github.com/zhongruan0522/new-api/service"
-	"github.com/zhongruan0522/new-api/setting/model_setting"
 	"github.com/zhongruan0522/new-api/setting/operation_setting"
 	"github.com/zhongruan0522/new-api/setting/ratio_setting"
 	"github.com/zhongruan0522/new-api/types"
@@ -221,17 +220,15 @@ func TextHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *types
 	}
 	adaptor.Init(info)
 
-	passThroughGlobal := model_setting.GetGlobalSettings().PassThroughRequestEnabled
 	passThroughBody := info.ChannelSetting.PassThroughBodyEnabled
 	// Media handling rewrites the structured request; pass-through body would bypass it.
 	if mediaMode != dto.ImageAutoConvertToURLModeOff {
-		passThroughGlobal = false
 		passThroughBody = false
 	}
 
 	var requestBody io.Reader
 
-	if passThroughGlobal || passThroughBody {
+	if passThroughBody {
 		body, err := common.GetRequestBody(c)
 		if err != nil {
 			return types.NewErrorWithStatusCode(err, types.ErrorCodeReadRequestBodyFailed, http.StatusBadRequest, types.ErrOptionWithSkipRetry())

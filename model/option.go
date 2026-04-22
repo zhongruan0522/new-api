@@ -145,10 +145,35 @@ func InitOptionMap() {
 
 func loadOptionsFromDatabase() {
 	options, _ := AllOption()
+
 	for _, option := range options {
 		err := updateOptionMap(option.Key, option.Value)
 		if err != nil {
 			common.SysLog("failed to update option map: " + err.Error())
+		}
+	}
+
+	// One-time migration: if the removed toggle "quota_setting.enable_free_model_pre_consume"
+	// exists in DB and is "false", override FreeModelPreConsumedQuota to 0 so that
+	// users who had disabled free-model pre-consumption don't suddenly get charged
+	// after upgrade. Then persist the migrated value. Always delete the stale row
+	// regardless of its value since the toggle has been removed entirely.
+	for _, option := range options {
+		if option.Key == "quota_setting.enable_free_model_pre_consume" {
+			if option.Value == "false" {
+				quotaSetting := operation_setting.GetQuotaSetting()
+				quotaSetting.FreeModelPreConsumedQuota = 0
+				// Sync to OptionMap so API returns the correct value
+				common.OptionMap["quota_setting.free_model_pre_consumed_quota"] = "0"
+				// Persist the migrated quota to DB so it survives restart
+				migratedOption := Option{Key: "quota_setting.free_model_pre_consumed_quota"}
+				DB.FirstOrCreate(&migratedOption, Option{Key: "quota_setting.free_model_pre_consumed_quota"})
+				DB.Model(&migratedOption).Update("value", "0")
+				common.SysLog("migrated quota_setting.enable_free_model_pre_consume=false -> free_model_pre_consumed_quota=0")
+			}
+			// Delete the stale toggle row regardless of value
+			DB.Where(commonKeyCol+" = ?", "quota_setting.enable_free_model_pre_consume").Delete(&Option{})
+			break
 		}
 	}
 }
@@ -171,7 +196,8 @@ func UpdateOption(key string, value string) error {
 		"global.third_party_multimodal_model_id", "global.third_party_multimodal_call_api_type",
 		"global.third_party_multimodal_system_prompt", "global.third_party_multimodal_first_user_prompt",
 		"global.third_party_multimodal_user_agent", "global.third_party_multimodal_x_title",
-		"global.third_party_multimodal_http_referer":
+		"global.third_party_multimodal_http_referer",
+		"quota_setting.enable_free_model_pre_consume":
 		return errors.New("option removed")
 	}
 	if key == "SidebarModulesAdmin" {
@@ -211,7 +237,8 @@ func updateOptionMap(key string, value string) (err error) {
 		"global.third_party_multimodal_model_id", "global.third_party_multimodal_call_api_type",
 		"global.third_party_multimodal_system_prompt", "global.third_party_multimodal_first_user_prompt",
 		"global.third_party_multimodal_user_agent", "global.third_party_multimodal_x_title",
-		"global.third_party_multimodal_http_referer":
+		"global.third_party_multimodal_http_referer",
+		"quota_setting.enable_free_model_pre_consume":
 		delete(common.OptionMap, key)
 		return nil
 	}

@@ -56,6 +56,7 @@ const QUOTA_FIELDS = [
   'PreConsumedQuota',
   'QuotaForInviter',
   'QuotaForInvitee',
+  'quota_setting.free_model_pre_consumed_quota',
 ];
 
 export default function SettingsCreditLimit(props) {
@@ -67,7 +68,7 @@ export default function SettingsCreditLimit(props) {
     PreConsumedQuota: '',
     QuotaForInviter: '',
     QuotaForInvitee: '',
-    'quota_setting.enable_free_model_pre_consume': true,
+    'quota_setting.free_model_pre_consumed_quota': '',
   });
   const refForm = useRef();
   const [inputsRow, setInputsRow] = useState(inputs);
@@ -85,7 +86,7 @@ export default function SettingsCreditLimit(props) {
       if (QUOTA_FIELDS.includes(key) && val !== '' && val !== undefined) {
         raw[key] = String(displayToToken(val));
       } else {
-        raw[key] = typeof val === 'boolean' ? val : val;
+        raw[key] = val;
       }
     }
     return raw;
@@ -97,12 +98,7 @@ export default function SettingsCreditLimit(props) {
     const updateArray = compareObjects(rawInputs, rawInputsRow);
     if (!updateArray.length) return showWarning(t('你似乎并没有修改什么'));
     const requestQueue = updateArray.map((item) => {
-      let value = '';
-      if (typeof rawInputs[item.key] === 'boolean') {
-        value = String(rawInputs[item.key]);
-      } else {
-        value = rawInputs[item.key];
-      }
+      const value = rawInputs[item.key];
       return API.put('/api/option/', {
         key: item.key,
         value,
@@ -144,6 +140,13 @@ export default function SettingsCreditLimit(props) {
     setInputsRow(structuredClone(currentInputs));
     refForm.current?.setValues(currentInputs);
   }, [props.options]);
+
+  const sectionStyle = {
+    marginBottom: 16,
+    paddingBottom: 16,
+    borderBottom: '1px solid var(--semi-color-border)',
+  };
+
   return (
     <>
       <Spin spinning={loading}>
@@ -153,93 +156,117 @@ export default function SettingsCreditLimit(props) {
           style={{ marginBottom: 15 }}
         >
           <Form.Section text={t('额度设置')}>
-            <Row gutter={16}>
-              <Col xs={24} sm={12} md={8} lg={8} xl={8}>
-                <Form.InputNumber
-                  field='QuotaForNewUser'
-                  label={t('新用户初始额度')}
-                  step={0.01}
-                  min={0}
-                  suffix={currencySuffix}
-                  placeholder={''}
-                  onChange={(value) =>
-                    setInputs((prev) => ({ ...prev, QuotaForNewUser: value }))
-                  }
-                />
-              </Col>
-              <Col xs={24} sm={12} md={8} lg={8} xl={8}>
-                <Form.InputNumber
-                  field='PreConsumedQuota'
-                  label={t('请求预扣费额度')}
-                  step={0.01}
-                  min={0}
-                  suffix={currencySuffix}
-                  extraText={t('请求结束后多退少补')}
-                  placeholder={''}
-                  onChange={(value) =>
-                    setInputs((prev) => ({
-                      ...prev,
-                      PreConsumedQuota: value,
-                    }))
-                  }
-                />
-              </Col>
-              <Col xs={24} sm={12} md={8} lg={8} xl={8}>
-                <Form.InputNumber
-                  field='QuotaForInviter'
-                  label={t('邀请新用户奖励额度')}
-                  step={0.01}
-                  min={0}
-                  suffix={currencySuffix}
-                  extraText={''}
-                  placeholder={t('例如：2000')}
-                  onChange={(value) =>
-                    setInputs((prev) => ({
-                      ...prev,
-                      QuotaForInviter: value,
-                    }))
-                  }
-                />
-              </Col>
-            </Row>
-            <Row>
-              <Col xs={24} sm={12} md={8} lg={8} xl={6}>
-                <Form.InputNumber
-                  field='QuotaForInvitee'
-                  label={t('新用户使用邀请码奖励额度')}
-                  step={0.01}
-                  min={0}
-                  suffix={currencySuffix}
-                  extraText={''}
-                  placeholder={t('例如：1000')}
-                  onChange={(value) =>
-                    setInputs((prev) => ({
-                      ...prev,
-                      QuotaForInvitee: value,
-                    }))
-                  }
-                />
-              </Col>
-            </Row>
-            <Row>
-              <Col>
-                <Form.Switch
-                  label={t('对免费模型启用预消耗')}
-                  field={'quota_setting.enable_free_model_pre_consume'}
-                  extraText={t(
-                    '开启后，对免费模型（倍率为0，或者价格为0）的模型也会预消耗额度',
-                  )}
-                  onChange={(value) =>
-                    setInputs((prev) => ({
-                      ...prev,
-                      'quota_setting.enable_free_model_pre_consume': value,
-                    }))
-                  }
-                />
-              </Col>
-            </Row>
+            {/* 新用户设置 */}
+            <div style={sectionStyle}>
+              <div style={{ fontWeight: 600, marginBottom: 12, color: 'var(--semi-color-text-1)' }}>
+                {t('新用户设置')}
+              </div>
+              <Row gutter={16}>
+                <Col xs={24} sm={12} md={8} lg={8} xl={8}>
+                  <Form.InputNumber
+                    field='QuotaForNewUser'
+                    label={t('新用户初始额度')}
+                    step={0.01}
+                    min={0}
+                    suffix={currencySuffix}
+                    placeholder={''}
+                    onChange={(value) =>
+                      setInputs((prev) => ({ ...prev, QuotaForNewUser: value }))
+                    }
+                  />
+                </Col>
+              </Row>
+            </div>
 
-            <Row>
+            {/* AFF设置 */}
+            <div style={sectionStyle}>
+              <div style={{ fontWeight: 600, marginBottom: 12, color: 'var(--semi-color-text-1)' }}>
+                {t('AFF设置')}
+              </div>
+              <Row gutter={16}>
+                <Col xs={24} sm={12} md={8} lg={8} xl={8}>
+                  <Form.InputNumber
+                    field='QuotaForInviter'
+                    label={t('邀请新用户奖励额度')}
+                    step={0.01}
+                    min={0}
+                    suffix={currencySuffix}
+                    extraText={''}
+                    placeholder={t('例如：2000')}
+                    onChange={(value) =>
+                      setInputs((prev) => ({
+                        ...prev,
+                        QuotaForInviter: value,
+                      }))
+                    }
+                  />
+                </Col>
+                <Col xs={24} sm={12} md={8} lg={8} xl={8}>
+                  <Form.InputNumber
+                    field='QuotaForInvitee'
+                    label={t('新用户使用邀请码奖励额度')}
+                    step={0.01}
+                    min={0}
+                    suffix={currencySuffix}
+                    extraText={''}
+                    placeholder={t('例如：1000')}
+                    onChange={(value) =>
+                      setInputs((prev) => ({
+                        ...prev,
+                        QuotaForInvitee: value,
+                      }))
+                    }
+                  />
+                </Col>
+              </Row>
+            </div>
+
+            {/* 预消耗设置 */}
+            <div>
+              <div style={{ fontWeight: 600, marginBottom: 12, color: 'var(--semi-color-text-1)' }}>
+                {t('预消耗设置')}
+              </div>
+              <Row gutter={16}>
+                <Col xs={24} sm={12} md={8} lg={8} xl={8}>
+                  <Form.InputNumber
+                    field='PreConsumedQuota'
+                    label={t('请求预扣费额度')}
+                    step={0.01}
+                    min={0}
+                    suffix={currencySuffix}
+                    extraText={t('请求结束后多退少补')}
+                    placeholder={''}
+                    onChange={(value) =>
+                      setInputs((prev) => ({
+                        ...prev,
+                        PreConsumedQuota: value,
+                      }))
+                    }
+                  />
+                </Col>
+                <Col xs={24} sm={12} md={8} lg={8} xl={8}>
+                  <Form.InputNumber
+                    field='quota_setting.free_model_pre_consumed_quota'
+                    label={t('免费模型预消耗额度')}
+                    step={0.01}
+                    min={0}
+                    suffix={currencySuffix}
+                    extraText={t(
+                      '免费模型预扣费的额度，独立于请求预扣费额度，设为 0 则不预扣费',
+                    )}
+                    placeholder={''}
+                    onChange={(value) =>
+                      setInputs((prev) => ({
+                        ...prev,
+                        'quota_setting.free_model_pre_consumed_quota': value,
+                      }))
+                    }
+                  />
+                </Col>
+              </Row>
+            </div>
+
+            <Row style={{ marginTop: 16 }}>
               <Button size='default' onClick={onSubmit}>
                 {t('保存额度设置')}
               </Button>

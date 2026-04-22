@@ -120,6 +120,7 @@ var SupportedPlanQuotaProviders = map[string]bool{
 	"kimi-coding-plan":                  true,
 	"minimax-coding-plan":               true,
 	"minimax-coding-plan-international": true,
+	"ollama-coding-plan":               true,
 }
 
 var ChannelSpecialBases = map[string]ChannelSpecialBase{
@@ -140,5 +141,9 @@ var ChannelSpecialBases = map[string]ChannelSpecialBase{
 	},
 	"minimax-coding-plan-international": {
 		ClaudeBaseURL: "https://api.minimaxi.io/anthropic",
+	},
+	"ollama-coding-plan": {
+		ClaudeBaseURL: "https://ollama.com",
+		OpenAIBaseURL: "https://ollama.com",
 	},
 }
