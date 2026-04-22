@@ -163,19 +163,7 @@ func (s *BillingSession) shouldTrust(c *gin.Context) bool {
 
 	tokenTrusted := quotaType == 0 || s.relayInfo.TokenUnlimited
 	if !tokenTrusted {
-		var tokenQuota int
-		switch quotaType {
-		case 1:
-			tokenQuota = s.relayInfo.TokenQuota
-		case 2, 3:
-			// 对于时段限额模式，使用窗口剩余额度
-			// TokenQuota 在 auth 中设置为 RemainQuota，但时段模式下我们需要窗口剩余额度
-			// 这里简化处理：如果 TokenQuota > trustQuota 就信任
-			tokenQuota = s.relayInfo.TokenQuota
-		default:
-			tokenQuota = s.relayInfo.TokenQuota
-		}
-		tokenTrusted = tokenQuota > trustQuota
+		tokenTrusted = s.relayInfo.TokenQuota > trustQuota
 	}
 	if !tokenTrusted {
 		return false
@@ -207,7 +195,11 @@ func (s *BillingSession) decreaseTokenQuota(quota int) error {
 		if err := model.DecreaseWindowQuota(tokenId, tokenKey, quota); err != nil {
 			return err
 		}
-		return model.DecreaseCycleQuota(tokenId, tokenKey, quota)
+		if err := model.DecreaseCycleQuota(tokenId, tokenKey, quota); err != nil {
+			_ = model.IncreaseWindowQuota(tokenId, tokenKey, quota)
+			return err
+		}
+		return nil
 	default:
 		return model.DecreaseTokenQuota(tokenId, tokenKey, quota)
 	}
@@ -230,7 +222,11 @@ func (s *BillingSession) increaseTokenQuota(quota int) error {
 		if err := model.IncreaseWindowQuota(tokenId, tokenKey, quota); err != nil {
 			return err
 		}
-		return model.IncreaseCycleQuota(tokenId, tokenKey, quota)
+		if err := model.IncreaseCycleQuota(tokenId, tokenKey, quota); err != nil {
+			_ = model.DecreaseWindowQuota(tokenId, tokenKey, quota)
+			return err
+		}
+		return nil
 	default:
 		return model.IncreaseTokenQuota(tokenId, tokenKey, quota)
 	}
@@ -251,7 +247,11 @@ func (s *BillingSession) increaseTokenQuotaByAmount(tokenId int, tokenKey string
 		if err := model.IncreaseWindowQuota(tokenId, tokenKey, quota); err != nil {
 			return err
 		}
-		return model.IncreaseCycleQuota(tokenId, tokenKey, quota)
+		if err := model.IncreaseCycleQuota(tokenId, tokenKey, quota); err != nil {
+			_ = model.DecreaseWindowQuota(tokenId, tokenKey, quota)
+			return err
+		}
+		return nil
 	default:
 		return model.IncreaseTokenQuota(tokenId, tokenKey, quota)
 	}

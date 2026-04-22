@@ -361,7 +361,25 @@ func SetupContextForToken(c *gin.Context, token *model.Token, parts ...string) e
 	common.SetContextKey(c, constant.ContextKeyTokenQuotaType, token.QuotaType)
 	if !token.UnlimitedQuota {
 		// 将认证阶段读取到的额度快照写入上下文，后续预扣费无需再次查 token。
-		common.SetContextKey(c, constant.ContextKeyTokenQuota, token.RemainQuota)
+		quotaType := token.QuotaType
+		// 兼容旧数据
+		if quotaType == 0 && !token.UnlimitedQuota {
+			quotaType = 1
+		}
+		switch quotaType {
+		case 2:
+			common.SetContextKey(c, constant.ContextKeyTokenQuota, token.WindowQuota-token.WindowUsedQuota)
+		case 3:
+			windowRemain := token.WindowQuota - token.WindowUsedQuota
+			cycleRemain := token.CycleQuota - token.CycleUsedQuota
+			if windowRemain < cycleRemain {
+				common.SetContextKey(c, constant.ContextKeyTokenQuota, windowRemain)
+			} else {
+				common.SetContextKey(c, constant.ContextKeyTokenQuota, cycleRemain)
+			}
+		default:
+			common.SetContextKey(c, constant.ContextKeyTokenQuota, token.RemainQuota)
+		}
 	}
 	if token.ModelLimitsEnabled {
 		c.Set("token_model_limit_enabled", true)
