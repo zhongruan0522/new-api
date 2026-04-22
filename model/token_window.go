@@ -91,6 +91,6 @@ func (token *Token) shouldResetCycle(now int64) bool {
 	if token.CycleStartTime <= 0 {
 		return true
 	}
-	_, cycleEnd := token.getCurrentCycle(now)
-	return now >= cycleEnd
+	cycleStart, _ := token.getCurrentCycle(now)
+	return token.CycleStartTime < cycleStart
 }

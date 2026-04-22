@@ -250,9 +250,13 @@ func ValidateUserToken(key string) (token *Token, err error) {
 		case 2: // 时段限额
 			if token.ShouldResetWindow() {
 				windowStart, _ := token.GetCurrentWindow()
-				_ = ResetWindowQuota(token.Id, windowStart)
-				token.WindowUsedQuota = 0
-				token.WindowStartTime = windowStart
+				if err := ResetWindowQuota(token.Id, windowStart); err != nil {
+					common.SysLog("failed to reset window quota: " + err.Error())
+				} else {
+					token.WindowUsedQuota = 0
+					token.WindowStartTime = windowStart
+					_ = cacheDeleteToken(token.Key)
+				}
 			}
 			if token.WindowUsedQuota >= token.WindowQuota {
 				keyPrefix := key[:3]
@@ -262,15 +266,23 @@ func ValidateUserToken(key string) (token *Token, err error) {
 		case 3: // 时段+周期限额
 			if token.ShouldResetWindow() {
 				windowStart, _ := token.GetCurrentWindow()
-				_ = ResetWindowQuota(token.Id, windowStart)
-				token.WindowUsedQuota = 0
-				token.WindowStartTime = windowStart
+				if err := ResetWindowQuota(token.Id, windowStart); err != nil {
+					common.SysLog("failed to reset window quota: " + err.Error())
+				} else {
+					token.WindowUsedQuota = 0
+					token.WindowStartTime = windowStart
+					_ = cacheDeleteToken(token.Key)
+				}
 			}
 			if token.ShouldResetCycle() {
 				cycleStart, _ := token.GetCurrentCycle()
-				_ = ResetCycleQuota(token.Id, cycleStart)
-				token.CycleUsedQuota = 0
-				token.CycleStartTime = cycleStart
+				if err := ResetCycleQuota(token.Id, cycleStart); err != nil {
+					common.SysLog("failed to reset cycle quota: " + err.Error())
+				} else {
+					token.CycleUsedQuota = 0
+					token.CycleStartTime = cycleStart
+					_ = cacheDeleteToken(token.Key)
+				}
 			}
 			if token.WindowUsedQuota >= token.WindowQuota {
 				keyPrefix := key[:3]
