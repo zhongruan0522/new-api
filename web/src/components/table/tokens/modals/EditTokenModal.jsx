@@ -68,6 +68,7 @@ const EditTokenModal = (props) => {
     name: '',
     remain_quota: 0,
     expired_time: -1,
+    quota_type: 0,
     unlimited_quota: true,
     model_limits_enabled: false,
     model_limits: [],
@@ -75,6 +76,11 @@ const EditTokenModal = (props) => {
     group: '',
     cross_group_retry: false,
     tokenCount: 1,
+    window_hours: 1,
+    window_quota: 0,
+    window_start_hour: 0,
+    cycle_days: 1,
+    cycle_quota: 0,
   });
 
   const handleCancel = () => {
@@ -162,6 +168,20 @@ const EditTokenModal = (props) => {
       } else {
         data.model_limits = [];
       }
+      // 兼容旧数据：如果没有 quota_type，从 unlimited_quota 派生
+      if (!data.quota_type || data.quota_type === 0) {
+        if (data.unlimited_quota) {
+          data.quota_type = 0;
+        } else {
+          data.quota_type = 1;
+        }
+      }
+      // 设置默认值
+      data.window_hours = data.window_hours || 1;
+      data.window_quota = data.window_quota || 0;
+      data.window_start_hour = data.window_start_hour || 0;
+      data.cycle_days = data.cycle_days || 1;
+      data.cycle_quota = data.cycle_quota || 0;
       if (formApiRef.current) {
         formApiRef.current.setValues({ ...getInitValues(), ...data });
       }
@@ -207,6 +227,15 @@ const EditTokenModal = (props) => {
 
   const submit = async (values) => {
     setLoading(true);
+
+    // 根据 quota_type 设置 unlimited_quota（向后兼容）
+    const quotaType = values.quota_type;
+    if (quotaType === 0) {
+      values.unlimited_quota = true;
+    } else {
+      values.unlimited_quota = false;
+    }
+
     if (isEdit) {
       let { tokenCount: _tc, ...localInputs } = values;
       localInputs.remain_quota = parseInt(localInputs.remain_quota);
@@ -221,6 +250,12 @@ const EditTokenModal = (props) => {
       }
       localInputs.model_limits = localInputs.model_limits.join(',');
       localInputs.model_limits_enabled = localInputs.model_limits.length > 0;
+      localInputs.quota_type = parseInt(localInputs.quota_type);
+      localInputs.window_hours = parseInt(localInputs.window_hours) || 0;
+      localInputs.window_quota = parseInt(localInputs.window_quota) || 0;
+      localInputs.window_start_hour = parseInt(localInputs.window_start_hour) || 0;
+      localInputs.cycle_days = parseInt(localInputs.cycle_days) || 0;
+      localInputs.cycle_quota = parseInt(localInputs.cycle_quota) || 0;
       let res = await API.put(`/api/token/`, {
         ...localInputs,
         id: parseInt(props.editingToken.id),
@@ -258,6 +293,12 @@ const EditTokenModal = (props) => {
         }
         localInputs.model_limits = localInputs.model_limits.join(',');
         localInputs.model_limits_enabled = localInputs.model_limits.length > 0;
+        localInputs.quota_type = parseInt(localInputs.quota_type);
+        localInputs.window_hours = parseInt(localInputs.window_hours) || 0;
+        localInputs.window_quota = parseInt(localInputs.window_quota) || 0;
+        localInputs.window_start_hour = parseInt(localInputs.window_start_hour) || 0;
+        localInputs.cycle_days = parseInt(localInputs.cycle_days) || 0;
+        localInputs.cycle_quota = parseInt(localInputs.cycle_quota) || 0;
         let res = await API.post(`/api/token/`, localInputs);
         const { success, message } = res.data;
         if (success) {
@@ -489,38 +530,181 @@ const EditTokenModal = (props) => {
                 </div>
                 <Row gutter={12}>
                   <Col span={24}>
-                    <Form.AutoComplete
-                      field='remain_quota'
-                      label={t('额度')}
-                      placeholder={t('请输入额度')}
-                      type='number'
-                      disabled={values.unlimited_quota}
-                      extraText={renderQuotaWithPrompt(values.remain_quota)}
-                      rules={
-                        values.unlimited_quota
-                          ? []
-                          : [{ required: true, message: t('请输入额度') }]
-                      }
-                      data={[
-                        { value: 500000, label: '1$' },
-                        { value: 5000000, label: '10$' },
-                        { value: 25000000, label: '50$' },
-                        { value: 50000000, label: '100$' },
-                        { value: 250000000, label: '500$' },
-                        { value: 500000000, label: '1000$' },
-                      ]}
-                    />
+                    <Form.Select
+                      field='quota_type'
+                      label={t('限额方式')}
+                      style={{ width: '100%' }}
+                      rules={[{ required: true, message: t('请选择限额方式') }]}
+                    >
+                      <Form.Select.Option value={0}>{t('无限额度')}</Form.Select.Option>
+                      <Form.Select.Option value={1}>{t('永久限额')}</Form.Select.Option>
+                      <Form.Select.Option value={2}>{t('时段限额')}</Form.Select.Option>
+                      <Form.Select.Option value={3}>{t('时段+周期限额')}</Form.Select.Option>
+                    </Form.Select>
                   </Col>
-                  <Col span={24}>
-                    <Form.Switch
-                      field='unlimited_quota'
-                      label={t('无限额度')}
-                      size='default'
-                      extraText={t(
-                        '令牌的额度仅用于限制令牌本身的最大额度使用量，实际的使用受到账户的剩余额度限制',
-                      )}
-                    />
-                  </Col>
+
+                  {/* quota_type === 0: 无限额度 */}
+                  {values.quota_type === 0 && (
+                    <Col span={24}>
+                      <div className='text-sm text-gray-500 mt-1'>
+                        {t('令牌的额度仅用于限制令牌本身的最大额度使用量，实际的使用受到账户的剩余额度限制')}
+                      </div>
+                    </Col>
+                  )}
+
+                  {/* quota_type === 1: 永久限额 */}
+                  {values.quota_type === 1 && (
+                    <Col span={24}>
+                      <Form.AutoComplete
+                        field='remain_quota'
+                        label={t('额度')}
+                        placeholder={t('请输入额度')}
+                        type='number'
+                        extraText={renderQuotaWithPrompt(values.remain_quota)}
+                        rules={[{ required: true, message: t('请输入额度') }]}
+                        data={[
+                          { value: 500000, label: '1$' },
+                          { value: 5000000, label: '10$' },
+                          { value: 25000000, label: '50$' },
+                          { value: 50000000, label: '100$' },
+                          { value: 250000000, label: '500$' },
+                          { value: 500000000, label: '1000$' },
+                        ]}
+                      />
+                    </Col>
+                  )}
+
+                  {/* quota_type === 2: 时段限额 */}
+                  {values.quota_type === 2 && (
+                    <>
+                      <Col span={24}>
+                        <Form.InputNumber
+                          field='window_hours'
+                          label={t('窗口时长（小时）')}
+                          placeholder={t('请输入窗口时长')}
+                          min={1}
+                          max={720}
+                          rules={[{ required: true, message: t('请输入窗口时长') }]}
+                          style={{ width: '100%' }}
+                        />
+                      </Col>
+                      <Col span={24}>
+                        <Form.AutoComplete
+                          field='window_quota'
+                          label={t('窗口额度')}
+                          placeholder={t('请输入窗口额度')}
+                          type='number'
+                          extraText={renderQuotaWithPrompt(values.window_quota)}
+                          rules={[{ required: true, message: t('请输入窗口额度') }]}
+                          data={[
+                            { value: 500000, label: '1$' },
+                            { value: 5000000, label: '10$' },
+                            { value: 25000000, label: '50$' },
+                            { value: 50000000, label: '100$' },
+                            { value: 250000000, label: '500$' },
+                            { value: 500000000, label: '1000$' },
+                          ]}
+                        />
+                      </Col>
+                      <Col span={24}>
+                        <Form.InputNumber
+                          field='window_start_hour'
+                          label={t('窗口起始小时（0-23）')}
+                          placeholder={t('窗口对齐的起始小时')}
+                          min={0}
+                          max={23}
+                          rules={[{ required: true, message: t('请输入窗口起始小时') }]}
+                          style={{ width: '100%' }}
+                        />
+                      </Col>
+                      <Col span={24}>
+                        <div className='text-xs text-gray-500'>
+                          {t('每')} {values.window_hours || 1} {t('小时为一个窗口，窗口开始时额度自动重置')}
+                        </div>
+                      </Col>
+                    </>
+                  )}
+
+                  {/* quota_type === 3: 时段+周期限额 */}
+                  {values.quota_type === 3 && (
+                    <>
+                      <Col span={24}>
+                        <Form.InputNumber
+                          field='window_hours'
+                          label={t('窗口时长（小时）')}
+                          placeholder={t('请输入窗口时长')}
+                          min={1}
+                          max={720}
+                          rules={[{ required: true, message: t('请输入窗口时长') }]}
+                          style={{ width: '100%' }}
+                        />
+                      </Col>
+                      <Col span={24}>
+                        <Form.AutoComplete
+                          field='window_quota'
+                          label={t('窗口额度')}
+                          placeholder={t('请输入窗口额度')}
+                          type='number'
+                          extraText={renderQuotaWithPrompt(values.window_quota)}
+                          rules={[{ required: true, message: t('请输入窗口额度') }]}
+                          data={[
+                            { value: 500000, label: '1$' },
+                            { value: 5000000, label: '10$' },
+                            { value: 25000000, label: '50$' },
+                            { value: 50000000, label: '100$' },
+                            { value: 250000000, label: '500$' },
+                            { value: 500000000, label: '1000$' },
+                          ]}
+                        />
+                      </Col>
+                      <Col span={24}>
+                        <Form.InputNumber
+                          field='window_start_hour'
+                          label={t('窗口起始小时（0-23）')}
+                          placeholder={t('窗口对齐的起始小时')}
+                          min={0}
+                          max={23}
+                          rules={[{ required: true, message: t('请输入窗口起始小时') }]}
+                          style={{ width: '100%' }}
+                        />
+                      </Col>
+                      <Col span={24}>
+                        <Form.InputNumber
+                          field='cycle_days'
+                          label={t('周期天数')}
+                          placeholder={t('请输入周期天数')}
+                          min={1}
+                          max={365}
+                          rules={[{ required: true, message: t('请输入周期天数') }]}
+                          style={{ width: '100%' }}
+                        />
+                      </Col>
+                      <Col span={24}>
+                        <Form.AutoComplete
+                          field='cycle_quota'
+                          label={t('周期总额度')}
+                          placeholder={t('请输入周期总额度')}
+                          type='number'
+                          extraText={renderQuotaWithPrompt(values.cycle_quota)}
+                          rules={[{ required: true, message: t('请输入周期总额度') }]}
+                          data={[
+                            { value: 500000, label: '1$' },
+                            { value: 5000000, label: '10$' },
+                            { value: 25000000, label: '50$' },
+                            { value: 50000000, label: '100$' },
+                            { value: 250000000, label: '500$' },
+                            { value: 500000000, label: '1000$' },
+                            { value: 2500000000, label: '5000$' },
+                          ]}
+                        />
+                      </Col>
+                      <Col span={24}>
+                        <div className='text-xs text-gray-500'>
+                          {t('每')} {values.window_hours || 1} {t('小时为一个窗口（额度自动重置），同时')} {values.cycle_days || 1} {t('天内总消耗不超过周期总额度')}
+                        </div>
+                      </Col>
+                    </>
+                  )}
                 </Row>
               </Card>
 

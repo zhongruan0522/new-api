@@ -9,6 +9,8 @@ const (
 )
 
 const (
-	TokenFiledRemainQuota = "RemainQuota"
-	TokenFieldGroup       = "Group"
+	TokenFiledRemainQuota    = "RemainQuota"
+	TokenFieldGroup          = "Group"
+	TokenFieldWindowUsedQuota = "WindowUsedQuota"
+	TokenFieldCycleUsedQuota  = "CycleUsedQuota"
 )

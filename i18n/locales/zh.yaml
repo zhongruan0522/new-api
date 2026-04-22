@@ -37,6 +37,11 @@ token.expired: "该令牌已过期"
 token.exhausted: "该令牌额度已用尽 TokenStatusExhausted[sk-{{.Prefix}}***{{.Suffix}}]"
 token.status_unavailable: "该令牌状态不可用"
 token.db_error: "无效的令牌，数据库查询出错，请联系管理员"
+token.window_exhausted: "该令牌时段额度已用尽"
+token.cycle_exhausted: "该令牌周期额度已用尽"
+token.invalid_quota_type: "无效的限额类型"
+token.invalid_window_params: "无效的窗口参数"
+token.invalid_cycle_params: "无效的周期参数"
 
 # Redemption messages
 redemption.name_length: "兑换码名称长度必须在1-20之间"

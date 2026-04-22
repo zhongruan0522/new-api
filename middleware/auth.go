@@ -358,6 +358,7 @@ func SetupContextForToken(c *gin.Context, token *model.Token, parts ...string) e
 	common.SetContextKey(c, constant.ContextKeyTokenKey, token.Key)
 	c.Set("token_name", token.Name)
 	common.SetContextKey(c, constant.ContextKeyTokenUnlimited, token.UnlimitedQuota)
+	common.SetContextKey(c, constant.ContextKeyTokenQuotaType, token.QuotaType)
 	if !token.UnlimitedQuota {
 		// 将认证阶段读取到的额度快照写入上下文，后续预扣费无需再次查 token。
 		common.SetContextKey(c, constant.ContextKeyTokenQuota, token.RemainQuota)

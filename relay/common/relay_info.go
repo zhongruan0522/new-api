@@ -96,6 +96,7 @@ type RelayInfo struct {
 	TokenKey          string
 	TokenGroup        string
 	TokenQuota        int
+	TokenQuotaType    int
 	UserId            int
 	UsingGroup        string // 使用的分组，当auto跨分组重试时，会变动
 	UserGroup         string // 用户所在分组
@@ -435,10 +436,11 @@ func genBaseRelayInfo(c *gin.Context, request dto.Request) *RelayInfo {
 
 		OriginModelName: common.GetContextKeyString(c, constant.ContextKeyOriginalModel),
 
-		TokenId:        common.GetContextKeyInt(c, constant.ContextKeyTokenId),
-		TokenKey:       common.GetContextKeyString(c, constant.ContextKeyTokenKey),
-		TokenQuota:     common.GetContextKeyInt(c, constant.ContextKeyTokenQuota),
-		TokenUnlimited: common.GetContextKeyBool(c, constant.ContextKeyTokenUnlimited),
+		TokenId:         common.GetContextKeyInt(c, constant.ContextKeyTokenId),
+		TokenKey:        common.GetContextKeyString(c, constant.ContextKeyTokenKey),
+		TokenQuota:      common.GetContextKeyInt(c, constant.ContextKeyTokenQuota),
+		TokenQuotaType:  common.GetContextKeyInt(c, constant.ContextKeyTokenQuotaType),
+		TokenUnlimited:  common.GetContextKeyBool(c, constant.ContextKeyTokenUnlimited),
 		TokenGroup:     tokenGroup,
 
 		isFirstResponse: true,
