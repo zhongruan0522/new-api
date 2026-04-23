@@ -468,7 +468,9 @@ func PreConsumeTokenQuota(relayInfo *relaycommon.RelayInfo, quota int) error {
 		err = model.DecreaseCycleQuota(relayInfo.TokenId, relayInfo.TokenKey, quota)
 		if err != nil {
 			// 回滚窗口扣减
-			_ = model.IncreaseWindowQuota(relayInfo.TokenId, relayInfo.TokenKey, quota)
+			if rollbackErr := model.IncreaseWindowQuota(relayInfo.TokenId, relayInfo.TokenKey, quota); rollbackErr != nil {
+				common.SysError(fmt.Sprintf("rollback window quota failed after cycle decrease error: %v (rollback: %v)", err, rollbackErr))
+			}
 			return err
 		}
 	default:
@@ -507,7 +509,9 @@ func PostConsumeQuota(relayInfo *relaycommon.RelayInfo, quota int, preConsumedQu
 			if err = model.DecreaseWindowQuota(relayInfo.TokenId, relayInfo.TokenKey, quota); err == nil {
 				err = model.DecreaseCycleQuota(relayInfo.TokenId, relayInfo.TokenKey, quota)
 				if err != nil {
-					_ = model.IncreaseWindowQuota(relayInfo.TokenId, relayInfo.TokenKey, quota)
+					if rollbackErr := model.IncreaseWindowQuota(relayInfo.TokenId, relayInfo.TokenKey, quota); rollbackErr != nil {
+						common.SysError(fmt.Sprintf("rollback window quota failed after cycle decrease error: %v (rollback: %v)", err, rollbackErr))
+					}
 				}
 			}
 		default: // 1 或其他
@@ -522,7 +526,9 @@ func PostConsumeQuota(relayInfo *relaycommon.RelayInfo, quota int, preConsumedQu
 			if err = model.IncreaseWindowQuota(relayInfo.TokenId, relayInfo.TokenKey, -quota); err == nil {
 				err = model.IncreaseCycleQuota(relayInfo.TokenId, relayInfo.TokenKey, -quota)
 				if err != nil {
-					_ = model.DecreaseWindowQuota(relayInfo.TokenId, relayInfo.TokenKey, -quota)
+					if rollbackErr := model.DecreaseWindowQuota(relayInfo.TokenId, relayInfo.TokenKey, -quota); rollbackErr != nil {
+						common.SysError(fmt.Sprintf("rollback window quota failed after cycle increase error: %v (rollback: %v)", err, rollbackErr))
+					}
 				}
 			}
 		default: // 1 或其他

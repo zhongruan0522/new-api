@@ -196,7 +196,9 @@ func (s *BillingSession) decreaseTokenQuota(quota int) error {
 			return err
 		}
 		if err := model.DecreaseCycleQuota(tokenId, tokenKey, quota); err != nil {
-			_ = model.IncreaseWindowQuota(tokenId, tokenKey, quota)
+			if rollbackErr := model.IncreaseWindowQuota(tokenId, tokenKey, quota); rollbackErr != nil {
+				common.SysError(fmt.Sprintf("rollback window quota failed after cycle decrease error: %v (rollback: %v)", err, rollbackErr))
+			}
 			return err
 		}
 		return nil
@@ -223,7 +225,9 @@ func (s *BillingSession) increaseTokenQuota(quota int) error {
 			return err
 		}
 		if err := model.IncreaseCycleQuota(tokenId, tokenKey, quota); err != nil {
-			_ = model.DecreaseWindowQuota(tokenId, tokenKey, quota)
+			if rollbackErr := model.DecreaseWindowQuota(tokenId, tokenKey, quota); rollbackErr != nil {
+				common.SysError(fmt.Sprintf("rollback window quota failed after cycle increase error: %v (rollback: %v)", err, rollbackErr))
+			}
 			return err
 		}
 		return nil
@@ -248,7 +252,9 @@ func (s *BillingSession) increaseTokenQuotaByAmount(tokenId int, tokenKey string
 			return err
 		}
 		if err := model.IncreaseCycleQuota(tokenId, tokenKey, quota); err != nil {
-			_ = model.DecreaseWindowQuota(tokenId, tokenKey, quota)
+			if rollbackErr := model.DecreaseWindowQuota(tokenId, tokenKey, quota); rollbackErr != nil {
+				common.SysError(fmt.Sprintf("rollback window quota failed after cycle increase error: %v (rollback: %v)", err, rollbackErr))
+			}
 			return err
 		}
 		return nil

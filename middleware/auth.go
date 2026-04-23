@@ -358,14 +358,14 @@ func SetupContextForToken(c *gin.Context, token *model.Token, parts ...string) e
 	common.SetContextKey(c, constant.ContextKeyTokenKey, token.Key)
 	c.Set("token_name", token.Name)
 	common.SetContextKey(c, constant.ContextKeyTokenUnlimited, token.UnlimitedQuota)
-	common.SetContextKey(c, constant.ContextKeyTokenQuotaType, token.QuotaType)
+	// 兼容旧数据：quota_type=0 && !unlimited_quota 应视为永久限额
+	quotaType := token.QuotaType
+	if quotaType == 0 && !token.UnlimitedQuota {
+		quotaType = 1
+	}
+	common.SetContextKey(c, constant.ContextKeyTokenQuotaType, quotaType)
 	if !token.UnlimitedQuota {
 		// 将认证阶段读取到的额度快照写入上下文，后续预扣费无需再次查 token。
-		quotaType := token.QuotaType
-		// 兼容旧数据
-		if quotaType == 0 && !token.UnlimitedQuota {
-			quotaType = 1
-		}
 		switch quotaType {
 		case 2:
 			common.SetContextKey(c, constant.ContextKeyTokenQuota, token.WindowQuota-token.WindowUsedQuota)
