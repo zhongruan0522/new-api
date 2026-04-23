@@ -456,11 +456,17 @@ func PreConsumeTokenQuota(relayInfo *relaycommon.RelayInfo, quota int) error {
 	// 时段限额模式 (2, 3)：预扣减窗口额度
 	switch quotaType {
 	case 2:
+		if relayInfo.TokenQuota < quota {
+			return fmt.Errorf("token window quota is not enough, remain quota: %s, need quota: %s", logger.FormatQuota(relayInfo.TokenQuota), logger.FormatQuota(quota))
+		}
 		err := model.DecreaseWindowQuota(relayInfo.TokenId, relayInfo.TokenKey, quota)
 		if err != nil {
 			return err
 		}
 	case 3:
+		if relayInfo.TokenQuota < quota {
+			return fmt.Errorf("token quota is not enough, remain quota: %s, need quota: %s", logger.FormatQuota(relayInfo.TokenQuota), logger.FormatQuota(quota))
+		}
 		err := model.DecreaseWindowQuota(relayInfo.TokenId, relayInfo.TokenKey, quota)
 		if err != nil {
 			return err
