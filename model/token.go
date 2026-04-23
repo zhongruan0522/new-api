@@ -7,7 +7,6 @@ import (
 	"sync"
 
 	"github.com/bytedance/gopkg/util/gopool"
-	"github.com/go-redis/redis/v8"
 	"github.com/zhongruan0522/new-api/common"
 	"golang.org/x/sync/singleflight"
 	"gorm.io/gorm"
@@ -230,6 +229,18 @@ func ValidateUserToken(key string) (token *Token, err error) {
 		quotaType := token.QuotaType
 		if quotaType == 0 && !token.UnlimitedQuota {
 			quotaType = 1
+		}
+
+		// 时段/周期额度需要精确的实时状态，强制从 DB 重载以避免 Redis 缓存延迟
+		if quotaType == 2 || quotaType == 3 {
+			if fresh, freshErr := GetTokenByKey(key, true); freshErr == nil && fresh != nil {
+				token = fresh
+				// 重载后必须重新计算 quotaType，否则配额模式切换时仍会按旧分支执行
+				quotaType = token.QuotaType
+				if quotaType == 0 && !token.UnlimitedQuota {
+					quotaType = 1
+				}
+			}
 		}
 
 		switch quotaType {
@@ -556,10 +567,6 @@ func IncreaseWindowQuota(id int, key string, quota int) (err error) {
 			}
 		})
 	}
-	if common.BatchUpdateEnabled {
-		addNewRecord(BatchUpdateTypeWindowQuota, id, -quota)
-		return nil
-	}
 	return increaseWindowQuota(id, -quota)
 }
 
@@ -567,38 +574,6 @@ func IncreaseWindowQuota(id int, key string, quota int) (err error) {
 func DecreaseWindowQuota(id int, key string, quota int) (err error) {
 	if quota < 0 {
 		return errors.New("quota 不能为负数！")
-	}
-	if common.RedisEnabled {
-		ok, err := cacheDecrWindowQuotaCond(key, quota)
-		if err != nil {
-			if errors.Is(err, redis.Nil) {
-				// 缓存未命中，回退到 DB/Batch 路径
-				if common.BatchUpdateEnabled {
-					addNewRecord(BatchUpdateTypeWindowQuota, id, quota)
-					return nil
-				}
-				return decreaseWindowQuota(id, quota)
-			}
-			return err
-		}
-		if !ok {
-			return errors.New("token window quota is not enough")
-		}
-		// Redis 扣减成功，异步同步到 DB
-		if common.BatchUpdateEnabled {
-			addNewRecord(BatchUpdateTypeWindowQuota, id, quota)
-		} else {
-			gopool.Go(func() {
-				if err := increaseWindowQuota(id, quota); err != nil {
-					common.SysLog("failed to sync window quota to db: " + err.Error())
-				}
-			})
-		}
-		return nil
-	}
-	if common.BatchUpdateEnabled {
-		addNewRecord(BatchUpdateTypeWindowQuota, id, quota)
-		return nil
 	}
 	return decreaseWindowQuota(id, quota)
 }
@@ -641,10 +616,6 @@ func IncreaseCycleQuota(id int, key string, quota int) (err error) {
 			}
 		})
 	}
-	if common.BatchUpdateEnabled {
-		addNewRecord(BatchUpdateTypeCycleQuota, id, -quota)
-		return nil
-	}
 	return increaseCycleQuota(id, -quota)
 }
 
@@ -652,36 +623,6 @@ func IncreaseCycleQuota(id int, key string, quota int) (err error) {
 func DecreaseCycleQuota(id int, key string, quota int) (err error) {
 	if quota < 0 {
 		return errors.New("quota 不能为负数！")
-	}
-	if common.RedisEnabled {
-		ok, err := cacheDecrCycleQuotaCond(key, quota)
-		if err != nil {
-			if errors.Is(err, redis.Nil) {
-				if common.BatchUpdateEnabled {
-					addNewRecord(BatchUpdateTypeCycleQuota, id, quota)
-					return nil
-				}
-				return decreaseCycleQuota(id, quota)
-			}
-			return err
-		}
-		if !ok {
-			return errors.New("token cycle quota is not enough")
-		}
-		if common.BatchUpdateEnabled {
-			addNewRecord(BatchUpdateTypeCycleQuota, id, quota)
-		} else {
-			gopool.Go(func() {
-				if err := increaseCycleQuota(id, quota); err != nil {
-					common.SysLog("failed to sync cycle quota to db: " + err.Error())
-				}
-			})
-		}
-		return nil
-	}
-	if common.BatchUpdateEnabled {
-		addNewRecord(BatchUpdateTypeCycleQuota, id, quota)
-		return nil
 	}
 	return decreaseCycleQuota(id, quota)
 }

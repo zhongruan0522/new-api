@@ -27,14 +27,15 @@ func (token *Token) getCurrentWindow(now int64) (windowStart, windowEnd int64) {
 		return 0, 0
 	}
 
-	// 固定锚点：1970-01-01 00:00:00 UTC + WindowStartHour 小时
-	// 这样无论是否跨天，窗口都按固定时长连续推进
-	epochStart := int64(token.WindowStartHour) * 3600
+	// 按天对齐锚点：每天 WindowStartHour 小时都会启动一个新窗口
+	// 避免使用 1970 全局锚点时 WindowHours 不能整除 24 导致的持续漂移
 	windowLen := hours * 3600
+	dayStart := (now / 86400) * 86400
+	anchor := dayStart + int64(token.WindowStartHour)*3600
 
-	elapsed := now - epochStart
+	elapsed := now - anchor
 	windowIndex := floorDiv(elapsed, windowLen)
-	windowStart = epochStart + windowIndex*windowLen
+	windowStart = anchor + windowIndex*windowLen
 	windowEnd = windowStart + windowLen
 
 	return windowStart, windowEnd
