@@ -58,18 +58,6 @@ func cacheIncrCycleUsedQuota(key string, increment int64) error {
 	return nil
 }
 
-// cacheDecrWindowQuotaCond 原子扣减窗口额度，仅当 window_used_quota + quota <= window_quota 时才成功。
-func cacheDecrWindowQuotaCond(key string, quota int) (bool, error) {
-	key = common.GenerateHMAC(key)
-	return common.RedisHIncrByCond(fmt.Sprintf("token:%s", key), constant.TokenFieldWindowUsedQuota, constant.TokenFieldWindowQuota, int64(quota))
-}
-
-// cacheDecrCycleQuotaCond 原子扣减周期额度，仅当 cycle_used_quota + quota <= cycle_quota 时才成功。
-func cacheDecrCycleQuotaCond(key string, quota int) (bool, error) {
-	key = common.GenerateHMAC(key)
-	return common.RedisHIncrByCond(fmt.Sprintf("token:%s", key), constant.TokenFieldCycleUsedQuota, constant.TokenFieldCycleQuota, int64(quota))
-}
-
 func cacheSetTokenField(key string, field string, value string) error {
 	key = common.GenerateHMAC(key)
 	err := common.RedisHSetField(fmt.Sprintf("token:%s", key), field, value)
