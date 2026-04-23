@@ -312,7 +312,7 @@ func RedisHIncrByCond(key, usedField, limitField string, delta int64) (bool, err
 	}
 
 	if ttl <= 0 {
-		return false, nil
+		return false, redis.Nil
 	}
 
 	ctx := context.Background()
