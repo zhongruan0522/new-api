@@ -250,7 +250,7 @@ func ValidateUserToken(key string) (token *Token, err error) {
 		case 2: // 时段限额
 			if token.ShouldResetWindow() {
 				windowStart, _ := token.GetCurrentWindow()
-				if err := ResetWindowQuota(token.Id, windowStart); err != nil {
+				if err := ResetWindowQuota(token.Id, token.WindowStartTime, windowStart); err != nil {
 					common.SysLog("failed to reset window quota: " + err.Error())
 				} else {
 					token.WindowUsedQuota = 0
@@ -266,7 +266,7 @@ func ValidateUserToken(key string) (token *Token, err error) {
 		case 3: // 时段+周期限额
 			if token.ShouldResetWindow() {
 				windowStart, _ := token.GetCurrentWindow()
-				if err := ResetWindowQuota(token.Id, windowStart); err != nil {
+				if err := ResetWindowQuota(token.Id, token.WindowStartTime, windowStart); err != nil {
 					common.SysLog("failed to reset window quota: " + err.Error())
 				} else {
 					token.WindowUsedQuota = 0
@@ -276,7 +276,7 @@ func ValidateUserToken(key string) (token *Token, err error) {
 			}
 			if token.ShouldResetCycle() {
 				cycleStart, _ := token.GetCurrentCycle()
-				if err := ResetCycleQuota(token.Id, cycleStart); err != nil {
+				if err := ResetCycleQuota(token.Id, token.CycleStartTime, cycleStart); err != nil {
 					common.SysLog("failed to reset cycle quota: " + err.Error())
 				} else {
 					token.CycleUsedQuota = 0
@@ -625,23 +625,23 @@ func increaseCycleQuota(id int, quota int) (err error) {
 	return err
 }
 
-// ResetWindowQuota 重置窗口额度到新窗口
-func ResetWindowQuota(id int, windowStart int64) (err error) {
-	err = DB.Model(&Token{}).Where("id = ?", id).Updates(
+// ResetWindowQuota 重置窗口额度到新窗口，仅在旧的 window_start_time 匹配时才执行，防止并发边界覆盖其他请求已扣减的额度。
+func ResetWindowQuota(id int, oldStart int64, newStart int64) (err error) {
+	err = DB.Model(&Token{}).Where("id = ? AND window_start_time = ?", id, oldStart).Updates(
 		map[string]interface{}{
-			"window_used_quota":  0,
-			"window_start_time":  windowStart,
+			"window_used_quota": 0,
+			"window_start_time": newStart,
 		},
 	).Error
 	return err
 }
 
-// ResetCycleQuota 重置周期额度到新周期
-func ResetCycleQuota(id int, cycleStart int64) (err error) {
-	err = DB.Model(&Token{}).Where("id = ?", id).Updates(
+// ResetCycleQuota 重置周期额度到新周期，仅在旧的 cycle_start_time 匹配时才执行，防止并发边界覆盖其他请求已扣减的额度。
+func ResetCycleQuota(id int, oldStart int64, newStart int64) (err error) {
+	err = DB.Model(&Token{}).Where("id = ? AND cycle_start_time = ?", id, oldStart).Updates(
 		map[string]interface{}{
 			"cycle_used_quota": 0,
-			"cycle_start_time": cycleStart,
+			"cycle_start_time": newStart,
 		},
 	).Error
 	return err

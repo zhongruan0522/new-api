@@ -10,30 +10,32 @@ func (token *Token) GetCurrentWindow() (windowStart, windowEnd int64) {
 	return token.getCurrentWindow(time.Now().Unix())
 }
 
+func floorDiv(a, b int64) int64 {
+	if b <= 0 {
+		return 0
+	}
+	if a >= 0 {
+		return a / b
+	}
+	// 向下取整，例如 -1/5 = -1
+	return -((-a + b - 1) / b)
+}
+
 func (token *Token) getCurrentWindow(now int64) (windowStart, windowEnd int64) {
 	hours := int64(token.WindowHours)
 	if hours <= 0 {
 		return 0, 0
 	}
 
-	// 将 now 转换为 UTC 时间，然后取当天 0 点
-	t := time.Unix(now, 0).UTC()
-	startOfDay := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location()).Unix()
+	// 固定锚点：1970-01-01 00:00:00 UTC + WindowStartHour 小时
+	// 这样无论是否跨天，窗口都按固定时长连续推进
+	epochStart := int64(token.WindowStartHour) * 3600
+	windowLen := hours * 3600
 
-	// 从当天 0 点偏移到 WindowStartHour
-	alignmentOffset := int64(token.WindowStartHour) * 3600
-	epochStart := startOfDay + alignmentOffset
-
-	// 如果 epochStart 在 now 之后，说明今天第一个窗口还没开始，回退到昨天
-	if epochStart > now {
-		epochStart -= 24 * 3600
-	}
-
-	// 找到 <= now 的最后一个窗口起始时间
 	elapsed := now - epochStart
-	windowIndex := elapsed / (hours * 3600)
-	windowStart = epochStart + windowIndex*hours*3600
-	windowEnd = windowStart + hours*3600
+	windowIndex := floorDiv(elapsed, windowLen)
+	windowStart = epochStart + windowIndex*windowLen
+	windowEnd = windowStart + windowLen
 
 	return windowStart, windowEnd
 }

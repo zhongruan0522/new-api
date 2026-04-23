@@ -458,7 +458,7 @@ func UpdateToken(c *gin.Context) {
 			cleanToken.WindowUsedQuota = 0
 			cleanToken.WindowStartTime = 0
 		}
-		if quotaType == 3 && (oldCycleDays != token.CycleDays || oldCycleQuota != token.CycleQuota) {
+		if oldQuotaType != quotaType || (quotaType == 3 && (oldCycleDays != token.CycleDays || oldCycleQuota != token.CycleQuota)) {
 			cleanToken.CycleUsedQuota = 0
 			cleanToken.CycleStartTime = 0
 		}
