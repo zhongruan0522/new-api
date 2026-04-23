@@ -28,10 +28,15 @@ func (token *Token) getCurrentWindow(now int64) (windowStart, windowEnd int64) {
 	}
 
 	// 按天对齐锚点：每天 WindowStartHour 小时都会启动一个新窗口
-	// 避免使用 1970 全局锚点时 WindowHours 不能整除 24 导致的持续漂移
+	// 避免使用 1970 全局锚点时 WindowHours 不能整除 24 导致的持续漂移。
+	// 若当前时间尚未到达今天的锚点，则使用昨天的锚点保持窗口连续性，
+	// 防止跨午夜后 windowStart 回退导致 ShouldResetWindow 判断异常。
 	windowLen := hours * 3600
 	dayStart := (now / 86400) * 86400
 	anchor := dayStart + int64(token.WindowStartHour)*3600
+	if now < anchor {
+		anchor -= 86400
+	}
 
 	elapsed := now - anchor
 	windowIndex := floorDiv(elapsed, windowLen)
