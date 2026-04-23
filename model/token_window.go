@@ -30,24 +30,10 @@ func (token *Token) getCurrentWindow(now int64) (windowStart, windowEnd int64) {
 	// windowLen 是窗口长度（秒）
 	windowLen := hours * 3600
 
-	var anchor int64
-	if hours <= 24 {
-		// WindowHours <= 24：按天对齐锚点，每天 WindowStartHour 小时启动新窗口。
-		// 若当前时间尚未到达今天的锚点，则使用昨天的锚点保持窗口连续性，
-		// 防止跨午夜后 windowStart 回退导致 ShouldResetWindow 判断异常。
-		dayStart := (now / 86400) * 86400
-		anchor = dayStart + int64(token.WindowStartHour)*3600
-		if now < anchor {
-			anchor -= 86400
-		}
-	} else {
-		// WindowHours > 24：使用固定锚点，保证多日窗口序列连续不中断。
-		// 按天对齐会导致窗口在每天 WindowStartHour 时刻被错误截断，
-		// 例如 window_start_hour=8, window_hours=30 时，第二天 08:00 会错误地
-		// 开始新窗口，而实际窗口应持续到第二天 14:00 才结束。
-		// 以 Unix 纪元当天的 WindowStartHour 作为全局锚点。
-		anchor = int64(token.WindowStartHour) * 3600
-	}
+	// 使用固定锚点（Unix 纪元当天的 WindowStartHour），保证窗口序列连续不中断。
+	// 按天对齐会在每天 WindowStartHour 时刻截断窗口，对于不能整除 24 的 WindowHours
+	// （如 5/7/10/30 等）会导致窗口在错误的时刻重置额度。
+	anchor := int64(token.WindowStartHour) * 3600
 
 	elapsed := now - anchor
 	windowIndex := floorDiv(elapsed, windowLen)
