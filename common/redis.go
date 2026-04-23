@@ -299,46 +299,6 @@ func RedisHIncrBy(key, field string, delta int64) error {
 	return nil
 }
 
-// RedisHIncrByCond 在 used + delta <= limit 时才执行 HINCRBY，使用 Lua 脚本保证原子性。
-// 返回 (ok, error)：ok=true 表示扣减成功，ok=false 表示条件不满足（额度不足）。
-func RedisHIncrByCond(key, usedField, limitField string, delta int64) (bool, error) {
-	if DebugEnabled {
-		SysLog(fmt.Sprintf("Redis HINCRBY_COND: key=%s, used=%s, limit=%s, delta=%d", key, usedField, limitField, delta))
-	}
-	ttlCmd := RDB.TTL(context.Background(), key)
-	ttl, err := ttlCmd.Result()
-	if err != nil && !errors.Is(err, redis.Nil) {
-		return false, fmt.Errorf("failed to get TTL: %w", err)
-	}
-
-	if ttl <= 0 {
-		return false, redis.Nil
-	}
-
-	ctx := context.Background()
-	script := redis.NewScript(`
-		local used = tonumber(redis.call('HGET', KEYS[1], ARGV[1]) or 0)
-		local limit = tonumber(redis.call('HGET', KEYS[1], ARGV[2]) or 0)
-		local delta = tonumber(ARGV[3])
-		if used + delta <= limit then
-			redis.call('HINCRBY', KEYS[1], ARGV[1], delta)
-			local ttl = tonumber(ARGV[4])
-			if ttl > 0 then
-				redis.call('EXPIRE', KEYS[1], ttl)
-			end
-			return 1
-		else
-			return 0
-		end
-	`)
-
-	result, err := script.Run(ctx, RDB, []string{key}, usedField, limitField, delta, int64(ttl.Seconds())).Int64()
-	if err != nil {
-		return false, err
-	}
-	return result == 1, nil
-}
-
 func RedisHSetField(key, field string, value interface{}) error {
 	if DebugEnabled {
 		SysLog(fmt.Sprintf("Redis HSET field: key=%s, field=%s, value=%v", key, field, value))
