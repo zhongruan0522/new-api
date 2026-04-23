@@ -231,11 +231,12 @@ func ValidateUserToken(key string) (token *Token, err error) {
 			quotaType = 1
 		}
 
-		// 时段/周期额度需要精确的实时状态，强制从 DB 重载以避免 Redis 缓存延迟
-		if quotaType == 2 || quotaType == 3 {
+		// 当 Redis 缓存命中时，强制从 DB 重载以获取最新的配额模式，
+		// 避免 Redis 异步刷新延迟导致从无限/永久切到时段/周期后短时间内仍按旧模式校验。
+		// Redis 未启用时 GetTokenByKey 已直接查 DB，无需重复查询。
+		if common.RedisEnabled {
 			if fresh, freshErr := GetTokenByKey(key, true); freshErr == nil && fresh != nil {
 				token = fresh
-				// 重载后必须重新计算 quotaType，否则配额模式切换时仍会按旧分支执行
 				quotaType = token.QuotaType
 				if quotaType == 0 && !token.UnlimitedQuota {
 					quotaType = 1
