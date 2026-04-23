@@ -251,7 +251,12 @@ func ValidateUserToken(key string) (token *Token, err error) {
 			if token.ShouldResetWindow() {
 				windowStart, _ := token.GetCurrentWindow()
 				if err := ResetWindowQuota(token.Id, token.WindowStartTime, windowStart); err != nil {
-					common.SysLog("failed to reset window quota: " + err.Error())
+					// CAS 竞争失败或 DB 错误，尝试重新加载最新 token
+					if fresh, loadErr := GetTokenByKey(key, true); loadErr == nil && fresh != nil {
+						token = fresh
+					} else {
+						common.SysLog("failed to reset window quota: " + err.Error())
+					}
 				} else {
 					token.WindowUsedQuota = 0
 					token.WindowStartTime = windowStart
@@ -267,7 +272,11 @@ func ValidateUserToken(key string) (token *Token, err error) {
 			if token.ShouldResetWindow() {
 				windowStart, _ := token.GetCurrentWindow()
 				if err := ResetWindowQuota(token.Id, token.WindowStartTime, windowStart); err != nil {
-					common.SysLog("failed to reset window quota: " + err.Error())
+					if fresh, loadErr := GetTokenByKey(key, true); loadErr == nil && fresh != nil {
+						token = fresh
+					} else {
+						common.SysLog("failed to reset window quota: " + err.Error())
+					}
 				} else {
 					token.WindowUsedQuota = 0
 					token.WindowStartTime = windowStart
@@ -277,7 +286,11 @@ func ValidateUserToken(key string) (token *Token, err error) {
 			if token.ShouldResetCycle() {
 				cycleStart, _ := token.GetCurrentCycle()
 				if err := ResetCycleQuota(token.Id, token.CycleStartTime, cycleStart); err != nil {
-					common.SysLog("failed to reset cycle quota: " + err.Error())
+					if fresh, loadErr := GetTokenByKey(key, true); loadErr == nil && fresh != nil {
+						token = fresh
+					} else {
+						common.SysLog("failed to reset cycle quota: " + err.Error())
+					}
 				} else {
 					token.CycleUsedQuota = 0
 					token.CycleStartTime = cycleStart
@@ -552,18 +565,36 @@ func DecreaseWindowQuota(id int, key string, quota int) (err error) {
 		return errors.New("quota 不能为负数！")
 	}
 	if common.RedisEnabled {
-		gopool.Go(func() {
-			err := cacheIncrWindowUsedQuota(key, int64(quota))
-			if err != nil {
-				common.SysLog("failed to decrease window quota: " + err.Error())
-			}
-		})
+		ok, err := cacheDecrWindowQuotaCond(key, quota)
+		if err != nil {
+			return err
+		}
+		if !ok {
+			return errors.New("token window quota is not enough")
+		}
+		return nil
 	}
 	if common.BatchUpdateEnabled {
 		addNewRecord(BatchUpdateTypeWindowQuota, id, quota)
 		return nil
 	}
-	return increaseWindowQuota(id, quota)
+	return decreaseWindowQuota(id, quota)
+}
+
+func decreaseWindowQuota(id int, quota int) (err error) {
+	result := DB.Model(&Token{}).Where("id = ? AND window_used_quota + ? <= window_quota", id, quota).Updates(
+		map[string]interface{}{
+			"window_used_quota": gorm.Expr("window_used_quota + ?", quota),
+			"accessed_time":     common.GetTimestamp(),
+		},
+	)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return errors.New("token window quota is not enough")
+	}
+	return nil
 }
 
 func increaseWindowQuota(id int, quota int) (err error) {
@@ -601,18 +632,36 @@ func DecreaseCycleQuota(id int, key string, quota int) (err error) {
 		return errors.New("quota 不能为负数！")
 	}
 	if common.RedisEnabled {
-		gopool.Go(func() {
-			err := cacheIncrCycleUsedQuota(key, int64(quota))
-			if err != nil {
-				common.SysLog("failed to decrease cycle quota: " + err.Error())
-			}
-		})
+		ok, err := cacheDecrCycleQuotaCond(key, quota)
+		if err != nil {
+			return err
+		}
+		if !ok {
+			return errors.New("token cycle quota is not enough")
+		}
+		return nil
 	}
 	if common.BatchUpdateEnabled {
 		addNewRecord(BatchUpdateTypeCycleQuota, id, quota)
 		return nil
 	}
-	return increaseCycleQuota(id, quota)
+	return decreaseCycleQuota(id, quota)
+}
+
+func decreaseCycleQuota(id int, quota int) (err error) {
+	result := DB.Model(&Token{}).Where("id = ? AND cycle_used_quota + ? <= cycle_quota", id, quota).Updates(
+		map[string]interface{}{
+			"cycle_used_quota": gorm.Expr("cycle_used_quota + ?", quota),
+			"accessed_time":    common.GetTimestamp(),
+		},
+	)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return errors.New("token cycle quota is not enough")
+	}
+	return nil
 }
 
 func increaseCycleQuota(id int, quota int) (err error) {
@@ -627,24 +676,36 @@ func increaseCycleQuota(id int, quota int) (err error) {
 
 // ResetWindowQuota 重置窗口额度到新窗口，仅在旧的 window_start_time 匹配时才执行，防止并发边界覆盖其他请求已扣减的额度。
 func ResetWindowQuota(id int, oldStart int64, newStart int64) (err error) {
-	err = DB.Model(&Token{}).Where("id = ? AND window_start_time = ?", id, oldStart).Updates(
+	result := DB.Model(&Token{}).Where("id = ? AND window_start_time = ?", id, oldStart).Updates(
 		map[string]interface{}{
 			"window_used_quota": 0,
 			"window_start_time": newStart,
 		},
-	).Error
-	return err
+	)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return errors.New("window already reset by another request")
+	}
+	return nil
 }
 
 // ResetCycleQuota 重置周期额度到新周期，仅在旧的 cycle_start_time 匹配时才执行，防止并发边界覆盖其他请求已扣减的额度。
 func ResetCycleQuota(id int, oldStart int64, newStart int64) (err error) {
-	err = DB.Model(&Token{}).Where("id = ? AND cycle_start_time = ?", id, oldStart).Updates(
+	result := DB.Model(&Token{}).Where("id = ? AND cycle_start_time = ?", id, oldStart).Updates(
 		map[string]interface{}{
 			"cycle_used_quota": 0,
 			"cycle_start_time": newStart,
 		},
-	).Error
-	return err
+	)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return errors.New("cycle already reset by another request")
+	}
+	return nil
 }
 
 // CountUserTokens returns total number of tokens for the given user, used for pagination
