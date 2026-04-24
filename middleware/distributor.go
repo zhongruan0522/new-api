@@ -399,6 +399,12 @@ func guessRelayFormatFromPath(path string) types.RelayFormat {
 		return types.RelayFormatClaude
 	case strings.HasPrefix(path, "/v1beta/models/"):
 		return types.RelayFormatGemini
+	case strings.HasPrefix(path, "/v1/models/") && strings.Contains(path, ":"):
+		// POST /v1/models/{model}:{action} is Gemini format relay
+		return types.RelayFormatGemini
+	case strings.HasPrefix(path, "/v1/engines/"):
+		// POST /v1/engines/{model}/embeddings is Gemini format relay
+		return types.RelayFormatGemini
 	case strings.HasPrefix(path, "/v1/realtime"):
 		return types.RelayFormatOpenAIRealtime
 	case strings.HasPrefix(path, "/v1/responses/compact"):
