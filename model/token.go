@@ -28,22 +28,22 @@ func getTokenResetLock(id int) *sync.Mutex {
 }
 
 type Token struct {
-	Id                 int            `json:"id"`
-	UserId             int            `json:"user_id" gorm:"index"`
-	Key                string         `json:"key" gorm:"type:char(48);uniqueIndex"`
-	Status             int            `json:"status" gorm:"default:1"`
-	Name               string         `json:"name" gorm:"index" `
-	CreatedTime        int64          `json:"created_time" gorm:"bigint"`
-	AccessedTime       int64          `json:"accessed_time" gorm:"bigint"`
-	ExpiredTime        int64          `json:"expired_time" gorm:"bigint;default:-1"` // -1 means never expired
-	RemainQuota        int            `json:"remain_quota" gorm:"default:0"`
-	UnlimitedQuota     bool           `json:"unlimited_quota"`
-	ModelLimitsEnabled bool           `json:"model_limits_enabled"`
-	ModelLimits        string         `json:"model_limits" gorm:"type:varchar(1024);default:''"`
-	AllowIps           *string        `json:"allow_ips" gorm:"default:''"`
-	UsedQuota          int            `json:"used_quota" gorm:"default:0"` // used quota
-	Group              string         `json:"group" gorm:"default:''"`
-	CrossGroupRetry    bool           `json:"cross_group_retry"` // 跨分组重试，仅auto分组有效
+	Id                 int     `json:"id"`
+	UserId             int     `json:"user_id" gorm:"index"`
+	Key                string  `json:"key" gorm:"type:char(48);uniqueIndex"`
+	Status             int     `json:"status" gorm:"default:1"`
+	Name               string  `json:"name" gorm:"index" `
+	CreatedTime        int64   `json:"created_time" gorm:"bigint"`
+	AccessedTime       int64   `json:"accessed_time" gorm:"bigint"`
+	ExpiredTime        int64   `json:"expired_time" gorm:"bigint;default:-1"` // -1 means never expired
+	RemainQuota        int     `json:"remain_quota" gorm:"default:0"`
+	UnlimitedQuota     bool    `json:"unlimited_quota"`
+	ModelLimitsEnabled bool    `json:"model_limits_enabled"`
+	ModelLimits        string  `json:"model_limits" gorm:"type:varchar(1024);default:''"`
+	AllowIps           *string `json:"allow_ips" gorm:"default:''"`
+	UsedQuota          int     `json:"used_quota" gorm:"default:0"` // used quota
+	Group              string  `json:"group" gorm:"default:''"`
+	CrossGroupRetry    bool    `json:"cross_group_retry"` // 跨分组重试，仅auto分组有效
 
 	// 限额类型：0=无限额度, 1=永久限额, 2=时段限额, 3=时段+周期限额
 	QuotaType int `json:"quota_type" gorm:"default:0"`
@@ -499,9 +499,11 @@ func IncreaseTokenQuota(id int, key string, quota int) (err error) {
 	}
 	if common.RedisEnabled {
 		gopool.Go(func() {
-			err := cacheIncrTokenQuota(key, int64(quota))
-			if err != nil {
-				common.SysLog("failed to increase token quota: " + err.Error())
+			if cacheErr := cacheIncrTokenQuota(key, int64(quota)); cacheErr != nil {
+				common.SysLog("failed to increase token quota: " + cacheErr.Error())
+			}
+			if cacheErr := cacheIncrTokenUsedQuota(key, -int64(quota)); cacheErr != nil {
+				common.SysLog("failed to decrease token used quota: " + cacheErr.Error())
 			}
 		})
 	}
@@ -529,9 +531,11 @@ func DecreaseTokenQuota(id int, key string, quota int) (err error) {
 	}
 	if common.RedisEnabled {
 		gopool.Go(func() {
-			err := cacheDecrTokenQuota(key, int64(quota))
-			if err != nil {
-				common.SysLog("failed to decrease token quota: " + err.Error())
+			if cacheErr := cacheDecrTokenQuota(key, int64(quota)); cacheErr != nil {
+				common.SysLog("failed to decrease token quota: " + cacheErr.Error())
+			}
+			if cacheErr := cacheIncrTokenUsedQuota(key, int64(quota)); cacheErr != nil {
+				common.SysLog("failed to increase token used quota: " + cacheErr.Error())
 			}
 		})
 	}
@@ -558,6 +562,10 @@ func IncreaseWindowQuota(id int, key string, quota int) (err error) {
 	if quota < 0 {
 		return errors.New("quota 不能为负数！")
 	}
+	err = increaseWindowQuota(id, -quota)
+	if err != nil {
+		return err
+	}
 	if common.RedisEnabled {
 		gopool.Go(func() {
 			err := cacheIncrWindowUsedQuota(key, -int64(quota))
@@ -566,7 +574,7 @@ func IncreaseWindowQuota(id int, key string, quota int) (err error) {
 			}
 		})
 	}
-	return increaseWindowQuota(id, -quota)
+	return nil
 }
 
 // DecreaseWindowQuota 减少窗口已用额度（扣费时使用）
@@ -574,7 +582,18 @@ func DecreaseWindowQuota(id int, key string, quota int) (err error) {
 	if quota < 0 {
 		return errors.New("quota 不能为负数！")
 	}
-	return decreaseWindowQuota(id, quota)
+	err = decreaseWindowQuota(id, quota)
+	if err != nil {
+		return err
+	}
+	if common.RedisEnabled {
+		gopool.Go(func() {
+			if cacheErr := cacheIncrWindowUsedQuota(key, int64(quota)); cacheErr != nil {
+				common.SysLog("failed to increase window used quota: " + cacheErr.Error())
+			}
+		})
+	}
+	return nil
 }
 
 func decreaseWindowQuota(id int, quota int) (err error) {
@@ -607,6 +626,10 @@ func IncreaseCycleQuota(id int, key string, quota int) (err error) {
 	if quota < 0 {
 		return errors.New("quota 不能为负数！")
 	}
+	err = increaseCycleQuota(id, -quota)
+	if err != nil {
+		return err
+	}
 	if common.RedisEnabled {
 		gopool.Go(func() {
 			err := cacheIncrCycleUsedQuota(key, -int64(quota))
@@ -615,7 +638,7 @@ func IncreaseCycleQuota(id int, key string, quota int) (err error) {
 			}
 		})
 	}
-	return increaseCycleQuota(id, -quota)
+	return nil
 }
 
 // DecreaseCycleQuota 减少周期已用额度（扣费时使用）
@@ -623,7 +646,18 @@ func DecreaseCycleQuota(id int, key string, quota int) (err error) {
 	if quota < 0 {
 		return errors.New("quota 不能为负数！")
 	}
-	return decreaseCycleQuota(id, quota)
+	err = decreaseCycleQuota(id, quota)
+	if err != nil {
+		return err
+	}
+	if common.RedisEnabled {
+		gopool.Go(func() {
+			if cacheErr := cacheIncrCycleUsedQuota(key, int64(quota)); cacheErr != nil {
+				common.SysLog("failed to increase cycle used quota: " + cacheErr.Error())
+			}
+		})
+	}
+	return nil
 }
 
 func decreaseCycleQuota(id int, quota int) (err error) {

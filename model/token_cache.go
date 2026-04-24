@@ -40,6 +40,15 @@ func cacheDecrTokenQuota(key string, decrement int64) error {
 	return cacheIncrTokenQuota(key, -decrement)
 }
 
+func cacheIncrTokenUsedQuota(key string, increment int64) error {
+	key = common.GenerateHMAC(key)
+	err := common.RedisHIncrBy(fmt.Sprintf("token:%s", key), constant.TokenFieldUsedQuota, increment)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func cacheIncrWindowUsedQuota(key string, increment int64) error {
 	key = common.GenerateHMAC(key)
 	err := common.RedisHIncrBy(fmt.Sprintf("token:%s", key), constant.TokenFieldWindowUsedQuota, increment)
