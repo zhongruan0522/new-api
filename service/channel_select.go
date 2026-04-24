@@ -8,6 +8,7 @@ import (
 	"github.com/zhongruan0522/new-api/logger"
 	"github.com/zhongruan0522/new-api/model"
 	"github.com/zhongruan0522/new-api/setting"
+	"github.com/zhongruan0522/new-api/types"
 	"github.com/gin-gonic/gin"
 )
 
@@ -16,6 +17,7 @@ type RetryParam struct {
 	TokenGroup   string
 	ModelName    string
 	Retry        *int
+	RelayFormat  types.RelayFormat
 	resetNextTry bool
 }
 
@@ -85,6 +87,7 @@ func CacheGetRandomSatisfiedChannel(param *RetryParam) (*model.Channel, string, 
 	var err error
 	selectGroup := param.TokenGroup
 	userGroup := common.GetContextKeyString(param.Ctx, constant.ContextKeyUserGroup)
+	preferredAPIType := types.RelayFormatToPreferredAPIType(param.RelayFormat)
 
 	if param.TokenGroup == "auto" {
 		if len(setting.GetAutoGroups()) == 0 {
@@ -115,7 +118,7 @@ func CacheGetRandomSatisfiedChannel(param *RetryParam) (*model.Channel, string, 
 			}
 			logger.LogDebug(param.Ctx, "Auto selecting group: %s, priorityRetry: %d", autoGroup, priorityRetry)
 
-			channel, _ = model.GetRandomSatisfiedChannel(autoGroup, param.ModelName, priorityRetry)
+			channel, _ = model.GetRandomSatisfiedChannel(autoGroup, param.ModelName, priorityRetry, preferredAPIType)
 			if channel == nil {
 				// Current group has no available channel for this model, try next group
 				// 当前分组没有该模型的可用渠道，尝试下一个分组
@@ -153,7 +156,7 @@ func CacheGetRandomSatisfiedChannel(param *RetryParam) (*model.Channel, string, 
 			break
 		}
 	} else {
-		channel, err = model.GetRandomSatisfiedChannel(param.TokenGroup, param.ModelName, param.GetRetry())
+		channel, err = model.GetRandomSatisfiedChannel(param.TokenGroup, param.ModelName, param.GetRetry(), preferredAPIType)
 		if err != nil {
 			return nil, param.TokenGroup, err
 		}
