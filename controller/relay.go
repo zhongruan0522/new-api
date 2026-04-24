@@ -178,10 +178,11 @@ func Relay(c *gin.Context, relayFormat types.RelayFormat) {
 	}()
 
 	retryParam := &service.RetryParam{
-		Ctx:        c,
-		TokenGroup: relayInfo.TokenGroup,
-		ModelName:  relayInfo.OriginModelName,
-		Retry:      common.GetPointer(0),
+		Ctx:         c,
+		TokenGroup:  relayInfo.TokenGroup,
+		ModelName:   relayInfo.OriginModelName,
+		Retry:       common.GetPointer(0),
+		RelayFormat: relayFormat,
 	}
 
 	for ; retryParam.GetRetry() <= common.RetryTimes; retryParam.IncreaseRetry() {
@@ -464,10 +465,11 @@ func RelayTask(c *gin.Context) {
 		retryTimes = 0
 	}
 	retryParam := &service.RetryParam{
-		Ctx:        c,
-		TokenGroup: relayInfo.TokenGroup,
-		ModelName:  relayInfo.OriginModelName,
-		Retry:      common.GetPointer(0),
+		Ctx:         c,
+		TokenGroup:  relayInfo.TokenGroup,
+		ModelName:   relayInfo.OriginModelName,
+		Retry:       common.GetPointer(0),
+		RelayFormat: types.RelayFormatTask,
 	}
 	for ; shouldRetryTaskRelay(c, channelId, taskErr, retryTimes) && retryParam.GetRetry() < retryTimes; retryParam.IncreaseRetry() {
 		channel, newAPIError := getChannel(c, relayInfo, retryParam)

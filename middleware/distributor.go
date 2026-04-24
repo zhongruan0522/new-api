@@ -80,6 +80,7 @@ func Distribute() func(c *gin.Context) {
 				}
 				var selectGroup string
 				usingGroup := common.GetContextKeyString(c, constant.ContextKeyUsingGroup)
+				relayFormat := guessRelayFormatFromPath(c.Request.URL.Path)
 
 				if preferredChannelID, found := service.GetPreferredChannelByAffinity(c, modelRequest.Model, usingGroup); found {
 					preferred, err := model.CacheGetChannel(preferredChannelID)
@@ -106,10 +107,11 @@ func Distribute() func(c *gin.Context) {
 
 				if channel == nil {
 					channel, selectGroup, err = service.CacheGetRandomSatisfiedChannel(&service.RetryParam{
-						Ctx:        c,
-						ModelName:  modelRequest.Model,
-						TokenGroup: usingGroup,
-						Retry:      common.GetPointer(0),
+						Ctx:         c,
+						ModelName:   modelRequest.Model,
+						TokenGroup:  usingGroup,
+						Retry:       common.GetPointer(0),
+						RelayFormat: relayFormat,
 					})
 					if err != nil {
 						showGroup := usingGroup
@@ -387,4 +389,35 @@ func extractModelNameFromGeminiPath(path string) string {
 
 	// 返回模型名部分
 	return path[startIndex : startIndex+colonIndex]
+}
+
+// guessRelayFormatFromPath infers the relay format from the request URL path.
+// This is used by the distributor to prefer channels matching the request format.
+func guessRelayFormatFromPath(path string) types.RelayFormat {
+	switch {
+	case strings.HasPrefix(path, "/v1/messages"):
+		return types.RelayFormatClaude
+	case strings.HasPrefix(path, "/v1beta/models/"):
+		return types.RelayFormatGemini
+	case strings.HasPrefix(path, "/v1/realtime"):
+		return types.RelayFormatOpenAIRealtime
+	case strings.HasPrefix(path, "/v1/responses/compact"):
+		return types.RelayFormatOpenAIResponsesCompaction
+	case strings.HasPrefix(path, "/v1/responses"):
+		return types.RelayFormatOpenAIResponses
+	case strings.HasPrefix(path, "/v1/images/"):
+		return types.RelayFormatOpenAIImage
+	case strings.HasPrefix(path, "/v1/embeddings"):
+		return types.RelayFormatEmbedding
+	case strings.HasPrefix(path, "/v1/audio/"):
+		return types.RelayFormatOpenAIAudio
+	case strings.HasPrefix(path, "/v1/rerank"):
+		return types.RelayFormatRerank
+	case strings.HasPrefix(path, "/v1/chat/completions"),
+		strings.HasPrefix(path, "/v1/completions"),
+		strings.HasPrefix(path, "/v1/moderations"):
+		return types.RelayFormatOpenAI
+	default:
+		return ""
+	}
 }
