@@ -14,9 +14,7 @@ type StatusCodeRange struct {
 
 var AutomaticDisableStatusCodeRanges = []StatusCodeRange{{Start: 401, End: 401}}
 
-// Default behavior matches legacy hardcoded retry rules in controller/relay.go shouldRetry:
-// retry for 1xx, 3xx, 4xx(except 400/408), 5xx(except 504/524), and no retry for 2xx.
-var AutomaticRetryStatusCodeRanges = []StatusCodeRange{
+var defaultAutomaticRetryStatusCodeRanges = []StatusCodeRange{
 	{Start: 100, End: 199},
 	{Start: 300, End: 399},
 	{Start: 401, End: 407},
@@ -25,6 +23,10 @@ var AutomaticRetryStatusCodeRanges = []StatusCodeRange{
 	{Start: 505, End: 523},
 	{Start: 525, End: 599},
 }
+
+// Default behavior matches legacy hardcoded retry rules in controller/relay.go shouldRetry:
+// retry for 1xx, 3xx, 4xx(except 400/408), 5xx(except 504/524), and no retry for 2xx.
+var AutomaticRetryStatusCodeRanges = cloneStatusCodeRanges(defaultAutomaticRetryStatusCodeRanges)
 
 func AutomaticDisableStatusCodesToString() string {
 	return statusCodeRangesToString(AutomaticDisableStatusCodeRanges)
@@ -48,6 +50,10 @@ func AutomaticRetryStatusCodesToString() string {
 }
 
 func AutomaticRetryStatusCodesFromString(s string) error {
+	if strings.TrimSpace(s) == "" {
+		AutomaticRetryStatusCodeRanges = cloneStatusCodeRanges(defaultAutomaticRetryStatusCodeRanges)
+		return nil
+	}
 	ranges, err := ParseHTTPStatusCodeRanges(s)
 	if err != nil {
 		return err
@@ -73,6 +79,13 @@ func statusCodeRangesToString(ranges []StatusCodeRange) string {
 		parts = append(parts, fmt.Sprintf("%d-%d", r.Start, r.End))
 	}
 	return strings.Join(parts, ",")
+}
+
+func cloneStatusCodeRanges(ranges []StatusCodeRange) []StatusCodeRange {
+	if len(ranges) == 0 {
+		return nil
+	}
+	return append([]StatusCodeRange(nil), ranges...)
 }
 
 func shouldMatchStatusCodeRanges(ranges []StatusCodeRange, code int) bool {
