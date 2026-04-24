@@ -173,8 +173,8 @@ func preferAbilitiesByAPIType(abilities []Ability, preferredAPIType int) []Abili
 		if !ok {
 			continue
 		}
-		apiType, ok := common.ChannelType2APIType(chType)
-		if ok && apiType == preferredAPIType {
+		apiType, _ := common.ChannelType2APIType(chType)
+		if apiType == preferredAPIType {
 			matched = append(matched, a)
 		}
 	}

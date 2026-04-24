@@ -207,8 +207,8 @@ func GetRandomSatisfiedChannel(group string, model string, retry int, preferredA
 func preferChannelsByAPIType(channels []*Channel, preferredAPIType int) []*Channel {
 	matched := make([]*Channel, 0, len(channels))
 	for _, ch := range channels {
-		chAPIType, ok := common.ChannelType2APIType(ch.Type)
-		if ok && chAPIType == preferredAPIType {
+		chAPIType, _ := common.ChannelType2APIType(ch.Type)
+		if chAPIType == preferredAPIType {
 			matched = append(matched, ch)
 		}
 	}
