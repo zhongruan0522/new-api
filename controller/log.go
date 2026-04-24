@@ -104,7 +104,7 @@ func GetLogsStat(c *gin.Context) {
 	group := c.Query("group")
 
 	var statData model.Stat
-	if common.DataExportEnabled {
+	if common.DataExportEnabled && tokenName == "" && channel == 0 && group == "" && modelName == "" && logType == 0 {
 		var qStat model.QuotaStat
 		var err error
 		if username != "" {
@@ -157,7 +157,7 @@ func GetLogsSelfStat(c *gin.Context) {
 	group := c.Query("group")
 
 	var statData model.Stat
-	if common.DataExportEnabled {
+	if common.DataExportEnabled && tokenName == "" && channel == 0 && group == "" && modelName == "" && logType == 0 {
 		qStat, err := model.GetQuotaStatByUserId(userId, startTimestamp, endTimestamp)
 		if err != nil {
 			common.ApiError(c, err)
