@@ -338,7 +338,6 @@ const LoginForm = () => {
   // 返回登录页面
   const handleBackToLogin = () => {
     setShowTwoFA(false);
-    setInputs({ username: '', password: '' });
   };
 
   const renderOAuthOptions = () => {
