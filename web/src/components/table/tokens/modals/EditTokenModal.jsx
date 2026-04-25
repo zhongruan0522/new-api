@@ -178,10 +178,12 @@ const EditTokenModal = (props) => {
       }
       // 设置默认值
       data.window_hours = data.window_hours || 1;
-      data.window_quota = data.window_quota || 0;
+      data.window_quota = String(data.window_quota ?? 0);
       data.window_start_hour = data.window_start_hour || 0;
       data.cycle_days = data.cycle_days || 1;
-      data.cycle_quota = data.cycle_quota || 0;
+      data.cycle_quota = String(data.cycle_quota ?? 0);
+      // AutoComplete 组件需要字符串值才能正确显示
+      data.remain_quota = String(data.remain_quota ?? 0);
       if (formApiRef.current) {
         formApiRef.current.setValues({ ...getInitValues(), ...data });
       }
