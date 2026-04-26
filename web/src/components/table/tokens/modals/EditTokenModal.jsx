@@ -168,6 +168,7 @@ const EditTokenModal = (props) => {
       } else {
         data.model_limits = [];
       }
+      data.allow_ips = data.allow_ips ?? '';
       // 兼容旧数据：如果没有 quota_type，从 unlimited_quota 派生
       if (!data.quota_type || data.quota_type === 0) {
         if (data.unlimited_quota) {
@@ -177,10 +178,14 @@ const EditTokenModal = (props) => {
         }
       }
       // 设置默认值
-      data.window_hours = data.window_hours || 1;
+      if (data.quota_type >= 2) {
+        data.window_hours = data.window_hours || 1;
+      }
       data.window_quota = String(data.window_quota ?? 0);
       data.window_start_hour = data.window_start_hour || 0;
-      data.cycle_days = data.cycle_days || 1;
+      if (data.quota_type === 3) {
+        data.cycle_days = data.cycle_days || 1;
+      }
       data.cycle_quota = String(data.cycle_quota ?? 0);
       data.remain_quota = String(data.remain_quota ?? 0);
       if (formApiRef.current) {
