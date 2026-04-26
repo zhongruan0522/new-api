@@ -36,10 +36,8 @@ import Token from './pages/Token';
 import Redemption from './pages/Redemption';
 import TopUp from './pages/TopUp';
 import Log from './pages/Log';
-import Midjourney from './pages/Midjourney';
 import MultimodalFiles from './pages/MultimodalFiles';
 import Pricing from './pages/Pricing';
-import Task from './pages/Task';
 import ModelPage from './pages/Model';
 
 import OAuth2Callback from './components/auth/OAuth2Callback';
@@ -243,26 +241,6 @@ function App() {
             <PrivateRoute>
               <Suspense fallback={<Loading></Loading>} key={location.pathname}>
                 <Dashboard />
-              </Suspense>
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path='/console/midjourney'
-          element={
-            <PrivateRoute>
-              <Suspense fallback={<Loading></Loading>} key={location.pathname}>
-                <Midjourney />
-              </Suspense>
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path='/console/task'
-          element={
-            <PrivateRoute>
-              <Suspense fallback={<Loading></Loading>} key={location.pathname}>
-                <Task />
               </Suspense>
             </PrivateRoute>
           }

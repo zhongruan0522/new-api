@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"github.com/zhongruan0522/new-api/dto"
-	"github.com/zhongruan0522/new-api/model"
 	relaycommon "github.com/zhongruan0522/new-api/relay/common"
 	"github.com/zhongruan0522/new-api/types"
 
@@ -29,29 +28,4 @@ type Adaptor interface {
 	GetChannelName() string
 	ConvertClaudeRequest(c *gin.Context, info *relaycommon.RelayInfo, request *dto.ClaudeRequest) (any, error)
 	ConvertGeminiRequest(c *gin.Context, info *relaycommon.RelayInfo, request *dto.GeminiChatRequest) (any, error)
-}
-
-type TaskAdaptor interface {
-	Init(info *relaycommon.RelayInfo)
-
-	ValidateRequestAndSetAction(c *gin.Context, info *relaycommon.RelayInfo) *dto.TaskError
-
-	BuildRequestURL(info *relaycommon.RelayInfo) (string, error)
-	BuildRequestHeader(c *gin.Context, req *http.Request, info *relaycommon.RelayInfo) error
-	BuildRequestBody(c *gin.Context, info *relaycommon.RelayInfo) (io.Reader, error)
-
-	DoRequest(c *gin.Context, info *relaycommon.RelayInfo, requestBody io.Reader) (*http.Response, error)
-	DoResponse(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (taskID string, taskData []byte, err *dto.TaskError)
-
-	GetModelList() []string
-	GetChannelName() string
-
-	// FetchTask
-	FetchTask(baseUrl, key string, body map[string]any, proxy string) (*http.Response, error)
-
-	ParseTaskResult(respBody []byte) (*relaycommon.TaskInfo, error)
-}
-
-type OpenAIVideoConverter interface {
-	ConvertToOpenAIVideo(originTask *model.Task) ([]byte, error)
 }

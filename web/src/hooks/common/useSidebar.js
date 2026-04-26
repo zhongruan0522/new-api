@@ -32,8 +32,6 @@ export const DEFAULT_ADMIN_CONFIG = {
     token: true,
     log: true,
     multimodal_files: true,
-    midjourney: true,
-    task: true,
   },
   personal: {
     enabled: true,
