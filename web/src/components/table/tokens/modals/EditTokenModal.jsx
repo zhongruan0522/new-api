@@ -163,7 +163,7 @@ const EditTokenModal = (props) => {
       if (data.expired_time !== -1) {
         data.expired_time = timestamp2string(data.expired_time);
       }
-      if (data.model_limits !== '') {
+      if (data.model_limits_enabled && data.model_limits !== '') {
         data.model_limits = data.model_limits.split(',');
       } else {
         data.model_limits = [];
@@ -253,8 +253,9 @@ const EditTokenModal = (props) => {
         }
         localInputs.expired_time = Math.ceil(time / 1000);
       }
-      localInputs.model_limits = localInputs.model_limits.join(',');
-      localInputs.model_limits_enabled = localInputs.model_limits.length > 0;
+      const modelLimits = localInputs.model_limits || [];
+      localInputs.model_limits = modelLimits.join(',');
+      localInputs.model_limits_enabled = modelLimits.length > 0;
       localInputs.quota_type = parseInt(localInputs.quota_type);
       localInputs.window_hours = parseInt(localInputs.window_hours) || 0;
       localInputs.window_quota = parseInt(localInputs.window_quota) || 0;
@@ -296,8 +297,9 @@ const EditTokenModal = (props) => {
           }
           localInputs.expired_time = Math.ceil(time / 1000);
         }
-        localInputs.model_limits = localInputs.model_limits.join(',');
-        localInputs.model_limits_enabled = localInputs.model_limits.length > 0;
+        const modelLimits = localInputs.model_limits || [];
+        localInputs.model_limits = modelLimits.join(',');
+        localInputs.model_limits_enabled = modelLimits.length > 0;
         localInputs.quota_type = parseInt(localInputs.quota_type);
         localInputs.window_hours = parseInt(localInputs.window_hours) || 0;
         localInputs.window_quota = parseInt(localInputs.window_quota) || 0;
