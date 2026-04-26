@@ -23,7 +23,7 @@ import {
   Table,
   Input,
   Space,
-  Form,
+  Switch,
   Card,
   Typography,
 } from '@douyinfe/semi-ui';
@@ -1415,15 +1415,19 @@ export default function GroupRatioSettings(props) {
       />
 
       <Card style={{ marginBottom: 16 }}>
-        <Form.Switch
-          label={t(
-            '创建令牌默认选择auto分组，初始令牌也将设为auto（否则留空，为用户默认分组）',
-          )}
-          checked={inputs.DefaultUseAutoGroup}
-          onChange={(value) =>
-            setInputs({ ...inputs, DefaultUseAutoGroup: value })
-          }
-        />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <Switch
+            checked={inputs.DefaultUseAutoGroup}
+            onChange={(value) =>
+              setInputs({ ...inputs, DefaultUseAutoGroup: value })
+            }
+          />
+          <Typography.Text>
+            {t(
+              '创建令牌默认选择auto分组，初始令牌也将设为auto（否则留空，为用户默认分组）',
+            )}
+          </Typography.Text>
+        </div>
       </Card>
 
       <Button
