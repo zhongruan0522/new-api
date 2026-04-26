@@ -1,9 +1,6 @@
 package relay
 
 import (
-	"strconv"
-
-	"github.com/gin-gonic/gin"
 	"github.com/zhongruan0522/new-api/constant"
 	"github.com/zhongruan0522/new-api/relay/channel"
 	"github.com/zhongruan0522/new-api/relay/channel/aws"
@@ -15,10 +12,6 @@ import (
 	"github.com/zhongruan0522/new-api/relay/channel/ollama"
 	"github.com/zhongruan0522/new-api/relay/channel/openai"
 	"github.com/zhongruan0522/new-api/relay/channel/siliconflow"
-	taskGemini "github.com/zhongruan0522/new-api/relay/channel/task/gemini"
-	"github.com/zhongruan0522/new-api/relay/channel/task/hailuo"
-	"github.com/zhongruan0522/new-api/relay/channel/task/suno"
-	taskvertex "github.com/zhongruan0522/new-api/relay/channel/task/vertex"
 	"github.com/zhongruan0522/new-api/relay/channel/vertex"
 	"github.com/zhongruan0522/new-api/relay/channel/zhipu_4v"
 )
@@ -49,32 +42,6 @@ func GetAdaptor(apiType int) channel.Adaptor {
 		return &moonshot.Adaptor{}
 	case constant.APITypeMiniMax:
 		return &minimax.Adaptor{}
-	}
-	return nil
-}
-
-func GetTaskPlatform(c *gin.Context) constant.TaskPlatform {
-	channelType := c.GetInt("channel_type")
-	if channelType > 0 {
-		return constant.TaskPlatform(strconv.Itoa(channelType))
-	}
-	return constant.TaskPlatform(c.GetString("platform"))
-}
-
-func GetTaskAdaptor(platform constant.TaskPlatform) channel.TaskAdaptor {
-	switch platform {
-	case constant.TaskPlatformSuno:
-		return &suno.TaskAdaptor{}
-	}
-	if channelType, err := strconv.ParseInt(string(platform), 10, 64); err == nil {
-		switch channelType {
-		case constant.ChannelTypeVertexAi:
-			return &taskvertex.TaskAdaptor{}
-		case constant.ChannelTypeGemini:
-			return &taskGemini.TaskAdaptor{}
-		case constant.ChannelTypeMiniMax:
-			return &hailuo.TaskAdaptor{}
-		}
 	}
 	return nil
 }

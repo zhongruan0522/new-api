@@ -47,8 +47,6 @@ export default function SettingsSidebarModulesAdmin(props) {
       token: true,
       log: true,
       multimodal_files: true,
-      midjourney: true,
-      task: true,
     },
     personal: {
       enabled: true,
@@ -162,12 +160,6 @@ export default function SettingsSidebarModulesAdmin(props) {
           title: t('多模态文件'),
           description: t('多模态文件管理'),
         },
-        {
-          key: 'midjourney',
-          title: t('绘图日志'),
-          description: t('绘图任务记录'),
-        },
-        { key: 'task', title: t('任务日志'), description: t('系统任务记录') },
       ],
     },
     {

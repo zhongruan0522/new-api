@@ -54,8 +54,6 @@ const PageLayout = () => {
     '/console/redemption',
     '/console/user',
     '/console/token',
-    '/console/midjourney',
-    '/console/task',
     '/console/models',
     '/console/multimodal-files',
     '/pricing',

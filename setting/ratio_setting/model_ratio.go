@@ -23,7 +23,6 @@ const (
 // 1 === ￥0.014 / 1k tokens
 
 var defaultModelRatio = map[string]float64{
-	//"midjourney":                50,
 	"gpt-4-gizmo-*":  15,
 	"gpt-4o-gizmo-*": 2.5,
 	"gpt-4-all":      15,

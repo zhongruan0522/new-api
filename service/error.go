@@ -15,20 +15,6 @@ import (
 	"github.com/zhongruan0522/new-api/types"
 )
 
-func MidjourneyErrorWrapper(code int, desc string) *dto.MidjourneyResponse {
-	return &dto.MidjourneyResponse{
-		Code:        code,
-		Description: desc,
-	}
-}
-
-func MidjourneyErrorWithStatusCodeWrapper(code int, desc string, statusCode int) *dto.MidjourneyResponseWithStatusCode {
-	return &dto.MidjourneyResponseWithStatusCode{
-		StatusCode: statusCode,
-		Response:   *MidjourneyErrorWrapper(code, desc),
-	}
-}
-
 //// OpenAIErrorWrapper wraps an error into an OpenAIErrorWithStatusCode
 //func OpenAIErrorWrapper(err error, code string, statusCode int) *dto.OpenAIErrorWithStatusCode {
 //	text := err.Error()
@@ -143,29 +129,4 @@ func ResetStatusCode(newApiErr *types.NewAPIError, statusCodeMappingStr string) 
 		intCode, _ := strconv.Atoi(statusCodeMapping[codeStr])
 		newApiErr.StatusCode = intCode
 	}
-}
-
-func TaskErrorWrapperLocal(err error, code string, statusCode int) *dto.TaskError {
-	openaiErr := TaskErrorWrapper(err, code, statusCode)
-	openaiErr.LocalError = true
-	return openaiErr
-}
-
-func TaskErrorWrapper(err error, code string, statusCode int) *dto.TaskError {
-	text := err.Error()
-	lowerText := strings.ToLower(text)
-	if strings.Contains(lowerText, "post") || strings.Contains(lowerText, "dial") || strings.Contains(lowerText, "http") {
-		common.SysLog(fmt.Sprintf("error: %s", text))
-		//text = "请求上游地址失败"
-		text = common.MaskSensitiveInfo(text)
-	}
-	//避免暴露内部错误
-	taskError := &dto.TaskError{
-		Code:       code,
-		Message:    text,
-		StatusCode: statusCode,
-		Error:      err,
-	}
-
-	return taskError
 }

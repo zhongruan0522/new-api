@@ -11,7 +11,6 @@ import (
 
 	"github.com/zhongruan0522/new-api/common"
 	"github.com/zhongruan0522/new-api/constant"
-	"github.com/zhongruan0522/new-api/dto"
 	"github.com/zhongruan0522/new-api/model"
 	relayconstant "github.com/zhongruan0522/new-api/relay/constant"
 	"github.com/zhongruan0522/new-api/service"
@@ -161,50 +160,7 @@ func getModelRequest(c *gin.Context) (*ModelRequest, bool, error) {
 	var modelRequest ModelRequest
 	shouldSelectChannel := true
 	var err error
-	if strings.Contains(c.Request.URL.Path, "/mj/") {
-		relayMode := relayconstant.Path2RelayModeMidjourney(c.Request.URL.Path)
-		if relayMode == relayconstant.RelayModeMidjourneyTaskFetch ||
-			relayMode == relayconstant.RelayModeMidjourneyTaskFetchByCondition ||
-			relayMode == relayconstant.RelayModeMidjourneyNotify ||
-			relayMode == relayconstant.RelayModeMidjourneyTaskImageSeed {
-			shouldSelectChannel = false
-		} else {
-			midjourneyRequest := dto.MidjourneyRequest{}
-			err = common.UnmarshalBodyReusable(c, &midjourneyRequest)
-			if err != nil {
-				return nil, false, errors.New("无效的midjourney请求, " + err.Error())
-			}
-			midjourneyModel, mjErr, success := service.GetMjRequestModel(relayMode, &midjourneyRequest)
-			if mjErr != nil {
-				return nil, false, fmt.Errorf("%s", mjErr.Description)
-			}
-			if midjourneyModel == "" {
-				if !success {
-					return nil, false, fmt.Errorf("无效的请求, 无法解析模型")
-				} else {
-					// task fetch, task fetch by condition, notify
-					shouldSelectChannel = false
-				}
-			}
-			modelRequest.Model = midjourneyModel
-		}
-		c.Set("relay_mode", relayMode)
-	} else if strings.Contains(c.Request.URL.Path, "/suno/") {
-		relayMode := relayconstant.Path2RelaySuno(c.Request.Method, c.Request.URL.Path)
-		if relayMode == relayconstant.RelayModeSunoFetch ||
-			relayMode == relayconstant.RelayModeSunoFetchByID {
-			shouldSelectChannel = false
-		} else {
-			modelName := service.CoverTaskActionToModelName(constant.TaskPlatformSuno, c.Param("action"))
-			modelRequest.Model = modelName
-		}
-		c.Set("platform", string(constant.TaskPlatformSuno))
-		c.Set("relay_mode", relayMode)
-	} else if strings.Contains(c.Request.URL.Path, "/v1/videos/") && strings.HasSuffix(c.Request.URL.Path, "/remix") {
-		relayMode := relayconstant.RelayModeVideoSubmit
-		c.Set("relay_mode", relayMode)
-		shouldSelectChannel = false
-	} else if strings.Contains(c.Request.URL.Path, "/v1/videos") {
+	if strings.Contains(c.Request.URL.Path, "/v1/videos") {
 		//curl https://api.openai.com/v1/videos \
 		//  -H "Authorization: Bearer $OPENAI_API_KEY" \
 		//  -F "model=sora-2" \
