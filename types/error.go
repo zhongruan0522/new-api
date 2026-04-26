@@ -29,7 +29,6 @@ const (
 	ErrorTypeNewAPIError     ErrorType = "new_api_error"
 	ErrorTypeOpenAIError     ErrorType = "openai_error"
 	ErrorTypeClaudeError     ErrorType = "claude_error"
-	ErrorTypeMidjourneyError ErrorType = "midjourney_error"
 	ErrorTypeGeminiError     ErrorType = "gemini_error"
 	ErrorTypeRerankError     ErrorType = "rerank_error"
 	ErrorTypeUpstreamError   ErrorType = "upstream_error"
