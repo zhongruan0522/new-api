@@ -17,6 +17,7 @@ import (
 	"github.com/zhongruan0522/new-api/model"
 	"github.com/zhongruan0522/new-api/relay"
 	relaycommon "github.com/zhongruan0522/new-api/relay/common"
+	relayconstant "github.com/zhongruan0522/new-api/relay/constant"
 	"github.com/zhongruan0522/new-api/relay/helper"
 	"github.com/zhongruan0522/new-api/service"
 	"github.com/zhongruan0522/new-api/setting"

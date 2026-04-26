@@ -1,7 +1,6 @@
 package common
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -156,7 +155,6 @@ type RelayInfo struct {
 	*RerankerInfo
 	*ResponsesUsageInfo
 	*ChannelMeta
-	*TaskRelayInfo
 }
 
 func (info *RelayInfo) InitChannelMeta(c *gin.Context) {
