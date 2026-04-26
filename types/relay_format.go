@@ -15,13 +15,10 @@ const (
 	RelayFormatOpenAIRealtime                        = "openai_realtime"
 	RelayFormatRerank                                = "rerank"
 	RelayFormatEmbedding                             = "embedding"
-
-	RelayFormatTask    = "task"
-	RelayFormatMjProxy = "mj_proxy"
 )
 
 // RelayFormatToPreferredAPIType returns the preferred API type for a given relay format.
-// Returns -1 if the format has no specific API type preference (e.g. task, mj_proxy).
+// Returns -1 if the format has no specific API type preference.
 func RelayFormatToPreferredAPIType(format RelayFormat) int {
 	switch format {
 	case RelayFormatOpenAI, RelayFormatOpenAIResponses,
