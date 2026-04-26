@@ -4,6 +4,7 @@ import (
 	"github.com/zhongruan0522/new-api/constant"
 	"github.com/zhongruan0522/new-api/controller"
 	"github.com/zhongruan0522/new-api/middleware"
+	"github.com/zhongruan0522/new-api/relay"
 	"github.com/zhongruan0522/new-api/types"
 
 	"github.com/gin-gonic/gin"
