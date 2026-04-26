@@ -182,10 +182,13 @@ const EditTokenModal = (props) => {
       data.window_start_hour = data.window_start_hour || 0;
       data.cycle_days = data.cycle_days || 1;
       data.cycle_quota = String(data.cycle_quota ?? 0);
-      // AutoComplete 组件需要字符串值才能正确显示
       data.remain_quota = String(data.remain_quota ?? 0);
       if (formApiRef.current) {
-        formApiRef.current.setValues({ ...getInitValues(), ...data });
+        // 条件渲染字段尚未注册时，也需要同步到 FormState。
+        formApiRef.current.setValues(
+          { ...getInitValues(), ...data },
+          { isOverride: true },
+        );
       }
     } else {
       showError(message);
