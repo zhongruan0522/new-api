@@ -46,6 +46,7 @@ const routerMap = {
   models: '/console/models',
   deployment: '/console/deployment',
   personal: '/console/personal',
+  ticket: '/console/ticket',
 };
 
 const SiderBar = ({ onNavigate = () => {} }) => {
@@ -120,6 +121,23 @@ const SiderBar = ({ onNavigate = () => {} }) => {
     // 根据配置过滤项目
     const filteredItems = items.filter((item) => {
       const configVisible = isModuleVisible('personal', item.itemKey);
+      return configVisible;
+    });
+
+    return filteredItems;
+  }, [t, isModuleVisible]);
+
+  const supportItems = useMemo(() => {
+    const items = [
+      {
+        text: t('工单列表'),
+        itemKey: 'ticket',
+        to: '/ticket',
+      },
+    ];
+
+    const filteredItems = items.filter((item) => {
+      const configVisible = isModuleVisible('support', item.itemKey);
       return configVisible;
     });
 
@@ -285,6 +303,19 @@ const SiderBar = ({ onNavigate = () => {} }) => {
                   <div className='sidebar-group-label'>{t('个人中心')}</div>
                 )}
                 {financeItems.map((item) => renderNavItem(item))}
+              </div>
+            </>
+          )}
+
+          {/* 客户支持区域 */}
+          {hasSectionVisibleModules('support') && (
+            <>
+              <Divider className='sidebar-divider' />
+              <div>
+                {!collapsed && (
+                  <div className='sidebar-group-label'>{t('客户支持')}</div>
+                )}
+                {supportItems.map((item) => renderNavItem(item))}
               </div>
             </>
           )}
