@@ -210,6 +210,22 @@ func changeTicketStatus(ticketId int, userId int, role int, username string, tar
 		}
 
 		now := common.GetTimestamp()
+		values := map[string]any{
+			"status":     targetStatus,
+			"updated_at": now,
+			"closed_at":  int64(0),
+		}
+		if targetStatus == model.TicketStatusCompleted {
+			values["closed_at"] = now
+		}
+		updated, err := model.UpdateTicketStatusTx(tx, ticket.Id, ticket.Status, values)
+		if err != nil {
+			return errors.New("更新工单状态失败")
+		}
+		if !updated {
+			return errors.New("工单状态已变更，请刷新后重试")
+		}
+
 		entry := &model.TicketEntry{
 			TicketId:     ticket.Id,
 			EntryType:    model.TicketEntryTypeStatusChange,
@@ -223,23 +239,21 @@ func changeTicketStatus(ticketId int, userId int, role int, username string, tar
 		if err := model.CreateTicketEntryTx(tx, entry); err != nil {
 			return errors.New("更新工单状态失败")
 		}
-
-		values := map[string]any{
-			"status":     targetStatus,
-			"updated_at": now,
-			"closed_at":  int64(0),
-		}
-		if targetStatus == model.TicketStatusCompleted {
-			values["closed_at"] = now
-		}
-		if err := model.UpdateTicketFieldsTx(tx, ticket.Id, values); err != nil {
-			return errors.New("更新工单状态失败")
-		}
 		return nil
 	})
 }
 
 func buildTicketListFilter(userId int, page int, pageSize int, status string, keyword string) (model.TicketListFilter, error) {
+	if page < 1 {
+		page = 1
+	}
+	if pageSize <= 0 {
+		pageSize = common.ItemsPerPage
+	}
+	if pageSize > 100 {
+		pageSize = 100
+	}
+
 	filter := model.TicketListFilter{
 		UserId:  userId,
 		Keyword: strings.TrimSpace(keyword),

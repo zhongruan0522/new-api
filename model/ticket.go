@@ -206,6 +206,14 @@ func UpdateTicketFieldsTx(tx *gorm.DB, ticketId int, values map[string]any) erro
 	return tx.Model(&Ticket{}).Where("id = ?", ticketId).Updates(values).Error
 }
 
+func UpdateTicketStatusTx(tx *gorm.DB, ticketId int, fromStatus int, values map[string]any) (bool, error) {
+	result := tx.Model(&Ticket{}).Where("id = ? AND status = ?", ticketId, fromStatus).Updates(values)
+	if result.Error != nil {
+		return false, result.Error
+	}
+	return result.RowsAffected > 0, nil
+}
+
 func escapeTicketLikeValue(value string) string {
 	value = strings.ReplaceAll(value, "!", "!!")
 	value = strings.ReplaceAll(value, "%", "!%")
