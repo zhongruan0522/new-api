@@ -250,6 +250,8 @@ func InitLogDB() (err error) {
 func migrateDB() error {
 	err := DB.AutoMigrate(
 		&Channel{},
+		&Ticket{},
+		&TicketEntry{},
 		&Token{},
 		&User{},
 		&PasskeyCredential{},
@@ -293,6 +295,8 @@ func migrateDBFast() error {
 		name  string
 	}{
 		{&Channel{}, "Channel"},
+		{&Ticket{}, "Ticket"},
+		{&TicketEntry{}, "TicketEntry"},
 		{&Token{}, "Token"},
 		{&User{}, "User"},
 		{&PasskeyCredential{}, "PasskeyCredential"},

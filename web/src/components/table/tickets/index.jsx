@@ -1,87 +1,21 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Tabs, TabPane, Input, Button, Space } from '@douyinfe/semi-ui';
+import {
+  Tabs,
+  TabPane,
+  Input,
+  Button,
+  Space,
+  Modal,
+  Select,
+} from '@douyinfe/semi-ui';
 import { IconPlus, IconSearch } from '@douyinfe/semi-icons';
 import CardPro from '../../common/ui/CardPro';
 import TicketsTable from './TicketsTable';
 import TicketDetailModal from './modals/TicketDetailModal';
 import { useIsMobile } from '../../../hooks/common/useIsMobile';
 import { createCardProPagination } from '../../../helpers/utils';
-
-// Mock data for UI demonstration
-const generateMockTickets = () => {
-  const types = ['bug', 'feature', 'question', 'other'];
-  const statuses = ['pending', 'processing', 'completed'];
-  const titles = [
-    'API调用返回500错误',
-    '希望增加批量导入功能',
-    '如何设置速率限制？',
-    '账单显示异常',
-    '模型响应速度较慢',
-    '请求新增Claude 3.5模型支持',
-    'Token余额未到账',
-    '如何查看API使用统计？',
-    '渠道连接超时问题',
-    '希望支持流式输出',
-    '兑换码无法使用',
-    'Webhook回调失败',
-  ];
-
-  return titles.map((title, index) => {
-    const now = Date.now();
-    const createdOffset = Math.floor(Math.random() * 7 * 24 * 3600) * 1000;
-    const updatedOffset = Math.floor(Math.random() * 2 * 24 * 3600) * 1000;
-    return {
-      id: index + 1,
-      title,
-      type: types[index % types.length],
-      status: statuses[index % statuses.length],
-      created_at: Math.floor((now - createdOffset) / 1000),
-      updated_at: Math.floor((now - updatedOffset) / 1000),
-    };
-  });
-};
-
-const MOCK_TICKETS = generateMockTickets();
-
-// Mock messages per ticket
-const generateMockMessages = (ticketId) => {
-  const now = Date.now();
-  const baseTime = Math.floor((now - 5 * 24 * 3600 * 1000) / 1000);
-
-  const conversations = {
-    1: [
-      { type: 'message', role: 'user', username: '张三', content: '我在调用 /v1/chat/completions 接口时，频繁收到 500 Internal Server Error 错误。请求的模型是 gpt-4o，token 数量不大，大概 2000 左右。', time: baseTime },
-      { type: 'message', role: 'user', username: '张三', content: '错误信息大概是：{"error":{"message":"Internal server error","type":"server_error"}}，已经持续了大概半小时了。', time: baseTime + 60 },
-      { type: 'status', role: 'admin', username: '管理员', value: 'processing', time: baseTime + 300 },
-      { type: 'message', role: 'admin', username: '管理员', content: '您好，感谢反馈。我们已经注意到这个问题，正在排查上游渠道的状态。请稍候。', time: baseTime + 360 },
-      { type: 'message', role: 'admin', username: '管理员', content: '经排查，是上游 OpenAI 节点出现短暂故障，我们已经自动切换到备用节点。请您再试一下，应该恢复正常了。', time: baseTime + 1800 },
-      { type: 'status', role: 'admin', username: '管理员', value: 'completed', time: baseTime + 1810 },
-    ],
-    2: [
-      { type: 'message', role: 'user', username: '李四', content: '希望能增加批量导入令牌的功能，目前只能一个个手动创建，当需要创建大量令牌时效率很低。', time: baseTime + 100 },
-      { type: 'message', role: 'user', username: '李四', content: '最好支持 CSV 或 JSON 格式导入，可以一次导入几百个令牌并设置相同的权限和额度。', time: baseTime + 120 },
-      { type: 'status', role: 'admin', username: '管理员', value: 'processing', time: baseTime + 600 },
-      { type: 'message', role: 'admin', username: '管理员', content: '感谢您的建议！这个功能已经在我们的开发计划中了，预计下个版本会支持 CSV 批量导入。', time: baseTime + 900 },
-    ],
-    3: [
-      { type: 'message', role: 'user', username: '王五', content: '请问如何给不同的用户组设置不同的速率限制？我想给 VIP 用户更高的 RPM 限制。', time: baseTime + 200 },
-      { type: 'status', role: 'admin', username: '管理员', value: 'processing', time: baseTime + 100 },
-      { type: 'message', role: 'admin', username: '管理员', content: '您可以在「系统设置」->「速率限制」中，按用户分组配置不同的 RPM/TPM 限制。具体路径：控制台 -> 管理员 -> 系统设置 -> 速率限制选项卡。', time: baseTime + 200 },
-      { type: 'message', role: 'user', username: '王五', content: '找到了，谢谢！', time: baseTime + 400 },
-      { type: 'status', role: 'admin', username: '管理员', value: 'completed', time: baseTime + 500 },
-    ],
-  };
-
-  // Return ticket-specific messages or a generic conversation
-  if (conversations[ticketId]) return conversations[ticketId];
-
-  return [
-    { type: 'message', role: 'user', username: '用户', content: '提交了一个工单：' + (MOCK_TICKETS.find(t => t.id === ticketId)?.title || ''), time: baseTime + ticketId * 10 },
-    { type: 'status', role: 'admin', username: '管理员', value: 'processing', time: baseTime + ticketId * 10 + 60 },
-    { type: 'message', role: 'admin', username: '管理员', content: '已收到您的工单，我们正在处理中，请耐心等待。', time: baseTime + ticketId * 10 + 120 },
-  ];
-};
+import { API, isAdmin, showError, showSuccess } from '../../../helpers';
 
 const STATUS_TABS = [
   { key: 'all', label: '全部' },
@@ -90,40 +24,91 @@ const STATUS_TABS = [
   { key: 'completed', label: '已完成' },
 ];
 
+const TICKET_TYPE_OPTIONS = [
+  { value: 'bug', label: '缺陷报告' },
+  { value: 'feature', label: '功能请求' },
+  { value: 'question', label: '使用咨询' },
+  { value: 'other', label: '其他' },
+];
+
+const defaultCreateForm = {
+  title: '',
+  type: 'question',
+  content: '',
+};
+
 const TicketsPage = () => {
   const { t } = useTranslation();
   const isMobile = useIsMobile();
+  const isAdminUser = useMemo(() => isAdmin(), []);
+
   const [activeStatus, setActiveStatus] = useState('all');
   const [searchKeyword, setSearchKeyword] = useState('');
   const [activePage, setActivePage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [tickets, setTickets] = useState([]);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(false);
   const [detailVisible, setDetailVisible] = useState(false);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [replyLoading, setReplyLoading] = useState(false);
+  const [createVisible, setCreateVisible] = useState(false);
+  const [createLoading, setCreateLoading] = useState(false);
   const [activeTicket, setActiveTicket] = useState(null);
+  const [createForm, setCreateForm] = useState(defaultCreateForm);
 
-  const filteredTickets = useMemo(() => {
-    let result = MOCK_TICKETS;
+  const ticketListEndpoint = isAdminUser ? '/api/ticket/admin' : '/api/ticket';
 
-    if (activeStatus !== 'all') {
-      result = result.filter((ticket) => ticket.status === activeStatus);
+  const fetchTickets = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await API.get(ticketListEndpoint, {
+        params: {
+          p: activePage,
+          page_size: pageSize,
+          status: activeStatus,
+          keyword: searchKeyword.trim() || undefined,
+        },
+      });
+      const { success, message, data } = res.data;
+      if (!success) {
+        showError(message || t('获取工单失败'));
+        return;
+      }
+      setTickets(data?.items || []);
+      setTotal(data?.total || 0);
+    } catch (error) {
+      showError(error.response?.data?.message || t('获取工单失败'));
+    } finally {
+      setLoading(false);
     }
+  }, [ticketListEndpoint, activePage, pageSize, activeStatus, searchKeyword, t]);
 
-    if (searchKeyword.trim()) {
-      const keyword = searchKeyword.trim().toLowerCase();
-      result = result.filter((ticket) =>
-        ticket.title.toLowerCase().includes(keyword),
-      );
-    }
+  const loadTicketDetail = useCallback(
+    async (ticketId) => {
+      setDetailLoading(true);
+      try {
+        const res = await API.get(`/api/ticket/${ticketId}`);
+        const { success, message, data } = res.data;
+        if (!success) {
+          showError(message || t('获取工单详情失败'));
+          return false;
+        }
+        setActiveTicket(data);
+        return true;
+      } catch (error) {
+        showError(error.response?.data?.message || t('获取工单详情失败'));
+        return false;
+      } finally {
+        setDetailLoading(false);
+      }
+    },
+    [t],
+  );
 
-    // Sort by updated_at descending
-    result = [...result].sort((a, b) => b.updated_at - a.updated_at);
-
-    return result;
-  }, [activeStatus, searchKeyword]);
-
-  const pagedTickets = useMemo(() => {
-    const start = (activePage - 1) * pageSize;
-    return filteredTickets.slice(start, start + pageSize);
-  }, [filteredTickets, activePage, pageSize]);
+  useEffect(() => {
+    fetchTickets();
+  }, [fetchTickets]);
 
   const handlePageChange = useCallback((page) => {
     setActivePage(page);
@@ -144,27 +129,145 @@ const TicketsPage = () => {
     setActivePage(1);
   }, []);
 
-  const handleViewTicket = useCallback((ticket) => {
-    setActiveTicket(ticket);
-    setDetailVisible(true);
-  }, []);
+  const handleViewTicket = useCallback(
+    (ticket) => {
+      setActiveTicket(ticket);
+      setDetailVisible(true);
+      void loadTicketDetail(ticket.id);
+    },
+    [loadTicketDetail],
+  );
 
   const handleCloseDetail = useCallback(() => {
     setDetailVisible(false);
     setActiveTicket(null);
   }, []);
 
-  const activeTicketMessages = useMemo(() => {
-    if (!activeTicket) return [];
-    return generateMockMessages(activeTicket.id);
-  }, [activeTicket]);
+  const handleReplyTicket = useCallback(
+    async (content) => {
+      if (!activeTicket?.id) {
+        return false;
+      }
+      setReplyLoading(true);
+      try {
+        const res = await API.post(`/api/ticket/${activeTicket.id}/reply`, {
+          content,
+        });
+        const { success, message } = res.data;
+        if (!success) {
+          showError(message || t('发送回复失败'));
+          return false;
+        }
+        showSuccess(t('回复已发送'));
+        await Promise.all([fetchTickets(), loadTicketDetail(activeTicket.id)]);
+        return true;
+      } catch (error) {
+        showError(error.response?.data?.message || t('发送回复失败'));
+        return false;
+      } finally {
+        setReplyLoading(false);
+      }
+    },
+    [activeTicket, fetchTickets, loadTicketDetail, t],
+  );
 
-  // Header area: tabs on left, search + button on right
+  const handleCloseTicket = useCallback(
+    (ticket) => {
+      Modal.confirm({
+        title: t('确认关闭工单'),
+        content: t('关闭后工单状态将变为已完成，是否继续？'),
+        okText: t('关闭工单'),
+        cancelText: t('取消'),
+        okButtonProps: {
+          type: 'danger',
+        },
+        onOk: async () => {
+          try {
+            const res = await API.post(`/api/ticket/${ticket.id}/close`);
+            const { success, message } = res.data;
+            if (!success) {
+              showError(message || t('关闭工单失败'));
+              return;
+            }
+            showSuccess(t('工单已关闭'));
+            await fetchTickets();
+            if (detailVisible && activeTicket?.id === ticket.id) {
+              await loadTicketDetail(ticket.id);
+            }
+          } catch (error) {
+            showError(error.response?.data?.message || t('关闭工单失败'));
+          }
+        },
+      });
+    },
+    [activeTicket, detailVisible, fetchTickets, loadTicketDetail, t],
+  );
+
+  const handleOpenCreate = useCallback(() => {
+    setCreateForm(defaultCreateForm);
+    setCreateVisible(true);
+  }, []);
+
+  const handleCreateTicket = useCallback(async () => {
+    if (!createForm.title.trim()) {
+      showError(t('请输入工单标题'));
+      return;
+    }
+    if (!createForm.content.trim()) {
+      showError(t('请输入工单内容'));
+      return;
+    }
+
+    setCreateLoading(true);
+    try {
+      const res = await API.post('/api/ticket', {
+        title: createForm.title,
+        type: createForm.type,
+        content: createForm.content,
+      });
+      const { success, message, data } = res.data;
+      if (!success) {
+        showError(message || t('创建工单失败'));
+        return;
+      }
+
+      const shouldRefreshDirectly =
+        activeStatus === 'all' &&
+        activePage === 1 &&
+        searchKeyword.trim() === '';
+
+      setCreateVisible(false);
+      setCreateForm(defaultCreateForm);
+      setActiveStatus('all');
+      setSearchKeyword('');
+      setActivePage(1);
+      showSuccess(t('工单创建成功'));
+
+      if (shouldRefreshDirectly) {
+        await fetchTickets();
+      }
+
+      if (data?.id) {
+        setActiveTicket(data);
+        setDetailVisible(true);
+      }
+    } catch (error) {
+      showError(error.response?.data?.message || t('创建工单失败'));
+    } finally {
+      setCreateLoading(false);
+    }
+  }, [
+    createForm,
+    activeStatus,
+    activePage,
+    searchKeyword,
+    fetchTickets,
+    t,
+  ]);
+
   const headerArea = (
     <div className='flex flex-col gap-3 w-full'>
-      {/* Top row: tabs left, actions right */}
       <div className='flex items-center justify-between w-full flex-wrap gap-2'>
-        {/* Left: Status tabs */}
         <Tabs
           activeKey={activeStatus}
           type='button'
@@ -176,7 +279,6 @@ const TicketsPage = () => {
           ))}
         </Tabs>
 
-        {/* Right: Search + New ticket button */}
         <Space>
           <Input
             prefix={<IconSearch />}
@@ -187,7 +289,7 @@ const TicketsPage = () => {
             onClear={() => handleSearch('')}
             style={{ width: 200 }}
           />
-          <Button theme='solid' icon={<IconPlus />}>
+          <Button theme='solid' icon={<IconPlus />} onClick={handleOpenCreate}>
             {t('新建工单')}
           </Button>
         </Space>
@@ -197,11 +299,56 @@ const TicketsPage = () => {
 
   return (
     <>
+      <Modal
+        title={t('新建工单')}
+        visible={createVisible}
+        onOk={handleCreateTicket}
+        onCancel={() => setCreateVisible(false)}
+        confirmLoading={createLoading}
+        okText={t('提交')}
+        cancelText={t('取消')}
+        size={isMobile ? 'full-width' : 'small'}
+      >
+        <div className='flex flex-col gap-3'>
+          <Input
+            value={createForm.title}
+            onChange={(value) =>
+              setCreateForm((prev) => ({ ...prev, title: value }))
+            }
+            placeholder={t('请输入工单标题')}
+            showClear
+          />
+          <Select
+            value={createForm.type}
+            onChange={(value) =>
+              setCreateForm((prev) => ({ ...prev, type: value }))
+            }
+          >
+            {TICKET_TYPE_OPTIONS.map((option) => (
+              <Select.Option key={option.value} value={option.value}>
+                {t(option.label)}
+              </Select.Option>
+            ))}
+          </Select>
+          <Input.TextArea
+            value={createForm.content}
+            onChange={(value) =>
+              setCreateForm((prev) => ({ ...prev, content: value }))
+            }
+            placeholder={t('请描述您遇到的问题或需求')}
+            autosize={{ minRows: 6, maxRows: 10 }}
+          />
+        </div>
+      </Modal>
+
       <TicketDetailModal
         visible={detailVisible}
         onCancel={handleCloseDetail}
         ticket={activeTicket}
-        messages={activeTicketMessages}
+        messages={activeTicket?.messages || []}
+        loading={detailLoading}
+        sending={replyLoading}
+        onSend={handleReplyTicket}
         t={t}
       />
 
@@ -211,7 +358,7 @@ const TicketsPage = () => {
         paginationArea={createCardProPagination({
           currentPage: activePage,
           pageSize,
-          total: filteredTickets.length,
+          total,
           onPageChange: handlePageChange,
           onPageSizeChange: handlePageSizeChange,
           isMobile,
@@ -220,14 +367,15 @@ const TicketsPage = () => {
         t={t}
       >
         <TicketsTable
-          tickets={pagedTickets}
-          loading={false}
+          tickets={tickets}
+          loading={loading}
           activePage={activePage}
           pageSize={pageSize}
-          total={filteredTickets.length}
+          total={total}
           handlePageChange={handlePageChange}
           handlePageSizeChange={handlePageSizeChange}
           onViewTicket={handleViewTicket}
+          onCloseTicket={handleCloseTicket}
           t={t}
         />
       </CardPro>
