@@ -194,6 +194,18 @@ func SetApiRouter(router *gin.Engine) {
 			tokenRoute.PUT("/:id/key", middleware.CriticalRateLimit(), controller.ResetTokenKey)
 		}
 
+		ticketRoute := apiRouter.Group("/ticket")
+		ticketRoute.Use(middleware.UserAuth())
+		{
+			ticketRoute.GET("/", controller.GetUserTickets)
+			ticketRoute.GET("/admin", controller.GetAdminTickets)
+			ticketRoute.POST("/", controller.CreateTicket)
+			ticketRoute.GET("/:id", controller.GetTicketDetail)
+			ticketRoute.POST("/:id/reply", controller.ReplyTicket)
+			ticketRoute.POST("/:id/close", controller.CloseTicket)
+			ticketRoute.POST("/:id/status", controller.UpdateTicketStatus)
+		}
+
 		usageRoute := apiRouter.Group("/usage")
 		usageRoute.Use(middleware.CORS(), middleware.CriticalRateLimit())
 		{

@@ -32,6 +32,7 @@ const TicketsTable = ({
   handlePageChange,
   handlePageSizeChange,
   onViewTicket,
+  onCloseTicket,
   t,
 }) => {
   const columns = useMemo(() => {
@@ -98,7 +99,9 @@ const TicketsTable = ({
                   <Dropdown.Item onClick={() => onViewTicket(record)}>
                     {t('查看详情')}
                   </Dropdown.Item>
-                  <Dropdown.Item>{t('关闭工单')}</Dropdown.Item>
+                  <Dropdown.Item onClick={() => onCloseTicket(record)}>
+                    {t('关闭工单')}
+                  </Dropdown.Item>
                 </Dropdown.Menu>
               }
             >
@@ -113,7 +116,7 @@ const TicketsTable = ({
         },
       },
     ];
-  }, [t, onViewTicket]);
+  }, [t, onViewTicket, onCloseTicket]);
 
   return (
     <CardTable
