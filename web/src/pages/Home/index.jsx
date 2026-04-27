@@ -151,12 +151,12 @@ const Home = () => {
       />
       {homePageContentLoaded && homePageContent === '' ? (
         <div className='w-full overflow-x-hidden'>
-          {/* Banner 部分 */}
-          <div className='w-full border-b border-semi-color-border min-h-[500px] md:min-h-[600px] lg:min-h-[700px] relative overflow-x-hidden'>
-            {/* 背景模糊晕染球 */}
-            <div className='blur-ball blur-ball-indigo' />
-            <div className='blur-ball blur-ball-teal' />
-            <div className='flex items-center justify-center h-full px-4 py-20 md:py-24 lg:py-32 mt-10'>
+           {/* Banner 部分 */}
+           <div className='w-full border-b border-semi-color-border flex-1 relative overflow-x-hidden'>
+             {/* 背景模糊晕染球 */}
+             <div className='blur-ball blur-ball-indigo' />
+             <div className='blur-ball blur-ball-teal' />
+             <div className='flex items-center justify-center h-full px-4 py-8 md:py-12'>
               {/* 居中内容区 */}
               <div className='flex flex-col items-center justify-center text-center max-w-4xl mx-auto'>
                 <div className='flex flex-col items-center justify-center mb-6 md:mb-8'>
@@ -231,8 +231,8 @@ const Home = () => {
                 </div>
 
                 {/* 框架兼容性图标 */}
-                <div className='mt-12 md:mt-16 lg:mt-20 w-full'>
-                  <div className='flex items-center mb-6 md:mb-8 justify-center'>
+                <div className='mt-8 md:mt-10 w-full'>
+                  <div className='flex items-center mb-4 md:mb-6 justify-center'>
                     <Text
                       type='tertiary'
                       className='text-lg md:text-xl lg:text-2xl font-light'

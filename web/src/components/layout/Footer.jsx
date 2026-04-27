@@ -41,16 +41,11 @@ const FooterBar = () => {
 
   const customFooter = useMemo(
     () => (
-      <footer className='relative h-auto py-16 px-6 md:px-24 w-full flex flex-col items-center justify-between overflow-hidden'>
-        <div className='absolute hidden md:block top-[204px] left-[-100px] w-[151px] h-[151px] rounded-full bg-[#FFD166]'></div>
-        <div className='absolute md:hidden bottom-[20px] left-[-50px] w-[80px] h-[80px] rounded-full bg-[#FFD166] opacity-60'></div>
-
-        <div className='flex flex-col md:flex-row items-center justify-center w-full max-w-[1110px] gap-6'>
-          <div className='flex flex-wrap items-center gap-2'>
-            <Typography.Text className='text-sm !text-semi-color-text-1'>
-              © {currentYear} {systemName}. {t('版权所有')}
-            </Typography.Text>
-          </div>
+      <footer className='relative w-full flex items-center justify-center py-3 px-6'>
+        <div className='flex flex-wrap items-center gap-2'>
+          <Typography.Text className='text-sm !text-semi-color-text-1'>
+            © {currentYear} {systemName}. {t('版权所有')}
+          </Typography.Text>
         </div>
       </footer>
     ),
