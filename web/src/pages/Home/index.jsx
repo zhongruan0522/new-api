@@ -156,7 +156,7 @@ const Home = () => {
              {/* 背景模糊晕染球 */}
              <div className='blur-ball blur-ball-indigo' />
              <div className='blur-ball blur-ball-teal' />
-             <div className='flex items-center justify-center h-full px-4 py-8 md:py-12'>
+             <div className='flex items-center justify-center h-full px-4 pt-[72px] pb-8 md:pb-12'>
               {/* 居中内容区 */}
               <div className='flex flex-col items-center justify-center text-center max-w-4xl mx-auto'>
                 <div className='flex flex-col items-center justify-center mb-6 md:mb-8'>
