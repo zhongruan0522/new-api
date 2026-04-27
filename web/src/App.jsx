@@ -39,6 +39,7 @@ import Log from './pages/Log';
 import MultimodalFiles from './pages/MultimodalFiles';
 import Pricing from './pages/Pricing';
 import ModelPage from './pages/Model';
+import Ticket from './pages/Ticket';
 
 import OAuth2Callback from './components/auth/OAuth2Callback';
 import PersonalSetting from './components/settings/PersonalSetting';
@@ -232,6 +233,14 @@ function App() {
           element={
             <PrivateRoute>
               <MultimodalFiles />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path='/console/ticket'
+          element={
+            <PrivateRoute>
+              <Ticket />
             </PrivateRoute>
           }
         />

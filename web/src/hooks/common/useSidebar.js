@@ -38,6 +38,10 @@ export const DEFAULT_ADMIN_CONFIG = {
     topup: true,
     personal: true,
   },
+  support: {
+    enabled: true,
+    ticket: true,
+  },
   admin: {
     enabled: true,
     channel: true,
