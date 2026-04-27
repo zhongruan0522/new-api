@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Button, Empty, Space, Tag, Tooltip, Typography, Dropdown } from '@douyinfe/semi-ui';
+import { Button, Empty, Tag, Typography, Dropdown } from '@douyinfe/semi-ui';
 import { IconMore } from '@douyinfe/semi-icons';
 import CardTable from '../../common/ui/CardTable';
 import {
@@ -31,6 +31,7 @@ const TicketsTable = ({
   total,
   handlePageChange,
   handlePageSizeChange,
+  onViewTicket,
   t,
 }) => {
   const columns = useMemo(() => {
@@ -39,9 +40,9 @@ const TicketsTable = ({
         title: t('标题'),
         dataIndex: 'title',
         key: 'title',
-        render: (text, record) => {
+        render: (text) => {
           return (
-            <Text strong>{text}</Text>
+            <Text strong style={{ cursor: 'pointer' }}>{text}</Text>
           );
         },
       },
@@ -94,7 +95,9 @@ const TicketsTable = ({
               position='bottomRight'
               render={
                 <Dropdown.Menu>
-                  <Dropdown.Item>{t('查看详情')}</Dropdown.Item>
+                  <Dropdown.Item onClick={() => onViewTicket(record)}>
+                    {t('查看详情')}
+                  </Dropdown.Item>
                   <Dropdown.Item>{t('关闭工单')}</Dropdown.Item>
                 </Dropdown.Menu>
               }
@@ -110,7 +113,7 @@ const TicketsTable = ({
         },
       },
     ];
-  }, [t]);
+  }, [t, onViewTicket]);
 
   return (
     <CardTable
@@ -129,6 +132,10 @@ const TicketsTable = ({
         onPageChange: handlePageChange,
       }}
       hidePagination={true}
+      onRow={(record) => ({
+        onClick: () => onViewTicket(record),
+        style: { cursor: 'pointer' },
+      })}
       empty={
         <Empty
           image={<IllustrationNoResult style={{ width: 150, height: 150 }} />}
