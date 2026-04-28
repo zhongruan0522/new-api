@@ -35,6 +35,7 @@ import {
   OpenRouter,
   SiliconCloud,
 } from '@lobehub/icons';
+import XiaomiMiMoIcon from './XiaomiMiMoIcon';
 
 import {
   LayoutDashboard,
@@ -233,6 +234,8 @@ export function getChannelIcon(channelType) {
       return <Minimax.Color size={iconSize} />;
     case 40: // SiliconCloud
       return <SiliconCloud.Color size={iconSize} />;
+    case 6: // 小米 MiMo
+      return <XiaomiMiMoIcon size={iconSize} />;
     case 8: // 自定义渠道
     default:
       return null;

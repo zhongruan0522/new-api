@@ -13,6 +13,7 @@ import (
 	"github.com/zhongruan0522/new-api/relay/channel/openai"
 	"github.com/zhongruan0522/new-api/relay/channel/siliconflow"
 	"github.com/zhongruan0522/new-api/relay/channel/vertex"
+	"github.com/zhongruan0522/new-api/relay/channel/xiaomi"
 	"github.com/zhongruan0522/new-api/relay/channel/zhipu_4v"
 )
 
@@ -42,6 +43,8 @@ func GetAdaptor(apiType int) channel.Adaptor {
 		return &moonshot.Adaptor{}
 	case constant.APITypeMiniMax:
 		return &minimax.Adaptor{}
+	case constant.APITypeXiaomi:
+		return &xiaomi.Adaptor{}
 	}
 	return nil
 }
