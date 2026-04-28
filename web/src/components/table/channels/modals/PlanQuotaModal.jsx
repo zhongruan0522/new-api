@@ -527,6 +527,9 @@ const PerformanceChart = ({ channelId }) => {
 };
 
 const isGlmPlan = (planName) => planName === 'glm-coding-plan' || planName === 'glm-coding-plan-international';
+const isKimiPlan = (planName) => planName === 'kimi-coding-plan';
+const isMiniMaxPlan = (planName) => planName === 'minimax-coding-plan' || planName === 'minimax-coding-plan-international';
+const isTierBasedPlan = (planName) => isKimiPlan(planName) || isMiniMaxPlan(planName);
 
 const PlanQuotaModal = ({ visible, onCancel, channel, onRefresh }) => {
   const { t } = useTranslation();
@@ -562,7 +565,9 @@ const PlanQuotaModal = ({ visible, onCancel, channel, onRefresh }) => {
   }, [visible, channel?.id, fetchQuotaData]);
 
   const planDisplayName = quotaData?.plan_name ? PLAN_DISPLAY_NAMES[quotaData.plan_name] || quotaData.plan_name : '';
-  const hasRealData = quotaData && isGlmPlan(quotaData.plan_name) && quotaData.product_name;
+  const isGlmData = quotaData && isGlmPlan(quotaData.plan_name) && quotaData.product_name;
+  const isTierData = quotaData && isTierBasedPlan(quotaData.plan_name);
+  const hasRealData = isGlmData || isTierData;
 
   // 根据实际可见的卡片数量动态决定列数
   const visibleCardCount = [
@@ -607,7 +612,7 @@ const PlanQuotaModal = ({ visible, onCancel, channel, onRefresh }) => {
     >
       {loading ? (
         <div style={{ textAlign: 'center', padding: '40px 0' }}><Spin size='large' /></div>
-      ) : hasRealData ? (
+      ) : isGlmData ? (
         <div className="plan-quota-body" ref={bodyRef}>
           {/* 套餐基本信息 */}
           <div className="plan-quota-info-card">
@@ -649,6 +654,63 @@ const PlanQuotaModal = ({ visible, onCancel, channel, onRefresh }) => {
 
           {/* 系统健康度图表 */}
           <PerformanceChart channelId={channel?.id} />
+        </div>
+      ) : isTierData ? (
+        <div className="plan-quota-body" ref={bodyRef}>
+          {/* 凭证状态提示 */}
+          {quotaData.credential === 'expired' && (
+            <div style={{ padding: '12px 16px', marginBottom: 12, borderRadius: 8, background: 'var(--semi-color-warning-light-default)', border: '1px solid var(--semi-color-warning-light-hover)' }}>
+              <Text type='warning'>⚠️ API Key 无效或已过期，请检查渠道配置</Text>
+            </div>
+          )}
+          {quotaData.credential === 'error' && (
+            <div style={{ padding: '12px 16px', marginBottom: 12, borderRadius: 8, background: 'var(--semi-color-danger-light-default)', border: '1px solid var(--semi-color-danger-light-hover)' }}>
+              <Text type='danger'>❌ 响应解析失败，API 格式可能已变更</Text>
+            </div>
+          )}
+
+          {/* 套餐标题 */}
+          <div className="plan-quota-info-card">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Title heading={5} style={{ margin: 0 }}>{planDisplayName}</Title>
+              {quotaData.credential === 'valid' && (
+                <Tag color='green' size='small'>有效</Tag>
+              )}
+            </div>
+          </div>
+
+          {/* 限额卡片 */}
+          {quotaData.tiers && quotaData.tiers.length > 0 && (
+            <div className={`plan-quota-grid plan-quota-grid-${quotaData.tiers.length}`}>
+              {quotaData.tiers.map((tier, idx) => {
+                const title = tier.name === 'five_hour' ? '每5小时限额' : '每周限额';
+                const resetLabel = tier.resets_at
+                  ? (tier.name === 'five_hour' ? formatHourReset(tier.resets_at) : (formatResetTime(tier.resets_at) ? `下次重置: ${formatResetTime(tier.resets_at)}` : ''))
+                  : '';
+                const limitData = {
+                  percentage: tier.percentage,
+                  status: tier.status,
+                  next_reset_time: tier.resets_at,
+                };
+                return (
+                  <div key={idx}>
+                    <LimitCard title={title} data={limitData} resetLabel={resetLabel} />
+                    <div style={{ marginTop: 6, display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--semi-color-text-2)' }}>
+                      <span>已用 {formatCompactNumber(tier.used)}</span>
+                      <span>剩余 {formatCompactNumber(tier.remaining)} / {formatCompactNumber(tier.limit)}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* 无限额数据 */}
+          {(!quotaData.tiers || quotaData.tiers.length === 0) && quotaData.credential === 'valid' && (
+            <div style={{ textAlign: 'center', padding: '20px 0', color: 'var(--semi-color-text-2)' }}>
+              暂无限额数据
+            </div>
+          )}
         </div>
       ) : (
         <div style={{ padding: '16px 0' }}>

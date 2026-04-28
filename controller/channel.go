@@ -2241,6 +2241,36 @@ func QueryPlanQuota(c *gin.Context) {
 			"data":    quotaData,
 		})
 		return
+	case "kimi-coding-plan":
+		key := strings.Split(channel.Key, "\n")[0]
+		quotaData, err := service.FetchKimiPlanQuota(key)
+		if err != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": "查询额度失败: " + err.Error(),
+			})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{
+			"success": true,
+			"data":    quotaData,
+		})
+		return
+	case "minimax-coding-plan", "minimax-coding-plan-international":
+		key := strings.Split(channel.Key, "\n")[0]
+		quotaData, err := service.FetchMiniMaxPlanQuota(key, planName)
+		if err != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": "查询额度失败: " + err.Error(),
+			})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{
+			"success": true,
+			"data":    quotaData,
+		})
+		return
 	default:
 		// 暂未支持实际查询的套餐
 		c.JSON(http.StatusOK, gin.H{
