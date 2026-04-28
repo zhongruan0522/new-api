@@ -31,6 +31,7 @@ export const CHANNEL_OPTIONS = [
   { value: 40, color: 'purple', label: 'SiliconCloud' },
   { value: 41, color: 'blue', label: 'Vertex AI' },
   { value: 26, color: 'purple', label: '智谱 GLM-4V' },
+  { value: 6, color: 'orange', label: '小米 MiMo' },
   { value: 8, color: 'pink', label: '自定义渠道' },
 ];
 

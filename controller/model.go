@@ -41,6 +41,7 @@ func init() {
 		constant.APITypeOpenRouter,
 		constant.APITypeMoonshot,
 		constant.APITypeMiniMax,
+		constant.APITypeXiaomi,
 	}
 	for _, apiType := range allAPITypes {
 		adaptor := relay.GetAdaptor(apiType)
