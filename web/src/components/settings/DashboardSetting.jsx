@@ -39,6 +39,8 @@ import SettingsAPIInfo from '../../pages/Setting/Dashboard/SettingsAPIInfo';
 import SettingsAnnouncements from '../../pages/Setting/Dashboard/SettingsAnnouncements';
 import SettingsDataDashboard from '../../pages/Setting/Dashboard/SettingsDataDashboard';
 import SettingsFAQ from '../../pages/Setting/Dashboard/SettingsFAQ';
+import SettingsHeaderNavModules from '../../pages/Setting/Operation/SettingsHeaderNavModules';
+import SettingsSidebarModulesAdmin from '../../pages/Setting/Operation/SettingsSidebarModulesAdmin';
 import SettingsUptimeKuma from '../../pages/Setting/Dashboard/SettingsUptimeKuma';
 
 const LEGAL_USER_AGREEMENT_KEY = 'legal.user_agreement';
@@ -69,6 +71,12 @@ const DashboardSetting = () => {
     DataExportEnabled: false,
     DataExportDefaultTime: 'hour',
     DataExportInterval: 5,
+
+    /* 顶栏模块管理 */
+    HeaderNavModules: '',
+
+    /* 左侧边栏模块管理（管理员） */
+    SidebarModulesAdmin: '',
   });
 
   // 通用设置 & 个性化设置
@@ -350,6 +358,55 @@ const DashboardSetting = () => {
           </p>
         </Modal>
 
+        {/* 顶栏模块管理 */}
+        <div style={{ marginTop: '10px' }}>
+          <SettingsHeaderNavModules options={dashboardInputs} refresh={onRefresh} />
+        </div>
+
+        {/* 左侧边栏模块管理（管理员） */}
+        <div style={{ marginTop: '10px' }}>
+          <SettingsSidebarModulesAdmin options={dashboardInputs} refresh={onRefresh} />
+        </div>
+
+        {/* 数据看板设置（大卡片，包含子项） */}
+        <Card
+          style={{ marginTop: '10px' }}
+          title={
+            <span style={{ fontSize: 16, fontWeight: 600 }}>
+              {t('数据看板设置')}
+            </span>
+          }
+        >
+          {/* 数据看板基础配置 */}
+          <SettingsDataDashboard
+            options={dashboardInputs}
+            refresh={onRefresh}
+          />
+
+          {/* 系统公告管理 */}
+          <div style={{ marginTop: 16 }}>
+            <SettingsAnnouncements
+              options={dashboardInputs}
+              refresh={onRefresh}
+            />
+          </div>
+
+          {/* API信息管理 */}
+          <div style={{ marginTop: 16 }}>
+            <SettingsAPIInfo options={dashboardInputs} refresh={onRefresh} />
+          </div>
+
+          {/* 常见问答管理 */}
+          <div style={{ marginTop: 16 }}>
+            <SettingsFAQ options={dashboardInputs} refresh={onRefresh} />
+          </div>
+
+          {/* Uptime Kuma 监控分类管理 */}
+          <div style={{ marginTop: 16 }}>
+            <SettingsUptimeKuma options={dashboardInputs} refresh={onRefresh} />
+          </div>
+        </Card>
+
         {/* 通用设置 */}
         <Form
           values={otherInputs}
@@ -492,45 +549,6 @@ const DashboardSetting = () => {
             </Form.Section>
           </Card>
         </Form>
-
-        {/* 数据看板设置（大卡片，包含子项） */}
-        <Card
-          style={{ marginTop: '10px' }}
-          title={
-            <span style={{ fontSize: 16, fontWeight: 600 }}>
-              {t('数据看板设置')}
-            </span>
-          }
-        >
-          {/* 数据看板基础配置 */}
-          <SettingsDataDashboard
-            options={dashboardInputs}
-            refresh={onRefresh}
-          />
-
-          {/* 系统公告管理 */}
-          <div style={{ marginTop: 16 }}>
-            <SettingsAnnouncements
-              options={dashboardInputs}
-              refresh={onRefresh}
-            />
-          </div>
-
-          {/* API信息管理 */}
-          <div style={{ marginTop: 16 }}>
-            <SettingsAPIInfo options={dashboardInputs} refresh={onRefresh} />
-          </div>
-
-          {/* 常见问答管理 */}
-          <div style={{ marginTop: 16 }}>
-            <SettingsFAQ options={dashboardInputs} refresh={onRefresh} />
-          </div>
-
-          {/* Uptime Kuma 监控分类管理 */}
-          <div style={{ marginTop: 16 }}>
-            <SettingsUptimeKuma options={dashboardInputs} refresh={onRefresh} />
-          </div>
-        </Card>
       </Spin>
     </>
   );
