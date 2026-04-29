@@ -791,7 +791,13 @@ func DeleteDisabledChannel() (int64, error) {
 
 func GetPaginatedTags(offset int, limit int) ([]*string, error) {
 	var tags []*string
-	err := DB.Model(&Channel{}).Select("DISTINCT tag").Where("tag != ''").Order("LOWER(tag) asc").Offset(offset).Limit(limit).Find(&tags).Error
+	query := DB.Model(&Channel{}).Select("DISTINCT tag").Where("tag != ''")
+	if common.UsingPostgreSQL {
+		query = query.Order("tag asc")
+	} else {
+		query = query.Order("LOWER(tag) asc")
+	}
+	err := query.Offset(offset).Limit(limit).Find(&tags).Error
 	return tags, err
 }
 
