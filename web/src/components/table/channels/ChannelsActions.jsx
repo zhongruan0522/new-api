@@ -193,6 +193,7 @@ const ChannelsActions = ({
             <Switch
               size='small'
               checked={idSort}
+              disabled={enableTagMode}
               onChange={(v) => {
                 localStorage.setItem('id-sort', v + '');
                 setIdSort(v);
