@@ -24,8 +24,6 @@ import { useTranslation } from 'react-i18next';
 import {
   Settings,
   Calculator,
-  Gauge,
-  Shapes,
   Cog,
   LayoutDashboard,
   CreditCard,
@@ -35,13 +33,10 @@ import {
 import SystemSetting from '../../components/settings/SystemSetting';
 import { isRoot } from '../../helpers';
 import OperationSetting from '../../components/settings/OperationSetting';
-import RateLimitSetting from '../../components/settings/RateLimitSetting';
-import ModelSetting from '../../components/settings/ModelSetting';
+import RuntimeSetting from '../../components/settings/RuntimeSetting';
 import DashboardSetting from '../../components/settings/DashboardSetting';
 import RatioSetting from '../../components/settings/RatioSetting';
 import PaymentSetting from '../../components/settings/PaymentSetting';
-
-import PerformanceSetting from '../../components/settings/PerformanceSetting';
 
 const Setting = () => {
   const { t } = useTranslation();
@@ -94,32 +89,12 @@ const Setting = () => {
     panes.push({
       tab: (
         <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-          <Gauge size={18} />
-          {t('速率限制设置')}
-        </span>
-      ),
-      content: <RateLimitSetting />,
-      itemKey: 'ratelimit',
-    });
-    panes.push({
-      tab: (
-        <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-          <Shapes size={18} />
-          {t('模型相关设置')}
-        </span>
-      ),
-      content: <ModelSetting />,
-      itemKey: 'models',
-    });
-    panes.push({
-      tab: (
-        <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
           <Activity size={18} />
-          {t('性能设置')}
+          {t('运行设置')}
         </span>
       ),
-      content: <PerformanceSetting />,
-      itemKey: 'performance',
+      content: <RuntimeSetting />,
+      itemKey: 'runtime',
     });
     panes.push({
       tab: (
