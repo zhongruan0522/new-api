@@ -53,12 +53,19 @@ export default function SettingsSidebarModulesAdmin(props) {
       topup: true,
       personal: true,
     },
+    support: {
+      enabled: true,
+      ticket: true,
+    },
+    user_maintenance: {
+      enabled: true,
+      user: true,
+      redemption: true,
+    },
     admin: {
       enabled: true,
       channel: true,
       models: true,
-      redemption: true,
-      user: true,
       setting: true,
     },
   });
@@ -163,6 +170,14 @@ export default function SettingsSidebarModulesAdmin(props) {
       ],
     },
     {
+      key: 'support',
+      title: t('客户支持区域'),
+      description: t('客户服务功能'),
+      modules: [
+        { key: 'ticket', title: t('工单列表'), description: t('客户工单管理') },
+      ],
+    },
+    {
       key: 'personal',
       title: t('个人中心区域'),
       description: t('用户个人功能'),
@@ -176,18 +191,25 @@ export default function SettingsSidebarModulesAdmin(props) {
       ],
     },
     {
+      key: 'user_maintenance',
+      title: t('用户维护区域'),
+      description: t('用户与兑换码管理'),
+      modules: [
+        { key: 'user', title: t('用户管理'), description: t('用户账户管理') },
+        {
+          key: 'redemption',
+          title: t('兑换码管理'),
+          description: t('兑换码生成管理'),
+        },
+      ],
+    },
+    {
       key: 'admin',
       title: t('管理员区域'),
       description: t('系统管理功能'),
       modules: [
         { key: 'channel', title: t('渠道管理'), description: t('API渠道配置') },
         { key: 'models', title: t('模型管理'), description: t('AI模型配置') },
-        {
-          key: 'redemption',
-          title: t('兑换码管理'),
-          description: t('兑换码生成管理'),
-        },
-        { key: 'user', title: t('用户管理'), description: t('用户账户管理') },
         {
           key: 'setting',
           title: t('系统设置'),
