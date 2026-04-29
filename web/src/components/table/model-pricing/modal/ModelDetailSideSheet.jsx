@@ -23,7 +23,6 @@ import { IconClose } from '@douyinfe/semi-icons';
 
 import { useIsMobile } from '../../../../hooks/common/useIsMobile';
 import ModelHeader from './components/ModelHeader';
-import ModelBasicInfo from './components/ModelBasicInfo';
 import ModelEndpoints from './components/ModelEndpoints';
 import ModelPricingTable from './components/ModelPricingTable';
 
@@ -77,11 +76,6 @@ const ModelDetailSideSheet = ({
         )}
         {modelData && (
           <>
-            <ModelBasicInfo
-              modelData={modelData}
-              vendorsMap={vendorsMap}
-              t={t}
-            />
             <ModelEndpoints
               modelData={modelData}
               endpointMap={endpointMap}
