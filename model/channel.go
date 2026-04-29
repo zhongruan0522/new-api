@@ -276,7 +276,7 @@ func (channel *Channel) SaveWithoutKey() error {
 func GetAllChannels(startIdx int, num int, selectAll bool, idSort bool) ([]*Channel, error) {
 	var channels []*Channel
 	var err error
-	order := "priority desc"
+	order := "LOWER(name) asc, id asc"
 	if idSort {
 		order = "id desc"
 	}
@@ -290,10 +290,8 @@ func GetAllChannels(startIdx int, num int, selectAll bool, idSort bool) ([]*Chan
 
 func GetChannelsByTag(tag string, idSort bool, selectAll bool) ([]*Channel, error) {
 	var channels []*Channel
-	order := "priority desc"
-	if idSort {
-		order = "id desc"
-	}
+	// 标签聚合模式下固定按优先级、权重排序，忽略 idSort
+	order := "priority desc, weight desc"
 	query := DB.Where("tag = ?", tag).Order(order)
 	if !selectAll {
 		query = query.Omit("key")
@@ -317,7 +315,7 @@ func SearchChannels(keyword string, group string, model string, idSort bool) ([]
 		baseURLCol = `"base_url"`
 	}
 
-	order := "priority desc"
+	order := "LOWER(name) asc, id asc"
 	if idSort {
 		order = "id desc"
 	}
@@ -793,7 +791,7 @@ func DeleteDisabledChannel() (int64, error) {
 
 func GetPaginatedTags(offset int, limit int) ([]*string, error) {
 	var tags []*string
-	err := DB.Model(&Channel{}).Select("DISTINCT tag").Where("tag != ''").Offset(offset).Limit(limit).Find(&tags).Error
+	err := DB.Model(&Channel{}).Select("DISTINCT tag").Where("tag != ''").Order("LOWER(tag) asc").Offset(offset).Limit(limit).Find(&tags).Error
 	return tags, err
 }
 
@@ -812,7 +810,7 @@ func SearchTags(keyword string, group string, model string, idSort bool) ([]*str
 		baseURLCol = `"base_url"`
 	}
 
-	order := "priority desc"
+	order := "LOWER(name) asc, id asc"
 	if idSort {
 		order = "id desc"
 	}
@@ -1044,7 +1042,7 @@ func CountAllTags() (int64, error) {
 // Get channels of specified type with pagination
 func GetChannelsByType(startIdx int, num int, idSort bool, channelType int) ([]*Channel, error) {
 	var channels []*Channel
-	order := "priority desc"
+	order := "LOWER(name) asc, id asc"
 	if idSort {
 		order = "id desc"
 	}
