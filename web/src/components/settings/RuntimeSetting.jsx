@@ -17,77 +17,25 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 
-import React, { useEffect, useState } from 'react';
-import { Card, Spin } from '@douyinfe/semi-ui';
-
-import { API, showError, toBoolean } from '../../helpers';
-import RequestRateLimit from '../../pages/Setting/RateLimit/SettingsRequestRateLimit';
-import SettingGlobalModel from '../../pages/Setting/Model/SettingGlobalModel';
-import SettingsChannelAffinity from '../../pages/Setting/Operation/SettingsChannelAffinity';
-import SettingsPerformance from '../../pages/Setting/Performance/SettingsPerformance';
+import React from 'react';
+import { Card } from '@douyinfe/semi-ui';
+import RateLimitSetting from './RateLimitSetting';
+import ModelSetting from './ModelSetting';
+import PerformanceSetting from './PerformanceSetting';
 
 const RuntimeSetting = () => {
-  let [inputs, setInputs] = useState({});
-  let [loading, setLoading] = useState(false);
-
-  const getOptions = async () => {
-    const res = await API.get('/api/option/');
-    const { success, message, data } = res.data;
-    if (success) {
-      let newInputs = {};
-      data.forEach((item) => {
-        if (item.key === 'ModelRequestRateLimitGroup') {
-          try {
-            item.value = JSON.stringify(JSON.parse(item.value), null, 2);
-          } catch (e) {
-            // keep original value
-          }
-        }
-        if (
-          item.key.endsWith('Enabled') ||
-          item.key.endsWith('enabled')
-        ) {
-          newInputs[item.key] = toBoolean(item.value);
-        } else {
-          newInputs[item.key] = item.value;
-        }
-      });
-      setInputs(newInputs);
-    } else {
-      showError(message);
-    }
-  };
-
-  async function onRefresh() {
-    try {
-      setLoading(true);
-      await getOptions();
-    } catch (error) {
-      showError('刷新失败');
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  useEffect(() => {
-    onRefresh();
-  }, []);
-
   return (
-    <Spin spinning={loading} size='large'>
+    <>
       <Card style={{ marginTop: '10px' }}>
-        <RequestRateLimit options={inputs} refresh={onRefresh} />
+        <RateLimitSetting />
       </Card>
       <Card style={{ marginTop: '10px' }}>
-        <SettingGlobalModel options={inputs} refresh={onRefresh} />
+        <ModelSetting />
       </Card>
       <Card style={{ marginTop: '10px' }}>
-        <SettingsChannelAffinity options={inputs} refresh={onRefresh} />
+        <PerformanceSetting />
       </Card>
-      <Card style={{ marginTop: '10px' }}>
-        <SettingsPerformance options={inputs} refresh={onRefresh} />
-      </Card>
-    </Spin>
+    </>
   );
 };
 
