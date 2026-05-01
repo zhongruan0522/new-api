@@ -1153,8 +1153,8 @@ const EditChannelModal = (props) => {
     }
     delete localInputs.vertex_files;
 
-    if (!isEdit && (!localInputs.name || !localInputs.key)) {
-      showInfo(t('请填写渠道名称和渠道密钥！'));
+    if (!isEdit && !localInputs.name) {
+      showInfo(t('请填写渠道名称！'));
       return;
     }
     if (!Array.isArray(localInputs.models) || localInputs.models.length === 0) {
@@ -1855,11 +1855,7 @@ const EditChannelModal = (props) => {
                                   )
                               : t('请输入密钥，一行一个')
                           }
-                          rules={
-                            isEdit
-                              ? []
-                              : [{ required: true, message: t('请输入密钥') }]
-                          }
+                          rules={[]}
                           autosize
                           autoComplete='new-password'
                           onChange={(value) => handleInputChange('key', value)}
@@ -2058,11 +2054,7 @@ const EditChannelModal = (props) => {
                                     )
                                 : t(type2secretPrompt(inputs.type))
                             }
-                            rules={
-                              isEdit
-                                ? []
-                                : [{ required: true, message: t('请输入密钥') }]
-                            }
+                            rules={[]}
                             autoComplete='new-password'
                             onChange={(value) =>
                               handleInputChange('key', value)
