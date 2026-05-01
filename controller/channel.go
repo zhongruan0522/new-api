@@ -663,13 +663,8 @@ func validateChannel(channel *model.Channel, isAdd bool) error {
 		return fmt.Errorf("渠道额外设置[channel setting] 格式错误：%s", err.Error())
 	}
 
-	// 如果是添加操作，检查 channel 和 key 是否为空
+	// 如果是添加操作，检查模型名称长度
 	if isAdd {
-		if channel.Key == "" {
-			return fmt.Errorf("channel cannot be empty")
-		}
-
-		// 检查模型名称长度是否超过 255
 		for _, m := range channel.GetModels() {
 			if len(m) > 255 {
 				return fmt.Errorf("模型名称过长: %s", m)
@@ -818,9 +813,6 @@ func AddChannel(c *gin.Context) {
 
 	channels := make([]model.Channel, 0, len(keys))
 	for _, key := range keys {
-		if key == "" {
-			continue
-		}
 		localChannel := addChannelRequest.Channel
 		localChannel.Key = key
 		if addChannelRequest.BatchAddSetKeyPrefix2Name && len(keys) > 1 {

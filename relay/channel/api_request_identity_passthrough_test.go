@@ -196,3 +196,51 @@ func TestDoApiRequest_AllowsIdentityHeadersViaExplicitClientHeaderOverrideEvenWh
 		t.Fatalf("expected Referer from explicit override, got %q", got.Get("Referer"))
 	}
 }
+
+func TestDoApiRequest_ExplicitCookieInHeaderOverride(t *testing.T) {
+	info := newTestRelayInfo(false, map[string]interface{}{
+		"Cookie": "session=abc123; token=xyz",
+	})
+	got := doApiRequestToTestServer(t, info, nil)
+
+	if got.Get("Cookie") != "session=abc123; token=xyz" {
+		t.Fatalf("expected Cookie from explicit override, got %q", got.Get("Cookie"))
+	}
+}
+
+func TestDoApiRequest_CookieNotPassthroughByWildcard(t *testing.T) {
+	info := newTestRelayInfo(true, map[string]interface{}{
+		"*": true,
+	})
+	clientHeaders := map[string]string{
+		"Cookie":    "client_session=should_not_pass",
+		"X-Custom":  "should_pass",
+	}
+	got := doApiRequestToTestServer(t, info, clientHeaders)
+
+	if got.Get("Cookie") != "" {
+		t.Fatalf("expected Cookie to NOT be passthrough by wildcard, got %q", got.Get("Cookie"))
+	}
+	if got.Get("X-Custom") != "should_pass" {
+		t.Fatalf("expected X-Custom to be passthrough, got %q", got.Get("X-Custom"))
+	}
+}
+
+func TestDoApiRequest_ExplicitCookieOverridesPassthrough(t *testing.T) {
+	info := newTestRelayInfo(true, map[string]interface{}{
+		"*":       true,
+		"Cookie":  "explicit_cookie=value",
+	})
+	clientHeaders := map[string]string{
+		"Cookie":   "client_cookie=should_not_pass",
+		"X-Custom": "should_pass",
+	}
+	got := doApiRequestToTestServer(t, info, clientHeaders)
+
+	if got.Get("Cookie") != "explicit_cookie=value" {
+		t.Fatalf("expected explicit Cookie override to win, got %q", got.Get("Cookie"))
+	}
+	if got.Get("X-Custom") != "should_pass" {
+		t.Fatalf("expected X-Custom to be passthrough, got %q", got.Get("X-Custom"))
+	}
+}
