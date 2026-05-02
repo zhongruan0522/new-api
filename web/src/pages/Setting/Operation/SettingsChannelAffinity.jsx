@@ -139,7 +139,8 @@ const RULES_JSON_PLACEHOLDER = `[
     "ttl_seconds": 600,
     "skip_retry_on_failure": false,
     "include_using_group": true,
-    "include_rule_name": true
+    "include_rule_name": true,
+    "include_model_name": false
   }
 ]`;
 
