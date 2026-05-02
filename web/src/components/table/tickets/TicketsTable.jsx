@@ -124,7 +124,7 @@ const TicketsTable = ({
       dataSource={tickets}
       rowKey='id'
       loading={loading}
-      scroll={{ x: 'max-content' }}
+      style={{ width: '100%' }}
       pagination={{
         currentPage: activePage,
         pageSize: pageSize,

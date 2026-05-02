@@ -745,6 +745,7 @@ html.dark .with-pastel-balls::before {
 .table-scroll-card .semi-card-body {
   flex: 1 1 auto;
   overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .table-scroll-card .semi-card-body::-webkit-scrollbar {
