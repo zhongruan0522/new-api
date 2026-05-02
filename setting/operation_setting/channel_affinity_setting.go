@@ -22,6 +22,7 @@ type ChannelAffinityRule struct {
 
 	IncludeUsingGroup bool `json:"include_using_group"`
 	IncludeRuleName   bool `json:"include_rule_name"`
+	IncludeModelName  bool `json:"include_model_name"`
 }
 
 type ChannelAffinitySetting struct {
