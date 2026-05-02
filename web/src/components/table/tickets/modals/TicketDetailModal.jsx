@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Modal, Input, Button, Tag, Typography, Spin } from '@douyinfe/semi-ui';
+import { Modal, TextArea, Button, Tag, Typography, Spin } from '@douyinfe/semi-ui';
 import { IconSend } from '@douyinfe/semi-icons';
 import { timestamp2string } from '../../../../helpers';
 
@@ -167,7 +167,7 @@ const TicketDetailModal = ({
           backgroundColor: 'var(--semi-color-bg-1)',
         }}
       >
-        <Input.TextArea
+        <TextArea
           value={replyText}
           onChange={setReplyText}
           placeholder={t('输入回复内容...')}

@@ -4,6 +4,7 @@ import {
   Tabs,
   TabPane,
   Input,
+  TextArea,
   Button,
   Space,
   Modal,
@@ -330,7 +331,7 @@ const TicketsPage = () => {
               </Select.Option>
             ))}
           </Select>
-          <Input.TextArea
+          <TextArea
             value={createForm.content}
             onChange={(value) =>
               setCreateForm((prev) => ({ ...prev, content: value }))
