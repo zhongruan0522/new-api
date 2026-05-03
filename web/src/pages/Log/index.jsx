@@ -26,7 +26,7 @@ const Token = () => {
   const { t } = useTranslation();
 
   return (
-    <div className='mt-[60px] h-[calc(100vh-60px)]'>
+    <div className='mt-[60px]'>
       <SectionPageLayout>
         <SectionPageLayout.Title>{t('使用日志')}</SectionPageLayout.Title>
         <SectionPageLayout.Description>

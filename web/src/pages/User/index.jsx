@@ -26,7 +26,7 @@ const User = () => {
   const { t } = useTranslation();
 
   return (
-    <div className='mt-[60px] h-[calc(100vh-60px)]'>
+    <div className='mt-[60px]'>
       <SectionPageLayout>
         <SectionPageLayout.Title>{t('用户管理')}</SectionPageLayout.Title>
         <SectionPageLayout.Description>

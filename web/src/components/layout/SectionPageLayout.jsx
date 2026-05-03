@@ -76,10 +76,10 @@ function SectionPageLayout(props) {
   const hasHeader = title || description || actions;
 
   return (
-    <div className='section-page-layout flex h-full flex-col'>
+    <div className='section-page-layout flex flex-col'>
       {/* 页面标题区域 */}
       {hasHeader && (
-        <div className='section-page-layout-header shrink-0 px-3 pt-3 pb-2.5 sm:px-4 sm:pt-6 sm:pb-4'>
+        <div className='section-page-layout-header shrink-0 px-3 pt-3 pb-2.5 sm:px-4 sm:pt-4 sm:pb-3'>
           <div className='flex flex-wrap items-center justify-between gap-x-3 gap-y-2 sm:gap-x-4'>
             <div className='min-w-0'>
               {title && (
@@ -103,7 +103,7 @@ function SectionPageLayout(props) {
       )}
 
       {/* 页面内容区域 */}
-      <div className='section-page-layout-content min-h-0 flex-1 overflow-auto px-3 pb-3 sm:px-4 sm:pb-4'>
+      <div className='section-page-layout-content min-h-0 flex-1 overflow-auto'>
         {content}
       </div>
     </div>
