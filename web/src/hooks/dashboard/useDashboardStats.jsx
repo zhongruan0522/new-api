@@ -61,6 +61,7 @@ export const useDashboardStats = (
   navigate,
   t,
   regionStats,
+  mediaConvertStats,
 ) => {
   const totalRate = useMemo(() => {
     if (!times && !failCount) return '--';
@@ -186,7 +187,7 @@ export const useDashboardStats = (
         items: [
           {
             title: t('图片转URL'),
-            value: userState.user?.image_converted_count || 0,
+            value: mediaConvertStats?.image_count || 0,
             icon: <IconHistogram />,
             avatarColor: 'rose',
             trendData: [],
@@ -194,7 +195,7 @@ export const useDashboardStats = (
           },
           {
             title: t('视频转URL'),
-            value: userState.user?.video_converted_count || 0,
+            value: mediaConvertStats?.video_count || 0,
             icon: <IconPulse />,
             avatarColor: 'amber',
             trendData: [],
@@ -207,8 +208,7 @@ export const useDashboardStats = (
       userState?.user?.quota,
       userState?.user?.used_quota,
       userState?.user?.request_count,
-      userState?.user?.image_converted_count,
-      userState?.user?.video_converted_count,
+      mediaConvertStats,
       times,
       failCount,
       totalRate,

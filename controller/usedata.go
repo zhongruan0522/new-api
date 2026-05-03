@@ -135,3 +135,38 @@ func GetUserModelRank(c *gin.Context) {
 		"data":    rank,
 	})
 }
+
+// GetAllMediaConvertStats 管理员查询所有用户的图片/视频转URL统计
+func GetAllMediaConvertStats(c *gin.Context) {
+	startTimestamp, _ := strconv.ParseInt(c.Query("start_timestamp"), 10, 64)
+	endTimestamp, _ := strconv.ParseInt(c.Query("end_timestamp"), 10, 64)
+
+	stats, err := model.GetAllMediaConvertStats(startTimestamp, endTimestamp)
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "",
+		"data":    stats,
+	})
+}
+
+// GetUserMediaConvertStats 普通用户查询自己的图片/视频转URL统计
+func GetUserMediaConvertStats(c *gin.Context) {
+	userId := c.GetInt("id")
+	startTimestamp, _ := strconv.ParseInt(c.Query("start_timestamp"), 10, 64)
+	endTimestamp, _ := strconv.ParseInt(c.Query("end_timestamp"), 10, 64)
+
+	stats, err := model.GetMediaConvertStatsByUserId(userId, startTimestamp, endTimestamp)
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "",
+		"data":    stats,
+	})
+}

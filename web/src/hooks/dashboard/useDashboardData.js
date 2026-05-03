@@ -60,6 +60,7 @@ export const useDashboardData = (userState, userDispatch, statusState) => {
   const [failCount, setFailCount] = useState(0);
   const [regionStats, setRegionStats] = useState(null);
   const [modelRank, setModelRank] = useState(null);
+  const [mediaConvertStats, setMediaConvertStats] = useState(null);
   const [pieData, setPieData] = useState([{ type: 'null', value: '0' }]);
   const [lineData, setLineData] = useState([]);
   const [modelColors, setModelColors] = useState({});
@@ -258,6 +259,27 @@ export const useDashboardData = (userState, userDispatch, statusState) => {
     }
   }, [inputs, isAdminUser]);
 
+  const loadMediaConvertStats = useCallback(async () => {
+    try {
+      const { start_timestamp, end_timestamp, username } = inputs;
+      const localStartTimestamp = Date.parse(start_timestamp) / 1000;
+      const localEndTimestamp = Date.parse(end_timestamp) / 1000;
+      let url = '';
+      if (isAdminUser) {
+        url = `/api/data/media_convert_stats?username=${username}&start_timestamp=${localStartTimestamp}&end_timestamp=${localEndTimestamp}`;
+      } else {
+        url = `/api/data/self/media_convert_stats?start_timestamp=${localStartTimestamp}&end_timestamp=${localEndTimestamp}`;
+      }
+      const res = await API.get(url);
+      const { success, data } = res.data;
+      if (success) {
+        setMediaConvertStats(data);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  }, [inputs, isAdminUser]);
+
   const getUserData = useCallback(async () => {
     let res = await API.get(`/api/user/self`);
     const { success, message, data } = res.data;
@@ -273,8 +295,9 @@ export const useDashboardData = (userState, userDispatch, statusState) => {
     await loadUptimeData();
     loadRegionStats();
     loadModelRank();
+    loadMediaConvertStats();
     return data;
-  }, [loadQuotaData, loadUptimeData, loadRegionStats, loadModelRank]);
+  }, [loadQuotaData, loadUptimeData, loadRegionStats, loadModelRank, loadMediaConvertStats]);
 
   const handleSearchConfirm = useCallback(
     async (updateChartDataCallback) => {
@@ -324,6 +347,7 @@ export const useDashboardData = (userState, userDispatch, statusState) => {
     setFailCount,
     regionStats,
     modelRank,
+    mediaConvertStats,
     pieData,
     setPieData,
     lineData,

@@ -244,6 +244,8 @@ func SetApiRouter(router *gin.Engine) {
 		dataRoute.GET("/self/region_stats", middleware.UserAuth(), controller.GetUserRegionStats)
 		dataRoute.GET("/model_rank", middleware.AdminAuth(), controller.GetAllModelRank)
 		dataRoute.GET("/self/model_rank", middleware.UserAuth(), controller.GetUserModelRank)
+		dataRoute.GET("/media_convert_stats", middleware.AdminAuth(), controller.GetAllMediaConvertStats)
+		dataRoute.GET("/self/media_convert_stats", middleware.UserAuth(), controller.GetUserMediaConvertStats)
 
 		logRoute.Use(middleware.CORS(), middleware.CriticalRateLimit())
 		{
