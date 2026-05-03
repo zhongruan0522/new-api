@@ -19,11 +19,23 @@ For commercial licensing, please contact support@quantumnous.com
 
 import React from 'react';
 import RedemptionsTable from '../../components/table/redemptions';
+import SectionPageLayout from '../../components/layout/SectionPageLayout';
+import { useTranslation } from 'react-i18next';
 
 const Redemption = () => {
+  const { t } = useTranslation();
+
   return (
-    <div className='mt-[60px] px-2'>
-      <RedemptionsTable />
+    <div className='mt-[60px] h-[calc(100vh-60px)]'>
+      <SectionPageLayout>
+        <SectionPageLayout.Title>{t('兑换码管理')}</SectionPageLayout.Title>
+        <SectionPageLayout.Description>
+          {t('管理兑换码，包括创建、查看和删除兑换码')}
+        </SectionPageLayout.Description>
+        <SectionPageLayout.Content>
+          <RedemptionsTable />
+        </SectionPageLayout.Content>
+      </SectionPageLayout>
     </div>
   );
 };

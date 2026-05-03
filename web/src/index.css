@@ -994,3 +994,188 @@ html.dark .with-pastel-balls::before {
     grid-template-columns: 1fr;
   }
 }
+
+/* ==================== SectionPageLayout 页面布局样式 ==================== */
+.section-page-layout {
+  animation: pageEnter 0.25s cubic-bezier(0.33, 1, 0.68, 1) both;
+}
+
+@keyframes pageEnter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ==================== 微交互效果（参考 default 主题） ==================== */
+/* 卡片悬停浮起效果 */
+@media (prefers-reduced-motion: no-preference) {
+  .semi-card {
+    transition: transform 150ms ease, box-shadow 150ms ease;
+  }
+
+  @media (min-width: 641px) {
+    .semi-card:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+    }
+
+    .dark .semi-card:hover {
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+  }
+
+  /* 按钮点击缩放效果 */
+  .semi-button:not(:disabled):active {
+    transform: scale(0.98);
+  }
+
+  /* 表格行交错进入动画 */
+  .semi-table-tbody > tr {
+    animation: tableRowEnter 0.2s cubic-bezier(0.33, 1, 0.68, 1) both;
+    transition: background-color 120ms ease;
+  }
+
+  .semi-table-tbody > tr:nth-child(2) {
+    animation-delay: 25ms;
+  }
+  .semi-table-tbody > tr:nth-child(3) {
+    animation-delay: 50ms;
+  }
+  .semi-table-tbody > tr:nth-child(4) {
+    animation-delay: 75ms;
+  }
+  .semi-table-tbody > tr:nth-child(5) {
+    animation-delay: 100ms;
+  }
+  .semi-table-tbody > tr:nth-child(6) {
+    animation-delay: 125ms;
+  }
+  .semi-table-tbody > tr:nth-child(7) {
+    animation-delay: 150ms;
+  }
+  .semi-table-tbody > tr:nth-child(8) {
+    animation-delay: 175ms;
+  }
+  .semi-table-tbody > tr:nth-child(9) {
+    animation-delay: 200ms;
+  }
+  .semi-table-tbody > tr:nth-child(10) {
+    animation-delay: 225ms;
+  }
+  .semi-table-tbody > tr:nth-child(n + 11) {
+    animation-delay: 250ms;
+  }
+}
+
+@keyframes tableRowEnter {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 减少动画偏好时禁用所有动画 */
+@media (prefers-reduced-motion: reduce) {
+  .section-page-layout,
+  .semi-table-tbody > tr {
+    animation: none !important;
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ==================== 骨架屏加载动画 ==================== */
+.skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--semi-color-fill-0) 0%,
+    var(--semi-color-fill-0) 33%,
+    var(--semi-color-fill-1) 50%,
+    var(--semi-color-fill-0) 67%,
+    var(--semi-color-fill-0) 100%
+  );
+  background-size: 300% 100%;
+  animation: skeleton-shimmer 1.8s ease-in-out infinite;
+}
+
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: -100% 50%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-shimmer {
+    animation: none !important;
+    background: var(--semi-color-fill-0) !important;
+  }
+}
+
+/* ==================== 渐变淡出遮罩效果 ==================== */
+.fade-bottom-mask {
+  mask-image: linear-gradient(to top, transparent 0%, black 35%);
+}
+
+.fade-top-mask {
+  mask-image: linear-gradient(to bottom, transparent 0%, black 35%);
+}
+
+/* ==================== 统计卡片入场动画 ==================== */
+.stats-card-enter {
+  animation: statsCardEnter 0.4s cubic-bezier(0.33, 1, 0.68, 1) both;
+}
+
+.stats-card-enter:nth-child(1) {
+  animation-delay: 0ms;
+}
+.stats-card-enter:nth-child(2) {
+  animation-delay: 60ms;
+}
+.stats-card-enter:nth-child(3) {
+  animation-delay: 120ms;
+}
+.stats-card-enter:nth-child(4) {
+  animation-delay: 180ms;
+}
+.stats-card-enter:nth-child(5) {
+  animation-delay: 240ms;
+}
+.stats-card-enter:nth-child(6) {
+  animation-delay: 300ms;
+}
+
+@keyframes statsCardEnter {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stats-card-enter {
+    animation: none !important;
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ==================== 表格数字等宽显示 ==================== */
+.semi-table td.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}

@@ -19,11 +19,23 @@ For commercial licensing, please contact support@quantumnous.com
 
 import React from 'react';
 import ChannelsTable from '../../components/table/channels';
+import SectionPageLayout from '../../components/layout/SectionPageLayout';
+import { useTranslation } from 'react-i18next';
 
 const File = () => {
+  const { t } = useTranslation();
+
   return (
-    <div className='mt-[60px] px-2'>
-      <ChannelsTable />
+    <div className='mt-[60px] h-[calc(100vh-60px)]'>
+      <SectionPageLayout>
+        <SectionPageLayout.Title>{t('渠道管理')}</SectionPageLayout.Title>
+        <SectionPageLayout.Description>
+          {t('管理所有API渠道，包括添加、编辑、测试和删除渠道')}
+        </SectionPageLayout.Description>
+        <SectionPageLayout.Content>
+          <ChannelsTable />
+        </SectionPageLayout.Content>
+      </SectionPageLayout>
     </div>
   );
 };

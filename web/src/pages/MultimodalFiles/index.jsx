@@ -19,12 +19,26 @@ For commercial licensing, please contact support@quantumnous.com
 
 import React from 'react';
 import StoredMediaPage from '../../components/table/stored-media';
+import SectionPageLayout from '../../components/layout/SectionPageLayout';
+import { useTranslation } from 'react-i18next';
 
-const MultimodalFiles = () => (
-  <div className='mt-[60px] px-2'>
-    <StoredMediaPage />
-  </div>
-);
+const MultimodalFiles = () => {
+  const { t } = useTranslation();
+
+  return (
+    <div className='mt-[60px] h-[calc(100vh-60px)]'>
+      <SectionPageLayout>
+        <SectionPageLayout.Title>{t('多模态文件')}</SectionPageLayout.Title>
+        <SectionPageLayout.Description>
+          {t('管理已上传的多模态文件资源')}
+        </SectionPageLayout.Description>
+        <SectionPageLayout.Content>
+          <StoredMediaPage />
+        </SectionPageLayout.Content>
+      </SectionPageLayout>
+    </div>
+  );
+};
 
 export default MultimodalFiles;
 

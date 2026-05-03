@@ -37,6 +37,7 @@ import RuntimeSetting from '../../components/settings/RuntimeSetting';
 import DashboardSetting from '../../components/settings/DashboardSetting';
 import RatioSetting from '../../components/settings/RatioSetting';
 import PaymentSetting from '../../components/settings/PaymentSetting';
+import SectionPageLayout from '../../components/layout/SectionPageLayout';
 
 const Setting = () => {
   const { t } = useTranslation();
@@ -122,23 +123,31 @@ const Setting = () => {
     }
   }, [location.search]);
   return (
-    <div className='mt-[60px] px-2'>
-      <Layout>
-        <Layout.Content>
-          <Tabs
-            type='card'
-            collapsible
-            activeKey={tabActiveKey}
-            onChange={(key) => onChangeTab(key)}
-          >
-            {panes.map((pane) => (
-              <TabPane itemKey={pane.itemKey} tab={pane.tab} key={pane.itemKey}>
-                {tabActiveKey === pane.itemKey && pane.content}
-              </TabPane>
-            ))}
-          </Tabs>
-        </Layout.Content>
-      </Layout>
+    <div className='mt-[60px] h-[calc(100vh-60px)]'>
+      <SectionPageLayout>
+        <SectionPageLayout.Title>{t('系统设置')}</SectionPageLayout.Title>
+        <SectionPageLayout.Description>
+          {t('管理系统配置，包括运营、支付、定价和运行参数')}
+        </SectionPageLayout.Description>
+        <SectionPageLayout.Content>
+          <Layout>
+            <Layout.Content>
+              <Tabs
+                type='card'
+                collapsible
+                activeKey={tabActiveKey}
+                onChange={(key) => onChangeTab(key)}
+              >
+                {panes.map((pane) => (
+                  <TabPane itemKey={pane.itemKey} tab={pane.tab} key={pane.itemKey}>
+                    {tabActiveKey === pane.itemKey && pane.content}
+                  </TabPane>
+                ))}
+              </Tabs>
+            </Layout.Content>
+          </Layout>
+        </SectionPageLayout.Content>
+      </SectionPageLayout>
     </div>
   );
 };

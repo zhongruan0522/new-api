@@ -89,84 +89,87 @@ const StatsCards = ({
         {groupedStatsData.map((group, idx) => {
           if (group.regionItems) {
             return (
-              <RegionCard key={idx} group={group} loading={loading} />
+              <div key={idx} className='stats-card-enter'>
+                <RegionCard group={group} loading={loading} />
+              </div>
             );
           }
 
           return (
-            <Card
-              key={idx}
-              {...CARD_PROPS}
-              className={`${group.color} border-0 !rounded-2xl w-full`}
-              title={group.title}
-            >
-              <div className='space-y-4'>
-                {group.items.map((item, itemIdx) => (
-                  <div
-                    key={itemIdx}
-                    className='flex items-center justify-between cursor-pointer'
-                    onClick={item.onClick}
-                  >
-                    <div className='flex items-center'>
-                      <Avatar
-                        className='mr-3'
-                        size='small'
-                        color={item.avatarColor}
-                      >
-                        {item.icon}
-                      </Avatar>
-                      <div>
-                        <div className='text-xs text-gray-500'>
-                          {item.title}
-                        </div>
-                        <div className='text-lg font-semibold'>
-                          <Skeleton
-                            loading={loading}
-                            active
-                            placeholder={
-                              <Skeleton.Paragraph
-                                active
-                                rows={1}
-                                style={{
-                                  width: '65px',
-                                  height: '24px',
-                                  marginTop: '4px',
-                                }}
-                              />
-                            }
-                          >
-                            {item.value}
-                          </Skeleton>
+            <div key={idx} className='stats-card-enter'>
+              <Card
+                {...CARD_PROPS}
+                className={`${group.color} border-0 !rounded-2xl w-full`}
+                title={group.title}
+              >
+                <div className='space-y-4'>
+                  {group.items.map((item, itemIdx) => (
+                    <div
+                      key={itemIdx}
+                      className='flex items-center justify-between cursor-pointer'
+                      onClick={item.onClick}
+                    >
+                      <div className='flex items-center'>
+                        <Avatar
+                          className='mr-3'
+                          size='small'
+                          color={item.avatarColor}
+                        >
+                          {item.icon}
+                        </Avatar>
+                        <div>
+                          <div className='text-xs text-gray-500'>
+                            {item.title}
+                          </div>
+                          <div className='text-lg font-semibold'>
+                            <Skeleton
+                              loading={loading}
+                              active
+                              placeholder={
+                                <Skeleton.Paragraph
+                                  active
+                                  rows={1}
+                                  style={{
+                                    width: '65px',
+                                    height: '24px',
+                                    marginTop: '4px',
+                                  }}
+                                />
+                              }
+                            >
+                              {item.value}
+                            </Skeleton>
+                          </div>
                         </div>
                       </div>
+                      {item.title === t('当前余额') ? (
+                        <Tag
+                          color='white'
+                          shape='circle'
+                          size='large'
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate('/console/topup');
+                          }}
+                        >
+                          {t('充值')}
+                        </Tag>
+                      ) : (
+                        (loading ||
+                          (item.trendData && item.trendData.length > 0)) && (
+                          <div className='w-24 h-10'>
+                            <VChart
+                              spec={getTrendSpec(item.trendData, item.trendColor)}
+                              option={CHART_CONFIG}
+                            />
+                          </div>
+                        )
+                      )}
                     </div>
-                    {item.title === t('当前余额') ? (
-                      <Tag
-                        color='white'
-                        shape='circle'
-                        size='large'
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          navigate('/console/topup');
-                        }}
-                      >
-                        {t('充值')}
-                      </Tag>
-                    ) : (
-                      (loading ||
-                        (item.trendData && item.trendData.length > 0)) && (
-                        <div className='w-24 h-10'>
-                          <VChart
-                            spec={getTrendSpec(item.trendData, item.trendColor)}
-                            option={CHART_CONFIG}
-                          />
-                        </div>
-                      )
-                    )}
-                  </div>
-                ))}
-              </div>
-            </Card>
+                  ))}
+                </div>
+              </Card>
+            </div>
           );
         })}
       </div>

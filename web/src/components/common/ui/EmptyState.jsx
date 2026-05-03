@@ -18,26 +18,29 @@ For commercial licensing, please contact support@quantumnous.com
 */
 
 import React from 'react';
-import UsageLogsTable from '../../components/table/usage-logs';
-import SectionPageLayout from '../../components/layout/SectionPageLayout';
-import { useTranslation } from 'react-i18next';
+import { IllustrationNoResult } from '@douyinfe/semi-illustrations';
+import { Empty } from '@douyinfe/semi-ui';
 
-const Token = () => {
-  const { t } = useTranslation();
-
+/**
+ * 统一的空状态组件
+ * 用于表格无数据、列表无内容等场景
+ *
+ * props:
+ * - title: 标题文本
+ * - description: 描述文本（可选）
+ * - action: 操作按钮（可选，ReactNode）
+ */
+const EmptyState = ({ title, description, action }) => {
   return (
-    <div className='mt-[60px] h-[calc(100vh-60px)]'>
-      <SectionPageLayout>
-        <SectionPageLayout.Title>{t('使用日志')}</SectionPageLayout.Title>
-        <SectionPageLayout.Description>
-          {t('查看API调用日志和使用记录')}
-        </SectionPageLayout.Description>
-        <SectionPageLayout.Content>
-          <UsageLogsTable />
-        </SectionPageLayout.Content>
-      </SectionPageLayout>
+    <div className='flex flex-col items-center justify-center py-12 px-4'>
+      <Empty
+        image={<IllustrationNoResult style={{ width: 120, height: 120 }} />}
+        title={title || '暂无数据'}
+        description={description}
+      />
+      {action && <div className='mt-4'>{action}</div>}
     </div>
   );
 };
 
-export default Token;
+export default EmptyState;
