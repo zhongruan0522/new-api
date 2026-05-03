@@ -204,6 +204,37 @@ const TicketsPage = () => {
     [activeTicket, detailVisible, fetchTickets, loadTicketDetail, t],
   );
 
+  const handleReopenTicket = useCallback(
+    (ticket) => {
+      Modal.confirm({
+        title: t('确认重新开启'),
+        content: t('重新开启后工单将恢复为待处理状态，是否继续？'),
+        okText: t('重新开启'),
+        cancelText: t('取消'),
+        onOk: async () => {
+          try {
+            const res = await API.post(`/api/ticket/${ticket.id}/status`, {
+              status: 'pending',
+            });
+            const { success, message } = res.data;
+            if (!success) {
+              showError(message || t('重新开启失败'));
+              return;
+            }
+            showSuccess(t('工单已重新开启'));
+            await fetchTickets();
+            if (detailVisible && activeTicket?.id === ticket.id) {
+              await loadTicketDetail(ticket.id);
+            }
+          } catch (error) {
+            showError(error.response?.data?.message || t('重新开启失败'));
+          }
+        },
+      });
+    },
+    [activeTicket, detailVisible, fetchTickets, loadTicketDetail, t],
+  );
+
   const handleOpenCreate = useCallback(() => {
     setCreateForm(defaultCreateForm);
     setCreateVisible(true);
@@ -377,6 +408,7 @@ const TicketsPage = () => {
           handlePageSizeChange={handlePageSizeChange}
           onViewTicket={handleViewTicket}
           onCloseTicket={handleCloseTicket}
+          onReopenTicket={handleReopenTicket}
           t={t}
         />
       </CardPro>
