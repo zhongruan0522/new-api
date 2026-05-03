@@ -1,19 +1,14 @@
 TaskID,Page/Component,Description,Priority,Status,Notes
-T01,SectionPageLayout,"创建统一的页面布局组件，包含标题、描述、操作按钮、内容区域插槽",High,Done,参考default的SectionPageLayout compound component模式
-T02,PageTransition,"添加页面切换过渡动画(pageEnter keyframe)",Medium,Done,CSS动画实现，无需额外依赖
-T03,Skeleton Loading,"添加骨架屏shimmer动画",Medium,Done,skeleton-shimmer CSS类
-T04,EmptyState,"创建统一的空状态组件",Medium,Done,使用Semi Design Empty + IllustrationNoResult
-T05,Dashboard,"Dashboard页面优化：StatsCards入场动画",High,Done,stats-card-enter交错动画
-T06,Channel,"Channel页面：统一布局",High,Done,使用SectionPageLayout
-T07,Token,"Token页面：统一布局",High,Done,使用SectionPageLayout
-T08,User,"User页面：统一布局",High,Done,使用SectionPageLayout
-T09,Log,"Log页面：统一布局",High,Done,使用SectionPageLayout
-T10,Redemption,"Redemption页面：统一布局",High,Done,使用SectionPageLayout
-T11,Model,"Model页面：统一布局",High,Done,使用SectionPageLayout
-T12,Ticket,"Ticket页面：统一布局",Medium,Done,使用SectionPageLayout
-T13,MultimodalFiles,"MultimodalFiles页面：统一布局",Medium,Done,使用SectionPageLayout
-T14,Settings,"Settings页面：布局优化",Medium,Done,使用SectionPageLayout
-T15,Micro-interactions,"添加卡片悬停浮起、按钮点击缩放、表格行交错动画",Medium,Done,参考default的micro-interactions
-T16,Global Styles,"全局样式优化：渐变遮罩、数字等宽、减少动画偏好支持",Medium,Done,fade-bottom-mask等
-T17,i18n,"添加缺失的翻译key",Medium,Done,11个新翻译key
-T18,Build,"验证编译通过",High,Done,bun run build成功(56.91s)
+T01,SectionPageLayout,"创建统一的页面布局组件",High,Done,compound component模式
+T02,PageTransition,"添加页面切换过渡动画",Medium,Done,CSS pageEnter动画
+T03,Skeleton Loading,"添加骨架屏shimmer动画",Medium,Done,skeleton-shimmer CSS
+T04,EmptyState,"创建统一的空状态组件",Medium,Done,Semi Design Empty + IllustrationNoResult
+T05,Dashboard,"Dashboard StatsCards交错入场动画",High,Done,stats-card-enter
+T06-14,Pages,"10个页面统一使用SectionPageLayout",High,Done,Channel/Token/User/Log/Dashboard/Redemption/Model/Ticket/MultimodalFiles/Setting
+T15,Micro-interactions,"卡片悬停/按钮缩放/表格行交错动画",Medium,Done,参考default micro-interactions
+T16,Global Styles,"渐变遮罩/数字等宽/减少动画偏好",Medium,Done,fade-bottom-mask等
+T17,i18n,"补充11个翻译key",Medium,Done,zh.json
+T18,Pricing,"加入场动画class",High,Done,section-page-layout
+T19,Home,"模块化拆分为HeroSection+ProviderIcons",High,Done,从322行单文件拆为3个文件
+T20,Mobile,"移动端卡片视图已存在(CardTable)",Medium,Done,无需额外创建,已有CardTable组件
+T21,Build,"编译通过",High,Done,bun run build成功
