@@ -218,11 +218,14 @@ func computeModelRank(quotaDatas []*QuotaData) ModelRankResponse {
 	}
 
 	// 计算成功率并分类
+	const noDataRate = -1.0
 	var allList, domesticList, overseasList []ModelRankItem
 	for _, rank := range modelMap {
 		total := rank.SuccessCount + rank.FailCount
 		if total > 0 {
 			rank.SuccessRate = math.Floor(float64(rank.SuccessCount)/float64(total)*1000) / 10
+		} else {
+			rank.SuccessRate = noDataRate
 		}
 		allList = append(allList, *rank)
 		if matchModelPrefix(rank.ModelName, domesticPrefixes) {
@@ -325,13 +328,18 @@ func computeRegionStats(quotaDatas []*QuotaData) (domestic RegionStat, overseas 
 			overseas.FailCount += item.FailCount
 		}
 	}
+	const noDataRate = -1.0
 	total := domestic.SuccessCount + domestic.FailCount
 	if total > 0 {
 		domestic.SuccessRate = math.Floor(float64(domestic.SuccessCount)/float64(total)*1000) / 10
+	} else {
+		domestic.SuccessRate = noDataRate
 	}
 	total = overseas.SuccessCount + overseas.FailCount
 	if total > 0 {
 		overseas.SuccessRate = math.Floor(float64(overseas.SuccessCount)/float64(total)*1000) / 10
+	} else {
+		overseas.SuccessRate = noDataRate
 	}
 	return
 }

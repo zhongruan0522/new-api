@@ -31,7 +31,7 @@ const RankColumn = ({ title, items, loading, isMobile }) => (
     <ol className='space-y-1'>
       {items.map((item, idx) => {
         const rateStr =
-          item.success_rate !== undefined
+          item.success_rate != null && item.success_rate >= 0
             ? `${item.success_rate.toFixed(1)}%`
             : '--';
         return (

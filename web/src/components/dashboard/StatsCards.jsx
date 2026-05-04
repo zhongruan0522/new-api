@@ -61,12 +61,16 @@ const RegionCard = ({ group, loading }) => (
             </div>
           </div>
           <div className='w-32'>
-            <Progress
-              percent={item.rate || 0}
-              showInfo={false}
-              stroke={item.color}
-              size='small'
-            />
+            {item.rate != null ? (
+              <Progress
+                percent={item.rate}
+                showInfo={false}
+                stroke={item.color}
+                size='small'
+              />
+            ) : (
+              <span className='text-xs text-gray-400'>--</span>
+            )}
           </div>
         </div>
       ))}

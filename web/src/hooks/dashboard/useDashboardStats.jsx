@@ -33,7 +33,7 @@ import { renderQuota } from '../../helpers';
 import { createSectionTitle } from '../../helpers/dashboard';
 
 const getRateColor = (stat) => {
-  if (!stat) return '#6b7280';
+  if (!stat || stat.success_rate < 0) return '#6b7280';
   const rate = stat.success_rate;
   if (rate >= 95) return '#10b981';
   if (rate >= 50) return '#f59e0b';
@@ -41,7 +41,7 @@ const getRateColor = (stat) => {
 };
 
 const formatRegionRate = (stat) => {
-  if (!stat) return '--';
+  if (!stat || stat.success_rate < 0) return '--';
   return `${stat.success_rate.toFixed(1)}%`;
 };
 
@@ -126,14 +126,18 @@ export const useDashboardStats = (
             rateValue: formatRegionRate(regionStats?.domestic),
             countValue: formatRegionCount(regionStats?.domestic),
             color: getRateColor(regionStats?.domestic),
-            rate: regionStats?.domestic?.success_rate ?? 0,
+            rate: regionStats?.domestic?.success_rate != null && regionStats.domestic.success_rate >= 0
+              ? regionStats.domestic.success_rate
+              : null,
           },
           {
             label: t('海外模型'),
             rateValue: formatRegionRate(regionStats?.overseas),
             countValue: formatRegionCount(regionStats?.overseas),
             color: getRateColor(regionStats?.overseas),
-            rate: regionStats?.overseas?.success_rate ?? 0,
+            rate: regionStats?.overseas?.success_rate != null && regionStats.overseas.success_rate >= 0
+              ? regionStats.overseas.success_rate
+              : null,
           },
         ],
       },
