@@ -19,11 +19,25 @@ For commercial licensing, please contact support@quantumnous.com
 
 import React from 'react';
 import UsageLogsTable from '../../components/table/usage-logs';
+import SectionPageLayout from '../../components/layout/SectionPageLayout';
+import { useTranslation } from 'react-i18next';
 
-const Token = () => (
-  <div className='mt-[60px] px-2'>
-    <UsageLogsTable />
-  </div>
-);
+const Token = () => {
+  const { t } = useTranslation();
+
+  return (
+    <div className='mt-[60px]'>
+      <SectionPageLayout>
+        <SectionPageLayout.Title>{t('使用日志')}</SectionPageLayout.Title>
+        <SectionPageLayout.Description>
+          {t('查看API调用日志和使用记录')}
+        </SectionPageLayout.Description>
+        <SectionPageLayout.Content>
+          <UsageLogsTable />
+        </SectionPageLayout.Content>
+      </SectionPageLayout>
+    </div>
+  );
+};
 
 export default Token;

@@ -19,7 +19,8 @@ const (
 	ChannelTypeSiliconFlow    = 40
 	ChannelTypeVertexAi       = 41
 	ChannelTypeDeepSeek       = 43
-	ChannelTypeDummy          = 49 // this one is only for count, do not add any channel after this
+	ChannelTypeXiaomi         = 6
+	ChannelTypeDummy          = 7 // this one is only for count, do not add any channel after this
 )
 
 var ChannelBaseURLs = []string{
@@ -29,8 +30,8 @@ var ChannelBaseURLs = []string{
 	"",                          // 3  Azure
 	"http://localhost:11434",    // 4  Ollama
 	"https://api.openai-sb.com", // 5  MidjourneyPlus
-	"",                          // 6  (removed)
-	"",                          // 7  (removed)
+	"https://api.xiaomimimo.com", // 6  Xiaomi
+	"",                          // 7  Dummy
 	"",                          // 8  Custom
 	"",                          // 9  (removed)
 	"",                          // 10 (removed)
@@ -90,6 +91,7 @@ var ChannelTypeNames = map[int]string{
 	ChannelTypeSiliconFlow: "SiliconFlow",
 	ChannelTypeVertexAi:    "VertexAI",
 	ChannelTypeDeepSeek:    "DeepSeek",
+	ChannelTypeXiaomi:      "Xiaomi",
 }
 
 func GetChannelTypeName(channelType int) string {
@@ -121,6 +123,9 @@ var SupportedPlanQuotaProviders = map[string]bool{
 	"minimax-coding-plan":               true,
 	"minimax-coding-plan-international": true,
 	"ollama-coding-plan":               true,
+	"xiaomi-coding-plan":               true,
+	"xiaomi-coding-plan-sgp":           true,
+	"xiaomi-coding-plan-ams":           true,
 }
 
 var ChannelSpecialBases = map[string]ChannelSpecialBase{
@@ -145,5 +150,17 @@ var ChannelSpecialBases = map[string]ChannelSpecialBase{
 	"ollama-coding-plan": {
 		ClaudeBaseURL: "https://ollama.com",
 		OpenAIBaseURL: "https://ollama.com",
+	},
+	"xiaomi-coding-plan": {
+		ClaudeBaseURL: "https://token-plan-cn.xiaomimimo.com/anthropic",
+		OpenAIBaseURL: "https://token-plan-cn.xiaomimimo.com/v1",
+	},
+	"xiaomi-coding-plan-sgp": {
+		ClaudeBaseURL: "https://token-plan-sgp.xiaomimimo.com/anthropic",
+		OpenAIBaseURL: "https://token-plan-sgp.xiaomimimo.com/v1",
+	},
+	"xiaomi-coding-plan-ams": {
+		ClaudeBaseURL: "https://token-plan-ams.xiaomimimo.com/anthropic",
+		OpenAIBaseURL: "https://token-plan-ams.xiaomimimo.com/v1",
 	},
 }

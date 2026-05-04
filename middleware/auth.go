@@ -268,19 +268,9 @@ func TokenAuth() func(c *gin.Context) {
 		if strings.HasPrefix(key, "Bearer ") || strings.HasPrefix(key, "bearer ") {
 			key = strings.TrimSpace(key[7:])
 		}
-		if key == "" || key == "midjourney-proxy" {
-			key = c.Request.Header.Get("mj-api-secret")
-			if strings.HasPrefix(key, "Bearer ") || strings.HasPrefix(key, "bearer ") {
-				key = strings.TrimSpace(key[7:])
-			}
-			key = strings.TrimPrefix(key, "sk-")
-			parts = strings.Split(key, "-")
-			key = parts[0]
-		} else {
-			key = strings.TrimPrefix(key, "sk-")
-			parts = strings.Split(key, "-")
-			key = parts[0]
-		}
+		key = strings.TrimPrefix(key, "sk-")
+		parts = strings.Split(key, "-")
+		key = parts[0]
 		token, err := model.ValidateUserToken(key)
 		if token != nil {
 			id := c.GetInt("id")
@@ -358,9 +348,28 @@ func SetupContextForToken(c *gin.Context, token *model.Token, parts ...string) e
 	common.SetContextKey(c, constant.ContextKeyTokenKey, token.Key)
 	c.Set("token_name", token.Name)
 	common.SetContextKey(c, constant.ContextKeyTokenUnlimited, token.UnlimitedQuota)
+	// 兼容旧数据：quota_type=0 && !unlimited_quota 应视为永久限额
+	quotaType := token.QuotaType
+	if quotaType == 0 && !token.UnlimitedQuota {
+		quotaType = 1
+	}
+	common.SetContextKey(c, constant.ContextKeyTokenQuotaType, quotaType)
 	if !token.UnlimitedQuota {
 		// 将认证阶段读取到的额度快照写入上下文，后续预扣费无需再次查 token。
-		common.SetContextKey(c, constant.ContextKeyTokenQuota, token.RemainQuota)
+		switch quotaType {
+		case 2:
+			common.SetContextKey(c, constant.ContextKeyTokenQuota, token.WindowQuota-token.WindowUsedQuota)
+		case 3:
+			windowRemain := token.WindowQuota - token.WindowUsedQuota
+			cycleRemain := token.CycleQuota - token.CycleUsedQuota
+			if windowRemain < cycleRemain {
+				common.SetContextKey(c, constant.ContextKeyTokenQuota, windowRemain)
+			} else {
+				common.SetContextKey(c, constant.ContextKeyTokenQuota, cycleRemain)
+			}
+		default:
+			common.SetContextKey(c, constant.ContextKeyTokenQuota, token.RemainQuota)
+		}
 	}
 	if token.ModelLimitsEnabled {
 		c.Set("token_model_limit_enabled", true)

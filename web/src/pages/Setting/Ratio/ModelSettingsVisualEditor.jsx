@@ -458,6 +458,7 @@ export default function ModelSettingsVisualEditor(props) {
       title: t('模型名称'),
       dataIndex: 'name',
       key: 'name',
+      width: 220,
       render: (text, record) => (
         <span>
           {text}
@@ -473,6 +474,7 @@ export default function ModelSettingsVisualEditor(props) {
       title: t('模型固定价格'),
       dataIndex: 'price',
       key: 'price',
+      width: 100,
       render: (text, record) => (
         <Input
           value={editingValues[`${record.name}:price`] ?? text}
@@ -557,38 +559,6 @@ export default function ModelSettingsVisualEditor(props) {
       ),
     },
     {
-      title: `${t('缓存读取价格')} ($/1M)`,
-      dataIndex: 'cacheRatio',
-      key: 'cacheRatio',
-      render: (text, record) => (
-        <Input
-          value={
-            editingValues[`${record.name}:cacheRatio`] ??
-            relativeRatioToDisplayPrice(text, record.ratio)
-          }
-          placeholder={t('缓存读取')}
-          disabled={record.price !== ''}
-          onChange={(value) =>
-            handleInlineInputChange(
-              record.name,
-              'cacheRatio',
-              value,
-              (current) => displayPriceToRelativeRatio(current, record.ratio),
-            )
-          }
-          onBlur={() =>
-            handleInlineInputBlur(
-              record.name,
-              'cacheRatio',
-              editingValues[`${record.name}:cacheRatio`] ??
-                relativeRatioToDisplayPrice(text, record.ratio),
-              (current) => displayPriceToRelativeRatio(current, record.ratio),
-            )
-          }
-        />
-      ),
-    },
-    {
       title: `${t('缓存创建价格')} ($/1M)`,
       dataIndex: 'createCacheRatio',
       key: 'createCacheRatio',
@@ -613,6 +583,38 @@ export default function ModelSettingsVisualEditor(props) {
               record.name,
               'createCacheRatio',
               editingValues[`${record.name}:createCacheRatio`] ??
+                relativeRatioToDisplayPrice(text, record.ratio),
+              (current) => displayPriceToRelativeRatio(current, record.ratio),
+            )
+          }
+        />
+      ),
+    },
+    {
+      title: `${t('缓存读取价格')} ($/1M)`,
+      dataIndex: 'cacheRatio',
+      key: 'cacheRatio',
+      render: (text, record) => (
+        <Input
+          value={
+            editingValues[`${record.name}:cacheRatio`] ??
+            relativeRatioToDisplayPrice(text, record.ratio)
+          }
+          placeholder={t('缓存读取')}
+          disabled={record.price !== ''}
+          onChange={(value) =>
+            handleInlineInputChange(
+              record.name,
+              'cacheRatio',
+              value,
+              (current) => displayPriceToRelativeRatio(current, record.ratio),
+            )
+          }
+          onBlur={() =>
+            handleInlineInputBlur(
+              record.name,
+              'cacheRatio',
+              editingValues[`${record.name}:cacheRatio`] ??
                 relativeRatioToDisplayPrice(text, record.ratio),
               (current) => displayPriceToRelativeRatio(current, record.ratio),
             )
@@ -1164,17 +1166,6 @@ export default function ModelSettingsVisualEditor(props) {
                 suffix={t('$/1M tokens')}
               />
               <Form.Input
-                field='cacheTokenPrice'
-                label={t('缓存读取价格')}
-                onChange={(value) => {
-                  handleCacheTokenPriceChange(value);
-                }}
-                initValue={normalizeEditableValue(
-                  currentModel?.cacheTokenPrice,
-                )}
-                suffix={t('$/1M tokens')}
-              />
-              <Form.Input
                 field='createCacheTokenPrice'
                 label={t('缓存创建价格')}
                 onChange={(value) => {
@@ -1182,6 +1173,17 @@ export default function ModelSettingsVisualEditor(props) {
                 }}
                 initValue={normalizeEditableValue(
                   currentModel?.createCacheTokenPrice,
+                )}
+                suffix={t('$/1M tokens')}
+              />
+              <Form.Input
+                field='cacheTokenPrice'
+                label={t('缓存读取价格')}
+                onChange={(value) => {
+                  handleCacheTokenPriceChange(value);
+                }}
+                initValue={normalizeEditableValue(
+                  currentModel?.cacheTokenPrice,
                 )}
                 suffix={t('$/1M tokens')}
               />

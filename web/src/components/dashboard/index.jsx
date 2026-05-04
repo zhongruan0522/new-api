@@ -86,6 +86,7 @@ const Dashboard = () => {
     dashboardData.navigate,
     dashboardData.t,
     dashboardData.regionStats,
+    dashboardData.mediaConvertStats,
   );
 
   // ========== 数据处理 ==========
@@ -97,6 +98,7 @@ const Dashboard = () => {
     });
     await dashboardData.loadRegionStats();
     dashboardData.loadModelRank();
+    dashboardData.loadMediaConvertStats();
     await dashboardData.loadUptimeData();
   };
 

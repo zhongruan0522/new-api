@@ -19,11 +19,23 @@ For commercial licensing, please contact support@quantumnous.com
 
 import React from 'react';
 import TokensTable from '../../components/table/tokens';
+import SectionPageLayout from '../../components/layout/SectionPageLayout';
+import { useTranslation } from 'react-i18next';
 
 const Token = () => {
+  const { t } = useTranslation();
+
   return (
-    <div className='mt-[60px] px-2'>
-      <TokensTable />
+    <div className='mt-[60px]'>
+      <SectionPageLayout>
+        <SectionPageLayout.Title>{t('令牌管理')}</SectionPageLayout.Title>
+        <SectionPageLayout.Description>
+          {t('管理API访问令牌，包括创建、编辑和删除令牌')}
+        </SectionPageLayout.Description>
+        <SectionPageLayout.Content>
+          <TokensTable />
+        </SectionPageLayout.Content>
+      </SectionPageLayout>
     </div>
   );
 };

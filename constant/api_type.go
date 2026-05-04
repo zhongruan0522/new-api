@@ -32,4 +32,5 @@ const (
 	APITypeMoonshot    = 28
 	APITypeMiniMax     = 29
 	APITypeDummy       = 30
+	APITypeXiaomi      = 31
 )

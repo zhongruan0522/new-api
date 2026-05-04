@@ -11,7 +11,6 @@ import (
 
 	"github.com/zhongruan0522/new-api/common"
 	"github.com/zhongruan0522/new-api/constant"
-	"github.com/zhongruan0522/new-api/dto"
 	"github.com/zhongruan0522/new-api/model"
 	relayconstant "github.com/zhongruan0522/new-api/relay/constant"
 	"github.com/zhongruan0522/new-api/service"
@@ -80,6 +79,7 @@ func Distribute() func(c *gin.Context) {
 				}
 				var selectGroup string
 				usingGroup := common.GetContextKeyString(c, constant.ContextKeyUsingGroup)
+				relayFormat := guessRelayFormatFromPath(c.Request.URL.Path)
 
 				if preferredChannelID, found := service.GetPreferredChannelByAffinity(c, modelRequest.Model, usingGroup); found {
 					preferred, err := model.CacheGetChannel(preferredChannelID)
@@ -106,10 +106,11 @@ func Distribute() func(c *gin.Context) {
 
 				if channel == nil {
 					channel, selectGroup, err = service.CacheGetRandomSatisfiedChannel(&service.RetryParam{
-						Ctx:        c,
-						ModelName:  modelRequest.Model,
-						TokenGroup: usingGroup,
-						Retry:      common.GetPointer(0),
+						Ctx:         c,
+						ModelName:   modelRequest.Model,
+						TokenGroup:  usingGroup,
+						Retry:       common.GetPointer(0),
+						RelayFormat: relayFormat,
 					})
 					if err != nil {
 						showGroup := usingGroup
@@ -158,88 +159,7 @@ func getModelFromRequest(c *gin.Context) (*ModelRequest, error) {
 func getModelRequest(c *gin.Context) (*ModelRequest, bool, error) {
 	var modelRequest ModelRequest
 	shouldSelectChannel := true
-	var err error
-	if strings.Contains(c.Request.URL.Path, "/mj/") {
-		relayMode := relayconstant.Path2RelayModeMidjourney(c.Request.URL.Path)
-		if relayMode == relayconstant.RelayModeMidjourneyTaskFetch ||
-			relayMode == relayconstant.RelayModeMidjourneyTaskFetchByCondition ||
-			relayMode == relayconstant.RelayModeMidjourneyNotify ||
-			relayMode == relayconstant.RelayModeMidjourneyTaskImageSeed {
-			shouldSelectChannel = false
-		} else {
-			midjourneyRequest := dto.MidjourneyRequest{}
-			err = common.UnmarshalBodyReusable(c, &midjourneyRequest)
-			if err != nil {
-				return nil, false, errors.New("无效的midjourney请求, " + err.Error())
-			}
-			midjourneyModel, mjErr, success := service.GetMjRequestModel(relayMode, &midjourneyRequest)
-			if mjErr != nil {
-				return nil, false, fmt.Errorf("%s", mjErr.Description)
-			}
-			if midjourneyModel == "" {
-				if !success {
-					return nil, false, fmt.Errorf("无效的请求, 无法解析模型")
-				} else {
-					// task fetch, task fetch by condition, notify
-					shouldSelectChannel = false
-				}
-			}
-			modelRequest.Model = midjourneyModel
-		}
-		c.Set("relay_mode", relayMode)
-	} else if strings.Contains(c.Request.URL.Path, "/suno/") {
-		relayMode := relayconstant.Path2RelaySuno(c.Request.Method, c.Request.URL.Path)
-		if relayMode == relayconstant.RelayModeSunoFetch ||
-			relayMode == relayconstant.RelayModeSunoFetchByID {
-			shouldSelectChannel = false
-		} else {
-			modelName := service.CoverTaskActionToModelName(constant.TaskPlatformSuno, c.Param("action"))
-			modelRequest.Model = modelName
-		}
-		c.Set("platform", string(constant.TaskPlatformSuno))
-		c.Set("relay_mode", relayMode)
-	} else if strings.Contains(c.Request.URL.Path, "/v1/videos/") && strings.HasSuffix(c.Request.URL.Path, "/remix") {
-		relayMode := relayconstant.RelayModeVideoSubmit
-		c.Set("relay_mode", relayMode)
-		shouldSelectChannel = false
-	} else if strings.Contains(c.Request.URL.Path, "/v1/videos") {
-		//curl https://api.openai.com/v1/videos \
-		//  -H "Authorization: Bearer $OPENAI_API_KEY" \
-		//  -F "model=sora-2" \
-		//  -F "prompt=A calico cat playing a piano on stage"
-		//	-F input_reference="@image.jpg"
-		relayMode := relayconstant.RelayModeUnknown
-		if c.Request.Method == http.MethodPost {
-			relayMode = relayconstant.RelayModeVideoSubmit
-			req, err := getModelFromRequest(c)
-			if err != nil {
-				return nil, false, err
-			}
-			if req != nil {
-				modelRequest.Model = req.Model
-			}
-		} else if c.Request.Method == http.MethodGet {
-			relayMode = relayconstant.RelayModeVideoFetchByID
-			shouldSelectChannel = false
-		}
-		c.Set("relay_mode", relayMode)
-	} else if strings.Contains(c.Request.URL.Path, "/v1/video/generations") {
-		relayMode := relayconstant.RelayModeUnknown
-		if c.Request.Method == http.MethodPost {
-			req, err := getModelFromRequest(c)
-			if err != nil {
-				return nil, false, err
-			}
-			modelRequest.Model = req.Model
-			relayMode = relayconstant.RelayModeVideoSubmit
-		} else if c.Request.Method == http.MethodGet {
-			relayMode = relayconstant.RelayModeVideoFetchByID
-			shouldSelectChannel = false
-		}
-		if _, ok := c.Get("relay_mode"); !ok {
-			c.Set("relay_mode", relayMode)
-		}
-	} else if strings.HasPrefix(c.Request.URL.Path, "/v1beta/models/") || strings.HasPrefix(c.Request.URL.Path, "/v1/models/") {
+	if strings.HasPrefix(c.Request.URL.Path, "/v1beta/models/") || strings.HasPrefix(c.Request.URL.Path, "/v1/models/") {
 		// Gemini API 路径处理: /v1beta/models/gemini-2.0-flash:generateContent
 		relayMode := relayconstant.RelayModeGemini
 		modelName := extractModelNameFromGeminiPath(c.Request.URL.Path)
@@ -387,4 +307,41 @@ func extractModelNameFromGeminiPath(path string) string {
 
 	// 返回模型名部分
 	return path[startIndex : startIndex+colonIndex]
+}
+
+// guessRelayFormatFromPath infers the relay format from the request URL path.
+// This is used by the distributor to prefer channels matching the request format.
+func guessRelayFormatFromPath(path string) types.RelayFormat {
+	switch {
+	case strings.HasPrefix(path, "/v1/messages"):
+		return types.RelayFormatClaude
+	case strings.HasPrefix(path, "/v1beta/models/"):
+		return types.RelayFormatGemini
+	case strings.HasPrefix(path, "/v1/models/") && strings.Contains(path, ":"):
+		// POST /v1/models/{model}:{action} is Gemini format relay
+		return types.RelayFormatGemini
+	case strings.HasPrefix(path, "/v1/engines/"):
+		// POST /v1/engines/{model}/embeddings is Gemini format relay
+		return types.RelayFormatGemini
+	case strings.HasPrefix(path, "/v1/realtime"):
+		return types.RelayFormatOpenAIRealtime
+	case strings.HasPrefix(path, "/v1/responses/compact"):
+		return types.RelayFormatOpenAIResponsesCompaction
+	case strings.HasPrefix(path, "/v1/responses"):
+		return types.RelayFormatOpenAIResponses
+	case strings.HasPrefix(path, "/v1/images/"):
+		return types.RelayFormatOpenAIImage
+	case strings.HasPrefix(path, "/v1/embeddings"):
+		return types.RelayFormatEmbedding
+	case strings.HasPrefix(path, "/v1/audio/"):
+		return types.RelayFormatOpenAIAudio
+	case strings.HasPrefix(path, "/v1/rerank"):
+		return types.RelayFormatRerank
+	case strings.HasPrefix(path, "/v1/chat/completions"),
+		strings.HasPrefix(path, "/v1/completions"),
+		strings.HasPrefix(path, "/v1/moderations"):
+		return types.RelayFormatOpenAI
+	default:
+		return ""
+	}
 }

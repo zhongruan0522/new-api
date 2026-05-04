@@ -36,6 +36,11 @@ token.expired: "This token has expired"
 token.exhausted: "This token quota is exhausted TokenStatusExhausted[sk-{{.Prefix}}***{{.Suffix}}]"
 token.status_unavailable: "This token status is unavailable"
 token.db_error: "Invalid token, database query error, please contact administrator"
+token.window_exhausted: "Token window quota is exhausted"
+token.cycle_exhausted: "Token cycle quota is exhausted"
+token.invalid_quota_type: "Invalid quota type"
+token.invalid_window_params: "Invalid window parameters"
+token.invalid_cycle_params: "Invalid cycle parameters"
 
 # Redemption messages
 redemption.name_length: "Redemption code name length must be between 1-20"

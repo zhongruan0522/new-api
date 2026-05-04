@@ -1,11 +1,11 @@
 package controller
 
 import (
+	"github.com/gin-gonic/gin"
 	"github.com/zhongruan0522/new-api/common"
 	"github.com/zhongruan0522/new-api/model"
 	"github.com/zhongruan0522/new-api/setting/operation_setting"
 	"github.com/zhongruan0522/new-api/types"
-	"github.com/gin-gonic/gin"
 )
 
 func GetSubscription(c *gin.Context) {
@@ -15,11 +15,13 @@ func GetSubscription(c *gin.Context) {
 	var token *model.Token
 	var expiredTime int64
 	if common.DisplayTokenStatEnabled {
-		tokenId := c.GetInt("token_id")
-		token, err = model.GetTokenById(tokenId)
-		expiredTime = token.ExpiredTime
-		remainQuota = token.RemainQuota
-		usedQuota = token.UsedQuota
+		token, err = getTokenForFeedback(c)
+		if err == nil {
+			snapshot := token.GetQuotaSnapshot()
+			expiredTime = token.ExpiredTime
+			remainQuota = snapshot.TotalAvailable
+			usedQuota = snapshot.TotalUsed
+		}
 	} else {
 		userId := c.GetInt("id")
 		remainQuota, err = model.GetUserQuota(userId, false)
@@ -73,9 +75,11 @@ func GetUsage(c *gin.Context) {
 	var err error
 	var token *model.Token
 	if common.DisplayTokenStatEnabled {
-		tokenId := c.GetInt("token_id")
-		token, err = model.GetTokenById(tokenId)
-		quota = token.UsedQuota
+		token, err = getTokenForFeedback(c)
+		if err == nil {
+			snapshot := token.GetQuotaSnapshot()
+			quota = snapshot.TotalUsed
+		}
 	} else {
 		userId := c.GetInt("id")
 		quota, err = model.GetUserUsedQuota(userId)

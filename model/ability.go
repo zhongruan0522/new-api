@@ -103,7 +103,7 @@ func getChannelQuery(group string, model string, retry int) (*gorm.DB, error) {
 	return channelQuery, nil
 }
 
-func GetChannel(group string, model string, retry int) (*Channel, error) {
+func GetChannel(group string, model string, retry int, preferredAPIType int) (*Channel, error) {
 	var abilities []Ability
 
 	var err error = nil
@@ -121,6 +121,11 @@ func GetChannel(group string, model string, retry int) (*Channel, error) {
 	}
 	channel := Channel{}
 	if len(abilities) > 0 {
+		// If a preferred API type is specified, try to pick from matching channels first.
+		// Fall back to all channels if none match (format conversion).
+		if preferredAPIType >= 0 {
+			abilities = preferAbilitiesByAPIType(abilities, preferredAPIType)
+		}
 		// Randomly choose one
 		weightSum := uint(0)
 		for _, ability_ := range abilities {
@@ -141,6 +146,42 @@ func GetChannel(group string, model string, retry int) (*Channel, error) {
 	}
 	err = DB.First(&channel, "id = ?", channel.Id).Error
 	return &channel, err
+}
+
+// preferAbilitiesByAPIType filters abilities to only include those whose channel type
+// maps to the preferred API type. Falls back to the original list if none match.
+func preferAbilitiesByAPIType(abilities []Ability, preferredAPIType int) []Ability {
+	// Collect channel IDs to look up their types
+	channelIDs := make([]int, 0, len(abilities))
+	for _, a := range abilities {
+		channelIDs = append(channelIDs, a.ChannelId)
+	}
+
+	var channels []Channel
+	if err := DB.Select("id, type").Where("id IN ?", channelIDs).Find(&channels).Error; err != nil {
+		return abilities
+	}
+
+	channelTypeMap := make(map[int]int, len(channels))
+	for _, ch := range channels {
+		channelTypeMap[ch.Id] = ch.Type
+	}
+
+	matched := make([]Ability, 0, len(abilities))
+	for _, a := range abilities {
+		chType, ok := channelTypeMap[a.ChannelId]
+		if !ok {
+			continue
+		}
+		apiType, _ := common.ChannelType2APIType(chType)
+		if apiType == preferredAPIType {
+			matched = append(matched, a)
+		}
+	}
+	if len(matched) > 0 {
+		return matched
+	}
+	return abilities
 }
 
 func (channel *Channel) AddAbilities(tx *gorm.DB) error {

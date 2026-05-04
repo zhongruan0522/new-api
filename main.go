@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/constant"
 	"github.com/zhongruan0522/new-api/controller"
 	"github.com/zhongruan0522/new-api/i18n"
 	"github.com/zhongruan0522/new-api/logger"
@@ -22,7 +21,6 @@ import (
 	"github.com/zhongruan0522/new-api/service"
 	_ "github.com/zhongruan0522/new-api/setting/performance_setting"
 	"github.com/zhongruan0522/new-api/setting/ratio_setting"
-
 	"github.com/bytedance/gopkg/util/gopool"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
@@ -104,14 +102,6 @@ func main() {
 
 	go controller.AutomaticallyTestChannels()
 
-	if common.IsMasterNode && constant.UpdateTask {
-		gopool.Go(func() {
-			controller.UpdateMidjourneyTaskBulk()
-		})
-		gopool.Go(func() {
-			controller.UpdateTaskBulk()
-		})
-	}
 	if os.Getenv("BATCH_UPDATE_ENABLED") == "true" {
 		common.BatchUpdateEnabled = true
 		common.SysLog("batch update enabled with interval " + strconv.Itoa(common.BatchUpdateInterval) + "s")

@@ -24,11 +24,8 @@ import { useTranslation } from 'react-i18next';
 import {
   Settings,
   Calculator,
-  Gauge,
-  Shapes,
   Cog,
   LayoutDashboard,
-  Palette,
   CreditCard,
   Activity,
 } from 'lucide-react';
@@ -36,14 +33,11 @@ import {
 import SystemSetting from '../../components/settings/SystemSetting';
 import { isRoot } from '../../helpers';
 import OperationSetting from '../../components/settings/OperationSetting';
-import RateLimitSetting from '../../components/settings/RateLimitSetting';
-import ModelSetting from '../../components/settings/ModelSetting';
+import RuntimeSetting from '../../components/settings/RuntimeSetting';
 import DashboardSetting from '../../components/settings/DashboardSetting';
 import RatioSetting from '../../components/settings/RatioSetting';
-import DrawingSetting from '../../components/settings/DrawingSetting';
 import PaymentSetting from '../../components/settings/PaymentSetting';
-
-import PerformanceSetting from '../../components/settings/PerformanceSetting';
+import SectionPageLayout from '../../components/layout/SectionPageLayout';
 
 const Setting = () => {
   const { t } = useTranslation();
@@ -76,16 +70,6 @@ const Setting = () => {
     panes.push({
       tab: (
         <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-          <Palette size={18} />
-          {t('绘图设置')}
-        </span>
-      ),
-      content: <DrawingSetting />,
-      itemKey: 'drawing',
-    });
-    panes.push({
-      tab: (
-        <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
           <CreditCard size={18} />
           {t('支付设置')}
         </span>
@@ -106,32 +90,12 @@ const Setting = () => {
     panes.push({
       tab: (
         <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-          <Gauge size={18} />
-          {t('速率限制设置')}
-        </span>
-      ),
-      content: <RateLimitSetting />,
-      itemKey: 'ratelimit',
-    });
-    panes.push({
-      tab: (
-        <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-          <Shapes size={18} />
-          {t('模型相关设置')}
-        </span>
-      ),
-      content: <ModelSetting />,
-      itemKey: 'models',
-    });
-    panes.push({
-      tab: (
-        <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
           <Activity size={18} />
-          {t('性能设置')}
+          {t('运行设置')}
         </span>
       ),
-      content: <PerformanceSetting />,
-      itemKey: 'performance',
+      content: <RuntimeSetting />,
+      itemKey: 'runtime',
     });
     panes.push({
       tab: (
@@ -159,23 +123,31 @@ const Setting = () => {
     }
   }, [location.search]);
   return (
-    <div className='mt-[60px] px-2'>
-      <Layout>
-        <Layout.Content>
-          <Tabs
-            type='card'
-            collapsible
-            activeKey={tabActiveKey}
-            onChange={(key) => onChangeTab(key)}
-          >
-            {panes.map((pane) => (
-              <TabPane itemKey={pane.itemKey} tab={pane.tab} key={pane.itemKey}>
-                {tabActiveKey === pane.itemKey && pane.content}
-              </TabPane>
-            ))}
-          </Tabs>
-        </Layout.Content>
-      </Layout>
+    <div className='mt-[60px]'>
+      <SectionPageLayout>
+        <SectionPageLayout.Title>{t('系统设置')}</SectionPageLayout.Title>
+        <SectionPageLayout.Description>
+          {t('管理系统配置，包括运营、支付、定价和运行参数')}
+        </SectionPageLayout.Description>
+        <SectionPageLayout.Content>
+          <Layout>
+            <Layout.Content>
+              <Tabs
+                type='card'
+                collapsible
+                activeKey={tabActiveKey}
+                onChange={(key) => onChangeTab(key)}
+              >
+                {panes.map((pane) => (
+                  <TabPane itemKey={pane.itemKey} tab={pane.tab} key={pane.itemKey}>
+                    {tabActiveKey === pane.itemKey && pane.content}
+                  </TabPane>
+                ))}
+              </Tabs>
+            </Layout.Content>
+          </Layout>
+        </SectionPageLayout.Content>
+      </SectionPageLayout>
     </div>
   );
 };

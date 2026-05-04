@@ -94,3 +94,39 @@ func queryStoredMedia(ctx context.Context, userId int, startTimestamp, endTimest
 	return items, total, nil
 }
 
+// MediaConvertStats 图片/视频转URL的统计结果
+type MediaConvertStats struct {
+	ImageCount int64 `json:"image_count"`
+	VideoCount int64 `json:"video_count"`
+}
+
+// GetMediaConvertStatsByUserId 按用户和时间范围统计转URL数量
+func GetMediaConvertStatsByUserId(userId int, startTime, endTime int64) (MediaConvertStats, error) {
+	var stats MediaConvertStats
+	err := DB.Model(&StoredImage{}).
+		Where("user_id = ? AND created_at >= ? AND created_at <= ?", userId, startTime, endTime).
+		Count(&stats.ImageCount).Error
+	if err != nil {
+		return stats, err
+	}
+	err = DB.Model(&StoredVideo{}).
+		Where("user_id = ? AND created_at >= ? AND created_at <= ?", userId, startTime, endTime).
+		Count(&stats.VideoCount).Error
+	return stats, err
+}
+
+// GetAllMediaConvertStats 按时间范围统计所有用户的转URL数量
+func GetAllMediaConvertStats(startTime, endTime int64) (MediaConvertStats, error) {
+	var stats MediaConvertStats
+	err := DB.Model(&StoredImage{}).
+		Where("created_at >= ? AND created_at <= ?", startTime, endTime).
+		Count(&stats.ImageCount).Error
+	if err != nil {
+		return stats, err
+	}
+	err = DB.Model(&StoredVideo{}).
+		Where("created_at >= ? AND created_at <= ?", startTime, endTime).
+		Count(&stats.VideoCount).Error
+	return stats, err
+}
+

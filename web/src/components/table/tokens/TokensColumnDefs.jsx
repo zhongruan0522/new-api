@@ -251,10 +251,16 @@ const renderAllowIps = (text, t) => {
 // Render separate quota usage column
 const renderQuotaUsage = (text, record, t) => {
   const { Paragraph } = Typography;
-  const used = parseInt(record.used_quota) || 0;
-  const remain = parseInt(record.remain_quota) || 0;
-  const total = used + remain;
-  if (record.unlimited_quota) {
+
+  // quota_type: 0=无限额度, 1=永久限额, 2=时段限额, 3=时段+周期限额
+  // 兼容旧数据：quota_type=0 且 unlimited_quota=false 视为永久限额
+  const quotaType = record.quota_type != null
+    ? (record.quota_type === 0 && !record.unlimited_quota ? 1 : record.quota_type)
+    : (record.unlimited_quota ? 0 : 1);
+
+  if (quotaType === 0) {
+    // 无限额度：显示已用额度
+    const used = parseInt(record.used_quota) || 0;
     const popoverContent = (
       <div className='text-xs p-2'>
         <Paragraph copyable={{ content: renderQuota(used) }}>
@@ -270,7 +276,61 @@ const renderQuotaUsage = (text, record, t) => {
       </Popover>
     );
   }
+
+  let used, remain, total, extraLines;
+
+  if (quotaType === 2 || quotaType === 3) {
+    // 时段额度：如果窗口已过期但尚未触发后端重置，前端归零已用额度
+    const nowSec = Math.floor(Date.now() / 1000);
+    const windowTotal = parseInt(record.window_quota) || 0;
+    const windowUsedRaw = parseInt(record.window_used_quota) || 0;
+    const windowStart = parseInt(record.window_start_time) || 0;
+    const windowExpired = windowStart > 0 && nowSec >= windowStart + (parseInt(record.window_hours) || 1) * 3600;
+    const windowUsed = windowExpired ? 0 : windowUsedRaw;
+    const windowRemain = Math.max(windowTotal - windowUsed, 0);
+
+    if (quotaType === 2) {
+      total = windowTotal;
+      used = windowUsed;
+      remain = windowRemain;
+      extraLines = [
+        { label: t('时段额度'), value: renderQuota(total) },
+      ];
+    } else {
+      // 周期额度：同样处理过期归零
+      const cycleTotal = parseInt(record.cycle_quota) || 0;
+      const cycleUsedRaw = parseInt(record.cycle_used_quota) || 0;
+      const cycleStart = parseInt(record.cycle_start_time) || 0;
+      const cycleExpired = cycleStart > 0 && nowSec >= cycleStart + (parseInt(record.cycle_days) || 1) * 86400;
+      const cycleUsed = cycleExpired ? 0 : cycleUsedRaw;
+      const cycleRemain = Math.max(cycleTotal - cycleUsed, 0);
+
+      // 取绝对剩余额度较小的维度作为主显示
+      if (windowRemain <= cycleRemain) {
+        total = windowTotal;
+        used = windowUsed;
+        remain = windowRemain;
+      } else {
+        total = cycleTotal;
+        used = cycleUsed;
+        remain = cycleRemain;
+      }
+
+      extraLines = [
+        { label: t('时段额度'), value: `${renderQuota(windowRemain)} / ${renderQuota(windowTotal)}` },
+        { label: t('周期额度'), value: `${renderQuota(cycleRemain)} / ${renderQuota(cycleTotal)}` },
+      ];
+    }
+  } else {
+    // 永久限额（quota_type=1）
+    used = parseInt(record.used_quota) || 0;
+    remain = parseInt(record.remain_quota) || 0;
+    total = used + remain;
+    extraLines = [];
+  }
+
   const percent = total > 0 ? (remain / total) * 100 : 0;
+
   const popoverContent = (
     <div className='text-xs p-2'>
       <Paragraph copyable={{ content: renderQuota(used) }}>
@@ -282,8 +342,14 @@ const renderQuotaUsage = (text, record, t) => {
       <Paragraph copyable={{ content: renderQuota(total) }}>
         {t('总额度')}: {renderQuota(total)}
       </Paragraph>
+      {extraLines.map((line, idx) => (
+        <Paragraph key={idx} copyable={{ content: line.value }}>
+          {line.label}: {line.value}
+        </Paragraph>
+      ))}
     </div>
   );
+
   return (
     <Popover content={popoverContent} position='top'>
       <Tag color='white' shape='circle'>

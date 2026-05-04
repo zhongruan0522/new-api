@@ -93,10 +93,10 @@ func SyncChannelCache(frequency int) {
 	}
 }
 
-func GetRandomSatisfiedChannel(group string, model string, retry int) (*Channel, error) {
+func GetRandomSatisfiedChannel(group string, model string, retry int, preferredAPIType int) (*Channel, error) {
 	// if memory cache is disabled, get channel directly from database
 	if !common.MemoryCacheEnabled {
-		return GetChannel(group, model, retry)
+		return GetChannel(group, model, retry, preferredAPIType)
 	}
 
 	channelSyncLock.RLock()
@@ -159,6 +159,18 @@ func GetRandomSatisfiedChannel(group string, model string, retry int) (*Channel,
 		return nil, errors.New(fmt.Sprintf("no channel found, group: %s, model: %s, priority: %d", group, model, targetPriority))
 	}
 
+	// If a preferred API type is specified, try to pick from channels that match it first.
+	// If no matching channels exist at this priority, fall back to all channels (format conversion).
+	if preferredAPIType >= 0 {
+		targetChannels = preferChannelsByAPIType(targetChannels, preferredAPIType)
+	}
+
+	// Recalculate sumWeight after potential filtering by API type
+	sumWeight = 0
+	for _, channel := range targetChannels {
+		sumWeight += channel.GetWeight()
+	}
+
 	// smoothing factor and adjustment
 	smoothingFactor := 1
 	smoothingAdjustment := 0
@@ -188,6 +200,22 @@ func GetRandomSatisfiedChannel(group string, model string, retry int) (*Channel,
 	}
 	// return null if no channel is not found
 	return nil, errors.New("channel not found")
+}
+
+// preferChannelsByAPIType filters channels to only include those matching the preferred API type.
+// If no channels match, returns the original list (fall back to format conversion).
+func preferChannelsByAPIType(channels []*Channel, preferredAPIType int) []*Channel {
+	matched := make([]*Channel, 0, len(channels))
+	for _, ch := range channels {
+		chAPIType, _ := common.ChannelType2APIType(ch.Type)
+		if chAPIType == preferredAPIType {
+			matched = append(matched, ch)
+		}
+	}
+	if len(matched) > 0 {
+		return matched
+	}
+	return channels
 }
 
 func CacheGetChannel(id int) (*Channel, error) {

@@ -319,6 +319,7 @@ export const useLogsData = () => {
     setChannelAffinityUsageCacheTarget({
       rule_name: a.rule_name || a.reason || '',
       using_group: a.using_group || '',
+      model_name: a.model || '',
       key_hint: a.key_hint || '',
       key_fp: a.key_fp || '',
     });

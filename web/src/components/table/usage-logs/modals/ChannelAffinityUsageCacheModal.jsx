@@ -54,6 +54,7 @@ const ChannelAffinityUsageCacheModal = ({
     return {
       rule_name: (x.rule_name || '').trim(),
       using_group: (x.using_group || '').trim(),
+      model_name: (x.model_name || '').trim(),
       key_hint: (x.key_hint || '').trim(),
       key_fp: (x.key_fp || '').trim(),
     };
@@ -122,6 +123,7 @@ const ChannelAffinityUsageCacheModal = ({
     return [
       { key: t('规则'), value: s.rule_name || params.rule_name || '-' },
       { key: t('分组'), value: s.using_group || params.using_group || '-' },
+      { key: t('模型'), value: s.model_name || params.model_name || '-' },
       {
         key: t('Key 摘要'),
         value: params.key_hint || '-',

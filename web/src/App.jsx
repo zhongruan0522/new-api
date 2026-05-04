@@ -36,11 +36,10 @@ import Token from './pages/Token';
 import Redemption from './pages/Redemption';
 import TopUp from './pages/TopUp';
 import Log from './pages/Log';
-import Midjourney from './pages/Midjourney';
 import MultimodalFiles from './pages/MultimodalFiles';
 import Pricing from './pages/Pricing';
-import Task from './pages/Task';
 import ModelPage from './pages/Model';
+import Ticket from './pages/Ticket';
 
 import OAuth2Callback from './components/auth/OAuth2Callback';
 import PersonalSetting from './components/settings/PersonalSetting';
@@ -238,31 +237,19 @@ function App() {
           }
         />
         <Route
+          path='/console/ticket'
+          element={
+            <PrivateRoute>
+              <Ticket />
+            </PrivateRoute>
+          }
+        />
+        <Route
           path='/console'
           element={
             <PrivateRoute>
               <Suspense fallback={<Loading></Loading>} key={location.pathname}>
                 <Dashboard />
-              </Suspense>
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path='/console/midjourney'
-          element={
-            <PrivateRoute>
-              <Suspense fallback={<Loading></Loading>} key={location.pathname}>
-                <Midjourney />
-              </Suspense>
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path='/console/task'
-          element={
-            <PrivateRoute>
-              <Suspense fallback={<Loading></Loading>} key={location.pathname}>
-                <Task />
               </Suspense>
             </PrivateRoute>
           }

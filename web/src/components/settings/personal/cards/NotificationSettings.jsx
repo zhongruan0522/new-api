@@ -68,20 +68,25 @@ const NotificationSettings = ({
       detail: true,
       token: true,
       log: true,
-      midjourney: true,
-      task: true,
     },
     personal: {
       enabled: true,
       topup: true,
       personal: true,
     },
+    support: {
+      enabled: true,
+      ticket: true,
+    },
+    user_maintenance: {
+      enabled: true,
+      user: true,
+      redemption: true,
+    },
     admin: {
       enabled: true,
       channel: true,
       models: true,
-      redemption: true,
-      user: true,
       setting: true,
     },
   });
@@ -153,18 +158,16 @@ const NotificationSettings = ({
         detail: true,
         token: true,
         log: true,
-        midjourney: true,
-        task: true,
       },
       personal: { enabled: true, topup: true, personal: true },
+      support: { enabled: true, ticket: true },
+      user_maintenance: { enabled: true, user: true, redemption: true },
       admin: {
         enabled: true,
-      channel: true,
-      models: true,
-      redemption: true,
-      user: true,
-      setting: true,
-    },
+        channel: true,
+        models: true,
+        setting: true,
+      },
     };
     setSidebarModulesUser(defaultConfig);
   };
@@ -241,12 +244,14 @@ const NotificationSettings = ({
         { key: 'detail', title: t('数据看板'), description: t('系统数据统计') },
         { key: 'token', title: t('令牌管理'), description: t('API令牌管理') },
         { key: 'log', title: t('使用日志'), description: t('API使用记录') },
-        {
-          key: 'midjourney',
-          title: t('绘图日志'),
-          description: t('绘图任务记录'),
-        },
-        { key: 'task', title: t('任务日志'), description: t('系统任务记录') },
+      ],
+    },
+    {
+      key: 'support',
+      title: t('客户支持区域'),
+      description: t('客户服务功能'),
+      modules: [
+        { key: 'ticket', title: t('工单列表'), description: t('客户工单管理') },
       ],
     },
     {
@@ -262,6 +267,20 @@ const NotificationSettings = ({
         },
       ],
     },
+    // 用户维护区域：根据后端权限控制显示
+    {
+      key: 'user_maintenance',
+      title: t('用户维护区域'),
+      description: t('用户与兑换码管理'),
+      modules: [
+        { key: 'user', title: t('用户管理'), description: t('用户账户管理') },
+        {
+          key: 'redemption',
+          title: t('兑换码管理'),
+          description: t('兑换码生成管理'),
+        },
+      ],
+    },
     // 管理员区域：根据后端权限控制显示
     {
       key: 'admin',
@@ -270,12 +289,6 @@ const NotificationSettings = ({
       modules: [
         { key: 'channel', title: t('渠道管理'), description: t('API渠道配置') },
         { key: 'models', title: t('模型管理'), description: t('AI模型配置') },
-        {
-          key: 'redemption',
-          title: t('兑换码管理'),
-          description: t('兑换码生成管理'),
-        },
-        { key: 'user', title: t('用户管理'), description: t('用户账户管理') },
         {
           key: 'setting',
           title: t('系统设置'),

@@ -28,23 +28,42 @@ func getTokenResetLock(id int) *sync.Mutex {
 }
 
 type Token struct {
-	Id                 int            `json:"id"`
-	UserId             int            `json:"user_id" gorm:"index"`
-	Key                string         `json:"key" gorm:"type:char(48);uniqueIndex"`
-	Status             int            `json:"status" gorm:"default:1"`
-	Name               string         `json:"name" gorm:"index" `
-	CreatedTime        int64          `json:"created_time" gorm:"bigint"`
-	AccessedTime       int64          `json:"accessed_time" gorm:"bigint"`
-	ExpiredTime        int64          `json:"expired_time" gorm:"bigint;default:-1"` // -1 means never expired
-	RemainQuota        int            `json:"remain_quota" gorm:"default:0"`
-	UnlimitedQuota     bool           `json:"unlimited_quota"`
-	ModelLimitsEnabled bool           `json:"model_limits_enabled"`
-	ModelLimits        string         `json:"model_limits" gorm:"type:varchar(1024);default:''"`
-	AllowIps           *string        `json:"allow_ips" gorm:"default:''"`
-	UsedQuota          int            `json:"used_quota" gorm:"default:0"` // used quota
-	Group              string         `json:"group" gorm:"default:''"`
-	CrossGroupRetry    bool           `json:"cross_group_retry"` // 跨分组重试，仅auto分组有效
-	DeletedAt          gorm.DeletedAt `gorm:"index"`
+	Id                 int     `json:"id"`
+	UserId             int     `json:"user_id" gorm:"index"`
+	Key                string  `json:"key" gorm:"type:char(48);uniqueIndex"`
+	Status             int     `json:"status" gorm:"default:1"`
+	Name               string  `json:"name" gorm:"index" `
+	CreatedTime        int64   `json:"created_time" gorm:"bigint"`
+	AccessedTime       int64   `json:"accessed_time" gorm:"bigint"`
+	ExpiredTime        int64   `json:"expired_time" gorm:"bigint;default:-1"` // -1 means never expired
+	RemainQuota        int     `json:"remain_quota" gorm:"default:0"`
+	UnlimitedQuota     bool    `json:"unlimited_quota"`
+	ModelLimitsEnabled bool    `json:"model_limits_enabled"`
+	ModelLimits        string  `json:"model_limits" gorm:"type:varchar(1024);default:''"`
+	AllowIps           *string `json:"allow_ips" gorm:"default:''"`
+	UsedQuota          int     `json:"used_quota" gorm:"default:0"` // used quota
+	Group              string  `json:"group" gorm:"default:''"`
+	CrossGroupRetry    bool    `json:"cross_group_retry"` // 跨分组重试，仅auto分组有效
+
+	// 限额类型：0=无限额度, 1=永久限额, 2=时段限额, 3=时段+周期限额
+	QuotaType int `json:"quota_type" gorm:"default:0"`
+
+	// 时段限额相关字段（quota_type=2,3 时生效）
+	WindowHours     int `json:"window_hours" gorm:"default:0"`      // 窗口时长（小时）
+	WindowQuota     int `json:"window_quota" gorm:"default:0"`      // 每个窗口的额度
+	WindowStartHour int `json:"window_start_hour" gorm:"default:0"` // 窗口起始小时（0-23）
+
+	// 周期限额相关字段（quota_type=3 时生效）
+	CycleDays  int `json:"cycle_days" gorm:"default:0"`  // 周期天数
+	CycleQuota int `json:"cycle_quota" gorm:"default:0"` // 周期总额度
+
+	// 运行时状态字段（自动计算，不由用户设置）
+	WindowUsedQuota int   `json:"window_used_quota" gorm:"default:0"` // 当前窗口已用额度
+	WindowStartTime int64 `json:"window_start_time" gorm:"default:0"` // 当前窗口开始时间（unix timestamp）
+	CycleUsedQuota  int   `json:"cycle_used_quota" gorm:"default:0"`  // 当前周期已用额度
+	CycleStartTime  int64 `json:"cycle_start_time" gorm:"default:0"`  // 当前周期开始时间（unix timestamp）
+
+	DeletedAt gorm.DeletedAt `gorm:"index"`
 }
 
 func (token *Token) Clean() {
@@ -205,18 +224,104 @@ func ValidateUserToken(key string) (token *Token, err error) {
 			}
 			return token, errors.New("该令牌已过期")
 		}
-		if !token.UnlimitedQuota && token.RemainQuota <= 0 {
-			if !common.RedisEnabled {
-				// in this case, we can make sure the token is exhausted
-				token.Status = common.TokenStatusExhausted
-				err := token.SelectUpdate()
-				if err != nil {
-					common.SysLog("failed to update token status" + err.Error())
+
+		// 兼容旧数据：如果没有 QuotaType，从 UnlimitedQuota 派生
+		quotaType := token.QuotaType
+		if quotaType == 0 && !token.UnlimitedQuota {
+			quotaType = 1
+		}
+
+		// 时段/周期额度需要精确的实时状态，强制从 DB 重载以避免 Redis 缓存延迟
+		if quotaType == 2 || quotaType == 3 {
+			if fresh, freshErr := GetTokenByKey(key, true); freshErr == nil && fresh != nil {
+				token = fresh
+				// 重载后必须重新计算 quotaType，否则配额模式切换时仍会按旧分支执行
+				quotaType = token.QuotaType
+				if quotaType == 0 && !token.UnlimitedQuota {
+					quotaType = 1
 				}
 			}
-			keyPrefix := key[:3]
-			keySuffix := key[len(key)-3:]
-			return token, errors.New(fmt.Sprintf("[sk-%s***%s] 该令牌额度已用尽 !token.UnlimitedQuota && token.RemainQuota = %d", keyPrefix, keySuffix, token.RemainQuota))
+		}
+
+		switch quotaType {
+		case 0: // 无限额度
+			// 不做额度检查
+		case 1: // 永久限额
+			if token.RemainQuota <= 0 {
+				if !common.RedisEnabled {
+					token.Status = common.TokenStatusExhausted
+					err := token.SelectUpdate()
+					if err != nil {
+						common.SysLog("failed to update token status" + err.Error())
+					}
+				}
+				keyPrefix := key[:3]
+				keySuffix := key[len(key)-3:]
+				return token, errors.New(fmt.Sprintf("[sk-%s***%s] 该令牌额度已用尽 !token.UnlimitedQuota && token.RemainQuota = %d", keyPrefix, keySuffix, token.RemainQuota))
+			}
+		case 2: // 时段限额
+			if token.ShouldResetWindow() {
+				windowStart, _ := token.GetCurrentWindow()
+				if err := ResetWindowQuota(token.Id, token.WindowStartTime, windowStart); err != nil {
+					// CAS 竞争失败或 DB 错误，尝试重新加载最新 token
+					if fresh, loadErr := GetTokenByKey(key, true); loadErr == nil && fresh != nil {
+						token = fresh
+					} else {
+						common.SysLog("failed to reset window quota: " + err.Error())
+						return token, errors.New("令牌窗口状态更新失败，请重试")
+					}
+				} else {
+					token.WindowUsedQuota = 0
+					token.WindowStartTime = windowStart
+					_ = cacheDeleteToken(token.Key)
+				}
+			}
+			if token.WindowUsedQuota >= token.WindowQuota {
+				keyPrefix := key[:3]
+				keySuffix := key[len(key)-3:]
+				return token, errors.New(fmt.Sprintf("[sk-%s***%s] 该令牌时段额度已用尽 (窗口已用: %d, 窗口总额: %d)", keyPrefix, keySuffix, token.WindowUsedQuota, token.WindowQuota))
+			}
+		case 3: // 时段+周期限额
+			if token.ShouldResetWindow() {
+				windowStart, _ := token.GetCurrentWindow()
+				if err := ResetWindowQuota(token.Id, token.WindowStartTime, windowStart); err != nil {
+					if fresh, loadErr := GetTokenByKey(key, true); loadErr == nil && fresh != nil {
+						token = fresh
+					} else {
+						common.SysLog("failed to reset window quota: " + err.Error())
+						return token, errors.New("令牌窗口状态更新失败，请重试")
+					}
+				} else {
+					token.WindowUsedQuota = 0
+					token.WindowStartTime = windowStart
+					_ = cacheDeleteToken(token.Key)
+				}
+			}
+			if token.ShouldResetCycle() {
+				cycleStart, _ := token.GetCurrentCycle()
+				if err := ResetCycleQuota(token.Id, token.CycleStartTime, cycleStart); err != nil {
+					if fresh, loadErr := GetTokenByKey(key, true); loadErr == nil && fresh != nil {
+						token = fresh
+					} else {
+						common.SysLog("failed to reset cycle quota: " + err.Error())
+						return token, errors.New("令牌周期状态更新失败，请重试")
+					}
+				} else {
+					token.CycleUsedQuota = 0
+					token.CycleStartTime = cycleStart
+					_ = cacheDeleteToken(token.Key)
+				}
+			}
+			if token.WindowUsedQuota >= token.WindowQuota {
+				keyPrefix := key[:3]
+				keySuffix := key[len(key)-3:]
+				return token, errors.New(fmt.Sprintf("[sk-%s***%s] 该令牌时段额度已用尽 (窗口已用: %d, 窗口总额: %d)", keyPrefix, keySuffix, token.WindowUsedQuota, token.WindowQuota))
+			}
+			if token.CycleUsedQuota >= token.CycleQuota {
+				keyPrefix := key[:3]
+				keySuffix := key[len(key)-3:]
+				return token, errors.New(fmt.Sprintf("[sk-%s***%s] 该令牌周期额度已用尽 (周期已用: %d, 周期总额: %d)", keyPrefix, keySuffix, token.CycleUsedQuota, token.CycleQuota))
+			}
 		}
 		return token, nil
 	}
@@ -300,16 +405,18 @@ func (token *Token) Insert() error {
 func (token *Token) Update() (err error) {
 	defer func() {
 		if shouldUpdateRedis(true, err) {
-			gopool.Go(func() {
-				err := cacheSetToken(*token)
-				if err != nil {
-					common.SysLog("failed to update token cache: " + err.Error())
-				}
-			})
+			// 同步刷新缓存，确保后续请求立即读到最新的配额模式，
+			// 避免异步刷新窗口期内从无限/永久切到时段/周期后仍按旧模式校验。
+			if cacheErr := cacheSetToken(*token); cacheErr != nil {
+				common.SysLog("failed to update token cache: " + cacheErr.Error())
+			}
 		}
 	}()
 	err = DB.Model(token).Select("name", "status", "expired_time", "remain_quota", "unlimited_quota",
-		"model_limits_enabled", "model_limits", "allow_ips", "group", "cross_group_retry").Updates(token).Error
+		"model_limits_enabled", "model_limits", "allow_ips", "group", "cross_group_retry",
+		"quota_type", "window_hours", "window_quota", "window_start_hour",
+		"cycle_days", "cycle_quota",
+		"window_used_quota", "window_start_time", "cycle_used_quota", "cycle_start_time").Updates(token).Error
 	return err
 }
 
@@ -392,9 +499,11 @@ func IncreaseTokenQuota(id int, key string, quota int) (err error) {
 	}
 	if common.RedisEnabled {
 		gopool.Go(func() {
-			err := cacheIncrTokenQuota(key, int64(quota))
-			if err != nil {
-				common.SysLog("failed to increase token quota: " + err.Error())
+			if cacheErr := cacheIncrTokenQuota(key, int64(quota)); cacheErr != nil {
+				common.SysLog("failed to increase token quota: " + cacheErr.Error())
+			}
+			if cacheErr := cacheIncrTokenUsedQuota(key, -int64(quota)); cacheErr != nil {
+				common.SysLog("failed to decrease token used quota: " + cacheErr.Error())
 			}
 		})
 	}
@@ -422,9 +531,11 @@ func DecreaseTokenQuota(id int, key string, quota int) (err error) {
 	}
 	if common.RedisEnabled {
 		gopool.Go(func() {
-			err := cacheDecrTokenQuota(key, int64(quota))
-			if err != nil {
-				common.SysLog("failed to decrease token quota: " + err.Error())
+			if cacheErr := cacheDecrTokenQuota(key, int64(quota)); cacheErr != nil {
+				common.SysLog("failed to decrease token quota: " + cacheErr.Error())
+			}
+			if cacheErr := cacheIncrTokenUsedQuota(key, int64(quota)); cacheErr != nil {
+				common.SysLog("failed to increase token used quota: " + cacheErr.Error())
 			}
 		})
 	}
@@ -444,6 +555,169 @@ func decreaseTokenQuota(id int, quota int) (err error) {
 		},
 	).Error
 	return err
+}
+
+// IncreaseWindowQuota 增加窗口已用额度（退还额度时使用）
+func IncreaseWindowQuota(id int, key string, quota int) (err error) {
+	if quota < 0 {
+		return errors.New("quota 不能为负数！")
+	}
+	err = increaseWindowQuota(id, -quota)
+	if err != nil {
+		return err
+	}
+	if common.RedisEnabled {
+		gopool.Go(func() {
+			err := cacheIncrWindowUsedQuota(key, -int64(quota))
+			if err != nil {
+				common.SysLog("failed to increase window quota: " + err.Error())
+			}
+		})
+	}
+	return nil
+}
+
+// DecreaseWindowQuota 减少窗口已用额度（扣费时使用）
+func DecreaseWindowQuota(id int, key string, quota int) (err error) {
+	if quota < 0 {
+		return errors.New("quota 不能为负数！")
+	}
+	err = decreaseWindowQuota(id, quota)
+	if err != nil {
+		return err
+	}
+	if common.RedisEnabled {
+		gopool.Go(func() {
+			if cacheErr := cacheIncrWindowUsedQuota(key, int64(quota)); cacheErr != nil {
+				common.SysLog("failed to increase window used quota: " + cacheErr.Error())
+			}
+		})
+	}
+	return nil
+}
+
+func decreaseWindowQuota(id int, quota int) (err error) {
+	result := DB.Model(&Token{}).Where("id = ? AND window_used_quota + ? <= window_quota", id, quota).Updates(
+		map[string]interface{}{
+			"window_used_quota": gorm.Expr("window_used_quota + ?", quota),
+			"accessed_time":     common.GetTimestamp(),
+		},
+	)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return errors.New("token window quota is not enough")
+	}
+	return nil
+}
+
+func increaseWindowQuota(id int, quota int) (err error) {
+	updates := map[string]interface{}{
+		"window_used_quota": gorm.Expr("window_used_quota + ?", quota),
+		"accessed_time":     common.GetTimestamp(),
+	}
+	err = DB.Model(&Token{}).Where("id = ?", id).Updates(updates).Error
+	return err
+}
+
+// IncreaseCycleQuota 增加周期已用额度（退还额度时使用，传入负值）
+func IncreaseCycleQuota(id int, key string, quota int) (err error) {
+	if quota < 0 {
+		return errors.New("quota 不能为负数！")
+	}
+	err = increaseCycleQuota(id, -quota)
+	if err != nil {
+		return err
+	}
+	if common.RedisEnabled {
+		gopool.Go(func() {
+			err := cacheIncrCycleUsedQuota(key, -int64(quota))
+			if err != nil {
+				common.SysLog("failed to increase cycle quota: " + err.Error())
+			}
+		})
+	}
+	return nil
+}
+
+// DecreaseCycleQuota 减少周期已用额度（扣费时使用）
+func DecreaseCycleQuota(id int, key string, quota int) (err error) {
+	if quota < 0 {
+		return errors.New("quota 不能为负数！")
+	}
+	err = decreaseCycleQuota(id, quota)
+	if err != nil {
+		return err
+	}
+	if common.RedisEnabled {
+		gopool.Go(func() {
+			if cacheErr := cacheIncrCycleUsedQuota(key, int64(quota)); cacheErr != nil {
+				common.SysLog("failed to increase cycle used quota: " + cacheErr.Error())
+			}
+		})
+	}
+	return nil
+}
+
+func decreaseCycleQuota(id int, quota int) (err error) {
+	result := DB.Model(&Token{}).Where("id = ? AND cycle_used_quota + ? <= cycle_quota", id, quota).Updates(
+		map[string]interface{}{
+			"cycle_used_quota": gorm.Expr("cycle_used_quota + ?", quota),
+			"accessed_time":    common.GetTimestamp(),
+		},
+	)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return errors.New("token cycle quota is not enough")
+	}
+	return nil
+}
+
+func increaseCycleQuota(id int, quota int) (err error) {
+	err = DB.Model(&Token{}).Where("id = ?", id).Updates(
+		map[string]interface{}{
+			"cycle_used_quota": gorm.Expr("cycle_used_quota + ?", quota),
+			"accessed_time":    common.GetTimestamp(),
+		},
+	).Error
+	return err
+}
+
+// ResetWindowQuota 重置窗口额度到新窗口，仅在旧的 window_start_time 匹配时才执行，防止并发边界覆盖其他请求已扣减的额度。
+func ResetWindowQuota(id int, oldStart int64, newStart int64) (err error) {
+	result := DB.Model(&Token{}).Where("id = ? AND window_start_time = ?", id, oldStart).Updates(
+		map[string]interface{}{
+			"window_used_quota": 0,
+			"window_start_time": newStart,
+		},
+	)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return errors.New("window already reset by another request")
+	}
+	return nil
+}
+
+// ResetCycleQuota 重置周期额度到新周期，仅在旧的 cycle_start_time 匹配时才执行，防止并发边界覆盖其他请求已扣减的额度。
+func ResetCycleQuota(id int, oldStart int64, newStart int64) (err error) {
+	result := DB.Model(&Token{}).Where("id = ? AND cycle_start_time = ?", id, oldStart).Updates(
+		map[string]interface{}{
+			"cycle_used_quota": 0,
+			"cycle_start_time": newStart,
+		},
+	)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return errors.New("cycle already reset by another request")
+	}
+	return nil
 }
 
 // CountUserTokens returns total number of tokens for the given user, used for pagination

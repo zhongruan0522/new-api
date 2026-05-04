@@ -250,6 +250,8 @@ func InitLogDB() (err error) {
 func migrateDB() error {
 	err := DB.AutoMigrate(
 		&Channel{},
+		&Ticket{},
+		&TicketEntry{},
 		&Token{},
 		&User{},
 		&PasskeyCredential{},
@@ -259,10 +261,8 @@ func migrateDB() error {
 		&Log{},
 		&StoredImage{},
 		&StoredVideo{},
-		&Midjourney{},
 		&TopUp{},
 		&QuotaData{},
-		&Task{},
 		&Model{},
 		&Vendor{},
 		&PrefillGroup{},
@@ -295,6 +295,8 @@ func migrateDBFast() error {
 		name  string
 	}{
 		{&Channel{}, "Channel"},
+		{&Ticket{}, "Ticket"},
+		{&TicketEntry{}, "TicketEntry"},
 		{&Token{}, "Token"},
 		{&User{}, "User"},
 		{&PasskeyCredential{}, "PasskeyCredential"},
@@ -304,10 +306,8 @@ func migrateDBFast() error {
 		{&Log{}, "Log"},
 		{&StoredImage{}, "StoredImage"},
 		{&StoredVideo{}, "StoredVideo"},
-		{&Midjourney{}, "Midjourney"},
 		{&TopUp{}, "TopUp"},
 		{&QuotaData{}, "QuotaData"},
-		{&Task{}, "Task"},
 		{&Model{}, "Model"},
 		{&Vendor{}, "Vendor"},
 		{&PrefillGroup{}, "PrefillGroup"},

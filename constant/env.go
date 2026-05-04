@@ -9,21 +9,16 @@ var ForceStreamOption bool
 var CountToken bool
 var GetMediaToken bool
 var GetMediaTokenNotStream bool
-var UpdateTask bool
 var MaxRequestBodyMB int
 var AzureDefaultAPIVersion string
 var NotifyLimitCount int
 var NotificationLimitDurationMinute int
 var GenerateDefaultToken bool
 var ErrorLogEnabled bool
-var TaskQueryLimit int
 
 // Stored media pool limits (in MB). When exceeded, the oldest stored assets are deleted automatically.
 var StoredImagePoolMB int
 var StoredVideoPoolMB int
-
-// temporary variable for sora patch, will be removed in future
-var TaskPricePatches []string
 
 // TrustedRedirectDomains is a list of trusted domains for redirect URL validation.
 // Domains support subdomain matching (e.g., "example.com" matches "sub.example.com").

@@ -76,8 +76,42 @@ const RULE_TEMPLATES = {
     skip_retry_on_failure: false,
     include_using_group: true,
     include_rule_name: true,
+    include_model_name: false,
+  },
+  codex: {
+    name: 'codex trace',
+    model_regex: ['^gpt-.*$'],
+    path_regex: ['/v1/responses'],
+    key_sources: [{ type: 'gjson', path: 'prompt_cache_key' }],
+    value_regex: '',
+    ttl_seconds: 0,
+    skip_retry_on_failure: false,
+    include_using_group: true,
+    include_rule_name: true,
+    include_model_name: false,
+  },
+  allChannel: {
+    name: 'all-models-affinity-by-token',
+    model_regex: ['^.*$'],
+    path_regex: [],
+    key_sources: [
+      { type: 'context_int', key: 'token_id' },
+      { type: 'context_int', key: 'id' },
+    ],
+    value_regex: '',
+    ttl_seconds: 86400,
+    skip_retry_on_failure: false,
+    include_using_group: true,
+    include_rule_name: true,
+    include_model_name: true,
   },
 };
+
+const RULE_TEMPLATE_OPTIONS = [
+  { value: 'claudeCode', label: 'Claude Code' },
+  { value: 'codex', label: 'Codex' },
+  { value: 'allChannel', label: '全渠道' },
+];
 
 const CONTEXT_KEY_PRESETS = [
   { key: 'id', label: 'id（用户 ID）' },
@@ -105,7 +139,8 @@ const RULES_JSON_PLACEHOLDER = `[
     "ttl_seconds": 600,
     "skip_retry_on_failure": false,
     "include_using_group": true,
-    "include_rule_name": true
+    "include_rule_name": true,
+    "include_model_name": false
   }
 ]`;
 
@@ -229,6 +264,7 @@ export default function SettingsChannelAffinity(props) {
       skip_retry_on_failure: !!r.skip_retry_on_failure,
       include_using_group: r.include_using_group ?? true,
       include_rule_name: r.include_rule_name ?? true,
+      include_model_name: r.include_model_name ?? false,
     };
   };
 
@@ -335,7 +371,9 @@ export default function SettingsChannelAffinity(props) {
     }
   };
 
-  const appendClaudeCodeTemplate = () => {
+  const appendTemplate = () => {
+    let selectedTemplate = RULE_TEMPLATE_OPTIONS[0].value;
+
     const doAppend = () => {
       const existingNames = new Set(
         (rules || [])
@@ -343,7 +381,7 @@ export default function SettingsChannelAffinity(props) {
           .filter((x) => x.length > 0),
       );
 
-      const tpl = RULE_TEMPLATES.claudeCode;
+      const tpl = RULE_TEMPLATES[selectedTemplate];
       const name = makeUniqueName(existingNames, tpl.name);
       const templates = [{ ...tpl, name }];
 
@@ -355,16 +393,19 @@ export default function SettingsChannelAffinity(props) {
       showSuccess(t('已填充模版'));
     };
 
-    if ((rules || []).length === 0) {
-      doAppend();
-      return;
-    }
-
     Modal.confirm({
-      title: t('填充 Claude Code 模版'),
+      title: t('填充模版'),
       content: (
         <div style={{ lineHeight: '1.6' }}>
-          <Text type='tertiary'>{t('将追加 1 条规则到现有规则列表。')}</Text>
+          <Text type='tertiary' style={{ display: 'block', marginBottom: 8 }}>
+            {t('选择要追加的规则模版：')}
+          </Text>
+          <Select
+            style={{ width: '100%' }}
+            optionList={RULE_TEMPLATE_OPTIONS}
+            defaultValue={selectedTemplate}
+            onChange={(v) => (selectedTemplate = v)}
+          />
         </div>
       ),
       onOk: doAppend,
@@ -452,6 +493,7 @@ export default function SettingsChannelAffinity(props) {
         const tags = [];
         if (record?.include_using_group) tags.push('分组');
         if (record?.include_rule_name) tags.push('规则');
+        if (record?.include_model_name) tags.push('模型');
         if (tags.length === 0) return '-';
         return tags.map((x) => (
           <Tag key={x} style={{ marginRight: 4 }}>
@@ -520,6 +562,7 @@ export default function SettingsChannelAffinity(props) {
       skip_retry_on_failure: false,
       include_using_group: true,
       include_rule_name: true,
+      include_model_name: false,
     };
     setEditingRule(nextRule);
     setIsEdit(false);
@@ -578,6 +621,7 @@ export default function SettingsChannelAffinity(props) {
         ttl_seconds: Number(values.ttl_seconds || 0),
         include_using_group: !!values.include_using_group,
         include_rule_name: !!values.include_rule_name,
+        ...(values.include_model_name ? { include_model_name: true } : {}),
         ...(values.skip_retry_on_failure
           ? { skip_retry_on_failure: true }
           : {}),
@@ -843,8 +887,8 @@ export default function SettingsChannelAffinity(props) {
               >
                 {t('JSON 模式')}
               </Button>
-              <Button onClick={appendClaudeCodeTemplate}>
-                {t('填充 Claude Code 模版')}
+              <Button onClick={appendTemplate}>
+                {t('填充模版')}
               </Button>
               <Button icon={<IconPlus />} onClick={openAddModal}>
                 {t('新增规则')}
@@ -1040,7 +1084,18 @@ export default function SettingsChannelAffinity(props) {
                 </Col>
               </Row>
 
-              <Row gutter={16}>
+              <Row gutter={16} style={{ marginTop: 12 }}>
+                <Col xs={24} sm={12}>
+                  <Form.Switch
+                    field='include_model_name'
+                    label={t('作用域：包含模型名称')}
+                  />
+                  <Text type='tertiary' size='small'>
+                    {t(
+                      '开启后，模型名称会参与 cache key（不同模型隔离），确保每个模型独立记录亲和渠道。',
+                    )}
+                  </Text>
+                </Col>
                 <Col xs={24} sm={12}>
                   <Form.Switch
                     field='skip_retry_on_failure'

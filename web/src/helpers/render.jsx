@@ -35,6 +35,7 @@ import {
   OpenRouter,
   SiliconCloud,
 } from '@lobehub/icons';
+import XiaomiMiMoIcon from './XiaomiMiMoIcon';
 
 import {
   LayoutDashboard,
@@ -51,6 +52,7 @@ import {
   CircleUser,
   Package,
   Server,
+  TicketCheck,
 } from 'lucide-react';
 
 // 获取侧边栏Lucide图标组件
@@ -73,12 +75,8 @@ export function getLucideIcon(key, selected = false) {
       return <Key {...commonProps} color={iconColor} />;
     case 'log':
       return <BarChart3 {...commonProps} color={iconColor} />;
-    case 'midjourney':
-      return <ImageIcon {...commonProps} color={iconColor} />;
     case 'multimodal_files':
       return <FileImage {...commonProps} color={iconColor} />;
-    case 'task':
-      return <CheckSquare {...commonProps} color={iconColor} />;
     case 'topup':
       return <CreditCard {...commonProps} color={iconColor} />;
     case 'channel':
@@ -94,6 +92,8 @@ export function getLucideIcon(key, selected = false) {
       return <Server {...commonProps} color={iconColor} />;
     case 'setting':
       return <Settings {...commonProps} color={iconColor} />;
+    case 'ticket':
+      return <TicketCheck {...commonProps} color={iconColor} />;
     default:
       return <CircleUser {...commonProps} color={iconColor} />;
   }
@@ -234,6 +234,8 @@ export function getChannelIcon(channelType) {
       return <Minimax.Color size={iconSize} />;
     case 40: // SiliconCloud
       return <SiliconCloud.Color size={iconSize} />;
+    case 6: // 小米 MiMo
+      return <XiaomiMiMoIcon size={iconSize} />;
     case 8: // 自定义渠道
     default:
       return null;

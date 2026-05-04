@@ -39,15 +39,14 @@ const routerMap = {
   user: '/console/user',
   log: '/console/log',
   multimodal_files: '/console/multimodal-files',
-  midjourney: '/console/midjourney',
   setting: '/console/setting',
   about: '/about',
   detail: '/console',
   pricing: '/pricing',
-  task: '/console/task',
   models: '/console/models',
   deployment: '/console/deployment',
   personal: '/console/personal',
+  ticket: '/console/ticket',
 };
 
 const SiderBar = ({ onNavigate = () => {} }) => {
@@ -90,22 +89,6 @@ const SiderBar = ({ onNavigate = () => {} }) => {
         itemKey: 'multimodal_files',
         to: '/multimodal-files',
       },
-      {
-        text: t('绘图日志'),
-        itemKey: 'midjourney',
-        to: '/midjourney',
-        className:
-          localStorage.getItem('enable_drawing') === 'true'
-            ? ''
-            : 'tableHiddle',
-      },
-      {
-        text: t('任务日志'),
-        itemKey: 'task',
-        to: '/task',
-        className:
-          localStorage.getItem('enable_task') === 'true' ? '' : 'tableHiddle',
-      },
     ];
 
     // 根据配置过滤项目
@@ -117,8 +100,6 @@ const SiderBar = ({ onNavigate = () => {} }) => {
     return filteredItems;
   }, [
     localStorage.getItem('enable_data_export'),
-    localStorage.getItem('enable_drawing'),
-    localStorage.getItem('enable_task'),
     t,
     isModuleVisible,
   ]);
@@ -146,6 +127,47 @@ const SiderBar = ({ onNavigate = () => {} }) => {
     return filteredItems;
   }, [t, isModuleVisible]);
 
+  const supportItems = useMemo(() => {
+    const items = [
+      {
+        text: t('工单列表'),
+        itemKey: 'ticket',
+        to: '/ticket',
+      },
+    ];
+
+    const filteredItems = items.filter((item) => {
+      const configVisible = isModuleVisible('support', item.itemKey);
+      return configVisible;
+    });
+
+    return filteredItems;
+  }, [t, isModuleVisible]);
+
+  const userMaintenanceItems = useMemo(() => {
+    const items = [
+      {
+        text: t('用户管理'),
+        itemKey: 'user',
+        to: '/user',
+        className: isAdmin() ? '' : 'tableHiddle',
+      },
+      {
+        text: t('兑换码管理'),
+        itemKey: 'redemption',
+        to: '/redemption',
+        className: isAdmin() ? '' : 'tableHiddle',
+      },
+    ];
+
+    const filteredItems = items.filter((item) => {
+      const configVisible = isModuleVisible('user_maintenance', item.itemKey);
+      return configVisible;
+    });
+
+    return filteredItems;
+  }, [isAdmin(), t, isModuleVisible]);
+
   const adminItems = useMemo(() => {
     const items = [
       {
@@ -158,18 +180,6 @@ const SiderBar = ({ onNavigate = () => {} }) => {
         text: t('模型管理'),
         itemKey: 'models',
         to: '/console/models',
-        className: isAdmin() ? '' : 'tableHiddle',
-      },
-      {
-        text: t('兑换码管理'),
-        itemKey: 'redemption',
-        to: '/redemption',
-        className: isAdmin() ? '' : 'tableHiddle',
-      },
-      {
-        text: t('用户管理'),
-        itemKey: 'user',
-        to: '/user',
         className: isAdmin() ? '' : 'tableHiddle',
       },
       {
@@ -296,6 +306,19 @@ const SiderBar = ({ onNavigate = () => {} }) => {
             </>
           )}
 
+          {/* 客户支持区域 */}
+          {hasSectionVisibleModules('support') && (
+            <>
+              <Divider className='sidebar-divider' />
+              <div>
+                {!collapsed && (
+                  <div className='sidebar-group-label'>{t('客户支持')}</div>
+                )}
+                {supportItems.map((item) => renderNavItem(item))}
+              </div>
+            </>
+          )}
+
           {/* 个人中心区域 */}
           {hasSectionVisibleModules('personal') && (
             <>
@@ -305,6 +328,19 @@ const SiderBar = ({ onNavigate = () => {} }) => {
                   <div className='sidebar-group-label'>{t('个人中心')}</div>
                 )}
                 {financeItems.map((item) => renderNavItem(item))}
+              </div>
+            </>
+          )}
+
+          {/* 用户维护区域 - 只在管理员时显示 */}
+          {isAdmin() && hasSectionVisibleModules('user_maintenance') && (
+            <>
+              <Divider className='sidebar-divider' />
+              <div>
+                {!collapsed && (
+                  <div className='sidebar-group-label'>{t('用户维护')}</div>
+                )}
+                {userMaintenanceItems.map((item) => renderNavItem(item))}
               </div>
             </>
           )}

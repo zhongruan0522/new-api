@@ -78,6 +78,21 @@ func TestShouldRetryByStatusCode_DefaultMatchesLegacyBehavior(t *testing.T) {
 	require.True(t, ShouldRetryByStatusCode(599))
 }
 
+func TestAutomaticRetryStatusCodesFromString_EmptyRestoresDefault(t *testing.T) {
+	defaultRanges := append([]StatusCodeRange(nil), AutomaticRetryStatusCodeRanges...)
+	orig := AutomaticRetryStatusCodeRanges
+	t.Cleanup(func() { AutomaticRetryStatusCodeRanges = orig })
+
+	AutomaticRetryStatusCodeRanges = []StatusCodeRange{{Start: 429, End: 429}}
+
+	err := AutomaticRetryStatusCodesFromString("")
+	require.NoError(t, err)
+	require.Equal(t, defaultRanges, AutomaticRetryStatusCodeRanges)
+	require.True(t, ShouldRetryByStatusCode(429))
+	require.True(t, ShouldRetryByStatusCode(500))
+	require.False(t, ShouldRetryByStatusCode(504))
+}
+
 func TestParseHTTPStatusCodeRanges_BusinessErrorCodes(t *testing.T) {
 	// Zhipu AI business error codes (1000-1313)
 	ranges, err := ParseHTTPStatusCodeRanges("1000-1313")

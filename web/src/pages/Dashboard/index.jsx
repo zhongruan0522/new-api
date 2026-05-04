@@ -19,11 +19,22 @@ For commercial licensing, please contact support@quantumnous.com
 
 import React from 'react';
 import Dashboard from '../../components/dashboard';
+import SectionPageLayout from '../../components/layout/SectionPageLayout';
+import { useTranslation } from 'react-i18next';
 
-const Detail = () => (
-  <div className='mt-[60px] px-2'>
-    <Dashboard />
-  </div>
-);
+const Detail = () => {
+  const { t } = useTranslation();
+
+  return (
+    <div className='mt-[60px]'>
+      <SectionPageLayout>
+        <SectionPageLayout.Title>{t('仪表盘')}</SectionPageLayout.Title>
+        <SectionPageLayout.Content>
+          <Dashboard />
+        </SectionPageLayout.Content>
+      </SectionPageLayout>
+    </div>
+  );
+};
 
 export default Detail;

@@ -77,15 +77,16 @@ func GetTokenStatus(c *gin.Context) {
 		common.ApiError(c, err)
 		return
 	}
+	snapshot := token.GetQuotaSnapshot()
 	expiredAt := token.ExpiredTime
 	if expiredAt == -1 {
 		expiredAt = 0
 	}
 	c.JSON(http.StatusOK, gin.H{
 		"object":          "credit_summary",
-		"total_granted":   token.RemainQuota,
-		"total_used":      0, // not supported currently
-		"total_available": token.RemainQuota,
+		"total_granted":   snapshot.TotalGranted,
+		"total_used":      snapshot.TotalUsed,
+		"total_available": snapshot.TotalAvailable,
 		"expires_at":      expiredAt * 1000,
 	})
 }
@@ -108,14 +109,13 @@ func GetTokenUsage(c *gin.Context) {
 		})
 		return
 	}
-	tokenKey := parts[1]
-
-	token, err := model.GetTokenByKey(strings.TrimPrefix(tokenKey, "sk-"), false)
+	token, err := getTokenForFeedback(c)
 	if err != nil {
 		common.SysError("failed to get token by key: " + err.Error())
 		common.ApiErrorI18n(c, i18n.MsgTokenGetInfoFailed)
 		return
 	}
+	snapshot := token.GetQuotaSnapshot()
 
 	expiredAt := token.ExpiredTime
 	if expiredAt == -1 {
@@ -128,9 +128,9 @@ func GetTokenUsage(c *gin.Context) {
 		"data": gin.H{
 			"object":               "token_usage",
 			"name":                 token.Name,
-			"total_granted":        token.RemainQuota + token.UsedQuota,
-			"total_used":           token.UsedQuota,
-			"total_available":      token.RemainQuota,
+			"total_granted":        snapshot.TotalGranted,
+			"total_used":           snapshot.TotalUsed,
+			"total_available":      snapshot.TotalAvailable,
 			"unlimited_quota":      token.UnlimitedQuota,
 			"model_limits":         token.GetModelLimitsMap(),
 			"model_limits_enabled": token.ModelLimitsEnabled,
@@ -150,8 +150,19 @@ func AddToken(c *gin.Context) {
 		common.ApiErrorI18n(c, i18n.MsgTokenNameTooLong)
 		return
 	}
-	// 非无限额度时，检查额度值是否超出有效范围
-	if !token.UnlimitedQuota {
+
+	// 根据 quota_type 验证额度参数
+	quotaType := token.QuotaType
+	// 兼容旧逻辑：如果 quota_type 未设置但 unlimited_quota 有值
+	if quotaType == 0 && !token.UnlimitedQuota {
+		quotaType = 1
+	}
+
+	switch quotaType {
+	case 0: // 无限额度
+		token.UnlimitedQuota = true
+	case 1: // 永久限额
+		token.UnlimitedQuota = false
 		if token.RemainQuota < 0 {
 			common.ApiErrorI18n(c, i18n.MsgTokenQuotaNegative)
 			return
@@ -161,7 +172,74 @@ func AddToken(c *gin.Context) {
 			common.ApiErrorI18n(c, i18n.MsgTokenQuotaExceedMax, map[string]any{"Max": maxQuotaValue})
 			return
 		}
+	case 2: // 时段限额
+		token.UnlimitedQuota = false
+		if token.WindowHours < 1 {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": "窗口时长必须大于等于1小时",
+			})
+			return
+		}
+		if token.WindowQuota <= 0 {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": "窗口额度必须大于0",
+			})
+			return
+		}
+		if token.WindowStartHour < 0 || token.WindowStartHour > 23 {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": "窗口起始小时必须在0-23之间",
+			})
+			return
+		}
+	case 3: // 时段+周期限额
+		token.UnlimitedQuota = false
+		if token.WindowHours < 1 {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": "窗口时长必须大于等于1小时",
+			})
+			return
+		}
+		if token.WindowQuota <= 0 {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": "窗口额度必须大于0",
+			})
+			return
+		}
+		if token.WindowStartHour < 0 || token.WindowStartHour > 23 {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": "窗口起始小时必须在0-23之间",
+			})
+			return
+		}
+		if token.CycleDays < 1 {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": "周期天数必须大于等于1",
+			})
+			return
+		}
+		if token.CycleQuota <= 0 {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": "周期总额度必须大于0",
+			})
+			return
+		}
+	default:
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": "无效的限额类型",
+		})
+		return
 	}
+
 	// 检查用户令牌数量是否已达上限
 	count, err := model.CountUserTokens(c.GetInt("id"))
 	if err != nil {
@@ -181,12 +259,14 @@ func AddToken(c *gin.Context) {
 		common.SysLog("failed to generate token key: " + err.Error())
 		return
 	}
+
+	now := common.GetTimestamp()
 	cleanToken := model.Token{
 		UserId:             c.GetInt("id"),
 		Name:               token.Name,
 		Key:                key,
-		CreatedTime:        common.GetTimestamp(),
-		AccessedTime:       common.GetTimestamp(),
+		CreatedTime:        now,
+		AccessedTime:       now,
 		ExpiredTime:        token.ExpiredTime,
 		RemainQuota:        token.RemainQuota,
 		UnlimitedQuota:     token.UnlimitedQuota,
@@ -195,6 +275,16 @@ func AddToken(c *gin.Context) {
 		AllowIps:           token.AllowIps,
 		Group:              token.Group,
 		CrossGroupRetry:    token.CrossGroupRetry,
+		QuotaType:          quotaType,
+		WindowHours:        token.WindowHours,
+		WindowQuota:        token.WindowQuota,
+		WindowStartHour:    token.WindowStartHour,
+		CycleDays:          token.CycleDays,
+		CycleQuota:         token.CycleQuota,
+		WindowUsedQuota:    0,
+		WindowStartTime:    0,
+		CycleUsedQuota:     0,
+		CycleStartTime:     0,
 	}
 	err = cleanToken.Insert()
 	if err != nil {
@@ -236,7 +326,19 @@ func UpdateToken(c *gin.Context) {
 		common.ApiErrorI18n(c, i18n.MsgTokenNameTooLong)
 		return
 	}
-	if !token.UnlimitedQuota {
+
+	// 根据 quota_type 验证额度参数
+	quotaType := token.QuotaType
+	// 兼容旧逻辑：如果 quota_type 未设置但 unlimited_quota 有值
+	if quotaType == 0 && !token.UnlimitedQuota {
+		quotaType = 1
+	}
+
+	switch quotaType {
+	case 0: // 无限额度
+		token.UnlimitedQuota = true
+	case 1: // 永久限额
+		token.UnlimitedQuota = false
 		if token.RemainQuota < 0 {
 			common.ApiErrorI18n(c, i18n.MsgTokenQuotaNegative)
 			return
@@ -246,7 +348,68 @@ func UpdateToken(c *gin.Context) {
 			common.ApiErrorI18n(c, i18n.MsgTokenQuotaExceedMax, map[string]any{"Max": maxQuotaValue})
 			return
 		}
+	case 2: // 时段限额
+		token.UnlimitedQuota = false
+		if token.WindowHours < 1 {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": "窗口时长必须大于等于1小时",
+			})
+			return
+		}
+		if token.WindowQuota <= 0 {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": "窗口额度必须大于0",
+			})
+			return
+		}
+		if token.WindowStartHour < 0 || token.WindowStartHour > 23 {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": "窗口起始小时必须在0-23之间",
+			})
+			return
+		}
+	case 3: // 时段+周期限额
+		token.UnlimitedQuota = false
+		if token.WindowHours < 1 {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": "窗口时长必须大于等于1小时",
+			})
+			return
+		}
+		if token.WindowQuota <= 0 {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": "窗口额度必须大于0",
+			})
+			return
+		}
+		if token.WindowStartHour < 0 || token.WindowStartHour > 23 {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": "窗口起始小时必须在0-23之间",
+			})
+			return
+		}
+		if token.CycleDays < 1 {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": "周期天数必须大于等于1",
+			})
+			return
+		}
+		if token.CycleQuota <= 0 {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": "周期总额度必须大于0",
+			})
+			return
+		}
 	}
+
 	cleanToken, err := model.GetTokenByIds(token.Id, userId)
 	if err != nil {
 		common.ApiError(c, err)
@@ -266,6 +429,12 @@ func UpdateToken(c *gin.Context) {
 		cleanToken.Status = token.Status
 	} else {
 		// If you add more fields, please also update token.Update()
+		oldQuotaType := cleanToken.QuotaType
+		oldWindowHours := cleanToken.WindowHours
+		oldWindowStartHour := cleanToken.WindowStartHour
+		oldCycleDays := cleanToken.CycleDays
+		oldCycleQuota := cleanToken.CycleQuota
+
 		cleanToken.Name = token.Name
 		cleanToken.ExpiredTime = token.ExpiredTime
 		cleanToken.RemainQuota = token.RemainQuota
@@ -275,6 +444,24 @@ func UpdateToken(c *gin.Context) {
 		cleanToken.AllowIps = token.AllowIps
 		cleanToken.Group = token.Group
 		cleanToken.CrossGroupRetry = token.CrossGroupRetry
+		cleanToken.QuotaType = quotaType
+		cleanToken.WindowHours = token.WindowHours
+		cleanToken.WindowQuota = token.WindowQuota
+		cleanToken.WindowStartHour = token.WindowStartHour
+		cleanToken.CycleDays = token.CycleDays
+		cleanToken.CycleQuota = token.CycleQuota
+
+		// 如果 quota_type 或窗口参数变化，重置运行时状态
+		if oldQuotaType != quotaType ||
+			oldWindowHours != token.WindowHours ||
+			oldWindowStartHour != token.WindowStartHour {
+			cleanToken.WindowUsedQuota = 0
+			cleanToken.WindowStartTime = 0
+		}
+		if oldQuotaType != quotaType || (quotaType == 3 && (oldCycleDays != token.CycleDays || oldCycleQuota != token.CycleQuota)) {
+			cleanToken.CycleUsedQuota = 0
+			cleanToken.CycleStartTime = 0
+		}
 	}
 	err = cleanToken.Update()
 	if err != nil {

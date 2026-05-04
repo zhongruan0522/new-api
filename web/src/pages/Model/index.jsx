@@ -18,11 +18,23 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import React from 'react';
 import ModelsTable from '../../components/table/models';
+import SectionPageLayout from '../../components/layout/SectionPageLayout';
+import { useTranslation } from 'react-i18next';
 
 const ModelPage = () => {
+  const { t } = useTranslation();
+
   return (
-    <div className='mt-[60px] px-2'>
-      <ModelsTable />
+    <div className='mt-[60px]'>
+      <SectionPageLayout>
+        <SectionPageLayout.Title>{t('AI模型配置')}</SectionPageLayout.Title>
+        <SectionPageLayout.Description>
+          {t('管理AI模型配置，包括模型名称、定价和可用性设置')}
+        </SectionPageLayout.Description>
+        <SectionPageLayout.Content>
+          <ModelsTable />
+        </SectionPageLayout.Content>
+      </SectionPageLayout>
     </div>
   );
 };
