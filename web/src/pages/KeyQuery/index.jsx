@@ -7,16 +7,14 @@ const KeyQuery = () => {
   const { t } = useTranslation();
 
   return (
-    <div className='mt-[60px]'>
+    <div className='mt-[60px]' style={{ maxWidth: '80%', margin: '0 auto' }}>
       <SectionPageLayout>
         <SectionPageLayout.Title>{t('Key消耗查询')}</SectionPageLayout.Title>
         <SectionPageLayout.Description>
           {t('通过API Key查询令牌余额和调用详情')}
         </SectionPageLayout.Description>
         <SectionPageLayout.Content>
-          <div style={{ maxWidth: '80%', margin: '0 auto' }}>
-            <KeyQueryComponent />
-          </div>
+          <KeyQueryComponent />
         </SectionPageLayout.Content>
       </SectionPageLayout>
     </div>

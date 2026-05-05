@@ -226,7 +226,6 @@ const KeyQuery = () => {
     {
       title: '时间',
       dataIndex: 'created_at',
-      width: 170,
       render: (text) => timestamp2string(text),
       sorter: (a, b) => a.created_at - b.created_at,
     },
@@ -245,7 +244,6 @@ const KeyQuery = () => {
     {
       title: '模型',
       dataIndex: 'model_name',
-      width: 180,
       render: (text) => {
         if (!text) return <Text type='weak'>-</Text>;
         return (
@@ -264,7 +262,7 @@ const KeyQuery = () => {
     {
       title: '用时',
       dataIndex: 'use_time',
-      width: 120,
+      width: 130,
       render: (text, record) => {
         if (!isApiCallLog(record) || !text) return '-';
         return (
@@ -279,7 +277,7 @@ const KeyQuery = () => {
     {
       title: '提示',
       dataIndex: 'prompt_tokens',
-      width: 80,
+      width: 70,
       render: (text, record) =>
         isApiCallLog(record) && text ? text : '-',
       sorter: (a, b) => a.prompt_tokens - b.prompt_tokens,
@@ -287,7 +285,7 @@ const KeyQuery = () => {
     {
       title: '补全',
       dataIndex: 'completion_tokens',
-      width: 80,
+      width: 70,
       render: (text, record) =>
         isApiCallLog(record) && parseInt(text) > 0 ? text : '-',
       sorter: (a, b) => a.completion_tokens - b.completion_tokens,
@@ -295,7 +293,7 @@ const KeyQuery = () => {
     {
       title: '花费',
       dataIndex: 'quota',
-      width: 110,
+      width: 100,
       render: (text, record) => {
         if (!isApiCallLog(record)) return '-';
         return renderQuota(text);
@@ -307,7 +305,7 @@ const KeyQuery = () => {
   const isUnlimited = balance === 100000000;
 
   return (
-    <div className='flex flex-col gap-4' style={{ maxWidth: '100%' }}>
+    <div className='flex flex-col gap-4'>
       {/* Search Input */}
       <Card bodyStyle={{ padding: '16px' }}>
         <Input
