@@ -14,7 +14,9 @@ const KeyQuery = () => {
           {t('通过API Key查询令牌余额和调用详情')}
         </SectionPageLayout.Description>
         <SectionPageLayout.Content>
-          <KeyQueryComponent />
+          <div style={{ maxWidth: '80%', margin: '0 auto' }}>
+            <KeyQueryComponent />
+          </div>
         </SectionPageLayout.Content>
       </SectionPageLayout>
     </div>

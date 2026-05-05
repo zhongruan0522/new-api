@@ -20,11 +20,35 @@ import { Toast, Modal } from '@douyinfe/semi-ui';
 import { timestamp2string, copy, renderQuota, stringToColor } from '../../helpers';
 import Papa from 'papaparse';
 
-const { Text, Title } = Typography;
+const { Text } = Typography;
 
 const ITEMS_PER_PAGE = 20;
 
+// 日志类型常量
+const LOG_TYPE_CONSUME = 2;
+const LOG_TYPE_ERROR = 5;
+const LOG_TYPE_REFUND = 6;
+
+// 判断是否为 API 调用相关日志（消费、错误、退款）
+function isApiCallLog(record) {
+  return record.type === LOG_TYPE_CONSUME || record.type === LOG_TYPE_ERROR || record.type === LOG_TYPE_REFUND;
+}
+
+function renderLogType(type) {
+  switch (type) {
+    case LOG_TYPE_CONSUME:
+      return <Tag color='green' size='small'>消费</Tag>;
+    case LOG_TYPE_ERROR:
+      return <Tag color='red' size='small'>错误</Tag>;
+    case LOG_TYPE_REFUND:
+      return <Tag color='blue' size='small'>退款</Tag>;
+    default:
+      return null;
+  }
+}
+
 function renderIsStream(bool) {
+  if (bool === undefined || bool === null) return null;
   return bool ? (
     <Tag color='blue' size='small'>
       流
@@ -37,6 +61,7 @@ function renderIsStream(bool) {
 }
 
 function renderUseTime(timeMs) {
+  if (!timeMs) return '-';
   const seconds = (parseInt(timeMs) / 1000).toFixed(1);
   if (seconds < 101) {
     return (
@@ -137,7 +162,9 @@ const KeyQuery = () => {
           setLogs(logItems);
           let quotaSum = 0;
           for (const item of logItems) {
-            quotaSum += item.quota || 0;
+            if (item.type === LOG_TYPE_CONSUME || item.type === LOG_TYPE_REFUND) {
+              quotaSum += item.quota || 0;
+            }
           }
           setTotalQuota(quotaSum);
         }
@@ -175,12 +202,12 @@ const KeyQuery = () => {
   const exportCSV = useCallback(() => {
     const csvData = logs.map((log) => ({
       时间: timestamp2string(log.created_at),
-      令牌名称: log.token_name,
-      模型: log.model_name,
-      用时: `${(log.use_time / 1000).toFixed(1)}s`,
+      类型: log.type === LOG_TYPE_CONSUME ? '消费' : log.type === LOG_TYPE_ERROR ? '错误' : log.type === LOG_TYPE_REFUND ? '退款' : '其他',
+      模型: log.model_name || '-',
+      用时: log.use_time ? `${(log.use_time / 1000).toFixed(1)}s` : '-',
       流式: log.is_stream ? '是' : '否',
-      提示tokens: log.prompt_tokens,
-      补全tokens: log.completion_tokens,
+      提示tokens: log.prompt_tokens || 0,
+      补全tokens: log.completion_tokens || 0,
       花费: renderQuota(log.quota),
     }));
     const csvString = '\ufeff' + Papa.unparse(csvData, { escapeFormulae: true });
@@ -204,11 +231,23 @@ const KeyQuery = () => {
       sorter: (a, b) => a.created_at - b.created_at,
     },
     {
+      title: '类型',
+      dataIndex: 'type',
+      width: 70,
+      render: (text) => renderLogType(text),
+      filters: [
+        { text: '消费', value: LOG_TYPE_CONSUME },
+        { text: '错误', value: LOG_TYPE_ERROR },
+        { text: '退款', value: LOG_TYPE_REFUND },
+      ],
+      onFilter: (value, record) => record.type === value,
+    },
+    {
       title: '模型',
       dataIndex: 'model_name',
       width: 180,
-      render: (text, record) => {
-        if (record.type !== 0 && record.type !== 2) return null;
+      render: (text) => {
+        if (!text) return <Text type='weak'>-</Text>;
         return (
           <Tag
             color={stringToColor(text)}
@@ -226,40 +265,41 @@ const KeyQuery = () => {
       title: '用时',
       dataIndex: 'use_time',
       width: 120,
-      render: (text, record) => (
-        <Space>
-          {renderUseTime(text)}
-          {renderIsStream(record.is_stream)}
-        </Space>
-      ),
+      render: (text, record) => {
+        if (!isApiCallLog(record) || !text) return '-';
+        return (
+          <Space>
+            {renderUseTime(text)}
+            {renderIsStream(record.is_stream)}
+          </Space>
+        );
+      },
       sorter: (a, b) => a.use_time - b.use_time,
     },
     {
       title: '提示',
       dataIndex: 'prompt_tokens',
-      width: 90,
+      width: 80,
       render: (text, record) =>
-        record.type === 0 || record.type === 2 ? text : null,
+        isApiCallLog(record) && text ? text : '-',
       sorter: (a, b) => a.prompt_tokens - b.prompt_tokens,
     },
     {
       title: '补全',
       dataIndex: 'completion_tokens',
-      width: 90,
+      width: 80,
       render: (text, record) =>
-        parseInt(text) > 0 && (record.type === 0 || record.type === 2)
-          ? text
-          : null,
+        isApiCallLog(record) && parseInt(text) > 0 ? text : '-',
       sorter: (a, b) => a.completion_tokens - b.completion_tokens,
     },
     {
       title: '花费',
       dataIndex: 'quota',
-      width: 120,
-      render: (text, record) =>
-        record.type === 0 || record.type === 2
-          ? renderQuota(text)
-          : null,
+      width: 110,
+      render: (text, record) => {
+        if (!isApiCallLog(record)) return '-';
+        return renderQuota(text);
+      },
       sorter: (a, b) => a.quota - b.quota,
     },
   ];
@@ -267,7 +307,7 @@ const KeyQuery = () => {
   const isUnlimited = balance === 100000000;
 
   return (
-    <div className='flex flex-col gap-4'>
+    <div className='flex flex-col gap-4' style={{ maxWidth: '100%' }}>
       {/* Search Input */}
       <Card bodyStyle={{ padding: '16px' }}>
         <Input
@@ -384,6 +424,7 @@ const KeyQuery = () => {
               }}
               size='small'
               rowKey='id'
+              scroll={{ x: 800 }}
             />
           </Spin>
         </Card>
