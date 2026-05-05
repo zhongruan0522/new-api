@@ -26,6 +26,7 @@ export const useNavigation = (t, docsLink, headerNavModules) => {
       home: true,
       console: true,
       pricing: true,
+      key_query: true,
       docs: true,
       about: true,
     };
@@ -48,6 +49,11 @@ export const useNavigation = (t, docsLink, headerNavModules) => {
         text: t('模型广场'),
         itemKey: 'pricing',
         to: '/pricing',
+      },
+      {
+        text: t('Key消耗查询'),
+        itemKey: 'key_query',
+        to: '/key-query',
       },
       ...(docsLink
         ? [
@@ -76,6 +82,10 @@ export const useNavigation = (t, docsLink, headerNavModules) => {
         return typeof modules.pricing === 'object'
           ? modules.pricing.enabled
           : modules.pricing;
+      }
+      // 未在配置中出现的模块默认显示
+      if (!(link.itemKey in modules)) {
+        return true;
       }
       return modules[link.itemKey] === true;
     });

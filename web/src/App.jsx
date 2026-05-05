@@ -38,6 +38,7 @@ import TopUp from './pages/TopUp';
 import Log from './pages/Log';
 import MultimodalFiles from './pages/MultimodalFiles';
 import Pricing from './pages/Pricing';
+import KeyQuery from './pages/KeyQuery';
 import ModelPage from './pages/Model';
 import Ticket from './pages/Ticket';
 
@@ -271,6 +272,14 @@ function App() {
                 <Pricing />
               </Suspense>
             )
+          }
+        />
+        <Route
+          path='/key-query'
+          element={
+            <Suspense fallback={<Loading></Loading>} key={location.pathname}>
+              <KeyQuery />
+            </Suspense>
           }
         />
         <Route
