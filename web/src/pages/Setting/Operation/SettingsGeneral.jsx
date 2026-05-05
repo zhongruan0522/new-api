@@ -52,7 +52,6 @@ export default function GeneralSettings(props) {
     QuotaPerUnit: '',
     RetryTimes: '',
     USDExchangeRate: '',
-    DisplayTokenStatEnabled: false,
     DefaultCollapseSidebar: false,
   });
   const refForm = useRef();
@@ -243,16 +242,6 @@ export default function GeneralSettings(props) {
               </Col>
             </Row>
             <Row gutter={16}>
-              <Col xs={24} sm={12} md={8} lg={8} xl={8}>
-                <Form.Switch
-                  field={'DisplayTokenStatEnabled'}
-                  label={t('额度查询接口返回令牌额度而非用户额度')}
-                  size='default'
-                  checkedText='｜'
-                  uncheckedText='〇'
-                  onChange={handleFieldChange('DisplayTokenStatEnabled')}
-                />
-              </Col>
               <Col xs={24} sm={12} md={8} lg={8} xl={8}>
                 <Form.Switch
                   field={'DefaultCollapseSidebar'}
