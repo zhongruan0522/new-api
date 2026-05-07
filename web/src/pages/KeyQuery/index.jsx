@@ -7,7 +7,7 @@ const KeyQuery = () => {
   const { t } = useTranslation();
 
   return (
-    <div className='mt-[60px]' style={{ maxWidth: '80%', margin: '0 auto' }}>
+    <div className='mt-[60px] mx-auto' style={{ maxWidth: '80%' }}>
       <SectionPageLayout>
         <SectionPageLayout.Title>{t('Key消耗查询')}</SectionPageLayout.Title>
         <SectionPageLayout.Description>
