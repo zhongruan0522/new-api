@@ -834,7 +834,6 @@ const EditChannelModal = (props) => {
         {
           title: t('查看渠道密钥'),
           description: t('为了保护账户安全，请验证您的身份。'),
-          preferredMethod: 'passkey', // 优先使用 Passkey
         },
       );
 
