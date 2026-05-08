@@ -183,8 +183,17 @@ func Relay(c *gin.Context, relayFormat types.RelayFormat) {
 		Retry:       common.GetPointer(0),
 		RelayFormat: relayFormat,
 	}
+	lastFailedChannelId := 0
 
 	for ; retryParam.GetRetry() <= common.RetryTimes; retryParam.IncreaseRetry() {
+		// retry%2==1 means same-priority retry: exclude the previously failed channel
+		// retry%2==1 表示同优先级重试：排除上次失败的渠道
+		if retryParam.GetRetry()%2 == 1 {
+			retryParam.ExcludeChannelId = lastFailedChannelId
+		} else {
+			retryParam.ExcludeChannelId = 0
+		}
+
 		channel, channelErr := getChannel(c, relayInfo, retryParam)
 		if channelErr != nil {
 			logger.LogError(c, channelErr.Error())
@@ -193,6 +202,7 @@ func Relay(c *gin.Context, relayFormat types.RelayFormat) {
 		}
 
 		addUsedChannel(c, channel.Id)
+		lastFailedChannelId = channel.Id
 		requestBody, bodyErr := common.GetRequestBody(c)
 		if bodyErr != nil {
 			// Ensure consistent 413 for oversized bodies even when error occurs later (e.g., retry path)

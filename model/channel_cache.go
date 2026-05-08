@@ -93,10 +93,10 @@ func SyncChannelCache(frequency int) {
 	}
 }
 
-func GetRandomSatisfiedChannel(group string, model string, retry int, preferredAPIType int) (*Channel, error) {
+func GetRandomSatisfiedChannel(group string, model string, priorityIndex int, preferredAPIType int, excludeChannelId int) (*Channel, error) {
 	// if memory cache is disabled, get channel directly from database
 	if !common.MemoryCacheEnabled {
-		return GetChannel(group, model, retry, preferredAPIType)
+		return GetChannel(group, model, priorityIndex, preferredAPIType, excludeChannelId)
 	}
 
 	channelSyncLock.RLock()
@@ -136,17 +136,21 @@ func GetRandomSatisfiedChannel(group string, model string, retry int, preferredA
 	}
 	sort.Sort(sort.Reverse(sort.IntSlice(sortedUniquePriorities)))
 
-	if retry >= len(uniquePriorities) {
-		retry = len(uniquePriorities) - 1
+	if priorityIndex >= len(uniquePriorities) {
+		priorityIndex = len(uniquePriorities) - 1
 	}
-	targetPriority := int64(sortedUniquePriorities[retry])
+	targetPriority := int64(sortedUniquePriorities[priorityIndex])
 
-	// get the priority for the given retry number
+	// get the priority for the given priority index
 	var sumWeight = 0
 	var targetChannels []*Channel
 	for _, channelId := range channels {
 		if channel, ok := channelsIDM[channelId]; ok {
 			if channel.GetPriority() == targetPriority {
+				// Exclude the previously failed channel for same-priority retry
+				if excludeChannelId > 0 && channel.Id == excludeChannelId {
+					continue
+				}
 				sumWeight += channel.GetWeight()
 				targetChannels = append(targetChannels, channel)
 			}
@@ -156,7 +160,7 @@ func GetRandomSatisfiedChannel(group string, model string, retry int, preferredA
 	}
 
 	if len(targetChannels) == 0 {
-		return nil, errors.New(fmt.Sprintf("no channel found, group: %s, model: %s, priority: %d", group, model, targetPriority))
+		return nil, nil
 	}
 
 	// If a preferred API type is specified, try to pick from channels that match it first.
@@ -216,6 +220,30 @@ func preferChannelsByAPIType(channels []*Channel, preferredAPIType int) []*Chann
 		return matched
 	}
 	return channels
+}
+
+// GetPriorityCount returns the number of distinct priority levels for a group/model pair.
+func GetPriorityCount(group string, model string) int {
+	if !common.MemoryCacheEnabled {
+		return getPriorityCountDB(group, model)
+	}
+
+	channelSyncLock.RLock()
+	defer channelSyncLock.RUnlock()
+
+	channels := group2model2channels[group][model]
+	if len(channels) == 0 {
+		normalizedModel := ratio_setting.FormatMatchingModelName(model)
+		channels = group2model2channels[group][normalizedModel]
+	}
+
+	uniquePriorities := make(map[int]bool)
+	for _, channelId := range channels {
+		if channel, ok := channelsIDM[channelId]; ok {
+			uniquePriorities[int(channel.GetPriority())] = true
+		}
+	}
+	return len(uniquePriorities)
 }
 
 func CacheGetChannel(id int) (*Channel, error) {

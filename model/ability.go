@@ -88,26 +88,37 @@ func getPriority(group string, model string, retry int) (int, error) {
 	return priorityToUse, nil
 }
 
-func getChannelQuery(group string, model string, retry int) (*gorm.DB, error) {
+// getPriorityCountDB returns the number of distinct priority levels for a group/model pair from DB.
+func getPriorityCountDB(group string, model string) int {
+	var count int64
+	DB.Model(&Ability{}).
+		Where(commonGroupCol+" = ? and model = ? and enabled = ?", group, model, true).
+		Distinct("priority").
+		Count(&count)
+	return int(count)
+}
+
+func getChannelQuery(group string, model string, priorityIndex int, excludeChannelId int) (*gorm.DB, error) {
 	maxPrioritySubQuery := DB.Model(&Ability{}).Select("MAX(priority)").Where(commonGroupCol+" = ? and model = ? and enabled = ?", group, model, true)
 	channelQuery := DB.Where(commonGroupCol+" = ? and model = ? and enabled = ? and priority = (?)", group, model, true, maxPrioritySubQuery)
-	if retry != 0 {
-		priority, err := getPriority(group, model, retry)
+	if priorityIndex != 0 {
+		priority, err := getPriority(group, model, priorityIndex)
 		if err != nil {
 			return nil, err
-		} else {
-			channelQuery = DB.Where(commonGroupCol+" = ? and model = ? and enabled = ? and priority = ?", group, model, true, priority)
 		}
+		channelQuery = DB.Where(commonGroupCol+" = ? and model = ? and enabled = ? and priority = ?", group, model, true, priority)
 	}
-
+	if excludeChannelId > 0 {
+		channelQuery = channelQuery.Where("channel_id != ?", excludeChannelId)
+	}
 	return channelQuery, nil
 }
 
-func GetChannel(group string, model string, retry int, preferredAPIType int) (*Channel, error) {
+func GetChannel(group string, model string, priorityIndex int, preferredAPIType int, excludeChannelId int) (*Channel, error) {
 	var abilities []Ability
 
 	var err error = nil
-	channelQuery, err := getChannelQuery(group, model, retry)
+	channelQuery, err := getChannelQuery(group, model, priorityIndex, excludeChannelId)
 	if err != nil {
 		return nil, err
 	}
