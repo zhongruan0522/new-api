@@ -153,7 +153,37 @@ func GetChannel(group string, model string, priorityIndex int, preferredAPIType 
 			}
 		}
 	} else {
-		return nil, nil
+		// If exclusion left no candidates at current priority, fall through to next lower priority
+		// 如果排除后在当前优先级无候选渠道，降级到下一个优先级
+		if excludeChannelId > 0 {
+			fallbackQuery, fallbackErr := getChannelQuery(group, model, priorityIndex+1, 0)
+			if fallbackErr != nil {
+				return nil, nil
+			}
+			if fallbackErr = fallbackQuery.Order("weight DESC").Find(&abilities).Error; fallbackErr != nil {
+				return nil, nil
+			}
+			if len(abilities) == 0 {
+				return nil, nil
+			}
+			if preferredAPIType >= 0 {
+				abilities = preferAbilitiesByAPIType(abilities, preferredAPIType)
+			}
+			weightSum := uint(0)
+			for _, ability_ := range abilities {
+				weightSum += ability_.Weight + 10
+			}
+			weight := common.GetRandomInt(int(weightSum))
+			for _, ability_ := range abilities {
+				weight -= int(ability_.Weight) + 10
+				if weight <= 0 {
+					channel.Id = ability_.ChannelId
+					break
+				}
+			}
+		} else {
+			return nil, nil
+		}
 	}
 	err = DB.First(&channel, "id = ?", channel.Id).Error
 	return &channel, err

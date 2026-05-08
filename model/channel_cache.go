@@ -117,6 +117,9 @@ func GetRandomSatisfiedChannel(group string, model string, priorityIndex int, pr
 
 	if len(channels) == 1 {
 		if channel, ok := channelsIDM[channels[0]]; ok {
+			if excludeChannelId > 0 && channel.Id == excludeChannelId {
+				return nil, nil
+			}
 			return channel, nil
 		}
 		return nil, fmt.Errorf("数据库一致性错误，渠道# %d 不存在，请联系管理员修复", channels[0])
@@ -156,6 +159,20 @@ func GetRandomSatisfiedChannel(group string, model string, priorityIndex int, pr
 			}
 		} else {
 			return nil, fmt.Errorf("数据库一致性错误，渠道# %d 不存在，请联系管理员修复", channelId)
+		}
+	}
+
+	// If exclusion left no candidates at current priority, fall through to next lower priority
+	// 如果排除后在当前优先级无候选渠道，降级到下一个优先级
+	if len(targetChannels) == 0 && excludeChannelId > 0 && priorityIndex+1 < len(sortedUniquePriorities) {
+		targetPriority = int64(sortedUniquePriorities[priorityIndex+1])
+		for _, channelId := range channels {
+			if channel, ok := channelsIDM[channelId]; ok {
+				if channel.GetPriority() == targetPriority {
+					sumWeight += channel.GetWeight()
+					targetChannels = append(targetChannels, channel)
+				}
+			}
 		}
 	}
 
