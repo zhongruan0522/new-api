@@ -20,9 +20,9 @@ For commercial licensing, please contact support@quantumnous.com
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { API, isAdmin, showError, timestamp2string } from '../../helpers';
-import { getDefaultTime, getInitialTimestamp } from '../../helpers/dashboard';
-import { TIME_OPTIONS } from '../../constants/dashboard.constants';
+import { API, isAdmin, showError } from '../../helpers';
+import { getDefaultTime, getInitialTimestamp, getInitialEndTimestamp } from '../../helpers/dashboard';
+import { TIME_OPTIONS, STORAGE_KEYS } from '../../constants/dashboard.constants';
 import { useIsMobile } from '../common/useIsMobile';
 import { useMinimumLoadingTime } from '../common/useMinimumLoadingTime';
 
@@ -44,7 +44,7 @@ export const useDashboardData = (userState, userDispatch, statusState) => {
     token_name: '',
     model_name: '',
     start_timestamp: getInitialTimestamp(),
-    end_timestamp: timestamp2string(new Date().getTime() / 1000 + 3600),
+    end_timestamp: getInitialEndTimestamp(),
     channel: '',
     data_export_default_time: '',
   });
@@ -147,6 +147,11 @@ export const useDashboardData = (userState, userDispatch, statusState) => {
       setDataExportDefaultTime(value);
       localStorage.setItem('data_export_default_time', value);
       return;
+    }
+    if (name === 'start_timestamp') {
+      localStorage.setItem(STORAGE_KEYS.DASHBOARD_START_TIMESTAMP, value);
+    } else if (name === 'end_timestamp') {
+      localStorage.setItem(STORAGE_KEYS.DASHBOARD_END_TIMESTAMP, value);
     }
     setInputs((inputs) => ({ ...inputs, [name]: value }));
   }, []);

@@ -49,6 +49,9 @@ export const getTimeInterval = (timeType, isSeconds = false) => {
 };
 
 export const getInitialTimestamp = () => {
+  const saved = localStorage.getItem(STORAGE_KEYS.DASHBOARD_START_TIMESTAMP);
+  if (saved) return saved;
+
   const defaultTime = getDefaultTime();
   const now = new Date().getTime() / 1000;
 
@@ -60,6 +63,12 @@ export const getInitialTimestamp = () => {
     default:
       return timestamp2string(now - 86400 * 7);
   }
+};
+
+export const getInitialEndTimestamp = () => {
+  const saved = localStorage.getItem(STORAGE_KEYS.DASHBOARD_END_TIMESTAMP);
+  if (saved) return saved;
+  return timestamp2string(new Date().getTime() / 1000 + 3600);
 };
 
 // ========== 数据处理工具函数 ==========
