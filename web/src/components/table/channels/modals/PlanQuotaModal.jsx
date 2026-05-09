@@ -132,6 +132,26 @@ const getTimeParams = (days) => {
   return `startTime=${fmt(start)}&endTime=${fmt(end)}`;
 };
 
+// 系统健康度专用时间参数：排除当天，end 为昨天 23:59:59
+const getPerfTimeParams = (days) => {
+  // end 为昨天 23:59:59（北京时间）
+  const now = new Date();
+  const yesterday = new Date(now.getTime() - 86400000);
+  const end = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate(), 23, 59, 59);
+  // start 为 end 再往前推 days-1 天（因为 end 已经是昨天，所以 days 天实际包含昨天往前 days 天）
+  const start = new Date(end.getTime() - (days - 1) * 86400000);
+  const toBJ = (d) => {
+    const utc = d.getTime() + d.getTimezoneOffset() * 60000;
+    return new Date(utc + 8 * 3600000);
+  };
+  const fmt = (d) => {
+    const bj = toBJ(d);
+    const z = (n) => n.toString().padStart(2, '0');
+    return `${bj.getFullYear()}-${z(bj.getMonth() + 1)}-${z(bj.getDate())}+${z(bj.getHours())}:${z(bj.getMinutes())}:${z(bj.getSeconds())}`;
+  };
+  return `startTime=${fmt(start)}&endTime=${fmt(end)}`;
+};
+
 const formatTimeLabel = (timeStr) => {
   if (!timeStr) return '';
   // 尝试解析 "2026-01-15 10:00" 或 "2026-01-15" 格式
@@ -361,16 +381,21 @@ const UsageChart = ({ channelId }) => {
 };
 
 // 系统健康度图表
-const PerformanceChart = ({ channelId }) => {
+const PerformanceChart = ({ channelId, productLevel }) => {
   const [range, setRange] = useState(7);
   const [loading, setLoading] = useState(false);
   const [rawData, setRawData] = useState(null);
+
+  // 根据套餐等级决定显示哪些指标
+  const isLite = productLevel === 'Lite';
+  const speedLabel = isLite ? 'Lite速度' : 'Pro/Max速度';
+  const rateLabel = isLite ? 'Lite成功率' : 'Pro/Max成功率';
 
   const fetchPerf = useCallback(async () => {
     if (!channelId) return;
     setLoading(true);
     try {
-      const params = getTimeParams(range);
+      const params = getPerfTimeParams(range);
       const res = await API.get(
         `/api/channel/plan/glm/usage/${channelId}?type=performance&${params}`,
         { skipErrorHandler: true },
@@ -397,20 +422,19 @@ const PerformanceChart = ({ channelId }) => {
     const liteRate = (d.liteSuccessRate || []).map((v) => (v ? parseFloat((v * 100).toFixed(2)) : 0));
     const proMaxRate = (d.proMaxSuccessRate || []).map((v) => (v ? parseFloat((v * 100).toFixed(2)) : 0));
 
+    const speedArr = isLite ? liteSpeed : proMaxSpeed;
+    const rateArr = isLite ? liteRate : proMaxRate;
+
     const flatValues = [];
     x.forEach((t, i) => {
-      flatValues.push({ time: t, value: liteSpeed[i], type: 'Lite速度' });
-      flatValues.push({ time: t, value: proMaxSpeed[i], type: 'Pro/Max速度' });
-      flatValues.push({ time: t, value: liteRate[i], type: 'Lite成功率' });
-      flatValues.push({ time: t, value: proMaxRate[i], type: 'Pro/Max成功率' });
+      flatValues.push({ time: t, value: speedArr[i], type: speedLabel });
+      flatValues.push({ time: t, value: rateArr[i], type: rateLabel });
     });
 
     const avg = (arr) => (arr.length ? (arr.reduce((a, b) => a + b, 0) / arr.length).toFixed(1) : 0);
-    const speed = ((parseFloat(avg(liteSpeed)) + parseFloat(avg(proMaxSpeed))) / 2).toFixed(1);
-    const rate = ((parseFloat(avg(liteRate)) + parseFloat(avg(proMaxRate))) / 2).toFixed(1);
 
-    return { perfValues: flatValues, avgSpeed: speed, avgRate: rate, perfTimes: x };
-  }, [rawData]);
+    return { perfValues: flatValues, avgSpeed: avg(speedArr), avgRate: avg(rateArr), perfTimes: x };
+  }, [rawData, isLite, speedLabel, rateLabel]);
 
   const vchartSpec = useMemo(() => {
     if (!perfValues.length) return null;
@@ -418,12 +442,10 @@ const PerformanceChart = ({ channelId }) => {
     const sampledLabels = sampleTimeLabels(perfTimes, 4);
 
     const colorMap = {
-      'Lite速度': '#d97757',
-      'Pro/Max速度': '#6a9bcc',
-      'Lite成功率': '#d97757',
-      'Pro/Max成功率': '#788c5d',
+      [speedLabel]: '#d97757',
+      [rateLabel]: '#788c5d',
     };
-    const fields = ['Lite速度', 'Pro/Max速度', 'Lite成功率', 'Pro/Max成功率'];
+    const fields = [speedLabel, rateLabel];
 
     return {
       type: 'common',
@@ -437,8 +459,8 @@ const PerformanceChart = ({ channelId }) => {
           smooth: true,
           line: {
             style: {
-              lineWidth: (d) => (d.type.includes('成功率') ? 2 : 2),
-              lineDash: (d) => (d.type.includes('成功率') ? [4, 4] : [0]),
+              lineWidth: 2,
+              lineDash: (d) => (d.type === rateLabel ? [4, 4] : [0]),
             },
           },
           point: { visible: false },
@@ -477,14 +499,14 @@ const PerformanceChart = ({ channelId }) => {
         mark: {
           content: [{
             key: (d) => d.type,
-            value: (d) => d.type.includes('成功率') ? `${d.value?.toFixed(1)}%` : `${d.value?.toFixed(1)} tokens/s`,
+            value: (d) => d.type === rateLabel ? `${d.value?.toFixed(1)}%` : `${d.value?.toFixed(1)} tokens/s`,
           }],
         },
       },
       height: 240,
       padding: { top: 10, bottom: 5, left: 10, right: 10 },
     };
-  }, [perfValues, perfTimes]);
+  }, [perfValues, perfTimes, speedLabel, rateLabel]);
 
   const ranges = [
     { key: 7, label: '7天' },
@@ -653,7 +675,7 @@ const PlanQuotaModal = ({ visible, onCancel, channel, onRefresh }) => {
           <UsageChart channelId={channel?.id} />
 
           {/* 系统健康度图表 */}
-          <PerformanceChart channelId={channel?.id} />
+          <PerformanceChart channelId={channel?.id} productLevel={quotaData.product_level} />
         </div>
       ) : isTierData ? (
         <div className="plan-quota-body" ref={bodyRef}>
