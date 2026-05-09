@@ -23,7 +23,8 @@ RUN go mod download
 
 COPY . .
 COPY --from=builder /build/dist ./web/dist
-RUN go build -ldflags "-s -w -X 'github.com/zhongruan0522/new-api/common.Version=$(git rev-parse HEAD)'" -o new-api
+RUN COMMIT_HASH=$(cat COMMIT 2>/dev/null || echo "") && \
+    go build -ldflags "-s -w -X 'github.com/zhongruan0522/new-api/common.Version=${COMMIT_HASH}'" -o new-api
 
 FROM debian:bookworm-slim
 
