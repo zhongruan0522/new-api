@@ -73,8 +73,8 @@ const TicketDetailModal = ({
         maxWidth: '50vw',
       }}
       bodyStyle={isMobile ? {
-        height: '100vh',
-        maxHeight: '100vh',
+        height: 'calc(100vh - 56px)',
+        maxHeight: 'calc(100vh - 56px)',
         display: 'flex',
         flexDirection: 'column',
         padding: 0,

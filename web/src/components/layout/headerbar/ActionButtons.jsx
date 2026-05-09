@@ -32,12 +32,17 @@ const ActionButtons = ({
   userState,
   isLoading,
   isMobile,
+  isConsoleRoute,
   logout,
   navigate,
   t,
 }) => {
+  // On mobile + console route: hidden here, shown in sidebar instead
+  // On mobile + non-console route: still shown in header
+  const mobileHide = isMobile && isConsoleRoute;
+
   return (
-    <div className='hidden md:flex items-center gap-2 md:gap-3'>
+    <div className={`${mobileHide ? 'hidden' : 'flex'} items-center gap-2 md:gap-3`}>
       <NewYearButton isNewYear={isNewYear} />
 
       <NotificationButton

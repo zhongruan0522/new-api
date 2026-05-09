@@ -36,7 +36,7 @@ import NoticeModal from './NoticeModal';
 import { Nav, Divider, Button } from '@douyinfe/semi-ui';
 import { UserContext } from '../../context/User';
 import { StatusContext } from '../../context/Status';
-import { useTheme, useSetTheme, useActualTheme } from '../../context/Theme';
+import { useTheme, useSetTheme } from '../../context/Theme';
 import { useNotifications } from '../../hooks/common/useNotifications';
 
 const routerMap = {
@@ -74,7 +74,6 @@ const SiderBar = ({ onNavigate = () => {} }) => {
   const [statusState] = useContext(StatusContext);
   const theme = useTheme();
   const setTheme = useSetTheme();
-  const actualTheme = useActualTheme();
 
   const {
     noticeVisible,
@@ -434,7 +433,10 @@ const SiderBar = ({ onNavigate = () => {} }) => {
             isLoading={isLoading}
             isMobile={isMobile}
             logout={logout}
-            navigate={navigate}
+            navigate={(path) => {
+              navigate(path);
+              onNavigate();
+            }}
             t={t}
           />
         </div>

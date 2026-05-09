@@ -18,7 +18,7 @@ For commercial licensing, please contact support@quantumnous.com
 */
 
 import React from 'react';
-import { Modal, Button, Tag, Typography } from '@douyinfe/semi-ui';
+import { Modal, Button, Input, Tag, Typography } from '@douyinfe/semi-ui';
 import { timestamp2string } from '../../../../helpers';
 import { useIsMobile } from '../../../../hooks/common/useIsMobile';
 import { IconCopy, IconClose } from '@douyinfe/semi-icons';

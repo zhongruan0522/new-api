@@ -110,6 +110,7 @@ const HeaderBar = ({ onMobileMenuToggle, drawerOpen }) => {
             userState={userState}
             isLoading={isLoading}
             isMobile={isMobile}
+            isConsoleRoute={isConsoleRoute}
             logout={logout}
             navigate={navigate}
             t={t}
