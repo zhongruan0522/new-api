@@ -11,7 +11,7 @@ build-frontend:
 
 build-backend:
 	@echo "Building backend..."
-	@cd $(BACKEND_DIR) && go build -ldflags "-X 'github.com/zhongruan0522/new-api/common.Version=$(cat VERSION)' -X 'github.com/zhongruan0522/new-api/common.BuildCommit=$(shell git rev-parse HEAD)'" -o new-api
+	@cd $(BACKEND_DIR) && go build -ldflags "-X 'github.com/zhongruan0522/new-api/common.Version=$(shell git rev-parse HEAD)'" -o new-api
 
 start-backend:
 	@echo "Starting backend dev server..."

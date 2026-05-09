@@ -553,8 +553,8 @@ const SystemSetting = () => {
             >
               <Card>
                 <Form.Section text={t('当前打包 ID')}>
-                  <Text copyable={!!statusState?.status?.build_commit}>
-                    {statusState?.status?.build_commit || t('未知（非正式构建）')}
+                  <Text copyable={!!statusState?.status?.version}>
+                    {statusState?.status?.version || t('未知（非正式构建）')}
                   </Text>
                   <Text
                     type='secondary'

@@ -10,8 +10,7 @@ import (
 	"github.com/google/uuid"
 )
 
-var Version = "v0.0.0" // this hard coding will be replaced automatically when building, no need to manually change
-var BuildCommit = ""   // git commit hash injected at build time via -ldflags
+var Version = "" // injected at build time via -ldflags; defaults to git commit hash
 var SystemName = "New API"
 var Footer = ""
 var Logo = ""
