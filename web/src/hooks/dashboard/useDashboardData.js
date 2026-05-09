@@ -393,6 +393,7 @@ export const useDashboardData = (userState, userDispatch, statusState) => {
     loadQuotaData,
     loadRegionStats,
     loadModelRank,
+    loadMediaConvertStats,
     loadUptimeData,
     getUserData,
     refresh,
