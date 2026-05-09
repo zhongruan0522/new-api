@@ -18,14 +18,101 @@ For commercial licensing, please contact support@quantumnous.com
 */
 
 import React from 'react';
-import { Modal, Input, Tag, Typography } from '@douyinfe/semi-ui';
+import { Modal, Button, Tag, Typography } from '@douyinfe/semi-ui';
 import { timestamp2string } from '../../../../helpers';
+import { useIsMobile } from '../../../../hooks/common/useIsMobile';
+import { IconCopy, IconClose } from '@douyinfe/semi-icons';
+import { copy } from '../../../../helpers';
 
 const { Text } = Typography;
 
 const ViewStoredMediaModal = ({ visible, onCancel, data, t }) => {
+  const isMobile = useIsMobile();
   const mediaType = data?.media_type;
   const url = data?.url || '';
+
+  const handleCopyUrl = async () => {
+    if (url) {
+      await copy(url);
+    }
+  };
+
+  if (isMobile) {
+    return (
+      <Modal
+        visible={visible}
+        onCancel={onCancel}
+        footer={null}
+        closeOnEsc
+        style={{ maxWidth: '95vw' }}
+        bodyStyle={{ padding: '12px 16px' }}
+        title={
+          <div className='flex items-center justify-between w-full'>
+            <div className='flex items-center gap-2'>
+              <span className='text-base font-medium'>{t('多模态文件')}</span>
+              {mediaType && (
+                <Tag color='white' shape='circle' size='small'>
+                  {mediaType}
+                </Tag>
+              )}
+            </div>
+            <Button
+              icon={<IconClose />}
+              theme='borderless'
+              type='tertiary'
+              size='small'
+              onClick={onCancel}
+            />
+          </div>
+        }
+      >
+        <div className='flex flex-col gap-3'>
+          {/* 直接显示图片 */}
+          {url && mediaType === 'image' && (
+            <div className='flex justify-center'>
+              <img
+                src={url}
+                alt='stored'
+                style={{ maxWidth: '100%', maxHeight: 240, borderRadius: 8 }}
+              />
+            </div>
+          )}
+          {url && mediaType === 'video' && (
+            <div className='flex justify-center'>
+              <video
+                src={url}
+                controls
+                style={{ maxWidth: '100%', maxHeight: 240, borderRadius: 8 }}
+              />
+            </div>
+          )}
+
+          {/* 简化URL复制 */}
+          {url && (
+            <Button
+              icon={<IconCopy />}
+              theme='outline'
+              size='small'
+              onClick={handleCopyUrl}
+              block
+            >
+              {t('复制链接')}
+            </Button>
+          )}
+
+          {/* 说明信息 */}
+          <div className='flex items-center justify-center gap-2 text-xs text-semi-color-text-2'>
+            <Text type='secondary' size='small'>
+              {t('ID')}: {data?.id || '-'}
+            </Text>
+            <Text type='secondary' size='small'>
+              {data?.created_at ? timestamp2string(data.created_at) : '-'}
+            </Text>
+          </div>
+        </div>
+      </Modal>
+    );
+  }
 
   return (
     <Modal
