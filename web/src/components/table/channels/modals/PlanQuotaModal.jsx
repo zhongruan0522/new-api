@@ -603,7 +603,7 @@ const PlanQuotaModal = ({ visible, onCancel, channel, onRefresh }) => {
     try {
       const d = new Date(timeStr);
       if (isNaN(d.getTime())) return timeStr;
-      return `${d.getMonth() + 1}月${d.getDate()}日`;
+      return `${d.getMonth() + 1}月${d.getDate()}日 ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
     } catch { return timeStr; }
   };
 
