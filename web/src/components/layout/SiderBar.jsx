@@ -17,18 +17,27 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 
-import React, { useEffect, useMemo, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import React, { useEffect, useMemo, useState, useContext, useCallback } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { getLucideIcon } from '../../helpers/render';
 import { ChevronLeft } from 'lucide-react';
 import { useSidebarCollapsed } from '../../hooks/common/useSidebarCollapsed';
 import { useSidebar } from '../../hooks/common/useSidebar';
 import { useMinimumLoadingTime } from '../../hooks/common/useMinimumLoadingTime';
-import { isAdmin, isRoot } from '../../helpers';
+import { useIsMobile } from '../../hooks/common/useIsMobile';
+import { isAdmin, isRoot, API, showSuccess } from '../../helpers';
 import SkeletonWrapper from './components/SkeletonWrapper';
+import NotificationButton from './headerbar/NotificationButton';
+import ThemeToggle from './headerbar/ThemeToggle';
+import UserArea from './headerbar/UserArea';
+import NoticeModal from './NoticeModal';
 
 import { Nav, Divider, Button } from '@douyinfe/semi-ui';
+import { UserContext } from '../../context/User';
+import { StatusContext } from '../../context/Status';
+import { useTheme, useSetTheme, useActualTheme } from '../../context/Theme';
+import { useNotifications } from '../../hooks/common/useNotifications';
 
 const routerMap = {
   home: '/',
@@ -57,6 +66,46 @@ const SiderBar = ({ onNavigate = () => {} }) => {
     hasSectionVisibleModules,
     loading: sidebarLoading,
   } = useSidebar();
+  const isMobile = useIsMobile();
+  const navigate = useNavigate();
+
+  // Mobile action buttons: use contexts directly
+  const [userState, userDispatch] = useContext(UserContext);
+  const [statusState] = useContext(StatusContext);
+  const theme = useTheme();
+  const setTheme = useSetTheme();
+  const actualTheme = useActualTheme();
+
+  const {
+    noticeVisible,
+    unreadCount,
+    handleNoticeOpen,
+    handleNoticeClose,
+    getUnreadKeys,
+  } = useNotifications(statusState);
+
+  const handleThemeToggle = useCallback(
+    (newTheme) => {
+      if (
+        !newTheme ||
+        (newTheme !== 'light' && newTheme !== 'dark' && newTheme !== 'auto')
+      ) {
+        return;
+      }
+      setTheme(newTheme);
+    },
+    [setTheme],
+  );
+
+  const logout = useCallback(async () => {
+    await API.get('/api/user/logout');
+    showSuccess(t('注销成功!'));
+    userDispatch({ type: 'logout' });
+    localStorage.removeItem('user');
+    navigate('/login');
+  }, [navigate, t, userDispatch]);
+
+  const isLoading = statusState?.status === undefined;
 
   const showSkeleton = useMinimumLoadingTime(sidebarLoading, 200);
 
@@ -359,6 +408,37 @@ const SiderBar = ({ onNavigate = () => {} }) => {
           )}
         </Nav>
       </SkeletonWrapper>
+
+      {/* 移动端通知弹窗 */}
+      {isMobile && (
+        <NoticeModal
+          visible={noticeVisible}
+          onClose={handleNoticeClose}
+          isMobile={isMobile}
+          defaultTab={unreadCount > 0 ? 'system' : 'inApp'}
+          unreadKeys={getUnreadKeys()}
+        />
+      )}
+
+      {/* 移动端操作按钮区域 */}
+      {isMobile && (
+        <div className='flex items-center justify-center gap-2 px-3 py-2 border-t border-semi-color-border'>
+          <NotificationButton
+            unreadCount={unreadCount}
+            onNoticeOpen={handleNoticeOpen}
+            t={t}
+          />
+          <ThemeToggle theme={theme} onThemeToggle={handleThemeToggle} t={t} />
+          <UserArea
+            userState={userState}
+            isLoading={isLoading}
+            isMobile={isMobile}
+            logout={logout}
+            navigate={navigate}
+            t={t}
+          />
+        </div>
+      )}
 
       {/* 底部折叠按钮 */}
       <div className='sidebar-collapse-button'>
