@@ -23,6 +23,7 @@ import { useTranslation } from 'react-i18next';
 
 import GroupRatioSettings from '../../pages/Setting/Ratio/GroupRatioSettings';
 import ModelSettingsVisualEditor from '../../pages/Setting/Ratio/ModelSettingsVisualEditor';
+import ToolBillingSettings from '../../pages/Setting/Ratio/ToolBillingSettings';
 
 import { API, showError, toBoolean } from '../../helpers';
 
@@ -98,6 +99,9 @@ const RatioSetting = () => {
           </Tabs.TabPane>
           <Tabs.TabPane tab={t('可视化倍率设置')} itemKey='visual'>
             <ModelSettingsVisualEditor options={inputs} refresh={onRefresh} />
+          </Tabs.TabPane>
+          <Tabs.TabPane tab={t('工具调用计费')} itemKey='tool_billing'>
+            <ToolBillingSettings />
           </Tabs.TabPane>
         </Tabs>
       </Card>
