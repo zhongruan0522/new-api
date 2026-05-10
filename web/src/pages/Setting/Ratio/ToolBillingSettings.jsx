@@ -345,7 +345,7 @@ const ToolBillingSettings = () => {
         width={600}
       >
         <Form
-          ref={formRef}
+          getFormApi={(api) => (formRef.current = api)}
           labelPosition='left'
           labelWidth={120}
           initValues={EMPTY_FORM}
