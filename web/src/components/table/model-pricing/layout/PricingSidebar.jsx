@@ -31,8 +31,6 @@ import { usePricingFilterCounts } from '../../../../hooks/model-pricing/usePrici
 const PricingSidebar = ({
   showWithRecharge,
   setShowWithRecharge,
-  currency,
-  setCurrency,
   handleChange,
   setActiveKey,
   viewMode,
@@ -76,7 +74,6 @@ const PricingSidebar = ({
     resetPricingFilters({
       handleChange,
       setShowWithRecharge,
-      setCurrency,
       setViewMode,
       setFilterGroup,
       setFilterQuotaType,

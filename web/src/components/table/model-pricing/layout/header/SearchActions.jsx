@@ -18,7 +18,7 @@ For commercial licensing, please contact support@quantumnous.com
 */
 
 import React, { memo, useCallback } from 'react';
-import { Input, Button, Switch, Select, Divider } from '@douyinfe/semi-ui';
+import { Input, Button, Switch, Divider } from '@douyinfe/semi-ui';
 import { IconSearch, IconCopy, IconFilter } from '@douyinfe/semi-icons';
 
 const SearchActions = memo(
@@ -33,8 +33,6 @@ const SearchActions = memo(
     setShowFilterModal,
     showWithRecharge,
     setShowWithRecharge,
-    currency,
-    setCurrency,
     viewMode,
     setViewMode,
     tokenUnit,
@@ -96,19 +94,6 @@ const SearchActions = memo(
                 onChange={setShowWithRecharge}
               />
             </div>
-
-            {/* 货币单位选择 */}
-            {showWithRecharge && (
-              <Select
-                value={currency}
-                onChange={setCurrency}
-                optionList={[
-                  { value: 'USD', label: 'USD' },
-                  { value: 'CNY', label: 'CNY' },
-                  { value: 'CUSTOM', label: t('自定义货币') },
-                ]}
-              />
-            )}
 
             {/* 视图模式切换按钮 */}
             <Button
