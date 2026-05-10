@@ -1,8 +1,7 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
   Table,
   Button,
-  Input,
   Modal,
   Form,
   Space,
@@ -54,25 +53,28 @@ const TOOL_TYPE_COLORS = {
   image_generation: 'purple',
 };
 
+const EMPTY_FORM = {
+  id: '',
+  name: '',
+  tool_type: 'web_search',
+  billing_mode: 'per_call',
+  price: 0,
+  model_filter: '',
+  quality: '',
+  size: '',
+  provider: '',
+  enabled: true,
+};
+
 const ToolBillingSettings = () => {
   const { t } = useTranslation();
   const [rules, setRules] = useState([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
-  const [editingRule, setEditingRule] = useState(null);
-  const [editForm, setEditForm] = useState({
-    id: '',
-    name: '',
-    tool_type: 'web_search',
-    billing_mode: 'per_call',
-    price: 0,
-    model_filter: '',
-    quality: '',
-    size: '',
-    provider: '',
-    enabled: true,
-  });
+  const [editingIndex, setEditingIndex] = useState(null);
+  const [toolType, setToolType] = useState('web_search');
+  const formRef = useRef(null);
 
   const fetchRules = useCallback(async () => {
     try {
@@ -133,45 +135,59 @@ const ToolBillingSettings = () => {
   };
 
   const openAddModal = () => {
-    setEditingRule(null);
-    setEditForm({
-      id: '',
-      name: '',
-      tool_type: 'web_search',
-      billing_mode: 'per_call',
-      price: 0,
-      model_filter: '',
-      quality: '',
-      size: '',
-      provider: '',
-      enabled: true,
-    });
+    setEditingIndex(null);
+    setToolType('web_search');
     setModalVisible(true);
+    setTimeout(() => {
+      if (formRef.current) {
+        formRef.current.setValues(EMPTY_FORM);
+      }
+    }, 0);
   };
 
   const openEditModal = (record, index) => {
-    setEditingRule(index);
-    setEditForm({ ...record });
+    setEditingIndex(index);
+    setToolType(record.tool_type || 'web_search');
     setModalVisible(true);
+    setTimeout(() => {
+      if (formRef.current) {
+        formRef.current.setValues({ ...record });
+      }
+    }, 0);
   };
 
   const handleModalOk = () => {
-    if (!editForm.id.trim()) {
+    const formValues = formRef.current
+      ? formRef.current.getValues()
+      : null;
+    if (!formValues) return;
+
+    if (!formValues.id || !formValues.id.trim()) {
       showError('规则 ID 不能为空');
       return;
     }
-    if (!editForm.name.trim()) {
+    if (!formValues.name || !formValues.name.trim()) {
       showError('规则名称不能为空');
       return;
     }
 
-    const newRules = [...rules];
-    const rule = { ...editForm };
+    const rule = {
+      id: formValues.id.trim(),
+      name: formValues.name.trim(),
+      tool_type: formValues.tool_type || 'web_search',
+      billing_mode: formValues.billing_mode || 'per_call',
+      price: typeof formValues.price === 'number' ? formValues.price : 0,
+      model_filter: formValues.model_filter || '',
+      quality: formValues.quality || '',
+      size: formValues.size || '',
+      provider: formValues.provider || '',
+      enabled: formValues.enabled !== false,
+    };
 
-    if (editingRule !== null) {
-      newRules[editingRule] = rule;
+    const newRules = [...rules];
+    if (editingIndex !== null) {
+      newRules[editingIndex] = rule;
     } else {
-      // Check duplicate ID
       if (newRules.some((r) => r.id === rule.id)) {
         showError('规则 ID 已存在');
         return;
@@ -227,9 +243,7 @@ const ToolBillingSettings = () => {
       title: t('价格 (USD)'),
       dataIndex: 'price',
       width: 120,
-      render: (text, record) => {
-        return `$${text}/次`;
-      },
+      render: (text) => `$${text}/次`,
     },
     {
       title: t('供应商'),
@@ -294,32 +308,23 @@ const ToolBillingSettings = () => {
     },
   ];
 
-  const isImageGeneration = editForm.tool_type === 'image_generation';
+  const isImageGeneration = toolType === 'image_generation';
 
   return (
     <div>
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          marginBottom: 16,
-        }}
-      >
-        <Space>
-          <Button icon={<IconPlus />} theme='solid' onClick={openAddModal}>
-            {t('添加规则')}
-          </Button>
-        </Space>
+      <Space className='mt-2' style={{ marginBottom: 16 }}>
+        <Button icon={<IconPlus />} onClick={openAddModal}>
+          {t('添加规则')}
+        </Button>
         <Button
-          icon={<IconSave />}
-          theme='solid'
           type='primary'
+          icon={<IconSave />}
           loading={saving}
           onClick={handleSave}
         >
           {t('保存')}
         </Button>
-      </div>
+      </Space>
 
       <Table
         columns={columns}
@@ -331,7 +336,7 @@ const ToolBillingSettings = () => {
       />
 
       <Modal
-        title={editingRule !== null ? t('编辑规则') : t('添加规则')}
+        title={editingIndex !== null ? t('编辑规则') : t('添加规则')}
         visible={modalVisible}
         onOk={handleModalOk}
         onCancel={() => setModalVisible(false)}
@@ -339,56 +344,43 @@ const ToolBillingSettings = () => {
         cancelText={t('取消')}
         width={600}
       >
-        <Form labelPosition='left' labelWidth={120}>
+        <Form
+          ref={formRef}
+          labelPosition='left'
+          labelWidth={120}
+          initValues={EMPTY_FORM}
+        >
           <Form.Input
             field='id'
             label='ID'
-            value={editForm.id}
-            onChange={(val) =>
-              setEditForm((prev) => ({ ...prev, id: val }))
-            }
             placeholder='如: web_search_openai'
-            disabled={editingRule !== null}
+            disabled={editingIndex !== null}
           />
           <Form.Input
             field='name'
             label={t('名称')}
-            value={editForm.name}
-            onChange={(val) =>
-              setEditForm((prev) => ({ ...prev, name: val }))
-            }
             placeholder='如: OpenAI Web Search'
           />
           <Form.Select
             field='tool_type'
             label={t('工具类型')}
-            value={editForm.tool_type}
-            onChange={(val) =>
-              setEditForm((prev) => ({
-                ...prev,
-                tool_type: val,
-                quality: val === 'web_search' ? '' : prev.quality,
-                size: val === 'web_search' ? '' : prev.size,
-              }))
-            }
             optionList={TOOL_TYPES}
+            onChange={(val) => {
+              setToolType(val);
+              if (val === 'web_search' && formRef.current) {
+                formRef.current.setValue('quality', '');
+                formRef.current.setValue('size', '');
+              }
+            }}
           />
           <Form.Select
             field='billing_mode'
             label={t('计费模式')}
-            value={editForm.billing_mode}
-            onChange={(val) =>
-              setEditForm((prev) => ({ ...prev, billing_mode: val }))
-            }
             optionList={BILLING_MODES}
           />
           <Form.InputNumber
             field='price'
             label={t('价格 (USD)')}
-            value={editForm.price}
-            onChange={(val) =>
-              setEditForm((prev) => ({ ...prev, price: val }))
-            }
             min={0}
             step={0.001}
             precision={6}
@@ -396,19 +388,11 @@ const ToolBillingSettings = () => {
           <Form.Select
             field='provider'
             label={t('供应商')}
-            value={editForm.provider}
-            onChange={(val) =>
-              setEditForm((prev) => ({ ...prev, provider: val }))
-            }
             optionList={PROVIDERS}
           />
           <Form.Input
             field='model_filter'
             label={t('模型过滤')}
-            value={editForm.model_filter}
-            onChange={(val) =>
-              setEditForm((prev) => ({ ...prev, model_filter: val }))
-            }
             placeholder='如: gpt-4o*,gpt-4.1* (留空=全部)'
           />
           {isImageGeneration && (
@@ -416,19 +400,11 @@ const ToolBillingSettings = () => {
               <Form.Select
                 field='quality'
                 label={t('质量')}
-                value={editForm.quality}
-                onChange={(val) =>
-                  setEditForm((prev) => ({ ...prev, quality: val }))
-                }
                 optionList={QUALITIES}
               />
               <Form.Select
                 field='size'
                 label={t('尺寸')}
-                value={editForm.size}
-                onChange={(val) =>
-                  setEditForm((prev) => ({ ...prev, size: val }))
-                }
                 optionList={SIZES}
               />
             </>
@@ -436,10 +412,6 @@ const ToolBillingSettings = () => {
           <Form.Switch
             field='enabled'
             label={t('启用')}
-            checked={editForm.enabled}
-            onChange={(val) =>
-              setEditForm((prev) => ({ ...prev, enabled: val }))
-            }
           />
         </Form>
       </Modal>
