@@ -146,6 +146,33 @@ func TryUserAuth() func(c *gin.Context) {
 	}
 }
 
+// PricingAuth 根据模型广场的 requireAuth 配置动态决定认证策略：
+// 如果开启了 requireAuth，则强制校验用户登录态（token/session 必须有效）；
+// 如果未开启，则使用宽松认证（TryUserAuth），不强制登录。
+func PricingAuth() func(c *gin.Context) {
+	return func(c *gin.Context) {
+		common.OptionMapRWMutex.RLock()
+		headerNavModulesStr := common.OptionMap["HeaderNavModules"]
+		common.OptionMapRWMutex.RUnlock()
+
+		if headerNavModulesStr != "" {
+			var modules struct {
+				Pricing struct {
+					RequireAuth bool `json:"requireAuth"`
+				} `json:"pricing"`
+			}
+			if err := common.Unmarshal([]byte(headerNavModulesStr), &modules); err == nil {
+				if modules.Pricing.RequireAuth {
+					authHelper(c, common.RoleCommonUser)
+					return
+				}
+			}
+		}
+		// 未开启 requireAuth 或配置解析失败，使用宽松认证
+		TryUserAuth()(c)
+	}
+}
+
 func UserAuth() func(c *gin.Context) {
 	return func(c *gin.Context) {
 		authHelper(c, common.RoleCommonUser)
