@@ -103,6 +103,7 @@ const ChartsPanel = ({
   spec_model_line,
   spec_pie,
   spec_rank_bar,
+  spec_cache_line,
   modelRank,
   loading,
   CARD_PROPS,
@@ -130,6 +131,7 @@ const ChartsPanel = ({
             <TabPane tab={<span>{t('消耗趋势')}</span>} itemKey='2' />
             <TabPane tab={<span>{t('调用次数分布')}</span>} itemKey='3' />
             <TabPane tab={<span>{t('调用次数排行')}</span>} itemKey='4' />
+            <TabPane tab={<span>{t('缓存率趋势')}</span>} itemKey='5' />
           </Tabs>
         </div>
       }
@@ -147,6 +149,9 @@ const ChartsPanel = ({
         )}
         {activeChartTab === '4' && (
           <ModelRankPanel modelRank={modelRank} loading={loading} t={t} />
+        )}
+        {activeChartTab === '5' && (
+          <VChart spec={spec_cache_line} option={CHART_CONFIG} />
         )}
       </div>
     </Card>

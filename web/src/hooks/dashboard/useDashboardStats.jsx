@@ -50,6 +50,16 @@ const formatRegionCount = (stat) => {
   return `${stat.success_count} / ${stat.fail_count}`;
 };
 
+const formatCacheRate = (stat) => {
+  if (!stat || stat.cache_rate < 0) return '--';
+  return `${stat.cache_rate.toFixed(2)}%`;
+};
+
+const formatCacheDetail = (stat) => {
+  if (!stat) return '';
+  return `命中 ${stat.cache_hit_tokens || 0} / 创建 ${stat.cache_creation_tokens || 0} / 输入 ${stat.input_tokens || 0}`;
+};
+
 export const useDashboardStats = (
   userState,
   consumeQuota,
@@ -137,6 +147,31 @@ export const useDashboardStats = (
             color: getRateColor(regionStats?.overseas),
             rate: regionStats?.overseas?.success_rate != null && regionStats.overseas.success_rate >= 0
               ? regionStats.overseas.success_rate
+              : null,
+          },
+        ],
+      },
+      {
+        title: createSectionTitle(Globe, t('海内外模型缓存率')),
+        color: 'bg-sky-50',
+        colSpan: 2,
+        regionItems: [
+          {
+            label: t('国内模型'),
+            rateValue: formatCacheRate(regionStats?.domestic),
+            countValue: formatCacheDetail(regionStats?.domestic),
+            color: '#0ea5e9',
+            rate: regionStats?.domestic?.cache_rate != null && regionStats.domestic.cache_rate >= 0
+              ? regionStats.domestic.cache_rate
+              : null,
+          },
+          {
+            label: t('海外模型'),
+            rateValue: formatCacheRate(regionStats?.overseas),
+            countValue: formatCacheDetail(regionStats?.overseas),
+            color: '#6366f1',
+            rate: regionStats?.overseas?.cache_rate != null && regionStats.overseas.cache_rate >= 0
+              ? regionStats.overseas.cache_rate
               : null,
           },
         ],

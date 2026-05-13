@@ -14,15 +14,18 @@ import (
 
 // QuotaData 柱状图数据
 type QuotaData struct {
-	Id        int    `json:"id"`
-	UserID    int    `json:"user_id" gorm:"index"`
-	Username  string `json:"username" gorm:"index:idx_qdt_model_user_name,priority:2;size:64;default:''"`
-	ModelName string `json:"model_name" gorm:"index:idx_qdt_model_user_name,priority:1;size:64;default:''"`
-	CreatedAt int64  `json:"created_at" gorm:"bigint;index:idx_qdt_created_at,priority:2"`
-	TokenUsed int    `json:"token_used" gorm:"default:0"`
-	Count     int    `json:"count" gorm:"default:0"`
-	FailCount int    `json:"fail_count" gorm:"default:0"`
-	Quota     int    `json:"quota" gorm:"default:0"`
+	Id                  int    `json:"id"`
+	UserID              int    `json:"user_id" gorm:"index"`
+	Username            string `json:"username" gorm:"index:idx_qdt_model_user_name,priority:2;size:64;default:''"`
+	ModelName           string `json:"model_name" gorm:"index:idx_qdt_model_user_name,priority:1;size:64;default:''"`
+	CreatedAt           int64  `json:"created_at" gorm:"bigint;index:idx_qdt_created_at,priority:2"`
+	TokenUsed           int    `json:"token_used" gorm:"default:0"`
+	Count               int    `json:"count" gorm:"default:0"`
+	FailCount           int    `json:"fail_count" gorm:"default:0"`
+	Quota               int    `json:"quota" gorm:"default:0"`
+	InputTokens         int    `json:"input_tokens" gorm:"default:0"`
+	CacheHitTokens      int    `json:"cache_hit_tokens" gorm:"default:0"`
+	CacheCreationTokens int    `json:"cache_creation_tokens" gorm:"default:0"`
 }
 
 func UpdateQuotaData() {
@@ -38,34 +41,40 @@ func UpdateQuotaData() {
 var CacheQuotaData = make(map[string]*QuotaData)
 var CacheQuotaDataLock = sync.Mutex{}
 
-func logQuotaDataCache(userId int, username string, modelName string, quota int, createdAt int64, tokenUsed int) {
+func logQuotaDataCache(userId int, username string, modelName string, quota int, createdAt int64, tokenUsed int, inputTokens int, cacheHitTokens int, cacheCreationTokens int) {
 	key := fmt.Sprintf("%d-%s-%s-%d", userId, username, modelName, createdAt)
 	quotaData, ok := CacheQuotaData[key]
 	if ok {
 		quotaData.Count += 1
 		quotaData.Quota += quota
 		quotaData.TokenUsed += tokenUsed
+		quotaData.InputTokens += inputTokens
+		quotaData.CacheHitTokens += cacheHitTokens
+		quotaData.CacheCreationTokens += cacheCreationTokens
 	} else {
 		quotaData = &QuotaData{
-			UserID:    userId,
-			Username:  username,
-			ModelName: modelName,
-			CreatedAt: createdAt,
-			Count:     1,
-			Quota:     quota,
-			TokenUsed: tokenUsed,
+			UserID:              userId,
+			Username:            username,
+			ModelName:           modelName,
+			CreatedAt:           createdAt,
+			Count:               1,
+			Quota:               quota,
+			TokenUsed:           tokenUsed,
+			InputTokens:         inputTokens,
+			CacheHitTokens:      cacheHitTokens,
+			CacheCreationTokens: cacheCreationTokens,
 		}
 	}
 	CacheQuotaData[key] = quotaData
 }
 
 // LogQuotaData 记录成功请求数据到内存缓存
-func LogQuotaData(userId int, username string, modelName string, quota int, createdAt int64, tokenUsed int) {
+func LogQuotaData(userId int, username string, modelName string, quota int, createdAt int64, tokenUsed int, inputTokens int, cacheHitTokens int, cacheCreationTokens int) {
 	createdAt = createdAt - (createdAt % 3600)
 
 	CacheQuotaDataLock.Lock()
 	defer CacheQuotaDataLock.Unlock()
-	logQuotaDataCache(userId, username, modelName, quota, createdAt, tokenUsed)
+	logQuotaDataCache(userId, username, modelName, quota, createdAt, tokenUsed, inputTokens, cacheHitTokens, cacheCreationTokens)
 }
 
 // LogQuotaErrorData 记录失败请求数据到内存缓存
@@ -106,7 +115,7 @@ func SaveQuotaDataCache() {
 		DB.Table("quota_data").Where("user_id = ? and username = ? and model_name = ? and created_at = ?",
 			quotaData.UserID, quotaData.Username, quotaData.ModelName, quotaData.CreatedAt).First(quotaDataDB)
 		if quotaDataDB.Id > 0 {
-			increaseQuotaData(quotaData.UserID, quotaData.Username, quotaData.ModelName, quotaData.Count, quotaData.Quota, quotaData.CreatedAt, quotaData.TokenUsed, quotaData.FailCount)
+			increaseQuotaData(quotaData.UserID, quotaData.Username, quotaData.ModelName, quotaData.Count, quotaData.Quota, quotaData.CreatedAt, quotaData.TokenUsed, quotaData.FailCount, quotaData.InputTokens, quotaData.CacheHitTokens, quotaData.CacheCreationTokens)
 		} else {
 			DB.Table("quota_data").Create(quotaData)
 		}
@@ -115,13 +124,16 @@ func SaveQuotaDataCache() {
 	common.SysLog(fmt.Sprintf("保存数据看板数据成功，共保存%d条数据", size))
 }
 
-func increaseQuotaData(userId int, username string, modelName string, count int, quota int, createdAt int64, tokenUsed int, failCount int) {
+func increaseQuotaData(userId int, username string, modelName string, count int, quota int, createdAt int64, tokenUsed int, failCount int, inputTokens int, cacheHitTokens int, cacheCreationTokens int) {
 	err := DB.Table("quota_data").Where("user_id = ? and username = ? and model_name = ? and created_at = ?",
 		userId, username, modelName, createdAt).Updates(map[string]interface{}{
-		"count":      gorm.Expr("count + ?", count),
-		"quota":      gorm.Expr("quota + ?", quota),
-		"token_used": gorm.Expr("token_used + ?", tokenUsed),
-		"fail_count": gorm.Expr("fail_count + ?", failCount),
+		"count":                 gorm.Expr("count + ?", count),
+		"quota":                 gorm.Expr("quota + ?", quota),
+		"token_used":            gorm.Expr("token_used + ?", tokenUsed),
+		"fail_count":            gorm.Expr("fail_count + ?", failCount),
+		"input_tokens":          gorm.Expr("input_tokens + ?", inputTokens),
+		"cache_hit_tokens":      gorm.Expr("cache_hit_tokens + ?", cacheHitTokens),
+		"cache_creation_tokens": gorm.Expr("cache_creation_tokens + ?", cacheCreationTokens),
 	}).Error
 	if err != nil {
 		common.SysLog(fmt.Sprintf("increaseQuotaData error: %s", err))
@@ -150,7 +162,7 @@ func GetAllQuotaDates(startTime int64, endTime int64, username string) (quotaDat
 	// 从quota_data表中查询数据
 	// only select model_name, sum(count) as count, sum(quota) as quota, model_name, created_at from quota_data group by model_name, created_at;
 	//err = DB.Table("quota_data").Where("created_at >= ? and created_at <= ?", startTime, endTime).Find(&quotaDatas).Error
-	err = DB.Table("quota_data").Select("model_name, sum(count) as count, sum(quota) as quota, sum(token_used) as token_used, sum(fail_count) as fail_count, created_at").Where("created_at >= ? and created_at <= ?", startTime, endTime).Group("model_name, created_at").Find(&quotaDatas).Error
+	err = DB.Table("quota_data").Select("model_name, sum(count) as count, sum(quota) as quota, sum(token_used) as token_used, sum(fail_count) as fail_count, sum(input_tokens) as input_tokens, sum(cache_hit_tokens) as cache_hit_tokens, sum(cache_creation_tokens) as cache_creation_tokens, created_at").Where("created_at >= ? and created_at <= ?", startTime, endTime).Group("model_name, created_at").Find(&quotaDatas).Error
 	return quotaDatas, err
 }
 
@@ -295,9 +307,13 @@ func GetAllModelRank(startTime int64, endTime int64) (ModelRankResponse, error) 
 
 // RegionStat 区域统计数据（国内/海外）
 type RegionStat struct {
-	SuccessCount int     `json:"success_count"`
-	FailCount    int     `json:"fail_count"`
-	SuccessRate  float64 `json:"success_rate"`
+	SuccessCount        int     `json:"success_count"`
+	FailCount           int     `json:"fail_count"`
+	SuccessRate         float64 `json:"success_rate"`
+	InputTokens         int     `json:"input_tokens"`
+	CacheHitTokens      int     `json:"cache_hit_tokens"`
+	CacheCreationTokens int     `json:"cache_creation_tokens"`
+	CacheRate           float64 `json:"cache_rate"`
 }
 
 // regionModelPrefixes 国内模型名前缀（统一小写）
@@ -323,9 +339,15 @@ func computeRegionStats(quotaDatas []*QuotaData) (domestic RegionStat, overseas 
 		if matchModelPrefix(item.ModelName, domesticPrefixes) {
 			domestic.SuccessCount += item.Count
 			domestic.FailCount += item.FailCount
+			domestic.InputTokens += item.InputTokens
+			domestic.CacheHitTokens += item.CacheHitTokens
+			domestic.CacheCreationTokens += item.CacheCreationTokens
 		} else if matchModelPrefix(item.ModelName, overseasPrefixes) {
 			overseas.SuccessCount += item.Count
 			overseas.FailCount += item.FailCount
+			overseas.InputTokens += item.InputTokens
+			overseas.CacheHitTokens += item.CacheHitTokens
+			overseas.CacheCreationTokens += item.CacheCreationTokens
 		}
 	}
 	const noDataRate = -1.0
@@ -335,11 +357,21 @@ func computeRegionStats(quotaDatas []*QuotaData) (domestic RegionStat, overseas 
 	} else {
 		domestic.SuccessRate = noDataRate
 	}
+	if domestic.InputTokens > 0 {
+		domestic.CacheRate = math.Floor(float64(domestic.CacheHitTokens)/float64(domestic.InputTokens)*1000) / 10
+	} else {
+		domestic.CacheRate = noDataRate
+	}
 	total = overseas.SuccessCount + overseas.FailCount
 	if total > 0 {
 		overseas.SuccessRate = math.Floor(float64(overseas.SuccessCount)/float64(total)*1000) / 10
 	} else {
 		overseas.SuccessRate = noDataRate
+	}
+	if overseas.InputTokens > 0 {
+		overseas.CacheRate = math.Floor(float64(overseas.CacheHitTokens)/float64(overseas.InputTokens)*1000) / 10
+	} else {
+		overseas.CacheRate = noDataRate
 	}
 	return
 }
@@ -354,7 +386,7 @@ type RegionStatsResponse struct {
 func GetRegionStatsByUserId(userId int, startTime int64, endTime int64) (RegionStatsResponse, error) {
 	var quotaDatas []*QuotaData
 	err := DB.Table("quota_data").
-		Select("model_name, sum(count) as count, sum(fail_count) as fail_count").
+		Select("model_name, sum(count) as count, sum(fail_count) as fail_count, sum(input_tokens) as input_tokens, sum(cache_hit_tokens) as cache_hit_tokens, sum(cache_creation_tokens) as cache_creation_tokens").
 		Where("user_id = ? and created_at >= ? and created_at <= ?", userId, startTime, endTime).
 		Group("model_name").
 		Find(&quotaDatas).Error
@@ -369,7 +401,7 @@ func GetRegionStatsByUserId(userId int, startTime int64, endTime int64) (RegionS
 func GetRegionStatsByUsername(username string, startTime int64, endTime int64) (RegionStatsResponse, error) {
 	var quotaDatas []*QuotaData
 	err := DB.Table("quota_data").
-		Select("model_name, sum(count) as count, sum(fail_count) as fail_count").
+		Select("model_name, sum(count) as count, sum(fail_count) as fail_count, sum(input_tokens) as input_tokens, sum(cache_hit_tokens) as cache_hit_tokens, sum(cache_creation_tokens) as cache_creation_tokens").
 		Where("username = ? and created_at >= ? and created_at <= ?", username, startTime, endTime).
 		Group("model_name").
 		Find(&quotaDatas).Error
@@ -384,7 +416,7 @@ func GetRegionStatsByUsername(username string, startTime int64, endTime int64) (
 func GetAllRegionStats(startTime int64, endTime int64) (RegionStatsResponse, error) {
 	var quotaDatas []*QuotaData
 	err := DB.Table("quota_data").
-		Select("model_name, sum(count) as count, sum(fail_count) as fail_count").
+		Select("model_name, sum(count) as count, sum(fail_count) as fail_count, sum(input_tokens) as input_tokens, sum(cache_hit_tokens) as cache_hit_tokens, sum(cache_creation_tokens) as cache_creation_tokens").
 		Where("created_at >= ? and created_at <= ?", startTime, endTime).
 		Group("model_name").
 		Find(&quotaDatas).Error

@@ -51,7 +51,11 @@ const RegionCard = ({ group, loading }) => (
                 <div className='text-sm font-semibold'>
                   {item.rateValue}
                   {item.countValue && (
-                    <span className='text-gray-400 font-normal' style={{ fontSize: '0.8em' }}>
+                    <span
+                      className='text-gray-400 font-normal'
+                      style={{ fontSize: '0.8em' }}
+                      title={item.countValue}
+                    >
                       {' - '}
                       {item.countValue}
                     </span>

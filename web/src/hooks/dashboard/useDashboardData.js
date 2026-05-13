@@ -78,6 +78,8 @@ export const useDashboardData = (userState, userDispatch, statusState) => {
     tokens: [],
     rpm: [],
     tpm: [],
+    domesticCacheRate: [],
+    overseasCacheRate: [],
   });
 
   // ========== Uptime 数据 ==========
