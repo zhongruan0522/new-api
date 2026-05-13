@@ -32,9 +32,8 @@ import {
 import { renderQuota } from '../../helpers';
 import { createSectionTitle } from '../../helpers/dashboard';
 
-const getRateColor = (stat) => {
-  if (!stat || stat.success_rate < 0) return '#6b7280';
-  const rate = stat.success_rate;
+const getRateColor = (rate) => {
+  if (rate == null || rate < 0) return '#6b7280';
   if (rate >= 95) return '#10b981';
   if (rate >= 50) return '#f59e0b';
   return '#ef4444';
@@ -144,7 +143,7 @@ export const useDashboardStats = (
             label: t('国内模型'),
             rateValue: formatRegionRate(regionStats?.domestic),
             countValue: formatRegionCount(regionStats?.domestic),
-            color: getRateColor(regionStats?.domestic),
+            color: getRateColor(regionStats?.domestic?.success_rate),
             rate: regionStats?.domestic?.success_rate != null && regionStats.domestic.success_rate >= 0
               ? regionStats.domestic.success_rate
               : null,
@@ -153,7 +152,7 @@ export const useDashboardStats = (
             label: t('海外模型'),
             rateValue: formatRegionRate(regionStats?.overseas),
             countValue: formatRegionCount(regionStats?.overseas),
-            color: getRateColor(regionStats?.overseas),
+            color: getRateColor(regionStats?.overseas?.success_rate),
             rate: regionStats?.overseas?.success_rate != null && regionStats.overseas.success_rate >= 0
               ? regionStats.overseas.success_rate
               : null,
@@ -169,19 +168,21 @@ export const useDashboardStats = (
             label: t('国内模型'),
             rateValue: formatCacheRate(regionStats?.domestic),
             countValue: formatCacheDetail(regionStats?.domestic),
-            color: '#0ea5e9',
+            color: getRateColor(regionStats?.domestic?.cache_rate),
             rate: regionStats?.domestic?.cache_rate != null && regionStats.domestic.cache_rate >= 0
               ? regionStats.domestic.cache_rate
               : null,
+            showProgress: false,
           },
           {
             label: t('海外模型'),
             rateValue: formatCacheRate(regionStats?.overseas),
             countValue: formatCacheDetail(regionStats?.overseas),
-            color: '#6366f1',
+            color: getRateColor(regionStats?.overseas?.cache_rate),
             rate: regionStats?.overseas?.cache_rate != null && regionStats.overseas.cache_rate >= 0
               ? regionStats.overseas.cache_rate
               : null,
+            showProgress: false,
           },
         ],
       },
