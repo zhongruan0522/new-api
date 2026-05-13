@@ -148,8 +148,6 @@ const PricingVendorIntro = memo(
     setShowFilterModal,
     showWithRecharge,
     setShowWithRecharge,
-    currency,
-    setCurrency,
     viewMode,
     setViewMode,
     tokenUnit,
@@ -281,8 +279,6 @@ const PricingVendorIntro = memo(
           setShowFilterModal={setShowFilterModal}
           showWithRecharge={showWithRecharge}
           setShowWithRecharge={setShowWithRecharge}
-          currency={currency}
-          setCurrency={setCurrency}
           viewMode={viewMode}
           setViewMode={setViewMode}
           tokenUnit={tokenUnit}
@@ -301,8 +297,6 @@ const PricingVendorIntro = memo(
         setShowFilterModal,
         showWithRecharge,
         setShowWithRecharge,
-        currency,
-        setCurrency,
         viewMode,
         setViewMode,
         tokenUnit,

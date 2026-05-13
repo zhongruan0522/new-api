@@ -29,7 +29,9 @@ const ModelPage = () => {
       <SectionPageLayout>
         <SectionPageLayout.Title>{t('AI模型配置')}</SectionPageLayout.Title>
         <SectionPageLayout.Description>
-          {t('管理AI模型配置，包括模型名称、定价和可用性设置')}
+          <span className='font-semibold text-semi-color-text-1'>
+            {t('管理AI模型配置，包括模型名称、定价和可用性设置。此处配置仅用于控制「模型广场」对用户的展示效果，不会影响模型的实际调用与路由。若需配置真实调用行为，请前往「渠道管理」进行设置。')}
+          </span>
         </SectionPageLayout.Description>
         <SectionPageLayout.Content>
           <ModelsTable />

@@ -96,8 +96,17 @@ export const useSecureVerification = ({
         return false;
       }
 
-      // 设置默认验证方式
-      let defaultMethod = preferredMethod;
+      // 设置默认验证方式：首选方式不可用时自动回退
+      let defaultMethod = null;
+      if (
+        preferredMethod === 'passkey' &&
+        methods.hasPasskey &&
+        methods.passkeySupported
+      ) {
+        defaultMethod = 'passkey';
+      } else if (preferredMethod === '2fa' && methods.has2FA) {
+        defaultMethod = '2fa';
+      }
       if (!defaultMethod) {
         if (methods.hasPasskey && methods.passkeySupported) {
           defaultMethod = 'passkey';

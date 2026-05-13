@@ -57,9 +57,15 @@ func UpdateOption(c *gin.Context) {
 	}
 	switch option.Key {
 	case "Chats", "ChatLink", "ChatLink2",
-		// Removed login methods: keep DB compatibility but block re-creation via API.
 		"WeChatAuthEnabled", "WeChatServerAddress", "WeChatServerToken", "WeChatAccountQRCodeImageURL",
-		"oidc.enabled", "oidc.client_id", "oidc.client_secret", "oidc.well_known", "oidc.authorization_endpoint", "oidc.token_endpoint", "oidc.user_info_endpoint":
+		"oidc.enabled", "oidc.client_id", "oidc.client_secret", "oidc.well_known", "oidc.authorization_endpoint", "oidc.token_endpoint", "oidc.user_info_endpoint",
+		"CreemApiKey", "CreemProducts", "CreemTestMode", "CreemWebhookSecret",
+		"ExposeRatioEnabled", "ImageRatio",
+		"global.third_party_multimodal_model_id", "global.third_party_multimodal_call_api_type",
+		"global.third_party_multimodal_system_prompt", "global.third_party_multimodal_first_user_prompt",
+		"global.third_party_multimodal_user_agent", "global.third_party_multimodal_x_title",
+		"global.third_party_multimodal_http_referer",
+		"quota_setting.enable_free_model_pre_consume":
 		// Removed legacy features: do not allow recreating these options via API.
 		c.JSON(http.StatusNotFound, gin.H{
 			"success": false,
@@ -217,6 +223,15 @@ func UpdateOption(c *gin.Context) {
 			c.JSON(http.StatusOK, gin.H{
 				"success": false,
 				"message": err.Error(),
+			})
+			return
+		}
+	case "tool_billing_setting.rules":
+		err = operation_setting.ValidateToolBillingRules(option.Value.(string))
+		if err != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": "工具计费规则设置失败: " + err.Error(),
 			})
 			return
 		}

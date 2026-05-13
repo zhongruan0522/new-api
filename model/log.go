@@ -141,6 +141,7 @@ type RecordConsumeLogParams struct {
 	IsStream         bool                   `json:"is_stream"`
 	Group            string                 `json:"group"`
 	Other            map[string]interface{} `json:"other"`
+	InputTokens      int                    `json:"input_tokens"` // 原始输入 token（未被计费逻辑修改），用于缓存率统计
 }
 
 func RecordConsumeLog(c *gin.Context, userId int, params RecordConsumeLogParams) {
@@ -186,7 +187,25 @@ func RecordConsumeLog(c *gin.Context, userId int, params RecordConsumeLogParams)
 			common.SysError(fmt.Sprintf("failed to record consume log (request_id=%s): %s", requestId, err.Error()))
 		}
 		if common.DataExportEnabled {
-			LogQuotaData(userId, username, params.ModelName, params.Quota, createdAt, params.PromptTokens+params.CompletionTokens)
+			cacheHitTokens := 0
+			cacheCreationTokens := 0
+			if other != nil {
+				if v, ok := other["cache_tokens"].(float64); ok {
+					cacheHitTokens = int(v)
+				} else if v, ok := other["cache_tokens"].(int); ok {
+					cacheHitTokens = v
+				}
+				if v, ok := other["cache_creation_tokens"].(float64); ok {
+					cacheCreationTokens = int(v)
+				} else if v, ok := other["cache_creation_tokens"].(int); ok {
+					cacheCreationTokens = v
+				}
+			}
+			inputTokens := params.InputTokens
+			if inputTokens == 0 {
+				inputTokens = params.PromptTokens
+			}
+			LogQuotaData(userId, username, params.ModelName, params.Quota, createdAt, params.PromptTokens+params.CompletionTokens, inputTokens, cacheHitTokens, cacheCreationTokens)
 		}
 	})
 }

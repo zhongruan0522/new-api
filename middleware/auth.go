@@ -146,6 +146,33 @@ func TryUserAuth() func(c *gin.Context) {
 	}
 }
 
+// PricingAuth 根据模型广场的 requireAuth 配置动态决定认证策略：
+// 如果开启了 requireAuth，则强制校验用户登录态（token/session 必须有效）；
+// 如果未开启，则使用宽松认证（TryUserAuth），不强制登录。
+func PricingAuth() func(c *gin.Context) {
+	return func(c *gin.Context) {
+		common.OptionMapRWMutex.RLock()
+		headerNavModulesStr := common.OptionMap["HeaderNavModules"]
+		common.OptionMapRWMutex.RUnlock()
+
+		if headerNavModulesStr != "" {
+			var modules struct {
+				Pricing struct {
+					RequireAuth bool `json:"requireAuth"`
+				} `json:"pricing"`
+			}
+			if err := common.Unmarshal([]byte(headerNavModulesStr), &modules); err == nil {
+				if modules.Pricing.RequireAuth {
+					authHelper(c, common.RoleCommonUser)
+					return
+				}
+			}
+		}
+		// 未开启 requireAuth 或配置解析失败，使用宽松认证
+		TryUserAuth()(c)
+	}
+}
+
 func UserAuth() func(c *gin.Context) {
 	return func(c *gin.Context) {
 		authHelper(c, common.RoleCommonUser)
@@ -169,7 +196,7 @@ func WssAuth(c *gin.Context) {
 }
 
 // TokenAuthReadOnly 宽松版本的令牌认证中间件，用于只读查询接口。
-// 只验证令牌 key 是否存在，不检查令牌状态、过期时间和额度。
+// 只验证令牌 key 是否存在，不检查令牌状态、过期时间、额度和 IP 限制。
 // 即使令牌已过期、已耗尽或已禁用，也允许访问。
 // 仍然检查用户是否被封禁。
 func TokenAuthReadOnly() func(c *gin.Context) {
@@ -219,8 +246,16 @@ func TokenAuthReadOnly() func(c *gin.Context) {
 		}
 
 		c.Set("id", token.UserId)
-		c.Set("token_id", token.Id)
-		c.Set("token_key", token.Key)
+		common.SetContextKey(c, constant.ContextKeyTokenId, token.Id)
+		common.SetContextKey(c, constant.ContextKeyTokenKey, token.Key)
+		common.SetContextKey(c, constant.ContextKeyTokenUnlimited, token.UnlimitedQuota)
+
+		quotaType := token.QuotaType
+		if quotaType == 0 && !token.UnlimitedQuota {
+			quotaType = 1
+		}
+		common.SetContextKey(c, constant.ContextKeyTokenQuotaType, quotaType)
+
 		c.Next()
 	}
 }

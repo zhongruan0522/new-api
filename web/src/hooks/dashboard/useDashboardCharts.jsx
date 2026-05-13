@@ -260,6 +260,45 @@ export const useDashboardCharts = (
     },
   });
 
+  // 缓存率趋势折线图
+  const [spec_cache_line, setSpecCacheLine] = useState({
+    type: 'line',
+    data: [
+      {
+        id: 'cacheRateData',
+        values: [],
+      },
+    ],
+    xField: 'Time',
+    yField: 'Rate',
+    seriesField: 'Type',
+    legends: {
+      visible: true,
+      selectMode: 'single',
+    },
+    title: {
+      visible: true,
+      text: t('模型缓存率趋势'),
+      subtext: '',
+    },
+    tooltip: {
+      mark: {
+        content: [
+          {
+            key: (datum) => datum['Type'],
+            value: (datum) => `${(datum['Rate'] * 100).toFixed(2)}%`,
+          },
+        ],
+      },
+    },
+    color: {
+      specified: {
+        [t('国内模型')]: '#10b981',
+        [t('海外模型')]: '#3b82f6',
+      },
+    },
+  });
+
   // ========== 数据处理函数 ==========
   const generateModelColors = useCallback((uniqueModels, modelColors) => {
     const newModelColors = {};
@@ -291,6 +330,10 @@ export const useDashboardCharts = (
         timeQuotaMap,
         timeTokensMap,
         timeCountMap,
+        domesticInputTokensMap,
+        domesticCacheHitTokensMap,
+        overseasInputTokensMap,
+        overseasCacheHitTokensMap,
       } = processedData;
 
       const trendDataResult = calculateTrendData(
@@ -299,6 +342,10 @@ export const useDashboardCharts = (
         timeTokensMap,
         timeCountMap,
         dataExportDefaultTime,
+        domesticInputTokensMap,
+        domesticCacheHitTokensMap,
+        overseasInputTokensMap,
+        overseasCacheHitTokensMap,
       );
       setTrendData(trendDataResult);
 
@@ -408,6 +455,39 @@ export const useDashboardCharts = (
         'rankData',
       );
 
+      // ===== 缓存率趋势折线图 =====
+      let cacheLineData = [];
+      chartTimePoints.forEach((time) => {
+        const domesticInput = domesticInputTokensMap.get(time) || 0;
+        const domesticHit = domesticCacheHitTokensMap.get(time) || 0;
+        const overseasInput = overseasInputTokensMap.get(time) || 0;
+        const overseasHit = overseasCacheHitTokensMap.get(time) || 0;
+        cacheLineData.push({
+          Time: time,
+          Type: t('国内模型'),
+          Rate: domesticInput > 0 ? domesticHit / domesticInput : 0,
+        });
+        cacheLineData.push({
+          Time: time,
+          Type: t('海外模型'),
+          Rate: overseasInput > 0 ? overseasHit / overseasInput : 0,
+        });
+      });
+      cacheLineData.sort((a, b) => a.Time.localeCompare(b.Time));
+
+      const cacheRateColors = {
+        [t('国内模型')]: '#10b981',
+        [t('海外模型')]: '#3b82f6',
+      };
+
+      updateChartSpec(
+        setSpecCacheLine,
+        cacheLineData,
+        '',
+        cacheRateColors,
+        'cacheRateData',
+      );
+
       setPieData(newPieData);
       setLineData(newLineData);
       setConsumeQuota(totalQuota);
@@ -426,6 +506,7 @@ export const useDashboardCharts = (
       setConsumeTokens,
       setTimes,
       setFailCount,
+      setSpecCacheLine,
       t,
     ],
   );
@@ -443,6 +524,7 @@ export const useDashboardCharts = (
     spec_line,
     spec_model_line,
     spec_rank_bar,
+    spec_cache_line,
 
     // 函数
     updateChartData,

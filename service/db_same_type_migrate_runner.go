@@ -39,33 +39,31 @@ func runDBSameTypeMigrateJobWithContext(ctx context.Context, job *DBSameTypeMigr
 
 	job.setStep("校验目标数据库连接")
 
-	// 准备目标主库：连接 + 建表 + 空库校验 + 身份校验
-	targetMainDB, err := prepareSameTypeTargetMainDB(ctx, job, params, targetType)
+	// 连接目标主库（仅连接，不建表）
+	targetMainDB, err := openTargetMainDB(job, params, targetType)
 	if err != nil {
 		return err
 	}
 	defer func() { _ = closeGormDB(targetMainDB) }()
 
 	// 校验目标主库 != 源主库（P1: 连接级标识，不依赖 DSN 字符串）
+	// 在建表之前校验，避免对源库误执行 AutoMigrate
 	if err := checkNotSameDB(job, model.DB, targetMainDB, targetType, "主库"); err != nil {
 		return err
 	}
 
-	// 准备目标日志库（可选）：连接 + 建表 + 空库校验 + 身份校验
-	// 在主库表复制之前完成，避免主库已写入但日志库校验失败导致半完成状态
-	targetLogDB, needCloseLogDB, err := prepareSameTypeTargetLogDB(ctx, job, params, targetMainDB, targetType)
+	// 校验通过后再建表 + 空库检查
+	if err := prepareSameTypeTargetMainDBAfterCheck(ctx, job, targetMainDB, params); err != nil {
+		return err
+	}
+
+	// 连接目标日志库（可选），同样先校验再建表
+	targetLogDB, needCloseLogDB, err := openAndCheckTargetLogDB(ctx, job, params, targetMainDB, targetType)
 	if err != nil {
 		return err
 	}
 	if needCloseLogDB {
 		defer func() { _ = closeGormDB(targetLogDB) }()
-	}
-
-	// 校验目标日志库 != 源日志库
-	if params.IncludeLogs {
-		if err := checkNotSameDB(job, model.LOG_DB, targetLogDB, targetType, "日志库"); err != nil {
-			return err
-		}
 	}
 
 	// ============ 第二阶段：所有校验通过，开始复制数据 ============
@@ -92,34 +90,39 @@ func runDBSameTypeMigrateJobWithContext(ctx context.Context, job *DBSameTypeMigr
 
 // checkNotSameDB 通过连接级数据库标识比较两个连接是否指向同一个库
 func checkNotSameDB(job *DBSameTypeMigrateJob, src *gorm.DB, dst *gorm.DB, dbType string, label string) error {
-	same, err := isSameDBConnection(src, dst, dbType)
-	if err != nil {
-		return fmt.Errorf("无法校验目标%s与源%s是否相同：%w（身份校验失败时拒绝继续，以防止误操作）", label, label, err)
+	srcID, srcErr := getDBIdentity(src, dbType)
+	dstID, dstErr := getDBIdentity(dst, dbType)
+	if srcErr != nil || dstErr != nil {
+		return fmt.Errorf("无法校验目标%s与源%s是否相同：源=%v 目标=%v（身份校验失败时拒绝继续，以防止误操作）", label, label, srcErr, dstErr)
 	}
-	if same {
-		return fmt.Errorf("目标%s与当前源%s是同一个数据库，禁止迁移以避免数据被覆盖", label, label)
+	if srcID == dstID {
+		return fmt.Errorf("目标%s与当前源%s是同一个数据库（源=%s 目标=%s），禁止迁移以避免数据被覆盖",
+			label, label, srcID.String(), dstID.String())
 	}
-	job.appendLog(fmt.Sprintf("[%s] 目标%s与源%s不是同一个数据库，校验通过", time.Now().Format(time.RFC3339), label, label))
+	job.appendLog(fmt.Sprintf("[%s] 目标%s与源%s不是同一个数据库（源=%s 目标=%s），校验通过",
+		time.Now().Format(time.RFC3339), label, label, srcID.String(), dstID.String()))
 	return nil
 }
 
-func prepareSameTypeTargetMainDB(ctx context.Context, job *DBSameTypeMigrateJob, params DBSameTypeMigrateStartParams, targetType string) (*gorm.DB, error) {
+func openTargetMainDB(job *DBSameTypeMigrateJob, params DBSameTypeMigrateStartParams, targetType string) (*gorm.DB, error) {
 	job.appendLog(fmt.Sprintf("[%s] 连接目标主库...", time.Now().Format(time.RFC3339)))
 	targetMainDB, err := openDBByType(params.TargetDSN, targetType)
 	if err != nil {
 		return nil, fmt.Errorf("连接目标主库失败：%w", err)
 	}
+	return targetMainDB, nil
+}
+
+func prepareSameTypeTargetMainDBAfterCheck(ctx context.Context, job *DBSameTypeMigrateJob, targetMainDB *gorm.DB, params DBSameTypeMigrateStartParams) error {
 	job.appendLog(fmt.Sprintf("[%s] 目标主库建表/迁移 schema...", time.Now().Format(time.RFC3339)))
 	if err := autoMigrateTargetMainSchema(targetMainDB); err != nil {
-		_ = closeGormDB(targetMainDB)
-		return nil, fmt.Errorf("目标主库建表/迁移失败：%w", err)
+		return fmt.Errorf("目标主库建表/迁移失败：%w", err)
 	}
 	if err := ensureSameTypeTargetMainDBEmptyOrForce(ctx, targetMainDB, params.Force); err != nil {
-		_ = closeGormDB(targetMainDB)
-		return nil, err
+		return err
 	}
 	job.appendLog(fmt.Sprintf("[%s] 目标主库准备完成", time.Now().Format(time.RFC3339)))
-	return targetMainDB, nil
+	return nil
 }
 
 func ensureSameTypeTargetMainDBEmptyOrForce(ctx context.Context, target *gorm.DB, force bool) error {
@@ -144,7 +147,7 @@ func ensureSameTypeTargetMainDBEmptyOrForce(ctx context.Context, target *gorm.DB
 	return nil
 }
 
-func prepareSameTypeTargetLogDB(ctx context.Context, job *DBSameTypeMigrateJob, params DBSameTypeMigrateStartParams, targetMainDB *gorm.DB, targetType string) (*gorm.DB, bool, error) {
+func openAndCheckTargetLogDB(ctx context.Context, job *DBSameTypeMigrateJob, params DBSameTypeMigrateStartParams, targetMainDB *gorm.DB, targetType string) (*gorm.DB, bool, error) {
 	if !params.IncludeLogs {
 		return targetMainDB, false, nil
 	}
@@ -161,6 +164,7 @@ func prepareSameTypeTargetLogDB(ctx context.Context, job *DBSameTypeMigrateJob, 
 		return nil, false, errors.New("目标日志库类型必须与目标主库一致")
 	}
 	if strings.TrimSpace(targetLogDSN) == strings.TrimSpace(params.TargetDSN) {
+		// 日志库与主库共用同一个目标库，主库已校验通过
 		return targetMainDB, false, nil
 	}
 
@@ -169,6 +173,13 @@ func prepareSameTypeTargetLogDB(ctx context.Context, job *DBSameTypeMigrateJob, 
 	if err != nil {
 		return nil, false, fmt.Errorf("连接目标日志库失败：%w", err)
 	}
+
+	// 先校验是否同一个库，再建表
+	if err := checkNotSameDB(job, model.LOG_DB, targetLogDB, targetType, "日志库"); err != nil {
+		_ = closeGormDB(targetLogDB)
+		return nil, false, err
+	}
+
 	if err := autoMigrateTargetLogSchema(targetLogDB); err != nil {
 		_ = closeGormDB(targetLogDB)
 		return nil, false, fmt.Errorf("目标日志库建表/迁移失败：%w", err)

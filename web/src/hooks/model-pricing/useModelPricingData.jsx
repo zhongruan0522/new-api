@@ -41,7 +41,6 @@ export const useModelPricingData = () => {
   const [filterTag, setFilterTag] = useState('all'); // 模型标签筛选: 'all' | string
   const [pageSize, setPageSize] = useState(20);
   const [currentPage, setCurrentPage] = useState(1);
-  const [currency, setCurrency] = useState('USD');
   const [showWithRecharge, setShowWithRecharge] = useState(false);
   const [tokenUnit, setTokenUnit] = useState('M');
   const [models, setModels] = useState([]);
@@ -55,38 +54,18 @@ export const useModelPricingData = () => {
   const [statusState] = useContext(StatusContext);
   const [userState] = useContext(UserContext);
 
-  // 充值汇率（price）与美元兑人民币汇率（usd_exchange_rate）
+  // 充值价格倍率（price）
   const priceRate = useMemo(
     () => statusState?.status?.price ?? 1,
     [statusState],
   );
-  const usdExchangeRate = useMemo(
-    () => statusState?.status?.usd_exchange_rate ?? priceRate,
-    [statusState, priceRate],
-  );
-  const customExchangeRate = useMemo(
-    () => statusState?.status?.custom_currency_exchange_rate ?? 1,
-    [statusState],
-  );
-  const customCurrencySymbol = useMemo(
-    () => statusState?.status?.custom_currency_symbol ?? '¤',
-    [statusState],
-  );
 
-  // 默认货币与站点展示类型同步（USD/CNY），TOKENS 时仍允许切换视图内货币
-  const siteDisplayType = useMemo(
-    () => statusState?.status?.quota_display_type || 'USD',
-    [statusState],
-  );
-  useEffect(() => {
-    if (
-      siteDisplayType === 'USD' ||
-      siteDisplayType === 'CNY' ||
-      siteDisplayType === 'CUSTOM'
-    ) {
-      setCurrency(siteDisplayType);
+  const displayPrice = (usdPrice) => {
+    if (showWithRecharge) {
+      return `$${(usdPrice * priceRate).toFixed(3)}`;
     }
-  }, [siteDisplayType]);
+    return `$${usdPrice.toFixed(3)}`;
+  };
 
   const filteredModels = useMemo(() => {
     let result = models;
@@ -168,20 +147,6 @@ export const useModelPricingData = () => {
     }),
     [selectedRowKeys],
   );
-
-  const displayPrice = (usdPrice) => {
-    let priceInUSD = usdPrice;
-    if (showWithRecharge) {
-      priceInUSD = (usdPrice * priceRate) / usdExchangeRate;
-    }
-
-    if (currency === 'CNY') {
-      return `¥${(priceInUSD * usdExchangeRate).toFixed(3)}`;
-    } else if (currency === 'CUSTOM') {
-      return `${customCurrencySymbol}${(priceInUSD * customExchangeRate).toFixed(3)}`;
-    }
-    return `$${priceInUSD.toFixed(3)}`;
-  };
 
   const setModelsFormat = (models, groupRatio, vendorMap) => {
     for (let i = 0; i < models.length; i++) {
@@ -351,8 +316,6 @@ export const useModelPricingData = () => {
     setPageSize,
     currentPage,
     setCurrentPage,
-    currency,
-    setCurrency,
     showWithRecharge,
     setShowWithRecharge,
     tokenUnit,
@@ -366,7 +329,6 @@ export const useModelPricingData = () => {
 
     // 计算属性
     priceRate,
-    usdExchangeRate,
     filteredModels,
     rowSelection,
 

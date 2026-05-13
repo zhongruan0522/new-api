@@ -48,10 +48,14 @@ const RegionCard = ({ group, loading }) => (
                   />
                 }
               >
-                <div className='text-sm font-semibold'>
+                <div className='text-sm font-semibold' style={item.showProgress ? {} : { color: item.color }}>
                   {item.rateValue}
                   {item.countValue && (
-                    <span className='text-gray-400 font-normal' style={{ fontSize: '0.8em' }}>
+                    <span
+                      className='text-gray-400 font-normal'
+                      style={{ fontSize: '0.8em' }}
+                      title={item.countValue}
+                    >
                       {' - '}
                       {item.countValue}
                     </span>
@@ -60,18 +64,18 @@ const RegionCard = ({ group, loading }) => (
               </Skeleton>
             </div>
           </div>
-          <div className='w-32'>
-            {item.rate != null ? (
+          {!item.showProgress && item.rate != null ? null : item.rate != null ? (
+            <div className='w-32'>
               <Progress
                 percent={item.rate}
                 showInfo={false}
                 stroke={item.color}
                 size='small'
               />
-            ) : (
-              <span className='text-xs text-gray-400'>--</span>
-            )}
-          </div>
+            </div>
+          ) : (
+            <span className='text-xs text-gray-400'>--</span>
+          )}
         </div>
       ))}
     </div>

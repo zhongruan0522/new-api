@@ -46,8 +46,6 @@ func InitOptionMap() {
 	common.OptionMap["AutomaticDisableChannelEnabled"] = strconv.FormatBool(common.AutomaticDisableChannelEnabled)
 	common.OptionMap["AutomaticEnableChannelEnabled"] = strconv.FormatBool(common.AutomaticEnableChannelEnabled)
 	common.OptionMap["LogConsumeEnabled"] = strconv.FormatBool(common.LogConsumeEnabled)
-	common.OptionMap["DisplayInCurrencyEnabled"] = strconv.FormatBool(common.DisplayInCurrencyEnabled)
-	common.OptionMap["DisplayTokenStatEnabled"] = strconv.FormatBool(common.DisplayTokenStatEnabled)
 	common.OptionMap["DataExportEnabled"] = strconv.FormatBool(common.DataExportEnabled)
 	common.OptionMap["ChannelDisableThreshold"] = strconv.FormatFloat(common.ChannelDisableThreshold, 'f', -1, 64)
 	common.OptionMap["EmailDomainRestrictionEnabled"] = strconv.FormatBool(common.EmailDomainRestrictionEnabled)
@@ -74,7 +72,6 @@ func InitOptionMap() {
 	common.OptionMap["EpayId"] = ""
 	common.OptionMap["EpayKey"] = ""
 	common.OptionMap["Price"] = strconv.FormatFloat(operation_setting.Price, 'f', -1, 64)
-	common.OptionMap["USDExchangeRate"] = strconv.FormatFloat(operation_setting.USDExchangeRate, 'f', -1, 64)
 	common.OptionMap["MinTopUp"] = strconv.Itoa(operation_setting.MinTopUp)
 	common.OptionMap["StripeMinTopUp"] = strconv.Itoa(setting.StripeMinTopUp)
 	common.OptionMap["StripeApiSecret"] = setting.StripeApiSecret
@@ -281,21 +278,9 @@ func updateOptionMap(key string, value string) (err error) {
 			common.AutomaticDisableChannelEnabled = boolValue
 		case "AutomaticEnableChannelEnabled":
 			common.AutomaticEnableChannelEnabled = boolValue
-		case "LogConsumeEnabled":
-			common.LogConsumeEnabled = boolValue
-		case "DisplayInCurrencyEnabled":
-			// 兼容旧字段：同步到新配置 general_setting.quota_display_type（运行时生效）
-			// true -> USD, false -> TOKENS
-			newVal := "USD"
-			if !boolValue {
-				newVal = "TOKENS"
-			}
-			if cfg := config.GlobalConfig.Get("general_setting"); cfg != nil {
-				_ = config.UpdateConfigFromMap(cfg, map[string]string{"quota_display_type": newVal})
-			}
-		case "DisplayTokenStatEnabled":
-			common.DisplayTokenStatEnabled = boolValue
-		case "DataExportEnabled":
+	case "LogConsumeEnabled":
+		common.LogConsumeEnabled = boolValue
+	case "DataExportEnabled":
 			common.DataExportEnabled = boolValue
 		case "DefaultCollapseSidebar":
 			common.DefaultCollapseSidebar = boolValue
@@ -347,8 +332,6 @@ func updateOptionMap(key string, value string) (err error) {
 		operation_setting.EpayKey = value
 	case "Price":
 		operation_setting.Price, _ = strconv.ParseFloat(value, 64)
-	case "USDExchangeRate":
-		operation_setting.USDExchangeRate, _ = strconv.ParseFloat(value, 64)
 	case "MinTopUp":
 		operation_setting.MinTopUp, _ = strconv.Atoi(value)
 	case "StripeApiSecret":

@@ -10,12 +10,17 @@ import (
 
 // dbIdentity 用于唯一标识一个数据库连接
 type dbIdentity struct {
-	Host     string
-	Port     string
-	Database string
+	Host       string
+	Port       string
+	Database   string
+	ServerUUID string // MySQL: @@server_uuid; PostgreSQL: system_identifier
 }
 
-// getDBIdentity 通过数据库连接获取 host/port/database 标识
+func (id dbIdentity) String() string {
+	return fmt.Sprintf("%s:%s/%s (uuid=%s)", id.Host, id.Port, id.Database, id.ServerUUID)
+}
+
+// getDBIdentity 通过数据库连接获取唯一标识
 func getDBIdentity(db *gorm.DB, dbType string) (dbIdentity, error) {
 	switch dbType {
 	case common.DatabaseTypePostgreSQL:
@@ -29,20 +34,21 @@ func getDBIdentity(db *gorm.DB, dbType string) (dbIdentity, error) {
 
 func getPostgresIdentity(db *gorm.DB) (dbIdentity, error) {
 	var host, port, dbName string
-	// pg 后端进程监听地址
-	row := db.Raw("SELECT inet_server_addr(), inet_server_port(), current_database()").Row()
-	if err := row.Scan(&host, &port, &dbName); err != nil {
+	var sysID string
+	// pg 后端进程监听地址 + system_identifier（唯一标识一个 PG 实例）
+	row := db.Raw("SELECT inet_server_addr(), inet_server_port(), current_database(), system_identifier FROM pg_control_system()").Row()
+	if err := row.Scan(&host, &port, &dbName, &sysID); err != nil {
 		return dbIdentity{}, fmt.Errorf("获取 PostgreSQL 连接标识失败：%w", err)
 	}
-	return dbIdentity{Host: host, Port: port, Database: dbName}, nil
+	return dbIdentity{Host: host, Port: port, Database: dbName, ServerUUID: sysID}, nil
 }
 
 func getMySQLIdentity(db *gorm.DB) (dbIdentity, error) {
-	// MySQL 没有直接的 inet_server_addr，用 @@hostname + @@port + DATABASE()
 	var host, port sql.NullString
-	var dbName string
-	row := db.Raw("SELECT @@hostname, @@port, DATABASE()").Row()
-	if err := row.Scan(&host, &port, &dbName); err != nil {
+	var dbName, serverUUID string
+	// @@server_uuid 全局唯一标识一个 MySQL 实例（5.6+）
+	row := db.Raw("SELECT @@hostname, @@port, DATABASE(), @@server_uuid").Row()
+	if err := row.Scan(&host, &port, &dbName, &serverUUID); err != nil {
 		return dbIdentity{}, fmt.Errorf("获取 MySQL 连接标识失败：%w", err)
 	}
 	h := ""
@@ -53,7 +59,7 @@ func getMySQLIdentity(db *gorm.DB) (dbIdentity, error) {
 	if port.Valid {
 		p = port.String
 	}
-	return dbIdentity{Host: h, Port: p, Database: dbName}, nil
+	return dbIdentity{Host: h, Port: p, Database: dbName, ServerUUID: serverUUID}, nil
 }
 
 // isSameDBConnection 判断两个数据库连接是否指向同一个数据库

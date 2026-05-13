@@ -361,11 +361,18 @@ func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage 
 	// response api 格式工具计费
 	if relayInfo.ResponsesUsageInfo != nil {
 		if webSearchTool, exists := relayInfo.ResponsesUsageInfo.BuiltInTools[dto.BuildInToolWebSearchPreview]; exists && webSearchTool.CallCount > 0 {
-			// 计算 web search 调用的配额 (配额 = 价格 * 调用次数 / 1000 * 分组倍率)
-			webSearchPrice = operation_setting.GetWebSearchPricePerThousand(modelName, webSearchTool.SearchContextSize)
-			dWebSearchQuota = decimal.NewFromFloat(webSearchPrice).
-				Mul(decimal.NewFromInt(int64(webSearchTool.CallCount))).
-				Div(decimal.NewFromInt(1000)).Mul(dGroupRatio).Mul(dQuotaPerUnit)
+			// 优先使用可配置价格，回退到硬编码常量
+			if pricePerCall, ok := operation_setting.GetToolBillingPrice("web_search", modelName, "openai", "", ""); ok {
+				webSearchPrice = pricePerCall
+				dWebSearchQuota = decimal.NewFromFloat(webSearchPrice).
+					Mul(decimal.NewFromInt(int64(webSearchTool.CallCount))).
+					Mul(dGroupRatio).Mul(dQuotaPerUnit)
+			} else {
+				webSearchPrice = operation_setting.GetWebSearchPricePerThousand(modelName, webSearchTool.SearchContextSize)
+				dWebSearchQuota = decimal.NewFromFloat(webSearchPrice).
+					Mul(decimal.NewFromInt(int64(webSearchTool.CallCount))).
+					Div(decimal.NewFromInt(1000)).Mul(dGroupRatio).Mul(dQuotaPerUnit)
+			}
 			extraContent = append(extraContent, fmt.Sprintf("Web Search 调用 %d 次，上下文大小 %s，调用花费 %s",
 				webSearchTool.CallCount, webSearchTool.SearchContextSize, dWebSearchQuota.String()))
 		}
@@ -375,9 +382,15 @@ func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage 
 		if searchContextSize == "" {
 			searchContextSize = "medium"
 		}
-		webSearchPrice = operation_setting.GetWebSearchPricePerThousand(modelName, searchContextSize)
-		dWebSearchQuota = decimal.NewFromFloat(webSearchPrice).
-			Div(decimal.NewFromInt(1000)).Mul(dGroupRatio).Mul(dQuotaPerUnit)
+		if pricePerCall, ok := operation_setting.GetToolBillingPrice("web_search", modelName, "openai", "", ""); ok {
+			webSearchPrice = pricePerCall
+			dWebSearchQuota = decimal.NewFromFloat(webSearchPrice).
+				Mul(dGroupRatio).Mul(dQuotaPerUnit)
+		} else {
+			webSearchPrice = operation_setting.GetWebSearchPricePerThousand(modelName, searchContextSize)
+			dWebSearchQuota = decimal.NewFromFloat(webSearchPrice).
+				Div(decimal.NewFromInt(1000)).Mul(dGroupRatio).Mul(dQuotaPerUnit)
+		}
 		extraContent = append(extraContent, fmt.Sprintf("Web Search 调用 1 次，上下文大小 %s，调用花费 %s",
 			searchContextSize, dWebSearchQuota.String()))
 	}
@@ -386,9 +399,16 @@ func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage 
 	var claudeWebSearchPrice float64
 	claudeWebSearchCallCount := ctx.GetInt("claude_web_search_requests")
 	if claudeWebSearchCallCount > 0 {
-		claudeWebSearchPrice = operation_setting.GetClaudeWebSearchPricePerThousand()
-		dClaudeWebSearchQuota = decimal.NewFromFloat(claudeWebSearchPrice).
-			Div(decimal.NewFromInt(1000)).Mul(dGroupRatio).Mul(dQuotaPerUnit).Mul(decimal.NewFromInt(int64(claudeWebSearchCallCount)))
+		if pricePerCall, ok := operation_setting.GetToolBillingPrice("web_search", modelName, "claude", "", ""); ok {
+			claudeWebSearchPrice = pricePerCall
+			dClaudeWebSearchQuota = decimal.NewFromFloat(claudeWebSearchPrice).
+				Mul(decimal.NewFromInt(int64(claudeWebSearchCallCount))).
+				Mul(dGroupRatio).Mul(dQuotaPerUnit)
+		} else {
+			claudeWebSearchPrice = operation_setting.GetClaudeWebSearchPricePerThousand()
+			dClaudeWebSearchQuota = decimal.NewFromFloat(claudeWebSearchPrice).
+				Div(decimal.NewFromInt(1000)).Mul(dGroupRatio).Mul(dQuotaPerUnit).Mul(decimal.NewFromInt(int64(claudeWebSearchCallCount)))
+		}
 		extraContent = append(extraContent, fmt.Sprintf("Claude Web Search 调用 %d 次，调用花费 %s",
 			claudeWebSearchCallCount, dClaudeWebSearchQuota.String()))
 	}
@@ -408,7 +428,12 @@ func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage 
 	var dImageGenerationCallQuota decimal.Decimal
 	var imageGenerationCallPrice float64
 	if ctx.GetBool("image_generation_call") {
-		imageGenerationCallPrice = operation_setting.GetGPTImage1PriceOnceCall(ctx.GetString("image_generation_call_quality"), ctx.GetString("image_generation_call_size"))
+		if pricePerCall, ok := operation_setting.GetToolBillingPrice("image_generation", modelName, "openai",
+			ctx.GetString("image_generation_call_quality"), ctx.GetString("image_generation_call_size")); ok {
+			imageGenerationCallPrice = pricePerCall
+		} else {
+			imageGenerationCallPrice = operation_setting.GetGPTImage1PriceOnceCall(ctx.GetString("image_generation_call_quality"), ctx.GetString("image_generation_call_size"))
+		}
 		dImageGenerationCallQuota = decimal.NewFromFloat(imageGenerationCallPrice).Mul(dGroupRatio).Mul(dQuotaPerUnit)
 		extraContent = append(extraContent, fmt.Sprintf("Image Generation Call 花费 %s", dImageGenerationCallQuota.String()))
 	}

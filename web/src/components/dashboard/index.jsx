@@ -189,6 +189,7 @@ const Dashboard = () => {
             spec_model_line={dashboardCharts.spec_model_line}
             spec_pie={dashboardCharts.spec_pie}
             spec_rank_bar={dashboardCharts.spec_rank_bar}
+            spec_cache_line={dashboardCharts.spec_cache_line}
             modelRank={dashboardData.modelRank}
             loading={dashboardData.loading}
             CARD_PROPS={CARD_PROPS}

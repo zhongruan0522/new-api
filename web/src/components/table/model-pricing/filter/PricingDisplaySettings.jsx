@@ -23,8 +23,6 @@ import SelectableButtonGroup from '../../../common/ui/SelectableButtonGroup';
 const PricingDisplaySettings = ({
   showWithRecharge,
   setShowWithRecharge,
-  currency,
-  setCurrency,
   viewMode,
   setViewMode,
   tokenUnit,
@@ -45,12 +43,6 @@ const PricingDisplaySettings = ({
       value: 'tokenUnit',
       label: t('按K显示单位'),
     },
-  ];
-
-  const currencyItems = [
-    { value: 'USD', label: 'USD ($)' },
-    { value: 'CNY', label: 'CNY (¥)' },
-    { value: 'CUSTOM', label: t('自定义货币') },
   ];
 
   const handleChange = (value) => {
@@ -87,18 +79,6 @@ const PricingDisplaySettings = ({
         loading={loading}
         t={t}
       />
-
-      {showWithRecharge && (
-        <SelectableButtonGroup
-          title={t('货币单位')}
-          items={currencyItems}
-          activeValue={currency}
-          onChange={setCurrency}
-          collapsible={false}
-          loading={loading}
-          t={t}
-        />
-      )}
     </div>
   );
 };

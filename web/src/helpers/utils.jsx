@@ -503,21 +503,6 @@ export const calculateModelPrice = ({
       parseFloat(rawDisplayCompletion.replace(/[^0-9.]/g, '')) / unitDivisor;
 
     let symbol = '$';
-    if (currency === 'CNY') {
-      symbol = '¥';
-    } else if (currency === 'CUSTOM') {
-      try {
-        const statusStr = localStorage.getItem('status');
-        if (statusStr) {
-          const s = JSON.parse(statusStr);
-          symbol = s?.custom_currency_symbol || '¤';
-        } else {
-          symbol = '¤';
-        }
-      } catch (e) {
-        symbol = '¤';
-      }
-    }
     return {
       inputPrice: `${symbol}${numInput.toFixed(precision)}`,
       completionPrice: `${symbol}${numCompletion.toFixed(precision)}`,
@@ -590,22 +575,7 @@ const resolvePricingDisplayContext = ({
   const unitDivisor = tokenUnit === 'K' ? 1000 : 1;
   const unitLabel = tokenUnit === 'K' ? 'K' : 'M';
 
-  let symbol = '$';
-  if (currency === 'CNY') {
-    symbol = '¥';
-  } else if (currency === 'CUSTOM') {
-    try {
-      const statusStr = localStorage.getItem('status');
-      if (statusStr) {
-        const status = JSON.parse(statusStr);
-        symbol = status?.custom_currency_symbol || '¤';
-      } else {
-        symbol = '¤';
-      }
-    } catch (e) {
-      symbol = '¤';
-    }
-  }
+  const symbol = '$';
 
   return {
     usedGroup,
@@ -754,7 +724,6 @@ export const createCardProPagination = ({
 const DEFAULT_PRICING_FILTERS = {
   search: '',
   showWithRecharge: false,
-  currency: 'USD',
   viewMode: 'card',
   tokenUnit: 'M',
   filterGroup: 'all',
@@ -769,7 +738,6 @@ const DEFAULT_PRICING_FILTERS = {
 export const resetPricingFilters = ({
   handleChange,
   setShowWithRecharge,
-  setCurrency,
   setViewMode,
   setFilterGroup,
   setFilterQuotaType,
@@ -781,7 +749,6 @@ export const resetPricingFilters = ({
 }) => {
   handleChange?.(DEFAULT_PRICING_FILTERS.search);
   setShowWithRecharge?.(DEFAULT_PRICING_FILTERS.showWithRecharge);
-  setCurrency?.(DEFAULT_PRICING_FILTERS.currency);
   setViewMode?.(DEFAULT_PRICING_FILTERS.viewMode);
   setTokenUnit?.(DEFAULT_PRICING_FILTERS.tokenUnit);
   setFilterGroup?.(DEFAULT_PRICING_FILTERS.filterGroup);

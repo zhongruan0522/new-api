@@ -216,7 +216,7 @@ func GetAllUsers(pageInfo *common.PageInfo) (users []*User, total int64, err err
 	return users, total, nil
 }
 
-func SearchUsers(keyword string, group string, startIdx int, num int) ([]*User, int64, error) {
+func SearchUsers(keyword string, group string, status string, startIdx int, num int) ([]*User, int64, error) {
 	var users []*User
 	var total int64
 	var err error
@@ -259,6 +259,16 @@ func SearchUsers(keyword string, group string, startIdx int, num int) ([]*User, 
 			query = query.Where(likeCondition,
 				"%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%")
 		}
+	}
+
+	// 按状态筛选
+	switch status {
+	case "1":
+		query = query.Where("status = ? AND deleted_at IS NULL", common.UserStatusEnabled)
+	case "2":
+		query = query.Where("status = ? AND deleted_at IS NULL", common.UserStatusDisabled)
+	case "3":
+		query = query.Where("deleted_at IS NOT NULL")
 	}
 
 	// 获取总数

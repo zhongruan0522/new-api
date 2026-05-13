@@ -17,8 +17,9 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 
-import React, { useRef, useMemo } from 'react';
+import React, { useRef, useMemo, useState } from 'react';
 import { Modal, Form, ButtonGroup, Button } from '@douyinfe/semi-ui';
+import { API, showError, showSuccess } from '../../../helpers';
 
 const DATE_SHORTCUTS = [
   { key: 'today', label: '当日' },
@@ -61,6 +62,32 @@ const SearchModal = ({
   t,
 }) => {
   const formRef = useRef();
+  const [recalculating, setRecalculating] = useState(false);
+
+  const handleRecalculate = async () => {
+    const localStart = Date.parse(start_timestamp) / 1000;
+    const localEnd = Date.parse(end_timestamp) / 1000;
+    if (!localStart || !localEnd || localEnd <= localStart) {
+      showError(t('请先选择有效的时间范围'));
+      return;
+    }
+    setRecalculating(true);
+    try {
+      const res = await API.post(
+        `/api/data/recalculate?start_timestamp=${localStart}&end_timestamp=${localEnd}`,
+      );
+      const { success, message } = res.data;
+      if (success) {
+        showSuccess(t('重新计算完成'));
+      } else {
+        showError(message);
+      }
+    } catch (err) {
+      showError(err.message);
+    } finally {
+      setRecalculating(false);
+    }
+  };
 
   const FORM_FIELD_PROPS = {
     className: 'w-full mb-2 !rounded-lg',
@@ -167,6 +194,23 @@ const SearchModal = ({
             name: 'username',
             onChange: (value) => handleInputChange(value, 'username'),
           })}
+
+        {isAdminUser && (
+          <div className='mt-4 pt-3 border-t border-gray-200'>
+            <Button
+              block
+              theme='solid'
+              type='warning'
+              loading={recalculating}
+              onClick={handleRecalculate}
+            >
+              {t('重新计算数据看板')}
+            </Button>
+            <p className='text-xs text-gray-400 mt-1'>
+              {t('从日志重新聚合选定时间范围的数据看板，已有数据将被覆盖')}
+            </p>
+          </div>
+        )}
       </Form>
     </Modal>
   );

@@ -25,6 +25,10 @@ import {
   IllustrationNoResultDark,
 } from '@douyinfe/semi-illustrations';
 import { getLogsColumns } from './UsageLogsColumnDefs';
+import { useIsMobile } from '../../../hooks/common/useIsMobile';
+
+// Column keys to hide on mobile
+const MOBILE_HIDDEN_KEYS = ['retry', 'details', 'use_time'];
 
 const LogsTable = (logsData) => {
   const {
@@ -46,6 +50,8 @@ const LogsTable = (logsData) => {
     t,
     COLUMN_KEYS,
   } = logsData;
+
+  const isMobile = useIsMobile();
 
   // Get all columns
   const allColumns = useMemo(() => {
@@ -72,8 +78,12 @@ const LogsTable = (logsData) => {
   };
 
   const visibleColumnsList = useMemo(() => {
-    return getVisibleColumns();
-  }, [visibleColumns, allColumns]);
+    const cols = getVisibleColumns();
+    if (isMobile) {
+      return cols.filter((col) => !MOBILE_HIDDEN_KEYS.includes(col.key));
+    }
+    return cols;
+  }, [visibleColumns, allColumns, isMobile]);
 
   const tableColumns = useMemo(() => {
     return compactMode
@@ -88,7 +98,7 @@ const LogsTable = (logsData) => {
   return (
     <CardTable
       columns={tableColumns}
-      {...(hasExpandableRows() && {
+      {...(!isMobile && hasExpandableRows() && {
         expandedRowRender: expandRowRender,
         expandRowByClick: true,
         rowExpandable: (record) =>

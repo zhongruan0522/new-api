@@ -17,7 +17,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useContext } from 'react';
 import {
   Button,
   Form,
@@ -41,11 +41,13 @@ import {
   toBoolean,
 } from '../../helpers';
 import { useTranslation } from 'react-i18next';
+import { StatusContext } from '../../context/Status';
 import DatabasePreMigration from './DatabasePreMigration';
 import DatabaseSameTypeMigration from './DatabaseSameTypeMigration';
 
 const SystemSetting = () => {
   const { t } = useTranslation();
+  const [statusState] = useContext(StatusContext);
   let [inputs, setInputs] = useState({
     PasswordLoginEnabled: '',
     PasswordRegisterEnabled: '',
@@ -549,6 +551,21 @@ const SystemSetting = () => {
                 marginTop: '10px',
               }}
             >
+              <Card>
+                <Form.Section text={t('当前打包 ID')}>
+                  <Text copyable={!!statusState?.status?.version}>
+                    {statusState?.status?.version || t('未知（非正式构建）')}
+                  </Text>
+                  <Text
+                    type='secondary'
+                    size='small'
+                    style={{ display: 'block', marginTop: 4 }}
+                  >
+                    {t('当前安装包构建时对应的 Git Commit Hash')}
+                  </Text>
+                </Form.Section>
+              </Card>
+
               <Card>
                 <Form.Section text={t('通用设置')}>
                   <Row

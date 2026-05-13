@@ -27,9 +27,9 @@ export function setStatusData(data) {
   localStorage.removeItem('chats');
   localStorage.removeItem('chat_link');
   localStorage.removeItem('chat_link2');
-  // 兼容：保留旧字段，同时写入新的额度展示类型
-  localStorage.setItem('display_in_currency', data.display_in_currency);
-  localStorage.setItem('quota_display_type', data.quota_display_type || 'USD');
+  // 清理已移除的额度展示类型相关缓存
+  localStorage.removeItem('display_in_currency');
+  localStorage.removeItem('quota_display_type');
   localStorage.setItem('enable_data_export', data.enable_data_export);
   localStorage.setItem(
     'data_export_default_time',

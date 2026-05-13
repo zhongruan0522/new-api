@@ -84,6 +84,9 @@ jobs:
           # Write VERSION file for build
           echo "${{ env.VERSION }}" > VERSION
 
+          # Write COMMIT file for build (git commit hash injected into Version variable)
+          git rev-parse HEAD > COMMIT
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
 

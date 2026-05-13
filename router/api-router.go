@@ -28,7 +28,7 @@ func SetApiRouter(router *gin.Engine) {
 		apiRouter.GET("/privacy-policy", controller.GetPrivacyPolicy)
 		apiRouter.GET("/about", controller.GetAbout)
 		apiRouter.GET("/home_page_content", controller.GetHomePageContent)
-		apiRouter.GET("/pricing", middleware.TryUserAuth(), controller.GetPricing)
+		apiRouter.GET("/pricing", middleware.PricingAuth(), controller.GetPricing)
 		apiRouter.GET("/verification", middleware.EmailVerificationRateLimit(), middleware.TurnstileCheck(), controller.SendEmailVerification)
 		apiRouter.GET("/reset_password", middleware.CriticalRateLimit(), middleware.TurnstileCheck(), controller.SendPasswordResetEmail)
 		apiRouter.POST("/user/reset", middleware.CriticalRateLimit(), controller.ResetPassword)
@@ -246,6 +246,7 @@ func SetApiRouter(router *gin.Engine) {
 		dataRoute.GET("/self/model_rank", middleware.UserAuth(), controller.GetUserModelRank)
 		dataRoute.GET("/media_convert_stats", middleware.AdminAuth(), controller.GetAllMediaConvertStats)
 		dataRoute.GET("/self/media_convert_stats", middleware.UserAuth(), controller.GetUserMediaConvertStats)
+		dataRoute.POST("/recalculate", middleware.AdminAuth(), controller.RecalculateQuotaData)
 
 		logRoute.Use(middleware.CORS(), middleware.CriticalRateLimit())
 		{

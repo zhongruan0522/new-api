@@ -373,9 +373,6 @@ func GetChargedAmount(count float64, user model.User) float64 {
 
 func getStripePayMoney(amount float64, group string) float64 {
 	originalAmount := amount
-	if operation_setting.GetQuotaDisplayType() == operation_setting.QuotaDisplayTypeTokens {
-		amount = amount / common.QuotaPerUnit
-	}
 	// Using float64 for monetary calculations is acceptable here due to the small amounts involved
 	topupGroupRatio := common.GetTopupGroupRatio(group)
 	if topupGroupRatio == 0 {
@@ -393,9 +390,5 @@ func getStripePayMoney(amount float64, group string) float64 {
 }
 
 func getStripeMinTopup() int64 {
-	minTopup := setting.StripeMinTopUp
-	if operation_setting.GetQuotaDisplayType() == operation_setting.QuotaDisplayTypeTokens {
-		minTopup = minTopup * int(common.QuotaPerUnit)
-	}
-	return int64(minTopup)
+	return int64(setting.StripeMinTopUp)
 }

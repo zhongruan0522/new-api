@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Modal, TextArea, Button, Tag, Typography, Spin } from '@douyinfe/semi-ui';
 import { IconSend } from '@douyinfe/semi-icons';
 import { timestamp2string } from '../../../../helpers';
+import { useIsMobile } from '../../../../hooks/common/useIsMobile';
 
 const { Text } = Typography;
 
@@ -54,6 +55,7 @@ const TicketDetailModal = ({
 
   const statusInfo = STATUS_MAP[ticket?.status];
   const statusLabel = statusInfo ? t(statusInfo.label) : ticket?.status;
+  const isMobile = useIsMobile();
 
   return (
     <Modal
@@ -61,12 +63,23 @@ const TicketDetailModal = ({
       onCancel={onCancel}
       footer={null}
       closeOnEsc
-      style={{
+      style={isMobile ? {
+        width: '100vw',
+        maxWidth: '100vw',
+        margin: 0,
+        top: 0,
+      } : {
         width: '50vw',
         maxWidth: '50vw',
-        // Semi Modal uses inner content, we control height via bodyStyle
       }}
-      bodyStyle={{
+      bodyStyle={isMobile ? {
+        height: 'calc(100vh - 56px)',
+        maxHeight: 'calc(100vh - 56px)',
+        display: 'flex',
+        flexDirection: 'column',
+        padding: 0,
+        overflow: 'hidden',
+      } : {
         height: '80vh',
         maxHeight: '80vh',
         display: 'flex',

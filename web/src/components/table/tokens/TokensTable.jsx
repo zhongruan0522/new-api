@@ -25,6 +25,10 @@ import {
   IllustrationNoResultDark,
 } from '@douyinfe/semi-illustrations';
 import { getTokensColumns } from './TokensColumnDefs';
+import { useIsMobile } from '../../../hooks/common/useIsMobile';
+
+// Column dataIndices to hide on mobile
+const MOBILE_HIDDEN_DATA_INDICES = ['model_limits', 'allow_ips', 'created_time', 'expired_time'];
 
 const TokensTable = (tokensData) => {
   const {
@@ -48,6 +52,8 @@ const TokensTable = (tokensData) => {
     refresh,
     t,
   } = tokensData;
+
+  const isMobile = useIsMobile();
 
   // Get all columns
   const columns = useMemo(() => {
@@ -74,18 +80,25 @@ const TokensTable = (tokensData) => {
     refresh,
   ]);
 
-  // Handle compact mode by removing fixed positioning
+  // Handle compact mode by removing fixed positioning, and hide columns on mobile
   const tableColumns = useMemo(() => {
-    return compactMode
-      ? columns.map((col) => {
-          if (col.dataIndex === 'operate') {
-            const { fixed, ...rest } = col;
-            return rest;
-          }
-          return col;
-        })
-      : columns;
-  }, [compactMode, columns]);
+    let cols = columns;
+    if (isMobile) {
+      cols = cols.filter(
+        (col) => !MOBILE_HIDDEN_DATA_INDICES.includes(col.dataIndex),
+      );
+    }
+    if (compactMode) {
+      cols = cols.map((col) => {
+        if (col.dataIndex === 'operate') {
+          const { fixed, ...rest } = col;
+          return rest;
+        }
+        return col;
+      });
+    }
+    return cols;
+  }, [compactMode, isMobile, columns]);
 
   return (
     <CardTable

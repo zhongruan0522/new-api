@@ -88,26 +88,37 @@ func getPriority(group string, model string, retry int) (int, error) {
 	return priorityToUse, nil
 }
 
-func getChannelQuery(group string, model string, retry int) (*gorm.DB, error) {
+// getPriorityCountDB returns the number of distinct priority levels for a group/model pair from DB.
+func getPriorityCountDB(group string, model string) int {
+	var count int64
+	DB.Model(&Ability{}).
+		Where(commonGroupCol+" = ? and model = ? and enabled = ?", group, model, true).
+		Distinct("priority").
+		Count(&count)
+	return int(count)
+}
+
+func getChannelQuery(group string, model string, priorityIndex int, excludeChannelId int) (*gorm.DB, error) {
 	maxPrioritySubQuery := DB.Model(&Ability{}).Select("MAX(priority)").Where(commonGroupCol+" = ? and model = ? and enabled = ?", group, model, true)
 	channelQuery := DB.Where(commonGroupCol+" = ? and model = ? and enabled = ? and priority = (?)", group, model, true, maxPrioritySubQuery)
-	if retry != 0 {
-		priority, err := getPriority(group, model, retry)
+	if priorityIndex != 0 {
+		priority, err := getPriority(group, model, priorityIndex)
 		if err != nil {
 			return nil, err
-		} else {
-			channelQuery = DB.Where(commonGroupCol+" = ? and model = ? and enabled = ? and priority = ?", group, model, true, priority)
 		}
+		channelQuery = DB.Where(commonGroupCol+" = ? and model = ? and enabled = ? and priority = ?", group, model, true, priority)
 	}
-
+	if excludeChannelId > 0 {
+		channelQuery = channelQuery.Where("channel_id != ?", excludeChannelId)
+	}
 	return channelQuery, nil
 }
 
-func GetChannel(group string, model string, retry int, preferredAPIType int) (*Channel, error) {
+func GetChannel(group string, model string, priorityIndex int, preferredAPIType int, excludeChannelId int) (*Channel, error) {
 	var abilities []Ability
 
 	var err error = nil
-	channelQuery, err := getChannelQuery(group, model, retry)
+	channelQuery, err := getChannelQuery(group, model, priorityIndex, excludeChannelId)
 	if err != nil {
 		return nil, err
 	}
@@ -142,7 +153,41 @@ func GetChannel(group string, model string, retry int, preferredAPIType int) (*C
 			}
 		}
 	} else {
-		return nil, nil
+		// If exclusion left no candidates at current priority, fall through to next lower priority
+		// 如果排除后在当前优先级无候选渠道，降级到下一个优先级
+		if excludeChannelId > 0 {
+			numPriorities := getPriorityCountDB(group, model)
+			if priorityIndex+1 < numPriorities {
+				fallbackQuery, fallbackErr := getChannelQuery(group, model, priorityIndex+1, 0)
+				if fallbackErr != nil {
+					return nil, nil
+				}
+				if fallbackErr = fallbackQuery.Order("weight DESC").Find(&abilities).Error; fallbackErr != nil {
+					return nil, nil
+				}
+				if len(abilities) == 0 {
+					return nil, nil
+				}
+				if preferredAPIType >= 0 {
+					abilities = preferAbilitiesByAPIType(abilities, preferredAPIType)
+				}
+				weightSum := uint(0)
+				for _, ability_ := range abilities {
+					weightSum += ability_.Weight + 10
+				}
+				weight := common.GetRandomInt(int(weightSum))
+				for _, ability_ := range abilities {
+					weight -= int(ability_.Weight) + 10
+					if weight <= 0 {
+						channel.Id = ability_.ChannelId
+						break
+					}
+				}
+			}
+		}
+		if channel.Id == 0 {
+			return nil, nil
+		}
 	}
 	err = DB.First(&channel, "id = ?", channel.Id).Error
 	return &channel, err

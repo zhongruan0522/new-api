@@ -38,8 +38,6 @@ const PricingTopSection = memo(
     searchValue,
     showWithRecharge,
     setShowWithRecharge,
-    currency,
-    setCurrency,
     viewMode,
     setViewMode,
     tokenUnit,
@@ -64,8 +62,6 @@ const PricingTopSection = memo(
                 setShowFilterModal={setShowFilterModal}
                 showWithRecharge={showWithRecharge}
                 setShowWithRecharge={setShowWithRecharge}
-                currency={currency}
-                setCurrency={setCurrency}
                 viewMode={viewMode}
                 setViewMode={setViewMode}
                 tokenUnit={tokenUnit}
@@ -97,8 +93,6 @@ const PricingTopSection = memo(
             setShowFilterModal={setShowFilterModal}
             showWithRecharge={showWithRecharge}
             setShowWithRecharge={setShowWithRecharge}
-            currency={currency}
-            setCurrency={setCurrency}
             viewMode={viewMode}
             setViewMode={setViewMode}
             tokenUnit={tokenUnit}
