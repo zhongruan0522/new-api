@@ -55,9 +55,18 @@ const formatCacheRate = (stat) => {
   return `${stat.cache_rate.toFixed(2)}%`;
 };
 
+const formatTokenCount = (num) => {
+  if (num == null) return '0';
+  const abs = Math.abs(num);
+  if (abs >= 1e9) return `${(num / 1e9).toFixed(2)}B`;
+  if (abs >= 1e6) return `${(num / 1e6).toFixed(2)}M`;
+  if (abs >= 1e3) return `${(num / 1e3).toFixed(1)}K`;
+  return `${num}`;
+};
+
 const formatCacheDetail = (stat) => {
   if (!stat) return '';
-  return `命中 ${stat.cache_hit_tokens || 0} / 创建 ${stat.cache_creation_tokens || 0} / 输入 ${stat.input_tokens || 0}`;
+  return `命中 ${formatTokenCount(stat.cache_hit_tokens)} / 创建 ${formatTokenCount(stat.cache_creation_tokens)} / 输入 ${formatTokenCount(stat.input_tokens)}`;
 };
 
 export const useDashboardStats = (

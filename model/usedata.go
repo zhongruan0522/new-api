@@ -426,3 +426,148 @@ func GetAllRegionStats(startTime int64, endTime int64) (RegionStatsResponse, err
 	domestic, overseas := computeRegionStats(quotaDatas)
 	return RegionStatsResponse{Domestic: domestic, Overseas: overseas}, nil
 }
+
+// RecalculateQuotaData 从 logs 表重新聚合指定时间范围的 quota_data（先删后插）
+func RecalculateQuotaData(startTime int64, endTime int64) error {
+	// 对齐到小时桶边界，避免部分小时数据不一致
+	startTime = startTime - (startTime % 3600)
+	endTime = endTime - (endTime % 3600) + 3599
+
+	// 先从日志聚合数据（可失败的操作放在事务外）
+	type logRow struct {
+		UserId         int
+		Username       string
+		ModelName      string
+		CreatedAt      int64
+		PromptTokens   int
+		CompletionTokens int
+		Quota          int
+		Other          string
+	}
+
+	// 成功请求（type = 2）
+	var successLogs []logRow
+	err := LOG_DB.Table("logs").
+		Select("user_id, username, model_name, created_at, prompt_tokens, completion_tokens, quota, other").
+		Where("type = 2 and created_at >= ? and created_at <= ?", startTime, endTime).
+		Find(&successLogs).Error
+	if err != nil {
+		return fmt.Errorf("查询成功日志失败: %w", err)
+	}
+
+	// 失败请求（type = 5）
+	type failRow struct {
+		UserId    int
+		Username  string
+		ModelName string
+		CreatedAt int64
+	}
+	var failLogs []failRow
+	err = LOG_DB.Table("logs").
+		Select("user_id, username, model_name, created_at").
+		Where("type = 5 and created_at >= ? and created_at <= ?", startTime, endTime).
+		Find(&failLogs).Error
+	if err != nil {
+		return fmt.Errorf("查询失败日志失败: %w", err)
+	}
+
+	// 按 (userId, username, modelName, hourStart) 聚合
+	type aggKey struct {
+		UserId    int
+		Username  string
+		ModelName string
+		HourStart int64
+	}
+	type aggVal struct {
+		Count               int
+		FailCount           int
+		Quota               int
+		TokenUsed           int
+		InputTokens         int
+		CacheHitTokens      int
+		CacheCreationTokens int
+	}
+	merged := make(map[aggKey]*aggVal)
+
+	// 聚合成功日志，同时解析 other JSON 提取缓存Token
+	for _, r := range successLogs {
+		hourStart := r.CreatedAt - (r.CreatedAt % 3600)
+		key := aggKey{UserId: r.UserId, Username: r.Username, ModelName: r.ModelName, HourStart: hourStart}
+		v, ok := merged[key]
+		if !ok {
+			v = &aggVal{}
+			merged[key] = v
+		}
+		v.Count++
+		v.Quota += r.Quota
+		v.TokenUsed += r.PromptTokens + r.CompletionTokens
+		// inputTokens 优先使用 PromptTokens（与 RecordConsumeLog 逻辑一致）
+		v.InputTokens += r.PromptTokens
+
+		// 从 other JSON 提取缓存Token
+		if r.Other != "" {
+			var other map[string]interface{}
+			if common.UnmarshalJsonStr(r.Other, &other) == nil {
+				if cv, ok := other["cache_tokens"]; ok {
+					if f, ok := cv.(float64); ok {
+						v.CacheHitTokens += int(f)
+					}
+				}
+				if cv, ok := other["cache_creation_tokens"]; ok {
+					if f, ok := cv.(float64); ok {
+						v.CacheCreationTokens += int(f)
+					}
+				}
+			}
+		}
+	}
+
+	// 聚合失败日志
+	for _, r := range failLogs {
+		hourStart := r.CreatedAt - (r.CreatedAt % 3600)
+		key := aggKey{UserId: r.UserId, Username: r.Username, ModelName: r.ModelName, HourStart: hourStart}
+		v, ok := merged[key]
+		if !ok {
+			v = &aggVal{}
+			merged[key] = v
+		}
+		v.FailCount++
+	}
+
+	// 构建批量插入数据
+	batch := make([]*QuotaData, 0, len(merged))
+	for k, v := range merged {
+		batch = append(batch, &QuotaData{
+			UserID:              k.UserId,
+			Username:            k.Username,
+			ModelName:           k.ModelName,
+			CreatedAt:           k.HourStart,
+			Count:               v.Count,
+			FailCount:           v.FailCount,
+			Quota:               v.Quota,
+			TokenUsed:           v.TokenUsed,
+			InputTokens:         v.InputTokens,
+			CacheHitTokens:      v.CacheHitTokens,
+			CacheCreationTokens: v.CacheCreationTokens,
+		})
+	}
+
+	// 事务保护：先删后插
+	err = DB.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Table("quota_data").Where("created_at >= ? and created_at <= ?", startTime, endTime).Delete(nil).Error; err != nil {
+			return fmt.Errorf("删除旧 quota_data 失败: %w", err)
+		}
+		if len(batch) > 0 {
+			if err := tx.Table("quota_data").CreateInBatches(batch, 100).Error; err != nil {
+				return fmt.Errorf("插入 quota_data 失败: %w", err)
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
+	common.SysLog(fmt.Sprintf("重新计算数据看板完成，时间范围 %d~%d，共 %d 条记录", startTime, endTime, len(batch)))
+	return nil
+}

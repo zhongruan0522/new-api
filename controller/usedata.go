@@ -153,6 +153,30 @@ func GetAllMediaConvertStats(c *gin.Context) {
 	})
 }
 
+// RecalculateQuotaData 管理员触发重新计算指定时间范围的数据看板
+func RecalculateQuotaData(c *gin.Context) {
+	startTimestamp, _ := strconv.ParseInt(c.Query("start_timestamp"), 10, 64)
+	endTimestamp, _ := strconv.ParseInt(c.Query("end_timestamp"), 10, 64)
+
+	if startTimestamp <= 0 || endTimestamp <= 0 || endTimestamp <= startTimestamp {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": "无效的时间范围",
+		})
+		return
+	}
+
+	err := model.RecalculateQuotaData(startTimestamp, endTimestamp)
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "重新计算完成",
+	})
+}
+
 // GetUserMediaConvertStats 普通用户查询自己的图片/视频转URL统计
 func GetUserMediaConvertStats(c *gin.Context) {
 	userId := c.GetInt("id")
