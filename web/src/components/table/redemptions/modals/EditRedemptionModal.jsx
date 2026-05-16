@@ -142,37 +142,46 @@ const EditRedemptionModal = (props) => {
     const batchCount = Math.ceil(totalCount / BATCH_SIZE);
     let allKeys = [];
 
-    for (let batch = 0; batch < batchCount; batch++) {
-      const batchNum = batch + 1;
-      // 最后一批取余数，其余每批 BATCH_SIZE 个
-      const currentBatchSize =
-        batch === batchCount - 1
-          ? totalCount - batch * BATCH_SIZE
-          : BATCH_SIZE;
+    try {
+      for (let batch = 0; batch < batchCount; batch++) {
+        const batchNum = batch + 1;
+        // 最后一批取余数，其余每批 BATCH_SIZE 个
+        const currentBatchSize =
+          batch === batchCount - 1
+            ? totalCount - batch * BATCH_SIZE
+            : BATCH_SIZE;
 
-      setBatchProgress({ current: batchNum, total: batchCount });
+        setBatchProgress({ current: batchNum, total: batchCount });
 
-      let res = await API.post(`/api/redemption/`, {
-        ...localInputs,
-        count: currentBatchSize,
-      });
-      const { success, message, data } = res.data;
-      if (!success) {
-        showError(message);
-        // 已有部分创建成功，提示用户下载
-        if (allKeys.length > 0) {
-          promptDownload(allKeys, localInputs.name, true);
+        let res = await API.post(`/api/redemption/`, {
+          ...localInputs,
+          count: currentBatchSize,
+        });
+        const { success, message, data } = res.data;
+        if (!success) {
+          showError(message);
+          // 已有部分创建成功，提示用户下载
+          if (allKeys.length > 0) {
+            promptDownload(allKeys, localInputs.name, true);
+          }
+          return;
         }
-        setLoading(false);
-        setBatchProgress(null);
-        return;
+        if (data) {
+          allKeys = allKeys.concat(data);
+        }
       }
-      if (data) {
-        allKeys = allKeys.concat(data);
+    } catch (e) {
+      // 网络异常或服务端 5xx：提示已有部分成功的兑换码下载
+      showError(e.message);
+      if (allKeys.length > 0) {
+        promptDownload(allKeys, localInputs.name, true);
       }
+      return;
+    } finally {
+      setLoading(false);
+      setBatchProgress(null);
     }
 
-    setBatchProgress(null);
     showSuccess(
       t('兑换码创建成功！共创建 {{count}} 个', { count: allKeys.length }),
     );
@@ -183,7 +192,6 @@ const EditRedemptionModal = (props) => {
     if (allKeys.length > 0) {
       promptDownload(allKeys, localInputs.name, false);
     }
-    setLoading(false);
   };
 
   /**
