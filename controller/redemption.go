@@ -10,6 +10,7 @@ import (
 	"github.com/zhongruan0522/new-api/model"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 func GetAllRedemptions(c *gin.Context) {
@@ -73,6 +74,8 @@ func AddRedemption(c *gin.Context) {
 		common.ApiErrorI18n(c, i18n.MsgRedemptionCountPositive)
 		return
 	}
+	// 单次请求上限 100 条，防止大量并发写入导致数据库过载。
+	// 如需创建更多兑换码，由前端分批调用本接口实现。
 	if redemption.Count > 100 {
 		common.ApiErrorI18n(c, i18n.MsgRedemptionCountMax)
 		return
@@ -82,27 +85,33 @@ func AddRedemption(c *gin.Context) {
 		return
 	}
 	var keys []string
-	for i := 0; i < redemption.Count; i++ {
-		key := common.GetUUID()
-		cleanRedemption := model.Redemption{
-			UserId:      c.GetInt("id"),
-			Name:        redemption.Name,
-			Key:         key,
-			CreatedTime: common.GetTimestamp(),
-			Quota:       redemption.Quota,
-			ExpiredTime: redemption.ExpiredTime,
+	// 使用事务保证原子性：整批成功或整批回滚，避免部分写入导致数据不一致
+	err = model.DB.Transaction(func(tx *gorm.DB) error {
+		for i := 0; i < redemption.Count; i++ {
+			key := common.GetUUID()
+			cleanRedemption := model.Redemption{
+				UserId:      c.GetInt("id"),
+				Name:        redemption.Name,
+				Key:         key,
+				CreatedTime: common.GetTimestamp(),
+				Quota:       redemption.Quota,
+				ExpiredTime: redemption.ExpiredTime,
+			}
+			if err := tx.Create(&cleanRedemption).Error; err != nil {
+				return err
+			}
+			keys = append(keys, key)
 		}
-		err = cleanRedemption.Insert()
-		if err != nil {
-			common.SysError("failed to insert redemption: " + err.Error())
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": i18n.T(c, i18n.MsgRedemptionCreateFailed),
-				"data":    keys,
-			})
-			return
-		}
-		keys = append(keys, key)
+		return nil
+	})
+	if err != nil {
+		common.SysError("failed to batch insert redemptions: " + err.Error())
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": i18n.T(c, i18n.MsgRedemptionCreateFailed),
+			"data":    []string{},
+		})
+		return
 	}
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
