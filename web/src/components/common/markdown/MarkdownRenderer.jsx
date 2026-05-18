@@ -27,7 +27,6 @@ import RehypeKatex from 'rehype-katex';
 import RemarkGfm from 'remark-gfm';
 import RehypeHighlight from 'rehype-highlight';
 import { useRef, useState, useEffect, useMemo } from 'react';
-import mermaid from 'mermaid';
 import React from 'react';
 import { useDebouncedCallback } from 'use-debounce';
 import clsx from 'clsx';
@@ -36,28 +35,35 @@ import { copy, rehypeSplitWordsIntoSpans } from '../../../helpers';
 import { IconCopy } from '@douyinfe/semi-icons';
 import { useTranslation } from 'react-i18next';
 
-mermaid.initialize({
-  startOnLoad: false,
-  theme: 'default',
-  securityLevel: 'loose',
-});
-
 export function Mermaid(props) {
   const ref = useRef(null);
   const [hasError, setHasError] = useState(false);
 
   useEffect(() => {
-    if (props.code && ref.current) {
-      mermaid
-        .run({
+    if (!props.code || !ref.current) return;
+    let cancelled = false;
+    import('mermaid')
+      .then((mermaid) => {
+        if (cancelled) return;
+        mermaid.default.initialize({
+          startOnLoad: false,
+          theme: 'default',
+          securityLevel: 'loose',
+        });
+        return mermaid.default.run({
           nodes: [ref.current],
           suppressErrors: true,
-        })
-        .catch((e) => {
+        });
+      })
+      .catch((e) => {
+        if (!cancelled) {
           setHasError(true);
           console.error('[Mermaid] ', e.message);
-        });
-    }
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [props.code]);
 
   function viewSvgInNewWindow() {

@@ -17,11 +17,14 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { Card, Avatar, Skeleton, Tag, Progress } from '@douyinfe/semi-ui';
-import { VChart } from '@visactor/react-vchart';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+
+const VChart = lazy(() =>
+  import('@visactor/react-vchart').then((m) => ({ default: m.VChart })),
+);
 
 const RegionCard = ({ group, loading }) => (
   <Card
@@ -166,10 +169,12 @@ const StatsCards = ({
                         (loading ||
                           (item.trendData && item.trendData.length > 0)) && (
                           <div className='w-24 h-10'>
-                            <VChart
-                              spec={getTrendSpec(item.trendData, item.trendColor)}
-                              option={CHART_CONFIG}
-                            />
+                            <Suspense fallback={null}>
+                              <VChart
+                                spec={getTrendSpec(item.trendData, item.trendColor)}
+                                option={CHART_CONFIG}
+                              />
+                            </Suspense>
                           </div>
                         )
                       )}

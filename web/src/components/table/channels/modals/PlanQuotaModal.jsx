@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef, lazy, Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Modal,
@@ -11,12 +11,15 @@ import {
   Progress,
   ButtonGroup,
 } from '@douyinfe/semi-ui';
-import { VChart } from '@visactor/react-vchart';
 import {
   IllustrationNoResult,
   IllustrationNoResultDark,
 } from '@douyinfe/semi-illustrations';
 import { API, showError } from '../../../../helpers';
+
+const VChart = lazy(() =>
+  import('@visactor/react-vchart').then((m) => ({ default: m.VChart })),
+);
 
 const { Title, Text } = Typography;
 
@@ -369,7 +372,7 @@ const UsageChart = ({ channelId }) => {
       {loading ? (
         <div style={{ textAlign: 'center', padding: '40px 0' }}><Spin /></div>
       ) : vchartSpec ? (
-        <VChart spec={vchartSpec} />
+        <Suspense fallback={null}><VChart spec={vchartSpec} /></Suspense>
       ) : (
         <div style={{ textAlign: 'center', padding: '20px 0', color: 'var(--semi-color-text-2)' }}>暂无数据</div>
       )}
@@ -540,7 +543,7 @@ const PerformanceChart = ({ channelId, productLevel }) => {
       {loading ? (
         <div style={{ textAlign: 'center', padding: '40px 0' }}><Spin /></div>
       ) : vchartSpec ? (
-        <VChart spec={vchartSpec} />
+        <Suspense fallback={null}><VChart spec={vchartSpec} /></Suspense>
       ) : (
         <div style={{ textAlign: 'center', padding: '20px 0', color: 'var(--semi-color-text-2)' }}>暂无数据</div>
       )}

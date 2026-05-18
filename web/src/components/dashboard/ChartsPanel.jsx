@@ -17,10 +17,13 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { Card, Tabs, TabPane, Skeleton } from '@douyinfe/semi-ui';
 import { PieChart } from 'lucide-react';
-import { VChart } from '@visactor/react-vchart';
+
+const VChart = lazy(() =>
+  import('@visactor/react-vchart').then((m) => ({ default: m.VChart })),
+);
 import { useIsMobile } from '../../hooks/common/useIsMobile';
 
 const RankColumn = ({ title, items, loading, isMobile }) => (
@@ -139,19 +142,27 @@ const ChartsPanel = ({
     >
       <div className='h-96 p-2'>
         {activeChartTab === '1' && (
-          <VChart spec={spec_line} option={CHART_CONFIG} />
+          <Suspense fallback={null}>
+            <VChart spec={spec_line} option={CHART_CONFIG} />
+          </Suspense>
         )}
         {activeChartTab === '2' && (
-          <VChart spec={spec_model_line} option={CHART_CONFIG} />
+          <Suspense fallback={null}>
+            <VChart spec={spec_model_line} option={CHART_CONFIG} />
+          </Suspense>
         )}
         {activeChartTab === '3' && (
-          <VChart spec={spec_pie} option={CHART_CONFIG} />
+          <Suspense fallback={null}>
+            <VChart spec={spec_pie} option={CHART_CONFIG} />
+          </Suspense>
         )}
         {activeChartTab === '4' && (
           <ModelRankPanel modelRank={modelRank} loading={loading} t={t} />
         )}
         {activeChartTab === '5' && (
-          <VChart spec={spec_cache_line} option={CHART_CONFIG} />
+          <Suspense fallback={null}>
+            <VChart spec={spec_cache_line} option={CHART_CONFIG} />
+          </Suspense>
         )}
       </div>
     </Card>
