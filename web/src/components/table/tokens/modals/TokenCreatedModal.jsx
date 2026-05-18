@@ -21,7 +21,6 @@ import React, { useContext, useState } from 'react';
 import {
   Modal,
   Button,
-  Space,
   Typography,
   Input,
   InputGroup,
@@ -51,14 +50,6 @@ const TokenCreatedModal = ({ visible, onClose, keys, t }) => {
     }
   };
 
-  const handleCopyAllKeys = async () => {
-    const allKeys = keys.map((k) => `sk-${k}`).join('\n');
-    const ok = await copy(allKeys);
-    if (ok) {
-      showSuccess(t('已复制所有密钥到剪贴板'));
-    }
-  };
-
   const configItems = [
     { label: 'OpenAI', baseUrl: `${baseUrl}/v1` },
     { label: 'Claude', baseUrl: `${baseUrl}/v1` },
@@ -80,12 +71,9 @@ const TokenCreatedModal = ({ visible, onClose, keys, t }) => {
       onCancel={onClose}
       closeIcon={<IconClose />}
       footer={
-        <div className='flex justify-between'>
-          <Button type='primary' onClick={handleCopyAllKeys}>
-            {keys.length > 1 ? t('复制所有密钥') : t('复制密钥')}
-          </Button>
-          <Button type='tertiary' onClick={onClose}>
-            {t('关闭')}
+        <div className='flex justify-end'>
+          <Button type='primary' onClick={onClose}>
+            {t('完成')}
           </Button>
         </div>
       }
@@ -107,13 +95,16 @@ const TokenCreatedModal = ({ visible, onClose, keys, t }) => {
         <div className='space-y-2'>
           {keys.map((key, index) => (
             <div key={index} className='flex items-center gap-2'>
-              <InputGroup size='large' style={{ flex: 1 }}>
+              <InputGroup size='large' style={{ flex: 1, minWidth: 0 }}>
                 <Input
                   value={`sk-${key}`}
                   readOnly
                   style={{
                     fontFamily: 'monospace',
                     fontSize: '13px',
+                    textOverflow: 'ellipsis',
+                    overflow: 'hidden',
+                    whiteSpace: 'nowrap',
                   }}
                 />
                 <Button
