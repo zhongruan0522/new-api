@@ -22,7 +22,7 @@ import { Modal, Tag, Typography, Avatar } from '@douyinfe/semi-ui';
 import { copy, showSuccess } from './utils';
 import { MOBILE_BREAKPOINT } from '../hooks/common/useIsMobile';
 import { visit } from 'unist-util-visit';
-import * as LobeIcons from '@lobehub/icons';
+import * as LobeIcons from '@lobehub/icons/es/icons';
 import {
   OpenAI,
   Claude,
@@ -34,8 +34,8 @@ import {
   Ollama,
   OpenRouter,
   SiliconCloud,
-} from '@lobehub/icons';
-import XiaomiMiMoIcon from './XiaomiMiMoIcon';
+  XiaomiMiMo,
+} from '@lobehub/icons/es/icons';
 
 import {
   LayoutDashboard,
@@ -235,7 +235,7 @@ export function getChannelIcon(channelType) {
     case 40: // SiliconCloud
       return <SiliconCloud.Color size={iconSize} />;
     case 6: // 小米 MiMo
-      return <XiaomiMiMoIcon size={iconSize} />;
+      return <XiaomiMiMo size={iconSize} />;
     case 8: // 自定义渠道
     default:
       return null;
