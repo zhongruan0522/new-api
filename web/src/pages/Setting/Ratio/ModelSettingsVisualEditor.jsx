@@ -748,6 +748,7 @@ export default function ModelSettingsVisualEditor(props) {
       title: t('模型名称'),
       dataIndex: 'name',
       key: 'name',
+      width: 220,
       render: (text, record) => (
         <span
           style={{
@@ -758,8 +759,13 @@ export default function ModelSettingsVisualEditor(props) {
                 ? 'var(--semi-color-primary)'
                 : 'inherit',
             cursor: 'pointer',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+            display: 'block',
           }}
           onClick={() => handleSafeSelectModel(record)}
+          title={text}
         >
           {text}
         </span>
@@ -874,6 +880,7 @@ export default function ModelSettingsVisualEditor(props) {
             columns={listColumns}
             dataSource={pagedData}
             rowKey='name'
+            width='100%'
             pagination={{
               currentPage: currentPage,
               pageSize: listPageSize,
