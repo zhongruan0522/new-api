@@ -261,6 +261,8 @@ func CovertOpenAI2Gemini(c *gin.Context, textRequest dto.GeneralOpenAIRequest, i
 			geminiTools = append(geminiTools, dto.GeminiChatTool{
 				GoogleSearch: make(map[string]string),
 			})
+			// 标记请求使用了 Google Search，用于后续计费
+			c.Set("gemini_web_search_requests", 1)
 		}
 		if urlContext {
 			geminiTools = append(geminiTools, dto.GeminiChatTool{

@@ -56,11 +56,21 @@ func OaiResponsesHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http
 	if info == nil || info.ResponsesUsageInfo == nil || info.ResponsesUsageInfo.BuiltInTools == nil {
 		return &usage, nil
 	}
-	// 解析 Tools 用量
-	for _, tool := range responsesResponse.Tools {
-		buildToolinfo, ok := info.ResponsesUsageInfo.BuiltInTools[common.Interface2String(tool["type"])]
+	// 解析 Output 中的内置工具调用次数（web_search_call、file_search_call 等）
+	// 注意：不能遍历 responsesResponse.Tools，那是请求工具配置的回显，不是实际调用结果
+	for _, output := range responsesResponse.Output {
+		var toolType string
+		switch output.Type {
+		case dto.BuildInCallWebSearchCall:
+			toolType = dto.BuildInToolWebSearchPreview
+		case dto.BuildInCallFileSearchCall:
+			toolType = dto.BuildInToolFileSearch
+		default:
+			continue
+		}
+		buildToolinfo, ok := info.ResponsesUsageInfo.BuiltInTools[toolType]
 		if !ok || buildToolinfo == nil {
-			logger.LogError(c, fmt.Sprintf("BuiltInTools not found for tool type: %v", tool["type"]))
+			logger.LogError(c, fmt.Sprintf("BuiltInTools not found for tool type: %v", toolType))
 			continue
 		}
 		buildToolinfo.CallCount++
@@ -112,14 +122,16 @@ func OaiResponsesStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp
 				// 处理输出文本
 				responseTextBuilder.WriteString(streamResponse.Delta)
 			case dto.ResponsesOutputTypeItemDone:
-				// 函数调用处理
-				if streamResponse.Item != nil {
+				// 内置工具调用计数
+				if streamResponse.Item != nil && info != nil && info.ResponsesUsageInfo != nil && info.ResponsesUsageInfo.BuiltInTools != nil {
 					switch streamResponse.Item.Type {
 					case dto.BuildInCallWebSearchCall:
-						if info != nil && info.ResponsesUsageInfo != nil && info.ResponsesUsageInfo.BuiltInTools != nil {
-							if webSearchTool, exists := info.ResponsesUsageInfo.BuiltInTools[dto.BuildInToolWebSearchPreview]; exists && webSearchTool != nil {
-								webSearchTool.CallCount++
-							}
+						if webSearchTool, exists := info.ResponsesUsageInfo.BuiltInTools[dto.BuildInToolWebSearchPreview]; exists && webSearchTool != nil {
+							webSearchTool.CallCount++
+						}
+					case dto.BuildInCallFileSearchCall:
+						if fileSearchTool, exists := info.ResponsesUsageInfo.BuiltInTools[dto.BuildInToolFileSearch]; exists && fileSearchTool != nil {
+							fileSearchTool.CallCount++
 						}
 					}
 				}
