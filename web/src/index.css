@@ -486,6 +486,46 @@ code {
   display: none;
 }
 
+/* ==================== 可视化倍率设置页面滚动条 ==================== */
+/* 左侧表格容器：让 Semi Table 填满高度，滚动仅发生在表格正文 */
+.visual-ratio-table-wrap {
+  display: flex;
+  flex-direction: column;
+}
+
+.visual-ratio-table-wrap .semi-table {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.visual-ratio-table-wrap .semi-table-container {
+  flex: 1;
+  overflow: hidden;
+}
+
+/* 表格正文 + 右侧面板：统一窄灰色滚动条 */
+.visual-ratio-table-wrap .semi-table-body::-webkit-scrollbar,
+.visual-ratio-table-wrap ~ div::-webkit-scrollbar {
+  width: 5px;
+}
+
+.visual-ratio-table-wrap .semi-table-body::-webkit-scrollbar-thumb,
+.visual-ratio-table-wrap ~ div::-webkit-scrollbar-thumb {
+  background: rgba(128, 128, 128, 0.3);
+  border-radius: 2.5px;
+}
+
+.visual-ratio-table-wrap .semi-table-body::-webkit-scrollbar-thumb:hover,
+.visual-ratio-table-wrap ~ div::-webkit-scrollbar-thumb:hover {
+  background: rgba(128, 128, 128, 0.5);
+}
+
+.visual-ratio-table-wrap .semi-table-body::-webkit-scrollbar-track,
+.visual-ratio-table-wrap ~ div::-webkit-scrollbar-track {
+  background: transparent;
+}
+
 /* 图片列表滚动条样式 */
 .image-list-scroll::-webkit-scrollbar {
   width: 6px;

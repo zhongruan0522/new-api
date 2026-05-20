@@ -866,36 +866,40 @@ export default function ModelSettingsVisualEditor(props) {
         </div>
 
         {/* 模型表格 */}
-        <Table
-          columns={listColumns}
-          dataSource={pagedData}
-          rowKey='name'
-          pagination={{
-            currentPage: currentPage,
-            pageSize: listPageSize,
-            total: filteredModels.length,
-            onPageChange: (page) => setCurrentPage(page),
-            showTotal: true,
-            showSizeChanger: true,
-            pageSizeOpts: [50, 100, 200],
-            onPageSizeChange: (size) => {
-              setListPageSize(size);
-              setCurrentPage(1);
-            },
-          }}
-          onRow={(record) => ({
-            onClick: () => handleSafeSelectModel(record),
-            style: {
-              cursor: 'pointer',
-              background:
-                record.name === selectedModelName
-                  ? 'var(--semi-color-fill-0)'
-                  : undefined,
-            },
-          })}
-          size='small'
-          style={{ flex: 1, overflow: 'auto' }}
-        />
+        <div
+          className='visual-ratio-table-wrap'
+          style={{ flex: 1, overflow: 'hidden' }}
+        >
+          <Table
+            columns={listColumns}
+            dataSource={pagedData}
+            rowKey='name'
+            pagination={{
+              currentPage: currentPage,
+              pageSize: listPageSize,
+              total: filteredModels.length,
+              onPageChange: (page) => setCurrentPage(page),
+              showTotal: true,
+              showSizeChanger: true,
+              pageSizeOpts: [50, 100, 200],
+              onPageSizeChange: (size) => {
+                setListPageSize(size);
+                setCurrentPage(1);
+              },
+            }}
+            onRow={(record) => ({
+              onClick: () => handleSafeSelectModel(record),
+              style: {
+                cursor: 'pointer',
+                background:
+                  record.name === selectedModelName
+                    ? 'var(--semi-color-fill-0)'
+                    : undefined,
+              },
+            })}
+            size='small'
+          />
+        </div>
       </div>
 
       {/* ====== 右侧：详情配置面板 ====== */}
@@ -905,6 +909,7 @@ export default function ModelSettingsVisualEditor(props) {
           borderLeft: '1px solid var(--semi-color-border)',
           paddingLeft: 16,
           overflowY: 'auto',
+          overflowX: 'hidden',
           display: 'flex',
           flexDirection: 'column',
         }}
