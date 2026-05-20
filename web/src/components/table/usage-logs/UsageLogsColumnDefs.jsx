@@ -40,7 +40,6 @@ import {
   renderClaudeModelPrice,
   renderModelPrice,
 } from '../../../helpers';
-import { IconHelpCircle } from '@douyinfe/semi-icons';
 import { Route, Sparkles } from 'lucide-react';
 
 const colors = [
@@ -570,18 +569,7 @@ export const getLogsColumns = ({
     },
     {
       key: COLUMN_KEYS.IP,
-      title: (
-        <div className='flex items-center gap-1'>
-          {t('IP')}
-          <Tooltip
-            content={t(
-              '仅“消费”和“错误”日志会记录客户端IP（强制开启）',
-            )}
-          >
-            <IconHelpCircle className='text-gray-400 cursor-help' />
-          </Tooltip>
-        </div>
-      ),
+      title: t('IP'),
       dataIndex: 'ip',
       render: (text, record, index) => {
         return (record.type === 2 || record.type === 5) && text ? (
