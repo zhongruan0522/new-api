@@ -85,8 +85,6 @@ func Login(c *gin.Context) {
 
 // setup session & cookies and then return user info
 func setupLogin(user *model.User, c *gin.Context) {
-	forceEnableUserIpLogSetting(c, user)
-
 	session := sessions.Default(c)
 	session.Set("id", user.Id)
 	session.Set("username", user.Username)
@@ -925,41 +923,6 @@ func TopUp(c *gin.Context) {
 	})
 }
 
-func forceEnableUserIpLogSetting(c *gin.Context, user *model.User) {
-	if user == nil || user.Id == 0 {
-		return
-	}
-
-	setting := dto.UserSetting{}
-	if user.Setting != "" {
-		if err := common.Unmarshal([]byte(user.Setting), &setting); err != nil {
-			// Don't block login; leave existing setting untouched on parse errors.
-			logger.LogError(c, "failed to unmarshal user setting: "+err.Error())
-			return
-		}
-	}
-
-	if setting.RecordIpLog {
-		return
-	}
-
-	setting.RecordIpLog = true
-	settingBytes, err := common.Marshal(setting)
-	if err != nil {
-		// Don't block login.
-		logger.LogError(c, "failed to marshal user setting: "+err.Error())
-		return
-	}
-
-	newSetting := string(settingBytes)
-	user.Setting = newSetting
-	if err := model.DB.Model(&model.User{}).Where("id = ?", user.Id).Update("setting", newSetting).Error; err != nil {
-		// Don't block login.
-		logger.LogError(c, "failed to persist user setting: "+err.Error())
-		return
-	}
-}
-
 type UpdateUserSettingRequest struct {
 	QuotaWarningType           string  `json:"notify_type"`
 	QuotaWarningThreshold      float64 `json:"quota_warning_threshold"`
@@ -1066,7 +1029,6 @@ func UpdateUserSetting(c *gin.Context) {
 		NotifyType:            req.QuotaWarningType,
 		QuotaWarningThreshold: req.QuotaWarningThreshold,
 		AcceptUnsetRatioModel: req.AcceptUnsetModelRatioModel,
-		RecordIpLog:           true,
 	}
 
 	// 如果是webhook类型,添加webhook相关设置
