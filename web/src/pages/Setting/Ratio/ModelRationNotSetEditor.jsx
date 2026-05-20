@@ -430,6 +430,18 @@ export default function ModelRatioNotSetEditor(props) {
       showError(t('模型名称已存在'));
       return;
     }
+    // 校验数值字段：非空时必须是合法数字
+    const numericFields = [
+      'price', 'ratio', 'completionRatio', 'cacheRatio',
+      'createCacheRatio', 'audioRatio', 'audioCompletionRatio',
+    ];
+    for (const field of numericFields) {
+      const val = values[field];
+      if (val !== '' && val !== undefined && val !== null && isNaN(Number(val))) {
+        showError(t('请输入有效的数字'));
+        return;
+      }
+    }
     setModels((prev) => [
       {
         name: values.name,
@@ -603,7 +615,7 @@ export default function ModelRatioNotSetEditor(props) {
             total: filteredModels.length,
             onPageChange: (page) => setCurrentPage(page),
             onPageSizeChange: handlePageSizeChange,
-            pageSizeOptions: pageSizeOptions,
+            pageSizeOpts: pageSizeOptions,
             showTotal: true,
             showSizeChanger: true,
           }}

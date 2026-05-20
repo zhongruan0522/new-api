@@ -441,7 +441,7 @@ export default function ModelSettingsVisualEditor(props) {
     return keywordMatch && conflictMatch;
   });
 
-  const pagedData = getPagedData(filteredModels, currentPage, pageSize);
+  const pagedData = getPagedData(filteredModels, currentPage, listPageSize);
 
   /** 保存所有模型数据到后端 */
   const SubmitData = async () => {
@@ -567,7 +567,14 @@ export default function ModelSettingsVisualEditor(props) {
 
   /** 处理删除模型 */
   const handleDeleteModel = (name) => {
-    setModels((prev) => prev.filter((model) => model.name !== name));
+    setModels((prev) => {
+      const next = prev.filter((model) => model.name !== name);
+      const totalPages = Math.max(1, Math.ceil(next.length / listPageSize));
+      if (currentPage > totalPages) {
+        setCurrentPage(totalPages);
+      }
+      return next;
+    });
     if (selectedModelName === name) {
       setSelectedModelName(null);
       setEditingModel(null);
