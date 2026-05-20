@@ -17,25 +17,24 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import {
   Table,
   Button,
   Input,
-  Modal,
-  Form,
   Space,
   RadioGroup,
   Radio,
   Checkbox,
   Tag,
+  Switch,
+  Banner,
 } from '@douyinfe/semi-ui';
 import {
   IconDelete,
   IconPlus,
   IconSearch,
   IconSave,
-  IconEdit,
 } from '@douyinfe/semi-icons';
 import { API, showError, showSuccess } from '../../../helpers';
 import { useTranslation } from 'react-i18next';
@@ -149,14 +148,16 @@ const hasPerTokenPricing = (model) =>
 const buildConflictState = (model) =>
   hasValue(model?.price) && hasPerTokenPricing(model);
 
-// 从倍率字段构建价格显示值（用于弹窗编辑时的价格字段回显）
+// 从倍率字段构建价格显示值（用于详情面板的价格字段回显）
 const buildPriceFieldsFromRatios = (model) => {
   const ratio = parseInputNumber(model?.ratio);
   const completionRatio = parseInputNumber(model?.completionRatio);
   const cacheRatio = parseInputNumber(model?.cacheRatio);
   const createCacheRatio = parseInputNumber(model?.createCacheRatio);
   const audioRatio = parseInputNumber(model?.audioRatio);
-  const audioCompletionRatio = parseInputNumber(model?.audioCompletionRatio);
+  const audioCompletionRatio = parseInputNumber(
+    model?.audioCompletionRatio,
+  );
 
   const tokenPrice = ratio !== null ? ratioToPrice(ratio) : null;
 
@@ -252,21 +253,49 @@ const displayPriceToRatio = (price) => {
   return Number.isFinite(p) ? formatNumberValue(p / 2) : '';
 };
 
+/**
+ * 获取模型的计费模式摘要文本，用于左侧列表展示
+ */
+const getModelPricingSummary = (model) => {
+  if (hasValue(model?.price)) {
+    return `按次 $${model.price} / 次`;
+  }
+
+  // 按量计费模式
+  const parts = [];
+  const inputPrice = ratioToDisplayPrice(model?.ratio);
+  if (inputPrice) {
+    parts.push(`输入 $${inputPrice}`);
+  }
+
+  // 统计额外已配置项数量
+  let extraCount = 0;
+  if (hasValue(model?.completionRatio)) extraCount++;
+  if (hasValue(model?.cacheRatio)) extraCount++;
+  if (hasValue(model?.createCacheRatio)) extraCount++;
+  if (hasValue(model?.audioRatio)) extraCount++;
+  if (hasValue(model?.audioCompletionRatio)) extraCount++;
+
+  if (extraCount > 0) {
+    parts.push(`额外价格项 ${extraCount}`);
+  }
+
+  return parts.length > 0 ? parts.join('，') : '';
+};
+
 export default function ModelSettingsVisualEditor(props) {
   const { t } = useTranslation();
   const [models, setModels] = useState([]);
   const [enabledModels, setEnabledModels] = useState([]);
-  const [visible, setVisible] = useState(false);
-  const [isEditMode, setIsEditMode] = useState(false);
-  const [currentModel, setCurrentModel] = useState(null);
+  const [selectedModelName, setSelectedModelName] = useState(null);
   const [searchText, setSearchText] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(false);
-  const [pricingMode, setPricingMode] = useState('per-token'); // 'per-token' or 'per-request'
   const [conflictOnly, setConflictOnly] = useState(false);
-  const [editingValues, setEditingValues] = useState({});
-  const formRef = useRef(null);
-  const pageSize = 10;
+  const [listPageSize, setListPageSize] = useState(100); // 左侧列表每页条数（可变）
+
+  // 当前选中模型的编辑状态（右侧面板使用）
+  const [editingModel, setEditingModel] = useState(null);
 
   const getAllEnabledModels = async () => {
     try {
@@ -291,7 +320,9 @@ export default function ModelSettingsVisualEditor(props) {
     try {
       const modelPrice = JSON.parse(props.options.ModelPrice || '{}');
       const modelRatio = JSON.parse(props.options.ModelRatio || '{}');
-      const completionRatio = JSON.parse(props.options.CompletionRatio || '{}');
+      const completionRatio = JSON.parse(
+        props.options.CompletionRatio || '{}',
+      );
       const cacheRatio = JSON.parse(props.options.CacheRatio || '{}');
       const createCacheRatio = JSON.parse(
         props.options.CreateCacheRatio || '{}',
@@ -313,14 +344,22 @@ export default function ModelSettingsVisualEditor(props) {
 
       const configuredModelData = Array.from(configuredModelNames).map(
         (name) => {
-          const price = modelPrice[name] === undefined ? '' : modelPrice[name];
-          const ratio = modelRatio[name] === undefined ? '' : modelRatio[name];
+          const price =
+            modelPrice[name] === undefined ? '' : modelPrice[name];
+          const ratio =
+            modelRatio[name] === undefined ? '' : modelRatio[name];
           const comp =
-            completionRatio[name] === undefined ? '' : completionRatio[name];
-          const cache = cacheRatio[name] === undefined ? '' : cacheRatio[name];
+            completionRatio[name] === undefined
+              ? ''
+              : completionRatio[name];
+          const cache =
+            cacheRatio[name] === undefined ? '' : cacheRatio[name];
           const createCache =
-            createCacheRatio[name] === undefined ? '' : createCacheRatio[name];
-          const audio = audioRatio[name] === undefined ? '' : audioRatio[name];
+            createCacheRatio[name] === undefined
+              ? ''
+              : createCacheRatio[name];
+          const audio =
+            audioRatio[name] === undefined ? '' : audioRatio[name];
           const audioComp =
             audioCompletionRatio[name] === undefined
               ? ''
@@ -360,6 +399,34 @@ export default function ModelSettingsVisualEditor(props) {
     }
   }, [enabledModels, props.options]);
 
+  // 当前选中的模型对象
+  const selectedModel = useMemo(() => {
+    if (!selectedModelName) return null;
+    return models.find((m) => m.name === selectedModelName) || null;
+  }, [models, selectedModelName]);
+
+  // 同步 editingModel 与选中模型
+  useEffect(() => {
+    if (selectedModel) {
+      if (hasValue(selectedModel?.price)) {
+        // 按次计费
+        setEditingModel({
+          ...selectedModel,
+          pricingMode: 'per-request',
+        });
+      } else {
+        // 按量计费：构建价格字段用于回显
+        setEditingModel({
+          ...selectedModel,
+          ...buildPriceFieldsFromRatios(selectedModel),
+          pricingMode: 'per-token',
+        });
+      }
+    } else {
+      setEditingModel(null);
+    }
+  }, [selectedModel]);
+
   const getPagedData = (data, currentPage, pageSize) => {
     const start = (currentPage - 1) * pageSize;
     const end = start + pageSize;
@@ -367,13 +434,16 @@ export default function ModelSettingsVisualEditor(props) {
   };
 
   const filteredModels = models.filter((model) => {
-    const keywordMatch = searchText ? model.name.includes(searchText) : true;
+    const keywordMatch = searchText
+      ? model.name.toLowerCase().includes(searchText.toLowerCase())
+      : true;
     const conflictMatch = conflictOnly ? model.hasConflict : true;
     return keywordMatch && conflictMatch;
   });
 
   const pagedData = getPagedData(filteredModels, currentPage, pageSize);
 
+  /** 保存所有模型数据到后端 */
   const SubmitData = async () => {
     setLoading(true);
     const output = {
@@ -386,7 +456,13 @@ export default function ModelSettingsVisualEditor(props) {
       AudioCompletionRatio: {},
     };
     try {
-      models.forEach((model) => {
+      // 如果当前正在编辑某个模型，先同步到 models 列表
+      let modelsToSave = models;
+      if (editingModel && selectedModelName) {
+        modelsToSave = saveEditingModelToList(modelsToSave);
+      }
+
+      modelsToSave.forEach((model) => {
         if (model.price !== '') {
           output.ModelPrice[model.name] = parseInputNumber(model.price);
         } else {
@@ -452,560 +528,312 @@ export default function ModelSettingsVisualEditor(props) {
     }
   };
 
-  // 表格列：统一以价格（$/1M tokens）展示，内部仍存倍率
-  const columns = [
+  /**
+   * 将当前 editingModel 的修改同步回 models 列表，返回新列表
+   */
+  const saveEditingModelToList = (baseModels) => {
+    if (!editingModel || !selectedModelName) return baseModels;
+
+    let valuesToSave = { ...editingModel };
+
+    if (editingModel.pricingMode === 'per-token') {
+      valuesToSave = syncRatioFieldsFromPrices(valuesToSave);
+      valuesToSave.price = '';
+    } else {
+      valuesToSave = clearPerTokenPricing(valuesToSave);
+    }
+
+    // 移除临时字段
+    delete valuesToSave.tokenPrice;
+    delete valuesToSave.completionTokenPrice;
+    delete valuesToSave.cacheTokenPrice;
+    delete valuesToSave.createCacheTokenPrice;
+    delete valuesToSave.audioTokenPrice;
+    delete valuesToSave.audioCompletionTokenPrice;
+    delete valuesToSave.pricingMode;
+
+    return baseModels.map((model) => {
+      if (model.name !== selectedModelName) return model;
+      const updated = { ...model, ...valuesToSave };
+      updated.hasConflict = buildConflictState(updated);
+      return updated;
+    });
+  };
+
+  /** 处理左侧列表点击选中 */
+  const handleSelectModel = (record) => {
+    setSelectedModelName(record.name);
+  };
+
+  /** 处理删除模型 */
+  const handleDeleteModel = (name) => {
+    setModels((prev) => prev.filter((model) => model.name !== name));
+    if (selectedModelName === name) {
+      setSelectedModelName(null);
+      setEditingModel(null);
+    }
+  };
+
+  /** 处理添加新模型 */
+  const handleAddModel = () => {
+    // 先提交当前正在编辑的修改
+    commitEditingChanges();
+    const newName = t('新模型') + '_' + Date.now().toString(36);
+    const newModel = createEmptyModel(newName);
+    newModel.isUnset = false;
+    setModels((prev) => sortModels([newModel, ...prev]));
+    setSelectedModelName(newName);
+  };
+
+  /** 更新 editingModel 的指定字段 */
+  const updateEditingField = (field, value) => {
+    setEditingModel((prev) => {
+      if (!prev) return prev;
+
+      // 数字校验：非空值必须是合法数字
+      if (hasValue(value) && !isEditableNumberInput(value)) {
+        showError(t('请输入数字'));
+        return prev;
+      }
+
+      const updated = { ...prev, [field]: value };
+
+      // 如果修改了基础价格，需要联动更新相对倍率字段
+      if (field === 'tokenPrice' && prev.pricingMode === 'per-token') {
+        return syncRatioFieldsFromPrices(updated);
+      }
+      if (field === 'audioTokenPrice' && prev.pricingMode === 'per-token') {
+        return syncRatioFieldsFromPrices(updated);
+      }
+
+      updated.hasConflict = buildConflictState(updated);
+      return updated;
+    });
+  };
+
+  /** 切换计费模式 */
+  const handlePricingModeChange = (newMode) => {
+    if (!editingModel) return;
+
+    setEditingModel((prev) => {
+      if (!prev) return prev;
+      if (prev.pricingMode === newMode) return prev; // 模式未变则跳过
+
+      if (newMode === 'per-token') {
+        // 从按次切到按量：基于当前编辑状态，从倍率重建价格字段
+        return {
+          ...prev,
+          ...buildPriceFieldsFromRatios(prev),
+          pricingMode: 'per-token',
+          price: '', // 清除固定价格
+        };
+      } else {
+        // 从按量切到按次：清除按量字段，保留当前编辑的固定价格
+        return {
+          ...prev,
+          pricingMode: 'per-request',
+          tokenPrice: '',
+          completionTokenPrice: '',
+          cacheTokenPrice: '',
+          createCacheTokenPrice: '',
+          audioTokenPrice: '',
+          audioCompletionTokenPrice: '',
+          ratio: '',
+          completionRatio: '',
+          cacheRatio: '',
+          createCacheRatio: '',
+          audioRatio: '',
+          audioCompletionRatio: '',
+        };
+      }
+    });
+  };
+
+  /** 切换可选价格开关 */
+  const toggleOptionalField = (field, enabled) => {
+    if (!editingModel) return;
+    if (enabled) {
+      // 启用时，如果为空则给一个默认值
+      updateEditingField(field, editingModel[field] || '0');
+    } else {
+      // 禁用时：同时清除显示价格和底层倍率字段
+      setEditingModel((prev) => {
+        if (!prev) return prev;
+        const updated = { ...prev, [field]: '' };
+        // 映射：显示价格字段 → 底层倍率字段
+        const fieldToRatioMap = {
+          completionTokenPrice: 'completionRatio',
+          cacheTokenPrice: 'cacheRatio',
+          createCacheTokenPrice: 'createCacheRatio',
+          audioTokenPrice: 'audioRatio',
+          audioCompletionTokenPrice: 'audioCompletionRatio',
+        };
+        const ratioField = fieldToRatioMap[field];
+        if (ratioField) {
+          updated[ratioField] = '';
+        }
+        updated.hasConflict = buildConflictState(updated);
+        return updated;
+      });
+    }
+  };
+
+  /** 实时保存当前编辑内容到 models 列表（切换选中项前自动调用） */
+  const commitEditingChanges = () => {
+    if (editingModel && selectedModelName) {
+      setModels((prev) => saveEditingModelToList(prev));
+    }
+  };
+
+  /** 安全地切换选中模型 */
+  const handleSafeSelectModel = (record) => {
+    if (record.name === selectedModelName) return; // 已选中则跳过
+    commitEditingChanges();
+    handleSelectModel(record);
+  };
+
+  // ========== 保存预览数据 ==========
+  const previewData = useMemo(() => {
+    if (!editingModel || !selectedModelName) return null;
+
+    if (editingModel.pricingMode === 'per-request') {
+      return {
+        ModelPrice: editingModel.price || '',
+      };
+    }
+
+    // 按量计费：基于当前编辑状态生成预览
+    const synced = syncRatioFieldsFromPrices({ ...editingModel });
+    return {
+      ModelRatio: synced.ratio || '0',
+      CompletionRatio: synced.completionRatio || '0',
+      CacheRatio: synced.cacheRatio || '0',
+      CreateCacheRatio: synced.createCacheRatio || '0',
+      ImageRatio: '0',
+      AudioRatio: synced.audioRatio || '0',
+      AudioCompletionRatio: synced.audioCompletionRatio || '1',
+    };
+  }, [editingModel, selectedModelName]);
+
+  // ========== 左侧列表列定义 ==========
+  const listColumns = [
+    {
+      title: '',
+      dataIndex: 'name',
+      key: 'select',
+      width: 40,
+      render: (text, record) => (
+        <div
+          style={{
+            width: 4,
+            height: '100%',
+            background:
+              record.name === selectedModelName
+                ? 'var(--semi-color-primary)'
+                : 'transparent',
+            borderRadius: 2,
+            marginRight: 8,
+          }}
+        />
+      ),
+    },
     {
       title: t('模型名称'),
       dataIndex: 'name',
       key: 'name',
-      width: 220,
       render: (text, record) => (
-        <span>
+        <span
+          style={{
+            fontWeight:
+              record.name === selectedModelName ? 600 : 'normal',
+            color:
+              record.name === selectedModelName
+                ? 'var(--semi-color-primary)'
+                : 'inherit',
+            cursor: 'pointer',
+          }}
+          onClick={() => handleSafeSelectModel(record)}
+        >
           {text}
-          {record.hasConflict && (
-            <Tag color='red' shape='circle' className='ml-2'>
-              {t('矛盾')}
-            </Tag>
-          )}
         </span>
       ),
     },
     {
-      title: t('模型固定价格'),
-      dataIndex: 'price',
-      key: 'price',
+      title: t('计费方式'),
+      dataIndex: 'pricingType',
+      key: 'pricingType',
       width: 100,
-      render: (text, record) => (
-        <Input
-          value={editingValues[`${record.name}:price`] ?? text}
-          placeholder={t('按量计费')}
-          onChange={(value) =>
-            handleInlineInputChange(record.name, 'price', value, (current) =>
-              formatNumberValue(Number(current)),
-            )
-          }
-          onBlur={() =>
-            handleInlineInputBlur(
-              record.name,
-              'price',
-              editingValues[`${record.name}:price`] ?? text,
-              (current) => formatNumberValue(Number(current)),
-            )
-          }
-        />
-      ),
+      render: (_, record) => {
+        const isPerRequest = hasValue(record?.price);
+        return (
+          <Tag
+            color={isPerRequest ? 'green' : 'blue'}
+            shape='rounded'
+          >
+            {isPerRequest ? t('按次计费') : t('按量计费')}
+          </Tag>
+        );
+      },
     },
     {
-      title: `${t('输入价格')} ($/1M)`,
-      dataIndex: 'ratio',
-      key: 'ratio',
-      render: (text, record) => (
-        <Input
-          value={
-            editingValues[`${record.name}:ratio`] ?? ratioToDisplayPrice(text)
-          }
-          placeholder={record.price !== '' ? '-' : t('默认补全倍率')}
-          disabled={record.price !== ''}
-          onChange={(value) =>
-            handleInlineInputChange(
-              record.name,
-              'ratio',
-              value,
-              displayPriceToRatio,
-            )
-          }
-          onBlur={() =>
-            handleInlineInputBlur(
-              record.name,
-              'ratio',
-              editingValues[`${record.name}:ratio`] ??
-                ratioToDisplayPrice(text),
-              displayPriceToRatio,
-            )
-          }
-        />
-      ),
-    },
-    {
-      title: `${t('输出价格')} ($/1M)`,
-      dataIndex: 'completionRatio',
-      key: 'completionRatio',
-      render: (text, record) => (
-        <Input
-          value={
-            editingValues[`${record.name}:completionRatio`] ??
-            completionRatioToDisplayPrice(text, record.ratio)
-          }
-          placeholder={record.price !== '' ? '-' : t('默认补全倍率')}
-          disabled={record.price !== ''}
-          onChange={(value) =>
-            handleInlineInputChange(
-              record.name,
-              'completionRatio',
-              value,
-              (current) => displayPriceToCompletionRatio(current, record.ratio),
-            )
-          }
-          onBlur={() =>
-            handleInlineInputBlur(
-              record.name,
-              'completionRatio',
-              editingValues[`${record.name}:completionRatio`] ??
-                completionRatioToDisplayPrice(text, record.ratio),
-              (current) => displayPriceToCompletionRatio(current, record.ratio),
-            )
-          }
-        />
-      ),
-    },
-    {
-      title: `${t('缓存创建价格')} ($/1M)`,
-      dataIndex: 'createCacheRatio',
-      key: 'createCacheRatio',
-      render: (text, record) => (
-        <Input
-          value={
-            editingValues[`${record.name}:createCacheRatio`] ??
-            relativeRatioToDisplayPrice(text, record.ratio)
-          }
-          placeholder={t('缓存创建')}
-          disabled={record.price !== ''}
-          onChange={(value) =>
-            handleInlineInputChange(
-              record.name,
-              'createCacheRatio',
-              value,
-              (current) => displayPriceToRelativeRatio(current, record.ratio),
-            )
-          }
-          onBlur={() =>
-            handleInlineInputBlur(
-              record.name,
-              'createCacheRatio',
-              editingValues[`${record.name}:createCacheRatio`] ??
-                relativeRatioToDisplayPrice(text, record.ratio),
-              (current) => displayPriceToRelativeRatio(current, record.ratio),
-            )
-          }
-        />
-      ),
-    },
-    {
-      title: `${t('缓存读取价格')} ($/1M)`,
-      dataIndex: 'cacheRatio',
-      key: 'cacheRatio',
-      render: (text, record) => (
-        <Input
-          value={
-            editingValues[`${record.name}:cacheRatio`] ??
-            relativeRatioToDisplayPrice(text, record.ratio)
-          }
-          placeholder={t('缓存读取')}
-          disabled={record.price !== ''}
-          onChange={(value) =>
-            handleInlineInputChange(
-              record.name,
-              'cacheRatio',
-              value,
-              (current) => displayPriceToRelativeRatio(current, record.ratio),
-            )
-          }
-          onBlur={() =>
-            handleInlineInputBlur(
-              record.name,
-              'cacheRatio',
-              editingValues[`${record.name}:cacheRatio`] ??
-                relativeRatioToDisplayPrice(text, record.ratio),
-              (current) => displayPriceToRelativeRatio(current, record.ratio),
-            )
-          }
-        />
-      ),
-    },
-    {
-      title: `${t('音频输入价格')} ($/1M)`,
-      dataIndex: 'audioRatio',
-      key: 'audioRatio',
-      render: (text, record) => (
-        <Input
-          value={
-            editingValues[`${record.name}:audioRatio`] ??
-            relativeRatioToDisplayPrice(text, record.ratio)
-          }
-          placeholder={t('音频输入')}
-          disabled={record.price !== ''}
-          onChange={(value) =>
-            handleInlineInputChange(
-              record.name,
-              'audioRatio',
-              value,
-              (current) => displayPriceToRelativeRatio(current, record.ratio),
-            )
-          }
-          onBlur={() =>
-            handleInlineInputBlur(
-              record.name,
-              'audioRatio',
-              editingValues[`${record.name}:audioRatio`] ??
-                relativeRatioToDisplayPrice(text, record.ratio),
-              (current) => displayPriceToRelativeRatio(current, record.ratio),
-            )
-          }
-        />
-      ),
-    },
-    {
-      title: `${t('音频输出价格')} ($/1M)`,
-      dataIndex: 'audioCompletionRatio',
-      key: 'audioCompletionRatio',
-      render: (text, record) => (
-        <Input
-          value={
-            editingValues[`${record.name}:audioCompletionRatio`] ??
-            audioCompletionRatioToDisplayPrice(
-              text,
-              record.ratio,
-              record.audioRatio,
-            )
-          }
-          placeholder={t('音频输出')}
-          disabled={record.price !== ''}
-          onChange={(value) =>
-            handleInlineInputChange(
-              record.name,
-              'audioCompletionRatio',
-              value,
-              (current) =>
-                displayPriceToAudioCompletionRatio(
-                  current,
-                  record.ratio,
-                  record.audioRatio,
-                ),
-            )
-          }
-          onBlur={() =>
-            handleInlineInputBlur(
-              record.name,
-              'audioCompletionRatio',
-              editingValues[`${record.name}:audioCompletionRatio`] ??
-                audioCompletionRatioToDisplayPrice(
-                  text,
-                  record.ratio,
-                  record.audioRatio,
-                ),
-              (current) =>
-                displayPriceToAudioCompletionRatio(
-                  current,
-                  record.ratio,
-                  record.audioRatio,
-                ),
-            )
-          }
-        />
+      title: t('价格摘要'),
+      dataIndex: 'summary',
+      key: 'summary',
+      render: (_, record) => (
+        <span style={{ color: 'var(--semi-color-text-2)', fontSize: 13 }}>
+          {getModelPricingSummary(record)}
+        </span>
       ),
     },
     {
       title: t('操作'),
       key: 'action',
+      width: 60,
       render: (_, record) => (
-        <Space>
-          <Button
-            type='primary'
-            icon={<IconEdit />}
-            onClick={() => editModel(record)}
-          ></Button>
-          <Button
-            icon={<IconDelete />}
-            type='danger'
-            onClick={() => deleteModel(record.name)}
-          />
-        </Space>
+        <Button
+          icon={<IconDelete />}
+          type='danger'
+          theme='borderless'
+          size='small'
+          onClick={(e) => {
+            e.stopPropagation();
+            handleDeleteModel(record.name);
+          }}
+        />
       ),
     },
   ];
 
-  const handleInlineInputChange = (
-    name,
-    field,
-    rawValue,
-    converter = (current) => current,
-  ) => {
-    if (rawValue !== '' && !isEditableNumberInput(rawValue)) {
-      showError('请输入数字');
-      return;
-    }
-
-    const cacheKey = `${name}:${field}`;
-    setEditingValues((prev) => ({ ...prev, [cacheKey]: rawValue }));
-
-    if (shouldDeferNumericSync(rawValue)) {
-      return;
-    }
-
-    const normalizedValue = rawValue === '' ? '' : converter(rawValue);
-    setModels((prev) =>
-      prev.map((model) => {
-        if (model.name !== name) return model;
-        const updated = { ...model, [field]: normalizedValue };
-        updated.hasConflict = buildConflictState(updated);
-        return updated;
-      }),
-    );
-  };
-
-  const handleInlineInputBlur = (
-    name,
-    field,
-    value,
-    converter = (current) => current,
-  ) => {
-    const cacheKey = `${name}:${field}`;
-    const normalizedValue = hasValue(value) ? converter(value) : '';
-
-    setModels((prev) =>
-      prev.map((model) => {
-        if (model.name !== name) return model;
-        const updated = { ...model, [field]: normalizedValue };
-        updated.hasConflict = buildConflictState(updated);
-        return updated;
-      }),
-    );
-
-    setEditingValues((prev) => {
-      const next = { ...prev };
-      delete next[cacheKey];
-      return next;
-    });
-  };
-
-  const deleteModel = (name) => {
-    setEditingValues((prev) => {
-      const next = { ...prev };
-      Object.keys(next).forEach((key) => {
-        if (key.startsWith(`${name}:`)) {
-          delete next[key];
-        }
-      });
-      return next;
-    });
-    setModels((prev) => prev.filter((model) => model.name !== name));
-  };
-
-  // 弹窗中价格输入的 onChange 处理（输入价格 → 自动转为倍率存入 currentModel）
-  const handleTokenPriceChange = (value) => {
-    const newState = {
-      ...(currentModel || {}),
-      tokenPrice: value,
-      ratio:
-        hasValue(value) && !isNaN(value)
-          ? formatNumberValue(priceToRatio(Number(value)))
-          : '',
-    };
-    setCurrentModel(syncRatioFieldsFromPrices(newState));
-  };
-
-  const handleCompletionTokenPriceChange = (value) => {
-    const newState = {
-      ...(currentModel || {}),
-      completionTokenPrice: value,
-      completionRatio:
-        hasValue(value) && hasValue(currentModel?.tokenPrice)
-          ? calculateRelativeRatio(
-              Number(value),
-              Number(currentModel.tokenPrice),
-            )
-          : '',
-    };
-    setCurrentModel(newState);
-  };
-
-  const handleCacheTokenPriceChange = (value) => {
-    const newState = {
-      ...(currentModel || {}),
-      cacheTokenPrice: value,
-      cacheRatio:
-        hasValue(value) && hasValue(currentModel?.tokenPrice)
-          ? calculateRelativeRatio(
-              Number(value),
-              Number(currentModel.tokenPrice),
-            )
-          : '',
-    };
-    setCurrentModel(newState);
-  };
-
-  const handleCreateCacheTokenPriceChange = (value) => {
-    const newState = {
-      ...(currentModel || {}),
-      createCacheTokenPrice: value,
-      createCacheRatio:
-        hasValue(value) && hasValue(currentModel?.tokenPrice)
-          ? calculateRelativeRatio(
-              Number(value),
-              Number(currentModel.tokenPrice),
-            )
-          : '',
-    };
-    setCurrentModel(newState);
-  };
-
-  const handleAudioTokenPriceChange = (value) => {
-    const newState = {
-      ...(currentModel || {}),
-      audioTokenPrice: value,
-      audioRatio:
-        hasValue(value) && hasValue(currentModel?.tokenPrice)
-          ? calculateRelativeRatio(
-              Number(value),
-              Number(currentModel.tokenPrice),
-            )
-          : '',
-    };
-    setCurrentModel(syncRatioFieldsFromPrices(newState));
-  };
-
-  const handleAudioCompletionTokenPriceChange = (value) => {
-    const newState = {
-      ...(currentModel || {}),
-      audioCompletionTokenPrice: value,
-      audioCompletionRatio:
-        hasValue(value) && hasValue(currentModel?.audioTokenPrice)
-          ? calculateRelativeRatio(
-              Number(value),
-              Number(currentModel.audioTokenPrice),
-            )
-          : '',
-    };
-    setCurrentModel(newState);
-  };
-
-  const addOrUpdateModel = (values) => {
-    const existingModelIndex = models.findIndex(
-      (model) => model.name === values.name,
-    );
-
-    if (existingModelIndex >= 0) {
-      setModels((prev) =>
-        sortModels(
-          prev.map((model, index) => {
-            if (index !== existingModelIndex) return model;
-            const updated = {
-              ...model,
-              name: values.name,
-              price: normalizeNumericEditableValue(values.price),
-              ratio: normalizeNumericEditableValue(values.ratio),
-              completionRatio: normalizeNumericEditableValue(
-                values.completionRatio,
-              ),
-              cacheRatio: normalizeNumericEditableValue(values.cacheRatio),
-              createCacheRatio: normalizeNumericEditableValue(
-                values.createCacheRatio,
-              ),
-              audioRatio: normalizeNumericEditableValue(values.audioRatio),
-              audioCompletionRatio: normalizeNumericEditableValue(
-                values.audioCompletionRatio,
-              ),
-            };
-            updated.hasConflict = buildConflictState(updated);
-            return updated;
-          }),
-        ),
-      );
-      setVisible(false);
-      showSuccess(t('更新成功'));
-    } else {
-      if (models.some((model) => model.name === values.name)) {
-        showError(t('模型名称已存在'));
-        return;
-      }
-
-      setModels((prev) => {
-        const newModel = {
-          name: values.name,
-          price: normalizeNumericEditableValue(values.price),
-          ratio: normalizeNumericEditableValue(values.ratio),
-          completionRatio: normalizeNumericEditableValue(
-            values.completionRatio,
-          ),
-          cacheRatio: normalizeNumericEditableValue(values.cacheRatio),
-          createCacheRatio: normalizeNumericEditableValue(
-            values.createCacheRatio,
-          ),
-          audioRatio: normalizeNumericEditableValue(values.audioRatio),
-          audioCompletionRatio: normalizeNumericEditableValue(
-            values.audioCompletionRatio,
-          ),
-          isUnset: false,
-        };
-        newModel.hasConflict = buildConflictState(newModel);
-        return sortModels([newModel, ...prev]);
-      });
-      setVisible(false);
-      showSuccess(t('添加成功'));
-    }
-  };
-
-  const resetModalState = () => {
-    setCurrentModel(null);
-    setPricingMode('per-token');
-    setIsEditMode(false);
-  };
-
-  const editModel = (record) => {
-    setIsEditMode(true);
-
-    let initialPricingMode = 'per-token';
-    if (record.price !== '') {
-      initialPricingMode = 'per-request';
-    }
-
-    setPricingMode(initialPricingMode);
-
-    // 从倍率构建价格字段用于弹窗回显
-    const modelCopy = {
-      ...record,
-      ...buildPriceFieldsFromRatios(record),
-    };
-
-    setCurrentModel(modelCopy);
-    setVisible(true);
-
-    setTimeout(() => {
-      if (formRef.current) {
-        const formValues = { name: modelCopy.name };
-
-        if (initialPricingMode === 'per-request') {
-          formValues.priceInput = modelCopy.price;
-        } else {
-          // 按量计费统一以价格展示
-          formValues.modelTokenPrice = modelCopy.tokenPrice;
-          formValues.completionTokenPrice = modelCopy.completionTokenPrice;
-          formValues.cacheTokenPrice = modelCopy.cacheTokenPrice;
-          formValues.createCacheTokenPrice = modelCopy.createCacheTokenPrice;
-          formValues.audioTokenPrice = modelCopy.audioTokenPrice;
-          formValues.audioCompletionTokenPrice =
-            modelCopy.audioCompletionTokenPrice;
-        }
-
-        formRef.current.setValues(formValues);
-      }
-    }, 0);
-  };
-
+  // ========== 渲染 ==========
   return (
-    <>
-      <Space vertical align='start' style={{ width: '100%' }}>
-        <Space className='mt-2'>
+    <div style={{ display: 'flex', gap: 16, height: 'calc(100vh - 280px)' }}>
+      {/* ====== 左侧：模型列表 ====== */}
+      <div
+        style={{
+          flex: '0 0 55%',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+        }}
+      >
+        {/* 工具栏 */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: 8,
+            marginBottom: 12,
+          }}
+        >
           <Button
             icon={<IconPlus />}
-            onClick={() => {
-              resetModalState();
-              setVisible(true);
-            }}
+            type='primary'
+            onClick={handleAddModel}
           >
             {t('添加模型')}
           </Button>
-          <Button type='primary' icon={<IconSave />} onClick={SubmitData}>
+          <Button icon={<IconSave />} onClick={SubmitData} loading={loading}>
             {t('应用更改')}
           </Button>
           <Input
@@ -1028,207 +856,528 @@ export default function ModelSettingsVisualEditor(props) {
           >
             {t('仅显示矛盾倍率')}
           </Checkbox>
-        </Space>
+        </div>
+
+        {/* 模型表格 */}
         <Table
-          columns={columns}
+          columns={listColumns}
           dataSource={pagedData}
           rowKey='name'
           pagination={{
             currentPage: currentPage,
-            pageSize: pageSize,
+            pageSize: listPageSize,
             total: filteredModels.length,
             onPageChange: (page) => setCurrentPage(page),
             showTotal: true,
-            showSizeChanger: false,
+            showSizeChanger: true,
+            pageSizeOpts: [50, 100, 200],
+            onPageSizeChange: (size) => {
+              setListPageSize(size);
+              setCurrentPage(1);
+            },
           }}
+          onRow={(record) => ({
+            onClick: () => handleSafeSelectModel(record),
+            style: {
+              cursor: 'pointer',
+              background:
+                record.name === selectedModelName
+                  ? 'var(--semi-color-fill-0)'
+                  : undefined,
+            },
+          })}
+          size='small'
+          style={{ flex: 1, overflow: 'auto' }}
         />
-      </Space>
+      </div>
 
-      <Modal
-        title={isEditMode ? t('编辑模型') : t('添加模型')}
-        visible={visible}
-        onCancel={() => {
-          resetModalState();
-          setVisible(false);
-        }}
-        onOk={() => {
-          if (currentModel) {
-            let valuesToSave = { ...currentModel };
-
-            // 按量计费：将价格字段同步回倍率字段
-            if (pricingMode === 'per-token') {
-              valuesToSave = syncRatioFieldsFromPrices(valuesToSave);
-              valuesToSave.price = '';
-            } else {
-              // 按次计费：清除按量字段
-              valuesToSave = clearPerTokenPricing(valuesToSave);
-            }
-
-            addOrUpdateModel(valuesToSave);
-          }
+      {/* ====== 右侧：详情配置面板 ====== */}
+      <div
+        style={{
+          flex: 1,
+          borderLeft: '1px solid var(--semi-color-border)',
+          paddingLeft: 16,
+          overflowY: 'auto',
+          display: 'flex',
+          flexDirection: 'column',
         }}
       >
-        <Form getFormApi={(api) => (formRef.current = api)}>
-          <Form.Input
-            field='name'
-            label={t('模型名称')}
-            placeholder='strawberry'
-            required
-            disabled={isEditMode}
-            onChange={(value) =>
-              setCurrentModel((prev) => ({ ...prev, name: value }))
-            }
-          />
+        {editingModel ? (
+          <>
+            {/* 标题行：模型名称 + 计费方式标签 */}
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: 16,
+              }}
+            >
+              <Input
+                value={editingModel.name}
+                onChange={(value) => {
+                  setEditingModel((prev) =>
+                    prev ? { ...prev, name: value } : prev,
+                  );
+                  // 同步更新 models 列表中的名称和选中状态
+                  setModels((prev) =>
+                    prev.map((m) =>
+                      m.name === selectedModelName
+                        ? { ...m, name: value }
+                        : m,
+                    ),
+                  );
+                  setSelectedModelName(value);
+                }}
+                style={{ fontWeight: 600, fontSize: 18, border: 'none', padding: 0, boxShadow: 'none' }}
+              />
+              <Tag
+                color={
+                  editingModel.pricingMode === 'per-request'
+                    ? 'blue'
+                    : 'blue'
+                }
+              >
+                {editingModel.pricingMode === 'per-request'
+                  ? t('按次计费')
+                  : t('按量计费')}
+              </Tag>
+            </div>
 
-          <Form.Section text={t('定价模式')}>
-            <div style={{ marginBottom: '16px' }}>
+            {/* 计费方式切换 */}
+            <div style={{ marginBottom: 4 }}>
+              <span style={{ color: 'var(--semi-color-text-2)', marginBottom: 8, display: 'block' }}>
+                {t('计费方式')}
+              </span>
               <RadioGroup
                 type='button'
-                value={pricingMode}
-                onChange={(e) => {
-                  const newMode = e.target.value;
-                  setPricingMode(newMode);
-
-                  if (currentModel) {
-                    const updatedModel =
-                      newMode === 'per-token'
-                        ? {
-                            ...currentModel,
-                            ...buildPriceFieldsFromRatios(currentModel),
-                          }
-                        : { ...currentModel };
-
-                    if (formRef.current) {
-                      const formValues = { name: updatedModel.name };
-
-                      if (newMode === 'per-request') {
-                        formValues.priceInput = normalizeEditableValue(
-                          updatedModel.price,
-                        );
-                      } else {
-                        formValues.modelTokenPrice = normalizeEditableValue(
-                          updatedModel.tokenPrice,
-                        );
-                        formValues.completionTokenPrice =
-                          normalizeEditableValue(
-                            updatedModel.completionTokenPrice,
-                          );
-                        formValues.cacheTokenPrice = normalizeEditableValue(
-                          updatedModel.cacheTokenPrice,
-                        );
-                        formValues.createCacheTokenPrice =
-                          normalizeEditableValue(
-                            updatedModel.createCacheTokenPrice,
-                          );
-                        formValues.audioTokenPrice = normalizeEditableValue(
-                          updatedModel.audioTokenPrice,
-                        );
-                        formValues.audioCompletionTokenPrice =
-                          normalizeEditableValue(
-                            updatedModel.audioCompletionTokenPrice,
-                          );
-                      }
-
-                      formRef.current.setValues(formValues);
-                    }
-
-                    setCurrentModel(updatedModel);
-                  }
-                }}
+                value={editingModel.pricingMode || 'per-token'}
+                onChange={(e) => handlePricingModeChange(e.target.value)}
               >
                 <Radio value='per-token'>{t('按量计费')}</Radio>
                 <Radio value='per-request'>{t('按次计费')}</Radio>
               </RadioGroup>
             </div>
-          </Form.Section>
 
-          {/* 按量计费：统一以价格（$/1M tokens）输入，保存时自动转倍率 */}
-          {pricingMode === 'per-token' && (
-            <>
-              <Form.Input
-                field='modelTokenPrice'
-                label={t('输入价格')}
-                onChange={(value) => {
-                  handleTokenPriceChange(value);
-                }}
-                initValue={normalizeEditableValue(currentModel?.tokenPrice)}
-                suffix={t('$/1M tokens')}
-              />
-              <Form.Input
-                field='completionTokenPrice'
-                label={t('输出价格')}
-                onChange={(value) => {
-                  handleCompletionTokenPriceChange(value);
-                }}
-                initValue={normalizeEditableValue(
-                  currentModel?.completionTokenPrice,
-                )}
-                suffix={t('$/1M tokens')}
-              />
-              <Form.Input
-                field='createCacheTokenPrice'
-                label={t('缓存创建价格')}
-                onChange={(value) => {
-                  handleCreateCacheTokenPriceChange(value);
-                }}
-                initValue={normalizeEditableValue(
-                  currentModel?.createCacheTokenPrice,
-                )}
-                suffix={t('$/1M tokens')}
-              />
-              <Form.Input
-                field='cacheTokenPrice'
-                label={t('缓存读取价格')}
-                onChange={(value) => {
-                  handleCacheTokenPriceChange(value);
-                }}
-                initValue={normalizeEditableValue(
-                  currentModel?.cacheTokenPrice,
-                )}
-                suffix={t('$/1M tokens')}
-              />
-              <Form.Input
-                field='audioTokenPrice'
-                label={t('音频输入价格')}
-                onChange={(value) => {
-                  handleAudioTokenPriceChange(value);
-                }}
-                initValue={normalizeEditableValue(
-                  currentModel?.audioTokenPrice,
-                )}
-                suffix={t('$/1M tokens')}
-              />
-              <Form.Input
-                field='audioCompletionTokenPrice'
-                label={t('音频输出价格')}
-                onChange={(value) => {
-                  handleAudioCompletionTokenPriceChange(value);
-                }}
-                initValue={normalizeEditableValue(
-                  currentModel?.audioCompletionTokenPrice,
-                )}
-                suffix={t('$/1M tokens')}
-              />
-            </>
-          )}
-
-          {pricingMode === 'per-request' && (
-            <Form.Input
-              field='priceInput'
-              label={t('固定价格(每次)')}
-              placeholder={t('输入每次价格')}
-              onChange={(value) =>
-                setCurrentModel((prev) => ({
-                  ...(prev || {}),
-                  price: value,
-                }))
-              }
-              initValue={normalizeEditableValue(currentModel?.price)}
+            <Banner
+              type='info'
+              description={t(
+                '这个界面默认按价格填写，保存时会自动换算回后端需要的倍率 JSON。',
+              )}
+              style={{ marginBottom: 16 }}
             />
-          )}
-        </Form>
-      </Modal>
-    </>
+
+            {/* ====== 按量计费表单 ====== */}
+            {editingModel.pricingMode === 'per-token' && (
+              <>
+                {/* 基础价格 */}
+                <div style={{ marginBottom: 24 }}>
+                  <div
+                    style={{
+                      fontWeight: 600,
+                      marginBottom: 12,
+                      fontSize: 14,
+                    }}
+                  >
+                    {t('基础价格')}
+                  </div>
+
+                  <div style={{ marginBottom: 12 }}>
+                    <div
+                      style={{
+                        color: 'var(--semi-color-text-2)',
+                        marginBottom: 4,
+                        fontSize: 13,
+                      }}
+                    >
+                      {t('输入价格')}
+                    </div>
+                    <Input
+                      value={editingModel.tokenPrice ?? ''}
+                      placeholder='0'
+                      onChange={(value) =>
+                        updateEditingField('tokenPrice', value)
+                      }
+                      suffix='$/1M tokens'
+                    />
+                  </div>
+
+                  <div style={{ marginBottom: 12 }}>
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        marginBottom: 4,
+                      }}
+                    >
+                      <span
+                        style={{
+                          color: 'var(--semi-color-text-2)',
+                          fontSize: 13,
+                        }}
+                      >
+                        {t('补全价格')}
+                      </span>
+                      <Switch
+                        checked={hasValue(
+                          editingModel.completionTokenPrice,
+                        )}
+                        onChange={(checked) =>
+                          toggleOptionalField('completionTokenPrice', checked)
+                        }
+                        size='small'
+                      />
+                    </div>
+                    <Input
+                      value={editingModel.completionTokenPrice ?? ''}
+                      placeholder='0'
+                      onChange={(value) =>
+                        updateEditingField(
+                          'completionTokenPrice',
+                          value,
+                        )
+                      }
+                      suffix='$/1M tokens'
+                      disabled={!hasValue(
+                        editingModel.completionTokenPrice,
+                      )}
+                    />
+                  </div>
+
+                  <div style={{ marginBottom: 12 }}>
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        marginBottom: 4,
+                      }}
+                    >
+                      <span
+                        style={{
+                          color: 'var(--semi-color-text-2)',
+                          fontSize: 13,
+                        }}
+                      >
+                        {t('缓存读取价格')}
+                      </span>
+                      <Switch
+                        checked={hasValue(editingModel.cacheTokenPrice)}
+                        onChange={(checked) =>
+                          toggleOptionalField('cacheTokenPrice', checked)
+                        }
+                        size='small'
+                      />
+                    </div>
+                    <Input
+                      value={editingModel.cacheTokenPrice ?? ''}
+                      placeholder='0'
+                      onChange={(value) =>
+                        updateEditingField('cacheTokenPrice', value)
+                      }
+                      suffix='$/1M tokens'
+                      disabled={!hasValue(editingModel.cacheTokenPrice)}
+                    />
+                  </div>
+
+                  <div style={{ marginBottom: 0 }}>
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        marginBottom: 4,
+                      }}
+                    >
+                      <span
+                        style={{
+                          color: 'var(--semi-color-text-2)',
+                          fontSize: 13,
+                        }}
+                      >
+                        {t('缓存创建价格')}
+                      </span>
+                      <Switch
+                        checked={hasValue(
+                          editingModel.createCacheTokenPrice,
+                        )}
+                        onChange={(checked) =>
+                          toggleOptionalField('createCacheTokenPrice', checked)
+                        }
+                        size='small'
+                      />
+                    </div>
+                    <Input
+                      value={editingModel.createCacheTokenPrice ?? ''}
+                      placeholder='0'
+                      onChange={(value) =>
+                        updateEditingField(
+                          'createCacheTokenPrice',
+                          value,
+                        )
+                      }
+                      suffix='$/1M tokens'
+                      disabled={!hasValue(
+                        editingModel.createCacheTokenPrice,
+                      )}
+                    />
+                  </div>
+                </div>
+
+                {/* 扩展价格 */}
+                <div style={{ marginBottom: 24 }}>
+                  <div
+                    style={{
+                      fontWeight: 600,
+                      marginBottom: 4,
+                      fontSize: 14,
+                    }}
+                  >
+                    {t('扩展价格')}
+                  </div>
+                  <div
+                    style={{
+                      color: 'var(--semi-color-text-2)',
+                      marginBottom: 12,
+                      fontSize: 13,
+                    }}
+                  >
+                    {t('这些价格都是可选项，不填也可以。')}
+                  </div>
+
+                  <div style={{ marginBottom: 12 }}>
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        marginBottom: 4,
+                      }}
+                    >
+                      <span
+                        style={{
+                          color: 'var(--semi-color-text-2)',
+                          fontSize: 13,
+                        }}
+                      >
+                        {t('图片输入价格')}
+                      </span>
+                      <Switch size='small' />
+                    </div>
+                    <Input
+                      value='0'
+                      disabled
+                      suffix='$/1M tokens'
+                    />
+                  </div>
+
+                  <div style={{ marginBottom: 12 }}>
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        marginBottom: 4,
+                      }}
+                    >
+                      <span
+                        style={{
+                          color: 'var(--semi-color-text-2)',
+                          fontSize: 13,
+                        }}
+                      >
+                        {t('音频输入价格')}
+                      </span>
+                      <Switch
+                        checked={hasValue(editingModel.audioTokenPrice)}
+                        onChange={(checked) =>
+                          toggleOptionalField('audioTokenPrice', checked)
+                        }
+                        size='small'
+                      />
+                    </div>
+                    <Input
+                      value={editingModel.audioTokenPrice ?? ''}
+                      placeholder='250'
+                      onChange={(value) =>
+                        updateEditingField('audioTokenPrice', value)
+                      }
+                      suffix='$/1M tokens'
+                      disabled={!hasValue(editingModel.audioTokenPrice)}
+                    />
+                  </div>
+
+                  <div style={{ marginBottom: 0 }}>
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        marginBottom: 4,
+                      }}
+                    >
+                      <span
+                        style={{
+                          color: 'var(--semi-color-text-2)',
+                          fontSize: 13,
+                        }}
+                      >
+                        {t('音频补全价格')}
+                      </span>
+                      <Switch
+                        checked={hasValue(
+                          editingModel.audioCompletionTokenPrice,
+                        )}
+                        onChange={(checked) =>
+                          toggleOptionalField(
+                            'audioCompletionTokenPrice',
+                            checked,
+                          )
+                        }
+                        size='small'
+                      />
+                    </div>
+                    <Input
+                      value={
+                        editingModel.audioCompletionTokenPrice ?? ''
+                      }
+                      placeholder='250'
+                      onChange={(value) =>
+                        updateEditingField(
+                          'audioCompletionTokenPrice',
+                          value,
+                        )
+                      }
+                      suffix='$/1M tokens'
+                      disabled={!hasValue(
+                        editingModel.audioCompletionTokenPrice,
+                      )}
+                    />
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* ====== 按次计费表单 ====== */}
+            {editingModel.pricingMode === 'per-request' && (
+              <>
+                <div style={{ marginBottom: 24 }}>
+                  <div
+                    style={{
+                      fontWeight: 600,
+                      marginBottom: 12,
+                      fontSize: 14,
+                    }}
+                  >
+                    {t('固定价格')}
+                  </div>
+                  <Input
+                    value={editingModel.price ?? ''}
+                    placeholder='19.9'
+                    onChange={(value) =>
+                      updateEditingField('price', value)
+                    }
+                    suffix='$/次'
+                  />
+                  <div
+                    style={{
+                      color: 'var(--semi-color-text-2)',
+                      marginTop: 8,
+                      fontSize: 13,
+                    }}
+                  >
+                    {t('适合 MJ / 任务类等按次收费模型。')}
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* ====== 保存预览 ====== */}
+            {previewData && (
+              <div
+                style={{
+                  backgroundColor: 'var(--semi-color-fill-0)',
+                  borderRadius: 8,
+                  padding: 16,
+                  marginTop: 'auto',
+                }}
+              >
+                <div
+                  style={{
+                    fontWeight: 600,
+                    marginBottom: 4,
+                    fontSize: 14,
+                  }}
+                >
+                  {t('保存预览')}
+                </div>
+                <div
+                  style={{
+                    color: 'var(--semi-color-text-2)',
+                    marginBottom: 12,
+                    fontSize: 13,
+                  }}
+                >
+                  {t(
+                    '下面展示这个模型保存后会写入哪些后端字段，便于和原始 JSON 编辑器保持一致。',
+                  )}
+                </div>
+                {Object.entries(previewData).map(([key, val]) => (
+                  <div
+                    key={key}
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      padding: '6px 0',
+                      borderBottom:
+                        '1px solid var(--semi-color-border)',
+                      fontSize: 13,
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontFamily: 'monospace',
+                        fontWeight: 500,
+                      }}
+                    >
+                      {key}
+                    </span>
+                    <span
+                      style={{
+                        color: 'var(--semi-color-text-2)',
+                        fontFamily: 'monospace',
+                      }}
+                    >
+                      {val}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
+        ) : (
+          /* 空状态提示 */
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              height: '100%',
+              color: 'var(--semi-color-text-3)',
+              fontSize: 14,
+            }}
+          >
+            <div style={{ textAlign: 'center' }}>
+              <IconSearch
+                style={{ fontSize: 48, marginBottom: 16, opacity: 0.3 }}
+              />
+              <div>{t('请从左侧选择一个模型进行配置')}</div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -1291,7 +1440,11 @@ const audioCompletionRatioToDisplayPrice = (
 };
 
 // 显示价格 → 音频补全倍率
-const displayPriceToAudioCompletionRatio = (price, baseRatio, audioRatio) => {
+const displayPriceToAudioCompletionRatio = (
+  price,
+  baseRatio,
+  audioRatio,
+) => {
   if (!hasValue(price) || !hasValue(baseRatio) || !hasValue(audioRatio))
     return '';
   const p = Number(price);
