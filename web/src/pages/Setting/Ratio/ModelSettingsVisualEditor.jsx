@@ -1276,6 +1276,7 @@ export default function ModelSettingsVisualEditor(props) {
       >
         {/* 工具栏 */}
         <div
+          className='mt-2'
           style={{
             display: 'flex',
             alignItems: 'center',
