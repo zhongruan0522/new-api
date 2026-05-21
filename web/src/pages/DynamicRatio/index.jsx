@@ -17,18 +17,18 @@ import { ArrowUp, ArrowDown, Plus, Trash2, Pencil } from 'lucide-react';
 import SectionPageLayout from '../../components/layout/SectionPageLayout';
 import { API, isRoot, showError, showSuccess } from '../../helpers';
 
-const WEEKDAY_OPTIONS = [
-  { value: 0, label: '周日' },
-  { value: 1, label: '周一' },
-  { value: 2, label: '周二' },
-  { value: 3, label: '周三' },
-  { value: 4, label: '周四' },
-  { value: 5, label: '周五' },
-  { value: 6, label: '周六' },
-];
-
 const DynamicRatio = () => {
   const { t } = useTranslation();
+
+  const WEEKDAY_OPTIONS = [
+    { value: 0, label: t('周日') },
+    { value: 1, label: t('周一') },
+    { value: 2, label: t('周二') },
+    { value: 3, label: t('周三') },
+    { value: 4, label: t('周四') },
+    { value: 5, label: t('周五') },
+    { value: 6, label: t('周六') },
+  ];
   const [rules, setRules] = useState([]);
   const [loading, setLoading] = useState(false);
   const [globalEnabled, setGlobalEnabled] = useState(false);

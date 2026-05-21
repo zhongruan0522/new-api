@@ -2,16 +2,65 @@ package model
 
 import (
 	"sort"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/zhongruan0522/new-api/common"
 )
 
+// parsedDynamicRatioRule 预解析后的缓存规则，避免热路径重复 JSON 解析
+type parsedDynamicRatioRule struct {
+	DynamicRatioRule                   // 嵌入原始规则，保留所有原始字段供前端展示
+	ParsedWeekdays   []int             // 预解析后的星期数组，nil 表示不限
+	ParsedStartMin   int               // 预解析后的开始时间（分钟），-1 表示不限
+	ParsedEndMin     int               // 预解析后的结束时间（分钟），-1 表示不限
+	HasTimeRange     bool              // 是否有时间条件
+}
+
 var (
-	dynamicRatioRules    []DynamicRatioRule
+	dynamicRatioRules     []parsedDynamicRatioRule
 	dynamicRatioCacheLock sync.RWMutex
 )
+
+// parseDynamicRatioRules 将 DB 规则转换为预解析后的缓存规则
+func parseDynamicRatioRules(rules []DynamicRatioRule) []parsedDynamicRatioRule {
+	result := make([]parsedDynamicRatioRule, 0, len(rules))
+	for _, r := range rules {
+		parsed := parsedDynamicRatioRule{
+			DynamicRatioRule: r,
+			ParsedStartMin:   -1,
+			ParsedEndMin:     -1,
+		}
+
+		// 预解析 Weekdays
+		if r.Weekdays != "" {
+			var days []int
+			if err := common.UnmarshalJsonStr(r.Weekdays, &days); err == nil && len(days) > 0 {
+				parsed.ParsedWeekdays = days
+			}
+		}
+
+		// 预解析 StartTime / EndTime
+		if r.StartTime != "" && r.EndTime != "" {
+			startParts := strings.Split(r.StartTime, ":")
+			endParts := strings.Split(r.EndTime, ":")
+			if len(startParts) == 2 && len(endParts) == 2 {
+				sh, _ := strconv.Atoi(startParts[0])
+				sm, _ := strconv.Atoi(startParts[1])
+				eh, _ := strconv.Atoi(endParts[0])
+				em, _ := strconv.Atoi(endParts[1])
+				parsed.ParsedStartMin = sh*60 + sm
+				parsed.ParsedEndMin = eh*60 + em
+				parsed.HasTimeRange = true
+			}
+		}
+
+		result = append(result, parsed)
+	}
+	return result
+}
 
 // InitDynamicRatioCache 初始化动态倍率缓存
 func InitDynamicRatioCache() {
@@ -22,8 +71,10 @@ func InitDynamicRatioCache() {
 		return
 	}
 
+	parsed := parseDynamicRatioRules(rules)
+
 	dynamicRatioCacheLock.Lock()
-	dynamicRatioRules = rules
+	dynamicRatioRules = parsed
 	dynamicRatioCacheLock.Unlock()
 
 	common.SysLog("dynamic ratio rules synced from database")
@@ -53,16 +104,18 @@ func SetDynamicRatioRulesForTest(rules []DynamicRatioRule) {
 		return rules[i].Id < rules[j].Id
 	})
 
+	parsed := parseDynamicRatioRules(rules)
+
 	dynamicRatioCacheLock.Lock()
-	dynamicRatioRules = rules
+	dynamicRatioRules = parsed
 	dynamicRatioCacheLock.Unlock()
 }
 
 // GetDynamicRatioRulesFromCache 获取缓存中的规则（测试用）
-func GetDynamicRatioRulesFromCache() []DynamicRatioRule {
+func GetDynamicRatioRulesFromCache() []parsedDynamicRatioRule {
 	dynamicRatioCacheLock.RLock()
 	defer dynamicRatioCacheLock.RUnlock()
-	result := make([]DynamicRatioRule, len(dynamicRatioRules))
+	result := make([]parsedDynamicRatioRule, len(dynamicRatioRules))
 	copy(result, dynamicRatioRules)
 	return result
 }

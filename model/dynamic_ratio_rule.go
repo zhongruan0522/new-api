@@ -2,8 +2,6 @@ package model
 
 import (
 	"fmt"
-	"strconv"
-	"strings"
 	"time"
 
 	"github.com/zhongruan0522/new-api/common"
@@ -150,7 +148,7 @@ func GetDynamicRatioStatus(group string) DynamicRatioStatus {
 	rules := dynamicRatioRules
 	dynamicRatioCacheLock.RUnlock()
 
-	var groupRules []DynamicRatioRule
+	var groupRules []parsedDynamicRatioRule
 	for _, r := range rules {
 		if r.Group == group {
 			groupRules = append(groupRules, r)
@@ -194,9 +192,9 @@ func GetMatchedDynamicRatio(group string) float64 {
 }
 
 // matchDynamicRatio 核心匹配逻辑（纯函数，方便测试）
-func matchDynamicRatio(rules []DynamicRatioRule, group string, concurrency int64, now time.Time) float64 {
+func matchDynamicRatio(rules []parsedDynamicRatioRule, group string, concurrency int64, now time.Time) float64 {
 	type scoredRule struct {
-		rule           DynamicRatioRule
+		rule           parsedDynamicRatioRule
 		hasConcurrency bool
 		concurrencyGap int64
 	}
@@ -214,17 +212,10 @@ func matchDynamicRatio(rules []DynamicRatioRule, group string, concurrency int64
 
 		effectiveWeekday := int(now.Weekday())
 
-		// 检查时间段条件
-		if r.StartTime != "" && r.EndTime != "" {
-			startParts := strings.Split(r.StartTime, ":")
-			endParts := strings.Split(r.EndTime, ":")
-			if len(startParts) != 2 || len(endParts) != 2 {
-				continue
-			}
-			startH, startM := parseTimeParts(startParts)
-			endH, endM := parseTimeParts(endParts)
-			startMinutes := startH*60 + startM
-			endMinutes := endH*60 + endM
+		// 检查时间段条件（使用预解析的分钟值）
+		if r.HasTimeRange {
+			startMinutes := r.ParsedStartMin
+			endMinutes := r.ParsedEndMin
 
 			if startMinutes <= endMinutes {
 				// 不跨天
@@ -250,23 +241,17 @@ func matchDynamicRatio(rules []DynamicRatioRule, group string, concurrency int64
 			}
 		}
 
-		// 检查星期条件
-		if r.Weekdays != "" {
-			var days []int
-			if err := common.UnmarshalJsonStr(r.Weekdays, &days); err != nil {
-				continue
+		// 检查星期条件（使用预解析的数组）
+		if r.ParsedWeekdays != nil {
+			found := false
+			for _, d := range r.ParsedWeekdays {
+				if d == effectiveWeekday {
+					found = true
+					break
+				}
 			}
-			if len(days) > 0 {
-				found := false
-				for _, d := range days {
-					if d == effectiveWeekday {
-						found = true
-						break
-					}
-				}
-				if !found {
-					continue
-				}
+			if !found {
+				continue
 			}
 		}
 
@@ -312,15 +297,6 @@ func matchDynamicRatio(rules []DynamicRatioRule, group string, concurrency int64
 	}
 
 	return best.rule.Ratio
-}
-
-func parseTimeParts(parts []string) (int, int) {
-	h, _ := strconv.Atoi(parts[0])
-	m := 0
-	if len(parts) >= 2 {
-		m, _ = strconv.Atoi(parts[1])
-	}
-	return h, m
 }
 
 // getActiveConnections 获取当前 relay 并发数

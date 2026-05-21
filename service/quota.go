@@ -140,6 +140,10 @@ func PostWssConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, mod
 	usage *dto.RealtimeUsage, extraContent string) {
 
 	useTimeMs := time.Since(relayInfo.StartTime).Milliseconds()
+	textInputTokens := usage.InputTokenDetails.TextTokens
+	textOutTokens := usage.OutputTokenDetails.TextTokens
+	audioInputTokens := usage.InputTokenDetails.AudioTokens
+	audioOutTokens := usage.OutputTokenDetails.AudioTokens
 
 	tokenName := ctx.GetString("token_name")
 	completionRatio := decimal.NewFromFloat(ratio_setting.GetCompletionRatio(modelName))
@@ -151,7 +155,22 @@ func PostWssConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, mod
 	modelPrice := relayInfo.PriceData.ModelPrice
 	usePrice := relayInfo.PriceData.UsePrice
 
-	quota := relayInfo.FinalPreConsumedQuota
+	quotaInfo := QuotaInfo{
+		InputDetails: TokenDetails{
+			TextTokens:  textInputTokens,
+			AudioTokens: audioInputTokens,
+		},
+		OutputDetails: TokenDetails{
+			TextTokens:  textOutTokens,
+			AudioTokens: audioOutTokens,
+		},
+		ModelName:  modelName,
+		UsePrice:   usePrice,
+		ModelRatio: modelRatio,
+		GroupRatio: groupRatio,
+	}
+
+	quota := calculateAudioQuota(quotaInfo)
 
 	totalTokens := usage.TotalTokens
 	var logContent string

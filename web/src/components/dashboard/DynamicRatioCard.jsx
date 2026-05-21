@@ -4,18 +4,18 @@ import { Card, Tag, Button, Modal } from '@douyinfe/semi-ui';
 import { API, showError } from '../../helpers';
 import { AlertTriangle, CheckCircle, Eye } from 'lucide-react';
 
-const WEEKDAY_LABELS = {
-  0: '周日',
-  1: '周一',
-  2: '周二',
-  3: '周三',
-  4: '周四',
-  5: '周五',
-  6: '周六',
-};
-
 const DynamicRatioCard = ({ currentGroup = '' }) => {
   const { t } = useTranslation();
+
+  const WEEKDAY_LABELS = {
+    0: t('周日'),
+    1: t('周一'),
+    2: t('周二'),
+    3: t('周三'),
+    4: t('周四'),
+    5: t('周五'),
+    6: t('周六'),
+  };
   const [status, setStatus] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
 
