@@ -220,6 +220,12 @@ const SiderBar = ({ onNavigate = () => {} }) => {
   const adminItems = useMemo(() => {
     const items = [
       {
+        text: t('动态倍率'),
+        itemKey: 'dynamic_ratio',
+        to: '/console/dynamic-ratio',
+        className: isAdmin() ? '' : 'tableHiddle',
+      },
+      {
         text: t('渠道管理'),
         itemKey: 'channel',
         to: '/channel',
@@ -236,12 +242,6 @@ const SiderBar = ({ onNavigate = () => {} }) => {
         itemKey: 'setting',
         to: '/setting',
         className: isRoot() ? '' : 'tableHiddle',
-      },
-      {
-        text: t('动态倍率'),
-        itemKey: 'dynamic_ratio',
-        to: '/console/dynamic-ratio',
-        className: isAdmin() ? '' : 'tableHiddle',
       },
     ];
 
