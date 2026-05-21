@@ -2,6 +2,9 @@ package model
 
 import (
 	"fmt"
+	"math"
+	"sort"
+	"strings"
 	"time"
 
 	"github.com/zhongruan0522/new-api/common"
@@ -118,6 +121,7 @@ func ReorderDynamicRatioRules(ids []int64) error {
 type DynamicRatioStatus struct {
 	Enabled     bool                  `json:"enabled"`
 	ActiveRatio float64               `json:"active_ratio"`
+	ActiveGroup string                `json:"active_group,omitempty"`
 	RulesCount  int                   `json:"rules_count"`
 	Rules       []DynamicRatioSummary `json:"rules"`
 }
@@ -135,6 +139,11 @@ type DynamicRatioSummary struct {
 
 // GetDynamicRatioStatus 获取指定分组的动态倍率状态
 func GetDynamicRatioStatus(group string) DynamicRatioStatus {
+	return GetDynamicRatioStatusForGroups([]string{group})
+}
+
+// GetDynamicRatioStatusForGroups 获取多个可用分组中的动态倍率状态
+func GetDynamicRatioStatusForGroups(groups []string) DynamicRatioStatus {
 	status := DynamicRatioStatus{
 		Enabled:     common.DynamicRatioEnabled,
 		ActiveRatio: 1.0,
@@ -144,13 +153,23 @@ func GetDynamicRatioStatus(group string) DynamicRatioStatus {
 		return status
 	}
 
+	groups = normalizeDynamicRatioGroups(groups)
+	if len(groups) == 0 {
+		return status
+	}
+	groupSet := make(map[string]struct{}, len(groups))
+	for _, group := range groups {
+		groupSet[group] = struct{}{}
+	}
+
 	dynamicRatioCacheLock.RLock()
-	rules := dynamicRatioRules
+	rules := make([]parsedDynamicRatioRule, len(dynamicRatioRules))
+	copy(rules, dynamicRatioRules)
 	dynamicRatioCacheLock.RUnlock()
 
 	var groupRules []parsedDynamicRatioRule
 	for _, r := range rules {
-		if r.Group == group {
+		if _, ok := groupSet[r.Group]; ok {
 			groupRules = append(groupRules, r)
 		}
 	}
@@ -170,12 +189,40 @@ func GetDynamicRatioStatus(group string) DynamicRatioStatus {
 	}
 
 	// 计算当前生效倍率
-	activeRatio := matchDynamicRatio(rules, group, getActiveConnections(), time.Now())
-	if activeRatio > 0 {
-		status.ActiveRatio = activeRatio
+	concurrency := getActiveConnections()
+	now := time.Now()
+	hasActiveRatio := false
+	for _, group := range groups {
+		activeRatio := matchDynamicRatio(rules, group, concurrency, now)
+		if activeRatio <= 0 {
+			continue
+		}
+		if !hasActiveRatio || math.Abs(activeRatio-1) > math.Abs(status.ActiveRatio-1) {
+			status.ActiveRatio = activeRatio
+			status.ActiveGroup = group
+			hasActiveRatio = true
+		}
 	}
 
 	return status
+}
+
+func normalizeDynamicRatioGroups(groups []string) []string {
+	groupSet := make(map[string]struct{}, len(groups))
+	for _, group := range groups {
+		group = strings.TrimSpace(group)
+		if group == "" {
+			continue
+		}
+		groupSet[group] = struct{}{}
+	}
+
+	result := make([]string, 0, len(groupSet))
+	for group := range groupSet {
+		result = append(result, group)
+	}
+	sort.Strings(result)
+	return result
 }
 
 // GetMatchedDynamicRatio 从缓存中匹配动态倍率，返回倍率值（0 表示未命中）

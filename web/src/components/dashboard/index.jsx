@@ -180,7 +180,7 @@ const Dashboard = () => {
 
       {/* 动态倍率状态卡片 */}
       <div className='mb-4'>
-        <DynamicRatioCard currentGroup={userState?.user?.group} />
+        <DynamicRatioCard />
       </div>
 
       {/* API信息和图表面板 */}

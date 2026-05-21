@@ -4,7 +4,7 @@ import { Card, Tag, Button, Modal } from '@douyinfe/semi-ui';
 import { API, showError } from '../../helpers';
 import { AlertTriangle, CheckCircle, Eye } from 'lucide-react';
 
-const DynamicRatioCard = ({ currentGroup = '' }) => {
+const DynamicRatioCard = () => {
   const { t } = useTranslation();
 
   const WEEKDAY_LABELS = {
@@ -39,10 +39,7 @@ const DynamicRatioCard = ({ currentGroup = '' }) => {
 
   const loadStatus = useCallback(async () => {
     try {
-      const query = currentGroup
-        ? `?group=${encodeURIComponent(currentGroup)}`
-        : '';
-      const res = await API.get(`/api/dynamic_ratio/status${query}`);
+      const res = await API.get('/api/dynamic_ratio/status');
       const { success, data, message } = res.data;
       if (success) {
         setStatus(data);
@@ -52,7 +49,7 @@ const DynamicRatioCard = ({ currentGroup = '' }) => {
     } catch {
       showError(t('动态倍率状态加载失败'));
     }
-  }, [currentGroup, t]);
+  }, [t]);
 
   useEffect(() => {
     loadStatus();
@@ -62,8 +59,9 @@ const DynamicRatioCard = ({ currentGroup = '' }) => {
     return null;
   }
 
-  const hasActiveRatio = status.active_ratio && status.active_ratio !== 1;
-  const isHighRatio = status.active_ratio && status.active_ratio >= 2;
+  const activeRatio = Number(status.active_ratio);
+  const hasActiveRatio = Number.isFinite(activeRatio) && activeRatio !== 1;
+  const isHighRatio = Number.isFinite(activeRatio) && activeRatio >= 2;
 
   const cardStyle = hasActiveRatio
     ? {

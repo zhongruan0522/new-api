@@ -12,11 +12,11 @@ import (
 
 // parsedDynamicRatioRule 预解析后的缓存规则，避免热路径重复 JSON 解析
 type parsedDynamicRatioRule struct {
-	DynamicRatioRule                   // 嵌入原始规则，保留所有原始字段供前端展示
-	ParsedWeekdays   []int             // 预解析后的星期数组，nil 表示不限
-	ParsedStartMin   int               // 预解析后的开始时间（分钟），-1 表示不限
-	ParsedEndMin     int               // 预解析后的结束时间（分钟），-1 表示不限
-	HasTimeRange     bool              // 是否有时间条件
+	DynamicRatioRule       // 嵌入原始规则，保留所有原始字段供前端展示
+	ParsedWeekdays   []int // 预解析后的星期数组，nil 表示不限
+	ParsedStartMin   int   // 预解析后的开始时间（分钟），-1 表示不限
+	ParsedEndMin     int   // 预解析后的结束时间（分钟），-1 表示不限
+	HasTimeRange     bool  // 是否有时间条件
 }
 
 var (
@@ -53,7 +53,7 @@ func parseDynamicRatioRules(rules []DynamicRatioRule) []parsedDynamicRatioRule {
 				em, _ := strconv.Atoi(endParts[1])
 				parsed.ParsedStartMin = sh*60 + sm
 				parsed.ParsedEndMin = eh*60 + em
-				parsed.HasTimeRange = true
+				parsed.HasTimeRange = parsed.ParsedStartMin != parsed.ParsedEndMin
 			}
 		}
 

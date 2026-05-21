@@ -134,6 +134,23 @@ func TestMatchDynamicRatio_TimeMatch(t *testing.T) {
 	}
 }
 
+func TestMatchDynamicRatio_EqualTimeRangeMatchesAllDay(t *testing.T) {
+	rules := []DynamicRatioRule{
+		{Id: 1, Enable: true, Group: "vip", StartTime: "00:00", EndTime: "00:00", Ratio: 1.5, Priority: 0},
+	}
+
+	for _, now := range []time.Time{
+		makeTime(0, 0, time.Monday),
+		makeTime(12, 30, time.Wednesday),
+		makeTime(23, 59, time.Sunday),
+	} {
+		ratio := matchDynamicRatio(toParsedRules(rules), "vip", 0, now)
+		if ratio != 1.5 {
+			t.Errorf("expected 1.5 for all-day range at %s, got %f", now.Format("15:04"), ratio)
+		}
+	}
+}
+
 // 测试：时间段不匹配（不跨天）
 func TestMatchDynamicRatio_TimeNotMatch(t *testing.T) {
 	rules := []DynamicRatioRule{
@@ -309,6 +326,30 @@ func TestGetMatchedDynamicRatio_Enabled(t *testing.T) {
 	ratio := GetMatchedDynamicRatio("vip")
 	if ratio != 2.0 {
 		t.Errorf("expected 2.0 (global enabled), got %f", ratio)
+	}
+}
+
+func TestGetDynamicRatioStatusForGroupsMatchesAnyUsableGroup(t *testing.T) {
+	originalEnabled := common.DynamicRatioEnabled
+	t.Cleanup(func() {
+		common.DynamicRatioEnabled = originalEnabled
+		SetDynamicRatioRulesForTest(nil)
+	})
+
+	common.DynamicRatioEnabled = true
+	SetDynamicRatioRulesForTest([]DynamicRatioRule{
+		{Id: 1, Enable: true, Group: "default", Ratio: 1.5, Priority: 0},
+	})
+
+	status := GetDynamicRatioStatusForGroups([]string{"root", "default"})
+	if status.ActiveRatio != 1.5 {
+		t.Errorf("expected active ratio 1.5 from usable default group, got %f", status.ActiveRatio)
+	}
+	if status.ActiveGroup != "default" {
+		t.Errorf("expected active group default, got %s", status.ActiveGroup)
+	}
+	if status.RulesCount != 1 {
+		t.Errorf("expected one visible rule, got %d", status.RulesCount)
 	}
 }
 

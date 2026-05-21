@@ -2,6 +2,7 @@ package controller
 
 import (
 	"strconv"
+	"strings"
 
 	"github.com/zhongruan0522/new-api/common"
 	"github.com/zhongruan0522/new-api/model"
@@ -117,30 +118,32 @@ func SetDynamicRatioEnabled(c *gin.Context) {
 
 // GetDynamicRatioStatus 用户端动态倍率状态
 func GetDynamicRatioStatus(c *gin.Context) {
-	group := c.Query("group")
-	if group == "" {
-		// 使用用户默认 group
-		userId := c.GetInt("id")
-		user, err := model.GetUserById(userId, false)
-		if err != nil {
-			common.ApiError(c, err)
-			return
-		}
-		group = user.Group
-	} else {
-		// 验证用户是否有权访问该分组
-		userId := c.GetInt("id")
-		user, err := model.GetUserById(userId, false)
-		if err != nil {
-			common.ApiError(c, err)
-			return
-		}
+	group := strings.TrimSpace(c.Query("group"))
+	userId := c.GetInt("id")
+	user, err := model.GetUserById(userId, false)
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+
+	if group != "" {
 		if !service.GroupInUserUsableGroups(user.Group, group) {
 			common.ApiErrorMsg(c, "无权访问该分组")
 			return
 		}
+		common.ApiSuccess(c, model.GetDynamicRatioStatus(group))
+		return
 	}
 
-	status := model.GetDynamicRatioStatus(group)
+	usableGroups := service.GetUserUsableGroups(user.Group)
+	groups := make([]string, 0, len(usableGroups)+1)
+	for usableGroup := range usableGroups {
+		groups = append(groups, usableGroup)
+	}
+	if user.Group != "" {
+		groups = append(groups, user.Group)
+	}
+
+	status := model.GetDynamicRatioStatusForGroups(groups)
 	common.ApiSuccess(c, status)
 }
