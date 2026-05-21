@@ -563,7 +563,13 @@ func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage 
 		extraContent = append(extraContent, fmt.Sprintf("模型 %s", modelName))
 	}
 	logContent := strings.Join(extraContent, ", ")
-	other := service.GenerateTextOtherInfo(ctx, relayInfo, modelRatio, groupRatio, completionRatio, cacheTokens, cacheRatio, modelPrice, relayInfo.PriceData.GroupRatioInfo.GroupSpecialRatio)
+	// 计算原始分组倍率（不含动态倍率），用于日志记录
+	originalGroupRatio := groupRatio
+	dynamicRatio := relayInfo.PriceData.GroupRatioInfo.DynamicRatio
+	if dynamicRatio > 0 {
+		originalGroupRatio = groupRatio / dynamicRatio
+	}
+	other := service.GenerateTextOtherInfo(ctx, relayInfo, modelRatio, originalGroupRatio, completionRatio, cacheTokens, cacheRatio, modelPrice, relayInfo.PriceData.GroupRatioInfo.GroupSpecialRatio, dynamicRatio)
 	if adminRejectReason != "" {
 		other["reject_reason"] = adminRejectReason
 	}

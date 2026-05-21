@@ -41,6 +41,7 @@ import Pricing from './pages/Pricing';
 import KeyQuery from './pages/KeyQuery';
 import ModelPage from './pages/Model';
 import Ticket from './pages/Ticket';
+import DynamicRatio from './pages/DynamicRatio';
 
 import OAuth2Callback from './components/auth/OAuth2Callback';
 import PersonalSetting from './components/settings/PersonalSetting';
@@ -243,6 +244,14 @@ function App() {
             <PrivateRoute>
               <Ticket />
             </PrivateRoute>
+          }
+        />
+        <Route
+          path='/console/dynamic-ratio'
+          element={
+            <AdminRoute>
+              <DynamicRatio />
+            </AdminRoute>
           }
         />
         <Route

@@ -29,6 +29,7 @@ import ApiInfoPanel from './ApiInfoPanel';
 import AnnouncementsPanel from './AnnouncementsPanel';
 import FaqPanel from './FaqPanel';
 import UptimePanel from './UptimePanel';
+import DynamicRatioCard from './DynamicRatioCard';
 import SearchModal from './modals/SearchModal';
 
 import { useDashboardData } from '../../hooks/dashboard/useDashboardData';
@@ -176,6 +177,11 @@ const Dashboard = () => {
         CARD_PROPS={CARD_PROPS}
         CHART_CONFIG={CHART_CONFIG}
       />
+
+      {/* 动态倍率状态卡片 */}
+      <div className='mb-4'>
+        <DynamicRatioCard currentGroup={userState?.user?.group} />
+      </div>
 
       {/* API信息和图表面板 */}
       <div className='mb-4'>

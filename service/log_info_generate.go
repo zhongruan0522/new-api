@@ -68,7 +68,7 @@ func appendRequestPath(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, other
 }
 
 func GenerateTextOtherInfo(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, modelRatio, groupRatio, completionRatio float64,
-	cacheTokens int, cacheRatio float64, modelPrice float64, userGroupRatio float64) map[string]interface{} {
+	cacheTokens int, cacheRatio float64, modelPrice float64, userGroupRatio float64, dynamicRatio float64) map[string]interface{} {
 	other := make(map[string]interface{})
 	other["model_ratio"] = modelRatio
 	other["group_ratio"] = groupRatio
@@ -77,6 +77,9 @@ func GenerateTextOtherInfo(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, m
 	other["cache_ratio"] = cacheRatio
 	other["model_price"] = modelPrice
 	other["user_group_ratio"] = userGroupRatio
+	if dynamicRatio > 0 {
+		other["dynamic_ratio"] = dynamicRatio
+	}
 	other["frt"] = float64(relayInfo.FirstResponseTime.UnixMilli() - relayInfo.StartTime.UnixMilli())
 	if relayInfo.ReasoningEffort != "" {
 		other["reasoning_effort"] = relayInfo.ReasoningEffort
@@ -146,7 +149,7 @@ func appendRequestConversionChain(relayInfo *relaycommon.RelayInfo, other map[st
 }
 
 func GenerateWssOtherInfo(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage *dto.RealtimeUsage, modelRatio, groupRatio, completionRatio, audioRatio, audioCompletionRatio, modelPrice, userGroupRatio float64) map[string]interface{} {
-	info := GenerateTextOtherInfo(ctx, relayInfo, modelRatio, groupRatio, completionRatio, 0, 0.0, modelPrice, userGroupRatio)
+	info := GenerateTextOtherInfo(ctx, relayInfo, modelRatio, groupRatio, completionRatio, 0, 0.0, modelPrice, userGroupRatio, 0)
 	info["ws"] = true
 	info["audio_input"] = usage.InputTokenDetails.AudioTokens
 	info["audio_output"] = usage.OutputTokenDetails.AudioTokens
@@ -158,7 +161,7 @@ func GenerateWssOtherInfo(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, us
 }
 
 func GenerateAudioOtherInfo(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage *dto.Usage, modelRatio, groupRatio, completionRatio, audioRatio, audioCompletionRatio, modelPrice, userGroupRatio float64) map[string]interface{} {
-	info := GenerateTextOtherInfo(ctx, relayInfo, modelRatio, groupRatio, completionRatio, 0, 0.0, modelPrice, userGroupRatio)
+	info := GenerateTextOtherInfo(ctx, relayInfo, modelRatio, groupRatio, completionRatio, 0, 0.0, modelPrice, userGroupRatio, 0)
 	info["audio"] = true
 	info["audio_input"] = usage.PromptTokensDetails.AudioTokens
 	info["audio_output"] = usage.CompletionTokenDetails.AudioTokens
@@ -175,7 +178,7 @@ func GenerateClaudeOtherInfo(ctx *gin.Context, relayInfo *relaycommon.RelayInfo,
 	cacheCreationTokens5m int, cacheCreationRatio5m float64,
 	cacheCreationTokens1h int, cacheCreationRatio1h float64,
 	modelPrice float64, userGroupRatio float64) map[string]interface{} {
-	info := GenerateTextOtherInfo(ctx, relayInfo, modelRatio, groupRatio, completionRatio, cacheTokens, cacheRatio, modelPrice, userGroupRatio)
+	info := GenerateTextOtherInfo(ctx, relayInfo, modelRatio, groupRatio, completionRatio, cacheTokens, cacheRatio, modelPrice, userGroupRatio, 0)
 	info["claude"] = true
 	info["cache_creation_tokens"] = cacheCreationTokens
 	info["cache_creation_ratio"] = cacheCreationRatio
@@ -194,6 +197,10 @@ func GenerateMjOtherInfo(relayInfo *relaycommon.RelayInfo, priceData types.PerCa
 	other := make(map[string]interface{})
 	other["model_price"] = priceData.ModelPrice
 	other["group_ratio"] = priceData.GroupRatioInfo.GroupRatio
+	if priceData.GroupRatioInfo.DynamicRatio > 0 {
+		other["dynamic_ratio"] = priceData.GroupRatioInfo.DynamicRatio
+		other["group_ratio"] = priceData.GroupRatioInfo.GroupRatio / priceData.GroupRatioInfo.DynamicRatio
+	}
 	if priceData.GroupRatioInfo.HasSpecialRatio {
 		other["user_group_ratio"] = priceData.GroupRatioInfo.GroupSpecialRatio
 	}

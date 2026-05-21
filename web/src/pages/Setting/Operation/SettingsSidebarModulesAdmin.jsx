@@ -67,6 +67,7 @@ export default function SettingsSidebarModulesAdmin(props) {
       channel: true,
       models: true,
       setting: true,
+      dynamic_ratio: true,
     },
   });
 
@@ -214,6 +215,11 @@ export default function SettingsSidebarModulesAdmin(props) {
           key: 'setting',
           title: t('系统设置'),
           description: t('系统参数配置'),
+        },
+        {
+          key: 'dynamic_ratio',
+          title: t('动态倍率'),
+          description: t('动态倍率规则管理'),
         },
       ],
     },

@@ -5,6 +5,7 @@ import (
 
 	"github.com/zhongruan0522/new-api/common"
 	"github.com/zhongruan0522/new-api/logger"
+	"github.com/zhongruan0522/new-api/model"
 	relaycommon "github.com/zhongruan0522/new-api/relay/common"
 	"github.com/zhongruan0522/new-api/setting/operation_setting"
 	"github.com/zhongruan0522/new-api/setting/ratio_setting"
@@ -40,6 +41,14 @@ func HandleGroupRatio(ctx *gin.Context, relayInfo *relaycommon.RelayInfo) types.
 	} else {
 		// normal group ratio
 		groupRatioInfo.GroupRatio = ratio_setting.GetGroupRatio(relayInfo.UsingGroup)
+	}
+
+	// 叠加动态倍率
+	originalGroupRatio := groupRatioInfo.GroupRatio
+	dynamicRatio := model.GetMatchedDynamicRatio(relayInfo.UsingGroup)
+	if dynamicRatio > 0 {
+		groupRatioInfo.GroupRatio = originalGroupRatio * dynamicRatio
+		groupRatioInfo.DynamicRatio = dynamicRatio
 	}
 
 	return groupRatioInfo

@@ -689,6 +689,7 @@ export const getLogsColumns = ({
             : groupRatio;
         const groupRatioText = formatRatio(effectiveGroupRatio) + 'x';
         const hasCache = (other.cache_tokens || 0) > 0;
+        const hasDynamicRatio = other.dynamic_ratio && other.dynamic_ratio > 0 && other.dynamic_ratio !== 1;
 
         let content;
         if (other.model_price != null && other.model_price !== -1) {
@@ -700,6 +701,10 @@ export const getLogsColumns = ({
         } else {
           // 按量计费，不支持缓存
           content = `${t('按量计费')}，${t('缓存')}×，${t('分组')}${groupRatioText}`;
+        }
+
+        if (hasDynamicRatio) {
+          content += `\n${t('高峰期倍率')}：${other.dynamic_ratio}x`;
         }
 
         return (
