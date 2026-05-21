@@ -176,12 +176,8 @@ const Dashboard = () => {
         getTrendSpec={getTrendSpec}
         CARD_PROPS={CARD_PROPS}
         CHART_CONFIG={CHART_CONFIG}
+        dynamicRatioCard={<DynamicRatioCard />}
       />
-
-      {/* 动态倍率状态卡片 */}
-      <div className='mb-4'>
-        <DynamicRatioCard />
-      </div>
 
       {/* API信息和图表面板 */}
       <div className='mb-4'>

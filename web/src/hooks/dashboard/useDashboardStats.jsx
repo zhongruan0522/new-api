@@ -252,6 +252,9 @@ export const useDashboardStats = (
           },
         ],
       },
+      {
+        customCard: true,
+      },
     ],
     [
       userState?.user?.quota,

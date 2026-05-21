@@ -91,6 +91,7 @@ const StatsCards = ({
   getTrendSpec,
   CARD_PROPS,
   CHART_CONFIG,
+  dynamicRatioCard,
 }) => {
   const navigate = useNavigate();
   const { t } = useTranslation();
@@ -98,6 +99,14 @@ const StatsCards = ({
     <div className='mb-4'>
       <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4'>
         {groupedStatsData.map((group, idx) => {
+          if (group.customCard && dynamicRatioCard) {
+            return (
+              <div key={idx} className='stats-card-enter'>
+                {dynamicRatioCard}
+              </div>
+            );
+          }
+
           if (group.regionItems) {
             return (
               <div key={idx} className='stats-card-enter'>
