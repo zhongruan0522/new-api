@@ -17,7 +17,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Card, Avatar, Typography, Table, Tag } from '@douyinfe/semi-ui';
 import { IconCoinMoneyStroked } from '@douyinfe/semi-icons';
 import {
@@ -35,6 +35,78 @@ const EXTRA_PRICE_ITEMS = [
   { key: 'audioInputPrice', label: '音频输入' },
   { key: 'audioOutputPrice', label: '音频输出' },
 ];
+
+// 分档计费中所有可能的计费类型，按展示优先级排列
+const TIER_PRICE_TYPES = [
+  { typeKey: 'input', label: '输入' },
+  { typeKey: 'output', label: '输出' },
+  { typeKey: 'cache_read', label: '缓存读取' },
+  { typeKey: 'cache_create', label: '缓存创建' },
+  { typeKey: 'audio_input', label: '音频输入' },
+  { typeKey: 'audio_output', label: '音频输出' },
+];
+
+/**
+ * 将 calculateContextTierPriceRows 返回的行式数据（每行一种计费类型）
+ * 转换为列式数据（每个分档一行，计费类型作为列）。
+ * 同时返回实际有价格的计费类型列表，用于动态生成列。
+ */
+const buildTierRowsByGroup = (flatRows) => {
+  const tierMap = new Map();
+  const activeTypes = new Set();
+
+  for (const row of flatRows) {
+    const mapKey = `${row.usedGroup}::${row.tierIndex}`;
+    if (!tierMap.has(mapKey)) {
+      tierMap.set(mapKey, {
+        key: `${row.usedGroup}-${row.tierIndex}`,
+        group: row.usedGroup,
+        tierIndex: row.tierIndex,
+        contextRange: row.contextRange,
+        prices: {},
+      });
+    }
+    const entry = tierMap.get(mapKey);
+    entry.prices[row.typeKey] = row.price;
+    if (row.price !== '-') {
+      activeTypes.add(row.typeKey);
+    }
+  }
+
+  // 按 group 分组，保持 tierIndex 顺序
+  const groupOrder = [];
+  const groupTierCount = new Map();
+  for (const entry of tierMap.values()) {
+    if (!groupOrder.includes(entry.group)) {
+      groupOrder.push(entry.group);
+    }
+    groupTierCount.set(
+      entry.group,
+      (groupTierCount.get(entry.group) || 0) + 1,
+    );
+  }
+
+  const rows = [...tierMap.values()];
+
+  // 只保留有实际价格的计费类型列
+  const activePriceTypes = TIER_PRICE_TYPES.filter((pt) =>
+    activeTypes.has(pt.typeKey),
+  );
+
+  return { rows, groupOrder, groupTierCount, activePriceTypes };
+};
+
+const renderPriceCell = (text, tokenUnit) => {
+  if (!text || text === '-') return <span className='text-gray-400'>-</span>;
+  return (
+    <>
+      <div className='font-semibold text-orange-600'>{text}</div>
+      <div className='text-xs text-gray-500'>
+        / {tokenUnit === 'K' ? '1K' : '1M'} tokens
+      </div>
+    </>
+  );
+};
 
 const ModelPricingTable = ({
   modelData,
@@ -61,7 +133,8 @@ const ModelPricingTable = ({
     const isContextPricing = modelData?.context_pricing?.enabled;
 
     if (isContextPricing) {
-      const tableData = availableGroups.flatMap((group) =>
+      // 收集所有分组的扁平行数据
+      const allFlatRows = availableGroups.flatMap((group) =>
         calculateContextTierPriceRows({
           record: modelData,
           selectedGroup: group,
@@ -69,30 +142,40 @@ const ModelPricingTable = ({
           tokenUnit,
           displayPrice,
           currency,
-        }).map((row) => ({
-          ...row,
-          key: `${group}-${row.tierIndex}-${row.typeKey}`,
-          group,
-        })),
+        }),
       );
 
+      const { rows, groupOrder, groupTierCount, activePriceTypes } =
+        buildTierRowsByGroup(allFlatRows);
+
+      // 构建列：分组（合并）+ 上下文区间 + 各计费类型价格列
       const columns = [
         {
           title: t('分组'),
           dataIndex: 'group',
-          render: (text, record) =>
-            record.tierIndex === 0 && record.priceIndex === 0 ? (
-              <Tag color='white' size='small' shape='circle'>
-                {text}
-                {t('分组')}
-              </Tag>
-            ) : (
-              ''
-            ),
+          render: (text, record, index) => {
+            // 找到该分组的第一行索引
+            const groupStartIndex = rows.findIndex(
+              (r) => r.group === text,
+            );
+            if (index !== groupStartIndex) {
+              return { children: null, props: { rowSpan: 0 } };
+            }
+            const span = groupTierCount.get(text) || 1;
+            return {
+              children: (
+                <Tag color='white' size='small' shape='circle'>
+                  {text}
+                  {t('分组')}
+                </Tag>
+              ),
+              props: { rowSpan: span },
+            };
+          },
         },
         {
           title: t('上下文区间'),
-          dataIndex: 'contextRangeDisplay',
+          dataIndex: 'contextRange',
           render: (text) =>
             text ? (
               <Tag color='blue' size='small' shape='circle'>
@@ -102,27 +185,16 @@ const ModelPricingTable = ({
               ''
             ),
         },
-        {
-          title: t('计费类型'),
-          dataIndex: 'billingType',
-        },
-        {
-          title: t('价格'),
-          dataIndex: 'price',
-          render: (text, record) => (
-            <>
-              <div className='font-semibold text-orange-600'>{text}</div>
-              <div className='text-xs text-gray-500'>
-                / {tokenUnit === 'K' ? '1K' : '1M'} tokens
-              </div>
-            </>
-          ),
-        },
+        ...activePriceTypes.map((pt) => ({
+          title: t(pt.label),
+          dataIndex: 'prices',
+          render: (prices) => renderPriceCell(prices?.[pt.typeKey], tokenUnit),
+        })),
       ];
 
       return (
         <Table
-          dataSource={tableData}
+          dataSource={rows}
           columns={columns}
           pagination={false}
           size='small'
