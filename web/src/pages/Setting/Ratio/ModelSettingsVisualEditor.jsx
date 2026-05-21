@@ -819,11 +819,12 @@ export default function ModelSettingsVisualEditor(props) {
 
   // ========== 渲染 ==========
   return (
-    <div style={{ display: 'flex', gap: 16, height: 'calc(100vh - 280px)' }}>
+    <div style={{ display: 'flex', gap: 16, height: 'calc(100vh - 280px)', minHeight: 400 }}>
       {/* ====== 左侧：模型列表 ====== */}
       <div
         style={{
-          flex: '0 0 55%',
+          flex: '1 1 55%',
+          minWidth: 0,
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
@@ -837,6 +838,7 @@ export default function ModelSettingsVisualEditor(props) {
             flexWrap: 'wrap',
             gap: 8,
             marginBottom: 12,
+            flexShrink: 0,
           }}
         >
           <Button
@@ -874,13 +876,14 @@ export default function ModelSettingsVisualEditor(props) {
         {/* 模型表格 */}
         <div
           className='visual-ratio-table-wrap'
-          style={{ flex: 1, overflow: 'hidden' }}
+          style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}
         >
           <Table
             columns={listColumns}
             dataSource={pagedData}
             rowKey='name'
-            width='100%'
+            style={{ width: '100%' }}
+            scroll={{ y: '100%' }}
             pagination={{
               currentPage: currentPage,
               pageSize: listPageSize,
@@ -912,7 +915,8 @@ export default function ModelSettingsVisualEditor(props) {
       {/* ====== 右侧：详情配置面板 ====== */}
       <div
         style={{
-          flex: 1,
+          flex: '0 0 380px',
+          maxWidth: 420,
           borderLeft: '1px solid var(--semi-color-border)',
           paddingLeft: 16,
           overflowY: 'auto',
