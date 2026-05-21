@@ -1166,7 +1166,7 @@ export default function ModelSettingsVisualEditor(props) {
 
         {tiers.map((tier, index) => (
           <div
-            key={`${index}-${tier.minTokens}-${tier.maxTokens}`}
+            key={`context-tier-${index}`}
             style={{
               border: '1px solid var(--semi-color-border)',
               borderRadius: 8,
@@ -1267,7 +1267,7 @@ export default function ModelSettingsVisualEditor(props) {
       {/* ====== 左侧：模型列表 ====== */}
       <div
         style={{
-          flex: '1 1 55%',
+          flex: '0 0 55%',
           minWidth: 0,
           display: 'flex',
           flexDirection: 'column',
