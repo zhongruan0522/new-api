@@ -544,6 +544,29 @@ code {
   width: 100%;
 }
 
+.visual-ratio-billing-tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.visual-ratio-billing-tags .semi-tag {
+  max-width: 100%;
+  flex: 0 0 auto;
+}
+
+.visual-ratio-summary {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--semi-color-text-2);
+  font-size: 13px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
 .visual-ratio-table-wrap .semi-table-pagination-outer {
   flex: 0 0 auto;
   gap: 8px;

@@ -22,7 +22,6 @@ import {
   Table,
   Button,
   Input,
-  Space,
   RadioGroup,
   Radio,
   Checkbox,
@@ -1073,12 +1072,12 @@ export default function ModelSettingsVisualEditor(props) {
       title: t('计费方式'),
       dataIndex: 'pricingType',
       key: 'pricingType',
-      width: 100,
+      width: 150,
       render: (_, record) => {
         const isPerRequest = hasValue(record?.price);
         const isContextPricing = record?.contextPricing?.enabled;
         return (
-          <Space>
+          <div className='visual-ratio-billing-tags'>
             <Tag color={isPerRequest ? 'green' : 'blue'} shape='rounded'>
               {isPerRequest ? t('按次计费') : t('按量计费')}
             </Tag>
@@ -1091,7 +1090,7 @@ export default function ModelSettingsVisualEditor(props) {
                 {t('分段计费')}
               </Tag>
             )}
-          </Space>
+          </div>
         );
       },
     },
@@ -1099,8 +1098,12 @@ export default function ModelSettingsVisualEditor(props) {
       title: t('价格摘要'),
       dataIndex: 'summary',
       key: 'summary',
+      width: 140,
       render: (_, record) => (
-        <span style={{ color: 'var(--semi-color-text-2)', fontSize: 13 }}>
+        <span
+          className='visual-ratio-summary'
+          title={getModelPricingSummary(record)}
+        >
           {getModelPricingSummary(record)}
         </span>
       ),
