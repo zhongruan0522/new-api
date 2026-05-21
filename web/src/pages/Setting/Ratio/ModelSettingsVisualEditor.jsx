@@ -1355,8 +1355,7 @@ export default function ModelSettingsVisualEditor(props) {
       {/* ====== 右侧：详情配置面板 ====== */}
       <div
         style={{
-          flex: '0 0 380px',
-          maxWidth: 420,
+          flex: '1 1 0',
           borderLeft: '1px solid var(--semi-color-border)',
           paddingLeft: 16,
           overflowY: 'auto',
