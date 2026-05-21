@@ -1257,6 +1257,7 @@ export default function ModelSettingsVisualEditor(props) {
   // ========== 渲染 ==========
   return (
     <div
+      className='visual-ratio-editor'
       style={{
         display: 'flex',
         gap: 16,
@@ -1266,6 +1267,7 @@ export default function ModelSettingsVisualEditor(props) {
     >
       {/* ====== 左侧：模型列表 ====== */}
       <div
+        className='visual-ratio-list-pane'
         style={{
           flex: '0 0 55%',
           minWidth: 0,
@@ -1276,7 +1278,7 @@ export default function ModelSettingsVisualEditor(props) {
       >
         {/* 工具栏 */}
         <div
-          className='mt-2'
+          className='visual-ratio-toolbar mt-2'
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -1320,11 +1322,13 @@ export default function ModelSettingsVisualEditor(props) {
           style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}
         >
           <Table
+            className='visual-ratio-model-table'
             columns={listColumns}
             dataSource={pagedData}
             rowKey='name'
             style={{ width: '100%' }}
-            scroll={{ y: '100%' }}
+            tableLayout='fixed'
+            scroll={{ x: '100%', y: '100%' }}
             pagination={{
               currentPage: currentPage,
               pageSize: listPageSize,
@@ -1333,6 +1337,7 @@ export default function ModelSettingsVisualEditor(props) {
               showTotal: true,
               showSizeChanger: true,
               pageSizeOpts: [50, 100, 200],
+              pageSizeOptions: [50, 100, 200],
               onPageSizeChange: (size) => {
                 setListPageSize(size);
                 setCurrentPage(1);
@@ -1355,6 +1360,7 @@ export default function ModelSettingsVisualEditor(props) {
 
       {/* ====== 右侧：详情配置面板 ====== */}
       <div
+        className='visual-ratio-detail-pane'
         style={{
           flex: '1 1 0',
           borderLeft: '1px solid var(--semi-color-border)',
