@@ -47,6 +47,7 @@ export default function ModelRatioSettings(props) {
     CompletionRatio: '',
     AudioRatio: '',
     AudioCompletionRatio: '',
+    ContextPricing: '',
   });
   const refForm = useRef();
   const [inputsRow, setInputsRow] = useState(inputs);
@@ -289,6 +290,32 @@ export default function ModelRatioSettings(props) {
               ]}
               onChange={(value) =>
                 setInputs({ ...inputs, AudioCompletionRatio: value })
+              }
+            />
+          </Col>
+        </Row>
+        <Row gutter={16}>
+          <Col xs={24} sm={16}>
+            <Form.TextArea
+              label={t('分段计费')}
+              extraText={t(
+                '按上下文 token 区间覆盖模型、补全、缓存和音频倍率。关闭模型的分段计费请使用 enabled:false 或在可视化编辑器关闭。',
+              )}
+              placeholder={t(
+                '为一个 JSON 文本，键为模型名称，值为分段计费配置',
+              )}
+              field={'ContextPricing'}
+              autosize={{ minRows: 6, maxRows: 12 }}
+              trigger='blur'
+              stopValidateWithError
+              rules={[
+                {
+                  validator: (rule, value) => verifyJSON(value),
+                  message: '不是合法的 JSON 字符串',
+                },
+              ]}
+              onChange={(value) =>
+                setInputs({ ...inputs, ContextPricing: value })
               }
             />
           </Col>

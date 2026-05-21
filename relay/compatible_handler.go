@@ -338,6 +338,20 @@ func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage 
 	groupRatio := relayInfo.PriceData.GroupRatioInfo.GroupRatio
 	modelPrice := relayInfo.PriceData.ModelPrice
 	cachedCreationRatio := relayInfo.PriceData.CacheCreationRatio
+	isClaudeUsageSemantic := relayInfo.FinalRequestRelayFormat == types.RelayFormatClaude
+
+	if _, enabled, err := service.ApplyContextPricingForUsage(modelName, service.BuildContextPricingUsage(usage, isClaudeUsageSemantic), &relayInfo.PriceData); enabled {
+		if err != nil {
+			logger.LogError(ctx, "context pricing failed: "+err.Error())
+			extraContent = append(extraContent, "分段计费匹配失败: "+err.Error())
+		} else {
+			completionRatio = relayInfo.PriceData.CompletionRatio
+			cacheRatio = relayInfo.PriceData.CacheRatio
+			modelRatio = relayInfo.PriceData.ModelRatio
+			modelPrice = relayInfo.PriceData.ModelPrice
+			cachedCreationRatio = relayInfo.PriceData.CacheCreationRatio
+		}
+	}
 
 	// Convert values to decimal for precise calculation
 	dPromptTokens := decimal.NewFromInt(int64(promptTokens))
@@ -458,7 +472,6 @@ func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage 
 
 	var audioInputQuota decimal.Decimal
 	var audioInputPrice float64
-	isClaudeUsageSemantic := relayInfo.FinalRequestRelayFormat == types.RelayFormatClaude
 	if !relayInfo.PriceData.UsePrice {
 		baseTokens := dPromptTokens
 		// 减去 cached tokens

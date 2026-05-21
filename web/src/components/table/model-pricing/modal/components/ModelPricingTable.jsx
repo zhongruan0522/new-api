@@ -20,7 +20,11 @@ For commercial licensing, please contact support@quantumnous.com
 import React from 'react';
 import { Card, Avatar, Typography, Table, Tag } from '@douyinfe/semi-ui';
 import { IconCoinMoneyStroked } from '@douyinfe/semi-icons';
-import { calculateModelPrice, calculateExtraPrices } from '../../../../../helpers';
+import {
+  calculateModelPrice,
+  calculateExtraPrices,
+  calculateContextTierPriceRows,
+} from '../../../../../helpers';
 
 const { Text } = Typography;
 
@@ -53,6 +57,80 @@ const ModelPricingTable = ({
       .filter((g) => g !== '')
       .filter((g) => g !== 'auto')
       .filter((g) => modelEnableGroups.includes(g));
+
+    const isContextPricing = modelData?.context_pricing?.enabled;
+
+    if (isContextPricing) {
+      const tableData = availableGroups.flatMap((group) =>
+        calculateContextTierPriceRows({
+          record: modelData,
+          selectedGroup: group,
+          groupRatio,
+          tokenUnit,
+          displayPrice,
+          currency,
+        }).map((row) => ({
+          ...row,
+          key: `${group}-${row.tierIndex}-${row.typeKey}`,
+          group,
+        })),
+      );
+
+      const columns = [
+        {
+          title: t('分组'),
+          dataIndex: 'group',
+          render: (text, record) =>
+            record.tierIndex === 0 && record.priceIndex === 0 ? (
+              <Tag color='white' size='small' shape='circle'>
+                {text}
+                {t('分组')}
+              </Tag>
+            ) : (
+              ''
+            ),
+        },
+        {
+          title: t('上下文区间'),
+          dataIndex: 'contextRangeDisplay',
+          render: (text) =>
+            text ? (
+              <Tag color='blue' size='small' shape='circle'>
+                {text}
+              </Tag>
+            ) : (
+              ''
+            ),
+        },
+        {
+          title: t('计费类型'),
+          dataIndex: 'billingType',
+        },
+        {
+          title: t('价格'),
+          dataIndex: 'price',
+          render: (text, record) => (
+            <>
+              <div className='font-semibold text-orange-600'>{text}</div>
+              <div className='text-xs text-gray-500'>
+                / {tokenUnit === 'K' ? '1K' : '1M'} tokens
+              </div>
+            </>
+          ),
+        },
+      ];
+
+      return (
+        <Table
+          dataSource={tableData}
+          columns={columns}
+          pagination={false}
+          size='small'
+          bordered={false}
+          className='!rounded-lg'
+        />
+      );
+    }
 
     // 准备表格数据
     const tableData = availableGroups.map((group) => {

@@ -118,6 +118,19 @@ func appendBillingInfo(relayInfo *relaycommon.RelayInfo, other map[string]interf
 	if relayInfo.BillingSource != "" {
 		other["billing_source"] = relayInfo.BillingSource
 	}
+	if relayInfo.PriceData.ContextPricing != nil && relayInfo.PriceData.ContextPricing.Enabled {
+		result := relayInfo.PriceData.ContextPricing
+		other["context_pricing_enabled"] = true
+		other["context_tokens_for_tier"] = result.ContextTokensForTier
+		other["context_pricing_tier_index"] = result.TierIndex
+		other["context_pricing_tier_name"] = result.TierName
+		other["context_pricing_tier_min_tokens"] = result.MinTokens
+		if result.MaxTokens != nil {
+			other["context_pricing_tier_max_tokens"] = *result.MaxTokens
+		}
+		other["context_pricing_prices"] = result.Prices
+		other["context_pricing"] = result
+	}
 }
 
 func appendRequestConversionChain(relayInfo *relaycommon.RelayInfo, other map[string]interface{}) {

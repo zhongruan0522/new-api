@@ -60,6 +60,18 @@ const PER_TOKEN_OUTPUT_KEY_MAP = {
   audioRatio: 'AudioRatio',
   audioCompletionRatio: 'AudioCompletionRatio',
 };
+const DEFAULT_CONTEXT_TIER_BOUNDS = [
+  { minTokens: '0', maxTokens: '200000', name: '<200K' },
+  { minTokens: '200000', maxTokens: '1000000', name: '200K~1000K' },
+];
+const CONTEXT_TIER_PRICE_FIELDS = [
+  'tokenPrice',
+  'completionTokenPrice',
+  'cacheTokenPrice',
+  'createCacheTokenPrice',
+  'audioTokenPrice',
+  'audioCompletionTokenPrice',
+];
 
 const hasValue = (value) =>
   value !== '' && value !== undefined && value !== null;
@@ -100,12 +112,14 @@ const createEmptyModel = (name = '') => ({
   createCacheRatio: '',
   audioRatio: '',
   audioCompletionRatio: '',
+  contextPricing: { enabled: false, tiers: [] },
   hasConflict: false,
   isUnset: true,
 });
 
 const hasAnyPricingConfig = (model) =>
-  MODEL_PRICING_FIELDS.some((field) => hasValue(model?.[field]));
+  MODEL_PRICING_FIELDS.some((field) => hasValue(model?.[field])) ||
+  Boolean(model?.contextPricing?.enabled);
 
 const sortModels = (modelList) =>
   [...modelList].sort((left, right) => {
@@ -155,9 +169,7 @@ const buildPriceFieldsFromRatios = (model) => {
   const cacheRatio = parseInputNumber(model?.cacheRatio);
   const createCacheRatio = parseInputNumber(model?.createCacheRatio);
   const audioRatio = parseInputNumber(model?.audioRatio);
-  const audioCompletionRatio = parseInputNumber(
-    model?.audioCompletionRatio,
-  );
+  const audioCompletionRatio = parseInputNumber(model?.audioCompletionRatio);
 
   const tokenPrice = ratio !== null ? ratioToPrice(ratio) : null;
 
@@ -253,10 +265,121 @@ const displayPriceToRatio = (price) => {
   return Number.isFinite(p) ? formatNumberValue(p / 2) : '';
 };
 
+const backendTierToEditable = (tier = {}) => {
+  const modelRatio = parseInputNumber(tier.model_ratio);
+  const basePrice = modelRatio !== null ? modelRatio * 2 : 0;
+  const audioInputPrice = basePrice * (Number(tier.audio_ratio) || 0);
+
+  return {
+    name: tier.name || '',
+    minTokens:
+      tier.min_tokens === undefined || tier.min_tokens === null
+        ? ''
+        : `${tier.min_tokens}`,
+    maxTokens:
+      tier.max_tokens === undefined || tier.max_tokens === null
+        ? ''
+        : `${tier.max_tokens}`,
+    tokenPrice: formatNumberValue(basePrice),
+    completionTokenPrice: formatNumberValue(
+      basePrice * (Number(tier.completion_ratio) || 0),
+    ),
+    cacheTokenPrice: formatNumberValue(
+      basePrice * (Number(tier.cache_ratio) || 0),
+    ),
+    createCacheTokenPrice: formatNumberValue(
+      basePrice * (Number(tier.create_cache_ratio) || 0),
+    ),
+    audioTokenPrice: formatNumberValue(audioInputPrice),
+    audioCompletionTokenPrice: formatNumberValue(
+      audioInputPrice * (Number(tier.audio_completion_ratio) || 0),
+    ),
+  };
+};
+
+const editableTierToBackend = (tier = {}) => {
+  const tokenPrice = parseInputNumber(tier.tokenPrice) || 0;
+  const audioTokenPrice = parseInputNumber(tier.audioTokenPrice) || 0;
+  const toRatio = (price) => {
+    const parsed = parseInputNumber(price);
+    if (parsed === null || tokenPrice === 0) return 0;
+    return normalizeNumberValue(parsed / tokenPrice) || 0;
+  };
+  const toAudioCompletionRatio = (price) => {
+    const parsed = parseInputNumber(price);
+    if (parsed === null || audioTokenPrice === 0) return 0;
+    return normalizeNumberValue(parsed / audioTokenPrice) || 0;
+  };
+  const maxTokens = hasValue(tier.maxTokens) ? Number(tier.maxTokens) : null;
+
+  const backend = {
+    min_tokens: Number(tier.minTokens),
+    model_ratio: priceToRatio(tokenPrice) || 0,
+    completion_ratio: toRatio(tier.completionTokenPrice),
+    cache_ratio: toRatio(tier.cacheTokenPrice),
+    create_cache_ratio: toRatio(tier.createCacheTokenPrice),
+    audio_ratio: toRatio(tier.audioTokenPrice),
+    audio_completion_ratio: toAudioCompletionRatio(
+      tier.audioCompletionTokenPrice,
+    ),
+  };
+  if (hasValue(tier.name)) {
+    backend.name = tier.name;
+  }
+  if (maxTokens !== null) {
+    backend.max_tokens = maxTokens;
+  }
+  return backend;
+};
+
+const buildEditableContextPricing = (config) => {
+  if (config?.enabled && Array.isArray(config.tiers)) {
+    return {
+      enabled: true,
+      tiers: config.tiers.map((tier) => backendTierToEditable(tier)),
+    };
+  }
+  return { enabled: false, tiers: [] };
+};
+
+const createDefaultContextPricing = (model = {}) => {
+  const priceFields = buildPriceFieldsFromRatios(model);
+  return {
+    enabled: true,
+    tiers: DEFAULT_CONTEXT_TIER_BOUNDS.map((bounds) => ({
+      ...bounds,
+      tokenPrice: priceFields.tokenPrice || '0',
+      completionTokenPrice: priceFields.completionTokenPrice || '0',
+      cacheTokenPrice: priceFields.cacheTokenPrice || '0',
+      createCacheTokenPrice: priceFields.createCacheTokenPrice || '0',
+      audioTokenPrice: priceFields.audioTokenPrice || '0',
+      audioCompletionTokenPrice: priceFields.audioCompletionTokenPrice || '0',
+    })),
+  };
+};
+
+const normalizeContextPricingForSave = (contextPricing) => ({
+  enabled: true,
+  tiers: (contextPricing?.tiers || []).map((tier) =>
+    editableTierToBackend(tier),
+  ),
+});
+
+const formatContextRangeSummary = (tier) => {
+  if (!hasValue(tier?.maxTokens)) {
+    return `≥${tier?.minTokens || 0}`;
+  }
+  return `${tier?.minTokens || 0}~${tier.maxTokens}`;
+};
+
 /**
  * 获取模型的计费模式摘要文本，用于左侧列表展示
  */
 const getModelPricingSummary = (model) => {
+  if (model?.contextPricing?.enabled) {
+    const tierCount = model.contextPricing.tiers?.length || 0;
+    return `分段计费 ${tierCount} 档`;
+  }
   if (hasValue(model?.price)) {
     return `按次 $${model.price} / 次`;
   }
@@ -320,9 +443,7 @@ export default function ModelSettingsVisualEditor(props) {
     try {
       const modelPrice = JSON.parse(props.options.ModelPrice || '{}');
       const modelRatio = JSON.parse(props.options.ModelRatio || '{}');
-      const completionRatio = JSON.parse(
-        props.options.CompletionRatio || '{}',
-      );
+      const completionRatio = JSON.parse(props.options.CompletionRatio || '{}');
       const cacheRatio = JSON.parse(props.options.CacheRatio || '{}');
       const createCacheRatio = JSON.parse(
         props.options.CreateCacheRatio || '{}',
@@ -331,6 +452,7 @@ export default function ModelSettingsVisualEditor(props) {
       const audioCompletionRatio = JSON.parse(
         props.options.AudioCompletionRatio || '{}',
       );
+      const contextPricing = JSON.parse(props.options.ContextPricing || '{}');
 
       const configuredModelNames = new Set([
         ...Object.keys(modelPrice),
@@ -340,30 +462,27 @@ export default function ModelSettingsVisualEditor(props) {
         ...Object.keys(createCacheRatio),
         ...Object.keys(audioRatio),
         ...Object.keys(audioCompletionRatio),
+        ...Object.keys(contextPricing),
       ]);
 
       const configuredModelData = Array.from(configuredModelNames).map(
         (name) => {
-          const price =
-            modelPrice[name] === undefined ? '' : modelPrice[name];
-          const ratio =
-            modelRatio[name] === undefined ? '' : modelRatio[name];
+          const price = modelPrice[name] === undefined ? '' : modelPrice[name];
+          const ratio = modelRatio[name] === undefined ? '' : modelRatio[name];
           const comp =
-            completionRatio[name] === undefined
-              ? ''
-              : completionRatio[name];
-          const cache =
-            cacheRatio[name] === undefined ? '' : cacheRatio[name];
+            completionRatio[name] === undefined ? '' : completionRatio[name];
+          const cache = cacheRatio[name] === undefined ? '' : cacheRatio[name];
           const createCache =
-            createCacheRatio[name] === undefined
-              ? ''
-              : createCacheRatio[name];
-          const audio =
-            audioRatio[name] === undefined ? '' : audioRatio[name];
+            createCacheRatio[name] === undefined ? '' : createCacheRatio[name];
+          const audio = audioRatio[name] === undefined ? '' : audioRatio[name];
           const audioComp =
             audioCompletionRatio[name] === undefined
               ? ''
               : audioCompletionRatio[name];
+          const currentContextPricing =
+            contextPricing[name] === undefined
+              ? { enabled: false, tiers: [] }
+              : contextPricing[name];
 
           return {
             name,
@@ -374,6 +493,7 @@ export default function ModelSettingsVisualEditor(props) {
             createCacheRatio: normalizeNumericEditableValue(createCache),
             audioRatio: normalizeNumericEditableValue(audio),
             audioCompletionRatio: normalizeNumericEditableValue(audioComp),
+            contextPricing: buildEditableContextPricing(currentContextPricing),
             isUnset: false,
             hasConflict: buildConflictState({
               price: normalizeNumericEditableValue(price),
@@ -408,7 +528,13 @@ export default function ModelSettingsVisualEditor(props) {
   // 同步 editingModel 与选中模型
   useEffect(() => {
     if (selectedModel) {
-      if (hasValue(selectedModel?.price)) {
+      if (selectedModel?.contextPricing?.enabled) {
+        setEditingModel({
+          ...selectedModel,
+          pricingMode: 'per-token',
+          price: '',
+        });
+      } else if (hasValue(selectedModel?.price)) {
         // 按次计费
         setEditingModel({
           ...selectedModel,
@@ -443,6 +569,64 @@ export default function ModelSettingsVisualEditor(props) {
 
   const pagedData = getPagedData(filteredModels, currentPage, listPageSize);
 
+  const validateContextPricingModel = (model) => {
+    if (!model?.contextPricing?.enabled) return true;
+    const tiers = model.contextPricing.tiers || [];
+    if (tiers.length === 0) {
+      showError(`${model.name}: ${t('分段计费至少需要一个区间')}`);
+      return false;
+    }
+
+    const normalizedRanges = [];
+    for (let index = 0; index < tiers.length; index++) {
+      const tier = tiers[index];
+      const label = `${model.name} ${t('第')} ${index + 1} ${t('档')}`;
+      if (!hasValue(tier.minTokens)) {
+        showError(`${label}: ${t('请输入区间下限')}`);
+        return false;
+      }
+      const minTokens = Number(tier.minTokens);
+      const maxTokens = hasValue(tier.maxTokens)
+        ? Number(tier.maxTokens)
+        : null;
+      if (!Number.isInteger(minTokens) || minTokens < 0) {
+        showError(`${label}: ${t('区间下限必须是非负整数')}`);
+        return false;
+      }
+      if (
+        maxTokens !== null &&
+        (!Number.isInteger(maxTokens) || maxTokens <= minTokens)
+      ) {
+        showError(`${label}: ${t('区间上限必须大于下限')}`);
+        return false;
+      }
+      for (const field of CONTEXT_TIER_PRICE_FIELDS) {
+        if (!hasValue(tier[field])) {
+          showError(`${label}: ${t('价格字段不能为空')}`);
+          return false;
+        }
+        const value = Number(tier[field]);
+        if (!Number.isFinite(value) || value < 0) {
+          showError(`${label}: ${t('价格必须是非负数字')}`);
+          return false;
+        }
+      }
+      normalizedRanges.push({ minTokens, maxTokens, index });
+    }
+
+    normalizedRanges.sort((left, right) => left.minTokens - right.minTokens);
+    for (let index = 1; index < normalizedRanges.length; index++) {
+      const prev = normalizedRanges[index - 1];
+      const current = normalizedRanges[index];
+      if (prev.maxTokens === null || current.minTokens < prev.maxTokens) {
+        showError(`${model.name}: ${t('分段计费区间不能重叠')}`);
+        return false;
+      }
+    }
+
+    return true;
+  };
+
   /** 保存所有模型数据到后端 */
   const SubmitData = async () => {
     setLoading(true);
@@ -454,6 +638,7 @@ export default function ModelSettingsVisualEditor(props) {
       CreateCacheRatio: {},
       AudioRatio: {},
       AudioCompletionRatio: {},
+      ContextPricing: {},
     };
     try {
       // 如果当前正在编辑某个模型，先同步到 models 列表
@@ -462,7 +647,20 @@ export default function ModelSettingsVisualEditor(props) {
         modelsToSave = saveEditingModelToList(modelsToSave);
       }
 
+      for (const model of modelsToSave) {
+        if (!validateContextPricingModel(model)) {
+          setLoading(false);
+          return;
+        }
+      }
+
       modelsToSave.forEach((model) => {
+        if (model.contextPricing?.enabled) {
+          output.ContextPricing[model.name] = normalizeContextPricingForSave(
+            model.contextPricing,
+          );
+          return;
+        }
         if (model.price !== '') {
           output.ModelPrice[model.name] = parseInputNumber(model.price);
         } else {
@@ -493,6 +691,7 @@ export default function ModelSettingsVisualEditor(props) {
           null,
           2,
         ),
+        ContextPricing: JSON.stringify(output.ContextPricing, null, 2),
       };
 
       const requestQueue = Object.entries(finalOutput).map(([key, value]) => {
@@ -537,10 +736,29 @@ export default function ModelSettingsVisualEditor(props) {
     let valuesToSave = { ...editingModel };
 
     if (editingModel.pricingMode === 'per-token') {
-      valuesToSave = syncRatioFieldsFromPrices(valuesToSave);
-      valuesToSave.price = '';
+      if (editingModel.contextPricing?.enabled) {
+        valuesToSave = {
+          ...valuesToSave,
+          price: '',
+          ratio: '',
+          completionRatio: '',
+          cacheRatio: '',
+          createCacheRatio: '',
+          audioRatio: '',
+          audioCompletionRatio: '',
+          contextPricing: {
+            enabled: true,
+            tiers: editingModel.contextPricing.tiers || [],
+          },
+        };
+      } else {
+        valuesToSave = syncRatioFieldsFromPrices(valuesToSave);
+        valuesToSave.price = '';
+        valuesToSave.contextPricing = { enabled: false, tiers: [] };
+      }
     } else {
       valuesToSave = clearPerTokenPricing(valuesToSave);
+      valuesToSave.contextPricing = { enabled: false, tiers: [] };
     }
 
     // 移除临时字段
@@ -651,8 +869,84 @@ export default function ModelSettingsVisualEditor(props) {
           createCacheRatio: '',
           audioRatio: '',
           audioCompletionRatio: '',
+          contextPricing: { enabled: false, tiers: [] },
         };
       }
+    });
+  };
+
+  const toggleContextPricing = (enabled) => {
+    if (!editingModel) return;
+    setEditingModel((prev) => {
+      if (!prev) return prev;
+      if (enabled) {
+        const contextPricing =
+          prev.contextPricing?.tiers?.length > 0
+            ? { ...prev.contextPricing, enabled: true }
+            : createDefaultContextPricing(prev);
+        return {
+          ...prev,
+          pricingMode: 'per-token',
+          price: '',
+          contextPricing,
+        };
+      }
+      return {
+        ...prev,
+        contextPricing: { enabled: false, tiers: [] },
+        ...buildPriceFieldsFromRatios(prev),
+      };
+    });
+  };
+
+  const updateContextTier = (index, field, value) => {
+    setEditingModel((prev) => {
+      if (!prev?.contextPricing?.enabled) return prev;
+      if (field !== 'name' && hasValue(value) && !/^\d*(\.\d*)?$/.test(value)) {
+        showError(t('请输入数字'));
+        return prev;
+      }
+      const tiers = [...(prev.contextPricing.tiers || [])];
+      tiers[index] = { ...tiers[index], [field]: value };
+      return {
+        ...prev,
+        contextPricing: { ...prev.contextPricing, tiers },
+      };
+    });
+  };
+
+  const addContextTier = () => {
+    setEditingModel((prev) => {
+      if (!prev?.contextPricing?.enabled) return prev;
+      const tiers = prev.contextPricing.tiers || [];
+      const last = tiers[tiers.length - 1] || {};
+      const minTokens = hasValue(last.maxTokens) ? last.maxTokens : '1000000';
+      const nextTier = {
+        ...createDefaultContextPricing(prev).tiers[0],
+        name: `≥${minTokens}`,
+        minTokens,
+        maxTokens: '',
+      };
+      return {
+        ...prev,
+        contextPricing: {
+          ...prev.contextPricing,
+          tiers: [...tiers, nextTier],
+        },
+      };
+    });
+  };
+
+  const removeContextTier = (index) => {
+    setEditingModel((prev) => {
+      if (!prev?.contextPricing?.enabled) return prev;
+      const tiers = (prev.contextPricing.tiers || []).filter(
+        (_, tierIndex) => tierIndex !== index,
+      );
+      return {
+        ...prev,
+        contextPricing: { ...prev.contextPricing, tiers },
+      };
     });
   };
 
@@ -708,6 +1002,11 @@ export default function ModelSettingsVisualEditor(props) {
         ModelPrice: editingModel.price || '',
       };
     }
+    if (editingModel.contextPricing?.enabled) {
+      return {
+        ContextPricing: `${editingModel.contextPricing.tiers?.length || 0} ${t('档')}`,
+      };
+    }
 
     // 按量计费：基于当前编辑状态生成预览
     const synced = syncRatioFieldsFromPrices({ ...editingModel });
@@ -752,8 +1051,7 @@ export default function ModelSettingsVisualEditor(props) {
       render: (text, record) => (
         <span
           style={{
-            fontWeight:
-              record.name === selectedModelName ? 600 : 'normal',
+            fontWeight: record.name === selectedModelName ? 600 : 'normal',
             color:
               record.name === selectedModelName
                 ? 'var(--semi-color-primary)'
@@ -778,13 +1076,22 @@ export default function ModelSettingsVisualEditor(props) {
       width: 100,
       render: (_, record) => {
         const isPerRequest = hasValue(record?.price);
+        const isContextPricing = record?.contextPricing?.enabled;
         return (
-          <Tag
-            color={isPerRequest ? 'green' : 'blue'}
-            shape='rounded'
-          >
-            {isPerRequest ? t('按次计费') : t('按量计费')}
-          </Tag>
+          <Space>
+            <Tag color={isPerRequest ? 'green' : 'blue'} shape='rounded'>
+              {isPerRequest ? t('按次计费') : t('按量计费')}
+            </Tag>
+            {isContextPricing && (
+              <Tag
+                color='white'
+                shape='rounded'
+                style={{ background: '#e8f3ff', color: '#0f66d0' }}
+              >
+                {t('分段计费')}
+              </Tag>
+            )}
+          </Space>
         );
       },
     },
@@ -817,9 +1124,146 @@ export default function ModelSettingsVisualEditor(props) {
     },
   ];
 
+  const renderContextPricingEditor = () => {
+    const tiers = editingModel?.contextPricing?.tiers || [];
+    const priceFields = [
+      { field: 'tokenPrice', label: t('输入价格') },
+      { field: 'completionTokenPrice', label: t('补全价格') },
+      { field: 'cacheTokenPrice', label: t('缓存读取价格') },
+      { field: 'createCacheTokenPrice', label: t('缓存创建价格') },
+      { field: 'audioTokenPrice', label: t('音频输入价格') },
+      { field: 'audioCompletionTokenPrice', label: t('音频补全价格') },
+    ];
+
+    return (
+      <div style={{ marginBottom: 24 }}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: 12,
+          }}
+        >
+          <div>
+            <div style={{ fontWeight: 600, fontSize: 14 }}>
+              {t('分段计费区间')}
+            </div>
+            <div
+              style={{
+                color: 'var(--semi-color-text-2)',
+                fontSize: 13,
+                marginTop: 2,
+              }}
+            >
+              {t('按输入侧上下文 token 命中区间，整次请求使用该区间价格。')}
+            </div>
+          </div>
+          <Button icon={<IconPlus />} size='small' onClick={addContextTier}>
+            {t('新增区间')}
+          </Button>
+        </div>
+
+        {tiers.map((tier, index) => (
+          <div
+            key={`${index}-${tier.minTokens}-${tier.maxTokens}`}
+            style={{
+              border: '1px solid var(--semi-color-border)',
+              borderRadius: 8,
+              padding: 12,
+              marginBottom: 12,
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: 12,
+              }}
+            >
+              <div style={{ fontWeight: 600 }}>
+                {tier.name || formatContextRangeSummary(tier)}
+              </div>
+              <Button
+                icon={<IconDelete />}
+                type='danger'
+                theme='borderless'
+                size='small'
+                disabled={tiers.length <= 1}
+                onClick={() => removeContextTier(index)}
+              />
+            </div>
+
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr',
+                gap: 8,
+                marginBottom: 12,
+              }}
+            >
+              <Input
+                value={tier.minTokens ?? ''}
+                prefix={t('下限')}
+                suffix='tokens'
+                onChange={(value) =>
+                  updateContextTier(index, 'minTokens', value)
+                }
+              />
+              <Input
+                value={tier.maxTokens ?? ''}
+                prefix={t('上限')}
+                suffix='tokens'
+                placeholder={t('留空表示无上限')}
+                onChange={(value) =>
+                  updateContextTier(index, 'maxTokens', value)
+                }
+              />
+            </div>
+            <Input
+              value={tier.name ?? ''}
+              prefix={t('名称')}
+              placeholder={formatContextRangeSummary(tier)}
+              style={{ marginBottom: 12 }}
+              onChange={(value) => updateContextTier(index, 'name', value)}
+            />
+
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr',
+                gap: 8,
+              }}
+            >
+              {priceFields.map((item) => (
+                <Input
+                  key={item.field}
+                  value={tier[item.field] ?? ''}
+                  prefix={item.label}
+                  suffix='$/1M'
+                  onChange={(value) =>
+                    updateContextTier(index, item.field, value)
+                  }
+                />
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
   // ========== 渲染 ==========
   return (
-    <div style={{ display: 'flex', gap: 16, height: 'calc(100vh - 280px)', minHeight: 400 }}>
+    <div
+      style={{
+        display: 'flex',
+        gap: 16,
+        height: 'calc(100vh - 280px)',
+        minHeight: 400,
+      }}
+    >
       {/* ====== 左侧：模型列表 ====== */}
       <div
         style={{
@@ -841,11 +1285,7 @@ export default function ModelSettingsVisualEditor(props) {
             flexShrink: 0,
           }}
         >
-          <Button
-            icon={<IconPlus />}
-            type='primary'
-            onClick={handleAddModel}
-          >
+          <Button icon={<IconPlus />} type='primary' onClick={handleAddModel}>
             {t('添加模型')}
           </Button>
           <Button icon={<IconSave />} onClick={SubmitData} loading={loading}>
@@ -945,31 +1385,41 @@ export default function ModelSettingsVisualEditor(props) {
                   // 同步更新 models 列表中的名称和选中状态
                   setModels((prev) =>
                     prev.map((m) =>
-                      m.name === selectedModelName
-                        ? { ...m, name: value }
-                        : m,
+                      m.name === selectedModelName ? { ...m, name: value } : m,
                     ),
                   );
                   setSelectedModelName(value);
                 }}
-                style={{ fontWeight: 600, fontSize: 18, border: 'none', padding: 0, boxShadow: 'none' }}
+                style={{
+                  fontWeight: 600,
+                  fontSize: 18,
+                  border: 'none',
+                  padding: 0,
+                  boxShadow: 'none',
+                }}
               />
               <Tag
                 color={
-                  editingModel.pricingMode === 'per-request'
-                    ? 'blue'
-                    : 'blue'
+                  editingModel.pricingMode === 'per-request' ? 'blue' : 'blue'
                 }
               >
                 {editingModel.pricingMode === 'per-request'
                   ? t('按次计费')
-                  : t('按量计费')}
+                  : editingModel.contextPricing?.enabled
+                    ? t('分段计费')
+                    : t('按量计费')}
               </Tag>
             </div>
 
             {/* 计费方式切换 */}
             <div style={{ marginBottom: 4 }}>
-              <span style={{ color: 'var(--semi-color-text-2)', marginBottom: 8, display: 'block' }}>
+              <span
+                style={{
+                  color: 'var(--semi-color-text-2)',
+                  marginBottom: 8,
+                  display: 'block',
+                }}
+              >
                 {t('计费方式')}
               </span>
               <RadioGroup
@@ -993,292 +1443,324 @@ export default function ModelSettingsVisualEditor(props) {
             {/* ====== 按量计费表单 ====== */}
             {editingModel.pricingMode === 'per-token' && (
               <>
-                {/* 基础价格 */}
-                <div style={{ marginBottom: 24 }}>
-                  <div
-                    style={{
-                      fontWeight: 600,
-                      marginBottom: 12,
-                      fontSize: 14,
-                    }}
-                  >
-                    {t('基础价格')}
-                  </div>
-
-                  <div style={{ marginBottom: 12 }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: 16,
+                    padding: '10px 12px',
+                    border: '1px solid var(--semi-color-border)',
+                    borderRadius: 8,
+                    background: 'var(--semi-color-fill-0)',
+                  }}
+                >
+                  <div>
+                    <div style={{ fontWeight: 600, fontSize: 14 }}>
+                      {t('分段计费')}
+                    </div>
                     <div
                       style={{
                         color: 'var(--semi-color-text-2)',
-                        marginBottom: 4,
                         fontSize: 13,
+                        marginTop: 2,
                       }}
                     >
-                      {t('输入价格')}
+                      {t('开启后按上下文区间设置多组按量价格。')}
                     </div>
-                    <Input
-                      value={editingModel.tokenPrice ?? ''}
-                      placeholder='0'
-                      onChange={(value) =>
-                        updateEditingField('tokenPrice', value)
-                      }
-                      suffix='$/1M tokens'
-                    />
                   </div>
-
-                  <div style={{ marginBottom: 12 }}>
-                    <div
-                      style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        marginBottom: 4,
-                      }}
-                    >
-                      <span
-                        style={{
-                          color: 'var(--semi-color-text-2)',
-                          fontSize: 13,
-                        }}
-                      >
-                        {t('补全价格')}
-                      </span>
-                      <Switch
-                        checked={hasValue(
-                          editingModel.completionTokenPrice,
-                        )}
-                        onChange={(checked) =>
-                          toggleOptionalField('completionTokenPrice', checked)
-                        }
-                        size='small'
-                      />
-                    </div>
-                    <Input
-                      value={editingModel.completionTokenPrice ?? ''}
-                      placeholder='0'
-                      onChange={(value) =>
-                        updateEditingField(
-                          'completionTokenPrice',
-                          value,
-                        )
-                      }
-                      suffix='$/1M tokens'
-                      disabled={!hasValue(
-                        editingModel.completionTokenPrice,
-                      )}
-                    />
-                  </div>
-
-                  <div style={{ marginBottom: 12 }}>
-                    <div
-                      style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        marginBottom: 4,
-                      }}
-                    >
-                      <span
-                        style={{
-                          color: 'var(--semi-color-text-2)',
-                          fontSize: 13,
-                        }}
-                      >
-                        {t('缓存读取价格')}
-                      </span>
-                      <Switch
-                        checked={hasValue(editingModel.cacheTokenPrice)}
-                        onChange={(checked) =>
-                          toggleOptionalField('cacheTokenPrice', checked)
-                        }
-                        size='small'
-                      />
-                    </div>
-                    <Input
-                      value={editingModel.cacheTokenPrice ?? ''}
-                      placeholder='0'
-                      onChange={(value) =>
-                        updateEditingField('cacheTokenPrice', value)
-                      }
-                      suffix='$/1M tokens'
-                      disabled={!hasValue(editingModel.cacheTokenPrice)}
-                    />
-                  </div>
-
-                  <div style={{ marginBottom: 0 }}>
-                    <div
-                      style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        marginBottom: 4,
-                      }}
-                    >
-                      <span
-                        style={{
-                          color: 'var(--semi-color-text-2)',
-                          fontSize: 13,
-                        }}
-                      >
-                        {t('缓存创建价格')}
-                      </span>
-                      <Switch
-                        checked={hasValue(
-                          editingModel.createCacheTokenPrice,
-                        )}
-                        onChange={(checked) =>
-                          toggleOptionalField('createCacheTokenPrice', checked)
-                        }
-                        size='small'
-                      />
-                    </div>
-                    <Input
-                      value={editingModel.createCacheTokenPrice ?? ''}
-                      placeholder='0'
-                      onChange={(value) =>
-                        updateEditingField(
-                          'createCacheTokenPrice',
-                          value,
-                        )
-                      }
-                      suffix='$/1M tokens'
-                      disabled={!hasValue(
-                        editingModel.createCacheTokenPrice,
-                      )}
-                    />
-                  </div>
+                  <Switch
+                    checked={Boolean(editingModel.contextPricing?.enabled)}
+                    onChange={toggleContextPricing}
+                  />
                 </div>
 
-                {/* 扩展价格 */}
-                <div style={{ marginBottom: 24 }}>
-                  <div
-                    style={{
-                      fontWeight: 600,
-                      marginBottom: 4,
-                      fontSize: 14,
-                    }}
-                  >
-                    {t('扩展价格')}
-                  </div>
-                  <div
-                    style={{
-                      color: 'var(--semi-color-text-2)',
-                      marginBottom: 12,
-                      fontSize: 13,
-                    }}
-                  >
-                    {t('这些价格都是可选项，不填也可以。')}
-                  </div>
+                {editingModel.contextPricing?.enabled ? (
+                  renderContextPricingEditor()
+                ) : (
+                  <>
+                    {/* 基础价格 */}
+                    <div style={{ marginBottom: 24 }}>
+                      <div
+                        style={{
+                          fontWeight: 600,
+                          marginBottom: 12,
+                          fontSize: 14,
+                        }}
+                      >
+                        {t('基础价格')}
+                      </div>
 
-                  <div style={{ marginBottom: 12 }}>
-                    <div
-                      style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        marginBottom: 4,
-                      }}
-                    >
-                      <span
+                      <div style={{ marginBottom: 12 }}>
+                        <div
+                          style={{
+                            color: 'var(--semi-color-text-2)',
+                            marginBottom: 4,
+                            fontSize: 13,
+                          }}
+                        >
+                          {t('输入价格')}
+                        </div>
+                        <Input
+                          value={editingModel.tokenPrice ?? ''}
+                          placeholder='0'
+                          onChange={(value) =>
+                            updateEditingField('tokenPrice', value)
+                          }
+                          suffix='$/1M tokens'
+                        />
+                      </div>
+
+                      <div style={{ marginBottom: 12 }}>
+                        <div
+                          style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            marginBottom: 4,
+                          }}
+                        >
+                          <span
+                            style={{
+                              color: 'var(--semi-color-text-2)',
+                              fontSize: 13,
+                            }}
+                          >
+                            {t('补全价格')}
+                          </span>
+                          <Switch
+                            checked={hasValue(
+                              editingModel.completionTokenPrice,
+                            )}
+                            onChange={(checked) =>
+                              toggleOptionalField(
+                                'completionTokenPrice',
+                                checked,
+                              )
+                            }
+                            size='small'
+                          />
+                        </div>
+                        <Input
+                          value={editingModel.completionTokenPrice ?? ''}
+                          placeholder='0'
+                          onChange={(value) =>
+                            updateEditingField('completionTokenPrice', value)
+                          }
+                          suffix='$/1M tokens'
+                          disabled={
+                            !hasValue(editingModel.completionTokenPrice)
+                          }
+                        />
+                      </div>
+
+                      <div style={{ marginBottom: 12 }}>
+                        <div
+                          style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            marginBottom: 4,
+                          }}
+                        >
+                          <span
+                            style={{
+                              color: 'var(--semi-color-text-2)',
+                              fontSize: 13,
+                            }}
+                          >
+                            {t('缓存读取价格')}
+                          </span>
+                          <Switch
+                            checked={hasValue(editingModel.cacheTokenPrice)}
+                            onChange={(checked) =>
+                              toggleOptionalField('cacheTokenPrice', checked)
+                            }
+                            size='small'
+                          />
+                        </div>
+                        <Input
+                          value={editingModel.cacheTokenPrice ?? ''}
+                          placeholder='0'
+                          onChange={(value) =>
+                            updateEditingField('cacheTokenPrice', value)
+                          }
+                          suffix='$/1M tokens'
+                          disabled={!hasValue(editingModel.cacheTokenPrice)}
+                        />
+                      </div>
+
+                      <div style={{ marginBottom: 0 }}>
+                        <div
+                          style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            marginBottom: 4,
+                          }}
+                        >
+                          <span
+                            style={{
+                              color: 'var(--semi-color-text-2)',
+                              fontSize: 13,
+                            }}
+                          >
+                            {t('缓存创建价格')}
+                          </span>
+                          <Switch
+                            checked={hasValue(
+                              editingModel.createCacheTokenPrice,
+                            )}
+                            onChange={(checked) =>
+                              toggleOptionalField(
+                                'createCacheTokenPrice',
+                                checked,
+                              )
+                            }
+                            size='small'
+                          />
+                        </div>
+                        <Input
+                          value={editingModel.createCacheTokenPrice ?? ''}
+                          placeholder='0'
+                          onChange={(value) =>
+                            updateEditingField('createCacheTokenPrice', value)
+                          }
+                          suffix='$/1M tokens'
+                          disabled={
+                            !hasValue(editingModel.createCacheTokenPrice)
+                          }
+                        />
+                      </div>
+                    </div>
+
+                    {/* 扩展价格 */}
+                    <div style={{ marginBottom: 24 }}>
+                      <div
+                        style={{
+                          fontWeight: 600,
+                          marginBottom: 4,
+                          fontSize: 14,
+                        }}
+                      >
+                        {t('扩展价格')}
+                      </div>
+                      <div
                         style={{
                           color: 'var(--semi-color-text-2)',
+                          marginBottom: 12,
                           fontSize: 13,
                         }}
                       >
-                        {t('图片输入价格')}
-                      </span>
-                      <Switch size='small' />
-                    </div>
-                    <Input
-                      value='0'
-                      disabled
-                      suffix='$/1M tokens'
-                    />
-                  </div>
+                        {t('这些价格都是可选项，不填也可以。')}
+                      </div>
 
-                  <div style={{ marginBottom: 12 }}>
-                    <div
-                      style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        marginBottom: 4,
-                      }}
-                    >
-                      <span
-                        style={{
-                          color: 'var(--semi-color-text-2)',
-                          fontSize: 13,
-                        }}
-                      >
-                        {t('音频输入价格')}
-                      </span>
-                      <Switch
-                        checked={hasValue(editingModel.audioTokenPrice)}
-                        onChange={(checked) =>
-                          toggleOptionalField('audioTokenPrice', checked)
-                        }
-                        size='small'
-                      />
-                    </div>
-                    <Input
-                      value={editingModel.audioTokenPrice ?? ''}
-                      placeholder='250'
-                      onChange={(value) =>
-                        updateEditingField('audioTokenPrice', value)
-                      }
-                      suffix='$/1M tokens'
-                      disabled={!hasValue(editingModel.audioTokenPrice)}
-                    />
-                  </div>
+                      <div style={{ marginBottom: 12 }}>
+                        <div
+                          style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            marginBottom: 4,
+                          }}
+                        >
+                          <span
+                            style={{
+                              color: 'var(--semi-color-text-2)',
+                              fontSize: 13,
+                            }}
+                          >
+                            {t('图片输入价格')}
+                          </span>
+                          <Switch size='small' />
+                        </div>
+                        <Input value='0' disabled suffix='$/1M tokens' />
+                      </div>
 
-                  <div style={{ marginBottom: 0 }}>
-                    <div
-                      style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        marginBottom: 4,
-                      }}
-                    >
-                      <span
-                        style={{
-                          color: 'var(--semi-color-text-2)',
-                          fontSize: 13,
-                        }}
-                      >
-                        {t('音频补全价格')}
-                      </span>
-                      <Switch
-                        checked={hasValue(
-                          editingModel.audioCompletionTokenPrice,
-                        )}
-                        onChange={(checked) =>
-                          toggleOptionalField(
-                            'audioCompletionTokenPrice',
-                            checked,
-                          )
-                        }
-                        size='small'
-                      />
+                      <div style={{ marginBottom: 12 }}>
+                        <div
+                          style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            marginBottom: 4,
+                          }}
+                        >
+                          <span
+                            style={{
+                              color: 'var(--semi-color-text-2)',
+                              fontSize: 13,
+                            }}
+                          >
+                            {t('音频输入价格')}
+                          </span>
+                          <Switch
+                            checked={hasValue(editingModel.audioTokenPrice)}
+                            onChange={(checked) =>
+                              toggleOptionalField('audioTokenPrice', checked)
+                            }
+                            size='small'
+                          />
+                        </div>
+                        <Input
+                          value={editingModel.audioTokenPrice ?? ''}
+                          placeholder='250'
+                          onChange={(value) =>
+                            updateEditingField('audioTokenPrice', value)
+                          }
+                          suffix='$/1M tokens'
+                          disabled={!hasValue(editingModel.audioTokenPrice)}
+                        />
+                      </div>
+
+                      <div style={{ marginBottom: 0 }}>
+                        <div
+                          style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            marginBottom: 4,
+                          }}
+                        >
+                          <span
+                            style={{
+                              color: 'var(--semi-color-text-2)',
+                              fontSize: 13,
+                            }}
+                          >
+                            {t('音频补全价格')}
+                          </span>
+                          <Switch
+                            checked={hasValue(
+                              editingModel.audioCompletionTokenPrice,
+                            )}
+                            onChange={(checked) =>
+                              toggleOptionalField(
+                                'audioCompletionTokenPrice',
+                                checked,
+                              )
+                            }
+                            size='small'
+                          />
+                        </div>
+                        <Input
+                          value={editingModel.audioCompletionTokenPrice ?? ''}
+                          placeholder='250'
+                          onChange={(value) =>
+                            updateEditingField(
+                              'audioCompletionTokenPrice',
+                              value,
+                            )
+                          }
+                          suffix='$/1M tokens'
+                          disabled={
+                            !hasValue(editingModel.audioCompletionTokenPrice)
+                          }
+                        />
+                      </div>
                     </div>
-                    <Input
-                      value={
-                        editingModel.audioCompletionTokenPrice ?? ''
-                      }
-                      placeholder='250'
-                      onChange={(value) =>
-                        updateEditingField(
-                          'audioCompletionTokenPrice',
-                          value,
-                        )
-                      }
-                      suffix='$/1M tokens'
-                      disabled={!hasValue(
-                        editingModel.audioCompletionTokenPrice,
-                      )}
-                    />
-                  </div>
-                </div>
+                  </>
+                )}
               </>
             )}
 
@@ -1298,9 +1780,7 @@ export default function ModelSettingsVisualEditor(props) {
                   <Input
                     value={editingModel.price ?? ''}
                     placeholder='19.9'
-                    onChange={(value) =>
-                      updateEditingField('price', value)
-                    }
+                    onChange={(value) => updateEditingField('price', value)}
                     suffix='$/次'
                   />
                   <div
@@ -1353,8 +1833,7 @@ export default function ModelSettingsVisualEditor(props) {
                       display: 'flex',
                       justifyContent: 'space-between',
                       padding: '6px 0',
-                      borderBottom:
-                        '1px solid var(--semi-color-border)',
+                      borderBottom: '1px solid var(--semi-color-border)',
                       fontSize: 13,
                     }}
                   >
@@ -1463,11 +1942,7 @@ const audioCompletionRatioToDisplayPrice = (
 };
 
 // 显示价格 → 音频补全倍率
-const displayPriceToAudioCompletionRatio = (
-  price,
-  baseRatio,
-  audioRatio,
-) => {
+const displayPriceToAudioCompletionRatio = (price, baseRatio, audioRatio) => {
   if (!hasValue(price) || !hasValue(baseRatio) || !hasValue(audioRatio))
     return '';
   const p = Number(price);

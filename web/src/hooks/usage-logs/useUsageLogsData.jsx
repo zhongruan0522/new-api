@@ -17,7 +17,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Modal } from '@douyinfe/semi-ui';
 import {
@@ -39,6 +39,69 @@ import {
 } from '../../helpers';
 import { ITEMS_PER_PAGE } from '../../constants';
 import { useTableCompactMode } from '../common/useTableCompactMode';
+
+const formatTierTokenLabel = (tokens) => {
+  const value = Number(tokens);
+  if (!Number.isFinite(value)) {
+    return '-';
+  }
+  if (value % 1000 === 0) {
+    return `${value / 1000}K`;
+  }
+  return value.toLocaleString();
+};
+
+const formatContextPricingRange = (other) => {
+  const contextPricing = other?.context_pricing || {};
+  const minTokens =
+    other?.context_pricing_tier_min_tokens ?? contextPricing.min_tokens;
+  const maxTokens =
+    other?.context_pricing_tier_max_tokens ?? contextPricing.max_tokens;
+
+  if (maxTokens === undefined || maxTokens === null) {
+    return `≥${formatTierTokenLabel(minTokens)}`;
+  }
+  if (Number(minTokens || 0) === 0) {
+    return `<${formatTierTokenLabel(maxTokens)}`;
+  }
+  return `${formatTierTokenLabel(minTokens)}~${formatTierTokenLabel(maxTokens)}`;
+};
+
+const renderContextPricingLogInfo = (other, t) => {
+  const contextPricing = other?.context_pricing || {};
+  const prices = other?.context_pricing_prices || contextPricing.prices || {};
+  const priceItems = [
+    ['输入', prices.model_ratio],
+    ['补全', prices.completion_ratio],
+    ['缓存读取', prices.cache_ratio],
+    ['缓存创建', prices.cache_creation_ratio],
+    ['5m缓存创建', prices.cache_creation_ratio_5m],
+    ['1h缓存创建', prices.cache_creation_ratio_1h],
+    ['音频输入', prices.audio_ratio],
+    ['音频补全', prices.audio_completion_ratio],
+  ]
+    .filter(([, value]) => value !== undefined && value !== null)
+    .map(([label, value]) => `${t(label)}: ${value}`);
+
+  return (
+    <div style={{ lineHeight: 1.7 }}>
+      <div>
+        <strong>{t('当前为分段计费模式')}</strong>
+      </div>
+      <div>
+        {t('命中区间')}: {formatContextPricingRange(other)}
+        {contextPricing.tier_name ? ` (${contextPricing.tier_name})` : ''}
+      </div>
+      <div>
+        {t('分段上下文')}: {other?.context_tokens_for_tier ?? '-'}
+      </div>
+      <div>
+        {t('命中价格倍率')}:{' '}
+        {priceItems.length > 0 ? priceItems.join(' | ') : '-'}
+      </div>
+    </div>
+  );
+};
 
 export const useLogsData = () => {
   const { t } = useTranslation();
@@ -432,13 +495,22 @@ export const useLogsData = () => {
       const _inputTokens = _promptTokens - _cacheCreationTokens - _cacheTokens;
       expandDataLocal.push({
         key: t('Tokens'),
-        value: t('输入:{{input}} | 缓存创建: {{cacheCreation}} | 缓存读取: {{cacheRead}} | 输出:{{output}}', {
-          input: _inputTokens >= 0 ? _inputTokens : _promptTokens,
-          cacheCreation: _cacheCreationTokens,
-          cacheRead: _cacheTokens,
-          output: logs[i].completion_tokens || 0,
-        }),
+        value: t(
+          '输入:{{input}} | 缓存创建: {{cacheCreation}} | 缓存读取: {{cacheRead}} | 输出:{{output}}',
+          {
+            input: _inputTokens >= 0 ? _inputTokens : _promptTokens,
+            cacheCreation: _cacheCreationTokens,
+            cacheRead: _cacheTokens,
+            output: logs[i].completion_tokens || 0,
+          },
+        ),
       });
+      if (other?.context_pricing_enabled) {
+        expandDataLocal.push({
+          key: t('分段计费'),
+          value: renderContextPricingLogInfo(other, t),
+        });
+      }
       if (logs[i].type === 2) {
         expandDataLocal.push({
           key: t('日志详情'),
@@ -464,12 +536,12 @@ export const useLogsData = () => {
                 other?.model_ratio,
                 other.completion_ratio,
                 other.model_price,
-              other.group_ratio,
-              other?.user_group_ratio,
-              other.cache_ratio || 1.0,
-              other.web_search || false,
-              other.web_search_call_count || 0,
-              other.file_search || false,
+                other.group_ratio,
+                other?.user_group_ratio,
+                other.cache_ratio || 1.0,
+                other.web_search || false,
+                other.web_search_call_count || 0,
+                other.file_search || false,
                 other.file_search_call_count || 0,
               ),
         });

@@ -24,6 +24,7 @@ type PriceData struct {
 	UsePrice             bool
 	QuotaToPreConsume    int // 预消耗额度
 	GroupRatioInfo       GroupRatioInfo
+	ContextPricing       *ContextPricingResult
 }
 
 func (p *PriceData) AddOtherRatio(key string, ratio float64) {

@@ -15,22 +15,23 @@ import (
 )
 
 type Pricing struct {
-	ModelName              string                  `json:"model_name"`
-	Description            string                  `json:"-" gorm:"type:text"`
-	Icon                   string                  `json:"icon,omitempty"`
-	Tags                   string                  `json:"tags,omitempty"`
-	VendorID               int                     `json:"vendor_id,omitempty"`
-	QuotaType              int                     `json:"quota_type"`
-	ModelRatio             float64                 `json:"model_ratio"`
-	ModelPrice             float64                 `json:"model_price"`
-	OwnerBy                string                  `json:"owner_by"`
-	CompletionRatio        float64                 `json:"completion_ratio"`
-	CacheRatio             *float64                `json:"cache_ratio,omitempty"`
-	CreateCacheRatio       *float64                `json:"create_cache_ratio,omitempty"`
-	AudioRatio             *float64                `json:"audio_ratio,omitempty"`
-	AudioCompletionRatio   *float64                `json:"audio_completion_ratio,omitempty"`
-	EnableGroup            []string                `json:"enable_groups"`
-	SupportedEndpointTypes []constant.EndpointType `json:"supported_endpoint_types"`
+	ModelName              string                      `json:"model_name"`
+	Description            string                      `json:"-" gorm:"type:text"`
+	Icon                   string                      `json:"icon,omitempty"`
+	Tags                   string                      `json:"tags,omitempty"`
+	VendorID               int                         `json:"vendor_id,omitempty"`
+	QuotaType              int                         `json:"quota_type"`
+	ModelRatio             float64                     `json:"model_ratio"`
+	ModelPrice             float64                     `json:"model_price"`
+	OwnerBy                string                      `json:"owner_by"`
+	CompletionRatio        float64                     `json:"completion_ratio"`
+	CacheRatio             *float64                    `json:"cache_ratio,omitempty"`
+	CreateCacheRatio       *float64                    `json:"create_cache_ratio,omitempty"`
+	AudioRatio             *float64                    `json:"audio_ratio,omitempty"`
+	AudioCompletionRatio   *float64                    `json:"audio_completion_ratio,omitempty"`
+	ContextPricing         *types.ContextPricingConfig `json:"context_pricing,omitempty"`
+	EnableGroup            []string                    `json:"enable_groups"`
+	SupportedEndpointTypes []constant.EndpointType     `json:"supported_endpoint_types"`
 }
 
 type PricingVendor struct {
@@ -314,6 +315,23 @@ func updatePricing() {
 		if ratio_setting.ContainsAudioCompletionRatio(model) {
 			v := ratio_setting.GetAudioCompletionRatio(model)
 			pricing.AudioCompletionRatio = &v
+		}
+		if cfg, ok := ratio_setting.GetContextPricingConfig(model); ok && cfg.Enabled && len(cfg.Tiers) > 0 {
+			pricing.ContextPricing = &cfg
+			pricing.QuotaType = 0
+			if result, _, err := ratio_setting.MatchContextPricingTier(model, cfg.Tiers[0].MinTokens); err == nil && result != nil {
+				pricing.ModelPrice = 0
+				pricing.ModelRatio = result.Prices.ModelRatio
+				pricing.CompletionRatio = result.Prices.CompletionRatio
+				cacheRatio := result.Prices.CacheRatio
+				createCacheRatio := result.Prices.CacheCreationRatio
+				audioRatio := result.Prices.AudioRatio
+				audioCompletionRatio := result.Prices.AudioCompletionRatio
+				pricing.CacheRatio = &cacheRatio
+				pricing.CreateCacheRatio = &createCacheRatio
+				pricing.AudioRatio = &audioRatio
+				pricing.AudioCompletionRatio = &audioCompletionRatio
+			}
 		}
 		pricingMap = append(pricingMap, pricing)
 	}

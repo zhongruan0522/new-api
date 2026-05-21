@@ -59,6 +59,51 @@ func ModelPriceHelper(c *gin.Context, info *relaycommon.RelayInfo, promptTokens 
 
 	groupRatioInfo := HandleGroupRatio(c, info)
 
+	if result, enabled, err := ratio_setting.MatchContextPricingTier(info.OriginModelName, promptTokens); enabled {
+		if err != nil {
+			return types.PriceData{}, err
+		}
+		preConsumedPromptTokens := common.Max(promptTokens, common.PreConsumedQuota)
+		preConsumedTokens := float64(preConsumedPromptTokens)
+		if meta.MaxTokens != 0 {
+			preConsumedTokens += float64(meta.MaxTokens) * result.Prices.CompletionRatio
+		}
+		preConsumedQuota := int(preConsumedTokens * result.Prices.ModelRatio * groupRatioInfo.GroupRatio)
+
+		freeModel := false
+		quotaSetting := operation_setting.GetQuotaSetting()
+		tierIsFree := result.Prices.ModelRatio == 0 &&
+			result.Prices.CompletionRatio == 0 &&
+			result.Prices.CacheRatio == 0 &&
+			result.Prices.CacheCreationRatio == 0 &&
+			result.Prices.AudioRatio == 0 &&
+			result.Prices.AudioCompletionRatio == 0
+		if groupRatioInfo.GroupRatio == 0 {
+			if quotaSetting.FreeModelPreConsumedQuota <= 0 {
+				freeModel = true
+			}
+		} else if tierIsFree {
+			preConsumedQuota = quotaSetting.FreeModelPreConsumedQuota
+			if preConsumedQuota <= 0 {
+				freeModel = true
+			}
+		}
+
+		priceData := types.PriceData{
+			FreeModel:         freeModel,
+			ModelPrice:        -1,
+			GroupRatioInfo:    groupRatioInfo,
+			UsePrice:          false,
+			QuotaToPreConsume: preConsumedQuota,
+		}
+		ratio_setting.ApplyContextPricingResult(&priceData, result)
+		if common.DebugEnabled {
+			println(fmt.Sprintf("model_price_helper context pricing result: %s", priceData.ToSetting()))
+		}
+		info.PriceData = priceData
+		return priceData, nil
+	}
+
 	var preConsumedQuota int
 	var modelRatio float64
 	var completionRatio float64
