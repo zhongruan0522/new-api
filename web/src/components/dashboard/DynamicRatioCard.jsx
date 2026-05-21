@@ -86,19 +86,12 @@ const DynamicRatioCard = () => {
     [t],
   );
 
-  // 计算所有规则中的最高倍率
-  const maxRatio = useMemo(() => {
-    if (!status?.rules || status.rules.length === 0) return null;
-    let max = 0;
-    for (const rule of status.rules) {
-      if (rule.ratio > max) max = rule.ratio;
-    }
-    return max > 0 ? max : null;
-  }, [status]);
-
-  // 当前生效倍率
+  // 当前生效倍率（后端实时计算，未命中规则时为 1）
   const activeRatio = status ? Number(status.active_ratio) : 1;
   const hasActiveRatio = Number.isFinite(activeRatio) && activeRatio !== 1;
+
+  // 主数字始终显示后端实时计算的生效倍率
+  const displayRatio = activeRatio;
 
   // 判断本地时区是否与服务器时区不同
   const localTimezone = useMemo(() => {
@@ -129,7 +122,7 @@ const DynamicRatioCard = () => {
         style={{ boxShadow: 'none', bordered: true, headerLine: true }}
       >
         <div className='space-y-4'>
-          {/* 第一行：当前最高倍率 */}
+          {/* 第一行：当前倍率 / 最高可达倍率 */}
           <div className='flex items-center justify-between'>
             <div className='flex items-center'>
               <div
@@ -143,13 +136,13 @@ const DynamicRatioCard = () => {
               </div>
               <div>
                 <div className='text-xs text-gray-500'>
-                  {t('当前最高倍率可达')}
+                  {t('当前倍率')}
                 </div>
                 <div
                   className='text-lg font-semibold'
                   style={{ color: ratioColor }}
                 >
-                  {maxRatio != null ? `${maxRatio}x` : '--'}
+                  {displayRatio != null ? `${displayRatio}x` : '--'}
                 </div>
               </div>
             </div>
