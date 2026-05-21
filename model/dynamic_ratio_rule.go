@@ -122,6 +122,7 @@ type DynamicRatioStatus struct {
 	Enabled     bool                  `json:"enabled"`
 	ActiveRatio float64               `json:"active_ratio"`
 	ActiveGroup string                `json:"active_group,omitempty"`
+	Timezone    string                `json:"timezone"`
 	RulesCount  int                   `json:"rules_count"`
 	Rules       []DynamicRatioSummary `json:"rules"`
 }
@@ -147,6 +148,7 @@ func GetDynamicRatioStatusForGroups(groups []string) DynamicRatioStatus {
 	status := DynamicRatioStatus{
 		Enabled:     common.DynamicRatioEnabled,
 		ActiveRatio: 1.0,
+		Timezone:    common.StartupTimezoneName(),
 	}
 
 	if !common.DynamicRatioEnabled {
@@ -190,7 +192,7 @@ func GetDynamicRatioStatusForGroups(groups []string) DynamicRatioStatus {
 
 	// 计算当前生效倍率
 	concurrency := getActiveConnections()
-	now := time.Now()
+	now := common.NowInStartupTimezone()
 	hasActiveRatio := false
 	for _, group := range groups {
 		activeRatio := matchDynamicRatio(rules, group, concurrency, now)
@@ -235,7 +237,7 @@ func GetMatchedDynamicRatio(group string) float64 {
 	rules := dynamicRatioRules
 	dynamicRatioCacheLock.RUnlock()
 
-	return matchDynamicRatio(rules, group, getActiveConnections(), time.Now())
+	return matchDynamicRatio(rules, group, getActiveConnections(), common.NowInStartupTimezone())
 }
 
 // matchDynamicRatio 核心匹配逻辑（纯函数，方便测试）

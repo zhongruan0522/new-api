@@ -210,6 +210,28 @@ func TestMatchDynamicRatio_CrossDayUsesPreviousWeekdayAfterMidnight(t *testing.T
 	}
 }
 
+func TestMatchDynamicRatio_UsesNowLocation(t *testing.T) {
+	shanghai, err := time.LoadLocation("Asia/Shanghai")
+	if err != nil {
+		t.Fatalf("load Asia/Shanghai location: %v", err)
+	}
+
+	rules := []DynamicRatioRule{
+		{Id: 1, Enable: true, Group: "vip", Weekdays: "[1]", StartTime: "08:00", EndTime: "09:00", Ratio: 2.0, Priority: 0},
+	}
+	instant := time.Date(2026, 5, 18, 0, 30, 0, 0, time.UTC)
+
+	ratio := matchDynamicRatio(toParsedRules(rules), "vip", 0, instant.In(shanghai))
+	if ratio != 2.0 {
+		t.Errorf("expected 2.0 for Asia/Shanghai 08:30 Monday, got %f", ratio)
+	}
+
+	ratio = matchDynamicRatio(toParsedRules(rules), "vip", 0, instant)
+	if ratio != 0 {
+		t.Errorf("expected 0 for UTC 00:30 Monday outside 08:00-09:00, got %f", ratio)
+	}
+}
+
 // 测试：复合条件全满足
 func TestMatchDynamicRatio_CompositeAllMatch(t *testing.T) {
 	rules := []DynamicRatioRule{

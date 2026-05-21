@@ -30,6 +30,7 @@ func printHelp() {
 
 func InitEnv() {
 	flag.Parse()
+	InitStartupTimezone()
 
 	// VERSION env overrides the build-time git commit hash injected via -ldflags.
 	// Use this to set a human-readable version string (e.g. "v1.2.3") if needed.

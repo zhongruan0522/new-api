@@ -140,6 +140,25 @@ const DynamicRatioCard = () => {
         width={520}
       >
         <div className='space-y-3'>
+          {status.timezone && (
+            <div
+              className='flex items-center justify-between p-3 rounded-lg'
+              style={{
+                backgroundColor: 'var(--semi-color-fill-0)',
+                border: '1px solid var(--semi-color-border)',
+              }}
+            >
+              <span
+                className='text-sm'
+                style={{ color: 'var(--semi-color-text-2)' }}
+              >
+                {t('触发时区')}
+              </span>
+              <Tag size='small' shape='circle'>
+                {status.timezone}
+              </Tag>
+            </div>
+          )}
           {status.rules && status.rules.length > 0 ? (
             status.rules.map((rule, idx) => (
               <div
