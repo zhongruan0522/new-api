@@ -37,6 +37,17 @@ const EXTRA_PRICE_LABELS = {
   audioOutputPrice: '音频输出',
 };
 
+const renderInlineTokenPrices = (priceData, t) => (
+  <div className='flex flex-wrap items-center gap-x-3 gap-y-1 text-gray-700 leading-5'>
+    <span>
+      {t('输入')} {priceData.inputPrice} / 1{priceData.unitLabel} tokens
+    </span>
+    <span>
+      {t('输出')} {priceData.completionPrice} / 1{priceData.unitLabel} tokens
+    </span>
+  </div>
+);
+
 function renderQuotaType(type, record, t) {
   const segmentedTag = record?.context_pricing?.enabled ? (
     <Tag
@@ -218,13 +229,7 @@ export const getPricingTableColumns = ({
 
         return (
           <div className='space-y-1'>
-            <div className='text-gray-700'>
-              {t('输入')} {priceData.inputPrice} / 1{priceData.unitLabel} tokens
-            </div>
-            <div className='text-gray-700'>
-              {t('输出')} {priceData.completionPrice} / 1{priceData.unitLabel}{' '}
-              tokens
-            </div>
+            {renderInlineTokenPrices(priceData, t)}
             <div className='space-y-1 mt-1 pt-1 border-t border-gray-100'>
               {extraPriceItems.map(([field, value]) => (
                 <div key={field} className='text-gray-500 text-xs'>
