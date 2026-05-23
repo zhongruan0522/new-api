@@ -4,6 +4,7 @@ import {
   Card,
   Form,
   Modal,
+  Pagination,
   Space,
   Spin,
   Switch,
@@ -12,6 +13,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import SectionPageLayout from '../../components/layout/SectionPageLayout';
 import { API, renderQuota, showError, showSuccess, timestamp2string } from '../../helpers';
+import { ITEMS_PER_PAGE } from '../../constants';
 
 const initPlan = {
   id: 0,
@@ -37,21 +39,26 @@ const SubscriptionPlanPage = () => {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [plans, setPlans] = useState([]);
+  const [activePage, setActivePage] = useState(1);
+  const [pageSize, setPageSize] = useState(ITEMS_PER_PAGE);
+  const [total, setTotal] = useState(0);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingPlan, setEditingPlan] = useState(initPlan);
   const formApiRef = useRef(null);
 
-  const loadPlans = async () => {
+  const loadPlans = async (page = activePage, size = pageSize) => {
     setLoading(true);
     try {
       const res = await API.get('/api/subscription_plan/', {
-        params: { p: 1, page_size: 100 },
+        params: { p: page, page_size: size },
       });
       if (!res.data.success) {
         showError(res.data.message);
         return;
       }
       setPlans(res.data.data.items || []);
+      setTotal(res.data.data.total || 0);
+      setActivePage(res.data.data.page || page);
     } catch (error) {
       showError(error.message || t('加载套餐失败'));
     } finally {
@@ -60,7 +67,7 @@ const SubscriptionPlanPage = () => {
   };
 
   useEffect(() => {
-    loadPlans();
+    loadPlans(1, pageSize);
   }, []);
 
   const openCreate = () => {
@@ -88,7 +95,7 @@ const SubscriptionPlanPage = () => {
       }
       showSuccess(t(values.id ? '套餐更新成功' : '套餐创建成功'));
       setModalVisible(false);
-      loadPlans();
+      loadPlans(values.id ? activePage : 1, pageSize);
     } catch (error) {
       showError(error.message || t('保存套餐失败'));
     }
@@ -104,7 +111,7 @@ const SubscriptionPlanPage = () => {
         showError(res.data.message);
         return;
       }
-      loadPlans();
+      loadPlans(activePage, pageSize);
     } catch (error) {
       showError(error.message || t('更新套餐状态失败'));
     }
@@ -155,6 +162,26 @@ const SubscriptionPlanPage = () => {
           <Card>
             <Spin spinning={loading}>
               <Table rowKey='id' pagination={false} columns={columns} dataSource={plans} />
+              {total > 0 && (
+                <div className='mt-4 flex justify-end'>
+                  <Pagination
+                    currentPage={activePage}
+                    pageSize={pageSize}
+                    total={total}
+                    pageSizeOpts={[10, 20, 50, 100]}
+                    showSizeChanger
+                    onPageChange={(page) => {
+                      setActivePage(page);
+                      loadPlans(page, pageSize);
+                    }}
+                    onPageSizeChange={(size) => {
+                      setPageSize(size);
+                      setActivePage(1);
+                      loadPlans(1, size);
+                    }}
+                  />
+                </div>
+              )}
             </Spin>
           </Card>
         </SectionPageLayout.Content>
