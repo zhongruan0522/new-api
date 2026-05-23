@@ -4,13 +4,14 @@ import {
   Card,
   Empty,
   Form,
-  Select,
+  Input,
   Space,
   Spin,
   Table,
   Tag,
   Typography,
 } from '@douyinfe/semi-ui';
+import { IconGift } from '@douyinfe/semi-icons';
 import { useTranslation } from 'react-i18next';
 import SectionPageLayout from '../../components/layout/SectionPageLayout';
 import {
@@ -55,6 +56,7 @@ const SubscriptionPage = () => {
   const [orders, setOrders] = useState([]);
   const [selectedMethod, setSelectedMethod] = useState('stripe');
   const [submitting, setSubmitting] = useState('');
+  const [redemptionCode, setRedemptionCode] = useState('');
 
   const loadData = async () => {
     setLoading(true);
@@ -153,6 +155,29 @@ const SubscriptionPage = () => {
       showSuccess(t('已拉起支付，请在完成后刷新页面'));
     } catch (error) {
       showError(error.message || t('拉起支付失败'));
+    } finally {
+      setSubmitting('');
+    }
+  };
+
+  const redeemSubscription = async () => {
+    const key = redemptionCode.trim();
+    if (!key) {
+      showError(t('请输入兑换码'));
+      return;
+    }
+    setSubmitting('redeem');
+    try {
+      const res = await API.post('/api/user/subscription/redeem', { key });
+      if (!res.data.success) {
+        showError(res.data.message);
+        return;
+      }
+      showSuccess(t('套餐兑换成功'));
+      setRedemptionCode('');
+      await loadData();
+    } catch (error) {
+      showError(error.message || t('套餐兑换失败'));
     } finally {
       setSubmitting('');
     }
@@ -263,6 +288,28 @@ const SubscriptionPage = () => {
               </Card>
 
               <div className='space-y-4'>
+                <Card>
+                  <Title heading={5}>{t('套餐兑换码')}</Title>
+                  <Input
+                    value={redemptionCode}
+                    onChange={setRedemptionCode}
+                    onEnterPress={redeemSubscription}
+                    placeholder={t('请输入兑换码')}
+                    prefix={<IconGift />}
+                    showClear
+                    suffix={
+                      <Button
+                        theme='solid'
+                        type='primary'
+                        loading={submitting === 'redeem'}
+                        onClick={redeemSubscription}
+                      >
+                        {t('兑换套餐')}
+                      </Button>
+                    }
+                  />
+                </Card>
+
                 <Card>
                   <Title heading={5}>{t('当前套餐')}</Title>
                   {summary?.active ? (
