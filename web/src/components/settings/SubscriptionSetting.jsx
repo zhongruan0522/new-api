@@ -230,50 +230,52 @@ const SubscriptionSetting = () => {
   ];
 
   return (
-    <Spin spinning={loading}>
-      <Form
-        values={inputs}
-        getFormApi={(api) => {
-          formApiRef.current = api;
-        }}
-        onValueChange={(values) =>
-          setInputs((prev) => ({
-            ...prev,
-            ...values,
-          }))
-        }
-      >
-        <Form.Section text={t('套餐设置')}>
-          <Form.Select
-            field='subscription_setting.payment_mode'
-            label={t('支付方式')}
-            optionList={[
-              { label: t('余额支付'), value: 'balance' },
-              { label: t('现金支付'), value: 'cash' },
-              { label: t('余额&现金都可'), value: 'both' },
-            ]}
-            style={{ width: '100%' }}
-          />
-          <div className='mb-4'>
-            <div className='mb-2 font-medium'>{t('支持套餐模型')}</div>
-            <Table
-              dataSource={subscriptionModels}
-              columns={columns}
-              pagination={
-                subscriptionModels.length > 20 ? { pageSize: 20 } : false
-              }
-              size='small'
-              empty={
-                <div style={{ textAlign: 'center', padding: 20 }}>
-                  {t('暂无支持套餐的模型')}
-                </div>
-              }
+    <div style={{ marginTop: '10px' }}>
+      <Spin spinning={loading}>
+        <Form
+          values={inputs}
+          getFormApi={(api) => {
+            formApiRef.current = api;
+          }}
+          onValueChange={(values) =>
+            setInputs((prev) => ({
+              ...prev,
+              ...values,
+            }))
+          }
+        >
+          <Form.Section text={t('套餐设置')}>
+            <Form.Select
+              field='subscription_setting.payment_mode'
+              label={t('支付方式')}
+              optionList={[
+                { label: t('余额支付'), value: 'balance' },
+                { label: t('现金支付'), value: 'cash' },
+                { label: t('余额&现金都可'), value: 'both' },
+              ]}
+              style={{ width: '100%' }}
             />
-          </div>
-          <Button onClick={handleSubmit}>{t('保存套餐设置')}</Button>
-        </Form.Section>
-      </Form>
-    </Spin>
+            <div className='mb-4'>
+              <div className='mb-2 font-medium'>{t('支持套餐模型')}</div>
+              <Table
+                dataSource={subscriptionModels}
+                columns={columns}
+                pagination={
+                  subscriptionModels.length > 20 ? { pageSize: 20 } : false
+                }
+                size='small'
+                empty={
+                  <div style={{ textAlign: 'center', padding: 20 }}>
+                    {t('暂无支持套餐的模型')}
+                  </div>
+                }
+              />
+            </div>
+            <Button onClick={handleSubmit}>{t('保存套餐设置')}</Button>
+          </Form.Section>
+        </Form>
+      </Spin>
+    </div>
   );
 };
 
