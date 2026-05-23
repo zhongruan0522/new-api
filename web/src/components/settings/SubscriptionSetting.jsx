@@ -1,11 +1,59 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { Button, Form, Spin } from '@douyinfe/semi-ui';
-import { API, showError, showSuccess, showWarning, verifyJSON } from '../../helpers';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  Button,
+  Form,
+  InputNumber,
+  Spin,
+  Table,
+  Tag,
+  Typography,
+} from '@douyinfe/semi-ui';
+import { API, showError, showSuccess, showWarning } from '../../helpers';
 import { useTranslation } from 'react-i18next';
+
+const { Text } = Typography;
+
+const MODEL_RATIOS_KEY = 'subscription_setting.model_ratios';
 
 const defaultInputs = {
   'subscription_setting.payment_mode': 'both',
-  'subscription_setting.model_ratios': '{}',
+  [MODEL_RATIOS_KEY]: '{}',
+};
+
+const parseModelRatios = (value) => {
+  try {
+    const parsed = JSON.parse(value || '{}');
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      return {};
+    }
+    return Object.fromEntries(
+      Object.entries(parsed)
+        .map(([model, ratio]) => [model, Number(ratio)])
+        .filter(
+          ([model, ratio]) => model && Number.isFinite(ratio) && ratio > 0,
+        ),
+    );
+  } catch {
+    return {};
+  }
+};
+
+const stringifyModelRatios = (ratios) => {
+  const sorted = {};
+  Object.keys(ratios)
+    .sort((a, b) => a.localeCompare(b))
+    .forEach((key) => {
+      sorted[key] = ratios[key];
+    });
+  return JSON.stringify(sorted, null, 2);
+};
+
+const formatRatio = (value) => {
+  const ratio = Number(value || 1);
+  if (!Number.isFinite(ratio)) {
+    return '1x';
+  }
+  return `${Number(ratio.toFixed(4))}x`;
 };
 
 const SubscriptionSetting = () => {
@@ -13,24 +61,56 @@ const SubscriptionSetting = () => {
   const [loading, setLoading] = useState(false);
   const [inputs, setInputs] = useState(defaultInputs);
   const [initialInputs, setInitialInputs] = useState(defaultInputs);
+  const [models, setModels] = useState([]);
   const formApiRef = useRef(null);
+
+  const modelRatios = useMemo(
+    () => parseModelRatios(inputs[MODEL_RATIOS_KEY]),
+    [inputs],
+  );
+
+  const subscriptionModels = useMemo(
+    () =>
+      (Array.isArray(models) ? models : [])
+        .filter((model) => model?.subscription_supported)
+        .map((model) => ({
+          key: model.model_name,
+          modelName: model.model_name,
+          ratio:
+            modelRatios[model.model_name] ||
+            Number(model.subscription_model_ratio || 1),
+          groups: Array.isArray(model.enable_groups)
+            ? model.enable_groups.filter(Boolean)
+            : [],
+        }))
+        .sort((a, b) => a.modelName.localeCompare(b.modelName)),
+    [models, modelRatios],
+  );
 
   const loadOptions = async () => {
     setLoading(true);
     try {
-      const res = await API.get('/api/option/');
-      if (!res.data.success) {
-        showError(res.data.message);
+      const [optionRes, pricingRes] = await Promise.all([
+        API.get('/api/option/'),
+        API.get('/api/pricing'),
+      ]);
+      if (!optionRes.data.success) {
+        showError(optionRes.data.message);
+        return;
+      }
+      if (!pricingRes.data.success) {
+        showError(pricingRes.data.message);
         return;
       }
       const nextInputs = { ...defaultInputs };
-      res.data.data.forEach((item) => {
+      optionRes.data.data.forEach((item) => {
         if (Object.prototype.hasOwnProperty.call(nextInputs, item.key)) {
           nextInputs[item.key] = item.value || defaultInputs[item.key];
         }
       });
       setInputs(nextInputs);
       setInitialInputs(nextInputs);
+      setModels(pricingRes.data.data || []);
       formApiRef.current?.setValues(nextInputs);
     } catch (error) {
       showError(error.message || t('加载套餐设置失败'));
@@ -43,12 +123,35 @@ const SubscriptionSetting = () => {
     loadOptions();
   }, []);
 
-  const handleSubmit = async () => {
-    if (inputs['subscription_setting.model_ratios']) {
-      if (!verifyJSON(inputs['subscription_setting.model_ratios'])) {
-        showError(t('套餐模型倍率必须是合法 JSON'));
-        return;
+  const updateModelRatio = (modelName, value) => {
+    const ratio = Number(value);
+    if (!Number.isFinite(ratio) || ratio <= 0) {
+      return;
+    }
+    const nextRatios = {
+      ...parseModelRatios(inputs[MODEL_RATIOS_KEY]),
+      [modelName]: ratio,
+    };
+    setInputs((prev) => ({
+      ...prev,
+      [MODEL_RATIOS_KEY]: stringifyModelRatios(nextRatios),
+    }));
+  };
+
+  const validateModelRatios = () => {
+    const ratios = parseModelRatios(inputs[MODEL_RATIOS_KEY]);
+    for (const [model, ratio] of Object.entries(ratios)) {
+      if (!model || !Number.isFinite(ratio) || ratio <= 0) {
+        showError(t('套餐模型倍率必须大于 0'));
+        return false;
       }
+    }
+    return true;
+  };
+
+  const handleSubmit = async () => {
+    if (!validateModelRatios()) {
+      return;
     }
     const updates = Object.keys(inputs).filter(
       (key) => inputs[key] !== initialInputs[key],
@@ -81,6 +184,51 @@ const SubscriptionSetting = () => {
     }
   };
 
+  const columns = [
+    {
+      title: t('模型名称'),
+      dataIndex: 'modelName',
+      render: (text) => <Text copyable={{ content: text }}>{text}</Text>,
+    },
+    {
+      title: t('套餐倍率'),
+      dataIndex: 'ratio',
+      width: 180,
+      render: (value, record) => (
+        <InputNumber
+          value={value}
+          min={0.01}
+          step={0.1}
+          precision={4}
+          style={{ width: 140 }}
+          onChange={(nextValue) =>
+            updateModelRatio(record.modelName, nextValue)
+          }
+        />
+      ),
+    },
+    {
+      title: t('当前倍率'),
+      dataIndex: 'ratio',
+      width: 120,
+      render: (value) => formatRatio(value),
+    },
+    {
+      title: t('可用分组'),
+      dataIndex: 'groups',
+      render: (groups) => (
+        <div className='flex flex-wrap gap-1'>
+          {groups.map((group) => (
+            <Tag key={group} color='white' size='small' shape='circle'>
+              {group}
+              {t('分组')}
+            </Tag>
+          ))}
+        </div>
+      ),
+    },
+  ];
+
   return (
     <Spin spinning={loading}>
       <Form
@@ -88,7 +236,12 @@ const SubscriptionSetting = () => {
         getFormApi={(api) => {
           formApiRef.current = api;
         }}
-        onValueChange={(values) => setInputs(values)}
+        onValueChange={(values) =>
+          setInputs((prev) => ({
+            ...prev,
+            ...values,
+          }))
+        }
       >
         <Form.Section text={t('套餐设置')}>
           <Form.Select
@@ -101,13 +254,22 @@ const SubscriptionSetting = () => {
             ]}
             style={{ width: '100%' }}
           />
-          <Form.TextArea
-            field='subscription_setting.model_ratios'
-            label={t('套餐模型消耗倍率')}
-            placeholder={t('请填写模型到套餐倍率的 JSON，例如 {"gpt-4o":1.2}')}
-            autosize
-            extraText={t('当前实现为 JSON 配置；后端已支持读取此配置进行套餐扣费与模型广场展示')}
-          />
+          <div className='mb-4'>
+            <div className='mb-2 font-medium'>{t('支持套餐模型')}</div>
+            <Table
+              dataSource={subscriptionModels}
+              columns={columns}
+              pagination={
+                subscriptionModels.length > 20 ? { pageSize: 20 } : false
+              }
+              size='small'
+              empty={
+                <div style={{ textAlign: 'center', padding: 20 }}>
+                  {t('暂无支持套餐的模型')}
+                </div>
+              }
+            />
+          </div>
           <Button onClick={handleSubmit}>{t('保存套餐设置')}</Button>
         </Form.Section>
       </Form>

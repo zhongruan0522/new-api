@@ -37,15 +37,24 @@ func GetPricing(c *gin.Context) {
 			delete(groupRatio, group)
 		}
 	}
+	subscriptionDynamicRatio := map[string]float64{}
+	for group := range usableGroup {
+		ratio := model.GetMatchedSubscriptionDynamicRatio(group)
+		if ratio <= 0 {
+			ratio = 1
+		}
+		subscriptionDynamicRatio[group] = ratio
+	}
 
 	c.JSON(200, gin.H{
-		"success":            true,
-		"data":               pricing,
-		"vendors":            model.GetVendors(),
-		"group_ratio":        groupRatio,
-		"usable_group":       usableGroup,
-		"supported_endpoint": model.GetSupportedEndpointMap(),
-		"auto_groups":        service.GetUserAutoGroup(group),
+		"success":                    true,
+		"data":                       pricing,
+		"vendors":                    model.GetVendors(),
+		"group_ratio":                groupRatio,
+		"usable_group":               usableGroup,
+		"supported_endpoint":         model.GetSupportedEndpointMap(),
+		"auto_groups":                service.GetUserAutoGroup(group),
+		"subscription_dynamic_ratio": subscriptionDynamicRatio,
 	})
 }
 

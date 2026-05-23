@@ -50,6 +50,7 @@ export const useModelPricingData = () => {
   const [usableGroup, setUsableGroup] = useState({});
   const [endpointMap, setEndpointMap] = useState({});
   const [autoGroups, setAutoGroups] = useState([]);
+  const [subscriptionDynamicRatio, setSubscriptionDynamicRatio] = useState({});
 
   const [statusState] = useContext(StatusContext);
   const [userState] = useContext(UserContext);
@@ -197,10 +198,12 @@ export const useModelPricingData = () => {
       usable_group,
       supported_endpoint,
       auto_groups,
+      subscription_dynamic_ratio,
     } = res.data;
     if (success) {
       setGroupRatio(group_ratio);
       setUsableGroup(usable_group);
+      setSubscriptionDynamicRatio(subscription_dynamic_ratio || {});
       setSelectedGroup('all');
       // 构建供应商 Map 方便查找
       const vendorMap = {};
@@ -330,6 +333,7 @@ export const useModelPricingData = () => {
     usableGroup,
     endpointMap,
     autoGroups,
+    subscriptionDynamicRatio,
 
     // 计算属性
     priceRate,

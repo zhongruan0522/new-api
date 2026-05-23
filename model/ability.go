@@ -374,11 +374,19 @@ func (channel *Channel) UpdateAbilities(tx *gorm.DB) error {
 }
 
 func UpdateAbilityStatus(channelId int, status bool) error {
-	return DB.Model(&Ability{}).Where("channel_id = ?", channelId).Select("enabled").Update("enabled", status).Error
+	err := DB.Model(&Ability{}).Where("channel_id = ?", channelId).Select("enabled").Update("enabled", status).Error
+	if err == nil {
+		RefreshPricing()
+	}
+	return err
 }
 
 func UpdateAbilityStatusByTag(tag string, status bool) error {
-	return DB.Model(&Ability{}).Where("tag = ?", tag).Select("enabled").Update("enabled", status).Error
+	err := DB.Model(&Ability{}).Where("tag = ?", tag).Select("enabled").Update("enabled", status).Error
+	if err == nil {
+		RefreshPricing()
+	}
+	return err
 }
 
 func UpdateAbilityByTag(tag string, newTag *string, priority *int64, weight *uint) error {
@@ -392,7 +400,11 @@ func UpdateAbilityByTag(tag string, newTag *string, priority *int64, weight *uin
 	if weight != nil {
 		ability.Weight = *weight
 	}
-	return DB.Model(&Ability{}).Where("tag = ?", tag).Updates(ability).Error
+	err := DB.Model(&Ability{}).Where("tag = ?", tag).Updates(ability).Error
+	if err == nil {
+		RefreshPricing()
+	}
+	return err
 }
 
 var fixLock = sync.Mutex{}
@@ -450,5 +462,6 @@ func FixAbility() (int, int, error) {
 		}
 	}
 	InitChannelCache()
+	RefreshPricing()
 	return successCount, failCount, nil
 }

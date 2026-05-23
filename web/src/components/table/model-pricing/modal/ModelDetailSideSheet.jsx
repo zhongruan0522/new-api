@@ -40,6 +40,7 @@ const ModelDetailSideSheet = ({
   vendorsMap,
   endpointMap,
   autoGroups,
+  subscriptionDynamicRatio,
   t,
 }) => {
   const isMobile = useIsMobile();
@@ -89,6 +90,7 @@ const ModelDetailSideSheet = ({
               displayPrice={displayPrice}
               usableGroup={usableGroup}
               autoGroups={autoGroups}
+              subscriptionDynamicRatio={subscriptionDynamicRatio}
               t={t}
             />
           </>
