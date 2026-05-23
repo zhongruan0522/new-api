@@ -72,6 +72,8 @@ const NotificationSettings = ({
     personal: {
       enabled: true,
       topup: true,
+      subscription: true,
+      order_query: true,
       personal: true,
     },
     support: {
@@ -159,7 +161,13 @@ const NotificationSettings = ({
         token: true,
         log: true,
       },
-      personal: { enabled: true, topup: true, personal: true },
+      personal: {
+        enabled: true,
+        topup: true,
+        subscription: true,
+        order_query: true,
+        personal: true,
+      },
       support: { enabled: true, ticket: true },
       user_maintenance: { enabled: true, user: true, redemption: true },
       admin: {
@@ -260,6 +268,16 @@ const NotificationSettings = ({
       description: t('用户个人功能'),
       modules: [
         { key: 'topup', title: t('钱包管理'), description: t('余额充值管理') },
+        {
+          key: 'subscription',
+          title: t('订阅管理'),
+          description: t('用户套餐订阅管理'),
+        },
+        {
+          key: 'order_query',
+          title: t('订单查询'),
+          description: t('用户充值与套餐订单查询'),
+        },
         {
           key: 'personal',
           title: t('个人设置'),

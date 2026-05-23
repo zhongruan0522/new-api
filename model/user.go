@@ -107,6 +107,7 @@ func generateDefaultSidebarConfigForRole(userRole int) string {
 		"enabled":      true,
 		"topup":        true,
 		"subscription": true,
+		"order_query":  true,
 		"personal":     true,
 	}
 

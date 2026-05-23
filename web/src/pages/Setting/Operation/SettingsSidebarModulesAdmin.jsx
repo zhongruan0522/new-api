@@ -52,6 +52,7 @@ export default function SettingsSidebarModulesAdmin(props) {
       enabled: true,
       topup: true,
       subscription: true,
+      order_query: true,
       personal: true,
     },
     support: {
@@ -191,6 +192,11 @@ export default function SettingsSidebarModulesAdmin(props) {
           key: 'subscription',
           title: t('订阅管理'),
           description: t('用户套餐订阅管理'),
+        },
+        {
+          key: 'order_query',
+          title: t('订单查询'),
+          description: t('用户充值与套餐订单查询'),
         },
         {
           key: 'personal',

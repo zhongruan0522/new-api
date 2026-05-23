@@ -47,6 +47,7 @@ const routerMap = {
   subscription_redemption: '/console/subscription-redemption',
   topup: '/console/topup',
   subscription: '/console/subscription',
+  order_query: '/console/order-query',
   user: '/console/user',
   log: '/console/log',
   multimodal_files: '/console/multimodal-files',
@@ -167,6 +168,11 @@ const SiderBar = ({ onNavigate = () => {} }) => {
         text: t('订阅管理'),
         itemKey: 'subscription',
         to: '/subscription',
+      },
+      {
+        text: t('订单查询'),
+        itemKey: 'order_query',
+        to: '/order-query',
       },
       {
         text: t('个人设置'),

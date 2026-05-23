@@ -37,6 +37,7 @@ export const DEFAULT_ADMIN_CONFIG = {
     enabled: true,
     topup: true,
     subscription: true,
+    order_query: true,
     personal: true,
   },
   support: {

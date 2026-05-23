@@ -54,6 +54,7 @@ import {
   Server,
   TicketCheck,
   TrendingUp,
+  Receipt,
 } from 'lucide-react';
 
 // 获取侧边栏Lucide图标组件
@@ -82,6 +83,8 @@ export function getLucideIcon(key, selected = false) {
       return <CreditCard {...commonProps} color={iconColor} />;
     case 'subscription':
       return <Package {...commonProps} color={iconColor} />;
+    case 'order_query':
+      return <Receipt {...commonProps} color={iconColor} />;
     case 'channel':
       return <Layers {...commonProps} color={iconColor} />;
     case 'redemption':

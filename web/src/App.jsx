@@ -45,6 +45,7 @@ import DynamicRatio from './pages/DynamicRatio';
 import SubscriptionPage from './pages/Subscription';
 import SubscriptionPlanPage from './pages/SubscriptionPlan';
 import SubscriptionRedemptionPage from './pages/SubscriptionRedemption';
+import OrderQueryPage from './pages/OrderQuery';
 
 import OAuth2Callback from './components/auth/OAuth2Callback';
 import PersonalSetting from './components/settings/PersonalSetting';
@@ -246,6 +247,14 @@ function App() {
           element={
             <PrivateRoute>
               <SubscriptionPage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path='/console/order-query'
+          element={
+            <PrivateRoute>
+              <OrderQueryPage />
             </PrivateRoute>
           }
         />

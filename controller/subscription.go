@@ -71,7 +71,8 @@ func GetUserSubscriptionSummary(c *gin.Context) {
 func GetSubscriptionOrders(c *gin.Context) {
 	userId := c.GetInt("id")
 	pageInfo := common.GetPageQuery(c)
-	orders, total, err := model.ListUserSubscriptionOrders(userId, pageInfo)
+	filter := getOrderFilter(c)
+	orders, total, err := model.QueryUserSubscriptionOrders(userId, filter, pageInfo)
 	if err != nil {
 		common.ApiError(c, err)
 		return

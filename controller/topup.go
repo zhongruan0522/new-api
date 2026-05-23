@@ -338,18 +338,8 @@ func RequestAmount(c *gin.Context) {
 func GetUserTopUps(c *gin.Context) {
 	userId := c.GetInt("id")
 	pageInfo := common.GetPageQuery(c)
-	keyword := c.Query("keyword")
-
-	var (
-		topups []*model.TopUp
-		total  int64
-		err    error
-	)
-	if keyword != "" {
-		topups, total, err = model.SearchUserTopUps(userId, keyword, pageInfo)
-	} else {
-		topups, total, err = model.GetUserTopUps(userId, pageInfo)
-	}
+	filter := getOrderFilter(c)
+	topups, total, err := model.QueryUserTopUps(userId, filter, pageInfo)
 	if err != nil {
 		common.ApiError(c, err)
 		return
@@ -358,6 +348,19 @@ func GetUserTopUps(c *gin.Context) {
 	pageInfo.SetTotal(int(total))
 	pageInfo.SetItems(topups)
 	common.ApiSuccess(c, pageInfo)
+}
+
+func getOrderFilter(c *gin.Context) model.OrderFilter {
+	startTime, _ := strconv.ParseInt(c.Query("start_time"), 10, 64)
+	endTime, _ := strconv.ParseInt(c.Query("end_time"), 10, 64)
+	return model.OrderFilter{
+		Keyword:       c.Query("keyword"),
+		TradeNo:       c.Query("trade_no"),
+		Status:        c.Query("status"),
+		PaymentMethod: c.Query("payment_method"),
+		StartTime:     startTime,
+		EndTime:       endTime,
+	}
 }
 
 // GetAllTopUps 管理员获取全平台充值记录

@@ -72,6 +72,11 @@ type SubscriptionOrder struct {
 	CompleteTime   int64   `json:"complete_time"`
 }
 
+type SubscriptionOrderDetail struct {
+	SubscriptionOrder
+	PlanName string `json:"plan_name"`
+}
+
 // SubscriptionBill stores auditable quota changes for a subscription.
 type SubscriptionBill struct {
 	Id               int    `json:"id" gorm:"primaryKey"`
@@ -345,6 +350,77 @@ func ListUserSubscriptionOrders(userId int, pageInfo *common.PageInfo) ([]*Subsc
 		return nil, 0, err
 	}
 	return orders, total, nil
+}
+
+func QueryUserSubscriptionOrders(userId int, filter OrderFilter, pageInfo *common.PageInfo) ([]*SubscriptionOrderDetail, int64, error) {
+	var orders []*SubscriptionOrder
+	var total int64
+	tx := DB.Begin()
+	if tx.Error != nil {
+		return nil, 0, tx.Error
+	}
+	query := tx.Model(&SubscriptionOrder{}).Where("user_id = ?", userId)
+	if filter.Keyword != "" {
+		query = query.Where("trade_no LIKE ?", "%"+filter.Keyword+"%")
+	}
+	if filter.TradeNo != "" {
+		query = query.Where("trade_no = ?", filter.TradeNo)
+	}
+	if filter.Status != "" {
+		query = query.Where("status = ?", filter.Status)
+	}
+	if filter.PaymentMethod != "" {
+		query = query.Where("payment_method LIKE ?", "%"+filter.PaymentMethod+"%")
+	}
+	if filter.StartTime > 0 {
+		query = query.Where("create_time >= ?", filter.StartTime)
+	}
+	if filter.EndTime > 0 {
+		query = query.Where("create_time <= ?", filter.EndTime)
+	}
+	if err := query.Count(&total).Error; err != nil {
+		tx.Rollback()
+		return nil, 0, err
+	}
+	if err := query.Order("id desc").Limit(pageInfo.GetPageSize()).Offset(pageInfo.GetStartIdx()).Find(&orders).Error; err != nil {
+		tx.Rollback()
+		return nil, 0, err
+	}
+	planIds := make([]int, 0)
+	seenPlanIds := make(map[int]bool)
+	for _, order := range orders {
+		if !seenPlanIds[order.PlanId] {
+			seenPlanIds[order.PlanId] = true
+			planIds = append(planIds, order.PlanId)
+		}
+	}
+	plans := make([]*SubscriptionPlan, 0)
+	if len(planIds) > 0 {
+		if err := tx.Where("id IN ?", planIds).Find(&plans).Error; err != nil {
+			tx.Rollback()
+			return nil, 0, err
+		}
+	}
+	planNames := make(map[int]string, len(plans))
+	for _, plan := range plans {
+		planNames[plan.Id] = plan.Name
+	}
+	details := make([]*SubscriptionOrderDetail, 0, len(orders))
+	for _, order := range orders {
+		planName, ok := planNames[order.PlanId]
+		if !ok {
+			tx.Rollback()
+			return nil, 0, fmt.Errorf("套餐不存在: %d", order.PlanId)
+		}
+		details = append(details, &SubscriptionOrderDetail{
+			SubscriptionOrder: *order,
+			PlanName:          planName,
+		})
+	}
+	if err := tx.Commit().Error; err != nil {
+		return nil, 0, err
+	}
+	return details, total, nil
 }
 
 func GetUserSubscriptions(userId int) ([]*UserSubscription, error) {
