@@ -306,6 +306,24 @@ func AssignSubscriptionToUser(c *gin.Context) {
 	common.ApiSuccess(c, nil)
 }
 
+func ChangeSubscriptionForUser(c *gin.Context) {
+	userId, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	var req SubscriptionAssignRequest
+	if err = common.DecodeJson(c.Request.Body, &req); err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	if err = service.ChangeUserSubscriptionPlan(userId, req.PlanId); err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	common.ApiSuccess(c, nil)
+}
+
 func RemoveSubscriptionFromUser(c *gin.Context) {
 	userId, err := strconv.Atoi(c.Param("id"))
 	if err != nil {

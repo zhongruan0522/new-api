@@ -110,6 +110,7 @@ func SetApiRouter(router *gin.Engine) {
 				adminRoute.POST("/topup/complete", controller.AdminCompleteTopUp)
 				adminRoute.GET("/:id/subscription", controller.GetUserSubscriptionSummary)
 				adminRoute.POST("/:id/subscription/assign", controller.AssignSubscriptionToUser)
+				adminRoute.POST("/:id/subscription/change", controller.ChangeSubscriptionForUser)
 				adminRoute.POST("/:id/subscription/remove", controller.RemoveSubscriptionFromUser)
 				adminRoute.GET("/search", controller.SearchUsers)
 				adminRoute.GET("/:id", controller.GetUser)

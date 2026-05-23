@@ -223,6 +223,7 @@ const (
 	SubscriptionOrderActionRenew    = "renew"
 	SubscriptionOrderActionUpgrade  = "upgrade"
 	SubscriptionOrderActionAssign   = "assign"
+	SubscriptionOrderActionChange   = "change"
 )
 
 const (
@@ -234,4 +235,5 @@ const (
 	SubscriptionBillEventRemove     = "remove"
 	SubscriptionBillEventUpgrade    = "upgrade"
 	SubscriptionBillEventRenew      = "renew"
+	SubscriptionBillEventChange     = "change"
 )

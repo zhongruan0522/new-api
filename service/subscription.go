@@ -446,6 +446,70 @@ func AssignSubscriptionPlanToUser(userId int, planId int) error {
 	return err
 }
 
+func ChangeUserSubscriptionPlan(userId int, planId int) error {
+	plan, err := getSubscriptionPlanForOrder(planId)
+	if err != nil {
+		return err
+	}
+	now := common.GetTimestamp()
+	return model.DB.Transaction(func(tx *gorm.DB) error {
+		active, err := model.GetActiveUserSubscriptionTx(tx, userId, now, true)
+		if err != nil && err != model.ErrNoActiveSubscription {
+			return err
+		}
+		if active == nil {
+			return fmt.Errorf("当前没有可变更的套餐")
+		}
+		if err := cancelPendingSubscriptionsTx(tx, userId); err != nil {
+			return err
+		}
+		active.Status = common.SubscriptionStatusReplaced
+		active.UpdatedTime = now
+		if err := model.UpdateUserSubscription(tx, active, "status", "updated_time"); err != nil {
+			return err
+		}
+		nextSubscription := model.CloneSubscriptionFromPlan(userId, plan, common.SubscriptionStatusActive, now, active.UsedTotalQuota)
+		if err := model.CreateUserSubscription(tx, nextSubscription); err != nil {
+			return err
+		}
+		order := &model.SubscriptionOrder{
+			UserId:         userId,
+			PlanId:         plan.Id,
+			SubscriptionId: nextSubscription.Id,
+			TradeNo:        BuildSubscriptionTradeNo(userId),
+			Action:         common.SubscriptionOrderActionChange,
+			PaymentMethod:  "admin",
+			PaymentSource:  "admin",
+			Amount:         0,
+			TargetPlanId:   active.PlanId,
+			Status:         common.TopUpStatusSuccess,
+			CreateTime:     now,
+			CompleteTime:   now,
+		}
+		if err := tx.Create(order).Error; err != nil {
+			return err
+		}
+		content := fmt.Sprintf("管理员变更套餐：%s -> %s", active.PlanName, nextSubscription.PlanName)
+		if err := model.CreateSubscriptionBill(tx, &model.SubscriptionBill{
+			UserId:           userId,
+			SubscriptionId:   nextSubscription.Id,
+			OrderId:          order.Id,
+			Event:            common.SubscriptionBillEventChange,
+			Quota:            0,
+			BeforeWindowUsed: nextSubscription.WindowUsedQuota,
+			AfterWindowUsed:  nextSubscription.WindowUsedQuota,
+			BeforeTotalUsed:  nextSubscription.UsedTotalQuota,
+			AfterTotalUsed:   nextSubscription.UsedTotalQuota,
+			Content:          content,
+			CreatedTime:      now,
+		}); err != nil {
+			return err
+		}
+		model.RecordLog(userId, model.LogTypeManage, content)
+		return nil
+	})
+}
+
 func RemoveUserSubscription(userId int, subscriptionId int) error {
 	now := common.GetTimestamp()
 	return model.DB.Transaction(func(tx *gorm.DB) error {
