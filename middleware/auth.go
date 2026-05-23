@@ -346,6 +346,10 @@ func TokenAuth() func(c *gin.Context) {
 		}
 
 		userCache.WriteContext(c)
+		if err := service.WriteActiveSubscriptionContext(c, token.UserId); err != nil {
+			abortWithOpenAiMessage(c, http.StatusInternalServerError, err.Error())
+			return
+		}
 
 		userGroup := userCache.Group
 		tokenGroup := token.Group

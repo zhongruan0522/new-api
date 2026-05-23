@@ -203,3 +203,35 @@ const (
 	TopUpStatusExpired = "expired"
 	TopUpStatusFailed  = "failed"
 )
+
+const (
+	SubscriptionPaymentModeBalance = "balance"
+	SubscriptionPaymentModeCash    = "cash"
+	SubscriptionPaymentModeBoth    = "both"
+)
+
+const (
+	SubscriptionStatusPending   = "pending"
+	SubscriptionStatusActive    = "active"
+	SubscriptionStatusExpired   = "expired"
+	SubscriptionStatusCancelled = "cancelled"
+	SubscriptionStatusReplaced  = "replaced"
+)
+
+const (
+	SubscriptionOrderActionPurchase = "purchase"
+	SubscriptionOrderActionRenew    = "renew"
+	SubscriptionOrderActionUpgrade  = "upgrade"
+	SubscriptionOrderActionAssign   = "assign"
+)
+
+const (
+	SubscriptionBillEventPreConsume = "pre_consume"
+	SubscriptionBillEventSettle     = "settle"
+	SubscriptionBillEventRefund     = "refund"
+	SubscriptionBillEventRedeem     = "redeem"
+	SubscriptionBillEventAssign     = "assign"
+	SubscriptionBillEventRemove     = "remove"
+	SubscriptionBillEventUpgrade    = "upgrade"
+	SubscriptionBillEventRenew      = "renew"
+)

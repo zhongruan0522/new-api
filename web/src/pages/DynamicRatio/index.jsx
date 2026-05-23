@@ -208,6 +208,7 @@ const DynamicRatio = () => {
       start_time: values.start_time || '',
       end_time: values.end_time || '',
       ratio: values.ratio,
+      applies_to_subscription: values.applies_to_subscription === true,
       enable: values.enable !== false,
       priority: values.priority || 0,
     };
@@ -322,6 +323,13 @@ const DynamicRatio = () => {
         const color = text > 3 ? 'red' : text > 1.5 ? 'orange' : 'blue';
         return <Tag color={color}>{text}x</Tag>;
       },
+    },
+    {
+      title: t('套餐生效'),
+      dataIndex: 'applies_to_subscription',
+      width: 100,
+      render: (text) =>
+        text ? <Tag color='green'>{t('是')}</Tag> : <Tag color='grey'>{t('否')}</Tag>,
     },
     {
       title: t('优先级'),
@@ -442,6 +450,8 @@ const DynamicRatio = () => {
                   start_time: editingRule.start_time || '',
                   end_time: editingRule.end_time || '',
                   ratio: editingRule.ratio,
+                  applies_to_subscription:
+                    editingRule.applies_to_subscription === true,
                   enable: editingRule.enable !== false,
                   priority: editingRule.priority || 0,
                 }
@@ -452,6 +462,7 @@ const DynamicRatio = () => {
                   start_time: '',
                   end_time: '',
                   ratio: 1.5,
+                  applies_to_subscription: false,
                   enable: true,
                   priority: 0,
                 }
@@ -509,6 +520,7 @@ const DynamicRatio = () => {
             placeholder={t('越小越优先')}
             style={{ width: '100%' }}
           />
+          <Form.Switch field='applies_to_subscription' label={t('对套餐生效')} />
           <Form.Switch field='enable' label={t('启用')} />
         </Form>
       </Modal>

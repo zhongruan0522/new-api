@@ -245,12 +245,7 @@ func EpayNotify(c *gin.Context) {
 		return
 	}
 	verifyInfo, err := client.Verify(params)
-	if err == nil && verifyInfo.VerifyStatus {
-		_, err := c.Writer.Write([]byte("success"))
-		if err != nil {
-			log.Println("易支付回调写入失败")
-		}
-	} else {
+	if err != nil || !verifyInfo.VerifyStatus {
 		_, err := c.Writer.Write([]byte("fail"))
 		if err != nil {
 			log.Println("易支付回调写入失败")
@@ -260,9 +255,30 @@ func EpayNotify(c *gin.Context) {
 	}
 
 	if verifyInfo.TradeStatus == epay.StatusTradeSuccess {
+		if order, orderErr := model.GetSubscriptionOrderByTradeNo(verifyInfo.ServiceTradeNo); orderErr == nil && order != nil {
+			if order.Status == common.TopUpStatusPending {
+				if err := service.CompleteSubscriptionOrder(order.TradeNo); err != nil {
+					log.Printf("易支付回调完成套餐订单失败: %v", err)
+					_, _ = c.Writer.Write([]byte("fail"))
+					return
+				}
+			}
+		}
+	}
+
+	_, err = c.Writer.Write([]byte("success"))
+	if err != nil {
+		log.Println("易支付回调写入失败")
+	}
+
+	if verifyInfo.TradeStatus == epay.StatusTradeSuccess {
 		log.Println(verifyInfo)
 		LockOrder(verifyInfo.ServiceTradeNo)
 		defer UnlockOrder(verifyInfo.ServiceTradeNo)
+		if order, err := model.GetSubscriptionOrderByTradeNo(verifyInfo.ServiceTradeNo); err == nil && order != nil {
+			log.Printf("易支付回调完成套餐订单成功 %v", order.TradeNo)
+			return
+		}
 		topUp := model.GetTopUpByTradeNo(verifyInfo.ServiceTradeNo)
 		if topUp == nil {
 			log.Printf("易支付回调未找到订单: %v", verifyInfo)

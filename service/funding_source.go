@@ -1,6 +1,14 @@
 package service
 
-import "github.com/zhongruan0522/new-api/model"
+import (
+	"fmt"
+
+	"github.com/zhongruan0522/new-api/common"
+	"github.com/zhongruan0522/new-api/logger"
+	"github.com/zhongruan0522/new-api/model"
+	relaycommon "github.com/zhongruan0522/new-api/relay/common"
+	"gorm.io/gorm"
+)
 
 // FundingSource abstracts a pre-consume / settle / refund lifecycle for a funding source.
 // Subscription billing is removed; currently only wallet funding is supported.
@@ -14,6 +22,14 @@ type FundingSource interface {
 type WalletFunding struct {
 	userId   int
 	consumed int
+}
+
+type SubscriptionFunding struct {
+	userId         int
+	subscriptionId int
+	requestId      string
+	relayInfo       *relaycommon.RelayInfo
+	consumed       int
 }
 
 func (w *WalletFunding) Source() string { return BillingSourceWallet }
@@ -44,4 +60,116 @@ func (w *WalletFunding) Refund() error {
 		return nil
 	}
 	return model.IncreaseUserQuota(w.userId, w.consumed, false)
+}
+
+func (s *SubscriptionFunding) Source() string { return BillingSourceSubscription }
+
+func (s *SubscriptionFunding) PreConsume(amount int) error {
+	if amount <= 0 {
+		return nil
+	}
+	return model.DB.Transaction(func(tx *gorm.DB) error {
+		now := common.GetTimestamp()
+		sub, err := model.GetActiveUserSubscriptionTx(tx, s.userId, now, true)
+		if err != nil {
+			return err
+		}
+		if sub == nil || sub.Id != s.subscriptionId {
+			return fmt.Errorf("当前没有可用套餐")
+		}
+		snapshot := sub.Snapshot(now)
+		if snapshot.TotalRemaining <= 0 || snapshot.WindowRemaining < amount {
+			return fmt.Errorf("套餐额度不足，当前窗口剩余额度 %s，总剩余额度 %s", logger.FormatQuota(snapshot.WindowRemaining), logger.FormatQuota(snapshot.TotalRemaining))
+		}
+		bill := sub.ConsumeQuota(amount)
+		sub.UpdatedTime = now
+		bill.ChannelId = s.getChannelId()
+		bill.ModelName = s.getModelName()
+		bill.RequestId = s.requestId
+		bill.Event = common.SubscriptionBillEventPreConsume
+		bill.Content = fmt.Sprintf("套餐预扣费 %s", logger.FormatQuota(amount))
+		if err := model.UpdateUserSubscription(tx, sub, "window_used_quota", "used_total_quota", "next_reset_at", "updated_time"); err != nil {
+			return err
+		}
+		if err := model.CreateSubscriptionBill(tx, &bill); err != nil {
+			return err
+		}
+		s.consumed = amount
+		return nil
+	})
+}
+
+func (s *SubscriptionFunding) Settle(delta int) error {
+	if delta == 0 {
+		return nil
+	}
+	return model.DB.Transaction(func(tx *gorm.DB) error {
+		now := common.GetTimestamp()
+		sub, err := model.GetActiveUserSubscriptionTx(tx, s.userId, now, true)
+		if err != nil {
+			return err
+		}
+		if sub == nil || sub.Id != s.subscriptionId {
+			return fmt.Errorf("当前没有可用套餐")
+		}
+		var bill model.SubscriptionBill
+		if delta > 0 {
+			bill = sub.ConsumeQuota(delta)
+			bill.Event = common.SubscriptionBillEventSettle
+			bill.Content = fmt.Sprintf("套餐补扣 %s", logger.FormatQuota(delta))
+		} else {
+			bill = sub.RefundQuota(-delta)
+			bill.Event = common.SubscriptionBillEventRefund
+			bill.Content = fmt.Sprintf("套餐返还 %s", logger.FormatQuota(-delta))
+		}
+		bill.ChannelId = s.getChannelId()
+		bill.ModelName = s.getModelName()
+		bill.RequestId = s.requestId
+		sub.UpdatedTime = now
+		if err := model.UpdateUserSubscription(tx, sub, "window_used_quota", "used_total_quota", "next_reset_at", "updated_time"); err != nil {
+			return err
+		}
+		return model.CreateSubscriptionBill(tx, &bill)
+	})
+}
+
+func (s *SubscriptionFunding) Refund() error {
+	if s.consumed <= 0 {
+		return nil
+	}
+	return model.DB.Transaction(func(tx *gorm.DB) error {
+		now := common.GetTimestamp()
+		sub, err := model.GetActiveUserSubscriptionTx(tx, s.userId, now, true)
+		if err != nil {
+			return err
+		}
+		if sub == nil || sub.Id != s.subscriptionId {
+			return fmt.Errorf("当前没有可用套餐")
+		}
+		bill := sub.RefundQuota(s.consumed)
+		sub.UpdatedTime = now
+		bill.ChannelId = s.getChannelId()
+		bill.ModelName = s.getModelName()
+		bill.RequestId = s.requestId
+		bill.Event = common.SubscriptionBillEventRefund
+		bill.Content = fmt.Sprintf("套餐请求失败返还 %s", logger.FormatQuota(s.consumed))
+		if err := model.UpdateUserSubscription(tx, sub, "window_used_quota", "used_total_quota", "next_reset_at", "updated_time"); err != nil {
+			return err
+		}
+		return model.CreateSubscriptionBill(tx, &bill)
+	})
+}
+
+func (s *SubscriptionFunding) getChannelId() int {
+	if s.relayInfo != nil && s.relayInfo.ChannelMeta != nil {
+		return s.relayInfo.ChannelId
+	}
+	return 0
+}
+
+func (s *SubscriptionFunding) getModelName() string {
+	if s.relayInfo != nil {
+		return s.relayInfo.OriginModelName
+	}
+	return ""
 }

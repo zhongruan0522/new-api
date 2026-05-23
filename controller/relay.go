@@ -182,6 +182,7 @@ func Relay(c *gin.Context, relayFormat types.RelayFormat) {
 		ModelName:   relayInfo.OriginModelName,
 		Retry:       common.GetPointer(0),
 		RelayFormat: relayFormat,
+		RequireSubscriptionChannel: common.GetContextKeyBool(c, constant.ContextKeySubscriptionActive),
 	}
 	lastFailedChannelId := 0
 
@@ -417,5 +418,4 @@ func RelayNotFound(c *gin.Context) {
 		"error": err,
 	})
 }
-
 

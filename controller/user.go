@@ -273,10 +273,31 @@ func GetUser(c *gin.Context) {
 		common.ApiErrorI18n(c, i18n.MsgUserNoPermissionSameLevel)
 		return
 	}
+	subscriptionSummary, err := service.BuildSubscriptionSummary(user.Id)
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
-		"data":    user,
+		"data": gin.H{
+			"id":                   user.Id,
+			"username":             user.Username,
+			"password":             user.Password,
+			"display_name":         user.DisplayName,
+			"role":                 user.Role,
+			"status":               user.Status,
+			"email":                user.Email,
+			"github_id":            user.GitHubId,
+			"group":                user.Group,
+			"quota":                user.Quota,
+			"used_quota":           user.UsedQuota,
+			"request_count":        user.RequestCount,
+			"remark":               user.Remark,
+			"stripe_customer":      user.StripeCustomer,
+			"subscription_summary": subscriptionSummary,
+		},
 	})
 	return
 }
@@ -390,6 +411,11 @@ func GetSelf(c *gin.Context) {
 	}
 
 	// 构建响应数据，包含用户信息和权限
+	subscriptionSummary, err := service.BuildSubscriptionSummary(user.Id)
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
 	responseData := map[string]interface{}{
 		"id":                    user.Id,
 		"username":              user.Username,
@@ -412,6 +438,7 @@ func GetSelf(c *gin.Context) {
 		"stripe_customer":       user.StripeCustomer,
 		"sidebar_modules":       userSetting.SidebarModules,
 		"permissions":           permissions,
+		"subscription_summary":  subscriptionSummary,
 		"image_converted_count": user.ImageConvertedCount,
 		"video_converted_count": user.VideoConvertedCount,
 	}

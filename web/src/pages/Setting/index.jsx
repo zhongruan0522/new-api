@@ -28,6 +28,7 @@ import {
   LayoutDashboard,
   CreditCard,
   Activity,
+  Package,
 } from 'lucide-react';
 
 import SystemSetting from '../../components/settings/SystemSetting';
@@ -37,6 +38,7 @@ import RuntimeSetting from '../../components/settings/RuntimeSetting';
 import DashboardSetting from '../../components/settings/DashboardSetting';
 import RatioSetting from '../../components/settings/RatioSetting';
 import PaymentSetting from '../../components/settings/PaymentSetting';
+import SubscriptionSetting from '../../components/settings/SubscriptionSetting';
 import SectionPageLayout from '../../components/layout/SectionPageLayout';
 
 const Setting = () => {
@@ -76,6 +78,16 @@ const Setting = () => {
       ),
       content: <PaymentSetting />,
       itemKey: 'payment',
+    });
+    panes.push({
+      tab: (
+        <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+          <Package size={18} />
+          {t('套餐设置')}
+        </span>
+      ),
+      content: <SubscriptionSetting />,
+      itemKey: 'subscription',
     });
     panes.push({
       tab: (

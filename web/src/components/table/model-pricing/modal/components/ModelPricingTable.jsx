@@ -359,6 +359,17 @@ const ModelPricingTable = ({
 
   return (
     <Card className='!rounded-2xl shadow-sm border-0'>
+      {modelData?.subscription_supported && (
+        <div className='mb-4 rounded-lg border border-semi-color-border bg-semi-color-fill-0 p-3'>
+          <div className='font-medium mb-2'>{t('套餐计费')}</div>
+          <div className='text-sm text-gray-600'>
+            {t('套餐消耗倍率')}：{modelData.subscription_model_ratio || 1}x
+          </div>
+          <div className='text-xs text-gray-500 mt-1'>
+            {t('该模型存在支持套餐用户调用的渠道，套餐用户会按套餐倍率和动态倍率规则计算实际消耗')}
+          </div>
+        </div>
+      )}
       <div className='flex items-center mb-4'>
         <Avatar size='small' color='orange' className='mr-2 shadow-md'>
           <IconCoinMoneyStroked size={16} />

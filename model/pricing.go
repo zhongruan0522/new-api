@@ -10,6 +10,7 @@ import (
 
 	"github.com/zhongruan0522/new-api/common"
 	"github.com/zhongruan0522/new-api/constant"
+	"github.com/zhongruan0522/new-api/setting/operation_setting"
 	"github.com/zhongruan0522/new-api/setting/ratio_setting"
 	"github.com/zhongruan0522/new-api/types"
 )
@@ -32,6 +33,8 @@ type Pricing struct {
 	ContextPricing         *types.ContextPricingConfig `json:"context_pricing,omitempty"`
 	EnableGroup            []string                    `json:"enable_groups"`
 	SupportedEndpointTypes []constant.EndpointType     `json:"supported_endpoint_types"`
+	SubscriptionSupported  bool                        `json:"subscription_supported"`
+	SubscriptionModelRatio float64                     `json:"subscription_model_ratio,omitempty"`
 }
 
 type PricingVendor struct {
@@ -176,6 +179,7 @@ func updatePricing() {
 	}
 
 	modelGroupsMap := make(map[string]*types.Set[string])
+	subscriptionSupportMap := make(map[string]bool)
 
 	for _, ability := range enableAbilities {
 		groups, ok := modelGroupsMap[ability.Model]
@@ -184,6 +188,9 @@ func updatePricing() {
 			modelGroupsMap[ability.Model] = groups
 		}
 		groups.Add(ability.Group)
+		if ability.SupportSubscription {
+			subscriptionSupportMap[ability.Model] = true
+		}
 	}
 
 	//这里使用切片而不是Set，因为一个模型可能支持多个端点类型，并且第一个端点是优先使用端点
@@ -331,6 +338,14 @@ func updatePricing() {
 				pricing.CreateCacheRatio = &createCacheRatio
 				pricing.AudioRatio = &audioRatio
 				pricing.AudioCompletionRatio = &audioCompletionRatio
+			}
+		}
+		pricing.SubscriptionSupported = subscriptionSupportMap[model]
+		if pricing.SubscriptionSupported {
+			if ratio, ok, _ := operation_setting.GetSubscriptionModelRatio(model); ok {
+				pricing.SubscriptionModelRatio = ratio
+			} else {
+				pricing.SubscriptionModelRatio = 1
 			}
 		}
 		pricingMap = append(pricingMap, pricing)

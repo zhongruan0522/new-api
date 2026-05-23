@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/zhongruan0522/new-api/common"
+	"github.com/zhongruan0522/new-api/constant"
 	"github.com/zhongruan0522/new-api/logger"
 	"github.com/zhongruan0522/new-api/model"
 	relaycommon "github.com/zhongruan0522/new-api/relay/common"
@@ -32,20 +33,31 @@ func HandleGroupRatio(ctx *gin.Context, relayInfo *relaycommon.RelayInfo) types.
 	}
 
 	// check user group special ratio
-	userGroupRatio, ok := ratio_setting.GetGroupGroupRatio(relayInfo.UserGroup, relayInfo.UsingGroup)
-	if ok {
-		// user group special ratio
-		groupRatioInfo.GroupSpecialRatio = userGroupRatio
-		groupRatioInfo.GroupRatio = userGroupRatio
-		groupRatioInfo.HasSpecialRatio = true
+	if common.GetContextKeyBool(ctx, constant.ContextKeySubscriptionActive) {
+		subscriptionRatio, ok, _ := operation_setting.GetSubscriptionModelRatio(relayInfo.OriginModelName)
+		if !ok {
+			subscriptionRatio = 1
+		}
+		groupRatioInfo.GroupRatio = subscriptionRatio
 	} else {
-		// normal group ratio
-		groupRatioInfo.GroupRatio = ratio_setting.GetGroupRatio(relayInfo.UsingGroup)
+		userGroupRatio, ok := ratio_setting.GetGroupGroupRatio(relayInfo.UserGroup, relayInfo.UsingGroup)
+		if ok {
+			// user group special ratio
+			groupRatioInfo.GroupSpecialRatio = userGroupRatio
+			groupRatioInfo.GroupRatio = userGroupRatio
+			groupRatioInfo.HasSpecialRatio = true
+		} else {
+			// normal group ratio
+			groupRatioInfo.GroupRatio = ratio_setting.GetGroupRatio(relayInfo.UsingGroup)
+		}
 	}
 
 	// 叠加动态倍率
 	originalGroupRatio := groupRatioInfo.GroupRatio
 	dynamicRatio := model.GetMatchedDynamicRatio(relayInfo.UsingGroup)
+	if common.GetContextKeyBool(ctx, constant.ContextKeySubscriptionActive) {
+		dynamicRatio = model.GetMatchedSubscriptionDynamicRatio(relayInfo.UsingGroup)
+	}
 	if dynamicRatio > 0 {
 		groupRatioInfo.GroupRatio = originalGroupRatio * dynamicRatio
 		groupRatioInfo.DynamicRatio = dynamicRatio

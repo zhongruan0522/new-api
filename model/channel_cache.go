@@ -93,10 +93,10 @@ func SyncChannelCache(frequency int) {
 	}
 }
 
-func GetRandomSatisfiedChannel(group string, model string, priorityIndex int, preferredAPIType int, excludeChannelId int) (*Channel, error) {
+func GetRandomSatisfiedChannel(group string, model string, priorityIndex int, preferredAPIType int, excludeChannelId int, requireSubscription bool) (*Channel, error) {
 	// if memory cache is disabled, get channel directly from database
 	if !common.MemoryCacheEnabled {
-		return GetChannel(group, model, priorityIndex, preferredAPIType, excludeChannelId)
+		return GetChannel(group, model, priorityIndex, preferredAPIType, excludeChannelId, requireSubscription)
 	}
 
 	channelSyncLock.RLock()
@@ -118,6 +118,9 @@ func GetRandomSatisfiedChannel(group string, model string, priorityIndex int, pr
 	if len(channels) == 1 {
 		if channel, ok := channelsIDM[channels[0]]; ok {
 			if excludeChannelId > 0 && channel.Id == excludeChannelId {
+				return nil, nil
+			}
+			if requireSubscription && !channel.SupportSubscription {
 				return nil, nil
 			}
 			return channel, nil
@@ -154,6 +157,9 @@ func GetRandomSatisfiedChannel(group string, model string, priorityIndex int, pr
 				if excludeChannelId > 0 && channel.Id == excludeChannelId {
 					continue
 				}
+				if requireSubscription && !channel.SupportSubscription {
+					continue
+				}
 				sumWeight += channel.GetWeight()
 				targetChannels = append(targetChannels, channel)
 			}
@@ -162,16 +168,27 @@ func GetRandomSatisfiedChannel(group string, model string, priorityIndex int, pr
 		}
 	}
 
-	// If exclusion left no candidates at current priority, fall through to next lower priority
-	// 如果排除后在当前优先级无候选渠道，降级到下一个优先级
-	if len(targetChannels) == 0 && excludeChannelId > 0 && priorityIndex+1 < len(sortedUniquePriorities) {
-		targetPriority = int64(sortedUniquePriorities[priorityIndex+1])
-		for _, channelId := range channels {
-			if channel, ok := channelsIDM[channelId]; ok {
-				if channel.GetPriority() == targetPriority {
+	// If current priority has no candidates after filtering/exclusion, fall through to lower priorities.
+	// 如果当前优先级在筛选/排除后没有候选渠道，则继续尝试更低优先级。
+	if len(targetChannels) == 0 && priorityIndex+1 < len(sortedUniquePriorities) {
+		for nextIndex := priorityIndex + 1; nextIndex < len(sortedUniquePriorities); nextIndex++ {
+			targetPriority = int64(sortedUniquePriorities[nextIndex])
+			sumWeight = 0
+			targetChannels = targetChannels[:0]
+			for _, channelId := range channels {
+				if channel, ok := channelsIDM[channelId]; ok {
+					if channel.GetPriority() != targetPriority {
+						continue
+					}
+					if requireSubscription && !channel.SupportSubscription {
+						continue
+					}
 					sumWeight += channel.GetWeight()
 					targetChannels = append(targetChannels, channel)
 				}
+			}
+			if len(targetChannels) > 0 {
+				break
 			}
 		}
 	}
