@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/constant"
 	"github.com/zhongruan0522/new-api/logger"
 	"github.com/zhongruan0522/new-api/model"
 	relaycommon "github.com/zhongruan0522/new-api/relay/common"
@@ -33,7 +32,7 @@ func HandleGroupRatio(ctx *gin.Context, relayInfo *relaycommon.RelayInfo) types.
 	}
 
 	// check user group special ratio
-	if common.GetContextKeyBool(ctx, constant.ContextKeySubscriptionActive) {
+	if common.ShouldUseSubscriptionForRequest(ctx) {
 		subscriptionRatio, ok, _ := operation_setting.GetSubscriptionModelRatio(relayInfo.OriginModelName)
 		if !ok {
 			subscriptionRatio = 1
@@ -55,7 +54,7 @@ func HandleGroupRatio(ctx *gin.Context, relayInfo *relaycommon.RelayInfo) types.
 	// 叠加动态倍率
 	originalGroupRatio := groupRatioInfo.GroupRatio
 	dynamicRatio := model.GetMatchedDynamicRatio(relayInfo.UsingGroup)
-	if common.GetContextKeyBool(ctx, constant.ContextKeySubscriptionActive) {
+	if common.ShouldUseSubscriptionForRequest(ctx) {
 		dynamicRatio = model.GetMatchedSubscriptionDynamicRatio(relayInfo.UsingGroup)
 	}
 	if dynamicRatio > 0 {

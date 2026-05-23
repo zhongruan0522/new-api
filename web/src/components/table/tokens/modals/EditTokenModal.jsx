@@ -78,6 +78,7 @@ const EditTokenModal = (props) => {
     allow_ips: '',
     group: '',
     cross_group_retry: false,
+    billing_mode: 'subscription_then_wallet',
     tokenCount: 1,
     window_hours: 1,
     window_quota: 0,
@@ -191,6 +192,7 @@ const EditTokenModal = (props) => {
       }
       data.cycle_quota = String(data.cycle_quota ?? 0);
       data.remain_quota = String(data.remain_quota ?? 0);
+      data.billing_mode = data.billing_mode || 'subscription_then_wallet';
       if (formApiRef.current) {
         // 条件渲染字段尚未注册时，也需要同步到 FormState。
         formApiRef.current.setValues(
@@ -471,6 +473,26 @@ const EditTokenModal = (props) => {
                           '开启后，当前分组渠道失败时会按顺序尝试下一个分组的渠道',
                         )}
                       />
+                    </Col>
+                    <Col span={24}>
+                      <Form.Select
+                        field='billing_mode'
+                        label={t('扣费模式')}
+                        style={{ width: '100%' }}
+                        rules={[
+                          { required: true, message: t('请选择扣费模式') },
+                        ]}
+                      >
+                        <Form.Select.Option value='wallet'>
+                          {t('余额')}
+                        </Form.Select.Option>
+                        <Form.Select.Option value='subscription'>
+                          {t('套餐')}
+                        </Form.Select.Option>
+                        <Form.Select.Option value='subscription_then_wallet'>
+                          {t('套餐+余额')}
+                        </Form.Select.Option>
+                      </Form.Select>
                     </Col>
                     <Col xs={24} sm={24} md={24} lg={10} xl={10}>
                       <Form.DatePicker

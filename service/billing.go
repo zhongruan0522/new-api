@@ -3,16 +3,21 @@ package service
 import (
 	"fmt"
 
+	"github.com/gin-gonic/gin"
 	"github.com/zhongruan0522/new-api/logger"
 	relaycommon "github.com/zhongruan0522/new-api/relay/common"
 	"github.com/zhongruan0522/new-api/types"
-	"github.com/gin-gonic/gin"
 )
 
 const (
-	BillingSourceWallet = "wallet"
-	BillingSourceSubscription = "subscription"
+	BillingSourceWallet             = "wallet"
+	BillingSourceSubscription       = "subscription"
+	BillingSourceSubscriptionWallet = "subscription+wallet"
 )
+
+func BillingSourceUsesSubscription(source string) bool {
+	return source == BillingSourceSubscription || source == BillingSourceSubscriptionWallet
+}
 
 // PreConsumeBilling 根据用户计费偏好创建 BillingSession 并执行预扣费。
 // 会话存储在 relayInfo.Billing 上，供后续 Settle / Refund 使用。

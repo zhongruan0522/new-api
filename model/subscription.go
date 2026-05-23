@@ -201,8 +201,8 @@ func (sub *UserSubscription) Snapshot(now int64) SubscriptionQuotaSnapshot {
 		totalRemaining = 0
 	}
 	effectiveResetCap := sub.ResetQuota
-	if effectiveResetCap > totalRemaining {
-		effectiveResetCap = totalRemaining
+	if effectiveResetCap > totalRemaining+sub.WindowUsedQuota {
+		effectiveResetCap = totalRemaining + sub.WindowUsedQuota
 	}
 	windowRemaining := effectiveResetCap - sub.WindowUsedQuota
 	if windowRemaining < 0 {

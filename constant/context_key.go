@@ -21,6 +21,7 @@ const (
 	ContextKeyTokenModelLimitEnabled ContextKey = "token_model_limit_enabled"
 	ContextKeyTokenModelLimit        ContextKey = "token_model_limit"
 	ContextKeyTokenCrossGroupRetry   ContextKey = "token_cross_group_retry"
+	ContextKeyTokenBillingMode       ContextKey = "token_billing_mode"
 
 	/* channel related keys */
 	ContextKeyChannelId                ContextKey = "channel_id"
@@ -45,14 +46,14 @@ const (
 	ContextKeyAutoGroupRetryIndex ContextKey = "auto_group_retry_index"
 
 	/* user related keys */
-	ContextKeyUserId      ContextKey = "id"
-	ContextKeyUserSetting ContextKey = "user_setting"
-	ContextKeyUserQuota   ContextKey = "user_quota"
-	ContextKeyUserStatus  ContextKey = "user_status"
-	ContextKeyUserEmail   ContextKey = "user_email"
-	ContextKeyUserGroup   ContextKey = "user_group"
-	ContextKeyUsingGroup  ContextKey = "group"
-	ContextKeyUserName    ContextKey = "username"
+	ContextKeyUserId                   ContextKey = "id"
+	ContextKeyUserSetting              ContextKey = "user_setting"
+	ContextKeyUserQuota                ContextKey = "user_quota"
+	ContextKeyUserStatus               ContextKey = "user_status"
+	ContextKeyUserEmail                ContextKey = "user_email"
+	ContextKeyUserGroup                ContextKey = "user_group"
+	ContextKeyUsingGroup               ContextKey = "group"
+	ContextKeyUserName                 ContextKey = "username"
 	ContextKeySubscriptionActive       ContextKey = "subscription_active"
 	ContextKeySubscriptionId           ContextKey = "subscription_id"
 	ContextKeySubscriptionPlanId       ContextKey = "subscription_plan_id"

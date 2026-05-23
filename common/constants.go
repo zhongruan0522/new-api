@@ -211,6 +211,12 @@ const (
 )
 
 const (
+	TokenBillingModeWallet           = "wallet"
+	TokenBillingModeSubscription     = "subscription"
+	TokenBillingModeSubscriptionThen = "subscription_then_wallet"
+)
+
+const (
 	SubscriptionStatusPending   = "pending"
 	SubscriptionStatusActive    = "active"
 	SubscriptionStatusExpired   = "expired"
