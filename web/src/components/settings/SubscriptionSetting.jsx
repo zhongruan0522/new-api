@@ -48,14 +48,6 @@ const stringifyModelRatios = (ratios) => {
   return JSON.stringify(sorted, null, 2);
 };
 
-const formatRatio = (value) => {
-  const ratio = Number(value || 1);
-  if (!Number.isFinite(ratio)) {
-    return '1x';
-  }
-  return `${Number(ratio.toFixed(4))}x`;
-};
-
 const SubscriptionSetting = () => {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
@@ -206,12 +198,6 @@ const SubscriptionSetting = () => {
           }
         />
       ),
-    },
-    {
-      title: t('当前倍率'),
-      dataIndex: 'ratio',
-      width: 120,
-      render: (value) => formatRatio(value),
     },
     {
       title: t('可用分组'),
