@@ -49,7 +49,7 @@ func Distribute() func(c *gin.Context) {
 				abortWithOpenAiMessage(c, http.StatusForbidden, "该渠道已被禁用")
 				return
 			}
-			if common.GetContextKeyBool(c, constant.ContextKeySubscriptionActive) && !channel.SupportSubscription {
+			if common.ShouldUseSubscriptionForRequest(c) && !channel.SupportSubscription {
 				abortWithOpenAiMessage(c, http.StatusForbidden, "当前套餐用户不可使用该渠道")
 				return
 			}
@@ -85,7 +85,7 @@ func Distribute() func(c *gin.Context) {
 				usingGroup := common.GetContextKeyString(c, constant.ContextKeyUsingGroup)
 				relayFormat := guessRelayFormatFromPath(c.Request.URL.Path)
 
-				requireSubscriptionChannel := common.GetContextKeyBool(c, constant.ContextKeySubscriptionActive)
+				requireSubscriptionChannel := common.ShouldUseSubscriptionForRequest(c)
 				if preferredChannelID, found := service.GetPreferredChannelByAffinity(c, modelRequest.Model, usingGroup); found {
 					preferred, err := model.CacheGetChannel(preferredChannelID)
 					if err == nil && preferred != nil && preferred.Status == common.ChannelStatusEnabled {
@@ -116,11 +116,11 @@ func Distribute() func(c *gin.Context) {
 
 				if channel == nil {
 					channel, selectGroup, err = service.CacheGetRandomSatisfiedChannel(&service.RetryParam{
-						Ctx:         c,
-						ModelName:   modelRequest.Model,
-						TokenGroup:  usingGroup,
-						Retry:       common.GetPointer(0),
-						RelayFormat: relayFormat,
+						Ctx:                        c,
+						ModelName:                  modelRequest.Model,
+						TokenGroup:                 usingGroup,
+						Retry:                      common.GetPointer(0),
+						RelayFormat:                relayFormat,
 						RequireSubscriptionChannel: requireSubscriptionChannel,
 					})
 					if err != nil {
@@ -145,7 +145,14 @@ func Distribute() func(c *gin.Context) {
 			}
 		}
 		common.SetContextKey(c, constant.ContextKeyRequestStartTime, time.Now())
-		SetupContextForSelectedChannel(c, channel, modelRequest.Model)
+		if apiErr := SetupContextForSelectedChannel(c, channel, modelRequest.Model); apiErr != nil {
+			statusCode := apiErr.StatusCode
+			if statusCode == 0 {
+				statusCode = http.StatusServiceUnavailable
+			}
+			abortWithOpenAiMessage(c, statusCode, apiErr.Error(), apiErr.GetErrorCode())
+			return
+		}
 		c.Next()
 		if channel != nil && c.Writer != nil && c.Writer.Status() < http.StatusBadRequest {
 			service.RecordChannelAffinity(c, channel.Id)
