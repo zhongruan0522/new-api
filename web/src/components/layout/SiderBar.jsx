@@ -44,10 +44,7 @@ const routerMap = {
   channel: '/console/channel',
   token: '/console/token',
   redemption: '/console/redemption',
-  subscription_redemption: '/console/subscription-redemption',
   topup: '/console/topup',
-  subscription: '/console/subscription',
-  order_query: '/console/order-query',
   user: '/console/user',
   log: '/console/log',
   multimodal_files: '/console/multimodal-files',
@@ -60,7 +57,6 @@ const routerMap = {
   personal: '/console/personal',
   ticket: '/console/ticket',
   dynamic_ratio: '/console/dynamic-ratio',
-  subscription_plan: '/console/subscription-plan',
 };
 
 const SiderBar = ({ onNavigate = () => {} }) => {
@@ -165,16 +161,6 @@ const SiderBar = ({ onNavigate = () => {} }) => {
         to: '/topup',
       },
       {
-        text: t('订阅管理'),
-        itemKey: 'subscription',
-        to: '/subscription',
-      },
-      {
-        text: t('订单查询'),
-        itemKey: 'order_query',
-        to: '/order-query',
-      },
-      {
         text: t('个人设置'),
         itemKey: 'personal',
         to: '/personal',
@@ -221,12 +207,6 @@ const SiderBar = ({ onNavigate = () => {} }) => {
         to: '/redemption',
         className: isAdmin() ? '' : 'tableHiddle',
       },
-      {
-        text: t('套餐兑换码'),
-        itemKey: 'subscription_redemption',
-        to: '/subscription-redemption',
-        className: isAdmin() ? '' : 'tableHiddle',
-      },
     ];
 
     const filteredItems = items.filter((item) => {
@@ -262,12 +242,6 @@ const SiderBar = ({ onNavigate = () => {} }) => {
         itemKey: 'setting',
         to: '/setting',
         className: isRoot() ? '' : 'tableHiddle',
-      },
-      {
-        text: t('套餐管理'),
-        itemKey: 'subscription_plan',
-        to: '/subscription-plan',
-        className: isAdmin() ? '' : 'tableHiddle',
       },
     ];
 

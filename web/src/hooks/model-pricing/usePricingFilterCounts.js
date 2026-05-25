@@ -57,11 +57,7 @@ export const usePricingFilterCounts = ({
 
     // 计费类型
     if (!ignore.includes('quota') && filterQuotaType !== 'all') {
-      if (filterQuotaType === 'subscription') {
-        if (!model.subscription_supported) return false;
-      } else if (model.quota_type !== filterQuotaType) {
-        return false;
-      }
+      if (model.quota_type !== filterQuotaType) return false;
     }
 
     // 端点类型

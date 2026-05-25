@@ -51,8 +51,6 @@ export default function SettingsSidebarModulesAdmin(props) {
     personal: {
       enabled: true,
       topup: true,
-      subscription: true,
-      order_query: true,
       personal: true,
     },
     support: {
@@ -63,7 +61,6 @@ export default function SettingsSidebarModulesAdmin(props) {
       enabled: true,
       user: true,
       redemption: true,
-      subscription_redemption: true,
     },
     admin: {
       enabled: true,
@@ -71,7 +68,6 @@ export default function SettingsSidebarModulesAdmin(props) {
       models: true,
       setting: true,
       dynamic_ratio: true,
-      subscription_plan: true,
     },
   });
 
@@ -189,16 +185,6 @@ export default function SettingsSidebarModulesAdmin(props) {
       modules: [
         { key: 'topup', title: t('钱包管理'), description: t('余额充值管理') },
         {
-          key: 'subscription',
-          title: t('订阅管理'),
-          description: t('用户套餐订阅管理'),
-        },
-        {
-          key: 'order_query',
-          title: t('订单查询'),
-          description: t('用户充值与套餐订单查询'),
-        },
-        {
           key: 'personal',
           title: t('个人设置'),
           description: t('个人信息设置'),
@@ -216,11 +202,6 @@ export default function SettingsSidebarModulesAdmin(props) {
           title: t('兑换码管理'),
           description: t('兑换码生成管理'),
         },
-        {
-          key: 'subscription_redemption',
-          title: t('套餐兑换码'),
-          description: t('套餐兑换码生成管理'),
-        },
       ],
     },
     {
@@ -232,11 +213,6 @@ export default function SettingsSidebarModulesAdmin(props) {
           key: 'dynamic_ratio',
           title: t('动态倍率'),
           description: t('动态倍率规则管理'),
-        },
-        {
-          key: 'subscription_plan',
-          title: t('套餐管理'),
-          description: t('用户套餐定义管理'),
         },
         { key: 'channel', title: t('渠道管理'), description: t('API渠道配置') },
         { key: 'models', title: t('模型管理'), description: t('AI模型配置') },

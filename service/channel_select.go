@@ -18,7 +18,6 @@ type RetryParam struct {
 	ModelName       string
 	Retry           *int
 	RelayFormat     types.RelayFormat
-	RequireSubscriptionChannel bool
 	ExcludeChannelId int   // 同优先级内重试时排除上次失败的渠道
 	resetNextTry    bool
 }
@@ -115,7 +114,7 @@ func CacheGetRandomSatisfiedChannel(param *RetryParam) (*model.Channel, string, 
 			priorityIndex := priorityRetry / 2
 			logger.LogDebug(param.Ctx, "Auto selecting group: %s, priorityIndex: %d", autoGroup, priorityIndex)
 
-			channel, _ = model.GetRandomSatisfiedChannel(autoGroup, param.ModelName, priorityIndex, preferredAPIType, param.ExcludeChannelId, param.RequireSubscriptionChannel)
+			channel, _ = model.GetRandomSatisfiedChannel(autoGroup, param.ModelName, priorityIndex, preferredAPIType, param.ExcludeChannelId)
 			if channel == nil {
 				// Current group has no available channel for this model, try next group
 				// 当前分组没有该模型的可用渠道，尝试下一个分组
@@ -164,7 +163,7 @@ func CacheGetRandomSatisfiedChannel(param *RetryParam) (*model.Channel, string, 
 		}
 	} else {
 		priorityIndex := param.GetRetry() / 2
-		channel, err = model.GetRandomSatisfiedChannel(param.TokenGroup, param.ModelName, priorityIndex, preferredAPIType, param.ExcludeChannelId, param.RequireSubscriptionChannel)
+		channel, err = model.GetRandomSatisfiedChannel(param.TokenGroup, param.ModelName, priorityIndex, preferredAPIType, param.ExcludeChannelId)
 		if err != nil {
 			return nil, param.TokenGroup, err
 		}

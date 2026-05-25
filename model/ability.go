@@ -25,14 +25,13 @@ type Ability struct {
 
 type AbilityWithChannel struct {
 	Ability
-	ChannelType         int  `json:"channel_type"`
-	SupportSubscription bool `json:"support_subscription"`
+	ChannelType int `json:"channel_type"`
 }
 
 func GetAllEnableAbilityWithChannels() ([]AbilityWithChannel, error) {
 	var abilities []AbilityWithChannel
 	err := DB.Table("abilities").
-		Select("abilities.*, channels.type as channel_type, channels.support_subscription as support_subscription").
+		Select("abilities.*, channels.type as channel_type").
 		Joins("left join channels on abilities.channel_id = channels.id").
 		Where("abilities.enabled = ?", true).
 		Scan(&abilities).Error
@@ -115,7 +114,7 @@ func getChannelQuery(group string, model string, priorityIndex int, excludeChann
 	return channelQuery, nil
 }
 
-func GetChannel(group string, model string, priorityIndex int, preferredAPIType int, excludeChannelId int, requireSubscription bool) (*Channel, error) {
+func GetChannel(group string, model string, priorityIndex int, preferredAPIType int, excludeChannelId int) (*Channel, error) {
 	var abilities []Ability
 
 	var err error = nil
@@ -130,19 +129,6 @@ func GetChannel(group string, model string, priorityIndex int, preferredAPIType 
 	}
 	if err != nil {
 		return nil, err
-	}
-	if requireSubscription {
-		filtered := make([]Ability, 0, len(abilities))
-		for _, ability := range abilities {
-			channel, channelErr := GetChannelById(ability.ChannelId, true)
-			if channelErr != nil {
-				return nil, channelErr
-			}
-			if channel.SupportSubscription {
-				filtered = append(filtered, ability)
-			}
-		}
-		abilities = filtered
 	}
 	channel := Channel{}
 	if len(abilities) > 0 {
@@ -178,19 +164,6 @@ func GetChannel(group string, model string, priorityIndex int, preferredAPIType 
 				}
 				if fallbackErr = fallbackQuery.Order("weight DESC").Find(&abilities).Error; fallbackErr != nil {
 					return nil, nil
-				}
-				if requireSubscription {
-					filtered := make([]Ability, 0, len(abilities))
-					for _, ability := range abilities {
-						candidate, channelErr := GetChannelById(ability.ChannelId, true)
-						if channelErr != nil {
-							return nil, channelErr
-						}
-						if candidate.SupportSubscription {
-							filtered = append(filtered, ability)
-						}
-					}
-					abilities = filtered
 				}
 				if len(abilities) == 0 {
 					return nil, nil
@@ -374,19 +347,11 @@ func (channel *Channel) UpdateAbilities(tx *gorm.DB) error {
 }
 
 func UpdateAbilityStatus(channelId int, status bool) error {
-	err := DB.Model(&Ability{}).Where("channel_id = ?", channelId).Select("enabled").Update("enabled", status).Error
-	if err == nil {
-		RefreshPricing()
-	}
-	return err
+	return DB.Model(&Ability{}).Where("channel_id = ?", channelId).Select("enabled").Update("enabled", status).Error
 }
 
 func UpdateAbilityStatusByTag(tag string, status bool) error {
-	err := DB.Model(&Ability{}).Where("tag = ?", tag).Select("enabled").Update("enabled", status).Error
-	if err == nil {
-		RefreshPricing()
-	}
-	return err
+	return DB.Model(&Ability{}).Where("tag = ?", tag).Select("enabled").Update("enabled", status).Error
 }
 
 func UpdateAbilityByTag(tag string, newTag *string, priority *int64, weight *uint) error {
@@ -400,11 +365,7 @@ func UpdateAbilityByTag(tag string, newTag *string, priority *int64, weight *uin
 	if weight != nil {
 		ability.Weight = *weight
 	}
-	err := DB.Model(&Ability{}).Where("tag = ?", tag).Updates(ability).Error
-	if err == nil {
-		RefreshPricing()
-	}
-	return err
+	return DB.Model(&Ability{}).Where("tag = ?", tag).Updates(ability).Error
 }
 
 var fixLock = sync.Mutex{}
@@ -462,6 +423,5 @@ func FixAbility() (int, int, error) {
 		}
 	}
 	InitChannelCache()
-	RefreshPricing()
 	return successCount, failCount, nil
 }

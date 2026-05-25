@@ -245,7 +245,12 @@ func EpayNotify(c *gin.Context) {
 		return
 	}
 	verifyInfo, err := client.Verify(params)
-	if err != nil || !verifyInfo.VerifyStatus {
+	if err == nil && verifyInfo.VerifyStatus {
+		_, err := c.Writer.Write([]byte("success"))
+		if err != nil {
+			log.Println("易支付回调写入失败")
+		}
+	} else {
 		_, err := c.Writer.Write([]byte("fail"))
 		if err != nil {
 			log.Println("易支付回调写入失败")
@@ -255,30 +260,9 @@ func EpayNotify(c *gin.Context) {
 	}
 
 	if verifyInfo.TradeStatus == epay.StatusTradeSuccess {
-		if order, orderErr := model.GetSubscriptionOrderByTradeNo(verifyInfo.ServiceTradeNo); orderErr == nil && order != nil {
-			if order.Status == common.TopUpStatusPending {
-				if err := service.CompleteSubscriptionOrder(order.TradeNo); err != nil {
-					log.Printf("易支付回调完成套餐订单失败: %v", err)
-					_, _ = c.Writer.Write([]byte("fail"))
-					return
-				}
-			}
-		}
-	}
-
-	_, err = c.Writer.Write([]byte("success"))
-	if err != nil {
-		log.Println("易支付回调写入失败")
-	}
-
-	if verifyInfo.TradeStatus == epay.StatusTradeSuccess {
 		log.Println(verifyInfo)
 		LockOrder(verifyInfo.ServiceTradeNo)
 		defer UnlockOrder(verifyInfo.ServiceTradeNo)
-		if order, err := model.GetSubscriptionOrderByTradeNo(verifyInfo.ServiceTradeNo); err == nil && order != nil {
-			log.Printf("易支付回调完成套餐订单成功 %v", order.TradeNo)
-			return
-		}
 		topUp := model.GetTopUpByTradeNo(verifyInfo.ServiceTradeNo)
 		if topUp == nil {
 			log.Printf("易支付回调未找到订单: %v", verifyInfo)
@@ -338,8 +322,18 @@ func RequestAmount(c *gin.Context) {
 func GetUserTopUps(c *gin.Context) {
 	userId := c.GetInt("id")
 	pageInfo := common.GetPageQuery(c)
-	filter := getOrderFilter(c)
-	topups, total, err := model.QueryUserTopUps(userId, filter, pageInfo)
+	keyword := c.Query("keyword")
+
+	var (
+		topups []*model.TopUp
+		total  int64
+		err    error
+	)
+	if keyword != "" {
+		topups, total, err = model.SearchUserTopUps(userId, keyword, pageInfo)
+	} else {
+		topups, total, err = model.GetUserTopUps(userId, pageInfo)
+	}
 	if err != nil {
 		common.ApiError(c, err)
 		return
@@ -348,19 +342,6 @@ func GetUserTopUps(c *gin.Context) {
 	pageInfo.SetTotal(int(total))
 	pageInfo.SetItems(topups)
 	common.ApiSuccess(c, pageInfo)
-}
-
-func getOrderFilter(c *gin.Context) model.OrderFilter {
-	startTime, _ := strconv.ParseInt(c.Query("start_time"), 10, 64)
-	endTime, _ := strconv.ParseInt(c.Query("end_time"), 10, 64)
-	return model.OrderFilter{
-		Keyword:       c.Query("keyword"),
-		TradeNo:       c.Query("trade_no"),
-		Status:        c.Query("status"),
-		PaymentMethod: c.Query("payment_method"),
-		StartTime:     startTime,
-		EndTime:       endTime,
-	}
 }
 
 // GetAllTopUps 管理员获取全平台充值记录

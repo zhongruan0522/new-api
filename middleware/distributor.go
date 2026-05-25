@@ -49,10 +49,6 @@ func Distribute() func(c *gin.Context) {
 				abortWithOpenAiMessage(c, http.StatusForbidden, "该渠道已被禁用")
 				return
 			}
-			if common.ShouldUseSubscriptionForRequest(c) && !channel.SupportSubscription {
-				abortWithOpenAiMessage(c, http.StatusForbidden, "当前套餐用户不可使用该渠道")
-				return
-			}
 		} else {
 			// Select a channel for the user
 			// check token model mapping
@@ -85,15 +81,9 @@ func Distribute() func(c *gin.Context) {
 				usingGroup := common.GetContextKeyString(c, constant.ContextKeyUsingGroup)
 				relayFormat := guessRelayFormatFromPath(c.Request.URL.Path)
 
-				requireSubscriptionChannel := common.ShouldUseSubscriptionForRequest(c)
 				if preferredChannelID, found := service.GetPreferredChannelByAffinity(c, modelRequest.Model, usingGroup); found {
 					preferred, err := model.CacheGetChannel(preferredChannelID)
 					if err == nil && preferred != nil && preferred.Status == common.ChannelStatusEnabled {
-						if requireSubscriptionChannel && !preferred.SupportSubscription {
-							preferred = nil
-						}
-					}
-					if preferred != nil && preferred.Status == common.ChannelStatusEnabled {
 						if usingGroup == "auto" {
 							userGroup := common.GetContextKeyString(c, constant.ContextKeyUserGroup)
 							autoGroups := service.GetUserAutoGroup(userGroup)
@@ -116,12 +106,11 @@ func Distribute() func(c *gin.Context) {
 
 				if channel == nil {
 					channel, selectGroup, err = service.CacheGetRandomSatisfiedChannel(&service.RetryParam{
-						Ctx:                        c,
-						ModelName:                  modelRequest.Model,
-						TokenGroup:                 usingGroup,
-						Retry:                      common.GetPointer(0),
-						RelayFormat:                relayFormat,
-						RequireSubscriptionChannel: requireSubscriptionChannel,
+						Ctx:         c,
+						ModelName:   modelRequest.Model,
+						TokenGroup:  usingGroup,
+						Retry:       common.GetPointer(0),
+						RelayFormat: relayFormat,
 					})
 					if err != nil {
 						showGroup := usingGroup

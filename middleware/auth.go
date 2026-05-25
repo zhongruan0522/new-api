@@ -249,7 +249,6 @@ func TokenAuthReadOnly() func(c *gin.Context) {
 		common.SetContextKey(c, constant.ContextKeyTokenId, token.Id)
 		common.SetContextKey(c, constant.ContextKeyTokenKey, token.Key)
 		common.SetContextKey(c, constant.ContextKeyTokenUnlimited, token.UnlimitedQuota)
-		common.SetContextKey(c, constant.ContextKeyTokenBillingMode, model.NormalizeTokenBillingMode(token.BillingMode))
 
 		quotaType := token.QuotaType
 		if quotaType == 0 && !token.UnlimitedQuota {
@@ -347,10 +346,6 @@ func TokenAuth() func(c *gin.Context) {
 		}
 
 		userCache.WriteContext(c)
-		if err := service.WriteActiveSubscriptionContext(c, token.UserId); err != nil {
-			abortWithOpenAiMessage(c, http.StatusInternalServerError, err.Error())
-			return
-		}
 
 		userGroup := userCache.Group
 		tokenGroup := token.Group
@@ -419,7 +414,6 @@ func SetupContextForToken(c *gin.Context, token *model.Token, parts ...string) e
 	}
 	common.SetContextKey(c, constant.ContextKeyTokenGroup, token.Group)
 	common.SetContextKey(c, constant.ContextKeyTokenCrossGroupRetry, token.CrossGroupRetry)
-	common.SetContextKey(c, constant.ContextKeyTokenBillingMode, model.NormalizeTokenBillingMode(token.BillingMode))
 	if len(parts) > 1 {
 		if model.IsAdmin(token.UserId) {
 			c.Set("specific_channel_id", parts[1])

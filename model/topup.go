@@ -138,51 +138,6 @@ func GetUserTopUps(userId int, pageInfo *common.PageInfo) (topups []*TopUp, tota
 	return topups, total, nil
 }
 
-func QueryUserTopUps(userId int, filter OrderFilter, pageInfo *common.PageInfo) (topups []*TopUp, total int64, err error) {
-	tx := DB.Begin()
-	if tx.Error != nil {
-		return nil, 0, tx.Error
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			tx.Rollback()
-		}
-	}()
-
-	query := tx.Model(&TopUp{}).Where("user_id = ?", userId)
-	if filter.Keyword != "" {
-		query = query.Where("trade_no LIKE ?", "%"+filter.Keyword+"%")
-	}
-	if filter.TradeNo != "" {
-		query = query.Where("trade_no = ?", filter.TradeNo)
-	}
-	if filter.Status != "" {
-		query = query.Where("status = ?", filter.Status)
-	}
-	if filter.PaymentMethod != "" {
-		query = query.Where("payment_method LIKE ?", "%"+filter.PaymentMethod+"%")
-	}
-	if filter.StartTime > 0 {
-		query = query.Where("create_time >= ?", filter.StartTime)
-	}
-	if filter.EndTime > 0 {
-		query = query.Where("create_time <= ?", filter.EndTime)
-	}
-
-	if err = query.Count(&total).Error; err != nil {
-		tx.Rollback()
-		return nil, 0, err
-	}
-	if err = query.Order("id desc").Limit(pageInfo.GetPageSize()).Offset(pageInfo.GetStartIdx()).Find(&topups).Error; err != nil {
-		tx.Rollback()
-		return nil, 0, err
-	}
-	if err = tx.Commit().Error; err != nil {
-		return nil, 0, err
-	}
-	return topups, total, nil
-}
-
 // GetAllTopUps 获取全平台的充值记录（管理员使用）
 func GetAllTopUps(pageInfo *common.PageInfo) (topups []*TopUp, total int64, err error) {
 	tx := DB.Begin()

@@ -36,8 +36,6 @@ export const DEFAULT_ADMIN_CONFIG = {
   personal: {
     enabled: true,
     topup: true,
-    subscription: true,
-    order_query: true,
     personal: true,
   },
   support: {
@@ -48,7 +46,6 @@ export const DEFAULT_ADMIN_CONFIG = {
     enabled: true,
     user: true,
     redemption: true,
-    subscription_redemption: true,
   },
   admin: {
     enabled: true,
@@ -56,7 +53,6 @@ export const DEFAULT_ADMIN_CONFIG = {
     models: true,
     setting: true,
     dynamic_ratio: true,
-    subscription_plan: true,
   },
 };
 

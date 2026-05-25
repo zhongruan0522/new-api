@@ -44,7 +44,6 @@ type Token struct {
 	UsedQuota          int     `json:"used_quota" gorm:"default:0"` // used quota
 	Group              string  `json:"group" gorm:"default:''"`
 	CrossGroupRetry    bool    `json:"cross_group_retry"` // 跨分组重试，仅auto分组有效
-	BillingMode        string  `json:"billing_mode" gorm:"type:varchar(32);default:'subscription_then_wallet'"`
 
 	// 限额类型：0=无限额度, 1=永久限额, 2=时段限额, 3=时段+周期限额
 	QuotaType int `json:"quota_type" gorm:"default:0"`
@@ -69,10 +68,6 @@ type Token struct {
 
 func (token *Token) Clean() {
 	token.Key = ""
-}
-
-func NormalizeTokenBillingMode(mode string) string {
-	return common.NormalizeTokenBillingMode(mode)
 }
 
 func (token *Token) GetIpLimits() []string {
@@ -419,7 +414,6 @@ func (token *Token) Update() (err error) {
 	}()
 	err = DB.Model(token).Select("name", "status", "expired_time", "remain_quota", "unlimited_quota",
 		"model_limits_enabled", "model_limits", "allow_ips", "group", "cross_group_retry",
-		"billing_mode",
 		"quota_type", "window_hours", "window_quota", "window_start_hour",
 		"cycle_days", "cycle_quota",
 		"window_used_quota", "window_start_time", "cycle_used_quota", "cycle_start_time").Updates(token).Error

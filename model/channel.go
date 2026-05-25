@@ -39,16 +39,15 @@ type Channel struct {
 	UsedQuota          int64   `json:"used_quota" gorm:"bigint;default:0"`
 	ModelMapping       *string `json:"model_mapping" gorm:"type:text"`
 	//MaxInputTokens     *int    `json:"max_input_tokens" gorm:"default:0"`
-	StatusCodeMapping   *string `json:"status_code_mapping" gorm:"type:varchar(1024);default:''"`
-	Priority            *int64  `json:"priority" gorm:"bigint;default:0"`
-	AutoBan             *int    `json:"auto_ban" gorm:"default:1"`
-	OtherInfo           string  `json:"other_info"`
-	Tag                 *string `json:"tag" gorm:"index"`
-	Setting             *string `json:"setting" gorm:"type:text"` // 渠道额外设置
-	ParamOverride       *string `json:"param_override" gorm:"type:text"`
-	HeaderOverride      *string `json:"header_override" gorm:"type:text"`
-	Remark              *string `json:"remark" gorm:"type:varchar(255)" validate:"max=255"`
-	SupportSubscription bool    `json:"support_subscription" gorm:"default:false"`
+	StatusCodeMapping *string `json:"status_code_mapping" gorm:"type:varchar(1024);default:''"`
+	Priority          *int64  `json:"priority" gorm:"bigint;default:0"`
+	AutoBan           *int    `json:"auto_ban" gorm:"default:1"`
+	OtherInfo         string  `json:"other_info"`
+	Tag               *string `json:"tag" gorm:"index"`
+	Setting           *string `json:"setting" gorm:"type:text"` // 渠道额外设置
+	ParamOverride     *string `json:"param_override" gorm:"type:text"`
+	HeaderOverride    *string `json:"header_override" gorm:"type:text"`
+	Remark            *string `json:"remark" gorm:"type:varchar(255)" validate:"max=255"`
 	// add after v0.8.5
 	ChannelInfo ChannelInfo `json:"channel_info" gorm:"type:json"`
 
@@ -393,11 +392,7 @@ func BatchInsertChannels(channels []Channel) error {
 			}
 		}
 	}
-	if err := tx.Commit().Error; err != nil {
-		return err
-	}
-	RefreshPricing()
-	return nil
+	return tx.Commit().Error
 }
 
 func BatchDeleteChannels(ids []int) error {
@@ -419,11 +414,7 @@ func BatchDeleteChannels(ids []int) error {
 			return err
 		}
 	}
-	if err := tx.Commit().Error; err != nil {
-		return err
-	}
-	RefreshPricing()
-	return nil
+	return tx.Commit().Error
 }
 
 func (channel *Channel) GetPriority() int64 {
@@ -472,9 +463,6 @@ func (channel *Channel) Insert() error {
 		return err
 	}
 	err = channel.AddAbilities(nil)
-	if err == nil {
-		RefreshPricing()
-	}
 	return err
 }
 
@@ -524,9 +512,6 @@ func (channel *Channel) Update() error {
 	}
 	DB.Model(channel).First(channel, "id = ?", channel.Id)
 	err = channel.UpdateAbilities(nil)
-	if err == nil {
-		RefreshPricing()
-	}
 	return err
 }
 
@@ -557,9 +542,6 @@ func (channel *Channel) Delete() error {
 		return err
 	}
 	err = channel.DeleteAbilities()
-	if err == nil {
-		RefreshPricing()
-	}
 	return err
 }
 
@@ -675,8 +657,6 @@ func UpdateChannelStatus(channelId int, usingKey string, status int, reason stri
 			if beforeStatus != channelCache.Status {
 				CacheUpdateChannelStatus(channelId, channelCache.Status)
 			}
-			//CacheUpdateChannel(channelCache)
-			//return true
 		} else {
 			// 如果缓存渠道存在，且状态已是目标状态，直接返回
 			if channelCache.Status == status {
@@ -795,7 +775,6 @@ func EditChannelByTag(tag string, newTag *string, modelMapping *string, models *
 				}
 			}
 		}
-		RefreshPricing()
 	} else {
 		err := UpdateAbilityByTag(tag, newTag, priority, weight)
 		if err != nil {
@@ -1069,11 +1048,7 @@ func BatchSetChannelTag(ids []int, tag *string) error {
 	}
 
 	// 提交事务
-	if err := tx.Commit().Error; err != nil {
-		return err
-	}
-	RefreshPricing()
-	return nil
+	return tx.Commit().Error
 }
 
 // CountAllChannels returns total channels in DB

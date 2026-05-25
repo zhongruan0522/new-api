@@ -25,7 +25,6 @@ import {
   showSuccess,
   renderQuota,
   renderQuotaWithPrompt,
-  timestamp2string,
 } from '../../../../helpers';
 import { useIsMobile } from '../../../../hooks/common/useIsMobile';
 import {
@@ -41,6 +40,7 @@ import {
   Avatar,
   Row,
   Col,
+  Input,
   InputNumber,
 } from '@douyinfe/semi-ui';
 import {
@@ -62,7 +62,6 @@ const EditUserModal = (props) => {
   const [addQuotaLocal, setAddQuotaLocal] = useState('');
   const isMobile = useIsMobile();
   const [groupOptions, setGroupOptions] = useState([]);
-  const [planOptions, setPlanOptions] = useState([]);
   const formApiRef = useRef(null);
 
   const isEdit = Boolean(userId);
@@ -87,24 +86,6 @@ const EditUserModal = (props) => {
     }
   };
 
-  const fetchPlans = async () => {
-    try {
-      const res = await API.get('/api/subscription_plan/', {
-        params: { p: 1, page_size: 100 },
-      });
-      if (res.data.success) {
-        setPlanOptions(
-          (res.data.data.items || []).map((item) => ({
-            label: item.name,
-            value: item.id,
-          })),
-        );
-      }
-    } catch (e) {
-      showError(e.message);
-    }
-  };
-
   const handleCancel = () => props.handleClose();
 
   const loadUser = async () => {
@@ -123,10 +104,7 @@ const EditUserModal = (props) => {
 
   useEffect(() => {
     loadUser();
-    if (userId) {
-      fetchGroups();
-      fetchPlans();
-    }
+    if (userId) fetchGroups();
   }, [props.editingUser.id]);
 
   /* ----------------------- submit ----------------------- */
@@ -156,134 +134,6 @@ const EditUserModal = (props) => {
     const current = parseInt(formApiRef.current?.getValue('quota') || 0);
     const delta = parseInt(addQuotaLocal) || 0;
     formApiRef.current?.setValue('quota', current + delta);
-  };
-
-  const getSelectedPlanName = (planId) => {
-    const plan = planOptions.find((item) => item.value === planId);
-    return plan?.label || t('所选套餐');
-  };
-
-  const reloadUserSubscription = async () => {
-    await loadUser();
-    props.refresh();
-  };
-
-  const assignSubscription = async () => {
-    const planId = formApiRef.current?.getValue('subscription_plan_id');
-    if (!planId) {
-      showError(t('请选择套餐'));
-      return;
-    }
-    Modal.confirm({
-      title: t('确认发放套餐？'),
-      content: t('将为该用户发放套餐：') + getSelectedPlanName(planId),
-      onOk: async () => {
-        setLoading(true);
-        try {
-          const res = await API.post(`/api/user/${userId}/subscription/assign`, {
-            plan_id: planId,
-          });
-          if (!res.data.success) {
-            showError(res.data.message);
-            return;
-          }
-          showSuccess(t('套餐发放成功'));
-          await reloadUserSubscription();
-        } catch (error) {
-          showError(error.message || t('套餐发放失败'));
-        } finally {
-          setLoading(false);
-        }
-      },
-    });
-  };
-
-  const changeSubscription = async () => {
-    const planId = formApiRef.current?.getValue('subscription_plan_id');
-    if (!planId) {
-      showError(t('请选择套餐'));
-      return;
-    }
-    Modal.confirm({
-      title: t('确认变更当前套餐？'),
-      content: t('当前生效套餐会被替换，待生效套餐会被取消。新套餐：') + getSelectedPlanName(planId),
-      onOk: async () => {
-        setLoading(true);
-        try {
-          const res = await API.post(`/api/user/${userId}/subscription/change`, {
-            plan_id: planId,
-          });
-          if (!res.data.success) {
-            showError(res.data.message);
-            return;
-          }
-          showSuccess(t('套餐变更成功'));
-          await reloadUserSubscription();
-        } catch (error) {
-          showError(error.message || t('套餐变更失败'));
-        } finally {
-          setLoading(false);
-        }
-      },
-    });
-  };
-
-  const removeSubscription = async (subscriptionId) => {
-    Modal.confirm({
-      title: t('确认移除套餐？'),
-      content: t('该套餐会被标记为已取消，用户将无法继续使用该套餐权益。'),
-      onOk: async () => {
-        setLoading(true);
-        try {
-          const res = await API.post(`/api/user/${userId}/subscription/remove`, {
-            subscription_id: subscriptionId || 0,
-          });
-          if (!res.data.success) {
-            showError(res.data.message);
-            return;
-          }
-          showSuccess(t('套餐移除成功'));
-          await reloadUserSubscription();
-        } catch (error) {
-          showError(error.message || t('套餐移除失败'));
-        } finally {
-          setLoading(false);
-        }
-      },
-    });
-  };
-
-  const renderSubscriptionCard = (subscription, title, dashed = false) => {
-    if (!subscription) return null;
-    return (
-      <div className={`rounded-lg border ${dashed ? 'border-dashed' : ''} border-semi-color-border p-3`}>
-        <div className='flex flex-wrap items-center justify-between gap-2'>
-          <div className='font-medium'>
-            {title}: {subscription.plan_name}
-          </div>
-          <Tag color={subscription.status === 'active' ? 'green' : 'blue'}>
-            {subscription.status}
-          </Tag>
-        </div>
-        <div className='mt-2 grid grid-cols-1 sm:grid-cols-2 gap-1 text-xs text-gray-600'>
-          <div>{t('开始时间')}: {timestamp2string(subscription.starts_at)}</div>
-          <div>{t('到期时间')}: {timestamp2string(subscription.expires_at)}</div>
-          <div>{t('总额度')}: {renderQuota(subscription.total_quota)}</div>
-          <div>{t('总已用额度')}: {renderQuota(subscription.used_total_quota)}</div>
-          <div>{t('窗口额度')}: {renderQuota(subscription.reset_quota)}</div>
-          <div>{t('窗口已用额度')}: {renderQuota(subscription.window_used_quota)}</div>
-        </div>
-        <Button
-          type='danger'
-          theme='light'
-          size='small'
-          className='mt-2'
-          onClick={() => removeSubscription(subscription.id)}
-        >
-          {t('移除套餐')}
-        </Button>
-      </div>
-    );
   };
 
   /* --------------------------- UI --------------------------- */
@@ -450,71 +300,6 @@ const EditUserModal = (props) => {
                             icon={<IconPlus />}
                             onClick={() => setIsModalOpen(true)}
                           />
-                        </Form.Slot>
-                      </Col>
-                    </Row>
-                  </Card>
-                )}
-
-                {userId && (
-                  <Card className='!rounded-2xl shadow-sm border-0'>
-                    <div className='flex items-center mb-2'>
-                      <Avatar size='small' color='orange' className='mr-2 shadow-md'>
-                        <IconUserGroup size={16} />
-                      </Avatar>
-                      <div>
-                        <Text className='text-lg font-medium'>{t('套餐信息')}</Text>
-                        <div className='text-xs text-gray-600'>
-                          {t('查看用户当前套餐，并支持追加下个周期套餐或移除套餐')}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className='space-y-2 mb-3'>
-                      {values.subscription_summary?.active ? (
-                        renderSubscriptionCard(
-                          values.subscription_summary.active,
-                          t('当前套餐'),
-                        )
-                      ) : (
-                        <Text type='secondary'>{t('当前没有生效套餐')}</Text>
-                      )}
-
-                      {values.subscription_summary?.pending && (
-                        renderSubscriptionCard(
-                          values.subscription_summary.pending,
-                          t('待生效套餐'),
-                          true,
-                        )
-                      )}
-                    </div>
-
-                    <Row gutter={12}>
-                      <Col span={16}>
-                        <Form.Select
-                          field='subscription_plan_id'
-                          label={t('发放套餐')}
-                          optionList={planOptions}
-                          placeholder={t('请选择套餐')}
-                        />
-                      </Col>
-                      <Col span={8}>
-                        <Form.Slot label={t('操作')}>
-                          <Space vertical align='start'>
-                            <Button onClick={assignSubscription}>
-                              {values.subscription_summary?.active
-                                ? t('添加下个周期')
-                                : t('发放套餐')}
-                            </Button>
-                            <Button
-                              type='warning'
-                              theme='light'
-                              disabled={!values.subscription_summary?.active}
-                              onClick={changeSubscription}
-                            >
-                              {t('变更当前套餐')}
-                            </Button>
-                          </Space>
                         </Form.Slot>
                       </Col>
                     </Row>

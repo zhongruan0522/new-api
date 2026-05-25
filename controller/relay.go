@@ -176,17 +176,12 @@ func Relay(c *gin.Context, relayFormat types.RelayFormat) {
 		}
 	}()
 
-	requireSubscriptionChannel := service.BillingSourceUsesSubscription(relayInfo.BillingSource)
-	if relayInfo.Billing == nil {
-		requireSubscriptionChannel = common.ShouldUseSubscriptionForRequest(c)
-	}
 	retryParam := &service.RetryParam{
-		Ctx:                        c,
-		TokenGroup:                 relayInfo.TokenGroup,
-		ModelName:                  relayInfo.OriginModelName,
-		Retry:                      common.GetPointer(0),
-		RelayFormat:                relayFormat,
-		RequireSubscriptionChannel: requireSubscriptionChannel,
+		Ctx:         c,
+		TokenGroup:  relayInfo.TokenGroup,
+		ModelName:   relayInfo.OriginModelName,
+		Retry:       common.GetPointer(0),
+		RelayFormat: relayFormat,
 	}
 	lastFailedChannelId := 0
 
@@ -422,3 +417,5 @@ func RelayNotFound(c *gin.Context) {
 		"error": err,
 	})
 }
+
+

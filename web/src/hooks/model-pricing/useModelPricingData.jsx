@@ -35,7 +35,7 @@ export const useModelPricingData = () => {
   const [showModelDetail, setShowModelDetail] = useState(false);
   const [selectedModel, setSelectedModel] = useState(null);
   const [filterGroup, setFilterGroup] = useState('all'); // 用于 Table 的可用分组筛选，"all" 表示不过滤
-  const [filterQuotaType, setFilterQuotaType] = useState('all'); // 计费类型筛选: 'all' | 0 | 1 | 'subscription'
+  const [filterQuotaType, setFilterQuotaType] = useState('all'); // 计费类型筛选: 'all' | 0 | 1
   const [filterEndpointType, setFilterEndpointType] = useState('all'); // 端点类型筛选: 'all' | string
   const [filterVendor, setFilterVendor] = useState('all'); // 供应商筛选: 'all' | 'unknown' | string
   const [filterTag, setFilterTag] = useState('all'); // 模型标签筛选: 'all' | string
@@ -50,7 +50,6 @@ export const useModelPricingData = () => {
   const [usableGroup, setUsableGroup] = useState({});
   const [endpointMap, setEndpointMap] = useState({});
   const [autoGroups, setAutoGroups] = useState([]);
-  const [subscriptionDynamicRatio, setSubscriptionDynamicRatio] = useState({});
 
   const [statusState] = useContext(StatusContext);
   const [userState] = useContext(UserContext);
@@ -80,11 +79,7 @@ export const useModelPricingData = () => {
 
     // 计费类型筛选
     if (filterQuotaType !== 'all') {
-      result = result.filter((model) =>
-        filterQuotaType === 'subscription'
-          ? model.subscription_supported
-          : model.quota_type === filterQuotaType,
-      );
+      result = result.filter((model) => model.quota_type === filterQuotaType);
     }
 
     // 端点类型筛选
@@ -198,12 +193,10 @@ export const useModelPricingData = () => {
       usable_group,
       supported_endpoint,
       auto_groups,
-      subscription_dynamic_ratio,
     } = res.data;
     if (success) {
       setGroupRatio(group_ratio);
       setUsableGroup(usable_group);
-      setSubscriptionDynamicRatio(subscription_dynamic_ratio || {});
       setSelectedGroup('all');
       // 构建供应商 Map 方便查找
       const vendorMap = {};
@@ -333,7 +326,6 @@ export const useModelPricingData = () => {
     usableGroup,
     endpointMap,
     autoGroups,
-    subscriptionDynamicRatio,
 
     // 计算属性
     priceRate,

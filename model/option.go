@@ -199,16 +199,6 @@ func UpdateOption(key string, value string) error {
 		}
 		value = sanitized
 	}
-	if key == "subscription_setting.payment_mode" {
-		value = operation_setting.NormalizeSubscriptionPaymentMode(value)
-	}
-	if key == "subscription_setting.model_ratios" {
-		sanitized, err := operation_setting.SanitizeSubscriptionModelRatiosJSON(value)
-		if err != nil {
-			return err
-		}
-		value = sanitized
-	}
 	// Save to database first
 	option := Option{
 		Key: key,
@@ -473,19 +463,6 @@ func handleConfigUpdate(key, value string) bool {
 	config.UpdateConfigFromMap(cfg, configMap)
 
 	// 特定配置的后处理
-	if configName == "subscription_setting" {
-		subscriptionSetting := operation_setting.GetSubscriptionSetting()
-		if configKey == "payment_mode" {
-			subscriptionSetting.PaymentMode = operation_setting.NormalizeSubscriptionPaymentMode(value)
-		}
-		if configKey == "model_ratios" {
-			if err := operation_setting.UpdateSubscriptionModelRatiosByJSONString(value); err != nil {
-				common.SysLog("failed to update subscription model ratios: " + err.Error())
-			} else {
-				RefreshPricing()
-			}
-		}
-	}
 	if configName == "performance_setting" {
 		// 同步磁盘缓存配置到 common 包
 		performance_setting.UpdateAndSync()

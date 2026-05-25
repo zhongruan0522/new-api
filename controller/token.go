@@ -239,7 +239,6 @@ func AddToken(c *gin.Context) {
 		})
 		return
 	}
-	billingMode := model.NormalizeTokenBillingMode(token.BillingMode)
 
 	// 检查用户令牌数量是否已达上限
 	count, err := model.CountUserTokens(c.GetInt("id"))
@@ -276,7 +275,6 @@ func AddToken(c *gin.Context) {
 		AllowIps:           token.AllowIps,
 		Group:              token.Group,
 		CrossGroupRetry:    token.CrossGroupRetry,
-		BillingMode:        billingMode,
 		QuotaType:          quotaType,
 		WindowHours:        token.WindowHours,
 		WindowQuota:        token.WindowQuota,
@@ -414,7 +412,6 @@ func UpdateToken(c *gin.Context) {
 			return
 		}
 	}
-	billingMode := model.NormalizeTokenBillingMode(token.BillingMode)
 
 	cleanToken, err := model.GetTokenByIds(token.Id, userId)
 	if err != nil {
@@ -450,7 +447,6 @@ func UpdateToken(c *gin.Context) {
 		cleanToken.AllowIps = token.AllowIps
 		cleanToken.Group = token.Group
 		cleanToken.CrossGroupRetry = token.CrossGroupRetry
-		cleanToken.BillingMode = billingMode
 		cleanToken.QuotaType = quotaType
 		cleanToken.WindowHours = token.WindowHours
 		cleanToken.WindowQuota = token.WindowQuota

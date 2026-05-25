@@ -42,10 +42,6 @@ import KeyQuery from './pages/KeyQuery';
 import ModelPage from './pages/Model';
 import Ticket from './pages/Ticket';
 import DynamicRatio from './pages/DynamicRatio';
-import SubscriptionPage from './pages/Subscription';
-import SubscriptionPlanPage from './pages/SubscriptionPlan';
-import SubscriptionRedemptionPage from './pages/SubscriptionRedemption';
-import OrderQueryPage from './pages/OrderQuery';
 
 import OAuth2Callback from './components/auth/OAuth2Callback';
 import PersonalSetting from './components/settings/PersonalSetting';
@@ -145,22 +141,6 @@ function App() {
           }
         />
         <Route
-          path='/console/subscription-plan'
-          element={
-            <AdminRoute>
-              <SubscriptionPlanPage />
-            </AdminRoute>
-          }
-        />
-        <Route
-          path='/console/subscription-redemption'
-          element={
-            <AdminRoute>
-              <SubscriptionRedemptionPage />
-            </AdminRoute>
-          }
-        />
-        <Route
           path='/user/reset'
           element={
             <Suspense fallback={<Loading></Loading>} key={location.pathname}>
@@ -239,22 +219,6 @@ function App() {
               <Suspense fallback={<Loading></Loading>} key={location.pathname}>
                 <TopUp />
               </Suspense>
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path='/console/subscription'
-          element={
-            <PrivateRoute>
-              <SubscriptionPage />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path='/console/order-query'
-          element={
-            <PrivateRoute>
-              <OrderQueryPage />
             </PrivateRoute>
           }
         />

@@ -32,31 +32,20 @@ func HandleGroupRatio(ctx *gin.Context, relayInfo *relaycommon.RelayInfo) types.
 	}
 
 	// check user group special ratio
-	if common.ShouldUseSubscriptionForRequest(ctx) {
-		subscriptionRatio, ok, _ := operation_setting.GetSubscriptionModelRatio(relayInfo.OriginModelName)
-		if !ok {
-			subscriptionRatio = 1
-		}
-		groupRatioInfo.GroupRatio = subscriptionRatio
+	userGroupRatio, ok := ratio_setting.GetGroupGroupRatio(relayInfo.UserGroup, relayInfo.UsingGroup)
+	if ok {
+		// user group special ratio
+		groupRatioInfo.GroupSpecialRatio = userGroupRatio
+		groupRatioInfo.GroupRatio = userGroupRatio
+		groupRatioInfo.HasSpecialRatio = true
 	} else {
-		userGroupRatio, ok := ratio_setting.GetGroupGroupRatio(relayInfo.UserGroup, relayInfo.UsingGroup)
-		if ok {
-			// user group special ratio
-			groupRatioInfo.GroupSpecialRatio = userGroupRatio
-			groupRatioInfo.GroupRatio = userGroupRatio
-			groupRatioInfo.HasSpecialRatio = true
-		} else {
-			// normal group ratio
-			groupRatioInfo.GroupRatio = ratio_setting.GetGroupRatio(relayInfo.UsingGroup)
-		}
+		// normal group ratio
+		groupRatioInfo.GroupRatio = ratio_setting.GetGroupRatio(relayInfo.UsingGroup)
 	}
 
 	// 叠加动态倍率
 	originalGroupRatio := groupRatioInfo.GroupRatio
 	dynamicRatio := model.GetMatchedDynamicRatio(relayInfo.UsingGroup)
-	if common.ShouldUseSubscriptionForRequest(ctx) {
-		dynamicRatio = model.GetMatchedSubscriptionDynamicRatio(relayInfo.UsingGroup)
-	}
 	if dynamicRatio > 0 {
 		groupRatioInfo.GroupRatio = originalGroupRatio * dynamicRatio
 		groupRatioInfo.DynamicRatio = dynamicRatio

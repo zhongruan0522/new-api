@@ -138,7 +138,6 @@ const EditChannelModal = (props) => {
     status_code_mapping: '',
     models: [],
     auto_ban: 1,
-    support_subscription: false,
     test_model: '',
     groups: ['default'],
     priority: 0,
@@ -2717,17 +2716,6 @@ const EditChannelModal = (props) => {
                         />
                       </Col>
                     </Row>
-
-                    <Form.Switch
-                      field='support_subscription'
-                      label={t('支持套餐用户调用')}
-                      checkedText={t('开')}
-                      uncheckedText={t('关')}
-                      onChange={(value) =>
-                        handleInputChange('support_subscription', value)
-                      }
-                      extraText={t('开启后，拥有生效套餐的用户才可通过该渠道完成套餐扣费调用')}
-                    />
 
                     <Form.Switch
                       field='auto_ban'

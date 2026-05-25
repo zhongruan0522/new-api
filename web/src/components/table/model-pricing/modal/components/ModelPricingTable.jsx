@@ -63,9 +63,6 @@ const buildTierRowsByGroup = (flatRows) => {
         group: row.usedGroup,
         tierIndex: row.tierIndex,
         contextRange: row.contextRange,
-        subscriptionRatio: row.subscriptionRatio,
-        dynamicRatio: row.dynamicRatio,
-        effectiveRatio: row.effectiveRatio,
         prices: {},
       });
     }
@@ -83,7 +80,10 @@ const buildTierRowsByGroup = (flatRows) => {
     if (!groupOrder.includes(entry.group)) {
       groupOrder.push(entry.group);
     }
-    groupTierCount.set(entry.group, (groupTierCount.get(entry.group) || 0) + 1);
+    groupTierCount.set(
+      entry.group,
+      (groupTierCount.get(entry.group) || 0) + 1,
+    );
   }
 
   const rows = [...tierMap.values()];
@@ -108,12 +108,6 @@ const renderPriceCell = (text, tokenUnit) => {
   );
 };
 
-const formatRatio = (value) => {
-  const ratio = Number(value);
-  if (!Number.isFinite(ratio)) return '-';
-  return `${Number(ratio.toFixed(4))}x`;
-};
-
 const ModelPricingTable = ({
   modelData,
   groupRatio,
@@ -122,245 +116,19 @@ const ModelPricingTable = ({
   displayPrice,
   usableGroup,
   autoGroups = [],
-  subscriptionDynamicRatio = {},
   t,
 }) => {
   const modelEnableGroups = Array.isArray(modelData?.enable_groups)
     ? modelData.enable_groups
     : [];
   const autoChain = autoGroups.filter((g) => modelEnableGroups.includes(g));
-  const getAvailableGroups = () =>
-    Object.keys(usableGroup || {})
-      .filter((g) => g !== '')
-      .filter((g) => g !== 'auto')
-      .filter((g) => modelEnableGroups.includes(g));
-
-  const getSubscriptionEffectiveRatio = (group) => {
-    const subscriptionRatio = Number(modelData?.subscription_model_ratio || 1);
-    const dynamicRatioValue = Number(subscriptionDynamicRatio?.[group] || 1);
-    const dynamicRatio = Number.isFinite(dynamicRatioValue)
-      ? dynamicRatioValue
-      : 1;
-    return {
-      subscriptionRatio,
-      dynamicRatio,
-      effectiveRatio: subscriptionRatio * dynamicRatio,
-    };
-  };
-
-  const renderSubscriptionPriceTable = () => {
-    if (!modelData?.subscription_supported) {
-      return null;
-    }
-
-    const availableGroups = getAvailableGroups();
-    const isContextPricing = modelData?.context_pricing?.enabled;
-
-    if (isContextPricing) {
-      const allFlatRows = availableGroups.flatMap((group) => {
-        const { subscriptionRatio, dynamicRatio, effectiveRatio } =
-          getSubscriptionEffectiveRatio(group);
-        return calculateContextTierPriceRows({
-          record: modelData,
-          selectedGroup: group,
-          groupRatio: { [group]: effectiveRatio },
-          tokenUnit,
-          displayPrice,
-          currency,
-        }).map((row) => ({
-          ...row,
-          subscriptionRatio,
-          dynamicRatio,
-          effectiveRatio,
-        }));
-      });
-
-      const { rows, activePriceTypes } = buildTierRowsByGroup(allFlatRows);
-      const columns = [
-        {
-          title: t('分组'),
-          dataIndex: 'group',
-          render: (text) => (
-            <Tag color='white' size='small' shape='circle'>
-              {text}
-              {t('分组')}
-            </Tag>
-          ),
-        },
-        {
-          title: t('套餐倍率'),
-          dataIndex: 'subscriptionRatio',
-          render: (value) => formatRatio(value),
-        },
-        {
-          title: t('动态倍率'),
-          dataIndex: 'dynamicRatio',
-          render: (value) => formatRatio(value),
-        },
-        {
-          title: t('实际倍率'),
-          dataIndex: 'effectiveRatio',
-          render: (value) => formatRatio(value),
-        },
-        {
-          title: t('上下文区间'),
-          dataIndex: 'contextRange',
-          render: (text) =>
-            text ? (
-              <Tag color='blue' size='small' shape='circle'>
-                {text}
-              </Tag>
-            ) : (
-              ''
-            ),
-        },
-        ...activePriceTypes.map((pt) => ({
-          title: t(pt.label),
-          dataIndex: 'prices',
-          render: (prices) => renderPriceCell(prices?.[pt.typeKey], tokenUnit),
-        })),
-      ];
-
-      return (
-        <Table
-          dataSource={rows}
-          columns={columns}
-          pagination={false}
-          size='small'
-          bordered={false}
-          className='!rounded-lg'
-        />
-      );
-    }
-
-    const tableData = availableGroups.map((group) => {
-      const { subscriptionRatio, dynamicRatio, effectiveRatio } =
-        getSubscriptionEffectiveRatio(group);
-      const subscriptionGroupRatio = { [group]: effectiveRatio };
-      const priceData = calculateModelPrice({
-        record: modelData,
-        selectedGroup: group,
-        groupRatio: subscriptionGroupRatio,
-        tokenUnit,
-        displayPrice,
-        currency,
-      });
-      const extraPrices = calculateExtraPrices({
-        record: modelData,
-        selectedGroup: group,
-        groupRatio: subscriptionGroupRatio,
-        tokenUnit,
-        displayPrice,
-        currency,
-      });
-
-      return {
-        key: group,
-        group,
-        subscriptionRatio,
-        dynamicRatio,
-        effectiveRatio,
-        inputPrice: modelData?.quota_type === 0 ? priceData.inputPrice : '-',
-        outputPrice:
-          modelData?.quota_type === 0
-            ? priceData.completionPrice || priceData.outputPrice
-            : '-',
-        extraPrices,
-        fixedPrice: modelData?.quota_type === 1 ? priceData.price : '-',
-      };
-    });
-
-    const columns = [
-      {
-        title: t('分组'),
-        dataIndex: 'group',
-        render: (text) => (
-          <Tag color='white' size='small' shape='circle'>
-            {text}
-            {t('分组')}
-          </Tag>
-        ),
-      },
-      {
-        title: t('套餐倍率'),
-        dataIndex: 'subscriptionRatio',
-        render: (value) => formatRatio(value),
-      },
-      {
-        title: t('动态倍率'),
-        dataIndex: 'dynamicRatio',
-        render: (value) => formatRatio(value),
-      },
-      {
-        title: t('实际倍率'),
-        dataIndex: 'effectiveRatio',
-        render: (value) => formatRatio(value),
-      },
-    ];
-
-    if (modelData?.quota_type === 0) {
-      columns.push(
-        {
-          title: t('提示'),
-          dataIndex: 'inputPrice',
-          render: (text) => renderPriceCell(text, tokenUnit),
-        },
-        {
-          title: t('补全'),
-          dataIndex: 'outputPrice',
-          render: (text) => renderPriceCell(text, tokenUnit),
-        },
-        {
-          title: t('额外计费'),
-          dataIndex: 'extraPrices',
-          render: (extraPrices) => (
-            <div className='space-y-1'>
-              {EXTRA_PRICE_ITEMS.map((item) => {
-                const value = extraPrices?.[item.key];
-                return (
-                  <div key={item.key} className='text-xs text-gray-600'>
-                    <span className='text-gray-500'>{t(item.label)}：</span>
-                    <span className='font-semibold text-orange-600'>
-                      {value
-                        ? `${value} / 1${extraPrices?.unitLabel || tokenUnit} tokens`
-                        : t('不支持')}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          ),
-        },
-      );
-    } else {
-      columns.push({
-        title: t('价格'),
-        dataIndex: 'fixedPrice',
-        render: (text) => (
-          <>
-            <div className='font-semibold text-orange-600'>{text}</div>
-            <div className='text-xs text-gray-500'>/ 次</div>
-          </>
-        ),
-      });
-    }
-
-    return (
-      <Table
-        dataSource={tableData}
-        columns={columns}
-        pagination={false}
-        size='small'
-        bordered={false}
-        className='!rounded-lg'
-      />
-    );
-  };
-
   const renderGroupPriceTable = () => {
     // 仅展示模型可用的分组：模型 enable_groups 与用户可用分组的交集
 
-    const availableGroups = getAvailableGroups();
+    const availableGroups = Object.keys(usableGroup || {})
+      .filter((g) => g !== '')
+      .filter((g) => g !== 'auto')
+      .filter((g) => modelEnableGroups.includes(g));
 
     const isContextPricing = modelData?.context_pricing?.enabled;
 
@@ -387,7 +155,9 @@ const ModelPricingTable = ({
           dataIndex: 'group',
           render: (text, record, index) => {
             // 找到该分组的第一行索引
-            const groupStartIndex = rows.findIndex((r) => r.group === text);
+            const groupStartIndex = rows.findIndex(
+              (r) => r.group === text,
+            );
             if (index !== groupStartIndex) {
               return { children: null, props: { rowSpan: 0 } };
             }
@@ -589,12 +359,6 @@ const ModelPricingTable = ({
 
   return (
     <Card className='!rounded-2xl shadow-sm border-0'>
-      {modelData?.subscription_supported && (
-        <div className='mb-4 rounded-lg border border-semi-color-border bg-semi-color-fill-0 p-3'>
-          <div className='font-medium mb-2'>{t('套餐计费')}</div>
-          {renderSubscriptionPriceTable()}
-        </div>
-      )}
       <div className='flex items-center mb-4'>
         <Avatar size='small' color='orange' className='mr-2 shadow-md'>
           <IconCoinMoneyStroked size={16} />

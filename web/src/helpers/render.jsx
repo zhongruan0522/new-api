@@ -54,7 +54,6 @@ import {
   Server,
   TicketCheck,
   TrendingUp,
-  Receipt,
 } from 'lucide-react';
 
 // 获取侧边栏Lucide图标组件
@@ -81,15 +80,9 @@ export function getLucideIcon(key, selected = false) {
       return <FileImage {...commonProps} color={iconColor} />;
     case 'topup':
       return <CreditCard {...commonProps} color={iconColor} />;
-    case 'subscription':
-      return <Package {...commonProps} color={iconColor} />;
-    case 'order_query':
-      return <Receipt {...commonProps} color={iconColor} />;
     case 'channel':
       return <Layers {...commonProps} color={iconColor} />;
     case 'redemption':
-      return <Gift {...commonProps} color={iconColor} />;
-    case 'subscription_redemption':
       return <Gift {...commonProps} color={iconColor} />;
     case 'user':
     case 'personal':
@@ -104,8 +97,6 @@ export function getLucideIcon(key, selected = false) {
       return <TicketCheck {...commonProps} color={iconColor} />;
     case 'dynamic_ratio':
       return <TrendingUp {...commonProps} color={iconColor} />;
-    case 'subscription_plan':
-      return <Package {...commonProps} color={iconColor} />;
     default:
       return <CircleUser {...commonProps} color={iconColor} />;
   }

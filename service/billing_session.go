@@ -6,7 +6,6 @@ import (
 	"sync"
 
 	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/constant"
 	"github.com/zhongruan0522/new-api/logger"
 	"github.com/zhongruan0522/new-api/model"
 	relaycommon "github.com/zhongruan0522/new-api/relay/common"
@@ -59,7 +58,6 @@ func (s *BillingSession) Settle(actualQuota int) error {
 			s.relayInfo.UserId, s.relayInfo.TokenId, delta, tokenErr.Error(),
 		))
 	}
-	s.syncRelayInfo()
 
 	s.settled = true
 	return tokenErr
@@ -156,9 +154,6 @@ func (s *BillingSession) preConsume(c *gin.Context, quota int) *types.NewAPIErro
 }
 
 func (s *BillingSession) shouldTrust(c *gin.Context) bool {
-	if common.ShouldUseSubscriptionForRequest(c) {
-		return false
-	}
 	trustQuota := common.GetTrustQuota()
 	if trustQuota <= 0 {
 		return false
@@ -181,32 +176,6 @@ func (s *BillingSession) syncRelayInfo() {
 	info := s.relayInfo
 	info.FinalPreConsumedQuota = s.preConsumedQuota
 	info.BillingSource = s.funding.Source()
-}
-
-func validateWalletQuota(userQuota int, preConsumedQuota int) *types.NewAPIError {
-	if userQuota <= 0 {
-		return types.NewErrorWithStatusCode(
-			fmt.Errorf("用户额度不足, 剩余额度: %s", logger.FormatQuota(userQuota)),
-			types.ErrorCodeInsufficientUserQuota,
-			http.StatusForbidden,
-			types.ErrOptionWithSkipRetry(),
-			types.ErrOptionWithNoRecordErrorLog(),
-		)
-	}
-	if userQuota-preConsumedQuota < 0 {
-		return types.NewErrorWithStatusCode(
-			fmt.Errorf(
-				"预扣费额度失败, 用户剩余额度: %s, 需要预扣费额度: %s",
-				logger.FormatQuota(userQuota),
-				logger.FormatQuota(preConsumedQuota),
-			),
-			types.ErrorCodeInsufficientUserQuota,
-			http.StatusForbidden,
-			types.ErrOptionWithSkipRetry(),
-			types.ErrOptionWithNoRecordErrorLog(),
-		)
-	}
-	return nil
 }
 
 // decreaseTokenQuota 根据配额类型扣减 token 额度
@@ -307,55 +276,33 @@ func NewBillingSession(c *gin.Context, relayInfo *relaycommon.RelayInfo, preCons
 	if err != nil {
 		return nil, types.NewError(err, types.ErrorCodeQueryDataError, types.ErrOptionWithSkipRetry())
 	}
-	relayInfo.UserQuota = userQuota
-
-	billingMode := common.NormalizeTokenBillingMode(relayInfo.TokenBillingMode)
-	relayInfo.TokenBillingMode = billingMode
-	subscriptionActive := common.GetContextKeyBool(c, constant.ContextKeySubscriptionActive)
-	subscriptionId := common.GetContextKeyInt(c, constant.ContextKeySubscriptionId)
-
-	var funding FundingSource
-	switch billingMode {
-	case common.TokenBillingModeWallet:
-		if apiErr := validateWalletQuota(userQuota, preConsumedQuota); apiErr != nil {
-			return nil, apiErr
-		}
-		funding = &WalletFunding{userId: relayInfo.UserId}
-	case common.TokenBillingModeSubscription:
-		if !subscriptionActive || subscriptionId <= 0 {
-			return nil, types.NewErrorWithStatusCode(
-				fmt.Errorf("当前没有可用套餐"),
-				types.ErrorCodeInsufficientUserQuota,
-				http.StatusForbidden,
-				types.ErrOptionWithSkipRetry(),
-				types.ErrOptionWithNoRecordErrorLog(),
-			)
-		}
-		funding = &SubscriptionFunding{
-			userId:         relayInfo.UserId,
-			subscriptionId: subscriptionId,
-			requestId:      relayInfo.RequestId,
-			relayInfo:      relayInfo,
-		}
-	default:
-		if subscriptionActive && subscriptionId > 0 {
-			funding = &SubscriptionThenWalletFunding{
-				userId:         relayInfo.UserId,
-				subscriptionId: subscriptionId,
-				requestId:      relayInfo.RequestId,
-				relayInfo:      relayInfo,
-			}
-		} else {
-			if apiErr := validateWalletQuota(userQuota, preConsumedQuota); apiErr != nil {
-				return nil, apiErr
-			}
-			funding = &WalletFunding{userId: relayInfo.UserId}
-		}
+	if userQuota <= 0 {
+		return nil, types.NewErrorWithStatusCode(
+			fmt.Errorf("用户额度不足, 剩余额度: %s", logger.FormatQuota(userQuota)),
+			types.ErrorCodeInsufficientUserQuota,
+			http.StatusForbidden,
+			types.ErrOptionWithSkipRetry(),
+			types.ErrOptionWithNoRecordErrorLog(),
+		)
 	}
+	if userQuota-preConsumedQuota < 0 {
+		return nil, types.NewErrorWithStatusCode(
+			fmt.Errorf(
+				"预扣费额度失败, 用户剩余额度: %s, 需要预扣费额度: %s",
+				logger.FormatQuota(userQuota),
+				logger.FormatQuota(preConsumedQuota),
+			),
+			types.ErrorCodeInsufficientUserQuota,
+			http.StatusForbidden,
+			types.ErrOptionWithSkipRetry(),
+			types.ErrOptionWithNoRecordErrorLog(),
+		)
+	}
+	relayInfo.UserQuota = userQuota
 
 	session := &BillingSession{
 		relayInfo: relayInfo,
-		funding:   funding,
+		funding:   &WalletFunding{userId: relayInfo.UserId},
 	}
 	if apiErr := session.preConsume(c, preConsumedQuota); apiErr != nil {
 		return nil, apiErr

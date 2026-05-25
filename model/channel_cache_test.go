@@ -105,7 +105,7 @@ func TestCacheUpdateChannelStatusReaddsEnabledChannel(t *testing.T) {
 
 	InitChannelCache()
 
-	selected, err := GetRandomSatisfiedChannel("Coding", "claude-haiku-4-5-20251001", 0, -1, 0, false)
+	selected, err := GetRandomSatisfiedChannel("Coding", "claude-haiku-4-5-20251001", 0, -1, 0)
 	if err != nil {
 		t.Fatalf("initial channel selection failed: %v", err)
 	}
@@ -114,7 +114,7 @@ func TestCacheUpdateChannelStatusReaddsEnabledChannel(t *testing.T) {
 	}
 
 	CacheUpdateChannelStatus(channel.Id, common.ChannelStatusAutoDisabled)
-	selected, err = GetRandomSatisfiedChannel("Coding", "claude-haiku-4-5-20251001", 0, -1, 0, false)
+	selected, err = GetRandomSatisfiedChannel("Coding", "claude-haiku-4-5-20251001", 0, -1, 0)
 	if err != nil {
 		t.Fatalf("selection after disable returned error: %v", err)
 	}
@@ -123,7 +123,7 @@ func TestCacheUpdateChannelStatusReaddsEnabledChannel(t *testing.T) {
 	}
 
 	CacheUpdateChannelStatus(channel.Id, common.ChannelStatusEnabled)
-	selected, err = GetRandomSatisfiedChannel("Coding", "claude-haiku-4-5-20251001", 0, -1, 0, false)
+	selected, err = GetRandomSatisfiedChannel("Coding", "claude-haiku-4-5-20251001", 0, -1, 0)
 	if err != nil {
 		t.Fatalf("selection after re-enable failed: %v", err)
 	}
@@ -150,7 +150,7 @@ func TestUpdateChannelStatusRestoresMultiKeyChannelToCache(t *testing.T) {
 	if !UpdateChannelStatus(channel.Id, "key-1", common.ChannelStatusAutoDisabled, "test disable key 1") {
 		t.Fatalf("disable first key returned false")
 	}
-	selected, err := GetRandomSatisfiedChannel("Coding", "claude-haiku-4-5-20251001", 0, -1, 0, false)
+	selected, err := GetRandomSatisfiedChannel("Coding", "claude-haiku-4-5-20251001", 0, -1, 0)
 	if err != nil {
 		t.Fatalf("selection after first key disable failed: %v", err)
 	}
@@ -161,7 +161,7 @@ func TestUpdateChannelStatusRestoresMultiKeyChannelToCache(t *testing.T) {
 	if !UpdateChannelStatus(channel.Id, "key-2", common.ChannelStatusAutoDisabled, "test disable key 2") {
 		t.Fatalf("disable second key returned false")
 	}
-	selected, err = GetRandomSatisfiedChannel("Coding", "claude-haiku-4-5-20251001", 0, -1, 0, false)
+	selected, err = GetRandomSatisfiedChannel("Coding", "claude-haiku-4-5-20251001", 0, -1, 0)
 	if err != nil {
 		t.Fatalf("selection after all keys disabled returned error: %v", err)
 	}
@@ -172,7 +172,7 @@ func TestUpdateChannelStatusRestoresMultiKeyChannelToCache(t *testing.T) {
 	if !UpdateChannelStatus(channel.Id, "key-1", common.ChannelStatusEnabled, "") {
 		t.Fatalf("enable first key returned false")
 	}
-	selected, err = GetRandomSatisfiedChannel("Coding", "claude-haiku-4-5-20251001", 0, -1, 0, false)
+	selected, err = GetRandomSatisfiedChannel("Coding", "claude-haiku-4-5-20251001", 0, -1, 0)
 	if err != nil {
 		t.Fatalf("selection after key re-enable failed: %v", err)
 	}

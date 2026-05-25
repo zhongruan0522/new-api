@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pkg/errors"
 	"github.com/zhongruan0522/new-api/constant"
+	"github.com/pkg/errors"
 
 	"github.com/gin-gonic/gin"
 )
@@ -194,28 +194,6 @@ func GetContextKeyType[T any](c *gin.Context, key constant.ContextKey) (T, bool)
 	}
 	var t T
 	return t, false
-}
-
-func NormalizeTokenBillingMode(mode string) string {
-	switch strings.TrimSpace(strings.ToLower(mode)) {
-	case TokenBillingModeWallet:
-		return TokenBillingModeWallet
-	case TokenBillingModeSubscription:
-		return TokenBillingModeSubscription
-	default:
-		return TokenBillingModeSubscriptionThen
-	}
-}
-
-func GetContextTokenBillingMode(c *gin.Context) string {
-	return NormalizeTokenBillingMode(GetContextKeyString(c, constant.ContextKeyTokenBillingMode))
-}
-
-func ShouldUseSubscriptionForRequest(c *gin.Context) bool {
-	if !GetContextKeyBool(c, constant.ContextKeySubscriptionActive) {
-		return false
-	}
-	return GetContextTokenBillingMode(c) != TokenBillingModeWallet
 }
 
 func ApiError(c *gin.Context, err error) {

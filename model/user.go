@@ -104,11 +104,9 @@ func generateDefaultSidebarConfigForRole(userRole int) string {
 
 	// 个人中心区域 - 所有用户都可以访问
 	defaultConfig["personal"] = map[string]interface{}{
-		"enabled":      true,
-		"topup":        true,
-		"subscription": true,
-		"order_query":  true,
-		"personal":     true,
+		"enabled":  true,
+		"topup":    true,
+		"personal": true,
 	}
 
 	defaultConfig["support"] = map[string]interface{}{
@@ -120,24 +118,22 @@ func generateDefaultSidebarConfigForRole(userRole int) string {
 	if userRole == common.RoleAdminUser {
 		// 管理员可以访问管理员区域，但不能访问系统设置
 		defaultConfig["admin"] = map[string]interface{}{
-			"enabled":           true,
-			"channel":           true,
-			"models":            true,
-			"redemption":        true,
-			"user":              true,
-			"subscription_plan": true,
-			"setting":           false, // 管理员不能访问系统设置
+			"enabled":    true,
+			"channel":    true,
+			"models":     true,
+			"redemption": true,
+			"user":       true,
+			"setting":    false, // 管理员不能访问系统设置
 		}
 	} else if userRole == common.RoleRootUser {
 		// 超级管理员可以访问所有功能
 		defaultConfig["admin"] = map[string]interface{}{
-			"enabled":           true,
-			"channel":           true,
-			"models":            true,
-			"redemption":        true,
-			"user":              true,
-			"subscription_plan": true,
-			"setting":           true,
+			"enabled":    true,
+			"channel":    true,
+			"models":     true,
+			"redemption": true,
+			"user":       true,
+			"setting":    true,
 		}
 	}
 	// 普通用户不包含admin区域
@@ -803,25 +799,6 @@ func IncreaseUserQuota(id int, quota int, db bool) (err error) {
 	return increaseUserQuota(id, quota)
 }
 
-func IncreaseUserQuotaTx(tx *gorm.DB, id int, quota int) error {
-	if quota < 0 {
-		return errors.New("quota 不能为负数！")
-	}
-	if quota == 0 {
-		return nil
-	}
-	if tx == nil {
-		return IncreaseUserQuota(id, quota, false)
-	}
-	gopool.Go(func() {
-		err := cacheIncrUserQuota(id, int64(quota))
-		if err != nil {
-			common.SysLog("failed to increase user quota: " + err.Error())
-		}
-	})
-	return tx.Model(&User{}).Where("id = ?", id).Update("quota", gorm.Expr("quota + ?", quota)).Error
-}
-
 func increaseUserQuota(id int, quota int) (err error) {
 	err = DB.Model(&User{}).Where("id = ?", id).Update("quota", gorm.Expr("quota + ?", quota)).Error
 	if err != nil {
@@ -845,25 +822,6 @@ func DecreaseUserQuota(id int, quota int) (err error) {
 		return nil
 	}
 	return decreaseUserQuota(id, quota)
-}
-
-func DecreaseUserQuotaTx(tx *gorm.DB, id int, quota int) error {
-	if quota < 0 {
-		return errors.New("quota 不能为负数！")
-	}
-	if quota == 0 {
-		return nil
-	}
-	if tx == nil {
-		return DecreaseUserQuota(id, quota)
-	}
-	gopool.Go(func() {
-		err := cacheDecrUserQuota(id, int64(quota))
-		if err != nil {
-			common.SysLog("failed to decrease user quota: " + err.Error())
-		}
-	})
-	return tx.Model(&User{}).Where("id = ?", id).Update("quota", gorm.Expr("quota - ?", quota)).Error
 }
 
 func decreaseUserQuota(id int, quota int) (err error) {

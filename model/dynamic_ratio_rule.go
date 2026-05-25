@@ -22,7 +22,6 @@ type DynamicRatioRule struct {
 	StartTime   string  `json:"start_time" gorm:"default:''"`
 	EndTime     string  `json:"end_time" gorm:"default:''"`
 	Ratio       float64 `json:"ratio" gorm:"not null"`
-	AppliesToSubscription bool `json:"applies_to_subscription" gorm:"default:false"`
 	Priority    int     `json:"priority" gorm:"default:0;index"`
 	CreatedAt   int64   `json:"created_at" gorm:"not null"`
 	UpdatedAt   int64   `json:"updated_at" gorm:"not null"`
@@ -230,14 +229,6 @@ func normalizeDynamicRatioGroups(groups []string) []string {
 
 // GetMatchedDynamicRatio 从缓存中匹配动态倍率，返回倍率值（0 表示未命中）
 func GetMatchedDynamicRatio(group string) float64 {
-	return getMatchedDynamicRatio(group, false)
-}
-
-func GetMatchedSubscriptionDynamicRatio(group string) float64 {
-	return getMatchedDynamicRatio(group, true)
-}
-
-func getMatchedDynamicRatio(group string, subscriptionOnly bool) float64 {
 	if !common.DynamicRatioEnabled {
 		return 0
 	}
@@ -245,15 +236,6 @@ func getMatchedDynamicRatio(group string, subscriptionOnly bool) float64 {
 	dynamicRatioCacheLock.RLock()
 	rules := dynamicRatioRules
 	dynamicRatioCacheLock.RUnlock()
-	if subscriptionOnly {
-		filtered := make([]parsedDynamicRatioRule, 0, len(rules))
-		for _, rule := range rules {
-			if rule.AppliesToSubscription {
-				filtered = append(filtered, rule)
-			}
-		}
-		rules = filtered
-	}
 
 	return matchDynamicRatio(rules, group, getActiveConnections(), common.NowInStartupTimezone())
 }
