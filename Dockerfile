@@ -1,16 +1,7 @@
-FROM oven/bun:latest AS builder
-
-WORKDIR /build
-COPY web/classic/package.json .
-COPY web/classic/bun.lock .
-RUN bun install
-COPY ./web/classic .
-COPY ./VERSION .
-RUN DISABLE_ESLINT_PLUGIN='true' VITE_REACT_APP_VERSION=$(cat VERSION) bun run build
-
-FROM golang:alpine AS builder2
+FROM golang:alpine AS go-builder
 ENV GO111MODULE=on CGO_ENABLED=0
 
+ARG COMMIT_HASH=""
 ARG TARGETOS
 ARG TARGETARCH
 ENV GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH:-amd64}
@@ -22,9 +13,8 @@ ADD go.mod go.sum ./
 RUN go mod download
 
 COPY . .
-COPY --from=builder /build/dist ./web/classic/dist
-RUN COMMIT_HASH=$(cat COMMIT 2>/dev/null || echo "") && \
-    go build -ldflags "-s -w -X 'github.com/zhongruan0522/new-api/common.Version=${COMMIT_HASH}'" -o new-api
+RUN test -f web/default/dist/index.html && test -f web/classic/dist/index.html
+RUN go build -ldflags "-s -w -X 'github.com/zhongruan0522/new-api/common.Version=${COMMIT_HASH}'" -o new-api
 
 FROM debian:bookworm-slim
 
@@ -33,7 +23,7 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/* \
     && update-ca-certificates
 
-COPY --from=builder2 /build/new-api /
+COPY --from=go-builder /build/new-api /
 EXPOSE 3000
 WORKDIR /data
 ENTRYPOINT ["/new-api"]
