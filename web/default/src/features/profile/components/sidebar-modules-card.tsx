@@ -109,6 +109,11 @@ export function SidebarModulesCard() {
           description: t('Balance and top-up management'),
         },
         {
+          key: 'order_query',
+          title: t('Order Query'),
+          description: t('Search top-up orders by order number'),
+        },
+        {
           key: 'personal',
           title: t('Personal Settings'),
           description: t('Personal info settings'),

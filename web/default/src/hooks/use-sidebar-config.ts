@@ -51,6 +51,7 @@ const DEFAULT_SIDEBAR_MODULES: SidebarModulesAdminConfig = {
   personal: {
     enabled: true,
     topup: true,
+    order_query: true,
     personal: true,
   },
   support: {
@@ -107,6 +108,7 @@ const URL_TO_CONFIG_MAP: Record<string, { section: string; module: string }> = {
   '/usage-logs/common': { section: 'console', module: 'log' },
   '/multimodal-files': { section: 'console', module: 'multimodal_files' },
   '/wallet': { section: 'personal', module: 'topup' },
+  '/order-query': { section: 'personal', module: 'order_query' },
   '/profile': { section: 'personal', module: 'personal' },
   '/ticket': { section: 'support', module: 'ticket' },
   '/dynamic-ratio': { section: 'admin', module: 'dynamic_ratio' },

@@ -28,6 +28,7 @@ import {
   LifeBuoy,
   MessageSquare,
   Radio,
+  ReceiptText,
   Settings,
   Ticket,
   User,
@@ -103,6 +104,11 @@ export function useSidebarData(): SidebarData {
             title: t('Wallet'),
             url: '/wallet',
             icon: Wallet,
+          },
+          {
+            title: t('Order Query'),
+            url: '/order-query',
+            icon: ReceiptText,
           },
           {
             title: t('Profile'),

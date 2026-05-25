@@ -46,6 +46,7 @@ import { Route as AuthenticatedSubscriptionsIndexRouteImport } from './routes/_a
 import { Route as AuthenticatedRedemptionCodesIndexRouteImport } from './routes/_authenticated/redemption-codes/index'
 import { Route as AuthenticatedProfileIndexRouteImport } from './routes/_authenticated/profile/index'
 import { Route as AuthenticatedPlaygroundIndexRouteImport } from './routes/_authenticated/playground/index'
+import { Route as AuthenticatedOrderQueryIndexRouteImport } from './routes/_authenticated/order-query/index'
 import { Route as AuthenticatedMultimodalFilesIndexRouteImport } from './routes/_authenticated/multimodal-files/index'
 import { Route as AuthenticatedModelsIndexRouteImport } from './routes/_authenticated/models/index'
 import { Route as AuthenticatedKeysIndexRouteImport } from './routes/_authenticated/keys/index'
@@ -265,6 +266,12 @@ const AuthenticatedPlaygroundIndexRoute =
     path: '/playground/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedOrderQueryIndexRoute =
+  AuthenticatedOrderQueryIndexRouteImport.update({
+    id: '/order-query/',
+    path: '/order-query/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedMultimodalFilesIndexRoute =
   AuthenticatedMultimodalFilesIndexRouteImport.update({
     id: '/multimodal-files/',
@@ -457,6 +464,7 @@ export interface FileRoutesByFullPath {
   '/keys/': typeof AuthenticatedKeysIndexRoute
   '/models/': typeof AuthenticatedModelsIndexRoute
   '/multimodal-files/': typeof AuthenticatedMultimodalFilesIndexRoute
+  '/order-query/': typeof AuthenticatedOrderQueryIndexRoute
   '/playground/': typeof AuthenticatedPlaygroundIndexRoute
   '/profile/': typeof AuthenticatedProfileIndexRoute
   '/redemption-codes/': typeof AuthenticatedRedemptionCodesIndexRoute
@@ -519,6 +527,7 @@ export interface FileRoutesByTo {
   '/keys': typeof AuthenticatedKeysIndexRoute
   '/models': typeof AuthenticatedModelsIndexRoute
   '/multimodal-files': typeof AuthenticatedMultimodalFilesIndexRoute
+  '/order-query': typeof AuthenticatedOrderQueryIndexRoute
   '/playground': typeof AuthenticatedPlaygroundIndexRoute
   '/profile': typeof AuthenticatedProfileIndexRoute
   '/redemption-codes': typeof AuthenticatedRedemptionCodesIndexRoute
@@ -585,6 +594,7 @@ export interface FileRoutesById {
   '/_authenticated/keys/': typeof AuthenticatedKeysIndexRoute
   '/_authenticated/models/': typeof AuthenticatedModelsIndexRoute
   '/_authenticated/multimodal-files/': typeof AuthenticatedMultimodalFilesIndexRoute
+  '/_authenticated/order-query/': typeof AuthenticatedOrderQueryIndexRoute
   '/_authenticated/playground/': typeof AuthenticatedPlaygroundIndexRoute
   '/_authenticated/profile/': typeof AuthenticatedProfileIndexRoute
   '/_authenticated/redemption-codes/': typeof AuthenticatedRedemptionCodesIndexRoute
@@ -650,6 +660,7 @@ export interface FileRouteTypes {
     | '/keys/'
     | '/models/'
     | '/multimodal-files/'
+    | '/order-query/'
     | '/playground/'
     | '/profile/'
     | '/redemption-codes/'
@@ -712,6 +723,7 @@ export interface FileRouteTypes {
     | '/keys'
     | '/models'
     | '/multimodal-files'
+    | '/order-query'
     | '/playground'
     | '/profile'
     | '/redemption-codes'
@@ -777,6 +789,7 @@ export interface FileRouteTypes {
     | '/_authenticated/keys/'
     | '/_authenticated/models/'
     | '/_authenticated/multimodal-files/'
+    | '/_authenticated/order-query/'
     | '/_authenticated/playground/'
     | '/_authenticated/profile/'
     | '/_authenticated/redemption-codes/'
@@ -1086,6 +1099,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPlaygroundIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/order-query/': {
+      id: '/_authenticated/order-query/'
+      path: '/order-query'
+      fullPath: '/order-query/'
+      preLoaderRoute: typeof AuthenticatedOrderQueryIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/multimodal-files/': {
       id: '/_authenticated/multimodal-files/'
       path: '/multimodal-files'
@@ -1368,6 +1388,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedKeysIndexRoute: typeof AuthenticatedKeysIndexRoute
   AuthenticatedModelsIndexRoute: typeof AuthenticatedModelsIndexRoute
   AuthenticatedMultimodalFilesIndexRoute: typeof AuthenticatedMultimodalFilesIndexRoute
+  AuthenticatedOrderQueryIndexRoute: typeof AuthenticatedOrderQueryIndexRoute
   AuthenticatedPlaygroundIndexRoute: typeof AuthenticatedPlaygroundIndexRoute
   AuthenticatedProfileIndexRoute: typeof AuthenticatedProfileIndexRoute
   AuthenticatedRedemptionCodesIndexRoute: typeof AuthenticatedRedemptionCodesIndexRoute
@@ -1394,6 +1415,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedModelsIndexRoute: AuthenticatedModelsIndexRoute,
   AuthenticatedMultimodalFilesIndexRoute:
     AuthenticatedMultimodalFilesIndexRoute,
+  AuthenticatedOrderQueryIndexRoute: AuthenticatedOrderQueryIndexRoute,
   AuthenticatedPlaygroundIndexRoute: AuthenticatedPlaygroundIndexRoute,
   AuthenticatedProfileIndexRoute: AuthenticatedProfileIndexRoute,
   AuthenticatedRedemptionCodesIndexRoute:
