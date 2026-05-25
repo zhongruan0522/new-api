@@ -45,6 +45,7 @@ import { Route as AuthenticatedSubscriptionsIndexRouteImport } from './routes/_a
 import { Route as AuthenticatedRedemptionCodesIndexRouteImport } from './routes/_authenticated/redemption-codes/index'
 import { Route as AuthenticatedProfileIndexRouteImport } from './routes/_authenticated/profile/index'
 import { Route as AuthenticatedPlaygroundIndexRouteImport } from './routes/_authenticated/playground/index'
+import { Route as AuthenticatedMultimodalFilesIndexRouteImport } from './routes/_authenticated/multimodal-files/index'
 import { Route as AuthenticatedModelsIndexRouteImport } from './routes/_authenticated/models/index'
 import { Route as AuthenticatedKeysIndexRouteImport } from './routes/_authenticated/keys/index'
 import { Route as AuthenticatedDynamicRatioIndexRouteImport } from './routes/_authenticated/dynamic-ratio/index'
@@ -257,6 +258,12 @@ const AuthenticatedPlaygroundIndexRoute =
     path: '/playground/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedMultimodalFilesIndexRoute =
+  AuthenticatedMultimodalFilesIndexRouteImport.update({
+    id: '/multimodal-files/',
+    path: '/multimodal-files/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedModelsIndexRoute =
   AuthenticatedModelsIndexRouteImport.update({
     id: '/models/',
@@ -442,6 +449,7 @@ export interface FileRoutesByFullPath {
   '/dynamic-ratio/': typeof AuthenticatedDynamicRatioIndexRoute
   '/keys/': typeof AuthenticatedKeysIndexRoute
   '/models/': typeof AuthenticatedModelsIndexRoute
+  '/multimodal-files/': typeof AuthenticatedMultimodalFilesIndexRoute
   '/playground/': typeof AuthenticatedPlaygroundIndexRoute
   '/profile/': typeof AuthenticatedProfileIndexRoute
   '/redemption-codes/': typeof AuthenticatedRedemptionCodesIndexRoute
@@ -502,6 +510,7 @@ export interface FileRoutesByTo {
   '/dynamic-ratio': typeof AuthenticatedDynamicRatioIndexRoute
   '/keys': typeof AuthenticatedKeysIndexRoute
   '/models': typeof AuthenticatedModelsIndexRoute
+  '/multimodal-files': typeof AuthenticatedMultimodalFilesIndexRoute
   '/playground': typeof AuthenticatedPlaygroundIndexRoute
   '/profile': typeof AuthenticatedProfileIndexRoute
   '/redemption-codes': typeof AuthenticatedRedemptionCodesIndexRoute
@@ -566,6 +575,7 @@ export interface FileRoutesById {
   '/_authenticated/dynamic-ratio/': typeof AuthenticatedDynamicRatioIndexRoute
   '/_authenticated/keys/': typeof AuthenticatedKeysIndexRoute
   '/_authenticated/models/': typeof AuthenticatedModelsIndexRoute
+  '/_authenticated/multimodal-files/': typeof AuthenticatedMultimodalFilesIndexRoute
   '/_authenticated/playground/': typeof AuthenticatedPlaygroundIndexRoute
   '/_authenticated/profile/': typeof AuthenticatedProfileIndexRoute
   '/_authenticated/redemption-codes/': typeof AuthenticatedRedemptionCodesIndexRoute
@@ -629,6 +639,7 @@ export interface FileRouteTypes {
     | '/dynamic-ratio/'
     | '/keys/'
     | '/models/'
+    | '/multimodal-files/'
     | '/playground/'
     | '/profile/'
     | '/redemption-codes/'
@@ -689,6 +700,7 @@ export interface FileRouteTypes {
     | '/dynamic-ratio'
     | '/keys'
     | '/models'
+    | '/multimodal-files'
     | '/playground'
     | '/profile'
     | '/redemption-codes'
@@ -752,6 +764,7 @@ export interface FileRouteTypes {
     | '/_authenticated/dynamic-ratio/'
     | '/_authenticated/keys/'
     | '/_authenticated/models/'
+    | '/_authenticated/multimodal-files/'
     | '/_authenticated/playground/'
     | '/_authenticated/profile/'
     | '/_authenticated/redemption-codes/'
@@ -1053,6 +1066,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPlaygroundIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/multimodal-files/': {
+      id: '/_authenticated/multimodal-files/'
+      path: '/multimodal-files'
+      fullPath: '/multimodal-files/'
+      preLoaderRoute: typeof AuthenticatedMultimodalFilesIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/models/': {
       id: '/_authenticated/models/'
       path: '/models'
@@ -1327,6 +1347,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedDynamicRatioIndexRoute: typeof AuthenticatedDynamicRatioIndexRoute
   AuthenticatedKeysIndexRoute: typeof AuthenticatedKeysIndexRoute
   AuthenticatedModelsIndexRoute: typeof AuthenticatedModelsIndexRoute
+  AuthenticatedMultimodalFilesIndexRoute: typeof AuthenticatedMultimodalFilesIndexRoute
   AuthenticatedPlaygroundIndexRoute: typeof AuthenticatedPlaygroundIndexRoute
   AuthenticatedProfileIndexRoute: typeof AuthenticatedProfileIndexRoute
   AuthenticatedRedemptionCodesIndexRoute: typeof AuthenticatedRedemptionCodesIndexRoute
@@ -1350,6 +1371,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDynamicRatioIndexRoute: AuthenticatedDynamicRatioIndexRoute,
   AuthenticatedKeysIndexRoute: AuthenticatedKeysIndexRoute,
   AuthenticatedModelsIndexRoute: AuthenticatedModelsIndexRoute,
+  AuthenticatedMultimodalFilesIndexRoute:
+    AuthenticatedMultimodalFilesIndexRoute,
   AuthenticatedPlaygroundIndexRoute: AuthenticatedPlaygroundIndexRoute,
   AuthenticatedProfileIndexRoute: AuthenticatedProfileIndexRoute,
   AuthenticatedRedemptionCodesIndexRoute:

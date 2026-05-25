@@ -91,6 +91,11 @@ export function SidebarModulesCard() {
           title: t('Usage Logs'),
           description: t('API usage records'),
         },
+        {
+          key: 'multimodal_files',
+          title: t('Multimodal Files'),
+          description: t('Uploaded multimodal file resources'),
+        },
       ],
     },
     {

@@ -106,6 +106,10 @@ export function SidebarModulesSection({
         title: t('Usage logs'),
         description: t('Detailed request logs for investigations.'),
       },
+      multimodal_files: {
+        title: t('Multimodal files'),
+        description: t('Manage uploaded multimodal file resources.'),
+      },
     },
     personal: {
       topup: {
