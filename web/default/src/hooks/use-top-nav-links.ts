@@ -77,6 +77,11 @@ export function useTopNavLinks(): TopNavLink[] {
     links.push({ title: t('Model Square'), href: '/pricing', requiresAuth })
   }
 
+  // Key usage query
+  if (modules?.key_query !== false) {
+    links.push({ title: t('Key Usage Query'), href: '/key-query' })
+  }
+
   // Docs is only exposed when the backend provides an external docs link.
   if (modules?.docs !== false && docsLink) {
     links.push({ title: t('Docs'), href: docsLink, external: true })

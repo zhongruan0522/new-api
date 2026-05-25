@@ -49,6 +49,7 @@ import {
 const headerNavSchema = z.object({
   home: z.boolean(),
   console: z.boolean(),
+  key_query: z.boolean(),
   pricingEnabled: z.boolean(),
   pricingRequireAuth: z.boolean(),
   docs: z.boolean(),
@@ -69,6 +70,10 @@ const toFormValues = (config: HeaderNavModulesConfig): HeaderNavFormValues => ({
     config.console === undefined
       ? HEADER_NAV_DEFAULT.console
       : Boolean(config.console),
+  key_query:
+    config.key_query === undefined
+      ? HEADER_NAV_DEFAULT.key_query
+      : Boolean(config.key_query),
   pricingEnabled:
     config.pricing?.enabled === undefined
       ? HEADER_NAV_DEFAULT.pricing.enabled
@@ -107,6 +112,7 @@ export function HeaderNavigationSection({
       ...config,
       home: values.home,
       console: values.console,
+      key_query: values.key_query,
       docs: values.docs,
       about: values.about,
       pricing: {
@@ -150,6 +156,11 @@ export function HeaderNavigationSection({
       key: 'console',
       title: t('Console'),
       description: t('User dashboard and quota controls.'),
+    },
+    {
+      key: 'key_query',
+      title: t('Key Usage Query'),
+      description: t('Query balance and recent usage by API key.'),
     },
     {
       key: 'docs',

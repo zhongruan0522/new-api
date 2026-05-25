@@ -24,6 +24,7 @@ export type HeaderNavAccessConfig = {
 export type HeaderNavModulesConfig = {
   home: boolean
   console: boolean
+  key_query: boolean
   pricing: HeaderNavAccessConfig
   rankings: HeaderNavAccessConfig
   docs: boolean
@@ -41,6 +42,7 @@ export type SidebarModulesAdminConfig = Record<string, SidebarSectionConfig>
 export const HEADER_NAV_DEFAULT: HeaderNavModulesConfig = {
   home: true,
   console: true,
+  key_query: true,
   pricing: {
     enabled: true,
     requireAuth: false,
