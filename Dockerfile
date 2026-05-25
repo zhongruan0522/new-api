@@ -1,10 +1,10 @@
 FROM oven/bun:latest AS builder
 
 WORKDIR /build
-COPY web/package.json .
-COPY web/bun.lock .
+COPY web/classic/package.json .
+COPY web/classic/bun.lock .
 RUN bun install
-COPY ./web .
+COPY ./web/classic .
 COPY ./VERSION .
 RUN DISABLE_ESLINT_PLUGIN='true' VITE_REACT_APP_VERSION=$(cat VERSION) bun run build
 
@@ -22,7 +22,7 @@ ADD go.mod go.sum ./
 RUN go mod download
 
 COPY . .
-COPY --from=builder /build/dist ./web/dist
+COPY --from=builder /build/dist ./web/classic/dist
 RUN COMMIT_HASH=$(cat COMMIT 2>/dev/null || echo "") && \
     go build -ldflags "-s -w -X 'github.com/zhongruan0522/new-api/common.Version=${COMMIT_HASH}'" -o new-api
 
