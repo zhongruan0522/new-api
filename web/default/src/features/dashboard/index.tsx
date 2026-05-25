@@ -65,12 +65,6 @@ const LazyConsumptionDistributionChart = lazy(() =>
   }))
 )
 
-const LazyPerformanceOverview = lazy(() =>
-  import('./components/models/performance-overview').then((m) => ({
-    default: m.PerformanceOverview,
-  }))
-)
-
 const LazyUserCharts = lazy(() =>
   import('./components/users/user-charts').then((m) => ({
     default: m.UserCharts,
@@ -102,29 +96,6 @@ function ModelChartsFallback() {
       </div>
       <div className='h-96 p-2'>
         <Skeleton className='h-full w-full' />
-      </div>
-    </div>
-  )
-}
-
-function PerformanceOverviewFallback() {
-  return (
-    <div className='overflow-hidden rounded-lg border'>
-      <div className='flex flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3 sm:px-5'>
-        <div className='flex items-center gap-2'>
-          <Skeleton className='h-4 w-24' />
-        </div>
-        {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className='flex items-center gap-1.5'>
-            <Skeleton className='h-3 w-14' />
-            <Skeleton className='h-4 w-16' />
-          </div>
-        ))}
-        <div className='ml-auto flex items-center gap-2'>
-          {Array.from({ length: 2 }).map((_, i) => (
-            <Skeleton key={i} className='h-5 w-28 rounded-full' />
-          ))}
-        </div>
       </div>
     </div>
   )
@@ -256,13 +227,6 @@ export function Dashboard() {
                   />
                 </Suspense>
               </FadeIn>
-              {isAdmin && (
-                <FadeIn delay={0.05}>
-                  <Suspense fallback={<PerformanceOverviewFallback />}>
-                    <LazyPerformanceOverview />
-                  </Suspense>
-                </FadeIn>
-              )}
               <FadeIn delay={0.1}>
                 <Suspense fallback={<ModelChartsFallback />}>
                   <LazyConsumptionDistributionChart

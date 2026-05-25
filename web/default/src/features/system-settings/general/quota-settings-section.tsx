@@ -21,7 +21,6 @@ import * as z from 'zod'
 import type { Resolver } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useTranslation } from 'react-i18next'
-import { Alert, AlertDescription } from '@/components/ui/alert'
 import {
   Form,
   FormControl,
@@ -32,15 +31,11 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
-import { Switch } from '@/components/ui/switch'
 import { FormDirtyIndicator } from '../components/form-dirty-indicator'
 import { FormNavigationGuard } from '../components/form-navigation-guard'
 import {
   SettingsForm,
-  SettingsSwitchContent,
-  SettingsSwitchItem,
   SettingsFormGrid,
-  SettingsFormGridItem,
 } from '../components/settings-form-layout'
 import { SettingsPageFormActions } from '../components/settings-page-context'
 import { SettingsSection } from '../components/settings-section'
@@ -57,7 +52,7 @@ const quotaSchema = z.object({
     docs_link: z.string(),
   }),
   quota_setting: z.object({
-    enable_free_model_pre_consume: z.boolean(),
+    free_model_pre_consumed_quota: z.coerce.number().min(0),
   }),
 })
 
@@ -65,13 +60,9 @@ type QuotaFormValues = z.infer<typeof quotaSchema>
 
 type QuotaSettingsSectionProps = {
   defaultValues: QuotaFormValues
-  complianceConfirmed?: boolean
 }
 
-export function QuotaSettingsSection({
-  defaultValues,
-  complianceConfirmed = true,
-}: QuotaSettingsSectionProps) {
+export function QuotaSettingsSection({ defaultValues }: QuotaSettingsSectionProps) {
   const { t } = useTranslation()
   const updateOption = useUpdateOption()
   const handleNumberChange =
@@ -103,16 +94,6 @@ export function QuotaSettingsSection({
   return (
     <SettingsSection title={t('Quota Settings')}>
       <FormNavigationGuard when={isDirty} />
-
-      {!complianceConfirmed ? (
-        <Alert variant='destructive'>
-          <AlertDescription>
-            {t(
-              'Non-zero invitation rewards require compliance confirmation in Payment Gateway settings.'
-            )}
-          </AlertDescription>
-        </Alert>
-      ) : null}
 
       <Form {...form}>
         <SettingsForm onSubmit={handleSubmit}>
@@ -218,31 +199,29 @@ export function QuotaSettingsSection({
               )}
             />
 
-            <SettingsFormGridItem span='full'>
-              <FormField
-                control={form.control}
-                name='quota_setting.enable_free_model_pre_consume'
-                render={({ field }) => (
-                  <SettingsSwitchItem>
-                    <SettingsSwitchContent>
-                      <FormLabel>{t('Pre-Consume for Free Models')}</FormLabel>
-                      <FormDescription>
-                        {t(
-                          'When enabled, zero-cost models also pre-consume quota before final settlement.'
-                        )}
-                      </FormDescription>
-                    </SettingsSwitchContent>
-                    <FormControl>
-                      <Switch
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                        disabled={updateOption.isPending}
-                      />
-                    </FormControl>
-                  </SettingsSwitchItem>
-                )}
-              />
-            </SettingsFormGridItem>
+            <FormField
+              control={form.control}
+              name='quota_setting.free_model_pre_consumed_quota'
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t('Pre-Consume for Free Models')}</FormLabel>
+                  <FormControl>
+                    <Input
+                      type='number'
+                      value={field.value ?? ''}
+                      onChange={handleNumberChange(field.onChange)}
+                      name={field.name}
+                      onBlur={field.onBlur}
+                      ref={field.ref}
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    {t('Quota pre-consumed for zero-cost models; set 0 to disable.')}
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <FormField
               control={form.control}

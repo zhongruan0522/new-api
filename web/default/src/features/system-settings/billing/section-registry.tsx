@@ -20,7 +20,6 @@ import { parseCurrencyDisplayType } from '@/lib/currency'
 import { CheckinSettingsSection } from '../general/checkin-settings-section'
 import { PricingSection } from '../general/pricing-section'
 import { QuotaSettingsSection } from '../general/quota-settings-section'
-import { PaymentSettingsSection } from '../integrations/payment-settings-section'
 import { RatioSettingsCard } from '../models/ratio-settings-card'
 import type { BillingSettings } from '../types'
 import { createSectionRegistry } from '../utils/section-registry'
@@ -66,14 +65,10 @@ const BILLING_SECTIONS = [
             docs_link: settings['general_setting.docs_link'],
           },
           quota_setting: {
-            enable_free_model_pre_consume:
-              settings['quota_setting.enable_free_model_pre_consume'],
+            free_model_pre_consumed_quota:
+              settings['quota_setting.free_model_pre_consumed_quota'],
           },
         }}
-        complianceConfirmed={
-          (settings['payment_setting.compliance_confirmed'] ?? false) &&
-          settings['payment_setting.compliance_terms_version'] === 'v1'
-        }
       />
     ),
   },
@@ -123,66 +118,6 @@ const BILLING_SECTIONS = [
         groupDefaults={getGroupDefaults(settings)}
         toolPricesDefault={settings['tool_price_setting.prices']}
         visibleTabs={['groups']}
-      />
-    ),
-  },
-  {
-    id: 'payment',
-    titleKey: 'Payment Gateway',
-    build: (settings: BillingSettings) => (
-      <PaymentSettingsSection
-        defaultValues={{
-          PayAddress: settings.PayAddress,
-          EpayId: settings.EpayId,
-          EpayKey: settings.EpayKey,
-          Price: settings.Price,
-          MinTopUp: settings.MinTopUp,
-          CustomCallbackAddress: settings.CustomCallbackAddress,
-          PayMethods: settings.PayMethods,
-          AmountOptions: settings['payment_setting.amount_options'],
-          AmountDiscount: settings['payment_setting.amount_discount'],
-          StripeApiSecret: settings.StripeApiSecret,
-          StripeWebhookSecret: settings.StripeWebhookSecret,
-          StripePriceId: settings.StripePriceId,
-          StripeUnitPrice: settings.StripeUnitPrice,
-          StripeMinTopUp: settings.StripeMinTopUp,
-          StripePromotionCodesEnabled: settings.StripePromotionCodesEnabled,
-          CreemApiKey: settings.CreemApiKey,
-          CreemWebhookSecret: settings.CreemWebhookSecret,
-          CreemTestMode: settings.CreemTestMode,
-          CreemProducts: settings.CreemProducts,
-        }}
-        waffoDefaultValues={{
-          WaffoEnabled: settings.WaffoEnabled ?? false,
-          WaffoApiKey: settings.WaffoApiKey ?? '',
-          WaffoPrivateKey: settings.WaffoPrivateKey ?? '',
-          WaffoPublicCert: settings.WaffoPublicCert ?? '',
-          WaffoSandboxPublicCert: settings.WaffoSandboxPublicCert ?? '',
-          WaffoSandboxApiKey: settings.WaffoSandboxApiKey ?? '',
-          WaffoSandboxPrivateKey: settings.WaffoSandboxPrivateKey ?? '',
-          WaffoSandbox: settings.WaffoSandbox ?? false,
-          WaffoMerchantId: settings.WaffoMerchantId ?? '',
-          WaffoCurrency: settings.WaffoCurrency ?? 'USD',
-          WaffoUnitPrice: settings.WaffoUnitPrice ?? 1,
-          WaffoMinTopUp: settings.WaffoMinTopUp ?? 1,
-          WaffoNotifyUrl: settings.WaffoNotifyUrl ?? '',
-          WaffoReturnUrl: settings.WaffoReturnUrl ?? '',
-          WaffoPayMethods: settings.WaffoPayMethods ?? '[]',
-        }}
-        waffoPancakeDefaultValues={{
-          WaffoPancakeMerchantID: settings.WaffoPancakeMerchantID ?? '',
-          WaffoPancakePrivateKey: settings.WaffoPancakePrivateKey ?? '',
-          WaffoPancakeReturnURL: settings.WaffoPancakeReturnURL ?? '',
-        }}
-        waffoPancakeProvisionedStoreID={settings.WaffoPancakeStoreID ?? ''}
-        waffoPancakeProvisionedProductID={settings.WaffoPancakeProductID ?? ''}
-        complianceDefaults={{
-          confirmed: settings['payment_setting.compliance_confirmed'] ?? false,
-          termsVersion:
-            settings['payment_setting.compliance_terms_version'] ?? '',
-          confirmedAt: settings['payment_setting.compliance_confirmed_at'] ?? 0,
-          confirmedBy: settings['payment_setting.compliance_confirmed_by'] ?? 0,
-        }}
       />
     ),
   },

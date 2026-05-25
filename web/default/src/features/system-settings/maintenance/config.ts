@@ -46,7 +46,7 @@ export const HEADER_NAV_DEFAULT: HeaderNavModulesConfig = {
     requireAuth: false,
   },
   rankings: {
-    enabled: true,
+    enabled: false,
     requireAuth: false,
   },
   docs: true,
@@ -64,8 +64,6 @@ export const SIDEBAR_MODULES_DEFAULT: SidebarModulesAdminConfig = {
     detail: true,
     token: true,
     log: true,
-    midjourney: true,
-    task: true,
   },
   personal: {
     enabled: true,
@@ -79,7 +77,6 @@ export const SIDEBAR_MODULES_DEFAULT: SidebarModulesAdminConfig = {
     redemption: true,
     user: true,
     setting: true,
-    subscription: true,
   },
 }
 

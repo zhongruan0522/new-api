@@ -20,7 +20,6 @@ import type { AuthSettings } from '../types'
 import { createSectionRegistry } from '../utils/section-registry'
 import { BasicAuthSection } from './basic-auth-section'
 import { BotProtectionSection } from './bot-protection-section'
-import { CustomOAuthSection } from './custom-oauth/custom-oauth-section'
 import { OAuthSection } from './oauth-section'
 import { PasskeySection } from './passkey-section'
 
@@ -117,11 +116,6 @@ const AUTH_SECTIONS = [
         }}
       />
     ),
-  },
-  {
-    id: 'custom-oauth',
-    titleKey: 'Custom OAuth',
-    build: () => <CustomOAuthSection />,
   },
 ] as const
 

@@ -20,7 +20,6 @@ import { useMemo, useState } from 'react'
 import {
   ChevronRight,
   ExternalLink,
-  Gauge,
   KeyRound,
   ScrollText,
   ShieldCheck,
@@ -46,11 +45,9 @@ import {
   CodeBlockCopyButton,
 } from '@/components/ai-elements/code-block'
 import {
-  buildRateLimits,
   buildSupportedParameters,
-  formatRateLimit,
   type SupportedParameter,
-} from '../lib/mock-stats'
+} from '../lib/model-api-reference'
 import { replaceModelInPath } from '../lib/model-helpers'
 import { inferApiInfo } from '../lib/model-metadata'
 import type { PricingModel } from '../types'
@@ -659,56 +656,6 @@ function ParamRangeCell(props: { param: SupportedParameter }) {
 }
 
 // ---------------------------------------------------------------------------
-// Rate-limits table
-// ---------------------------------------------------------------------------
-
-function RateLimitsSection(props: { model: PricingModel }) {
-  const { t } = useTranslation()
-  const limits = useMemo(() => buildRateLimits(props.model), [props.model])
-
-  if (limits.length === 0) return null
-
-  return (
-    <section>
-      <SectionTitle icon={Gauge}>{t('Rate limits')}</SectionTitle>
-      <div className='border-border/60 overflow-hidden rounded-lg border'>
-        <Table>
-          <TableHeader>
-            <TableRow className='bg-muted/30 hover:bg-muted/30'>
-              <TableHead className='h-9'>{t('Group')}</TableHead>
-              <TableHead className='h-9 text-right'>RPM</TableHead>
-              <TableHead className='h-9 text-right'>TPM</TableHead>
-              <TableHead className='h-9 text-right'>RPD</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {limits.map((l) => (
-              <TableRow key={l.group} className='hover:bg-muted/20'>
-                <TableCell className='py-2 font-mono'>{l.group}</TableCell>
-                <TableCell className='py-2 text-right font-mono'>
-                  {formatRateLimit(l.rpm)}
-                </TableCell>
-                <TableCell className='py-2 text-right font-mono'>
-                  {formatRateLimit(l.tpm)}
-                </TableCell>
-                <TableCell className='py-2 text-right font-mono'>
-                  {formatRateLimit(l.rpd)}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
-      <p className='text-muted-foreground mt-2 text-[11px] leading-relaxed'>
-        {t(
-          'RPM = requests per minute, TPM = tokens per minute, RPD = requests per day. Limits apply per token group.'
-        )}
-      </p>
-    </section>
-  )
-}
-
-// ---------------------------------------------------------------------------
 // Provider info card (vendor / tokenizer / license / privacy)
 // ---------------------------------------------------------------------------
 //
@@ -782,14 +729,18 @@ export function ModelDetailsProviderInfo(props: { model: PricingModel }) {
 
         <InfoCell label={t('Data retention')}>
           <span className='text-sm'>
-            {info.data_retention_days === 0
-              ? t('Zero retention')
-              : `${info.data_retention_days} ${t('days')}`}
+            {typeof info.data_retention_days === 'number'
+              ? info.data_retention_days === 0
+                ? t('Zero retention')
+                : `${info.data_retention_days} ${t('days')}`
+              : t('Provider-specific')}
           </span>
           <span className='text-muted-foreground text-[10px]'>
-            {info.training_opt_out
-              ? t('Not used for upstream training by default')
-              : t('May be used for training by upstream provider')}
+            {typeof info.training_opt_out === 'boolean'
+              ? info.training_opt_out
+                ? t('Not used for upstream training by default')
+                : t('May be used for training by upstream provider')
+              : t('Check the upstream provider policy for details')}
           </span>
         </InfoCell>
       </div>
@@ -855,7 +806,6 @@ export function ModelDetailsApi(props: {
       <CodeSamplesSection model={props.model} endpointMap={props.endpointMap} />
       <AuthSection />
       <SupportedParametersSection model={props.model} />
-      <RateLimitsSection model={props.model} />
     </div>
   )
 }

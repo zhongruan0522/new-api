@@ -27,16 +27,6 @@ const USAGE_LOGS_SECTIONS = [
     titleKey: 'Common Logs',
     build: () => null, // Content is rendered directly in the page component
   },
-  {
-    id: 'drawing',
-    titleKey: 'Drawing Logs',
-    build: () => null, // Content is rendered directly in the page component
-  },
-  {
-    id: 'task',
-    titleKey: 'Task Logs',
-    build: () => null, // Content is rendered directly in the page component
-  },
 ] as const
 
 export type UsageLogsSectionId = (typeof USAGE_LOGS_SECTIONS)[number]['id']

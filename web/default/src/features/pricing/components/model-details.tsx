@@ -17,9 +17,8 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { useMemo } from 'react'
-import { useQuery } from '@tanstack/react-query'
 import { useNavigate, useParams, useSearch } from '@tanstack/react-router'
-import { ArrowLeft, Code2, HeartPulse, Info, Timer } from 'lucide-react'
+import { ArrowLeft, Box, Code2, Info } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { getLobeIcon } from '@/lib/lobe-icon'
 import { cn } from '@/lib/utils'
@@ -45,12 +44,6 @@ import { CopyButton } from '@/components/copy-button'
 import { sideDrawerContentClassName } from '@/components/drawer-layout'
 import { GroupBadge } from '@/components/group-badge'
 import { PublicLayout } from '@/components/layout'
-import { getPerfMetrics } from '@/features/performance-metrics/api'
-import {
-  formatLatency,
-  formatThroughput,
-  formatUptimePct,
-} from '@/features/performance-metrics/lib/format'
 import { DEFAULT_TOKEN_UNIT, QUOTA_TYPE_VALUES } from '../constants'
 import { usePricingData } from '../hooks/use-pricing-data'
 import {
@@ -73,7 +66,6 @@ import type {
 import { DynamicPricingBreakdown } from './dynamic-pricing-breakdown'
 import { ModelDetailsApi, ModelDetailsProviderInfo } from './model-details-api'
 import { ModalityIcons } from './model-details-modalities'
-import { ModelDetailsPerformance } from './model-details-performance'
 import { ModelDetailsQuickStats } from './model-details-quick-stats'
 
 // ----------------------------------------------------------------------------
@@ -201,61 +193,25 @@ function OverviewMetric(props: {
 
 function OverviewSummaryGrid(props: { model: PricingModel }) {
   const { t } = useTranslation()
-  const metricsQuery = useQuery({
-    queryKey: ['perf-metrics', props.model.model_name],
-    queryFn: () => getPerfMetrics(props.model.model_name, 24),
-    staleTime: 60 * 1000,
-  })
-
-  const groups = metricsQuery.data?.data.groups ?? []
-  const successRates = groups
-    .map((group) => group.success_rate)
-    .filter((rate) => Number.isFinite(rate))
-  const successRate =
-    successRates.length > 0
-      ? successRates.reduce((sum, rate) => sum + rate, 0) / successRates.length
-      : Number.NaN
-  let successIntent: 'default' | 'warning' | 'success' = 'warning'
-  if (successRate >= 99.9) {
-    successIntent = 'success'
-  } else if (successRate >= 99) {
-    successIntent = 'default'
-  }
-  const tpsValues = groups
-    .map((group) => group.avg_tps)
-    .filter((value) => value > 0)
-  const avgTps =
-    tpsValues.length > 0
-      ? tpsValues.reduce((sum, value) => sum + value, 0) / tpsValues.length
-      : 0
-  const latencyValues = groups
-    .map((group) => group.avg_latency_ms)
-    .filter((value) => value > 0)
-  const avgLatency =
-    latencyValues.length > 0
-      ? Math.round(
-          latencyValues.reduce((sum, value) => sum + value, 0) /
-            latencyValues.length
-        )
-      : 0
+  const endpoints = props.model.supported_endpoint_types ?? []
+  const groups = (props.model.enable_groups ?? []).filter(Boolean)
 
   return (
     <div className='bg-muted/20 grid overflow-hidden rounded-lg border sm:grid-cols-3 sm:divide-x'>
       <OverviewMetric
-        icon={Timer}
-        label='TPS'
-        value={formatThroughput(avgTps)}
+        icon={Box}
+        label={t('Groups')}
+        value={groups.length > 0 ? groups.length : t('All')}
       />
       <OverviewMetric
-        icon={Timer}
-        label={t('Average latency')}
-        value={formatLatency(avgLatency)}
+        icon={Code2}
+        label={t('Endpoints')}
+        value={endpoints.length > 0 ? endpoints.length : t('Default')}
       />
       <OverviewMetric
-        icon={HeartPulse}
-        label={t('Success rate')}
-        value={formatUptimePct(successRate)}
-        intent={successIntent}
+        icon={Info}
+        label={t('Billing')}
+        value={isTokenBasedModel(props.model) ? t('Token-based') : t('Per Request')}
       />
     </div>
   )
@@ -883,7 +839,7 @@ function GroupPricingSection(props: {
   )
 }
 
-const TAB_VALUES = ['overview', 'performance', 'api'] as const
+const TAB_VALUES = ['overview', 'api'] as const
 type TabValue = (typeof TAB_VALUES)[number]
 
 const TAB_META: Record<
@@ -891,7 +847,6 @@ const TAB_META: Record<
   { icon: React.ComponentType<{ className?: string }>; labelKey: string }
 > = {
   overview: { icon: Info, labelKey: 'Overview' },
-  performance: { icon: HeartPulse, labelKey: 'Performance' },
   api: { icon: Code2, labelKey: 'API' },
 }
 
@@ -973,10 +928,6 @@ export function ModelDetailsContent(props: ModelDetailsContentProps) {
           />
 
           <ModelDetailsProviderInfo model={props.model} />
-        </TabsContent>
-
-        <TabsContent value='performance' className='outline-none'>
-          <ModelDetailsPerformance model={props.model} />
         </TabsContent>
 
         <TabsContent value='api' className='outline-none'>

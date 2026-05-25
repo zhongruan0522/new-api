@@ -106,14 +106,6 @@ export function SidebarModulesSection({
         title: t('Usage logs'),
         description: t('Detailed request logs for investigations.'),
       },
-      midjourney: {
-        title: t('Drawing logs'),
-        description: t('History of Midjourney-style image tasks.'),
-      },
-      task: {
-        title: t('Task logs'),
-        description: t('Background job tracker for queued work.'),
-      },
     },
     personal: {
       topup: {
@@ -145,10 +137,6 @@ export function SidebarModulesSection({
       setting: {
         title: t('System settings'),
         description: t('Advanced platform configuration.'),
-      },
-      subscription: {
-        title: t('Subscription Management'),
-        description: t('Manage subscription plans and pricing.'),
       },
     },
   }
