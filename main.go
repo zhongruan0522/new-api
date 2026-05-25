@@ -30,11 +30,17 @@ import (
 	_ "net/http/pprof"
 )
 
-//go:embed web/classic/dist
+//go:embed web/default/dist
 var buildFS embed.FS
 
-//go:embed web/classic/dist/index.html
+//go:embed web/default/dist/index.html
 var indexPage []byte
+
+//go:embed web/classic/dist
+var classicBuildFS embed.FS
+
+//go:embed web/classic/dist/index.html
+var classicIndexPage []byte
 
 func main() {
 	startTime := time.Now()
@@ -161,7 +167,12 @@ func main() {
 	InjectGoogleAnalytics()
 
 	// 设置路由
-	router.SetRouter(server, buildFS, indexPage)
+	router.SetRouter(server, router.ThemeAssets{
+		DefaultBuildFS:   buildFS,
+		DefaultIndexPage: indexPage,
+		ClassicBuildFS:   classicBuildFS,
+		ClassicIndexPage: classicIndexPage,
+	})
 	var port = os.Getenv("PORT")
 	if port == "" {
 		port = strconv.Itoa(*common.Port)
@@ -193,6 +204,7 @@ func InjectUmamiAnalytics() {
 	analyticsInjectBuilder.WriteString("<!--Umami QuantumNous-->\n")
 	analyticsInject := analyticsInjectBuilder.String()
 	indexPage = bytes.ReplaceAll(indexPage, []byte("<!--umami-->\n"), []byte(analyticsInject))
+	classicIndexPage = bytes.ReplaceAll(classicIndexPage, []byte("<!--umami-->\n"), []byte(analyticsInject))
 }
 
 func InjectGoogleAnalytics() {
@@ -215,6 +227,7 @@ func InjectGoogleAnalytics() {
 	analyticsInjectBuilder.WriteString("<!--Google Analytics QuantumNous-->\n")
 	analyticsInject := analyticsInjectBuilder.String()
 	indexPage = bytes.ReplaceAll(indexPage, []byte("<!--Google Analytics-->\n"), []byte(analyticsInject))
+	classicIndexPage = bytes.ReplaceAll(classicIndexPage, []byte("<!--Google Analytics-->\n"), []byte(analyticsInject))
 }
 
 func InitResources() error {

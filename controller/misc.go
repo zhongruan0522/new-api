@@ -66,6 +66,7 @@ func GetStatus(c *gin.Context) {
 		"data_export_default_time":    common.DataExportDefaultTime,
 		"default_collapse_sidebar":    common.DefaultCollapseSidebar,
 		"default_use_auto_group":      setting.DefaultUseAutoGroup,
+		"theme":                       system_setting.GetThemeSettings().Frontend,
 
 		"price":             operation_setting.Price,
 		"stripe_unit_price": setting.StripeUnitPrice,
