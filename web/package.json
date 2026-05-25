@@ -10,7 +10,7 @@
     "@lobehub/ui": "3.4.5",
     "@visactor/react-vchart": "~1.8.11",
     "@visactor/vchart": "~1.8.11",
-    "@visactor/vchart-semi-theme": "~1.8.8",
+    "@visactor/vchart-semi-theme": "~1.12.3",
     "axios": "1.15.2",
     "clsx": "^2.1.1",
     "dayjs": "^1.11.20",
