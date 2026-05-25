@@ -53,6 +53,10 @@ const DEFAULT_SIDEBAR_MODULES: SidebarModulesAdminConfig = {
     topup: true,
     personal: true,
   },
+  support: {
+    enabled: true,
+    ticket: true,
+  },
   admin: {
     enabled: true,
     dynamic_ratio: true,
@@ -104,6 +108,7 @@ const URL_TO_CONFIG_MAP: Record<string, { section: string; module: string }> = {
   '/multimodal-files': { section: 'console', module: 'multimodal_files' },
   '/wallet': { section: 'personal', module: 'topup' },
   '/profile': { section: 'personal', module: 'personal' },
+  '/ticket': { section: 'support', module: 'ticket' },
   '/dynamic-ratio': { section: 'admin', module: 'dynamic_ratio' },
   '/channels': { section: 'admin', module: 'channel' },
   '/models': { section: 'admin', module: 'models' },

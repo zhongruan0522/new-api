@@ -25,6 +25,7 @@ import {
   Gauge,
   Key,
   LayoutDashboard,
+  LifeBuoy,
   MessageSquare,
   Radio,
   Settings,
@@ -107,6 +108,17 @@ export function useSidebarData(): SidebarData {
             title: t('Profile'),
             url: '/profile',
             icon: User,
+          },
+        ],
+      },
+      {
+        id: 'support',
+        title: t('Support'),
+        items: [
+          {
+            title: t('Tickets'),
+            url: '/ticket',
+            icon: LifeBuoy,
           },
         ],
       },

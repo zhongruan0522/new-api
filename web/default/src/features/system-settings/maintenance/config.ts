@@ -73,6 +73,10 @@ export const SIDEBAR_MODULES_DEFAULT: SidebarModulesAdminConfig = {
     topup: true,
     personal: true,
   },
+  support: {
+    enabled: true,
+    ticket: true,
+  },
   admin: {
     enabled: true,
     dynamic_ratio: true,

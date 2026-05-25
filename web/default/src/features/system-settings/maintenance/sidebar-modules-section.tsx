@@ -73,6 +73,10 @@ export function SidebarModulesSection({
       title: t('Personal area'),
       description: t('Wallet management and personal preferences.'),
     },
+    support: {
+      title: t('Support area'),
+      description: t('Ticket support and user assistance.'),
+    },
     admin: {
       title: t('Admin area'),
       description: t('Global configuration and administrative tools.'),
@@ -119,6 +123,12 @@ export function SidebarModulesSection({
       personal: {
         title: t('Profile'),
         description: t('Personal settings and profile management.'),
+      },
+    },
+    support: {
+      ticket: {
+        title: t('Tickets'),
+        description: t('Create, reply to, and manage support tickets.'),
       },
     },
     admin: {

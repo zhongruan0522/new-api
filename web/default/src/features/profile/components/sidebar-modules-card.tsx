@@ -115,6 +115,18 @@ export function SidebarModulesCard() {
         },
       ],
     },
+    {
+      key: 'support',
+      title: t('Support Area'),
+      description: t('Support and service functions'),
+      modules: [
+        {
+          key: 'ticket',
+          title: t('Tickets'),
+          description: t('Support ticket list and replies'),
+        },
+      ],
+    },
   ]
 
   const loadConfig = useCallback(async () => {
