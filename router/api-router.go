@@ -300,5 +300,16 @@ func SetApiRouter(router *gin.Engine) {
 			modelsRoute.PUT("/", controller.UpdateModelMeta)
 			modelsRoute.DELETE("/:id", controller.DeleteModelMeta)
 		}
+
+		dynamicRatioRoute := apiRouter.Group("/dynamic_ratio")
+		{
+			dynamicRatioRoute.GET("/status", middleware.UserAuth(), controller.GetDynamicRatioStatus)
+			dynamicRatioRoute.GET("/rules", middleware.AdminAuth(), controller.GetDynamicRatioRules)
+			dynamicRatioRoute.POST("/rules", middleware.RootAuth(), controller.CreateDynamicRatioRule)
+			dynamicRatioRoute.PUT("/rules", middleware.RootAuth(), controller.UpdateDynamicRatioRule)
+			dynamicRatioRoute.DELETE("/rules/:id", middleware.RootAuth(), controller.DeleteDynamicRatioRule)
+			dynamicRatioRoute.PUT("/rules/reorder", middleware.RootAuth(), controller.ReorderDynamicRatioRules)
+			dynamicRatioRoute.PUT("/enabled", middleware.RootAuth(), controller.SetDynamicRatioEnabled)
+		}
 	}
 }

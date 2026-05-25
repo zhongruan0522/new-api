@@ -1419,7 +1419,7 @@ export default function GroupRatioSettings(props) {
           <Switch
             checked={inputs.DefaultUseAutoGroup}
             onChange={(value) =>
-              setInputs({ ...inputs, DefaultUseAutoGroup: value })
+              setInputs((prev) => ({ ...prev, DefaultUseAutoGroup: value }))
             }
           />
           <Typography.Text>

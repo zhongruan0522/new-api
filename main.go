@@ -11,6 +11,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/bytedance/gopkg/util/gopool"
+	"github.com/gin-contrib/sessions"
+	"github.com/gin-contrib/sessions/cookie"
+	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 	"github.com/zhongruan0522/new-api/common"
 	"github.com/zhongruan0522/new-api/controller"
 	"github.com/zhongruan0522/new-api/i18n"
@@ -21,11 +26,6 @@ import (
 	"github.com/zhongruan0522/new-api/service"
 	_ "github.com/zhongruan0522/new-api/setting/performance_setting"
 	"github.com/zhongruan0522/new-api/setting/ratio_setting"
-	"github.com/bytedance/gopkg/util/gopool"
-	"github.com/gin-contrib/sessions"
-	"github.com/gin-contrib/sessions/cookie"
-	"github.com/gin-gonic/gin"
-	"github.com/joho/godotenv"
 
 	_ "net/http/pprof"
 )
@@ -85,6 +85,14 @@ func main() {
 
 		go model.SyncChannelCache(common.SyncFrequency)
 	}
+
+	model.InitDynamicRatioCache()
+
+	// 动态倍率缓存同步
+	go model.SyncDynamicRatioCache(common.SyncFrequency)
+
+	// 设置获取 relay 并发数的函数指针
+	common.GetActiveConnectionsFunc = middleware.GetActiveConnectionCount
 
 	// 热更新配置
 	go model.SyncOptions(common.SyncFrequency)

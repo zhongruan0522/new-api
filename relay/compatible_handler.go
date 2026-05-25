@@ -338,6 +338,20 @@ func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage 
 	groupRatio := relayInfo.PriceData.GroupRatioInfo.GroupRatio
 	modelPrice := relayInfo.PriceData.ModelPrice
 	cachedCreationRatio := relayInfo.PriceData.CacheCreationRatio
+	isClaudeUsageSemantic := relayInfo.FinalRequestRelayFormat == types.RelayFormatClaude
+
+	if _, enabled, err := service.ApplyContextPricingForUsage(modelName, service.BuildContextPricingUsage(usage, isClaudeUsageSemantic), &relayInfo.PriceData); enabled {
+		if err != nil {
+			logger.LogError(ctx, "context pricing failed: "+err.Error())
+			extraContent = append(extraContent, "分段计费匹配失败: "+err.Error())
+		} else {
+			completionRatio = relayInfo.PriceData.CompletionRatio
+			cacheRatio = relayInfo.PriceData.CacheRatio
+			modelRatio = relayInfo.PriceData.ModelRatio
+			modelPrice = relayInfo.PriceData.ModelPrice
+			cachedCreationRatio = relayInfo.PriceData.CacheCreationRatio
+		}
+	}
 
 	// Convert values to decimal for precise calculation
 	dPromptTokens := decimal.NewFromInt(int64(promptTokens))
@@ -412,6 +426,22 @@ func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage 
 		extraContent = append(extraContent, fmt.Sprintf("Claude Web Search 调用 %d 次，调用花费 %s",
 			claudeWebSearchCallCount, dClaudeWebSearchQuota.String()))
 	}
+	// gemini web search tool 计费
+	var dGeminiWebSearchQuota decimal.Decimal
+	var geminiWebSearchPrice float64
+	geminiWebSearchCallCount := ctx.GetInt("gemini_web_search_requests")
+	if geminiWebSearchCallCount > 0 {
+		if pricePerCall, ok := operation_setting.GetToolBillingPrice("web_search", modelName, "gemini", "", ""); ok {
+			geminiWebSearchPrice = pricePerCall
+			dGeminiWebSearchQuota = decimal.NewFromFloat(geminiWebSearchPrice).
+				Mul(decimal.NewFromInt(int64(geminiWebSearchCallCount))).
+				Mul(dGroupRatio).Mul(dQuotaPerUnit)
+		}
+		if !dGeminiWebSearchQuota.IsZero() {
+			extraContent = append(extraContent, fmt.Sprintf("Gemini Web Search 调用 %d 次，调用花费 %s",
+				geminiWebSearchCallCount, dGeminiWebSearchQuota.String()))
+		}
+	}
 	// file search tool 计费
 	var dFileSearchQuota decimal.Decimal
 	var fileSearchPrice float64
@@ -442,7 +472,6 @@ func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage 
 
 	var audioInputQuota decimal.Decimal
 	var audioInputPrice float64
-	isClaudeUsageSemantic := relayInfo.FinalRequestRelayFormat == types.RelayFormatClaude
 	if !relayInfo.PriceData.UsePrice {
 		baseTokens := dPromptTokens
 		// 减去 cached tokens
@@ -488,6 +517,8 @@ func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage 
 	}
 	// 添加 responses tools call 调用的配额
 	quotaCalculateDecimal = quotaCalculateDecimal.Add(dWebSearchQuota)
+	quotaCalculateDecimal = quotaCalculateDecimal.Add(dClaudeWebSearchQuota)
+	quotaCalculateDecimal = quotaCalculateDecimal.Add(dGeminiWebSearchQuota)
 	quotaCalculateDecimal = quotaCalculateDecimal.Add(dFileSearchQuota)
 	// 添加 audio input 独立计费
 	quotaCalculateDecimal = quotaCalculateDecimal.Add(audioInputQuota)
@@ -509,10 +540,18 @@ func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage 
 
 	// record all the consume log even if quota is 0
 	if totalTokens == 0 {
-		// in this case, must be some error happened
-		// we cannot just return, because we may have to return the pre-consumed quota
-		quota = 0
-		extraContent = append(extraContent, "上游没有返回计费信息，无法扣费（可能是上游超时）")
+		// 上游没有返回 token 信息（可能是超时或错误），但如果有工具调用费用，仍需扣费
+		toolQuota := dWebSearchQuota.Add(dClaudeWebSearchQuota).Add(dGeminiWebSearchQuota).
+			Add(dFileSearchQuota).Add(dImageGenerationCallQuota).Add(audioInputQuota)
+		if toolQuota.GreaterThan(decimal.Zero) {
+			quota = int(toolQuota.Round(0).IntPart())
+			extraContent = append(extraContent, "上游没有返回计费信息，但工具调用费用仍需扣除")
+			model.UpdateUserUsedQuotaAndRequestCount(relayInfo.UserId, quota)
+			model.UpdateChannelUsedQuota(relayInfo.ChannelId, quota)
+		} else {
+			quota = 0
+			extraContent = append(extraContent, "上游没有返回计费信息，无法扣费（可能是上游超时）")
+		}
 		logger.LogError(ctx, fmt.Sprintf("total tokens is 0, cannot consume quota, userId %d, channelId %d, "+
 			"tokenId %d, model %s， pre-consumed quota %d", relayInfo.UserId, relayInfo.ChannelId, relayInfo.TokenId, modelName, relayInfo.FinalPreConsumedQuota))
 	} else {
@@ -537,7 +576,13 @@ func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage 
 		extraContent = append(extraContent, fmt.Sprintf("模型 %s", modelName))
 	}
 	logContent := strings.Join(extraContent, ", ")
-	other := service.GenerateTextOtherInfo(ctx, relayInfo, modelRatio, groupRatio, completionRatio, cacheTokens, cacheRatio, modelPrice, relayInfo.PriceData.GroupRatioInfo.GroupSpecialRatio)
+	// 计算原始分组倍率（不含动态倍率），用于日志记录
+	originalGroupRatio := groupRatio
+	dynamicRatio := relayInfo.PriceData.GroupRatioInfo.DynamicRatio
+	if dynamicRatio > 0 {
+		originalGroupRatio = groupRatio / dynamicRatio
+	}
+	other := service.GenerateTextOtherInfo(ctx, relayInfo, modelRatio, originalGroupRatio, completionRatio, cacheTokens, cacheRatio, modelPrice, relayInfo.PriceData.GroupRatioInfo.GroupSpecialRatio, dynamicRatio)
 	if adminRejectReason != "" {
 		other["reject_reason"] = adminRejectReason
 	}
@@ -566,6 +611,10 @@ func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage 
 		other["web_search"] = true
 		other["web_search_call_count"] = claudeWebSearchCallCount
 		other["web_search_price"] = claudeWebSearchPrice
+	} else if !dGeminiWebSearchQuota.IsZero() {
+		other["web_search"] = true
+		other["web_search_call_count"] = geminiWebSearchCallCount
+		other["web_search_price"] = geminiWebSearchPrice
 	}
 	if !dFileSearchQuota.IsZero() && relayInfo.ResponsesUsageInfo != nil {
 		if fileSearchTool, exists := relayInfo.ResponsesUsageInfo.BuiltInTools[dto.BuildInToolFileSearch]; exists {

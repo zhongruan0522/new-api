@@ -301,19 +301,55 @@ func CacheUpdateChannelStatus(id int, status int) {
 	}
 	channelSyncLock.Lock()
 	defer channelSyncLock.Unlock()
-	if channel, ok := channelsIDM[id]; ok {
-		channel.Status = status
+	channel, ok := channelsIDM[id]
+	if !ok {
+		return
 	}
-	if status != common.ChannelStatusEnabled {
-		// delete the channel from group2model2channels
-		for group, model2channels := range group2model2channels {
-			for model, channels := range model2channels {
-				for i, channelId := range channels {
-					if channelId == id {
-						// remove the channel from the slice
-						group2model2channels[group][model] = append(channels[:i], channels[i+1:]...)
-						break
-					}
+	channel.Status = status
+	if status == common.ChannelStatusEnabled {
+		addChannelToGroupModelCache(channel)
+	} else {
+		removeChannelFromGroupModelCache(id)
+	}
+}
+
+func addChannelToGroupModelCache(channel *Channel) {
+	if channel == nil {
+		return
+	}
+	if group2model2channels == nil {
+		group2model2channels = make(map[string]map[string][]int)
+	}
+	groups := channel.GetGroups()
+	models := channel.GetModels()
+	for _, group := range groups {
+		if group == "" {
+			continue
+		}
+		if _, ok := group2model2channels[group]; !ok {
+			group2model2channels[group] = make(map[string][]int)
+		}
+		for _, model := range models {
+			model = strings.TrimSpace(model)
+			if model == "" {
+				continue
+			}
+			channels := group2model2channels[group][model]
+			if isChannelIDInList(channels, channel.Id) {
+				continue
+			}
+			group2model2channels[group][model] = append(channels, channel.Id)
+		}
+	}
+}
+
+func removeChannelFromGroupModelCache(id int) {
+	for group, model2channels := range group2model2channels {
+		for model, channels := range model2channels {
+			for i, channelId := range channels {
+				if channelId == id {
+					group2model2channels[group][model] = append(channels[:i], channels[i+1:]...)
+					break
 				}
 			}
 		}

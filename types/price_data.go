@@ -6,6 +6,7 @@ type GroupRatioInfo struct {
 	GroupRatio        float64
 	GroupSpecialRatio float64
 	HasSpecialRatio   bool
+	DynamicRatio      float64
 }
 
 type PriceData struct {
@@ -23,6 +24,7 @@ type PriceData struct {
 	UsePrice             bool
 	QuotaToPreConsume    int // 预消耗额度
 	GroupRatioInfo       GroupRatioInfo
+	ContextPricing       *ContextPricingResult
 }
 
 func (p *PriceData) AddOtherRatio(key string, ratio float64) {

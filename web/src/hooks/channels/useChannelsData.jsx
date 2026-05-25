@@ -109,18 +109,16 @@ export const useChannelsData = () => {
             title: t('风控检测'),
             content: (
               <div>
-                <p style={{ marginBottom: 8 }}>
-                  检测到账号存在多人使用行为，部分订阅权益已被限制。恢复正常使用后，系统将在2个工作日内自动解除。
-                </p>
                 <p>
-                  申诉表单：
+                  当前账户已被风控，请前往
                   <a
-                    href="https://zhipu-ai.feishu.cn/share/base/form/shrcnPhrmp7eeMttK2M50Y4i0oc"
+                    href="https://open.bigmodel.cn"
                     target="_blank"
                     rel="noreferrer"
                   >
-                    https://zhipu-ai.feishu.cn/share/base/form/shrcnPhrmp7eeMttK2M50Y4i0oc
+                    智谱开发者平台
                   </a>
+                  获取解决办法
                 </p>
               </div>
             ),

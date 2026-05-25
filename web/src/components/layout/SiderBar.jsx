@@ -56,6 +56,7 @@ const routerMap = {
   deployment: '/console/deployment',
   personal: '/console/personal',
   ticket: '/console/ticket',
+  dynamic_ratio: '/console/dynamic-ratio',
 };
 
 const SiderBar = ({ onNavigate = () => {} }) => {
@@ -218,6 +219,12 @@ const SiderBar = ({ onNavigate = () => {} }) => {
 
   const adminItems = useMemo(() => {
     const items = [
+      {
+        text: t('动态倍率'),
+        itemKey: 'dynamic_ratio',
+        to: '/console/dynamic-ratio',
+        className: isAdmin() ? '' : 'tableHiddle',
+      },
       {
         text: t('渠道管理'),
         itemKey: 'channel',

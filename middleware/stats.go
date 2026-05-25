@@ -39,3 +39,8 @@ func GetStats() StatsInfo {
 		ActiveConnections: atomic.LoadInt64(&globalStats.activeConnections),
 	}
 }
+
+// GetActiveConnectionCount 获取当前 relay 并发连接数
+func GetActiveConnectionCount() int64 {
+	return atomic.LoadInt64(&globalStats.activeConnections)
+}

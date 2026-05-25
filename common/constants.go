@@ -94,6 +94,12 @@ var PreConsumedQuota = 500
 
 var RetryTimes = 0
 
+// DynamicRatioEnabled 全局动态倍率开关
+var DynamicRatioEnabled = false
+
+// GetActiveConnectionsFunc 获取当前 relay 并发数的函数指针，由 middleware 包在启动时设置
+var GetActiveConnectionsFunc func() int64
+
 //var RootUserEmail = ""
 
 var IsMasterNode bool

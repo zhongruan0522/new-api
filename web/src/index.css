@@ -486,6 +486,131 @@ code {
   display: none;
 }
 
+/* ==================== 可视化倍率设置页面滚动条 ==================== */
+.visual-ratio-editor {
+  width: 100%;
+  min-width: 0;
+}
+
+.visual-ratio-list-pane,
+.visual-ratio-detail-pane {
+  min-width: 0;
+}
+
+/* 左侧表格容器：让 Semi Table 填满高度，滚动仅发生在表格正文 */
+.visual-ratio-table-wrap {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  overflow: hidden;
+}
+
+.visual-ratio-table-wrap .semi-table-wrapper,
+.visual-ratio-table-wrap .semi-spin,
+.visual-ratio-table-wrap .semi-spin-children,
+.visual-ratio-table-wrap .semi-spin-children > div {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  width: 100%;
+  overflow: hidden;
+}
+
+.visual-ratio-table-wrap .semi-table-container {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  overflow: hidden;
+}
+
+.visual-ratio-table-wrap .semi-table-header {
+  flex: 0 0 auto;
+}
+
+.visual-ratio-table-wrap .semi-table-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none !important;
+  overflow-y: auto !important;
+  overflow-x: auto !important;
+}
+
+.visual-ratio-table-wrap .semi-table {
+  width: 100%;
+}
+
+.visual-ratio-billing-tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.visual-ratio-billing-tags .semi-tag {
+  max-width: 100%;
+  flex: 0 0 auto;
+}
+
+.visual-ratio-summary {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--semi-color-text-2);
+  font-size: 13px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.visual-ratio-table-wrap .semi-table-pagination-outer {
+  flex: 0 0 auto;
+  gap: 8px;
+  min-height: 52px;
+  padding-top: 8px;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+/* 表格正文 + 右侧面板：统一窄灰色滚动条 */
+.visual-ratio-table-wrap .semi-table-body::-webkit-scrollbar,
+.visual-ratio-detail-pane::-webkit-scrollbar,
+.visual-ratio-table-wrap .semi-table-pagination-outer::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+.visual-ratio-table-wrap .semi-table-body::-webkit-scrollbar-thumb,
+.visual-ratio-detail-pane::-webkit-scrollbar-thumb,
+.visual-ratio-table-wrap .semi-table-pagination-outer::-webkit-scrollbar-thumb {
+  background: rgba(128, 128, 128, 0.3);
+  border-radius: 2.5px;
+}
+
+.visual-ratio-table-wrap .semi-table-body::-webkit-scrollbar-thumb:hover,
+.visual-ratio-detail-pane::-webkit-scrollbar-thumb:hover,
+.visual-ratio-table-wrap .semi-table-pagination-outer::-webkit-scrollbar-thumb:hover {
+  background: rgba(128, 128, 128, 0.5);
+}
+
+.visual-ratio-table-wrap .semi-table-body::-webkit-scrollbar-track,
+.visual-ratio-detail-pane::-webkit-scrollbar-track,
+.visual-ratio-table-wrap .semi-table-pagination-outer::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+@media (max-width: 1180px) {
+  .visual-ratio-table-wrap .semi-table-pagination-outer {
+    flex-wrap: wrap;
+    align-content: center;
+    min-height: 72px;
+  }
+}
+
 /* 图片列表滚动条样式 */
 .image-list-scroll::-webkit-scrollbar {
   width: 6px;

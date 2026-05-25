@@ -64,17 +64,57 @@ export default defineConfig({
   build: {
     rollupOptions: {
       output: {
-        manualChunks: {
-          'react-core': ['react', 'react-dom', 'react-router-dom'],
-          'semi-ui': ['@douyinfe/semi-icons', '@douyinfe/semi-ui'],
-          tools: ['axios', 'history', 'marked'],
-          'react-components': [
-            'react-dropzone',
-            'react-fireworks',
-            'react-toastify',
-            'react-turnstile',
-          ],
-          i18n: ['i18next', 'react-i18next'],
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            // Heavy dependencies: split into their own chunks
+            if (id.includes('mermaid') || id.includes('cytoscape')) {
+              return 'mermaid';
+            }
+            if (id.includes('@visactor') || id.includes('vchart')) {
+              return 'vchart';
+            }
+            if (id.includes('katex')) {
+              return 'katex';
+            }
+            // Icon libraries
+            if (
+              id.includes('react-icons') ||
+              id.includes('lucide-react') ||
+              id.includes('@lobehub/icons')
+            ) {
+              return 'icons';
+            }
+            // React + Semi UI (must be in the same chunk to avoid circular dependency)
+            if (
+              id.includes('react-dom') ||
+              id.includes('react/') ||
+              id.includes('react-router') ||
+              id.includes('@remix-run') ||
+              id.includes('@douyinfe/semi') ||
+              id.includes('semi-icons')
+            ) {
+              return 'react-vendor';
+            }
+            // Markdown / rehype / remark ecosystem
+            if (
+              id.includes('react-markdown') ||
+              id.includes('remark-') ||
+              id.includes('rehype-') ||
+              id.includes('unified') ||
+              id.includes('unist-') ||
+              id.includes('bail') ||
+              id.includes('is-plain-') ||
+              id.includes('trough') ||
+              id.includes('vfile') ||
+              id.includes('mdast') ||
+              id.includes('hast') ||
+              id.includes('lowlight') ||
+              id.includes('highlight.js')
+            ) {
+              return 'markdown';
+            }
+            // Other small deps — no grouping to avoid large chunks
+          }
         },
       },
     },

@@ -191,9 +191,24 @@ const PricingCardView = ({
       });
     }
 
+    const segmentedTag = record?.context_pricing?.enabled ? (
+      <Tag
+        key='segmented'
+        shape='circle'
+        color='white'
+        size='small'
+        style={{ background: '#e8f3ff', color: '#0f66d0' }}
+      >
+        {t('分段计费')}
+      </Tag>
+    ) : null;
+
     return (
       <div className='flex items-center justify-between'>
-        <div className='flex items-center gap-2'>{billingTag}</div>
+        <div className='flex items-center gap-2'>
+          {billingTag}
+          {segmentedTag}
+        </div>
         <div className='flex items-center gap-1'>
           {customTags.length > 0 &&
             renderLimitedItems({
@@ -211,11 +226,7 @@ const PricingCardView = ({
 
   // 显示骨架屏
   if (showSkeleton) {
-    return (
-      <PricingCardSkeleton
-        rowSelection={!!rowSelection}
-      />
-    );
+    return <PricingCardSkeleton rowSelection={!!rowSelection} />;
   }
 
   if (!filteredModels || filteredModels.length === 0) {
@@ -274,7 +285,7 @@ const PricingCardView = ({
                       <h3 className='text-lg font-bold text-gray-900 truncate'>
                         {model.model_name}
                       </h3>
-                      <div className='flex items-center gap-3 text-xs mt-1'>
+                      <div className='flex flex-wrap items-center gap-x-3 gap-y-1 text-xs mt-1 leading-5'>
                         {formatPriceInfo(priceData, t)}
                       </div>
                     </div>
@@ -312,23 +323,24 @@ const PricingCardView = ({
                   {renderTags(model)}
 
                   {/* 额外计费价格 */}
-                  {model.quota_type === 0 && (
-                    <div className='pt-3'>
-                      <div className='grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-gray-600'>
-                        {EXTRA_PRICE_ITEMS.map((item) => {
-                          const value = extraPrices[item.key];
-                          return (
-                            <div key={item.key}>
-                              {t(item.label)}:{' '}
-                              {value
-                                ? `${value} / 1${extraPrices.unitLabel} tokens`
-                                : t('不支持')}
-                            </div>
-                          );
-                        })}
+                  {model.quota_type === 0 &&
+                    !model?.context_pricing?.enabled && (
+                      <div className='pt-3'>
+                        <div className='grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-gray-600'>
+                          {EXTRA_PRICE_ITEMS.map((item) => {
+                            const value = extraPrices[item.key];
+                            return (
+                              <div key={item.key}>
+                                {t(item.label)}:{' '}
+                                {value
+                                  ? `${value} / 1${extraPrices.unitLabel} tokens`
+                                  : t('不支持')}
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
                 </div>
               </div>
             </Card>

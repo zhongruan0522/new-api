@@ -26,9 +26,7 @@ import {
   calculateExtraPrices,
   getLobeHubIcon,
 } from '../../../../../helpers';
-import {
-  renderLimitedItems,
-} from '../../../../common/ui/RenderUtils';
+import { renderLimitedItems } from '../../../../common/ui/RenderUtils';
 import { useIsMobile } from '../../../../../hooks/common/useIsMobile';
 
 // 统一额外计费标签，确保列表页与详情页展示一致。
@@ -39,19 +37,45 @@ const EXTRA_PRICE_LABELS = {
   audioOutputPrice: '音频输出',
 };
 
-function renderQuotaType(type, t) {
+const renderInlineTokenPrices = (priceData, t) => (
+  <div className='flex flex-wrap items-center gap-x-3 gap-y-1 text-gray-700 leading-5'>
+    <span>
+      {t('输入')} {priceData.inputPrice} / 1{priceData.unitLabel} tokens
+    </span>
+    <span>
+      {t('输出')} {priceData.completionPrice} / 1{priceData.unitLabel} tokens
+    </span>
+  </div>
+);
+
+function renderQuotaType(type, record, t) {
+  const segmentedTag = record?.context_pricing?.enabled ? (
+    <Tag
+      color='white'
+      shape='circle'
+      style={{ background: '#e8f3ff', color: '#0f66d0' }}
+    >
+      {t('分段计费')}
+    </Tag>
+  ) : null;
   switch (type) {
     case 1:
       return (
-        <Tag color='teal' shape='circle'>
-          {t('按次计费')}
-        </Tag>
+        <Space wrap>
+          <Tag color='teal' shape='circle'>
+            {t('按次计费')}
+          </Tag>
+          {segmentedTag}
+        </Space>
       );
     case 0:
       return (
-        <Tag color='violet' shape='circle'>
-          {t('按量计费')}
-        </Tag>
+        <Space wrap>
+          <Tag color='violet' shape='circle'>
+            {t('按量计费')}
+          </Tag>
+          {segmentedTag}
+        </Space>
       );
     default:
       return t('未知');
@@ -161,7 +185,7 @@ export const getPricingTableColumns = ({
     title: t('计费类型'),
     dataIndex: 'quota_type',
     render: (text, record, index) => {
-      return renderQuotaType(parseInt(text), t);
+      return renderQuotaType(parseInt(text), record, t);
     },
     sorter: (a, b) => a.quota_type - b.quota_type,
   };
@@ -178,12 +202,7 @@ export const getPricingTableColumns = ({
     render: (text, record) => renderVendor(text, record.vendor_icon, t),
   };
 
-  const baseColumns = [
-    modelNameColumn,
-    vendorColumn,
-    tagsColumn,
-    quotaColumn,
-  ];
+  const baseColumns = [modelNameColumn, vendorColumn, tagsColumn, quotaColumn];
 
   const priceColumn = {
     title: t('模型价格'),
@@ -210,19 +229,15 @@ export const getPricingTableColumns = ({
 
         return (
           <div className='space-y-1'>
-            <div className='text-gray-700'>
-              {t('输入')} {priceData.inputPrice} / 1{priceData.unitLabel} tokens
-            </div>
-            <div className='text-gray-700'>
-              {t('输出')} {priceData.completionPrice} / 1{priceData.unitLabel}{' '}
-              tokens
-            </div>
+            {renderInlineTokenPrices(priceData, t)}
             <div className='space-y-1 mt-1 pt-1 border-t border-gray-100'>
               {extraPriceItems.map(([field, value]) => (
                 <div key={field} className='text-gray-500 text-xs'>
                   {t(EXTRA_PRICE_LABELS[field])}
                   {field === 'cacheCreatePrice5m' ? ' (5m)' : ''}：
-                  {value ? `${value} / 1${extraPrices.unitLabel} tokens` : t('不支持')}
+                  {value
+                    ? `${value} / 1${extraPrices.unitLabel} tokens`
+                    : t('不支持')}
                 </div>
               ))}
             </div>

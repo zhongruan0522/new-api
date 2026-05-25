@@ -34,9 +34,9 @@ const getShortcutTimestamp = (key) => {
     case 'today':
       return new Date(now.getFullYear(), now.getMonth(), now.getDate());
     case 'week':
-      return new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7);
+      return new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
     case 'month':
-      return new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+      return new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
     case 'currentMonth':
       return new Date(now.getFullYear(), now.getMonth(), 1);
     default:
@@ -117,10 +117,13 @@ const SearchModal = ({
     const date = getShortcutTimestamp(key);
     if (date) {
       const formatted = formatDateTime(date);
+      const endFormatted = formatDateTime(new Date());
       handleInputChange(formatted, 'start_timestamp');
+      handleInputChange(endFormatted, 'end_timestamp');
       // 同步更新 Form 内部状态，使 DatePicker 立即显示新值
       if (formRef.current) {
         formRef.current.formApi.setValue('start_timestamp', formatted);
+        formRef.current.formApi.setValue('end_timestamp', endFormatted);
       }
     }
   };

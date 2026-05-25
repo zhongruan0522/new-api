@@ -56,6 +56,7 @@ const PageLayout = () => {
     '/console/token',
     '/console/models',
     '/console/multimodal-files',
+    '/console/dynamic-ratio',
     '/pricing',
   ];
 

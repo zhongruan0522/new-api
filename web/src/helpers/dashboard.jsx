@@ -58,6 +58,57 @@ export const getDefaultTime = () => {
   return localStorage.getItem(STORAGE_KEYS.DATA_EXPORT_DEFAULT_TIME) || 'hour';
 };
 
+const DEFAULT_DASHBOARD_RANGE_SECONDS = 30 * 24 * 60 * 60;
+const MAX_DASHBOARD_RANGE_SECONDS = 31 * 24 * 60 * 60;
+
+let initialDashboardRange;
+
+const getDefaultDashboardRange = () => {
+  const end = Math.floor(Date.now() / 1000);
+  return {
+    start: timestamp2string(end - DEFAULT_DASHBOARD_RANGE_SECONDS),
+    end: timestamp2string(end),
+  };
+};
+
+const isValidSavedDashboardRange = (start, end) => {
+  if (!start || !end) {
+    return false;
+  }
+  const startTimestamp = Date.parse(start) / 1000;
+  const endTimestamp = Date.parse(end) / 1000;
+  return (
+    Number.isFinite(startTimestamp) &&
+    Number.isFinite(endTimestamp) &&
+    endTimestamp > startTimestamp &&
+    endTimestamp - startTimestamp <= MAX_DASHBOARD_RANGE_SECONDS
+  );
+};
+
+const getInitialDashboardRange = () => {
+  if (initialDashboardRange) {
+    return initialDashboardRange;
+  }
+
+  const savedStart = localStorage.getItem(
+    STORAGE_KEYS.DASHBOARD_START_TIMESTAMP,
+  );
+  const savedEnd = localStorage.getItem(STORAGE_KEYS.DASHBOARD_END_TIMESTAMP);
+
+  if (isValidSavedDashboardRange(savedStart, savedEnd)) {
+    initialDashboardRange = { start: savedStart, end: savedEnd };
+    return initialDashboardRange;
+  }
+
+  if (savedStart || savedEnd) {
+    localStorage.removeItem(STORAGE_KEYS.DASHBOARD_START_TIMESTAMP);
+    localStorage.removeItem(STORAGE_KEYS.DASHBOARD_END_TIMESTAMP);
+  }
+
+  initialDashboardRange = getDefaultDashboardRange();
+  return initialDashboardRange;
+};
+
 export const getTimeInterval = (timeType, isSeconds = false) => {
   const intervals =
     DEFAULT_TIME_INTERVALS[timeType] || DEFAULT_TIME_INTERVALS.hour;
@@ -65,26 +116,11 @@ export const getTimeInterval = (timeType, isSeconds = false) => {
 };
 
 export const getInitialTimestamp = () => {
-  const saved = localStorage.getItem(STORAGE_KEYS.DASHBOARD_START_TIMESTAMP);
-  if (saved) return saved;
-
-  const defaultTime = getDefaultTime();
-  const now = new Date().getTime() / 1000;
-
-  switch (defaultTime) {
-    case 'hour':
-      return timestamp2string(now - 86400);
-    case 'week':
-      return timestamp2string(now - 86400 * 30);
-    default:
-      return timestamp2string(now - 86400 * 7);
-  }
+  return getInitialDashboardRange().start;
 };
 
 export const getInitialEndTimestamp = () => {
-  const saved = localStorage.getItem(STORAGE_KEYS.DASHBOARD_END_TIMESTAMP);
-  if (saved) return saved;
-  return timestamp2string(new Date().getTime() / 1000 + 3600);
+  return getInitialDashboardRange().end;
 };
 
 // ========== 数据处理工具函数 ==========

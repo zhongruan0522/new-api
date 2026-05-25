@@ -51,6 +51,7 @@ import {
 } from '@douyinfe/semi-icons';
 import { useTranslation } from 'react-i18next';
 import { StatusContext } from '../../../../context/Status';
+import TokenCreatedModal from './TokenCreatedModal';
 
 const { Text, Title } = Typography;
 
@@ -62,6 +63,8 @@ const EditTokenModal = (props) => {
   const formApiRef = useRef(null);
   const [models, setModels] = useState([]);
   const [groups, setGroups] = useState([]);
+  const [createdKeys, setCreatedKeys] = useState([]);
+  const [showCreatedModal, setShowCreatedModal] = useState(false);
   const isEdit = props.editingToken.id !== undefined;
 
   const getInitValues = () => ({
@@ -264,7 +267,8 @@ const EditTokenModal = (props) => {
       localInputs.quota_type = parseInt(localInputs.quota_type);
       localInputs.window_hours = parseInt(localInputs.window_hours) || 0;
       localInputs.window_quota = parseInt(localInputs.window_quota) || 0;
-      localInputs.window_start_hour = parseInt(localInputs.window_start_hour) || 0;
+      localInputs.window_start_hour =
+        parseInt(localInputs.window_start_hour) || 0;
       localInputs.cycle_days = parseInt(localInputs.cycle_days) || 0;
       localInputs.cycle_quota = parseInt(localInputs.cycle_quota) || 0;
       let res = await API.put(`/api/token/`, {
@@ -282,6 +286,7 @@ const EditTokenModal = (props) => {
     } else {
       const count = parseInt(values.tokenCount, 10) || 1;
       let successCount = 0;
+      const newKeys = [];
       for (let i = 0; i < count; i++) {
         let { tokenCount: _tc, ...localInputs } = values;
         const baseName =
@@ -308,22 +313,29 @@ const EditTokenModal = (props) => {
         localInputs.quota_type = parseInt(localInputs.quota_type);
         localInputs.window_hours = parseInt(localInputs.window_hours) || 0;
         localInputs.window_quota = parseInt(localInputs.window_quota) || 0;
-        localInputs.window_start_hour = parseInt(localInputs.window_start_hour) || 0;
+        localInputs.window_start_hour =
+          parseInt(localInputs.window_start_hour) || 0;
         localInputs.cycle_days = parseInt(localInputs.cycle_days) || 0;
         localInputs.cycle_quota = parseInt(localInputs.cycle_quota) || 0;
         let res = await API.post(`/api/token/`, localInputs);
-        const { success, message } = res.data;
+        const { success, message, data } = res.data;
         if (success) {
           successCount++;
+          if (data?.key) {
+            newKeys.push(data.key);
+          }
         } else {
           showError(t(message));
           break;
         }
       }
       if (successCount > 0) {
-        showSuccess(t('令牌创建成功，请在列表页面点击复制获取令牌！'));
         props.refresh();
         props.handleClose();
+        if (newKeys.length > 0) {
+          setCreatedKeys(newKeys);
+          setShowCreatedModal(true);
+        }
       }
     }
     setLoading(false);
@@ -331,451 +343,521 @@ const EditTokenModal = (props) => {
   };
 
   return (
-    <SideSheet
-      placement={isEdit ? 'right' : 'left'}
-      title={
-        <Space>
-          {isEdit ? (
-            <Tag color='blue' shape='circle'>
-              {t('更新')}
-            </Tag>
-          ) : (
-            <Tag color='green' shape='circle'>
-              {t('新建')}
-            </Tag>
-          )}
-          <Title heading={4} className='m-0'>
-            {isEdit ? t('更新令牌信息') : t('创建新的令牌')}
-          </Title>
-        </Space>
-      }
-      bodyStyle={{ padding: '0' }}
-      visible={props.visiable}
-      width={isMobile ? '100%' : 600}
-      footer={
-        <div className='flex justify-end bg-white'>
+    <>
+      <TokenCreatedModal
+        visible={showCreatedModal}
+        onClose={() => setShowCreatedModal(false)}
+        keys={createdKeys}
+        t={t}
+      />
+
+      <SideSheet
+        placement={isEdit ? 'right' : 'left'}
+        title={
           <Space>
-            <Button
-              theme='solid'
-              className='!rounded-lg'
-              onClick={() => formApiRef.current?.submitForm()}
-              icon={<IconSave />}
-              loading={loading}
-            >
-              {t('提交')}
-            </Button>
-            <Button
-              theme='light'
-              className='!rounded-lg'
-              type='primary'
-              onClick={handleCancel}
-              icon={<IconClose />}
-            >
-              {t('取消')}
-            </Button>
+            {isEdit ? (
+              <Tag color='blue' shape='circle'>
+                {t('更新')}
+              </Tag>
+            ) : (
+              <Tag color='green' shape='circle'>
+                {t('新建')}
+              </Tag>
+            )}
+            <Title heading={4} className='m-0'>
+              {isEdit ? t('更新令牌信息') : t('创建新的令牌')}
+            </Title>
           </Space>
-        </div>
-      }
-      closeIcon={null}
-      onCancel={() => handleCancel()}
-    >
-      <Spin spinning={loading}>
-        <Form
-          key={isEdit ? 'edit' : 'new'}
-          initValues={getInitValues()}
-          getFormApi={(api) => (formApiRef.current = api)}
-          onSubmit={submit}
-        >
-          {({ values }) => (
-            <div className='p-2'>
-              {/* 基本信息 */}
-              <Card className='!rounded-2xl shadow-sm border-0'>
-                <div className='flex items-center mb-2'>
-                  <Avatar size='small' color='blue' className='mr-2 shadow-md'>
-                    <IconKey size={16} />
-                  </Avatar>
-                  <div>
-                    <Text className='text-lg font-medium'>{t('基本信息')}</Text>
-                    <div className='text-xs text-gray-600'>
-                      {t('设置令牌的基本信息')}
+        }
+        bodyStyle={{ padding: '0' }}
+        visible={props.visiable}
+        width={isMobile ? '100%' : 600}
+        footer={
+          <div className='flex justify-end bg-white'>
+            <Space>
+              <Button
+                theme='solid'
+                className='!rounded-lg'
+                onClick={() => formApiRef.current?.submitForm()}
+                icon={<IconSave />}
+                loading={loading}
+              >
+                {t('提交')}
+              </Button>
+              <Button
+                theme='light'
+                className='!rounded-lg'
+                type='primary'
+                onClick={handleCancel}
+                icon={<IconClose />}
+              >
+                {t('取消')}
+              </Button>
+            </Space>
+          </div>
+        }
+        closeIcon={null}
+        onCancel={() => handleCancel()}
+      >
+        <Spin spinning={loading}>
+          <Form
+            key={isEdit ? 'edit' : 'new'}
+            initValues={getInitValues()}
+            getFormApi={(api) => (formApiRef.current = api)}
+            onSubmit={submit}
+          >
+            {({ values }) => (
+              <div className='p-2'>
+                {/* 基本信息 */}
+                <Card className='!rounded-2xl shadow-sm border-0'>
+                  <div className='flex items-center mb-2'>
+                    <Avatar
+                      size='small'
+                      color='blue'
+                      className='mr-2 shadow-md'
+                    >
+                      <IconKey size={16} />
+                    </Avatar>
+                    <div>
+                      <Text className='text-lg font-medium'>
+                        {t('基本信息')}
+                      </Text>
+                      <div className='text-xs text-gray-600'>
+                        {t('设置令牌的基本信息')}
+                      </div>
                     </div>
                   </div>
-                </div>
-                <Row gutter={12}>
-                  <Col span={24}>
-                    <Form.Input
-                      field='name'
-                      label={t('名称')}
-                      placeholder={t('请输入名称')}
-                      rules={[{ required: true, message: t('请输入名称') }]}
-                      showClear
-                    />
-                  </Col>
-                  <Col span={24}>
-                    {groups.length > 0 ? (
-                      <Form.Select
-                        field='group'
-                        label={t('令牌分组')}
-                        placeholder={t('令牌分组，默认为用户的分组')}
-                        optionList={groups}
-                        renderOptionItem={renderGroupOption}
+                  <Row gutter={12}>
+                    <Col span={24}>
+                      <Form.Input
+                        field='name'
+                        label={t('名称')}
+                        placeholder={t('请输入名称')}
+                        rules={[{ required: true, message: t('请输入名称') }]}
+                        showClear
+                      />
+                    </Col>
+                    <Col span={24}>
+                      {groups.length > 0 ? (
+                        <Form.Select
+                          field='group'
+                          label={t('令牌分组')}
+                          placeholder={t('令牌分组，默认为用户的分组')}
+                          optionList={groups}
+                          renderOptionItem={renderGroupOption}
+                          showClear
+                          style={{ width: '100%' }}
+                        />
+                      ) : (
+                        <Form.Select
+                          placeholder={t('管理员未设置用户可选分组')}
+                          disabled
+                          label={t('令牌分组')}
+                          style={{ width: '100%' }}
+                        />
+                      )}
+                    </Col>
+                    <Col
+                      span={24}
+                      style={{
+                        display: values.group === 'auto' ? 'block' : 'none',
+                      }}
+                    >
+                      <Form.Switch
+                        field='cross_group_retry'
+                        label={t('跨分组重试')}
+                        size='default'
+                        extraText={t(
+                          '开启后，当前分组渠道失败时会按顺序尝试下一个分组的渠道',
+                        )}
+                      />
+                    </Col>
+                    <Col xs={24} sm={24} md={24} lg={10} xl={10}>
+                      <Form.DatePicker
+                        field='expired_time'
+                        label={t('过期时间')}
+                        type='dateTime'
+                        placeholder={t('请选择过期时间')}
+                        rules={[
+                          { required: true, message: t('请选择过期时间') },
+                          {
+                            validator: (rule, value) => {
+                              // 允许 -1 表示永不过期，也允许空值在必填校验时被拦截
+                              if (value === -1 || !value)
+                                return Promise.resolve();
+                              const time = Date.parse(value);
+                              if (isNaN(time)) {
+                                return Promise.reject(t('过期时间格式错误！'));
+                              }
+                              if (time <= Date.now()) {
+                                return Promise.reject(
+                                  t('过期时间不能早于当前时间！'),
+                                );
+                              }
+                              return Promise.resolve();
+                            },
+                          },
+                        ]}
                         showClear
                         style={{ width: '100%' }}
                       />
-                    ) : (
-                      <Form.Select
-                        placeholder={t('管理员未设置用户可选分组')}
-                        disabled
-                        label={t('令牌分组')}
-                        style={{ width: '100%' }}
-                      />
+                    </Col>
+                    <Col xs={24} sm={24} md={24} lg={14} xl={14}>
+                      <Form.Slot label={t('过期时间快捷设置')}>
+                        <Space wrap>
+                          <Button
+                            theme='light'
+                            type='primary'
+                            onClick={() => setExpiredTime(0, 0, 0, 0)}
+                          >
+                            {t('永不过期')}
+                          </Button>
+                          <Button
+                            theme='light'
+                            type='tertiary'
+                            onClick={() => setExpiredTime(1, 0, 0, 0)}
+                          >
+                            {t('一个月')}
+                          </Button>
+                          <Button
+                            theme='light'
+                            type='tertiary'
+                            onClick={() => setExpiredTime(0, 1, 0, 0)}
+                          >
+                            {t('一天')}
+                          </Button>
+                          <Button
+                            theme='light'
+                            type='tertiary'
+                            onClick={() => setExpiredTime(0, 0, 1, 0)}
+                          >
+                            {t('一小时')}
+                          </Button>
+                        </Space>
+                      </Form.Slot>
+                    </Col>
+                    {!isEdit && (
+                      <Col span={24}>
+                        <Form.InputNumber
+                          field='tokenCount'
+                          label={t('新建数量')}
+                          min={1}
+                          extraText={t('批量创建时会在名称后自动添加随机后缀')}
+                          rules={[
+                            { required: true, message: t('请输入新建数量') },
+                          ]}
+                          style={{ width: '100%' }}
+                        />
+                      </Col>
                     )}
-                  </Col>
-                  <Col
-                    span={24}
-                    style={{
-                      display: values.group === 'auto' ? 'block' : 'none',
-                    }}
-                  >
-                    <Form.Switch
-                      field='cross_group_retry'
-                      label={t('跨分组重试')}
-                      size='default'
-                      extraText={t(
-                        '开启后，当前分组渠道失败时会按顺序尝试下一个分组的渠道',
-                      )}
-                    />
-                  </Col>
-                  <Col xs={24} sm={24} md={24} lg={10} xl={10}>
-                    <Form.DatePicker
-                      field='expired_time'
-                      label={t('过期时间')}
-                      type='dateTime'
-                      placeholder={t('请选择过期时间')}
-                      rules={[
-                        { required: true, message: t('请选择过期时间') },
-                        {
-                          validator: (rule, value) => {
-                            // 允许 -1 表示永不过期，也允许空值在必填校验时被拦截
-                            if (value === -1 || !value)
-                              return Promise.resolve();
-                            const time = Date.parse(value);
-                            if (isNaN(time)) {
-                              return Promise.reject(t('过期时间格式错误！'));
-                            }
-                            if (time <= Date.now()) {
-                              return Promise.reject(
-                                t('过期时间不能早于当前时间！'),
-                              );
-                            }
-                            return Promise.resolve();
-                          },
-                        },
-                      ]}
-                      showClear
-                      style={{ width: '100%' }}
-                    />
-                  </Col>
-                  <Col xs={24} sm={24} md={24} lg={14} xl={14}>
-                    <Form.Slot label={t('过期时间快捷设置')}>
-                      <Space wrap>
-                        <Button
-                          theme='light'
-                          type='primary'
-                          onClick={() => setExpiredTime(0, 0, 0, 0)}
-                        >
-                          {t('永不过期')}
-                        </Button>
-                        <Button
-                          theme='light'
-                          type='tertiary'
-                          onClick={() => setExpiredTime(1, 0, 0, 0)}
-                        >
-                          {t('一个月')}
-                        </Button>
-                        <Button
-                          theme='light'
-                          type='tertiary'
-                          onClick={() => setExpiredTime(0, 1, 0, 0)}
-                        >
-                          {t('一天')}
-                        </Button>
-                        <Button
-                          theme='light'
-                          type='tertiary'
-                          onClick={() => setExpiredTime(0, 0, 1, 0)}
-                        >
-                          {t('一小时')}
-                        </Button>
-                      </Space>
-                    </Form.Slot>
-                  </Col>
-                  {!isEdit && (
+                  </Row>
+                </Card>
+
+                {/* 额度设置 */}
+                <Card className='!rounded-2xl shadow-sm border-0'>
+                  <div className='flex items-center mb-2'>
+                    <Avatar
+                      size='small'
+                      color='green'
+                      className='mr-2 shadow-md'
+                    >
+                      <IconCreditCard size={16} />
+                    </Avatar>
+                    <div>
+                      <Text className='text-lg font-medium'>
+                        {t('额度设置')}
+                      </Text>
+                      <div className='text-xs text-gray-600'>
+                        {t('设置令牌可用额度和数量')}
+                      </div>
+                    </div>
+                  </div>
+                  <Row gutter={12}>
                     <Col span={24}>
-                      <Form.InputNumber
-                        field='tokenCount'
-                        label={t('新建数量')}
-                        min={1}
-                        extraText={t('批量创建时会在名称后自动添加随机后缀')}
+                      <Form.Select
+                        field='quota_type'
+                        label={t('限额方式')}
+                        style={{ width: '100%' }}
                         rules={[
-                          { required: true, message: t('请输入新建数量') },
+                          { required: true, message: t('请选择限额方式') },
                         ]}
+                      >
+                        <Form.Select.Option value={0}>
+                          {t('无限额度')}
+                        </Form.Select.Option>
+                        <Form.Select.Option value={1}>
+                          {t('永久限额')}
+                        </Form.Select.Option>
+                        <Form.Select.Option value={2}>
+                          {t('时段限额')}
+                        </Form.Select.Option>
+                        <Form.Select.Option value={3}>
+                          {t('时段+周期限额')}
+                        </Form.Select.Option>
+                      </Form.Select>
+                    </Col>
+
+                    {/* quota_type === 0: 无限额度 */}
+                    {values.quota_type === 0 && (
+                      <Col span={24}>
+                        <div className='text-sm text-gray-500 mt-1'>
+                          {t(
+                            '令牌的额度仅用于限制令牌本身的最大额度使用量，实际的使用受到账户的剩余额度限制',
+                          )}
+                        </div>
+                      </Col>
+                    )}
+
+                    {/* quota_type === 1: 永久限额 */}
+                    {values.quota_type === 1 && (
+                      <Col span={24}>
+                        <Form.AutoComplete
+                          field='remain_quota'
+                          label={t('额度')}
+                          placeholder={t('请输入额度')}
+                          type='number'
+                          extraText={renderQuotaWithPrompt(values.remain_quota)}
+                          rules={[{ required: true, message: t('请输入额度') }]}
+                          data={[
+                            { value: 500000, label: '1$' },
+                            { value: 5000000, label: '10$' },
+                            { value: 25000000, label: '50$' },
+                            { value: 50000000, label: '100$' },
+                            { value: 250000000, label: '500$' },
+                            { value: 500000000, label: '1000$' },
+                          ]}
+                        />
+                      </Col>
+                    )}
+
+                    {/* quota_type === 2: 时段限额 */}
+                    {values.quota_type === 2 && (
+                      <>
+                        <Col span={24}>
+                          <Form.InputNumber
+                            field='window_hours'
+                            label={t('窗口时长（小时）')}
+                            placeholder={t('请输入窗口时长')}
+                            min={1}
+                            max={720}
+                            rules={[
+                              { required: true, message: t('请输入窗口时长') },
+                            ]}
+                            style={{ width: '100%' }}
+                          />
+                        </Col>
+                        <Col span={24}>
+                          <Form.AutoComplete
+                            field='window_quota'
+                            label={t('窗口额度')}
+                            placeholder={t('请输入窗口额度')}
+                            type='number'
+                            extraText={renderQuotaWithPrompt(
+                              values.window_quota,
+                            )}
+                            rules={[
+                              { required: true, message: t('请输入窗口额度') },
+                            ]}
+                            data={[
+                              { value: 500000, label: '1$' },
+                              { value: 5000000, label: '10$' },
+                              { value: 25000000, label: '50$' },
+                              { value: 50000000, label: '100$' },
+                              { value: 250000000, label: '500$' },
+                              { value: 500000000, label: '1000$' },
+                            ]}
+                          />
+                        </Col>
+                        <Col span={24}>
+                          <Form.InputNumber
+                            field='window_start_hour'
+                            label={t('窗口起始小时（0-23）')}
+                            placeholder={t('窗口对齐的起始小时')}
+                            min={0}
+                            max={23}
+                            rules={[
+                              {
+                                required: true,
+                                message: t('请输入窗口起始小时'),
+                              },
+                            ]}
+                            style={{ width: '100%' }}
+                          />
+                        </Col>
+                        <Col span={24}>
+                          <div className='text-xs text-gray-500'>
+                            {t('每')} {values.window_hours || 1}{' '}
+                            {t('小时为一个窗口，窗口开始时额度自动重置')}
+                          </div>
+                        </Col>
+                      </>
+                    )}
+
+                    {/* quota_type === 3: 时段+周期限额 */}
+                    {values.quota_type === 3 && (
+                      <>
+                        <Col span={24}>
+                          <Form.InputNumber
+                            field='window_hours'
+                            label={t('窗口时长（小时）')}
+                            placeholder={t('请输入窗口时长')}
+                            min={1}
+                            max={720}
+                            rules={[
+                              { required: true, message: t('请输入窗口时长') },
+                            ]}
+                            style={{ width: '100%' }}
+                          />
+                        </Col>
+                        <Col span={24}>
+                          <Form.AutoComplete
+                            field='window_quota'
+                            label={t('窗口额度')}
+                            placeholder={t('请输入窗口额度')}
+                            type='number'
+                            extraText={renderQuotaWithPrompt(
+                              values.window_quota,
+                            )}
+                            rules={[
+                              { required: true, message: t('请输入窗口额度') },
+                            ]}
+                            data={[
+                              { value: 500000, label: '1$' },
+                              { value: 5000000, label: '10$' },
+                              { value: 25000000, label: '50$' },
+                              { value: 50000000, label: '100$' },
+                              { value: 250000000, label: '500$' },
+                              { value: 500000000, label: '1000$' },
+                            ]}
+                          />
+                        </Col>
+                        <Col span={24}>
+                          <Form.InputNumber
+                            field='window_start_hour'
+                            label={t('窗口起始小时（0-23）')}
+                            placeholder={t('窗口对齐的起始小时')}
+                            min={0}
+                            max={23}
+                            rules={[
+                              {
+                                required: true,
+                                message: t('请输入窗口起始小时'),
+                              },
+                            ]}
+                            style={{ width: '100%' }}
+                          />
+                        </Col>
+                        <Col span={24}>
+                          <Form.InputNumber
+                            field='cycle_days'
+                            label={t('周期天数')}
+                            placeholder={t('请输入周期天数')}
+                            min={1}
+                            max={365}
+                            rules={[
+                              { required: true, message: t('请输入周期天数') },
+                            ]}
+                            style={{ width: '100%' }}
+                          />
+                        </Col>
+                        <Col span={24}>
+                          <Form.AutoComplete
+                            field='cycle_quota'
+                            label={t('周期总额度')}
+                            placeholder={t('请输入周期总额度')}
+                            type='number'
+                            extraText={renderQuotaWithPrompt(
+                              values.cycle_quota,
+                            )}
+                            rules={[
+                              {
+                                required: true,
+                                message: t('请输入周期总额度'),
+                              },
+                            ]}
+                            data={[
+                              { value: 500000, label: '1$' },
+                              { value: 5000000, label: '10$' },
+                              { value: 25000000, label: '50$' },
+                              { value: 50000000, label: '100$' },
+                              { value: 250000000, label: '500$' },
+                              { value: 500000000, label: '1000$' },
+                              { value: 2500000000, label: '5000$' },
+                            ]}
+                          />
+                        </Col>
+                        <Col span={24}>
+                          <div className='text-xs text-gray-500'>
+                            {t('每')} {values.window_hours || 1}{' '}
+                            {t('小时为一个窗口（额度自动重置），同时')}{' '}
+                            {values.cycle_days || 1}{' '}
+                            {t('天内总消耗不超过周期总额度')}
+                          </div>
+                        </Col>
+                      </>
+                    )}
+                  </Row>
+                </Card>
+
+                {/* 访问限制 */}
+                <Card className='!rounded-2xl shadow-sm border-0'>
+                  <div className='flex items-center mb-2'>
+                    <Avatar
+                      size='small'
+                      color='purple'
+                      className='mr-2 shadow-md'
+                    >
+                      <IconLink size={16} />
+                    </Avatar>
+                    <div>
+                      <Text className='text-lg font-medium'>
+                        {t('访问限制')}
+                      </Text>
+                      <div className='text-xs text-gray-600'>
+                        {t('设置令牌的访问限制')}
+                      </div>
+                    </div>
+                  </div>
+                  <Row gutter={12}>
+                    <Col span={24}>
+                      <Form.Select
+                        field='model_limits'
+                        label={t('模型限制列表')}
+                        placeholder={t(
+                          '请选择该令牌支持的模型，留空支持所有模型',
+                        )}
+                        multiple
+                        optionList={models}
+                        extraText={t('非必要，不建议启用模型限制')}
+                        filter={selectFilter}
+                        autoClearSearchValue={false}
+                        searchPosition='dropdown'
+                        showClear
                         style={{ width: '100%' }}
                       />
                     </Col>
-                  )}
-                </Row>
-              </Card>
-
-              {/* 额度设置 */}
-              <Card className='!rounded-2xl shadow-sm border-0'>
-                <div className='flex items-center mb-2'>
-                  <Avatar size='small' color='green' className='mr-2 shadow-md'>
-                    <IconCreditCard size={16} />
-                  </Avatar>
-                  <div>
-                    <Text className='text-lg font-medium'>{t('额度设置')}</Text>
-                    <div className='text-xs text-gray-600'>
-                      {t('设置令牌可用额度和数量')}
-                    </div>
-                  </div>
-                </div>
-                <Row gutter={12}>
-                  <Col span={24}>
-                    <Form.Select
-                      field='quota_type'
-                      label={t('限额方式')}
-                      style={{ width: '100%' }}
-                      rules={[{ required: true, message: t('请选择限额方式') }]}
-                    >
-                      <Form.Select.Option value={0}>{t('无限额度')}</Form.Select.Option>
-                      <Form.Select.Option value={1}>{t('永久限额')}</Form.Select.Option>
-                      <Form.Select.Option value={2}>{t('时段限额')}</Form.Select.Option>
-                      <Form.Select.Option value={3}>{t('时段+周期限额')}</Form.Select.Option>
-                    </Form.Select>
-                  </Col>
-
-                  {/* quota_type === 0: 无限额度 */}
-                  {values.quota_type === 0 && (
                     <Col span={24}>
-                      <div className='text-sm text-gray-500 mt-1'>
-                        {t('令牌的额度仅用于限制令牌本身的最大额度使用量，实际的使用受到账户的剩余额度限制')}
-                      </div>
-                    </Col>
-                  )}
-
-                  {/* quota_type === 1: 永久限额 */}
-                  {values.quota_type === 1 && (
-                    <Col span={24}>
-                      <Form.AutoComplete
-                        field='remain_quota'
-                        label={t('额度')}
-                        placeholder={t('请输入额度')}
-                        type='number'
-                        extraText={renderQuotaWithPrompt(values.remain_quota)}
-                        rules={[{ required: true, message: t('请输入额度') }]}
-                        data={[
-                          { value: 500000, label: '1$' },
-                          { value: 5000000, label: '10$' },
-                          { value: 25000000, label: '50$' },
-                          { value: 50000000, label: '100$' },
-                          { value: 250000000, label: '500$' },
-                          { value: 500000000, label: '1000$' },
-                        ]}
+                      <Form.TextArea
+                        field='allow_ips'
+                        label={t('IP白名单（支持CIDR表达式）')}
+                        placeholder={t('允许的IP，一行一个，不填写则不限制')}
+                        autosize
+                        rows={1}
+                        extraText={t(
+                          '请勿过度信任此功能，IP可能被伪造，请配合nginx和cdn等网关使用',
+                        )}
+                        showClear
+                        style={{ width: '100%' }}
                       />
                     </Col>
-                  )}
-
-                  {/* quota_type === 2: 时段限额 */}
-                  {values.quota_type === 2 && (
-                    <>
-                      <Col span={24}>
-                        <Form.InputNumber
-                          field='window_hours'
-                          label={t('窗口时长（小时）')}
-                          placeholder={t('请输入窗口时长')}
-                          min={1}
-                          max={720}
-                          rules={[{ required: true, message: t('请输入窗口时长') }]}
-                          style={{ width: '100%' }}
-                        />
-                      </Col>
-                      <Col span={24}>
-                        <Form.AutoComplete
-                          field='window_quota'
-                          label={t('窗口额度')}
-                          placeholder={t('请输入窗口额度')}
-                          type='number'
-                          extraText={renderQuotaWithPrompt(values.window_quota)}
-                          rules={[{ required: true, message: t('请输入窗口额度') }]}
-                          data={[
-                            { value: 500000, label: '1$' },
-                            { value: 5000000, label: '10$' },
-                            { value: 25000000, label: '50$' },
-                            { value: 50000000, label: '100$' },
-                            { value: 250000000, label: '500$' },
-                            { value: 500000000, label: '1000$' },
-                          ]}
-                        />
-                      </Col>
-                      <Col span={24}>
-                        <Form.InputNumber
-                          field='window_start_hour'
-                          label={t('窗口起始小时（0-23）')}
-                          placeholder={t('窗口对齐的起始小时')}
-                          min={0}
-                          max={23}
-                          rules={[{ required: true, message: t('请输入窗口起始小时') }]}
-                          style={{ width: '100%' }}
-                        />
-                      </Col>
-                      <Col span={24}>
-                        <div className='text-xs text-gray-500'>
-                          {t('每')} {values.window_hours || 1} {t('小时为一个窗口，窗口开始时额度自动重置')}
-                        </div>
-                      </Col>
-                    </>
-                  )}
-
-                  {/* quota_type === 3: 时段+周期限额 */}
-                  {values.quota_type === 3 && (
-                    <>
-                      <Col span={24}>
-                        <Form.InputNumber
-                          field='window_hours'
-                          label={t('窗口时长（小时）')}
-                          placeholder={t('请输入窗口时长')}
-                          min={1}
-                          max={720}
-                          rules={[{ required: true, message: t('请输入窗口时长') }]}
-                          style={{ width: '100%' }}
-                        />
-                      </Col>
-                      <Col span={24}>
-                        <Form.AutoComplete
-                          field='window_quota'
-                          label={t('窗口额度')}
-                          placeholder={t('请输入窗口额度')}
-                          type='number'
-                          extraText={renderQuotaWithPrompt(values.window_quota)}
-                          rules={[{ required: true, message: t('请输入窗口额度') }]}
-                          data={[
-                            { value: 500000, label: '1$' },
-                            { value: 5000000, label: '10$' },
-                            { value: 25000000, label: '50$' },
-                            { value: 50000000, label: '100$' },
-                            { value: 250000000, label: '500$' },
-                            { value: 500000000, label: '1000$' },
-                          ]}
-                        />
-                      </Col>
-                      <Col span={24}>
-                        <Form.InputNumber
-                          field='window_start_hour'
-                          label={t('窗口起始小时（0-23）')}
-                          placeholder={t('窗口对齐的起始小时')}
-                          min={0}
-                          max={23}
-                          rules={[{ required: true, message: t('请输入窗口起始小时') }]}
-                          style={{ width: '100%' }}
-                        />
-                      </Col>
-                      <Col span={24}>
-                        <Form.InputNumber
-                          field='cycle_days'
-                          label={t('周期天数')}
-                          placeholder={t('请输入周期天数')}
-                          min={1}
-                          max={365}
-                          rules={[{ required: true, message: t('请输入周期天数') }]}
-                          style={{ width: '100%' }}
-                        />
-                      </Col>
-                      <Col span={24}>
-                        <Form.AutoComplete
-                          field='cycle_quota'
-                          label={t('周期总额度')}
-                          placeholder={t('请输入周期总额度')}
-                          type='number'
-                          extraText={renderQuotaWithPrompt(values.cycle_quota)}
-                          rules={[{ required: true, message: t('请输入周期总额度') }]}
-                          data={[
-                            { value: 500000, label: '1$' },
-                            { value: 5000000, label: '10$' },
-                            { value: 25000000, label: '50$' },
-                            { value: 50000000, label: '100$' },
-                            { value: 250000000, label: '500$' },
-                            { value: 500000000, label: '1000$' },
-                            { value: 2500000000, label: '5000$' },
-                          ]}
-                        />
-                      </Col>
-                      <Col span={24}>
-                        <div className='text-xs text-gray-500'>
-                          {t('每')} {values.window_hours || 1} {t('小时为一个窗口（额度自动重置），同时')} {values.cycle_days || 1} {t('天内总消耗不超过周期总额度')}
-                        </div>
-                      </Col>
-                    </>
-                  )}
-                </Row>
-              </Card>
-
-              {/* 访问限制 */}
-              <Card className='!rounded-2xl shadow-sm border-0'>
-                <div className='flex items-center mb-2'>
-                  <Avatar
-                    size='small'
-                    color='purple'
-                    className='mr-2 shadow-md'
-                  >
-                    <IconLink size={16} />
-                  </Avatar>
-                  <div>
-                    <Text className='text-lg font-medium'>{t('访问限制')}</Text>
-                    <div className='text-xs text-gray-600'>
-                      {t('设置令牌的访问限制')}
-                    </div>
-                  </div>
-                </div>
-                <Row gutter={12}>
-                  <Col span={24}>
-                    <Form.Select
-                      field='model_limits'
-                      label={t('模型限制列表')}
-                      placeholder={t(
-                        '请选择该令牌支持的模型，留空支持所有模型',
-                      )}
-                      multiple
-                      optionList={models}
-                      extraText={t('非必要，不建议启用模型限制')}
-                      filter={selectFilter}
-                      autoClearSearchValue={false}
-                      searchPosition='dropdown'
-                      showClear
-                      style={{ width: '100%' }}
-                    />
-                  </Col>
-                  <Col span={24}>
-                    <Form.TextArea
-                      field='allow_ips'
-                      label={t('IP白名单（支持CIDR表达式）')}
-                      placeholder={t('允许的IP，一行一个，不填写则不限制')}
-                      autosize
-                      rows={1}
-                      extraText={t(
-                        '请勿过度信任此功能，IP可能被伪造，请配合nginx和cdn等网关使用',
-                      )}
-                      showClear
-                      style={{ width: '100%' }}
-                    />
-                  </Col>
-                </Row>
-              </Card>
-            </div>
-          )}
-        </Form>
-      </Spin>
-    </SideSheet>
+                  </Row>
+                </Card>
+              </div>
+            )}
+          </Form>
+        </Spin>
+      </SideSheet>
+    </>
   );
 };
 

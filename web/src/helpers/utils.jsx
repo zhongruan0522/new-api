@@ -485,6 +485,30 @@ export const calculateModelPrice = ({
   }
 
   // 2. 根据计费类型计算价格
+  if (record?.context_pricing?.enabled) {
+    const tierRows = calculateContextTierPriceRows({
+      record,
+      selectedGroup,
+      groupRatio,
+      tokenUnit,
+      displayPrice,
+      currency,
+      precision,
+    });
+    const firstInput = tierRows.find((row) => row.typeKey === 'input');
+    const firstOutput = tierRows.find((row) => row.typeKey === 'output');
+    return {
+      inputPrice: firstInput?.price || '-',
+      completionPrice: firstOutput?.price || '-',
+      unitLabel: firstInput?.unitLabel || (tokenUnit === 'K' ? 'K' : 'M'),
+      isPerToken: true,
+      isContextPricing: true,
+      tierRows,
+      usedGroup,
+      usedGroupRatio,
+    };
+  }
+
   if (record.quota_type === 0) {
     // 按量计费
     const inputRatioPriceUSD = record.model_ratio * 2 * usedGroupRatio;
@@ -538,6 +562,121 @@ export const calculateModelPrice = ({
     audioInputPrice: null,
     audioOutputPrice: null,
   };
+};
+
+export const formatContextTokenRange = (minTokens, maxTokens) => {
+  const formatBound = (value) => {
+    const n = Number(value);
+    if (!Number.isFinite(n)) return '';
+    if (n >= 1000000 && n % 1000000 === 0) return `${n / 1000000}M`;
+    if (n >= 1000 && n % 1000 === 0) return `${n / 1000}K`;
+    if (n >= 1000000) return `${Number((n / 1000000).toFixed(1))}M`;
+    if (n >= 1000) return `${Number((n / 1000).toFixed(1))}K`;
+    return `${n}`;
+  };
+
+  const min = Number(minTokens || 0);
+  const hasMax =
+    maxTokens !== undefined && maxTokens !== null && maxTokens !== '';
+  if (!hasMax) {
+    return `≥${formatBound(min)}`;
+  }
+  const max = Number(maxTokens);
+  if (min <= 0) {
+    return `<${formatBound(max)}`;
+  }
+  return `${formatBound(min)}~${formatBound(max)}`;
+};
+
+export const calculateContextTierPriceRows = ({
+  record,
+  selectedGroup,
+  groupRatio,
+  tokenUnit,
+  displayPrice,
+  currency,
+  precision = 4,
+}) => {
+  const { usedGroup, usedGroupRatio, unitDivisor, unitLabel, symbol } =
+    resolvePricingDisplayContext({
+      record,
+      selectedGroup,
+      groupRatio,
+      tokenUnit,
+      currency,
+    });
+
+  const tiers = Array.isArray(record?.context_pricing?.tiers)
+    ? record.context_pricing.tiers
+    : [];
+  const priceTypes = [
+    {
+      typeKey: 'input',
+      billingType: '输入',
+      multiplier: (tier) => Number(tier.model_ratio),
+    },
+    {
+      typeKey: 'output',
+      billingType: '输出',
+      multiplier: (tier) =>
+        Number(tier.model_ratio) * Number(tier.completion_ratio),
+    },
+    {
+      typeKey: 'cache_read',
+      billingType: '缓存读取',
+      multiplier: (tier) => Number(tier.model_ratio) * Number(tier.cache_ratio),
+    },
+    {
+      typeKey: 'cache_create',
+      billingType: '缓存创建',
+      multiplier: (tier) =>
+        Number(tier.model_ratio) * Number(tier.create_cache_ratio),
+    },
+    {
+      typeKey: 'audio_input',
+      billingType: '音频输入',
+      multiplier: (tier) => Number(tier.model_ratio) * Number(tier.audio_ratio),
+    },
+    {
+      typeKey: 'audio_output',
+      billingType: '音频输出',
+      multiplier: (tier) =>
+        Number(tier.model_ratio) *
+        Number(tier.audio_ratio) *
+        Number(tier.audio_completion_ratio),
+    },
+  ];
+
+  return tiers.flatMap((tier, tierIndex) => {
+    const rangeLabel = formatContextTokenRange(
+      tier.min_tokens,
+      tier.max_tokens,
+    );
+    return priceTypes.map((priceType, priceIndex) => {
+      const multiplier = priceType.multiplier(tier);
+      let price = '-';
+      if (Number.isFinite(multiplier) && multiplier >= 0) {
+        const rawDisplay = displayPrice(multiplier * 2 * usedGroupRatio);
+        const num =
+          parseFloat(String(rawDisplay).replace(/[^0-9.]/g, '')) / unitDivisor;
+        price = `${symbol}${Number.isFinite(num) ? num.toFixed(precision) : '-'}`;
+      }
+      return {
+        key: `${usedGroup}-${tierIndex}-${priceType.typeKey}`,
+        tierIndex,
+        priceIndex,
+        contextRange: rangeLabel,
+        contextRangeDisplay: priceIndex === 0 ? rangeLabel : '',
+        tierName: tier.name || '',
+        billingType: priceType.billingType,
+        typeKey: priceType.typeKey,
+        price,
+        unitLabel,
+        usedGroup,
+        usedGroupRatio,
+      };
+    });
+  });
 };
 
 // 统一解析模型价格页使用的实际分组与货币显示信息，避免列表与详情计算不一致。
@@ -596,19 +735,14 @@ export const calculateExtraPrices = ({
   currency,
   precision = 4,
 }) => {
-  const {
-    usedGroup,
-    usedGroupRatio,
-    unitDivisor,
-    unitLabel,
-    symbol,
-  } = resolvePricingDisplayContext({
-    record,
-    selectedGroup,
-    groupRatio,
-    tokenUnit,
-    currency,
-  });
+  const { usedGroup, usedGroupRatio, unitDivisor, unitLabel, symbol } =
+    resolvePricingDisplayContext({
+      record,
+      selectedGroup,
+      groupRatio,
+      tokenUnit,
+      currency,
+    });
 
   // 额外计费都基于文本输入单价展开，再叠加对应的倍率或分组倍率。
   const baseModelRatio = Number(record?.model_ratio || 0);
@@ -649,6 +783,19 @@ export const calculateExtraPrices = ({
 
 // 格式化价格信息（用于卡片视图）
 export const formatPriceInfo = (priceData, t) => {
+  if (priceData.isContextPricing) {
+    return (
+      <>
+        <span style={{ color: 'var(--semi-color-text-1)' }}>
+          {t('分段计费')}
+        </span>
+        <span style={{ color: 'var(--semi-color-text-2)' }}>
+          {priceData.inputPrice}/{priceData.unitLabel} {t('起')}
+        </span>
+      </>
+    );
+  }
+
   if (priceData.isPerToken) {
     return (
       <>

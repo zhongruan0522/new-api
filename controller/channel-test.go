@@ -459,8 +459,12 @@ func testChannel(channel *model.Channel, testModel string, endpointType string, 
 	}
 	tok := time.Now()
 	milliseconds := tok.Sub(tik).Milliseconds()
-	other := service.GenerateTextOtherInfo(c, info, priceData.ModelRatio, priceData.GroupRatioInfo.GroupRatio, priceData.CompletionRatio,
-		usage.PromptTokensDetails.CachedTokens, priceData.CacheRatio, priceData.ModelPrice, priceData.GroupRatioInfo.GroupSpecialRatio)
+	originalGroupRatio := priceData.GroupRatioInfo.GroupRatio
+	if priceData.GroupRatioInfo.DynamicRatio > 0 {
+		originalGroupRatio = priceData.GroupRatioInfo.GroupRatio / priceData.GroupRatioInfo.DynamicRatio
+	}
+	other := service.GenerateTextOtherInfo(c, info, priceData.ModelRatio, originalGroupRatio, priceData.CompletionRatio,
+		usage.PromptTokensDetails.CachedTokens, priceData.CacheRatio, priceData.ModelPrice, priceData.GroupRatioInfo.GroupSpecialRatio, priceData.GroupRatioInfo.DynamicRatio)
 	// 复用正式消费日志的流式指标，保证模型测试日志与线上展示一致。
 	service.AppendStreamMetrics(other, info, milliseconds, usage.CompletionTokens)
 	model.RecordConsumeLog(c, 1, model.RecordConsumeLogParams{

@@ -22,7 +22,7 @@ import { Modal, Tag, Typography, Avatar } from '@douyinfe/semi-ui';
 import { copy, showSuccess } from './utils';
 import { MOBILE_BREAKPOINT } from '../hooks/common/useIsMobile';
 import { visit } from 'unist-util-visit';
-import * as LobeIcons from '@lobehub/icons';
+import * as LobeIcons from '@lobehub/icons/es/icons';
 import {
   OpenAI,
   Claude,
@@ -34,8 +34,8 @@ import {
   Ollama,
   OpenRouter,
   SiliconCloud,
-} from '@lobehub/icons';
-import XiaomiMiMoIcon from './XiaomiMiMoIcon';
+  XiaomiMiMo,
+} from '@lobehub/icons/es/icons';
 
 import {
   LayoutDashboard,
@@ -53,6 +53,7 @@ import {
   Package,
   Server,
   TicketCheck,
+  TrendingUp,
 } from 'lucide-react';
 
 // 获取侧边栏Lucide图标组件
@@ -94,6 +95,8 @@ export function getLucideIcon(key, selected = false) {
       return <Settings {...commonProps} color={iconColor} />;
     case 'ticket':
       return <TicketCheck {...commonProps} color={iconColor} />;
+    case 'dynamic_ratio':
+      return <TrendingUp {...commonProps} color={iconColor} />;
     default:
       return <CircleUser {...commonProps} color={iconColor} />;
   }
@@ -120,79 +123,137 @@ export const getModelCategories = (() => {
         label: 'OpenAI',
         icon: <OpenAI />,
         filter: (model) =>
-          String(model?.model_name ?? '').toLowerCase().includes('gpt') ||
-          String(model?.model_name ?? '').toLowerCase().includes('dall-e') ||
-          String(model?.model_name ?? '').toLowerCase().includes('whisper') ||
-          String(model?.model_name ?? '').toLowerCase().includes('tts-1') ||
+          String(model?.model_name ?? '')
+            .toLowerCase()
+            .includes('gpt') ||
+          String(model?.model_name ?? '')
+            .toLowerCase()
+            .includes('dall-e') ||
+          String(model?.model_name ?? '')
+            .toLowerCase()
+            .includes('whisper') ||
+          String(model?.model_name ?? '')
+            .toLowerCase()
+            .includes('tts-1') ||
           String(model?.model_name ?? '')
             .toLowerCase()
             .includes('text-embedding-3') ||
           String(model?.model_name ?? '')
             .toLowerCase()
             .includes('text-moderation') ||
-          String(model?.model_name ?? '').toLowerCase().includes('babbage') ||
-          String(model?.model_name ?? '').toLowerCase().includes('davinci') ||
-          String(model?.model_name ?? '').toLowerCase().includes('curie') ||
-          String(model?.model_name ?? '').toLowerCase().includes('ada') ||
-          String(model?.model_name ?? '').toLowerCase().includes('o1') ||
-          String(model?.model_name ?? '').toLowerCase().includes('o3') ||
-          String(model?.model_name ?? '').toLowerCase().includes('o4'),
+          String(model?.model_name ?? '')
+            .toLowerCase()
+            .includes('babbage') ||
+          String(model?.model_name ?? '')
+            .toLowerCase()
+            .includes('davinci') ||
+          String(model?.model_name ?? '')
+            .toLowerCase()
+            .includes('curie') ||
+          String(model?.model_name ?? '')
+            .toLowerCase()
+            .includes('ada') ||
+          String(model?.model_name ?? '')
+            .toLowerCase()
+            .includes('o1') ||
+          String(model?.model_name ?? '')
+            .toLowerCase()
+            .includes('o3') ||
+          String(model?.model_name ?? '')
+            .toLowerCase()
+            .includes('o4'),
       },
       anthropic: {
         label: 'Anthropic',
         icon: <Claude.Color />,
         filter: (model) =>
-          String(model?.model_name ?? '').toLowerCase().includes('claude'),
+          String(model?.model_name ?? '')
+            .toLowerCase()
+            .includes('claude'),
       },
       gemini: {
         label: 'Gemini',
         icon: <Gemini.Color />,
         filter: (model) =>
-          String(model?.model_name ?? '').toLowerCase().includes('gemini') ||
-          String(model?.model_name ?? '').toLowerCase().includes('gemma') ||
-          String(model?.model_name ?? '').toLowerCase().includes('learnlm') ||
-          String(model?.model_name ?? '').toLowerCase().startsWith('embedding-') ||
+          String(model?.model_name ?? '')
+            .toLowerCase()
+            .includes('gemini') ||
+          String(model?.model_name ?? '')
+            .toLowerCase()
+            .includes('gemma') ||
+          String(model?.model_name ?? '')
+            .toLowerCase()
+            .includes('learnlm') ||
+          String(model?.model_name ?? '')
+            .toLowerCase()
+            .startsWith('embedding-') ||
           String(model?.model_name ?? '')
             .toLowerCase()
             .includes('text-embedding-004') ||
-          String(model?.model_name ?? '').toLowerCase().includes('imagen-4') ||
-          String(model?.model_name ?? '').toLowerCase().includes('veo-') ||
-          String(model?.model_name ?? '').toLowerCase().includes('aqa'),
+          String(model?.model_name ?? '')
+            .toLowerCase()
+            .includes('imagen-4') ||
+          String(model?.model_name ?? '')
+            .toLowerCase()
+            .includes('veo-') ||
+          String(model?.model_name ?? '')
+            .toLowerCase()
+            .includes('aqa'),
       },
       moonshot: {
         label: 'Moonshot',
         icon: <Moonshot />,
         filter: (model) =>
-          String(model?.model_name ?? '').toLowerCase().includes('moonshot') ||
-          String(model?.model_name ?? '').toLowerCase().includes('kimi'),
+          String(model?.model_name ?? '')
+            .toLowerCase()
+            .includes('moonshot') ||
+          String(model?.model_name ?? '')
+            .toLowerCase()
+            .includes('kimi'),
       },
       zhipu: {
         label: t('智谱'),
         icon: <Zhipu.Color />,
         filter: (model) =>
-          String(model?.model_name ?? '').toLowerCase().includes('chatglm') ||
-          String(model?.model_name ?? '').toLowerCase().includes('glm-') ||
-          String(model?.model_name ?? '').toLowerCase().includes('cogview') ||
-          String(model?.model_name ?? '').toLowerCase().includes('cogvideo'),
+          String(model?.model_name ?? '')
+            .toLowerCase()
+            .includes('chatglm') ||
+          String(model?.model_name ?? '')
+            .toLowerCase()
+            .includes('glm-') ||
+          String(model?.model_name ?? '')
+            .toLowerCase()
+            .includes('cogview') ||
+          String(model?.model_name ?? '')
+            .toLowerCase()
+            .includes('cogvideo'),
       },
       deepseek: {
         label: 'DeepSeek',
         icon: <DeepSeek.Color />,
         filter: (model) =>
-          String(model?.model_name ?? '').toLowerCase().includes('deepseek'),
+          String(model?.model_name ?? '')
+            .toLowerCase()
+            .includes('deepseek'),
       },
       minimax: {
         label: 'MiniMax',
         icon: <Minimax.Color />,
         filter: (model) =>
-          String(model?.model_name ?? '').toLowerCase().includes('abab') ||
-          String(model?.model_name ?? '').toLowerCase().includes('minimax'),
+          String(model?.model_name ?? '')
+            .toLowerCase()
+            .includes('abab') ||
+          String(model?.model_name ?? '')
+            .toLowerCase()
+            .includes('minimax'),
       },
       llama: {
         label: 'Llama',
         icon: <Ollama />,
         filter: (model) =>
-          String(model?.model_name ?? '').toLowerCase().includes('llama'),
+          String(model?.model_name ?? '')
+            .toLowerCase()
+            .includes('llama'),
       },
     };
 
@@ -235,7 +296,7 @@ export function getChannelIcon(channelType) {
     case 40: // SiliconCloud
       return <SiliconCloud.Color size={iconSize} />;
     case 6: // 小米 MiMo
-      return <XiaomiMiMoIcon size={iconSize} />;
+      return <XiaomiMiMo size={iconSize} />;
     case 8: // 自定义渠道
     default:
       return null;
@@ -905,7 +966,7 @@ function renderPriceSimpleCore({
     parts.push(i18next.t('缓存创建: {{cacheCreationRatio}}'));
   }
 
-	parts.push(`{{ratioType}}: {{groupRatio}}`);
+  parts.push(`{{ratioType}}: {{groupRatio}}`);
 
   let result = i18next.t(parts.join(' * '), {
     ratio: modelRatio,
@@ -914,8 +975,8 @@ function renderPriceSimpleCore({
     cacheRatio: cacheRatio,
     cacheCreationRatio: cacheCreationRatio,
     cacheCreationRatio5m: cacheCreationRatio5m,
-		cacheCreationRatio1h: cacheCreationRatio1h,
-	});
+    cacheCreationRatio1h: cacheCreationRatio1h,
+  });
 
   return result;
 }
@@ -941,6 +1002,7 @@ export function renderModelPrice(
   audioInputPrice = 0,
   imageGenerationCall = false,
   imageGenerationCallPrice = 0,
+  dynamicRatio = 0,
 ) {
   const { ratio: effectiveGroupRatio, label: ratioLabel } = getEffectiveRatio(
     groupRatio,
@@ -954,6 +1016,41 @@ export function renderModelPrice(
   if (modelPrice !== -1) {
     const displayPrice = (modelPrice * rate).toFixed(6);
     const displayTotal = (modelPrice * groupRatio * rate).toFixed(6);
+    if (dynamicRatio > 0 && dynamicRatio !== 1) {
+      return (
+        <article>
+          <p>
+            {i18next.t(
+              '模型价格：{{symbol}}{{price}} * {{ratioType}}：{{ratio}} = {{symbol}}{{total}}',
+              {
+                symbol,
+                price: displayPrice,
+                ratio: groupRatio,
+                total: displayTotal,
+                ratioType: ratioLabel,
+              },
+            )}
+          </p>
+          <p>{i18next.t('高峰期倍率：{{ratio}}', { ratio: dynamicRatio })}</p>
+          <p>
+            {i18next.t(
+              '{{symbol}}{{priceBefore}} * 高峰期倍率 = {{symbol}}{{priceAfter}}',
+              {
+                symbol,
+                priceBefore: displayTotal,
+                priceAfter: (
+                  modelPrice *
+                  groupRatio *
+                  dynamicRatio *
+                  rate
+                ).toFixed(6),
+              },
+            )}
+          </p>
+          <p>{i18next.t('仅供参考，以实际扣费为准')}</p>
+        </article>
+      );
+    }
     return i18next.t(
       '模型价格：{{symbol}}{{price}} * {{ratioType}}：{{ratio}} = {{symbol}}{{total}}',
       {
@@ -1048,6 +1145,9 @@ export function renderModelPrice(
                 price: (imageGenerationCallPrice * rate).toFixed(6),
               })}
             </p>
+          )}
+          {dynamicRatio > 0 && dynamicRatio !== 1 && (
+            <p>{i18next.t('高峰期倍率：{{ratio}}', { ratio: dynamicRatio })}</p>
           )}
           <p>
             {(() => {
@@ -1149,6 +1249,18 @@ export function renderModelPrice(
               );
             })()}
           </p>
+          {dynamicRatio > 0 && dynamicRatio !== 1 && (
+            <p>
+              {i18next.t(
+                '{{symbol}}{{priceBefore}} * 高峰期倍率 = {{symbol}}{{priceAfter}}',
+                {
+                  symbol: symbol,
+                  priceBefore: (price * rate).toFixed(6),
+                  priceAfter: (price * dynamicRatio * rate).toFixed(6),
+                },
+              )}
+            </p>
+          )}
           <p>{i18next.t('仅供参考，以实际扣费为准')}</p>
         </article>
       </>
@@ -1268,6 +1380,7 @@ export function renderAudioModelPrice(
   user_group_ratio,
   cacheTokens = 0,
   cacheRatio = 1.0,
+  dynamicRatio = 0,
 ) {
   const { ratio: effectiveGroupRatio, label: ratioLabel } = getEffectiveRatio(
     groupRatio,
@@ -1280,13 +1393,49 @@ export function renderAudioModelPrice(
 
   // 1 ratio = $0.002 / 1K tokens
   if (modelPrice !== -1) {
+    const displayTotal = (modelPrice * groupRatio * rate).toFixed(6);
+    if (dynamicRatio > 0 && dynamicRatio !== 1) {
+      return (
+        <article>
+          <p>
+            {i18next.t(
+              '模型价格：{{symbol}}{{price}} * {{ratioType}}：{{ratio}} = {{symbol}}{{total}}',
+              {
+                symbol,
+                price: (modelPrice * rate).toFixed(6),
+                ratio: groupRatio,
+                total: displayTotal,
+                ratioType: ratioLabel,
+              },
+            )}
+          </p>
+          <p>{i18next.t('高峰期倍率：{{ratio}}', { ratio: dynamicRatio })}</p>
+          <p>
+            {i18next.t(
+              '{{symbol}}{{priceBefore}} * 高峰期倍率 = {{symbol}}{{priceAfter}}',
+              {
+                symbol,
+                priceBefore: displayTotal,
+                priceAfter: (
+                  modelPrice *
+                  groupRatio *
+                  dynamicRatio *
+                  rate
+                ).toFixed(6),
+              },
+            )}
+          </p>
+          <p>{i18next.t('仅供参考，以实际扣费为准')}</p>
+        </article>
+      );
+    }
     return i18next.t(
       '模型价格：{{symbol}}{{price}} * {{ratioType}}：{{ratio}} = {{symbol}}{{total}}',
       {
         symbol: symbol,
         price: (modelPrice * rate).toFixed(6),
         ratio: groupRatio,
-        total: (modelPrice * groupRatio * rate).toFixed(6),
+        total: displayTotal,
         ratioType: ratioLabel,
       },
     );
@@ -1438,6 +1587,21 @@ export function renderAudioModelPrice(
               },
             )}
           </p>
+          {dynamicRatio > 0 && dynamicRatio !== 1 && (
+            <p>{i18next.t('高峰期倍率：{{ratio}}', { ratio: dynamicRatio })}</p>
+          )}
+          {dynamicRatio > 0 && dynamicRatio !== 1 && (
+            <p>
+              {i18next.t(
+                '{{symbol}}{{priceBefore}} * 高峰期倍率 = {{symbol}}{{priceAfter}}',
+                {
+                  symbol: symbol,
+                  priceBefore: (price * rate).toFixed(6),
+                  priceAfter: (price * dynamicRatio * rate).toFixed(6),
+                },
+              )}
+            </p>
+          )}
           <p>{i18next.t('仅供参考，以实际扣费为准')}</p>
         </article>
       </>
@@ -1465,6 +1629,7 @@ export function renderClaudeModelPrice(
   cacheCreationRatio5m = 1.0,
   cacheCreationTokens1h = 0,
   cacheCreationRatio1h = 1.0,
+  dynamicRatio = 0,
 ) {
   const { ratio: effectiveGroupRatio, label: ratioLabel } = getEffectiveRatio(
     groupRatio,
@@ -1476,6 +1641,42 @@ export function renderClaudeModelPrice(
   const { symbol, rate } = getCurrencyConfig();
 
   if (modelPrice !== -1) {
+    const displayTotal = (modelPrice * groupRatio * rate).toFixed(6);
+    if (dynamicRatio > 0 && dynamicRatio !== 1) {
+      return (
+        <article>
+          <p>
+            {i18next.t(
+              '模型价格：{{symbol}}{{price}} * {{ratioType}}：{{ratio}} = {{symbol}}{{total}}',
+              {
+                symbol,
+                price: (modelPrice * rate).toFixed(6),
+                ratioType: ratioLabel,
+                ratio: groupRatio,
+                total: displayTotal,
+              },
+            )}
+          </p>
+          <p>{i18next.t('高峰期倍率：{{ratio}}', { ratio: dynamicRatio })}</p>
+          <p>
+            {i18next.t(
+              '{{symbol}}{{priceBefore}} * 高峰期倍率 = {{symbol}}{{priceAfter}}',
+              {
+                symbol,
+                priceBefore: displayTotal,
+                priceAfter: (
+                  modelPrice *
+                  groupRatio *
+                  dynamicRatio *
+                  rate
+                ).toFixed(6),
+              },
+            )}
+          </p>
+          <p>{i18next.t('仅供参考，以实际扣费为准')}</p>
+        </article>
+      );
+    }
     return i18next.t(
       '模型价格：{{symbol}}{{price}} * {{ratioType}}：{{ratio}} = {{symbol}}{{total}}',
       {
@@ -1483,7 +1684,7 @@ export function renderClaudeModelPrice(
         price: (modelPrice * rate).toFixed(6),
         ratioType: ratioLabel,
         ratio: groupRatio,
-        total: (modelPrice * groupRatio * rate).toFixed(6),
+        total: displayTotal,
       },
     );
   } else {
@@ -1714,6 +1915,21 @@ export function renderClaudeModelPrice(
               },
             )}
           </p>
+          {dynamicRatio > 0 && dynamicRatio !== 1 && (
+            <p>{i18next.t('高峰期倍率：{{ratio}}', { ratio: dynamicRatio })}</p>
+          )}
+          {dynamicRatio > 0 && dynamicRatio !== 1 && (
+            <p>
+              {i18next.t(
+                '{{symbol}}{{priceBefore}} * 高峰期倍率 = {{symbol}}{{priceAfter}}',
+                {
+                  symbol: symbol,
+                  priceBefore: (price * rate).toFixed(6),
+                  priceAfter: (price * dynamicRatio * rate).toFixed(6),
+                },
+              )}
+            </p>
+          )}
           <p>{i18next.t('仅供参考，以实际扣费为准')}</p>
         </article>
       </>

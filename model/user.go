@@ -78,14 +78,10 @@ func (user *User) GetSetting() dto.UserSetting {
 			common.SysLog("failed to unmarshal setting: " + err.Error())
 		}
 	}
-	// record_ip_log is forced-enabled for abuse tracing and cannot be disabled by users.
-	setting.RecordIpLog = true
 	return setting
 }
 
 func (user *User) SetSetting(setting dto.UserSetting) {
-	// record_ip_log is forced-enabled for abuse tracing and cannot be disabled by users.
-	setting.RecordIpLog = true
 	settingBytes, err := common.Marshal(setting)
 	if err != nil {
 		common.SysLog("failed to marshal setting: " + err.Error())

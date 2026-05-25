@@ -41,6 +41,7 @@ import {
   Avatar,
   Row,
   Col,
+  Progress,
 } from '@douyinfe/semi-ui';
 import {
   IconCreditCard,
@@ -50,6 +51,9 @@ import {
 } from '@douyinfe/semi-icons';
 
 const { Text, Title } = Typography;
+
+// 单次 API 请求的最大创建数量，与后端 controller/redemption.go 保持一致
+const BATCH_SIZE = 100;
 
 const EditRedemptionModal = (props) => {
   const { t } = useTranslation();
@@ -96,6 +100,8 @@ const EditRedemptionModal = (props) => {
     }
   }, [props.editingRedemption.id]);
 
+  const [batchProgress, setBatchProgress] = useState(null); // { current, total }
+
   const submit = async (values) => {
     let name = values.name;
     if (!isEdit && (!name || name === '')) {
@@ -113,51 +119,112 @@ const EditRedemptionModal = (props) => {
         localInputs.expired_time.getTime() / 1000,
       );
     }
-    let res;
+
     if (isEdit) {
-      res = await API.put(`/api/redemption/`, {
+      let res = await API.put(`/api/redemption/`, {
         ...localInputs,
         id: parseInt(props.editingRedemption.id),
       });
-    } else {
-      res = await API.post(`/api/redemption/`, {
-        ...localInputs,
-      });
-    }
-    const { success, message, data } = res.data;
-    if (success) {
-      if (isEdit) {
+      const { success, message } = res.data;
+      if (success) {
         showSuccess(t('兑换码更新成功！'));
         props.refresh();
         props.handleClose();
       } else {
-        showSuccess(t('兑换码创建成功！'));
-        props.refresh();
-        formApiRef.current?.setValues(getInitValues());
-        props.handleClose();
+        showError(message);
       }
-    } else {
-      showError(message);
+      setLoading(false);
+      return;
     }
-    if (!isEdit && data) {
-      let text = '';
-      for (let i = 0; i < data.length; i++) {
-        text += data[i] + '\n';
+
+    // 新建：分批创建兑换码
+    const totalCount = localInputs.count;
+    const batchCount = Math.ceil(totalCount / BATCH_SIZE);
+    let allKeys = [];
+
+    try {
+      for (let batch = 0; batch < batchCount; batch++) {
+        const batchNum = batch + 1;
+        // 最后一批取余数，其余每批 BATCH_SIZE 个
+        const currentBatchSize =
+          batch === batchCount - 1
+            ? totalCount - batch * BATCH_SIZE
+            : BATCH_SIZE;
+
+        setBatchProgress({ current: batchNum, total: batchCount });
+
+        let res = await API.post(`/api/redemption/`, {
+          ...localInputs,
+          count: currentBatchSize,
+        });
+        const { success, message, data } = res.data;
+        if (!success) {
+          showError(message);
+          // 已有部分创建成功，提示用户下载
+          if (allKeys.length > 0) {
+            promptDownload(allKeys, localInputs.name, true);
+          }
+          return;
+        }
+        if (data) {
+          allKeys = allKeys.concat(data);
+        }
       }
-      Modal.confirm({
-        title: t('兑换码创建成功'),
-        content: (
-          <div>
-            <p>{t('兑换码创建成功，是否下载兑换码？')}</p>
-            <p>{t('兑换码将以文本文件的形式下载，文件名为兑换码的名称。')}</p>
-          </div>
-        ),
-        onOk: () => {
-          downloadTextAsFile(text, `${localInputs.name}.txt`);
-        },
-      });
+    } catch (e) {
+      // 网络异常或服务端 5xx：提示已有部分成功的兑换码下载
+      showError(e.message);
+      if (allKeys.length > 0) {
+        promptDownload(allKeys, localInputs.name, true);
+      }
+      return;
+    } finally {
+      setLoading(false);
+      setBatchProgress(null);
     }
-    setLoading(false);
+
+    showSuccess(
+      t('兑换码创建成功！共创建 {{count}} 个', { count: allKeys.length }),
+    );
+    props.refresh();
+    formApiRef.current?.setValues(getInitValues());
+    props.handleClose();
+
+    if (allKeys.length > 0) {
+      promptDownload(allKeys, localInputs.name, false);
+    }
+  };
+
+  /**
+   * 弹窗提示用户下载兑换码文本文件
+   * @param {string[]} keys - 兑换码列表
+   * @param {string} name - 文件名
+   * @param {boolean} partial - 是否为部分创建（中间有批次失败）
+   */
+  const promptDownload = (keys, name, partial) => {
+    let text = keys.join('\n');
+    Modal.confirm({
+      title: partial
+        ? t('部分兑换码创建成功')
+        : t('兑换码创建成功'),
+      content: (
+        <div>
+          <p>
+            {partial
+              ? t(
+                  '部分批次创建失败，已成功创建 {{count}} 个兑换码，是否下载？',
+                  { count: keys.length },
+                )
+              : t('兑换码创建成功，是否下载兑换码？', {
+                  count: keys.length,
+                })}
+          </p>
+          <p>{t('兑换码将以文本文件的形式下载，文件名为兑换码的名称。')}</p>
+        </div>
+      ),
+      onOk: () => {
+        downloadTextAsFile(text, `${name}.txt`);
+      },
+    });
   };
 
   return (
@@ -334,12 +401,42 @@ const EditRedemptionModal = (props) => {
                               },
                             },
                           ]}
+                          extraText={
+                            batchProgress
+                              ? null
+                              : t(
+                                  '单次上限 {{max}} 个，超出将自动分批创建',
+                                  { max: BATCH_SIZE },
+                                )
+                          }
                           style={{ width: '100%' }}
                           showClear
                         />
                       </Col>
                     )}
                   </Row>
+                  {/* 分批创建进度条 */}
+                  {batchProgress && (
+                    <div style={{ marginTop: 12 }}>
+                      <Progress
+                        percent={
+                          Math.round(
+                            (batchProgress.current /
+                              batchProgress.total) *
+                              100,
+                          )
+                        }
+                        showInfo
+                        style={{ marginBottom: 4 }}
+                      />
+                      <Text type='tertiary' size='small'>
+                        {t('正在创建第 {{current}} 批，共 {{total}} 批', {
+                          current: batchProgress.current,
+                          total: batchProgress.total,
+                        })}
+                      </Text>
+                    </div>
+                  )}
                 </Card>
               </div>
             )}

@@ -134,7 +134,14 @@ func Distribute() func(c *gin.Context) {
 			}
 		}
 		common.SetContextKey(c, constant.ContextKeyRequestStartTime, time.Now())
-		SetupContextForSelectedChannel(c, channel, modelRequest.Model)
+		if apiErr := SetupContextForSelectedChannel(c, channel, modelRequest.Model); apiErr != nil {
+			statusCode := apiErr.StatusCode
+			if statusCode == 0 {
+				statusCode = http.StatusServiceUnavailable
+			}
+			abortWithOpenAiMessage(c, statusCode, apiErr.Error(), apiErr.GetErrorCode())
+			return
+		}
 		c.Next()
 		if channel != nil && c.Writer != nil && c.Writer.Status() < http.StatusBadRequest {
 			service.RecordChannelAffinity(c, channel.Id)

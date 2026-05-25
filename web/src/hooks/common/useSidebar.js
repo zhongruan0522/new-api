@@ -52,6 +52,7 @@ export const DEFAULT_ADMIN_CONFIG = {
     channel: true,
     models: true,
     setting: true,
+    dynamic_ratio: true,
   },
 };
 
