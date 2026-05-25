@@ -21,6 +21,7 @@ import {
   Box,
   FileText,
   FlaskConical,
+  Gauge,
   Key,
   LayoutDashboard,
   MessageSquare,
@@ -107,6 +108,11 @@ export function useSidebarData(): SidebarData {
         id: 'admin',
         title: t('Admin'),
         items: [
+          {
+            title: t('Dynamic Ratio'),
+            url: '/dynamic-ratio',
+            icon: Gauge,
+          },
           {
             title: t('Channels'),
             url: '/channels',

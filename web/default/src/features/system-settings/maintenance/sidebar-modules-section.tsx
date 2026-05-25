@@ -118,6 +118,10 @@ export function SidebarModulesSection({
       },
     },
     admin: {
+      dynamic_ratio: {
+        title: t('Dynamic ratio'),
+        description: t('Manage dynamic ratio rules.'),
+      },
       channel: {
         title: t('Channels'),
         description: t('Configure upstream providers and routing.'),
