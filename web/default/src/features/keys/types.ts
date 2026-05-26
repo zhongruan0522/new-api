@@ -45,6 +45,14 @@ export const apiKeySchema = z.object({
   model_limits_enabled: z.boolean(),
   model_limits: z.string().nullish().default(''),
   allow_ips: z.string().nullish().default(''),
+  quota_type: z.number().optional().default(0),
+  window_hours: z.number().optional().default(0),
+  window_quota: z.number().optional().default(0),
+  window_start_hour: z.number().optional().default(0),
+  cycle_days: z.number().optional().default(0),
+  cycle_quota: z.number().optional().default(0),
+  window_used_quota: z.number().optional().default(0),
+  cycle_used_quota: z.number().optional().default(0),
 })
 
 export type ApiKey = z.infer<typeof apiKeySchema>
@@ -78,6 +86,7 @@ export interface GetApiKeysResponse {
 export interface SearchApiKeysParams {
   keyword?: string
   token?: string
+  all?: boolean
   p?: number
   size?: number
 }
@@ -92,6 +101,12 @@ export interface ApiKeyFormData {
   allow_ips: string
   group: string
   cross_group_retry: boolean
+  quota_type: number
+  window_hours: number
+  window_quota: number
+  window_start_hour: number
+  cycle_days: number
+  cycle_quota: number
 }
 
 // ============================================================================

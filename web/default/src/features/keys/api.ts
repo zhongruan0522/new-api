@@ -42,11 +42,12 @@ export async function getApiKeys(
 // Search API keys by keyword or token (with pagination)
 export async function searchApiKeys(
   params: SearchApiKeysParams
-): Promise<{ success: boolean; message?: string; data?: ApiKey[] }> {
-  const { keyword = '', token = '', p, size } = params
+): Promise<GetApiKeysResponse> {
+  const { keyword = '', token = '', all = false, p, size } = params
   const queryParams = new URLSearchParams()
   if (keyword) queryParams.set('keyword', keyword)
   if (token) queryParams.set('token', token)
+  if (all) queryParams.set('all', 'true')
   if (p != null) queryParams.set('p', String(p))
   if (size != null) queryParams.set('size', String(size))
   const res = await api.get(`/api/token/search?${queryParams.toString()}`)

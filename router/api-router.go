@@ -191,6 +191,8 @@ func SetApiRouter(router *gin.Engine) {
 			tokenRoute.PUT("/", controller.UpdateToken)
 			tokenRoute.DELETE("/:id", controller.DeleteToken)
 			tokenRoute.POST("/batch", controller.DeleteTokenBatch)
+			tokenRoute.POST("/batch/keys", controller.GetTokenKeysBatch)
+			tokenRoute.POST("/:id/key", middleware.CriticalRateLimit(), controller.GetTokenKey)
 			tokenRoute.PUT("/:id/key", middleware.CriticalRateLimit(), controller.ResetTokenKey)
 		}
 

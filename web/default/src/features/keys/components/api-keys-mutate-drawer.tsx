@@ -44,6 +44,10 @@ import {
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import {
+  NativeSelect,
+  NativeSelectOption,
+} from '@/components/ui/native-select'
+import {
   Sheet,
   SheetClose,
   SheetContent,
@@ -243,8 +247,9 @@ export function ApiKeysMutateDrawer({
   const quotaPlaceholder = tokensOnly
     ? t('Enter quota in tokens')
     : t('Enter quota in {{currency}}', { currency: currencyLabel })
+  const quotaInputStep = tokensOnly ? 1 : 0.01
   const selectedGroup = form.watch('group')
-  const unlimitedQuota = form.watch('unlimited_quota')
+  const quotaType = form.watch('quota_type')
 
   return (
     <Sheet
@@ -436,7 +441,60 @@ export function ApiKeysMutateDrawer({
                 description={t('Set quota amount and limits')}
                 icon={<WalletCards className='size-4' />}
               />
-              {!unlimitedQuota && (
+
+              <FormField
+                control={form.control}
+                name='quota_type'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t('Quota Type')}</FormLabel>
+                    <FormControl>
+                      <NativeSelect
+                        className='w-full'
+                        value={String(field.value)}
+                        onChange={(e) => {
+                          const nextQuotaType = Number(e.target.value)
+                          field.onChange(nextQuotaType)
+                          form.setValue(
+                            'unlimited_quota',
+                            nextQuotaType === 0,
+                            { shouldDirty: true }
+                          )
+                        }}
+                      >
+                        <NativeSelectOption value='0'>
+                          {t('Unlimited Quota')}
+                        </NativeSelectOption>
+                        <NativeSelectOption value='1'>
+                          {t('Permanent Quota')}
+                        </NativeSelectOption>
+                        <NativeSelectOption value='2'>
+                          {t('Hourly Reset Quota')}
+                        </NativeSelectOption>
+                        <NativeSelectOption value='3'>
+                          {t('Hourly + Days Reset Quota')}
+                        </NativeSelectOption>
+                      </NativeSelect>
+                    </FormControl>
+                    <FormDescription>
+                      {t(
+                        'Choose whether this key is unlimited, has a fixed quota, or resets quota by hour/day.'
+                      )}
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {quotaType === 0 && (
+                <p className='text-muted-foreground text-sm'>
+                  {t(
+                    'The key itself has no quota cap, but actual usage is still limited by the account balance.'
+                  )}
+                </p>
+              )}
+
+              {quotaType === 1 && (
                 <FormField
                   control={form.control}
                   name='remain_quota_dollars'
@@ -445,9 +503,9 @@ export function ApiKeysMutateDrawer({
                       <FormLabel>{quotaLabel}</FormLabel>
                       <FormControl>
                         <Input
-                          {...field}
+                          value={field.value ?? ''}
                           type='number'
-                          step={tokensOnly ? 1 : 0.01}
+                          step={quotaInputStep}
                           placeholder={quotaPlaceholder}
                           onChange={(e) =>
                             field.onChange(parseFloat(e.target.value) || 0)
@@ -467,28 +525,148 @@ export function ApiKeysMutateDrawer({
                 />
               )}
 
-              <FormField
-                control={form.control}
-                name='unlimited_quota'
-                render={({ field }) => (
-                  <FormItem className={sideDrawerSwitchItemClassName()}>
-                    <div className='flex flex-col gap-0.5'>
-                      <FormLabel className='text-sm'>
-                        {t('Unlimited Quota')}
-                      </FormLabel>
-                      <FormDescription className='text-xs'>
-                        {t('Enable unlimited quota for this API key')}
-                      </FormDescription>
-                    </div>
-                    <FormControl>
-                      <Switch
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
+              {quotaType >= 2 && (
+                <div className='grid gap-4 sm:grid-cols-3'>
+                  <FormField
+                    control={form.control}
+                    name='window_hours'
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('Window Hours')}</FormLabel>
+                        <FormControl>
+                          <Input
+                            value={field.value ?? ''}
+                            type='number'
+                            min='1'
+                            max='720'
+                            placeholder={t('Hours')}
+                            onChange={(e) =>
+                              field.onChange(parseInt(e.target.value, 10) || 1)
+                            }
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          {t('Reset window duration in hours')}
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name='window_quota_dollars'
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>
+                          {t('Window Quota ({{currency}})', {
+                            currency: currencyLabel,
+                          })}
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            value={field.value ?? ''}
+                            type='number'
+                            step={quotaInputStep}
+                            placeholder={quotaPlaceholder}
+                            onChange={(e) =>
+                              field.onChange(parseFloat(e.target.value) || 0)
+                            }
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          {t('Quota available in each window')}
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name='window_start_hour'
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('Start Hour')}</FormLabel>
+                        <FormControl>
+                          <Input
+                            value={field.value ?? ''}
+                            type='number'
+                            min='0'
+                            max='23'
+                            placeholder='0-23'
+                            onChange={(e) =>
+                              field.onChange(parseInt(e.target.value, 10) || 0)
+                            }
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          {t('Window start hour, from 0 to 23')}
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              )}
+
+              {quotaType === 3 && (
+                <div className='grid gap-4 sm:grid-cols-2'>
+                  <FormField
+                    control={form.control}
+                    name='cycle_days'
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('Cycle Days')}</FormLabel>
+                        <FormControl>
+                          <Input
+                            value={field.value ?? ''}
+                            type='number'
+                            min='1'
+                            placeholder={t('Days')}
+                            onChange={(e) =>
+                              field.onChange(parseInt(e.target.value, 10) || 1)
+                            }
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          {t('Cycle duration in days')}
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name='cycle_quota_dollars'
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>
+                          {t('Cycle Quota ({{currency}})', {
+                            currency: currencyLabel,
+                          })}
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            value={field.value ?? ''}
+                            type='number'
+                            step={quotaInputStep}
+                            placeholder={quotaPlaceholder}
+                            onChange={(e) =>
+                              field.onChange(parseFloat(e.target.value) || 0)
+                            }
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          {t('Total quota available in each day cycle')}
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              )}
             </SideDrawerSection>
 
             <Collapsible open={advancedOpen} onOpenChange={setAdvancedOpen}>

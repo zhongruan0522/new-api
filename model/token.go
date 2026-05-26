@@ -138,7 +138,7 @@ func sanitizeLikePattern(input string) (string, error) {
 
 const searchHardLimit = 100
 
-func SearchUserTokens(userId int, keyword string, token string, offset int, limit int) (tokens []*Token, total int64, err error) {
+func SearchUserTokens(userId int, keyword string, token string, all bool, offset int, limit int) (tokens []*Token, total int64, err error) {
 	// model 层强制截断
 	if limit <= 0 || limit > searchHardLimit {
 		limit = searchHardLimit
@@ -148,7 +148,7 @@ func SearchUserTokens(userId int, keyword string, token string, offset int, limi
 	}
 
 	if token != "" {
-		token = strings.Trim(token, "sk-")
+		token = strings.TrimPrefix(token, "sk-")
 	}
 
 	// 超量用户（令牌数超过上限）只允许精确搜索，禁止模糊搜索
@@ -166,20 +166,32 @@ func SearchUserTokens(userId int, keyword string, token string, offset int, limi
 
 	baseQuery := DB.Model(&Token{}).Where("user_id = ?", userId)
 
-	// 非空才加 LIKE 条件，空则跳过（不过滤该字段）
-	if keyword != "" {
+	// 非空才加 LIKE 条件，空则跳过（不过滤该字段）。all=true 时用于新 UI 的单框搜索，名称或密钥匹配其一即可。
+	if all && keyword != "" && token != "" {
 		keywordPattern, err := sanitizeLikePattern(keyword)
 		if err != nil {
 			return nil, 0, err
 		}
-		baseQuery = baseQuery.Where("name LIKE ? ESCAPE '!'", keywordPattern)
-	}
-	if token != "" {
 		tokenPattern, err := sanitizeLikePattern(token)
 		if err != nil {
 			return nil, 0, err
 		}
-		baseQuery = baseQuery.Where(commonKeyCol+" LIKE ? ESCAPE '!'", tokenPattern)
+		baseQuery = baseQuery.Where("(name LIKE ? ESCAPE '!' OR "+commonKeyCol+" LIKE ? ESCAPE '!')", keywordPattern, tokenPattern)
+	} else {
+		if keyword != "" {
+			keywordPattern, err := sanitizeLikePattern(keyword)
+			if err != nil {
+				return nil, 0, err
+			}
+			baseQuery = baseQuery.Where("name LIKE ? ESCAPE '!'", keywordPattern)
+		}
+		if token != "" {
+			tokenPattern, err := sanitizeLikePattern(token)
+			if err != nil {
+				return nil, 0, err
+			}
+			baseQuery = baseQuery.Where(commonKeyCol+" LIKE ? ESCAPE '!'", tokenPattern)
+		}
 	}
 
 	// 先查匹配总数（用于分页，受 maxTokens 上限保护，避免全表 COUNT）
