@@ -6,6 +6,7 @@ on:
       - main
       - beta
       - dev
+      - test
     tags:
       - '*'
   workflow_dispatch:
@@ -57,6 +58,12 @@ jobs:
             echo "TAGS=ghcr.io/${GHCR_REPO}:dev" >> $GITHUB_OUTPUT
             echo "VERSION=dev" >> $GITHUB_ENV
             echo "Building dev branch -> dev"
+
+          elif [[ "${{ github.ref }}" == refs/heads/test ]]; then
+            # Test branch: tag as test
+            echo "TAGS=ghcr.io/${GHCR_REPO}:test" >> $GITHUB_OUTPUT
+            echo "VERSION=test" >> $GITHUB_ENV
+            echo "Building test branch -> test"
 
           else
             echo "Unknown ref: ${{ github.ref }}"
