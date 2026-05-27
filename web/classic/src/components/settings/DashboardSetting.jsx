@@ -26,6 +26,7 @@ import {
   Form,
   Modal,
   Row,
+  Select,
   Spin,
 } from '@douyinfe/semi-ui';
 import { useTranslation } from 'react-i18next';
@@ -399,13 +400,18 @@ const DashboardSetting = () => {
           }
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <Form.Select
+            <Select
               optionList={frontendOptions}
               value={frontendTheme}
               style={{ width: 200 }}
-              onChange={(value) => submitFrontendTheme(value)}
-              disabled={frontendThemeLoading}
+              onChange={(value) => setFrontendTheme(value)}
             />
+            <Button
+              onClick={() => submitFrontendTheme(frontendTheme)}
+              loading={frontendThemeLoading}
+            >
+              {t('保存')}
+            </Button>
             <span style={{ color: 'var(--semi-color-text-2)', fontSize: 13 }}>
               {t('切换后刷新页面生效')}
             </span>
