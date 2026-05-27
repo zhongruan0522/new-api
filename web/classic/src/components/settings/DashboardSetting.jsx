@@ -256,6 +256,35 @@ const DashboardSetting = () => {
     }
   };
 
+  // 仪表盘 UI 选择
+  const frontendOptions = [
+    { key: 'default', label: t('新版前端'), value: 'default' },
+    { key: 'classic', label: t('经典前端'), value: 'classic' },
+  ];
+  let [frontendTheme, setFrontendTheme] = useState('default');
+  let [frontendThemeLoading, setFrontendThemeLoading] = useState(false);
+
+  const submitFrontendTheme = async (value) => {
+    setFrontendThemeLoading(true);
+    try {
+      const res = await API.put('/api/option/', {
+        key: 'theme.frontend',
+        value,
+      });
+      const { success, message } = res.data;
+      if (success) {
+        setFrontendTheme(value);
+        showSuccess(t('仪表盘 UI 已切换，刷新页面后生效'));
+      } else {
+        showError(message);
+      }
+    } catch (error) {
+      showError(t('保存失败'));
+    } finally {
+      setFrontendThemeLoading(false);
+    }
+  };
+
   // 获取仪表盘相关配置
   const getOptions = async () => {
     const res = await API.get('/api/option/');
@@ -272,6 +301,9 @@ const DashboardSetting = () => {
         }
         if (item.key in otherInputs) {
           newOtherInputs[item.key] = item.value;
+        }
+        if (item.key === 'theme.frontend') {
+          setFrontendTheme(item.value);
         }
       });
       setDashboardInputs(newDashboardInputs);
@@ -357,6 +389,28 @@ const DashboardSetting = () => {
             迁移过程中会自动处理数据格式转换，迁移完成后旧配置将被清除，请在迁移前在数据库中备份好旧配置。
           </p>
         </Modal>
+
+        {/* 仪表盘 UI 选择 */}
+        <Card
+          title={
+            <span style={{ fontSize: 16, fontWeight: 600 }}>
+              {t('仪表盘 UI 选择')}
+            </span>
+          }
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <Form.Select
+              optionList={frontendOptions}
+              value={frontendTheme}
+              style={{ width: 200 }}
+              onChange={(value) => submitFrontendTheme(value)}
+              disabled={frontendThemeLoading}
+            />
+            <span style={{ color: 'var(--semi-color-text-2)', fontSize: 13 }}>
+              {t('切换后刷新页面生效')}
+            </span>
+          </div>
+        </Card>
 
         {/* 顶栏模块管理 */}
         <div style={{ marginTop: '10px' }}>
