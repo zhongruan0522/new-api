@@ -123,7 +123,7 @@ func (c *chatToResponsesStreamConverter) getOrCreateToolCall(callID string) *cha
 	return state
 }
 
-func (c *chatToResponsesStreamConverter) resolveToolCallID(call dto.ToolCallResponse) string {
+func (c *chatToResponsesStreamConverter) resolveToolCallID(call dto.ToolCallResponse) (string, bool) {
 	callID := strings.TrimSpace(call.ID)
 	if call.Index != nil {
 		index := *call.Index
@@ -132,16 +132,19 @@ func (c *chatToResponsesStreamConverter) resolveToolCallID(call dto.ToolCallResp
 				c.rekeyToolCallState(mapped, callID)
 			}
 			c.toolCallIDByIndex[index] = callID
-			return callID
+			return callID, true
 		}
 		if mapped := c.toolCallIDByIndex[index]; mapped != "" {
-			return mapped
+			return mapped, false
 		}
 		callID = fmt.Sprintf("call_%d", index)
 		c.toolCallIDByIndex[index] = callID
-		return callID
+		return callID, false
 	}
-	return fmt.Sprintf("call_%d", len(c.toolCallsByID))
+	if callID != "" {
+		return callID, true
+	}
+	return fmt.Sprintf("call_%d", len(c.toolCallsByID)), false
 }
 
 func (c *chatToResponsesStreamConverter) rekeyToolCallState(from string, to string) {
@@ -153,6 +156,7 @@ func (c *chatToResponsesStreamConverter) rekeyToolCallState(from string, to stri
 		return
 	}
 	if existing := c.toolCallsByID[to]; existing != nil {
+		existing.hasStableID = true
 		if existing.toolType == "" {
 			existing.toolType = state.toolType
 		}
@@ -172,6 +176,7 @@ func (c *chatToResponsesStreamConverter) rekeyToolCallState(from string, to stri
 		return
 	}
 	state.id = to
+	state.hasStableID = true
 	c.toolCallsByID[to] = state
 	delete(c.toolCallsByID, from)
 	for i, callID := range c.toolCallOrder {

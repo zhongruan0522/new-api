@@ -2,6 +2,7 @@ package relay
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
@@ -26,6 +27,7 @@ type responsesToChatStreamConverter struct {
 	toolCallTypeByID         map[string]string
 	toolCallNameByID         map[string]string
 	toolCallIDByItemID       map[string]string
+	toolCallHasStableIDByID  map[string]bool
 	toolCallStartedByID      map[string]bool
 	toolCallBufferedArgsByID map[string]string
 	toolCallArgsByID         map[string]string
@@ -40,6 +42,7 @@ func newResponsesToChatStreamConverter(includeUsage bool) *responsesToChatStream
 		toolCallTypeByID:         make(map[string]string),
 		toolCallNameByID:         make(map[string]string),
 		toolCallIDByItemID:       make(map[string]string),
+		toolCallHasStableIDByID:  make(map[string]bool),
 		toolCallStartedByID:      make(map[string]bool),
 		toolCallBufferedArgsByID: make(map[string]string),
 		toolCallArgsByID:         make(map[string]string),
@@ -116,32 +119,40 @@ func (c *responsesToChatStreamConverter) captureToolCallMeta(stream dto.Response
 	if stream.Item == nil {
 		return
 	}
-	itemType := strings.TrimSpace(stream.Item.Type)
+	c.rememberToolCallMeta(*stream.Item, stream.ItemID)
+}
+
+func (c *responsesToChatStreamConverter) rememberToolCallMeta(item dto.ResponsesOutput, eventItemID string) {
+	itemType := strings.TrimSpace(item.Type)
 	if itemType != "function_call" && itemType != "custom_tool_call" {
 		return
 	}
-	callID := strings.TrimSpace(stream.Item.CallId)
+	callID := strings.TrimSpace(item.CallId)
+	hasStableID := callID != ""
 	if callID == "" {
-		callID = strings.TrimSpace(stream.Item.ID)
+		callID = strings.TrimSpace(item.ID)
 	}
 	if callID == "" {
-		callID = strings.TrimSpace(stream.ItemID)
+		callID = strings.TrimSpace(eventItemID)
 	}
 	if callID == "" {
 		return
 	}
-	if itemID := strings.TrimSpace(stream.Item.ID); itemID != "" {
+	if itemID := strings.TrimSpace(item.ID); itemID != "" {
 		c.toolCallIDByItemID[itemID] = callID
 		c.rekeyToolCallState(itemID, callID)
 	}
-	if itemID := strings.TrimSpace(stream.ItemID); itemID != "" {
+	if itemID := strings.TrimSpace(eventItemID); itemID != "" {
 		c.toolCallIDByItemID[itemID] = callID
 		c.rekeyToolCallState(itemID, callID)
 	}
-	if strings.TrimSpace(stream.Item.Name) != "" {
-		c.toolCallNameByID[callID] = stream.Item.Name
+	if strings.TrimSpace(item.Name) != "" {
+		c.toolCallNameByID[callID] = item.Name
 	}
 	c.toolCallTypeByID[callID] = itemType
+	if hasStableID {
+		c.toolCallHasStableIDByID[callID] = true
+	}
 	c.sawToolCalls = true
 }
 
@@ -169,8 +180,8 @@ func (c *responsesToChatStreamConverter) hydrateFromResponse(resp *dto.OpenAIRes
 	if len(resp.Output) > 0 {
 		for _, item := range resp.Output {
 			if strings.TrimSpace(item.Type) == "function_call" || strings.TrimSpace(item.Type) == "custom_tool_call" {
+				c.rememberToolCallMeta(item, "")
 				c.sawToolCalls = true
-				break
 			}
 		}
 	}
@@ -222,7 +233,14 @@ func (c *responsesToChatStreamConverter) emitToolCallAdded(stream dto.ResponsesS
 	if !ok {
 		return "", nil
 	}
+	return c.emitToolCallAddedByID(callID, name, false)
+}
+
+func (c *responsesToChatStreamConverter) emitToolCallAddedByID(callID string, name string, allowUnstableID bool) (string, error) {
 	if strings.TrimSpace(name) == "" {
+		return "", nil
+	}
+	if !allowUnstableID && !c.toolCallHasStableIDByID[callID] {
 		return "", nil
 	}
 	if c.toolCallStartedByID[callID] {
@@ -369,6 +387,11 @@ func (c *responsesToChatStreamConverter) emitFinal() (string, error) {
 	}
 
 	var builder strings.Builder
+	pendingToolCalls, err := c.emitPendingToolCalls()
+	if err != nil {
+		return "", err
+	}
+	builder.WriteString(pendingToolCalls)
 	stopFrame, err := encodeChatSSEChunk(stop)
 	if err != nil {
 		return "", err
@@ -388,6 +411,27 @@ func (c *responsesToChatStreamConverter) emitFinal() (string, error) {
 
 	builder.WriteString("data: [DONE]\n\n")
 	return builder.String(), nil
+}
+
+func (c *responsesToChatStreamConverter) emitPendingToolCalls() (string, error) {
+	callIDs := make([]string, 0, len(c.toolCallNameByID))
+	for callID, name := range c.toolCallNameByID {
+		if c.toolCallStartedByID[callID] || strings.TrimSpace(name) == "" {
+			continue
+		}
+		callIDs = append(callIDs, callID)
+	}
+	sort.Strings(callIDs)
+
+	var out strings.Builder
+	for _, callID := range callIDs {
+		frame, err := c.emitToolCallAddedByID(callID, c.toolCallNameByID[callID], true)
+		if err != nil {
+			return "", err
+		}
+		out.WriteString(frame)
+	}
+	return out.String(), nil
 }
 
 func (c *responsesToChatStreamConverter) finishReason() string {
@@ -444,6 +488,10 @@ func (c *responsesToChatStreamConverter) rekeyToolCallState(from string, to stri
 		c.toolCallStartedByID[to] = true
 		delete(c.toolCallStartedByID, from)
 	}
+	if c.toolCallHasStableIDByID[from] {
+		c.toolCallHasStableIDByID[to] = true
+		delete(c.toolCallHasStableIDByID, from)
+	}
 	if _, ok := c.toolCallIndexByID[to]; !ok {
 		if value, oldOK := c.toolCallIndexByID[from]; oldOK {
 			c.toolCallIndexByID[to] = value
@@ -497,6 +545,9 @@ func (c *responsesToChatStreamConverter) emitStartedToolCallArguments(callID str
 }
 
 func (c *responsesToChatStreamConverter) getToolCallMeta(stream dto.ResponsesStreamResponse) (string, string, bool) {
+	if stream.Item != nil {
+		c.rememberToolCallMeta(*stream.Item, stream.ItemID)
+	}
 	itemID := strings.TrimSpace(stream.ItemID)
 	callID := c.toolCallIDByItemID[itemID]
 	itemType := ""

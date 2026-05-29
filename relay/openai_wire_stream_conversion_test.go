@@ -232,6 +232,69 @@ func TestChatToResponsesStreamConverter_RekeysBufferedIndexToToolCallID(t *testi
 	}
 }
 
+// Test name-before-id chunks because Responses clients must not observe a
+// placeholder tool-call id that later changes to the model-generated id.
+func TestChatToResponsesStreamConverter_WaitsForStableToolCallID(t *testing.T) {
+	converter := newChatToResponsesStreamConverter()
+	firstChunk := dto.ChatCompletionsStreamResponse{
+		Id:      "chatcmpl_1",
+		Object:  "chat.completion.chunk",
+		Created: 1700000000,
+		Model:   "gpt-4.1",
+		Choices: []dto.ChatCompletionsStreamResponseChoice{{
+			Index: 0,
+			Delta: dto.ChatCompletionsStreamResponseChoiceDelta{ToolCalls: []dto.ToolCallResponse{{
+				Index: common.GetPointer(0),
+				Type:  "function",
+				Function: dto.FunctionResponse{
+					Name:      "get_weather",
+					Arguments: `{"city":"bei`,
+				},
+			}}},
+		}},
+	}
+	raw, err := common.Marshal(firstChunk)
+	if err != nil {
+		t.Fatalf("marshal first chunk error = %v", err)
+	}
+	out, err := converter.ConvertFrame("", string(raw), "data: "+string(raw)+"\n\n")
+	if err != nil {
+		t.Fatalf("ConvertFrame(first) error = %v", err)
+	}
+	if strings.Contains(out, `"type":"function_call"`) || strings.Contains(out, `"id":"call_0"`) {
+		t.Fatalf("first output = %q, want no placeholder tool call item", out)
+	}
+
+	secondChunk := dto.ChatCompletionsStreamResponse{
+		Id:      "chatcmpl_1",
+		Object:  "chat.completion.chunk",
+		Created: 1700000000,
+		Model:   "gpt-4.1",
+		Choices: []dto.ChatCompletionsStreamResponseChoice{{
+			Index: 0,
+			Delta: dto.ChatCompletionsStreamResponseChoiceDelta{ToolCalls: []dto.ToolCallResponse{{
+				Index: common.GetPointer(0),
+				ID:    "call_real",
+				Type:  "function",
+				Function: dto.FunctionResponse{
+					Arguments: `jing"}`,
+				},
+			}}},
+		}},
+	}
+	raw, err = common.Marshal(secondChunk)
+	if err != nil {
+		t.Fatalf("marshal second chunk error = %v", err)
+	}
+	out, err = converter.ConvertFrame("", string(raw), "data: "+string(raw)+"\n\n")
+	if err != nil {
+		t.Fatalf("ConvertFrame(second) error = %v", err)
+	}
+	if !strings.Contains(out, `"id":"call_real"`) || strings.Contains(out, `"id":"call_0"`) || !strings.Contains(out, `\"city\":\"beijing\"`) {
+		t.Fatalf("second output = %q, want stable real id with buffered arguments", out)
+	}
+}
+
 // Test Responses tool-call buffering for the inverse rewrite path because some
 // streams surface arguments deltas before the item.added metadata with name.
 func TestResponsesToChatStreamConverter_BuffersToolCallUntilNameKnown(t *testing.T) {
@@ -361,6 +424,126 @@ func TestResponsesToChatStreamConverter_RekeysBufferedItemIDToCallID(t *testing.
 	}
 	if !strings.Contains(out, `"id":"call_1"`) || !strings.Contains(out, `\"city\":\"bei`) {
 		t.Fatalf("added output = %q, want buffered args rekeyed to call_id", out)
+	}
+}
+
+// Test name-before-call-id events because Chat clients must not receive a
+// tool_call id derived from Responses item_id if call_id arrives later.
+func TestResponsesToChatStreamConverter_WaitsForStableCallID(t *testing.T) {
+	converter := newResponsesToChatStreamConverter(false)
+	addedEvent, err := common.Marshal(dto.ResponsesStreamResponse{
+		Type: "response.output_item.added",
+		Item: &dto.ResponsesOutput{
+			Type:   "function_call",
+			ID:     "fc_1",
+			Name:   "get_weather",
+			Status: "in_progress",
+		},
+		ItemID: "fc_1",
+	})
+	if err != nil {
+		t.Fatalf("marshal added event error = %v", err)
+	}
+	out, err := converter.ConvertFrame("response.output_item.added", string(addedEvent), "event: response.output_item.added\ndata: "+string(addedEvent)+"\n\n")
+	if err != nil {
+		t.Fatalf("ConvertFrame(added) error = %v", err)
+	}
+	if out != "" {
+		t.Fatalf("added output = %q, want no placeholder item_id tool call", out)
+	}
+
+	argsEvent, err := common.Marshal(dto.ResponsesStreamResponse{
+		Type:   "response.function_call_arguments.delta",
+		ItemID: "fc_1",
+		Delta:  `{"city":"bei`,
+	})
+	if err != nil {
+		t.Fatalf("marshal args event error = %v", err)
+	}
+	out, err = converter.ConvertFrame("response.function_call_arguments.delta", string(argsEvent), "event: response.function_call_arguments.delta\ndata: "+string(argsEvent)+"\n\n")
+	if err != nil {
+		t.Fatalf("ConvertFrame(args) error = %v", err)
+	}
+	if out != "" {
+		t.Fatalf("args output = %q, want buffered args until stable call_id", out)
+	}
+
+	doneEvent, err := common.Marshal(dto.ResponsesStreamResponse{
+		Type: "response.output_item.done",
+		Item: &dto.ResponsesOutput{
+			Type:      "function_call",
+			ID:        "fc_1",
+			CallId:    "call_1",
+			Name:      "get_weather",
+			Arguments: `{"city":"beijing"}`,
+			Status:    "completed",
+		},
+		ItemID: "fc_1",
+	})
+	if err != nil {
+		t.Fatalf("marshal done event error = %v", err)
+	}
+	out, err = converter.ConvertFrame("response.output_item.done", string(doneEvent), "event: response.output_item.done\ndata: "+string(doneEvent)+"\n\n")
+	if err != nil {
+		t.Fatalf("ConvertFrame(done) error = %v", err)
+	}
+	if !strings.Contains(out, `"id":"call_1"`) || strings.Contains(out, `"id":"fc_1"`) || !strings.Contains(out, `\"city\":\"bei`) {
+		t.Fatalf("done output = %q, want stable call_id with buffered arguments", out)
+	}
+}
+
+func TestResponsesToChatStreamConverter_UsesCompletedResponseCallIDForPendingToolCall(t *testing.T) {
+	converter := newResponsesToChatStreamConverter(false)
+	addedEvent, err := common.Marshal(dto.ResponsesStreamResponse{
+		Type: "response.output_item.added",
+		Item: &dto.ResponsesOutput{
+			Type:   "function_call",
+			ID:     "fc_1",
+			Name:   "get_weather",
+			Status: "in_progress",
+		},
+		ItemID: "fc_1",
+	})
+	if err != nil {
+		t.Fatalf("marshal added event error = %v", err)
+	}
+	if out, err := converter.ConvertFrame("response.output_item.added", string(addedEvent), "event: response.output_item.added\ndata: "+string(addedEvent)+"\n\n"); err != nil || out != "" {
+		t.Fatalf("ConvertFrame(added) = (%q, %v), want buffered", out, err)
+	}
+
+	argsEvent, err := common.Marshal(dto.ResponsesStreamResponse{
+		Type:   "response.function_call_arguments.delta",
+		ItemID: "fc_1",
+		Delta:  `{"city":"beijing"}`,
+	})
+	if err != nil {
+		t.Fatalf("marshal args event error = %v", err)
+	}
+	if out, err := converter.ConvertFrame("response.function_call_arguments.delta", string(argsEvent), "event: response.function_call_arguments.delta\ndata: "+string(argsEvent)+"\n\n"); err != nil || out != "" {
+		t.Fatalf("ConvertFrame(args) = (%q, %v), want buffered", out, err)
+	}
+
+	completedEvent, err := common.Marshal(dto.ResponsesStreamResponse{
+		Type: "response.completed",
+		Response: &dto.OpenAIResponsesResponse{
+			Status: "completed",
+			Output: []dto.ResponsesOutput{{
+				Type:   "function_call",
+				ID:     "fc_1",
+				CallId: "call_1",
+				Name:   "get_weather",
+			}},
+		},
+	})
+	if err != nil {
+		t.Fatalf("marshal completed event error = %v", err)
+	}
+	out, err := converter.ConvertFrame("response.completed", string(completedEvent), "event: response.completed\ndata: "+string(completedEvent)+"\n\n")
+	if err != nil {
+		t.Fatalf("ConvertFrame(completed) error = %v", err)
+	}
+	if !strings.Contains(out, `"id":"call_1"`) || strings.Contains(out, `"id":"fc_1"`) || !strings.Contains(out, `\"city\":\"beijing\"`) {
+		t.Fatalf("completed output = %q, want pending tool call emitted with completed call_id", out)
 	}
 }
 

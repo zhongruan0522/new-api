@@ -41,6 +41,7 @@ type chatToResponsesToolCallState struct {
 	args           strings.Builder
 	emittedArgsLen int
 	sentAdded      bool
+	hasStableID    bool
 }
 
 func newChatToResponsesStreamConverter() *chatToResponsesStreamConverter {
@@ -282,9 +283,10 @@ func (c *chatToResponsesStreamConverter) emitReasoningDelta(delta string) (strin
 func (c *chatToResponsesStreamConverter) emitToolCallDeltas(calls []dto.ToolCallResponse) (string, error) {
 	var out strings.Builder
 	for _, call := range calls {
-		callID := c.resolveToolCallID(call)
+		callID, hasStableID := c.resolveToolCallID(call)
 
 		state := c.getOrCreateToolCall(callID)
+		state.hasStableID = state.hasStableID || hasStableID
 		if call.Index != nil {
 			state.index = *call.Index
 		}
@@ -315,23 +317,8 @@ func (c *chatToResponsesStreamConverter) emitToolCallDeltas(calls []dto.ToolCall
 			state.args.WriteString(call.Function.Arguments)
 		}
 
-		if !state.sentAdded && strings.TrimSpace(state.name) != "" {
-			itemType := "function_call"
-			if state.toolType == dto.CustomType {
-				itemType = "custom_tool_call"
-			}
-			frame, err := encodeResponsesStreamEvent(dto.ResponsesStreamResponse{
-				Type: "response.output_item.added",
-				Item: &dto.ResponsesOutput{
-					Type:   itemType,
-					ID:     callID,
-					Status: "in_progress",
-					Role:   "assistant",
-					CallId: callID,
-					Name:   state.name,
-				},
-				ItemID: callID,
-			})
+		if !state.sentAdded && state.hasStableID && strings.TrimSpace(state.name) != "" {
+			frame, err := c.emitToolCallAdded(state)
 			if err != nil {
 				return "", err
 			}
@@ -395,6 +382,13 @@ func (c *chatToResponsesStreamConverter) emitCompleted() (string, error) {
 		}
 		if strings.TrimSpace(state.name) == "" {
 			return "", fmt.Errorf("tool call %q is missing name", state.id)
+		}
+		if !state.sentAdded {
+			frame, err := c.emitToolCallAdded(state)
+			if err != nil {
+				return "", err
+			}
+			out.WriteString(frame)
 		}
 		eventType := "response.function_call_arguments.done"
 		if state.toolType == dto.CustomType {
@@ -466,6 +460,30 @@ func (c *chatToResponsesStreamConverter) emitCompleted() (string, error) {
 
 func isSSECommentFrame(rawFrame string) bool {
 	return strings.HasPrefix(strings.TrimSpace(rawFrame), ":")
+}
+
+func (c *chatToResponsesStreamConverter) emitToolCallAdded(state *chatToResponsesToolCallState) (string, error) {
+	itemType := "function_call"
+	if state.toolType == dto.CustomType {
+		itemType = "custom_tool_call"
+	}
+	frame, err := encodeResponsesStreamEvent(dto.ResponsesStreamResponse{
+		Type: "response.output_item.added",
+		Item: &dto.ResponsesOutput{
+			Type:   itemType,
+			ID:     state.id,
+			Status: "in_progress",
+			Role:   "assistant",
+			CallId: state.id,
+			Name:   state.name,
+		},
+		ItemID: state.id,
+	})
+	if err != nil {
+		return "", err
+	}
+	state.sentAdded = true
+	return frame, nil
 }
 
 func parseChatCustomToolCallDelta(raw json.RawMessage) (name string, input string, err error) {
