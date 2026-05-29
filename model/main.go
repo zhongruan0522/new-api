@@ -248,6 +248,12 @@ func InitLogDB() (err error) {
 }
 
 func migrateDB() error {
+	// PrefillGroup 的唯一索引从旧版 gorm:"uniqueIndex"（约束名 uni_prefill_groups_name）
+	// 改为新版 gorm:"uniqueIndex:uk_prefill_name,where:deleted_at IS NULL"（部分索引）。
+	// GORM AutoMigrate 会尝试 DROP CONSTRAINT 旧约束，但如果旧约束不存在（全新安装或已清理），
+	// PostgreSQL 会报错。这里先安全清理。
+	cleanupPrefillGroupLegacyIndex()
+
 	err := DB.AutoMigrate(
 		&Channel{},
 		&Ticket{},
@@ -288,6 +294,8 @@ func migrateDB() error {
 }
 
 func migrateDBFast() error {
+	// 同 migrateDB 中的说明
+	cleanupPrefillGroupLegacyIndex()
 
 	var wg sync.WaitGroup
 
@@ -359,6 +367,22 @@ func migrateLOGDB() error {
 		return err
 	}
 	return nil
+}
+
+// cleanupPrefillGroupLegacyIndex 清理 PrefillGroup 旧版唯一约束/索引。
+// 旧版 tag 为 gorm:"uniqueIndex"，GORM 在 PostgreSQL 中生成的约束名为 uni_prefill_groups_name。
+// 新版改为 gorm:"uniqueIndex:uk_prefill_name,where:deleted_at IS NULL"（部分唯一索引）。
+// GORM AutoMigrate 会尝试 DROP CONSTRAINT uni_prefill_groups_name，
+// 但如果该约束不存在（全新安装或已手动清理），PostgreSQL 会报 SQLSTATE 42704。
+// 此函数在 AutoMigrate 之前安全地清理旧约束和旧索引。
+func cleanupPrefillGroupLegacyIndex() {
+	if !common.UsingPostgreSQL {
+		return
+	}
+	// 安全删除旧约束（IF EXISTS 避免 SQLSTATE 42704）
+	_ = DB.Exec(`ALTER TABLE "prefill_groups" DROP CONSTRAINT IF EXISTS "uni_prefill_groups_name"`).Error
+	// 同时清理可能残留的旧索引（GORM 有时用索引而非约束实现唯一性）
+	_ = DB.Exec(`DROP INDEX IF EXISTS "uni_prefill_groups_name"`).Error
 }
 
 func closeDB(db *gorm.DB) error {
