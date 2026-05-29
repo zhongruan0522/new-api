@@ -6,6 +6,7 @@ on:
       - main
       - beta
       - dev
+      - test
     tags:
       - '*'
   workflow_dispatch:
@@ -58,16 +59,31 @@ jobs:
             echo "VERSION=dev" >> $GITHUB_ENV
             echo "Building dev branch -> dev"
 
+          elif [[ "${{ github.ref }}" == refs/heads/test ]]; then
+            # Test branch: tag as test
+            echo "TAGS=ghcr.io/${GHCR_REPO}:test" >> $GITHUB_OUTPUT
+            echo "VERSION=test" >> $GITHUB_ENV
+            echo "Building test branch -> test"
+
           else
             echo "Unknown ref: ${{ github.ref }}"
             exit 1
           fi
 
-          # Write VERSION file for build
-          echo "${{ env.VERSION }}" > VERSION
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
 
-          # Write COMMIT file for build (git commit hash injected into Version variable)
-          git rev-parse HEAD > COMMIT
+      - name: Build default frontend
+        working-directory: web/default
+        run: |
+          bun install
+          VITE_REACT_APP_VERSION="${VERSION}" bun run build
+
+      - name: Build classic frontend
+        working-directory: web/classic
+        run: |
+          bun install
+          DISABLE_ESLINT_PLUGIN='true' VITE_REACT_APP_VERSION="${VERSION}" bun run build
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
@@ -94,6 +110,8 @@ jobs:
           push: true
           tags: ${{ steps.tags.outputs.TAGS }}
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            COMMIT_HASH=${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
           provenance: false

@@ -1,5 +1,7 @@
 # AGENTS.md — Project Conventions for new-api
 
+> **TEST 分支规则**：当前端接口调用失败，且确认是前端额外传了后端不认识的字段（而非现有 API 本身的缺陷）时，**必须先询问用户**是砍掉前端的对应调用，还是修复后端来适配，不要自主决定直接改后端。新版本 UI 与老版本后端交互存在较多不一致，需要用户来判断该改哪一侧。
+
 ## Overview
 
 This is an AI API gateway/proxy built with Go. It aggregates 40+ upstream AI providers (OpenAI, Claude, Gemini, Azure, AWS Bedrock, etc.) behind a unified API, with user management, billing, rate limiting, and an admin dashboard.

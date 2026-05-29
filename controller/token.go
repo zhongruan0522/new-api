@@ -35,10 +35,11 @@ func SearchTokens(c *gin.Context) {
 	userId := c.GetInt("id")
 	keyword := c.Query("keyword")
 	token := c.Query("token")
+	all := c.Query("all") == "true" || c.Query("all") == "1"
 
 	pageInfo := common.GetPageQuery(c)
 
-	tokens, total, err := model.SearchUserTokens(userId, keyword, token, pageInfo.GetStartIdx(), pageInfo.GetPageSize())
+	tokens, total, err := model.SearchUserTokens(userId, keyword, token, all, pageInfo.GetStartIdx(), pageInfo.GetPageSize())
 	if err != nil {
 		common.ApiError(c, err)
 		return
@@ -67,6 +68,27 @@ func GetToken(c *gin.Context) {
 		"data":    token,
 	})
 	return
+}
+
+func GetTokenKey(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	userId := c.GetInt("id")
+	token, err := model.GetTokenByIds(id, userId)
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "",
+		"data": gin.H{
+			"key": token.Key,
+		},
+	})
 }
 
 func GetTokenStatus(c *gin.Context) {
@@ -498,6 +520,31 @@ func DeleteTokenBatch(c *gin.Context) {
 		"success": true,
 		"message": "",
 		"data":    count,
+	})
+}
+
+func GetTokenKeysBatch(c *gin.Context) {
+	tokenBatch := TokenBatch{}
+	if err := c.ShouldBindJSON(&tokenBatch); err != nil || len(tokenBatch.Ids) == 0 {
+		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
+		return
+	}
+	userId := c.GetInt("id")
+	keys := make(map[int]string, len(tokenBatch.Ids))
+	for _, id := range tokenBatch.Ids {
+		token, err := model.GetTokenByIds(id, userId)
+		if err != nil {
+			common.ApiError(c, err)
+			return
+		}
+		keys[id] = token.Key
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "",
+		"data": gin.H{
+			"keys": keys,
+		},
 	})
 }
 

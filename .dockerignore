@@ -7,5 +7,9 @@ Makefile
 docs
 .eslintcache
 .gocache
+/new-api
 /web/node_modules
+/web/classic/node_modules
+/web/default/node_modules
+.playwright-mcp
 参考项目/
