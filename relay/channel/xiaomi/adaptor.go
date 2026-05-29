@@ -13,6 +13,7 @@ import (
 	"github.com/zhongruan0522/new-api/relay/channel/claude"
 	"github.com/zhongruan0522/new-api/relay/channel/openai"
 	relaycommon "github.com/zhongruan0522/new-api/relay/common"
+	relayconstant "github.com/zhongruan0522/new-api/relay/constant"
 	"github.com/zhongruan0522/new-api/types"
 	"github.com/gin-gonic/gin"
 )
@@ -54,7 +55,12 @@ func (a *Adaptor) GetRequestURL(info *relaycommon.RelayInfo) (string, error) {
 		return fmt.Sprintf("%s/anthropic/v1/messages", baseURL), nil
 	default:
 		if hasSpecialPlan && specialPlan.OpenAIBaseURL != "" {
-			return fmt.Sprintf("%s/chat/completions", specialPlan.OpenAIBaseURL), nil
+			switch info.RelayMode {
+			case relayconstant.RelayModeResponses, relayconstant.RelayModeResponsesCompact:
+				return fmt.Sprintf("%s/responses", specialPlan.OpenAIBaseURL), nil
+			default:
+				return fmt.Sprintf("%s/chat/completions", specialPlan.OpenAIBaseURL), nil
+			}
 		}
 		return fmt.Sprintf("%s/v1/chat/completions", baseURL), nil
 	}
@@ -82,7 +88,7 @@ func (a *Adaptor) ConvertEmbeddingRequest(c *gin.Context, info *relaycommon.Rela
 }
 
 func (a *Adaptor) ConvertOpenAIResponsesRequest(c *gin.Context, info *relaycommon.RelayInfo, request dto.OpenAIResponsesRequest) (any, error) {
-	return nil, errors.New("not implemented")
+	return request, nil
 }
 
 func (a *Adaptor) DoRequest(c *gin.Context, info *relaycommon.RelayInfo, requestBody io.Reader) (any, error) {

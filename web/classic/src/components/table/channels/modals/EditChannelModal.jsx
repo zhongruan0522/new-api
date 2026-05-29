@@ -3089,7 +3089,7 @@ const EditChannelModal = (props) => {
                       )}
                     />
 
-                    {inputs.type === 1 && (
+                    {[1, 4, 6, 25, 26, 35].includes(inputs.type) && (
                       <Form.Select
                         field='openai_wire_api'
                         label={t('默认 OpenAI 规范')}

@@ -53,6 +53,14 @@ func (a *Adaptor) GetRequestURL(info *relaycommon.RelayInfo) (string, error) {
 		if info.RelayFormat == types.RelayFormatOpenAI {
 			return fmt.Sprintf("%s/chat/completions", specialPlan.OpenAIBaseURL), nil
 		}
+		if info.RelayFormat == types.RelayFormatOpenAIResponses {
+			switch info.RelayMode {
+			case constant.RelayModeResponses, constant.RelayModeResponsesCompact:
+				return fmt.Sprintf("%s/responses", specialPlan.OpenAIBaseURL), nil
+			default:
+				return fmt.Sprintf("%s/chat/completions", specialPlan.OpenAIBaseURL), nil
+			}
+		}
 	}
 
 	switch info.RelayFormat {
@@ -83,8 +91,7 @@ func (a *Adaptor) ConvertOpenAIRequest(c *gin.Context, info *relaycommon.RelayIn
 }
 
 func (a *Adaptor) ConvertOpenAIResponsesRequest(c *gin.Context, info *relaycommon.RelayInfo, request dto.OpenAIResponsesRequest) (any, error) {
-	// TODO implement me
-	return nil, errors.New("not implemented")
+	return request, nil
 }
 
 func (a *Adaptor) DoRequest(c *gin.Context, info *relaycommon.RelayInfo, requestBody io.Reader) (any, error) {
