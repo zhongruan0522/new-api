@@ -18,12 +18,14 @@ type responsesFunctionCallInput struct {
 	CallID    string `json:"call_id"`
 	Name      string `json:"name"`
 	Arguments string `json:"arguments"`
+	Input     string `json:"input"`
 }
 
 type responsesFunctionCallOutputInput struct {
-	Type   string `json:"type"`
-	CallID string `json:"call_id"`
-	Output any    `json:"output"`
+	Type    string          `json:"type"`
+	CallID  string          `json:"call_id"`
+	Output  json.RawMessage `json:"output"`
+	IsError *bool           `json:"tool_call_is_error,omitempty"`
 }
 
 type responsesReasoningInput struct {
@@ -61,6 +63,28 @@ func buildChatMessagesFromResponsesInputArray(raw json.RawMessage) ([]dto.Messag
 
 	out := make([]dto.Message, 0, len(items))
 	pendingReasoning := ""
+	pendingToolCalls := make([]dto.ToolCallResponse, 0)
+	flushToolCalls := func() error {
+		if len(pendingToolCalls) == 0 {
+			return nil
+		}
+		if len(out) > 0 && strings.EqualFold(out[len(out)-1].Role, "assistant") {
+			if err := appendToolCallsToChatAssistantMessage(&out[len(out)-1], pendingReasoning, pendingToolCalls); err != nil {
+				return err
+			}
+			pendingReasoning = ""
+			pendingToolCalls = pendingToolCalls[:0]
+			return nil
+		}
+		msg, err := buildChatAssistantMessage("", pendingReasoning, pendingToolCalls)
+		if err != nil {
+			return err
+		}
+		out = append(out, msg)
+		pendingReasoning = ""
+		pendingToolCalls = pendingToolCalls[:0]
+		return nil
+	}
 	for i, itemRaw := range items {
 		itemType, err := probeResponsesInputItemType(itemRaw)
 		if err != nil {
@@ -75,9 +99,20 @@ func buildChatMessagesFromResponsesInputArray(raw json.RawMessage) ([]dto.Messag
 				return nil, fmt.Errorf("input[%d]: %w", i, err)
 			}
 			if strings.TrimSpace(reasoning) != "" {
-				pendingReasoning = reasoning
+				pendingReasoning = appendReasoningSummary(pendingReasoning, reasoning)
 			}
 			continue
+		}
+		if itemType == openAIResponsesInputItemTypeFunctionCall || itemType == openAIResponsesInputItemTypeCustomToolCall {
+			call, err := buildChatToolCallFromResponsesFunctionCall(itemRaw)
+			if err != nil {
+				return nil, fmt.Errorf("input[%d]: %w", i, err)
+			}
+			pendingToolCalls = append(pendingToolCalls, call)
+			continue
+		}
+		if err := flushToolCalls(); err != nil {
+			return nil, fmt.Errorf("input[%d]: %w", i, err)
 		}
 
 		msgs, err := buildChatMessagesFromResponsesInputItemByType(itemType, itemRaw)
@@ -89,6 +124,9 @@ func buildChatMessagesFromResponsesInputArray(raw json.RawMessage) ([]dto.Messag
 			pendingReasoning = ""
 		}
 		out = append(out, msgs...)
+	}
+	if err := flushToolCalls(); err != nil {
+		return nil, err
 	}
 	if strings.TrimSpace(pendingReasoning) != "" {
 		out = append(out, dto.Message{Role: "assistant", ReasoningContent: pendingReasoning})
@@ -109,13 +147,13 @@ func buildChatMessagesFromResponsesInputItemByType(itemType string, raw json.Raw
 			return nil, nil
 		}
 		return []dto.Message{{Role: "assistant", ReasoningContent: reasoning}}, nil
-	case openAIResponsesInputItemTypeFunctionCall:
+	case openAIResponsesInputItemTypeFunctionCall, openAIResponsesInputItemTypeCustomToolCall:
 		msg, err := buildChatToolCallMessageFromResponsesFunctionCall(raw)
 		if err != nil {
 			return nil, err
 		}
 		return []dto.Message{msg}, nil
-	case openAIResponsesInputItemTypeFunctionCallOutput:
+	case openAIResponsesInputItemTypeFunctionCallOutput, openAIResponsesInputItemTypeCustomToolOutput:
 		msg, err := buildChatToolOutputMessageFromResponsesFunctionCallOutput(raw)
 		if err != nil {
 			return nil, err
@@ -179,29 +217,12 @@ func buildChatMessageFromResponsesMessageContent(role string, raw json.RawMessag
 }
 
 func buildChatToolCallMessageFromResponsesFunctionCall(raw json.RawMessage) (dto.Message, error) {
-	var item responsesFunctionCallInput
-	if err := common.Unmarshal(raw, &item); err != nil {
-		return dto.Message{}, fmt.Errorf("unmarshal function_call item failed: %w", err)
-	}
-	callID := strings.TrimSpace(item.CallID)
-	if callID == "" {
-		return dto.Message{}, fmt.Errorf("function_call.call_id is required")
-	}
-	name := strings.TrimSpace(item.Name)
-	if name == "" {
-		return dto.Message{}, fmt.Errorf("function_call.name is required")
+	call, err := buildChatToolCallFromResponsesFunctionCall(raw)
+	if err != nil {
+		return dto.Message{}, err
 	}
 
-	rawToolCalls, err := common.Marshal([]dto.ToolCallResponse{
-		{
-			ID:   callID,
-			Type: "function",
-			Function: dto.FunctionResponse{
-				Name:      name,
-				Arguments: item.Arguments,
-			},
-		},
-	})
+	rawToolCalls, err := common.Marshal([]dto.ToolCallResponse{call})
 	if err != nil {
 		return dto.Message{}, fmt.Errorf("marshal tool_calls failed: %w", err)
 	}
@@ -210,6 +231,44 @@ func buildChatToolCallMessageFromResponsesFunctionCall(raw json.RawMessage) (dto
 		Role:      "assistant",
 		Content:   nil,
 		ToolCalls: rawToolCalls,
+	}, nil
+}
+
+func buildChatToolCallFromResponsesFunctionCall(raw json.RawMessage) (dto.ToolCallResponse, error) {
+	var item responsesFunctionCallInput
+	if err := common.Unmarshal(raw, &item); err != nil {
+		return dto.ToolCallResponse{}, fmt.Errorf("unmarshal function_call item failed: %w", err)
+	}
+	callID := strings.TrimSpace(item.CallID)
+	if callID == "" {
+		return dto.ToolCallResponse{}, fmt.Errorf("function_call.call_id is required")
+	}
+	name := strings.TrimSpace(item.Name)
+	if name == "" {
+		return dto.ToolCallResponse{}, fmt.Errorf("%s.name is required", item.Type)
+	}
+	if strings.TrimSpace(item.Type) == openAIResponsesInputItemTypeCustomToolCall {
+		custom, err := common.Marshal(map[string]any{
+			"name":  name,
+			"input": item.Input,
+		})
+		if err != nil {
+			return dto.ToolCallResponse{}, fmt.Errorf("marshal custom tool call failed: %w", err)
+		}
+		return dto.ToolCallResponse{
+			ID:     callID,
+			Type:   dto.CustomType,
+			Custom: custom,
+		}, nil
+	}
+
+	return dto.ToolCallResponse{
+		ID:   callID,
+		Type: "function",
+		Function: dto.FunctionResponse{
+			Name:      name,
+			Arguments: item.Arguments,
+		},
 	}, nil
 }
 
@@ -222,16 +281,69 @@ func buildChatToolOutputMessageFromResponsesFunctionCallOutput(raw json.RawMessa
 	if callID == "" {
 		return dto.Message{}, fmt.Errorf("function_call_output.call_id is required")
 	}
-	output, ok := item.Output.(string)
-	if !ok {
-		return dto.Message{}, fmt.Errorf("function_call_output.output must be a string")
+	output, err := responsesFunctionCallOutputToChatContent(item.Output)
+	if err != nil {
+		return dto.Message{}, err
 	}
 
 	return dto.Message{
-		Role:       "tool",
-		Content:    output,
-		ToolCallId: callID,
+		Role:            "tool",
+		Content:         output,
+		ToolCallId:      callID,
+		ToolCallIsError: item.IsError,
 	}, nil
+}
+
+func appendToolCallsToChatAssistantMessage(msg *dto.Message, reasoning string, toolCalls []dto.ToolCallResponse) error {
+	if msg == nil || len(toolCalls) == 0 {
+		return nil
+	}
+	if strings.TrimSpace(reasoning) != "" {
+		msg.ReasoningContent = appendReasoningSummary(msg.ReasoningContent, reasoning)
+	}
+	existing := make([]dto.ToolCallResponse, 0)
+	if len(msg.ToolCalls) > 0 && common.GetJsonType(msg.ToolCalls) != "null" {
+		if err := common.Unmarshal(msg.ToolCalls, &existing); err != nil {
+			return fmt.Errorf("unmarshal existing tool_calls failed: %w", err)
+		}
+	}
+	existing = append(existing, toolCalls...)
+	raw, err := common.Marshal(existing)
+	if err != nil {
+		return fmt.Errorf("marshal tool_calls failed: %w", err)
+	}
+	msg.ToolCalls = raw
+	return nil
+}
+
+func responsesFunctionCallOutputToChatContent(raw json.RawMessage) (any, error) {
+	if len(raw) == 0 || common.GetJsonType(raw) == "null" {
+		return "", nil
+	}
+	if common.GetJsonType(raw) == "string" {
+		var output string
+		if err := common.Unmarshal(raw, &output); err != nil {
+			return nil, fmt.Errorf("unmarshal function_call_output.output failed: %w", err)
+		}
+		return output, nil
+	}
+	if common.GetJsonType(raw) != "array" {
+		return nil, fmt.Errorf("function_call_output.output must be a string or content array, got %s", common.GetJsonType(raw))
+	}
+
+	var parts []map[string]any
+	if err := common.Unmarshal(raw, &parts); err != nil {
+		return nil, fmt.Errorf("unmarshal function_call_output.output failed: %w", err)
+	}
+	media, err := convertResponsesContentPartsToChat(parts)
+	if err != nil {
+		return nil, err
+	}
+	text, ok := collapseChatMediaToString(media)
+	if !ok {
+		return nil, fmt.Errorf("function_call_output.output only supports text parts for chat.completions conversion")
+	}
+	return text, nil
 }
 
 func convertResponsesContentPartsToChat(parts []map[string]any) ([]dto.MediaContent, error) {
@@ -280,6 +392,18 @@ func extractResponsesImageURL(v any) *dto.MessageImageUrl {
 
 // extractResponsesReasoningSummary flattens a Responses reasoning item into the
 // assistant reasoning_content field used by ChatCompletions-compatible clients.
+func appendReasoningSummary(existing string, next string) string {
+	existing = strings.TrimSpace(existing)
+	next = strings.TrimSpace(next)
+	if existing == "" {
+		return next
+	}
+	if next == "" {
+		return existing
+	}
+	return existing + "\n" + next
+}
+
 func extractResponsesReasoningSummary(raw json.RawMessage) (string, error) {
 	var item responsesReasoningInput
 	if err := common.Unmarshal(raw, &item); err != nil {

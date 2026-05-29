@@ -10,9 +10,11 @@ import (
 )
 
 type chatToolCall struct {
+	Type      string
 	ID        string
 	Name      string
 	Arguments string
+	Input     string
 }
 
 func buildResponsesInputFromChatMessages(messages []dto.Message) (json.RawMessage, error) {
@@ -21,8 +23,9 @@ func buildResponsesInputFromChatMessages(messages []dto.Message) (json.RawMessag
 	}
 
 	items := make([]map[string]any, 0, len(messages))
+	toolOutputItemTypeByCallID := make(map[string]string)
 	for _, msg := range messages {
-		add, err := buildResponsesInputItemsFromChatMessage(msg)
+		add, err := buildResponsesInputItemsFromChatMessage(msg, toolOutputItemTypeByCallID)
 		if err != nil {
 			return nil, err
 		}
@@ -39,7 +42,7 @@ func buildResponsesInputFromChatMessages(messages []dto.Message) (json.RawMessag
 	return raw, nil
 }
 
-func buildResponsesInputItemsFromChatMessage(msg dto.Message) ([]map[string]any, error) {
+func buildResponsesInputItemsFromChatMessage(msg dto.Message, toolOutputItemTypeByCallID map[string]string) ([]map[string]any, error) {
 	role := strings.TrimSpace(msg.Role)
 	if role == "" {
 		return nil, fmt.Errorf("chat message role is required")
@@ -47,7 +50,11 @@ func buildResponsesInputItemsFromChatMessage(msg dto.Message) ([]map[string]any,
 	roleLower := strings.ToLower(role)
 
 	if roleLower == "tool" {
-		return buildResponsesFunctionCallOutputItemFromToolMessage(msg)
+		itemType := openAIResponsesInputItemTypeFunctionCallOutput
+		if mapped := toolOutputItemTypeByCallID[strings.TrimSpace(msg.ToolCallId)]; mapped != "" {
+			itemType = mapped
+		}
+		return buildResponsesFunctionCallOutputItemFromToolMessage(msg, itemType)
 	}
 	if strings.TrimSpace(msg.ToolCallId) != "" {
 		return nil, fmt.Errorf("tool_call_id is only supported for role \"tool\"")
@@ -59,6 +66,16 @@ func buildResponsesInputItemsFromChatMessage(msg dto.Message) ([]map[string]any,
 	}
 	if len(toolCalls) > 0 && roleLower != "assistant" {
 		return nil, fmt.Errorf("tool_calls is only supported for role \"assistant\"")
+	}
+	for _, call := range toolCalls {
+		if strings.TrimSpace(call.ID) == "" {
+			continue
+		}
+		if call.Type == dto.CustomType {
+			toolOutputItemTypeByCallID[call.ID] = openAIResponsesInputItemTypeCustomToolOutput
+			continue
+		}
+		toolOutputItemTypeByCallID[call.ID] = openAIResponsesInputItemTypeFunctionCallOutput
 	}
 
 	items := make([]map[string]any, 0, 1+len(toolCalls))
@@ -87,22 +104,27 @@ func buildResponsesInputItemsFromChatMessage(msg dto.Message) ([]map[string]any,
 	return items, nil
 }
 
-func buildResponsesFunctionCallOutputItemFromToolMessage(msg dto.Message) ([]map[string]any, error) {
+func buildResponsesFunctionCallOutputItemFromToolMessage(msg dto.Message, itemType string) ([]map[string]any, error) {
 	callID := strings.TrimSpace(msg.ToolCallId)
 	if callID == "" {
 		return nil, fmt.Errorf("tool message requires tool_call_id")
+	}
+	if strings.TrimSpace(itemType) == "" {
+		itemType = openAIResponsesInputItemTypeFunctionCallOutput
 	}
 	output, err := chatMessageTextOnly(msg)
 	if err != nil {
 		return nil, err
 	}
-	return []map[string]any{
-		{
-			"type":    openAIResponsesInputItemTypeFunctionCallOutput,
-			"call_id": callID,
-			"output":  output,
-		},
-	}, nil
+	item := map[string]any{
+		"type":    itemType,
+		"call_id": callID,
+		"output":  output,
+	}
+	if msg.ToolCallIsError != nil {
+		item["tool_call_is_error"] = *msg.ToolCallIsError
+	}
+	return []map[string]any{item}, nil
 }
 
 func buildResponsesMessageItemFromChatMessage(role string, msg dto.Message, allowSkipEmpty bool) (map[string]any, bool, error) {
@@ -238,9 +260,25 @@ func parseChatMessageToolCalls(raw json.RawMessage) ([]chatToolCall, error) {
 
 	calls := make([]chatToolCall, 0, len(items))
 	for i, item := range items {
+		toolType := strings.ToLower(strings.TrimSpace(common.Interface2String(item["type"])))
+		if toolType == "" {
+			toolType = "function"
+		}
 		callID := strings.TrimSpace(common.Interface2String(item["id"]))
 		if callID == "" {
 			callID = fmt.Sprintf("call_%d", i)
+		}
+		if toolType == dto.CustomType {
+			custom, _ := item["custom"].(map[string]any)
+			name := strings.TrimSpace(common.Interface2String(custom["name"]))
+			if name == "" {
+				return nil, fmt.Errorf("tool_calls[%d].custom.name is required", i)
+			}
+			calls = append(calls, chatToolCall{Type: dto.CustomType, ID: callID, Name: name, Input: common.Interface2String(custom["input"])})
+			continue
+		}
+		if toolType != "function" {
+			return nil, fmt.Errorf("tool_calls[%d].type %q is not supported for responses conversion", i, toolType)
 		}
 		fn, _ := item["function"].(map[string]any)
 		name := strings.TrimSpace(common.Interface2String(fn["name"]))
@@ -248,7 +286,7 @@ func parseChatMessageToolCalls(raw json.RawMessage) ([]chatToolCall, error) {
 			return nil, fmt.Errorf("tool_calls[%d].function.name is required", i)
 		}
 		args := common.Interface2String(fn["arguments"])
-		calls = append(calls, chatToolCall{ID: callID, Name: name, Arguments: args})
+		calls = append(calls, chatToolCall{Type: "function", ID: callID, Name: name, Arguments: args})
 	}
 
 	return calls, nil
@@ -257,6 +295,15 @@ func parseChatMessageToolCalls(raw json.RawMessage) ([]chatToolCall, error) {
 func buildResponsesFunctionCallInputItems(calls []chatToolCall) []map[string]any {
 	out := make([]map[string]any, 0, len(calls))
 	for _, call := range calls {
+		if call.Type == dto.CustomType {
+			out = append(out, map[string]any{
+				"type":    openAIResponsesInputItemTypeCustomToolCall,
+				"call_id": call.ID,
+				"name":    call.Name,
+				"input":   call.Input,
+			})
+			continue
+		}
 		out = append(out, map[string]any{
 			"type":      openAIResponsesInputItemTypeFunctionCall,
 			"call_id":   call.ID,

@@ -1,6 +1,7 @@
 package relay
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -25,6 +26,7 @@ type chatToResponsesStreamConverter struct {
 	reasoningBuilder   strings.Builder
 	textBuilder        strings.Builder
 	toolCallsByID      map[string]*chatToResponsesToolCallState
+	toolCallIDByIndex  map[int]string
 	toolCallOrder      []string
 
 	usage *dto.Usage
@@ -34,6 +36,7 @@ type chatToResponsesStreamConverter struct {
 type chatToResponsesToolCallState struct {
 	id             string
 	index          int
+	toolType       string
 	name           string
 	args           strings.Builder
 	emittedArgsLen int
@@ -42,7 +45,8 @@ type chatToResponsesToolCallState struct {
 
 func newChatToResponsesStreamConverter() *chatToResponsesStreamConverter {
 	return &chatToResponsesStreamConverter{
-		toolCallsByID: make(map[string]*chatToResponsesToolCallState),
+		toolCallsByID:     make(map[string]*chatToResponsesToolCallState),
+		toolCallIDByIndex: make(map[int]string),
 	}
 }
 
@@ -278,25 +282,48 @@ func (c *chatToResponsesStreamConverter) emitReasoningDelta(delta string) (strin
 func (c *chatToResponsesStreamConverter) emitToolCallDeltas(calls []dto.ToolCallResponse) (string, error) {
 	var out strings.Builder
 	for _, call := range calls {
-		callID := strings.TrimSpace(call.ID)
-		if callID == "" {
-			callID = fmt.Sprintf("call_%d", len(c.toolCallsByID))
-		}
+		callID := c.resolveToolCallID(call)
 
 		state := c.getOrCreateToolCall(callID)
-		if strings.TrimSpace(call.Function.Name) != "" {
-			state.name = call.Function.Name
+		if call.Index != nil {
+			state.index = *call.Index
 		}
-		delta := call.Function.Arguments
-		if strings.TrimSpace(delta) != "" {
-			state.args.WriteString(delta)
+		if strings.EqualFold(common.Interface2String(call.Type), dto.CustomType) || len(call.Custom) > 0 {
+			state.toolType = dto.CustomType
+		} else if strings.EqualFold(common.Interface2String(call.Type), "function") || strings.TrimSpace(call.Function.Name) != "" || strings.TrimSpace(call.Function.Arguments) != "" {
+			state.toolType = "function"
+		}
+		if state.toolType == dto.CustomType {
+			name, input, err := parseChatCustomToolCallDelta(call.Custom)
+			if err != nil {
+				return "", err
+			}
+			if name != "" {
+				state.name = name
+			}
+			delta := input
+			if delta != "" {
+				state.args.WriteString(delta)
+			}
+		} else if strings.TrimSpace(call.Function.Name) != "" {
+			state.name = call.Function.Name
+			delta := call.Function.Arguments
+			if delta != "" {
+				state.args.WriteString(delta)
+			}
+		} else if call.Function.Arguments != "" {
+			state.args.WriteString(call.Function.Arguments)
 		}
 
 		if !state.sentAdded && strings.TrimSpace(state.name) != "" {
+			itemType := "function_call"
+			if state.toolType == dto.CustomType {
+				itemType = "custom_tool_call"
+			}
 			frame, err := encodeResponsesStreamEvent(dto.ResponsesStreamResponse{
 				Type: "response.output_item.added",
 				Item: &dto.ResponsesOutput{
-					Type:   "function_call",
+					Type:   itemType,
 					ID:     callID,
 					Status: "in_progress",
 					Role:   "assistant",
@@ -318,9 +345,13 @@ func (c *chatToResponsesStreamConverter) emitToolCallDeltas(calls []dto.ToolCall
 
 		pendingArgs := state.args.String()
 		if len(pendingArgs) > state.emittedArgsLen {
-			delta = pendingArgs[state.emittedArgsLen:]
+			delta := pendingArgs[state.emittedArgsLen:]
+			eventType := "response.function_call_arguments.delta"
+			if state.toolType == dto.CustomType {
+				eventType = "response.custom_tool_call_input.delta"
+			}
 			frame, err := encodeResponsesStreamEvent(dto.ResponsesStreamResponse{
-				Type:   "response.function_call_arguments.delta",
+				Type:   eventType,
 				Delta:  delta,
 				ItemID: callID,
 			})
@@ -363,19 +394,51 @@ func (c *chatToResponsesStreamConverter) emitCompleted() (string, error) {
 			continue
 		}
 		if strings.TrimSpace(state.name) == "" {
-			return "", fmt.Errorf("tool call %q is missing function name", state.id)
+			return "", fmt.Errorf("tool call %q is missing name", state.id)
+		}
+		eventType := "response.function_call_arguments.done"
+		if state.toolType == dto.CustomType {
+			eventType = "response.custom_tool_call_input.done"
+		}
+		doneEvent := dto.ResponsesStreamResponse{
+			Type:   eventType,
+			ItemID: state.id,
+		}
+		if state.toolType == dto.CustomType {
+			doneEvent.Input = state.args.String()
+		} else {
+			doneEvent.Arguments = state.args.String()
+		}
+		argumentsDoneFrame, err := encodeResponsesStreamEvent(dto.ResponsesStreamResponse{
+			Type:      doneEvent.Type,
+			Arguments: doneEvent.Arguments,
+			Input:     doneEvent.Input,
+			ItemID:    doneEvent.ItemID,
+		})
+		if err != nil {
+			return "", err
+		}
+		out.WriteString(argumentsDoneFrame)
+		itemType := "function_call"
+		if state.toolType == dto.CustomType {
+			itemType = "custom_tool_call"
+		}
+		item := &dto.ResponsesOutput{
+			Type:   itemType,
+			ID:     state.id,
+			Status: "completed",
+			Role:   "assistant",
+			CallId: state.id,
+			Name:   state.name,
+		}
+		if state.toolType == dto.CustomType {
+			item.Input = state.args.String()
+		} else {
+			item.Arguments = state.args.String()
 		}
 		frame, err := encodeResponsesStreamEvent(dto.ResponsesStreamResponse{
-			Type: "response.output_item.done",
-			Item: &dto.ResponsesOutput{
-				Type:      "function_call",
-				ID:        state.id,
-				Status:    "completed",
-				Role:      "assistant",
-				CallId:    state.id,
-				Name:      state.name,
-				Arguments: state.args.String(),
-			},
+			Type:   "response.output_item.done",
+			Item:   item,
 			ItemID: state.id,
 		})
 		if err != nil {
@@ -403,4 +466,15 @@ func (c *chatToResponsesStreamConverter) emitCompleted() (string, error) {
 
 func isSSECommentFrame(rawFrame string) bool {
 	return strings.HasPrefix(strings.TrimSpace(rawFrame), ":")
+}
+
+func parseChatCustomToolCallDelta(raw json.RawMessage) (name string, input string, err error) {
+	if len(raw) == 0 {
+		return "", "", nil
+	}
+	var custom map[string]any
+	if err := common.Unmarshal(raw, &custom); err != nil {
+		return "", "", fmt.Errorf("unmarshal custom tool call delta failed: %w", err)
+	}
+	return strings.TrimSpace(common.Interface2String(custom["name"])), common.Interface2String(custom["input"]), nil
 }

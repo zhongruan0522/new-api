@@ -7,6 +7,7 @@ import (
 
 	"github.com/zhongruan0522/new-api/common"
 	"github.com/zhongruan0522/new-api/dto"
+	relaycommon "github.com/zhongruan0522/new-api/relay/common"
 )
 
 type responsesToChatStreamConverter struct {
@@ -22,9 +23,12 @@ type responsesToChatStreamConverter struct {
 	status       string
 
 	toolCallIndexByID        map[string]int
+	toolCallTypeByID         map[string]string
 	toolCallNameByID         map[string]string
+	toolCallIDByItemID       map[string]string
 	toolCallStartedByID      map[string]bool
 	toolCallBufferedArgsByID map[string]string
+	toolCallArgsByID         map[string]string
 
 	err error
 }
@@ -33,9 +37,12 @@ func newResponsesToChatStreamConverter(includeUsage bool) *responsesToChatStream
 	return &responsesToChatStreamConverter{
 		includeUsage:             includeUsage,
 		toolCallIndexByID:        make(map[string]int),
+		toolCallTypeByID:         make(map[string]string),
 		toolCallNameByID:         make(map[string]string),
+		toolCallIDByItemID:       make(map[string]string),
 		toolCallStartedByID:      make(map[string]bool),
 		toolCallBufferedArgsByID: make(map[string]string),
+		toolCallArgsByID:         make(map[string]string),
 		sentRole:                 false,
 		sawToolCalls:             false,
 		created:                  0,
@@ -80,6 +87,12 @@ func (c *responsesToChatStreamConverter) ConvertFrame(event string, data string,
 		return c.emitToolCallAdded(stream)
 	case "response.function_call_arguments.delta":
 		return c.emitToolCallDelta(stream)
+	case "response.function_call_arguments.done":
+		return c.emitToolCallDone(stream)
+	case "response.custom_tool_call_input.delta":
+		return c.emitToolCallDelta(stream)
+	case "response.custom_tool_call_input.done":
+		return c.emitToolCallDone(stream)
 	case "response.output_item.done":
 		c.captureToolCallMeta(stream)
 		return c.emitToolCallAdded(stream)
@@ -103,7 +116,8 @@ func (c *responsesToChatStreamConverter) captureToolCallMeta(stream dto.Response
 	if stream.Item == nil {
 		return
 	}
-	if strings.TrimSpace(stream.Item.Type) != "function_call" {
+	itemType := strings.TrimSpace(stream.Item.Type)
+	if itemType != "function_call" && itemType != "custom_tool_call" {
 		return
 	}
 	callID := strings.TrimSpace(stream.Item.CallId)
@@ -116,9 +130,18 @@ func (c *responsesToChatStreamConverter) captureToolCallMeta(stream dto.Response
 	if callID == "" {
 		return
 	}
+	if itemID := strings.TrimSpace(stream.Item.ID); itemID != "" {
+		c.toolCallIDByItemID[itemID] = callID
+		c.rekeyToolCallState(itemID, callID)
+	}
+	if itemID := strings.TrimSpace(stream.ItemID); itemID != "" {
+		c.toolCallIDByItemID[itemID] = callID
+		c.rekeyToolCallState(itemID, callID)
+	}
 	if strings.TrimSpace(stream.Item.Name) != "" {
 		c.toolCallNameByID[callID] = stream.Item.Name
 	}
+	c.toolCallTypeByID[callID] = itemType
 	c.sawToolCalls = true
 }
 
@@ -136,17 +159,8 @@ func (c *responsesToChatStreamConverter) hydrateFromResponse(resp *dto.OpenAIRes
 		c.created = int64(resp.CreatedAt)
 	}
 	if resp.Usage != nil {
-		u := &dto.Usage{
-			PromptTokens:     resp.Usage.InputTokens,
-			CompletionTokens: resp.Usage.OutputTokens,
-			TotalTokens:      resp.Usage.TotalTokens,
-		}
-		if u.TotalTokens == 0 {
-			u.TotalTokens = u.PromptTokens + u.CompletionTokens
-		}
-		if resp.Usage.InputTokensDetails != nil {
-			u.PromptTokensDetails.CachedTokens = resp.Usage.InputTokensDetails.CachedTokens
-		}
+		u := &dto.Usage{}
+		relaycommon.ApplyResponsesUsageToChatUsage(u, resp.Usage)
 		c.usage = u
 	}
 	if strings.TrimSpace(resp.Status) != "" {
@@ -154,7 +168,7 @@ func (c *responsesToChatStreamConverter) hydrateFromResponse(resp *dto.OpenAIRes
 	}
 	if len(resp.Output) > 0 {
 		for _, item := range resp.Output {
-			if strings.TrimSpace(item.Type) == "function_call" {
+			if strings.TrimSpace(item.Type) == "function_call" || strings.TrimSpace(item.Type) == "custom_tool_call" {
 				c.sawToolCalls = true
 				break
 			}
@@ -227,14 +241,11 @@ func (c *responsesToChatStreamConverter) emitToolCallAdded(stream dto.ResponsesS
 		choice.Delta.Role = "assistant"
 		c.sentRole = true
 	}
-	choice.Delta.ToolCalls = []dto.ToolCallResponse{{
-		Index: common.GetPointer(idx),
-		ID:    callID,
-		Type:  "function",
-		Function: dto.FunctionResponse{
-			Name: name,
-		},
-	}}
+	toolCall, err := c.newChatToolCallAdded(callID, idx, name)
+	if err != nil {
+		return "", err
+	}
+	choice.Delta.ToolCalls = []dto.ToolCallResponse{toolCall}
 	chunk.Choices = []dto.ChatCompletionsStreamResponseChoice{choice}
 	frame, err := encodeChatSSEChunk(chunk)
 	if err != nil {
@@ -243,7 +254,7 @@ func (c *responsesToChatStreamConverter) emitToolCallAdded(stream dto.ResponsesS
 
 	var builder strings.Builder
 	builder.WriteString(frame)
-	if buffered := c.toolCallBufferedArgsByID[callID]; strings.TrimSpace(buffered) != "" {
+	if buffered := c.toolCallBufferedArgsByID[callID]; buffered != "" {
 		deltaFrame, err := c.emitStartedToolCallArguments(callID, idx, name, buffered)
 		if err != nil {
 			return "", err
@@ -254,16 +265,40 @@ func (c *responsesToChatStreamConverter) emitToolCallAdded(stream dto.ResponsesS
 	return builder.String(), nil
 }
 
+func (c *responsesToChatStreamConverter) newChatToolCallAdded(callID string, idx int, name string) (dto.ToolCallResponse, error) {
+	if c.toolCallTypeByID[callID] == "custom_tool_call" {
+		custom, err := common.Marshal(map[string]any{"name": name})
+		if err != nil {
+			return dto.ToolCallResponse{}, fmt.Errorf("marshal custom tool call failed: %w", err)
+		}
+		return dto.ToolCallResponse{
+			Index:  common.GetPointer(idx),
+			ID:     callID,
+			Type:   dto.CustomType,
+			Custom: custom,
+		}, nil
+	}
+	return dto.ToolCallResponse{
+		Index: common.GetPointer(idx),
+		ID:    callID,
+		Type:  "function",
+		Function: dto.FunctionResponse{
+			Name: name,
+		},
+	}, nil
+}
+
 func (c *responsesToChatStreamConverter) emitToolCallDelta(stream dto.ResponsesStreamResponse) (string, error) {
 	callID, name, ok := c.getToolCallMeta(stream)
 	if !ok {
 		return "", nil
 	}
 	delta := stream.Delta
-	if strings.TrimSpace(delta) == "" {
+	if delta == "" {
 		return "", nil
 	}
 	c.sawToolCalls = true
+	c.toolCallArgsByID[callID] += delta
 
 	if !c.toolCallStartedByID[callID] {
 		c.toolCallBufferedArgsByID[callID] += delta
@@ -279,6 +314,47 @@ func (c *responsesToChatStreamConverter) emitToolCallDelta(stream dto.ResponsesS
 		return "", err
 	}
 	return frame, nil
+}
+
+func (c *responsesToChatStreamConverter) emitToolCallDone(stream dto.ResponsesStreamResponse) (string, error) {
+	callID, name, ok := c.getToolCallMeta(stream)
+	if !ok {
+		return "", nil
+	}
+	arguments := stream.Arguments
+	if c.toolCallTypeByID[callID] == "custom_tool_call" {
+		arguments = stream.Input
+	}
+	if arguments == "" && stream.Item != nil {
+		if c.toolCallTypeByID[callID] == "custom_tool_call" {
+			arguments = stream.Item.Input
+		} else {
+			arguments = stream.Item.Arguments
+		}
+	}
+	if arguments == "" {
+		return "", nil
+	}
+
+	if !c.toolCallStartedByID[callID] {
+		c.toolCallBufferedArgsByID[callID] = arguments
+		if strings.TrimSpace(name) == "" {
+			return "", nil
+		}
+		return c.emitToolCallAdded(stream)
+	}
+
+	emitted := c.toolCallArgsByID[callID]
+	remaining := arguments
+	if strings.HasPrefix(arguments, emitted) {
+		remaining = arguments[len(emitted):]
+	}
+	if remaining == "" {
+		return "", nil
+	}
+	c.toolCallArgsByID[callID] += remaining
+	idx := c.getToolCallIndex(callID)
+	return c.emitStartedToolCallArguments(callID, idx, name, remaining)
 }
 
 func (c *responsesToChatStreamConverter) emitFinal() (string, error) {
@@ -352,8 +428,40 @@ func (c *responsesToChatStreamConverter) getToolCallIndex(callID string) int {
 	return idx
 }
 
+func (c *responsesToChatStreamConverter) rekeyToolCallState(from string, to string) {
+	if from == "" || to == "" || from == to {
+		return
+	}
+	if value, ok := c.toolCallBufferedArgsByID[from]; ok {
+		c.toolCallBufferedArgsByID[to] = value + c.toolCallBufferedArgsByID[to]
+		delete(c.toolCallBufferedArgsByID, from)
+	}
+	if value, ok := c.toolCallArgsByID[from]; ok {
+		c.toolCallArgsByID[to] = value + c.toolCallArgsByID[to]
+		delete(c.toolCallArgsByID, from)
+	}
+	if c.toolCallStartedByID[from] {
+		c.toolCallStartedByID[to] = true
+		delete(c.toolCallStartedByID, from)
+	}
+	if _, ok := c.toolCallIndexByID[to]; !ok {
+		if value, oldOK := c.toolCallIndexByID[from]; oldOK {
+			c.toolCallIndexByID[to] = value
+		}
+	}
+	delete(c.toolCallIndexByID, from)
+	if c.toolCallNameByID[to] == "" {
+		c.toolCallNameByID[to] = c.toolCallNameByID[from]
+	}
+	delete(c.toolCallNameByID, from)
+	if c.toolCallTypeByID[to] == "" {
+		c.toolCallTypeByID[to] = c.toolCallTypeByID[from]
+	}
+	delete(c.toolCallTypeByID, from)
+}
+
 func (c *responsesToChatStreamConverter) emitStartedToolCallArguments(callID string, idx int, name string, delta string) (string, error) {
-	if strings.TrimSpace(delta) == "" {
+	if delta == "" {
 		return "", nil
 	}
 	chunk := c.newChatChunk()
@@ -365,27 +473,59 @@ func (c *responsesToChatStreamConverter) emitStartedToolCallArguments(callID str
 		choice.Delta.Role = "assistant"
 		c.sentRole = true
 	}
-	choice.Delta.ToolCalls = []dto.ToolCallResponse{{
+	toolCall := dto.ToolCallResponse{
 		Index: common.GetPointer(idx),
 		Function: dto.FunctionResponse{
 			Name:      name,
 			Arguments: delta,
 		},
-	}}
+	}
+	if c.toolCallTypeByID[callID] == "custom_tool_call" {
+		custom, err := common.Marshal(map[string]any{"input": delta})
+		if err != nil {
+			return "", fmt.Errorf("marshal custom tool call input delta failed: %w", err)
+		}
+		toolCall = dto.ToolCallResponse{
+			Index:  common.GetPointer(idx),
+			Type:   dto.CustomType,
+			Custom: custom,
+		}
+	}
+	choice.Delta.ToolCalls = []dto.ToolCallResponse{toolCall}
 	chunk.Choices = []dto.ChatCompletionsStreamResponseChoice{choice}
 	return encodeChatSSEChunk(chunk)
 }
 
 func (c *responsesToChatStreamConverter) getToolCallMeta(stream dto.ResponsesStreamResponse) (string, string, bool) {
-	callID := strings.TrimSpace(stream.ItemID)
-	if callID == "" && stream.Item != nil {
-		callID = strings.TrimSpace(stream.Item.CallId)
+	itemID := strings.TrimSpace(stream.ItemID)
+	callID := c.toolCallIDByItemID[itemID]
+	itemType := ""
+	if stream.Item != nil {
+		if currentType := strings.TrimSpace(stream.Item.Type); currentType == "function_call" || currentType == "custom_tool_call" {
+			itemType = currentType
+		}
+		if strings.TrimSpace(stream.Item.CallId) != "" {
+			callID = strings.TrimSpace(stream.Item.CallId)
+		} else if callID == "" {
+			callID = c.toolCallIDByItemID[strings.TrimSpace(stream.Item.ID)]
+		}
 		if callID == "" {
 			callID = strings.TrimSpace(stream.Item.ID)
 		}
 	}
 	if callID == "" {
+		callID = itemID
+	}
+	if callID == "" {
 		return "", "", false
+	}
+	if strings.HasPrefix(stream.Type, "response.custom_tool_call_input.") {
+		itemType = "custom_tool_call"
+	} else if strings.HasPrefix(stream.Type, "response.function_call_arguments.") {
+		itemType = "function_call"
+	}
+	if itemType != "" {
+		c.toolCallTypeByID[callID] = itemType
 	}
 	name := c.toolCallNameByID[callID]
 	if stream.Item != nil && strings.TrimSpace(stream.Item.Name) != "" {

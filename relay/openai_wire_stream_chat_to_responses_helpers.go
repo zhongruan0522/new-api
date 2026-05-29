@@ -7,6 +7,7 @@ import (
 
 	"github.com/zhongruan0522/new-api/common"
 	"github.com/zhongruan0522/new-api/dto"
+	relaycommon "github.com/zhongruan0522/new-api/relay/common"
 )
 
 func (c *chatToResponsesStreamConverter) hydrateFromChunk(chunk *dto.ChatCompletionsStreamResponse) {
@@ -58,15 +59,21 @@ func (c *chatToResponsesStreamConverter) buildOutput() []dto.ResponsesOutput {
 		if state == nil {
 			continue
 		}
-		output = append(output, dto.ResponsesOutput{
-			Type:      "function_call",
-			ID:        state.id,
-			Status:    "completed",
-			Role:      "assistant",
-			CallId:    state.id,
-			Name:      state.name,
-			Arguments: state.args.String(),
-		})
+		item := dto.ResponsesOutput{
+			Type:   "function_call",
+			ID:     state.id,
+			Status: "completed",
+			Role:   "assistant",
+			CallId: state.id,
+			Name:   state.name,
+		}
+		if state.toolType == dto.CustomType {
+			item.Type = "custom_tool_call"
+			item.Input = state.args.String()
+		} else {
+			item.Arguments = state.args.String()
+		}
+		output = append(output, item)
 	}
 	return output
 }
@@ -75,18 +82,7 @@ func (c *chatToResponsesStreamConverter) buildUsage() *dto.Usage {
 	if c.usage == nil {
 		return nil
 	}
-	u := &dto.Usage{
-		InputTokens:  c.usage.PromptTokens,
-		OutputTokens: c.usage.CompletionTokens,
-		TotalTokens:  c.usage.TotalTokens,
-		InputTokensDetails: &dto.InputTokenDetails{
-			CachedTokens: c.usage.PromptTokensDetails.CachedTokens,
-		},
-	}
-	if u.TotalTokens == 0 {
-		u.TotalTokens = u.InputTokens + u.OutputTokens
-	}
-	return u
+	return relaycommon.MapChatUsageToResponsesUsage(*c.usage)
 }
 
 func (c *chatToResponsesStreamConverter) mapStatus() string {
@@ -125,6 +121,74 @@ func (c *chatToResponsesStreamConverter) getOrCreateToolCall(callID string) *cha
 	c.toolCallsByID[callID] = state
 	c.toolCallOrder = append(c.toolCallOrder, callID)
 	return state
+}
+
+func (c *chatToResponsesStreamConverter) resolveToolCallID(call dto.ToolCallResponse) string {
+	callID := strings.TrimSpace(call.ID)
+	if call.Index != nil {
+		index := *call.Index
+		if callID != "" {
+			if mapped := c.toolCallIDByIndex[index]; mapped != "" && mapped != callID {
+				c.rekeyToolCallState(mapped, callID)
+			}
+			c.toolCallIDByIndex[index] = callID
+			return callID
+		}
+		if mapped := c.toolCallIDByIndex[index]; mapped != "" {
+			return mapped
+		}
+		callID = fmt.Sprintf("call_%d", index)
+		c.toolCallIDByIndex[index] = callID
+		return callID
+	}
+	return fmt.Sprintf("call_%d", len(c.toolCallsByID))
+}
+
+func (c *chatToResponsesStreamConverter) rekeyToolCallState(from string, to string) {
+	if from == "" || to == "" || from == to {
+		return
+	}
+	state := c.toolCallsByID[from]
+	if state == nil {
+		return
+	}
+	if existing := c.toolCallsByID[to]; existing != nil {
+		if existing.toolType == "" {
+			existing.toolType = state.toolType
+		}
+		if existing.name == "" {
+			existing.name = state.name
+		}
+		var args strings.Builder
+		args.WriteString(state.args.String())
+		args.WriteString(existing.args.String())
+		existing.args = args
+		if existing.emittedArgsLen < state.emittedArgsLen {
+			existing.emittedArgsLen = state.emittedArgsLen
+		}
+		existing.sentAdded = existing.sentAdded || state.sentAdded
+		delete(c.toolCallsByID, from)
+		c.removeToolCallOrder(from)
+		return
+	}
+	state.id = to
+	c.toolCallsByID[to] = state
+	delete(c.toolCallsByID, from)
+	for i, callID := range c.toolCallOrder {
+		if callID == from {
+			c.toolCallOrder[i] = to
+			return
+		}
+	}
+}
+
+func (c *chatToResponsesStreamConverter) removeToolCallOrder(callID string) {
+	for i, current := range c.toolCallOrder {
+		if current == callID {
+			c.toolCallOrder = append(c.toolCallOrder[:i], c.toolCallOrder[i+1:]...)
+			return
+		}
+	}
 }
 
 func (c *chatToResponsesStreamConverter) emitMessageDoneIfAny() (string, error) {

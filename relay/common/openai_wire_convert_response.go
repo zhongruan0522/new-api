@@ -11,9 +11,10 @@ import (
 )
 
 const (
-	openAIResponsesOutputTypeMessage      = "message"
-	openAIResponsesOutputTypeReasoning    = "reasoning"
-	openAIResponsesOutputTypeFunctionCall = "function_call"
+	openAIResponsesOutputTypeMessage        = "message"
+	openAIResponsesOutputTypeReasoning      = "reasoning"
+	openAIResponsesOutputTypeFunctionCall   = "function_call"
+	openAIResponsesOutputTypeCustomToolCall = "custom_tool_call"
 
 	openAIResponsesOutputContentTypeText = "output_text"
 )
@@ -111,13 +112,21 @@ func extractChatMessageFromResponsesOutput(output []dto.ResponsesOutput) (conten
 				}
 				builder.WriteString(part.Text)
 			}
-		case openAIResponsesOutputTypeFunctionCall:
+		case openAIResponsesOutputTypeFunctionCall, openAIResponsesOutputTypeCustomToolCall:
 			callID := strings.TrimSpace(item.CallId)
 			if callID == "" {
 				callID = strings.TrimSpace(item.ID)
 			}
 			if callID == "" {
 				callID = fmt.Sprintf("call_%d", len(calls))
+			}
+			if itemType == openAIResponsesOutputTypeCustomToolCall {
+				custom, marshalErr := common.Marshal(map[string]any{"name": item.Name, "input": item.Input})
+				if marshalErr != nil {
+					return "", "", nil, fmt.Errorf("marshal custom tool call failed: %w", marshalErr)
+				}
+				calls = append(calls, dto.ToolCallResponse{ID: callID, Type: dto.CustomType, Custom: custom})
+				continue
 			}
 			calls = append(calls, dto.ToolCallResponse{
 				ID:   callID,
@@ -164,18 +173,10 @@ func buildChatAssistantMessage(content string, reasoning string, toolCalls []dto
 }
 
 func applyResponsesUsageToChat(out *dto.OpenAITextResponse, usage *dto.Usage) {
-	if out == nil || usage == nil {
+	if out == nil {
 		return
 	}
-	out.Usage.PromptTokens = usage.InputTokens
-	out.Usage.CompletionTokens = usage.OutputTokens
-	out.Usage.TotalTokens = usage.TotalTokens
-	if out.Usage.TotalTokens == 0 {
-		out.Usage.TotalTokens = out.Usage.PromptTokens + out.Usage.CompletionTokens
-	}
-	if usage.InputTokensDetails != nil {
-		out.Usage.PromptTokensDetails.CachedTokens = usage.InputTokensDetails.CachedTokens
-	}
+	ApplyResponsesUsageToChatUsage(&out.Usage, usage)
 }
 
 func coerceCreatedAtFromResponses(createdAt int) any {
@@ -280,18 +281,7 @@ func coerceCreatedAtFromChat(v any) int {
 }
 
 func mapChatUsageToResponses(u dto.Usage) *dto.Usage {
-	usage := &dto.Usage{
-		InputTokens:  u.PromptTokens,
-		OutputTokens: u.CompletionTokens,
-		TotalTokens:  u.TotalTokens,
-		InputTokensDetails: &dto.InputTokenDetails{
-			CachedTokens: u.PromptTokensDetails.CachedTokens,
-		},
-	}
-	if usage.TotalTokens == 0 {
-		usage.TotalTokens = usage.InputTokens + usage.OutputTokens
-	}
-	return usage
+	return MapChatUsageToResponsesUsage(u)
 }
 
 func convertChatToolCallsToResponsesOutput(raw json.RawMessage) ([]dto.ResponsesOutput, error) {
@@ -313,6 +303,22 @@ func convertChatToolCallsToResponsesOutput(raw json.RawMessage) ([]dto.Responses
 		if callID == "" {
 			callID = fmt.Sprintf("call_%d", i)
 		}
+		if strings.EqualFold(common.Interface2String(call.Type), dto.CustomType) {
+			customName, customInput, err := parseChatCustomToolCall(call.Custom)
+			if err != nil {
+				return nil, fmt.Errorf("tool_calls[%d]: %w", i, err)
+			}
+			out = append(out, dto.ResponsesOutput{
+				Type:   openAIResponsesOutputTypeCustomToolCall,
+				ID:     callID,
+				Status: "completed",
+				Role:   "assistant",
+				CallId: callID,
+				Name:   customName,
+				Input:  customInput,
+			})
+			continue
+		}
 		if strings.TrimSpace(call.Function.Name) == "" {
 			return nil, fmt.Errorf("tool_calls[%d].function.name is required", i)
 		}
@@ -328,4 +334,19 @@ func convertChatToolCallsToResponsesOutput(raw json.RawMessage) ([]dto.Responses
 	}
 
 	return out, nil
+}
+
+func parseChatCustomToolCall(raw json.RawMessage) (name string, input string, err error) {
+	if len(raw) == 0 {
+		return "", "", fmt.Errorf("custom is required")
+	}
+	var custom map[string]any
+	if err := common.Unmarshal(raw, &custom); err != nil {
+		return "", "", fmt.Errorf("unmarshal custom failed: %w", err)
+	}
+	name = strings.TrimSpace(common.Interface2String(custom["name"]))
+	if name == "" {
+		return "", "", fmt.Errorf("custom.name is required")
+	}
+	return name, common.Interface2String(custom["input"]), nil
 }

@@ -13,4 +13,6 @@ const (
 	openAIResponsesInputItemTypeReasoning          = "reasoning"
 	openAIResponsesInputItemTypeFunctionCall       = "function_call"
 	openAIResponsesInputItemTypeFunctionCallOutput = "function_call_output"
+	openAIResponsesInputItemTypeCustomToolCall     = "custom_tool_call"
+	openAIResponsesInputItemTypeCustomToolOutput   = "custom_tool_call_output"
 )
