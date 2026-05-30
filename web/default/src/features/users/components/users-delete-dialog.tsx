@@ -82,7 +82,7 @@ export function UsersDeleteDialog() {
             disabled={isDeleting}
             className='bg-destructive text-destructive-foreground hover:bg-destructive/90'
           >
-            {isDeleting ? 'Deleting...' : 'Delete'}
+            {isDeleting ? t('Deleting...') : t('Delete')}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

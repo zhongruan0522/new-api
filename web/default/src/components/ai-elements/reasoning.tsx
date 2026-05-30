@@ -26,6 +26,7 @@ import {
   useEffect,
   useState,
 } from 'react'
+import { useTranslation } from 'react-i18next'
 import { BrainIcon, ChevronDownIcon } from 'lucide-react'
 import { useControllableState } from '@/lib/use-controllable-state'
 import { cn } from '@/lib/utils'
@@ -139,14 +140,16 @@ export const Reasoning = memo(
 export type ReasoningTriggerProps = ComponentProps<typeof CollapsibleTrigger>
 
 const getThinkingMessage = (isStreaming: boolean, duration?: number) => {
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const { t } = useTranslation()
   if (isStreaming) {
-    return <Shimmer duration={1}>Thinking...</Shimmer>
+    return <Shimmer duration={1}>{t('Thinking...')}</Shimmer>
   }
   // When duration is unknown or 0 (e.g., non-streaming responses), show a generic message
   if (duration === undefined || duration === 0) {
-    return <p>Thought for a few seconds</p>
+    return <p>{t('Thought for a few seconds')}</p>
   }
-  return <p>Thought for {duration} seconds</p>
+  return <p>{t('Thought for {{duration}} seconds', { duration })}</p>
 }
 
 export const ReasoningTrigger = memo(

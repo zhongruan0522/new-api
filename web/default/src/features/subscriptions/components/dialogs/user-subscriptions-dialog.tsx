@@ -249,7 +249,7 @@ export function UserSubscriptionsDialog(props: Props) {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>ID</TableHead>
+                    <TableHead>{t('ID')}</TableHead>
                     <TableHead>{t('Plan')}</TableHead>
                     <TableHead>{t('Status')}</TableHead>
                     <TableHead>{t('Validity')}</TableHead>

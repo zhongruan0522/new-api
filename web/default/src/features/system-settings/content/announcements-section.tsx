@@ -415,11 +415,11 @@ export function AnnouncementsSection({
                     </TableCell>
                     <TableCell>
                       <StatusBadge
-                        label={
+                        label={t(
                           typeOptions.find(
                             (opt) => opt.value === announcement.type
-                          )?.label
-                        }
+                          )?.label ?? 'Default'
+                        )}
                         variant={
                           typeOptions.find(
                             (opt) => opt.value === announcement.type
@@ -538,7 +538,7 @@ export function AnnouncementsSection({
                               <div
                                 className={`h-3 w-3 rounded-full ${option.color}`}
                               />
-                              {option.label}
+                              {t(option.label)}
                             </div>
                           ),
                         })),
@@ -561,7 +561,7 @@ export function AnnouncementsSection({
                                 <div
                                   className={`h-3 w-3 rounded-full ${option.color}`}
                                 />
-                                {option.label}
+                                {t(option.label)}
                               </div>
                             </SelectItem>
                           ))}
@@ -616,8 +616,10 @@ export function AnnouncementsSection({
             <AlertDialogTitle>{t('Are you sure?')}</AlertDialogTitle>
             <AlertDialogDescription>
               {deleteTarget === 'single'
-                ? 'This announcement will be removed from the list.'
-                : `${selectedIds.length} announcements will be removed from the list.`}
+                ? t('This announcement will be removed from the list.')
+                : t('{{count}} announcements will be removed from the list.', {
+                    count: selectedIds.length,
+                  })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

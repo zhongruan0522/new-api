@@ -126,7 +126,7 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
         onOpenChange={setDeleteConfirmOpen}
         title={t('Delete Model')}
         desc={`Are you sure you want to delete "${model.model_name}"? This action cannot be undone.`}
-        confirmText='Delete'
+        confirmText={t('Delete')}
         destructive
         handleConfirm={() => {
           handleDeleteModel(model.id, queryClient)

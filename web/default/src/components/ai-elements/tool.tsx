@@ -62,14 +62,16 @@ export type ToolHeaderProps = {
 }
 
 const getStatusBadge = (status: ExtendedToolState) => {
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const { t } = useTranslation()
   const labels: Record<ExtendedToolState, string> = {
-    'input-streaming': 'Pending',
-    'input-available': 'Running',
-    'approval-requested': 'Awaiting Approval',
-    'approval-responded': 'Responded',
-    'output-available': 'Completed',
-    'output-error': 'Error',
-    'output-denied': 'Denied',
+    'input-streaming': t('Pending'),
+    'input-available': t('Running'),
+    'approval-requested': t('Awaiting Approval'),
+    'approval-responded': t('Responded'),
+    'output-available': t('Completed'),
+    'output-error': t('Error'),
+    'output-denied': t('Denied'),
   }
 
   const icons: Record<ExtendedToolState, ReactNode> = {
@@ -156,6 +158,7 @@ export const ToolOutput = ({
   errorText,
   ...props
 }: ToolOutputProps) => {
+  const { t } = useTranslation()
   if (!(output || errorText)) {
     return null
   }
@@ -173,7 +176,7 @@ export const ToolOutput = ({
   return (
     <div className={cn('space-y-2 p-4', className)} {...props}>
       <h4 className='text-muted-foreground text-xs font-medium tracking-wide uppercase'>
-        {errorText ? 'Error' : 'Result'}
+        {errorText ? t('Error') : t('Result')}
       </h4>
       <div
         className={cn(

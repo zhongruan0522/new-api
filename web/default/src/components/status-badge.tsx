@@ -18,6 +18,7 @@ For commercial licensing, please contact support@quantumnous.com
 */
 /* eslint-disable react-refresh/only-export-components */
 import * as React from 'react'
+import { useTranslation } from 'react-i18next'
 import { type LucideIcon } from 'lucide-react'
 import { stringToColor } from '@/lib/colors'
 import { cn } from '@/lib/utils'
@@ -135,6 +136,7 @@ export function StatusBadge({
   onClick,
   ...props
 }: StatusBadgeProps) {
+  const { t } = useTranslation()
   const { copyToClipboard } = useCopyToClipboard()
   void showDot
 
@@ -165,7 +167,7 @@ export function StatusBadge({
         className
       )}
       onClick={handleClick}
-      title={copyable ? `Click to copy: ${copyText || label || ''}` : undefined}
+      title={copyable ? t('Click to copy: {{text}}', { text: copyText || label || '' }) : undefined}
       {...props}
     >
       {Icon && <Icon className='size-3.5 shrink-0' />}
@@ -254,5 +256,11 @@ export const statusPresets = {
     pulse: true,
   },
 } as const
+
+/** Render a status preset label through i18n */
+export function useStatusPresetLabel(preset: StatusPreset): string {
+  const { t } = useTranslation()
+  return t(statusPresets[preset].label)
+}
 
 export type StatusPreset = keyof typeof statusPresets

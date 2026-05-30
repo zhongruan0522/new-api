@@ -155,16 +155,16 @@ export function PrefillGroupManagementDialog({
     try {
       const response = await deletePrefillGroup(deleteState.group.id)
       if (response.success) {
-        toast.success(`Deleted "${deleteState.group.name}"`)
+        toast.success(t('Deleted "{{name}}"', { name: deleteState.group.name }))
         queryClient.invalidateQueries({
           queryKey: prefillGroupsQueryKeys.lists(),
         })
         setDeleteState({ open: false, group: null })
       } else {
-        toast.error(response.message || 'Failed to delete group')
+        toast.error(response.message || t('Failed to delete group'))
       }
     } catch (err: unknown) {
-      toast.error((err as Error)?.message || 'Failed to delete group')
+      toast.error((err as Error)?.message || t('Failed to delete group'))
     } finally {
       setIsDeleting(false)
     }
@@ -314,9 +314,9 @@ export function PrefillGroupManagementDialog({
                                   {group.description}
                                 </CardDescription>
                               ) : (
-                                <CardDescription className='text-muted-foreground italic'>
-                                  No description provided
-                                </CardDescription>
+                                 <CardDescription className='text-muted-foreground italic'>
+                                   {t('No description provided')}
+                                 </CardDescription>
                               )}
                             </div>
 
@@ -342,7 +342,7 @@ export function PrefillGroupManagementDialog({
                           </CardHeader>
                           <CardContent className='space-y-3'>
                             <div className='text-muted-foreground flex flex-wrap items-center gap-2 text-xs font-medium tracking-wide uppercase'>
-                              <span>Items</span>
+                              <span>{t('Items')}</span>
                               <StatusBadge
                                 label={`${parsedItems.length} item${parsedItems.length === 1 ? '' : 's'}`}
                                 variant='neutral'
@@ -372,8 +372,8 @@ export function PrefillGroupManagementDialog({
                             ) : (
                               <p className='text-muted-foreground text-sm'>
                                 {group.type === 'endpoint'
-                                  ? 'No endpoint mappings configured.'
-                                  : 'No items configured yet.'}
+                                  ? t('No endpoint mappings configured.')
+                                  : t('No items configured yet.')}
                               </p>
                             )}
                           </CardContent>
@@ -413,9 +413,9 @@ export function PrefillGroupManagementDialog({
                                           {group.description}
                                         </p>
                                       ) : (
-                                        <p className='text-muted-foreground text-xs italic'>
-                                          No description provided
-                                        </p>
+                                         <p className='text-muted-foreground text-xs italic'>
+                                           {t('No description provided')}
+                                         </p>
                                       )}
                                     </div>
                                   </TableCell>
@@ -453,8 +453,8 @@ export function PrefillGroupManagementDialog({
                                       ) : (
                                         <p className='text-muted-foreground text-sm'>
                                           {group.type === 'endpoint'
-                                            ? 'No endpoint mappings configured.'
-                                            : 'No items configured yet.'}
+                                            ? t('No endpoint mappings configured.')
+                                            : t('No items configured yet.')}
                                         </p>
                                       )}
                                     </div>
@@ -515,7 +515,7 @@ export function PrefillGroupManagementDialog({
           </p>
         }
         destructive
-        confirmText={isDeleting ? 'Deleting...' : 'Delete'}
+        confirmText={isDeleting ? t('Deleting...') : t('Delete')}
         isLoading={isDeleting}
         handleConfirm={handleDeleteConfirm}
       />

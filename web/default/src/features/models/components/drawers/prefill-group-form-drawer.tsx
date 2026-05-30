@@ -165,17 +165,17 @@ export function PrefillGroupFormDrawer({
 
       if (response.success) {
         toast.success(
-          isEdit ? 'Prefill group updated' : 'Prefill group created'
+          isEdit ? t('Prefill group updated') : t('Prefill group created')
         )
         queryClient.invalidateQueries({
           queryKey: prefillGroupsQueryKeys.lists(),
         })
         onClose()
       } else {
-        toast.error(response.message || 'Operation failed')
+        toast.error(response.message || t('Operation failed'))
       }
     } catch (err: unknown) {
-      toast.error((err as Error)?.message || 'Operation failed')
+      toast.error((err as Error)?.message || t('Operation failed'))
     } finally {
       setIsSaving(false)
     }
@@ -273,7 +273,7 @@ export function PrefillGroupFormDrawer({
                 name='type'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Group Type</FormLabel>
+                    <FormLabel>{t('Group Type')}</FormLabel>
                     <Select
                       items={[
                         ...PREFILL_GROUP_TYPES.map((type) => ({
