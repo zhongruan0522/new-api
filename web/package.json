@@ -76,7 +76,7 @@
   "devDependencies": {
     "@douyinfe/vite-plugin-semi": "^2.74.0-alpha.6",
     "@so1ve/prettier-config": "^3.26.0",
-    "@vitejs/plugin-react": "^4.7.0",
+    "@vitejs/plugin-react": "^6.0.2",
     "autoprefixer": "^10.5.0",
     "code-inspector-plugin": "^1.5.1",
     "eslint": "8.57.0",
