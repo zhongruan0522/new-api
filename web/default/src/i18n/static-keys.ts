@@ -224,7 +224,6 @@ export const STATIC_I18N_KEYS = [
   'Per-call',
   'Chinese',
   'English',
-  'Japanese',
   'Official Repository',
   'Configuration File',
   'Sync from the public upstream metadata repository.',
