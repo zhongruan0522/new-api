@@ -5,13 +5,18 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    target-branch: "dev"
 
   - package-ecosystem: "npm"
-    directory: "/web"
+    directories:
+      - "/web/classic"
+      - "/web/default"
     schedule:
       interval: "weekly"
+    target-branch: "dev"
 
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
+    target-branch: "dev"
