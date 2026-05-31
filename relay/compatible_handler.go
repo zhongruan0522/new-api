@@ -539,7 +539,12 @@ func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage 
 	//var logContent string
 
 	// record all the consume log even if quota is 0
+	// 当 totalTokens == 0 时，若发生了规范转换（RequestConversionChain 长度 > 1），则可能是转换导致的 token 统计异常，不算 error
+	logType := 0 // 0 表示使用默认的 LogTypeConsume
 	if totalTokens == 0 {
+		if len(relayInfo.RequestConversionChain) <= 1 {
+			logType = model.LogTypeError
+		}
 		// 上游没有返回 token 信息（可能是超时或错误），但如果有工具调用费用，仍需扣费
 		toolQuota := dWebSearchQuota.Add(dClaudeWebSearchQuota).Add(dGeminiWebSearchQuota).
 			Add(dFileSearchQuota).Add(dImageGenerationCallQuota).Add(audioInputQuota)
@@ -647,5 +652,6 @@ func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage 
 		IsStream:         relayInfo.IsStream,
 		Group:            relayInfo.UsingGroup,
 		Other:            other,
+		LogType:          logType,
 	})
 }

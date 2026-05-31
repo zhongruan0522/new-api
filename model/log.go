@@ -142,6 +142,7 @@ type RecordConsumeLogParams struct {
 	Group            string                 `json:"group"`
 	Other            map[string]interface{} `json:"other"`
 	InputTokens      int                    `json:"input_tokens"` // 原始输入 token（未被计费逻辑修改），用于缓存率统计
+	LogType          int                    `json:"log_type"`     // 日志类型，0 表示使用默认的 LogTypeConsume
 }
 
 func RecordConsumeLog(c *gin.Context, userId int, params RecordConsumeLogParams) {
@@ -159,12 +160,16 @@ func RecordConsumeLog(c *gin.Context, userId int, params RecordConsumeLogParams)
 	}
 	appendConsumeLogClientHeaders(c, other)
 	otherStr := common.MapToJsonStr(other)
+	logType := params.LogType
+	if logType == 0 {
+		logType = LogTypeConsume
+	}
 	// 记录请求与错误日志的 IP（强制开启，用于滥用追踪）
 	log := &Log{
 		UserId:           userId,
 		Username:         username,
 		CreatedAt:        createdAt,
-		Type:             LogTypeConsume,
+		Type:             logType,
 		Content:          params.Content,
 		PromptTokens:     params.PromptTokens,
 		CompletionTokens: params.CompletionTokens,
@@ -187,25 +192,29 @@ func RecordConsumeLog(c *gin.Context, userId int, params RecordConsumeLogParams)
 			common.SysError(fmt.Sprintf("failed to record consume log (request_id=%s): %s", requestId, err.Error()))
 		}
 		if common.DataExportEnabled {
-			cacheHitTokens := 0
-			cacheCreationTokens := 0
-			if other != nil {
-				if v, ok := other["cache_tokens"].(float64); ok {
-					cacheHitTokens = int(v)
-				} else if v, ok := other["cache_tokens"].(int); ok {
-					cacheHitTokens = v
+			if logType == LogTypeError {
+				LogQuotaErrorData(userId, username, params.ModelName, createdAt)
+			} else {
+				cacheHitTokens := 0
+				cacheCreationTokens := 0
+				if other != nil {
+					if v, ok := other["cache_tokens"].(float64); ok {
+						cacheHitTokens = int(v)
+					} else if v, ok := other["cache_tokens"].(int); ok {
+						cacheHitTokens = v
+					}
+					if v, ok := other["cache_creation_tokens"].(float64); ok {
+						cacheCreationTokens = int(v)
+					} else if v, ok := other["cache_creation_tokens"].(int); ok {
+						cacheCreationTokens = v
+					}
 				}
-				if v, ok := other["cache_creation_tokens"].(float64); ok {
-					cacheCreationTokens = int(v)
-				} else if v, ok := other["cache_creation_tokens"].(int); ok {
-					cacheCreationTokens = v
+				inputTokens := params.InputTokens
+				if inputTokens == 0 {
+					inputTokens = params.PromptTokens
 				}
+				LogQuotaData(userId, username, params.ModelName, params.Quota, createdAt, params.PromptTokens+params.CompletionTokens, inputTokens, cacheHitTokens, cacheCreationTokens)
 			}
-			inputTokens := params.InputTokens
-			if inputTokens == 0 {
-				inputTokens = params.PromptTokens
-			}
-			LogQuotaData(userId, username, params.ModelName, params.Quota, createdAt, params.PromptTokens+params.CompletionTokens, inputTokens, cacheHitTokens, cacheCreationTokens)
 		}
 	})
 }
