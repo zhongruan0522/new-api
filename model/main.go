@@ -15,6 +15,7 @@ import (
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 var commonGroupCol string
@@ -248,11 +249,9 @@ func InitLogDB() (err error) {
 }
 
 func migrateDB() error {
-	// PrefillGroup 的唯一索引从旧版 gorm:"uniqueIndex"（约束名 uni_prefill_groups_name）
-	// 改为新版 gorm:"uniqueIndex:uk_prefill_name,where:deleted_at IS NULL"（部分索引）。
-	// GORM AutoMigrate 会尝试 DROP CONSTRAINT 旧约束，但如果旧约束不存在（全新安装或已清理），
-	// PostgreSQL 会报错。这里先安全清理。
-	cleanupPrefillGroupLegacyIndex()
+	// 清理旧版唯一约束/索引，防止 GORM AutoMigrate 的 MigrateColumnUnique 报 SQLSTATE 42704。
+	// 详见 cleanupPrefillGroupLegacyIndex 和 CleanupLegacyUniqueConstraints 的注释。
+	cleanupLegacyUniqueIndexes()
 
 	err := DB.AutoMigrate(
 		&Channel{},
@@ -295,7 +294,7 @@ func migrateDB() error {
 
 func migrateDBFast() error {
 	// 同 migrateDB 中的说明
-	cleanupPrefillGroupLegacyIndex()
+	cleanupLegacyUniqueIndexes()
 
 	var wg sync.WaitGroup
 
@@ -369,20 +368,50 @@ func migrateLOGDB() error {
 	return nil
 }
 
-// cleanupPrefillGroupLegacyIndex 清理 PrefillGroup 旧版唯一约束/索引。
-// 旧版 tag 为 gorm:"uniqueIndex"，GORM 在 PostgreSQL 中生成的约束名为 uni_prefill_groups_name。
-// 新版改为 gorm:"uniqueIndex:uk_prefill_name,where:deleted_at IS NULL"（部分唯一索引）。
-// GORM AutoMigrate 会尝试 DROP CONSTRAINT uni_prefill_groups_name，
-// 但如果该约束不存在（全新安装或已手动清理），PostgreSQL 会报 SQLSTATE 42704。
-// 此函数在 AutoMigrate 之前安全地清理旧约束和旧索引。
-func cleanupPrefillGroupLegacyIndex() {
+// cleanupLegacyUniqueIndexes 清理所有从旧版 uniqueIndex tag 迁移到新版复合/部分索引后
+// 可能残留的 UNIQUE 约束和索引。仅影响 PostgreSQL。
+//
+// 根因：GORM AutoMigrate 的 MigrateColumnUnique 会查询 information_schema.table_constraints，
+// 如果检测到列有 UNIQUE 约束但模型定义中 field.Unique 为 false（因为用的是 uniqueIndex tag），
+// 就会调用 DropConstraint（不带 IF EXISTS），导致 SQLSTATE 42704。
+//
+// 此函数在 AutoMigrate 之前执行，动态查询并删除所有相关的旧 UNIQUE 约束和索引。
+func cleanupLegacyUniqueIndexes() {
 	if !common.UsingPostgreSQL {
 		return
 	}
-	// 安全删除旧约束（IF EXISTS 避免 SQLSTATE 42704）
-	_ = DB.Exec(`ALTER TABLE "prefill_groups" DROP CONSTRAINT IF EXISTS "uni_prefill_groups_name"`).Error
-	// 同时清理可能残留的旧索引（GORM 有时用索引而非约束实现唯一性）
-	_ = DB.Exec(`DROP INDEX IF EXISTS "uni_prefill_groups_name"`).Error
+	// PrefillGroup: 旧版 gorm:"uniqueIndex" → 新版 gorm:"uniqueIndex:uk_prefill_name,where:deleted_at IS NULL"
+	CleanupLegacyUniqueConstraints(DB, "prefill_groups", "name", []string{"uni_prefill_groups_name", "idx_prefill_groups_name"})
+	// Model: 旧版 gorm:"uniqueIndex" → 新版 gorm:"uniqueIndex:uk_model_name_delete_at,priority:1"
+	CleanupLegacyUniqueConstraints(DB, "models", "model_name", []string{"uni_models_model_name", "idx_models_model_name"})
+	// Vendor: 旧版 gorm:"uniqueIndex" → 新版 gorm:"uniqueIndex:uk_vendor_name_delete_at,priority:1"
+	CleanupLegacyUniqueConstraints(DB, "vendors", "name", []string{"uni_vendors_name", "idx_vendors_name"})
+}
+
+// CleanupLegacyUniqueConstraints 动态查询并删除指定表/列的所有 UNIQUE 约束和已知旧索引。
+// 用于解决 GORM AutoMigrate 的 MigrateColumnUnique 在约束不存在时 DROP CONSTRAINT 不带 IF EXISTS 的问题。
+func CleanupLegacyUniqueConstraints(db *gorm.DB, tableName string, columnName string, legacyIndexNames []string) {
+	// 1. 动态查询所有与指定列相关的 UNIQUE 约束，逐一删除
+	rows, err := db.Raw(
+		`SELECT tc.constraint_name FROM information_schema.table_constraints tc
+		 JOIN information_schema.constraint_column_usage ccu ON tc.constraint_schema = ccu.constraint_schema AND tc.constraint_name = ccu.constraint_name
+		 WHERE tc.constraint_type = 'UNIQUE' AND tc.table_name = ? AND ccu.column_name = ?`,
+		tableName, columnName,
+	).Rows()
+	if err == nil {
+		for rows.Next() {
+			var constraintName string
+			if rows.Scan(&constraintName) == nil {
+				_ = db.Exec(`ALTER TABLE ? DROP CONSTRAINT IF EXISTS ?`, clause.Table{Name: tableName}, clause.Column{Name: constraintName}).Error
+			}
+		}
+		rows.Close()
+	}
+
+	// 2. 清理已知旧索引名
+	for _, idxName := range legacyIndexNames {
+		_ = db.Exec(`DROP INDEX IF EXISTS ?`, clause.Column{Name: idxName}).Error
+	}
 }
 
 func closeDB(db *gorm.DB) error {

@@ -7,10 +7,11 @@ import (
 )
 
 func autoMigrateTargetMainSchema(db *gorm.DB) error {
-	// 同 model.cleanupPrefillGroupLegacyIndex 的说明，pre-migrate 路径也需要清理
+	// 同 model.cleanupLegacyUniqueIndexes 的说明，pre-migrate 路径也需要清理
 	if common.UsingPostgreSQL {
-		_ = db.Exec(`ALTER TABLE "prefill_groups" DROP CONSTRAINT IF EXISTS "uni_prefill_groups_name"`).Error
-		_ = db.Exec(`DROP INDEX IF EXISTS "uni_prefill_groups_name"`).Error
+		model.CleanupLegacyUniqueConstraints(db, "prefill_groups", "name", []string{"uni_prefill_groups_name", "idx_prefill_groups_name"})
+		model.CleanupLegacyUniqueConstraints(db, "models", "model_name", []string{"uni_models_model_name", "idx_models_model_name"})
+		model.CleanupLegacyUniqueConstraints(db, "vendors", "name", []string{"uni_vendors_name", "idx_vendors_name"})
 	}
 	return db.AutoMigrate(
 		&model.Channel{},
