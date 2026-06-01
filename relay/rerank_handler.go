@@ -95,6 +95,8 @@ func RerankHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *typ
 		service.ResetStatusCode(newAPIError, statusCodeMappingStr)
 		return newAPIError
 	}
-	postConsumeQuota(c, info, usage.(*dto.Usage))
+	if apiErr := postConsumeQuota(c, info, usage.(*dto.Usage)); apiErr != nil {
+		return apiErr
+	}
 	return nil
 }

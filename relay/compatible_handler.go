@@ -298,14 +298,18 @@ func TextHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *types
 	var containsAudioRatios = ratio_setting.ContainsAudioRatio(info.OriginModelName) || ratio_setting.ContainsAudioCompletionRatio(info.OriginModelName)
 
 	if containAudioTokens && containsAudioRatios {
-		service.PostAudioConsumeQuota(c, info, usage.(*dto.Usage), "")
+		if apiErr := service.PostAudioConsumeQuota(c, info, usage.(*dto.Usage), ""); apiErr != nil {
+			return apiErr
+		}
 	} else {
-		postConsumeQuota(c, info, usage.(*dto.Usage))
+		if apiErr := postConsumeQuota(c, info, usage.(*dto.Usage)); apiErr != nil {
+			return apiErr
+		}
 	}
 	return nil
 }
 
-func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage *dto.Usage, extraContent ...string) {
+func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage *dto.Usage, extraContent ...string) *types.NewAPIError {
 	originUsage := usage
 	if usage == nil {
 		usage = &dto.Usage{
@@ -539,11 +543,12 @@ func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage 
 	//var logContent string
 
 	// record all the consume log even if quota is 0
-	// 当 totalTokens == 0 时，若发生了规范转换（RequestConversionChain 长度 > 1），则可能是转换导致的 token 统计异常，不算 error
+	// 未发生规范转换时，totalTokens == 0 代表上游缺失计费信息，需要交给外层重试。
+	// 发生规范转换时，可能是转换导致的 token 统计异常，继续记录消费日志但不触发重试。
 	logType := 0 // 0 表示使用默认的 LogTypeConsume
 	if totalTokens == 0 {
-		if len(relayInfo.RequestConversionChain) <= 1 {
-			logType = model.LogTypeError
+		if apiErr := service.NewEmptyUsageRetryError(relayInfo); apiErr != nil {
+			return apiErr
 		}
 		// 上游没有返回 token 信息（可能是超时或错误），但如果有工具调用费用，仍需扣费
 		toolQuota := dWebSearchQuota.Add(dClaudeWebSearchQuota).Add(dGeminiWebSearchQuota).
@@ -654,4 +659,5 @@ func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage 
 		Other:            other,
 		LogType:          logType,
 	})
+	return nil
 }
