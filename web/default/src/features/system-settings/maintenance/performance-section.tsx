@@ -84,10 +84,6 @@ const perfSchema = z.object({
     .number()
     .min(0)
     .max(100),
-  'perf_metrics_setting.enabled': z.boolean(),
-  'perf_metrics_setting.flush_interval': z.coerce.number().min(1),
-  'perf_metrics_setting.bucket_time': z.enum(['minute', '5min', 'hour']),
-  'perf_metrics_setting.retention_days': z.coerce.number().min(0),
 })
 
 type PerfFormValues = z.infer<typeof perfSchema>
@@ -171,19 +167,25 @@ export function PerformanceSection(props: Props) {
     try {
       const res = await api.get('/api/performance/stats')
       if (res.data.success) setStats(res.data.data)
-    } catch {
-      /* ignore */
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : t('Failed to fetch performance stats')
+      )
     }
-  }, [])
+  }, [t])
 
   const fetchLogInfo = useCallback(async () => {
     try {
       const res = await api.get('/api/performance/logs')
       if (res.data.success) setLogInfo(res.data.data)
-    } catch {
-      /* ignore */
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : t('Failed to fetch log info')
+      )
     }
-  }, [])
+  }, [t])
 
   useEffect(() => {
     fetchStats()
@@ -277,7 +279,6 @@ export function PerformanceSection(props: Props) {
 
   const diskEnabled = form.watch('performance_setting.disk_cache_enabled')
   const monitorEnabled = form.watch('performance_setting.monitor_enabled')
-  const perfMetricsEnabled = form.watch('perf_metrics_setting.enabled')
   const maxCacheSizeMb = form.watch(
     'performance_setting.disk_cache_max_size_mb'
   )
@@ -480,108 +481,6 @@ export function PerformanceSection(props: Props) {
                       disabled={!monitorEnabled}
                     />
                   </FormControl>
-                </FormItem>
-              )}
-            />
-          </div>
-
-          <Separator />
-
-          <div>
-            <h4 className='font-medium'>{t('Model performance metrics')}</h4>
-            <p className='text-muted-foreground mt-1 text-xs'>
-              {t(
-                'Collect relay latency and success-rate metrics for the model square.'
-              )}
-            </p>
-          </div>
-
-          <div className='grid grid-cols-1 gap-4 md:grid-cols-4'>
-            <FormField
-              control={form.control}
-              name='perf_metrics_setting.enabled'
-              render={({ field }) => (
-                <SettingsSwitchItem>
-                  <SettingsSwitchContent>
-                    <FormLabel>
-                      {t('Enable model performance metrics')}
-                    </FormLabel>
-                  </SettingsSwitchContent>
-                  <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
-                  </FormControl>
-                </SettingsSwitchItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name='perf_metrics_setting.flush_interval'
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t('Flush interval (minutes)')}</FormLabel>
-                  <FormControl>
-                    <Input
-                      type='number'
-                      min={1}
-                      {...field}
-                      disabled={!perfMetricsEnabled}
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name='perf_metrics_setting.bucket_time'
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t('Aggregation bucket')}</FormLabel>
-                  <Select
-                    items={[
-                      { value: 'minute', label: t('1 minute') },
-                      { value: '5min', label: t('5 minutes') },
-                      { value: 'hour', label: t('1 hour') },
-                    ]}
-                    value={field.value}
-                    onValueChange={field.onChange}
-                    disabled={!perfMetricsEnabled}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent alignItemWithTrigger={false}>
-                      <SelectGroup>
-                        <SelectItem value='minute'>{t('1 minute')}</SelectItem>
-                        <SelectItem value='5min'>{t('5 minutes')}</SelectItem>
-                        <SelectItem value='hour'>{t('1 hour')}</SelectItem>
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name='perf_metrics_setting.retention_days'
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t('Retention days')}</FormLabel>
-                  <FormControl>
-                    <Input
-                      type='number'
-                      min={0}
-                      {...field}
-                      disabled={!perfMetricsEnabled}
-                    />
-                  </FormControl>
-                  <FormDescription>
-                    {t('0 means data is kept permanently')}
-                  </FormDescription>
                 </FormItem>
               )}
             />

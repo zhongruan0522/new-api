@@ -36,13 +36,6 @@ const defaultContentSettings: ContentSettings = {
   DataExportEnabled: false,
   DataExportDefaultTime: 'hour',
   DataExportInterval: 5,
-  Chats: '[]',
-  DrawingEnabled: false,
-  MjNotifyEnabled: false,
-  MjAccountFilterEnabled: false,
-  MjForwardUrlEnabled: false,
-  MjModeClearEnabled: false,
-  MjActionCheckSuccessEnabled: false,
 }
 
 function resolveContentSettings(

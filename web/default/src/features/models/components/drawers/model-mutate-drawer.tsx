@@ -100,7 +100,6 @@ const extendedModelFormSchema = z.object({
   ratio: z.string().optional(),
   cacheRatio: z.string().optional(),
   completionRatio: z.string().optional(),
-  imageRatio: z.string().optional(),
   audioRatio: z.string().optional(),
   audioCompletionRatio: z.string().optional(),
 })
@@ -157,40 +156,30 @@ export function ModelMutateDrawer({
   const modelSettings = useMemo(() => {
     if (!systemOptionsData?.data) return null
     const defaultModelSettings: ModelSettings = {
-      'global.pass_through_request_enabled': false,
-      'global.thinking_model_blacklist': '[]',
-      'global.chat_completions_to_responses_policy': '{}',
       'general_setting.ping_interval_enabled': false,
       'general_setting.ping_interval_seconds': 60,
       'gemini.safety_settings': '',
       'gemini.version_settings': '',
       'gemini.supported_imagine_models': '',
-      'gemini.thinking_adapter_enabled': false,
-      'gemini.thinking_adapter_budget_tokens_percentage': 0.6,
       'gemini.function_call_thought_signature_enabled': false,
       'gemini.remove_function_response_id_enabled': true,
       'claude.model_headers_settings': '',
       'claude.default_max_tokens': '',
-      'claude.thinking_adapter_enabled': true,
-      'claude.thinking_adapter_budget_tokens_percentage': 0.8,
       ModelPrice: '',
       ModelRatio: '',
       CacheRatio: '',
+      CreateCacheRatio: '',
       CompletionRatio: '',
-      ImageRatio: '',
       AudioRatio: '',
       AudioCompletionRatio: '',
-      ExposeRatioEnabled: false,
-      'billing_setting.billing_mode': '{}',
-      'billing_setting.billing_expr': '{}',
-      'tool_price_setting.prices': '{}',
+      ContextPricing: '',
+      'tool_billing_setting.rules': '[]',
       TopupGroupRatio: '',
       GroupRatio: '',
       UserUsableGroups: '',
       GroupGroupRatio: '',
       AutoGroups: '',
       DefaultUseAutoGroup: false,
-      CreateCacheRatio: '',
       'group_ratio_setting.group_special_usable_group': '{}',
       'grok.violation_deduction_enabled': false,
       'grok.violation_deduction_amount': 0,
@@ -199,8 +188,6 @@ export function ModelMutateDrawer({
       'channel_affinity_setting.max_entries': 100000,
       'channel_affinity_setting.default_ttl_seconds': 3600,
       'channel_affinity_setting.rules': '[]',
-      'model_deployment.ionet.api_key': '',
-      'model_deployment.ionet.enabled': false,
     }
     return getOptionValue(systemOptionsData.data, defaultModelSettings)
   }, [systemOptionsData])
@@ -221,7 +208,6 @@ export function ModelMutateDrawer({
       ratio: '',
       cacheRatio: '',
       completionRatio: '',
-      imageRatio: '',
       audioRatio: '',
       audioCompletionRatio: '',
     },
@@ -280,7 +266,6 @@ export function ModelMutateDrawer({
         ratio: '',
         cacheRatio: '',
         completionRatio: '',
-        imageRatio: '',
         audioRatio: '',
         audioCompletionRatio: '',
       }
@@ -303,10 +288,6 @@ export function ModelMutateDrawer({
           modelSettings.CompletionRatio,
           { fallback: {}, silent: true }
         )
-        const imageMap = safeJsonParse<Record<string, number>>(
-          modelSettings.ImageRatio,
-          { fallback: {}, silent: true }
-        )
         const audioMap = safeJsonParse<Record<string, number>>(
           modelSettings.AudioRatio,
           { fallback: {}, silent: true }
@@ -322,7 +303,6 @@ export function ModelMutateDrawer({
         const ratio = ratioMap[modelName]
         const cacheRatio = cacheMap[modelName]
         const completionRatio = completionMap[modelName]
-        const imageRatio = imageMap[modelName]
         const audioRatio = audioMap[modelName]
         const audioCompletionRatio = audioCompletionMap[modelName]
 
@@ -348,12 +328,11 @@ export function ModelMutateDrawer({
             ratio: ratio?.toString() || '',
             cacheRatio: cacheRatio?.toString() || '',
             completionRatio: completionRatio?.toString() || '',
-            imageRatio: imageRatio?.toString() || '',
             audioRatio: audioRatio?.toString() || '',
             audioCompletionRatio: audioCompletionRatio?.toString() || '',
           })
           setAdvancedOpen(
-            !!(cacheRatio || imageRatio || audioRatio || audioCompletionRatio)
+            !!(cacheRatio || audioRatio || audioCompletionRatio)
           )
         }
       } else {
@@ -384,7 +363,6 @@ export function ModelMutateDrawer({
         ratio: '',
         cacheRatio: '',
         completionRatio: '',
-        imageRatio: '',
         audioRatio: '',
         audioCompletionRatio: '',
       })
@@ -409,7 +387,6 @@ export function ModelMutateDrawer({
           ratio,
           cacheRatio,
           completionRatio,
-          imageRatio,
           audioRatio,
           audioCompletionRatio,
           ...modelData
@@ -430,7 +407,6 @@ export function ModelMutateDrawer({
               (values.ratio ||
                 values.cacheRatio ||
                 values.completionRatio ||
-                values.imageRatio ||
                 values.audioRatio ||
                 values.audioCompletionRatio))
 
@@ -454,10 +430,6 @@ export function ModelMutateDrawer({
               modelSettings.CompletionRatio,
               { fallback: {}, silent: true }
             )
-            const imageMap = safeJsonParse<Record<string, number>>(
-              modelSettings.ImageRatio,
-              { fallback: {}, silent: true }
-            )
             const audioMap = safeJsonParse<Record<string, number>>(
               modelSettings.AudioRatio,
               { fallback: {}, silent: true }
@@ -473,7 +445,6 @@ export function ModelMutateDrawer({
               delete ratioMap[oldModelName]
               delete cacheMap[oldModelName]
               delete completionMap[oldModelName]
-              delete imageMap[oldModelName]
               delete audioMap[oldModelName]
               delete audioCompletionMap[oldModelName]
             }
@@ -484,7 +455,6 @@ export function ModelMutateDrawer({
             delete ratioMap[finalModelName]
             delete cacheMap[finalModelName]
             delete completionMap[finalModelName]
-            delete imageMap[finalModelName]
             delete audioMap[finalModelName]
             delete audioCompletionMap[finalModelName]
 
@@ -507,9 +477,6 @@ export function ModelMutateDrawer({
                   completionMap[finalModelName] = parseFloat(
                     values.completionRatio
                   )
-                }
-                if (values.imageRatio && values.imageRatio !== '') {
-                  imageMap[finalModelName] = parseFloat(values.imageRatio)
                 }
                 if (values.audioRatio && values.audioRatio !== '') {
                   audioMap[finalModelName] = parseFloat(values.audioRatio)
@@ -560,13 +527,6 @@ export function ModelMutateDrawer({
                 key: 'CompletionRatio',
                 value: newCompletionRatio,
               })
-            }
-
-            const newImageRatio = normalizeJsonString(JSON.stringify(imageMap))
-            if (
-              newImageRatio !== normalizeJsonString(modelSettings.ImageRatio)
-            ) {
-              updates.push({ key: 'ImageRatio', value: newImageRatio })
             }
 
             const newAudioRatio = normalizeJsonString(JSON.stringify(audioMap))
@@ -1137,33 +1097,6 @@ export function ModelMutateDrawer({
                             </FormControl>
                             <FormDescription>
                               {t('Discount ratio for cache hits.')}
-                            </FormDescription>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name='imageRatio'
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>{t('Image ratio')}</FormLabel>
-                            <FormControl>
-                              <Input
-                                type='text'
-                                placeholder='1.0'
-                                {...field}
-                                onChange={(e) => {
-                                  const value = e.target.value
-                                  if (validateNumber(value)) {
-                                    field.onChange(value)
-                                  }
-                                }}
-                              />
-                            </FormControl>
-                            <FormDescription>
-                              {t('Multiplier for image processing.')}
                             </FormDescription>
                             <FormMessage />
                           </FormItem>

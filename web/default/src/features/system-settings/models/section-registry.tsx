@@ -17,23 +17,12 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { ChannelAffinitySection } from '../general/channel-affinity'
-import { IoNetDeploymentSettingsSection } from '../integrations/ionet-deployment-settings-section'
 import type { ModelSettings } from '../types'
 import { createSectionRegistry } from '../utils/section-registry'
 import { ClaudeSettingsCard } from './claude-settings-card'
 import { GeminiSettingsCard } from './gemini-settings-card'
 import { GlobalSettingsCard } from './global-settings-card'
 import { GrokSettingsCard } from './grok-settings-card'
-
-function formatJsonForEditor(value: string, fallback: string) {
-  const raw = (value ?? '').toString().trim()
-  if (!raw) return fallback
-  try {
-    return JSON.stringify(JSON.parse(raw), null, 2)
-  } catch {
-    return fallback
-  }
-}
 
 const MODELS_SECTIONS = [
   {
@@ -42,18 +31,6 @@ const MODELS_SECTIONS = [
     build: (settings: ModelSettings) => (
       <GlobalSettingsCard
         defaultValues={{
-          global: {
-            pass_through_request_enabled:
-              settings['global.pass_through_request_enabled'],
-            thinking_model_blacklist: formatJsonForEditor(
-              settings['global.thinking_model_blacklist'],
-              '[]'
-            ),
-            chat_completions_to_responses_policy: formatJsonForEditor(
-              settings['global.chat_completions_to_responses_policy'],
-              '{}'
-            ),
-          },
           general_setting: {
             ping_interval_enabled:
               settings['general_setting.ping_interval_enabled'],
@@ -75,10 +52,6 @@ const MODELS_SECTIONS = [
             version_settings: settings['gemini.version_settings'],
             supported_imagine_models:
               settings['gemini.supported_imagine_models'],
-            thinking_adapter_enabled:
-              settings['gemini.thinking_adapter_enabled'],
-            thinking_adapter_budget_tokens_percentage:
-              settings['gemini.thinking_adapter_budget_tokens_percentage'],
             function_call_thought_signature_enabled:
               settings['gemini.function_call_thought_signature_enabled'],
             remove_function_response_id_enabled:
@@ -97,10 +70,6 @@ const MODELS_SECTIONS = [
           claude: {
             model_headers_settings: settings['claude.model_headers_settings'],
             default_max_tokens: settings['claude.default_max_tokens'],
-            thinking_adapter_enabled:
-              settings['claude.thinking_adapter_enabled'],
-            thinking_adapter_budget_tokens_percentage:
-              settings['claude.thinking_adapter_budget_tokens_percentage'],
           },
         }}
       />
@@ -136,18 +105,6 @@ const MODELS_SECTIONS = [
             settings['channel_affinity_setting.default_ttl_seconds'],
           'channel_affinity_setting.rules':
             settings['channel_affinity_setting.rules'],
-        }}
-      />
-    ),
-  },
-  {
-    id: 'model-deployment',
-    titleKey: 'Model Deployment',
-    build: (settings: ModelSettings) => (
-      <IoNetDeploymentSettingsSection
-        defaultValues={{
-          enabled: settings['model_deployment.ionet.enabled'],
-          apiKey: settings['model_deployment.ionet.api_key'],
         }}
       />
     ),

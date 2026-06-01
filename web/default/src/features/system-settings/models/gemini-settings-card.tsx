@@ -31,13 +31,11 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form'
-import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import {
   SettingsForm,
   SettingsSwitchContent,
-  SettingsControlGroup,
   SettingsSwitchItem,
 } from '../components/settings-form-layout'
 import { SettingsPageFormActions } from '../components/settings-page-context'
@@ -83,11 +81,6 @@ const schema = z.object({
         })
       }
     }),
-    thinking_adapter_enabled: z.boolean(),
-    thinking_adapter_budget_tokens_percentage: z.coerce
-      .number()
-      .min(0.002, { message: 'Must be at least 0.002' })
-      .max(1, { message: 'Must be 1 or less' }),
     function_call_thought_signature_enabled: z.boolean(),
     remove_function_response_id_enabled: z.boolean(),
   }),
@@ -100,8 +93,6 @@ type FlatGeminiSettings = {
   'gemini.safety_settings': string
   'gemini.version_settings': string
   'gemini.supported_imagine_models': string
-  'gemini.thinking_adapter_enabled': boolean
-  'gemini.thinking_adapter_budget_tokens_percentage': number
   'gemini.function_call_thought_signature_enabled': boolean
   'gemini.remove_function_response_id_enabled': boolean
 }
@@ -123,11 +114,6 @@ export function GeminiSettingsCard({ defaultValues }: GeminiSettingsCardProps) {
     'gemini.supported_imagine_models': normalizeJsonString(
       defaultValues.gemini.supported_imagine_models
     ),
-    'gemini.thinking_adapter_enabled':
-      defaultValues.gemini.thinking_adapter_enabled,
-    'gemini.thinking_adapter_budget_tokens_percentage': Number(
-      defaultValues.gemini.thinking_adapter_budget_tokens_percentage
-    ),
     'gemini.function_call_thought_signature_enabled':
       defaultValues.gemini.function_call_thought_signature_enabled ?? true,
     'gemini.remove_function_response_id_enabled':
@@ -143,9 +129,6 @@ export function GeminiSettingsCard({ defaultValues }: GeminiSettingsCardProps) {
       supported_imagine_models: formatJsonForTextarea(
         values.gemini.supported_imagine_models
       ),
-      thinking_adapter_enabled: values.gemini.thinking_adapter_enabled,
-      thinking_adapter_budget_tokens_percentage:
-        values.gemini.thinking_adapter_budget_tokens_percentage,
       function_call_thought_signature_enabled:
         values.gemini.function_call_thought_signature_enabled ?? true,
       remove_function_response_id_enabled:
@@ -173,11 +156,6 @@ export function GeminiSettingsCard({ defaultValues }: GeminiSettingsCardProps) {
       'gemini.supported_imagine_models': normalizeJsonString(
         defaultValues.gemini.supported_imagine_models
       ),
-      'gemini.thinking_adapter_enabled':
-        defaultValues.gemini.thinking_adapter_enabled,
-      'gemini.thinking_adapter_budget_tokens_percentage': Number(
-        defaultValues.gemini.thinking_adapter_budget_tokens_percentage
-      ),
       'gemini.function_call_thought_signature_enabled':
         defaultValues.gemini.function_call_thought_signature_enabled ?? true,
       'gemini.remove_function_response_id_enabled':
@@ -186,8 +164,6 @@ export function GeminiSettingsCard({ defaultValues }: GeminiSettingsCardProps) {
 
     form.reset(buildFormDefaults(defaultValues))
   }, [defaultValues, form])
-
-  const isAdapterEnabled = form.watch('gemini.thinking_adapter_enabled')
 
   const onSubmit = async (values: GeminiSettingsFormValues) => {
     const normalized: FlatGeminiSettings = {
@@ -200,9 +176,6 @@ export function GeminiSettingsCard({ defaultValues }: GeminiSettingsCardProps) {
       'gemini.supported_imagine_models': normalizeJsonString(
         values.gemini.supported_imagine_models
       ),
-      'gemini.thinking_adapter_enabled': values.gemini.thinking_adapter_enabled,
-      'gemini.thinking_adapter_budget_tokens_percentage':
-        values.gemini.thinking_adapter_budget_tokens_percentage,
       'gemini.function_call_thought_signature_enabled':
         values.gemini.function_call_thought_signature_enabled,
       'gemini.remove_function_response_id_enabled':
@@ -299,64 +272,6 @@ export function GeminiSettingsCard({ defaultValues }: GeminiSettingsCardProps) {
               </FormItem>
             )}
           />
-
-          <SettingsControlGroup>
-            <FormField
-              control={form.control}
-              name='gemini.thinking_adapter_enabled'
-              render={({ field }) => (
-                <SettingsSwitchItem>
-                  <SettingsSwitchContent>
-                    <FormLabel>{t('Thinking Adapter')}</FormLabel>
-                    <FormDescription>
-                      {t('Supports `-thinking`, `-thinking-')}
-                      {'{{budget}}'}
-                      {t(
-                        '`, and `-nothinking` suffixes while routing to the correct Gemini variant.'
-                      )}
-                    </FormDescription>
-                  </SettingsSwitchContent>
-                  <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
-                  </FormControl>
-                </SettingsSwitchItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name='gemini.thinking_adapter_budget_tokens_percentage'
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t('Budget Tokens Ratio')}</FormLabel>
-                  <FormControl>
-                    <Input
-                      {...field}
-                      value={String(field.value ?? '')}
-                      onChange={(event) => field.onChange(event.target.value)}
-                    />
-                  </FormControl>
-                  <FormDescription>
-                    {t(
-                      'Budget tokens = max tokens × ratio. Accepts a decimal between 0.002 and 1. Recommended to keep aligned with upstream billing.'
-                    )}
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {!isAdapterEnabled && (
-              <p className='text-muted-foreground text-sm'>
-                {t(
-                  'Gemini will continue to auto-detect thinking mode even with the adapter disabled. Enable this only when you need finer control over pricing and budgeting.'
-                )}
-              </p>
-            )}
-          </SettingsControlGroup>
 
           <FormField
             control={form.control}

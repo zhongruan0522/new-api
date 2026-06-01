@@ -31,15 +31,8 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form'
-import { Input } from '@/components/ui/input'
-import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
-import {
-  SettingsForm,
-  SettingsSwitchContent,
-  SettingsControlGroup,
-  SettingsSwitchItem,
-} from '../components/settings-form-layout'
+import { SettingsForm } from '../components/settings-form-layout'
 import { SettingsPageFormActions } from '../components/settings-page-context'
 import { SettingsSection } from '../components/settings-section'
 import { useUpdateOption } from '../hooks/use-update-option'
@@ -69,11 +62,6 @@ const schema = z.object({
         })
       }
     }),
-    thinking_adapter_enabled: z.boolean(),
-    thinking_adapter_budget_tokens_percentage: z.coerce
-      .number()
-      .min(0.1, { message: 'Must be at least 0.1' })
-      .max(1, { message: 'Must be 1 or less' }),
   }),
 })
 
@@ -83,8 +71,6 @@ type ClaudeSettingsFormInput = z.input<typeof schema>
 type FlatClaudeSettings = {
   'claude.model_headers_settings': string
   'claude.default_max_tokens': string
-  'claude.thinking_adapter_enabled': boolean
-  'claude.thinking_adapter_budget_tokens_percentage': number
 }
 
 type ClaudeSettingsCardProps = {
@@ -101,11 +87,6 @@ export function ClaudeSettingsCard({ defaultValues }: ClaudeSettingsCardProps) {
     'claude.default_max_tokens': normalizeJsonString(
       defaultValues.claude.default_max_tokens
     ),
-    'claude.thinking_adapter_enabled':
-      defaultValues.claude.thinking_adapter_enabled,
-    'claude.thinking_adapter_budget_tokens_percentage': Number(
-      defaultValues.claude.thinking_adapter_budget_tokens_percentage
-    ),
   })
 
   const buildFormDefaults = (
@@ -118,9 +99,6 @@ export function ClaudeSettingsCard({ defaultValues }: ClaudeSettingsCardProps) {
       default_max_tokens: formatJsonForTextarea(
         values.claude.default_max_tokens
       ),
-      thinking_adapter_enabled: values.claude.thinking_adapter_enabled,
-      thinking_adapter_budget_tokens_percentage:
-        values.claude.thinking_adapter_budget_tokens_percentage,
     },
   })
 
@@ -141,11 +119,6 @@ export function ClaudeSettingsCard({ defaultValues }: ClaudeSettingsCardProps) {
       'claude.default_max_tokens': normalizeJsonString(
         defaultValues.claude.default_max_tokens
       ),
-      'claude.thinking_adapter_enabled':
-        defaultValues.claude.thinking_adapter_enabled,
-      'claude.thinking_adapter_budget_tokens_percentage': Number(
-        defaultValues.claude.thinking_adapter_budget_tokens_percentage
-      ),
     }
 
     form.reset(buildFormDefaults(defaultValues))
@@ -159,9 +132,6 @@ export function ClaudeSettingsCard({ defaultValues }: ClaudeSettingsCardProps) {
       'claude.default_max_tokens': normalizeJsonString(
         values.claude.default_max_tokens
       ),
-      'claude.thinking_adapter_enabled': values.claude.thinking_adapter_enabled,
-      'claude.thinking_adapter_budget_tokens_percentage':
-        values.claude.thinking_adapter_budget_tokens_percentage,
     }
 
     const updates = (
@@ -223,54 +193,6 @@ export function ClaudeSettingsCard({ defaultValues }: ClaudeSettingsCardProps) {
               </FormItem>
             )}
           />
-
-          <SettingsControlGroup>
-            <FormField
-              control={form.control}
-              name='claude.thinking_adapter_enabled'
-              render={({ field }) => (
-                <SettingsSwitchItem>
-                  <SettingsSwitchContent>
-                    <FormLabel>{t('Thinking Adapter')}</FormLabel>
-                    <FormDescription>
-                      {t(
-                        'Translate `-thinking` suffixes into Anthropic native thinking models while keeping pricing predictable.'
-                      )}
-                    </FormDescription>
-                  </SettingsSwitchContent>
-                  <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
-                  </FormControl>
-                </SettingsSwitchItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name='claude.thinking_adapter_budget_tokens_percentage'
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t('Budget Tokens Ratio')}</FormLabel>
-                  <FormControl>
-                    <Input
-                      {...field}
-                      value={String(field.value ?? '')}
-                      onChange={(event) => field.onChange(event.target.value)}
-                    />
-                  </FormControl>
-                  <FormDescription>
-                    {t(
-                      'Budget tokens = max tokens × ratio. Accepts a decimal between 0.1 and 1.'
-                    )}
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </SettingsControlGroup>
         </SettingsForm>
       </Form>
     </SettingsSection>

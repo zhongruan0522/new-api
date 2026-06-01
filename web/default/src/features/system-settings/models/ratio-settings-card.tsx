@@ -31,7 +31,6 @@ import { useUpdateOption } from '../hooks/use-update-option'
 import { GroupRatioForm } from './group-ratio-form'
 import { ModelRatioForm } from './model-ratio-form'
 import { ToolPriceSettings } from './tool-price-settings'
-import { UpstreamRatioSync } from './upstream-ratio-sync'
 import {
   formatJsonForTextarea,
   normalizeJsonString,
@@ -84,15 +83,6 @@ const modelSchema = z.object({
       })
     }
   }),
-  ImageRatio: z.string().superRefine((value, ctx) => {
-    const result = validateJsonString(value)
-    if (!result.valid) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: result.message || 'Invalid JSON',
-      })
-    }
-  }),
   AudioRatio: z.string().superRefine((value, ctx) => {
     const result = validateJsonString(value)
     if (!result.valid) {
@@ -111,17 +101,7 @@ const modelSchema = z.object({
       })
     }
   }),
-  ExposeRatioEnabled: z.boolean(),
-  BillingMode: z.string().superRefine((value, ctx) => {
-    const result = validateJsonString(value)
-    if (!result.valid) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: result.message || 'Invalid JSON',
-      })
-    }
-  }),
-  BillingExpr: z.string().superRefine((value, ctx) => {
+  ContextPricing: z.string().superRefine((value, ctx) => {
     const result = validateJsonString(value)
     if (!result.valid) {
       ctx.addIssue({
@@ -197,7 +177,7 @@ const groupSchema = z.object({
 
 type ModelFormValues = z.infer<typeof modelSchema>
 type GroupFormValues = z.infer<typeof groupSchema>
-type RatioTabId = 'models' | 'groups' | 'tool-prices' | 'upstream-sync'
+type RatioTabId = 'models' | 'groups' | 'tool-prices'
 
 type RatioSettingsCardProps = {
   modelDefaults: ModelFormValues
@@ -212,7 +192,7 @@ export function RatioSettingsCard({
   groupDefaults,
   toolPricesDefault,
   titleKey = 'Pricing Ratios',
-  visibleTabs = ['models', 'groups', 'tool-prices', 'upstream-sync'],
+  visibleTabs = ['models', 'groups', 'tool-prices'],
 }: RatioSettingsCardProps) {
   const { t } = useTranslation()
   const updateOption = useUpdateOption()
@@ -241,14 +221,11 @@ export function RatioSettingsCard({
     CacheRatio: normalizeJsonString(modelDefaults.CacheRatio),
     CreateCacheRatio: normalizeJsonString(modelDefaults.CreateCacheRatio),
     CompletionRatio: normalizeJsonString(modelDefaults.CompletionRatio),
-    ImageRatio: normalizeJsonString(modelDefaults.ImageRatio),
     AudioRatio: normalizeJsonString(modelDefaults.AudioRatio),
     AudioCompletionRatio: normalizeJsonString(
       modelDefaults.AudioCompletionRatio
     ),
-    ExposeRatioEnabled: modelDefaults.ExposeRatioEnabled,
-    BillingMode: normalizeJsonString(modelDefaults.BillingMode),
-    BillingExpr: normalizeJsonString(modelDefaults.BillingExpr),
+    ContextPricing: normalizeJsonString(modelDefaults.ContextPricing),
   })
 
   const groupNormalizedDefaults = useRef({
@@ -273,13 +250,11 @@ export function RatioSettingsCard({
       CacheRatio: formatJsonForTextarea(modelDefaults.CacheRatio),
       CreateCacheRatio: formatJsonForTextarea(modelDefaults.CreateCacheRatio),
       CompletionRatio: formatJsonForTextarea(modelDefaults.CompletionRatio),
-      ImageRatio: formatJsonForTextarea(modelDefaults.ImageRatio),
       AudioRatio: formatJsonForTextarea(modelDefaults.AudioRatio),
       AudioCompletionRatio: formatJsonForTextarea(
         modelDefaults.AudioCompletionRatio
       ),
-      BillingMode: formatJsonForTextarea(modelDefaults.BillingMode),
-      BillingExpr: formatJsonForTextarea(modelDefaults.BillingExpr),
+      ContextPricing: formatJsonForTextarea(modelDefaults.ContextPricing),
     },
   })
 
@@ -306,14 +281,11 @@ export function RatioSettingsCard({
       CacheRatio: normalizeJsonString(modelDefaults.CacheRatio),
       CreateCacheRatio: normalizeJsonString(modelDefaults.CreateCacheRatio),
       CompletionRatio: normalizeJsonString(modelDefaults.CompletionRatio),
-      ImageRatio: normalizeJsonString(modelDefaults.ImageRatio),
       AudioRatio: normalizeJsonString(modelDefaults.AudioRatio),
       AudioCompletionRatio: normalizeJsonString(
         modelDefaults.AudioCompletionRatio
       ),
-      ExposeRatioEnabled: modelDefaults.ExposeRatioEnabled,
-      BillingMode: normalizeJsonString(modelDefaults.BillingMode),
-      BillingExpr: normalizeJsonString(modelDefaults.BillingExpr),
+      ContextPricing: normalizeJsonString(modelDefaults.ContextPricing),
     }
 
     modelForm.reset({
@@ -323,13 +295,11 @@ export function RatioSettingsCard({
       CacheRatio: formatJsonForTextarea(modelDefaults.CacheRatio),
       CreateCacheRatio: formatJsonForTextarea(modelDefaults.CreateCacheRatio),
       CompletionRatio: formatJsonForTextarea(modelDefaults.CompletionRatio),
-      ImageRatio: formatJsonForTextarea(modelDefaults.ImageRatio),
       AudioRatio: formatJsonForTextarea(modelDefaults.AudioRatio),
       AudioCompletionRatio: formatJsonForTextarea(
         modelDefaults.AudioCompletionRatio
       ),
-      BillingMode: formatJsonForTextarea(modelDefaults.BillingMode),
-      BillingExpr: formatJsonForTextarea(modelDefaults.BillingExpr),
+      ContextPricing: formatJsonForTextarea(modelDefaults.ContextPricing),
     })
   }, [modelDefaults, modelForm])
 
@@ -367,17 +337,9 @@ export function RatioSettingsCard({
         CacheRatio: normalizeJsonString(values.CacheRatio),
         CreateCacheRatio: normalizeJsonString(values.CreateCacheRatio),
         CompletionRatio: normalizeJsonString(values.CompletionRatio),
-        ImageRatio: normalizeJsonString(values.ImageRatio),
         AudioRatio: normalizeJsonString(values.AudioRatio),
         AudioCompletionRatio: normalizeJsonString(values.AudioCompletionRatio),
-        ExposeRatioEnabled: values.ExposeRatioEnabled,
-        BillingMode: normalizeJsonString(values.BillingMode),
-        BillingExpr: normalizeJsonString(values.BillingExpr),
-      }
-
-      const apiKeyMap: Record<string, string> = {
-        BillingMode: 'billing_setting.billing_mode',
-        BillingExpr: 'billing_setting.billing_expr',
+        ContextPricing: normalizeJsonString(values.ContextPricing),
       }
 
       const updates = (
@@ -392,8 +354,7 @@ export function RatioSettingsCard({
       }
 
       for (const key of updates) {
-        const apiKey = apiKeyMap[key as string] || (key as string)
-        await updateOption.mutateAsync({ key: apiKey, value: normalized[key] })
+        await updateOption.mutateAsync({ key, value: normalized[key] })
       }
     },
     [t, updateOption]
@@ -446,15 +407,13 @@ export function RatioSettingsCard({
     models: 'Model prices',
     groups: 'Group ratios',
     'tool-prices': 'Tool prices',
-    'upstream-sync': 'Upstream price sync',
   }
   const tabsGridClass =
     {
       1: 'grid-cols-1',
       2: 'grid-cols-2',
       3: 'grid-cols-3',
-      4: 'grid-cols-4',
-    }[visibleTabs.length] ?? 'grid-cols-4'
+    }[visibleTabs.length] ?? 'grid-cols-3'
   const defaultTab = visibleTabs[0] ?? 'models'
 
   const renderTabContent = (tab: RatioTabId) => {
@@ -481,22 +440,7 @@ export function RatioSettingsCard({
     if (tab === 'tool-prices') {
       return <ToolPriceSettings defaultValue={toolPricesDefault} />
     }
-    return (
-      <UpstreamRatioSync
-        modelRatios={{
-          ModelPrice: modelDefaults.ModelPrice,
-          ModelRatio: modelDefaults.ModelRatio,
-          CompletionRatio: modelDefaults.CompletionRatio,
-          CacheRatio: modelDefaults.CacheRatio,
-          CreateCacheRatio: modelDefaults.CreateCacheRatio,
-          ImageRatio: modelDefaults.ImageRatio,
-          AudioRatio: modelDefaults.AudioRatio,
-          AudioCompletionRatio: modelDefaults.AudioCompletionRatio,
-          'billing_setting.billing_mode': modelDefaults.BillingMode,
-          'billing_setting.billing_expr': modelDefaults.BillingExpr,
-        }}
-      />
-    )
+    return null
   }
 
   return (

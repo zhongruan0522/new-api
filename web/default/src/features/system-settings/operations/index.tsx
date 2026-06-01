@@ -28,8 +28,6 @@ import {
 const defaultOperationsSettings: OperationsSettings = {
   RetryTimes: 0,
   DefaultCollapseSidebar: false,
-  DemoSiteEnabled: false,
-  SelfUseModeEnabled: false,
   ChannelDisableThreshold: '',
   QuotaRemindThreshold: '',
   AutomaticDisableChannelEnabled: false,
@@ -46,7 +44,6 @@ const defaultOperationsSettings: OperationsSettings = {
   SMTPFrom: '',
   SMTPToken: '',
   SMTPSSLEnabled: false,
-  SMTPForceAuthLogin: false,
   WorkerUrl: '',
   WorkerValidKey: '',
   WorkerAllowHttpImageRequestEnabled: false,
@@ -58,11 +55,7 @@ const defaultOperationsSettings: OperationsSettings = {
   'performance_setting.monitor_enabled': false,
   'performance_setting.monitor_cpu_threshold': 90,
   'performance_setting.monitor_memory_threshold': 90,
-  'performance_setting.monitor_disk_threshold': 95,
-  'perf_metrics_setting.enabled': true,
-  'perf_metrics_setting.flush_interval': 5,
-  'perf_metrics_setting.bucket_time': 'hour',
-  'perf_metrics_setting.retention_days': 0,
+  'performance_setting.monitor_disk_threshold': 90,
 }
 
 export function OperationsSettings() {

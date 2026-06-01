@@ -23,6 +23,7 @@ import { toast } from 'sonner'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Switch } from '@/components/ui/switch'
 import {
   Table,
   TableBody,
@@ -34,61 +35,71 @@ import {
 import { Textarea } from '@/components/ui/textarea'
 import { useUpdateOption } from '../hooks/use-update-option'
 
-const OPTION_KEY = 'tool_price_setting.prices'
+const OPTION_KEY = 'tool_billing_setting.rules'
 
-const DEFAULT_PRICES: Record<string, number> = {
-  web_search: 10.0,
-  web_search_preview: 10.0,
-  'web_search_preview:gpt-4o*': 25.0,
-  'web_search_preview:gpt-4.1*': 25.0,
-  'web_search_preview:gpt-4o-mini*': 25.0,
-  'web_search_preview:gpt-4.1-mini*': 25.0,
-  file_search: 2.5,
-  google_search: 14.0,
-}
-
-type ToolPriceRow = {
-  id: number
-  key: string
+type ToolBillingRule = {
+  id: string
+  name: string
+  tool_type: 'web_search' | 'image_generation' | string
+  billing_mode: 'per_call' | string
   price: number
+  model_filter?: string
+  quality?: string
+  size?: string
+  provider?: string
+  enabled: boolean
 }
 
-function rowsToObject(rows: ToolPriceRow[]): Record<string, number> {
-  const prices: Record<string, number> = {}
-  for (const row of rows) {
-    const k = row.key.trim()
-    if (!k) continue
-    prices[k] = Number(row.price) || 0
+type ToolBillingRow = ToolBillingRule & {
+  rowId: number
+}
+
+function normalizeRule(rule: ToolBillingRule): ToolBillingRule {
+  return {
+    id: rule.id?.trim() ?? '',
+    name: rule.name?.trim() ?? '',
+    tool_type: rule.tool_type || 'web_search',
+    billing_mode: rule.billing_mode || 'per_call',
+    price: Number(rule.price) || 0,
+    model_filter: rule.model_filter ?? '',
+    quality: rule.quality ?? '',
+    size: rule.size ?? '',
+    provider: rule.provider ?? '',
+    enabled: rule.enabled !== false,
   }
-  return prices
 }
 
-function objectToRows(prices: Record<string, number>): ToolPriceRow[] {
-  return Object.entries(prices).map(([key, price], index) => ({
-    id: index + 1,
-    key,
-    price: Number(price) || 0,
-  }))
+function rowsToRules(rows: ToolBillingRow[]): ToolBillingRule[] {
+  return rows.map(({ rowId: _rowId, ...rule }) => normalizeRule(rule))
 }
 
-function parseInitialPrices(
-  rawValue: string | undefined
-): Record<string, number> {
-  if (!rawValue) return { ...DEFAULT_PRICES }
-  try {
-    const parsed = JSON.parse(rawValue) as unknown
-    if (
-      parsed &&
-      typeof parsed === 'object' &&
-      !Array.isArray(parsed) &&
-      Object.keys(parsed as object).length > 0
-    ) {
-      return parsed as Record<string, number>
+function validateRules(rules: ToolBillingRule[]): string | null {
+  const seen = new Set<string>()
+  for (const [index, rule] of rules.entries()) {
+    if (!rule.id) return `rule ${index}: id is required`
+    if (seen.has(rule.id)) return `rule ${index}: duplicate id ${rule.id}`
+    seen.add(rule.id)
+    if (!rule.name) return `rule ${index} (${rule.id}): name is required`
+    if (!['web_search', 'image_generation'].includes(rule.tool_type)) {
+      return `rule ${index} (${rule.id}): unsupported tool_type`
     }
-  } catch {
-    // fall through to defaults
+    if (rule.billing_mode !== 'per_call') {
+      return `rule ${index} (${rule.id}): only per_call billing is supported`
+    }
+    if (!Number.isFinite(rule.price) || rule.price < 0) {
+      return `rule ${index} (${rule.id}): price must be a non-negative number`
+    }
   }
-  return { ...DEFAULT_PRICES }
+  return null
+}
+
+function parseInitialRules(rawValue: string | undefined): ToolBillingRule[] {
+  if (!rawValue) return []
+  const parsed = JSON.parse(rawValue) as unknown
+  if (!Array.isArray(parsed)) {
+    throw new Error('Tool billing rules must be a JSON array')
+  }
+  return parsed.map((item) => normalizeRule(item as ToolBillingRule))
 }
 
 type ToolPriceSettingsProps = {
@@ -101,27 +112,36 @@ export const ToolPriceSettings = memo(function ToolPriceSettings({
   const { t } = useTranslation()
   const updateOption = useUpdateOption()
   const [editMode, setEditMode] = useState<'visual' | 'json'>('visual')
-  const [rows, setRows] = useState<ToolPriceRow[]>([])
-  const [jsonText, setJsonText] = useState('')
+  const [rows, setRows] = useState<ToolBillingRow[]>([])
+  const [jsonText, setJsonText] = useState('[]')
   const [jsonError, setJsonError] = useState('')
   const [nextRowId, setNextRowId] = useState(1)
 
   useEffect(() => {
-    const prices = parseInitialPrices(defaultValue)
-    const initialRows = objectToRows(prices)
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setRows(initialRows)
-    setJsonText(JSON.stringify(prices, null, 2))
-    setJsonError('')
-    setNextRowId(initialRows.length + 1)
-  }, [defaultValue])
+    try {
+      const rules = parseInitialRules(defaultValue)
+      const initialRows = rules.map((rule, index) => ({
+        ...rule,
+        rowId: index + 1,
+      }))
+      setRows(initialRows)
+      setJsonText(JSON.stringify(rules, null, 2))
+      setJsonError('')
+      setNextRowId(initialRows.length + 1)
+    } catch (error) {
+      setRows([])
+      setJsonText(defaultValue || '[]')
+      setJsonError(error instanceof Error ? error.message : t('Invalid JSON'))
+    }
+  }, [defaultValue, t])
 
-  const currentPrices = useMemo(() => rowsToObject(rows), [rows])
+  const currentRules = useMemo(() => rowsToRules(rows), [rows])
 
-  const syncFromRows = useCallback((nextRows: ToolPriceRow[]) => {
+  const syncFromRows = useCallback((nextRows: ToolBillingRow[]) => {
+    const rules = rowsToRules(nextRows)
     setRows(nextRows)
-    setJsonText(JSON.stringify(rowsToObject(nextRows), null, 2))
-    setJsonError('')
+    setJsonText(JSON.stringify(rules, null, 2))
+    setJsonError(validateRules(rules) ?? '')
   }, [])
 
   const handleJsonChange = useCallback(
@@ -129,11 +149,20 @@ export const ToolPriceSettings = memo(function ToolPriceSettings({
       setJsonText(text)
       try {
         const parsed = JSON.parse(text) as unknown
-        if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-          setJsonError(t('JSON must be an object'))
+        if (!Array.isArray(parsed)) {
+          setJsonError(t('JSON must be an array'))
           return
         }
-        const nextRows = objectToRows(parsed as Record<string, number>)
+        const rules = parsed.map((item) => normalizeRule(item as ToolBillingRule))
+        const validationError = validateRules(rules)
+        if (validationError) {
+          setJsonError(validationError)
+          return
+        }
+        const nextRows = rules.map((rule, index) => ({
+          ...rule,
+          rowId: index + 1,
+        }))
         setRows(nextRows)
         setNextRowId(nextRows.length + 1)
         setJsonError('')
@@ -145,34 +174,44 @@ export const ToolPriceSettings = memo(function ToolPriceSettings({
   )
 
   const updateRow = useCallback(
-    (id: number, field: 'key' | 'price', value: string | number) => {
+    (
+      rowId: number,
+      field: keyof ToolBillingRule,
+      value: string | number | boolean
+    ) => {
       syncFromRows(
-        rows.map((r) => (r.id === id ? { ...r, [field]: value } : r))
+        rows.map((row) =>
+          row.rowId === rowId ? { ...row, [field]: value } : row
+        )
       )
     },
     [rows, syncFromRows]
   )
 
   const addRow = useCallback(() => {
-    const newRow: ToolPriceRow = { id: nextRowId, key: '', price: 0 }
+    const newRow: ToolBillingRow = {
+      rowId: nextRowId,
+      id: '',
+      name: '',
+      tool_type: 'web_search',
+      billing_mode: 'per_call',
+      price: 0,
+      model_filter: '',
+      quality: '',
+      size: '',
+      provider: '',
+      enabled: true,
+    }
     setNextRowId((prev) => prev + 1)
     syncFromRows([...rows, newRow])
   }, [nextRowId, rows, syncFromRows])
 
   const removeRow = useCallback(
-    (id: number) => {
-      syncFromRows(rows.filter((r) => r.id !== id))
+    (rowId: number) => {
+      syncFromRows(rows.filter((row) => row.rowId !== rowId))
     },
     [rows, syncFromRows]
   )
-
-  const resetToDefault = useCallback(() => {
-    const initialRows = objectToRows(DEFAULT_PRICES)
-    setRows(initialRows)
-    setJsonText(JSON.stringify(DEFAULT_PRICES, null, 2))
-    setJsonError('')
-    setNextRowId(initialRows.length + 1)
-  }, [])
 
   const handleCopyJson = useCallback(async () => {
     try {
@@ -184,15 +223,16 @@ export const ToolPriceSettings = memo(function ToolPriceSettings({
   }, [jsonText, t])
 
   const handleSave = useCallback(async () => {
-    if (editMode === 'json' && jsonError) {
-      toast.error(t('Please fix JSON errors before saving'))
+    const validationError = validateRules(currentRules)
+    if (validationError || jsonError) {
+      toast.error(validationError || jsonError)
       return
     }
     await updateOption.mutateAsync({
       key: OPTION_KEY,
-      value: JSON.stringify(currentPrices),
+      value: JSON.stringify(currentRules),
     })
-  }, [currentPrices, editMode, jsonError, t, updateOption])
+  }, [currentRules, jsonError, updateOption])
 
   const toggleEditMode = useCallback(() => {
     setEditMode((prev) => (prev === 'visual' ? 'json' : 'visual'))
@@ -203,20 +243,12 @@ export const ToolPriceSettings = memo(function ToolPriceSettings({
       <Alert>
         <AlertDescription className='space-y-1 text-sm'>
           <div>
-            {t(
-              'Configure per-tool unit prices ($/1K calls). Per-request models do not incur additional tool fees.'
-            )}
+            {t('Configure tool billing rules. Prices are USD per call.')}
           </div>
           <div>
-            <span className='font-medium'>{t('Format')}:</span>{' '}
             <code className='bg-muted rounded px-1 py-0.5 text-xs'>
-              web_search_preview
-            </code>{' '}
-            {t('is the default price; ')}
-            <code className='bg-muted rounded px-1 py-0.5 text-xs'>
-              web_search_preview:gpt-4o*
-            </code>{' '}
-            {t('overrides for matching model prefix.')}
+              tool_billing_setting.rules
+            </code>
           </div>
         </AlertDescription>
       </Alert>
@@ -224,25 +256,15 @@ export const ToolPriceSettings = memo(function ToolPriceSettings({
       <div className='flex flex-wrap items-center justify-between gap-2'>
         <div className='flex flex-wrap items-center gap-2'>
           {editMode === 'visual' ? (
-            <>
-              <Button variant='outline' size='sm' onClick={addRow}>
-                <Plus className='mr-2 h-4 w-4' />
-                {t('Add')}
-              </Button>
-              <Button variant='ghost' size='sm' onClick={resetToDefault}>
-                {t('Restore defaults')}
-              </Button>
-            </>
+            <Button variant='outline' size='sm' onClick={addRow}>
+              <Plus className='mr-2 h-4 w-4' />
+              {t('Add')}
+            </Button>
           ) : (
-            <>
-              <Button variant='ghost' size='sm' onClick={handleCopyJson}>
-                <Copy className='mr-2 h-4 w-4' />
-                {t('Copy')}
-              </Button>
-              <Button variant='ghost' size='sm' onClick={resetToDefault}>
-                {t('Restore defaults')}
-              </Button>
-            </>
+            <Button variant='ghost' size='sm' onClick={handleCopyJson}>
+              <Copy className='mr-2 h-4 w-4' />
+              {t('Copy')}
+            </Button>
           )}
         </div>
         <Button variant='outline' size='sm' onClick={toggleEditMode}>
@@ -261,14 +283,29 @@ export const ToolPriceSettings = memo(function ToolPriceSettings({
       </div>
 
       {editMode === 'visual' ? (
-        <div className='overflow-hidden rounded-md border'>
+        <div className='overflow-auto rounded-md border'>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>{t('Tool identifier')}</TableHead>
-                <TableHead className='w-[200px]'>
-                  {t('Price ($/1K calls)')}
+                <TableHead className='min-w-[180px]'>ID</TableHead>
+                <TableHead className='min-w-[180px]'>{t('Name')}</TableHead>
+                <TableHead className='min-w-[150px]'>
+                  {t('Tool type')}
                 </TableHead>
+                <TableHead className='min-w-[120px]'>
+                  {t('Price')}
+                </TableHead>
+                <TableHead className='min-w-[130px]'>
+                  {t('Provider')}
+                </TableHead>
+                <TableHead className='min-w-[180px]'>
+                  {t('Model filter')}
+                </TableHead>
+                <TableHead className='min-w-[120px]'>
+                  {t('Quality')}
+                </TableHead>
+                <TableHead className='min-w-[140px]'>{t('Size')}</TableHead>
+                <TableHead className='w-[90px]'>{t('Enabled')}</TableHead>
                 <TableHead className='w-[80px] text-right'>
                   {t('Actions')}
                 </TableHead>
@@ -278,21 +315,39 @@ export const ToolPriceSettings = memo(function ToolPriceSettings({
               {rows.length === 0 ? (
                 <TableRow>
                   <TableCell
-                    colSpan={3}
+                    colSpan={10}
                     className='text-muted-foreground py-8 text-center'
                   >
-                    {t('No tools configured')}
+                    {t('No rules configured')}
                   </TableCell>
                 </TableRow>
               ) : (
                 rows.map((row) => (
-                  <TableRow key={row.id}>
+                  <TableRow key={row.rowId}>
                     <TableCell>
                       <Input
-                        value={row.key}
-                        placeholder='web_search_preview:gpt-4o*'
-                        onChange={(e) =>
-                          updateRow(row.id, 'key', e.target.value)
+                        value={row.id}
+                        placeholder='web_search_openai'
+                        onChange={(event) =>
+                          updateRow(row.rowId, 'id', event.target.value)
+                        }
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Input
+                        value={row.name}
+                        placeholder='OpenAI Web Search'
+                        onChange={(event) =>
+                          updateRow(row.rowId, 'name', event.target.value)
+                        }
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Input
+                        value={row.tool_type}
+                        placeholder='web_search'
+                        onChange={(event) =>
+                          updateRow(row.rowId, 'tool_type', event.target.value)
                         }
                       />
                     </TableCell>
@@ -300,14 +355,62 @@ export const ToolPriceSettings = memo(function ToolPriceSettings({
                       <Input
                         type='number'
                         min={0}
-                        step={0.5}
+                        step={0.001}
                         value={row.price}
-                        onChange={(e) =>
+                        onChange={(event) =>
                           updateRow(
-                            row.id,
+                            row.rowId,
                             'price',
-                            Number(e.target.value) || 0
+                            Number(event.target.value) || 0
                           )
+                        }
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Input
+                        value={row.provider ?? ''}
+                        placeholder='openai'
+                        onChange={(event) =>
+                          updateRow(row.rowId, 'provider', event.target.value)
+                        }
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Input
+                        value={row.model_filter ?? ''}
+                        placeholder='gpt-4o*,gpt-4.1*'
+                        onChange={(event) =>
+                          updateRow(
+                            row.rowId,
+                            'model_filter',
+                            event.target.value
+                          )
+                        }
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Input
+                        value={row.quality ?? ''}
+                        placeholder='high'
+                        onChange={(event) =>
+                          updateRow(row.rowId, 'quality', event.target.value)
+                        }
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Input
+                        value={row.size ?? ''}
+                        placeholder='1024x1024'
+                        onChange={(event) =>
+                          updateRow(row.rowId, 'size', event.target.value)
+                        }
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Switch
+                        checked={row.enabled}
+                        onCheckedChange={(checked) =>
+                          updateRow(row.rowId, 'enabled', checked)
                         }
                       />
                     </TableCell>
@@ -315,7 +418,7 @@ export const ToolPriceSettings = memo(function ToolPriceSettings({
                       <Button
                         variant='ghost'
                         size='icon'
-                        onClick={() => removeRow(row.id)}
+                        onClick={() => removeRow(row.rowId)}
                         aria-label={t('Delete')}
                       >
                         <Trash2 className='text-destructive h-4 w-4' />
@@ -331,9 +434,9 @@ export const ToolPriceSettings = memo(function ToolPriceSettings({
         <div className='space-y-2'>
           <Textarea
             value={jsonText}
-            onChange={(e) => handleJsonChange(e.target.value)}
+            onChange={(event) => handleJsonChange(event.target.value)}
             className='font-mono text-sm'
-            rows={12}
+            rows={16}
             spellCheck={false}
           />
           {jsonError && <p className='text-destructive text-sm'>{jsonError}</p>}
@@ -347,7 +450,7 @@ export const ToolPriceSettings = memo(function ToolPriceSettings({
             updateOption.isPending || (editMode === 'json' && !!jsonError)
           }
         >
-          {t('Save tool prices')}
+          {t('Save tool billing rules')}
         </Button>
       </div>
     </div>

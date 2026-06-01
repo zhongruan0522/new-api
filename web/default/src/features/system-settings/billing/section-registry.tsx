@@ -16,10 +16,9 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { parseCurrencyDisplayType } from '@/lib/currency'
 import { CheckinSettingsSection } from '../general/checkin-settings-section'
-import { PricingSection } from '../general/pricing-section'
 import { QuotaSettingsSection } from '../general/quota-settings-section'
+import { PaymentSettingsSection } from '../integrations/payment-settings-section'
 import { RatioSettingsCard } from '../models/ratio-settings-card'
 import type { BillingSettings } from '../types'
 import { createSectionRegistry } from '../utils/section-registry'
@@ -30,12 +29,9 @@ const getModelDefaults = (settings: BillingSettings) => ({
   CacheRatio: settings.CacheRatio,
   CreateCacheRatio: settings.CreateCacheRatio,
   CompletionRatio: settings.CompletionRatio,
-  ImageRatio: settings.ImageRatio,
   AudioRatio: settings.AudioRatio,
   AudioCompletionRatio: settings.AudioCompletionRatio,
-  ExposeRatioEnabled: settings.ExposeRatioEnabled,
-  BillingMode: settings['billing_setting.billing_mode'],
-  BillingExpr: settings['billing_setting.billing_expr'],
+  ContextPricing: settings.ContextPricing,
 })
 
 const getGroupDefaults = (settings: BillingSettings) => ({
@@ -73,25 +69,28 @@ const BILLING_SECTIONS = [
     ),
   },
   {
-    id: 'currency',
-    titleKey: 'Currency & Display',
+    id: 'payment',
+    titleKey: 'Payment Settings',
     build: (settings: BillingSettings) => (
-      <PricingSection
+      <PaymentSettingsSection
         defaultValues={{
-          QuotaPerUnit: settings.QuotaPerUnit,
-          USDExchangeRate: settings.USDExchangeRate,
-          DisplayInCurrencyEnabled: settings.DisplayInCurrencyEnabled,
-          DisplayTokenStatEnabled: settings.DisplayTokenStatEnabled,
-          general_setting: {
-            quota_display_type: parseCurrencyDisplayType(
-              settings['general_setting.quota_display_type']
-            ),
-            custom_currency_symbol:
-              settings['general_setting.custom_currency_symbol'] ?? '¤',
-            custom_currency_exchange_rate:
-              settings['general_setting.custom_currency_exchange_rate'] ?? 1,
-          },
+          PayAddress: settings.PayAddress,
+          EpayId: settings.EpayId,
+          EpayKey: settings.EpayKey,
+          Price: settings.Price,
+          MinTopUp: settings.MinTopUp,
+          CustomCallbackAddress: settings.CustomCallbackAddress,
+          PayMethods: settings.PayMethods,
+          AmountOptions: settings['payment_setting.amount_options'],
+          AmountDiscount: settings['payment_setting.amount_discount'],
+          StripeApiSecret: settings.StripeApiSecret,
+          StripeWebhookSecret: settings.StripeWebhookSecret,
+          StripePriceId: settings.StripePriceId,
+          StripeUnitPrice: settings.StripeUnitPrice,
+          StripeMinTopUp: settings.StripeMinTopUp,
+          StripePromotionCodesEnabled: settings.StripePromotionCodesEnabled,
         }}
+        serverAddress={settings.ServerAddress}
       />
     ),
   },
@@ -103,8 +102,8 @@ const BILLING_SECTIONS = [
         titleKey='Model Pricing'
         modelDefaults={getModelDefaults(settings)}
         groupDefaults={getGroupDefaults(settings)}
-        toolPricesDefault={settings['tool_price_setting.prices']}
-        visibleTabs={['models', 'tool-prices', 'upstream-sync']}
+        toolPricesDefault={settings['tool_billing_setting.rules']}
+        visibleTabs={['models', 'tool-prices']}
       />
     ),
   },
@@ -116,7 +115,7 @@ const BILLING_SECTIONS = [
         titleKey='Group Pricing'
         modelDefaults={getModelDefaults(settings)}
         groupDefaults={getGroupDefaults(settings)}
-        toolPricesDefault={settings['tool_price_setting.prices']}
+        toolPricesDefault={settings['tool_billing_setting.rules']}
         visibleTabs={['groups']}
       />
     ),
