@@ -232,6 +232,7 @@ export function CommonLogsFilterBar<TData>(
     <LogsFilterField>
       <LogsFilterInput
         placeholder={t('Model Name')}
+        autoComplete="off"
         value={filters.model || ''}
         onChange={(e) => handleChange('model', e.target.value)}
         onKeyDown={handleKeyDown}
@@ -243,6 +244,7 @@ export function CommonLogsFilterBar<TData>(
       <LogsFilterInput
         placeholder={t('Group')}
         type={sensitiveType}
+        autoComplete="off"
         value={filters.group || ''}
         onChange={(e) => handleChange('group', e.target.value)}
         onKeyDown={handleKeyDown}
@@ -281,6 +283,7 @@ export function CommonLogsFilterBar<TData>(
         <LogsFilterInput
           placeholder={t('Token Name')}
           type={sensitiveType}
+          autoComplete="off"
           value={filters.token || ''}
           onChange={(e) => handleChange('token', e.target.value)}
           onKeyDown={handleKeyDown}
@@ -291,6 +294,7 @@ export function CommonLogsFilterBar<TData>(
           <LogsFilterInput
             placeholder={t('Username')}
             type={sensitiveType}
+            autoComplete="off"
             value={filters.username || ''}
             onChange={(e) => handleChange('username', e.target.value)}
             onKeyDown={handleKeyDown}
@@ -301,6 +305,7 @@ export function CommonLogsFilterBar<TData>(
         <LogsFilterField>
           <LogsFilterInput
             placeholder={t('Channel ID')}
+            autoComplete="off"
             value={filters.channel || ''}
             onChange={(e) => handleChange('channel', e.target.value)}
             onKeyDown={handleKeyDown}
@@ -310,6 +315,7 @@ export function CommonLogsFilterBar<TData>(
       <LogsFilterField>
         <LogsFilterInput
           placeholder={t('Request ID')}
+          autoComplete="off"
           value={filters.requestId || ''}
           onChange={(e) => handleChange('requestId', e.target.value)}
           onKeyDown={handleKeyDown}
