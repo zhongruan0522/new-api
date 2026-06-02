@@ -552,8 +552,10 @@ function UsageChart({ channelId }: { channelId: number }) {
           label: {
             style: { fontSize: 11 },
             autoRotate: false,
-            formatter: (value: string) =>
-              sampledLabels.includes(value) ? formatTimeLabel(value) : '',
+            formatMethod: (value: number | string) => {
+              const label = String(value)
+              return sampledLabels.includes(label) ? formatTimeLabel(label) : ''
+            },
           },
           tick: { visible: false },
         },
@@ -563,7 +565,8 @@ function UsageChart({ channelId }: { channelId: number }) {
           field: 'value',
           label: {
             style: { fontSize: 10 },
-            formatter: (value: unknown) => formatCompactNumber(value),
+            formatMethod: (value: number | string) =>
+              formatCompactNumber(value),
           },
           grid: {
             visible: true,
@@ -759,7 +762,7 @@ function PerformanceChart({
             style: {
               lineWidth: 2,
               lineDash: (datum: UsagePoint) =>
-                datum.type.includes('成功率') ? [4, 4] : [0],
+                String(datum?.type ?? '').includes('成功率') ? [4, 4] : [0],
             },
           },
           point: { visible: false },
@@ -773,8 +776,10 @@ function PerformanceChart({
           label: {
             style: { fontSize: 11 },
             autoRotate: false,
-            formatter: (value: string) =>
-              sampledLabels.includes(value) ? formatTimeLabel(value) : '',
+            formatMethod: (value: number | string) => {
+              const label = String(value)
+              return sampledLabels.includes(label) ? formatTimeLabel(label) : ''
+            },
           },
           tick: { visible: false },
         },
@@ -784,7 +789,8 @@ function PerformanceChart({
           field: 'value',
           label: {
             style: { fontSize: 10 },
-            formatter: (value: unknown) => formatCompactNumber(value),
+            formatMethod: (value: number | string) =>
+              formatCompactNumber(value),
           },
           grid: {
             visible: true,
