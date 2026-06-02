@@ -33,7 +33,6 @@ import {
 import { Database } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
-import { formatQuota } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { useTableUrlState } from '@/hooks/use-table-url-state'
 import {
@@ -58,7 +57,7 @@ import {
   ERROR_MESSAGES,
 } from '../constants'
 import { type ApiKey } from '../types'
-import { ApiKeyCell } from './api-keys-cells'
+import { ApiKeyCell, ApiKeyQuotaCell } from './api-keys-cells'
 import { useApiKeysColumns } from './api-keys-columns'
 import { useApiKeys } from './api-keys-provider'
 import { DataTableBulkActions } from './data-table-bulk-actions'
@@ -130,7 +129,6 @@ function ApiKeysMobileList({
       {rows.map((row) => {
         const apiKey = row.original
         const statusConfig = API_KEY_STATUSES[apiKey.status]
-        const total = apiKey.used_quota + apiKey.remain_quota
 
         return (
           <div
@@ -165,19 +163,11 @@ function ApiKeysMobileList({
               <DataTableRowActions row={row} />
             </div>
 
-            <div className='flex items-center justify-between gap-2 text-xs'>
-              <span className='text-muted-foreground'>{t('Quota')}</span>
-              {apiKey.unlimited_quota ? (
-                <span className='font-medium'>{t('Unlimited')}</span>
-              ) : (
-                <span className='font-medium tabular-nums'>
-                  {formatQuota(apiKey.remain_quota)}
-                  <span className='text-muted-foreground font-normal'>
-                    {' / '}
-                    {formatQuota(total)}
-                  </span>
-                </span>
-              )}
+            <div className='space-y-1.5'>
+              <span className='text-muted-foreground text-xs'>
+                {t('Quota')}
+              </span>
+              <ApiKeyQuotaCell apiKey={apiKey} className='w-full' />
             </div>
           </div>
         )

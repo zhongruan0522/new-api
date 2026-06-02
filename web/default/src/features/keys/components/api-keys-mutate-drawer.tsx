@@ -43,7 +43,6 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
-import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import {
   Sheet,
   SheetClose,
@@ -80,6 +79,7 @@ import {
   ApiKeyGroupCombobox,
   type ApiKeyGroupOption,
 } from './api-key-group-combobox'
+import { ApiKeyQuotaTypeCombobox } from './api-key-quota-type-combobox'
 import { useApiKeys } from './api-keys-provider'
 
 type ApiKeyMutateDrawerProps = {
@@ -258,6 +258,28 @@ export function ApiKeysMutateDrawer({
   const quotaInputStep = tokensOnly ? 1 : 0.01
   const selectedGroup = form.watch('group')
   const quotaType = form.watch('quota_type')
+  const quotaTypeOptions = [
+    {
+      value: 0,
+      label: t('Unlimited Quota'),
+      description: t('No quota cap; usage still depends on account balance.'),
+    },
+    {
+      value: 1,
+      label: t('Permanent Quota'),
+      description: t('A fixed quota that remains available until consumed.'),
+    },
+    {
+      value: 2,
+      label: t('Hourly Reset Quota'),
+      description: t('Quota resets after each configured hour window.'),
+    },
+    {
+      value: 3,
+      label: t('Hourly + Days Reset Quota'),
+      description: t('Quota resets by hour window and day cycle.'),
+    },
+  ]
 
   return (
     <Sheet
@@ -457,11 +479,11 @@ export function ApiKeysMutateDrawer({
                   <FormItem>
                     <FormLabel>{t('Quota Type')}</FormLabel>
                     <FormControl>
-                      <NativeSelect
-                        className='w-full'
-                        value={String(field.value)}
-                        onChange={(e) => {
-                          const nextQuotaType = Number(e.target.value)
+                      <ApiKeyQuotaTypeCombobox
+                        options={quotaTypeOptions}
+                        value={field.value}
+                        placeholder={t('Select quota type')}
+                        onValueChange={(nextQuotaType) => {
                           field.onChange(nextQuotaType)
                           form.setValue(
                             'unlimited_quota',
@@ -469,20 +491,7 @@ export function ApiKeysMutateDrawer({
                             { shouldDirty: true }
                           )
                         }}
-                      >
-                        <NativeSelectOption value='0'>
-                          {t('Unlimited Quota')}
-                        </NativeSelectOption>
-                        <NativeSelectOption value='1'>
-                          {t('Permanent Quota')}
-                        </NativeSelectOption>
-                        <NativeSelectOption value='2'>
-                          {t('Hourly Reset Quota')}
-                        </NativeSelectOption>
-                        <NativeSelectOption value='3'>
-                          {t('Hourly + Days Reset Quota')}
-                        </NativeSelectOption>
-                      </NativeSelect>
+                      />
                     </FormControl>
                     <FormDescription>
                       {t(

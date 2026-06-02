@@ -17,24 +17,204 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { useState, useCallback } from 'react'
+import type { TFunction } from 'i18next'
 import { Check, Copy, Loader2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { copyToClipboard } from '@/lib/copy-to-clipboard'
+import { formatQuota } from '@/lib/format'
+import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover'
+import { Progress } from '@/components/ui/progress'
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
-import { StatusBadge } from '@/components/status-badge'
+import { StatusBadge, type StatusVariant } from '@/components/status-badge'
 import { type ApiKey } from '../types'
 import { useApiKeys } from './api-keys-provider'
+
+const MASKED_API_KEY = `sk-${'*'.repeat(12)}`
+
+type QuotaLimit = {
+  expired: boolean
+  remaining: number
+  total: number
+  used: number
+}
+
+type QuotaDetailLine = {
+  labelKey: string
+  value: string
+}
+
+type QuotaUsage = {
+  detailLines: QuotaDetailLine[]
+  primaryLabelKey: string
+  quotaType: number
+  quotaTypeLabelKey: string
+  quotaTypeVariant: StatusVariant
+  remaining: number
+  total: number
+  used: number
+}
+
+function getQuotaProgressColor(percentage: number): string {
+  if (percentage <= 10) return '[&_[data-slot=progress-indicator]]:bg-rose-500'
+  if (percentage <= 30) return '[&_[data-slot=progress-indicator]]:bg-amber-500'
+  return '[&_[data-slot=progress-indicator]]:bg-emerald-500'
+}
+
+function getEffectiveQuotaLimit(
+  total: number,
+  used: number,
+  startTime: number,
+  durationSeconds: number,
+  nowSeconds: number
+): QuotaLimit {
+  const expired = startTime > 0 && nowSeconds >= startTime + durationSeconds
+  const effectiveUsed = expired ? 0 : used
+
+  return {
+    expired,
+    remaining: Math.max(total - effectiveUsed, 0),
+    total,
+    used: effectiveUsed,
+  }
+}
+
+function resolveQuotaType(apiKey: ApiKey): number {
+  if (apiKey.quota_type === 0 && !apiKey.unlimited_quota) return 1
+  return apiKey.quota_type ?? (apiKey.unlimited_quota ? 0 : 1)
+}
+
+function getQuotaTypeMeta(quotaType: number): {
+  labelKey: string
+  variant: StatusVariant
+} {
+  if (quotaType === 0) {
+    return { labelKey: 'Unlimited Quota', variant: 'neutral' }
+  }
+  if (quotaType === 2) {
+    return { labelKey: 'Hourly Reset Quota', variant: 'info' }
+  }
+  if (quotaType === 3) {
+    return { labelKey: 'Hourly + Days Reset Quota', variant: 'purple' }
+  }
+  return { labelKey: 'Permanent Quota', variant: 'blue' }
+}
+
+function buildQuotaUsage(apiKey: ApiKey): QuotaUsage {
+  const quotaType = resolveQuotaType(apiKey)
+  const quotaTypeMeta = getQuotaTypeMeta(quotaType)
+
+  if (quotaType === 2 || quotaType === 3) {
+    const nowSeconds = Math.floor(Date.now() / 1000)
+    const windowHours = apiKey.window_hours || 1
+    const windowLimit = getEffectiveQuotaLimit(
+      apiKey.window_quota || 0,
+      apiKey.window_used_quota || 0,
+      apiKey.window_start_time || 0,
+      windowHours * 3600,
+      nowSeconds
+    )
+
+    if (quotaType === 2) {
+      return {
+        detailLines: [
+          {
+            labelKey: 'Window quota',
+            value: `${formatQuota(windowLimit.remaining)} / ${formatQuota(windowLimit.total)}`,
+          },
+          {
+            labelKey: 'Reset window',
+            value: `Every ${windowHours}h`,
+          },
+        ],
+        primaryLabelKey: 'Window quota',
+        quotaType,
+        quotaTypeLabelKey: quotaTypeMeta.labelKey,
+        quotaTypeVariant: quotaTypeMeta.variant,
+        remaining: windowLimit.remaining,
+        total: windowLimit.total,
+        used: windowLimit.used,
+      }
+    }
+
+    const cycleDays = apiKey.cycle_days || 1
+    const cycleLimit = getEffectiveQuotaLimit(
+      apiKey.cycle_quota || 0,
+      apiKey.cycle_used_quota || 0,
+      apiKey.cycle_start_time || 0,
+      cycleDays * 86400,
+      nowSeconds
+    )
+    const primaryLimit =
+      windowLimit.remaining <= cycleLimit.remaining ? windowLimit : cycleLimit
+    const primaryLabelKey =
+      windowLimit.remaining <= cycleLimit.remaining
+        ? 'Window quota'
+        : 'Cycle quota'
+
+    return {
+      detailLines: [
+        {
+          labelKey: 'Window quota',
+          value: `${formatQuota(windowLimit.remaining)} / ${formatQuota(windowLimit.total)}`,
+        },
+        {
+          labelKey: 'Reset window',
+          value: `Every ${windowHours}h`,
+        },
+        {
+          labelKey: 'Cycle quota',
+          value: `${formatQuota(cycleLimit.remaining)} / ${formatQuota(cycleLimit.total)}`,
+        },
+        {
+          labelKey: 'Reset cycle',
+          value: `Every ${cycleDays}d`,
+        },
+      ],
+      primaryLabelKey,
+      quotaType,
+      quotaTypeLabelKey: quotaTypeMeta.labelKey,
+      quotaTypeVariant: quotaTypeMeta.variant,
+      remaining: primaryLimit.remaining,
+      total: primaryLimit.total,
+      used: primaryLimit.used,
+    }
+  }
+
+  const used = apiKey.used_quota || 0
+  const remaining = apiKey.remain_quota || 0
+
+  return {
+    detailLines: [],
+    primaryLabelKey: 'Permanent quota',
+    quotaType,
+    quotaTypeLabelKey: quotaTypeMeta.labelKey,
+    quotaTypeVariant: quotaTypeMeta.variant,
+    remaining,
+    total: used + remaining,
+    used,
+  }
+}
+
+function formatQuotaScheduleValue(value: string, t: TFunction) {
+  const hourMatch = value.match(/^Every (\d+)h$/)
+  if (hourMatch) return t('Every {{count}}h', { count: Number(hourMatch[1]) })
+
+  const dayMatch = value.match(/^Every (\d+)d$/)
+  if (dayMatch) return t('Every {{count}}d', { count: Number(dayMatch[1]) })
+
+  return value
+}
 
 export function ApiKeyCell({ apiKey }: { apiKey: ApiKey }) {
   const { t } = useTranslation()
@@ -50,7 +230,6 @@ export function ApiKeyCell({ apiKey }: { apiKey: ApiKey }) {
   const isLoading = !!loadingKeys[apiKey.id]
   const resolvedFullKey = resolvedKeys[apiKey.id]
   const isCopied = copiedKeyId === apiKey.id
-  const maskedKey = `sk-${apiKey.key}`
 
   const handlePopoverOpen = useCallback(
     (open: boolean) => {
@@ -87,7 +266,7 @@ export function ApiKeyCell({ apiKey }: { apiKey: ApiKey }) {
             />
           }
         >
-          {maskedKey}
+          {MASKED_API_KEY}
         </PopoverTrigger>
         <PopoverContent
           className='w-auto max-w-[min(90vw,28rem)]'
@@ -105,7 +284,7 @@ export function ApiKeyCell({ apiKey }: { apiKey: ApiKey }) {
             ) : (
               <input
                 readOnly
-                value={resolvedFullKey || maskedKey}
+                value={resolvedFullKey || MASKED_API_KEY}
                 autoFocus
                 onFocus={(e) => e.target.select()}
                 className='bg-muted/50 w-full min-w-[280px] rounded-md border px-3 py-2 font-mono text-xs outline-none'
@@ -149,6 +328,112 @@ export function ApiKeyCell({ apiKey }: { apiKey: ApiKey }) {
         </TooltipContent>
       </Tooltip>
     </div>
+  )
+}
+
+export function ApiKeyQuotaCell({
+  apiKey,
+  className,
+}: {
+  apiKey: ApiKey
+  className?: string
+}) {
+  const { t } = useTranslation()
+  const usage = buildQuotaUsage(apiKey)
+  const percentage = usage.total > 0 ? (usage.remaining / usage.total) * 100 : 0
+
+  if (usage.quotaType === 0) {
+    return (
+      <Tooltip>
+        <TooltipTrigger
+          render={<span className={cn('inline-flex', className)} />}
+        >
+          <StatusBadge
+            label={t('Unlimited')}
+            variant='neutral'
+            copyable={false}
+          />
+        </TooltipTrigger>
+        <TooltipContent side='top' className='max-w-xs'>
+          <div className='space-y-1 text-xs'>
+            <StatusBadge
+              label={t(usage.quotaTypeLabelKey)}
+              variant={usage.quotaTypeVariant}
+              copyable={false}
+            />
+            <div className='text-muted-foreground'>
+              {t('No quota cap; usage still depends on account balance.')}
+            </div>
+            <div>
+              {t('Used:')} {formatQuota(usage.used)}
+            </div>
+          </div>
+        </TooltipContent>
+      </Tooltip>
+    )
+  }
+
+  return (
+    <Tooltip>
+      <TooltipTrigger
+        render={
+          <div
+            className={cn(
+              'w-[170px] cursor-default space-y-1 rounded-md p-1',
+              className
+            )}
+          />
+        }
+      >
+        <div className='flex items-center justify-between gap-2'>
+          <span className='truncate text-xs font-medium tabular-nums'>
+            {formatQuota(usage.remaining)}
+          </span>
+          <StatusBadge
+            label={t(usage.primaryLabelKey)}
+            variant={usage.quotaTypeVariant}
+            copyable={false}
+            className='max-w-24'
+          />
+        </div>
+        <Progress
+          value={percentage}
+          className={cn('h-1.5', getQuotaProgressColor(percentage))}
+        />
+        <div className='text-muted-foreground flex items-center justify-between gap-2 text-[10px]'>
+          <span className='truncate tabular-nums'>
+            {formatQuota(usage.total)}
+          </span>
+          <span className='shrink-0 tabular-nums'>
+            {percentage.toFixed(0)}%
+          </span>
+        </div>
+      </TooltipTrigger>
+      <TooltipContent side='top' className='max-w-xs'>
+        <div className='space-y-1 text-xs'>
+          <StatusBadge
+            label={t(usage.quotaTypeLabelKey)}
+            variant={usage.quotaTypeVariant}
+            copyable={false}
+          />
+          <div>
+            {t('Used:')} {formatQuota(usage.used)}
+          </div>
+          <div>
+            {t('Remaining:')} {formatQuota(usage.remaining)} (
+            {percentage.toFixed(1)}%)
+          </div>
+          <div>
+            {t('Total:')} {formatQuota(usage.total)}
+          </div>
+          {usage.detailLines.map((line) => (
+            <div key={line.labelKey}>
+              {t(line.labelKey)}: {formatQuotaScheduleValue(line.value, t)}
+            </div>
+          ))}
+        </div>
+      </TooltipContent>
+    </Tooltip>
   )
 }
 

@@ -52,7 +52,9 @@ export const apiKeySchema = z.object({
   cycle_days: z.number().optional().default(0),
   cycle_quota: z.number().optional().default(0),
   window_used_quota: z.number().optional().default(0),
+  window_start_time: z.number().optional().default(0),
   cycle_used_quota: z.number().optional().default(0),
+  cycle_start_time: z.number().optional().default(0),
 })
 
 export type ApiKey = z.infer<typeof apiKeySchema>

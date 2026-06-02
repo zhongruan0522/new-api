@@ -20,10 +20,9 @@ import { useQuery } from '@tanstack/react-query'
 import { type ColumnDef } from '@tanstack/react-table'
 import { useTranslation } from 'react-i18next'
 import { getUserGroups } from '@/lib/api'
-import { formatQuota, formatTimestampToDate } from '@/lib/format'
+import { formatTimestampToDate } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Progress } from '@/components/ui/progress'
 import {
   Tooltip,
   TooltipContent,
@@ -36,16 +35,11 @@ import { API_KEY_STATUSES } from '../constants'
 import { type ApiKey } from '../types'
 import {
   ApiKeyCell,
+  ApiKeyQuotaCell,
   ModelLimitsCell,
   IpRestrictionsCell,
 } from './api-keys-cells'
 import { DataTableRowActions } from './data-table-row-actions'
-
-function getQuotaProgressColor(percentage: number): string {
-  if (percentage <= 10) return '[&_[data-slot=progress-indicator]]:bg-rose-500'
-  if (percentage <= 30) return '[&_[data-slot=progress-indicator]]:bg-amber-500'
-  return '[&_[data-slot=progress-indicator]]:bg-emerald-500'
-}
 
 function useGroupRatios(): Record<string, number> {
   const { data } = useQuery({
@@ -139,56 +133,7 @@ export function useApiKeysColumns(): ColumnDef<ApiKey>[] {
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title={t('Quota')} />
       ),
-      cell: ({ row }) => {
-        const apiKey = row.original
-        if (apiKey.unlimited_quota) {
-          return (
-            <StatusBadge
-              label={t('Unlimited')}
-              variant='neutral'
-              copyable={false}
-            />
-          )
-        }
-
-        const used = apiKey.used_quota
-        const remaining = apiKey.remain_quota
-        const total = used + remaining
-        const percentage = total > 0 ? (remaining / total) * 100 : 0
-
-        return (
-          <Tooltip>
-            <TooltipTrigger render={<div className='w-[150px] space-y-1' />}>
-              <div className='flex justify-between text-xs'>
-                <span className='font-medium tabular-nums'>
-                  {formatQuota(remaining)}
-                </span>
-                <span className='text-muted-foreground tabular-nums'>
-                  {formatQuota(total)}
-                </span>
-              </div>
-              <Progress
-                value={percentage}
-                className={cn('h-1.5', getQuotaProgressColor(percentage))}
-              />
-            </TooltipTrigger>
-            <TooltipContent>
-              <div className='space-y-1 text-xs'>
-                <div>
-                  {t('Used:')} {formatQuota(used)}
-                </div>
-                <div>
-                  {t('Remaining:')} {formatQuota(remaining)} (
-                  {percentage.toFixed(1)}%)
-                </div>
-                <div>
-                  {t('Total:')} {formatQuota(total)}
-                </div>
-              </div>
-            </TooltipContent>
-          </Tooltip>
-        )
-      },
+      cell: ({ row }) => <ApiKeyQuotaCell apiKey={row.original} />,
       meta: { label: t('Quota') },
     },
     {
