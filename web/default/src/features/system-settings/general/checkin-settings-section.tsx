@@ -16,11 +16,14 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
+import { useMemo } from 'react'
 import { z } from 'zod'
 import { useForm, type Resolver } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
+import { getCurrencyLabel } from '@/lib/currency'
+import { parseQuotaFromDollars, quotaUnitsToDollars } from '@/lib/format'
 import {
   Form,
   FormControl,
@@ -43,8 +46,8 @@ import { useUpdateOption } from '../hooks/use-update-option'
 
 const schema = z.object({
   enabled: z.boolean(),
-  minQuota: z.coerce.number().int().min(0),
-  maxQuota: z.coerce.number().int().min(0),
+  minQuota: z.coerce.number().min(0),
+  maxQuota: z.coerce.number().min(0),
 })
 
 type Values = z.infer<typeof schema>
@@ -60,14 +63,19 @@ export function CheckinSettingsSection({
 }) {
   const { t } = useTranslation()
   const updateOption = useUpdateOption()
+  const quotaUnitLabel = getCurrencyLabel()
+  const displayDefaults = useMemo(
+    () => ({
+      enabled: defaultValues.enabled,
+      minQuota: quotaUnitsToDollars(defaultValues.minQuota),
+      maxQuota: quotaUnitsToDollars(defaultValues.maxQuota),
+    }),
+    [defaultValues.enabled, defaultValues.maxQuota, defaultValues.minQuota]
+  )
 
   const form = useForm<Values>({
     resolver: zodResolver(schema) as unknown as Resolver<Values>,
-    defaultValues: {
-      enabled: defaultValues.enabled,
-      minQuota: defaultValues.minQuota,
-      maxQuota: defaultValues.maxQuota,
-    },
+    defaultValues: displayDefaults,
   })
 
   const { isDirty, isSubmitting } = form.formState
@@ -76,24 +84,24 @@ export function CheckinSettingsSection({
   async function onSubmit(values: Values) {
     const updates: Array<{ key: string; value: string }> = []
 
-    if (values.enabled !== defaultValues.enabled) {
+    if (values.enabled !== displayDefaults.enabled) {
       updates.push({
         key: 'checkin_setting.enabled',
         value: String(values.enabled),
       })
     }
 
-    if (values.minQuota !== defaultValues.minQuota) {
+    if (values.minQuota !== displayDefaults.minQuota) {
       updates.push({
         key: 'checkin_setting.min_quota',
-        value: String(values.minQuota),
+        value: String(parseQuotaFromDollars(values.minQuota)),
       })
     }
 
-    if (values.maxQuota !== defaultValues.maxQuota) {
+    if (values.maxQuota !== displayDefaults.maxQuota) {
       updates.push({
         key: 'checkin_setting.max_quota',
-        value: String(values.maxQuota),
+        value: String(parseQuotaFromDollars(values.maxQuota)),
       })
     }
 
@@ -155,12 +163,15 @@ export function CheckinSettingsSection({
                       <Input
                         type='number'
                         min={0}
+                        step='any'
                         placeholder={t('1000')}
                         {...field}
                       />
                     </FormControl>
                     <FormDescription>
                       {t('Minimum quota amount awarded for check-in')}
+                      {' · '}
+                      {t('Displayed in {{unit}}', { unit: quotaUnitLabel })}
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -177,12 +188,15 @@ export function CheckinSettingsSection({
                       <Input
                         type='number'
                         min={0}
+                        step='any'
                         placeholder={t('10000')}
                         {...field}
                       />
                     </FormControl>
                     <FormDescription>
                       {t('Maximum quota amount awarded for check-in')}
+                      {' · '}
+                      {t('Displayed in {{unit}}', { unit: quotaUnitLabel })}
                     </FormDescription>
                     <FormMessage />
                   </FormItem>

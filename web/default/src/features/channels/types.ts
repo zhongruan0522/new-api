@@ -84,6 +84,8 @@ export interface ChannelSettings {
   thinking_to_content?: boolean
   proxy?: string
   pass_through_body_enabled?: boolean
+  pass_through_headers_enabled?: boolean
+  openai_wire_api?: 'both' | 'chat' | 'responses'
   system_prompt?: string
   system_prompt_override?: boolean
 }
@@ -93,6 +95,7 @@ export interface ChannelOtherSettings {
   vertex_key_type?: 'json' | 'api_key'
   openrouter_enterprise?: boolean
   aws_key_type?: 'ak_sk' | 'api_key'
+  image_auto_convert_to_url_mode?: 'off' | 'mcp'
   allow_service_tier?: boolean
   disable_store?: boolean
   allow_safety_identifier?: boolean

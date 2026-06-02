@@ -59,6 +59,8 @@ export const channelFormSchema = z.object({
   thinking_to_content: z.boolean().optional(),
   proxy: z.string().optional(),
   pass_through_body_enabled: z.boolean().optional(),
+  pass_through_headers_enabled: z.boolean().optional(),
+  openai_wire_api: z.enum(['both', 'chat', 'responses']).optional(),
   system_prompt: z.string().optional(),
   system_prompt_override: z.boolean().optional(),
   // Type-specific settings (stored in settings JSON)
@@ -66,6 +68,7 @@ export const channelFormSchema = z.object({
   vertex_key_type: z.enum(['json', 'api_key']).optional(), // Vertex AI specific
   aws_key_type: z.enum(['ak_sk', 'api_key']).optional(), // AWS specific
   azure_responses_version: z.string().optional(), // Azure specific
+  image_auto_convert_to_url_mode: z.enum(['off', 'mcp']).optional(),
   // Field passthrough controls (stored in settings JSON)
   allow_service_tier: z.boolean().optional(), // OpenAI/Anthropic
   disable_store: z.boolean().optional(), // OpenAI only
@@ -117,6 +120,8 @@ export const CHANNEL_FORM_DEFAULT_VALUES: ChannelFormValues = {
   thinking_to_content: false,
   proxy: '',
   pass_through_body_enabled: false,
+  pass_through_headers_enabled: true,
+  openai_wire_api: 'both',
   system_prompt: '',
   system_prompt_override: false,
   // Type-specific settings
@@ -124,6 +129,7 @@ export const CHANNEL_FORM_DEFAULT_VALUES: ChannelFormValues = {
   vertex_key_type: 'json',
   aws_key_type: 'ak_sk',
   azure_responses_version: '',
+  image_auto_convert_to_url_mode: 'off',
   // Field passthrough controls
   allow_service_tier: false,
   disable_store: false,
@@ -153,6 +159,8 @@ export function transformChannelToFormDefaults(
     thinking_to_content: false,
     proxy: '',
     pass_through_body_enabled: false,
+    pass_through_headers_enabled: true,
+    openai_wire_api: 'both' as const,
     system_prompt: '',
     system_prompt_override: false,
   }
@@ -165,6 +173,13 @@ export function transformChannelToFormDefaults(
         thinking_to_content: parsed.thinking_to_content || false,
         proxy: parsed.proxy || '',
         pass_through_body_enabled: parsed.pass_through_body_enabled || false,
+        pass_through_headers_enabled:
+          parsed.pass_through_headers_enabled !== false,
+        openai_wire_api:
+          parsed.openai_wire_api === 'chat' ||
+          parsed.openai_wire_api === 'responses'
+            ? parsed.openai_wire_api
+            : 'both',
         system_prompt: parsed.system_prompt || '',
         system_prompt_override: parsed.system_prompt_override || false,
       }
@@ -179,6 +194,7 @@ export function transformChannelToFormDefaults(
   let azureResponsesVersion = ''
   let isEnterpriseAccount = false
   let awsKeyType: 'ak_sk' | 'api_key' = 'ak_sk'
+  let imageAutoConvertToUrlMode: 'off' | 'mcp' = 'off'
   let allowServiceTier = false
   let disableStore = false
   let allowSafetyIdentifier = false
@@ -197,6 +213,11 @@ export function transformChannelToFormDefaults(
       azureResponsesVersion = parsed.azure_responses_version || ''
       isEnterpriseAccount = parsed.openrouter_enterprise === true
       awsKeyType = parsed.aws_key_type || 'ak_sk'
+      imageAutoConvertToUrlMode =
+        parsed.image_auto_convert_to_url_mode === 'mcp' ||
+        parsed.image_auto_convert_to_url === true
+          ? 'mcp'
+          : 'off'
       allowServiceTier = parsed.allow_service_tier === true
       disableStore = parsed.disable_store === true
       allowSafetyIdentifier = parsed.allow_safety_identifier === true
@@ -252,6 +273,7 @@ export function transformChannelToFormDefaults(
     vertex_key_type: vertexKeyType,
     azure_responses_version: azureResponsesVersion,
     aws_key_type: awsKeyType,
+    image_auto_convert_to_url_mode: imageAutoConvertToUrlMode,
     allow_service_tier: allowServiceTier,
     disable_store: disableStore,
     allow_include_obfuscation: allowIncludeObfuscation,
@@ -274,6 +296,9 @@ function buildSettingJSON(formData: ChannelFormValues): string {
     thinking_to_content: formData.thinking_to_content || false,
     proxy: formData.proxy || '',
     pass_through_body_enabled: formData.pass_through_body_enabled || false,
+    pass_through_headers_enabled:
+      formData.pass_through_headers_enabled !== false,
+    openai_wire_api: formData.openai_wire_api || 'both',
     system_prompt: formData.system_prompt || '',
     system_prompt_override: formData.system_prompt_override || false,
   }
@@ -385,6 +410,13 @@ function buildSettingsJSON(formData: ChannelFormValues): string {
       settingsObj.upstream_model_update_last_check_time = 0
     }
   }
+
+  if (formData.image_auto_convert_to_url_mode === 'mcp') {
+    settingsObj.image_auto_convert_to_url_mode = 'mcp'
+  } else {
+    delete settingsObj.image_auto_convert_to_url_mode
+  }
+  delete settingsObj.image_auto_convert_to_url
 
   return JSON.stringify(settingsObj)
 }

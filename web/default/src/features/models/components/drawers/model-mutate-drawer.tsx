@@ -60,7 +60,6 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet'
 import { Switch } from '@/components/ui/switch'
-import { Textarea } from '@/components/ui/textarea'
 import {
   SideDrawerSection,
   sideDrawerContentClassName,
@@ -88,14 +87,12 @@ import type { Model } from '../../types'
 const extendedModelFormSchema = z.object({
   id: z.number().optional(),
   model_name: z.string().min(1, 'Model name is required'),
-  description: z.string(),
   icon: z.string(),
   tags: z.array(z.string()),
   vendor_id: z.number().optional(),
   endpoints: z.string(),
   name_rule: z.number(),
   status: z.boolean(),
-  sync_official: z.boolean(),
   price: z.string().optional(),
   ratio: z.string().optional(),
   cacheRatio: z.string().optional(),
@@ -196,14 +193,12 @@ export function ModelMutateDrawer({
     resolver: zodResolver(extendedModelFormSchema),
     defaultValues: {
       model_name: '',
-      description: '',
       icon: '',
       tags: [],
       vendor_id: undefined,
       endpoints: '',
       name_rule: 0,
       status: true,
-      sync_official: true,
       price: '',
       ratio: '',
       cacheRatio: '',
@@ -245,6 +240,7 @@ export function ModelMutateDrawer({
   }
 
   // Load model data for editing and ratio configuration
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (open && isEditing && modelData?.data) {
       const model = modelData.data
@@ -254,14 +250,12 @@ export function ModelMutateDrawer({
       const baseModelData = {
         id: model.id,
         model_name: model.model_name,
-        description: model.description || '',
         icon: model.icon || '',
         tags: parseModelTags(model.tags),
         vendor_id: model.vendor_id,
         endpoints: model.endpoints || '',
         name_rule: model.name_rule || 0,
         status: model.status === 1,
-        sync_official: model.sync_official === 1,
         price: '',
         ratio: '',
         cacheRatio: '',
@@ -351,14 +345,12 @@ export function ModelMutateDrawer({
       setAdvancedOpen(false)
       form.reset({
         model_name: currentRow?.model_name || '',
-        description: '',
         icon: '',
         tags: [],
         vendor_id: undefined,
         endpoints: '',
         name_rule: 0,
         status: true,
-        sync_official: true,
         price: '',
         ratio: '',
         cacheRatio: '',
@@ -368,6 +360,7 @@ export function ModelMutateDrawer({
       })
     }
   }, [open, isEditing, modelData, currentRow, form, modelSettings])
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const onSubmit = useCallback(
     async (values: ExtendedModelFormValues): Promise<void> => {
@@ -378,7 +371,6 @@ export function ModelMutateDrawer({
           id: isEditing ? currentRow!.id : undefined,
           tags: Array.isArray(values.tags) ? values.tags.join(',') : '',
           status: values.status ? 1 : 0,
-          sync_official: values.sync_official ? 1 : 0,
         }
 
         // Remove ratio fields from model data (they're stored in system settings)
@@ -581,6 +573,7 @@ export function ModelMutateDrawer({
       oldModelName,
       modelSettings,
       updateOption,
+      t,
     ]
   )
 
@@ -637,24 +630,6 @@ export function ModelMutateDrawer({
                     <FormDescription>
                       {t('The unique identifier for this model')}
                     </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name='description'
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{t('Description')}</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        placeholder={t('Describe this model...')}
-                        rows={3}
-                        {...field}
-                      />
-                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -1162,9 +1137,9 @@ export function ModelMutateDrawer({
               )}
             </SideDrawerSection>
 
-            {/* Status & Sync */}
+            {/* Status */}
             <SideDrawerSection>
-              <h3 className='text-sm font-semibold'>{t('Status & Sync')}</h3>
+              <h3 className='text-sm font-semibold'>{t('Status')}</h3>
 
               <FormField
                 control={form.control}
@@ -1177,29 +1152,6 @@ export function ModelMutateDrawer({
                       </FormLabel>
                       <FormDescription>
                         {t('Enable or disable this model')}
-                      </FormDescription>
-                    </div>
-                    <FormControl>
-                      <Switch
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name='sync_official'
-                render={({ field }) => (
-                  <FormItem className={sideDrawerSwitchItemClassName()}>
-                    <div className='flex flex-col gap-0.5'>
-                      <FormLabel className='text-base'>
-                        {t('Official Sync')}
-                      </FormLabel>
-                      <FormDescription>
-                        {t('Sync this model with official upstream')}
                       </FormDescription>
                     </div>
                     <FormControl>

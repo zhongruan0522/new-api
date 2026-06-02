@@ -225,6 +225,7 @@ const MODEL_MAPPING_PREVIEW_FALLBACK: Array<{
 
 const ADVANCED_SETTINGS_EXPANDED_KEY = 'channel-advanced-settings-expanded'
 const UPSTREAM_DETECTED_MODEL_PREVIEW_LIMIT = 8
+const OPENAI_WIRE_API_CHANNEL_TYPES = new Set([1, 4, 6, 25, 26, 35])
 
 function readAdvancedSettingsPreference(): boolean {
   if (typeof window === 'undefined') return false
@@ -246,6 +247,9 @@ function hasAdvancedSettingsValues(values: ChannelFormValues): boolean {
     values.force_format ||
     values.thinking_to_content ||
     values.pass_through_body_enabled ||
+    values.pass_through_headers_enabled === false ||
+    values.openai_wire_api !== 'both' ||
+    values.image_auto_convert_to_url_mode === 'mcp' ||
     values.system_prompt_override ||
     values.claude_beta_query ||
     values.upstream_model_update_check_enabled ||
@@ -3155,7 +3159,109 @@ export function ChannelMutateDrawer({
                           </FormItem>
                         )}
                       />
+
+                      <FormField
+                        control={form.control}
+                        name='pass_through_headers_enabled'
+                        render={({ field }) => (
+                          <FormItem className='flex items-center justify-between px-4 py-3'>
+                            <div className='space-y-0.5'>
+                              <FormLabel>
+                                {t('Pass Through Headers')}
+                              </FormLabel>
+                              <FormDescription>
+                                {t(
+                                  'Pass client request headers upstream and merge them with header overrides'
+                                )}
+                              </FormDescription>
+                            </div>
+                            <FormControl>
+                              <Switch
+                                checked={field.value !== false}
+                                onCheckedChange={field.onChange}
+                              />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
                     </div>
+
+                    {OPENAI_WIRE_API_CHANNEL_TYPES.has(currentType) && (
+                      <FormField
+                        control={form.control}
+                        name='openai_wire_api'
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>{t('OpenAI Wire API')}</FormLabel>
+                            <Select
+                              onValueChange={field.onChange}
+                              value={field.value || 'both'}
+                            >
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent alignItemWithTrigger={false}>
+                                <SelectGroup>
+                                  <SelectItem value='both'>
+                                    {t('Both ChatCompletions and Responses')}
+                                  </SelectItem>
+                                  <SelectItem value='chat'>
+                                    {t('ChatCompletions')}
+                                  </SelectItem>
+                                  <SelectItem value='responses'>
+                                    {t('Responses')}
+                                  </SelectItem>
+                                </SelectGroup>
+                              </SelectContent>
+                            </Select>
+                            <FormDescription>
+                              {t(
+                                'Select the upstream OpenAI wire format used by this channel'
+                              )}
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    )}
+
+                    <FormField
+                      control={form.control}
+                      name='image_auto_convert_to_url_mode'
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{t('Multimodal conversion')}</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            value={field.value || 'off'}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent alignItemWithTrigger={false}>
+                              <SelectGroup>
+                                <SelectItem value='off'>
+                                  {t('Disabled')}
+                                </SelectItem>
+                                <SelectItem value='mcp'>
+                                  {t('MCP URL mode')}
+                                </SelectItem>
+                              </SelectGroup>
+                            </SelectContent>
+                          </Select>
+                          <FormDescription>
+                            {t(
+                              'For text-only upstream models, append media URLs to the user message for MCP or tool access'
+                            )}
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
                     <FormField
                       control={form.control}

@@ -16,22 +16,17 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { memo } from 'react'
+import { memo, useCallback, useState } from 'react'
 import { type UseFormReturn } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form'
-import { Textarea } from '@/components/ui/textarea'
+import { Form } from '@/components/ui/form'
 import { SettingsForm } from '../components/settings-form-layout'
 import { SettingsPageActionsPortal } from '../components/settings-page-context'
+import {
+  ModelRatioVisualEditor,
+  type ModelRatioField,
+} from './model-ratio-visual-editor'
 
 type ModelFormValues = {
   ModelPrice: string
@@ -52,64 +47,6 @@ type ModelRatioFormProps = {
   isResetting: boolean
 }
 
-type RatioTextareaConfig = {
-  name: keyof ModelFormValues
-  label: string
-  description: string
-  rows?: number
-}
-
-const ratioFields: RatioTextareaConfig[] = [
-  {
-    name: 'ModelPrice',
-    label: 'Model fixed pricing',
-    description:
-      'JSON map of model to USD cost per request. Takes precedence over ratio based billing.',
-  },
-  {
-    name: 'ModelRatio',
-    label: 'Model ratio',
-    description: 'JSON map of model to quota billing multiplier.',
-  },
-  {
-    name: 'CacheRatio',
-    label: 'Prompt cache ratio',
-    description: 'JSON map used when upstream cache hits occur.',
-  },
-  {
-    name: 'CreateCacheRatio',
-    label: 'Create cache ratio',
-    description:
-      'JSON map applied when creating cache entries for supported models.',
-  },
-  {
-    name: 'CompletionRatio',
-    label: 'Completion ratio',
-    description:
-      'JSON map for custom completion endpoint output multipliers.',
-  },
-  {
-    name: 'AudioRatio',
-    label: 'Audio ratio',
-    description:
-      'JSON map for audio input multipliers where supported by upstream models.',
-    rows: 6,
-  },
-  {
-    name: 'AudioCompletionRatio',
-    label: 'Audio completion ratio',
-    description: 'JSON map for audio output completion multipliers.',
-    rows: 6,
-  },
-  {
-    name: 'ContextPricing',
-    label: 'Context pricing',
-    description:
-      'JSON map for context-token segment pricing overrides.',
-    rows: 8,
-  },
-]
-
 export const ModelRatioForm = memo(function ModelRatioForm({
   form,
   onSave,
@@ -118,6 +55,22 @@ export const ModelRatioForm = memo(function ModelRatioForm({
   isResetting,
 }: ModelRatioFormProps) {
   const { t } = useTranslation()
+  const [isEditorValid, setIsEditorValid] = useState(true)
+  const values = form.watch()
+
+  const handleFieldChange = useCallback(
+    (field: ModelRatioField, value: string) => {
+      form.setValue(field, value, {
+        shouldDirty: true,
+        shouldValidate: true,
+      })
+    },
+    [form]
+  )
+
+  const handleValidityChange = useCallback((isValid: boolean) => {
+    setIsEditorValid(isValid)
+  }, [])
 
   return (
     <Form {...form}>
@@ -135,29 +88,24 @@ export const ModelRatioForm = memo(function ModelRatioForm({
           type='button'
           size='sm'
           onClick={form.handleSubmit(onSave)}
-          disabled={isSaving}
+          disabled={isSaving || !isEditorValid}
         >
           {isSaving ? t('Saving...') : t('Save model prices')}
         </Button>
       </SettingsPageActionsPortal>
       <SettingsForm onSubmit={form.handleSubmit(onSave)}>
-        {ratioFields.map((config) => (
-          <FormField
-            key={config.name}
-            control={form.control}
-            name={config.name}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>{t(config.label)}</FormLabel>
-                <FormControl>
-                  <Textarea rows={config.rows ?? 8} {...field} />
-                </FormControl>
-                <FormDescription>{t(config.description)}</FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        ))}
+        <ModelRatioVisualEditor
+          modelPrice={values.ModelPrice}
+          modelRatio={values.ModelRatio}
+          cacheRatio={values.CacheRatio}
+          createCacheRatio={values.CreateCacheRatio}
+          completionRatio={values.CompletionRatio}
+          audioRatio={values.AudioRatio}
+          audioCompletionRatio={values.AudioCompletionRatio}
+          contextPricing={values.ContextPricing}
+          onChange={handleFieldChange}
+          onValidityChange={handleValidityChange}
+        />
       </SettingsForm>
     </Form>
   )

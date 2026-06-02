@@ -16,11 +16,13 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import type { ChangeEvent } from 'react'
+import { useMemo, type ChangeEvent } from 'react'
 import * as z from 'zod'
 import type { Resolver } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useTranslation } from 'react-i18next'
+import { getCurrencyLabel } from '@/lib/currency'
+import { parseQuotaFromDollars, quotaUnitsToDollars } from '@/lib/format'
 import {
   Form,
   FormControl,
@@ -65,6 +67,23 @@ type QuotaSettingsSectionProps = {
 export function QuotaSettingsSection({ defaultValues }: QuotaSettingsSectionProps) {
   const { t } = useTranslation()
   const updateOption = useUpdateOption()
+  const quotaUnitLabel = getCurrencyLabel()
+  const displayDefaultValues = useMemo(
+    () => ({
+      ...defaultValues,
+      QuotaForNewUser: quotaUnitsToDollars(defaultValues.QuotaForNewUser),
+      PreConsumedQuota: quotaUnitsToDollars(defaultValues.PreConsumedQuota),
+      QuotaForInviter: quotaUnitsToDollars(defaultValues.QuotaForInviter),
+      QuotaForInvitee: quotaUnitsToDollars(defaultValues.QuotaForInvitee),
+      quota_setting: {
+        ...defaultValues.quota_setting,
+        free_model_pre_consumed_quota: quotaUnitsToDollars(
+          defaultValues.quota_setting.free_model_pre_consumed_quota
+        ),
+      },
+    }),
+    [defaultValues]
+  )
   const handleNumberChange =
     (onChange: (value: number | string) => void) =>
     (event: ChangeEvent<HTMLInputElement>) => {
@@ -80,12 +99,23 @@ export function QuotaSettingsSection({ defaultValues }: QuotaSettingsSectionProp
         unknown,
         QuotaFormValues
       >,
-      defaultValues,
+      defaultValues: displayDefaultValues,
       onSubmit: async (_data, changedFields) => {
+        const quotaFieldNames = new Set([
+          'QuotaForNewUser',
+          'PreConsumedQuota',
+          'QuotaForInviter',
+          'QuotaForInvitee',
+          'quota_setting.free_model_pre_consumed_quota',
+        ])
+
         for (const [key, value] of Object.entries(changedFields)) {
+          const submitValue = quotaFieldNames.has(key)
+            ? parseQuotaFromDollars(Number(value))
+            : value
           await updateOption.mutateAsync({
             key,
-            value: value as string | number | boolean,
+            value: submitValue as string | number | boolean,
           })
         }
       },
@@ -112,6 +142,7 @@ export function QuotaSettingsSection({ defaultValues }: QuotaSettingsSectionProp
                   <FormControl>
                     <Input
                       type='number'
+                      step='any'
                       value={field.value ?? ''}
                       onChange={handleNumberChange(field.onChange)}
                       name={field.name}
@@ -121,6 +152,8 @@ export function QuotaSettingsSection({ defaultValues }: QuotaSettingsSectionProp
                   </FormControl>
                   <FormDescription>
                     {t('Initial quota given to new users')}
+                    {' · '}
+                    {t('Displayed in {{unit}}', { unit: quotaUnitLabel })}
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -136,6 +169,7 @@ export function QuotaSettingsSection({ defaultValues }: QuotaSettingsSectionProp
                   <FormControl>
                     <Input
                       type='number'
+                      step='any'
                       value={field.value ?? ''}
                       onChange={handleNumberChange(field.onChange)}
                       name={field.name}
@@ -145,6 +179,8 @@ export function QuotaSettingsSection({ defaultValues }: QuotaSettingsSectionProp
                   </FormControl>
                   <FormDescription>
                     {t('Quota consumed before charging users')}
+                    {' · '}
+                    {t('Displayed in {{unit}}', { unit: quotaUnitLabel })}
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -160,6 +196,7 @@ export function QuotaSettingsSection({ defaultValues }: QuotaSettingsSectionProp
                   <FormControl>
                     <Input
                       type='number'
+                      step='any'
                       value={field.value ?? ''}
                       onChange={handleNumberChange(field.onChange)}
                       name={field.name}
@@ -169,6 +206,8 @@ export function QuotaSettingsSection({ defaultValues }: QuotaSettingsSectionProp
                   </FormControl>
                   <FormDescription>
                     {t('Quota given to users who invite others')}
+                    {' · '}
+                    {t('Displayed in {{unit}}', { unit: quotaUnitLabel })}
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -184,6 +223,7 @@ export function QuotaSettingsSection({ defaultValues }: QuotaSettingsSectionProp
                   <FormControl>
                     <Input
                       type='number'
+                      step='any'
                       value={field.value ?? ''}
                       onChange={handleNumberChange(field.onChange)}
                       name={field.name}
@@ -193,6 +233,8 @@ export function QuotaSettingsSection({ defaultValues }: QuotaSettingsSectionProp
                   </FormControl>
                   <FormDescription>
                     {t('Quota given to invited users')}
+                    {' · '}
+                    {t('Displayed in {{unit}}', { unit: quotaUnitLabel })}
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -208,6 +250,7 @@ export function QuotaSettingsSection({ defaultValues }: QuotaSettingsSectionProp
                   <FormControl>
                     <Input
                       type='number'
+                      step='any'
                       value={field.value ?? ''}
                       onChange={handleNumberChange(field.onChange)}
                       name={field.name}
@@ -217,6 +260,8 @@ export function QuotaSettingsSection({ defaultValues }: QuotaSettingsSectionProp
                   </FormControl>
                   <FormDescription>
                     {t('Quota pre-consumed for zero-cost models; set 0 to disable.')}
+                    {' · '}
+                    {t('Displayed in {{unit}}', { unit: quotaUnitLabel })}
                   </FormDescription>
                   <FormMessage />
                 </FormItem>

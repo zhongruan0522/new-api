@@ -26,6 +26,10 @@ export const STATIC_I18N_KEYS = [
   'Rankings',
   'Docs',
   'About',
+  'Key Usage Query',
+  'Multimodal Files',
+  'Order Query',
+  'Dynamic Ratio',
 
   // Sidebar views (drill-in workspaces)
   'System Settings',
