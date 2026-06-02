@@ -16,7 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { Loader2, RefreshCw, DollarSign } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
@@ -32,13 +32,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { getCodexUsage, updateChannelBalance } from '../../api'
+import { updateChannelBalance } from '../../api'
 import { channelsQueryKeys } from '../../lib'
 import { useChannels } from '../channels-provider'
-import {
-  CodexUsageDialog,
-  type CodexUsageDialogData,
-} from './codex-usage-dialog'
 
 type BalanceQueryDialogProps = {
   open: boolean
@@ -57,36 +53,6 @@ export function BalanceQueryDialog({
   const [balanceUpdatedTime, setBalanceUpdatedTime] = useState<number | null>(
     null
   )
-  const [codexUsageResponse, setCodexUsageResponse] =
-    useState<CodexUsageDialogData | null>(null)
-
-  const isCodex = currentRow?.type === 57
-
-  const handleQueryCodexUsage = async () => {
-    const row = currentRow
-    if (!row) return
-    setIsQuerying(true)
-    try {
-      const res = await getCodexUsage(row.id)
-      if (!res.success) {
-        throw new Error(res.message || t('Failed to fetch usage'))
-      }
-      setCodexUsageResponse(res)
-    } catch (error: unknown) {
-      toast.error(
-        error instanceof Error ? error.message : t('Failed to fetch usage')
-      )
-    } finally {
-      setIsQuerying(false)
-    }
-  }
-
-  useEffect(() => {
-    if (!isCodex) return
-    if (!open) return
-    handleQueryCodexUsage()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, isCodex])
 
   if (!currentRow) return null
 
@@ -128,7 +94,6 @@ export function BalanceQueryDialog({
   const handleClose = () => {
     setBalance(null)
     setBalanceUpdatedTime(null)
-    setCodexUsageResponse(null)
     onOpenChange(false)
   }
 
@@ -142,22 +107,6 @@ export function BalanceQueryDialog({
   const formatDate = (timestamp: number) => {
     if (!timestamp) return 'Never'
     return formatTimestampToDate(timestamp)
-  }
-
-  if (isCodex) {
-    return (
-      <CodexUsageDialog
-        open={open}
-        onOpenChange={(v) => {
-          if (!v) handleClose()
-        }}
-        channelName={currentRow.name}
-        channelId={currentRow.id}
-        response={codexUsageResponse}
-        onRefresh={handleQueryCodexUsage}
-        isRefreshing={isQuerying}
-      />
-    )
   }
 
   return (

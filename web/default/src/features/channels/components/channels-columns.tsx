@@ -28,7 +28,6 @@ import {
   Shuffle,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { toast } from 'sonner'
 import { getCurrencyLabel } from '@/lib/currency'
 import {
   formatTimestampToDate,
@@ -50,8 +49,7 @@ import { GroupBadge } from '@/components/group-badge'
 import { StatusBadge, StatusBadgeList } from '@/components/status-badge'
 import { TableId } from '@/components/table-id'
 import { TruncatedText } from '@/components/truncated-text'
-import { getCodexUsage } from '../api'
-import { CHANNEL_STATUS_CONFIG, MODEL_FETCHABLE_TYPES } from '../constants'
+import { CHANNEL_STATUS_CONFIG } from '../constants'
 import {
   formatBalance,
   formatRelativeTime,
@@ -70,15 +68,9 @@ import {
   isTagAggregateRow,
   type TagRow,
 } from '../lib'
-import { parseUpstreamUpdateMeta } from '../lib/upstream-update-utils'
 import type { Channel } from '../types'
-import { useChannels } from './channels-provider'
 import { DataTableRowActions } from './data-table-row-actions'
 import { DataTableTagRowActions } from './data-table-tag-row-actions'
-import {
-  CodexUsageDialog,
-  type CodexUsageDialogData,
-} from './dialogs/codex-usage-dialog'
 import { NumericSpinnerInput } from './numeric-spinner-input'
 
 function parseIonetMeta(otherInfo: string | null | undefined): null | {
@@ -110,64 +102,6 @@ function renderLimitedItems(
       max={maxDisplay}
       renderItem={(item) => item}
     />
-  )
-}
-
-/**
- * Upstream update tags (+N / -N) shown on channel name for model-fetchable channels
- */
-function UpstreamUpdateTags({ channel }: { channel: Channel }) {
-  const { upstream, setCurrentRow } = useChannels()
-  if (!MODEL_FETCHABLE_TYPES.has(channel.type)) return null
-
-  const meta = parseUpstreamUpdateMeta(channel.settings)
-  if (!meta.enabled) return null
-
-  const addCount = meta.pendingAddModels.length
-  const removeCount = meta.pendingRemoveModels.length
-  if (addCount === 0 && removeCount === 0) return null
-
-  return (
-    <div className='flex items-center gap-0.5'>
-      {addCount > 0 && (
-        <StatusBadge
-          label={`+${addCount}`}
-          variant='success'
-          size='sm'
-          copyable={false}
-          className='cursor-pointer'
-          onClick={(e: React.MouseEvent) => {
-            e.stopPropagation()
-            setCurrentRow(channel)
-            upstream.openModal(
-              channel,
-              meta.pendingAddModels,
-              meta.pendingRemoveModels,
-              'add'
-            )
-          }}
-        />
-      )}
-      {removeCount > 0 && (
-        <StatusBadge
-          label={`-${removeCount}`}
-          variant='danger'
-          size='sm'
-          copyable={false}
-          className='cursor-pointer'
-          onClick={(e: React.MouseEvent) => {
-            e.stopPropagation()
-            setCurrentRow(channel)
-            upstream.openModal(
-              channel,
-              meta.pendingAddModels,
-              meta.pendingRemoveModels,
-              'remove'
-            )
-          }}
-        />
-      )}
-    </div>
   )
 }
 
@@ -291,9 +225,6 @@ function BalanceCell({ channel }: { channel: Channel }) {
   const balance = channel.balance || 0
   const usedQuota = channel.used_quota || 0
   const [isUpdating, setIsUpdating] = useState(false)
-  const [codexUsageOpen, setCodexUsageOpen] = useState(false)
-  const [codexUsageResponse, setCodexUsageResponse] =
-    useState<CodexUsageDialogData | null>(null)
   const currencyLabel = getCurrencyLabel()
   const tokenSuffix = currencyLabel === 'Tokens' ? ' Tokens' : ''
   const withSuffix = (value: string) =>
@@ -321,24 +252,6 @@ function BalanceCell({ channel }: { channel: Channel }) {
     if (isUpdating) return
 
     setIsUpdating(true)
-    if (channel.type === 57) {
-      try {
-        const res = await getCodexUsage(channel.id)
-        if (!res.success) {
-          throw new Error(res.message || t('Failed to fetch usage'))
-        }
-        setCodexUsageResponse(res)
-        setCodexUsageOpen(true)
-      } catch (error) {
-        toast.error(
-          error instanceof Error ? error.message : t('Failed to fetch usage')
-        )
-      } finally {
-        setIsUpdating(false)
-      }
-      return
-    }
-
     await handleUpdateChannelBalance(channel.id, queryClient)
     setIsUpdating(false)
   }
@@ -369,19 +282,9 @@ function BalanceCell({ channel }: { channel: Channel }) {
             render={
               <StatusBadge
                 label={
-                  isUpdating
-                    ? t('Updating...')
-                    : channel.type === 57
-                      ? t('Account Info')
-                      : remainingDisplay
+                  isUpdating ? t('Updating...') : remainingDisplay
                 }
-                variant={
-                  channel.type === 57
-                    ? 'info'
-                    : isUpdating
-                      ? 'neutral'
-                      : variant
-                }
+                variant={isUpdating ? 'neutral' : variant}
                 size='sm'
                 copyable={false}
                 className='cursor-pointer'
@@ -391,42 +294,12 @@ function BalanceCell({ channel }: { channel: Channel }) {
           />
           <TooltipContent>
             <p>
-              {channel.type === 57
-                ? t('Click to view Codex usage')
-                : `${t('Remaining:')} ${remainingDisplay}`}
+              {t('Remaining:')} {remainingDisplay}
             </p>
-            {channel.type !== 57 && <p>{t('Click to update balance')}</p>}
+            <p>{t('Click to update balance')}</p>
           </TooltipContent>
         </Tooltip>
       </div>
-
-      <CodexUsageDialog
-        open={codexUsageOpen}
-        onOpenChange={setCodexUsageOpen}
-        channelName={channel.name}
-        channelId={channel.id}
-        response={codexUsageResponse}
-        onRefresh={async () => {
-          if (isUpdating) return
-          setIsUpdating(true)
-          try {
-            const res = await getCodexUsage(channel.id)
-            if (!res.success) {
-              throw new Error(res.message || t('Failed to fetch usage'))
-            }
-            setCodexUsageResponse(res)
-          } catch (error) {
-            toast.error(
-              error instanceof Error
-                ? error.message
-                : t('Failed to fetch usage')
-            )
-          } finally {
-            setIsUpdating(false)
-          }
-        }}
-        isRefreshing={isUpdating}
-      />
     </TooltipProvider>
   )
 }
@@ -565,7 +438,6 @@ export function useChannelsColumns(): ColumnDef<Channel>[] {
                     copyable={false}
                   />
                 )}
-                <UpstreamUpdateTags channel={channel} />
               </div>
               {channel.remark && (
                 <TooltipProvider delay={200}>

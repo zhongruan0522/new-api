@@ -39,7 +39,6 @@ import {
   Plus,
   Eye,
   Link2,
-  RefreshCw,
   ChevronDown,
   Code,
   Boxes,
@@ -55,7 +54,6 @@ import { toast } from 'sonner'
 import { getLobeIcon } from '@/lib/lobe-icon'
 import { cn } from '@/lib/utils'
 import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard'
-import { useHiddenClickUnlock } from '@/hooks/use-hidden-click-unlock'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import {
@@ -121,7 +119,6 @@ import {
   getChannelKey,
   getGroups,
   getPrefillGroups,
-  refreshCodexCredential,
   updateChannel,
 } from '../../api'
 import {
@@ -159,7 +156,6 @@ import {
 } from '../../lib/status-code-risk-guard'
 import type { Channel } from '../../types'
 import { useChannels } from '../channels-provider'
-import { CodexOAuthDialog } from '../dialogs/codex-oauth-dialog'
 import { FetchModelsDialog } from '../dialogs/fetch-models-dialog'
 import {
   MissingModelsConfirmationDialog,
@@ -224,7 +220,6 @@ const MODEL_MAPPING_PREVIEW_FALLBACK: Array<{
 }> = [{ source: 'client-model', target: 'upstream-model' }]
 
 const ADVANCED_SETTINGS_EXPANDED_KEY = 'channel-advanced-settings-expanded'
-const UPSTREAM_DETECTED_MODEL_PREVIEW_LIMIT = 8
 const OPENAI_WIRE_API_CHANNEL_TYPES = new Set([1, 4, 6, 25, 26, 35])
 
 function readAdvancedSettingsPreference(): boolean {
@@ -243,40 +238,14 @@ function hasAdvancedSettingsValues(values: ChannelFormValues): boolean {
     values.priority ||
     values.weight ||
     values.proxy?.trim() ||
-    values.system_prompt?.trim() ||
     values.force_format ||
     values.thinking_to_content ||
     values.pass_through_body_enabled ||
     values.pass_through_headers_enabled === false ||
     values.openai_wire_api !== 'both' ||
     values.image_auto_convert_to_url_mode === 'mcp' ||
-    values.system_prompt_override ||
-    values.claude_beta_query ||
-    values.upstream_model_update_check_enabled ||
-    values.upstream_model_update_auto_sync_enabled ||
-    values.upstream_model_update_ignored_models?.trim()
+    values.claude_beta_query
   )
-}
-
-function parseSettingsRecord(
-  settings: string | undefined
-): Record<string, unknown> {
-  if (!settings?.trim()) return {}
-  try {
-    const parsed = JSON.parse(settings)
-    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-      return parsed as Record<string, unknown>
-    }
-  } catch {
-    return {}
-  }
-  return {}
-}
-
-function formatUnixTime(timestamp: unknown): string {
-  const seconds = Number(timestamp)
-  if (!Number.isFinite(seconds) || seconds <= 0) return '-'
-  return new Date(seconds * 1000).toLocaleString()
 }
 
 function CardHeading({ title, icon }: { title: string; icon?: ReactNode }) {
@@ -316,9 +285,6 @@ export function ChannelMutateDrawer({
   const [fetchModelsDialogOpen, setFetchModelsDialogOpen] = useState(false)
   const [channelKey, setChannelKey] = useState<string | null>(null)
   const [isChannelKeyLoading, setIsChannelKeyLoading] = useState(false)
-  const [codexOAuthDialogOpen, setCodexOAuthDialogOpen] = useState(false)
-  const [isCodexCredentialRefreshing, setIsCodexCredentialRefreshing] =
-    useState(false)
   const initialModelsRef = useRef<string[]>([])
   const initialModelMappingRef = useRef<string>('')
   const initialStatusCodeMappingRef = useRef<string>('')
@@ -408,27 +374,6 @@ export function ChannelMutateDrawer({
   const currentName = form.watch('name')
   const currentModelMapping = form.watch('model_mapping')
   const awsKeyType = form.watch('aws_key_type')
-  const upstreamModelUpdateCheckEnabled = form.watch(
-    'upstream_model_update_check_enabled'
-  )
-  const currentSettings = form.watch('settings')
-  const {
-    unlocked: doubaoApiEditUnlocked,
-    handleClick: handleApiConfigSecretClick,
-    reset: resetDoubaoApiUnlock,
-  } = useHiddenClickUnlock({
-    requiredClicks: 10,
-    disabled: currentType !== 45,
-    onUnlock: () => {
-      toast.info(t('Doubao custom API address editing unlocked'))
-    },
-  })
-
-  useEffect(() => {
-    if (!open) {
-      resetDoubaoApiUnlock()
-    }
-  }, [open, resetDoubaoApiUnlock])
 
   // Helper computed values
   const isBatchMode =
@@ -487,7 +432,10 @@ export function ChannelMutateDrawer({
       label: t(option.label),
       icon: getLobeIcon(`${getChannelTypeIcon(option.value)}.Color`, 16),
     }))
-    if (!options.some((option) => Number(option.value) === currentType)) {
+    if (
+      isEditing &&
+      !options.some((option) => Number(option.value) === currentType)
+    ) {
       options.push({
         value: String(currentType),
         label: `#${currentType}`,
@@ -495,7 +443,7 @@ export function ChannelMutateDrawer({
       })
     }
     return options
-  }, [currentType, t])
+  }, [currentType, isEditing, t])
 
   // Extract redirect models from model_mapping (target values)
   const redirectModelList = useMemo(
@@ -587,30 +535,6 @@ export function ChannelMutateDrawer({
       ? modelMappingGuardrail.entries.length - 3
       : 0
 
-  const upstreamUpdateMeta = useMemo(() => {
-    const settings = parseSettingsRecord(currentSettings)
-    const detectedModels = Array.isArray(
-      settings.upstream_model_update_last_detected_models
-    )
-      ? settings.upstream_model_update_last_detected_models
-          .map((model) => String(model || '').trim())
-          .filter(Boolean)
-      : []
-
-    return {
-      lastCheckTime: settings.upstream_model_update_last_check_time,
-      detectedModels: Array.from(new Set(detectedModels)),
-    }
-  }, [currentSettings])
-
-  const upstreamDetectedModelsPreview = upstreamUpdateMeta.detectedModels.slice(
-    0,
-    UPSTREAM_DETECTED_MODEL_PREVIEW_LIMIT
-  )
-  const upstreamDetectedModelsOmittedCount =
-    upstreamUpdateMeta.detectedModels.length -
-    upstreamDetectedModelsPreview.length
-
   // Load channel data into form when editing
   useEffect(() => {
     if (isEditing && channelData?.data) {
@@ -634,27 +558,6 @@ export function ChannelMutateDrawer({
       initialStatusCodeMappingRef.current = ''
     }
   }, [isEditing, channelData, form])
-
-  // Handle type change - set default values for specific types
-  useEffect(() => {
-    if (isEditing) return // Don't auto-set defaults when editing
-
-    // Type 45 (VolcEngine) - set default base_url
-    if (currentType === 45) {
-      const currentBaseUrlValue = form.getValues('base_url')
-      if (!currentBaseUrlValue || currentBaseUrlValue === '') {
-        form.setValue('base_url', 'https://ark.cn-beijing.volces.com')
-      }
-    }
-
-    // Type 18 (Xunfei) - set default other (version)
-    if (currentType === 18) {
-      const currentOther = form.getValues('other')
-      if (!currentOther || currentOther === '') {
-        form.setValue('other', 'v2.1')
-      }
-    }
-  }, [currentType, isEditing, form])
 
   // Validate base_url - warn if it ends with /v1
   useEffect(() => {
@@ -738,25 +641,6 @@ export function ChannelMutateDrawer({
       }
     }
   }, [channelId, withVerification, fetchChannelKey])
-
-  const handleRefreshCodexCredential = useCallback(async () => {
-    if (!channelId) return
-    setIsCodexCredentialRefreshing(true)
-    try {
-      const res = await refreshCodexCredential(channelId)
-      if (!res.success) {
-        throw new Error(res.message || t('Failed to refresh credential'))
-      }
-      toast.success(t('Credential refreshed'))
-      queryClient.invalidateQueries({
-        queryKey: channelsQueryKeys.detail(channelId),
-      })
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : t('Refresh failed'))
-    } finally {
-      setIsCodexCredentialRefreshing(false)
-    }
-  }, [channelId, queryClient, t])
 
   // Unified function to update models
   const updateModels = useCallback(
@@ -1172,7 +1056,6 @@ export function ChannelMutateDrawer({
                             placeholder={t('Select channel type')}
                             searchPlaceholder={t('Search channel type...')}
                             emptyText={t('No channel type found.')}
-                            allowCustomValue
                           />
                         </FormControl>
                         <FormMessage />
@@ -1336,28 +1219,6 @@ export function ChannelMutateDrawer({
                   />
                 )}
 
-                {/* Xunfei/Spark (type 18) */}
-                {currentType === 18 && (
-                  <FormField
-                    control={form.control}
-                    name='other'
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{t('Model Version *')}</FormLabel>
-                        <FormControl>
-                          <Input placeholder={t('e.g., v2.1')} {...field} />
-                        </FormControl>
-                        <FormDescription>
-                          {t(
-                            'Spark model version, e.g., v2.1 (version number in API URL)'
-                          )}
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                )}
-
                 {/* OpenRouter (type 20) */}
                 {currentType === 20 && (
                   <FormField
@@ -1427,105 +1288,6 @@ export function ChannelMutateDrawer({
                             : t(
                                 'AK/SK mode: use AccessKey|SecretAccessKey|Region'
                               )}
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                )}
-
-                {/* AI Proxy Library (type 21) */}
-                {currentType === 21 && (
-                  <FormField
-                    control={form.control}
-                    name='other'
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{t('Knowledge Base ID *')}</FormLabel>
-                        <FormControl>
-                          <Input placeholder={t('e.g., 123456')} {...field} />
-                        </FormControl>
-                        <FormDescription>
-                          {t('Enter the knowledge base ID')}
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                )}
-
-                {/* FastGPT (type 22) */}
-                {currentType === 22 && (
-                  <FormField
-                    control={form.control}
-                    name='base_url'
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{t('Private Deployment URL')}</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder={t(
-                              'e.g., https://fastgpt.run/api/openapi'
-                            )}
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormDescription>
-                          {t(
-                            'For private deployments, format: https://fastgpt.run/api/openapi'
-                          )}
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                )}
-
-                {/* SunoAPI (type 36) */}
-                {currentType === 36 && (
-                  <FormField
-                    control={form.control}
-                    name='base_url'
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>
-                          {t('API Base URL (Important: Not Chat API) *')}
-                        </FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder={t(
-                              'e.g., https://api.example.com (path before /suno)'
-                            )}
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormDescription>
-                          {t(
-                            'Enter the path before /suno, usually just the domain'
-                          )}
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                )}
-
-                {/* Cloudflare Workers AI (type 39) */}
-                {currentType === 39 && (
-                  <FormField
-                    control={form.control}
-                    name='other'
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{t('Account ID *')}</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder={t('e.g., d6b5da8hk1awo8nap34ube6gh')}
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormDescription>
-                          {t('Your Cloudflare Account ID')}
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -1692,119 +1454,8 @@ export function ChannelMutateDrawer({
                   </>
                 )}
 
-                {/* VolcEngine (type 45) */}
-                {currentType === 45 && !doubaoApiEditUnlocked && (
-                  <FormField
-                    control={form.control}
-                    name='base_url'
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel
-                          className='cursor-pointer select-none'
-                          onClick={handleApiConfigSecretClick}
-                        >
-                          {t('API Base URL *')}
-                        </FormLabel>
-                        <Select
-                          items={[
-                            {
-                              value: 'https://ark.cn-beijing.volces.com',
-                              label: t('https://ark.cn-beijing.volces.com'),
-                            },
-                            {
-                              value: 'https://ark.ap-southeast.bytepluses.com',
-                              label: t(
-                                'https://ark.ap-southeast.bytepluses.com'
-                              ),
-                            },
-                            {
-                              value: 'doubao-coding-plan',
-                              label: t('Doubao Coding Plan'),
-                            },
-                          ]}
-                          onValueChange={field.onChange}
-                          value={
-                            field.value || 'https://ark.cn-beijing.volces.com'
-                          }
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent alignItemWithTrigger={false}>
-                            <SelectGroup>
-                              <SelectItem value='https://ark.cn-beijing.volces.com'>
-                                {t('https://ark.cn-beijing.volces.com')}
-                              </SelectItem>
-                              <SelectItem value='https://ark.ap-southeast.bytepluses.com'>
-                                {t('https://ark.ap-southeast.bytepluses.com')}
-                              </SelectItem>
-                              <SelectItem value='doubao-coding-plan'>
-                                {t('Doubao Coding Plan')}
-                              </SelectItem>
-                            </SelectGroup>
-                          </SelectContent>
-                        </Select>
-                        <FormDescription>
-                          {t('Select the API endpoint region')}
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                )}
-
-                {/* VolcEngine (type 45) - Custom API URL (unlocked) */}
-                {currentType === 45 && doubaoApiEditUnlocked && (
-                  <FormField
-                    control={form.control}
-                    name='base_url'
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{t('API Base URL *')}</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder={t(
-                              'e.g., https://ark.cn-beijing.volces.com'
-                            )}
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormDescription>
-                          {t('Enter custom API endpoint URL')}
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                )}
-
-                {/* Coze (type 49) */}
-                {currentType === 49 && (
-                  <FormField
-                    control={form.control}
-                    name='other'
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{t('Agent ID *')}</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder={t('e.g., 7342866812345')}
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormDescription>
-                          {t('Enter the Coze agent ID')}
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                )}
-
                 {/* General base_url for other types */}
-                {![3, 8, 22, 36, 45].includes(currentType) && (
+                {![3, 8].includes(currentType) && (
                   <FormField
                     control={form.control}
                     name='base_url'
@@ -2015,67 +1666,6 @@ export function ChannelMutateDrawer({
                         <FormMessage />
                       </FormItem>
                     )
-                  }}
-                />
-
-                {currentType === 57 && (
-                  <div className='border-border/60 flex flex-col gap-3 border-y py-4'>
-                    <div className='flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between'>
-                      <div className='flex flex-col gap-0.5'>
-                        <div className='text-sm font-semibold'>
-                          {t('Codex Authorization')}
-                        </div>
-                        <div className='text-muted-foreground text-xs'>
-                          {t(
-                            'Codex channels use an OAuth JSON credential as the key.'
-                          )}
-                        </div>
-                      </div>
-                      <div className='flex flex-wrap items-center gap-2'>
-                        <Button
-                          type='button'
-                          variant='outline'
-                          size='sm'
-                          onClick={() => setCodexOAuthDialogOpen(true)}
-                        >
-                          <Link2 className='mr-2 h-4 w-4' />
-                          {t('Authorize')}
-                        </Button>
-                        {isEditing && channelId && (
-                          <Button
-                            type='button'
-                            variant='outline'
-                            size='sm'
-                            onClick={handleRefreshCodexCredential}
-                            disabled={isCodexCredentialRefreshing}
-                          >
-                            {isCodexCredentialRefreshing ? (
-                              <Loader2 className='mr-2 h-4 w-4 animate-spin' />
-                            ) : (
-                              <RefreshCw className='mr-2 h-4 w-4' />
-                            )}
-                            {isCodexCredentialRefreshing
-                              ? t('Refreshing...')
-                              : t('Refresh credential')}
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                    <Alert>
-                      <AlertDescription>
-                        {t(
-                          'If authorization succeeds, the generated JSON will be inserted into the key field. You still need to save the channel to persist it.'
-                        )}
-                      </AlertDescription>
-                    </Alert>
-                  </div>
-                )}
-
-                <CodexOAuthDialog
-                  open={codexOAuthDialogOpen}
-                  onOpenChange={setCodexOAuthDialogOpen}
-                  onKeyGenerated={(key) => {
-                    form.setValue('key', key, { shouldDirty: true })
                   }}
                 />
 
@@ -2950,114 +2540,11 @@ export function ChannelMutateDrawer({
                                 )}
                               />
 
-                              <FormField
-                                control={form.control}
-                                name='allow_include_obfuscation'
-                                render={({ field }) => (
-                                  <FormItem className='flex items-center justify-between gap-3 px-4 py-3'>
-                                    <div className='space-y-0.5'>
-                                      <FormLabel className='text-sm'>
-                                        {t(
-                                          'Allow include usage obfuscation passthrough'
-                                        )}
-                                      </FormLabel>
-                                      <FormDescription>
-                                        {t(
-                                          'Pass through the include field for usage obfuscation'
-                                        )}
-                                      </FormDescription>
-                                    </div>
-                                    <FormControl>
-                                      <Switch
-                                        checked={field.value}
-                                        onCheckedChange={field.onChange}
-                                      />
-                                    </FormControl>
-                                  </FormItem>
-                                )}
-                              />
-
-                              <FormField
-                                control={form.control}
-                                name='allow_inference_geo'
-                                render={({ field }) => (
-                                  <FormItem className='flex items-center justify-between gap-3 px-4 py-3'>
-                                    <div className='space-y-0.5'>
-                                      <FormLabel className='text-sm'>
-                                        {t(
-                                          'Allow inference geography passthrough'
-                                        )}
-                                      </FormLabel>
-                                      <FormDescription>
-                                        {t(
-                                          'Pass through the inference_geo field for geographic routing'
-                                        )}
-                                      </FormDescription>
-                                    </div>
-                                    <FormControl>
-                                      <Switch
-                                        checked={field.value}
-                                        onCheckedChange={field.onChange}
-                                      />
-                                    </FormControl>
-                                  </FormItem>
-                                )}
-                              />
                             </>
                           )}
 
                           {currentType === 14 && (
                             <>
-                              <FormField
-                                control={form.control}
-                                name='allow_inference_geo'
-                                render={({ field }) => (
-                                  <FormItem className='flex items-center justify-between gap-3 px-4 py-3'>
-                                    <div className='space-y-0.5'>
-                                      <FormLabel className='text-sm'>
-                                        {t('Allow inference_geo passthrough')}
-                                      </FormLabel>
-                                      <FormDescription>
-                                        {t(
-                                          'Pass through the inference_geo field for Claude data residency region control'
-                                        )}
-                                      </FormDescription>
-                                    </div>
-                                    <FormControl>
-                                      <Switch
-                                        checked={field.value}
-                                        onCheckedChange={field.onChange}
-                                      />
-                                    </FormControl>
-                                  </FormItem>
-                                )}
-                              />
-
-                              <FormField
-                                control={form.control}
-                                name='allow_speed'
-                                render={({ field }) => (
-                                  <FormItem className='flex items-center justify-between gap-3 px-4 py-3'>
-                                    <div className='space-y-0.5'>
-                                      <FormLabel className='text-sm'>
-                                        {t('Allow speed passthrough')}
-                                      </FormLabel>
-                                      <FormDescription>
-                                        {t(
-                                          'Pass through the speed field for Claude inference speed mode control'
-                                        )}
-                                      </FormDescription>
-                                    </div>
-                                    <FormControl>
-                                      <Switch
-                                        checked={field.value}
-                                        onCheckedChange={field.onChange}
-                                      />
-                                    </FormControl>
-                                  </FormItem>
-                                )}
-                              />
-
                               <FormField
                                 control={form.control}
                                 name='claude_beta_query'
@@ -3285,170 +2772,6 @@ export function ChannelMutateDrawer({
                       )}
                     />
 
-                    <FormField
-                      control={form.control}
-                      name='system_prompt'
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>{t('System Prompt')}</FormLabel>
-                          <FormControl>
-                            <Textarea
-                              placeholder={t(
-                                'Enter system prompt (user prompt takes priority)'
-                              )}
-                              rows={3}
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormDescription>
-                            {t('Default system prompt for this channel')}
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name='system_prompt_override'
-                      render={({ field }) => (
-                        <FormItem className='flex items-center justify-between'>
-                          <div className='space-y-0.5'>
-                            <FormLabel>
-                              {t('System Prompt Concatenation')}
-                            </FormLabel>
-                            <FormDescription>
-                              {t(
-                                'Concatenate channel system prompt with user&apos;s prompt'
-                              )}
-                            </FormDescription>
-                          </div>
-                          <FormControl>
-                            <Switch
-                              checked={field.value}
-                              onCheckedChange={field.onChange}
-                            />
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
-
-                    {MODEL_FETCHABLE_TYPES.has(currentType) && (
-                      <div className='border-border/60 flex flex-col gap-3 border-y py-4'>
-                        <SubHeading
-                          title={t('Upstream Model Detection Settings')}
-                          icon={<RefreshCw className='h-3.5 w-3.5' />}
-                        />
-                        <div className='divide-border space-y-0 divide-y border-y'>
-                          <FormField
-                            control={form.control}
-                            name='upstream_model_update_check_enabled'
-                            render={({ field }) => (
-                              <FormItem className='flex items-center justify-between px-4 py-3'>
-                                <div className='space-y-0.5'>
-                                  <FormLabel>
-                                    {t('Upstream Model Update Check')}
-                                  </FormLabel>
-                                  <FormDescription>
-                                    {t(
-                                      'Periodically check for upstream model changes'
-                                    )}
-                                  </FormDescription>
-                                </div>
-                                <FormControl>
-                                  <Switch
-                                    checked={field.value}
-                                    onCheckedChange={field.onChange}
-                                  />
-                                </FormControl>
-                              </FormItem>
-                            )}
-                          />
-                          <FormField
-                            control={form.control}
-                            name='upstream_model_update_auto_sync_enabled'
-                            render={({ field }) => (
-                              <FormItem className='flex items-center justify-between px-4 py-3'>
-                                <div className='space-y-0.5'>
-                                  <FormLabel>
-                                    {t('Auto Sync Upstream Models')}
-                                  </FormLabel>
-                                  <FormDescription>
-                                    {t(
-                                      'Automatically sync model list when upstream changes are detected'
-                                    )}
-                                  </FormDescription>
-                                </div>
-                                <FormControl>
-                                  <Switch
-                                    checked={field.value}
-                                    disabled={!upstreamModelUpdateCheckEnabled}
-                                    onCheckedChange={field.onChange}
-                                  />
-                                </FormControl>
-                              </FormItem>
-                            )}
-                          />
-                        </div>
-                        <FormField
-                          control={form.control}
-                          name='upstream_model_update_ignored_models'
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>
-                                {t('Ignored upstream models')}
-                              </FormLabel>
-                              <FormControl>
-                                <Input
-                                  placeholder={t(
-                                    'e.g., gpt-4.1-nano,regex:^claude-.*$,regex:^sora-.*$'
-                                  )}
-                                  {...field}
-                                />
-                              </FormControl>
-                              <FormDescription>
-                                {t(
-                                  'Comma-separated exact model names. Prefix with regex: to ignore by regular expression.'
-                                )}
-                              </FormDescription>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <div className='text-muted-foreground space-y-2 border-t pt-3 text-xs'>
-                          <div>
-                            <span className='text-foreground font-medium'>
-                              {t('Last check time')}:
-                            </span>{' '}
-                            {formatUnixTime(upstreamUpdateMeta.lastCheckTime)}
-                          </div>
-                          <div>
-                            <span className='text-foreground font-medium'>
-                              {t('Last detected addable models')}:
-                            </span>{' '}
-                            {upstreamUpdateMeta.detectedModels.length === 0 ? (
-                              t('None')
-                            ) : (
-                              <>
-                                <span className='break-all'>
-                                  {upstreamDetectedModelsPreview.join(', ')}
-                                </span>
-                                {upstreamDetectedModelsOmittedCount > 0 && (
-                                  <span className='ml-1'>
-                                    {t('({{total}} total, {{omit}} omitted)', {
-                                      total:
-                                        upstreamUpdateMeta.detectedModels
-                                          .length,
-                                      omit: upstreamDetectedModelsOmittedCount,
-                                    })}
-                                  </span>
-                                )}
-                              </>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    )}
                   </div>
                 </CollapsibleContent>
               </Collapsible>

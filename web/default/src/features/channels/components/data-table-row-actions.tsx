@@ -32,7 +32,6 @@ import {
   PowerOff,
   Key,
   Trash2,
-  RefreshCw,
   Loader2,
   PackageSearch,
   ShieldAlert,
@@ -65,7 +64,6 @@ import {
 } from '@/components/ui/tooltip'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { getGlmRiskStatus } from '../api'
-import { MODEL_FETCHABLE_TYPES } from '../constants'
 import {
   channelsQueryKeys,
   handleDeleteChannel,
@@ -75,7 +73,6 @@ import {
   isMultiKeyChannel,
   isPlanChannel,
 } from '../lib'
-import { parseUpstreamUpdateMeta } from '../lib/upstream-update-utils'
 import type { Channel } from '../types'
 import { useChannels } from './channels-provider'
 
@@ -86,7 +83,7 @@ interface DataTableRowActionsProps {
 export function DataTableRowActions({ row }: DataTableRowActionsProps) {
   const { t } = useTranslation()
   const channel = row.original
-  const { setOpen, setCurrentRow, upstream } = useChannels()
+  const { setOpen, setCurrentRow } = useChannels()
   const queryClient = useQueryClient()
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
   const [riskDialogOpen, setRiskDialogOpen] = useState(false)
@@ -281,33 +278,6 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
               <Download size={16} />
             </DropdownMenuShortcut>
           </DropdownMenuItem>
-
-          {/* Detect Upstream Updates (only for fetchable channel types) */}
-          {MODEL_FETCHABLE_TYPES.has(channel.type) && (
-            <DropdownMenuItem
-              onClick={() => {
-                const meta = parseUpstreamUpdateMeta(channel.settings)
-                if (
-                  meta.pendingAddModels.length > 0 ||
-                  meta.pendingRemoveModels.length > 0
-                ) {
-                  upstream.openModal(
-                    channel,
-                    meta.pendingAddModels,
-                    meta.pendingRemoveModels,
-                    meta.pendingAddModels.length > 0 ? 'add' : 'remove'
-                  )
-                } else {
-                  upstream.detectChannelUpdates(channel)
-                }
-              }}
-            >
-              {t('Upstream Updates')}
-              <DropdownMenuShortcut>
-                <RefreshCw size={16} />
-              </DropdownMenuShortcut>
-            </DropdownMenuItem>
-          )}
 
           {/* Ollama Models (only for Ollama channels) */}
           {channel.type === 4 && (

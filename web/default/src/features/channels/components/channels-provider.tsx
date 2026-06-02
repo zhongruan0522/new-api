@@ -17,10 +17,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 /* eslint-disable react-refresh/only-export-components */
-import React, { createContext, useContext, useState, useCallback } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
-import { useChannelUpstreamUpdates } from '../hooks/use-channel-upstream-updates'
-import { channelsQueryKeys } from '../lib'
+import React, { createContext, useContext, useState } from 'react'
 import type { Channel } from '../types'
 
 // ============================================================================
@@ -41,8 +38,6 @@ type DialogType =
   | 'copy-channel'
   | null
 
-type UpstreamUpdateState = ReturnType<typeof useChannelUpstreamUpdates>
-
 type ChannelsContextType = {
   open: DialogType
   setOpen: (open: DialogType) => void
@@ -54,7 +49,6 @@ type ChannelsContextType = {
   setEnableTagMode: (enabled: boolean) => void
   idSort: boolean
   setIdSort: (enabled: boolean) => void
-  upstream: UpstreamUpdateState
 }
 
 // ============================================================================
@@ -80,12 +74,6 @@ export function ChannelsProvider({ children }: { children: React.ReactNode }) {
     return localStorage.getItem('channels-id-sort') === 'true'
   })
 
-  const queryClient = useQueryClient()
-  const refreshChannels = useCallback(async () => {
-    await queryClient.invalidateQueries({ queryKey: channelsQueryKeys.all })
-  }, [queryClient])
-  const upstream = useChannelUpstreamUpdates(refreshChannels)
-
   return (
     <ChannelsContext.Provider
       value={{
@@ -99,7 +87,6 @@ export function ChannelsProvider({ children }: { children: React.ReactNode }) {
         setEnableTagMode,
         idSort,
         setIdSort,
-        upstream,
       }}
     >
       {children}

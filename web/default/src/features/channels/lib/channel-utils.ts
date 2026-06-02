@@ -46,75 +46,21 @@ export function getChannelTypeLabel(type: number): string {
  */
 export function getChannelTypeIcon(type: number): string {
   const TYPE_TO_ICON: Record<number, string> = {
-    // OpenAI family
     1: 'OpenAI', // OpenAI
-    6: 'OpenAI', // OpenAIMax
-    7: 'OpenAI', // OhMyGPT
-    8: 'OpenAI', // Custom
     3: 'Azure', // Azure
-
-    // Anthropic
-    14: 'Claude', // Anthropic
-
-    // Google family
-    24: 'Gemini', // Gemini
-    11: 'Google', // PaLM
-    41: 'Gemini', // Vertex AI
-
-    // Cloud providers
-    33: 'Aws', // AWS
-    39: 'Cloudflare', // Cloudflare
-
-    // Chinese providers
-    15: 'Baidu', // Baidu
-    46: 'Baidu', // Baidu V2
-    16: 'Zhipu', // Zhipu
-    26: 'Zhipu', // Zhipu V4
-    17: 'Qwen', // Ali
-    18: 'Spark', // Xunfei
-    23: 'Hunyuan', // Tencent
-    19: 'Ai360', // 360
-    25: 'Moonshot', // Moonshot
-    31: 'Yi', // LingYiWanWu
-    35: 'Minimax', // MiniMax
-    45: 'Volcengine', // VolcEngine
-
-    // Other AI providers
     4: 'Ollama', // Ollama
-    27: 'Perplexity', // Perplexity
-    34: 'Cohere', // Cohere
-    42: 'Mistral', // Mistral
-    43: 'DeepSeek', // DeepSeek
-    48: 'XAI', // xAI
-    49: 'Coze', // Coze
-    40: 'SiliconCloud', // SiliconFlow
-    44: 'OpenAI', // MokaAI
+    6: 'Xiaomi', // Xiaomi
+    8: 'OpenAI', // Custom
+    14: 'Claude', // Anthropic
     20: 'OpenRouter', // OpenRouter
-
-    // Image/Video generation
-    2: 'Midjourney', // Midjourney
-    5: 'Midjourney', // MidjourneyPlus
-    50: 'Kling', // Kling
-    51: 'Jimeng', // Jimeng
-    52: 'Vidu', // Vidu
-    36: 'Suno', // SunoAPI
-    55: 'OpenAI', // Sora
-    54: 'Doubao', // DoubaoVideo
-    56: 'Replicate', // Replicate
-
-    // Tools & Platforms
-    37: 'Dify', // Dify
-    38: 'Jina', // Jina
-    22: 'FastGPT', // FastGPT
-    47: 'Xinference', // Xinference
-    53: 'OpenAI', // Submodel
-
-    // AI Proxy services
-    10: 'OpenAI', // AI Proxy
-    21: 'OpenAI', // AI Proxy Library
-    12: 'OpenAI', // API2GPT
-    13: 'OpenAI', // AIGC2D
-    9: 'OpenAI', // AILS
+    24: 'Gemini', // Gemini
+    25: 'Moonshot', // Moonshot
+    26: 'Zhipu', // Zhipu V4
+    33: 'Aws', // AWS
+    35: 'Minimax', // MiniMax
+    40: 'SiliconCloud', // SiliconFlow
+    41: 'Gemini', // Vertex AI
+    43: 'DeepSeek', // DeepSeek
   }
 
   return TYPE_TO_ICON[type] || 'OpenAI'

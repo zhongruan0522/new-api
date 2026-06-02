@@ -17,7 +17,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { z } from 'zod'
-import { CHANNEL_STATUS, MODEL_FETCHABLE_TYPES } from '../constants'
+import { CHANNEL_STATUS } from '../constants'
 import type { Channel } from '../types'
 
 // ============================================================================
@@ -61,8 +61,6 @@ export const channelFormSchema = z.object({
   pass_through_body_enabled: z.boolean().optional(),
   pass_through_headers_enabled: z.boolean().optional(),
   openai_wire_api: z.enum(['both', 'chat', 'responses']).optional(),
-  system_prompt: z.string().optional(),
-  system_prompt_override: z.boolean().optional(),
   // Type-specific settings (stored in settings JSON)
   is_enterprise_account: z.boolean().optional(), // OpenRouter specific
   vertex_key_type: z.enum(['json', 'api_key']).optional(), // Vertex AI specific
@@ -73,14 +71,7 @@ export const channelFormSchema = z.object({
   allow_service_tier: z.boolean().optional(), // OpenAI/Anthropic
   disable_store: z.boolean().optional(), // OpenAI only
   allow_safety_identifier: z.boolean().optional(), // OpenAI only
-  allow_include_obfuscation: z.boolean().optional(), // OpenAI: include usage obfuscation
-  allow_inference_geo: z.boolean().optional(), // OpenAI/Anthropic: inference geography
-  allow_speed: z.boolean().optional(), // Anthropic: speed mode control
   claude_beta_query: z.boolean().optional(), // Anthropic: beta query passthrough
-  // Upstream model update settings (stored in settings JSON)
-  upstream_model_update_check_enabled: z.boolean().optional(),
-  upstream_model_update_auto_sync_enabled: z.boolean().optional(),
-  upstream_model_update_ignored_models: z.string().optional(),
 })
 
 export type ChannelFormValues = z.infer<typeof channelFormSchema>
@@ -122,8 +113,6 @@ export const CHANNEL_FORM_DEFAULT_VALUES: ChannelFormValues = {
   pass_through_body_enabled: false,
   pass_through_headers_enabled: true,
   openai_wire_api: 'both',
-  system_prompt: '',
-  system_prompt_override: false,
   // Type-specific settings
   is_enterprise_account: false,
   vertex_key_type: 'json',
@@ -134,13 +123,7 @@ export const CHANNEL_FORM_DEFAULT_VALUES: ChannelFormValues = {
   allow_service_tier: false,
   disable_store: false,
   allow_safety_identifier: false,
-  allow_include_obfuscation: false,
-  allow_inference_geo: false,
-  allow_speed: false,
   claude_beta_query: false,
-  upstream_model_update_check_enabled: false,
-  upstream_model_update_auto_sync_enabled: false,
-  upstream_model_update_ignored_models: '',
 }
 
 // ============================================================================
@@ -161,8 +144,6 @@ export function transformChannelToFormDefaults(
     pass_through_body_enabled: false,
     pass_through_headers_enabled: true,
     openai_wire_api: 'both' as const,
-    system_prompt: '',
-    system_prompt_override: false,
   }
 
   if (channel.setting) {
@@ -180,8 +161,6 @@ export function transformChannelToFormDefaults(
           parsed.openai_wire_api === 'responses'
             ? parsed.openai_wire_api
             : 'both',
-        system_prompt: parsed.system_prompt || '',
-        system_prompt_override: parsed.system_prompt_override || false,
       }
     } catch (error) {
       // eslint-disable-next-line no-console
@@ -198,13 +177,7 @@ export function transformChannelToFormDefaults(
   let allowServiceTier = false
   let disableStore = false
   let allowSafetyIdentifier = false
-  let allowIncludeObfuscation = false
-  let allowInferenceGeo = false
-  let allowSpeed = false
   let claudeBetaQuery = false
-  let upstreamModelUpdateCheckEnabled = false
-  let upstreamModelUpdateAutoSyncEnabled = false
-  let upstreamModelUpdateIgnoredModels = ''
 
   if (channel.settings) {
     try {
@@ -221,19 +194,7 @@ export function transformChannelToFormDefaults(
       allowServiceTier = parsed.allow_service_tier === true
       disableStore = parsed.disable_store === true
       allowSafetyIdentifier = parsed.allow_safety_identifier === true
-      allowIncludeObfuscation = parsed.allow_include_obfuscation === true
-      allowInferenceGeo = parsed.allow_inference_geo === true
-      allowSpeed = parsed.allow_speed === true
       claudeBetaQuery = parsed.claude_beta_query === true
-      upstreamModelUpdateCheckEnabled =
-        parsed.upstream_model_update_check_enabled === true
-      upstreamModelUpdateAutoSyncEnabled =
-        parsed.upstream_model_update_auto_sync_enabled === true
-      upstreamModelUpdateIgnoredModels = Array.isArray(
-        parsed.upstream_model_update_ignored_models
-      )
-        ? parsed.upstream_model_update_ignored_models.join(',')
-        : ''
     } catch (error) {
       // eslint-disable-next-line no-console
       console.error('Failed to parse channel settings:', error)
@@ -276,14 +237,8 @@ export function transformChannelToFormDefaults(
     image_auto_convert_to_url_mode: imageAutoConvertToUrlMode,
     allow_service_tier: allowServiceTier,
     disable_store: disableStore,
-    allow_include_obfuscation: allowIncludeObfuscation,
-    allow_inference_geo: allowInferenceGeo,
-    allow_speed: allowSpeed,
     claude_beta_query: claudeBetaQuery,
     allow_safety_identifier: allowSafetyIdentifier,
-    upstream_model_update_check_enabled: upstreamModelUpdateCheckEnabled,
-    upstream_model_update_auto_sync_enabled: upstreamModelUpdateAutoSyncEnabled,
-    upstream_model_update_ignored_models: upstreamModelUpdateIgnoredModels,
   }
 }
 
@@ -299,8 +254,6 @@ function buildSettingJSON(formData: ChannelFormValues): string {
     pass_through_headers_enabled:
       formData.pass_through_headers_enabled !== false,
     openai_wire_api: formData.openai_wire_api || 'both',
-    system_prompt: formData.system_prompt || '',
-    system_prompt_override: formData.system_prompt_override || false,
   }
   return JSON.stringify(settingObj)
 }
@@ -362,53 +315,17 @@ function buildSettingsJSON(formData: ChannelFormValues): string {
     settingsObj.disable_store = formData.disable_store === true
     settingsObj.allow_safety_identifier =
       formData.allow_safety_identifier === true
-    settingsObj.allow_include_obfuscation =
-      formData.allow_include_obfuscation === true
-    settingsObj.allow_inference_geo = formData.allow_inference_geo === true
   } else {
     if ('disable_store' in settingsObj) delete settingsObj.disable_store
     if ('allow_safety_identifier' in settingsObj)
       delete settingsObj.allow_safety_identifier
-    if ('allow_include_obfuscation' in settingsObj)
-      delete settingsObj.allow_include_obfuscation
-    if (formData.type !== 14 && 'allow_inference_geo' in settingsObj)
-      delete settingsObj.allow_inference_geo
   }
 
-  // Anthropic (type 14): claude_beta_query, allow_inference_geo, allow_speed
+  // Anthropic (type 14): claude_beta_query
   if (formData.type === 14) {
-    settingsObj.allow_inference_geo = formData.allow_inference_geo === true
-    settingsObj.allow_speed = formData.allow_speed === true
     settingsObj.claude_beta_query = formData.claude_beta_query === true
   } else {
-    if ('allow_speed' in settingsObj) delete settingsObj.allow_speed
     if ('claude_beta_query' in settingsObj) delete settingsObj.claude_beta_query
-  }
-
-  // Upstream model update settings (for model-fetchable channel types)
-  if (MODEL_FETCHABLE_TYPES.has(formData.type)) {
-    settingsObj.upstream_model_update_check_enabled =
-      formData.upstream_model_update_check_enabled === true
-    settingsObj.upstream_model_update_auto_sync_enabled =
-      settingsObj.upstream_model_update_check_enabled === true &&
-      formData.upstream_model_update_auto_sync_enabled === true
-    settingsObj.upstream_model_update_ignored_models = Array.from(
-      new Set(
-        String(formData.upstream_model_update_ignored_models || '')
-          .split(',')
-          .map((model) => model.trim())
-          .filter(Boolean)
-      )
-    )
-    if (
-      !Array.isArray(settingsObj.upstream_model_update_last_detected_models) ||
-      settingsObj.upstream_model_update_check_enabled !== true
-    ) {
-      settingsObj.upstream_model_update_last_detected_models = []
-    }
-    if (typeof settingsObj.upstream_model_update_last_check_time !== 'number') {
-      settingsObj.upstream_model_update_last_check_time = 0
-    }
   }
 
   if (formData.image_auto_convert_to_url_mode === 'mcp') {
@@ -417,6 +334,15 @@ function buildSettingsJSON(formData: ChannelFormValues): string {
     delete settingsObj.image_auto_convert_to_url_mode
   }
   delete settingsObj.image_auto_convert_to_url
+  delete settingsObj.allow_include_obfuscation
+  delete settingsObj.allow_inference_geo
+  delete settingsObj.allow_speed
+  delete settingsObj.upstream_model_update_check_enabled
+  delete settingsObj.upstream_model_update_auto_sync_enabled
+  delete settingsObj.upstream_model_update_ignored_models
+  delete settingsObj.upstream_model_update_last_check_time
+  delete settingsObj.upstream_model_update_last_detected_models
+  delete settingsObj.upstream_model_update_last_removed_models
 
   return JSON.stringify(settingsObj)
 }

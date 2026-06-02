@@ -73,6 +73,36 @@ export const CHANNEL_TYPE_CONFIGS: Record<number, ChannelTypeConfig> = {
       models: 'Deployment names',
     },
   },
+  4: {
+    id: 4,
+    name: CHANNEL_TYPES[4],
+    icon: 'ollama',
+    defaultBaseUrl: 'http://localhost:11434',
+    hints: {
+      baseUrl: 'Default: http://localhost:11434',
+      key: 'Optional API key',
+      models: 'Use model names from Ollama',
+    },
+  },
+  6: {
+    id: 6,
+    name: CHANNEL_TYPES[6],
+    icon: 'xiaomi',
+    defaultBaseUrl: 'https://api.xiaomimimo.com',
+    hints: {
+      baseUrl: 'Default: https://api.xiaomimimo.com',
+      key: 'Xiaomi MiMo API Key',
+    },
+  },
+  8: {
+    id: 8,
+    name: CHANNEL_TYPES[8],
+    icon: 'openai',
+    hints: {
+      baseUrl: 'Full upstream API URL',
+      key: 'API key for custom upstream',
+    },
+  },
   14: {
     id: 14,
     name: CHANNEL_TYPES[14],
@@ -123,15 +153,53 @@ export const CHANNEL_TYPE_CONFIGS: Record<number, ChannelTypeConfig> = {
       models: 'Use model IDs from OpenRouter',
     },
   },
-  56: {
-    id: 56,
-    name: CHANNEL_TYPES[56],
-    icon: 'replicate',
-    defaultBaseUrl: 'https://api.replicate.com',
+  25: {
+    id: 25,
+    name: CHANNEL_TYPES[25],
+    icon: 'moonshot',
+    defaultBaseUrl: 'https://api.moonshot.cn',
     hints: {
-      key: 'Replicate API Token',
-      models: 'Replicate model IDs',
-      baseUrl: 'Default: https://api.replicate.com',
+      baseUrl: 'Default: https://api.moonshot.cn',
+      key: 'Moonshot API Key',
+    },
+  },
+  26: {
+    id: 26,
+    name: CHANNEL_TYPES[26],
+    icon: 'zhipu',
+    defaultBaseUrl: 'https://open.bigmodel.cn',
+    hints: {
+      baseUrl: 'Default: https://open.bigmodel.cn',
+      key: 'Zhipu API Key',
+    },
+  },
+  33: {
+    id: 33,
+    name: CHANNEL_TYPES[33],
+    icon: 'aws',
+    hints: {
+      key: 'AccessKey|SecretAccessKey|Region',
+      models: 'AWS Bedrock model IDs',
+    },
+  },
+  35: {
+    id: 35,
+    name: CHANNEL_TYPES[35],
+    icon: 'minimax',
+    defaultBaseUrl: 'https://api.minimaxi.com/v1',
+    hints: {
+      baseUrl: 'Default: https://api.minimaxi.com/v1',
+      key: 'MiniMax API Key',
+    },
+  },
+  40: {
+    id: 40,
+    name: CHANNEL_TYPES[40],
+    icon: 'siliconflow',
+    defaultBaseUrl: 'https://api.siliconflow.cn',
+    hints: {
+      baseUrl: 'Default: https://api.siliconflow.cn',
+      key: 'SiliconFlow API Key',
     },
   },
 }

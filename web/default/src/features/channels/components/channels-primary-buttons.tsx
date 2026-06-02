@@ -27,8 +27,6 @@ import {
   TestTube,
   DollarSign,
   SortAsc,
-  RefreshCw,
-  ArrowUpFromLine,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
@@ -61,7 +59,6 @@ export function ChannelsPrimaryButtons() {
     setEnableTagMode,
     idSort,
     setIdSort,
-    upstream,
   } = useChannels()
   const queryClient = useQueryClient()
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
@@ -163,28 +160,6 @@ export function ChannelsPrimaryButtons() {
               {t('Update All Balances')}
               <DropdownMenuShortcut>
                 <DollarSign className='h-4 w-4' />
-              </DropdownMenuShortcut>
-            </DropdownMenuItem>
-
-            <DropdownMenuSeparator />
-
-            <DropdownMenuItem
-              onClick={() => upstream.detectAllUpdates()}
-              disabled={upstream.detectAllLoading}
-            >
-              {t('Detect All Upstream Updates')}
-              <DropdownMenuShortcut>
-                <RefreshCw className='h-4 w-4' />
-              </DropdownMenuShortcut>
-            </DropdownMenuItem>
-
-            <DropdownMenuItem
-              onClick={() => upstream.applyAllUpdates()}
-              disabled={upstream.applyAllLoading}
-            >
-              {t('Apply All Upstream Updates')}
-              <DropdownMenuShortcut>
-                <ArrowUpFromLine className='h-4 w-4' />
               </DropdownMenuShortcut>
             </DropdownMenuItem>
 
