@@ -24,6 +24,7 @@ import type {
   GetApiKeysResponse,
   SearchApiKeysParams,
   ApiKeyFormData,
+  ApiKeySecretResponse,
 } from './types'
 
 // ============================================================================
@@ -63,7 +64,7 @@ export async function getApiKey(id: number): Promise<ApiResponse<ApiKey>> {
 // Create a new API key
 export async function createApiKey(
   data: ApiKeyFormData
-): Promise<ApiResponse<ApiKey>> {
+): Promise<ApiResponse<ApiKeySecretResponse>> {
   const res = await api.post('/api/token/', data)
   return res.data
 }
@@ -102,8 +103,16 @@ export async function updateApiKeyStatus(
 // Fetch the real (unmasked) key for a token by ID
 export async function fetchTokenKey(
   id: number
-): Promise<{ success: boolean; message?: string; data?: { key: string } }> {
+): Promise<ApiResponse<ApiKeySecretResponse>> {
   const res = await api.post(`/api/token/${id}/key`)
+  return res.data
+}
+
+// Reset a token key and return the newly generated real key.
+export async function resetApiKey(
+  id: number
+): Promise<ApiResponse<ApiKeySecretResponse>> {
+  const res = await api.put(`/api/token/${id}/key`)
   return res.data
 }
 

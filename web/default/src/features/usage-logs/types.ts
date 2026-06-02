@@ -92,6 +92,27 @@ export interface ChannelAffinityInfo {
   using_group?: string
 }
 
+export interface ContextPricingPrices {
+  model_ratio?: number
+  completion_ratio?: number
+  cache_ratio?: number
+  cache_creation_ratio?: number
+  cache_creation_ratio_5m?: number
+  cache_creation_ratio_1h?: number
+  audio_ratio?: number
+  audio_completion_ratio?: number
+}
+
+export interface ContextPricingResult {
+  enabled?: boolean
+  context_tokens_for_tier?: number
+  tier_index?: number
+  tier_name?: string
+  min_tokens?: number
+  max_tokens?: number
+  prices?: ContextPricingPrices
+}
+
 export interface LogOtherData {
   admin_info?: {
     is_multi_key?: boolean
@@ -132,10 +153,19 @@ export interface LogOtherData {
   cache_creation_ratio?: number
   cache_creation_ratio_5m?: number
   cache_creation_ratio_1h?: number
+  context_pricing_enabled?: boolean
+  context_tokens_for_tier?: number
+  context_pricing_tier_index?: number
+  context_pricing_tier_name?: string
+  context_pricing_tier_min_tokens?: number
+  context_pricing_tier_max_tokens?: number
+  context_pricing_prices?: ContextPricingPrices
+  context_pricing?: ContextPricingResult
   is_model_mapped?: boolean
   upstream_model_name?: string
   audio_ratio?: number
   audio_completion_ratio?: number
+  dynamic_ratio?: number
   frt?: number
   // Tiered (expression-based) billing fields, set by backend when
   // billing_mode === 'tiered_expr'. expr_b64 is the base64-encoded billing

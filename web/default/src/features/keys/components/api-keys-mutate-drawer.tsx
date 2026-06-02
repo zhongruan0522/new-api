@@ -43,10 +43,7 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
-import {
-  NativeSelect,
-  NativeSelectOption,
-} from '@/components/ui/native-select'
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import {
   Sheet,
   SheetClose,
@@ -98,7 +95,7 @@ export function ApiKeysMutateDrawer({
 }: ApiKeyMutateDrawerProps) {
   const { t } = useTranslation()
   const isUpdate = !!currentRow
-  const { triggerRefresh } = useApiKeys()
+  const { setCreatedKeys, setOpen, triggerRefresh } = useApiKeys()
   const { status } = useStatus()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [advancedOpen, setAdvancedOpen] = useState(false)
@@ -139,17 +136,21 @@ export function ApiKeysMutateDrawer({
   // Load existing data when updating
   useEffect(() => {
     if (open && isUpdate && currentRow) {
-      getApiKey(currentRow.id).then((result) => {
-        if (result.success && result.data) {
-          form.reset(transformApiKeyToFormDefaults(result.data))
-        }
-      })
+      getApiKey(currentRow.id)
+        .then((result) => {
+          if (result.success && result.data) {
+            form.reset(transformApiKeyToFormDefaults(result.data))
+          } else {
+            toast.error(result.message || t(ERROR_MESSAGES.LOAD_FAILED))
+          }
+        })
+        .catch(() => toast.error(t(ERROR_MESSAGES.UNEXPECTED)))
     } else if (open && !isUpdate) {
       form.reset(
         getApiKeyFormDefaultValues(defaultUseAutoGroup && backendHasAuto)
       )
     }
-  }, [open, isUpdate, currentRow, form, defaultUseAutoGroup, backendHasAuto])
+  }, [open, isUpdate, currentRow, form, defaultUseAutoGroup, backendHasAuto, t])
 
   // Correct group after groups load: if the form value is not in available groups, fall back
   useEffect(() => {
@@ -188,6 +189,7 @@ export function ApiKeysMutateDrawer({
         // Create mode - handle batch creation
         const count = data.tokenCount || 1
         let successCount = 0
+        const newKeys: string[] = []
 
         for (let i = 0; i < count; i++) {
           const result = await createApiKey({
@@ -197,8 +199,12 @@ export function ApiKeysMutateDrawer({
                 ? data.name
                 : `${data.name || 'default'}-${Math.random().toString(36).slice(2, 8)}`,
           })
-          if (result.success) {
+          if (result.success && result.data?.key) {
             successCount++
+            newKeys.push(`sk-${result.data.key}`)
+          } else if (result.success) {
+            toast.error(t('Created API key response did not include a key'))
+            break
           } else {
             toast.error(result.message || t(ERROR_MESSAGES.CREATE_FAILED))
             break
@@ -213,6 +219,8 @@ export function ApiKeysMutateDrawer({
           )
           onOpenChange(false)
           triggerRefresh()
+          setCreatedKeys(newKeys)
+          setOpen('created-keys')
         }
       }
     } catch (_error) {

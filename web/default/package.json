@@ -109,5 +109,8 @@
     "postcss": "8.5.15",
     "qs": "6.15.2",
     "uuid": "14.0.0"
+  },
+  "patchedDependencies": {
+    "brace-expansion@5.0.6": "patches/brace-expansion@5.0.6.patch"
   }
 }

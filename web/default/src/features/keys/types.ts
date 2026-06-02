@@ -67,6 +67,10 @@ export interface ApiResponse<T = unknown> {
   data?: T
 }
 
+export interface ApiKeySecretResponse {
+  key: string
+}
+
 export interface GetApiKeysParams {
   p?: number
   size?: number
@@ -118,4 +122,6 @@ export type ApiKeysDialogType =
   | 'update'
   | 'delete'
   | 'batch-delete'
+  | 'created-keys'
+  | 'reset-key'
   | 'cc-switch'

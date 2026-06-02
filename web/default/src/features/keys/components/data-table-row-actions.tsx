@@ -28,6 +28,7 @@ import {
   Copy,
   Link,
   Loader2,
+  RotateCcw,
   MoreHorizontal as DotsHorizontalIcon,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
@@ -288,6 +289,17 @@ export function DataTableRowActions<TData>({
             {t('CC Switch')}
             <DropdownMenuShortcut>
               <ArrowRightLeft size={16} />
+            </DropdownMenuShortcut>
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={() => {
+              setCurrentRow(apiKey)
+              setOpen('reset-key')
+            }}
+          >
+            {t('Reset Key')}
+            <DropdownMenuShortcut>
+              <RotateCcw size={16} />
             </DropdownMenuShortcut>
           </DropdownMenuItem>
           {hasChatPresets && (

@@ -86,6 +86,9 @@
       },
     },
   },
+  "patchedDependencies": {
+    "brace-expansion@5.0.6": "patches/brace-expansion@5.0.6.patch",
+  },
   "overrides": {
     "brace-expansion": "5.0.6",
     "dompurify": "3.4.5",

@@ -90,6 +90,33 @@ function getGroupRatioText(other: LogOtherData | null): string | null {
   return null
 }
 
+function getCacheCreationTotal(other: LogOtherData | null): number {
+  if (!other) return 0
+  const splitTotal =
+    (other.cache_creation_tokens_5m || 0) +
+    (other.cache_creation_tokens_1h || 0)
+  if (splitTotal > 0) return splitTotal
+  return other.cache_creation_tokens || 0
+}
+
+function getOrdinaryInputTokens(
+  log: UsageLog,
+  other: LogOtherData | null
+): number {
+  if ((other?.audio || other?.ws) && other.text_input != null) {
+    return Math.max(other.text_input, 0)
+  }
+
+  const cacheRead = other?.cache_tokens || 0
+  const cacheCreation = getCacheCreationTotal(other)
+  const audioInput = other?.audio_input_seperate_price
+    ? other.audio_input_token_count || 0
+    : 0
+  const input =
+    (log.prompt_tokens || 0) - cacheRead - cacheCreation - audioInput
+  return Math.max(input, 0)
+}
+
 function buildDetailSegments(
   log: UsageLog,
   other: LogOtherData | null,
@@ -652,11 +679,12 @@ export function useCommonLogsColumns(isAdmin: boolean): ColumnDef<UsageLog>[] {
         const cacheWriteTokens = hasSplitCache
           ? cacheWrite5m + cacheWrite1h
           : other?.cache_creation_tokens || 0
+        const ordinaryInputTokens = getOrdinaryInputTokens(log, other)
 
         return (
           <div className='flex flex-col gap-0.5'>
             <span className='font-mono text-xs font-medium tabular-nums'>
-              {promptTokens.toLocaleString()} /{' '}
+              {ordinaryInputTokens.toLocaleString()} /{' '}
               {completionTokens.toLocaleString()}
             </span>
             {(cacheReadTokens > 0 || cacheWriteTokens > 0) && (
