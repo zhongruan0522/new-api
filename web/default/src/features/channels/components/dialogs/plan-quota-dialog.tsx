@@ -531,19 +531,33 @@ function UsageChart({ channelId }: { channelId: number }) {
     )
 
     return {
-      type: 'common',
+      type: 'area',
       data: [{ id: 'usage', values }],
-      series: [
-        {
-          type: 'line',
-          xField: 'time',
-          yField: 'value',
-          seriesField: 'type',
-          smooth: true,
-          line: { style: { lineWidth: 2 } },
-          point: { visible: false },
+      xField: 'time',
+      yField: 'value',
+      seriesField: 'type',
+      stack: false,
+      legends: {
+        visible: true,
+        position: 'top',
+        item: { label: { style: { fontSize: 11 } } },
+        autoPage: true,
+        maxRow: 1,
+      },
+      color: { type: 'ordinal', range: colorRange, domain: fields },
+      area: {
+        style: {
+          fillOpacity: 0.08,
+          curveType: 'monotone',
         },
-      ],
+      },
+      line: {
+        style: {
+          lineWidth: 2,
+          curveType: 'monotone',
+        },
+      },
+      point: { visible: false },
       axes: [
         {
           orient: 'bottom',
@@ -574,14 +588,6 @@ function UsageChart({ channelId }: { channelId: number }) {
           },
         },
       ],
-      color: { type: 'ordinal', range: colorRange, domain: fields },
-      legends: {
-        visible: true,
-        position: 'top',
-        item: { label: { style: { fontSize: 11 } } },
-        autoPage: true,
-        maxRow: 1,
-      },
       tooltip: {
         visible: true,
         mark: {
@@ -597,6 +603,7 @@ function UsageChart({ channelId }: { channelId: number }) {
       height: 240,
       padding: { top: 10, bottom: 5, left: 10, right: 10 },
       background: 'transparent',
+      animation: true,
     }
   }, [chartColors, fields, times, values])
 
