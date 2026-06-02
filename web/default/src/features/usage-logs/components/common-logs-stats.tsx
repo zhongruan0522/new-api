@@ -25,7 +25,8 @@ import { useIsAdmin } from '@/hooks/use-admin'
 import { Skeleton } from '@/components/ui/skeleton'
 import { getLogStats, getUserLogStats } from '../api'
 import { DEFAULT_LOG_STATS } from '../constants'
-import { buildApiParams } from '../lib/utils'
+import { getDefaultTimeRange } from '../lib/utils'
+import type { GetLogStatsParams } from '../types'
 import { useUsageLogsContext } from './usage-logs-provider'
 
 const route = getRouteApi('/_authenticated/usage-logs/$section')
@@ -46,6 +47,42 @@ function StatBadge(props: {
   )
 }
 
+function getSingleLogType(value: unknown): number {
+  const raw = Array.isArray(value) && value.length === 1 ? value[0] : value
+  const type = Number(raw)
+  return Number.isFinite(type) ? type : 0
+}
+
+function timestampToSeconds(value: unknown, fallback: Date): number {
+  const numericValue = typeof value === 'number' ? value : Number(value)
+  const timestamp = Number.isFinite(numericValue)
+    ? numericValue
+    : fallback.getTime()
+  return Math.floor(timestamp / 1000)
+}
+
+function buildStatsParams(
+  searchParams: Record<string, unknown>,
+  isAdmin: boolean
+): GetLogStatsParams {
+  const { start, end } = getDefaultTimeRange()
+
+  return {
+    type: getSingleLogType(searchParams.type),
+    token_name: searchParams.token ? String(searchParams.token) : undefined,
+    model_name: searchParams.model ? String(searchParams.model) : undefined,
+    start_timestamp: timestampToSeconds(searchParams.startTime, start),
+    end_timestamp: timestampToSeconds(searchParams.endTime, end),
+    group: searchParams.group ? String(searchParams.group) : undefined,
+    ...(isAdmin && searchParams.username
+      ? { username: String(searchParams.username) }
+      : {}),
+    ...(isAdmin && searchParams.channel
+      ? { channel: Number(searchParams.channel) || 0 }
+      : {}),
+  }
+}
+
 export function CommonLogsStats() {
   const { t } = useTranslation()
   const isAdmin = useIsAdmin()
@@ -55,13 +92,7 @@ export function CommonLogsStats() {
   const { data: stats, isLoading } = useQuery({
     queryKey: ['usage-logs-stats', isAdmin, searchParams],
     queryFn: async () => {
-      const params = buildApiParams({
-        page: 1,
-        pageSize: 1,
-        searchParams,
-        columnFilters: [],
-        isAdmin,
-      })
+      const params = buildStatsParams(searchParams, isAdmin)
 
       const result = isAdmin
         ? await getLogStats(params)

@@ -43,6 +43,7 @@ import {
   formatModelName,
   getFirstResponseTimeColor,
   getResponseTimeColor,
+  getThroughputColor,
   getTieredBillingSummary,
   hasAnyCacheTokens,
   parseLogOther,
@@ -572,21 +573,29 @@ export function useCommonLogsColumns(isAdmin: boolean): ColumnDef<UsageLog>[] {
         const log = row.original
         if (!isTimingLogType(log.type)) return null
 
-        const useTime = row.getValue('use_time') as number
+        const useTimeMs = row.getValue('use_time') as number
+        const useTimeSeconds = useTimeMs / 1000
         const other = parseLogOther(log.other)
         const frt = other?.frt
-        const tokensPerSecond =
-          useTime > 0 && log.completion_tokens > 0
-            ? log.completion_tokens / useTime
+        const speed =
+          typeof other?.speed === 'number' && other.speed > 0
+            ? other.speed
             : null
-        const timeVariant = getResponseTimeColor(useTime, log.completion_tokens)
+        const timeVariant = getResponseTimeColor(
+          useTimeSeconds,
+          log.completion_tokens
+        )
         const frtVariant = frt ? getFirstResponseTimeColor(frt / 1000) : null
+        const speedVariant =
+          speed != null
+            ? (getThroughputColor(speed) as StatusBadgeProps['variant'])
+            : null
 
         return (
           <div className='flex flex-col gap-1'>
             <div className='flex items-center gap-1.5'>
               <StatusBadge
-                label={formatUseTime(useTime)}
+                label={formatUseTime(useTimeSeconds)}
                 variant={timeVariant as StatusBadgeProps['variant']}
                 size='sm'
                 copyable={false}
@@ -613,16 +622,16 @@ export function useCommonLogsColumns(isAdmin: boolean): ColumnDef<UsageLog>[] {
             <div className='flex items-center gap-1 text-[11px]'>
               <span className='text-muted-foreground/60'>
                 {log.is_stream ? t('Stream') : t('Non-stream')}
-                {tokensPerSecond != null && (
-                  <>
-                    {' · '}
-                    <span className='font-mono tabular-nums'>
-                      {Math.round(tokensPerSecond)}
-                    </span>
-                    {' t/s'}
-                  </>
-                )}
               </span>
+              {log.is_stream && speed != null && speedVariant && (
+                <StatusBadge
+                  label={`${speed.toFixed(1)} t/s`}
+                  variant={speedVariant}
+                  size='sm'
+                  copyable={false}
+                  className='font-mono'
+                />
+              )}
               {log.is_stream &&
                 other?.stream_status &&
                 other.stream_status.status !== 'ok' && (

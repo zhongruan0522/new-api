@@ -1028,13 +1028,13 @@ export function DetailsDialog(props: DetailsDialogProps) {
                         'font-medium',
                         timingTextColorClass(
                           getResponseTimeColor(
-                            props.log.use_time,
+                            props.log.use_time / 1000,
                             props.log.completion_tokens
                           )
                         )
                       )}
                     >
-                      {formatUseTime(props.log.use_time)}
+                      {formatUseTime(props.log.use_time / 1000)}
                       {props.log.is_stream &&
                         other?.frt != null &&
                         other.frt > 0 && (
