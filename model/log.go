@@ -38,6 +38,7 @@ type Log struct {
 	Ip               string `json:"ip" gorm:"index;default:''"`
 	RequestId        string `json:"request_id,omitempty" gorm:"type:varchar(64);index:idx_logs_request_id;default:''"`
 	Other            string `json:"other"`
+	ModelIcon        string `json:"model_icon,omitempty" gorm:"-"`
 }
 
 // don't use iota, avoid change log type value
@@ -66,9 +67,95 @@ func formatUserLogs(logs []*Log, startIdx int) {
 	}
 }
 
+// enrichLogModelIcons 批量填充日志的模型图标字段。
+// 优先使用 models 表的 icon，其次使用关联 vendors 表的 icon。
+func enrichLogModelIcons(logs []*Log) {
+	modelNames := make([]string, 0, len(logs))
+	for _, l := range logs {
+		if l.ModelName != "" {
+			modelNames = append(modelNames, l.ModelName)
+		}
+	}
+	if len(modelNames) == 0 {
+		return
+	}
+
+	// 查询 models 表中匹配的 model_name → icon 映射
+	type modelRow struct {
+		ModelName string `gorm:"column:model_name"`
+		Icon      string `gorm:"column:icon"`
+		VendorID  int    `gorm:"column:vendor_id"`
+	}
+	var models []modelRow
+	if err := DB.Table("models").
+		Select("model_name, icon, vendor_id").
+		Where("model_name IN ? AND deleted_at IS NULL", modelNames).
+		Find(&models).Error; err != nil {
+		return
+	}
+
+	modelIconMap := make(map[string]string, len(models))
+	vendorIDs := make(map[int]bool)
+	for _, m := range models {
+		if m.Icon != "" {
+			modelIconMap[m.ModelName] = m.Icon
+		}
+		if m.VendorID != 0 {
+			vendorIDs[m.VendorID] = true
+		}
+	}
+
+	// 查询需要的 vendor 图标
+	vendorIconMap := make(map[int]string)
+	if len(vendorIDs) > 0 {
+		ids := make([]int, 0, len(vendorIDs))
+		for id := range vendorIDs {
+			ids = append(ids, id)
+		}
+		type vendorRow struct {
+			Id   int    `gorm:"column:id"`
+			Icon string `gorm:"column:icon"`
+		}
+		var vendors []vendorRow
+		if err := DB.Table("vendors").
+			Select("id, icon").
+			Where("id IN ? AND deleted_at IS NULL", ids).
+			Find(&vendors).Error; err == nil {
+			for _, v := range vendors {
+				if v.Icon != "" {
+					vendorIconMap[v.Id] = v.Icon
+				}
+			}
+		}
+	}
+
+	// 构建 model_name → vendor_icon 的映射（仅对没有自身 icon 的模型）
+	modelVendorIconMap := make(map[string]string)
+	for _, m := range models {
+		if m.Icon == "" && m.VendorID != 0 {
+			if vIcon, ok := vendorIconMap[m.VendorID]; ok {
+				modelVendorIconMap[m.ModelName] = vIcon
+			}
+		}
+	}
+
+	// 填充
+	for _, l := range logs {
+		if l.ModelName == "" {
+			continue
+		}
+		if icon, ok := modelIconMap[l.ModelName]; ok {
+			l.ModelIcon = icon
+		} else if icon, ok := modelVendorIconMap[l.ModelName]; ok {
+			l.ModelIcon = icon
+		}
+	}
+}
+
 func GetLogByTokenId(tokenId int) (logs []*Log, err error) {
 	err = LOG_DB.Model(&Log{}).Where("token_id = ?", tokenId).Order("id desc").Limit(common.MaxRecentItems).Find(&logs).Error
 	formatUserLogs(logs, 0)
+	enrichLogModelIcons(logs)
 	return logs, err
 }
 
@@ -326,6 +413,8 @@ func GetAllLogs(logType int, startTimestamp int64, endTimestamp int64, modelName
 		}
 	}
 
+	enrichLogModelIcons(logs)
+
 	return logs, total, err
 }
 
@@ -373,6 +462,7 @@ func GetUserLogs(userId int, logType int, startTimestamp int64, endTimestamp int
 	}
 
 	formatUserLogs(logs, startIdx)
+	enrichLogModelIcons(logs)
 	return logs, total, err
 }
 

@@ -556,6 +556,7 @@ export function useCommonLogsColumns(isAdmin: boolean): ColumnDef<UsageLog>[] {
           <div className='flex max-w-[220px] flex-col gap-0.5'>
             <ModelBadge
               modelName={modelInfo.name}
+              modelIcon={log.model_icon}
               actualModel={modelInfo.actualModel}
             />
           </div>
