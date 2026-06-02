@@ -158,6 +158,13 @@ export function isMultiKeyChannel(channel: Channel): boolean {
   return channel.channel_info?.is_multi_key || false
 }
 
+/**
+ * Check if channel is a built-in plan channel.
+ */
+export function isPlanChannel(channel: Channel): boolean {
+  return channel.channel_info?.is_plan || false
+}
+
 // ============================================================================
 // Key Formatting
 // ============================================================================

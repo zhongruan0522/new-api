@@ -34,8 +34,21 @@ import {
   Trash2,
   RefreshCw,
   Loader2,
+  PackageSearch,
+  ShieldAlert,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { toast } from 'sonner'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -51,6 +64,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { ConfirmDialog } from '@/components/confirm-dialog'
+import { getGlmRiskStatus } from '../api'
 import { MODEL_FETCHABLE_TYPES } from '../constants'
 import {
   channelsQueryKeys,
@@ -59,6 +73,7 @@ import {
   handleToggleChannelStatus,
   isChannelEnabled,
   isMultiKeyChannel,
+  isPlanChannel,
 } from '../lib'
 import { parseUpstreamUpdateMeta } from '../lib/upstream-update-utils'
 import type { Channel } from '../types'
@@ -74,11 +89,18 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
   const { setOpen, setCurrentRow, upstream } = useChannels()
   const queryClient = useQueryClient()
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+  const [riskDialogOpen, setRiskDialogOpen] = useState(false)
+  const [riskDetected, setRiskDetected] = useState(false)
   const [isTesting, setIsTesting] = useState(false)
   const [isTogglingStatus, setIsTogglingStatus] = useState(false)
+  const [isCheckingRisk, setIsCheckingRisk] = useState(false)
 
   const isEnabled = isChannelEnabled(channel)
   const isMultiKey = isMultiKeyChannel(channel)
+  const isPlan = isPlanChannel(channel)
+  const isGlmPlan =
+    channel.channel_info?.plan_name === 'glm-coding-plan' ||
+    channel.channel_info?.plan_name === 'glm-coding-plan-international'
 
   const handleEdit = () => {
     setCurrentRow(channel)
@@ -125,6 +147,29 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
   const handleManageKeys = () => {
     setCurrentRow(channel)
     setOpen('multi-key-manage')
+  }
+
+  const handlePlanQuota = () => {
+    setCurrentRow(channel)
+    setOpen('plan-quota')
+  }
+
+  const handleCheckRisk = async () => {
+    setIsCheckingRisk(true)
+    try {
+      const response = await getGlmRiskStatus(channel.id)
+      if (!response.success) {
+        throw new Error(response.message || t('Risk query failed'))
+      }
+      setRiskDetected(Boolean(response.data?.is_risk))
+      setRiskDialogOpen(true)
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : t('Risk query failed')
+      )
+    } finally {
+      setIsCheckingRisk(false)
+    }
   }
 
   const handleToggleStatus = async (
@@ -294,6 +339,31 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
             </DropdownMenuItem>
           )}
 
+          {isPlan && (
+            <DropdownMenuItem onClick={handlePlanQuota}>
+              {t('Plan Usage')}
+              <DropdownMenuShortcut>
+                <PackageSearch size={16} />
+              </DropdownMenuShortcut>
+            </DropdownMenuItem>
+          )}
+
+          {isPlan && isGlmPlan && (
+            <DropdownMenuItem
+              onClick={handleCheckRisk}
+              disabled={isCheckingRisk}
+            >
+              {isCheckingRisk ? t('Querying...') : t('Risk Query')}
+              <DropdownMenuShortcut>
+                {isCheckingRisk ? (
+                  <Loader2 size={16} className='animate-spin' />
+                ) : (
+                  <ShieldAlert size={16} />
+                )}
+              </DropdownMenuShortcut>
+            </DropdownMenuItem>
+          )}
+
           <DropdownMenuSeparator />
 
           {/* Delete */}
@@ -324,6 +394,49 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
           setDeleteConfirmOpen(false)
         }}
       />
+
+      <AlertDialog open={riskDialogOpen} onOpenChange={setRiskDialogOpen}>
+        <AlertDialogContent className='sm:max-w-md'>
+          <AlertDialogHeader className='text-start'>
+            <AlertDialogTitle>{t('Risk Query')}</AlertDialogTitle>
+            <AlertDialogDescription render={<div />}>
+              {riskDetected ? (
+                <div className='space-y-2'>
+                  <p>{t('This account has been risk-controlled.')}</p>
+                  <p>
+                    {t('Please visit')}{' '}
+                    <a
+                      href='https://open.bigmodel.cn'
+                      target='_blank'
+                      rel='noreferrer'
+                      className='underline underline-offset-4'
+                    >
+                      智谱开发者平台
+                    </a>{' '}
+                    {t('for resolution steps.')}
+                  </p>
+                </div>
+              ) : (
+                <p>{t('Account status is normal.')}</p>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            {riskDetected && (
+              <AlertDialogCancel
+                onClick={() => {
+                  window.open('https://open.bigmodel.cn', '_blank', 'noopener')
+                }}
+              >
+                {t('Open Platform')}
+              </AlertDialogCancel>
+            )}
+            <AlertDialogAction onClick={() => setRiskDialogOpen(false)}>
+              {t('OK')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

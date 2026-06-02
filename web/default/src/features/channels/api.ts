@@ -34,6 +34,9 @@ import type {
   GetChannelsResponse,
   MultiKeyManageParams,
   MultiKeyStatusResponse,
+  GlmRiskResponse,
+  GlmUsageParams,
+  PlanQuotaResponse,
   SearchChannelsParams,
   SearchChannelsResponse,
   TagOperationParams,
@@ -42,6 +45,7 @@ import type {
 // Extended API config types
 interface ExtendedApiConfig extends AxiosRequestConfig {
   skipBusinessError?: boolean
+  skipErrorHandler?: boolean
   disableDuplicate?: boolean
 }
 
@@ -294,6 +298,46 @@ export async function getCodexUsage(
     disableDuplicate: true,
   }
   const res = await api.get(`/api/channel/${channelId}/codex/usage`, config)
+  return res.data
+}
+
+// ============================================================================
+// Plan Channel Operations
+// ============================================================================
+
+export async function getPlanQuota(
+  channelId: number
+): Promise<PlanQuotaResponse> {
+  const config: ExtendedApiConfig = {
+    skipBusinessError: true,
+    disableDuplicate: true,
+  }
+  const res = await api.get(`/api/channel/plan/quota/${channelId}`, config)
+  return res.data
+}
+
+export async function getGlmPlanUsage(
+  channelId: number,
+  params: GlmUsageParams
+): Promise<Record<string, unknown>> {
+  const config: ExtendedApiConfig = {
+    skipBusinessError: true,
+    disableDuplicate: true,
+    skipErrorHandler: true,
+    params,
+  }
+  const res = await api.get(`/api/channel/plan/glm/usage/${channelId}`, config)
+  return res.data
+}
+
+export async function getGlmRiskStatus(
+  channelId: number
+): Promise<GlmRiskResponse> {
+  const config: ExtendedApiConfig = {
+    skipBusinessError: true,
+    disableDuplicate: true,
+  }
+  const res = await api.get(`/api/channel/plan/glm/risk/${channelId}`, config)
   return res.data
 }
 

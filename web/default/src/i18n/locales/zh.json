@@ -4691,6 +4691,15 @@
     "Timezone": "时区",
     "Total quota": "总额度",
     "Used quota": "已用额度",
-    "Weekdays": "星期"
+    "Weekdays": "星期",
+    "Account status is normal.": "账户状态正常。",
+    "Failed to query plan usage": "套餐用量查询失败",
+    "for resolution steps.": "获取解决办法。",
+    "Open Platform": "打开平台",
+    "Plan Usage": "套餐用量",
+    "Please visit": "请前往",
+    "Risk Query": "风控查询",
+    "Risk query failed": "风控查询失败",
+    "This account has been risk-controlled.": "当前账户已被风控。"
   }
 }

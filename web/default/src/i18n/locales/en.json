@@ -4691,6 +4691,15 @@
     "Timezone": "Timezone",
     "Total quota": "Total quota",
     "Used quota": "Used quota",
-    "Weekdays": "Weekdays"
+    "Weekdays": "Weekdays",
+    "Account status is normal.": "Account status is normal.",
+    "Failed to query plan usage": "Failed to query plan usage",
+    "for resolution steps.": "for resolution steps.",
+    "Open Platform": "Open Platform",
+    "Plan Usage": "Plan Usage",
+    "Please visit": "Please visit",
+    "Risk Query": "Risk Query",
+    "Risk query failed": "Risk query failed",
+    "This account has been risk-controlled.": "This account has been risk-controlled."
   }
 }

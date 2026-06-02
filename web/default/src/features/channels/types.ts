@@ -24,6 +24,8 @@ import { z } from 'zod'
 
 export const channelInfoSchema = z.object({
   is_multi_key: z.boolean().default(false),
+  is_plan: z.boolean().default(false),
+  plan_name: z.string().default(''),
   multi_key_size: z.number().default(0),
   multi_key_status_list: z.record(z.string(), z.number()).optional(),
   multi_key_disabled_reason: z.record(z.string(), z.string()).optional(),
@@ -66,6 +68,8 @@ export const channelSchema = z.object({
   max_input_tokens: z.number().default(0),
   channel_info: channelInfoSchema.default({
     is_multi_key: false,
+    is_plan: false,
+    plan_name: '',
     multi_key_size: 0,
     multi_key_polling_index: 0,
     multi_key_mode: 'random',
@@ -208,6 +212,77 @@ export interface MultiKeyStatusResponse {
     enabled_count: number
     manual_disabled_count: number
     auto_disabled_count: number
+  }
+}
+
+// ============================================================================
+// Plan Channel Types
+// ============================================================================
+
+export interface PlanLimitInfo {
+  percentage?: number
+  next_reset_time?: string
+  status?: string
+}
+
+export interface PlanMcpToolDetail {
+  name?: string
+  usage?: number
+}
+
+export interface PlanMcpLimitInfo extends PlanLimitInfo {
+  current_usage?: string
+  tools?: PlanMcpToolDetail[]
+}
+
+export interface PlanTierInfo {
+  name?: string
+  percentage?: number
+  used?: number
+  limit?: number
+  remaining?: number
+  resets_at?: string
+  status?: string
+}
+
+export interface PlanQuotaData {
+  plan_name?: string
+  plan_version?: string
+  product_level?: string
+  product_name?: string
+  effective_date?: string
+  expiry_date?: string
+  auto_renew?: boolean
+  weekly_limit?: PlanLimitInfo
+  token_limit?: PlanLimitInfo
+  mcp_tool_limit?: PlanMcpLimitInfo
+  tiers?: PlanTierInfo[]
+  credential?: 'valid' | 'expired' | 'error' | string
+  quota_supported?: boolean
+  channel_id?: number
+  channel_name?: string
+}
+
+export interface PlanQuotaResponse {
+  success: boolean
+  message?: string
+  data?: PlanQuotaData
+}
+
+export type GlmUsageType = 'model' | 'tool' | 'performance'
+
+export interface GlmUsageParams {
+  type?: GlmUsageType
+  startTime?: string
+  endTime?: string
+}
+
+export interface GlmRiskResponse {
+  success: boolean
+  message?: string
+  data?: {
+    is_risk?: boolean
+    message?: string
   }
 }
 
