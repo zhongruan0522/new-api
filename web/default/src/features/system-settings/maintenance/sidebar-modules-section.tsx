@@ -40,6 +40,7 @@ import { useUpdateOption } from '../hooks/use-update-option'
 import {
   SIDEBAR_MODULES_DEFAULT,
   type SidebarModulesAdminConfig,
+  type SidebarSectionConfig,
   serializeSidebarModulesAdmin,
 } from './config'
 
@@ -173,7 +174,25 @@ export function SidebarModulesSection({
   }, [formDefaults, form])
 
   const onSubmit = async (values: SidebarFormValues) => {
-    const serialized = serializeSidebarModulesAdmin(values)
+    // Strip unknown sections and modules before saving, so stale entries
+    // (e.g. "midjourney", "task" from old data) are cleaned up.
+    const cleaned: SidebarFormValues = {}
+    for (const [sectionKey, sectionConfig] of Object.entries(values)) {
+      const defaultSection = SIDEBAR_MODULES_DEFAULT[sectionKey]
+      if (!defaultSection) continue
+      const cleanedSection: SidebarSectionConfig = {
+        enabled: sectionConfig.enabled,
+      }
+      for (const [moduleKey, moduleValue] of Object.entries(sectionConfig)) {
+        if (moduleKey === 'enabled') continue
+        if (moduleKey in defaultSection) {
+          cleanedSection[moduleKey] = moduleValue
+        }
+      }
+      cleaned[sectionKey] = cleanedSection
+    }
+
+    const serialized = serializeSidebarModulesAdmin(cleaned)
     if (serialized === initialSerialized) {
       return
     }
@@ -188,7 +207,13 @@ export function SidebarModulesSection({
     form.reset(SIDEBAR_MODULES_DEFAULT)
   }
 
-  const sections = Object.entries(config)
+  // Only render sections that exist in the default config.
+  // Unknown sections (e.g. stale "midjourney", "task" from old data)
+  // are silently stripped so the admin cannot toggle non-existent modules.
+  const knownSectionKeys = new Set(Object.keys(SIDEBAR_MODULES_DEFAULT))
+  const sections = Object.entries(config).filter(([sectionKey]) =>
+    knownSectionKeys.has(sectionKey)
+  )
 
   return (
     <SettingsSection title={t('Sidebar modules')}>
@@ -206,8 +231,15 @@ export function SidebarModulesSection({
               title: toTitleCase(sectionKey),
               description: t('Custom sidebar section'),
             }
+            // Only render modules that exist in the default config for this section.
+            const defaultModules = SIDEBAR_MODULES_DEFAULT[sectionKey]
+            const knownModuleKeys = defaultModules
+              ? new Set(Object.keys(defaultModules))
+              : null
             const modules = Object.entries(sectionConfig).filter(
-              ([moduleKey]) => moduleKey !== 'enabled'
+              ([moduleKey]) =>
+                moduleKey !== 'enabled' &&
+                (!knownModuleKeys || knownModuleKeys.has(moduleKey))
             )
 
             return (
