@@ -2,6 +2,7 @@ package model
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/glebarez/sqlite"
@@ -105,6 +106,79 @@ func TestValidateAccessTokenAcceptsNonEmptyBearerToken(t *testing.T) {
 				t.Fatalf("ValidateAccessToken(%q) returned user %d, want %d", authorization, got.Id, user.Id)
 			}
 		})
+	}
+}
+
+func TestUserAccessTokenIsNotSerialized(t *testing.T) {
+	accessToken := "sensitive-management-token"
+	user := User{
+		Id:          1,
+		Username:    "root",
+		Password:    "password123",
+		Role:        common.RoleRootUser,
+		Status:      common.UserStatusEnabled,
+		DisplayName: "Root User",
+		AccessToken: &accessToken,
+		Group:       "default",
+	}
+
+	data, err := common.Marshal(user)
+	if err != nil {
+		t.Fatalf("marshal user: %v", err)
+	}
+	body := string(data)
+	if strings.Contains(body, "access_token") || strings.Contains(body, accessToken) {
+		t.Fatalf("serialized user leaked access token: %s", body)
+	}
+}
+
+func TestUserPublicQueriesOmitAccessToken(t *testing.T) {
+	setupUserAccessTokenTestDB(t)
+	rootAccessToken := "root-management-token"
+	adminAccessToken := "admin-management-token"
+	createAccessTokenTestUser(t, 1, common.RoleRootUser, &rootAccessToken)
+	createAccessTokenTestUser(t, 2, common.RoleAdminUser, &adminAccessToken)
+
+	users, total, err := GetAllUsers(&common.PageInfo{Page: 1, PageSize: 10})
+	if err != nil {
+		t.Fatalf("GetAllUsers error: %v", err)
+	}
+	if total != 2 {
+		t.Fatalf("GetAllUsers total = %d, want 2", total)
+	}
+	for _, user := range users {
+		if user.AccessToken != nil {
+			t.Fatalf("GetAllUsers returned access token for user %d", user.Id)
+		}
+	}
+
+	searchUsers, total, err := SearchUsers("user", "", "", 0, 10)
+	if err != nil {
+		t.Fatalf("SearchUsers error: %v", err)
+	}
+	if total != 2 {
+		t.Fatalf("SearchUsers total = %d, want 2", total)
+	}
+	for _, user := range searchUsers {
+		if user.AccessToken != nil {
+			t.Fatalf("SearchUsers returned access token for user %d", user.Id)
+		}
+	}
+
+	publicUser, err := GetUserById(1, false)
+	if err != nil {
+		t.Fatalf("GetUserById(false) error: %v", err)
+	}
+	if publicUser.AccessToken != nil {
+		t.Fatalf("GetUserById(false) returned access token")
+	}
+
+	fullUser, err := GetUserById(1, true)
+	if err != nil {
+		t.Fatalf("GetUserById(true) error: %v", err)
+	}
+	if fullUser.AccessToken == nil || *fullUser.AccessToken != rootAccessToken {
+		t.Fatalf("GetUserById(true) access token = %v, want %q", fullUser.AccessToken, rootAccessToken)
 	}
 }
 
