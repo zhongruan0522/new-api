@@ -471,9 +471,19 @@ func PasskeyVerifyFinish(c *gin.Context) {
 		return
 	}
 
+	verifiedAt, err := PasskeyVerifyAndSetSession(c, user.Id)
+	if err != nil {
+		common.ApiError(c, fmt.Errorf("保存验证状态失败: %v", err))
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "Passkey 验证成功",
+		"data": gin.H{
+			"verified":   true,
+			"expires_at": verifiedAt + SecureVerificationTimeout,
+		},
 	})
 }
 

@@ -281,6 +281,9 @@ func migrateDB() error {
 		return err
 	}
 
+	if err := cleanupEmptyAccessTokens(); err != nil {
+		return err
+	}
 	if err := cleanupRemovedChatPlaygroundData(); err != nil {
 		return err
 	}
@@ -348,6 +351,9 @@ func migrateDBFast() error {
 			return err
 		}
 	}
+	if err := cleanupEmptyAccessTokens(); err != nil {
+		return err
+	}
 	if err := cleanupRemovedChatPlaygroundData(); err != nil {
 		return err
 	}
@@ -366,6 +372,10 @@ func migrateLOGDB() error {
 		return err
 	}
 	return nil
+}
+
+func cleanupEmptyAccessTokens() error {
+	return DB.Model(&User{}).Where("access_token = ?", "").Update("access_token", nil).Error
 }
 
 // cleanupLegacyUniqueIndexes 清理所有从旧版 uniqueIndex tag 迁移到新版复合/部分索引后

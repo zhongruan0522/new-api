@@ -673,13 +673,28 @@ func IsAdmin(userId int) bool {
 //	return user.Status == common.UserStatusEnabled, nil
 //}
 
-func ValidateAccessToken(token string) (user *User) {
+func normalizeAccessToken(authorization string) string {
+	authorization = strings.TrimSpace(authorization)
+	if authorization == "" {
+		return ""
+	}
+	parts := strings.Fields(authorization)
+	if len(parts) > 0 && strings.EqualFold(parts[0], "Bearer") {
+		if len(parts) != 2 {
+			return ""
+		}
+		return strings.TrimSpace(parts[1])
+	}
+	return authorization
+}
+
+func ValidateAccessToken(authorization string) (user *User) {
+	token := normalizeAccessToken(authorization)
 	if token == "" {
 		return nil
 	}
-	token = strings.Replace(token, "Bearer ", "", 1)
 	user = &User{}
-	if DB.Where("access_token = ?", token).First(user).RowsAffected == 1 {
+	if DB.Where("access_token = ? AND access_token <> ''", token).First(user).RowsAffected == 1 {
 		return user
 	}
 	return nil
