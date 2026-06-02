@@ -22,7 +22,6 @@ import { MonitoringSettingsSection } from '../integrations/monitoring-settings-s
 import { WorkerSettingsSection } from '../integrations/worker-settings-section'
 import { LogSettingsSection } from '../maintenance/log-settings-section'
 import { PerformanceSection } from '../maintenance/performance-section'
-import { UpdateCheckerSection } from '../maintenance/update-checker-section'
 import type { OperationsSettings } from '../types'
 import { createSectionRegistry } from '../utils/section-registry'
 
@@ -126,28 +125,13 @@ const OPERATIONS_SECTIONS = [
       />
     ),
   },
-  {
-    id: 'update-checker',
-    titleKey: 'System maintenance',
-    build: (
-      _settings: OperationsSettings,
-      currentVersion?: string | null,
-      startTime?: number | null
-    ) => (
-      <UpdateCheckerSection
-        currentVersion={currentVersion}
-        startTime={startTime}
-      />
-    ),
-  },
 ] as const
 
 export type OperationsSectionId = (typeof OPERATIONS_SECTIONS)[number]['id']
 
 const operationsRegistry = createSectionRegistry<
   OperationsSectionId,
-  OperationsSettings,
-  [string | null | undefined, number | null | undefined]
+  OperationsSettings
 >({
   sections: OPERATIONS_SECTIONS,
   defaultSection: 'behavior',
