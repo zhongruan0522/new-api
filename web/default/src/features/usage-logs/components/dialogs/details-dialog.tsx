@@ -1056,6 +1056,36 @@ export function DetailsDialog(props: DetailsDialogProps) {
               )}
             </div>
 
+            {/* Client request headers (consume logs only) */}
+            {isConsume && other && (other.http_referer || other.x_title || other.ua) && (
+              <DetailSection
+                icon={<Monitor className='size-3.5' aria-hidden='true' />}
+                label={t('Client Request Headers')}
+              >
+                {other.http_referer && (
+                  <DetailRow
+                    label='HTTP-Referer'
+                    value={other.http_referer}
+                    mono
+                  />
+                )}
+                {other.x_title && (
+                  <DetailRow
+                    label='X-Title'
+                    value={other.x_title}
+                    mono
+                  />
+                )}
+                {other.ua && (
+                  <DetailRow
+                    label='UA'
+                    value={other.ua}
+                    mono
+                  />
+                )}
+              </DetailSection>
+            )}
+
             {/* Request conversion (admin only, not for refund) */}
             {showConversion && (
               <DetailSection label={t('Request Conversion')}>

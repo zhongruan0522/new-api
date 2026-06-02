@@ -204,6 +204,10 @@ export interface LogOtherData {
   violation_fee_code?: string
   violation_fee_marker?: string
   fee_quota?: number
+  // Client request headers (type=2, consume logs)
+  http_referer?: string
+  x_title?: string
+  ua?: string
   // Reject / intercept reason (admin)
   reject_reason?: string
   // Task-related fields (for refund logs, type=6)
