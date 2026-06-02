@@ -23,7 +23,6 @@ import {
   MoreHorizontal,
   Boxes,
   Pencil,
-  TestTube,
   Gauge,
   DollarSign,
   Download,
@@ -65,9 +64,7 @@ import {
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { getGlmRiskStatus } from '../api'
 import {
-  channelsQueryKeys,
   handleDeleteChannel,
-  handleTestChannel,
   handleToggleChannelStatus,
   isChannelEnabled,
   isMultiKeyChannel,
@@ -88,7 +85,6 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
   const [riskDialogOpen, setRiskDialogOpen] = useState(false)
   const [riskDetected, setRiskDetected] = useState(false)
-  const [isTesting, setIsTesting] = useState(false)
   const [isTogglingStatus, setIsTogglingStatus] = useState(false)
   const [isCheckingRisk, setIsCheckingRisk] = useState(false)
 
@@ -107,18 +103,6 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
   const handleTest = () => {
     setCurrentRow(channel)
     setOpen('test-channel')
-  }
-
-  const handleDirectTest = async (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.stopPropagation()
-    setIsTesting(true)
-    try {
-      await handleTestChannel(channel.id, undefined, () => {
-        queryClient.invalidateQueries({ queryKey: channelsQueryKeys.lists() })
-      })
-    } finally {
-      setIsTesting(false)
-    }
   }
 
   const handleQueryBalance = () => {
@@ -189,17 +173,12 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
             <Button
               variant='ghost'
               size='icon-sm'
-              onClick={handleDirectTest}
-              disabled={isTesting}
+              onClick={handleTest}
               aria-label={t('Test Connection')}
             />
           }
         >
-          {isTesting ? (
-            <Loader2 className='size-4 animate-spin' />
-          ) : (
-            <Gauge className='size-4' />
-          )}
+          <Gauge className='size-4' />
         </TooltipTrigger>
         <TooltipContent>{t('Test Connection')}</TooltipContent>
       </Tooltip>
@@ -252,14 +231,6 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
             {t('Edit')}
             <DropdownMenuShortcut>
               <Pencil size={16} />
-            </DropdownMenuShortcut>
-          </DropdownMenuItem>
-
-          {/* Test Connection */}
-          <DropdownMenuItem onClick={handleTest}>
-            {t('Test Connection')}
-            <DropdownMenuShortcut>
-              <TestTube size={16} />
             </DropdownMenuShortcut>
           </DropdownMenuItem>
 
