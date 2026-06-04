@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/logger"
 	"github.com/zhongruan0522/new-api/model"
 	"github.com/zhongruan0522/new-api/service"
 	"github.com/zhongruan0522/new-api/setting"
@@ -165,13 +164,14 @@ func RequestEpay(c *gin.Context) {
 	}
 	amount := req.Amount
 	topUp := &model.TopUp{
-		UserId:        id,
-		Amount:        amount,
-		Money:         payMoney,
-		TradeNo:       tradeNo,
-		PaymentMethod: req.PaymentMethod,
-		CreateTime:    time.Now().Unix(),
-		Status:        "pending",
+		UserId:          id,
+		Amount:          amount,
+		Money:           payMoney,
+		TradeNo:         tradeNo,
+		PaymentMethod:   req.PaymentMethod,
+		PaymentProvider: model.PaymentProviderEpay,
+		CreateTime:      time.Now().Unix(),
+		Status:          common.TopUpStatusPending,
 	}
 	err = topUp.Insert()
 	if err != nil {
@@ -263,31 +263,11 @@ func EpayNotify(c *gin.Context) {
 		log.Println(verifyInfo)
 		LockOrder(verifyInfo.ServiceTradeNo)
 		defer UnlockOrder(verifyInfo.ServiceTradeNo)
-		topUp := model.GetTopUpByTradeNo(verifyInfo.ServiceTradeNo)
-		if topUp == nil {
-			log.Printf("易支付回调未找到订单: %v", verifyInfo)
+		if err := model.CompleteEpayTopUp(verifyInfo.ServiceTradeNo, verifyInfo.Type, verifyInfo.Money); err != nil {
+			log.Printf("易支付回调完成订单失败: trade_no=%s type=%s money=%s err=%v", verifyInfo.ServiceTradeNo, verifyInfo.Type, verifyInfo.Money, err)
 			return
 		}
-		if topUp.Status == "pending" {
-			topUp.Status = "success"
-			err := topUp.Update()
-			if err != nil {
-				log.Printf("易支付回调更新订单失败: %v", topUp)
-				return
-			}
-			//user, _ := model.GetUserById(topUp.UserId, false)
-			//user.Quota += topUp.Amount * 500000
-			dAmount := decimal.NewFromInt(int64(topUp.Amount))
-			dQuotaPerUnit := decimal.NewFromFloat(common.QuotaPerUnit)
-			quotaToAdd := int(dAmount.Mul(dQuotaPerUnit).IntPart())
-			err = model.IncreaseUserQuota(topUp.UserId, quotaToAdd, true)
-			if err != nil {
-				log.Printf("易支付回调更新用户失败: %v", topUp)
-				return
-			}
-			log.Printf("易支付回调更新用户成功 %v", topUp)
-			model.RecordLog(topUp.UserId, model.LogTypeTopup, fmt.Sprintf("使用在线充值成功，充值金额: %v，支付金额：%f", logger.LogQuota(quotaToAdd), topUp.Money))
-		}
+		log.Printf("易支付回调更新用户成功 trade_no=%s", verifyInfo.ServiceTradeNo)
 	} else {
 		log.Printf("易支付异常回调: %v", verifyInfo)
 	}
