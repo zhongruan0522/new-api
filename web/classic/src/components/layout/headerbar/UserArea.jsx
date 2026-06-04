@@ -163,7 +163,7 @@ const UserArea = ({
 
     return (
       <div className='flex items-center'>
-        <Link to='/login' className='flex'>
+        <Link to='/login' className='classic-header-action-link flex'>
           <Button
             theme='borderless'
             type='tertiary'
@@ -174,7 +174,10 @@ const UserArea = ({
         </Link>
         {true && (
           <div className='hidden md:block'>
-            <Link to='/register' className='flex -ml-px'>
+            <Link
+              to='/register'
+              className='classic-header-action-link flex -ml-px'
+            >
               <Button
                 theme='solid'
                 type='primary'

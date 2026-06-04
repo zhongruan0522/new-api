@@ -36,7 +36,10 @@ const HeaderLogo = ({
   }
 
   return (
-    <Link to='/' className='group flex items-center gap-2'>
+    <Link
+      to='/'
+      className='classic-header-logo-link group flex items-center gap-2'
+    >
       <div className='relative w-8 h-8 md:w-8 md:h-8'>
         <SkeletonWrapper loading={isLoading || !logoLoaded} type='image' />
         <img

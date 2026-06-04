@@ -95,6 +95,28 @@ code {
   height: 44px !important;
 }
 
+.classic-header-logo-link,
+.classic-header-nav-link,
+.classic-header-action-link {
+  color: var(--semi-color-text-0);
+  text-decoration: none;
+}
+
+.classic-header-logo-link:hover,
+.classic-header-logo-link:focus,
+.classic-header-nav-link:hover,
+.classic-header-nav-link:focus,
+.classic-header-action-link:hover,
+.classic-header-action-link:focus {
+  color: var(--semi-color-primary);
+  text-decoration: none;
+}
+
+.classic-header-nav-link:hover,
+.classic-header-nav-link:focus {
+  background-color: var(--semi-color-fill-0);
+}
+
 #root
   > section
   > header
