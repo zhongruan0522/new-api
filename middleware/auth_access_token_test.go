@@ -23,6 +23,7 @@ func setupAuthAccessTokenTestDB(t *testing.T) {
 	oldDB := model.DB
 	oldRedisEnabled := common.RedisEnabled
 	oldMemoryCacheEnabled := common.MemoryCacheEnabled
+
 	db, err := gorm.Open(sqlite.Open(fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name())), &gorm.Config{})
 	if err != nil {
 		t.Fatalf("open sqlite test db: %v", err)
@@ -140,6 +141,86 @@ func TestUserAuthDoesNotUseCommonUserEmptyAccessTokenAsRoot(t *testing.T) {
 
 	if strings.Contains(recorder.Body.String(), `"id":1`) || strings.Contains(recorder.Body.String(), `"role":100`) {
 		t.Fatalf("common user empty access token authenticated as root, response: %s", recorder.Body.String())
+	}
+}
+
+func TestTokenAuthHidesUserCacheErrors(t *testing.T) {
+	setupAuthAccessTokenTestDB(t)
+	gin.SetMode(gin.TestMode)
+
+	token := model.Token{
+		UserId:         404,
+		Key:            "tokenauthhiddenusererror",
+		Name:           "hidden-error",
+		Status:         common.TokenStatusEnabled,
+		ExpiredTime:    -1,
+		RemainQuota:    100,
+		UnlimitedQuota: true,
+	}
+	if err := model.DB.Create(&token).Error; err != nil {
+		t.Fatalf("create token: %v", err)
+	}
+
+	router := gin.New()
+	router.GET("/relay", TokenAuth(), func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"success": true})
+	})
+
+	req := httptest.NewRequest(http.MethodGet, "/relay", nil)
+	req.Header.Set("Authorization", "Bearer "+token.Key)
+	recorder := httptest.NewRecorder()
+
+	router.ServeHTTP(recorder, req)
+
+	if recorder.Code != http.StatusInternalServerError {
+		t.Fatalf("status = %d, want %d, body = %s", recorder.Code, http.StatusInternalServerError, recorder.Body.String())
+	}
+	body := recorder.Body.String()
+	if !strings.Contains(body, "数据库错误，请稍后重试") {
+		t.Fatalf("expected generic database error, got: %s", body)
+	}
+	if strings.Contains(body, "record not found") || strings.Contains(body, "404") {
+		t.Fatalf("response leaked backend lookup details: %s", body)
+	}
+}
+
+func TestTokenAuthReadOnlyHidesUserCacheErrors(t *testing.T) {
+	setupAuthAccessTokenTestDB(t)
+	gin.SetMode(gin.TestMode)
+
+	token := model.Token{
+		UserId:         405,
+		Key:            "readonlyhiddenusererror",
+		Name:           "readonly-hidden-error",
+		Status:         common.TokenStatusEnabled,
+		ExpiredTime:    -1,
+		RemainQuota:    100,
+		UnlimitedQuota: true,
+	}
+	if err := model.DB.Create(&token).Error; err != nil {
+		t.Fatalf("create token: %v", err)
+	}
+
+	router := gin.New()
+	router.GET("/readonly", TokenAuthReadOnly(), func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"success": true})
+	})
+
+	req := httptest.NewRequest(http.MethodGet, "/readonly", nil)
+	req.Header.Set("Authorization", "Bearer "+token.Key)
+	recorder := httptest.NewRecorder()
+
+	router.ServeHTTP(recorder, req)
+
+	if recorder.Code != http.StatusInternalServerError {
+		t.Fatalf("status = %d, want %d, body = %s", recorder.Code, http.StatusInternalServerError, recorder.Body.String())
+	}
+	body := recorder.Body.String()
+	if !strings.Contains(body, "数据库错误，请稍后重试") {
+		t.Fatalf("expected generic database error, got: %s", body)
+	}
+	if strings.Contains(body, "record not found") || strings.Contains(body, "405") {
+		t.Fatalf("response leaked backend lookup details: %s", body)
 	}
 }
 

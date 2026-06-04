@@ -246,9 +246,10 @@ func TokenAuthReadOnly() func(c *gin.Context) {
 
 		userCache, err := model.GetUserCache(token.UserId)
 		if err != nil {
+			common.SysLog("TokenAuthReadOnly user cache error: " + err.Error())
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"success": false,
-				"message": err.Error(),
+				"message": "数据库错误，请稍后重试",
 			})
 			c.Abort()
 			return
@@ -358,7 +359,8 @@ func TokenAuth() func(c *gin.Context) {
 
 		userCache, err := model.GetUserCache(token.UserId)
 		if err != nil {
-			abortWithOpenAiMessage(c, http.StatusInternalServerError, err.Error())
+			common.SysLog("TokenAuth user cache error: " + err.Error())
+			abortWithOpenAiMessage(c, http.StatusInternalServerError, "数据库错误，请稍后重试")
 			return
 		}
 		userEnabled := userCache.Status == common.UserStatusEnabled
