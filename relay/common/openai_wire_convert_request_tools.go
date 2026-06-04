@@ -1,6 +1,7 @@
 package common
 
 import (
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -9,12 +10,16 @@ import (
 	"github.com/zhongruan0522/new-api/dto"
 )
 
+const openAIResponsesChatToolNameMaxLen = 64
+
 type openAIResponsesFunctionTool struct {
 	Type        string          `json:"type"`
 	Name        string          `json:"name"`
 	Description string          `json:"description,omitempty"`
 	Parameters  json.RawMessage `json:"parameters,omitempty"`
 	Format      json.RawMessage `json:"format,omitempty"`
+	Tools       json.RawMessage `json:"tools,omitempty"`
+	Children    json.RawMessage `json:"children,omitempty"`
 }
 
 func convertChatToolChoiceToResponsesRaw(choice any) (json.RawMessage, error) {
@@ -171,8 +176,18 @@ func convertResponsesToolChoiceObjectToChatAny(obj map[string]any) (any, error) 
 		return nil, fmt.Errorf("tool_choice.type is required")
 	}
 	toolType = strings.ToLower(strings.TrimSpace(toolType))
-	if toolType != "function" && toolType != dto.CustomType {
+	if toolType != openAIResponsesToolTypeFunction &&
+		toolType != openAIResponsesToolTypeCustom &&
+		toolType != openAIResponsesToolTypeToolSearch {
 		return nil, fmt.Errorf("tool_choice.type %q is not supported for chat.completions conversion", toolType)
+	}
+	if toolType == openAIResponsesToolTypeToolSearch {
+		return map[string]any{
+			"type": "function",
+			"function": map[string]any{
+				"name": openAIResponsesToolSearchChatName,
+			},
+		}, nil
 	}
 
 	name, _ := obj["name"].(string)
@@ -182,13 +197,8 @@ func convertResponsesToolChoiceObjectToChatAny(obj map[string]any) (any, error) 
 	if strings.TrimSpace(name) == "" {
 		return nil, fmt.Errorf("tool_choice.name is required")
 	}
-	if toolType == dto.CustomType {
-		return map[string]any{
-			"type": dto.CustomType,
-			"custom": map[string]any{
-				"name": name,
-			},
-		}, nil
+	if namespace, _ := obj["namespace"].(string); strings.TrimSpace(namespace) != "" {
+		name = flattenOpenAIResponsesNamespaceToolName(namespace, name)
 	}
 
 	return map[string]any{
@@ -207,29 +217,132 @@ func convertResponsesToolsRawToChatTools(raw json.RawMessage) ([]dto.ToolCallReq
 
 	out := make([]dto.ToolCallRequest, 0, len(tools))
 	for i, tool := range tools {
-		item, err := convertOneResponsesToolToChatTool(i, tool)
+		items, err := convertOneResponsesToolToChatTools(i, tool, "")
 		if err != nil {
 			return nil, err
 		}
-		out = append(out, item)
+		out = append(out, items...)
 	}
 	return out, nil
 }
 
-func convertOneResponsesToolToChatTool(index int, tool openAIResponsesFunctionTool) (dto.ToolCallRequest, error) {
+func collectChatToolsFromResponsesToolSearchOutputs(raw json.RawMessage) ([]dto.ToolCallRequest, error) {
+	var value any
+	if err := common.Unmarshal(raw, &value); err != nil {
+		return nil, fmt.Errorf("unmarshal input for tool_search tools failed: %w", err)
+	}
+	out := make([]dto.ToolCallRequest, 0)
+	if err := collectChatToolsFromResponsesValue(value, &out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func collectChatToolsFromResponsesValue(value any, out *[]dto.ToolCallRequest) error {
+	switch v := value.(type) {
+	case []any:
+		for _, item := range v {
+			if err := collectChatToolsFromResponsesValue(item, out); err != nil {
+				return err
+			}
+		}
+	case map[string]any:
+		if typ, _ := v["type"].(string); strings.TrimSpace(typ) == openAIResponsesInputItemTypeToolSearchOutput {
+			if toolsAny, ok := v["tools"]; ok {
+				raw, err := common.Marshal(toolsAny)
+				if err != nil {
+					return fmt.Errorf("marshal tool_search_output.tools failed: %w", err)
+				}
+				tools, err := convertResponsesToolsRawToChatTools(raw)
+				if err != nil {
+					return fmt.Errorf("convert tool_search_output.tools failed: %w", err)
+				}
+				*out = append(*out, tools...)
+			}
+		}
+		for _, child := range v {
+			if err := collectChatToolsFromResponsesValue(child, out); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func appendUniqueChatTools(base []dto.ToolCallRequest, extra []dto.ToolCallRequest) []dto.ToolCallRequest {
+	if len(extra) == 0 {
+		return base
+	}
+	seen := make(map[string]struct{}, len(base)+len(extra))
+	out := make([]dto.ToolCallRequest, 0, len(base)+len(extra))
+	for _, tool := range base {
+		name := chatToolRequestName(tool)
+		if name != "" {
+			seen[name] = struct{}{}
+		}
+		out = append(out, tool)
+	}
+	for _, tool := range extra {
+		name := chatToolRequestName(tool)
+		if name != "" {
+			if _, ok := seen[name]; ok {
+				continue
+			}
+			seen[name] = struct{}{}
+		}
+		out = append(out, tool)
+	}
+	return out
+}
+
+func chatToolRequestName(tool dto.ToolCallRequest) string {
+	if strings.TrimSpace(tool.Function.Name) != "" {
+		return strings.TrimSpace(tool.Function.Name)
+	}
+	if len(tool.Custom) == 0 {
+		return ""
+	}
+	var custom map[string]any
+	if err := common.Unmarshal(tool.Custom, &custom); err != nil {
+		return ""
+	}
+	return strings.TrimSpace(common.Interface2String(custom["name"]))
+}
+
+func convertOneResponsesToolToChatTools(index int, tool openAIResponsesFunctionTool, namespace string) ([]dto.ToolCallRequest, error) {
 	toolType := strings.ToLower(strings.TrimSpace(tool.Type))
 	if toolType == "" {
-		return dto.ToolCallRequest{}, fmt.Errorf("tools[%d].type is required", index)
+		return nil, fmt.Errorf("tools[%d].type is required", index)
 	}
-	if toolType != "function" && toolType != dto.CustomType {
-		return dto.ToolCallRequest{}, fmt.Errorf("tools[%d].type %q is not supported for chat.completions conversion", index, tool.Type)
+	switch toolType {
+	case openAIResponsesToolTypeFunction:
+		item, err := convertOneResponsesFunctionToolToChatTool(index, tool, namespace)
+		if err != nil {
+			return nil, err
+		}
+		return []dto.ToolCallRequest{item}, nil
+	case openAIResponsesToolTypeCustom:
+		item, err := convertOneResponsesCustomToolToChatTool(index, tool)
+		if err != nil {
+			return nil, err
+		}
+		return []dto.ToolCallRequest{item}, nil
+	case openAIResponsesToolTypeToolSearch:
+		return []dto.ToolCallRequest{newResponsesToolSearchChatTool()}, nil
+	case openAIResponsesToolTypeNamespace:
+		return convertOneResponsesNamespaceToolToChatTools(index, tool)
+	default:
+		return nil, fmt.Errorf("tools[%d].type %q is not supported for chat.completions conversion", index, tool.Type)
 	}
-	if toolType == dto.CustomType {
-		return convertOneResponsesCustomToolToChatTool(index, tool)
-	}
+}
+
+func convertOneResponsesFunctionToolToChatTool(index int, tool openAIResponsesFunctionTool, namespace string) (dto.ToolCallRequest, error) {
 	name := strings.TrimSpace(tool.Name)
 	if name == "" {
 		return dto.ToolCallRequest{}, fmt.Errorf("tools[%d].name is required", index)
+	}
+	if strings.TrimSpace(namespace) != "" {
+		name = flattenOpenAIResponsesNamespaceToolName(namespace, name)
 	}
 
 	var params any
@@ -254,20 +367,122 @@ func convertOneResponsesCustomToolToChatTool(index int, tool openAIResponsesFunc
 	if name == "" {
 		return dto.ToolCallRequest{}, fmt.Errorf("tools[%d].name is required", index)
 	}
-	custom := map[string]any{"name": name}
-	if strings.TrimSpace(tool.Description) != "" {
-		custom["description"] = tool.Description
+	return dto.ToolCallRequest{
+		Type: "function",
+		Function: dto.FunctionRequest{
+			Name:        name,
+			Description: buildResponsesCustomToolChatDescription(tool),
+			Parameters: map[string]any{
+				"type": "object",
+				"properties": map[string]any{
+					openAIResponsesCustomInputField: map[string]any{
+						"type":        "string",
+						"description": "Raw string input for the original custom tool. Preserve formatting exactly.",
+					},
+				},
+				"required": []string{openAIResponsesCustomInputField},
+			},
+		},
+	}, nil
+}
+
+func convertOneResponsesNamespaceToolToChatTools(index int, tool openAIResponsesFunctionTool) ([]dto.ToolCallRequest, error) {
+	namespace := strings.TrimSpace(tool.Name)
+	if namespace == "" {
+		return nil, fmt.Errorf("tools[%d].name is required for namespace tool", index)
 	}
-	if len(tool.Format) > 0 {
-		var format any
-		if err := common.Unmarshal(tool.Format, &format); err != nil {
-			return dto.ToolCallRequest{}, fmt.Errorf("unmarshal tools[%d].format failed: %w", index, err)
+	childrenRaw := tool.Tools
+	if len(childrenRaw) == 0 {
+		childrenRaw = tool.Children
+	}
+	if len(childrenRaw) == 0 {
+		return nil, fmt.Errorf("tools[%d].tools is required for namespace tool", index)
+	}
+	var children []openAIResponsesFunctionTool
+	if err := common.Unmarshal(childrenRaw, &children); err != nil {
+		return nil, fmt.Errorf("unmarshal tools[%d].tools failed: %w", index, err)
+	}
+	out := make([]dto.ToolCallRequest, 0, len(children))
+	for childIndex, child := range children {
+		if strings.EqualFold(strings.TrimSpace(child.Type), openAIResponsesToolTypeNamespace) {
+			return nil, fmt.Errorf("tools[%d].tools[%d].type %q is not supported for chat.completions conversion", index, childIndex, child.Type)
 		}
-		custom["format"] = format
+		items, err := convertOneResponsesToolToChatTools(childIndex, child, namespace)
+		if err != nil {
+			return nil, fmt.Errorf("tools[%d].tools[%d]: %w", index, childIndex, err)
+		}
+		out = append(out, items...)
 	}
-	raw, err := common.Marshal(custom)
+	return out, nil
+}
+
+func newResponsesToolSearchChatTool() dto.ToolCallRequest {
+	return dto.ToolCallRequest{
+		Type: "function",
+		Function: dto.FunctionRequest{
+			Name:        openAIResponsesToolSearchChatName,
+			Description: "Search and load Codex tools, plugins, connectors, and MCP namespaces for the current task.",
+			Parameters: map[string]any{
+				"type": "object",
+				"properties": map[string]any{
+					"query": map[string]any{
+						"type":        "string",
+						"description": "Search query for tools or connectors to load.",
+					},
+					"limit": map[string]any{
+						"type":        "integer",
+						"description": "Maximum number of tool groups to return.",
+					},
+				},
+				"required": []string{"query"},
+			},
+		},
+	}
+}
+
+func buildResponsesCustomToolChatDescription(tool openAIResponsesFunctionTool) string {
+	description := strings.TrimSpace(tool.Description)
+	if len(tool.Format) == 0 {
+		return description
+	}
+	var format any
+	if err := common.Unmarshal(tool.Format, &format); err != nil {
+		return description
+	}
+	formatRaw, err := common.Marshal(format)
 	if err != nil {
-		return dto.ToolCallRequest{}, fmt.Errorf("marshal tools[%d].custom failed: %w", index, err)
+		return description
 	}
-	return dto.ToolCallRequest{Type: dto.CustomType, Custom: raw}, nil
+	if description != "" {
+		description += "\n\n"
+	}
+	return description + "Original custom tool format:\n" + string(formatRaw)
+}
+
+func flattenOpenAIResponsesNamespaceToolName(namespace string, name string) string {
+	fullName := strings.TrimSpace(namespace) + "__" + strings.TrimSpace(name)
+	if len(fullName) <= openAIResponsesChatToolNameMaxLen {
+		return fullName
+	}
+	sum := sha256.Sum256([]byte(fullName))
+	suffix := fmt.Sprintf("__%x", sum[:4])
+	prefixLen := openAIResponsesChatToolNameMaxLen - len(suffix)
+	if prefixLen < 0 {
+		prefixLen = 0
+	}
+	return trimStringByBytes(fullName, prefixLen) + suffix
+}
+
+func trimStringByBytes(s string, maxBytes int) string {
+	if len(s) <= maxBytes {
+		return s
+	}
+	var out strings.Builder
+	for _, r := range s {
+		if out.Len()+len(string(r)) > maxBytes {
+			break
+		}
+		out.WriteRune(r)
+	}
+	return out.String()
 }

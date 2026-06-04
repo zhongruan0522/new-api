@@ -14,11 +14,12 @@ type responsesInputTypeProbe struct {
 }
 
 type responsesFunctionCallInput struct {
-	Type      string `json:"type"`
-	CallID    string `json:"call_id"`
-	Name      string `json:"name"`
-	Arguments string `json:"arguments"`
-	Input     string `json:"input"`
+	Type      string          `json:"type"`
+	CallID    string          `json:"call_id"`
+	Name      string          `json:"name"`
+	Namespace string          `json:"namespace,omitempty"`
+	Arguments json.RawMessage `json:"arguments"`
+	Input     string          `json:"input"`
 }
 
 type responsesFunctionCallOutputInput struct {
@@ -103,7 +104,9 @@ func buildChatMessagesFromResponsesInputArray(raw json.RawMessage) ([]dto.Messag
 			}
 			continue
 		}
-		if itemType == openAIResponsesInputItemTypeFunctionCall || itemType == openAIResponsesInputItemTypeCustomToolCall {
+		if itemType == openAIResponsesInputItemTypeFunctionCall ||
+			itemType == openAIResponsesInputItemTypeCustomToolCall ||
+			itemType == openAIResponsesInputItemTypeToolSearchCall {
 			call, err := buildChatToolCallFromResponsesFunctionCall(itemRaw)
 			if err != nil {
 				return nil, fmt.Errorf("input[%d]: %w", i, err)
@@ -147,13 +150,13 @@ func buildChatMessagesFromResponsesInputItemByType(itemType string, raw json.Raw
 			return nil, nil
 		}
 		return []dto.Message{{Role: "assistant", ReasoningContent: reasoning}}, nil
-	case openAIResponsesInputItemTypeFunctionCall, openAIResponsesInputItemTypeCustomToolCall:
+	case openAIResponsesInputItemTypeFunctionCall, openAIResponsesInputItemTypeCustomToolCall, openAIResponsesInputItemTypeToolSearchCall:
 		msg, err := buildChatToolCallMessageFromResponsesFunctionCall(raw)
 		if err != nil {
 			return nil, err
 		}
 		return []dto.Message{msg}, nil
-	case openAIResponsesInputItemTypeFunctionCallOutput, openAIResponsesInputItemTypeCustomToolOutput:
+	case openAIResponsesInputItemTypeFunctionCallOutput, openAIResponsesInputItemTypeCustomToolOutput, openAIResponsesInputItemTypeToolSearchOutput:
 		msg, err := buildChatToolOutputMessageFromResponsesFunctionCallOutput(raw)
 		if err != nil {
 			return nil, err
@@ -244,10 +247,14 @@ func buildChatToolCallFromResponsesFunctionCall(raw json.RawMessage) (dto.ToolCa
 		return dto.ToolCallResponse{}, fmt.Errorf("function_call.call_id is required")
 	}
 	name := strings.TrimSpace(item.Name)
+	itemType := strings.TrimSpace(item.Type)
+	if itemType == openAIResponsesInputItemTypeToolSearchCall {
+		name = openAIResponsesToolSearchChatName
+	}
 	if name == "" {
 		return dto.ToolCallResponse{}, fmt.Errorf("%s.name is required", item.Type)
 	}
-	if strings.TrimSpace(item.Type) == openAIResponsesInputItemTypeCustomToolCall {
+	if itemType == openAIResponsesInputItemTypeCustomToolCall {
 		custom, err := common.Marshal(map[string]any{
 			"name":  name,
 			"input": item.Input,
@@ -261,13 +268,20 @@ func buildChatToolCallFromResponsesFunctionCall(raw json.RawMessage) (dto.ToolCa
 			Custom: custom,
 		}, nil
 	}
+	arguments, err := responsesArgumentsToChatString(item.Arguments)
+	if err != nil {
+		return dto.ToolCallResponse{}, err
+	}
+	if strings.TrimSpace(item.Namespace) != "" {
+		name = flattenOpenAIResponsesNamespaceToolName(item.Namespace, name)
+	}
 
 	return dto.ToolCallResponse{
 		ID:   callID,
 		Type: "function",
 		Function: dto.FunctionResponse{
 			Name:      name,
-			Arguments: item.Arguments,
+			Arguments: arguments,
 		},
 	}, nil
 }
@@ -281,9 +295,15 @@ func buildChatToolOutputMessageFromResponsesFunctionCallOutput(raw json.RawMessa
 	if callID == "" {
 		return dto.Message{}, fmt.Errorf("function_call_output.call_id is required")
 	}
-	output, err := responsesFunctionCallOutputToChatContent(item.Output)
-	if err != nil {
-		return dto.Message{}, err
+	var output any
+	var err error
+	if strings.TrimSpace(item.Type) == openAIResponsesInputItemTypeToolSearchOutput {
+		output = string(raw)
+	} else {
+		output, err = responsesFunctionCallOutputToChatContent(item.Output)
+		if err != nil {
+			return dto.Message{}, err
+		}
 	}
 
 	return dto.Message{
@@ -344,6 +364,28 @@ func responsesFunctionCallOutputToChatContent(raw json.RawMessage) (any, error) 
 		return nil, fmt.Errorf("function_call_output.output only supports text parts for chat.completions conversion")
 	}
 	return text, nil
+}
+
+func responsesArgumentsToChatString(raw json.RawMessage) (string, error) {
+	if len(raw) == 0 || common.GetJsonType(raw) == "null" {
+		return "{}", nil
+	}
+	if common.GetJsonType(raw) == "string" {
+		var arguments string
+		if err := common.Unmarshal(raw, &arguments); err != nil {
+			return "", fmt.Errorf("unmarshal function_call.arguments failed: %w", err)
+		}
+		return arguments, nil
+	}
+	var arguments any
+	if err := common.Unmarshal(raw, &arguments); err != nil {
+		return "", fmt.Errorf("unmarshal function_call.arguments failed: %w", err)
+	}
+	encoded, err := common.Marshal(arguments)
+	if err != nil {
+		return "", fmt.Errorf("marshal function_call.arguments failed: %w", err)
+	}
+	return string(encoded), nil
 }
 
 func convertResponsesContentPartsToChat(parts []map[string]any) ([]dto.MediaContent, error) {

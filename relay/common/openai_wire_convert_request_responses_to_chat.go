@@ -108,6 +108,13 @@ func applyResponsesToChatTools(out *dto.GeneralOpenAIRequest, responsesReq *dto.
 		}
 		out.Tools = tools
 	}
+	if len(responsesReq.Input) > 0 {
+		loadedTools, err := collectChatToolsFromResponsesToolSearchOutputs(responsesReq.Input)
+		if err != nil {
+			return err
+		}
+		out.Tools = appendUniqueChatTools(out.Tools, loadedTools)
+	}
 
 	if len(responsesReq.ParallelToolCalls) > 0 {
 		var enabled bool
