@@ -53,6 +53,8 @@ export type PricingModel = {
   billing_mode?: string
   /** Raw expression describing dynamic / tiered billing */
   billing_expr?: string
+  /** Context-based tiered pricing configuration */
+  context_pricing?: ContextPricingConfig
   /** Pricing version returned by backend, useful for cache busting */
   pricing_version?: string
   /**
@@ -110,3 +112,20 @@ export type PriceType =
   | 'audio_input'
   | 'audio_output'
 export type QuotaType = 0 | 1 // 0: token-based, 1: per-request
+
+export type ContextPricingTier = {
+  name?: string
+  min_tokens: number
+  max_tokens?: number | null
+  model_ratio: number
+  completion_ratio: number
+  cache_ratio: number
+  create_cache_ratio: number
+  audio_ratio: number
+  audio_completion_ratio: number
+}
+
+export type ContextPricingConfig = {
+  enabled: boolean
+  tiers: ContextPricingTier[]
+}

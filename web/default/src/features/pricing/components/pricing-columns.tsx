@@ -40,11 +40,52 @@ import {
   formatRequestPrice,
   stripTrailingZeros,
 } from '../lib/price'
-import type { PricingModel, TokenUnit } from '../types'
+import type { ContextPricingConfig, PricingModel, TokenUnit } from '../types'
 
 // ----------------------------------------------------------------------------
 // Pricing Table Columns
 // ----------------------------------------------------------------------------
+
+const TOKEN_UNIT_DIVISORS: Record<TokenUnit, number> = { M: 1, K: 1000 }
+
+function formatTokenRangeShort(min: number, max?: number | null): string {
+  const fmt = (n: number) =>
+    n >= 1_000_000
+      ? `${(n / 1_000_000).toFixed(n % 1_000_000 === 0 ? 0 : 1)}M`
+      : n >= 1000
+        ? `${(n / 1000).toFixed(n % 1000 === 0 ? 0 : 1)}K`
+        : String(n)
+  if (max == null) return `>=${fmt(min)}`
+  return `${fmt(min)}~${fmt(max)}`
+}
+
+function computeTierDisplayPrice(
+  ratio: number,
+  model: PricingModel,
+  tokenUnit: TokenUnit,
+  showRechargePrice: boolean,
+  priceRate: number,
+  usdExchangeRate: number
+): string {
+  const groups = Array.isArray(model.enable_groups) ? model.enable_groups : []
+  const ratios = model.group_ratio || {}
+  let groupRatio = 1
+  if (groups.length > 0) {
+    let minR = Infinity
+    for (const g of groups) {
+      if (ratios[g] !== undefined && ratios[g] < minR) minR = ratios[g]
+    }
+    if (minR !== Infinity) groupRatio = minR
+  }
+  const base = ratio * 2 * groupRatio
+  let priceUSD = base / TOKEN_UNIT_DIVISORS[tokenUnit]
+  if (showRechargePrice) {
+    priceUSD = (priceUSD * priceRate) / usdExchangeRate
+  }
+  return priceUSD < 0.0001
+    ? priceUSD.toExponential(2)
+    : priceUSD.toFixed(priceUSD >= 1 ? 2 : 4)
+}
 
 export interface PricingColumnsOptions {
   tokenUnit?: TokenUnit
@@ -208,6 +249,36 @@ export function usePricingColumns(
         }
 
         const isTokenBased = isTokenBasedModel(model)
+        const contextPricing = model.context_pricing
+        const hasContextPricing =
+          contextPricing?.enabled && (contextPricing.tiers?.length ?? 0) > 1
+
+        if (isTokenBased && hasContextPricing) {
+          return (
+            <div className='min-w-[200px]'>
+              <div className='flex flex-wrap gap-x-3 gap-y-0.5'>
+                {contextPricing!.tiers.map((tier, i) => (
+                  <span key={i} className='font-mono text-xs tabular-nums'>
+                    <span className='text-muted-foreground/50'>
+                      {formatTokenRangeShort(tier.min_tokens, tier.max_tokens)}
+                    </span>{' '}
+                    {computeTierDisplayPrice(
+                      tier.model_ratio,
+                      model,
+                      tokenUnit,
+                      showRechargePrice,
+                      priceRate,
+                      usdExchangeRate
+                    )}
+                  </span>
+                ))}
+              </div>
+              <div className='text-muted-foreground/50 text-[10px]'>
+                / {tokenUnitLabel} tokens · {contextPricing!.tiers.length} {t('tiers')}
+              </div>
+            </div>
+          )
+        }
 
         if (isTokenBased) {
           const inputPrice = stripTrailingZeros(
