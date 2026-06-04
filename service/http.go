@@ -24,12 +24,13 @@ func CloseResponseBodyGracefully(httpResponse *http.Response) {
 }
 
 func ShouldCopyUpstreamHeader(c *gin.Context, key string, values []string) bool {
-	if strings.EqualFold(key, "Content-Length") {
+	key = strings.TrimSpace(key)
+	if key == "" || len(values) == 0 || strings.EqualFold(key, "Content-Length") {
 		return false
 	}
 	if strings.EqualFold(key, common.RequestIdKey) {
-		if c != nil && len(values) > 0 {
-			c.Set(common.UpstreamRequestIdKey, values[0])
+		if c != nil {
+			c.Set(common.UpstreamRequestIdKey, strings.TrimSpace(values[0]))
 		}
 		return false
 	}

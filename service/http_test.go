@@ -25,6 +25,9 @@ func TestShouldCopyUpstreamHeaderSkipsLocalRequestIdAndCapturesUpstreamId(t *tes
 	if ShouldCopyUpstreamHeader(c, "Content-Length", []string{"123"}) {
 		t.Fatal("expected Content-Length to be skipped")
 	}
+	if ShouldCopyUpstreamHeader(c, "Content-Type", nil) {
+		t.Fatal("expected empty header values to be skipped")
+	}
 }
 
 func TestIOCopyBytesGracefullyDoesNotOverrideLocalRequestId(t *testing.T) {

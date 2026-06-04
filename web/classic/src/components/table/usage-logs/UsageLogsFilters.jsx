@@ -102,6 +102,15 @@ const LogsFilters = ({
             size='small'
           />
 
+          <Form.Input
+            field='upstream_request_id'
+            prefix={<IconSearch />}
+            placeholder={t('Upstream Request ID')}
+            showClear
+            pure
+            size='small'
+          />
+
           {isAdminUser && (
             <>
               <Form.Input
