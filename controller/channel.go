@@ -15,6 +15,7 @@ import (
 	"github.com/zhongruan0522/new-api/relay/channel/gemini"
 	"github.com/zhongruan0522/new-api/relay/channel/ollama"
 	"github.com/zhongruan0522/new-api/service"
+	"github.com/zhongruan0522/new-api/setting/system_setting"
 
 	"github.com/gin-gonic/gin"
 )
@@ -1174,6 +1175,19 @@ func UpdateChannel(c *gin.Context) {
 	return
 }
 
+func resolveFetchModelsBaseURL(baseURL string) string {
+	baseURL = strings.TrimSpace(baseURL)
+	if plan, ok := constant.ChannelSpecialBases[baseURL]; ok && plan.OpenAIBaseURL != "" {
+		return plan.OpenAIBaseURL
+	}
+	return baseURL
+}
+
+func validateFetchModelsURL(url string) error {
+	fetchSetting := system_setting.GetFetchSetting()
+	return common.ValidateURLWithFetchSetting(url, fetchSetting.EnableSSRFProtection, fetchSetting.AllowPrivateIp, fetchSetting.DomainFilterMode, fetchSetting.IpFilterMode, fetchSetting.DomainList, fetchSetting.IpList, fetchSetting.AllowedPorts, fetchSetting.ApplyIPFilterForDomain)
+}
+
 func FetchModels(c *gin.Context) {
 	var req struct {
 		BaseURL string `json:"base_url"`
@@ -1199,6 +1213,13 @@ func FetchModels(c *gin.Context) {
 	key = strings.Split(key, "\n")[0]
 
 	if req.Type == constant.ChannelTypeOllama {
+		if err := validateFetchModelsURL(fmt.Sprintf("%s/v1/models", strings.TrimRight(resolveFetchModelsBaseURL(baseURL), "/"))); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"success": false,
+				"message": err.Error(),
+			})
+			return
+		}
 		models, err := ollama.FetchOllamaModels(baseURL, key)
 		if err != nil {
 			c.JSON(http.StatusOK, gin.H{
@@ -1221,6 +1242,13 @@ func FetchModels(c *gin.Context) {
 	}
 
 	if req.Type == constant.ChannelTypeGemini {
+		if err := validateFetchModelsURL(fmt.Sprintf("%s/v1beta/models", strings.TrimRight(baseURL, "/"))); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"success": false,
+				"message": err.Error(),
+			})
+			return
+		}
 		headers := http.Header{}
 		applyFetchModelsDefaultHeaders(headers)
 		models, err := gemini.FetchGeminiModelsWithHeaders(baseURL, key, "", headers)
@@ -1256,6 +1284,14 @@ func FetchModels(c *gin.Context) {
 		}
 	default:
 		url = fmt.Sprintf("%s/v1/models", baseURL)
+	}
+
+	if err := validateFetchModelsURL(url); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"message": err.Error(),
+		})
+		return
 	}
 
 	request, err := http.NewRequest("GET", url, nil)
