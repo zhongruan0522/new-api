@@ -16,7 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Plus, Search, Trash2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
@@ -90,6 +90,10 @@ type ContextPricingEditorProps = {
 
 const PAGE_SIZE_OPTIONS = [20, 50, 100]
 const numberInputPattern = /^(\d+(\.\d*)?|\.\d*)?$/
+
+/** Values that look like an in-progress decimal input (e.g. "2.", ".") */
+const isDeferredDecimal = (value: string) =>
+  value === '.' || (typeof value === 'string' && /\.$/.test(value))
 
 function hasValue(value: unknown) {
   return value !== '' && value !== undefined && value !== null
@@ -232,6 +236,29 @@ function PriceInput({
   placeholder?: string
   onChange: (value: string) => void
 }) {
+  const [draft, setDraft] = useState(value)
+  const [focused, setFocused] = useState(false)
+
+  // Sync draft with external value when not focused
+  useEffect(() => {
+    if (!focused) setDraft(value)
+  }, [focused, value])
+
+  const handleChange = (next: string) => {
+    if (!numberInputPattern.test(next)) return
+    setDraft(next)
+    // Defer normalization for in-progress decimal input like "2."
+    if (!isDeferredDecimal(next)) {
+      onChange(next)
+    }
+  }
+
+  const handleBlur = () => {
+    setFocused(false)
+    // Flush the final value on blur
+    onChange(draft)
+  }
+
   return (
     <div className='space-y-1.5'>
       <Label className='text-xs'>{label}</Label>
@@ -242,13 +269,12 @@ function PriceInput({
         <Input
           className='rounded-l-none'
           inputMode='decimal'
-          value={value}
+          value={focused ? draft : value}
           disabled={disabled}
           placeholder={placeholder}
-          onChange={(event) => {
-            const next = event.target.value
-            if (numberInputPattern.test(next)) onChange(next)
-          }}
+          onFocus={() => setFocused(true)}
+          onChange={(event) => handleChange(event.target.value)}
+          onBlur={handleBlur}
         />
       </div>
     </div>
