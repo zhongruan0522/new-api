@@ -144,6 +144,58 @@ func TestUserAuthDoesNotUseCommonUserEmptyAccessTokenAsRoot(t *testing.T) {
 	}
 }
 
+func TestUserAuthHidesAccessTokenDatabaseErrors(t *testing.T) {
+	setupAuthAccessTokenTestDB(t)
+	gin.SetMode(gin.TestMode)
+
+	accessToken := "management-token-db-error"
+	user := model.User{
+		Id:          1,
+		Username:    "root",
+		Password:    "password123",
+		Role:        common.RoleRootUser,
+		Status:      common.UserStatusEnabled,
+		DisplayName: "Root User",
+		AccessToken: &accessToken,
+		Group:       "default",
+		AffCode:     "auth-aff-root-db-error",
+	}
+	if err := model.DB.Create(&user).Error; err != nil {
+		t.Fatalf("create root user: %v", err)
+	}
+	sqlDB, err := model.DB.DB()
+	if err != nil {
+		t.Fatalf("get sql db: %v", err)
+	}
+	if err := sqlDB.Close(); err != nil {
+		t.Fatalf("close sql db: %v", err)
+	}
+
+	router := gin.New()
+	router.Use(sessions.Sessions("session", cookie.NewStore([]byte("test-secret"))))
+	router.GET("/protected", UserAuth(), func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"success": true})
+	})
+
+	req := httptest.NewRequest(http.MethodGet, "/protected", nil)
+	req.Header.Set("Authorization", "Bearer "+accessToken)
+	req.Header.Set("New-Api-User", "1")
+	recorder := httptest.NewRecorder()
+
+	router.ServeHTTP(recorder, req)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", recorder.Code, http.StatusOK, recorder.Body.String())
+	}
+	body := recorder.Body.String()
+	if !strings.Contains(body, "access token 无效") {
+		t.Fatalf("expected generic invalid access token response, got: %s", body)
+	}
+	if strings.Contains(body, "database") || strings.Contains(body, "数据库错误") || strings.Contains(body, "sql: database is closed") {
+		t.Fatalf("response leaked backend database details: %s", body)
+	}
+}
+
 func TestTokenAuthHidesUserCacheErrors(t *testing.T) {
 	setupAuthAccessTokenTestDB(t)
 	gin.SetMode(gin.TestMode)

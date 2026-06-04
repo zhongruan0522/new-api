@@ -53,16 +53,11 @@ func authHelper(c *gin.Context, minRole int) {
 		if authErr != nil {
 			if errors.Is(authErr, model.ErrDatabase) {
 				common.SysLog("ValidateAccessToken database error: " + authErr.Error())
-				c.JSON(http.StatusInternalServerError, gin.H{
-					"success": false,
-					"message": "数据库错误，请稍后重试",
-				})
-			} else {
-				c.JSON(http.StatusOK, gin.H{
-					"success": false,
-					"message": "无权进行此操作，access token 无效",
-				})
 			}
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": "无权进行此操作，access token 无效",
+			})
 			c.Abort()
 			return
 		}
