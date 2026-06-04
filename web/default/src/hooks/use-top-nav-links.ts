@@ -77,6 +77,13 @@ export function useTopNavLinks(): TopNavLink[] {
     links.push({ title: t('Model Square'), href: '/pricing', requiresAuth })
   }
 
+  // Rankings
+  const rankings = modules?.rankings
+  if (rankings && typeof rankings === 'object' && rankings.enabled) {
+    const requiresAuth = rankings.requireAuth && !isAuthed
+    links.push({ title: t('Rankings'), href: '/rankings', requiresAuth })
+  }
+
   // Key usage query
   if (modules?.key_query !== false) {
     links.push({ title: t('Key Usage Query'), href: '/key-query' })

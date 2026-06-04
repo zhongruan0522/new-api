@@ -48,7 +48,7 @@ export const HEADER_NAV_DEFAULT: HeaderNavModulesConfig = {
     requireAuth: false,
   },
   rankings: {
-    enabled: false,
+    enabled: true,
     requireAuth: false,
   },
   docs: true,

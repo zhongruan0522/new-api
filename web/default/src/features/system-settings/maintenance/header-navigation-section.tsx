@@ -52,6 +52,8 @@ const headerNavSchema = z.object({
   key_query: z.boolean(),
   pricingEnabled: z.boolean(),
   pricingRequireAuth: z.boolean(),
+  rankingsEnabled: z.boolean(),
+  rankingsRequireAuth: z.boolean(),
   docs: z.boolean(),
   about: z.boolean(),
 })
@@ -82,6 +84,14 @@ const toFormValues = (config: HeaderNavModulesConfig): HeaderNavFormValues => ({
     config.pricing?.requireAuth === undefined
       ? HEADER_NAV_DEFAULT.pricing.requireAuth
       : Boolean(config.pricing.requireAuth),
+  rankingsEnabled:
+    config.rankings?.enabled === undefined
+      ? HEADER_NAV_DEFAULT.rankings.enabled
+      : Boolean(config.rankings.enabled),
+  rankingsRequireAuth:
+    config.rankings?.requireAuth === undefined
+      ? HEADER_NAV_DEFAULT.rankings.requireAuth
+      : Boolean(config.rankings.requireAuth),
   docs:
     config.docs === undefined ? HEADER_NAV_DEFAULT.docs : Boolean(config.docs),
   about:
@@ -122,8 +132,8 @@ export function HeaderNavigationSection({
       },
       rankings: {
         ...(config.rankings ?? HEADER_NAV_DEFAULT.rankings),
-        enabled: false,
-        requireAuth: false,
+        enabled: values.rankingsEnabled,
+        requireAuth: values.rankingsRequireAuth,
       },
     }
 
@@ -177,7 +187,7 @@ export function HeaderNavigationSection({
   const accessModules: Array<{
     enabledKey: keyof HeaderNavFormValues
     requireAuthKey: keyof HeaderNavFormValues
-    requireAuthDependsOn: 'pricingEnabled'
+    requireAuthDependsOn: 'pricingEnabled' | 'rankingsEnabled'
     title: string
     description: string
     requireAuthTitle: string
@@ -192,6 +202,17 @@ export function HeaderNavigationSection({
       requireAuthTitle: t('Require login to view models'),
       requireAuthDescription: t(
         'Visitors must authenticate before accessing the pricing directory.'
+      ),
+    },
+    {
+      enabledKey: 'rankingsEnabled',
+      requireAuthKey: 'rankingsRequireAuth',
+      requireAuthDependsOn: 'rankingsEnabled',
+      title: t('Rankings'),
+      description: t('Public rankings page based on live usage data.'),
+      requireAuthTitle: t('Require login to view rankings'),
+      requireAuthDescription: t(
+        'Visitors must authenticate before accessing the rankings page.'
       ),
     },
   ]

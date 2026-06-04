@@ -17,13 +17,19 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { useQuery } from '@tanstack/react-query'
+import { useStatus } from '@/hooks/use-status'
+import { getDataDashboardRefreshIntervalMs } from '@/features/dashboard/lib'
 import { getRankings } from '../api'
 import type { RankingPeriod } from '../types'
 
 export function useRankings(period: RankingPeriod) {
+  const { status } = useStatus()
+  const refreshInterval = getDataDashboardRefreshIntervalMs(status)
+
   return useQuery({
     queryKey: ['rankings', period],
     queryFn: () => getRankings(period),
-    staleTime: 5 * 60 * 1000,
+    staleTime: refreshInterval,
+    gcTime: refreshInterval * 6,
   })
 }

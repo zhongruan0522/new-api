@@ -168,9 +168,6 @@ export function getModuleAccessFromStatus(
   status: Record<string, unknown> | null,
   module: HeaderNavModule
 ): ModuleAccess {
-  if (module === 'rankings') {
-    return { enabled: false, requireAuth: false }
-  }
   return parseHeaderNavModulesFromStatus(status)[module] ?? DEFAULTS[module]
 }
 
