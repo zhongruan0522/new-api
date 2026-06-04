@@ -203,7 +203,8 @@ func RecordLogWithAdminInfo(userId int, logType int, content string, adminInfo m
 
 func RecordErrorLog(c *gin.Context, userId int, channelId int, modelName string, tokenName string, content string, tokenId int, useTimeMs int,
 	isStream bool, group string, other map[string]interface{}) {
-	logger.LogInfo(c, fmt.Sprintf("record error log: userId=%d, channelId=%d, modelName=%s, tokenName=%s, content=%s", userId, channelId, modelName, tokenName, content))
+	contentPreview := common.LocalLogPreview(content)
+	logger.LogInfo(c, fmt.Sprintf("record error log: userId=%d, channelId=%d, modelName=%s, tokenName=%s, content=%s", userId, channelId, modelName, tokenName, contentPreview))
 	username := c.GetString("username")
 	requestId := c.GetString(common.RequestIdKey)
 	upstreamRequestId := c.GetString(common.UpstreamRequestIdKey)
@@ -214,7 +215,7 @@ func RecordErrorLog(c *gin.Context, userId int, channelId int, modelName string,
 		Username:          username,
 		CreatedAt:         common.GetTimestamp(),
 		Type:              LogTypeError,
-		Content:           content,
+		Content:           contentPreview,
 		PromptTokens:      0,
 		CompletionTokens:  0,
 		TokenName:         tokenName,

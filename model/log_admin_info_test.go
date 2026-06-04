@@ -113,3 +113,31 @@ func TestRecordErrorLogStoresAndFiltersUpstreamRequestId(t *testing.T) {
 		t.Fatalf("filtered logs total=%d logs=%#v, want one upstream-id log", total, logs)
 	}
 }
+
+func TestRecordErrorLogTruncatesStoredContent(t *testing.T) {
+	setupLogAdminInfoTestDB(t)
+	gin.SetMode(gin.TestMode)
+	oldDebug := common.DebugEnabled
+	common.DebugEnabled = false
+	t.Cleanup(func() {
+		common.DebugEnabled = oldDebug
+	})
+
+	c, _ := gin.CreateTestContext(httptest.NewRecorder())
+	c.Request = httptest.NewRequest(http.MethodPost, "http://example.test/v1/chat/completions", nil)
+	c.Set("username", "target-user")
+
+	content := strings.Repeat("x", common.LocalLogContentLimit+128)
+	RecordErrorLog(c, 1, 0, "gpt-test", "token", content, 0, 10, false, "default", nil)
+
+	var stored Log
+	if err := LOG_DB.First(&stored).Error; err != nil {
+		t.Fatalf("query stored log: %v", err)
+	}
+	if !strings.Contains(stored.Content, "[truncated") {
+		t.Fatalf("stored content was not truncated: length=%d content=%q", len(stored.Content), stored.Content)
+	}
+	if strings.Contains(stored.Content, strings.Repeat("x", common.LocalLogContentLimit+1)) {
+		t.Fatal("stored content includes more than the allowed preview")
+	}
+}
