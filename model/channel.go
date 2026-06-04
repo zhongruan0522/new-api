@@ -69,6 +69,38 @@ type ChannelInfo struct {
 	PlanName               string                `json:"plan_name"` // 套餐标识名称，对应 ChannelSpecialBases 的 key
 }
 
+func NormalizeChannelGroupFilter(group string) string {
+	group = strings.TrimSpace(group)
+	if group == "" || strings.EqualFold(group, "all") || strings.EqualFold(group, "null") {
+		return ""
+	}
+	return group
+}
+
+func channelGroupFilterCondition() string {
+	if common.UsingMySQL {
+		return `CONCAT(',', ` + commonGroupCol + `, ',') LIKE ? ESCAPE '!'`
+	}
+	return `(',' || ` + commonGroupCol + ` || ',') LIKE ? ESCAPE '!'`
+}
+
+func channelGroupFilterPattern(group string) string {
+	group = strings.NewReplacer(
+		"!", "!!",
+		"%", "!%",
+		"_", "!_",
+	).Replace(group)
+	return "%," + group + ",%"
+}
+
+func ApplyChannelGroupFilter(query *gorm.DB, group string) *gorm.DB {
+	group = NormalizeChannelGroupFilter(group)
+	if group == "" {
+		return query
+	}
+	return query.Where(channelGroupFilterCondition(), channelGroupFilterPattern(group))
+}
+
 // Value implements driver.Valuer interface
 func (c ChannelInfo) Value() (driver.Value, error) {
 	return common.Marshal(&c)
@@ -289,10 +321,14 @@ func GetAllChannels(startIdx int, num int, selectAll bool, idSort bool) ([]*Chan
 }
 
 func GetChannelsByTag(tag string, idSort bool, selectAll bool) ([]*Channel, error) {
+	return GetChannelsByTagWithGroup(tag, "", idSort, selectAll)
+}
+
+func GetChannelsByTagWithGroup(tag string, group string, idSort bool, selectAll bool) ([]*Channel, error) {
 	var channels []*Channel
 	// 标签聚合模式下固定按优先级、权重排序，忽略 idSort
 	order := "priority desc, weight desc"
-	query := DB.Where("tag = ?", tag).Order(order)
+	query := ApplyChannelGroupFilter(DB.Where("tag = ?", tag), group).Order(order)
 	if !selectAll {
 		query = query.Omit("key")
 	}
@@ -323,26 +359,12 @@ func SearchChannels(keyword string, group string, model string, idSort bool) ([]
 	// 构造基础查询
 	baseQuery := DB.Model(&Channel{}).Omit("key")
 
-	// 构造WHERE子句
-	var whereClause string
-	var args []interface{}
-	if group != "" && group != "null" {
-		var groupCondition string
-		if common.UsingMySQL {
-			groupCondition = `CONCAT(',', ` + commonGroupCol + `, ',') LIKE ?`
-		} else {
-			// sqlite, PostgreSQL
-			groupCondition = `(',' || ` + commonGroupCol + ` || ',') LIKE ?`
-		}
-		whereClause = "(id = ? OR name LIKE ? OR " + commonKeyCol + " = ? OR " + baseURLCol + " LIKE ?) AND " + modelsCol + ` LIKE ? AND ` + groupCondition
-		args = append(args, common.String2Int(keyword), "%"+keyword+"%", keyword, "%"+keyword+"%", "%"+model+"%", "%,"+group+",%")
-	} else {
-		whereClause = "(id = ? OR name LIKE ? OR " + commonKeyCol + " = ? OR " + baseURLCol + " LIKE ?) AND " + modelsCol + " LIKE ?"
-		args = append(args, common.String2Int(keyword), "%"+keyword+"%", keyword, "%"+keyword+"%", "%"+model+"%")
-	}
+	whereClause := "(id = ? OR name LIKE ? OR " + commonKeyCol + " = ? OR " + baseURLCol + " LIKE ?) AND " + modelsCol + " LIKE ?"
+	args := []interface{}{common.String2Int(keyword), "%" + keyword + "%", keyword, "%" + keyword + "%", "%" + model + "%"}
+	baseQuery = ApplyChannelGroupFilter(baseQuery.Where(whereClause, args...), group)
 
 	// 执行查询
-	err := baseQuery.Where(whereClause, args...).Order(order).Find(&channels).Error
+	err := baseQuery.Order(order).Find(&channels).Error
 	if err != nil {
 		return nil, err
 	}
@@ -810,8 +832,12 @@ func DeleteDisabledChannel() (int64, error) {
 }
 
 func GetPaginatedTags(offset int, limit int) ([]*string, error) {
+	return GetPaginatedChannelTags(DB.Model(&Channel{}), offset, limit)
+}
+
+func GetPaginatedChannelTags(query *gorm.DB, offset int, limit int) ([]*string, error) {
 	var tags []*string
-	query := DB.Model(&Channel{}).Select("DISTINCT tag").Where("tag != ''")
+	query = query.Select("DISTINCT tag").Where("tag is not null AND tag != ''")
 	if common.UsingPostgreSQL {
 		query = query.Order("tag asc")
 	} else {
@@ -844,25 +870,11 @@ func SearchTags(keyword string, group string, model string, idSort bool) ([]*str
 	// 构造基础查询
 	baseQuery := DB.Model(&Channel{}).Omit("key")
 
-	// 构造WHERE子句
-	var whereClause string
-	var args []interface{}
-	if group != "" && group != "null" {
-		var groupCondition string
-		if common.UsingMySQL {
-			groupCondition = `CONCAT(',', ` + commonGroupCol + `, ',') LIKE ?`
-		} else {
-			// sqlite, PostgreSQL
-			groupCondition = `(',' || ` + commonGroupCol + ` || ',') LIKE ?`
-		}
-		whereClause = "(id = ? OR name LIKE ? OR " + commonKeyCol + " = ? OR " + baseURLCol + " LIKE ?) AND " + modelsCol + ` LIKE ? AND ` + groupCondition
-		args = append(args, common.String2Int(keyword), "%"+keyword+"%", keyword, "%"+keyword+"%", "%"+model+"%", "%,"+group+",%")
-	} else {
-		whereClause = "(id = ? OR name LIKE ? OR " + commonKeyCol + " = ? OR " + baseURLCol + " LIKE ?) AND " + modelsCol + " LIKE ?"
-		args = append(args, common.String2Int(keyword), "%"+keyword+"%", keyword, "%"+keyword+"%", "%"+model+"%")
-	}
+	whereClause := "(id = ? OR name LIKE ? OR " + commonKeyCol + " = ? OR " + baseURLCol + " LIKE ?) AND " + modelsCol + " LIKE ?"
+	args := []interface{}{common.String2Int(keyword), "%" + keyword + "%", keyword, "%" + keyword + "%", "%" + model + "%"}
+	baseQuery = ApplyChannelGroupFilter(baseQuery.Where(whereClause, args...), group)
 
-	subQuery := baseQuery.Where(whereClause, args...).
+	subQuery := baseQuery.
 		Select("tag").
 		Where("tag != ''").
 		Order(order)
@@ -1060,8 +1072,12 @@ func CountAllChannels() (int64, error) {
 
 // CountAllTags returns number of non-empty distinct tags
 func CountAllTags() (int64, error) {
+	return CountChannelTags(DB.Model(&Channel{}))
+}
+
+func CountChannelTags(query *gorm.DB) (int64, error) {
 	var total int64
-	err := DB.Model(&Channel{}).Where("tag is not null AND tag != ''").Distinct("tag").Count(&total).Error
+	err := query.Where("tag is not null AND tag != ''").Distinct("tag").Count(&total).Error
 	return total, err
 }
 

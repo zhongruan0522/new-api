@@ -112,6 +112,50 @@ func channelCacheTestSetting(t *testing.T, setting dto.ChannelSettings) *string 
 	return &value
 }
 
+func TestSearchChannelsEscapesGroupFilter(t *testing.T) {
+	setupChannelCacheTestDB(t)
+
+	createChannelCacheTestChannel(t, Channel{
+		Name:   "percent-literal",
+		Group:  "vip%,default",
+		Models: "gpt-4",
+	})
+	createChannelCacheTestChannel(t, Channel{
+		Name:   "percent-wildcard-target",
+		Group:  "vip1,default",
+		Models: "gpt-4",
+	})
+
+	channels, err := SearchChannels("", "vip%", "", false)
+	if err != nil {
+		t.Fatalf("SearchChannels error = %v", err)
+	}
+	if len(channels) != 1 || channels[0].Name != "percent-literal" {
+		t.Fatalf("SearchChannels returned %#v, want only literal percent group", channels)
+	}
+}
+
+func TestApplyChannelGroupFilterNormalizesAllAndNull(t *testing.T) {
+	setupChannelCacheTestDB(t)
+
+	createChannelCacheTestChannel(t, Channel{Name: "default-channel", Group: "default"})
+	createChannelCacheTestChannel(t, Channel{Name: "vip-channel", Group: "vip"})
+
+	var count int64
+	if err := ApplyChannelGroupFilter(DB.Model(&Channel{}), "all").Count(&count).Error; err != nil {
+		t.Fatalf("count all group: %v", err)
+	}
+	if count != 2 {
+		t.Fatalf("all group count = %d, want 2", count)
+	}
+	if err := ApplyChannelGroupFilter(DB.Model(&Channel{}), "null").Count(&count).Error; err != nil {
+		t.Fatalf("count null group: %v", err)
+	}
+	if count != 2 {
+		t.Fatalf("null group count = %d, want 2", count)
+	}
+}
+
 func TestCacheUpdateChannelStatusReaddsEnabledChannel(t *testing.T) {
 	setupChannelCacheTestDB(t)
 	channel := createChannelCacheTestChannel(t, Channel{})
