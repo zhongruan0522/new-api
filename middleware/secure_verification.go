@@ -13,6 +13,8 @@ const (
 	SecureVerificationSessionKey = "secure_verified_at"
 	// SecureVerificationUserIDSessionKey 绑定安全验证通过的用户（与 controller 保持一致）
 	SecureVerificationUserIDSessionKey = "secure_verified_user_id"
+	secureVerificationMethodSessionKey = "secure_verified_method"
+	passkeyReadySessionKey             = "secure_passkey_ready_at"
 	// SecureVerificationTimeout 验证有效期（秒）
 	SecureVerificationTimeout = 300 // 5分钟
 )
@@ -152,6 +154,8 @@ func ClearSecureVerification(c *gin.Context) {
 func clearSecureVerificationSession(session sessions.Session) {
 	session.Delete(SecureVerificationSessionKey)
 	session.Delete(SecureVerificationUserIDSessionKey)
+	session.Delete(secureVerificationMethodSessionKey)
+	session.Delete(passkeyReadySessionKey)
 	_ = session.Save()
 }
 
