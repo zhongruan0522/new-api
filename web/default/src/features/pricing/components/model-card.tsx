@@ -31,7 +31,7 @@ import {
 import { parseTags } from '../lib/filters'
 import { isTokenBasedModel } from '../lib/model-helpers'
 import { formatPrice, formatRequestPrice } from '../lib/price'
-import type { ContextPricingConfig, PricingModel, TokenUnit } from '../types'
+import type { PricingModel, TokenUnit } from '../types'
 import { ModelPerfBadge, type ModelPerfBadgeData } from './model-perf-badge'
 
 const TOKEN_UNIT_DIVISORS: Record<TokenUnit, number> = { M: 1, K: 1000 }
@@ -188,7 +188,7 @@ export const ModelCard = memo(function ModelCard(props: ModelCardProps) {
                   {contextPricing!.tiers.map((tier, i) => (
                     <span
                       key={i}
-                      className='text-muted-foreground whitespace-nowrap text-xs'
+                      className='text-muted-foreground text-xs whitespace-nowrap'
                     >
                       <span className='text-muted-foreground/60'>
                         {formatTokenRange(tier.min_tokens, tier.max_tokens)}

@@ -20,8 +20,6 @@ import { useEffect, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Plus, Search, Trash2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { toast } from 'sonner'
-import { getEnabledModels } from '@/features/channels/api'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -37,7 +35,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { Textarea } from '@/components/ui/textarea'
+import { getEnabledModels } from '@/features/channels/api'
 import { safeJsonParse } from '../utils/json-parser'
 import { formatPricingNumber } from './pricing-format'
 
@@ -69,6 +67,7 @@ type UnknownMap = Record<string, unknown>
 type PricingMode = 'per-request' | 'per-token' | 'per-token-length'
 
 type ContextTier = {
+  name?: string
   min_tokens: number
   max_tokens: number | null
   tokenPrice: string
@@ -78,6 +77,7 @@ type ContextTier = {
   audioTokenPrice: string
   audioCompletionTokenPrice: string
 }
+type BackendContextTier = Record<string, unknown>
 
 type ModelRow = {
   name: string
@@ -93,15 +93,40 @@ type ModelRow = {
   contextTiers?: ContextTier[]
 }
 
-type ContextPricingEditorProps = {
-  modelName: string
-  contextPricing: unknown
-  onCommit: (name: string, value: string) => void
-  onValidityChange?: (isValid: boolean) => void
-}
-
 const PAGE_SIZE_OPTIONS = [20, 50, 100]
 const numberInputPattern = /^(\d+(\.\d*)?|\.\d*)?$/
+type ContextTierPriceField = Exclude<
+  keyof ContextTier,
+  'name' | 'min_tokens' | 'max_tokens'
+>
+const contextTierPriceFields = [
+  'tokenPrice',
+  'completionTokenPrice',
+  'cacheTokenPrice',
+  'createCacheTokenPrice',
+  'audioTokenPrice',
+  'audioCompletionTokenPrice',
+] satisfies ReadonlyArray<ContextTierPriceField>
+
+function getContextTierPriceLabel(
+  field: ContextTierPriceField,
+  t: (key: string) => string
+) {
+  switch (field) {
+    case 'tokenPrice':
+      return t('Input')
+    case 'completionTokenPrice':
+      return t('Output')
+    case 'cacheTokenPrice':
+      return t('Cache read')
+    case 'createCacheTokenPrice':
+      return t('Cache creation')
+    case 'audioTokenPrice':
+      return t('Audio input')
+    case 'audioCompletionTokenPrice':
+      return t('Audio output')
+  }
+}
 
 /** Values that look like an in-progress decimal input (e.g. "2.", ".") */
 const isDeferredDecimal = (value: string) =>
@@ -182,7 +207,8 @@ function buildRow(
     maps.context[name] !== null &&
     (maps.context[name] as Record<string, unknown>).enabled === true &&
     Array.isArray((maps.context[name] as Record<string, unknown>).tiers) &&
-    ((maps.context[name] as Record<string, unknown>).tiers as unknown[]).length > 0
+    ((maps.context[name] as Record<string, unknown>).tiers as unknown[])
+      .length > 0
 
   let mode: PricingMode = 'per-token'
   if (fixedPrice !== undefined) {
@@ -212,33 +238,51 @@ function buildRow(
     ? (contextConfig as Record<string, unknown>).tiers
     : undefined
   const contextTiers: ContextTier[] = Array.isArray(rawTiers)
-    ? rawTiers.map((tier: Record<string, number>) => {
-        const baseRatio = tier.model_ratio ?? 0
+    ? rawTiers.map((tier: Record<string, unknown>) => {
+        const modelRatio =
+          typeof tier.model_ratio === 'number' ? tier.model_ratio : 0
+        const completionRatio =
+          typeof tier.completion_ratio === 'number' ? tier.completion_ratio : 0
+        const cacheRatio =
+          typeof tier.cache_ratio === 'number' ? tier.cache_ratio : 0
+        const createCacheRatio =
+          typeof tier.create_cache_ratio === 'number'
+            ? tier.create_cache_ratio
+            : 0
+        const audioRatio =
+          typeof tier.audio_ratio === 'number' ? tier.audio_ratio : 0
+        const audioCompletionRatio =
+          typeof tier.audio_completion_ratio === 'number'
+            ? tier.audio_completion_ratio
+            : 0
+        const baseRatio = modelRatio
         const basePrice = normalizeNumber(baseRatio * 2)
         return {
-          min_tokens: tier.min_tokens ?? 0,
-          max_tokens: tier.max_tokens ?? null,
+          name: typeof tier.name === 'string' ? tier.name : '',
+          min_tokens: typeof tier.min_tokens === 'number' ? tier.min_tokens : 0,
+          max_tokens:
+            typeof tier.max_tokens === 'number' ? tier.max_tokens : null,
           tokenPrice: basePrice ? formatPricingNumber(basePrice) : '0',
           completionTokenPrice:
-            basePrice && tier.completion_ratio
-              ? formatPricingNumber(basePrice * tier.completion_ratio)
+            basePrice && completionRatio
+              ? formatPricingNumber(basePrice * completionRatio)
               : '0',
           cacheTokenPrice:
-            basePrice && tier.cache_ratio
-              ? formatPricingNumber(basePrice * tier.cache_ratio)
+            basePrice && cacheRatio
+              ? formatPricingNumber(basePrice * cacheRatio)
               : '0',
           createCacheTokenPrice:
-            basePrice && tier.create_cache_ratio
-              ? formatPricingNumber(basePrice * tier.create_cache_ratio)
+            basePrice && createCacheRatio
+              ? formatPricingNumber(basePrice * createCacheRatio)
               : '0',
           audioTokenPrice:
-            basePrice && tier.audio_ratio
-              ? formatPricingNumber(basePrice * tier.audio_ratio)
+            basePrice && audioRatio
+              ? formatPricingNumber(basePrice * audioRatio)
               : '0',
           audioCompletionTokenPrice:
-            basePrice && tier.audio_completion_ratio
+            basePrice && audioCompletionRatio
               ? formatPricingNumber(
-                  basePrice * (tier.audio_ratio ?? 0) * (tier.audio_completion_ratio ?? 0)
+                  basePrice * audioRatio * audioCompletionRatio
                 )
               : '0',
         }
@@ -251,7 +295,8 @@ function buildRow(
     fixedPrice,
     inputPrice,
     completionPrice:
-      typeof inputPrice === 'number' && typeof maps.completion[name] === 'number'
+      typeof inputPrice === 'number' &&
+      typeof maps.completion[name] === 'number'
         ? normalizeNumber(inputPrice * maps.completion[name])
         : undefined,
     cachePrice:
@@ -280,7 +325,10 @@ function getSortRank(mode: PricingMode) {
   return 3
 }
 
-function getRowSummary(row: ModelRow, t: (key: string) => string) {
+function getRowSummary(
+  row: ModelRow,
+  t: (key: string, options?: Record<string, unknown>) => string
+) {
   if (row.mode === 'per-request') {
     return row.fixedPrice !== undefined
       ? `$${toInputValue(row.fixedPrice)} / ${t('request')}`
@@ -349,64 +397,6 @@ function PriceInput({
           onBlur={handleBlur}
         />
       </div>
-    </div>
-  )
-}
-
-function getContextPricingText(value: unknown) {
-  if (!value) return ''
-  return JSON.stringify(value, null, 2)
-}
-
-function ContextPricingEditor({
-  modelName,
-  contextPricing,
-  onCommit,
-  onValidityChange,
-}: ContextPricingEditorProps) {
-  const { t } = useTranslation()
-  const [draft, setDraft] = useState(() => getContextPricingText(contextPricing))
-  const [error, setError] = useState<string | null>(null)
-
-  const validateDraft = (next: string) => {
-    if (!next.trim()) return null
-    try {
-      JSON.parse(next)
-      return null
-    } catch (parseError) {
-      return parseError instanceof Error ? parseError.message : t('Invalid JSON')
-    }
-  }
-
-  return (
-    <div className='space-y-2'>
-      <Label>{t('Context pricing JSON')}</Label>
-      <Textarea
-        className='min-h-32 font-mono text-xs'
-        value={draft}
-        placeholder={t('Leave empty to disable context pricing for this model')}
-        onChange={(event) => {
-          const next = event.target.value
-          const nextError = validateDraft(next)
-          setDraft(next)
-          setError(nextError)
-          onValidityChange?.(!nextError)
-        }}
-        onBlur={(event) => {
-          const nextError = validateDraft(event.target.value)
-          setError(nextError)
-          onValidityChange?.(!nextError)
-          if (nextError) {
-            toast.error(t('Invalid context pricing JSON'))
-            return
-          }
-          onCommit(modelName, event.target.value)
-        }}
-      />
-      {error && <p className='text-destructive text-xs'>{error}</p>}
-      <p className='text-muted-foreground text-xs'>
-        {t('Stores this model entry inside ContextPricing. Use enabled:false or empty content to disable.')}
-      </p>
     </div>
   )
 }
@@ -622,26 +612,6 @@ export function ModelRatioVisualEditor({
     writeMap('AudioCompletionRatio', next)
   }
 
-  const setContextPricing = (name: string, value: string) => {
-    const trimmed = value.trim()
-    const next = { ...maps.context }
-    if (!trimmed) {
-      delete next[name]
-      writeMap('ContextPricing', next)
-      return
-    }
-
-    try {
-      const parsed = JSON.parse(trimmed)
-      next[name] = parsed
-      writeMap('ContextPricing', next)
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : t('Invalid JSON')
-      toast.error(t('Invalid context pricing JSON'), { description: message })
-    }
-  }
-
   const updateContextTier = (
     name: string,
     tierIndex: number,
@@ -650,12 +620,18 @@ export function ModelRatioVisualEditor({
   ) => {
     const current = maps.context[name] as Record<string, unknown> | undefined
     if (!current) return
-    const tiers = [...((current.tiers as Record<string, number>[]) || [])]
+    const tiers = [...((current.tiers as BackendContextTier[]) || [])]
     if (!tiers[tierIndex]) return
 
     const tier = { ...tiers[tierIndex] }
 
-    if (field === 'max_tokens') {
+    if (field === 'name') {
+      if (value.trim()) {
+        tier.name = value
+      } else {
+        delete tier.name
+      }
+    } else if (field === 'max_tokens') {
       if (value === '') {
         delete tier.max_tokens
       } else {
@@ -669,27 +645,38 @@ export function ModelRatioVisualEditor({
       // Price fields: convert display price to ratio
       const priceValue = value === '' ? 0 : Number(value)
       if (!Number.isFinite(priceValue)) return
-      const basePrice = Number(tier.model_ratio ?? 0) * 2
+      const modelRatio =
+        typeof tier.model_ratio === 'number' ? tier.model_ratio : 0
+      const basePrice = modelRatio * 2
       switch (field) {
         case 'tokenPrice':
-          tier.model_ratio = priceValue > 0 ? normalizeNumber(priceValue / 2) : 0
+          tier.model_ratio =
+            priceValue > 0 ? normalizeNumber(priceValue / 2) : 0
           break
         case 'completionTokenPrice':
-          tier.completion_ratio = basePrice > 0 ? normalizeNumber(priceValue / basePrice) : 0
+          tier.completion_ratio =
+            basePrice > 0 ? normalizeNumber(priceValue / basePrice) : 0
           break
         case 'cacheTokenPrice':
-          tier.cache_ratio = basePrice > 0 ? normalizeNumber(priceValue / basePrice) : 0
+          tier.cache_ratio =
+            basePrice > 0 ? normalizeNumber(priceValue / basePrice) : 0
           break
         case 'createCacheTokenPrice':
-          tier.create_cache_ratio = basePrice > 0 ? normalizeNumber(priceValue / basePrice) : 0
+          tier.create_cache_ratio =
+            basePrice > 0 ? normalizeNumber(priceValue / basePrice) : 0
           break
         case 'audioTokenPrice':
-          tier.audio_ratio = basePrice > 0 ? normalizeNumber(priceValue / basePrice) : 0
+          tier.audio_ratio =
+            basePrice > 0 ? normalizeNumber(priceValue / basePrice) : 0
           break
         case 'audioCompletionTokenPrice': {
-          const audioInputPrice = basePrice * (tier.audio_ratio ?? 0)
+          const audioRatio =
+            typeof tier.audio_ratio === 'number' ? tier.audio_ratio : 0
+          const audioInputPrice = basePrice * audioRatio
           tier.audio_completion_ratio =
-            audioInputPrice > 0 ? normalizeNumber(priceValue / audioInputPrice) : 0
+            audioInputPrice > 0
+              ? normalizeNumber(priceValue / audioInputPrice)
+              : 0
           break
         }
       }
@@ -704,11 +691,12 @@ export function ModelRatioVisualEditor({
 
   const addContextTier = (name: string) => {
     const current = maps.context[name] as Record<string, unknown> | undefined
-    const existingTiers = (current?.tiers as Record<string, number>[]) || []
+    const existingTiers = (current?.tiers as BackendContextTier[]) || []
     const lastTier = existingTiers[existingTiers.length - 1]
-    const minTokens = lastTier?.max_tokens ?? 200000
+    const minTokens =
+      typeof lastTier?.max_tokens === 'number' ? lastTier.max_tokens : 200000
 
-    const newTier: Record<string, number> = {
+    const newTier: BackendContextTier = {
       min_tokens: minTokens,
       model_ratio: 0,
       completion_ratio: 0,
@@ -731,7 +719,7 @@ export function ModelRatioVisualEditor({
   const removeContextTier = (name: string, tierIndex: number) => {
     const current = maps.context[name] as Record<string, unknown> | undefined
     if (!current) return
-    const tiers = ((current.tiers as Record<string, number>[]) || []).filter(
+    const tiers = ((current.tiers as BackendContextTier[]) || []).filter(
       (_, i) => i !== tierIndex
     )
     if (tiers.length === 0) {
@@ -925,7 +913,7 @@ export function ModelRatioVisualEditor({
                   {[
                     ['per-request', t('Per-request')],
                     ['per-token', t('Per-token')],
-                    ['per-token-length', t('Per-token-length')],
+                    ['per-token-length', t('Tiered pricing')],
                   ].map(([value, label]) => (
                     <Label
                       key={value}
@@ -1030,7 +1018,6 @@ export function ModelRatioVisualEditor({
                       }
                     />
                   </div>
-
                 </div>
               )}
 
@@ -1038,7 +1025,9 @@ export function ModelRatioVisualEditor({
                 <div className='space-y-4'>
                   <div className='flex items-center justify-between gap-2'>
                     <div>
-                      <Label className='text-sm font-semibold'>{t('Tiered pricing')}</Label>
+                      <Label className='text-sm font-semibold'>
+                        {t('Tiered pricing')}
+                      </Label>
                       <p className='text-muted-foreground text-xs'>
                         {t('Pricing varies by input context token range.')}
                       </p>
@@ -1055,160 +1044,114 @@ export function ModelRatioVisualEditor({
                   </div>
 
                   {(selectedRow.contextTiers || []).length > 0 ? (
-                    <div className='overflow-x-auto rounded-md border'>
-                      <table className='w-full text-sm'>
-                        <thead>
-                          <tr className='bg-muted/50 border-b'>
-                            <th className='text-muted-foreground px-3 py-2 text-left text-xs font-medium'>
-                              {t('Token range')}
-                            </th>
-                            <th className='text-muted-foreground px-3 py-2 text-right text-xs font-medium'>
-                              {t('Input')} ($/1M)
-                            </th>
-                            <th className='text-muted-foreground px-3 py-2 text-right text-xs font-medium'>
-                              {t('Output')} ($/1M)
-                            </th>
-                            <th className='text-muted-foreground px-3 py-2 text-right text-xs font-medium'>
-                              {t('Cache read')} ($/1M)
-                            </th>
-                            <th className='text-muted-foreground px-3 py-2 text-right text-xs font-medium'>
-                              {t('Cache write')} ($/1M)
-                            </th>
-                            <th className='w-10 px-2 py-2'></th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {(selectedRow.contextTiers || []).map((tier, tierIdx) => {
-                            const maxTokensStr =
-                              tier.max_tokens === null
-                                ? ''
-                                : String(tier.max_tokens)
-                            return (
-                              <tr
-                                key={tierIdx}
-                                className='border-b last:border-b-0'
+                    <div className='space-y-3'>
+                      {(selectedRow.contextTiers || []).map((tier, tierIdx) => {
+                        const maxTokensStr =
+                          tier.max_tokens === null
+                            ? ''
+                            : String(tier.max_tokens)
+                        return (
+                          <div
+                            key={tierIdx}
+                            className='bg-muted/20 rounded-md border p-3'
+                          >
+                            <div className='mb-3 flex items-center gap-2'>
+                              <div className='min-w-0 flex-1 space-y-1.5'>
+                                <Label className='text-xs'>{t('Name')}</Label>
+                                <Input
+                                  className='h-8'
+                                  value={tier.name ?? ''}
+                                  placeholder={`${t('Tier name')} ${tierIdx + 1}`}
+                                  onChange={(e) =>
+                                    updateContextTier(
+                                      selectedRow.name,
+                                      tierIdx,
+                                      'name',
+                                      e.target.value
+                                    )
+                                  }
+                                />
+                              </div>
+                              <Button
+                                type='button'
+                                variant='ghost'
+                                size='icon'
+                                className='mt-5 h-8 w-8 shrink-0'
+                                disabled={
+                                  (selectedRow.contextTiers || []).length <= 1
+                                }
+                                onClick={() =>
+                                  removeContextTier(selectedRow.name, tierIdx)
+                                }
                               >
-                                <td className='px-3 py-2'>
-                                  <div className='flex items-center gap-1'>
-                                    <Input
-                                      className='h-7 w-20 text-xs'
-                                      type='number'
-                                      value={tier.min_tokens}
-                                      onChange={(e) =>
+                                <Trash2 className='text-destructive h-4 w-4' />
+                              </Button>
+                            </div>
+
+                            <div className='mb-3 grid gap-3 sm:grid-cols-2'>
+                              <div className='space-y-1.5 sm:col-span-2'>
+                                <Label className='text-xs'>
+                                  {t('Context window')}
+                                </Label>
+                                <div className='grid gap-2 sm:grid-cols-2'>
+                                  <Input
+                                    className='h-8'
+                                    type='number'
+                                    value={tier.min_tokens}
+                                    placeholder={t('Start window')}
+                                    onChange={(e) =>
+                                      updateContextTier(
+                                        selectedRow.name,
+                                        tierIdx,
+                                        'min_tokens',
+                                        e.target.value
+                                      )
+                                    }
+                                  />
+                                  <Input
+                                    className='h-8'
+                                    type='number'
+                                    placeholder={t('End window')}
+                                    value={maxTokensStr}
+                                    onChange={(e) =>
+                                      updateContextTier(
+                                        selectedRow.name,
+                                        tierIdx,
+                                        'max_tokens',
+                                        e.target.value
+                                      )
+                                    }
+                                  />
+                                </div>
+                              </div>
+
+                              {contextTierPriceFields.map((field) => (
+                                <div key={field} className='space-y-1.5'>
+                                  <Label className='text-xs'>
+                                    {getContextTierPriceLabel(field, t)} ($/1M)
+                                  </Label>
+                                  <Input
+                                    className='h-8 text-right'
+                                    inputMode='decimal'
+                                    value={tier[field]}
+                                    onChange={(e) => {
+                                      const v = e.target.value
+                                      if (numberInputPattern.test(v)) {
                                         updateContextTier(
                                           selectedRow.name,
                                           tierIdx,
-                                          'min_tokens',
-                                          e.target.value
+                                          field,
+                                          v
                                         )
                                       }
-                                    />
-                                    <span className='text-muted-foreground text-xs'>~</span>
-                                    <Input
-                                      className='h-7 w-20 text-xs'
-                                      type='number'
-                                      placeholder={t('No limit')}
-                                      value={maxTokensStr}
-                                      onChange={(e) =>
-                                        updateContextTier(
-                                          selectedRow.name,
-                                          tierIdx,
-                                          'max_tokens',
-                                          e.target.value
-                                        )
-                                      }
-                                    />
-                                  </div>
-                                </td>
-                                <td className='px-3 py-2'>
-                                  <Input
-                                    className='h-7 text-right text-xs'
-                                    inputMode='decimal'
-                                    value={tier.tokenPrice}
-                                    onChange={(e) => {
-                                      const v = e.target.value
-                                      if (numberInputPattern.test(v))
-                                        updateContextTier(
-                                          selectedRow.name,
-                                          tierIdx,
-                                          'tokenPrice',
-                                          v
-                                        )
                                     }}
                                   />
-                                </td>
-                                <td className='px-3 py-2'>
-                                  <Input
-                                    className='h-7 text-right text-xs'
-                                    inputMode='decimal'
-                                    value={tier.completionTokenPrice}
-                                    onChange={(e) => {
-                                      const v = e.target.value
-                                      if (numberInputPattern.test(v))
-                                        updateContextTier(
-                                          selectedRow.name,
-                                          tierIdx,
-                                          'completionTokenPrice',
-                                          v
-                                        )
-                                    }}
-                                  />
-                                </td>
-                                <td className='px-3 py-2'>
-                                  <Input
-                                    className='h-7 text-right text-xs'
-                                    inputMode='decimal'
-                                    value={tier.cacheTokenPrice}
-                                    onChange={(e) => {
-                                      const v = e.target.value
-                                      if (numberInputPattern.test(v))
-                                        updateContextTier(
-                                          selectedRow.name,
-                                          tierIdx,
-                                          'cacheTokenPrice',
-                                          v
-                                        )
-                                    }}
-                                  />
-                                </td>
-                                <td className='px-3 py-2'>
-                                  <Input
-                                    className='h-7 text-right text-xs'
-                                    inputMode='decimal'
-                                    value={tier.createCacheTokenPrice}
-                                    onChange={(e) => {
-                                      const v = e.target.value
-                                      if (numberInputPattern.test(v))
-                                        updateContextTier(
-                                          selectedRow.name,
-                                          tierIdx,
-                                          'createCacheTokenPrice',
-                                          v
-                                        )
-                                    }}
-                                  />
-                                </td>
-                                <td className='px-2 py-2'>
-                                  <Button
-                                    type='button'
-                                    variant='ghost'
-                                    size='icon'
-                                    className='h-6 w-6'
-                                    disabled={
-                                      (selectedRow.contextTiers || []).length <= 1
-                                    }
-                                    onClick={() =>
-                                      removeContextTier(selectedRow.name, tierIdx)
-                                    }
-                                  >
-                                    <Trash2 className='text-destructive h-3 w-3' />
-                                  </Button>
-                                </td>
-                              </tr>
-                            )
-                          })}
-                        </tbody>
-                      </table>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )
+                      })}
                     </div>
                   ) : (
                     <div className='text-muted-foreground rounded-md border border-dashed p-4 text-sm'>

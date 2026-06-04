@@ -40,7 +40,7 @@ import {
   formatRequestPrice,
   stripTrailingZeros,
 } from '../lib/price'
-import type { ContextPricingConfig, PricingModel, TokenUnit } from '../types'
+import type { PricingModel, TokenUnit } from '../types'
 
 // ----------------------------------------------------------------------------
 // Pricing Table Columns
@@ -274,7 +274,8 @@ export function usePricingColumns(
                 ))}
               </div>
               <div className='text-muted-foreground/50 text-[10px]'>
-                / {tokenUnitLabel} tokens · {contextPricing!.tiers.length} {t('tiers')}
+                / {tokenUnitLabel} tokens · {contextPricing!.tiers.length}{' '}
+                {t('tiers')}
               </div>
             </div>
           )
