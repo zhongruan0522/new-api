@@ -181,7 +181,9 @@ export function ApiKeysTable() {
   const { refreshTrigger } = useApiKeys()
   const columns = useApiKeysColumns()
   const [rowSelection, setRowSelection] = useState({})
-  const [sorting, setSorting] = useState<SortingState>([])
+  const [sorting, setSorting] = useState<SortingState>([
+    { id: 'name', desc: false },
+  ])
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
 
   const {

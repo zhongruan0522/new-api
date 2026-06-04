@@ -342,36 +342,9 @@ export function ApiKeyQuotaCell({
   const usage = buildQuotaUsage(apiKey)
   const percentage = usage.total > 0 ? (usage.remaining / usage.total) * 100 : 0
 
-  if (usage.quotaType === 0) {
-    return (
-      <Tooltip>
-        <TooltipTrigger
-          render={<span className={cn('inline-flex', className)} />}
-        >
-          <StatusBadge
-            label={t('Unlimited')}
-            variant='neutral'
-            copyable={false}
-          />
-        </TooltipTrigger>
-        <TooltipContent side='top' className='max-w-xs'>
-          <div className='space-y-1 text-xs'>
-            <StatusBadge
-              label={t(usage.quotaTypeLabelKey)}
-              variant={usage.quotaTypeVariant}
-              copyable={false}
-            />
-            <div className='text-muted-foreground'>
-              {t('No quota cap; usage still depends on account balance.')}
-            </div>
-            <div>
-              {t('Used:')} {formatQuota(usage.used)}
-            </div>
-          </div>
-        </TooltipContent>
-      </Tooltip>
-    )
-  }
+  const isUnlimited = usage.quotaType === 0
+  const displayValue = isUnlimited ? usage.used : usage.total
+  const progressValue = isUnlimited ? 100 : percentage
 
   return (
     <Tooltip>
@@ -387,27 +360,19 @@ export function ApiKeyQuotaCell({
       >
         <div className='flex items-center justify-between gap-2'>
           <span className='truncate text-xs font-medium tabular-nums'>
-            {formatQuota(usage.remaining)}
+            {formatQuota(displayValue)}
           </span>
           <StatusBadge
-            label={t(usage.primaryLabelKey)}
+            label={t(usage.quotaTypeLabelKey)}
             variant={usage.quotaTypeVariant}
             copyable={false}
             className='max-w-24'
           />
         </div>
         <Progress
-          value={percentage}
-          className={cn('h-1.5', getQuotaProgressColor(percentage))}
+          value={progressValue}
+          className={cn('h-1.5', getQuotaProgressColor(progressValue))}
         />
-        <div className='text-muted-foreground flex items-center justify-between gap-2 text-[10px]'>
-          <span className='truncate tabular-nums'>
-            {formatQuota(usage.total)}
-          </span>
-          <span className='shrink-0 tabular-nums'>
-            {percentage.toFixed(0)}%
-          </span>
-        </div>
       </TooltipTrigger>
       <TooltipContent side='top' className='max-w-xs'>
         <div className='space-y-1 text-xs'>
@@ -416,21 +381,37 @@ export function ApiKeyQuotaCell({
             variant={usage.quotaTypeVariant}
             copyable={false}
           />
-          <div>
-            {t('Used:')} {formatQuota(usage.used)}
-          </div>
-          <div>
-            {t('Remaining:')} {formatQuota(usage.remaining)} (
-            {percentage.toFixed(1)}%)
-          </div>
-          <div>
-            {t('Total:')} {formatQuota(usage.total)}
-          </div>
-          {usage.detailLines.map((line) => (
-            <div key={line.labelKey}>
-              {t(line.labelKey)}: {formatQuotaScheduleValue(line.value, t)}
-            </div>
-          ))}
+          {isUnlimited ? (
+            <>
+              <div className='text-muted-foreground'>
+                {t('No quota cap; usage still depends on account balance.')}
+              </div>
+              <div>
+                {t('Used:')} {formatQuota(usage.used)}
+              </div>
+            </>
+          ) : (
+            <>
+              <div>
+                {t('Used:')} {formatQuota(usage.used)}
+              </div>
+              <div>
+                {t('Remaining:')} {formatQuota(usage.remaining)} (
+                {percentage.toFixed(1)}%)
+              </div>
+              <div>
+                {t('Total:')} {formatQuota(usage.total)}
+              </div>
+              <div>
+                {t('Reset:')}{' '}
+                {usage.detailLines.length > 0
+                  ? usage.detailLines
+                      .map((line) => formatQuotaScheduleValue(line.value, t))
+                      .join(', ')
+                  : t('No reset')}
+              </div>
+            </>
+          )}
         </div>
       </TooltipContent>
     </Tooltip>

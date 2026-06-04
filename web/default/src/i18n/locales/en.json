@@ -3336,6 +3336,8 @@
     "Research, analysis, scientific reasoning": "Research, analysis, scientific reasoning",
     "Resend ({{seconds}}s)": "Resend ({{seconds}}s)",
     "Reset": "Reset",
+    "Reset:": "Reset:",
+    "No reset": "No reset",
     "Reset 2FA": "Reset 2FA",
     "Reset all model prices?": "Reset all model prices?",
     "Reset all model ratios?": "Reset all model ratios?",

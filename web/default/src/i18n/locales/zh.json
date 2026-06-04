@@ -3336,6 +3336,8 @@
     "Research, analysis, scientific reasoning": "研究、分析与科学推理",
     "Resend ({{seconds}}s)": "重新发送 ({{seconds}}s)",
     "Reset": "重置",
+    "Reset:": "重置：",
+    "No reset": "不重置",
     "Reset 2FA": "重置 2FA",
     "Reset all model prices?": "重置所有模型价格吗？",
     "Reset all model ratios?": "重置所有模型比例吗？",
