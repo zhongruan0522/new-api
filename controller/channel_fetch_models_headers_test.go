@@ -3,6 +3,7 @@ package controller
 import (
 	"testing"
 
+	"github.com/zhongruan0522/new-api/common"
 	"github.com/zhongruan0522/new-api/constant"
 	"github.com/zhongruan0522/new-api/model"
 )
@@ -36,6 +37,35 @@ func TestBuildFetchModelsHeaders_SkipsPassthroughRulesAndClientHeader(t *testing
 	}
 	if got := headers.Get("X-Foo"); got != "" {
 		t.Fatalf("expected client_header placeholder to be skipped, got %q", got)
+	}
+}
+
+func TestBuildFetchModelsHeaders_SkipsUnsafeOverrideHeaders(t *testing.T) {
+	override := `{
+  "Host": "internal.example",
+  "Content-Length": "999",
+  "Accept-Encoding": "gzip",
+  "X-Oneapi-Request-Id": "attacker-id",
+  "Connection": "upgrade",
+  "User-Agent": "SafeUA"
+}`
+	channel := &model.Channel{
+		Type:           constant.ChannelTypeOpenAI,
+		HeaderOverride: &override,
+	}
+
+	headers, err := buildFetchModelsHeaders(channel, "abc123")
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	for _, key := range []string{"Host", "Content-Length", "Accept-Encoding", common.RequestIdKey, "Connection"} {
+		if got := headers.Get(key); got != "" {
+			t.Fatalf("expected unsafe header %s to be skipped, got %q", key, got)
+		}
+	}
+	if got := headers.Get("User-Agent"); got != "SafeUA" {
+		t.Fatalf("expected safe User-Agent override, got %q", got)
 	}
 }
 

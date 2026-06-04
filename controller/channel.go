@@ -234,6 +234,9 @@ func applyFetchModelsHeaderOverride(headers http.Header, channel *model.Channel,
 		if isFetchModelsHeaderPassthroughRuleKey(trimmedKey) {
 			continue
 		}
+		if shouldSkipFetchModelsHeaderOverride(trimmedKey) {
+			continue
+		}
 
 		str, ok := rawValue.(string)
 		if !ok {
@@ -275,6 +278,27 @@ func isFetchModelsHeaderPassthroughRuleKey(key string) bool {
 	}
 	lower := strings.ToLower(key)
 	return strings.HasPrefix(lower, "re:") || strings.HasPrefix(lower, "regex:")
+}
+
+func shouldSkipFetchModelsHeaderOverride(key string) bool {
+	switch strings.ToLower(strings.TrimSpace(key)) {
+	case "",
+		"host",
+		"content-length",
+		"accept-encoding",
+		strings.ToLower(common.RequestIdKey),
+		"connection",
+		"keep-alive",
+		"proxy-authenticate",
+		"proxy-authorization",
+		"te",
+		"trailer",
+		"transfer-encoding",
+		"upgrade":
+		return true
+	default:
+		return false
+	}
 }
 
 func FetchUpstreamModels(c *gin.Context) {
