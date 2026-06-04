@@ -5,10 +5,11 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"testing"
 	"time"
-	"sync"
 
+	"github.com/zhongruan0522/new-api/common"
 	"github.com/zhongruan0522/new-api/dto"
 	relaycommon "github.com/zhongruan0522/new-api/relay/common"
 	"github.com/zhongruan0522/new-api/service"
@@ -213,8 +214,8 @@ func TestDoApiRequest_CookieNotPassthroughByWildcard(t *testing.T) {
 		"*": true,
 	})
 	clientHeaders := map[string]string{
-		"Cookie":    "client_session=should_not_pass",
-		"X-Custom":  "should_pass",
+		"Cookie":   "client_session=should_not_pass",
+		"X-Custom": "should_pass",
 	}
 	got := doApiRequestToTestServer(t, info, clientHeaders)
 
@@ -226,10 +227,28 @@ func TestDoApiRequest_CookieNotPassthroughByWildcard(t *testing.T) {
 	}
 }
 
+func TestDoApiRequest_RequestIdNotPassthroughByWildcard(t *testing.T) {
+	info := newTestRelayInfo(true, map[string]interface{}{
+		"*": true,
+	})
+	clientHeaders := map[string]string{
+		common.RequestIdKey: "client-controlled-id",
+		"X-Custom":          "should_pass",
+	}
+	got := doApiRequestToTestServer(t, info, clientHeaders)
+
+	if got.Get(common.RequestIdKey) != "" {
+		t.Fatalf("expected %s to NOT be passthrough by wildcard, got %q", common.RequestIdKey, got.Get(common.RequestIdKey))
+	}
+	if got.Get("X-Custom") != "should_pass" {
+		t.Fatalf("expected X-Custom to be passthrough, got %q", got.Get("X-Custom"))
+	}
+}
+
 func TestDoApiRequest_ExplicitCookieOverridesPassthrough(t *testing.T) {
 	info := newTestRelayInfo(true, map[string]interface{}{
-		"*":       true,
-		"Cookie":  "explicit_cookie=value",
+		"*":      true,
+		"Cookie": "explicit_cookie=value",
 	})
 	clientHeaders := map[string]string{
 		"Cookie":   "client_cookie=should_not_pass",

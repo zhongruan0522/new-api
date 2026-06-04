@@ -10,6 +10,7 @@ import (
 	"github.com/zhongruan0522/new-api/common"
 	"github.com/zhongruan0522/new-api/dto"
 	relaycommon "github.com/zhongruan0522/new-api/relay/common"
+	"github.com/zhongruan0522/new-api/service"
 	"github.com/zhongruan0522/new-api/types"
 
 	"github.com/gin-gonic/gin"
@@ -123,7 +124,7 @@ func convertNonStreamBody(body []byte, upstream dto.OpenAIWireAPI, downstream dt
 
 func copyHeaders(dst http.Header, src http.Header) {
 	for k, vals := range src {
-		if strings.TrimSpace(k) == "" {
+		if strings.TrimSpace(k) == "" || !service.ShouldCopyUpstreamHeader(nil, k, vals) {
 			continue
 		}
 		dst[k] = append([]string(nil), vals...)

@@ -2,9 +2,12 @@ package model
 
 import (
 	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 
+	"github.com/gin-gonic/gin"
 	"github.com/glebarez/sqlite"
 	"github.com/zhongruan0522/new-api/common"
 	"gorm.io/gorm"
@@ -76,5 +79,37 @@ func TestRecordLogWithAdminInfoIsStrippedFromUserLogs(t *testing.T) {
 	}
 	if strings.Contains(logs[0].Content, "99") || strings.Contains(logs[0].Content, "root-admin") {
 		t.Fatalf("log content leaked admin identity: %s", logs[0].Content)
+	}
+}
+
+func TestRecordErrorLogStoresAndFiltersUpstreamRequestId(t *testing.T) {
+	setupLogAdminInfoTestDB(t)
+	gin.SetMode(gin.TestMode)
+
+	c, _ := gin.CreateTestContext(httptest.NewRecorder())
+	c.Request = httptest.NewRequest(http.MethodPost, "http://example.test/v1/chat/completions", nil)
+	c.Set("username", "target-user")
+	c.Set(common.RequestIdKey, "local-id")
+	c.Set(common.UpstreamRequestIdKey, "upstream-id")
+
+	RecordErrorLog(c, 1, 0, "gpt-test", "token", "upstream failed", 0, 10, false, "default", nil)
+
+	var stored Log
+	if err := LOG_DB.First(&stored).Error; err != nil {
+		t.Fatalf("query stored log: %v", err)
+	}
+	if stored.RequestId != "local-id" {
+		t.Fatalf("stored request id = %q, want local-id", stored.RequestId)
+	}
+	if stored.UpstreamRequestId != "upstream-id" {
+		t.Fatalf("stored upstream request id = %q, want upstream-id", stored.UpstreamRequestId)
+	}
+
+	logs, total, err := GetAllLogs(LogTypeUnknown, 0, 0, "", "", "", 0, 20, 0, "", "", "upstream-id")
+	if err != nil {
+		t.Fatalf("GetAllLogs error = %v", err)
+	}
+	if total != 1 || len(logs) != 1 || logs[0].UpstreamRequestId != "upstream-id" {
+		t.Fatalf("filtered logs total=%d logs=%#v, want one upstream-id log", total, logs)
 	}
 }

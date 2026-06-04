@@ -61,9 +61,10 @@ var passthroughSkipHeaderNamesLower = map[string]struct{}{
 	"cookie": {},
 
 	// Additional headers that should not be forwarded by name-matching passthrough rules.
-	"host":            {},
-	"content-length":  {},
-	"accept-encoding": {},
+	"host":                {},
+	"content-length":      {},
+	"accept-encoding":     {},
+	"x-oneapi-request-id": {},
 
 	// Do not passthrough credentials by wildcard/regex.
 	"authorization":  {},
@@ -586,6 +587,9 @@ func doRequest(c *gin.Context, req *http.Request, info *common.RelayInfo) (*http
 	}
 	if resp == nil {
 		return nil, errors.New("resp is nil")
+	}
+	if upstreamRequestId := resp.Header.Get(common2.RequestIdKey); upstreamRequestId != "" {
+		c.Set(common2.UpstreamRequestIdKey, upstreamRequestId)
 	}
 
 	_ = req.Body.Close()
