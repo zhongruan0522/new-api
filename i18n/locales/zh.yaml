@@ -61,6 +61,7 @@ user.register_disabled: "管理员关闭了新用户注册"
 user.password_register_disabled: "管理员关闭了通过密码进行注册，请使用第三方账户验证的形式进行注册"
 user.username_or_password_empty: "用户名或密码为空"
 user.username_or_password_error: "用户名或密码错误，或用户已被封禁"
+user.login_unavailable: "登录服务暂时不可用，请联系管理员"
 user.email_or_password_empty: "邮箱地址或密码为空！"
 user.exists: "用户名已存在，或已注销"
 user.not_exists: "用户不存在"
@@ -228,5 +229,4 @@ redeem.failed: "兑换失败，请稍后重试"
 user.create_default_token_error: "创建默认令牌失败"
 common.uuid_duplicate: "请重试，系统生成的 UUID 竟然重复了！"
 common.invalid_input: "输入不合法"
-
 

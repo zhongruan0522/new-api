@@ -60,6 +60,7 @@ user.register_disabled: "New user registration has been disabled by administrato
 user.password_register_disabled: "Password registration has been disabled by administrator, please use third-party account verification"
 user.username_or_password_empty: "Username or password is empty"
 user.username_or_password_error: "Username or password is incorrect, or user has been banned"
+user.login_unavailable: "Login service is temporarily unavailable, please contact the administrator"
 user.email_or_password_empty: "Email or password is empty!"
 user.exists: "Username already exists or has been deleted"
 user.not_exists: "User does not exist"
@@ -227,5 +228,4 @@ redeem.failed: "Redemption failed, please try again later"
 user.create_default_token_error: "Failed to create default token"
 common.uuid_duplicate: "Please retry, the system generated a duplicate UUID!"
 common.invalid_input: "Invalid input"
-
 

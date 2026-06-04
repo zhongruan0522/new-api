@@ -63,15 +63,15 @@ func Login(c *gin.Context) {
 	}
 	err = user.ValidateAndFill()
 	if err != nil {
-		message := i18n.T(c, i18n.MsgUserUsernameOrPasswordError)
-		if errors.Is(err, model.ErrDatabase) {
-			common.SysLog("ValidateAndFill database error: " + err.Error())
-			message = i18n.T(c, i18n.MsgDatabaseError)
+		switch {
+		case errors.Is(err, model.ErrDatabase):
+			common.SysLog(fmt.Sprintf("Login database error for user %s: %v", username, err))
+			common.ApiErrorI18n(c, i18n.MsgUserLoginUnavailable)
+		case errors.Is(err, model.ErrUserEmptyCredentials):
+			common.ApiErrorI18n(c, i18n.MsgInvalidParams)
+		default:
+			common.ApiErrorI18n(c, i18n.MsgUserUsernameOrPasswordError)
 		}
-		c.JSON(http.StatusOK, gin.H{
-			"message": message,
-			"success": false,
-		})
 		return
 	}
 
