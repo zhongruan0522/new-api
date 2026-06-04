@@ -55,6 +55,7 @@ func GetTopUpInfo(c *gin.Context) {
 		"stripe_min_topup":    setting.StripeMinTopUp,
 		"amount_options":      operation_setting.GetPaymentSetting().AmountOptions,
 		"discount":            operation_setting.GetPaymentSetting().AmountDiscount,
+		"topup_link":          common.TopUpLink,
 	}
 	common.ApiSuccess(c, data)
 }

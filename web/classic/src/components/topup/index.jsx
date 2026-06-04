@@ -50,9 +50,7 @@ const TopUp = () => {
   const [topUpCount, setTopUpCount] = useState(
     statusState?.status?.min_topup || 1,
   );
-  const [topUpLink, setTopUpLink] = useState(
-    statusState?.status?.top_up_link || '',
-  );
+  const [topUpLink, setTopUpLink] = useState('');
   const [enableOnlineTopUp, setEnableOnlineTopUp] = useState(
     statusState?.status?.enable_online_topup || false,
   );
@@ -333,6 +331,7 @@ const TopUp = () => {
           setEnableStripeTopUp(enableStripeTopUp);
           setMinTopUp(minTopUpValue);
           setTopUpCount(minTopUpValue);
+          setTopUpLink(data.topup_link || '');
 
           // 如果没有自定义充值数量选项，根据最小充值金额生成预设充值额度选项
           if (topupInfo.amount_options.length === 0) {
@@ -421,7 +420,6 @@ const TopUp = () => {
       // const minTopUpValue = statusState.status.min_topup || 1;
       // setMinTopUp(minTopUpValue);
       // setTopUpCount(minTopUpValue);
-      setTopUpLink(statusState.status.top_up_link || '');
       setPriceRatio(statusState.status.price || 1);
 
       setStatusLoading(false);
