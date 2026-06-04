@@ -7,6 +7,8 @@ import (
 	"github.com/glebarez/sqlite"
 	"github.com/zhongruan0522/new-api/common"
 	"github.com/zhongruan0522/new-api/constant"
+	"github.com/zhongruan0522/new-api/dto"
+	"github.com/zhongruan0522/new-api/types"
 	"gorm.io/gorm"
 )
 
@@ -99,6 +101,17 @@ func createChannelCacheTestChannel(t *testing.T, channel Channel) Channel {
 	return channel
 }
 
+func channelCacheTestSetting(t *testing.T, setting dto.ChannelSettings) *string {
+	t.Helper()
+
+	data, err := common.Marshal(setting)
+	if err != nil {
+		t.Fatalf("marshal channel setting: %v", err)
+	}
+	value := string(data)
+	return &value
+}
+
 func TestCacheUpdateChannelStatusReaddsEnabledChannel(t *testing.T) {
 	setupChannelCacheTestDB(t)
 	channel := createChannelCacheTestChannel(t, Channel{})
@@ -178,5 +191,78 @@ func TestUpdateChannelStatusRestoresMultiKeyChannelToCache(t *testing.T) {
 	}
 	if selected == nil || selected.Id != channel.Id {
 		t.Fatalf("selected after key re-enable = %+v, want channel %d", selected, channel.Id)
+	}
+}
+
+func TestGetRandomSatisfiedChannelWithRelayFormatPrefersExplicitOpenAIWireSetting(t *testing.T) {
+	setupChannelCacheTestDB(t)
+
+	const modelName = "glm-4.6"
+	openAIChannel := createChannelCacheTestChannel(t, Channel{
+		Name:   "openai-default-wire",
+		Type:   constant.ChannelTypeOpenAI,
+		Models: modelName,
+	})
+	zhipuChatOnly := createChannelCacheTestChannel(t, Channel{
+		Name:    "zhipu-chat-wire",
+		Type:    constant.ChannelTypeZhipu_v4,
+		Models:  modelName,
+		Setting: channelCacheTestSetting(t, dto.ChannelSettings{OpenAIWireAPI: dto.OpenAIWireAPIChat}),
+	})
+
+	InitChannelCache()
+
+	selected, err := GetRandomSatisfiedChannelWithRelayFormat(
+		"Coding",
+		modelName,
+		0,
+		constant.APITypeOpenAI,
+		types.RelayFormatOpenAIResponses,
+		0,
+	)
+	if err != nil {
+		t.Fatalf("channel selection failed: %v", err)
+	}
+	if selected == nil {
+		t.Fatal("selected channel is nil")
+	}
+	if selected.Id != zhipuChatOnly.Id {
+		t.Fatalf("selected channel %d (%s), want explicit chat-only channel %d; openai channel was %d", selected.Id, selected.Name, zhipuChatOnly.Id, openAIChannel.Id)
+	}
+}
+
+func TestGetRandomSatisfiedChannelWithRelayFormatPrefersExplicitOpenAIWireSettingWithoutCache(t *testing.T) {
+	setupChannelCacheTestDB(t)
+	common.MemoryCacheEnabled = false
+
+	const modelName = "glm-4.6"
+	openAIChannel := createChannelCacheTestChannel(t, Channel{
+		Name:   "openai-default-wire",
+		Type:   constant.ChannelTypeOpenAI,
+		Models: modelName,
+	})
+	zhipuChatOnly := createChannelCacheTestChannel(t, Channel{
+		Name:    "zhipu-chat-wire",
+		Type:    constant.ChannelTypeZhipu_v4,
+		Models:  modelName,
+		Setting: channelCacheTestSetting(t, dto.ChannelSettings{OpenAIWireAPI: dto.OpenAIWireAPIChat}),
+	})
+
+	selected, err := GetRandomSatisfiedChannelWithRelayFormat(
+		"Coding",
+		modelName,
+		0,
+		constant.APITypeOpenAI,
+		types.RelayFormatOpenAIResponses,
+		0,
+	)
+	if err != nil {
+		t.Fatalf("channel selection failed: %v", err)
+	}
+	if selected == nil {
+		t.Fatal("selected channel is nil")
+	}
+	if selected.Id != zhipuChatOnly.Id {
+		t.Fatalf("selected channel %d (%s), want explicit chat-only channel %d; openai channel was %d", selected.Id, selected.Name, zhipuChatOnly.Id, openAIChannel.Id)
 	}
 }
