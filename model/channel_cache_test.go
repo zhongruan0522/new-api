@@ -112,6 +112,10 @@ func channelCacheTestSetting(t *testing.T, setting dto.ChannelSettings) *string 
 	return &value
 }
 
+func channelCacheTestStringPtr(value string) *string {
+	return &value
+}
+
 func TestSearchChannelsEscapesGroupFilter(t *testing.T) {
 	setupChannelCacheTestDB(t)
 
@@ -132,6 +136,41 @@ func TestSearchChannelsEscapesGroupFilter(t *testing.T) {
 	}
 	if len(channels) != 1 || channels[0].Name != "percent-literal" {
 		t.Fatalf("SearchChannels returned %#v, want only literal percent group", channels)
+	}
+}
+
+func TestChannelTagQueriesApplyGroupFilter(t *testing.T) {
+	setupChannelCacheTestDB(t)
+
+	createChannelCacheTestChannel(t, Channel{Name: "alpha tagged", Group: "alpha", Models: "gpt-test", Tag: channelCacheTestStringPtr("shared")})
+	createChannelCacheTestChannel(t, Channel{Name: "beta tagged", Group: "beta", Models: "gpt-test", Tag: channelCacheTestStringPtr("shared")})
+	createChannelCacheTestChannel(t, Channel{Name: "beta only", Group: "beta", Models: "gpt-test", Tag: channelCacheTestStringPtr("beta-only")})
+
+	total, err := CountChannelTags(ApplyChannelGroupFilter(DB.Model(&Channel{}), "alpha"))
+	if err != nil {
+		t.Fatalf("CountChannelTags error = %v", err)
+	}
+	if total != 1 {
+		t.Fatalf("tag total = %d, want 1", total)
+	}
+
+	tags, err := GetPaginatedChannelTags(ApplyChannelGroupFilter(DB.Model(&Channel{}), "alpha"), 0, 20)
+	if err != nil {
+		t.Fatalf("GetPaginatedChannelTags error = %v", err)
+	}
+	if len(tags) != 1 || tags[0] == nil || *tags[0] != "shared" {
+		t.Fatalf("tags = %#v, want only shared", tags)
+	}
+
+	channels, err := GetChannelsByTagWithGroup("shared", "alpha", false, false)
+	if err != nil {
+		t.Fatalf("GetChannelsByTagWithGroup error = %v", err)
+	}
+	if len(channels) != 1 || channels[0].Group != "alpha" {
+		t.Fatalf("channels = %#v, want only alpha shared channel", channels)
+	}
+	if channels[0].Key != "" {
+		t.Fatal("expected non-selectAll tag query to omit channel key")
 	}
 }
 
