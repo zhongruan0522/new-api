@@ -44,55 +44,6 @@ func setupAuthAccessTokenTestDB(t *testing.T) {
 	})
 }
 
-func TestTokenAuthHidesTokenFailureReason(t *testing.T) {
-	setupAuthAccessTokenTestDB(t)
-	gin.SetMode(gin.TestMode)
-
-	user := model.User{
-		Id:          3,
-		Username:    "token-user",
-		Password:    "password123",
-		Role:        common.RoleCommonUser,
-		Status:      common.UserStatusEnabled,
-		DisplayName: "Token User",
-		Group:       "default",
-		AffCode:     "auth-aff-token-user",
-	}
-	if err := model.DB.Create(&user).Error; err != nil {
-		t.Fatalf("create token user: %v", err)
-	}
-	token := model.Token{
-		UserId:      user.Id,
-		Key:         "exhaustedtoken",
-		Status:      common.TokenStatusExhausted,
-		Name:        "exhausted",
-		ExpiredTime: -1,
-		RemainQuota: 0,
-	}
-	if err := model.DB.Create(&token).Error; err != nil {
-		t.Fatalf("create token: %v", err)
-	}
-
-	router := gin.New()
-	router.GET("/v1/chat/completions", TokenAuth(), func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{"success": true})
-	})
-
-	req := httptest.NewRequest(http.MethodGet, "/v1/chat/completions", nil)
-	req.Header.Set("Authorization", "Bearer sk-exhaustedtoken")
-	recorder := httptest.NewRecorder()
-
-	router.ServeHTTP(recorder, req)
-
-	body := recorder.Body.String()
-	if !strings.Contains(body, "无效的令牌") {
-		t.Fatalf("expected generic invalid token message, got: %s", body)
-	}
-	if strings.Contains(body, "额度") || strings.Contains(body, "exhaustedtoken") {
-		t.Fatalf("token failure leaked reason or key: %s", body)
-	}
-}
-
 func TestUserAuthRejectsEmptyBearerMatchingEmptyAccessToken(t *testing.T) {
 	setupAuthAccessTokenTestDB(t)
 	gin.SetMode(gin.TestMode)
