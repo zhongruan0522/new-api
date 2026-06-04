@@ -324,8 +324,13 @@ func HardDeleteUserById(id int) error {
 	if id == 0 {
 		return errors.New("id 为空！")
 	}
-	err := DB.Unscoped().Delete(&User{}, "id = ?", id).Error
-	return err
+	if err := DB.Unscoped().Delete(&User{}, "id = ?", id).Error; err != nil {
+		return err
+	}
+	if err := InvalidateUserCache(id); err != nil {
+		return err
+	}
+	return InvalidateUserTokensCache(id)
 }
 
 func inviteUser(inviterId int) (err error) {
@@ -547,16 +552,23 @@ func (user *User) Delete() error {
 		return err
 	}
 
-	// 清除缓存
-	return invalidateUserCache(user.Id)
+	if err := InvalidateUserCache(user.Id); err != nil {
+		return err
+	}
+	return InvalidateUserTokensCache(user.Id)
 }
 
 func (user *User) HardDelete() error {
 	if user.Id == 0 {
 		return errors.New("id 为空！")
 	}
-	err := DB.Unscoped().Delete(user).Error
-	return err
+	if err := DB.Unscoped().Delete(user).Error; err != nil {
+		return err
+	}
+	if err := InvalidateUserCache(user.Id); err != nil {
+		return err
+	}
+	return InvalidateUserTokensCache(user.Id)
 }
 
 // ValidateAndFill check password & user status

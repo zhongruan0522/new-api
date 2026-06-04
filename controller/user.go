@@ -28,6 +28,18 @@ type LoginRequest struct {
 	Password string `json:"password"`
 }
 
+func invalidateSecuritySensitiveUserCaches(userId int) {
+	if userId == 0 {
+		return
+	}
+	if err := model.InvalidateUserCache(userId); err != nil {
+		common.SysLog(fmt.Sprintf("failed to invalidate user cache for user %d: %v", userId, err))
+	}
+	if err := model.InvalidateUserTokensCache(userId); err != nil {
+		common.SysLog(fmt.Sprintf("failed to invalidate user token cache for user %d: %v", userId, err))
+	}
+}
+
 func Login(c *gin.Context) {
 	if !common.PasswordLoginEnabled {
 		common.ApiErrorI18n(c, i18n.MsgUserPasswordLoginDisabled)
@@ -520,6 +532,7 @@ func UpdateUser(c *gin.Context) {
 		common.ApiError(c, err)
 		return
 	}
+	invalidateSecuritySensitiveUserCaches(updatedUser.Id)
 	if originUser.Quota != updatedUser.Quota {
 		model.RecordLog(originUser.Id, model.LogTypeManage, fmt.Sprintf("管理员将用户额度从 %s修改为 %s", logger.LogQuota(originUser.Quota), logger.LogQuota(updatedUser.Quota)))
 	}
@@ -576,6 +589,7 @@ func UpdateSelf(c *gin.Context) {
 			common.ApiErrorI18n(c, i18n.MsgUpdateFailed)
 			return
 		}
+		invalidateSecuritySensitiveUserCaches(userId)
 
 		common.ApiSuccessI18n(c, i18n.MsgUpdateSuccess, nil)
 		return
@@ -621,6 +635,7 @@ func UpdateSelf(c *gin.Context) {
 		common.ApiError(c, err)
 		return
 	}
+	invalidateSecuritySensitiveUserCaches(cleanUser.Id)
 
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
@@ -667,12 +682,15 @@ func DeleteUser(c *gin.Context) {
 	}
 	err = model.HardDeleteUserById(id)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": true,
-			"message": "",
-		})
+		common.ApiError(c, err)
 		return
 	}
+	invalidateSecuritySensitiveUserCaches(id)
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "",
+	})
+	return
 }
 
 func DeleteSelf(c *gin.Context) {
@@ -689,6 +707,7 @@ func DeleteSelf(c *gin.Context) {
 		common.ApiError(c, err)
 		return
 	}
+	invalidateSecuritySensitiveUserCaches(id)
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
@@ -810,12 +829,7 @@ func ManageUser(c *gin.Context) {
 		common.ApiError(c, err)
 		return
 	}
-	if err := model.InvalidateUserCache(user.Id); err != nil {
-		common.SysLog(fmt.Sprintf("failed to invalidate user cache for user %d: %v", user.Id, err))
-	}
-	if err := model.InvalidateUserTokensCache(user.Id); err != nil {
-		common.SysLog(fmt.Sprintf("failed to invalidate user token cache for user %d: %v", user.Id, err))
-	}
+	invalidateSecuritySensitiveUserCaches(user.Id)
 	clearUser := model.User{
 		Role:   user.Role,
 		Status: user.Status,
@@ -866,6 +880,7 @@ func EmailBind(c *gin.Context) {
 		common.ApiError(c, err)
 		return
 	}
+	invalidateSecuritySensitiveUserCaches(user.Id)
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
@@ -1092,6 +1107,7 @@ func UpdateUserSetting(c *gin.Context) {
 		common.ApiErrorI18n(c, i18n.MsgUpdateFailed)
 		return
 	}
+	invalidateSecuritySensitiveUserCaches(userId)
 
 	common.ApiSuccessI18n(c, i18n.MsgSettingSaved, nil)
 }
