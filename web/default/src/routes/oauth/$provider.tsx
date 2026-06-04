@@ -171,8 +171,12 @@ function OAuthCallback() {
         if (res?.data?.success) {
           const { message } = res.data
           const loginUser = (res.data?.data ?? null) as AuthUser | null
+          const action =
+            typeof res.data?.data?.action === 'string'
+              ? res.data.data.action
+              : null
           // Check if this is a bind operation
-          if (message === 'bind') {
+          if (action === 'bind' || message === 'bind') {
             toast.success(i18next.t('Binding successful!'))
             notifyBindingResult('success')
             if (isBindingFlow) {

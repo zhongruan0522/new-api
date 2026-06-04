@@ -49,6 +49,10 @@ const OAuth2Callback = (props) => {
       );
 
       const { success, message, data } = resData;
+      const action =
+        data && typeof data === 'object' && typeof data.action === 'string'
+          ? data.action
+          : null;
 
       if (!success) {
         // 业务错误不重试，直接显示错误
@@ -56,7 +60,7 @@ const OAuth2Callback = (props) => {
         return;
       }
 
-      if (message === 'bind') {
+      if (action === 'bind' || message === 'bind') {
         showSuccess(t('绑定成功！'));
         navigate('/console/personal');
       } else {
