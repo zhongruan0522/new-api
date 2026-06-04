@@ -66,7 +66,18 @@ export type ModelRatioField =
 
 type NumericMap = Record<string, number>
 type UnknownMap = Record<string, unknown>
-type PricingMode = 'unset' | 'per-request' | 'per-token'
+type PricingMode = 'per-request' | 'per-token' | 'per-token-length'
+
+type ContextTier = {
+  min_tokens: number
+  max_tokens: number | null
+  tokenPrice: string
+  completionTokenPrice: string
+  cacheTokenPrice: string
+  createCacheTokenPrice: string
+  audioTokenPrice: string
+  audioCompletionTokenPrice: string
+}
 
 type ModelRow = {
   name: string
@@ -79,6 +90,7 @@ type ModelRow = {
   audioInputPrice?: number
   audioOutputPrice?: number
   contextPricing?: unknown
+  contextTiers?: ContextTier[]
 }
 
 type ContextPricingEditorProps = {
@@ -163,20 +175,75 @@ function buildRow(
       ? normalizeNumber(inputPrice * maps.audio[name])
       : undefined
 
-  let mode: PricingMode = 'unset'
+  // Check context pricing first
+  const hasContextPricingConfig =
+    maps.context[name] !== undefined &&
+    typeof maps.context[name] === 'object' &&
+    maps.context[name] !== null &&
+    (maps.context[name] as Record<string, unknown>).enabled === true &&
+    Array.isArray((maps.context[name] as Record<string, unknown>).tiers) &&
+    ((maps.context[name] as Record<string, unknown>).tiers as unknown[]).length > 0
+
+  let mode: PricingMode = 'per-token'
   if (fixedPrice !== undefined) {
     mode = 'per-request'
+  } else if (hasContextPricingConfig) {
+    mode = 'per-token-length'
   } else if (
     inputRatio !== undefined ||
     maps.cache[name] !== undefined ||
     maps.createCache[name] !== undefined ||
     maps.completion[name] !== undefined ||
     maps.audio[name] !== undefined ||
-    maps.audioCompletion[name] !== undefined ||
-    maps.context[name] !== undefined
+    maps.audioCompletion[name] !== undefined
   ) {
     mode = 'per-token'
+  } else {
+    mode = 'per-token'
   }
+
+  // Parse context pricing tiers for display
+  const contextConfig = maps.context[name]
+  const isEnabled =
+    contextConfig &&
+    typeof contextConfig === 'object' &&
+    (contextConfig as Record<string, unknown>).enabled === true
+  const rawTiers = isEnabled
+    ? (contextConfig as Record<string, unknown>).tiers
+    : undefined
+  const contextTiers: ContextTier[] = Array.isArray(rawTiers)
+    ? rawTiers.map((tier: Record<string, number>) => {
+        const baseRatio = tier.model_ratio ?? 0
+        const basePrice = normalizeNumber(baseRatio * 2)
+        return {
+          min_tokens: tier.min_tokens ?? 0,
+          max_tokens: tier.max_tokens ?? null,
+          tokenPrice: basePrice ? formatPricingNumber(basePrice) : '0',
+          completionTokenPrice:
+            basePrice && tier.completion_ratio
+              ? formatPricingNumber(basePrice * tier.completion_ratio)
+              : '0',
+          cacheTokenPrice:
+            basePrice && tier.cache_ratio
+              ? formatPricingNumber(basePrice * tier.cache_ratio)
+              : '0',
+          createCacheTokenPrice:
+            basePrice && tier.create_cache_ratio
+              ? formatPricingNumber(basePrice * tier.create_cache_ratio)
+              : '0',
+          audioTokenPrice:
+            basePrice && tier.audio_ratio
+              ? formatPricingNumber(basePrice * tier.audio_ratio)
+              : '0',
+          audioCompletionTokenPrice:
+            basePrice && tier.audio_completion_ratio
+              ? formatPricingNumber(
+                  basePrice * (tier.audio_ratio ?? 0) * (tier.audio_completion_ratio ?? 0)
+                )
+              : '0',
+        }
+      })
+    : []
 
   return {
     name,
@@ -203,21 +270,26 @@ function buildRow(
         ? normalizeNumber(audioInputPrice * maps.audioCompletion[name])
         : undefined,
     contextPricing: maps.context[name],
+    contextTiers,
   }
 }
 
 function getSortRank(mode: PricingMode) {
-  if (mode === 'unset') return 0
   if (mode === 'per-request') return 1
-  return 2
+  if (mode === 'per-token') return 2
+  return 3
 }
 
 function getRowSummary(row: ModelRow, t: (key: string) => string) {
-  if (row.mode === 'unset') return t('Unset price')
   if (row.mode === 'per-request') {
-    return `$${toInputValue(row.fixedPrice)} / ${t('request')}`
+    return row.fixedPrice !== undefined
+      ? `$${toInputValue(row.fixedPrice)} / ${t('request')}`
+      : t('Per-request')
   }
-  if (row.contextPricing) return t('Context pricing')
+  if (row.mode === 'per-token-length') {
+    const tierCount = row.contextTiers?.length ?? 0
+    return t('{{count}} tiers', { count: tierCount })
+  }
   return row.inputPrice !== undefined
     ? `$${toInputValue(row.inputPrice)} / 1M ${t('tokens')}`
     : t('Per-token')
@@ -481,6 +553,25 @@ export function ModelRatioVisualEditor({
     if (mode === 'per-token') {
       writeMap('ModelRatio', { ...maps.ratio, [name]: 0 })
     }
+    if (mode === 'per-token-length') {
+      // Default: 0~200K tier with zero prices
+      const defaultTiers = [
+        {
+          min_tokens: 0,
+          max_tokens: 200000,
+          model_ratio: 0,
+          completion_ratio: 0,
+          cache_ratio: 0,
+          create_cache_ratio: 0,
+          audio_ratio: 0,
+          audio_completion_ratio: 0,
+        },
+      ]
+      writeMap('ContextPricing', {
+        ...maps.context,
+        [name]: { enabled: true, tiers: defaultTiers },
+      })
+    }
   }
 
   const setFixedPrice = (name: string, value: string) => {
@@ -549,6 +640,111 @@ export function ModelRatioVisualEditor({
         error instanceof Error ? error.message : t('Invalid JSON')
       toast.error(t('Invalid context pricing JSON'), { description: message })
     }
+  }
+
+  const updateContextTier = (
+    name: string,
+    tierIndex: number,
+    field: string,
+    value: string
+  ) => {
+    const current = maps.context[name] as Record<string, unknown> | undefined
+    if (!current) return
+    const tiers = [...((current.tiers as Record<string, number>[]) || [])]
+    if (!tiers[tierIndex]) return
+
+    const tier = { ...tiers[tierIndex] }
+
+    if (field === 'max_tokens') {
+      if (value === '') {
+        delete tier.max_tokens
+      } else {
+        const parsed = Number(value)
+        if (Number.isFinite(parsed)) tier.max_tokens = parsed
+      }
+    } else if (field === 'min_tokens') {
+      const parsed = Number(value)
+      if (Number.isFinite(parsed)) tier.min_tokens = parsed
+    } else {
+      // Price fields: convert display price to ratio
+      const priceValue = value === '' ? 0 : Number(value)
+      if (!Number.isFinite(priceValue)) return
+      const basePrice = Number(tier.model_ratio ?? 0) * 2
+      switch (field) {
+        case 'tokenPrice':
+          tier.model_ratio = priceValue > 0 ? normalizeNumber(priceValue / 2) : 0
+          break
+        case 'completionTokenPrice':
+          tier.completion_ratio = basePrice > 0 ? normalizeNumber(priceValue / basePrice) : 0
+          break
+        case 'cacheTokenPrice':
+          tier.cache_ratio = basePrice > 0 ? normalizeNumber(priceValue / basePrice) : 0
+          break
+        case 'createCacheTokenPrice':
+          tier.create_cache_ratio = basePrice > 0 ? normalizeNumber(priceValue / basePrice) : 0
+          break
+        case 'audioTokenPrice':
+          tier.audio_ratio = basePrice > 0 ? normalizeNumber(priceValue / basePrice) : 0
+          break
+        case 'audioCompletionTokenPrice': {
+          const audioInputPrice = basePrice * (tier.audio_ratio ?? 0)
+          tier.audio_completion_ratio =
+            audioInputPrice > 0 ? normalizeNumber(priceValue / audioInputPrice) : 0
+          break
+        }
+      }
+    }
+
+    tiers[tierIndex] = tier
+    writeMap('ContextPricing', {
+      ...maps.context,
+      [name]: { ...current, enabled: true, tiers },
+    })
+  }
+
+  const addContextTier = (name: string) => {
+    const current = maps.context[name] as Record<string, unknown> | undefined
+    const existingTiers = (current?.tiers as Record<string, number>[]) || []
+    const lastTier = existingTiers[existingTiers.length - 1]
+    const minTokens = lastTier?.max_tokens ?? 200000
+
+    const newTier: Record<string, number> = {
+      min_tokens: minTokens,
+      model_ratio: 0,
+      completion_ratio: 0,
+      cache_ratio: 0,
+      create_cache_ratio: 0,
+      audio_ratio: 0,
+      audio_completion_ratio: 0,
+    }
+
+    writeMap('ContextPricing', {
+      ...maps.context,
+      [name]: {
+        ...(current || {}),
+        enabled: true,
+        tiers: [...existingTiers, newTier],
+      },
+    })
+  }
+
+  const removeContextTier = (name: string, tierIndex: number) => {
+    const current = maps.context[name] as Record<string, unknown> | undefined
+    if (!current) return
+    const tiers = ((current.tiers as Record<string, number>[]) || []).filter(
+      (_, i) => i !== tierIndex
+    )
+    if (tiers.length === 0) {
+      // Removing last tier disables context pricing
+      const next = { ...maps.context }
+      delete next[name]
+      writeMap('ContextPricing', next)
+      return
+    }
+    writeMap('ContextPricing', {
+      ...maps.context,
+      [name]: { ...current, enabled: true, tiers },
+    })
   }
 
   const addCustomModel = () => {
@@ -633,17 +829,17 @@ export function ModelRatioVisualEditor({
                     <TableCell>
                       <Badge
                         variant={
-                          row.mode === 'unset'
-                            ? 'outline'
-                            : row.mode === 'per-request'
-                              ? 'secondary'
-                              : 'default'
+                          row.mode === 'per-request'
+                            ? 'secondary'
+                            : row.mode === 'per-token-length'
+                              ? 'default'
+                              : 'outline'
                         }
                       >
-                        {row.mode === 'unset'
-                          ? t('Unset price')
-                          : row.mode === 'per-request'
-                            ? t('Per-request')
+                        {row.mode === 'per-request'
+                          ? t('Per-request')
+                          : row.mode === 'per-token-length'
+                            ? t('Tiered')
                             : t('Per-token')}
                       </Badge>
                     </TableCell>
@@ -727,9 +923,9 @@ export function ModelRatioVisualEditor({
                   className='grid gap-2 sm:grid-cols-3'
                 >
                   {[
-                    ['unset', t('Unset price')],
                     ['per-request', t('Per-request')],
                     ['per-token', t('Per-token')],
+                    ['per-token-length', t('Per-token-length')],
                   ].map(([value, label]) => (
                     <Label
                       key={value}
@@ -741,12 +937,6 @@ export function ModelRatioVisualEditor({
                   ))}
                 </RadioGroup>
               </div>
-
-              {selectedRow.mode === 'unset' && (
-                <div className='text-muted-foreground rounded-md border border-dashed p-4 text-sm'>
-                  {t('This model has no custom pricing. Choose a billing type to configure it.')}
-                </div>
-              )}
 
               {selectedRow.mode === 'per-request' && (
                 <PriceInput
@@ -841,13 +1031,190 @@ export function ModelRatioVisualEditor({
                     />
                   </div>
 
-                  <ContextPricingEditor
-                    key={`${selectedRow.name}:${getContextPricingText(selectedRow.contextPricing)}`}
-                    modelName={selectedRow.name}
-                    contextPricing={selectedRow.contextPricing}
-                    onCommit={setContextPricing}
-                    onValidityChange={onValidityChange}
-                  />
+                </div>
+              )}
+
+              {selectedRow.mode === 'per-token-length' && (
+                <div className='space-y-4'>
+                  <div className='flex items-center justify-between gap-2'>
+                    <div>
+                      <Label className='text-sm font-semibold'>{t('Tiered pricing')}</Label>
+                      <p className='text-muted-foreground text-xs'>
+                        {t('Pricing varies by input context token range.')}
+                      </p>
+                    </div>
+                    <Button
+                      type='button'
+                      variant='outline'
+                      size='sm'
+                      onClick={() => addContextTier(selectedRow.name)}
+                    >
+                      <Plus className='mr-1 h-3 w-3' />
+                      {t('Add tier')}
+                    </Button>
+                  </div>
+
+                  {(selectedRow.contextTiers || []).length > 0 ? (
+                    <div className='overflow-x-auto rounded-md border'>
+                      <table className='w-full text-sm'>
+                        <thead>
+                          <tr className='bg-muted/50 border-b'>
+                            <th className='text-muted-foreground px-3 py-2 text-left text-xs font-medium'>
+                              {t('Token range')}
+                            </th>
+                            <th className='text-muted-foreground px-3 py-2 text-right text-xs font-medium'>
+                              {t('Input')} ($/1M)
+                            </th>
+                            <th className='text-muted-foreground px-3 py-2 text-right text-xs font-medium'>
+                              {t('Output')} ($/1M)
+                            </th>
+                            <th className='text-muted-foreground px-3 py-2 text-right text-xs font-medium'>
+                              {t('Cache read')} ($/1M)
+                            </th>
+                            <th className='text-muted-foreground px-3 py-2 text-right text-xs font-medium'>
+                              {t('Cache write')} ($/1M)
+                            </th>
+                            <th className='w-10 px-2 py-2'></th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {(selectedRow.contextTiers || []).map((tier, tierIdx) => {
+                            const maxTokensStr =
+                              tier.max_tokens === null
+                                ? ''
+                                : String(tier.max_tokens)
+                            return (
+                              <tr
+                                key={tierIdx}
+                                className='border-b last:border-b-0'
+                              >
+                                <td className='px-3 py-2'>
+                                  <div className='flex items-center gap-1'>
+                                    <Input
+                                      className='h-7 w-20 text-xs'
+                                      type='number'
+                                      value={tier.min_tokens}
+                                      onChange={(e) =>
+                                        updateContextTier(
+                                          selectedRow.name,
+                                          tierIdx,
+                                          'min_tokens',
+                                          e.target.value
+                                        )
+                                      }
+                                    />
+                                    <span className='text-muted-foreground text-xs'>~</span>
+                                    <Input
+                                      className='h-7 w-20 text-xs'
+                                      type='number'
+                                      placeholder={t('No limit')}
+                                      value={maxTokensStr}
+                                      onChange={(e) =>
+                                        updateContextTier(
+                                          selectedRow.name,
+                                          tierIdx,
+                                          'max_tokens',
+                                          e.target.value
+                                        )
+                                      }
+                                    />
+                                  </div>
+                                </td>
+                                <td className='px-3 py-2'>
+                                  <Input
+                                    className='h-7 text-right text-xs'
+                                    inputMode='decimal'
+                                    value={tier.tokenPrice}
+                                    onChange={(e) => {
+                                      const v = e.target.value
+                                      if (numberInputPattern.test(v))
+                                        updateContextTier(
+                                          selectedRow.name,
+                                          tierIdx,
+                                          'tokenPrice',
+                                          v
+                                        )
+                                    }}
+                                  />
+                                </td>
+                                <td className='px-3 py-2'>
+                                  <Input
+                                    className='h-7 text-right text-xs'
+                                    inputMode='decimal'
+                                    value={tier.completionTokenPrice}
+                                    onChange={(e) => {
+                                      const v = e.target.value
+                                      if (numberInputPattern.test(v))
+                                        updateContextTier(
+                                          selectedRow.name,
+                                          tierIdx,
+                                          'completionTokenPrice',
+                                          v
+                                        )
+                                    }}
+                                  />
+                                </td>
+                                <td className='px-3 py-2'>
+                                  <Input
+                                    className='h-7 text-right text-xs'
+                                    inputMode='decimal'
+                                    value={tier.cacheTokenPrice}
+                                    onChange={(e) => {
+                                      const v = e.target.value
+                                      if (numberInputPattern.test(v))
+                                        updateContextTier(
+                                          selectedRow.name,
+                                          tierIdx,
+                                          'cacheTokenPrice',
+                                          v
+                                        )
+                                    }}
+                                  />
+                                </td>
+                                <td className='px-3 py-2'>
+                                  <Input
+                                    className='h-7 text-right text-xs'
+                                    inputMode='decimal'
+                                    value={tier.createCacheTokenPrice}
+                                    onChange={(e) => {
+                                      const v = e.target.value
+                                      if (numberInputPattern.test(v))
+                                        updateContextTier(
+                                          selectedRow.name,
+                                          tierIdx,
+                                          'createCacheTokenPrice',
+                                          v
+                                        )
+                                    }}
+                                  />
+                                </td>
+                                <td className='px-2 py-2'>
+                                  <Button
+                                    type='button'
+                                    variant='ghost'
+                                    size='icon'
+                                    className='h-6 w-6'
+                                    disabled={
+                                      (selectedRow.contextTiers || []).length <= 1
+                                    }
+                                    onClick={() =>
+                                      removeContextTier(selectedRow.name, tierIdx)
+                                    }
+                                  >
+                                    <Trash2 className='text-destructive h-3 w-3' />
+                                  </Button>
+                                </td>
+                              </tr>
+                            )
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div className='text-muted-foreground rounded-md border border-dashed p-4 text-sm'>
+                      {t('No tiers configured. Click "Add tier" to start.')}
+                    </div>
+                  )}
                 </div>
               )}
 
