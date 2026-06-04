@@ -815,3 +815,23 @@ func BatchDeleteTokens(ids []int, userId int) (int, error) {
 
 	return len(tokens), nil
 }
+
+func InvalidateUserTokensCache(userId int) error {
+	if userId == 0 || !common.RedisEnabled {
+		return nil
+	}
+
+	var tokens []Token
+	if err := DB.Select("key").Where("user_id = ?", userId).Find(&tokens).Error; err != nil {
+		return err
+	}
+	for _, token := range tokens {
+		if token.Key == "" {
+			continue
+		}
+		if err := cacheDeleteToken(token.Key); err != nil {
+			return err
+		}
+	}
+	return nil
+}

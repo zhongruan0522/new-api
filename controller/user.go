@@ -805,6 +805,12 @@ func ManageUser(c *gin.Context) {
 		common.ApiError(c, err)
 		return
 	}
+	if err := model.InvalidateUserCache(user.Id); err != nil {
+		common.SysLog(fmt.Sprintf("failed to invalidate user cache for user %d: %v", user.Id, err))
+	}
+	if err := model.InvalidateUserTokensCache(user.Id); err != nil {
+		common.SysLog(fmt.Sprintf("failed to invalidate user token cache for user %d: %v", user.Id, err))
+	}
 	clearUser := model.User{
 		Role:   user.Role,
 		Status: user.Status,
