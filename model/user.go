@@ -567,13 +567,19 @@ func (user *User) ValidateAndFill() (err error) {
 	password := user.Password
 	username := strings.TrimSpace(user.Username)
 	if username == "" || password == "" {
-		return errors.New("用户名或密码为空")
+		return ErrUserEmptyCredentials
 	}
 	// find buy username or email
-	DB.Where("username = ? OR email = ?", username, username).First(user)
+	err = DB.Where("username = ? OR email = ?", username, username).First(user).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return ErrInvalidCredentials
+		}
+		return fmt.Errorf("%w: %v", ErrDatabase, err)
+	}
 	okay := common.ValidatePasswordAndHash(password, user.Password)
 	if !okay || user.Status != common.UserStatusEnabled {
-		return errors.New("用户名或密码错误，或用户已被封禁")
+		return ErrInvalidCredentials
 	}
 	return nil
 }
@@ -688,16 +694,21 @@ func normalizeAccessToken(authorization string) string {
 	return authorization
 }
 
-func ValidateAccessToken(authorization string) (user *User) {
+func ValidateAccessToken(authorization string) (user *User, err error) {
 	token := normalizeAccessToken(authorization)
 	if token == "" {
-		return nil
+		return nil, ErrTokenInvalid
 	}
 	user = &User{}
-	if DB.Where("access_token = ? AND access_token <> ''", token).First(user).RowsAffected == 1 {
-		return user
+	err = DB.Where("access_token = ? AND access_token <> ''", token).First(user).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrTokenInvalid
+		}
+		return nil, fmt.Errorf("%w: %v", ErrDatabase, err)
 	}
-	return nil
+	user.AccessToken = nil
+	return user, nil
 }
 
 // GetUserQuota gets quota from Redis first, falls back to DB if needed

@@ -21,21 +21,76 @@ func setupAuthAccessTokenTestDB(t *testing.T) {
 	t.Helper()
 
 	oldDB := model.DB
+	oldRedisEnabled := common.RedisEnabled
+	oldMemoryCacheEnabled := common.MemoryCacheEnabled
 	db, err := gorm.Open(sqlite.Open(fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name())), &gorm.Config{})
 	if err != nil {
 		t.Fatalf("open sqlite test db: %v", err)
 	}
-	if err := db.AutoMigrate(&model.User{}); err != nil {
+	if err := db.AutoMigrate(&model.User{}, &model.Token{}); err != nil {
 		t.Fatalf("migrate sqlite test db: %v", err)
 	}
 	model.DB = db
+	common.RedisEnabled = false
+	common.MemoryCacheEnabled = false
 
 	t.Cleanup(func() {
 		if sqlDB, err := db.DB(); err == nil {
 			_ = sqlDB.Close()
 		}
 		model.DB = oldDB
+		common.RedisEnabled = oldRedisEnabled
+		common.MemoryCacheEnabled = oldMemoryCacheEnabled
 	})
+}
+
+func TestTokenAuthHidesTokenFailureReason(t *testing.T) {
+	setupAuthAccessTokenTestDB(t)
+	gin.SetMode(gin.TestMode)
+
+	user := model.User{
+		Id:          3,
+		Username:    "token-user",
+		Password:    "password123",
+		Role:        common.RoleCommonUser,
+		Status:      common.UserStatusEnabled,
+		DisplayName: "Token User",
+		Group:       "default",
+		AffCode:     "auth-aff-token-user",
+	}
+	if err := model.DB.Create(&user).Error; err != nil {
+		t.Fatalf("create token user: %v", err)
+	}
+	token := model.Token{
+		UserId:      user.Id,
+		Key:         "exhaustedtoken",
+		Status:      common.TokenStatusExhausted,
+		Name:        "exhausted",
+		ExpiredTime: -1,
+		RemainQuota: 0,
+	}
+	if err := model.DB.Create(&token).Error; err != nil {
+		t.Fatalf("create token: %v", err)
+	}
+
+	router := gin.New()
+	router.GET("/v1/chat/completions", TokenAuth(), func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"success": true})
+	})
+
+	req := httptest.NewRequest(http.MethodGet, "/v1/chat/completions", nil)
+	req.Header.Set("Authorization", "Bearer sk-exhaustedtoken")
+	recorder := httptest.NewRecorder()
+
+	router.ServeHTTP(recorder, req)
+
+	body := recorder.Body.String()
+	if !strings.Contains(body, "无效的令牌") {
+		t.Fatalf("expected generic invalid token message, got: %s", body)
+	}
+	if strings.Contains(body, "额度") || strings.Contains(body, "exhaustedtoken") {
+		t.Fatalf("token failure leaked reason or key: %s", body)
+	}
 }
 
 func TestUserAuthRejectsEmptyBearerMatchingEmptyAccessToken(t *testing.T) {
@@ -52,6 +107,7 @@ func TestUserAuthRejectsEmptyBearerMatchingEmptyAccessToken(t *testing.T) {
 		DisplayName: "Root User",
 		AccessToken: &emptyAccessToken,
 		Group:       "default",
+		AffCode:     "auth-aff-root-empty",
 	}
 	if err := model.DB.Create(&rootUser).Error; err != nil {
 		t.Fatalf("create root user: %v", err)
@@ -93,6 +149,7 @@ func TestUserAuthDoesNotUseCommonUserEmptyAccessTokenAsRoot(t *testing.T) {
 		Status:      common.UserStatusEnabled,
 		DisplayName: "Root User",
 		Group:       "default",
+		AffCode:     "auth-aff-root",
 	}
 	emptyAccessToken := ""
 	commonUser := model.User{
@@ -104,6 +161,7 @@ func TestUserAuthDoesNotUseCommonUserEmptyAccessTokenAsRoot(t *testing.T) {
 		DisplayName: "Common User",
 		AccessToken: &emptyAccessToken,
 		Group:       "default",
+		AffCode:     "auth-aff-common",
 	}
 	if err := model.DB.Create(&rootUser).Error; err != nil {
 		t.Fatalf("create root user: %v", err)

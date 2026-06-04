@@ -51,8 +51,13 @@ func Login(c *gin.Context) {
 	}
 	err = user.ValidateAndFill()
 	if err != nil {
+		message := i18n.T(c, i18n.MsgUserUsernameOrPasswordError)
+		if errors.Is(err, model.ErrDatabase) {
+			common.SysLog("ValidateAndFill database error: " + err.Error())
+			message = i18n.T(c, i18n.MsgDatabaseError)
+		}
 		c.JSON(http.StatusOK, gin.H{
-			"message": err.Error(),
+			"message": message,
 			"success": false,
 		})
 		return

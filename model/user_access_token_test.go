@@ -43,6 +43,7 @@ func createAccessTokenTestUser(t *testing.T, id int, role int, accessToken *stri
 		DisplayName: fmt.Sprintf("User %d", id),
 		AccessToken: accessToken,
 		Group:       "default",
+		AffCode:     fmt.Sprintf("access-token-aff-%d", id),
 	}
 	if err := DB.Create(&user).Error; err != nil {
 		t.Fatalf("create user: %v", err)
@@ -84,7 +85,11 @@ func TestValidateAccessTokenRejectsEmptyBearerWhenEmptyTokenExists(t *testing.T)
 
 	for _, authorization := range []string{"", "   ", "Bearer", "Bearer ", "bearer "} {
 		t.Run(fmt.Sprintf("authorization_%q", authorization), func(t *testing.T) {
-			if got := ValidateAccessToken(authorization); got != nil {
+			got, err := ValidateAccessToken(authorization)
+			if err != ErrTokenInvalid {
+				t.Fatalf("ValidateAccessToken(%q) err = %v, want %v", authorization, err, ErrTokenInvalid)
+			}
+			if got != nil {
 				t.Fatalf("ValidateAccessToken(%q) returned user %d, want nil", authorization, got.Id)
 			}
 		})
@@ -98,7 +103,10 @@ func TestValidateAccessTokenAcceptsNonEmptyBearerToken(t *testing.T) {
 
 	for _, authorization := range []string{"Bearer " + accessToken, "bearer     " + accessToken, accessToken} {
 		t.Run(fmt.Sprintf("authorization_%q", authorization), func(t *testing.T) {
-			got := ValidateAccessToken(authorization)
+			got, err := ValidateAccessToken(authorization)
+			if err != nil {
+				t.Fatalf("ValidateAccessToken(%q) err = %v", authorization, err)
+			}
 			if got == nil {
 				t.Fatalf("ValidateAccessToken(%q) returned nil", authorization)
 			}
@@ -120,6 +128,7 @@ func TestUserAccessTokenIsNotSerialized(t *testing.T) {
 		DisplayName: "Root User",
 		AccessToken: &accessToken,
 		Group:       "default",
+		AffCode:     "serialize-aff-1",
 	}
 
 	data, err := common.Marshal(user)
