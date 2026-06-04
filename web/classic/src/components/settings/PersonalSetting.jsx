@@ -355,9 +355,10 @@ const PersonalSetting = () => {
       return;
     }
     setLoading(true);
-    const res = await API.get(
-      `/api/oauth/email/bind?email=${inputs.email}&code=${inputs.email_verification_code}`,
-    );
+    const res = await API.post('/api/oauth/email/bind', {
+      email: inputs.email,
+      code: inputs.email_verification_code,
+    });
     const { success, message } = res.data;
     if (success) {
       showSuccess(t('邮箱账户绑定成功！'));
