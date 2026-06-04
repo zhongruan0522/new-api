@@ -13,9 +13,10 @@ import (
 )
 
 // defaultStoredAssetSignedURLTTL:
-//   - 0   => no expiry by default (URL is valid until the asset is cleaned from DB)
-//   - >0  => add exp+sig for short-lived URLs
-const defaultStoredAssetSignedURLTTL time.Duration = 0
+//
+// Stored media URLs are passed to tools and UI previews; keep them short-lived so
+// leaked links do not grant long-term unauthenticated access.
+const defaultStoredAssetSignedURLTTL = time.Hour
 
 func buildStoredImageURL(c *gin.Context, imageID string) string {
 	return buildStoredAssetURLWithTTL(c, "image", "stored_image", imageID, defaultStoredAssetSignedURLTTL)

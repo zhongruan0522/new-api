@@ -13,13 +13,13 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// verifyStoredAssetSignature validates `sig` and optional `exp` query params.
+// verifyStoredAssetSignature validates required `sig` and `exp` query params.
 //
-// - If `exp` is absent: signature is permanent (valid until the asset is deleted).
-// - If `exp` is present: signature is time-bound and must not be expired.
+// Stored media URLs must be time-bound so leaked links do not remain valid until
+// the asset is deleted.
 //
 // Returns:
-//   - exp: 0 means no-exp signature; otherwise the exp unix timestamp.
+//   - exp: the exp unix timestamp.
 //   - now: current unix timestamp, useful for cache headers.
 //   - ok:  whether validation passed (handler already responded when false).
 func verifyStoredAssetSignature(c *gin.Context, scope string, id string) (exp int64, now int64, ok bool) {
@@ -47,16 +47,11 @@ func verifyStoredAssetSignature(c *gin.Context, scope string, id string) (exp in
 	expStr := strings.TrimSpace(c.Query("exp"))
 	now = time.Now().Unix()
 
-	// No-exp signature
 	if expStr == "" {
-		expected := common.GenerateHMAC(fmt.Sprintf("%s:%s", scope, id))
-		if subtle.ConstantTimeCompare([]byte(expected), []byte(sig)) != 1 {
-			c.JSON(http.StatusForbidden, gin.H{
-				"error": "invalid signature",
-			})
-			return 0, now, false
-		}
-		return 0, now, true
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "exp is required",
+		})
+		return 0, now, false
 	}
 
 	exp, err := strconv.ParseInt(expStr, 10, 64)
