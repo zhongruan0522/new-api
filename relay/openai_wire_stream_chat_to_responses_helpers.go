@@ -28,7 +28,7 @@ func (c *chatToResponsesStreamConverter) hydrateFromChunk(chunk *dto.ChatComplet
 	}
 }
 
-func (c *chatToResponsesStreamConverter) buildOutput() []dto.ResponsesOutput {
+func (c *chatToResponsesStreamConverter) buildOutput() ([]dto.ResponsesOutput, error) {
 	output := make([]dto.ResponsesOutput, 0, 2+len(c.toolCallsByID))
 	reasoning := strings.TrimSpace(c.reasoningBuilder.String())
 	if reasoning != "" {
@@ -59,23 +59,107 @@ func (c *chatToResponsesStreamConverter) buildOutput() []dto.ResponsesOutput {
 		if state == nil {
 			continue
 		}
-		item := dto.ResponsesOutput{
-			Type:   "function_call",
-			ID:     state.id,
-			Status: "completed",
-			Role:   "assistant",
-			CallId: state.id,
-			Name:   state.name,
-		}
-		if state.toolType == dto.CustomType {
-			item.Type = "custom_tool_call"
-			item.Input = state.args.String()
-		} else {
-			item.Arguments = state.args.String()
+		item, err := state.responsesOutputItem("completed")
+		if err != nil {
+			return nil, err
 		}
 		output = append(output, item)
 	}
-	return output
+	return output, nil
+}
+
+func (s *chatToResponsesToolCallState) responsesArguments() (string, error) {
+	if s == nil {
+		return "", nil
+	}
+	raw := s.args.String()
+	if s.customProxy {
+		input, complete := relaycommon.ExtractResponsesCustomToolInputFromChatArguments(raw)
+		if !complete {
+			return "", fmt.Errorf("custom tool proxy %q arguments must contain a complete %q string", s.name, "input")
+		}
+		return input, nil
+	}
+	return raw, nil
+}
+
+func (s *chatToResponsesToolCallState) applyToolSpec(spec relaycommon.OpenAIWireToolSpec) {
+	if s == nil {
+		return
+	}
+	s.toolSpec = spec
+	s.hasToolSpec = true
+	s.name = spec.Name
+	s.namespace = spec.Namespace
+	s.customProxy = spec.IsCustom()
+	if spec.IsCustom() {
+		s.toolType = dto.CustomType
+		return
+	}
+	s.toolType = "function"
+}
+
+func (s *chatToResponsesToolCallState) isCustomTool() bool {
+	if s == nil {
+		return false
+	}
+	return s.toolType == dto.CustomType || (s.hasToolSpec && s.toolSpec.IsCustom())
+}
+
+func (s *chatToResponsesToolCallState) isToolSearch() bool {
+	return s != nil && s.hasToolSpec && s.toolSpec.IsToolSearch()
+}
+
+func (s *chatToResponsesToolCallState) responsesOutputItem(status string) (dto.ResponsesOutput, error) {
+	if s == nil {
+		return dto.ResponsesOutput{}, fmt.Errorf("tool call state is nil")
+	}
+	if s.isToolSearch() {
+		item := dto.ResponsesOutput{
+			Type:      "tool_search_call",
+			ID:        s.id,
+			Status:    status,
+			CallId:    s.id,
+			Execution: "client",
+		}
+		if status == "completed" {
+			arguments, err := relaycommon.BuildResponsesToolSearchArgumentsFromChatArguments(s.args.String())
+			if err != nil {
+				return dto.ResponsesOutput{}, fmt.Errorf("parse tool_search arguments failed: %w", err)
+			}
+			item.Arguments = arguments
+		}
+		return item, nil
+	}
+
+	item := dto.ResponsesOutput{
+		Type:      "function_call",
+		ID:        s.id,
+		Status:    status,
+		Role:      "assistant",
+		CallId:    s.id,
+		Name:      s.name,
+		Namespace: s.namespace,
+	}
+	if s.isCustomTool() {
+		item.Type = "custom_tool_call"
+		if status == "completed" {
+			input, err := s.responsesArguments()
+			if err != nil {
+				return dto.ResponsesOutput{}, err
+			}
+			item.Input = input
+		}
+		return item, nil
+	}
+	if status == "completed" {
+		arguments, err := s.responsesArguments()
+		if err != nil {
+			return dto.ResponsesOutput{}, err
+		}
+		item.Arguments = arguments
+	}
+	return item, nil
 }
 
 func (c *chatToResponsesStreamConverter) buildUsage() *dto.Usage {
@@ -163,6 +247,14 @@ func (c *chatToResponsesStreamConverter) rekeyToolCallState(from string, to stri
 		if existing.name == "" {
 			existing.name = state.name
 		}
+		if existing.namespace == "" {
+			existing.namespace = state.namespace
+		}
+		if !existing.hasToolSpec && state.hasToolSpec {
+			existing.toolSpec = state.toolSpec
+			existing.hasToolSpec = true
+		}
+		existing.customProxy = existing.customProxy || state.customProxy
 		var args strings.Builder
 		args.WriteString(state.args.String())
 		args.WriteString(existing.args.String())

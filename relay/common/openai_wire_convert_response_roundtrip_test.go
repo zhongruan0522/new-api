@@ -3,6 +3,7 @@ package common
 import (
 	"testing"
 
+	"github.com/zhongruan0522/new-api/common"
 	"github.com/zhongruan0522/new-api/dto"
 )
 
@@ -231,5 +232,93 @@ func TestConvertChatCompletionResponseToResponsesResponse_CustomToolCall(t *test
 	}
 	if got.Output[0].Type != "custom_tool_call" || got.Output[0].CallId != "call_custom" || got.Output[0].Name != "code_exec" || got.Output[0].Input != "print(1)" {
 		t.Fatalf("custom output = %#v, want custom_tool_call", got.Output[0])
+	}
+}
+
+// Test custom tool proxy restoration because Responses custom tools are
+// freeform, while Chat-only upstreams can only represent them as function
+// arguments with an input string.
+func TestResponsesCustomToolProxyRoundTrip_GenericCustomName(t *testing.T) {
+	toolsRaw, err := common.Marshal([]map[string]any{{
+		"type":        "custom",
+		"name":        "shell_exec",
+		"description": "execute shell text",
+		"format":      map[string]any{"type": "text"},
+	}})
+	if err != nil {
+		t.Fatalf("marshal tools error = %v", err)
+	}
+
+	chatReq, toolContext, err := ConvertResponsesRequestToChatCompletionsRequestWithToolContext(&dto.OpenAIResponsesRequest{
+		Model: "gpt-5",
+		Input: []byte(`"run a command"`),
+		Tools: toolsRaw,
+	})
+	if err != nil {
+		t.Fatalf("ConvertResponsesRequestToChatCompletionsRequestWithToolContext() error = %v", err)
+	}
+	if len(chatReq.Tools) != 1 {
+		t.Fatalf("chat tools len = %d, want 1", len(chatReq.Tools))
+	}
+	if chatReq.Tools[0].Type != "function" || chatReq.Tools[0].Function.Name != "shell_exec" {
+		t.Fatalf("chat tool = %#v, want function proxy named shell_exec", chatReq.Tools[0])
+	}
+	params, ok := chatReq.Tools[0].Function.Parameters.(map[string]any)
+	if !ok || params["type"] != "object" {
+		t.Fatalf("chat tool parameters = %#v, want object schema", chatReq.Tools[0].Function.Parameters)
+	}
+	properties, ok := params["properties"].(map[string]any)
+	if !ok {
+		t.Fatalf("chat tool properties = %#v, want object", params["properties"])
+	}
+	inputSchema, ok := properties["input"].(map[string]any)
+	if !ok || inputSchema["type"] != "string" {
+		t.Fatalf("chat tool input schema = %#v, want string input", properties["input"])
+	}
+
+	arguments, err := BuildChatArgumentsForResponsesCustomToolInput("printf 'hi'\n")
+	if err != nil {
+		t.Fatalf("build custom tool arguments error = %v", err)
+	}
+	toolCallsRaw, err := common.Marshal([]map[string]any{{
+		"id":   "call_shell",
+		"type": "function",
+		"function": map[string]any{
+			"name":      "shell_exec",
+			"arguments": arguments,
+		},
+	}})
+	if err != nil {
+		t.Fatalf("marshal chat tool calls error = %v", err)
+	}
+
+	got, err := ConvertChatCompletionResponseToResponsesResponseWithToolContext(&dto.OpenAITextResponse{
+		Id:      "chatcmpl_shell",
+		Object:  "chat.completion",
+		Created: 1700000000,
+		Model:   "gpt-5",
+		Choices: []dto.OpenAITextResponseChoice{{
+			Index: 0,
+			Message: dto.Message{
+				Role:      "assistant",
+				ToolCalls: toolCallsRaw,
+			},
+			FinishReason: "tool_calls",
+		}},
+	}, toolContext)
+	if err != nil {
+		t.Fatalf("ConvertChatCompletionResponseToResponsesResponseWithToolContext() error = %v", err)
+	}
+	if len(got.Output) != 1 {
+		t.Fatalf("output len = %d, want 1", len(got.Output))
+	}
+	if got.Output[0].Type != "custom_tool_call" || got.Output[0].CallId != "call_shell" || got.Output[0].Name != "shell_exec" {
+		t.Fatalf("output item = %#v, want shell_exec custom_tool_call", got.Output[0])
+	}
+	if got.Output[0].Input != "printf 'hi'\n" {
+		t.Fatalf("custom input = %q, want original freeform input", got.Output[0].Input)
+	}
+	if got.Output[0].Arguments != nil {
+		t.Fatalf("custom output arguments = %#v, want nil", got.Output[0].Arguments)
 	}
 }

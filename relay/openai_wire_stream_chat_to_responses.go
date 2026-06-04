@@ -7,6 +7,7 @@ import (
 
 	"github.com/zhongruan0522/new-api/common"
 	"github.com/zhongruan0522/new-api/dto"
+	relaycommon "github.com/zhongruan0522/new-api/relay/common"
 )
 
 const chatToResponsesAssistantMessageID = "msg_0"
@@ -28,6 +29,7 @@ type chatToResponsesStreamConverter struct {
 	toolCallsByID      map[string]*chatToResponsesToolCallState
 	toolCallIDByIndex  map[int]string
 	toolCallOrder      []string
+	toolContext        *relaycommon.OpenAIWireToolContext
 
 	usage *dto.Usage
 	err   error
@@ -38,16 +40,25 @@ type chatToResponsesToolCallState struct {
 	index          int
 	toolType       string
 	name           string
+	namespace      string
+	toolSpec       relaycommon.OpenAIWireToolSpec
+	hasToolSpec    bool
 	args           strings.Builder
 	emittedArgsLen int
 	sentAdded      bool
 	hasStableID    bool
+	customProxy    bool
 }
 
-func newChatToResponsesStreamConverter() *chatToResponsesStreamConverter {
+func newChatToResponsesStreamConverter(toolContext ...*relaycommon.OpenAIWireToolContext) *chatToResponsesStreamConverter {
+	var ctx *relaycommon.OpenAIWireToolContext
+	if len(toolContext) > 0 {
+		ctx = toolContext[0]
+	}
 	return &chatToResponsesStreamConverter{
 		toolCallsByID:     make(map[string]*chatToResponsesToolCallState),
 		toolCallIDByIndex: make(map[int]string),
+		toolContext:       ctx,
 	}
 }
 
@@ -308,7 +319,15 @@ func (c *chatToResponsesStreamConverter) emitToolCallDeltas(calls []dto.ToolCall
 				state.args.WriteString(delta)
 			}
 		} else if strings.TrimSpace(call.Function.Name) != "" {
-			state.name = call.Function.Name
+			if spec, ok := c.toolContext.ResolveToolProxy(call.Function.Name); ok {
+				state.applyToolSpec(spec)
+			} else {
+				state.toolType = "function"
+				state.name = call.Function.Name
+				state.namespace = ""
+				state.hasToolSpec = false
+				state.customProxy = false
+			}
 			delta := call.Function.Arguments
 			if delta != "" {
 				state.args.WriteString(delta)
@@ -330,11 +349,20 @@ func (c *chatToResponsesStreamConverter) emitToolCallDeltas(calls []dto.ToolCall
 			continue
 		}
 
+		// Responses custom tools are proxied as Chat functions with an "input"
+		// string. Buffer until the full JSON arguments can be unwrapped.
+		if state.customProxy {
+			continue
+		}
+
 		pendingArgs := state.args.String()
 		if len(pendingArgs) > state.emittedArgsLen {
+			if state.isToolSearch() {
+				continue
+			}
 			delta := pendingArgs[state.emittedArgsLen:]
 			eventType := "response.function_call_arguments.delta"
-			if state.toolType == dto.CustomType {
+			if state.isCustomTool() {
 				eventType = "response.custom_tool_call_input.delta"
 			}
 			frame, err := encodeResponsesStreamEvent(dto.ResponsesStreamResponse{
@@ -362,13 +390,17 @@ func (c *chatToResponsesStreamConverter) emitCompleted() (string, error) {
 		return "", err
 	}
 
+	output, err := c.buildOutput()
+	if err != nil {
+		return "", err
+	}
 	resp := &dto.OpenAIResponsesResponse{
 		ID:        c.ensureID(),
 		Object:    "response",
 		CreatedAt: int(c.ensureCreated()),
 		Status:    c.mapStatus(),
 		Model:     c.model,
-		Output:    c.buildOutput(),
+		Output:    output,
 		Usage:     c.buildUsage(),
 	}
 
@@ -390,49 +422,78 @@ func (c *chatToResponsesStreamConverter) emitCompleted() (string, error) {
 			}
 			out.WriteString(frame)
 		}
-		eventType := "response.function_call_arguments.done"
-		if state.toolType == dto.CustomType {
-			eventType = "response.custom_tool_call_input.done"
-		}
-		doneEvent := dto.ResponsesStreamResponse{
-			Type:   eventType,
-			ItemID: state.id,
-		}
-		if state.toolType == dto.CustomType {
-			doneEvent.Input = state.args.String()
-		} else {
-			doneEvent.Arguments = state.args.String()
-		}
-		argumentsDoneFrame, err := encodeResponsesStreamEvent(dto.ResponsesStreamResponse{
-			Type:      doneEvent.Type,
-			Arguments: doneEvent.Arguments,
-			Input:     doneEvent.Input,
-			ItemID:    doneEvent.ItemID,
-		})
+		toolArgs, err := state.responsesArguments()
 		if err != nil {
 			return "", err
 		}
-		out.WriteString(argumentsDoneFrame)
-		itemType := "function_call"
-		if state.toolType == dto.CustomType {
-			itemType = "custom_tool_call"
+		if state.customProxy {
+			if len(toolArgs) > 0 {
+				frame, err := encodeResponsesStreamEvent(dto.ResponsesStreamResponse{
+					Type:   "response.custom_tool_call_input.delta",
+					Delta:  toolArgs,
+					ItemID: state.id,
+					CallID: state.id,
+				})
+				if err != nil {
+					return "", err
+				}
+				out.WriteString(frame)
+				state.emittedArgsLen = len(toolArgs)
+			}
+			customDoneFrame, err := encodeResponsesStreamEvent(dto.ResponsesStreamResponse{
+				Type:   "response.custom_tool_call_input.done",
+				Input:  toolArgs,
+				ItemID: state.id,
+				CallID: state.id,
+			})
+			if err != nil {
+				return "", err
+			}
+			out.WriteString(customDoneFrame)
+		} else if !state.isToolSearch() && len(toolArgs) > state.emittedArgsLen {
+			// Regular function calls emit incremental deltas and a done event.
+			delta := toolArgs[state.emittedArgsLen:]
+			frame, err := encodeResponsesStreamEvent(dto.ResponsesStreamResponse{
+				Type:   "response.function_call_arguments.delta",
+				Delta:  delta,
+				ItemID: state.id,
+			})
+			if err != nil {
+				return "", err
+			}
+			out.WriteString(frame)
+			state.emittedArgsLen = len(toolArgs)
 		}
-		item := &dto.ResponsesOutput{
-			Type:   itemType,
-			ID:     state.id,
-			Status: "completed",
-			Role:   "assistant",
-			CallId: state.id,
-			Name:   state.name,
+		if !state.customProxy && !state.isToolSearch() {
+			if state.isCustomTool() {
+				customDoneFrame, err := encodeResponsesStreamEvent(dto.ResponsesStreamResponse{
+					Type:   "response.custom_tool_call_input.done",
+					Input:  toolArgs,
+					ItemID: state.id,
+				})
+				if err != nil {
+					return "", err
+				}
+				out.WriteString(customDoneFrame)
+			} else {
+				argumentsDoneFrame, err := encodeResponsesStreamEvent(dto.ResponsesStreamResponse{
+					Type:      "response.function_call_arguments.done",
+					Arguments: toolArgs,
+					ItemID:    state.id,
+				})
+				if err != nil {
+					return "", err
+				}
+				out.WriteString(argumentsDoneFrame)
+			}
 		}
-		if state.toolType == dto.CustomType {
-			item.Input = state.args.String()
-		} else {
-			item.Arguments = state.args.String()
+		item, err := state.responsesOutputItem("completed")
+		if err != nil {
+			return "", err
 		}
 		frame, err := encodeResponsesStreamEvent(dto.ResponsesStreamResponse{
 			Type:   "response.output_item.done",
-			Item:   item,
+			Item:   &item,
 			ItemID: state.id,
 		})
 		if err != nil {
@@ -463,20 +524,13 @@ func isSSECommentFrame(rawFrame string) bool {
 }
 
 func (c *chatToResponsesStreamConverter) emitToolCallAdded(state *chatToResponsesToolCallState) (string, error) {
-	itemType := "function_call"
-	if state.toolType == dto.CustomType {
-		itemType = "custom_tool_call"
+	item, err := state.responsesOutputItem("in_progress")
+	if err != nil {
+		return "", err
 	}
 	frame, err := encodeResponsesStreamEvent(dto.ResponsesStreamResponse{
-		Type: "response.output_item.added",
-		Item: &dto.ResponsesOutput{
-			Type:   itemType,
-			ID:     state.id,
-			Status: "in_progress",
-			Role:   "assistant",
-			CallId: state.id,
-			Name:   state.name,
-		},
+		Type:   "response.output_item.added",
+		Item:   &item,
 		ItemID: state.id,
 	})
 	if err != nil {

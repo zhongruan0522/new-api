@@ -339,7 +339,10 @@ func (c *responsesToChatStreamConverter) emitToolCallDone(stream dto.ResponsesSt
 	if !ok {
 		return "", nil
 	}
-	arguments := stream.Arguments
+	arguments, err := relaycommon.ResponsesArgumentsToChatString(stream.Arguments)
+	if err != nil {
+		return "", fmt.Errorf("marshal function_call arguments failed: %w", err)
+	}
 	if c.toolCallTypeByID[callID] == "custom_tool_call" {
 		arguments = stream.Input
 	}
@@ -347,7 +350,10 @@ func (c *responsesToChatStreamConverter) emitToolCallDone(stream dto.ResponsesSt
 		if c.toolCallTypeByID[callID] == "custom_tool_call" {
 			arguments = stream.Item.Input
 		} else {
-			arguments = stream.Item.Arguments
+			arguments, err = relaycommon.ResponsesArgumentsToChatString(stream.Item.Arguments)
+			if err != nil {
+				return "", fmt.Errorf("marshal function_call item arguments failed: %w", err)
+			}
 		}
 	}
 	if arguments == "" {

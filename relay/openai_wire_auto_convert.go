@@ -106,9 +106,9 @@ func relayChatDownstreamToResponsesUpstream(c *gin.Context, info *relaycommon.Re
 	setTemporaryRequestBody(c, bodyBytes)
 
 	if responsesReq.Stream {
-		return streamUpstreamWithWireConversion(c, info, dto.OpenAIWireAPIResponses, dto.OpenAIWireAPIChat, includeUsage, ResponsesHelper)
+		return streamUpstreamWithWireConversion(c, info, dto.OpenAIWireAPIResponses, dto.OpenAIWireAPIChat, openAIWireConversionOptions{ChatIncludeUsage: includeUsage}, ResponsesHelper)
 	}
-	return nonStreamUpstreamWithWireConversion(c, info, dto.OpenAIWireAPIResponses, dto.OpenAIWireAPIChat, ResponsesHelper)
+	return nonStreamUpstreamWithWireConversion(c, info, dto.OpenAIWireAPIResponses, dto.OpenAIWireAPIChat, openAIWireConversionOptions{}, ResponsesHelper)
 }
 
 func relayResponsesDownstreamToChatUpstream(c *gin.Context, info *relaycommon.RelayInfo) *types.NewAPIError {
@@ -122,7 +122,7 @@ func relayResponsesDownstreamToChatUpstream(c *gin.Context, info *relaycommon.Re
 		)
 	}
 
-	chatReq, err := relaycommon.ConvertResponsesRequestToChatCompletionsRequest(responsesReq)
+	chatReq, toolContext, err := relaycommon.ConvertResponsesRequestToChatCompletionsRequestWithToolContext(responsesReq)
 	if err != nil {
 		return types.NewErrorWithStatusCode(err, types.ErrorCodeInvalidRequest, http.StatusBadRequest, types.ErrOptionWithSkipRetry())
 	}
@@ -153,9 +153,9 @@ func relayResponsesDownstreamToChatUpstream(c *gin.Context, info *relaycommon.Re
 	setTemporaryRequestBody(c, bodyBytes)
 
 	if chatReq.Stream {
-		return streamUpstreamWithWireConversion(c, info, dto.OpenAIWireAPIChat, dto.OpenAIWireAPIResponses, false, TextHelper)
+		return streamUpstreamWithWireConversion(c, info, dto.OpenAIWireAPIChat, dto.OpenAIWireAPIResponses, openAIWireConversionOptions{ToolContext: toolContext}, TextHelper)
 	}
-	return nonStreamUpstreamWithWireConversion(c, info, dto.OpenAIWireAPIChat, dto.OpenAIWireAPIResponses, TextHelper)
+	return nonStreamUpstreamWithWireConversion(c, info, dto.OpenAIWireAPIChat, dto.OpenAIWireAPIResponses, openAIWireConversionOptions{ToolContext: toolContext}, TextHelper)
 }
 
 type upstreamHelperFn func(*gin.Context, *relaycommon.RelayInfo) *types.NewAPIError
@@ -165,11 +165,14 @@ func streamUpstreamWithWireConversion(
 	info *relaycommon.RelayInfo,
 	upstream dto.OpenAIWireAPI,
 	downstream dto.OpenAIWireAPI,
-	includeUsage bool,
+	opts openAIWireConversionOptions,
 	fn upstreamHelperFn,
 ) *types.NewAPIError {
 	base := c.Writer
-	writer, err := newOpenAIWireStreamWriter(base, upstream, downstream, openAIWireStreamOptions{ChatIncludeUsage: includeUsage})
+	writer, err := newOpenAIWireStreamWriter(base, upstream, downstream, openAIWireStreamOptions{
+		ChatIncludeUsage: opts.ChatIncludeUsage,
+		ToolContext:      opts.ToolContext,
+	})
 	if err != nil {
 		return types.NewError(err, types.ErrorCodeBadResponse, types.ErrOptionWithSkipRetry())
 	}
@@ -191,6 +194,7 @@ func nonStreamUpstreamWithWireConversion(
 	info *relaycommon.RelayInfo,
 	upstream dto.OpenAIWireAPI,
 	downstream dto.OpenAIWireAPI,
+	opts openAIWireConversionOptions,
 	fn upstreamHelperFn,
 ) *types.NewAPIError {
 	base := c.Writer
@@ -203,7 +207,7 @@ func nonStreamUpstreamWithWireConversion(
 		return newAPIError
 	}
 
-	if err := writeConvertedNonStreamResponse(c, capture, upstream, downstream); err != nil {
+	if err := writeConvertedNonStreamResponse(c, capture, upstream, downstream, opts); err != nil {
 		return types.NewError(err, types.ErrorCodeBadResponseBody)
 	}
 	return nil

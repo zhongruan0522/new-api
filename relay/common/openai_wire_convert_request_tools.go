@@ -210,6 +210,10 @@ func convertResponsesToolChoiceObjectToChatAny(obj map[string]any) (any, error) 
 }
 
 func convertResponsesToolsRawToChatTools(raw json.RawMessage) ([]dto.ToolCallRequest, error) {
+	return convertResponsesToolsRawToChatToolsWithToolContext(raw, nil)
+}
+
+func convertResponsesToolsRawToChatToolsWithToolContext(raw json.RawMessage, toolContext *OpenAIWireToolContext) ([]dto.ToolCallRequest, error) {
 	var tools []openAIResponsesFunctionTool
 	if err := common.Unmarshal(raw, &tools); err != nil {
 		return nil, fmt.Errorf("unmarshal tools failed: %w", err)
@@ -217,7 +221,7 @@ func convertResponsesToolsRawToChatTools(raw json.RawMessage) ([]dto.ToolCallReq
 
 	out := make([]dto.ToolCallRequest, 0, len(tools))
 	for i, tool := range tools {
-		items, err := convertOneResponsesToolToChatTools(i, tool, "")
+		items, err := convertOneResponsesToolToChatTools(i, tool, "", toolContext)
 		if err != nil {
 			return nil, err
 		}
@@ -227,22 +231,26 @@ func convertResponsesToolsRawToChatTools(raw json.RawMessage) ([]dto.ToolCallReq
 }
 
 func collectChatToolsFromResponsesToolSearchOutputs(raw json.RawMessage) ([]dto.ToolCallRequest, error) {
+	return collectChatToolsFromResponsesToolSearchOutputsWithToolContext(raw, nil)
+}
+
+func collectChatToolsFromResponsesToolSearchOutputsWithToolContext(raw json.RawMessage, toolContext *OpenAIWireToolContext) ([]dto.ToolCallRequest, error) {
 	var value any
 	if err := common.Unmarshal(raw, &value); err != nil {
 		return nil, fmt.Errorf("unmarshal input for tool_search tools failed: %w", err)
 	}
 	out := make([]dto.ToolCallRequest, 0)
-	if err := collectChatToolsFromResponsesValue(value, &out); err != nil {
+	if err := collectChatToolsFromResponsesValue(value, &out, toolContext); err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func collectChatToolsFromResponsesValue(value any, out *[]dto.ToolCallRequest) error {
+func collectChatToolsFromResponsesValue(value any, out *[]dto.ToolCallRequest, toolContext *OpenAIWireToolContext) error {
 	switch v := value.(type) {
 	case []any:
 		for _, item := range v {
-			if err := collectChatToolsFromResponsesValue(item, out); err != nil {
+			if err := collectChatToolsFromResponsesValue(item, out, toolContext); err != nil {
 				return err
 			}
 		}
@@ -253,7 +261,7 @@ func collectChatToolsFromResponsesValue(value any, out *[]dto.ToolCallRequest) e
 				if err != nil {
 					return fmt.Errorf("marshal tool_search_output.tools failed: %w", err)
 				}
-				tools, err := convertResponsesToolsRawToChatTools(raw)
+				tools, err := convertResponsesToolsRawToChatToolsWithToolContext(raw, toolContext)
 				if err != nil {
 					return fmt.Errorf("convert tool_search_output.tools failed: %w", err)
 				}
@@ -261,7 +269,7 @@ func collectChatToolsFromResponsesValue(value any, out *[]dto.ToolCallRequest) e
 			}
 		}
 		for _, child := range v {
-			if err := collectChatToolsFromResponsesValue(child, out); err != nil {
+			if err := collectChatToolsFromResponsesValue(child, out, toolContext); err != nil {
 				return err
 			}
 		}
@@ -309,40 +317,47 @@ func chatToolRequestName(tool dto.ToolCallRequest) string {
 	return strings.TrimSpace(common.Interface2String(custom["name"]))
 }
 
-func convertOneResponsesToolToChatTools(index int, tool openAIResponsesFunctionTool, namespace string) ([]dto.ToolCallRequest, error) {
+func convertOneResponsesToolToChatTools(index int, tool openAIResponsesFunctionTool, namespace string, toolContext *OpenAIWireToolContext) ([]dto.ToolCallRequest, error) {
 	toolType := strings.ToLower(strings.TrimSpace(tool.Type))
 	if toolType == "" {
 		return nil, fmt.Errorf("tools[%d].type is required", index)
 	}
 	switch toolType {
 	case openAIResponsesToolTypeFunction:
-		item, err := convertOneResponsesFunctionToolToChatTool(index, tool, namespace)
+		item, err := convertOneResponsesFunctionToolToChatTool(index, tool, namespace, toolContext)
 		if err != nil {
 			return nil, err
 		}
 		return []dto.ToolCallRequest{item}, nil
 	case openAIResponsesToolTypeCustom:
-		item, err := convertOneResponsesCustomToolToChatTool(index, tool)
+		item, err := convertOneResponsesCustomToolToChatTool(index, tool, namespace, toolContext)
 		if err != nil {
 			return nil, err
 		}
 		return []dto.ToolCallRequest{item}, nil
 	case openAIResponsesToolTypeToolSearch:
+		if toolContext != nil {
+			toolContext.AddToolSearchProxy(openAIResponsesToolSearchChatName)
+		}
 		return []dto.ToolCallRequest{newResponsesToolSearchChatTool()}, nil
 	case openAIResponsesToolTypeNamespace:
-		return convertOneResponsesNamespaceToolToChatTools(index, tool)
+		return convertOneResponsesNamespaceToolToChatTools(index, tool, toolContext)
 	default:
 		return nil, fmt.Errorf("tools[%d].type %q is not supported for chat.completions conversion", index, tool.Type)
 	}
 }
 
-func convertOneResponsesFunctionToolToChatTool(index int, tool openAIResponsesFunctionTool, namespace string) (dto.ToolCallRequest, error) {
+func convertOneResponsesFunctionToolToChatTool(index int, tool openAIResponsesFunctionTool, namespace string, toolContext *OpenAIWireToolContext) (dto.ToolCallRequest, error) {
+	originalName := strings.TrimSpace(tool.Name)
 	name := strings.TrimSpace(tool.Name)
 	if name == "" {
 		return dto.ToolCallRequest{}, fmt.Errorf("tools[%d].name is required", index)
 	}
 	if strings.TrimSpace(namespace) != "" {
 		name = flattenOpenAIResponsesNamespaceToolName(namespace, name)
+	}
+	if toolContext != nil {
+		toolContext.AddFunctionToolProxy(name, originalName, namespace)
 	}
 
 	var params any
@@ -362,10 +377,17 @@ func convertOneResponsesFunctionToolToChatTool(index int, tool openAIResponsesFu
 	}, nil
 }
 
-func convertOneResponsesCustomToolToChatTool(index int, tool openAIResponsesFunctionTool) (dto.ToolCallRequest, error) {
-	name := strings.TrimSpace(tool.Name)
-	if name == "" {
+func convertOneResponsesCustomToolToChatTool(index int, tool openAIResponsesFunctionTool, namespace string, toolContext *OpenAIWireToolContext) (dto.ToolCallRequest, error) {
+	originalName := strings.TrimSpace(tool.Name)
+	name := originalName
+	if originalName == "" {
 		return dto.ToolCallRequest{}, fmt.Errorf("tools[%d].name is required", index)
+	}
+	if strings.TrimSpace(namespace) != "" {
+		name = flattenOpenAIResponsesNamespaceToolName(namespace, name)
+	}
+	if toolContext != nil {
+		toolContext.AddCustomToolProxy(name, originalName, namespace)
 	}
 	return dto.ToolCallRequest{
 		Type: "function",
@@ -386,7 +408,7 @@ func convertOneResponsesCustomToolToChatTool(index int, tool openAIResponsesFunc
 	}, nil
 }
 
-func convertOneResponsesNamespaceToolToChatTools(index int, tool openAIResponsesFunctionTool) ([]dto.ToolCallRequest, error) {
+func convertOneResponsesNamespaceToolToChatTools(index int, tool openAIResponsesFunctionTool, toolContext *OpenAIWireToolContext) ([]dto.ToolCallRequest, error) {
 	namespace := strings.TrimSpace(tool.Name)
 	if namespace == "" {
 		return nil, fmt.Errorf("tools[%d].name is required for namespace tool", index)
@@ -407,7 +429,7 @@ func convertOneResponsesNamespaceToolToChatTools(index int, tool openAIResponses
 		if strings.EqualFold(strings.TrimSpace(child.Type), openAIResponsesToolTypeNamespace) {
 			return nil, fmt.Errorf("tools[%d].tools[%d].type %q is not supported for chat.completions conversion", index, childIndex, child.Type)
 		}
-		items, err := convertOneResponsesToolToChatTools(childIndex, child, namespace)
+		items, err := convertOneResponsesToolToChatTools(childIndex, child, namespace, toolContext)
 		if err != nil {
 			return nil, fmt.Errorf("tools[%d].tools[%d]: %w", index, childIndex, err)
 		}

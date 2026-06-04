@@ -15,6 +15,7 @@ const (
 	openAIResponsesOutputTypeReasoning      = "reasoning"
 	openAIResponsesOutputTypeFunctionCall   = "function_call"
 	openAIResponsesOutputTypeCustomToolCall = "custom_tool_call"
+	openAIResponsesOutputTypeToolSearchCall = "tool_search_call"
 
 	openAIResponsesOutputContentTypeText = "output_text"
 )
@@ -47,6 +48,10 @@ func ConvertResponsesResponseToChatCompletionResponse(responsesResp *dto.OpenAIR
 }
 
 func ConvertChatCompletionResponseToResponsesResponse(chatResp *dto.OpenAITextResponse) (*dto.OpenAIResponsesResponse, error) {
+	return ConvertChatCompletionResponseToResponsesResponseWithToolContext(chatResp, nil)
+}
+
+func ConvertChatCompletionResponseToResponsesResponseWithToolContext(chatResp *dto.OpenAITextResponse, toolContext *OpenAIWireToolContext) (*dto.OpenAIResponsesResponse, error) {
 	if chatResp == nil {
 		return nil, fmt.Errorf("chat completion response is nil")
 	}
@@ -59,7 +64,7 @@ func ConvertChatCompletionResponseToResponsesResponse(chatResp *dto.OpenAITextRe
 	if err != nil {
 		return nil, err
 	}
-	output, err := buildResponsesOutputFromChat(choice.Message, assistantText, choice.Message.ToolCalls)
+	output, err := buildResponsesOutputFromChat(choice.Message, assistantText, choice.Message.ToolCalls, toolContext)
 	if err != nil {
 		return nil, err
 	}
@@ -112,7 +117,7 @@ func extractChatMessageFromResponsesOutput(output []dto.ResponsesOutput) (conten
 				}
 				builder.WriteString(part.Text)
 			}
-		case openAIResponsesOutputTypeFunctionCall, openAIResponsesOutputTypeCustomToolCall:
+		case openAIResponsesOutputTypeFunctionCall, openAIResponsesOutputTypeCustomToolCall, openAIResponsesOutputTypeToolSearchCall:
 			callID := strings.TrimSpace(item.CallId)
 			if callID == "" {
 				callID = strings.TrimSpace(item.ID)
@@ -128,12 +133,22 @@ func extractChatMessageFromResponsesOutput(output []dto.ResponsesOutput) (conten
 				calls = append(calls, dto.ToolCallResponse{ID: callID, Type: dto.CustomType, Custom: custom})
 				continue
 			}
+			name := item.Name
+			if itemType == openAIResponsesOutputTypeToolSearchCall {
+				name = openAIResponsesToolSearchChatName
+			} else if strings.TrimSpace(item.Namespace) != "" {
+				name = flattenOpenAIResponsesNamespaceToolName(item.Namespace, item.Name)
+			}
+			arguments, argErr := ResponsesArgumentsToChatString(item.Arguments)
+			if argErr != nil {
+				return "", "", nil, fmt.Errorf("marshal %s.arguments failed: %w", itemType, argErr)
+			}
 			calls = append(calls, dto.ToolCallResponse{
 				ID:   callID,
 				Type: "function",
 				Function: dto.FunctionResponse{
-					Name:      item.Name,
-					Arguments: item.Arguments,
+					Name:      name,
+					Arguments: arguments,
 				},
 			})
 		default:
@@ -205,7 +220,7 @@ func extractChatMessageTextOnly(msg dto.Message) (string, error) {
 	return strings.TrimSpace(builder.String()), nil
 }
 
-func buildResponsesOutputFromChat(msg dto.Message, text string, rawToolCalls json.RawMessage) ([]dto.ResponsesOutput, error) {
+func buildResponsesOutputFromChat(msg dto.Message, text string, rawToolCalls json.RawMessage, toolContext *OpenAIWireToolContext) ([]dto.ResponsesOutput, error) {
 	output := make([]dto.ResponsesOutput, 0, 2)
 	if reasoning := normalizeChatResponseReasoning(msg); reasoning != "" {
 		output = append(output, dto.ResponsesOutput{
@@ -230,7 +245,7 @@ func buildResponsesOutputFromChat(msg dto.Message, text string, rawToolCalls jso
 		})
 	}
 
-	toolOutputs, err := convertChatToolCallsToResponsesOutput(rawToolCalls)
+	toolOutputs, err := convertChatToolCallsToResponsesOutput(rawToolCalls, toolContext)
 	if err != nil {
 		return nil, err
 	}
@@ -284,7 +299,7 @@ func mapChatUsageToResponses(u dto.Usage) *dto.Usage {
 	return MapChatUsageToResponsesUsage(u)
 }
 
-func convertChatToolCallsToResponsesOutput(raw json.RawMessage) ([]dto.ResponsesOutput, error) {
+func convertChatToolCallsToResponsesOutput(raw json.RawMessage, toolContext *OpenAIWireToolContext) ([]dto.ResponsesOutput, error) {
 	if len(raw) == 0 {
 		return nil, nil
 	}
@@ -322,18 +337,70 @@ func convertChatToolCallsToResponsesOutput(raw json.RawMessage) ([]dto.Responses
 		if strings.TrimSpace(call.Function.Name) == "" {
 			return nil, fmt.Errorf("tool_calls[%d].function.name is required", i)
 		}
-		out = append(out, dto.ResponsesOutput{
-			Type:      openAIResponsesOutputTypeFunctionCall,
-			ID:        callID,
-			Status:    "completed",
-			Role:      "assistant",
-			CallId:    callID,
-			Name:      call.Function.Name,
-			Arguments: call.Function.Arguments,
-		})
+		item, err := buildResponsesToolOutputFromChatCall(callID, call.Function.Name, call.Function.Arguments, toolContext)
+		if err != nil {
+			return nil, fmt.Errorf("tool_calls[%d]: %w", i, err)
+		}
+		out = append(out, item)
 	}
 
 	return out, nil
+}
+
+func buildResponsesToolOutputFromChatCall(callID string, chatName string, chatArguments string, toolContext *OpenAIWireToolContext) (dto.ResponsesOutput, error) {
+	spec, ok := toolContext.ResolveToolProxy(chatName)
+	if ok {
+		switch spec.Type {
+		case openAIResponsesToolTypeCustom:
+			input, complete := ExtractResponsesCustomToolInputFromChatArguments(chatArguments)
+			if !complete {
+				return dto.ResponsesOutput{}, fmt.Errorf("custom tool proxy %q arguments must contain a complete %q string", chatName, openAIResponsesCustomInputField)
+			}
+			return dto.ResponsesOutput{
+				Type:      openAIResponsesOutputTypeCustomToolCall,
+				ID:        callID,
+				Status:    "completed",
+				Role:      "assistant",
+				CallId:    callID,
+				Name:      spec.Name,
+				Namespace: spec.Namespace,
+				Input:     input,
+			}, nil
+		case openAIResponsesToolTypeToolSearch:
+			arguments, err := BuildResponsesToolSearchArgumentsFromChatArguments(chatArguments)
+			if err != nil {
+				return dto.ResponsesOutput{}, fmt.Errorf("parse tool_search arguments failed: %w", err)
+			}
+			return dto.ResponsesOutput{
+				Type:      openAIResponsesOutputTypeToolSearchCall,
+				ID:        callID,
+				Status:    "completed",
+				CallId:    callID,
+				Execution: "client",
+				Arguments: arguments,
+			}, nil
+		case openAIResponsesToolTypeFunction:
+			return dto.ResponsesOutput{
+				Type:      openAIResponsesOutputTypeFunctionCall,
+				ID:        callID,
+				Status:    "completed",
+				Role:      "assistant",
+				CallId:    callID,
+				Name:      spec.Name,
+				Namespace: spec.Namespace,
+				Arguments: chatArguments,
+			}, nil
+		}
+	}
+	return dto.ResponsesOutput{
+		Type:      openAIResponsesOutputTypeFunctionCall,
+		ID:        callID,
+		Status:    "completed",
+		Role:      "assistant",
+		CallId:    callID,
+		Name:      chatName,
+		Arguments: chatArguments,
+	}, nil
 }
 
 func parseChatCustomToolCall(raw json.RawMessage) (name string, input string, err error) {

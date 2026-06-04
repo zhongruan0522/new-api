@@ -6,6 +6,7 @@ import (
 
 	"github.com/zhongruan0522/new-api/common"
 	"github.com/zhongruan0522/new-api/dto"
+	relaycommon "github.com/zhongruan0522/new-api/relay/common"
 )
 
 // Test reasoning and incomplete status because Responses streaming clients need
@@ -636,6 +637,94 @@ func TestChatToResponsesStreamConverter_CustomToolCallInput(t *testing.T) {
 	}
 	if !strings.Contains(out, `"type":"custom_tool_call"`) || !strings.Contains(out, `"input":"print(\n    1)"`) {
 		t.Fatalf("done output = %q, want custom_tool_call output item", out)
+	}
+}
+
+// Test Responses custom tools proxied through Chat functions because freeform
+// tools must be restored by type/context, not by a specific tool name.
+func TestChatToResponsesStreamConverter_CustomToolProxyInputDone(t *testing.T) {
+	toolContext := relaycommon.NewOpenAIWireToolContext()
+	toolContext.AddCustomToolProxy("shell_exec", "shell_exec")
+	converter := newChatToResponsesStreamConverter(toolContext)
+
+	arguments, err := relaycommon.BuildChatArgumentsForResponsesCustomToolInput("printf 'hi'\n")
+	if err != nil {
+		t.Fatalf("build custom tool arguments error = %v", err)
+	}
+	split := strings.Index(arguments, ":") + 1
+	if split <= 0 || split >= len(arguments) {
+		t.Fatalf("unexpected generated arguments = %q", arguments)
+	}
+
+	var combined strings.Builder
+	convertChunk := func(label string, chunk dto.ChatCompletionsStreamResponse) {
+		t.Helper()
+		raw, marshalErr := common.Marshal(chunk)
+		if marshalErr != nil {
+			t.Fatalf("marshal %s chunk error = %v", label, marshalErr)
+		}
+		out, convertErr := converter.ConvertFrame("", string(raw), "data: "+string(raw)+"\n\n")
+		if convertErr != nil {
+			t.Fatalf("ConvertFrame(%s) error = %v", label, convertErr)
+		}
+		combined.WriteString(out)
+	}
+
+	chunk := dto.ChatCompletionsStreamResponse{
+		Id:      "chatcmpl_proxy",
+		Object:  "chat.completion.chunk",
+		Created: 1700000000,
+		Model:   "gpt-5",
+		Choices: []dto.ChatCompletionsStreamResponseChoice{{
+			Index: 0,
+			Delta: dto.ChatCompletionsStreamResponseChoiceDelta{ToolCalls: []dto.ToolCallResponse{{
+				Index: common.GetPointer(0),
+				ID:    "call_shell",
+				Type:  "function",
+				Function: dto.FunctionResponse{
+					Name: "shell_exec",
+				},
+			}}},
+		}},
+	}
+	convertChunk("name", chunk)
+
+	chunk.Choices[0].Delta.ToolCalls = []dto.ToolCallResponse{{
+		Index: common.GetPointer(0),
+		Type:  "function",
+		Function: dto.FunctionResponse{
+			Arguments: arguments[:split],
+		},
+	}}
+	convertChunk("first arguments", chunk)
+
+	chunk.Choices[0].Delta.ToolCalls = []dto.ToolCallResponse{{
+		Index: common.GetPointer(0),
+		Type:  "function",
+		Function: dto.FunctionResponse{
+			Arguments: arguments[split:],
+		},
+	}}
+	convertChunk("final arguments", chunk)
+
+	done, err := converter.ConvertFrame("", "[DONE]", "data: [DONE]\n\n")
+	if err != nil {
+		t.Fatalf("ConvertFrame(done) error = %v", err)
+	}
+	combined.WriteString(done)
+	out := combined.String()
+
+	if !strings.Contains(out, `"type":"custom_tool_call"`) || !strings.Contains(out, `"name":"shell_exec"`) {
+		t.Fatalf("converted output = %q, want shell_exec custom_tool_call", out)
+	}
+	if !strings.Contains(out, "event: response.custom_tool_call_input.delta") || !strings.Contains(out, `"delta":"printf 'hi'\n"`) {
+		t.Fatalf("converted output = %q, want full custom input delta", out)
+	}
+	if !strings.Contains(out, "event: response.custom_tool_call_input.done") || !strings.Contains(out, `"input":"printf 'hi'\n"`) {
+		t.Fatalf("converted output = %q, want custom input done", out)
+	}
+	if strings.Contains(out, "response.function_call_arguments.delta") || strings.Contains(out, "response.function_call_arguments.done") {
+		t.Fatalf("converted output = %q, want no function argument events for custom proxy", out)
 	}
 }
 

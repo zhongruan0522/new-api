@@ -255,17 +255,20 @@ func buildChatToolCallFromResponsesFunctionCall(raw json.RawMessage) (dto.ToolCa
 		return dto.ToolCallResponse{}, fmt.Errorf("%s.name is required", item.Type)
 	}
 	if itemType == openAIResponsesInputItemTypeCustomToolCall {
-		custom, err := common.Marshal(map[string]any{
-			"name":  name,
-			"input": item.Input,
-		})
+		if strings.TrimSpace(item.Namespace) != "" {
+			name = flattenOpenAIResponsesNamespaceToolName(item.Namespace, name)
+		}
+		arguments, err := BuildChatArgumentsForResponsesCustomToolInput(item.Input)
 		if err != nil {
-			return dto.ToolCallResponse{}, fmt.Errorf("marshal custom tool call failed: %w", err)
+			return dto.ToolCallResponse{}, fmt.Errorf("marshal custom tool call arguments failed: %w", err)
 		}
 		return dto.ToolCallResponse{
-			ID:     callID,
-			Type:   dto.CustomType,
-			Custom: custom,
+			ID:   callID,
+			Type: "function",
+			Function: dto.FunctionResponse{
+				Name:      name,
+				Arguments: arguments,
+			},
 		}, nil
 	}
 	arguments, err := responsesArgumentsToChatString(item.Arguments)

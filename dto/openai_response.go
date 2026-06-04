@@ -375,8 +375,10 @@ type ResponsesOutput struct {
 	Size             string                   `json:"size"`
 	CallId           string                   `json:"call_id,omitempty"`
 	Name             string                   `json:"name,omitempty"`
-	Arguments        string                   `json:"arguments,omitempty"`
+	Namespace        string                   `json:"namespace,omitempty"`
+	Arguments        any                      `json:"arguments,omitempty"`
 	Input            string                   `json:"input,omitempty"`
+	Execution        string                   `json:"execution,omitempty"`
 	Summary          []ResponsesContentPart   `json:"summary,omitempty"`
 	EncryptedContent string                   `json:"encrypted_content,omitempty"`
 }
@@ -408,7 +410,7 @@ type ResponsesStreamResponse struct {
 	Response  *OpenAIResponsesResponse `json:"response,omitempty"`
 	Delta     string                   `json:"delta,omitempty"`
 	Text      string                   `json:"text,omitempty"`
-	Arguments string                   `json:"arguments,omitempty"`
+	Arguments any                      `json:"arguments,omitempty"`
 	Input     string                   `json:"input,omitempty"`
 	Item      *ResponsesOutput         `json:"item,omitempty"`
 	// - response.function_call_arguments.delta
@@ -417,6 +419,7 @@ type ResponsesStreamResponse struct {
 	ContentIndex *int                  `json:"content_index,omitempty"`
 	SummaryIndex *int                  `json:"summary_index,omitempty"`
 	ItemID       string                `json:"item_id,omitempty"`
+	CallID       string                `json:"call_id,omitempty"`
 	Part         *ResponsesContentPart `json:"part,omitempty"`
 }
 
