@@ -94,15 +94,42 @@ export function isViolationFeeLog(other: LogOtherData | null): boolean {
 /**
  * Parse the 'other' field from JSON string to object
  */
-export function parseLogOther(other: string): LogOtherData | null {
+export function parseLogOther(other: unknown): LogOtherData | null {
   if (!other) return null
+  if (typeof other === 'object') {
+    return normalizeLogOtherData(other as LogOtherData)
+  }
+  if (typeof other !== 'string') return null
   try {
-    return JSON.parse(other) as LogOtherData
+    return normalizeLogOtherData(JSON.parse(other) as LogOtherData)
   } catch (error) {
     // eslint-disable-next-line no-console
     console.error('Failed to parse log other field:', error)
     return null
   }
+}
+
+function normalizeLogOtherData(other: LogOtherData): LogOtherData {
+  if (!other || typeof other !== 'object') return other
+  const rawConversion = other.request_conversion as unknown
+  if (typeof rawConversion === 'string') {
+    return {
+      ...other,
+      request_conversion: rawConversion
+        .split(/\s*[-=]>\s*|\s*→\s*/)
+        .map((item) => item.trim())
+        .filter(Boolean),
+    }
+  }
+  if (Array.isArray(rawConversion)) {
+    return {
+      ...other,
+      request_conversion: rawConversion
+        .map((item) => String(item).trim())
+        .filter(Boolean),
+    }
+  }
+  return other
 }
 
 /**

@@ -42,7 +42,7 @@ export const usageLogSchema = z.object({
   token_id: z.number().default(0),
   group: z.string().default(''),
   ip: z.string().default(''),
-  other: z.string().default(''),
+  other: z.union([z.string(), z.record(z.string(), z.unknown())]).default(''),
   request_id: z.string().default(''),
   upstream_request_id: z.string().default(''),
   model_icon: z.string().default(''),
