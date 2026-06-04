@@ -62,6 +62,7 @@ func GetStatus(c *gin.Context) {
 		"quota_per_unit":              common.QuotaPerUnit,
 		"enable_batch_update":         common.BatchUpdateEnabled,
 		"enable_data_export":          common.DataExportEnabled,
+		"data_export_interval":        common.DataExportInterval,
 		"data_export_default_time":    common.DataExportDefaultTime,
 		"default_collapse_sidebar":    common.DefaultCollapseSidebar,
 		"default_use_auto_group":      setting.DefaultUseAutoGroup,

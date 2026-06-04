@@ -16,23 +16,22 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-export {
-  cleanFilters,
-  buildQueryParams,
-  getSavedGranularity,
-  saveGranularity,
-  getDefaultDays,
-  getSavedChartPreferences,
-  saveChartPreferences,
-  buildDefaultDashboardFilters,
-} from './filters'
-export {
-  getLatencyColorClass,
-  testUrlLatency,
-  openExternalSpeedTest,
-  getDefaultPingStatus,
-} from './api-info'
-export { processChartData, processUserChartData } from './charts'
-export { safeDivide, calculateDashboardStats } from './stats'
-export { getDataDashboardRefreshIntervalMs } from './refresh'
-export { getPreviewText } from './text'
+const DEFAULT_DATA_DASHBOARD_REFRESH_MINUTES = 5
+
+function readRefreshIntervalMinutes(status: unknown): number {
+  if (!status || typeof status !== 'object') {
+    return DEFAULT_DATA_DASHBOARD_REFRESH_MINUTES
+  }
+
+  const raw = (status as Record<string, unknown>).data_export_interval
+  const value = typeof raw === 'number' ? raw : Number(raw)
+  if (!Number.isFinite(value) || value < 1) {
+    return DEFAULT_DATA_DASHBOARD_REFRESH_MINUTES
+  }
+
+  return Math.min(value, 1440)
+}
+
+export function getDataDashboardRefreshIntervalMs(status: unknown): number {
+  return readRefreshIntervalMinutes(status) * 60 * 1000
+}

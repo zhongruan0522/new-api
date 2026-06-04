@@ -241,6 +241,7 @@ func SetApiRouter(router *gin.Engine) {
 
 		dataRoute := apiRouter.Group("/data")
 		dataRoute.GET("/", middleware.AdminAuth(), controller.GetAllQuotaDates)
+		dataRoute.GET("/users", middleware.AdminAuth(), controller.GetQuotaDataGroupByUser)
 		dataRoute.GET("/self", middleware.UserAuth(), controller.GetUserQuotaDates)
 		dataRoute.GET("/region_stats", middleware.AdminAuth(), controller.GetAllRegionStats)
 		dataRoute.GET("/self/region_stats", middleware.UserAuth(), controller.GetUserRegionStats)

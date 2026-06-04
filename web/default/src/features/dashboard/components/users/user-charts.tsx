@@ -23,6 +23,7 @@ import { Users, Loader2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { getRollingDateRange, type TimeGranularity } from '@/lib/time'
 import { VCHART_OPTION } from '@/lib/vchart'
+import { useStatus } from '@/hooks/use-status'
 import { useThemeCustomization } from '@/context/theme-customization-provider'
 import { useTheme } from '@/context/theme-provider'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -37,6 +38,7 @@ import {
   getSavedGranularity,
   saveGranularity,
   processUserChartData,
+  getDataDashboardRefreshIntervalMs,
 } from '@/features/dashboard/lib'
 import type { ProcessedUserChartData } from '@/features/dashboard/types'
 
@@ -65,6 +67,7 @@ const TOP_USER_LIMIT_OPTIONS = [5, 10, 20, 50]
 
 export function UserCharts() {
   const { t } = useTranslation()
+  const { status } = useStatus()
   const { resolvedTheme } = useTheme()
   const { customization } = useThemeCustomization()
   const [themeReady, setThemeReady] = useState(false)
@@ -129,7 +132,7 @@ export function UserCharts() {
     queryKey: ['dashboard', 'user-quota', timeRange],
     queryFn: () => getUserQuotaDataByUsers(timeRange),
     select: (res) => (res.success ? res.data : []),
-    staleTime: 60_000,
+    staleTime: getDataDashboardRefreshIntervalMs(status),
   })
 
   const chartData = useMemo(
@@ -148,7 +151,6 @@ export function UserCharts() {
       t,
       topUserLimit,
       customization.preset,
-      customization.radius,
     ]
   )
 
