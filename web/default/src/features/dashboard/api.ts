@@ -61,6 +61,19 @@ export async function getUserQuotaDataByUsers(params: {
   return res.data
 }
 
+// Recalculate dashboard data from logs for a given time range (admin only)
+export async function recalculateQuotaData(params: {
+  start_timestamp: number
+  end_timestamp: number
+}) {
+  const res = await api.post<{ success: boolean; message?: string }>(
+    '/api/data/recalculate',
+    null,
+    { params }
+  )
+  return res.data
+}
+
 // Get uptime monitoring status for all services
 export async function getUptimeStatus() {
   const res = await api.get<{ success: boolean; data: UptimeGroupResult[] }>(
