@@ -166,7 +166,6 @@ export function ModelMutateDrawer({
   })
 
   // Load model data for editing
-  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (open && isEditing && modelData?.data) {
       const model = modelData.data
@@ -215,7 +214,6 @@ export function ModelMutateDrawer({
       })
     }
   }, [open, isEditing, modelData, currentRow, form])
-  /* eslint-enable react-hooks/set-state-in-effect */
 
   const onSubmit = useCallback(
     async (values: ExtendedModelFormValues): Promise<void> => {
@@ -522,9 +520,7 @@ export function ModelMutateDrawer({
 
             {/* Metadata Configuration */}
             <SideDrawerSection>
-              <h3 className='text-sm font-semibold'>
-                {t('Model metadata')}
-              </h3>
+              <h3 className='text-sm font-semibold'>{t('Model metadata')}</h3>
 
               <div className='grid gap-4 sm:grid-cols-2'>
                 <FormField

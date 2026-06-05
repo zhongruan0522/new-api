@@ -142,13 +142,12 @@ export function useStreamRequest() {
     }
   }, [])
 
-  // eslint-disable-next-line react-hooks/refs
   const isStreaming = sseSourceRef.current !== null
 
   return {
     sendStreamRequest,
     stopStream,
-    // eslint-disable-next-line react-hooks/refs
+
     isStreaming,
   }
 }

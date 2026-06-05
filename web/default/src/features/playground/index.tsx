@@ -18,7 +18,7 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { useCallback, useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { useTranslation } from 'react-i18next'
+import i18next from 'i18next'
 import { toast } from 'sonner'
 import { getUserModels, getUserGroups } from './api'
 import { PlaygroundChat } from './components/playground-chat'
@@ -28,7 +28,6 @@ import { createUserMessage, createLoadingAssistantMessage } from './lib'
 import type { Message as MessageType } from './types'
 
 export function Playground() {
-  const { t } = useTranslation()
   const {
     config,
     parameterEnabled,
@@ -62,7 +61,7 @@ export function Playground() {
         toast.error(
           error instanceof Error
             ? error.message
-            : t('Failed to load playground models')
+            : i18next.t('Failed to load playground models')
         )
         return []
       }
@@ -79,7 +78,7 @@ export function Playground() {
         toast.error(
           error instanceof Error
             ? error.message
-            : t('Failed to load playground groups')
+            : i18next.t('Failed to load playground groups')
         )
         return []
       }

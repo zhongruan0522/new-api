@@ -119,7 +119,6 @@ export function CCSwitchDialog(props: Props) {
 
   useEffect(() => {
     if (props.open) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setModels({})
 
       setApp('claude')

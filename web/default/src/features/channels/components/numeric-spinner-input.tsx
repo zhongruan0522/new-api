@@ -48,7 +48,6 @@ export function NumericSpinnerInput({
 
   useEffect(() => {
     if (!editing) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLocalValue(String(value ?? 0))
     }
   }, [value, editing])

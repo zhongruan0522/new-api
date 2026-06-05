@@ -67,6 +67,7 @@ const CHANNEL_SORTABLE_COLUMNS = new Set<ChannelSortBy>([
   'response_time',
   'test_time',
 ])
+const EMPTY_STRING_ARRAY: string[] = []
 
 function isDisabledChannelRow(channel: Channel) {
   return (
@@ -115,11 +116,14 @@ export function ChannelsTable() {
 
   // Extract filters from column filters
   const statusFilter =
-    (columnFilters.find((f) => f.id === 'status')?.value as string[]) || []
+    (columnFilters.find((f) => f.id === 'status')?.value as string[]) ??
+    EMPTY_STRING_ARRAY
   const typeFilter =
-    (columnFilters.find((f) => f.id === 'type')?.value as string[]) || []
+    (columnFilters.find((f) => f.id === 'type')?.value as string[]) ??
+    EMPTY_STRING_ARRAY
   const groupFilter =
-    (columnFilters.find((f) => f.id === 'group')?.value as string[]) || []
+    (columnFilters.find((f) => f.id === 'group')?.value as string[]) ??
+    EMPTY_STRING_ARRAY
   const modelFilterFromUrl =
     (columnFilters.find((f) => f.id === 'model')?.value as string) || ''
 

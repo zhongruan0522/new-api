@@ -64,7 +64,6 @@ function AudioClipCard({ clip }: { clip: AudioClip }) {
   const audioRef = useRef<HTMLAudioElement>(null)
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setHasError(false)
   }, [clip.audio_url])
 

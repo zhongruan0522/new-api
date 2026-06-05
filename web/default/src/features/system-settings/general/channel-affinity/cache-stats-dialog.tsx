@@ -54,7 +54,6 @@ export function CacheStatsDialog(props: Props) {
 
   useEffect(() => {
     if (!props.open || !props.target?.rule_name || !props.target?.key_fp) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setStats(null)
       return
     }

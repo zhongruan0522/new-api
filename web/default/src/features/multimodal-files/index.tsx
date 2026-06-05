@@ -16,17 +16,15 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-
 import { useMemo, useState } from 'react'
-import { Copy, Eye, RefreshCw, Trash2 } from 'lucide-react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { Copy, Eye, RefreshCw, Trash2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { useAuthStore } from '@/stores/auth-store'
-import { ROLE } from '@/lib/roles'
 import dayjs from '@/lib/dayjs'
 import { formatTimestampToDate } from '@/lib/format'
-import { SectionPageLayout } from '@/components/layout'
+import { ROLE } from '@/lib/roles'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -66,6 +64,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { SectionPageLayout } from '@/components/layout'
 import {
   batchDeleteStoredMedia,
   deleteStoredMedia,
@@ -76,6 +75,7 @@ import type { StoredMediaBatchItem, StoredMediaItem } from './types'
 
 const DEFAULT_PAGE_SIZE = 20
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100]
+const EMPTY_STORED_MEDIA_ITEMS: StoredMediaItem[] = []
 
 type DeleteTarget =
   | { mode: 'single'; item: StoredMediaItem }
@@ -156,18 +156,18 @@ export function MultimodalFiles() {
       }),
   })
 
-  const items = mediaQuery.data?.items ?? []
+  const items = mediaQuery.data?.items ?? EMPTY_STORED_MEDIA_ITEMS
   const total = mediaQuery.data?.total ?? 0
   const totalPages = Math.max(1, Math.ceil(total / pageSize))
 
   const selectedItems = useMemo(
     () =>
-      items.filter((item) => selectedKeys.includes(getMediaKey(item))).map(
-        (item) => ({
+      items
+        .filter((item) => selectedKeys.includes(getMediaKey(item)))
+        .map((item) => ({
           id: item.id,
           media_type: item.media_type,
-        })
-      ),
+        })),
     [items, selectedKeys]
   )
 

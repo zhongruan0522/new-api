@@ -57,7 +57,6 @@ export function FormNavigationGuard({
   // Listen to blocker status changes
   useEffect(() => {
     if (blocker.status === 'blocked') {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setShowDialog(true)
     }
   }, [blocker.status])

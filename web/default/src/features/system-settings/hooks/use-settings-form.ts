@@ -200,11 +200,9 @@ export function useSettingsForm<T extends FieldValues>({
     flattenValues((expandedDefaults ?? ({} as T)) as T)
   )
 
-  /* eslint-disable react-hooks/refs */
   const serializedDefaultsRef = useRef<string>(
     JSON.stringify(baselineRef.current)
   )
-  /* eslint-enable react-hooks/refs */
 
   useEffect(() => {
     if (!expandedDefaults) return
@@ -277,7 +275,7 @@ export function useSettingsForm<T extends FieldValues>({
 
   return {
     form,
-    // eslint-disable-next-line react-hooks/refs
+
     handleSubmit: form.handleSubmit(handleSubmit),
     handleReset,
     isDirty: form.formState.isDirty,

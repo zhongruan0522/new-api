@@ -16,10 +16,9 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-
 import { useMemo, useState } from 'react'
-import { Copy, Download, Search } from 'lucide-react'
 import { useMutation } from '@tanstack/react-query'
+import { Copy, Download, Search } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import {
@@ -28,7 +27,6 @@ import {
   formatTimestampToDate,
   formatUseTime,
 } from '@/lib/format'
-import { PublicLayout } from '@/components/layout'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -41,6 +39,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { PublicLayout } from '@/components/layout'
 import { fetchKeyQueryReport } from './api'
 import type { KeyQueryReport, TokenLog } from './types'
 
@@ -48,6 +47,7 @@ const LOG_TYPE_CONSUME = 2
 const LOG_TYPE_ERROR = 5
 const LOG_TYPE_REFUND = 6
 const UNLIMITED_USD = 100000000
+const EMPTY_LOGS: TokenLog[] = []
 
 function isApiCallLog(record: TokenLog) {
   return (
@@ -130,7 +130,7 @@ export function KeyQuery() {
     },
   })
 
-  const logs = report?.logs ?? []
+  const logs = report?.logs ?? EMPTY_LOGS
   const balance = report?.subscription.hard_limit_usd ?? null
   const usage = report ? report.usage.total_usage / 100 : null
   const expiredTime = report?.subscription.access_until ?? null
@@ -153,7 +153,9 @@ export function KeyQuery() {
   const copySummary = async () => {
     if (!report) return
     const remaining =
-      balance != null && usage != null ? formatCurrencyUSD(balance - usage) : '-'
+      balance != null && usage != null
+        ? formatCurrencyUSD(balance - usage)
+        : '-'
     const summary = [
       `${t('Total quota')}: ${
         isUnlimited ? t('Unlimited') : formatCurrencyUSD(balance)
@@ -211,180 +213,186 @@ export function KeyQuery() {
           }}
         />
         <main className='relative mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-6xl flex-col gap-4 px-3 pt-20 pb-8 sm:px-6 sm:pt-24 lg:px-8'>
-        <header className='space-y-2'>
-          <h1 className='text-2xl font-bold tracking-tight'>
-            {t('Key Usage Query')}
-          </h1>
-          <p className='text-muted-foreground max-w-2xl text-sm'>
-            {t('Query balance, recent usage, and token logs by API key.')}
-          </p>
-        </header>
+          <header className='space-y-2'>
+            <h1 className='text-2xl font-bold tracking-tight'>
+              {t('Key Usage Query')}
+            </h1>
+            <p className='text-muted-foreground max-w-2xl text-sm'>
+              {t('Query balance, recent usage, and token logs by API key.')}
+            </p>
+          </header>
 
-        <Card size='sm'>
-          <CardContent className='flex flex-col gap-2 sm:flex-row'>
-            <div className='relative flex-1'>
-              <Search className='text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2' />
-              <Input
-                value={key}
-                className='pl-8'
-                placeholder='sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
-                onChange={(event) => setKey(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter') runQuery()
-                }}
-              />
-            </div>
-            <Button
-              onClick={runQuery}
-              disabled={queryMutation.isPending}
-              className='sm:w-28'
-            >
-              {queryMutation.isPending ? t('Querying...') : t('Query')}
-            </Button>
-          </CardContent>
-        </Card>
+          <Card size='sm'>
+            <CardContent className='flex flex-col gap-2 sm:flex-row'>
+              <div className='relative flex-1'>
+                <Search className='text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2' />
+                <Input
+                  value={key}
+                  className='pl-8'
+                  placeholder='sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
+                  onChange={(event) => setKey(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter') runQuery()
+                  }}
+                />
+              </div>
+              <Button
+                onClick={runQuery}
+                disabled={queryMutation.isPending}
+                className='sm:w-28'
+              >
+                {queryMutation.isPending ? t('Querying...') : t('Query')}
+              </Button>
+            </CardContent>
+          </Card>
 
-        {report && (
-          <>
-            <Card size='sm'>
-              <CardHeader className='border-b'>
-                <div className='flex items-center justify-between gap-3'>
-                  <CardTitle>{t('Key Information')}</CardTitle>
-                  <Button variant='outline' onClick={copySummary}>
-                    <Copy />
-                    {t('Copy')}
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent className='grid gap-3 sm:grid-cols-2 lg:grid-cols-3'>
-                <StatBlock
-                  label={t('Total quota')}
-                  value={
-                    isUnlimited ? t('Unlimited') : formatCurrencyUSD(balance)
-                  }
-                />
-                <StatBlock
-                  label={t('Used quota')}
-                  value={
-                    isUnlimited || usage == null
-                      ? '-'
-                      : formatCurrencyUSD(usage)
-                  }
-                />
-                <StatBlock
-                  label={t('Remaining quota')}
-                  value={
-                    isUnlimited
-                      ? t('Unlimited')
-                      : balance == null || usage == null
+          {report && (
+            <>
+              <Card size='sm'>
+                <CardHeader className='border-b'>
+                  <div className='flex items-center justify-between gap-3'>
+                    <CardTitle>{t('Key Information')}</CardTitle>
+                    <Button variant='outline' onClick={copySummary}>
+                      <Copy />
+                      {t('Copy')}
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent className='grid gap-3 sm:grid-cols-2 lg:grid-cols-3'>
+                  <StatBlock
+                    label={t('Total quota')}
+                    value={
+                      isUnlimited ? t('Unlimited') : formatCurrencyUSD(balance)
+                    }
+                  />
+                  <StatBlock
+                    label={t('Used quota')}
+                    value={
+                      isUnlimited || usage == null
                         ? '-'
-                      : formatCurrencyUSD(balance - usage)
-                  }
-                />
-                <StatBlock
-                  label={t('Expires at')}
-                  value={
-                    expiredTime === 0
-                      ? t('Never')
-                      : formatTimestampToDate(expiredTime ?? 0)
-                  }
-                />
-                <StatBlock
-                  label={t('Recent log cost')}
-                  value={formatLogQuota(totalLogQuota)}
-                />
-                <StatBlock
-                  label={t('Recent calls')}
-                  value={`${logs.length}`}
-                />
-              </CardContent>
-            </Card>
+                        : formatCurrencyUSD(usage)
+                    }
+                  />
+                  <StatBlock
+                    label={t('Remaining quota')}
+                    value={
+                      isUnlimited
+                        ? t('Unlimited')
+                        : balance == null || usage == null
+                          ? '-'
+                          : formatCurrencyUSD(balance - usage)
+                    }
+                  />
+                  <StatBlock
+                    label={t('Expires at')}
+                    value={
+                      expiredTime === 0
+                        ? t('Never')
+                        : formatTimestampToDate(expiredTime ?? 0)
+                    }
+                  />
+                  <StatBlock
+                    label={t('Recent log cost')}
+                    value={formatLogQuota(totalLogQuota)}
+                  />
+                  <StatBlock
+                    label={t('Recent calls')}
+                    value={`${logs.length}`}
+                  />
+                </CardContent>
+              </Card>
 
-            <Card size='sm'>
-              <CardHeader className='border-b'>
-                <div className='flex items-center justify-between gap-3'>
-                  <CardTitle>{t('Call Details')}</CardTitle>
-                  <Button
-                    variant='outline'
-                    onClick={exportLogs}
-                    disabled={logs.length === 0}
-                  >
-                    <Download />
-                    {t('Export CSV')}
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent className='p-0'>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>{t('Time')}</TableHead>
-                      <TableHead>{t('Type')}</TableHead>
-                      <TableHead>{t('Model')}</TableHead>
-                      <TableHead>{t('Duration')}</TableHead>
-                      <TableHead>{t('Prompt')}</TableHead>
-                      <TableHead>{t('Completion')}</TableHead>
-                      <TableHead>{t('Cost')}</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {logs.length === 0 ? (
+              <Card size='sm'>
+                <CardHeader className='border-b'>
+                  <div className='flex items-center justify-between gap-3'>
+                    <CardTitle>{t('Call Details')}</CardTitle>
+                    <Button
+                      variant='outline'
+                      onClick={exportLogs}
+                      disabled={logs.length === 0}
+                    >
+                      <Download />
+                      {t('Export CSV')}
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent className='p-0'>
+                  <Table>
+                    <TableHeader>
                       <TableRow>
-                        <TableCell colSpan={7} className='h-24 text-center'>
-                          {t('No token logs')}
-                        </TableCell>
+                        <TableHead>{t('Time')}</TableHead>
+                        <TableHead>{t('Type')}</TableHead>
+                        <TableHead>{t('Model')}</TableHead>
+                        <TableHead>{t('Duration')}</TableHead>
+                        <TableHead>{t('Prompt')}</TableHead>
+                        <TableHead>{t('Completion')}</TableHead>
+                        <TableHead>{t('Cost')}</TableHead>
                       </TableRow>
-                    ) : (
-                      logs.map((log) => (
-                        <TableRow key={log.id}>
-                          <TableCell>
-                            {formatTimestampToDate(log.created_at)}
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant={getLogTypeVariant(log.type)}>
-                              {t(getLogTypeLabel(log.type))}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            {log.model_name ? (
-                              <Badge variant='outline'>{log.model_name}</Badge>
-                            ) : (
-                              <span className='text-muted-foreground'>-</span>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            {isApiCallLog(log) && log.use_time
-                              ? formatUseTime(log.use_time / 1000)
-                              : '-'}
-                            {isApiCallLog(log) && (
-                              <Badge variant='secondary' className='ml-2'>
-                                {log.is_stream ? t('Stream') : t('Non-stream')}
-                              </Badge>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            {isApiCallLog(log) && log.prompt_tokens
-                              ? log.prompt_tokens
-                              : '-'}
-                          </TableCell>
-                          <TableCell>
-                            {isApiCallLog(log) && log.completion_tokens
-                              ? log.completion_tokens
-                              : '-'}
-                          </TableCell>
-                          <TableCell>
-                            {isApiCallLog(log) ? formatLogQuota(log.quota) : '-'}
+                    </TableHeader>
+                    <TableBody>
+                      {logs.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={7} className='h-24 text-center'>
+                            {t('No token logs')}
                           </TableCell>
                         </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          </>
-        )}
-      </main>
+                      ) : (
+                        logs.map((log) => (
+                          <TableRow key={log.id}>
+                            <TableCell>
+                              {formatTimestampToDate(log.created_at)}
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant={getLogTypeVariant(log.type)}>
+                                {t(getLogTypeLabel(log.type))}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              {log.model_name ? (
+                                <Badge variant='outline'>
+                                  {log.model_name}
+                                </Badge>
+                              ) : (
+                                <span className='text-muted-foreground'>-</span>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              {isApiCallLog(log) && log.use_time
+                                ? formatUseTime(log.use_time / 1000)
+                                : '-'}
+                              {isApiCallLog(log) && (
+                                <Badge variant='secondary' className='ml-2'>
+                                  {log.is_stream
+                                    ? t('Stream')
+                                    : t('Non-stream')}
+                                </Badge>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              {isApiCallLog(log) && log.prompt_tokens
+                                ? log.prompt_tokens
+                                : '-'}
+                            </TableCell>
+                            <TableCell>
+                              {isApiCallLog(log) && log.completion_tokens
+                                ? log.completion_tokens
+                                : '-'}
+                            </TableCell>
+                            <TableCell>
+                              {isApiCallLog(log)
+                                ? formatLogQuota(log.quota)
+                                : '-'}
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            </>
+          )}
+        </main>
       </div>
     </PublicLayout>
   )

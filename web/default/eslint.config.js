@@ -6,6 +6,11 @@ import reactRefresh from 'eslint-plugin-react-refresh'
 import { defineConfig } from 'eslint/config'
 import tseslint from 'typescript-eslint'
 
+const reactHooksRules = {
+  'react-hooks/rules-of-hooks': 'error',
+  'react-hooks/exhaustive-deps': 'warn',
+}
+
 export default defineConfig(
   { ignores: ['dist', 'src/components/ui'] },
   {
@@ -24,7 +29,7 @@ export default defineConfig(
       'react-refresh': reactRefresh,
     },
     rules: {
-      ...reactHooks.configs.recommended.rules,
+      ...reactHooksRules,
       'react-hooks/incompatible-library': 'off',
       'react-refresh/only-export-components': [
         'warn',

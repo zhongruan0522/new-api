@@ -51,7 +51,6 @@ export function useAccordionState(pageId: string) {
     try {
       const stored = localStorage.getItem(storageKey)
       if (stored) {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
         setOpenItems(JSON.parse(stored))
       }
     } catch (_error) {

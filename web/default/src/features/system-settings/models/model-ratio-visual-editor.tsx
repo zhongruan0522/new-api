@@ -210,23 +210,12 @@ function buildRow(
     ((maps.context[name] as Record<string, unknown>).tiers as unknown[])
       .length > 0
 
-  let mode: PricingMode = 'per-token'
-  if (fixedPrice !== undefined) {
-    mode = 'per-request'
-  } else if (hasContextPricingConfig) {
-    mode = 'per-token-length'
-  } else if (
-    inputRatio !== undefined ||
-    maps.cache[name] !== undefined ||
-    maps.createCache[name] !== undefined ||
-    maps.completion[name] !== undefined ||
-    maps.audio[name] !== undefined ||
-    maps.audioCompletion[name] !== undefined
-  ) {
-    mode = 'per-token'
-  } else {
-    mode = 'per-token'
-  }
+  const mode: PricingMode =
+    fixedPrice !== undefined
+      ? 'per-request'
+      : hasContextPricingConfig
+        ? 'per-token-length'
+        : 'per-token'
 
   // Parse context pricing tiers for display
   const contextConfig = maps.context[name]

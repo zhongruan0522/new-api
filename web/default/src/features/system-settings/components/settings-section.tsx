@@ -17,7 +17,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { cn } from '@/lib/utils'
-import { useSuppressSettingsSectionHeader } from './settings-page-context'
+import { useSuppressSettingsSectionHeader } from './settings-page-hooks'
 
 type SettingsSectionProps = {
   title: string

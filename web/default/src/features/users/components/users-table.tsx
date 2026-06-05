@@ -96,6 +96,8 @@ export function UsersTable() {
   const groupFilter =
     (columnFilters.find((filter) => filter.id === 'group')?.value as string) ??
     ''
+  const status = statusFilter[0] ?? ''
+  const role = roleFilter[0] ?? ''
 
   // Fetch data with React Query
   const { data, isLoading, isFetching } = useQuery({
@@ -104,8 +106,10 @@ export function UsersTable() {
       pagination.pageIndex + 1,
       pagination.pageSize,
       globalFilter,
-      statusFilter,
-      roleFilter,
+      status,
+      role,
+      statusFilter.length,
+      roleFilter.length,
       groupFilter,
       refreshTrigger,
     ],
@@ -123,8 +127,8 @@ export function UsersTable() {
           ? await searchUsers({
               ...params,
               keyword: globalFilter,
-              status: statusFilter[0] ?? '',
-              role: roleFilter[0] ?? '',
+              status,
+              role,
               group: groupFilter,
             })
           : await getUsers(params)

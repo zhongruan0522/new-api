@@ -16,7 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { useState, useEffect, useRef } from 'react'
+import { useCallback, useState, useEffect, useRef } from 'react'
 import { Code, Table, Plus, Trash2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
@@ -47,55 +47,57 @@ export function ModelMappingEditor({
   const [jsonValue, setJsonValue] = useState(value)
   const nextRowIdRef = useRef(0)
 
-  const createRowId = () => {
+  const createRowId = useCallback(() => {
     nextRowIdRef.current += 1
     return `mapping-${nextRowIdRef.current}`
-  }
+  }, [])
 
-  const parseJsonToRows = (json: string) => {
-    try {
-      if (!json.trim()) {
-        setRows([])
-        return
-      }
-      const parsed = JSON.parse(json)
-      const entries = Object.entries(parsed)
-      setRows((previousRows) => {
-        const remainingRows = [...previousRows]
-        return entries.map(([from, to], index) => {
-          const toString = String(to)
-          const existingIndex = remainingRows.findIndex(
-            (row) =>
-              row.from === from ||
-              (row.from === from && row.to === toString) ||
-              previousRows[index]?.id === row.id
-          )
-          if (existingIndex >= 0) {
-            const [existing] = remainingRows.splice(existingIndex, 1)
+  const parseJsonToRows = useCallback(
+    (json: string) => {
+      try {
+        if (!json.trim()) {
+          setRows([])
+          return
+        }
+        const parsed = JSON.parse(json)
+        const entries = Object.entries(parsed)
+        setRows((previousRows) => {
+          const remainingRows = [...previousRows]
+          return entries.map(([from, to], index) => {
+            const toString = String(to)
+            const existingIndex = remainingRows.findIndex(
+              (row) =>
+                row.from === from ||
+                (row.from === from && row.to === toString) ||
+                previousRows[index]?.id === row.id
+            )
+            if (existingIndex >= 0) {
+              const [existing] = remainingRows.splice(existingIndex, 1)
+              return {
+                id: existing.id,
+                from,
+                to: toString,
+              }
+            }
             return {
-              id: existing.id,
+              id: createRowId(),
               from,
               to: toString,
             }
-          }
-          return {
-            id: createRowId(),
-            from,
-            to: toString,
-          }
+          })
         })
-      })
-    } catch (_error) {
-      // Invalid JSON, keep current rows
-    }
-  }
+      } catch (_error) {
+        // Invalid JSON, keep current rows
+      }
+    },
+    [createRowId]
+  )
 
   // Parse JSON to rows when value changes externally
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setJsonValue(value)
     parseJsonToRows(value)
-  }, [value])
+  }, [parseJsonToRows, value])
 
   const convertRowsToJson = (updatedRows: MappingRow[]): string => {
     if (updatedRows.length === 0) {

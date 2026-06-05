@@ -151,7 +151,7 @@ export function ClaudeSettingsCard({ defaultValues }: ClaudeSettingsCardProps) {
   return (
     <SettingsSection title={t('Claude')}>
       <Form {...form}>
-        {/* eslint-disable-next-line react-hooks/refs */}
+        {}
         <SettingsForm onSubmit={form.handleSubmit(onSubmit)}>
           <SettingsPageFormActions
             onSave={form.handleSubmit(onSubmit)}

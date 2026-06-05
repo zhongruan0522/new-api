@@ -26,8 +26,8 @@ import {
   useEffect,
   useState,
 } from 'react'
-import { useTranslation } from 'react-i18next'
 import { BrainIcon, ChevronDownIcon } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { useControllableState } from '@/lib/use-controllable-state'
 import { cn } from '@/lib/utils'
 import {
@@ -94,7 +94,6 @@ export const Reasoning = memo(
     useEffect(() => {
       if (isStreaming) {
         if (startTime === null) {
-          // eslint-disable-next-line react-hooks/set-state-in-effect
           setStartTime(Date.now())
         }
       } else if (startTime !== null) {

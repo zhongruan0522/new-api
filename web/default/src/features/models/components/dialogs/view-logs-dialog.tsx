@@ -75,7 +75,6 @@ export function ViewLogsDialog({
 
   useEffect(() => {
     if (!open) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setContainerId('')
 
       setStream('stdout')
