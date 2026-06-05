@@ -1,3 +1,21 @@
+/*
+Copyright (C) 2025 QuantumNous
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as
+published by the Free Software Foundation, either version 3 of the
+License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+For commercial licensing, please contact support@quantumnous.com
+*/
 import React, { useState, useEffect, useCallback, useMemo, useRef, lazy, Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -63,9 +81,9 @@ const formatCompactNumber = (num) => {
   if (num == null || isNaN(num)) return '0';
   const abs = Math.abs(num);
   const sign = num < 0 ? '-' : '';
-  if (abs >= 1_000_000_000) return sign + (abs / 1_000_000_000).toFixed(1).replace(/\.0$/, '') + 'B';
-  if (abs >= 1_000_000) return sign + (abs / 1_000_000).toFixed(1).replace(/\.0$/, '') + 'M';
-  if (abs >= 1_000) return sign + (abs / 1_000).toFixed(1).replace(/\.0$/, '') + 'K';
+  if (abs >= 1000000000) return sign + (abs / 1000000000).toFixed(1).replace(/\.0$/, '') + 'B';
+  if (abs >= 1000000) return sign + (abs / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
+  if (abs >= 1000) return sign + (abs / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
   return sign + abs.toString();
 };
 
@@ -225,8 +243,8 @@ const flattenUsageData = (rawData, usageType) => {
 };
 
 const buildYAxisFormatter = (maxValue) => {
-  if (maxValue >= 1_000_000) return (v) => formatCompactNumber(v);
-  if (maxValue >= 1_000) return (v) => formatCompactNumber(v);
+  if (maxValue >= 1000000) return (v) => formatCompactNumber(v);
+  if (maxValue >= 1000) return (v) => formatCompactNumber(v);
   return (v) => v?.toString();
 };
 
