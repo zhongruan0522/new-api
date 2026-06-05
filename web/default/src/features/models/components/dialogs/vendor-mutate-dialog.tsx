@@ -24,6 +24,7 @@ import { Loader2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   Dialog,
   DialogContent,
@@ -45,7 +46,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { createVendor, updateVendor } from '../../api'
 import { vendorsQueryKeys, modelsQueryKeys } from '../../lib'
-import { vendorFormSchema, type Vendor } from '../../types'
+import { vendorFormSchema, type Vendor, type VendorFormValues } from '../../types'
 
 type VendorMutateDialogProps = {
   open: boolean
@@ -63,12 +64,14 @@ export function VendorMutateDialog({
   const isEdit = Boolean(currentVendor?.id)
   const [isSaving, setIsSaving] = useState(false)
 
-  const form = useForm({
+  const form = useForm<VendorFormValues>({
     resolver: zodResolver(vendorFormSchema),
     defaultValues: {
       name: '',
       description: '',
       icon: '',
+      data_retention_days: null,
+      training_opt_out: null,
       status: 1,
     },
   })
@@ -81,6 +84,8 @@ export function VendorMutateDialog({
         name: currentVendor.name,
         description: currentVendor.description || '',
         icon: currentVendor.icon || '',
+        data_retention_days: currentVendor.data_retention_days ?? null,
+        training_opt_out: currentVendor.training_opt_out ?? null,
         status: currentVendor.status || 1,
       })
     } else if (open && !isEdit) {
@@ -88,17 +93,23 @@ export function VendorMutateDialog({
         name: '',
         description: '',
         icon: '',
+        data_retention_days: null,
+        training_opt_out: null,
         status: 1,
       })
     }
   }, [open, isEdit, currentVendor, form])
 
-  const onSubmit = async (values: Record<string, unknown>) => {
+  const onSubmit = async (values: VendorFormValues) => {
     setIsSaving(true)
     try {
+      const payload: Partial<Vendor> = {
+        ...values,
+        data_retention_days: values.data_retention_days ?? null,
+      }
       const response = isEdit
-        ? await updateVendor({ ...values, id: currentVendor!.id })
-        : await createVendor(values)
+        ? await updateVendor({ ...payload, id: currentVendor!.id })
+        : await createVendor(payload)
 
       if (response.success) {
         toast.success(
@@ -106,6 +117,7 @@ export function VendorMutateDialog({
         )
         queryClient.invalidateQueries({ queryKey: vendorsQueryKeys.lists() })
         queryClient.invalidateQueries({ queryKey: modelsQueryKeys.lists() })
+        queryClient.invalidateQueries({ queryKey: ['pricing'] })
         onOpenChange(false)
       } else {
         toast.error(response.message || t('Operation failed'))
@@ -192,6 +204,64 @@ export function VendorMutateDialog({
                 </FormItem>
               )}
             />
+
+            <div className='grid gap-4 sm:grid-cols-2'>
+              <FormField
+                control={form.control}
+                name='data_retention_days'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t('Data retention')}</FormLabel>
+                    <FormControl>
+                      <Input
+                        type='number'
+                        min={0}
+                        step={1}
+                        placeholder={t('Provider-specific')}
+                        value={field.value ?? ''}
+                        onChange={(event) =>
+                          field.onChange(
+                            event.target.value === ''
+                              ? null
+                              : Number(event.target.value)
+                          )
+                        }
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      {t('Use 0 for zero retention; leave empty when unknown.')}
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name='training_opt_out'
+                render={({ field }) => (
+                  <FormItem className='border-border/70 bg-muted/20 flex min-h-[5.75rem] items-start gap-3 rounded-md border p-3'>
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value === true}
+                        onCheckedChange={(checked) =>
+                          field.onChange(checked ? true : null)
+                        }
+                      />
+                    </FormControl>
+                    <div className='space-y-1'>
+                      <FormLabel>{t('Training opt-out')}</FormLabel>
+                      <FormDescription>
+                        {t(
+                          'Enable when requests are not used for upstream training by default.'
+                        )}
+                      </FormDescription>
+                      <FormMessage />
+                    </div>
+                  </FormItem>
+                )}
+              />
+            </div>
 
             <DialogFooter>
               <Button

@@ -448,11 +448,13 @@ export function inferApiInfo(model: PricingModel): ApiInfo {
   const license = LICENSE_BY_VENDOR[vendor]
   return {
     vendor,
-    vendor_label: VENDOR_LABELS[vendor],
+    vendor_label: model.vendor_name || VENDOR_LABELS[vendor],
     tokenizer: tk.tokenizer,
     tokenizer_note: tk.note,
     license: license.license,
     license_kind: license.kind,
+    data_retention_days: model.data_retention_days ?? undefined,
+    training_opt_out: model.training_opt_out ?? undefined,
     homepage: HOMEPAGE_BY_VENDOR[vendor],
   }
 }

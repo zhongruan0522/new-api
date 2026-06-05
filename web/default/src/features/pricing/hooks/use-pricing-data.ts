@@ -55,6 +55,8 @@ export function usePricingData() {
         vendor_name: vendor?.name,
         vendor_icon: vendor?.icon,
         vendor_description: vendor?.description,
+        data_retention_days: vendor?.data_retention_days,
+        training_opt_out: vendor?.training_opt_out,
         group_ratio: data.group_ratio,
       }
     })

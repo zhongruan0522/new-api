@@ -50,9 +50,11 @@ export type ModelFormValues = z.infer<typeof modelFormSchema>
 export const vendorFormSchema = z.object({
   id: z.number().optional(),
   name: z.string().min(1, 'Vendor name is required'),
-  description: z.string().default(''),
-  icon: z.string().default(''),
-  status: z.number().default(1),
+  description: z.string(),
+  icon: z.string(),
+  data_retention_days: z.number().int().min(0).optional().nullable(),
+  training_opt_out: z.boolean().optional().nullable(),
+  status: z.number(),
 })
 
 export type VendorFormValues = z.infer<typeof vendorFormSchema>

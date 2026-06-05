@@ -41,6 +41,14 @@ export interface Model {
   tags?: string
   vendor_id?: number
   endpoints?: string
+  context_length?: number
+  max_output_tokens?: number
+  input_modalities?: string[]
+  output_modalities?: string[]
+  capabilities?: string[]
+  knowledge_cutoff?: string
+  release_date?: string
+  parameter_count?: string
   status: number
   sync_official: number
   created_time: number
@@ -62,6 +70,8 @@ export interface Vendor {
   name: string
   description?: string
   icon?: string
+  data_retention_days?: number | null
+  training_opt_out?: boolean | null
   status: number
   created_time: number
   updated_time: number
@@ -246,9 +256,11 @@ export type ModelFormValues = z.infer<typeof modelFormSchema>
 export const vendorFormSchema = z.object({
   id: z.number().optional(),
   name: z.string().min(1, 'Vendor name is required'),
-  description: z.string().default(''),
-  icon: z.string().default(''),
-  status: z.number().default(1),
+  description: z.string(),
+  icon: z.string(),
+  data_retention_days: z.number().int().min(0).optional().nullable(),
+  training_opt_out: z.boolean().optional().nullable(),
+  status: z.number(),
 })
 
 export type VendorFormValues = z.infer<typeof vendorFormSchema>

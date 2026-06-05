@@ -25,6 +25,8 @@ export type PricingVendor = {
   name: string
   icon?: string
   description?: string
+  data_retention_days?: number | null
+  training_opt_out?: boolean | null
 }
 
 export type PricingModel = {
@@ -35,6 +37,8 @@ export type PricingModel = {
   vendor_name?: string
   vendor_icon?: string
   vendor_description?: string
+  data_retention_days?: number | null
+  training_opt_out?: boolean | null
   quota_type: number
   model_ratio: number
   completion_ratio: number
