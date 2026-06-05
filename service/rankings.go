@@ -137,6 +137,12 @@ var (
 	rankingCache   = map[string]rankingCacheItem{}
 )
 
+func ClearRankingsCache() {
+	rankingCacheMu.Lock()
+	defer rankingCacheMu.Unlock()
+	rankingCache = map[string]rankingCacheItem{}
+}
+
 func GetRankingsSnapshot(period string) (*RankingsResponse, error) {
 	config, err := rankingConfig(period)
 	if err != nil {

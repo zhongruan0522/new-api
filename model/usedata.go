@@ -29,12 +29,18 @@ type QuotaData struct {
 }
 
 func UpdateQuotaData() {
+	lastUpdatedAt := time.Time{}
 	for {
-		if common.DataExportEnabled {
+		interval := time.Duration(common.DataExportInterval) * time.Minute
+		if interval < time.Minute {
+			interval = time.Minute
+		}
+		if common.DataExportEnabled && time.Since(lastUpdatedAt) >= interval {
 			common.SysLog("正在更新数据看板数据...")
 			SaveQuotaDataCache()
+			lastUpdatedAt = time.Now()
 		}
-		time.Sleep(time.Duration(common.DataExportInterval) * time.Minute)
+		time.Sleep(time.Second)
 	}
 }
 

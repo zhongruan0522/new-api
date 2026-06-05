@@ -53,6 +53,7 @@ const SearchModal = ({
   searchModalVisible,
   handleSearchConfirm,
   handleCloseModal,
+  refreshAfterRecalculate,
   isMobile,
   isAdminUser,
   inputs,
@@ -79,6 +80,9 @@ const SearchModal = ({
       const { success, message } = res.data;
       if (success) {
         showSuccess(t('重新计算完成'));
+        if (refreshAfterRecalculate) {
+          await refreshAfterRecalculate();
+        }
       } else {
         showError(message);
       }

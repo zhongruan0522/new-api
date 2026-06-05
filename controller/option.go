@@ -7,6 +7,7 @@ import (
 
 	"github.com/zhongruan0522/new-api/common"
 	"github.com/zhongruan0522/new-api/model"
+	"github.com/zhongruan0522/new-api/service"
 	"github.com/zhongruan0522/new-api/setting"
 	"github.com/zhongruan0522/new-api/setting/console_setting"
 	"github.com/zhongruan0522/new-api/setting/operation_setting"
@@ -257,6 +258,9 @@ func UpdateOption(c *gin.Context) {
 	if err != nil {
 		common.ApiError(c, err)
 		return
+	}
+	if option.Key == "DataExportInterval" {
+		service.ClearRankingsCache()
 	}
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,

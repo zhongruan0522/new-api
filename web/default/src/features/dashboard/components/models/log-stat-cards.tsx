@@ -16,10 +16,12 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '@/stores/auth-store'
 import { formatNumber, formatQuota } from '@/lib/format'
 import { computeTimeRange } from '@/lib/time'
+import { useStatus } from '@/hooks/use-status'
 import { Skeleton } from '@/components/ui/skeleton'
 import { getUserQuotaDates } from '@/features/dashboard/api'
 import { useModelStatCardsConfig } from '@/features/dashboard/hooks/use-dashboard-config'
@@ -27,6 +29,7 @@ import {
   buildQueryParams,
   calculateDashboardStats,
   getDefaultDays,
+  getDataDashboardRefreshIntervalMs,
 } from '@/features/dashboard/lib'
 import type {
   QuotaDataItem,
@@ -41,58 +44,68 @@ interface LogStatCardsProps {
 export function LogStatCards(props: LogStatCardsProps) {
   const statCardsConfig = useModelStatCardsConfig()
   const user = useAuthStore((state) => state.auth.user)
+  const { status } = useStatus()
   const isAdmin = !!(user?.role && user.role >= 10)
-  const [stats, setStats] = useState<{
-    totalQuota: number
-    totalCount: number
-    totalTokens: number
-  } | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(false)
-
-  const [timeRangeMinutes, setTimeRangeMinutes] = useState(0)
 
   const { filters, onDataUpdate } = props
 
+  const timeRange = useMemo(
+    () =>
+      computeTimeRange(
+        getDefaultDays(filters?.time_granularity),
+        filters?.start_timestamp,
+        filters?.end_timestamp
+      ),
+    [filters?.end_timestamp, filters?.start_timestamp, filters?.time_granularity]
+  )
+
+  const queryParams = useMemo(
+    () => buildQueryParams(timeRange, filters),
+    [filters, timeRange]
+  )
+  const refreshInterval = getDataDashboardRefreshIntervalMs(status)
+
+  const {
+    data: quotaData = [],
+    isLoading,
+    isFetching,
+    isError,
+  } = useQuery({
+    queryKey: [
+      'dashboard',
+      'models',
+      'data',
+      queryParams,
+      isAdmin ? 'admin' : 'self',
+    ],
+    queryFn: async () => {
+      const res = await getUserQuotaDates(queryParams, isAdmin)
+      return res?.data ?? []
+    },
+    placeholderData: (previousData) => previousData,
+    staleTime: refreshInterval,
+    gcTime: refreshInterval * 6,
+    refetchInterval: refreshInterval,
+    refetchIntervalInBackground: true,
+  })
+
+  const timeRangeMinutes =
+    (timeRange.end_timestamp - timeRange.start_timestamp) / 60
+  const loading = isLoading && quotaData.length === 0
+  const error = isError
+  const stats = useMemo(
+    () => (isError ? null : calculateDashboardStats(quotaData)),
+    [isError, quotaData]
+  )
+
   useEffect(() => {
-    const abortController = new AbortController()
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setLoading(true)
-
-    setError(false)
-    onDataUpdate?.([], true)
-
-    const timeRange = computeTimeRange(
-      getDefaultDays(filters?.time_granularity),
-      filters?.start_timestamp,
-      filters?.end_timestamp
-    )
-    const timeDiff = (timeRange.end_timestamp - timeRange.start_timestamp) / 60
-    setTimeRangeMinutes(timeDiff)
-
-    getUserQuotaDates(buildQueryParams(timeRange, filters), isAdmin)
-      .then((res) => {
-        if (abortController.signal.aborted) return
-        const data = res?.data || []
-        setStats(calculateDashboardStats(data))
-        onDataUpdate?.(data, false)
-      })
-      .catch(() => {
-        if (abortController.signal.aborted) return
-        setStats(null)
-        setError(true)
-        onDataUpdate?.([], false)
-      })
-      .finally(() => {
-        if (!abortController.signal.aborted) {
-          setLoading(false)
-        }
-      })
-
-    return () => {
-      abortController.abort()
+    if (isError) {
+      onDataUpdate?.([], false)
+      return
     }
-  }, [filters, isAdmin, onDataUpdate])
+
+    onDataUpdate?.(quotaData, isFetching)
+  }, [isError, isFetching, onDataUpdate, quotaData])
 
   const adaptedStats = {
     rpm: stats?.totalCount ?? 0,

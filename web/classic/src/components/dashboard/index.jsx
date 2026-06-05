@@ -17,7 +17,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 
-import React, { useContext, useEffect } from 'react';
+import React, { useCallback, useContext, useEffect, useMemo } from 'react';
 import { getRelativeTime } from '../../helpers';
 import { UserContext } from '../../context/User';
 import { StatusContext } from '../../context/Status';
@@ -89,30 +89,48 @@ const Dashboard = () => {
     dashboardData.regionStats,
     dashboardData.mediaConvertStats,
   );
+  const {
+    loadQuotaData,
+    loadRegionStats,
+    loadModelRank,
+    loadMediaConvertStats,
+    loadUptimeData,
+    refresh,
+    handleSearchConfirm: refreshSearchData,
+  } = dashboardData;
+  const { updateChartData } = dashboardCharts;
 
   // ========== 数据处理 ==========
   const initChart = async () => {
-    await dashboardData.loadQuotaData().then((data) => {
+    await loadQuotaData().then((data) => {
       if (data && data.length > 0) {
-        dashboardCharts.updateChartData(data);
+        updateChartData(data);
       }
     });
-    await dashboardData.loadRegionStats();
-    dashboardData.loadModelRank();
-    dashboardData.loadMediaConvertStats();
-    await dashboardData.loadUptimeData();
+    await loadRegionStats();
+    loadModelRank();
+    loadMediaConvertStats();
+    await loadUptimeData();
   };
 
-  const handleRefresh = async () => {
-    const data = await dashboardData.refresh();
+  const handleRefresh = useCallback(async () => {
+    const data = await refresh();
     if (data && data.length > 0) {
-      dashboardCharts.updateChartData(data);
+      updateChartData(data);
     }
-  };
+  }, [refresh, updateChartData]);
 
-  const handleSearchConfirm = async () => {
-    await dashboardData.handleSearchConfirm(dashboardCharts.updateChartData);
-  };
+  const handleSearchConfirm = useCallback(async () => {
+    await refreshSearchData(updateChartData);
+  }, [refreshSearchData, updateChartData]);
+
+  const refreshIntervalMs = useMemo(
+    () =>
+      Math.max(1, Number(statusState?.status?.data_export_interval) || 5) *
+      60 *
+      1000,
+    [statusState?.status?.data_export_interval],
+  );
 
   // ========== 数据准备 ==========
   const apiInfoData = statusState?.status?.api_info || [];
@@ -146,6 +164,14 @@ const Dashboard = () => {
     initChart();
   }, []);
 
+  useEffect(() => {
+    const timer = setInterval(() => {
+      handleRefresh().catch(console.error);
+    }, refreshIntervalMs);
+
+    return () => clearInterval(timer);
+  }, [handleRefresh, refreshIntervalMs]);
+
   return (
     <div className='h-full'>
       <DashboardHeader
@@ -161,6 +187,7 @@ const Dashboard = () => {
         searchModalVisible={dashboardData.searchModalVisible}
         handleSearchConfirm={handleSearchConfirm}
         handleCloseModal={dashboardData.handleCloseModal}
+        refreshAfterRecalculate={handleRefresh}
         isMobile={dashboardData.isMobile}
         isAdminUser={dashboardData.isAdminUser}
         inputs={dashboardData.inputs}

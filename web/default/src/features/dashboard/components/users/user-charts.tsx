@@ -21,6 +21,8 @@ import { useQuery } from '@tanstack/react-query'
 import { VChart } from '@visactor/react-vchart'
 import { Users, Loader2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { useAuthStore } from '@/stores/auth-store'
+import { ROLE } from '@/lib/roles'
 import { getRollingDateRange, type TimeGranularity } from '@/lib/time'
 import { VCHART_OPTION } from '@/lib/vchart'
 import { useStatus } from '@/hooks/use-status'
@@ -40,6 +42,7 @@ import {
   processUserChartData,
   getDataDashboardRefreshIntervalMs,
 } from '@/features/dashboard/lib'
+import { DashboardRecalculateDialog } from '@/features/dashboard/components/dashboard-recalculate-dialog'
 import type { ProcessedUserChartData } from '@/features/dashboard/types'
 
 let themeManagerPromise: Promise<
@@ -68,6 +71,7 @@ const TOP_USER_LIMIT_OPTIONS = [5, 10, 20, 50]
 export function UserCharts() {
   const { t } = useTranslation()
   const { status } = useStatus()
+  const userRole = useAuthStore((state) => state.auth.user?.role)
   const { resolvedTheme } = useTheme()
   const { customization } = useThemeCustomization()
   const [themeReady, setThemeReady] = useState(false)
@@ -90,6 +94,15 @@ export function UserCharts() {
       end_timestamp: Math.floor(end.getTime() / 1000),
     }
   })
+  const refreshInterval = getDataDashboardRefreshIntervalMs(status)
+  const isAdmin = Boolean(userRole && userRole >= ROLE.ADMIN)
+  const recalculateTimeRange = useMemo(
+    () => ({
+      start_timestamp: new Date(timeRange.start_timestamp * 1000),
+      end_timestamp: new Date(timeRange.end_timestamp * 1000),
+    }),
+    [timeRange.end_timestamp, timeRange.start_timestamp]
+  )
 
   const handleRangeChange = useCallback((days: number) => {
     setSelectedRange(days)
@@ -132,7 +145,10 @@ export function UserCharts() {
     queryKey: ['dashboard', 'user-quota', timeRange],
     queryFn: () => getUserQuotaDataByUsers(timeRange),
     select: (res) => (res.success ? res.data : []),
-    staleTime: getDataDashboardRefreshIntervalMs(status),
+    staleTime: refreshInterval,
+    gcTime: refreshInterval * 6,
+    refetchInterval: refreshInterval,
+    refetchIntervalInBackground: true,
   })
 
   const chartData = useMemo(
@@ -218,6 +234,10 @@ export function UserCharts() {
 
         {isLoading && (
           <Loader2 className='text-muted-foreground size-4 animate-spin' />
+        )}
+
+        {isAdmin && (
+          <DashboardRecalculateDialog initialTimeRange={recalculateTimeRange} />
         )}
       </div>
 

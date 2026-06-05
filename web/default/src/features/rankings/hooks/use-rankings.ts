@@ -31,5 +31,7 @@ export function useRankings(period: RankingPeriod) {
     queryFn: () => getRankings(period),
     staleTime: refreshInterval,
     gcTime: refreshInterval * 6,
+    refetchInterval: refreshInterval,
+    refetchIntervalInBackground: true,
   })
 }

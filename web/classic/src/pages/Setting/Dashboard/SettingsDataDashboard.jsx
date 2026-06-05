@@ -18,18 +18,22 @@ For commercial licensing, please contact support@quantumnous.com
 */
 
 import React, { useEffect, useState, useRef } from 'react';
+import { useContext } from 'react';
 import { Button, Col, Form, Row, Spin } from '@douyinfe/semi-ui';
 import {
   compareObjects,
   API,
+  setStatusData,
   showError,
   showSuccess,
   showWarning,
 } from '../../../helpers';
 import { useTranslation } from 'react-i18next';
+import { StatusContext } from '../../../context/Status';
 
 export default function DataDashboard(props) {
   const { t } = useTranslation();
+  const [statusState, statusDispatch] = useContext(StatusContext);
 
   const optionsDataExportDefaultTime = [
     { key: 'hour', label: t('小时'), value: 'hour' },
@@ -69,6 +73,14 @@ export default function DataDashboard(props) {
           if (res.includes(undefined))
             return showError(t('部分保存失败，请重试'));
         }
+        const nextStatus = {
+          ...statusState.status,
+          data_export_interval: Number(inputs.DataExportInterval) || 5,
+          data_export_default_time: inputs.DataExportDefaultTime,
+          enable_data_export: Boolean(inputs.DataExportEnabled),
+        };
+        statusDispatch({ type: 'set', payload: nextStatus });
+        setStatusData(nextStatus);
         showSuccess(t('保存成功'));
         props.refresh();
       })

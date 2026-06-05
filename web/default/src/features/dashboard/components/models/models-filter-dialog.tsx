@@ -17,9 +17,8 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { useState } from 'react'
-import { Filter, RotateCcw, Calendar, Search, RefreshCw } from 'lucide-react'
+import { Filter, RotateCcw, Calendar, Search } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { toast } from 'sonner'
 import { useAuthStore } from '@/stores/auth-store'
 import { getRollingDateRange, type TimeGranularity } from '@/lib/time'
 import { cn } from '@/lib/utils'
@@ -53,7 +52,6 @@ import {
   buildDefaultDashboardFilters,
   cleanFilters,
 } from '@/features/dashboard/lib'
-import { recalculateQuotaData } from '@/features/dashboard/api'
 import type {
   DashboardChartPreferences,
   DashboardFilters,
@@ -86,7 +84,6 @@ export function ModelsFilter(props: ModelsFilterProps) {
   const isAdmin = user?.role && user.role >= 10
 
   const [open, setOpen] = useState(false)
-  const [recalculating, setRecalculating] = useState(false)
   const [filters, setFilters] = useState<DashboardFilters>(() =>
     buildDefaultDashboardFilters(props.preferences)
   )
@@ -144,37 +141,6 @@ export function ModelsFilter(props: ModelsFilterProps) {
       end_timestamp: end,
     }))
     setSelectedRange(days)
-  }
-
-  const handleRecalculate = async () => {
-    const start = filters.start_timestamp
-    const end = filters.end_timestamp
-    if (!start || !end) {
-      toast.error(t('Please select a valid time range first'))
-      return
-    }
-    const startTs = Math.floor(new Date(start).getTime() / 1000)
-    const endTs = Math.floor(new Date(end).getTime() / 1000)
-    if (endTs <= startTs) {
-      toast.error(t('Please select a valid time range first'))
-      return
-    }
-    setRecalculating(true)
-    try {
-      const { success, message } = await recalculateQuotaData({
-        start_timestamp: startTs,
-        end_timestamp: endTs,
-      })
-      if (success) {
-        toast.success(t('Recalculation completed'))
-      } else {
-        toast.error(message || t('Recalculation failed'))
-      }
-    } catch {
-      toast.error(t('Recalculation failed'))
-    } finally {
-      setRecalculating(false)
-    }
   }
 
   return (
@@ -281,7 +247,6 @@ export function ModelsFilter(props: ModelsFilterProps) {
               </Select>
             </div>
 
-            {/* Admin-only fields */}
             {isAdmin && (
               <>
                 <SectionDivider label={t('Admin Only')} />
@@ -294,28 +259,6 @@ export function ModelsFilter(props: ModelsFilterProps) {
                     value={filters.username}
                     onChange={(e) => handleChange('username', e.target.value)}
                   />
-                </div>
-
-                <SectionDivider label={t('Data Maintenance')} />
-
-                <div className='grid gap-2'>
-                  <Button
-                    type='button'
-                    variant='outline'
-                    className='border-warning/40 text-warning hover:bg-warning/10 hover:text-warning focus-visible:border-warning/40 focus-visible:ring-warning/20 dark:border-warning/30 dark:hover:bg-warning/20'
-                    disabled={recalculating}
-                    onClick={handleRecalculate}
-                  >
-                    <RefreshCw
-                      className={cn('mr-2 h-4 w-4', recalculating && 'animate-spin')}
-                    />
-                    {recalculating ? t('Recalculating...') : t('Recalculate Dashboard')}
-                  </Button>
-                  <p className='text-xs text-muted-foreground'>
-                    {t(
-                      'Re-aggregate dashboard data from logs for the selected time range. Existing data will be overwritten.'
-                    )}
-                  </p>
                 </div>
               </>
             )}

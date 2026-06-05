@@ -6,6 +6,7 @@ import (
 
 	"github.com/zhongruan0522/new-api/common"
 	"github.com/zhongruan0522/new-api/model"
+	"github.com/zhongruan0522/new-api/service"
 
 	"github.com/gin-gonic/gin"
 )
@@ -208,6 +209,7 @@ func RecalculateQuotaData(c *gin.Context) {
 		common.ApiError(c, err)
 		return
 	}
+	service.ClearRankingsCache()
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "重新计算完成",
