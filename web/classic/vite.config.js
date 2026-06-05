@@ -51,8 +51,8 @@ export default defineConfig({
   ],
   optimizeDeps: {
     force: true,
-    esbuildOptions: {
-      loader: {
+    rolldownOptions: {
+      moduleTypes: {
         '.js': 'jsx',
         '.json': 'json',
       },
