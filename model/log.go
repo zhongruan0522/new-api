@@ -71,42 +71,29 @@ func formatUserLogs(logs []*Log, startIdx int) {
 // enrichLogModelIcons 批量填充日志的模型图标字段。
 // 优先使用 models 表的 icon，其次使用关联 vendors 表的 icon。
 func enrichLogModelIcons(logs []*Log) {
-	modelNames := make([]string, 0, len(logs))
+	hasModelName := false
 	for _, l := range logs {
 		if l.ModelName != "" {
-			modelNames = append(modelNames, l.ModelName)
+			hasModelName = true
+			break
 		}
 	}
-	if len(modelNames) == 0 {
+	if !hasModelName {
 		return
 	}
 
-	// 查询 models 表中匹配的 model_name → icon 映射
-	type modelRow struct {
-		ModelName string `gorm:"column:model_name"`
-		Icon      string `gorm:"column:icon"`
-		VendorID  int    `gorm:"column:vendor_id"`
-	}
-	var models []modelRow
-	if err := DB.Table("models").
-		Select("model_name, icon, vendor_id").
-		Where("model_name IN ? AND deleted_at IS NULL", modelNames).
-		Find(&models).Error; err != nil {
+	var models []Model
+	if err := DB.Where("status = ?", 1).Find(&models).Error; err != nil {
 		return
 	}
 
-	modelIconMap := make(map[string]string, len(models))
-	vendorIDs := make(map[int]bool)
+	vendorIDs := make(map[int]struct{})
 	for _, m := range models {
-		if m.Icon != "" {
-			modelIconMap[m.ModelName] = m.Icon
-		}
 		if m.VendorID != 0 {
-			vendorIDs[m.VendorID] = true
+			vendorIDs[m.VendorID] = struct{}{}
 		}
 	}
 
-	// 查询需要的 vendor 图标
 	vendorIconMap := make(map[int]string)
 	if len(vendorIDs) > 0 {
 		ids := make([]int, 0, len(vendorIDs))
@@ -130,27 +117,48 @@ func enrichLogModelIcons(logs []*Log) {
 		}
 	}
 
-	// 构建 model_name → vendor_icon 的映射（仅对没有自身 icon 的模型）
-	modelVendorIconMap := make(map[string]string)
-	for _, m := range models {
-		if m.Icon == "" && m.VendorID != 0 {
-			if vIcon, ok := vendorIconMap[m.VendorID]; ok {
-				modelVendorIconMap[m.ModelName] = vIcon
-			}
-		}
-	}
-
-	// 填充
 	for _, l := range logs {
 		if l.ModelName == "" {
 			continue
 		}
-		if icon, ok := modelIconMap[l.ModelName]; ok {
-			l.ModelIcon = icon
-		} else if icon, ok := modelVendorIconMap[l.ModelName]; ok {
-			l.ModelIcon = icon
+		matched := matchLogModelMeta(l.ModelName, models)
+		if matched == nil {
+			continue
+		}
+		if matched.Icon != "" {
+			l.ModelIcon = matched.Icon
+			continue
+		}
+		if matched.VendorID != 0 {
+			if icon, ok := vendorIconMap[matched.VendorID]; ok {
+				l.ModelIcon = icon
+			}
 		}
 	}
+}
+
+func matchLogModelMeta(modelName string, models []Model) *Model {
+	for i := range models {
+		if models[i].NameRule == NameRuleExact && models[i].ModelName == modelName {
+			return &models[i]
+		}
+	}
+	for i := range models {
+		if models[i].NameRule == NameRulePrefix && strings.HasPrefix(modelName, models[i].ModelName) {
+			return &models[i]
+		}
+	}
+	for i := range models {
+		if models[i].NameRule == NameRuleContains && strings.Contains(modelName, models[i].ModelName) {
+			return &models[i]
+		}
+	}
+	for i := range models {
+		if models[i].NameRule == NameRuleSuffix && strings.HasSuffix(modelName, models[i].ModelName) {
+			return &models[i]
+		}
+	}
+	return nil
 }
 
 func GetLogByTokenId(tokenId int) (logs []*Log, err error) {
