@@ -62,7 +62,9 @@ const TicketsTable = ({
         key: 'title',
         render: (text) => {
           return (
-            <Text strong style={{ cursor: 'pointer' }}>{text}</Text>
+            <Text strong style={{ cursor: 'pointer' }}>
+              {text}
+            </Text>
           );
         },
       },
@@ -92,7 +94,11 @@ const TicketsTable = ({
         key: 'created_at',
         width: 180,
         render: (text, record) => {
-          return <>{record?.created_at ? timestamp2string(record.created_at) : '-'}</>;
+          return (
+            <>
+              {record?.created_at ? timestamp2string(record.created_at) : '-'}
+            </>
+          );
         },
       },
       {
@@ -101,7 +107,11 @@ const TicketsTable = ({
         key: 'updated_at',
         width: 180,
         render: (text, record) => {
-          return <>{record?.updated_at ? timestamp2string(record.updated_at) : '-'}</>;
+          return (
+            <>
+              {record?.updated_at ? timestamp2string(record.updated_at) : '-'}
+            </>
+          );
         },
       },
       {
@@ -116,10 +126,22 @@ const TicketsTable = ({
               position='bottomRight'
               render={
                 <Dropdown.Menu>
-                  <Dropdown.Item onClick={(e) => { e.stopPropagation(); onViewTicket(record); }}>
+                  <Dropdown.Item
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onViewTicket(record);
+                    }}
+                  >
                     {t('查看详情')}
                   </Dropdown.Item>
-                  <Dropdown.Item onClick={(e) => { e.stopPropagation(); isClosed ? onReopenTicket?.(record) : onCloseTicket(record); }}>
+                  <Dropdown.Item
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      isClosed
+                        ? onReopenTicket?.(record)
+                        : onCloseTicket(record);
+                    }}
+                  >
                     {isClosed ? t('重新开启') : t('关闭工单')}
                   </Dropdown.Item>
                 </Dropdown.Menu>

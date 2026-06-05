@@ -144,7 +144,9 @@ export default function ModelRatioNotSetEditor(props) {
       const modelRatio = JSON.parse(props.options.ModelRatio || '{}');
       const completionRatio = JSON.parse(props.options.CompletionRatio || '{}');
       const cacheRatio = JSON.parse(props.options.CacheRatio || '{}');
-      const createCacheRatio = JSON.parse(props.options.CreateCacheRatio || '{}');
+      const createCacheRatio = JSON.parse(
+        props.options.CreateCacheRatio || '{}',
+      );
       const audioRatio = JSON.parse(props.options.AudioRatio || '{}');
       const audioCompletionRatio = JSON.parse(
         props.options.AudioCompletionRatio || '{}',
@@ -168,7 +170,9 @@ export default function ModelRatioNotSetEditor(props) {
         cacheRatio: normalizeEditableValue(cacheRatio[name]),
         createCacheRatio: normalizeEditableValue(createCacheRatio[name]),
         audioRatio: normalizeEditableValue(audioRatio[name]),
-        audioCompletionRatio: normalizeEditableValue(audioCompletionRatio[name]),
+        audioCompletionRatio: normalizeEditableValue(
+          audioCompletionRatio[name],
+        ),
       }));
 
       setModels(modelData);
@@ -432,12 +436,22 @@ export default function ModelRatioNotSetEditor(props) {
     }
     // 校验数值字段：非空时必须是合法数字
     const numericFields = [
-      'price', 'ratio', 'completionRatio', 'cacheRatio',
-      'createCacheRatio', 'audioRatio', 'audioCompletionRatio',
+      'price',
+      'ratio',
+      'completionRatio',
+      'cacheRatio',
+      'createCacheRatio',
+      'audioRatio',
+      'audioCompletionRatio',
     ];
     for (const field of numericFields) {
       const val = values[field];
-      if (val !== '' && val !== undefined && val !== null && isNaN(Number(val))) {
+      if (
+        val !== '' &&
+        val !== undefined &&
+        val !== null &&
+        isNaN(Number(val))
+      ) {
         showError(t('请输入有效的数字'));
         return;
       }
@@ -451,7 +465,9 @@ export default function ModelRatioNotSetEditor(props) {
         cacheRatio: normalizeEditableValue(values.cacheRatio),
         createCacheRatio: normalizeEditableValue(values.createCacheRatio),
         audioRatio: normalizeEditableValue(values.audioRatio),
-        audioCompletionRatio: normalizeEditableValue(values.audioCompletionRatio),
+        audioCompletionRatio: normalizeEditableValue(
+          values.audioCompletionRatio,
+        ),
       },
       ...prev,
     ]);
@@ -566,7 +582,10 @@ export default function ModelRatioNotSetEditor(props) {
           <Button
             icon={<IconPlus />}
             onClick={() => {
-              setCurrentModel({ ...createEmptyExtraPricing(), priceMode: false });
+              setCurrentModel({
+                ...createEmptyExtraPricing(),
+                priceMode: false,
+              });
               setVisible(true);
             }}
           >

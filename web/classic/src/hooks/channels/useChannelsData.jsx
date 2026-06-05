@@ -112,9 +112,9 @@ export const useChannelsData = () => {
                 <p>
                   当前账户已被风控，请前往
                   <a
-                    href="https://open.bigmodel.cn"
-                    target="_blank"
-                    rel="noreferrer"
+                    href='https://open.bigmodel.cn'
+                    target='_blank'
+                    rel='noreferrer'
                   >
                     智谱开发者平台
                   </a>

@@ -20,10 +20,7 @@ For commercial licensing, please contact support@quantumnous.com
 import React from 'react';
 import { Card, Skeleton } from '@douyinfe/semi-ui';
 
-const PricingCardSkeleton = ({
-  skeletonCount = 100,
-  rowSelection = false,
-}) => {
+const PricingCardSkeleton = ({ skeletonCount = 100, rowSelection = false }) => {
   const placeholder = (
     <div className='px-2 pt-2'>
       <div className='grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-4'>

@@ -22,7 +22,14 @@ import { Button, Form } from '@douyinfe/semi-ui';
 
 import { DATE_RANGE_PRESETS } from '../../../constants/console.constants';
 
-const StoredMediaFilters = ({ formInitValues, setFormApi, refresh, loading, t, formApi }) => {
+const StoredMediaFilters = ({
+  formInitValues,
+  setFormApi,
+  refresh,
+  loading,
+  t,
+  formApi,
+}) => {
   return (
     <Form
       initValues={formInitValues}
@@ -58,7 +65,12 @@ const StoredMediaFilters = ({ formInitValues, setFormApi, refresh, loading, t, f
         {/* 操作按钮区域 */}
         <div className='flex flex-col sm:flex-row justify-end items-start sm:items-center gap-3'>
           <div className='flex gap-2 w-full sm:w-auto justify-end'>
-            <Button type='tertiary' htmlType='submit' loading={loading} size='small'>
+            <Button
+              type='tertiary'
+              htmlType='submit'
+              loading={loading}
+              size='small'
+            >
               {t('查询')}
             </Button>
             <Button
@@ -81,4 +93,3 @@ const StoredMediaFilters = ({ formInitValues, setFormApi, refresh, loading, t, f
 };
 
 export default StoredMediaFilters;
-

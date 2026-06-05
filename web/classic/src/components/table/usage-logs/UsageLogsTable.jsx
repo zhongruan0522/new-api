@@ -98,12 +98,13 @@ const LogsTable = (logsData) => {
   return (
     <CardTable
       columns={tableColumns}
-      {...(!isMobile && hasExpandableRows() && {
-        expandedRowRender: expandRowRender,
-        expandRowByClick: true,
-        rowExpandable: (record) =>
-          expandData[record.key] && expandData[record.key].length > 0,
-      })}
+      {...(!isMobile &&
+        hasExpandableRows() && {
+          expandedRowRender: expandRowRender,
+          expandRowByClick: true,
+          rowExpandable: (record) =>
+            expandData[record.key] && expandData[record.key].length > 0,
+        })}
       dataSource={logs}
       rowKey='key'
       loading={loading}

@@ -96,7 +96,11 @@ export const useUsersData = () => {
     searchStatus = null,
   ) => {
     // If no parameters passed, get values from form
-    if (searchKeyword === null || searchGroup === null || searchStatus === null) {
+    if (
+      searchKeyword === null ||
+      searchGroup === null ||
+      searchStatus === null
+    ) {
       const formValues = getFormValues();
       searchKeyword = formValues.searchKeyword;
       searchGroup = formValues.searchGroup;
@@ -204,7 +208,13 @@ export const useUsersData = () => {
     if (searchKeyword === '' && searchGroup === '' && searchStatus === '') {
       loadUsers(page, pageSize).then();
     } else {
-      searchUsers(page, pageSize, searchKeyword, searchGroup, searchStatus).then();
+      searchUsers(
+        page,
+        pageSize,
+        searchKeyword,
+        searchGroup,
+        searchStatus,
+      ).then();
     }
   };
 
@@ -239,7 +249,13 @@ export const useUsersData = () => {
     if (searchKeyword === '' && searchGroup === '' && searchStatus === '') {
       await loadUsers(page, pageSize);
     } else {
-      await searchUsers(page, pageSize, searchKeyword, searchGroup, searchStatus);
+      await searchUsers(
+        page,
+        pageSize,
+        searchKeyword,
+        searchGroup,
+        searchStatus,
+      );
     }
   };
 

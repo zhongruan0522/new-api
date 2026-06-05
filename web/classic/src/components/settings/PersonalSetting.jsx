@@ -462,7 +462,6 @@ const PersonalSetting = () => {
                 onPasskeyRegister={handleRegisterPasskey}
                 onPasskeyDelete={handleRemovePasskey}
               />
-
             </div>
 
             {/* 右侧：其他设置 */}

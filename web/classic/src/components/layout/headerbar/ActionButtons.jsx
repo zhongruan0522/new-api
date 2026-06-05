@@ -42,7 +42,9 @@ const ActionButtons = ({
   const mobileHide = isMobile && isConsoleRoute;
 
   return (
-    <div className={`${mobileHide ? 'hidden' : 'flex'} items-center gap-2 md:gap-3`}>
+    <div
+      className={`${mobileHide ? 'hidden' : 'flex'} items-center gap-2 md:gap-3`}
+    >
       <NewYearButton isNewYear={isNewYear} />
 
       <NotificationButton

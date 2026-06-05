@@ -31,9 +31,7 @@ import {
   getLobeHubIcon,
   stringToColor,
 } from '../../../helpers';
-import {
-  renderLimitedItems,
-} from '../../common/ui/RenderUtils';
+import { renderLimitedItems } from '../../common/ui/RenderUtils';
 
 const { Text } = Typography;
 

@@ -62,4 +62,3 @@ const StoredMediaPage = () => {
 };
 
 export default StoredMediaPage;
-

@@ -18,7 +18,14 @@ For commercial licensing, please contact support@quantumnous.com
 */
 
 import React, { useMemo } from 'react';
-import { Button, Empty, Modal, Space, Tooltip, Typography } from '@douyinfe/semi-ui';
+import {
+  Button,
+  Empty,
+  Modal,
+  Space,
+  Tooltip,
+  Typography,
+} from '@douyinfe/semi-ui';
 import CardTable from '../../common/ui/CardTable';
 import {
   IllustrationNoResult,
@@ -64,7 +71,11 @@ const StoredMediaTable = ({
         dataIndex: 'created_at',
         key: 'created_at',
         render: (text, record) => {
-          return <>{record?.created_at ? timestamp2string(record.created_at) : '-'}</>;
+          return (
+            <>
+              {record?.created_at ? timestamp2string(record.created_at) : '-'}
+            </>
+          );
         },
       },
       {
@@ -161,4 +172,3 @@ const StoredMediaTable = ({
 };
 
 export default StoredMediaTable;
-

@@ -28,7 +28,12 @@ import { getTokensColumns } from './TokensColumnDefs';
 import { useIsMobile } from '../../../hooks/common/useIsMobile';
 
 // Column dataIndices to hide on mobile
-const MOBILE_HIDDEN_DATA_INDICES = ['model_limits', 'allow_ips', 'created_time', 'expired_time'];
+const MOBILE_HIDDEN_DATA_INDICES = [
+  'model_limits',
+  'allow_ips',
+  'created_time',
+  'expired_time',
+];
 
 const TokensTable = (tokensData) => {
   const {

@@ -53,7 +53,9 @@ const BatchTagModal = ({
         <Typography.Text type='secondary'>
           {t('已选择 ${count} 个渠道').replace(
             '${count}',
-            getRealChannelCount ? getRealChannelCount() : selectedChannels.length,
+            getRealChannelCount
+              ? getRealChannelCount()
+              : selectedChannels.length,
           )}
         </Typography.Text>
       </div>

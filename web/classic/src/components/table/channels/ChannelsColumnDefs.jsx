@@ -56,9 +56,11 @@ const renderType = (type, record = {}, t) => {
   }
   type2label[0] = { value: 0, label: t('未知类型'), color: 'grey' };
 
-  const typeOption =
-    type2label[type] ||
-    ({ value: type, label: `${t('未知类型')} (${type})`, color: 'grey' });
+  const typeOption = type2label[type] || {
+    value: type,
+    label: `${t('未知类型')} (${type})`,
+    color: 'grey',
+  };
 
   let icon = getChannelIcon(type);
 
@@ -606,7 +608,8 @@ export const getChannelsColumns = ({
                 </Button>
               )}
 
-              {(record.channel_info?.is_multi_key || record.channel_info?.is_plan) ? (
+              {record.channel_info?.is_multi_key ||
+              record.channel_info?.is_plan ? (
                 <SplitButtonGroup aria-label={t('套餐渠道操作项目组')}>
                   <Button
                     type='tertiary'
@@ -622,28 +625,37 @@ export const getChannelsColumns = ({
                     trigger='click'
                     position='bottomRight'
                     menu={[
-                      ...(record.channel_info?.is_multi_key ? [{
-                        node: 'item',
-                        name: t('多密钥管理'),
-                        onClick: () => {
-                          setCurrentMultiKeyChannel(record);
-                          setShowMultiKeyManageModal(true);
-                        },
-                      }] : []),
-                      ...(record.channel_info?.is_plan ? [{
-                        node: 'item',
-                        name: t('额度查询'),
-                        onClick: () => {
-                          setCurrentPlanChannel(record);
-                          setShowPlanQuotaModal(true);
-                        },
-                      }, {
-                        node: 'item',
-                        name: t('风控检测'),
-                        onClick: () => {
-                          checkGlmRiskStatus(record);
-                        },
-                      }] : []),
+                      ...(record.channel_info?.is_multi_key
+                        ? [
+                            {
+                              node: 'item',
+                              name: t('多密钥管理'),
+                              onClick: () => {
+                                setCurrentMultiKeyChannel(record);
+                                setShowMultiKeyManageModal(true);
+                              },
+                            },
+                          ]
+                        : []),
+                      ...(record.channel_info?.is_plan
+                        ? [
+                            {
+                              node: 'item',
+                              name: t('额度查询'),
+                              onClick: () => {
+                                setCurrentPlanChannel(record);
+                                setShowPlanQuotaModal(true);
+                              },
+                            },
+                            {
+                              node: 'item',
+                              name: t('风控检测'),
+                              onClick: () => {
+                                checkGlmRiskStatus(record);
+                              },
+                            },
+                          ]
+                        : []),
                     ]}
                   >
                     <Button

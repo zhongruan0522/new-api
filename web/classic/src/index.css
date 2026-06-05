@@ -25,8 +25,8 @@ body.sidebar-collapsed {
 }
 
 body {
-  font-family: Lato, 'Helvetica Neue', Arial, Helvetica, 'Microsoft YaHei',
-    sans-serif;
+  font-family:
+    Lato, 'Helvetica Neue', Arial, Helvetica, 'Microsoft YaHei', sans-serif;
   color: var(--semi-color-text-0);
   background-color: var(--semi-color-bg-0);
 }
@@ -42,8 +42,8 @@ body {
 }
 
 code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+  font-family:
+    source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
 }
 
 /* ==================== 布局相关样式 ==================== */
@@ -615,7 +615,8 @@ code {
 
 .visual-ratio-table-wrap .semi-table-body::-webkit-scrollbar-thumb:hover,
 .visual-ratio-detail-pane::-webkit-scrollbar-thumb:hover,
-.visual-ratio-table-wrap .semi-table-pagination-outer::-webkit-scrollbar-thumb:hover {
+.visual-ratio-table-wrap
+  .semi-table-pagination-outer::-webkit-scrollbar-thumb:hover {
   background: rgba(128, 128, 128, 0.5);
 }
 
@@ -848,11 +849,8 @@ html:not(.dark) .blur-ball-teal {
   inset: 0;
   pointer-events: none;
   z-index: 0;
-  background: radial-gradient(
-      circle at -5% -10%,
-      var(--pb1) 0%,
-      transparent 60%
-    ),
+  background:
+    radial-gradient(circle at -5% -10%, var(--pb1) 0%, transparent 60%),
     radial-gradient(circle at 105% -10%, var(--pb2) 0%, transparent 55%),
     radial-gradient(circle at 5% 110%, var(--pb3) 0%, transparent 55%),
     radial-gradient(circle at 105% 110%, var(--pb4) 0%, transparent 50%);
@@ -1060,7 +1058,9 @@ html.dark .with-pastel-balls::before {
 .checkin-calendar .semi-calendar-month-same {
   background: transparent;
 }
-.checkin-calendar .semi-calendar-month-today .semi-calendar-month-grid-row-cell-day {
+.checkin-calendar
+  .semi-calendar-month-today
+  .semi-calendar-month-grid-row-cell-day {
   background: var(--semi-color-primary);
   color: white;
   border-radius: 50%;
@@ -1162,7 +1162,9 @@ html.dark .with-pastel-balls::before {
 /* 卡片悬停浮起效果 */
 @media (prefers-reduced-motion: no-preference) {
   .semi-card {
-    transition: transform 150ms ease, box-shadow 150ms ease;
+    transition:
+      transform 150ms ease,
+      box-shadow 150ms ease;
   }
 
   @media (min-width: 641px) {

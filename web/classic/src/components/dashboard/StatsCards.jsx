@@ -35,8 +35,14 @@ const RegionCard = ({ group, loading }) => (
       {group.regionItems.map((item, idx) => (
         <div key={idx} className='flex items-center justify-between'>
           <div className='flex items-center'>
-            <div className='mr-3 flex items-center justify-center w-8 h-8 rounded-full' style={{ backgroundColor: item.color + '20' }}>
-              <span className='inline-block w-3 h-3 rounded-full' style={{ backgroundColor: item.color }} />
+            <div
+              className='mr-3 flex items-center justify-center w-8 h-8 rounded-full'
+              style={{ backgroundColor: item.color + '20' }}
+            >
+              <span
+                className='inline-block w-3 h-3 rounded-full'
+                style={{ backgroundColor: item.color }}
+              />
             </div>
             <div>
               <div className='text-xs text-gray-500'>{item.label}</div>
@@ -51,7 +57,10 @@ const RegionCard = ({ group, loading }) => (
                   />
                 }
               >
-                <div className='text-sm font-semibold' style={item.showProgress ? {} : { color: item.color }}>
+                <div
+                  className='text-sm font-semibold'
+                  style={item.showProgress ? {} : { color: item.color }}
+                >
                   {item.rateValue}
                   {item.countValue && (
                     <span
@@ -67,7 +76,8 @@ const RegionCard = ({ group, loading }) => (
               </Skeleton>
             </div>
           </div>
-          {!item.showProgress && item.rate != null ? null : item.rate != null ? (
+          {!item.showProgress && item.rate != null ? null : item.rate !=
+            null ? (
             <div className='w-32'>
               <Progress
                 percent={item.rate}
@@ -180,7 +190,10 @@ const StatsCards = ({
                           <div className='w-24 h-10'>
                             <Suspense fallback={null}>
                               <VChart
-                                spec={getTrendSpec(item.trendData, item.trendColor)}
+                                spec={getTrendSpec(
+                                  item.trendData,
+                                  item.trendColor,
+                                )}
                                 option={CHART_CONFIG}
                               />
                             </Suspense>

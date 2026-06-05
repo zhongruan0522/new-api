@@ -28,12 +28,7 @@ import {
   Typography,
 } from '@douyinfe/semi-ui';
 import { IconPlus, IconDelete, IconSave } from '@douyinfe/semi-icons';
-import {
-  API,
-  showError,
-  showSuccess,
-  showWarning,
-} from '../../../helpers';
+import { API, showError, showSuccess, showWarning } from '../../../helpers';
 import { useTranslation } from 'react-i18next';
 
 const PAGE_SIZE = 5;
@@ -419,7 +414,10 @@ function NestedKeyValueTable({ title, description, data, onChange }) {
     const innerIdx2 = innerKeys.indexOf(prevRow.innerKey);
     if (innerIdx1 < 0 || innerIdx2 < 0) return;
     const newKeys = [...innerKeys];
-    [newKeys[innerIdx2], newKeys[innerIdx1]] = [newKeys[innerIdx1], newKeys[innerIdx2]];
+    [newKeys[innerIdx2], newKeys[innerIdx1]] = [
+      newKeys[innerIdx1],
+      newKeys[innerIdx2],
+    ];
     const newInner = {};
     newKeys.forEach((k) => (newInner[k] = data[outerKey][k]));
     onChange({ ...data, [outerKey]: newInner });
@@ -436,20 +434,20 @@ function NestedKeyValueTable({ title, description, data, onChange }) {
     const innerIdx2 = innerKeys.indexOf(nextRow.innerKey);
     if (innerIdx1 < 0 || innerIdx2 < 0) return;
     const newKeys = [...innerKeys];
-    [newKeys[innerIdx1], newKeys[innerIdx2]] = [newKeys[innerIdx2], newKeys[innerIdx1]];
+    [newKeys[innerIdx1], newKeys[innerIdx2]] = [
+      newKeys[innerIdx2],
+      newKeys[innerIdx1],
+    ];
     const newInner = {};
     newKeys.forEach((k) => (newInner[k] = data[outerKey][k]));
     onChange({ ...data, [outerKey]: newInner });
   };
 
   const adjustPage = (updatedData) => {
-    const remaining = Object.keys(updatedData).reduce(
-      (sum, k) => {
-        const innerLen = Object.keys(updatedData[k] || {}).length;
-        return sum + (innerLen === 0 ? 1 : innerLen);
-      },
-      0,
-    );
+    const remaining = Object.keys(updatedData).reduce((sum, k) => {
+      const innerLen = Object.keys(updatedData[k] || {}).length;
+      return sum + (innerLen === 0 ? 1 : innerLen);
+    }, 0);
     const newTotalPages = Math.max(1, Math.ceil(remaining / PAGE_SIZE));
     if (page > newTotalPages) setPage(newTotalPages);
   };
@@ -517,14 +515,36 @@ function NestedKeyValueTable({ title, description, data, onChange }) {
         <Space>
           <Button
             size='small'
-            disabled={record.isEmpty || record.innerKey === '' || (() => { const fullIdx = (safePage - 1) * PAGE_SIZE + index; return fullIdx <= 0 || flatRows[fullIdx - 1]?.outerKey !== record.outerKey || flatRows[fullIdx - 1]?.isEmpty; })()}
+            disabled={
+              record.isEmpty ||
+              record.innerKey === '' ||
+              (() => {
+                const fullIdx = (safePage - 1) * PAGE_SIZE + index;
+                return (
+                  fullIdx <= 0 ||
+                  flatRows[fullIdx - 1]?.outerKey !== record.outerKey ||
+                  flatRows[fullIdx - 1]?.isEmpty
+                );
+              })()
+            }
             onClick={() => handleMoveUp((safePage - 1) * PAGE_SIZE + index)}
           >
             ↑
           </Button>
           <Button
             size='small'
-            disabled={record.isEmpty || record.innerKey === '' || (() => { const fullIdx = (safePage - 1) * PAGE_SIZE + index; return fullIdx >= flatRows.length - 1 || flatRows[fullIdx + 1]?.outerKey !== record.outerKey || flatRows[fullIdx + 1]?.isEmpty; })()}
+            disabled={
+              record.isEmpty ||
+              record.innerKey === '' ||
+              (() => {
+                const fullIdx = (safePage - 1) * PAGE_SIZE + index;
+                return (
+                  fullIdx >= flatRows.length - 1 ||
+                  flatRows[fullIdx + 1]?.outerKey !== record.outerKey ||
+                  flatRows[fullIdx + 1]?.isEmpty
+                );
+              })()
+            }
             onClick={() => handleMoveDown((safePage - 1) * PAGE_SIZE + index)}
           >
             ↓
@@ -534,7 +554,11 @@ function NestedKeyValueTable({ title, description, data, onChange }) {
             type='danger'
             size='small'
             onClick={() =>
-              handleDeleteInner(record.outerKey, record.innerKey, record.isEmpty)
+              handleDeleteInner(
+                record.outerKey,
+                record.innerKey,
+                record.isEmpty,
+              )
             }
           />
         </Space>
@@ -809,7 +833,8 @@ function SpecialUsableGroupTable({ title, description, data, onChange }) {
     if (index <= 0) return;
     const row = flatRows[index];
     const prevRow = flatRows[index - 1];
-    if (row.outerKey !== prevRow.outerKey || row.isEmpty || prevRow.isEmpty) return;
+    if (row.outerKey !== prevRow.outerKey || row.isEmpty || prevRow.isEmpty)
+      return;
     const outerKey = row.outerKey;
     const innerKeys = Object.keys(data[outerKey] || {});
     const idx1 = innerKeys.indexOf(row.rawKey);
@@ -826,7 +851,8 @@ function SpecialUsableGroupTable({ title, description, data, onChange }) {
     if (index >= flatRows.length - 1) return;
     const row = flatRows[index];
     const nextRow = flatRows[index + 1];
-    if (row.outerKey !== nextRow.outerKey || row.isEmpty || nextRow.isEmpty) return;
+    if (row.outerKey !== nextRow.outerKey || row.isEmpty || nextRow.isEmpty)
+      return;
     const outerKey = row.outerKey;
     const innerKeys = Object.keys(data[outerKey] || {});
     const idx1 = innerKeys.indexOf(row.rawKey);
@@ -963,14 +989,34 @@ function SpecialUsableGroupTable({ title, description, data, onChange }) {
         <Space>
           <Button
             size='small'
-            disabled={record.isEmpty || (() => { const fi = (safePage - 1) * PAGE_SIZE + index; return fi <= 0 || flatRows[fi - 1]?.outerKey !== record.outerKey || flatRows[fi - 1]?.isEmpty; })()}
+            disabled={
+              record.isEmpty ||
+              (() => {
+                const fi = (safePage - 1) * PAGE_SIZE + index;
+                return (
+                  fi <= 0 ||
+                  flatRows[fi - 1]?.outerKey !== record.outerKey ||
+                  flatRows[fi - 1]?.isEmpty
+                );
+              })()
+            }
             onClick={() => handleMoveUp((safePage - 1) * PAGE_SIZE + index)}
           >
             ↑
           </Button>
           <Button
             size='small'
-            disabled={record.isEmpty || (() => { const fi = (safePage - 1) * PAGE_SIZE + index; return fi >= flatRows.length - 1 || flatRows[fi + 1]?.outerKey !== record.outerKey || flatRows[fi + 1]?.isEmpty; })()}
+            disabled={
+              record.isEmpty ||
+              (() => {
+                const fi = (safePage - 1) * PAGE_SIZE + index;
+                return (
+                  fi >= flatRows.length - 1 ||
+                  flatRows[fi + 1]?.outerKey !== record.outerKey ||
+                  flatRows[fi + 1]?.isEmpty
+                );
+              })()
+            }
             onClick={() => handleMoveDown((safePage - 1) * PAGE_SIZE + index)}
           >
             ↓
@@ -1171,7 +1217,10 @@ function StringListTable({ title, description, data, onChange }) {
             setEditCache((prev) => ({ ...prev, [record.realIndex]: v }))
           }
           onBlur={() =>
-            handleEditBlur(record.realIndex, editCache[record.realIndex] ?? text)
+            handleEditBlur(
+              record.realIndex,
+              editCache[record.realIndex] ?? text,
+            )
           }
         />
       ),
@@ -1304,9 +1353,7 @@ export default function GroupRatioSettings(props) {
     const changedFields = [];
     for (const key of Object.keys(inputs)) {
       const currentVal =
-        typeof inputs[key] === 'boolean'
-          ? String(inputs[key])
-          : inputs[key];
+        typeof inputs[key] === 'boolean' ? String(inputs[key]) : inputs[key];
       const originalVal =
         typeof inputsRow[key] === 'boolean'
           ? String(inputsRow[key])
@@ -1343,9 +1390,7 @@ export default function GroupRatioSettings(props) {
 
       if (res.includes(undefined)) {
         return showError(
-          requestQueue.length > 1
-            ? t('部分保存失败，请重试')
-            : t('保存失败'),
+          requestQueue.length > 1 ? t('部分保存失败，请重试') : t('保存失败'),
         );
       }
 
@@ -1366,7 +1411,12 @@ export default function GroupRatioSettings(props) {
   }
 
   return (
-    <div style={{ opacity: loading ? 0.6 : 1, pointerEvents: loading ? 'none' : 'auto' }}>
+    <div
+      style={{
+        opacity: loading ? 0.6 : 1,
+        pointerEvents: loading ? 'none' : 'auto',
+      }}
+    >
       <SimpleKeyValueTable
         title={t('分组倍率')}
         description={t('分组倍率设置，键为分组名称，值为倍率')}
@@ -1398,9 +1448,7 @@ export default function GroupRatioSettings(props) {
 
       <SpecialUsableGroupTable
         title={t('分组特殊可用分组')}
-        description={t(
-          '键为用户分组，值为操作映射。+: 添加分组，-: 移除分组',
-        )}
+        description={t('键为用户分组，值为操作映射。+: 添加分组，-: 移除分组')}
         data={specialUsableGroupData}
         onChange={(data) =>
           updateField('group_ratio_setting.group_special_usable_group', data)

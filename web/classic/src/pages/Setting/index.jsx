@@ -139,7 +139,11 @@ const Setting = () => {
                 onChange={(key) => onChangeTab(key)}
               >
                 {panes.map((pane) => (
-                  <TabPane itemKey={pane.itemKey} tab={pane.tab} key={pane.itemKey}>
+                  <TabPane
+                    itemKey={pane.itemKey}
+                    tab={pane.tab}
+                    key={pane.itemKey}
+                  >
                     {tabActiveKey === pane.itemKey && pane.content}
                   </TabPane>
                 ))}

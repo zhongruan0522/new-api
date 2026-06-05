@@ -49,7 +49,9 @@ const convertTimeToLocal = (timeStr, serverTimezone) => {
       now.toLocaleString('en-US', { timeZone: serverTimezone }),
     );
     const localDate = new Date(
-      now.toLocaleString('en-US', { timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone }),
+      now.toLocaleString('en-US', {
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      }),
     );
     const offsetMs = localDate.getTime() - serverDate.getTime();
 
@@ -153,9 +155,7 @@ const DynamicRatioCard = () => {
                 />
               </div>
               <div>
-                <div className='text-xs text-gray-500'>
-                  {t('当前倍率')}
-                </div>
+                <div className='text-xs text-gray-500'>{t('当前倍率')}</div>
                 <div
                   className='text-lg font-semibold'
                   style={{ color: ratioColor }}

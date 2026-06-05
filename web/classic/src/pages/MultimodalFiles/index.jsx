@@ -41,4 +41,3 @@ const MultimodalFiles = () => {
 };
 
 export default MultimodalFiles;
-

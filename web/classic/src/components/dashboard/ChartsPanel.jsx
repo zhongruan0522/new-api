@@ -58,11 +58,9 @@ const RankColumn = ({ title, items, loading, isMobile }) => (
               }
             >
               <span className='flex-shrink-0 text-gray-500 whitespace-nowrap'>
-                {isMobile ? (
-                  item.success_count
-                ) : (
-                  `${item.success_count}/${item.fail_count} - ${rateStr}`
-                )}
+                {isMobile
+                  ? item.success_count
+                  : `${item.success_count}/${item.fail_count} - ${rateStr}`}
               </span>
             </Skeleton>
           </li>

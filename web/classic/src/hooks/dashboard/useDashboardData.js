@@ -21,8 +21,15 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { API, isAdmin, showError } from '../../helpers';
-import { getDefaultTime, getInitialTimestamp, getInitialEndTimestamp } from '../../helpers/dashboard';
-import { TIME_OPTIONS, STORAGE_KEYS } from '../../constants/dashboard.constants';
+import {
+  getDefaultTime,
+  getInitialTimestamp,
+  getInitialEndTimestamp,
+} from '../../helpers/dashboard';
+import {
+  TIME_OPTIONS,
+  STORAGE_KEYS,
+} from '../../constants/dashboard.constants';
 import { useIsMobile } from '../common/useIsMobile';
 import { useMinimumLoadingTime } from '../common/useMinimumLoadingTime';
 
@@ -303,7 +310,13 @@ export const useDashboardData = (userState, userDispatch, statusState) => {
     loadModelRank();
     loadMediaConvertStats();
     return data;
-  }, [loadQuotaData, loadUptimeData, loadRegionStats, loadModelRank, loadMediaConvertStats]);
+  }, [
+    loadQuotaData,
+    loadUptimeData,
+    loadRegionStats,
+    loadModelRank,
+    loadMediaConvertStats,
+  ]);
 
   const handleSearchConfirm = useCallback(
     async (updateChartDataCallback) => {

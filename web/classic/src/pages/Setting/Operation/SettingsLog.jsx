@@ -54,7 +54,8 @@ export default function SettingsLog(props) {
 
   function onSubmit() {
     const updateArray = compareObjects(inputs, inputsRow).filter(
-      (item) => item.key !== 'historyTimestamp' && item.key !== 'cleanStoredMedia',
+      (item) =>
+        item.key !== 'historyTimestamp' && item.key !== 'cleanStoredMedia',
     );
 
     if (!updateArray.length) return showWarning(t('你似乎并没有修改什么'));
@@ -149,7 +150,9 @@ export default function SettingsLog(props) {
             <Text style={{ color: '#333' }}> {t('之前的所有日志')}</Text>
           </div>
           <p style={{ marginTop: '12px' }}>
-            <Text>{t('同时清除历史多模态文件（图片/视频，自动转URL保存）')}：</Text>
+            <Text>
+              {t('同时清除历史多模态文件（图片/视频，自动转URL保存）')}：
+            </Text>
             <Text strong type={inputs.cleanStoredMedia ? 'danger' : 'tertiary'}>
               {inputs.cleanStoredMedia ? t('是') : t('否')}
             </Text>
@@ -259,7 +262,9 @@ export default function SettingsLog(props) {
                   </Text>
                   <Form.Switch
                     field={'cleanStoredMedia'}
-                    label={t('同时清除历史多模态文件（图片/视频，自动转URL保存）')}
+                    label={t(
+                      '同时清除历史多模态文件（图片/视频，自动转URL保存）',
+                    )}
                     size='default'
                     checkedText='是'
                     uncheckedText='否'

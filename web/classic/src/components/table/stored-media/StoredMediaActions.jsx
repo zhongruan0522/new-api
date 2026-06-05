@@ -65,4 +65,3 @@ const StoredMediaActions = ({ selectedKeys, batchDelete, t }) => {
 };
 
 export default StoredMediaActions;
-

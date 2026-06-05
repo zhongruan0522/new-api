@@ -41,9 +41,7 @@ const TOOL_TYPES = [
   { value: 'image_generation', label: 'Image Generation' },
 ];
 
-const BILLING_MODES = [
-  { value: 'per_call', label: '按次计费 (USD/次)' },
-];
+const BILLING_MODES = [{ value: 'per_call', label: '按次计费 (USD/次)' }];
 
 const PROVIDERS = [
   { value: '', label: '全部' },
@@ -101,7 +99,7 @@ const ToolBillingSettings = () => {
       const { success, message, data } = res.data;
       if (success) {
         const rulesOption = data.find(
-          (item) => item.key === 'tool_billing_setting.rules'
+          (item) => item.key === 'tool_billing_setting.rules',
         );
         if (rulesOption) {
           try {
@@ -175,9 +173,7 @@ const ToolBillingSettings = () => {
   };
 
   const handleModalOk = () => {
-    const formValues = formRef.current
-      ? formRef.current.getValues()
-      : null;
+    const formValues = formRef.current ? formRef.current.getValues() : null;
     if (!formValues) return;
 
     if (!formValues.id || !formValues.id.trim()) {
@@ -254,8 +250,7 @@ const ToolBillingSettings = () => {
       title: t('计费模式'),
       dataIndex: 'billing_mode',
       width: 120,
-      render: (text) =>
-        text === 'per_call' ? '按次' : text,
+      render: (text) => (text === 'per_call' ? '按次' : text),
     },
     {
       title: t('价格 (USD)'),
@@ -420,17 +415,10 @@ const ToolBillingSettings = () => {
                 label={t('质量')}
                 optionList={QUALITIES}
               />
-              <Form.Select
-                field='size'
-                label={t('尺寸')}
-                optionList={SIZES}
-              />
+              <Form.Select field='size' label={t('尺寸')} optionList={SIZES} />
             </>
           )}
-          <Form.Switch
-            field='enabled'
-            label={t('启用')}
-          />
+          <Form.Switch field='enabled' label={t('启用')} />
         </Form>
       </Modal>
     </div>

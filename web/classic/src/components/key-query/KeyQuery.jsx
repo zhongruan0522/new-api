@@ -29,13 +29,14 @@ import {
   Tooltip,
   Descriptions,
 } from '@douyinfe/semi-ui';
-import {
-  IconSearch,
-  IconCopy,
-  IconDownload,
-} from '@douyinfe/semi-icons';
+import { IconSearch, IconCopy, IconDownload } from '@douyinfe/semi-icons';
 import { Toast, Modal } from '@douyinfe/semi-ui';
-import { timestamp2string, copy, renderQuota, stringToColor } from '../../helpers';
+import {
+  timestamp2string,
+  copy,
+  renderQuota,
+  stringToColor,
+} from '../../helpers';
 import Papa from 'papaparse';
 
 const { Text } = Typography;
@@ -49,17 +50,33 @@ const LOG_TYPE_REFUND = 6;
 
 // 判断是否为 API 调用相关日志（消费、错误、退款）
 function isApiCallLog(record) {
-  return record.type === LOG_TYPE_CONSUME || record.type === LOG_TYPE_ERROR || record.type === LOG_TYPE_REFUND;
+  return (
+    record.type === LOG_TYPE_CONSUME ||
+    record.type === LOG_TYPE_ERROR ||
+    record.type === LOG_TYPE_REFUND
+  );
 }
 
 function renderLogType(type) {
   switch (type) {
     case LOG_TYPE_CONSUME:
-      return <Tag color='green' size='small'>消费</Tag>;
+      return (
+        <Tag color='green' size='small'>
+          消费
+        </Tag>
+      );
     case LOG_TYPE_ERROR:
-      return <Tag color='red' size='small'>错误</Tag>;
+      return (
+        <Tag color='red' size='small'>
+          错误
+        </Tag>
+      );
     case LOG_TYPE_REFUND:
-      return <Tag color='blue' size='small'>退款</Tag>;
+      return (
+        <Tag color='blue' size='small'>
+          退款
+        </Tag>
+      );
     default:
       return null;
   }
@@ -180,7 +197,10 @@ const KeyQuery = () => {
           setLogs(logItems);
           let quotaSum = 0;
           for (const item of logItems) {
-            if (item.type === LOG_TYPE_CONSUME || item.type === LOG_TYPE_REFUND) {
+            if (
+              item.type === LOG_TYPE_CONSUME ||
+              item.type === LOG_TYPE_REFUND
+            ) {
               quotaSum += item.quota || 0;
             }
           }
@@ -220,7 +240,14 @@ const KeyQuery = () => {
   const exportCSV = useCallback(() => {
     const csvData = logs.map((log) => ({
       时间: timestamp2string(log.created_at),
-      类型: log.type === LOG_TYPE_CONSUME ? '消费' : log.type === LOG_TYPE_ERROR ? '错误' : log.type === LOG_TYPE_REFUND ? '退款' : '其他',
+      类型:
+        log.type === LOG_TYPE_CONSUME
+          ? '消费'
+          : log.type === LOG_TYPE_ERROR
+            ? '错误'
+            : log.type === LOG_TYPE_REFUND
+              ? '退款'
+              : '其他',
       模型: log.model_name || '-',
       用时: log.use_time ? `${(log.use_time / 1000).toFixed(1)}s` : '-',
       流式: log.is_stream ? '是' : '否',
@@ -228,7 +255,8 @@ const KeyQuery = () => {
       补全tokens: log.completion_tokens || 0,
       花费: renderQuota(log.quota),
     }));
-    const csvString = '\ufeff' + Papa.unparse(csvData, { escapeFormulae: true });
+    const csvString =
+      '\ufeff' + Papa.unparse(csvData, { escapeFormulae: true });
     const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -296,8 +324,7 @@ const KeyQuery = () => {
       title: '提示',
       dataIndex: 'prompt_tokens',
       width: 70,
-      render: (text, record) =>
-        isApiCallLog(record) && text ? text : '-',
+      render: (text, record) => (isApiCallLog(record) && text ? text : '-'),
       sorter: (a, b) => a.prompt_tokens - b.prompt_tokens,
     },
     {
@@ -363,14 +390,14 @@ const KeyQuery = () => {
           }
         >
           <Spin spinning={loading}>
-            <Descriptions
-              align='left'
-              size='small'
-              row
-            >
+            <Descriptions align='left' size='small' row>
               <Descriptions.Item itemKey='令牌总额'>
                 <Text>
-                  {isUnlimited ? '无限' : balance !== null ? `$${balance.toFixed(3)}` : '未知'}
+                  {isUnlimited
+                    ? '无限'
+                    : balance !== null
+                      ? `$${balance.toFixed(3)}`
+                      : '未知'}
                 </Text>
               </Descriptions.Item>
               <Descriptions.Item itemKey='已用额度'>

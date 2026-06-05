@@ -101,7 +101,14 @@ const TicketsPage = () => {
     } finally {
       setLoading(false);
     }
-  }, [ticketListEndpoint, activePage, pageSize, activeStatus, searchKeyword, t]);
+  }, [
+    ticketListEndpoint,
+    activePage,
+    pageSize,
+    activeStatus,
+    searchKeyword,
+    t,
+  ]);
 
   const loadTicketDetail = useCallback(
     async (ticketId) => {
@@ -306,14 +313,7 @@ const TicketsPage = () => {
     } finally {
       setCreateLoading(false);
     }
-  }, [
-    createForm,
-    activeStatus,
-    activePage,
-    searchKeyword,
-    fetchTickets,
-    t,
-  ]);
+  }, [createForm, activeStatus, activePage, searchKeyword, fetchTickets, t]);
 
   const headerArea = (
     <div className='flex flex-col gap-3 w-full'>

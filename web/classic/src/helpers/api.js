@@ -17,10 +17,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 
-import {
-  getUserIdFromLocalStorage,
-  showError,
-} from './utils';
+import { getUserIdFromLocalStorage, showError } from './utils';
 import axios from 'axios';
 
 export let API = axios.create({

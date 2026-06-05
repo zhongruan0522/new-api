@@ -286,9 +286,10 @@ export default function SettingsSidebarModulesAdmin(props) {
                     bodyStyle={{ padding: '16px' }}
                     hoverable
                     style={{
-                      opacity: sidebarModulesAdmin[section.key]?.enabled !== false
-                        ? 1
-                        : 0.5,
+                      opacity:
+                        sidebarModulesAdmin[section.key]?.enabled !== false
+                          ? 1
+                          : 0.5,
                       transition: 'opacity 0.2s',
                     }}
                   >

@@ -144,18 +144,22 @@ export const useDashboardStats = (
             rateValue: formatRegionRate(regionStats?.domestic),
             countValue: formatRegionCount(regionStats?.domestic),
             color: getRateColor(regionStats?.domestic?.success_rate),
-            rate: regionStats?.domestic?.success_rate != null && regionStats.domestic.success_rate >= 0
-              ? regionStats.domestic.success_rate
-              : null,
+            rate:
+              regionStats?.domestic?.success_rate != null &&
+              regionStats.domestic.success_rate >= 0
+                ? regionStats.domestic.success_rate
+                : null,
           },
           {
             label: t('海外模型'),
             rateValue: formatRegionRate(regionStats?.overseas),
             countValue: formatRegionCount(regionStats?.overseas),
             color: getRateColor(regionStats?.overseas?.success_rate),
-            rate: regionStats?.overseas?.success_rate != null && regionStats.overseas.success_rate >= 0
-              ? regionStats.overseas.success_rate
-              : null,
+            rate:
+              regionStats?.overseas?.success_rate != null &&
+              regionStats.overseas.success_rate >= 0
+                ? regionStats.overseas.success_rate
+                : null,
           },
         ],
       },
@@ -169,9 +173,11 @@ export const useDashboardStats = (
             rateValue: formatCacheRate(regionStats?.domestic),
             countValue: formatCacheDetail(regionStats?.domestic),
             color: getRateColor(regionStats?.domestic?.cache_rate),
-            rate: regionStats?.domestic?.cache_rate != null && regionStats.domestic.cache_rate >= 0
-              ? regionStats.domestic.cache_rate
-              : null,
+            rate:
+              regionStats?.domestic?.cache_rate != null &&
+              regionStats.domestic.cache_rate >= 0
+                ? regionStats.domestic.cache_rate
+                : null,
             showProgress: false,
           },
           {
@@ -179,9 +185,11 @@ export const useDashboardStats = (
             rateValue: formatCacheRate(regionStats?.overseas),
             countValue: formatCacheDetail(regionStats?.overseas),
             color: getRateColor(regionStats?.overseas?.cache_rate),
-            rate: regionStats?.overseas?.cache_rate != null && regionStats.overseas.cache_rate >= 0
-              ? regionStats.overseas.cache_rate
-              : null,
+            rate:
+              regionStats?.overseas?.cache_rate != null &&
+              regionStats.overseas.cache_rate >= 0
+                ? regionStats.overseas.cache_rate
+                : null,
             showProgress: false,
           },
         ],

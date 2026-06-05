@@ -296,7 +296,11 @@ export function getChannelIcon(channelType) {
       return <SiliconCloud.Color size={iconSize} />;
     case 6: // 小米 MiMo
       // React 18 兼容的 LobeHub 图标集未提供 XiaomiMiMo，回退为文字徽标以避免构建失败。
-      return <Avatar size='extra-extra-small' color='red'>Mi</Avatar>;
+      return (
+        <Avatar size='extra-extra-small' color='red'>
+          Mi
+        </Avatar>
+      );
     case 8: // 自定义渠道
     default:
       return null;

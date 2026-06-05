@@ -128,7 +128,8 @@ const ViewStoredMediaModal = ({ visible, onCancel, data, t }) => {
             {t('ID')}: {data?.id || '-'}
           </Text>
           <Text type='secondary'>
-            {t('时间')}: {data?.created_at ? timestamp2string(data.created_at) : '-'}
+            {t('时间')}:{' '}
+            {data?.created_at ? timestamp2string(data.created_at) : '-'}
           </Text>
           {mediaType && (
             <Tag color='white' shape='circle'>
@@ -169,4 +170,3 @@ const ViewStoredMediaModal = ({ visible, onCancel, data, t }) => {
 };
 
 export default ViewStoredMediaModal;
-

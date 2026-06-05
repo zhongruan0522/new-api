@@ -242,7 +242,6 @@ const UsersTable = (usersData) => {
         user={modalUser}
         t={t}
       />
-
     </>
   );
 };

@@ -25,7 +25,7 @@ import {
   Tooltip,
   Popover,
   Typography,
-  Button
+  Button,
 } from '@douyinfe/semi-ui';
 import {
   timestamp2string,
@@ -607,9 +607,9 @@ export const getLogsColumns = ({
           }
           if (other.admin_info !== undefined) {
             if (
-                other.admin_info.use_channel !== null &&
-                other.admin_info.use_channel !== undefined &&
-                other.admin_info.use_channel !== ''
+              other.admin_info.use_channel !== null &&
+              other.admin_info.use_channel !== undefined &&
+              other.admin_info.use_channel !== ''
             ) {
               let useChannel = other.admin_info.use_channel;
               let useChannelStr = useChannel.join('->');
@@ -689,7 +689,10 @@ export const getLogsColumns = ({
             : groupRatio;
         const groupRatioText = formatRatio(effectiveGroupRatio) + 'x';
         const hasCache = (other.cache_tokens || 0) > 0;
-        const hasDynamicRatio = other.dynamic_ratio && other.dynamic_ratio > 0 && other.dynamic_ratio !== 1;
+        const hasDynamicRatio =
+          other.dynamic_ratio &&
+          other.dynamic_ratio > 0 &&
+          other.dynamic_ratio !== 1;
 
         let content;
         if (other.model_price != null && other.model_price !== -1) {
@@ -708,14 +711,14 @@ export const getLogsColumns = ({
         }
 
         return (
-            <Typography.Paragraph
-                ellipsis={{
-                  rows: 3,
-                }}
-                style={{ maxWidth: 240, whiteSpace: 'pre-line' }}
-            >
-              {content}
-            </Typography.Paragraph>
+          <Typography.Paragraph
+            ellipsis={{
+              rows: 3,
+            }}
+            style={{ maxWidth: 240, whiteSpace: 'pre-line' }}
+          >
+            {content}
+          </Typography.Paragraph>
         );
       },
     },

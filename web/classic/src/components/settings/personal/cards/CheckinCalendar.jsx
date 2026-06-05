@@ -232,10 +232,7 @@ const CheckinCalendar = ({ t, status, turnstileEnabled, turnstileSiteKey }) => {
         <div className='flex flex-col sm:flex-row items-start sm:items-center sm:justify-between gap-4'>
           <div className='flex items-start w-full sm:w-auto'>
             <div className='w-12 h-12 rounded-full bg-green-50 dark:bg-green-900/30 flex items-center justify-center mr-4 flex-shrink-0'>
-              <Gift
-                size={22}
-                className='text-green-600 dark:text-green-400'
-              />
+              <Gift size={22} className='text-green-600 dark:text-green-400' />
             </div>
             <div>
               <Typography.Title heading={6} className='mb-1'>
@@ -324,10 +321,7 @@ const CheckinCalendar = ({ t, status, turnstileEnabled, turnstileSiteKey }) => {
           <div className='flex flex-col sm:flex-row items-start sm:justify-between gap-4'>
             <div className='flex items-start w-full sm:w-auto'>
               <div className='w-12 h-12 rounded-full bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center mr-4 flex-shrink-0'>
-                <Gift
-                  size={20}
-                  className='text-blue-600 dark:text-blue-400'
-                />
+                <Gift size={20} className='text-blue-600 dark:text-blue-400' />
               </div>
               <div>
                 <Typography.Title heading={6} className='mb-1'>

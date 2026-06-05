@@ -30,14 +30,7 @@ import {
 import { stringToColor } from '../../../helpers';
 import SkeletonWrapper from '../components/SkeletonWrapper';
 
-const UserArea = ({
-  userState,
-  isLoading,
-  isMobile,
-  logout,
-  navigate,
-  t,
-}) => {
+const UserArea = ({ userState, isLoading, isMobile, logout, navigate, t }) => {
   const dropdownRef = useRef(null);
   if (isLoading) {
     return (

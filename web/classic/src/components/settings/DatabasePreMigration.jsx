@@ -277,13 +277,17 @@ const DatabasePreMigration = () => {
                   placeholder={
                     targetType === 'postgres'
                       ? 'postgres://user:pass@host:5432/dbname?sslmode=disable'
-                      : t('例如：user:pass@tcp(127.0.0.1:3306)/dbname?charset=utf8mb4')
+                      : t(
+                          '例如：user:pass@tcp(127.0.0.1:3306)/dbname?charset=utf8mb4',
+                        )
                   }
                 />
               </div>
               <div style={{ marginTop: 8 }}>
                 <Text type='tertiary'>
-                  {t('提示：MySQL DSN 需要带库名；PostgreSQL 必须以 postgres:// 或 postgresql:// 开头。')}
+                  {t(
+                    '提示：MySQL DSN 需要带库名；PostgreSQL 必须以 postgres:// 或 postgresql:// 开头。',
+                  )}
                 </Text>
               </div>
             </Col>
@@ -316,7 +320,10 @@ const DatabasePreMigration = () => {
           </Col>
 
           <Col xs={24} sm={24} md={12} lg={12} xl={12}>
-            <Checkbox checked={force} onChange={(e) => setForce(e.target.checked)}>
+            <Checkbox
+              checked={force}
+              onChange={(e) => setForce(e.target.checked)}
+            >
               {t('覆盖目标库（清空后迁移）')}
             </Checkbox>
             {force && (
@@ -435,4 +442,3 @@ const DatabasePreMigration = () => {
 };
 
 export default DatabasePreMigration;
-

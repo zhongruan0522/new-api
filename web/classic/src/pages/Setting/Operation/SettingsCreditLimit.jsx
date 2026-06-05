@@ -27,10 +27,7 @@ import {
   showSuccess,
   showWarning,
 } from '../../../helpers';
-import {
-  getCurrencyConfig,
-  getQuotaPerUnit,
-} from '../../../helpers/render';
+import { getCurrencyConfig, getQuotaPerUnit } from '../../../helpers/render';
 
 // 将内部 Token 额度转换为当前货币显示值
 function tokenToDisplay(tokenValue) {
@@ -158,7 +155,13 @@ export default function SettingsCreditLimit(props) {
           <Form.Section text={t('额度设置')}>
             {/* 新用户设置 */}
             <div style={sectionStyle}>
-              <div style={{ fontWeight: 600, marginBottom: 12, color: 'var(--semi-color-text-1)' }}>
+              <div
+                style={{
+                  fontWeight: 600,
+                  marginBottom: 12,
+                  color: 'var(--semi-color-text-1)',
+                }}
+              >
                 {t('新用户设置')}
               </div>
               <Row gutter={16}>
@@ -180,7 +183,13 @@ export default function SettingsCreditLimit(props) {
 
             {/* AFF设置 */}
             <div style={sectionStyle}>
-              <div style={{ fontWeight: 600, marginBottom: 12, color: 'var(--semi-color-text-1)' }}>
+              <div
+                style={{
+                  fontWeight: 600,
+                  marginBottom: 12,
+                  color: 'var(--semi-color-text-1)',
+                }}
+              >
                 {t('AFF设置')}
               </div>
               <Row gutter={16}>
@@ -223,7 +232,13 @@ export default function SettingsCreditLimit(props) {
 
             {/* 预消耗设置 */}
             <div>
-              <div style={{ fontWeight: 600, marginBottom: 12, color: 'var(--semi-color-text-1)' }}>
+              <div
+                style={{
+                  fontWeight: 600,
+                  marginBottom: 12,
+                  color: 'var(--semi-color-text-1)',
+                }}
+              >
                 {t('预消耗设置')}
               </div>
               <Row gutter={16}>

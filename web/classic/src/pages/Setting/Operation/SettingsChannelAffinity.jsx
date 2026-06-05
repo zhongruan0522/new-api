@@ -887,9 +887,7 @@ export default function SettingsChannelAffinity(props) {
               >
                 {t('JSON 模式')}
               </Button>
-              <Button onClick={appendTemplate}>
-                {t('填充模版')}
-              </Button>
+              <Button onClick={appendTemplate}>{t('填充模版')}</Button>
               <Button icon={<IconPlus />} onClick={openAddModal}>
                 {t('新增规则')}
               </Button>

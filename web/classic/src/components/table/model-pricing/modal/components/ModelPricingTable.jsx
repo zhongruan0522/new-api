@@ -80,10 +80,7 @@ const buildTierRowsByGroup = (flatRows) => {
     if (!groupOrder.includes(entry.group)) {
       groupOrder.push(entry.group);
     }
-    groupTierCount.set(
-      entry.group,
-      (groupTierCount.get(entry.group) || 0) + 1,
-    );
+    groupTierCount.set(entry.group, (groupTierCount.get(entry.group) || 0) + 1);
   }
 
   const rows = [...tierMap.values()];
@@ -155,9 +152,7 @@ const ModelPricingTable = ({
           dataIndex: 'group',
           render: (text, record, index) => {
             // 找到该分组的第一行索引
-            const groupStartIndex = rows.findIndex(
-              (r) => r.group === text,
-            );
+            const groupStartIndex = rows.findIndex((r) => r.group === text);
             if (index !== groupStartIndex) {
               return { children: null, props: { rowSpan: 0 } };
             }

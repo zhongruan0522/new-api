@@ -364,13 +364,37 @@ export const processRawData = (
     updateMapValue(result.timeCountMap, timeKey, item.count || 0);
 
     if (isDomesticModel(item.model_name)) {
-      updateMapValue(result.domesticInputTokensMap, timeKey, item.input_tokens || 0);
-      updateMapValue(result.domesticCacheHitTokensMap, timeKey, item.cache_hit_tokens || 0);
-      updateMapValue(result.domesticCacheCreationTokensMap, timeKey, item.cache_creation_tokens || 0);
+      updateMapValue(
+        result.domesticInputTokensMap,
+        timeKey,
+        item.input_tokens || 0,
+      );
+      updateMapValue(
+        result.domesticCacheHitTokensMap,
+        timeKey,
+        item.cache_hit_tokens || 0,
+      );
+      updateMapValue(
+        result.domesticCacheCreationTokensMap,
+        timeKey,
+        item.cache_creation_tokens || 0,
+      );
     } else if (isOverseasModel(item.model_name)) {
-      updateMapValue(result.overseasInputTokensMap, timeKey, item.input_tokens || 0);
-      updateMapValue(result.overseasCacheHitTokensMap, timeKey, item.cache_hit_tokens || 0);
-      updateMapValue(result.overseasCacheCreationTokensMap, timeKey, item.cache_creation_tokens || 0);
+      updateMapValue(
+        result.overseasInputTokensMap,
+        timeKey,
+        item.input_tokens || 0,
+      );
+      updateMapValue(
+        result.overseasCacheHitTokensMap,
+        timeKey,
+        item.cache_hit_tokens || 0,
+      );
+      updateMapValue(
+        result.overseasCacheCreationTokensMap,
+        timeKey,
+        item.cache_creation_tokens || 0,
+      );
     }
   });
 

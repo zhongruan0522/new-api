@@ -161,7 +161,9 @@ export const useStoredMediaData = () => {
     setViewLoadingKey(key);
 
     try {
-      const res = await API.get(`/api/stored_media/${record.media_type}/${record.id}`);
+      const res = await API.get(
+        `/api/stored_media/${record.media_type}/${record.id}`,
+      );
       const { success, message, data } = res.data || {};
       if (!success) {
         showError(message || t('加载失败'));
@@ -285,4 +287,3 @@ export const useStoredMediaData = () => {
     batchDelete,
   };
 };
-

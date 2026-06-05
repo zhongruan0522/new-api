@@ -29,10 +29,7 @@ import {
 } from '../../../helpers';
 import { useTranslation } from 'react-i18next';
 import HttpStatusCodeRulesInput from '../../../components/settings/HttpStatusCodeRulesInput';
-import {
-  getCurrencyConfig,
-  getQuotaPerUnit,
-} from '../../../helpers/render';
+import { getCurrencyConfig, getQuotaPerUnit } from '../../../helpers/render';
 
 // 将内部 Token 额度转换为当前货币显示值
 function tokenToDisplay(tokenValue) {

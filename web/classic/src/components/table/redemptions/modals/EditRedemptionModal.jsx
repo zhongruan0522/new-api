@@ -203,9 +203,7 @@ const EditRedemptionModal = (props) => {
   const promptDownload = (keys, name, partial) => {
     let text = keys.join('\n');
     Modal.confirm({
-      title: partial
-        ? t('部分兑换码创建成功')
-        : t('兑换码创建成功'),
+      title: partial ? t('部分兑换码创建成功') : t('兑换码创建成功'),
       content: (
         <div>
           <p>
@@ -404,10 +402,9 @@ const EditRedemptionModal = (props) => {
                           extraText={
                             batchProgress
                               ? null
-                              : t(
-                                  '单次上限 {{max}} 个，超出将自动分批创建',
-                                  { max: BATCH_SIZE },
-                                )
+                              : t('单次上限 {{max}} 个，超出将自动分批创建', {
+                                  max: BATCH_SIZE,
+                                })
                           }
                           style={{ width: '100%' }}
                           showClear
@@ -419,13 +416,9 @@ const EditRedemptionModal = (props) => {
                   {batchProgress && (
                     <div style={{ marginTop: 12 }}>
                       <Progress
-                        percent={
-                          Math.round(
-                            (batchProgress.current /
-                              batchProgress.total) *
-                              100,
-                          )
-                        }
+                        percent={Math.round(
+                          (batchProgress.current / batchProgress.total) * 100,
+                        )}
                         showInfo
                         style={{ marginBottom: 4 }}
                       />

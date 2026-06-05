@@ -244,7 +244,6 @@ const AccountManagement = ({
                   </div>
                 </div>
               </Card>
-
             </div>
           </div>
         </TabPane>

@@ -21,12 +21,7 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Modal } from '@douyinfe/semi-ui';
 import { pinyin } from 'pinyin-pro';
-import {
-  API,
-  copy,
-  showError,
-  showSuccess,
-} from '../../helpers';
+import { API, copy, showError, showSuccess } from '../../helpers';
 import { ITEMS_PER_PAGE } from '../../constants';
 import { useTableCompactMode } from '../common/useTableCompactMode';
 

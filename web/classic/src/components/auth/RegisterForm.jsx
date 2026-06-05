@@ -47,10 +47,7 @@ import {
   IconLock,
   IconKey,
 } from '@douyinfe/semi-icons';
-import {
-  onGitHubOAuthClicked,
-  onLinuxDOOAuthClicked,
-} from '../../helpers';
+import { onGitHubOAuthClicked, onLinuxDOOAuthClicked } from '../../helpers';
 import LinuxDoIcon from '../common/logo/LinuxDoIcon';
 import { UserContext } from '../../context/User';
 import { StatusContext } from '../../context/Status';

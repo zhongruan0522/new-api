@@ -27,10 +27,7 @@ import {
   showWarning,
 } from '../../../helpers';
 import { useTranslation } from 'react-i18next';
-import {
-  getCurrencyConfig,
-  getQuotaPerUnit,
-} from '../../../helpers/render';
+import { getCurrencyConfig, getQuotaPerUnit } from '../../../helpers/render';
 
 function tokenToDisplay(tokenValue) {
   const quotaPerUnit = getQuotaPerUnit();

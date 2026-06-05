@@ -326,13 +326,10 @@ const EditUserModal = (props) => {
                     </div>
                   </div>
 
-                    <Row gutter={12}>
-                      {[
-                        'github_id',
-                        'email',
-                      ].map((field) => (
-                        <Col span={24} key={field}>
-                          <Form.Input
+                  <Row gutter={12}>
+                    {['github_id', 'email'].map((field) => (
+                      <Col span={24} key={field}>
+                        <Form.Input
                           field={field}
                           label={t(
                             `已绑定的 ${field.replace('_id', '').toUpperCase()} 账户`,

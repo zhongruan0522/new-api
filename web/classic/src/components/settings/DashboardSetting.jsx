@@ -30,12 +30,7 @@ import {
   Spin,
 } from '@douyinfe/semi-ui';
 import { useTranslation } from 'react-i18next';
-import {
-  API,
-  showError,
-  showSuccess,
-  toBoolean,
-} from '../../helpers';
+import { API, showError, showSuccess, toBoolean } from '../../helpers';
 import SettingsAPIInfo from '../../pages/Setting/Dashboard/SettingsAPIInfo';
 import SettingsAnnouncements from '../../pages/Setting/Dashboard/SettingsAnnouncements';
 import SettingsDataDashboard from '../../pages/Setting/Dashboard/SettingsDataDashboard';
@@ -420,12 +415,18 @@ const DashboardSetting = () => {
 
         {/* 顶栏模块管理 */}
         <div style={{ marginTop: '10px' }}>
-          <SettingsHeaderNavModules options={dashboardInputs} refresh={onRefresh} />
+          <SettingsHeaderNavModules
+            options={dashboardInputs}
+            refresh={onRefresh}
+          />
         </div>
 
         {/* 左侧边栏模块管理（管理员） */}
         <div style={{ marginTop: '10px' }}>
-          <SettingsSidebarModulesAdmin options={dashboardInputs} refresh={onRefresh} />
+          <SettingsSidebarModulesAdmin
+            options={dashboardInputs}
+            refresh={onRefresh}
+          />
         </div>
 
         {/* 数据看板设置（大卡片，包含子项） */}

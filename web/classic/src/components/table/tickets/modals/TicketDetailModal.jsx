@@ -17,7 +17,14 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import React, { useState, useRef, useEffect } from 'react';
-import { Modal, TextArea, Button, Tag, Typography, Spin } from '@douyinfe/semi-ui';
+import {
+  Modal,
+  TextArea,
+  Button,
+  Tag,
+  Typography,
+  Spin,
+} from '@douyinfe/semi-ui';
 import { IconSend } from '@douyinfe/semi-icons';
 import { timestamp2string } from '../../../../helpers';
 import { useIsMobile } from '../../../../hooks/common/useIsMobile';
@@ -81,30 +88,38 @@ const TicketDetailModal = ({
       onCancel={onCancel}
       footer={null}
       closeOnEsc
-      style={isMobile ? {
-        width: '100vw',
-        maxWidth: '100vw',
-        margin: 0,
-        top: 0,
-      } : {
-        width: '50vw',
-        maxWidth: '50vw',
-      }}
-      bodyStyle={isMobile ? {
-        height: 'calc(100vh - 56px)',
-        maxHeight: 'calc(100vh - 56px)',
-        display: 'flex',
-        flexDirection: 'column',
-        padding: 0,
-        overflow: 'hidden',
-      } : {
-        height: '80vh',
-        maxHeight: '80vh',
-        display: 'flex',
-        flexDirection: 'column',
-        padding: 0,
-        overflow: 'hidden',
-      }}
+      style={
+        isMobile
+          ? {
+              width: '100vw',
+              maxWidth: '100vw',
+              margin: 0,
+              top: 0,
+            }
+          : {
+              width: '50vw',
+              maxWidth: '50vw',
+            }
+      }
+      bodyStyle={
+        isMobile
+          ? {
+              height: 'calc(100vh - 56px)',
+              maxHeight: 'calc(100vh - 56px)',
+              display: 'flex',
+              flexDirection: 'column',
+              padding: 0,
+              overflow: 'hidden',
+            }
+          : {
+              height: '80vh',
+              maxHeight: '80vh',
+              display: 'flex',
+              flexDirection: 'column',
+              padding: 0,
+              overflow: 'hidden',
+            }
+      }
       title={
         <div className='flex items-center gap-3'>
           <span>{ticket?.title || t('工单详情')}</span>
@@ -122,10 +137,7 @@ const TicketDetailModal = ({
       }
     >
       {/* Messages area */}
-      <div
-        className='flex-1 overflow-y-auto'
-        style={{ padding: '16px 24px' }}
-      >
+      <div className='flex-1 overflow-y-auto' style={{ padding: '16px 24px' }}>
         <Spin spinning={loading}>
           {messages.length === 0 && !loading ? (
             <div className='py-6 text-center'>
@@ -158,7 +170,9 @@ const TicketDetailModal = ({
                   <Text
                     strong
                     size='small'
-                    style={{ color: isAdmin ? 'var(--semi-color-primary)' : undefined }}
+                    style={{
+                      color: isAdmin ? 'var(--semi-color-primary)' : undefined,
+                    }}
                   >
                     {msg.username}
                   </Text>

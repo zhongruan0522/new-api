@@ -2209,9 +2209,7 @@ const EditChannelModal = (props) => {
                   <div ref={(el) => (formSectionRefs.current.apiConfig = el)}>
                     <Card className='!rounded-2xl shadow-sm border-0 mb-6'>
                       {/* Header: API Config */}
-                      <div
-                        className='flex items-center mb-2'
-                      >
+                      <div className='flex items-center mb-2'>
                         <Avatar
                           size='small'
                           color='green'
@@ -2332,9 +2330,9 @@ const EditChannelModal = (props) => {
                             />
                           </div>
                         </>
-                        )}
+                      )}
 
-                        {inputs.type !== 3 &&
+                      {inputs.type !== 3 &&
                         inputs.type !== 8 &&
                         inputs.type !== 22 &&
                         inputs.type !== 36 && (
@@ -3095,7 +3093,10 @@ const EditChannelModal = (props) => {
                         label={t('默认 OpenAI 规范')}
                         placeholder={t('选择该渠道默认使用的 OpenAI 规范')}
                         optionList={[
-                          { label: t('两者通用 (Chat/Responses)'), value: 'both' },
+                          {
+                            label: t('两者通用 (Chat/Responses)'),
+                            value: 'both',
+                          },
                           { label: 'ChatCompletions', value: 'chat' },
                           { label: 'Responses', value: 'responses' },
                         ]}
