@@ -39,7 +39,7 @@ func newOpenAIWireStreamWriter(
 	case upstream == dto.OpenAIWireAPIResponses && downstream == dto.OpenAIWireAPIChat:
 		converter = newResponsesToChatStreamConverter(opts.ChatIncludeUsage)
 	case upstream == dto.OpenAIWireAPIChat && downstream == dto.OpenAIWireAPIResponses:
-		converter = newChatToResponsesStreamConverter(opts.ToolContext)
+		converter = relaycommon.NewChatToResponsesStreamConverter(opts.ToolContext)
 	default:
 		return nil, fmt.Errorf("unsupported stream conversion: %s -> %s", upstream, downstream)
 	}

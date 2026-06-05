@@ -86,6 +86,30 @@ func (a *Adaptor) ConvertClaudeRequest(c *gin.Context, info *relaycommon.RelayIn
 			IncludeUsage: true,
 		}
 	}
+	wire, ok := info.ChannelSetting.OpenAIWireAPI.Normalize()
+	if !ok {
+		return nil, fmt.Errorf("invalid channel setting openai_wire_api: %q", info.ChannelSetting.OpenAIWireAPI)
+	}
+	if wire == dto.OpenAIWireAPIResponses {
+		chatRequest, err := a.ConvertOpenAIRequest(c, info, aiRequest)
+		if err != nil {
+			return nil, err
+		}
+		relaycommon.AppendRequestConversionFromRequest(info, chatRequest)
+		normalizedChatRequest, ok := chatRequest.(*dto.GeneralOpenAIRequest)
+		if !ok {
+			return nil, fmt.Errorf("invalid normalized chat request type, got %T", chatRequest)
+		}
+		responsesRequest, err := relaycommon.ConvertChatCompletionsRequestToResponsesRequest(normalizedChatRequest)
+		if err != nil {
+			return nil, err
+		}
+		info.RelayMode = relayconstant.RelayModeResponses
+		info.RequestURLPath = "/v1/responses"
+		info.IsStream = responsesRequest.Stream
+		relaycommon.AppendRequestConversionFromRequest(info, responsesRequest)
+		return responsesRequest, nil
+	}
 	return a.ConvertOpenAIRequest(c, info, aiRequest)
 }
 

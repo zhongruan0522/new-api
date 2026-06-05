@@ -1,4 +1,4 @@
-package relay
+package common
 
 import (
 	"fmt"
@@ -7,7 +7,6 @@ import (
 
 	"github.com/zhongruan0522/new-api/common"
 	"github.com/zhongruan0522/new-api/dto"
-	relaycommon "github.com/zhongruan0522/new-api/relay/common"
 )
 
 func (c *chatToResponsesStreamConverter) hydrateFromChunk(chunk *dto.ChatCompletionsStreamResponse) {
@@ -74,7 +73,7 @@ func (s *chatToResponsesToolCallState) responsesArguments() (string, error) {
 	}
 	raw := s.args.String()
 	if s.customProxy {
-		input, complete := relaycommon.ExtractResponsesCustomToolInputFromChatArguments(raw)
+		input, complete := ExtractResponsesCustomToolInputFromChatArguments(raw)
 		if !complete {
 			return "", fmt.Errorf("custom tool proxy %q arguments must contain a complete %q string", s.name, "input")
 		}
@@ -83,7 +82,7 @@ func (s *chatToResponsesToolCallState) responsesArguments() (string, error) {
 	return raw, nil
 }
 
-func (s *chatToResponsesToolCallState) applyToolSpec(spec relaycommon.OpenAIWireToolSpec) {
+func (s *chatToResponsesToolCallState) applyToolSpec(spec OpenAIWireToolSpec) {
 	if s == nil {
 		return
 	}
@@ -123,7 +122,7 @@ func (s *chatToResponsesToolCallState) responsesOutputItem(status string) (dto.R
 			Execution: "client",
 		}
 		if status == "completed" {
-			arguments, err := relaycommon.BuildResponsesToolSearchArgumentsFromChatArguments(s.args.String())
+			arguments, err := BuildResponsesToolSearchArgumentsFromChatArguments(s.args.String())
 			if err != nil {
 				return dto.ResponsesOutput{}, fmt.Errorf("parse tool_search arguments failed: %w", err)
 			}
@@ -166,7 +165,7 @@ func (c *chatToResponsesStreamConverter) buildUsage() *dto.Usage {
 	if c.usage == nil {
 		return nil
 	}
-	return relaycommon.MapChatUsageToResponsesUsage(*c.usage)
+	return MapChatUsageToResponsesUsage(*c.usage)
 }
 
 func (c *chatToResponsesStreamConverter) mapStatus() string {

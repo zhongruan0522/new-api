@@ -1,4 +1,4 @@
-package relay
+package common
 
 import (
 	"encoding/json"
@@ -7,7 +7,6 @@ import (
 
 	"github.com/zhongruan0522/new-api/common"
 	"github.com/zhongruan0522/new-api/dto"
-	relaycommon "github.com/zhongruan0522/new-api/relay/common"
 )
 
 const chatToResponsesAssistantMessageID = "msg_0"
@@ -29,7 +28,7 @@ type chatToResponsesStreamConverter struct {
 	toolCallsByID      map[string]*chatToResponsesToolCallState
 	toolCallIDByIndex  map[int]string
 	toolCallOrder      []string
-	toolContext        *relaycommon.OpenAIWireToolContext
+	toolContext        *OpenAIWireToolContext
 
 	usage *dto.Usage
 	err   error
@@ -41,7 +40,7 @@ type chatToResponsesToolCallState struct {
 	toolType       string
 	name           string
 	namespace      string
-	toolSpec       relaycommon.OpenAIWireToolSpec
+	toolSpec       OpenAIWireToolSpec
 	hasToolSpec    bool
 	args           strings.Builder
 	emittedArgsLen int
@@ -50,8 +49,17 @@ type chatToResponsesToolCallState struct {
 	customProxy    bool
 }
 
-func newChatToResponsesStreamConverter(toolContext ...*relaycommon.OpenAIWireToolContext) *chatToResponsesStreamConverter {
-	var ctx *relaycommon.OpenAIWireToolContext
+type OpenAIWireStreamConverter interface {
+	ConvertFrame(event string, data string, rawFrame string) (string, error)
+	Err() error
+}
+
+func NewChatToResponsesStreamConverter(toolContext ...*OpenAIWireToolContext) OpenAIWireStreamConverter {
+	return newChatToResponsesStreamConverter(toolContext...)
+}
+
+func newChatToResponsesStreamConverter(toolContext ...*OpenAIWireToolContext) *chatToResponsesStreamConverter {
+	var ctx *OpenAIWireToolContext
 	if len(toolContext) > 0 {
 		ctx = toolContext[0]
 	}

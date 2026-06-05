@@ -92,8 +92,23 @@ func (a *Adaptor) ConvertEmbeddingRequest(c *gin.Context, info *relaycommon.Rela
 }
 
 func (a *Adaptor) ConvertOpenAIResponsesRequest(c *gin.Context, info *relaycommon.RelayInfo, request dto.OpenAIResponsesRequest) (any, error) {
-	// TODO implement me
-	return nil, errors.New("not implemented")
+	chatReq, toolContext, err := relaycommon.ConvertResponsesRequestToChatCompletionsRequestWithToolContext(&request)
+	if err != nil {
+		return nil, err
+	}
+	if info != nil {
+		info.OpenAIResponsesToolContext = toolContext
+		relaycommon.AppendRequestConversionFromRequest(info, chatReq)
+		if info.ClaudeConvertInfo == nil {
+			info.ClaudeConvertInfo = &relaycommon.ClaudeConvertInfo{LastMessagesType: relaycommon.LastMessageTypeNone}
+		}
+	}
+	claudeReq, err := a.ConvertOpenAIRequest(c, info, chatReq)
+	if err != nil {
+		return nil, err
+	}
+	relaycommon.AppendRequestConversionFromRequest(info, claudeReq)
+	return claudeReq, nil
 }
 
 func (a *Adaptor) DoRequest(c *gin.Context, info *relaycommon.RelayInfo, requestBody io.Reader) (any, error) {

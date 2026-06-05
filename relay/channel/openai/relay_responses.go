@@ -40,12 +40,20 @@ func OaiResponsesHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http
 		c.Set("image_generation_call_size", responsesResponse.GetSize())
 	}
 
-	// 写入新的 response body
-	service.IOCopyBytesGracefully(c, resp, responseBody)
-
 	// compute usage
 	usage := dto.Usage{}
 	relaycommon.ApplyResponsesUsageToChatUsage(&usage, responsesResponse.Usage)
+
+	if info != nil && info.RelayFormat == types.RelayFormatClaude {
+		responseBody, err = convertResponsesBodyToClaudeBody(&responsesResponse, &usage, info)
+		if err != nil {
+			return nil, types.NewError(err, types.ErrorCodeBadResponseBody)
+		}
+	}
+
+	// 写入新的 response body
+	service.IOCopyBytesGracefully(c, resp, responseBody)
+
 	if info == nil || info.ResponsesUsageInfo == nil || info.ResponsesUsageInfo.BuiltInTools == nil {
 		return &usage, nil
 	}
@@ -81,18 +89,24 @@ func OaiResponsesStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp
 
 	var usage = &dto.Usage{}
 	var responseTextBuilder strings.Builder
+	var responsesToChat relaycommon.OpenAIWireStreamConverter
+	if info.RelayFormat == types.RelayFormatClaude {
+		responsesToChat = relaycommon.NewResponsesToChatStreamConverter(false)
+	}
 
 	helper.StreamScannerHandler(c, resp, info, func(data string) bool {
 
 		// 检查当前数据是否包含 completed 状态和 usage 信息
 		var streamResponse dto.ResponsesStreamResponse
 		if err := common.UnmarshalJsonStr(data, &streamResponse); err == nil {
-			sendResponsesStreamData(c, streamResponse, data)
 			switch streamResponse.Type {
 			case "response.completed":
 				if streamResponse.Response != nil {
 					if streamResponse.Response.Usage != nil {
 						relaycommon.ApplyResponsesUsageToChatUsage(usage, streamResponse.Response.Usage)
+						if info.RelayFormat == types.RelayFormatClaude && info.ClaudeConvertInfo != nil {
+							info.ClaudeConvertInfo.Usage = usage
+						}
 					}
 					if streamResponse.Response.HasImageGenerationCall() {
 						c.Set("image_generation_call", true)
@@ -121,6 +135,18 @@ func OaiResponsesStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp
 		} else {
 			logger.LogError(c, "failed to unmarshal stream response: "+err.Error())
 		}
+
+		if info.RelayFormat == types.RelayFormatClaude {
+			if err := writeResponsesStreamAsClaude(c, info, responsesToChat, data); err != nil {
+				logger.LogError(c, "failed to convert responses stream to claude: "+err.Error())
+				return false
+			}
+			return true
+		}
+
+		if streamResponse.Type != "" {
+			sendResponsesStreamData(c, streamResponse, data)
+		}
 		return true
 	})
 
@@ -143,4 +169,66 @@ func OaiResponsesStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp
 	}
 
 	return usage, nil
+}
+
+func convertResponsesBodyToClaudeBody(responsesResponse *dto.OpenAIResponsesResponse, usage *dto.Usage, info *relaycommon.RelayInfo) ([]byte, error) {
+	chatResponse, err := relaycommon.ConvertResponsesResponseToChatCompletionResponse(responsesResponse)
+	if err != nil {
+		return nil, err
+	}
+	if usage != nil {
+		chatResponse.Usage = *usage
+	}
+	claudeResp := service.ResponseOpenAI2Claude(chatResponse, info)
+	return common.Marshal(claudeResp)
+}
+
+func writeResponsesStreamAsClaude(c *gin.Context, info *relaycommon.RelayInfo, converter relaycommon.OpenAIWireStreamConverter, data string) error {
+	if converter == nil {
+		return fmt.Errorf("responses to chat stream converter is nil")
+	}
+	if info.ClaudeConvertInfo == nil {
+		info.ClaudeConvertInfo = &relaycommon.ClaudeConvertInfo{LastMessagesType: relaycommon.LastMessageTypeNone}
+	}
+	var streamResponse dto.ResponsesStreamResponse
+	if err := common.UnmarshalJsonStr(data, &streamResponse); err == nil && streamResponse.Response != nil && streamResponse.Response.Usage != nil {
+		usage := &dto.Usage{}
+		relaycommon.ApplyResponsesUsageToChatUsage(usage, streamResponse.Response.Usage)
+		info.ClaudeConvertInfo.Usage = usage
+	}
+	out, err := converter.ConvertFrame("", data, "data: "+data+"\n\n")
+	if err != nil {
+		return err
+	}
+	for _, chatData := range chatDataFrames(out) {
+		if chatData == "[DONE]" {
+			continue
+		}
+		info.SendResponseCount++
+		if err := handleClaudeFormat(c, chatData, info); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func chatDataFrames(s string) []string {
+	frames := strings.Split(strings.ReplaceAll(s, "\r\n", "\n"), "\n\n")
+	out := make([]string, 0, len(frames))
+	for _, frame := range frames {
+		frame = strings.TrimSpace(frame)
+		if frame == "" || strings.HasPrefix(frame, ":") {
+			continue
+		}
+		var dataLines []string
+		for _, line := range strings.Split(frame, "\n") {
+			if strings.HasPrefix(line, "data:") {
+				dataLines = append(dataLines, strings.TrimPrefix(strings.TrimPrefix(line, "data:"), " "))
+			}
+		}
+		if len(dataLines) > 0 {
+			out = append(out, strings.Join(dataLines, "\n"))
+		}
+	}
+	return out
 }

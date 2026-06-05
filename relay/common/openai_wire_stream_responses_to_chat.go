@@ -1,4 +1,4 @@
-package relay
+package common
 
 import (
 	"fmt"
@@ -8,7 +8,6 @@ import (
 
 	"github.com/zhongruan0522/new-api/common"
 	"github.com/zhongruan0522/new-api/dto"
-	relaycommon "github.com/zhongruan0522/new-api/relay/common"
 )
 
 type responsesToChatStreamConverter struct {
@@ -33,6 +32,10 @@ type responsesToChatStreamConverter struct {
 	toolCallArgsByID         map[string]string
 
 	err error
+}
+
+func NewResponsesToChatStreamConverter(includeUsage bool) OpenAIWireStreamConverter {
+	return newResponsesToChatStreamConverter(includeUsage)
 }
 
 func newResponsesToChatStreamConverter(includeUsage bool) *responsesToChatStreamConverter {
@@ -171,7 +174,7 @@ func (c *responsesToChatStreamConverter) hydrateFromResponse(resp *dto.OpenAIRes
 	}
 	if resp.Usage != nil {
 		u := &dto.Usage{}
-		relaycommon.ApplyResponsesUsageToChatUsage(u, resp.Usage)
+		ApplyResponsesUsageToChatUsage(u, resp.Usage)
 		c.usage = u
 	}
 	if strings.TrimSpace(resp.Status) != "" {
@@ -339,7 +342,7 @@ func (c *responsesToChatStreamConverter) emitToolCallDone(stream dto.ResponsesSt
 	if !ok {
 		return "", nil
 	}
-	arguments, err := relaycommon.ResponsesArgumentsToChatString(stream.Arguments)
+	arguments, err := ResponsesArgumentsToChatString(stream.Arguments)
 	if err != nil {
 		return "", fmt.Errorf("marshal function_call arguments failed: %w", err)
 	}
@@ -350,7 +353,7 @@ func (c *responsesToChatStreamConverter) emitToolCallDone(stream dto.ResponsesSt
 		if c.toolCallTypeByID[callID] == "custom_tool_call" {
 			arguments = stream.Item.Input
 		} else {
-			arguments, err = relaycommon.ResponsesArgumentsToChatString(stream.Item.Arguments)
+			arguments, err = ResponsesArgumentsToChatString(stream.Item.Arguments)
 			if err != nil {
 				return "", fmt.Errorf("marshal function_call item arguments failed: %w", err)
 			}
