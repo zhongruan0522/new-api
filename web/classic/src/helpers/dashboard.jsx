@@ -37,22 +37,6 @@ import {
   ILLUSTRATION_SIZE,
 } from '../constants/dashboard.constants';
 
-// 国产/海外模型前缀（与后端 model/usedata.go 保持一致）
-const domesticPrefixes = ['glm', 'minimax', 'qwen', 'kimi'];
-const overseasPrefixes = ['claude', 'gemini', 'gpt'];
-
-export const isDomesticModel = (modelName) => {
-  if (!modelName) return false;
-  const lower = modelName.toLowerCase();
-  return domesticPrefixes.some((p) => lower.startsWith(p));
-};
-
-export const isOverseasModel = (modelName) => {
-  if (!modelName) return false;
-  const lower = modelName.toLowerCase();
-  return overseasPrefixes.some((p) => lower.startsWith(p));
-};
-
 // ========== 时间相关工具函数 ==========
 export const getDefaultTime = () => {
   return localStorage.getItem(STORAGE_KEYS.DATA_EXPORT_DEFAULT_TIME) || 'hour';
@@ -320,12 +304,6 @@ export const processRawData = (
     timeQuotaMap: new Map(),
     timeTokensMap: new Map(),
     timeCountMap: new Map(),
-    domesticInputTokensMap: new Map(),
-    domesticCacheHitTokensMap: new Map(),
-    domesticCacheCreationTokensMap: new Map(),
-    overseasInputTokensMap: new Map(),
-    overseasCacheHitTokensMap: new Map(),
-    overseasCacheCreationTokensMap: new Map(),
   };
 
   // 检查数据是否跨年
@@ -352,50 +330,10 @@ export const processRawData = (
       result.timeQuotaMap,
       result.timeTokensMap,
       result.timeCountMap,
-      result.domesticInputTokensMap,
-      result.domesticCacheHitTokensMap,
-      result.domesticCacheCreationTokensMap,
-      result.overseasInputTokensMap,
-      result.overseasCacheHitTokensMap,
-      result.overseasCacheCreationTokensMap,
     );
     updateMapValue(result.timeQuotaMap, timeKey, item.quota || 0);
     updateMapValue(result.timeTokensMap, timeKey, item.token_used || 0);
     updateMapValue(result.timeCountMap, timeKey, item.count || 0);
-
-    if (isDomesticModel(item.model_name)) {
-      updateMapValue(
-        result.domesticInputTokensMap,
-        timeKey,
-        item.input_tokens || 0,
-      );
-      updateMapValue(
-        result.domesticCacheHitTokensMap,
-        timeKey,
-        item.cache_hit_tokens || 0,
-      );
-      updateMapValue(
-        result.domesticCacheCreationTokensMap,
-        timeKey,
-        item.cache_creation_tokens || 0,
-      );
-    } else if (isOverseasModel(item.model_name)) {
-      updateMapValue(
-        result.overseasInputTokensMap,
-        timeKey,
-        item.input_tokens || 0,
-      );
-      updateMapValue(
-        result.overseasCacheHitTokensMap,
-        timeKey,
-        item.cache_hit_tokens || 0,
-      );
-      updateMapValue(
-        result.overseasCacheCreationTokensMap,
-        timeKey,
-        item.cache_creation_tokens || 0,
-      );
-    }
   });
 
   result.timePoints.sort();
@@ -408,10 +346,6 @@ export const calculateTrendData = (
   timeTokensMap,
   timeCountMap,
   dataExportDefaultTime,
-  domesticInputTokensMap,
-  domesticCacheHitTokensMap,
-  overseasInputTokensMap,
-  overseasCacheHitTokensMap,
 ) => {
   const quotaTrend = timePoints.map((time) => timeQuotaMap.get(time) || 0);
   const tokensTrend = timePoints.map((time) => timeTokensMap.get(time) || 0);
@@ -429,18 +363,6 @@ export const calculateTrendData = (
     }
   }
 
-  const domesticCacheRateTrend = timePoints.map((time) => {
-    const input = domesticInputTokensMap.get(time) || 0;
-    const hit = domesticCacheHitTokensMap.get(time) || 0;
-    return input > 0 ? hit / input : 0;
-  });
-
-  const overseasCacheRateTrend = timePoints.map((time) => {
-    const input = overseasInputTokensMap.get(time) || 0;
-    const hit = overseasCacheHitTokensMap.get(time) || 0;
-    return input > 0 ? hit / input : 0;
-  });
-
   return {
     balance: [],
     usedQuota: [],
@@ -450,8 +372,6 @@ export const calculateTrendData = (
     tokens: tokensTrend,
     rpm: rpmTrend,
     tpm: tpmTrend,
-    domesticCacheRate: domesticCacheRateTrend,
-    overseasCacheRate: overseasCacheRateTrend,
   };
 };
 

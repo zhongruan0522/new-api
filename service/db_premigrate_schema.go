@@ -13,7 +13,7 @@ func autoMigrateTargetMainSchema(db *gorm.DB) error {
 		model.CleanupLegacyUniqueConstraints(db, "models", "model_name", []string{"uni_models_model_name", "idx_models_model_name"})
 		model.CleanupLegacyUniqueConstraints(db, "vendors", "name", []string{"uni_vendors_name", "idx_vendors_name"})
 	}
-	return db.AutoMigrate(
+	if err := db.AutoMigrate(
 		&model.Channel{},
 		&model.Token{},
 		&model.User{},
@@ -33,7 +33,11 @@ func autoMigrateTargetMainSchema(db *gorm.DB) error {
 		&model.TwoFA{},
 		&model.TwoFABackupCode{},
 		&model.Checkin{},
-	)
+	); err != nil {
+		return err
+	}
+	model.CleanupRemovedQuotaDataCacheStats(db)
+	return nil
 }
 
 func autoMigrateTargetLogSchema(db *gorm.DB) error {

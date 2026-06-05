@@ -86,13 +86,10 @@ const Dashboard = () => {
     dashboardData.performanceMetrics,
     dashboardData.navigate,
     dashboardData.t,
-    dashboardData.regionStats,
     dashboardData.mediaConvertStats,
   );
   const {
     loadQuotaData,
-    loadRegionStats,
-    loadModelRank,
     loadMediaConvertStats,
     loadUptimeData,
     refresh,
@@ -107,8 +104,6 @@ const Dashboard = () => {
         updateChartData(data);
       }
     });
-    await loadRegionStats();
-    loadModelRank();
     loadMediaConvertStats();
     await loadUptimeData();
   };
@@ -218,9 +213,6 @@ const Dashboard = () => {
             spec_model_line={dashboardCharts.spec_model_line}
             spec_pie={dashboardCharts.spec_pie}
             spec_rank_bar={dashboardCharts.spec_rank_bar}
-            spec_cache_line={dashboardCharts.spec_cache_line}
-            modelRank={dashboardData.modelRank}
-            loading={dashboardData.loading}
             CARD_PROPS={CARD_PROPS}
             CHART_CONFIG={CHART_CONFIG}
             FLEX_CENTER_GAP2={FLEX_CENTER_GAP2}

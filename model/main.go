@@ -296,6 +296,7 @@ func migrateDB() error {
 	if err := cleanupRemovedMultimodalTextMode(); err != nil {
 		return err
 	}
+	cleanupRemovedQuotaDataCacheStats()
 	return nil
 }
 
@@ -366,6 +367,7 @@ func migrateDBFast() error {
 	if err := cleanupRemovedMultimodalTextMode(); err != nil {
 		return err
 	}
+	cleanupRemovedQuotaDataCacheStats()
 	common.SysLog("database migrated")
 	return nil
 }

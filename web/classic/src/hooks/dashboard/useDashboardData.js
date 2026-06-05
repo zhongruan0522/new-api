@@ -65,8 +65,6 @@ export const useDashboardData = (userState, userDispatch, statusState) => {
   const [consumeTokens, setConsumeTokens] = useState(0);
   const [times, setTimes] = useState(0);
   const [failCount, setFailCount] = useState(0);
-  const [regionStats, setRegionStats] = useState(null);
-  const [modelRank, setModelRank] = useState(null);
   const [mediaConvertStats, setMediaConvertStats] = useState(null);
   const [pieData, setPieData] = useState([{ type: 'null', value: '0' }]);
   const [lineData, setLineData] = useState([]);
@@ -85,8 +83,6 @@ export const useDashboardData = (userState, userDispatch, statusState) => {
     tokens: [],
     rpm: [],
     tpm: [],
-    domesticCacheRate: [],
-    overseasCacheRate: [],
   });
 
   // ========== Uptime 数据 ==========
@@ -230,48 +226,6 @@ export const useDashboardData = (userState, userDispatch, statusState) => {
     }
   }, [activeUptimeTab]);
 
-  const loadRegionStats = useCallback(async () => {
-    try {
-      const { start_timestamp, end_timestamp, username } = inputs;
-      const localStartTimestamp = Date.parse(start_timestamp) / 1000;
-      const localEndTimestamp = Date.parse(end_timestamp) / 1000;
-      let url = '';
-      if (isAdminUser) {
-        url = `/api/data/region_stats?username=${username}&start_timestamp=${localStartTimestamp}&end_timestamp=${localEndTimestamp}`;
-      } else {
-        url = `/api/data/self/region_stats?start_timestamp=${localStartTimestamp}&end_timestamp=${localEndTimestamp}`;
-      }
-      const res = await API.get(url);
-      const { success, data } = res.data;
-      if (success) {
-        setRegionStats(data);
-      }
-    } catch (err) {
-      console.error(err);
-    }
-  }, [inputs, isAdminUser]);
-
-  const loadModelRank = useCallback(async () => {
-    try {
-      const { start_timestamp, end_timestamp, username } = inputs;
-      const localStartTimestamp = Date.parse(start_timestamp) / 1000;
-      const localEndTimestamp = Date.parse(end_timestamp) / 1000;
-      let url = '';
-      if (isAdminUser) {
-        url = `/api/data/model_rank?username=${username}&start_timestamp=${localStartTimestamp}&end_timestamp=${localEndTimestamp}`;
-      } else {
-        url = `/api/data/self/model_rank?start_timestamp=${localStartTimestamp}&end_timestamp=${localEndTimestamp}`;
-      }
-      const res = await API.get(url);
-      const { success, data } = res.data;
-      if (success) {
-        setModelRank(data);
-      }
-    } catch (err) {
-      console.error(err);
-    }
-  }, [inputs, isAdminUser]);
-
   const loadMediaConvertStats = useCallback(async () => {
     try {
       const { start_timestamp, end_timestamp, username } = inputs;
@@ -306,17 +260,9 @@ export const useDashboardData = (userState, userDispatch, statusState) => {
   const refresh = useCallback(async () => {
     const data = await loadQuotaData();
     await loadUptimeData();
-    loadRegionStats();
-    loadModelRank();
     loadMediaConvertStats();
     return data;
-  }, [
-    loadQuotaData,
-    loadUptimeData,
-    loadRegionStats,
-    loadModelRank,
-    loadMediaConvertStats,
-  ]);
+  }, [loadQuotaData, loadUptimeData, loadMediaConvertStats]);
 
   const handleSearchConfirm = useCallback(
     async (updateChartDataCallback) => {
@@ -364,8 +310,6 @@ export const useDashboardData = (userState, userDispatch, statusState) => {
     setTimes,
     failCount,
     setFailCount,
-    regionStats,
-    modelRank,
     mediaConvertStats,
     pieData,
     setPieData,
@@ -405,8 +349,6 @@ export const useDashboardData = (userState, userDispatch, statusState) => {
     showSearchModal,
     handleCloseModal,
     loadQuotaData,
-    loadRegionStats,
-    loadModelRank,
     loadMediaConvertStats,
     loadUptimeData,
     getUserData,
