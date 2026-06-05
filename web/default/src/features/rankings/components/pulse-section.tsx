@@ -109,7 +109,9 @@ function PulseEmpty(props: { label: string }) {
 function MoverRow(props: { row: RankingMover; intent: 'up' | 'down' }) {
   return (
     <li className='flex items-center gap-3 px-4 py-2'>
-      <span className='shrink-0'>{getLobeIcon(props.row.vendor_icon, 20)}</span>
+      <span className='shrink-0'>
+        {getLobeIcon(props.row.model_icon || props.row.vendor_icon, 20)}
+      </span>
       <div className='min-w-0 flex-1'>
         <ModelLink
           modelName={props.row.model_name}

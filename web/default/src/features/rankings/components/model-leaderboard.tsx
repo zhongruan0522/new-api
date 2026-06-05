@@ -81,7 +81,7 @@ function ModelList(props: {
             {row.rank}.
           </span>
           <span className='shrink-0'>
-            {getLobeIcon(row.vendor_icon, compact ? 20 : 22)}
+            {getLobeIcon(row.model_icon || row.vendor_icon, compact ? 20 : 22)}
           </span>
           <div className='min-w-0 flex-1'>
             <ModelLink

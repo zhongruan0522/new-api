@@ -2,6 +2,7 @@ package model
 
 import (
 	"strconv"
+	"strings"
 
 	"github.com/zhongruan0522/new-api/common"
 
@@ -115,6 +116,30 @@ func GetAllModels(offset int, limit int) ([]*Model, error) {
 	var models []*Model
 	err := DB.Order("id DESC").Offset(offset).Limit(limit).Find(&models).Error
 	return models, err
+}
+
+func MatchModelMeta(modelName string, models []Model) *Model {
+	for i := range models {
+		if models[i].NameRule == NameRuleExact && models[i].ModelName == modelName {
+			return &models[i]
+		}
+	}
+	for i := range models {
+		if models[i].NameRule == NameRulePrefix && strings.HasPrefix(modelName, models[i].ModelName) {
+			return &models[i]
+		}
+	}
+	for i := range models {
+		if models[i].NameRule == NameRuleContains && strings.Contains(modelName, models[i].ModelName) {
+			return &models[i]
+		}
+	}
+	for i := range models {
+		if models[i].NameRule == NameRuleSuffix && strings.HasSuffix(modelName, models[i].ModelName) {
+			return &models[i]
+		}
+	}
+	return nil
 }
 
 func GetBoundChannelsByModelsMap(modelNames []string) (map[string][]BoundChannel, error) {

@@ -121,7 +121,7 @@ func enrichLogModelIcons(logs []*Log) {
 		if l.ModelName == "" {
 			continue
 		}
-		matched := matchLogModelMeta(l.ModelName, models)
+		matched := MatchModelMeta(l.ModelName, models)
 		if matched == nil {
 			continue
 		}
@@ -135,30 +135,6 @@ func enrichLogModelIcons(logs []*Log) {
 			}
 		}
 	}
-}
-
-func matchLogModelMeta(modelName string, models []Model) *Model {
-	for i := range models {
-		if models[i].NameRule == NameRuleExact && models[i].ModelName == modelName {
-			return &models[i]
-		}
-	}
-	for i := range models {
-		if models[i].NameRule == NameRulePrefix && strings.HasPrefix(modelName, models[i].ModelName) {
-			return &models[i]
-		}
-	}
-	for i := range models {
-		if models[i].NameRule == NameRuleContains && strings.Contains(modelName, models[i].ModelName) {
-			return &models[i]
-		}
-	}
-	for i := range models {
-		if models[i].NameRule == NameRuleSuffix && strings.HasSuffix(modelName, models[i].ModelName) {
-			return &models[i]
-		}
-	}
-	return nil
 }
 
 func GetLogByTokenId(tokenId int) (logs []*Log, err error) {

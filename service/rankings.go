@@ -35,6 +35,7 @@ type RankedModel struct {
 	ModelName    string  `json:"model_name"`
 	Vendor       string  `json:"vendor"`
 	VendorIcon   string  `json:"vendor_icon,omitempty"`
+	ModelIcon    string  `json:"model_icon,omitempty"`
 	Category     string  `json:"category"`
 	TotalTokens  int64   `json:"total_tokens"`
 	Share        float64 `json:"share"`
@@ -56,6 +57,7 @@ type RankingMover struct {
 	ModelName   string  `json:"model_name"`
 	Vendor      string  `json:"vendor"`
 	VendorIcon  string  `json:"vendor_icon,omitempty"`
+	ModelIcon   string  `json:"model_icon,omitempty"`
 	RankDelta   int     `json:"rank_delta"`
 	CurrentRank int     `json:"current_rank"`
 	GrowthPct   float64 `json:"growth_pct"`
@@ -117,6 +119,7 @@ type rankingCacheItem struct {
 type rankingModelMeta struct {
 	vendor     string
 	vendorIcon string
+	modelIcon  string
 }
 
 type vendorAggregate struct {
@@ -209,7 +212,10 @@ func buildRankingsSnapshot(config rankingPeriodConfig, now time.Time) (*Rankings
 		}
 	}
 
-	meta := buildRankingModelMeta()
+	meta, err := buildRankingModelMeta(rankingModelNames(currentTotals, previousTotals, currentBuckets))
+	if err != nil {
+		return nil, err
+	}
 	totalTokens := sumRankingTokens(currentTotals)
 	previousRankByModel := rankingRankMap(previousTotals)
 	previousTokensByModel := rankingTokenMap(previousTotals)
@@ -244,24 +250,52 @@ func previousRankingTimeRange(config rankingPeriodConfig, currentStart int64) (i
 	return previousStart, previousEnd
 }
 
-func buildRankingModelMeta() map[string]rankingModelMeta {
-	vendorByID := make(map[int]model.PricingVendor)
-	for _, vendor := range model.GetVendors() {
-		vendorByID[vendor.ID] = vendor
+func buildRankingModelMeta(modelNames []string) (map[string]rankingModelMeta, error) {
+	meta := make(map[string]rankingModelMeta)
+	if len(modelNames) == 0 {
+		return meta, nil
 	}
 
-	meta := make(map[string]rankingModelMeta)
-	for _, pricing := range model.GetPricing() {
-		item := rankingModelMeta{vendor: rankingUnknownVendor}
-		if vendor, ok := vendorByID[pricing.VendorID]; ok {
-			item.vendor = vendor.Name
-			item.vendorIcon = vendor.Icon
-		} else if pricing.OwnerBy != "" {
-			item.vendor = pricing.OwnerBy
-		}
-		meta[pricing.ModelName] = item
+	var models []model.Model
+	if err := model.DB.Where("status = ?", 1).Find(&models).Error; err != nil {
+		return nil, err
 	}
-	return meta
+
+	vendorIDs := make(map[int]struct{})
+	for _, item := range models {
+		if item.VendorID != 0 {
+			vendorIDs[item.VendorID] = struct{}{}
+		}
+	}
+
+	vendorByID := make(map[int]model.Vendor)
+	if len(vendorIDs) > 0 {
+		ids := make([]int, 0, len(vendorIDs))
+		for id := range vendorIDs {
+			ids = append(ids, id)
+		}
+		var vendors []model.Vendor
+		if err := model.DB.Where("id IN ?", ids).Find(&vendors).Error; err != nil {
+			return nil, err
+		}
+		for _, vendor := range vendors {
+			vendorByID[vendor.Id] = vendor
+		}
+	}
+
+	for _, modelName := range modelNames {
+		item := rankingModelMeta{vendor: rankingUnknownVendor}
+		matched := model.MatchModelMeta(modelName, models)
+		if matched != nil {
+			item.modelIcon = matched.Icon
+			if vendor, ok := vendorByID[matched.VendorID]; ok && vendor.Name != "" {
+				item.vendor = vendor.Name
+				item.vendorIcon = vendor.Icon
+			}
+		}
+		meta[modelName] = item
+	}
+	return meta, nil
 }
 
 func modelMeta(modelName string, meta map[string]rankingModelMeta) rankingModelMeta {
@@ -269,6 +303,30 @@ func modelMeta(modelName string, meta map[string]rankingModelMeta) rankingModelM
 		return item
 	}
 	return rankingModelMeta{vendor: rankingUnknownVendor}
+}
+
+func rankingModelNames(totals []model.RankingQuotaTotal, previousTotals []model.RankingQuotaTotal, buckets []model.RankingQuotaBucket) []string {
+	seen := make(map[string]struct{})
+	for _, item := range totals {
+		if item.ModelName != "" {
+			seen[item.ModelName] = struct{}{}
+		}
+	}
+	for _, item := range previousTotals {
+		if item.ModelName != "" {
+			seen[item.ModelName] = struct{}{}
+		}
+	}
+	for _, item := range buckets {
+		if item.ModelName != "" {
+			seen[item.ModelName] = struct{}{}
+		}
+	}
+	names := make([]string, 0, len(seen))
+	for name := range seen {
+		names = append(names, name)
+	}
+	return names
 }
 
 func buildRankedModels(totals []model.RankingQuotaTotal, totalTokens int64, previousRanks map[string]int, previousTokens map[string]int64, meta map[string]rankingModelMeta, showGrowth bool) []RankedModel {
@@ -290,6 +348,7 @@ func buildRankedModels(totals []model.RankingQuotaTotal, totalTokens int64, prev
 			ModelName:    item.ModelName,
 			Vendor:       modelMeta.vendor,
 			VendorIcon:   modelMeta.vendorIcon,
+			ModelIcon:    modelMeta.modelIcon,
 			Category:     "all",
 			TotalTokens:  item.TotalTokens,
 			Share:        rankingShare(item.TotalTokens, totalTokens),
@@ -497,6 +556,7 @@ func buildRankingMovers(models []RankedModel) ([]RankingMover, []RankingMover) {
 			ModelName:   item.ModelName,
 			Vendor:      item.Vendor,
 			VendorIcon:  item.VendorIcon,
+			ModelIcon:   item.ModelIcon,
 			RankDelta:   delta,
 			CurrentRank: item.Rank,
 			GrowthPct:   item.GrowthPct,
