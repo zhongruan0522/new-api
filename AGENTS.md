@@ -64,7 +64,7 @@ Azure、AWS Bedrock 等上游能力，提供用户、渠道、计费、限速、
 - `theme.frontend` 只允许 `default` 或 `classic`，后端通过 `common.GetTheme()` 选择资源。
 - `main.go` 必须 embed 两套 dist，`Dockerfile` 会检查 `web/default/dist/index.html`
   和 `web/classic/dist/index.html` 同时存在。
-- 后端业务 API 对新旧 UI 保持一致。default UI 字段或路径不匹配时，优先改前端适配本项目后端。
+
 - classic 进入维稳模式：只修 bug 和兼容性问题，不在 classic 上扩展新功能或引入新技术栈。
 - 任何影响共享 API、认证、主题切换、静态资源服务、系统设置的改动，都要考虑两套 UI 的运行路径。
 - 不允许在 default 或 classic 中用 mock 数据替代真实后端能力。
