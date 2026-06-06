@@ -155,3 +155,127 @@ func TestConvertResponsesRequestToChatCompletionsRequest_AssistantOutputTextAndJ
 		t.Fatal("response_format.json_schema.strict is empty, want true")
 	}
 }
+
+// Test adjacent Responses function_call items because Chat Completions requires
+// parallel tool calls to share one assistant message before tool outputs arrive.
+func TestConvertResponsesRequestToChatCompletionsRequest_GroupsParallelToolCallsAndToolOutput(t *testing.T) {
+	isError := true
+	inputRaw, err := common.Marshal([]map[string]any{
+		{
+			"type": "reasoning",
+			"summary": []map[string]any{{
+				"type": "summary_text",
+				"text": "Need tools",
+			}},
+		},
+		{
+			"type":      "function_call",
+			"call_id":   "call_weather",
+			"name":      "get_weather",
+			"arguments": `{"city":"beijing"}`,
+		},
+		{
+			"type":      "function_call",
+			"call_id":   "call_time",
+			"name":      "get_time",
+			"arguments": `{"tz":"Asia/Shanghai"}`,
+		},
+		{
+			"type":               "function_call_output",
+			"call_id":            "call_weather",
+			"output":             []map[string]any{{"type": "input_text", "text": "sunny"}},
+			"tool_call_is_error": isError,
+		},
+	})
+	if err != nil {
+		t.Fatalf("marshal input error = %v", err)
+	}
+
+	got, err := ConvertResponsesRequestToChatCompletionsRequest(&dto.OpenAIResponsesRequest{Model: "gpt-4.1", Input: inputRaw})
+	if err != nil {
+		t.Fatalf("ConvertResponsesRequestToChatCompletionsRequest() error = %v", err)
+	}
+	if len(got.Messages) != 2 {
+		t.Fatalf("messages len = %d, want 2", len(got.Messages))
+	}
+	assistant := got.Messages[0]
+	if assistant.Role != "assistant" {
+		t.Fatalf("messages[0].role = %q, want assistant", assistant.Role)
+	}
+	if assistant.ReasoningContent != "Need tools" {
+		t.Fatalf("reasoning_content = %q, want Need tools", assistant.ReasoningContent)
+	}
+	toolCalls := assistant.ParseToolCalls()
+	if len(toolCalls) != 2 {
+		t.Fatalf("tool_calls len = %d, want 2", len(toolCalls))
+	}
+	if toolCalls[0].ID != "call_weather" || toolCalls[1].ID != "call_time" {
+		t.Fatalf("tool_call ids = %#v, want call_weather/call_time", toolCalls)
+	}
+	toolMsg := got.Messages[1]
+	if toolMsg.Role != "tool" || toolMsg.ToolCallId != "call_weather" || toolMsg.StringContent() != "sunny" {
+		t.Fatalf("tool message = %#v, want call_weather sunny", toolMsg)
+	}
+	if toolMsg.ToolCallIsError == nil || !*toolMsg.ToolCallIsError {
+		t.Fatal("tool_call_is_error was not preserved")
+	}
+}
+
+// Test custom tools because the current OpenAI Chat schema supports custom
+// tool calls and Responses represents them as custom_tool_call items.
+func TestConvertChatCompletionsRequestToResponsesRequest_CustomToolHistory(t *testing.T) {
+	customToolRaw, err := common.Marshal(map[string]any{
+		"name":        "code_exec",
+		"description": "run code",
+		"format":      map[string]any{"type": "text"},
+	})
+	if err != nil {
+		t.Fatalf("marshal custom tool error = %v", err)
+	}
+	customCallRaw, err := common.Marshal([]map[string]any{{
+		"id":   "call_custom",
+		"type": "custom",
+		"custom": map[string]any{
+			"name":  "code_exec",
+			"input": "print(1)",
+		},
+	}})
+	if err != nil {
+		t.Fatalf("marshal custom call error = %v", err)
+	}
+
+	got, err := ConvertChatCompletionsRequestToResponsesRequest(&dto.GeneralOpenAIRequest{
+		Model: "gpt-5",
+		Messages: []dto.Message{
+			{Role: "user", Content: "run code"},
+			{Role: "assistant", ToolCalls: customCallRaw},
+			{Role: "tool", ToolCallId: "call_custom", Content: "ok"},
+		},
+		Tools: []dto.ToolCallRequest{{Type: dto.CustomType, Custom: customToolRaw}},
+	})
+	if err != nil {
+		t.Fatalf("ConvertChatCompletionsRequestToResponsesRequest() error = %v", err)
+	}
+
+	var tools []map[string]any
+	if err := common.Unmarshal(got.Tools, &tools); err != nil {
+		t.Fatalf("unmarshal tools error = %v", err)
+	}
+	if len(tools) != 1 || tools[0]["type"] != "custom" || tools[0]["name"] != "code_exec" {
+		t.Fatalf("tools = %#v, want one custom code_exec tool", tools)
+	}
+
+	var items []map[string]any
+	if err := common.Unmarshal(got.Input, &items); err != nil {
+		t.Fatalf("unmarshal input error = %v", err)
+	}
+	if len(items) != 3 {
+		t.Fatalf("input items len = %d, want 3", len(items))
+	}
+	if items[1]["type"] != "custom_tool_call" || items[1]["call_id"] != "call_custom" || items[1]["input"] != "print(1)" {
+		t.Fatalf("custom call item = %#v, want custom_tool_call", items[1])
+	}
+	if items[2]["type"] != "custom_tool_call_output" || items[2]["call_id"] != "call_custom" || items[2]["output"] != "ok" {
+		t.Fatalf("custom output item = %#v, want custom_tool_call_output", items[2])
+	}
+}

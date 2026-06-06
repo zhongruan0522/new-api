@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/zhongruan0522/new-api/common"
 	"github.com/zhongruan0522/new-api/model"
@@ -42,6 +43,8 @@ type storedMediaBatchItem struct {
 type storedMediaBatchRequest struct {
 	Items []storedMediaBatchItem `json:"items"`
 }
+
+const defaultStoredMediaSignedURLTTL = time.Hour
 
 func GetAllStoredMedia(c *gin.Context) {
 	pageInfo := common.GetPageQuery(c)
@@ -341,8 +344,9 @@ func buildStoredMediaURL(c *gin.Context, mediaType string, id string) string {
 		return ""
 	}
 
-	sig := common.GenerateHMAC(fmt.Sprintf("%s:%s", scope, id))
-	path := fmt.Sprintf("/mcp/%s/%s?sig=%s", mediaType, url.PathEscape(id), sig)
+	exp := time.Now().Add(defaultStoredMediaSignedURLTTL).Unix()
+	sig := common.GenerateHMAC(fmt.Sprintf("%s:%s:%d", scope, id, exp))
+	path := fmt.Sprintf("/mcp/%s/%s?exp=%d&sig=%s", mediaType, url.PathEscape(id), exp, sig)
 
 	base := strings.TrimRight(strings.TrimSpace(system_setting.ServerAddress), "/")
 	if base == "" {

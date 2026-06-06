@@ -145,6 +145,10 @@ type RelayInfo struct {
 	// RequestConversionChain records request format conversions in order, e.g.
 	// ["openai", "openai_responses"] or ["openai", "claude"].
 	RequestConversionChain []types.RelayFormat
+	// OpenAIResponsesToolContext carries per-request Responses tool proxy
+	// metadata across multi-hop conversions such as Responses -> Chat -> Claude
+	// and Claude -> Chat -> Responses.
+	OpenAIResponsesToolContext *OpenAIWireToolContext
 	// 最终请求到上游的格式 TODO: 当前仅设置了Claude
 	FinalRequestRelayFormat types.RelayFormat
 
@@ -434,11 +438,11 @@ func genBaseRelayInfo(c *gin.Context, request dto.Request) *RelayInfo {
 
 		OriginModelName: common.GetContextKeyString(c, constant.ContextKeyOriginalModel),
 
-		TokenId:         common.GetContextKeyInt(c, constant.ContextKeyTokenId),
-		TokenKey:        common.GetContextKeyString(c, constant.ContextKeyTokenKey),
-		TokenQuota:      common.GetContextKeyInt(c, constant.ContextKeyTokenQuota),
-		TokenQuotaType:  common.GetContextKeyInt(c, constant.ContextKeyTokenQuotaType),
-		TokenUnlimited:  common.GetContextKeyBool(c, constant.ContextKeyTokenUnlimited),
+		TokenId:        common.GetContextKeyInt(c, constant.ContextKeyTokenId),
+		TokenKey:       common.GetContextKeyString(c, constant.ContextKeyTokenKey),
+		TokenQuota:     common.GetContextKeyInt(c, constant.ContextKeyTokenQuota),
+		TokenQuotaType: common.GetContextKeyInt(c, constant.ContextKeyTokenQuotaType),
+		TokenUnlimited: common.GetContextKeyBool(c, constant.ContextKeyTokenUnlimited),
 		TokenGroup:     tokenGroup,
 
 		isFirstResponse: true,

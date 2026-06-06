@@ -10,6 +10,7 @@ import (
 	"github.com/zhongruan0522/new-api/common"
 	"github.com/zhongruan0522/new-api/dto"
 	relaycommon "github.com/zhongruan0522/new-api/relay/common"
+	"github.com/zhongruan0522/new-api/service"
 	"github.com/zhongruan0522/new-api/types"
 
 	"github.com/gin-gonic/gin"
@@ -46,6 +47,11 @@ type requestBodySnapshot struct {
 	storage any
 }
 
+type openAIWireConversionOptions struct {
+	ChatIncludeUsage bool
+	ToolContext      *relaycommon.OpenAIWireToolContext
+}
+
 func takeRequestBodySnapshot(c *gin.Context) (requestBodySnapshot, error) {
 	body, err := common.GetRequestBody(c)
 	if err != nil {
@@ -69,7 +75,7 @@ func setTemporaryRequestBody(c *gin.Context, body []byte) {
 	c.Request.ContentLength = int64(len(body))
 }
 
-func writeConvertedNonStreamResponse(c *gin.Context, captured *openAIWireCaptureWriter, upstream dto.OpenAIWireAPI, downstream dto.OpenAIWireAPI) error {
+func writeConvertedNonStreamResponse(c *gin.Context, captured *openAIWireCaptureWriter, upstream dto.OpenAIWireAPI, downstream dto.OpenAIWireAPI, opts openAIWireConversionOptions) error {
 	if captured == nil {
 		return fmt.Errorf("captured writer is nil")
 	}
@@ -78,7 +84,7 @@ func writeConvertedNonStreamResponse(c *gin.Context, captured *openAIWireCapture
 		return fmt.Errorf("empty upstream response body")
 	}
 
-	converted, err := convertNonStreamBody(body, upstream, downstream)
+	converted, err := convertNonStreamBody(body, upstream, downstream, opts)
 	if err != nil {
 		return err
 	}
@@ -89,7 +95,7 @@ func writeConvertedNonStreamResponse(c *gin.Context, captured *openAIWireCapture
 	return err
 }
 
-func convertNonStreamBody(body []byte, upstream dto.OpenAIWireAPI, downstream dto.OpenAIWireAPI) ([]byte, error) {
+func convertNonStreamBody(body []byte, upstream dto.OpenAIWireAPI, downstream dto.OpenAIWireAPI, opts openAIWireConversionOptions) ([]byte, error) {
 	switch {
 	case upstream == dto.OpenAIWireAPIResponses && downstream == dto.OpenAIWireAPIChat:
 		var resp dto.OpenAIResponsesResponse
@@ -106,7 +112,7 @@ func convertNonStreamBody(body []byte, upstream dto.OpenAIWireAPI, downstream dt
 		if err := common.Unmarshal(body, &chatResp); err != nil {
 			return nil, fmt.Errorf("unmarshal chat completion response failed: %w", err)
 		}
-		resp, err := relaycommon.ConvertChatCompletionResponseToResponsesResponse(&chatResp)
+		resp, err := relaycommon.ConvertChatCompletionResponseToResponsesResponseWithToolContext(&chatResp, opts.ToolContext)
 		if err != nil {
 			return nil, err
 		}
@@ -118,7 +124,7 @@ func convertNonStreamBody(body []byte, upstream dto.OpenAIWireAPI, downstream dt
 
 func copyHeaders(dst http.Header, src http.Header) {
 	for k, vals := range src {
-		if strings.TrimSpace(k) == "" {
+		if strings.TrimSpace(k) == "" || !service.ShouldCopyUpstreamHeader(nil, k, vals) {
 			continue
 		}
 		dst[k] = append([]string(nil), vals...)

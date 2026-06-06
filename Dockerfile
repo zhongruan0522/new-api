@@ -1,16 +1,7 @@
-FROM oven/bun:latest AS builder
-
-WORKDIR /build
-COPY web/package.json .
-COPY web/bun.lock .
-RUN bun install
-COPY ./web .
-COPY ./VERSION .
-RUN DISABLE_ESLINT_PLUGIN='true' VITE_REACT_APP_VERSION=$(cat VERSION) bun run build
-
-FROM golang:alpine AS builder2
+FROM golang:1.26.2-alpine@sha256:f85330846cde1e57ca9ec309382da3b8e6ae3ab943d2739500e08c86393a21b1 AS go-builder
 ENV GO111MODULE=on CGO_ENABLED=0
 
+ARG COMMIT_HASH=""
 ARG TARGETOS
 ARG TARGETARCH
 ENV GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH:-amd64}
@@ -22,18 +13,17 @@ ADD go.mod go.sum ./
 RUN go mod download
 
 COPY . .
-COPY --from=builder /build/dist ./web/dist
-RUN COMMIT_HASH=$(cat COMMIT 2>/dev/null || echo "") && \
-    go build -ldflags "-s -w -X 'github.com/zhongruan0522/new-api/common.Version=${COMMIT_HASH}'" -o new-api
+RUN test -f web/default/dist/index.html && test -f web/classic/dist/index.html
+RUN go build -ldflags "-s -w -X 'github.com/zhongruan0522/new-api/common.Version=${COMMIT_HASH}'" -o new-api
 
-FROM debian:bookworm-slim
+FROM debian:bookworm-slim@sha256:0104b334637a5f19aa9c983a91b54c89887c0984081f2068983107a6f6c21eeb
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends ca-certificates tzdata libasan8 wget \
     && rm -rf /var/lib/apt/lists/* \
     && update-ca-certificates
 
-COPY --from=builder2 /build/new-api /
+COPY --from=go-builder /build/new-api /
 EXPOSE 3000
 WORKDIR /data
 ENTRYPOINT ["/new-api"]

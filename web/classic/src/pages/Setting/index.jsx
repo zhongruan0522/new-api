@@ -1,0 +1,159 @@
+/*
+Copyright (C) 2025 QuantumNous
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as
+published by the Free Software Foundation, either version 3 of the
+License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+For commercial licensing, please contact support@quantumnous.com
+*/
+
+import React, { useEffect, useState } from 'react';
+import { Layout, TabPane, Tabs } from '@douyinfe/semi-ui';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import {
+  Settings,
+  Calculator,
+  Cog,
+  LayoutDashboard,
+  CreditCard,
+  Activity,
+} from 'lucide-react';
+
+import SystemSetting from '../../components/settings/SystemSetting';
+import { isRoot } from '../../helpers';
+import OperationSetting from '../../components/settings/OperationSetting';
+import RuntimeSetting from '../../components/settings/RuntimeSetting';
+import DashboardSetting from '../../components/settings/DashboardSetting';
+import RatioSetting from '../../components/settings/RatioSetting';
+import PaymentSetting from '../../components/settings/PaymentSetting';
+import SectionPageLayout from '../../components/layout/SectionPageLayout';
+
+const Setting = () => {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [tabActiveKey, setTabActiveKey] = useState('1');
+  let panes = [];
+
+  if (isRoot()) {
+    panes.push({
+      tab: (
+        <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+          <Settings size={18} />
+          {t('运营设置')}
+        </span>
+      ),
+      content: <OperationSetting />,
+      itemKey: 'operation',
+    });
+    panes.push({
+      tab: (
+        <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+          <LayoutDashboard size={18} />
+          {t('仪表盘设置')}
+        </span>
+      ),
+      content: <DashboardSetting />,
+      itemKey: 'dashboard',
+    });
+    panes.push({
+      tab: (
+        <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+          <CreditCard size={18} />
+          {t('支付设置')}
+        </span>
+      ),
+      content: <PaymentSetting />,
+      itemKey: 'payment',
+    });
+    panes.push({
+      tab: (
+        <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+          <Calculator size={18} />
+          {t('分组与模型定价设置')}
+        </span>
+      ),
+      content: <RatioSetting />,
+      itemKey: 'ratio',
+    });
+    panes.push({
+      tab: (
+        <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+          <Activity size={18} />
+          {t('运行设置')}
+        </span>
+      ),
+      content: <RuntimeSetting />,
+      itemKey: 'runtime',
+    });
+    panes.push({
+      tab: (
+        <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+          <Cog size={18} />
+          {t('系统设置')}
+        </span>
+      ),
+      content: <SystemSetting />,
+      itemKey: 'system',
+    });
+  }
+  const onChangeTab = (key) => {
+    setTabActiveKey(key);
+    navigate(`?tab=${key}`);
+  };
+  useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    const tab = searchParams.get('tab');
+    const validKeys = new Set(panes.map((p) => p.itemKey));
+    if (tab && validKeys.has(tab)) {
+      setTabActiveKey(tab);
+    } else {
+      onChangeTab('operation');
+    }
+  }, [location.search]);
+  return (
+    <div className='mt-[60px]'>
+      <SectionPageLayout>
+        <SectionPageLayout.Title>{t('系统设置')}</SectionPageLayout.Title>
+        <SectionPageLayout.Description>
+          {t('管理系统配置，包括运营、支付、定价和运行参数')}
+        </SectionPageLayout.Description>
+        <SectionPageLayout.Content>
+          <Layout>
+            <Layout.Content>
+              <Tabs
+                type='card'
+                collapsible
+                activeKey={tabActiveKey}
+                onChange={(key) => onChangeTab(key)}
+              >
+                {panes.map((pane) => (
+                  <TabPane
+                    itemKey={pane.itemKey}
+                    tab={pane.tab}
+                    key={pane.itemKey}
+                  >
+                    {tabActiveKey === pane.itemKey && pane.content}
+                  </TabPane>
+                ))}
+              </Tabs>
+            </Layout.Content>
+          </Layout>
+        </SectionPageLayout.Content>
+      </SectionPageLayout>
+    </div>
+  );
+};
+
+export default Setting;

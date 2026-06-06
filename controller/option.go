@@ -7,6 +7,7 @@ import (
 
 	"github.com/zhongruan0522/new-api/common"
 	"github.com/zhongruan0522/new-api/model"
+	"github.com/zhongruan0522/new-api/service"
 	"github.com/zhongruan0522/new-api/setting"
 	"github.com/zhongruan0522/new-api/setting/console_setting"
 	"github.com/zhongruan0522/new-api/setting/operation_setting"
@@ -115,6 +116,14 @@ func UpdateOption(c *gin.Context) {
 				"message": "无法启用 Turnstile 校验，请先填入 Turnstile 校验相关配置信息！",
 			})
 
+			return
+		}
+	case "theme.frontend":
+		if option.Value != "default" && option.Value != "classic" {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": "无效的主题值，可选值：default（新版前端）、classic（经典前端）",
+			})
 			return
 		}
 	case "GroupRatio":
@@ -249,6 +258,9 @@ func UpdateOption(c *gin.Context) {
 	if err != nil {
 		common.ApiError(c, err)
 		return
+	}
+	if option.Key == "DataExportInterval" {
+		service.ClearRankingsCache()
 	}
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,

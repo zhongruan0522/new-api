@@ -43,7 +43,7 @@ services:
     environment:
       - SQL_DSN=postgresql://root:123456@postgres:5432/new-api # ⚠️ IMPORTANT: Change the password in production!
       #      - SQL_DSN=root:123456@tcp(mysql:3306)/new-api  # Point to the mysql service, uncomment if using MySQL
-      - REDIS_CONN_STRING=redis://redis
+      - REDIS_CONN_STRING=redis://:123456@redis:6379 # ⚠️ IMPORTANT: Change this password in production!
       - TZ=Asia/Shanghai
       - ERROR_LOG_ENABLED=true # Whether to enable error logging
       - BATCH_UPDATE_ENABLED=true # Whether to enable batch update
@@ -69,6 +69,7 @@ services:
     image: redis:latest
     container_name: redis
     restart: always
+    command: ['redis-server', '--requirepass', '123456'] # ⚠️ IMPORTANT: Change this password in production!
 
   postgres:
     image: postgres:15
@@ -141,7 +142,7 @@ New API supports various environment variable configurations. Here are some comm
 | Environment Variable | Description                                         | Example                               |
 | -------------------- | --------------------------------------------------- | ------------------------------------- |
 | `SQL_DSN`            | Database connection string                          | `root:123456@tcp(mysql:3306)/new-api` |
-| `REDIS_CONN_STRING`  | Redis connection string                             | `redis://redis`                       |
+| `REDIS_CONN_STRING`  | Redis connection string                             | `redis://:123456@redis:6379`          |
 | `TZ`                 | Time zone setting                                   | `Asia/Shanghai`                       |
 | `SESSION_SECRET`     | Session secret (required for multi-node deployment) | `your_random_string`                  |
 | `NODE_TYPE`          | Node type (master/slave)                            | `master` or `slave`                   |
@@ -165,7 +166,7 @@ services:
       - '3000:3000'
     environment:
       - SQL_DSN=root:123456@tcp(mysql:3306)/new-api
-      - REDIS_CONN_STRING=redis://redis
+      - REDIS_CONN_STRING=redis://:123456@redis:6379
       - SESSION_SECRET=your_unique_session_secret
       - CRYPTO_SECRET=your_unique_crypto_secret
       - TZ=Asia/Shanghai
@@ -185,7 +186,7 @@ services:
       - '3001:3000' # Note the different port mapping
     environment:
       - SQL_DSN=root:123456@tcp(mysql:3306)/new-api
-      - REDIS_CONN_STRING=redis://redis
+      - REDIS_CONN_STRING=redis://:123456@redis:6379
       - SESSION_SECRET=your_unique_session_secret # Must be the same as the master node
       - CRYPTO_SECRET=your_unique_crypto_secret # Must be the same as the master node
       - NODE_TYPE=slave # Set as slave node

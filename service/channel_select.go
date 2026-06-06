@@ -3,23 +3,23 @@ package service
 import (
 	"errors"
 
+	"github.com/gin-gonic/gin"
 	"github.com/zhongruan0522/new-api/common"
 	"github.com/zhongruan0522/new-api/constant"
 	"github.com/zhongruan0522/new-api/logger"
 	"github.com/zhongruan0522/new-api/model"
 	"github.com/zhongruan0522/new-api/setting"
 	"github.com/zhongruan0522/new-api/types"
-	"github.com/gin-gonic/gin"
 )
 
 type RetryParam struct {
-	Ctx             *gin.Context
-	TokenGroup      string
-	ModelName       string
-	Retry           *int
-	RelayFormat     types.RelayFormat
-	ExcludeChannelId int   // 同优先级内重试时排除上次失败的渠道
-	resetNextTry    bool
+	Ctx              *gin.Context
+	TokenGroup       string
+	ModelName        string
+	Retry            *int
+	RelayFormat      types.RelayFormat
+	ExcludeChannelId int // 同优先级内重试时排除上次失败的渠道
+	resetNextTry     bool
 }
 
 func (p *RetryParam) GetRetry() int {
@@ -114,7 +114,7 @@ func CacheGetRandomSatisfiedChannel(param *RetryParam) (*model.Channel, string, 
 			priorityIndex := priorityRetry / 2
 			logger.LogDebug(param.Ctx, "Auto selecting group: %s, priorityIndex: %d", autoGroup, priorityIndex)
 
-			channel, _ = model.GetRandomSatisfiedChannel(autoGroup, param.ModelName, priorityIndex, preferredAPIType, param.ExcludeChannelId)
+			channel, _ = model.GetRandomSatisfiedChannelWithRelayFormat(autoGroup, param.ModelName, priorityIndex, preferredAPIType, param.RelayFormat, param.ExcludeChannelId)
 			if channel == nil {
 				// Current group has no available channel for this model, try next group
 				// 当前分组没有该模型的可用渠道，尝试下一个分组
@@ -163,7 +163,7 @@ func CacheGetRandomSatisfiedChannel(param *RetryParam) (*model.Channel, string, 
 		}
 	} else {
 		priorityIndex := param.GetRetry() / 2
-		channel, err = model.GetRandomSatisfiedChannel(param.TokenGroup, param.ModelName, priorityIndex, preferredAPIType, param.ExcludeChannelId)
+		channel, err = model.GetRandomSatisfiedChannelWithRelayFormat(param.TokenGroup, param.ModelName, priorityIndex, preferredAPIType, param.RelayFormat, param.ExcludeChannelId)
 		if err != nil {
 			return nil, param.TokenGroup, err
 		}

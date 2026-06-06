@@ -531,12 +531,14 @@ func ResponseClaude2OpenAI(claudeResponse *dto.ClaudeResponse) *dto.OpenAITextRe
 }
 
 type ClaudeResponseInfo struct {
-	ResponseId   string
-	Created      int64
-	Model        string
-	ResponseText strings.Builder
-	Usage        *dto.Usage
-	Done         bool
+	ResponseId                string
+	Created                   int64
+	Model                     string
+	ResponseText              strings.Builder
+	Usage                     *dto.Usage
+	Done                      bool
+	ResponsesStreamConverter  relaycommon.OpenAIWireStreamConverter
+	ResponsesCompletedEmitted bool
 }
 
 func buildMessageDeltaPatchUsage(claudeResponse *dto.ClaudeResponse, claudeInfo *ClaudeResponseInfo) *dto.ClaudeUsage {
@@ -719,6 +721,19 @@ func HandleStreamResponseData(c *gin.Context, info *relaycommon.RelayInfo, claud
 		if err != nil {
 			logger.LogError(c, "send_stream_response_failed: "+err.Error())
 		}
+	} else if info.RelayFormat == types.RelayFormatOpenAIResponses {
+		response := StreamResponseClaude2OpenAI(&claudeResponse)
+
+		if !FormatClaudeResponseInfo(&claudeResponse, response, claudeInfo) {
+			return nil
+		}
+		if response == nil {
+			return nil
+		}
+
+		if err := writeClaudeChatChunkAsResponsesEvent(c, info, claudeInfo, response); err != nil {
+			return err
+		}
 	} else if info.RelayFormat == types.RelayFormatGemini {
 		response := StreamResponseClaude2OpenAI(&claudeResponse)
 
@@ -766,6 +781,10 @@ func HandleStreamFinalResponse(c *gin.Context, info *relaycommon.RelayInfo, clau
 			}
 		}
 		helper.Done(c)
+	} else if info.RelayFormat == types.RelayFormatOpenAIResponses {
+		if err := writeClaudeResponsesFinalEvent(c, info, claudeInfo); err != nil {
+			common.SysLog("send final responses response failed: " + err.Error())
+		}
 	} else if info.RelayFormat == types.RelayFormatGemini {
 		response := helper.GenerateFinalUsageResponse(claudeInfo.ResponseId, claudeInfo.Created, info.UpstreamModelName, *claudeInfo.Usage)
 		geminiResponse := service.StreamResponseOpenAI2Gemini(response, info)
@@ -780,6 +799,68 @@ func HandleStreamFinalResponse(c *gin.Context, info *relaycommon.RelayInfo, clau
 		c.Render(-1, common.CustomEvent{Data: "data: " + string(geminiResponseStr)})
 		_ = helper.FlushWriter(c)
 	}
+}
+
+func ensureClaudeResponsesStreamConverter(info *relaycommon.RelayInfo, claudeInfo *ClaudeResponseInfo) relaycommon.OpenAIWireStreamConverter {
+	if claudeInfo.ResponsesStreamConverter == nil {
+		claudeInfo.ResponsesStreamConverter = relaycommon.NewChatToResponsesStreamConverter(info.OpenAIResponsesToolContext)
+	}
+	return claudeInfo.ResponsesStreamConverter
+}
+
+func writeClaudeChatChunkAsResponsesEvent(c *gin.Context, info *relaycommon.RelayInfo, claudeInfo *ClaudeResponseInfo, response *dto.ChatCompletionsStreamResponse) *types.NewAPIError {
+	converter := ensureClaudeResponsesStreamConverter(info, claudeInfo)
+	data, err := common.Marshal(response)
+	if err != nil {
+		return types.NewError(err, types.ErrorCodeBadResponseBody)
+	}
+	out, err := converter.ConvertFrame("", string(data), "data: "+string(data)+"\n\n")
+	if err != nil {
+		return types.NewError(err, types.ErrorCodeBadResponseBody)
+	}
+	if out == "" {
+		return nil
+	}
+	if _, err := c.Writer.Write([]byte(out)); err != nil {
+		return types.NewError(err, types.ErrorCodeBadResponseBody)
+	}
+	if err := helper.FlushWriter(c); err != nil {
+		return types.NewError(err, types.ErrorCodeBadResponseBody)
+	}
+	return nil
+}
+
+func writeClaudeResponsesFinalEvent(c *gin.Context, info *relaycommon.RelayInfo, claudeInfo *ClaudeResponseInfo) *types.NewAPIError {
+	if claudeInfo.ResponsesCompletedEmitted {
+		return nil
+	}
+	converter := ensureClaudeResponsesStreamConverter(info, claudeInfo)
+
+	if claudeInfo.Usage != nil {
+		usageChunk := helper.GenerateFinalUsageResponse(claudeInfo.ResponseId, claudeInfo.Created, info.UpstreamModelName, *claudeInfo.Usage)
+		data, err := common.Marshal(usageChunk)
+		if err != nil {
+			return types.NewError(err, types.ErrorCodeBadResponseBody)
+		}
+		if _, err := converter.ConvertFrame("", string(data), "data: "+string(data)+"\n\n"); err != nil {
+			return types.NewError(err, types.ErrorCodeBadResponseBody)
+		}
+	}
+
+	out, err := converter.ConvertFrame("", "[DONE]", "data: [DONE]\n\n")
+	if err != nil {
+		return types.NewError(err, types.ErrorCodeBadResponseBody)
+	}
+	if out != "" {
+		if _, err := c.Writer.Write([]byte(out)); err != nil {
+			return types.NewError(err, types.ErrorCodeBadResponseBody)
+		}
+		if err := helper.FlushWriter(c); err != nil {
+			return types.NewError(err, types.ErrorCodeBadResponseBody)
+		}
+	}
+	claudeInfo.ResponsesCompletedEmitted = true
+	return nil
 }
 
 func ClaudeStreamHandler(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (*dto.Usage, *types.NewAPIError) {
@@ -828,6 +909,17 @@ func HandleClaudeResponseData(c *gin.Context, info *relaycommon.RelayInfo, claud
 		openaiResponse := ResponseClaude2OpenAI(&claudeResponse)
 		openaiResponse.Usage = *claudeInfo.Usage
 		responseData, err = json.Marshal(openaiResponse)
+		if err != nil {
+			return types.NewError(err, types.ErrorCodeBadResponseBody)
+		}
+	case types.RelayFormatOpenAIResponses:
+		openaiResponse := ResponseClaude2OpenAI(&claudeResponse)
+		openaiResponse.Usage = *claudeInfo.Usage
+		responsesResp, convErr := relaycommon.ConvertChatCompletionResponseToResponsesResponseWithToolContext(openaiResponse, info.OpenAIResponsesToolContext)
+		if convErr != nil {
+			return types.NewError(convErr, types.ErrorCodeBadResponseBody)
+		}
+		responseData, err = common.Marshal(responsesResp)
 		if err != nil {
 			return types.NewError(err, types.ErrorCodeBadResponseBody)
 		}

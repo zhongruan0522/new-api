@@ -43,7 +43,7 @@ services:
     environment:
       - SQL_DSN=postgresql://root:123456@postgres:5432/new-api # ⚠️ 重要: 本番環境ではこのパスワードを変更してください！
       #      - SQL_DSN=root:123456@tcp(mysql:3306)/new-api  # mysql サービスを指します。MySQL を使用する場合はコメント解除してください
-      - REDIS_CONN_STRING=redis://redis
+      - REDIS_CONN_STRING=redis://:123456@redis:6379 # ⚠️ 本番環境では必ずこのパスワードを変更してください！
       - TZ=Asia/Shanghai
       - ERROR_LOG_ENABLED=true # エラーログ記録を有効にするかどうか
       - BATCH_UPDATE_ENABLED=true # バッチ更新を有効にするかどうか
@@ -69,6 +69,7 @@ services:
     image: redis:latest
     container_name: redis
     restart: always
+    command: ['redis-server', '--requirepass', '123456'] # ⚠️ 本番環境では必ずこのパスワードを変更してください！
 
   postgres:
     image: postgres:15
@@ -141,7 +142,7 @@ New API は複数の環境変数設定をサポートしており、以下はよ
 | 環境変数            | 説明                                                 | 示例                                  |
 | ------------------- | ---------------------------------------------------- | ------------------------------------- |
 | `SQL_DSN`           | データベース接続文字列                               | `root:123456@tcp(mysql:3306)/new-api` |
-| `REDIS_CONN_STRING` | Redis 接続文字列                                     | `redis://redis`                       |
+| `REDIS_CONN_STRING` | Redis 接続文字列                                     | `redis://:123456@redis:6379`          |
 | `TZ`                | タイムゾーン設定                                     | `Asia/Shanghai`                       |
 | `SESSION_SECRET`    | セッションキー（マルチノードデプロイメントでは必須） | `your_random_string`                  |
 | `NODE_TYPE`         | ノードタイプ（マスター/スレーブ）                    | `master`または`slave`                 |
@@ -165,7 +166,7 @@ services:
       - '3000:3000'
     environment:
       - SQL_DSN=root:123456@tcp(mysql:3306)/new-api
-      - REDIS_CONN_STRING=redis://redis
+      - REDIS_CONN_STRING=redis://:123456@redis:6379
       - SESSION_SECRET=your_unique_session_secret
       - CRYPTO_SECRET=your_unique_crypto_secret
       - TZ=Asia/Shanghai
@@ -185,7 +186,7 @@ services:
       - '3001:3000' # ポートマッピングが異なることに注意
     environment:
       - SQL_DSN=root:123456@tcp(mysql:3306)/new-api
-      - REDIS_CONN_STRING=redis://redis
+      - REDIS_CONN_STRING=redis://:123456@redis:6379
       - SESSION_SECRET=your_unique_session_secret # マスターノードと同じである必要があります
       - CRYPTO_SECRET=your_unique_crypto_secret # マスターノードと同じである必要があります
       - NODE_TYPE=slave # スレーブノードとして設定

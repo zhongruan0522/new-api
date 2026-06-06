@@ -36,6 +36,10 @@ func PasskeyRegisterBegin(c *gin.Context) {
 		return
 	}
 
+	if !requirePasskeyRegistrationVerification(c, user.Id) {
+		return
+	}
+
 	credential, err := model.GetPasskeyByUserID(user.Id)
 	if err != nil && !errors.Is(err, model.ErrPasskeyNotFound) {
 		common.ApiError(c, err)
@@ -54,7 +58,8 @@ func PasskeyRegisterBegin(c *gin.Context) {
 	waUser := passkeysvc.NewWebAuthnUser(user, credential)
 	var options []webauthnlib.RegistrationOption
 	if credential != nil {
-		descriptor := credential.ToWebAuthnCredential().Descriptor()
+		webAuthnCredential := credential.ToWebAuthnCredential()
+		descriptor := webAuthnCredential.Descriptor()
 		options = append(options, webauthnlib.WithExclusions([]protocol.CredentialDescriptor{descriptor}))
 	}
 
@@ -93,6 +98,10 @@ func PasskeyRegisterFinish(c *gin.Context) {
 			"success": false,
 			"message": err.Error(),
 		})
+		return
+	}
+
+	if !requirePasskeyRegistrationVerification(c, user.Id) {
 		return
 	}
 
@@ -148,6 +157,10 @@ func PasskeyDelete(c *gin.Context) {
 			"success": false,
 			"message": err.Error(),
 		})
+		return
+	}
+
+	if !requirePasskeyDeleteVerification(c, user.Id) {
 		return
 	}
 
@@ -470,6 +483,12 @@ func PasskeyVerifyFinish(c *gin.Context) {
 		return
 	}
 
+	_, err = PasskeyVerifyAndMarkReadySession(c, user.Id)
+	if err != nil {
+		common.ApiError(c, fmt.Errorf("保存验证状态失败: %v", err))
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "Passkey 验证成功",
@@ -494,4 +513,50 @@ func getSessionUser(c *gin.Context) (*model.User, error) {
 		return nil, errors.New("该用户已被禁用")
 	}
 	return user, nil
+}
+
+func requirePasskeyRegistrationVerification(c *gin.Context, userID int) bool {
+	twoFA, err := model.GetTwoFAByUserId(userID)
+	if err != nil {
+		common.ApiError(c, err)
+		return false
+	}
+	if twoFA == nil || !twoFA.IsEnabled {
+		return true
+	}
+	return requireSecureVerificationMethod(c, userID, secureVerificationMethod2FA)
+}
+
+func requirePasskeyDeleteVerification(c *gin.Context, userID int) bool {
+	twoFA, err := model.GetTwoFAByUserId(userID)
+	if err != nil {
+		common.ApiError(c, err)
+		return false
+	}
+	if twoFA != nil && twoFA.IsEnabled {
+		return requireSecureVerificationMethod(c, userID, secureVerificationMethod2FA)
+	}
+
+	_, err = model.GetPasskeyByUserID(userID)
+	if err != nil {
+		if errors.Is(err, model.ErrPasskeyNotFound) {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": "该用户尚未绑定 Passkey",
+			})
+			return false
+		}
+		common.ApiError(c, err)
+		return false
+	}
+
+	return requireSecureVerificationMethod(c, userID, secureVerificationMethodPasskey)
+}
+
+func requireSecureVerificationMethod(c *gin.Context, userID int, method string) bool {
+	if !hasSecureVerificationMethodForUser(c, userID, method) {
+		common.ApiErrorMsg(c, "请先完成对应的安全验证")
+		return false
+	}
+	return true
 }

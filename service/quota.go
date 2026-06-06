@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"net/http"
 	"time"
 
 	"github.com/zhongruan0522/new-api/common"
@@ -25,6 +26,16 @@ import (
 type TokenDetails struct {
 	TextTokens  int
 	AudioTokens int
+}
+
+const emptyUsageErrorMessage = "上游没有返回计费信息，无法扣费（可能是上游超时）"
+
+// NewEmptyUsageRetryError returns a retryable upstream error when native-format responses contain no billing usage.
+func NewEmptyUsageRetryError(relayInfo *relaycommon.RelayInfo) *types.NewAPIError {
+	if relayInfo == nil || len(relayInfo.RequestConversionChain) > 1 {
+		return nil
+	}
+	return types.NewOpenAIError(errors.New(emptyUsageErrorMessage), types.ErrorCodeBadResponse, http.StatusBadGateway)
 }
 
 type QuotaInfo struct {
@@ -151,7 +162,7 @@ func PreWssConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usag
 }
 
 func PostWssConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, modelName string,
-	usage *dto.RealtimeUsage, extraContent string) {
+	usage *dto.RealtimeUsage, extraContent string) *types.NewAPIError {
 
 	useTimeMs := time.Since(relayInfo.StartTime).Milliseconds()
 	textInputTokens := usage.InputTokenDetails.TextTokens
@@ -209,9 +220,14 @@ func PostWssConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, mod
 	}
 
 	// record all the consume log even if quota is 0
+	logType := 0 // 0 表示使用默认的 LogTypeConsume
 	if totalTokens == 0 {
+		if apiErr := NewEmptyUsageRetryError(relayInfo); apiErr != nil {
+			return apiErr
+		}
 		// in this case, must be some error happened
 		// we cannot just return, because we may have to return the pre-consumed quota
+		logType = model.LogTypeError
 		quota = 0
 		logContent += fmt.Sprintf("（可能是上游超时）")
 		logger.LogError(ctx, fmt.Sprintf("total tokens is 0, cannot consume quota, userId %d, channelId %d, "+
@@ -246,10 +262,12 @@ func PostWssConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, mod
 		IsStream:         relayInfo.IsStream,
 		Group:            relayInfo.UsingGroup,
 		Other:            other,
+		LogType:          logType,
 	})
+	return nil
 }
 
-func PostClaudeConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage *dto.Usage) {
+func PostClaudeConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage *dto.Usage) *types.NewAPIError {
 
 	useTimeMs := time.Since(relayInfo.StartTime).Milliseconds()
 	promptTokens := usage.PromptTokens
@@ -327,9 +345,14 @@ func PostClaudeConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, 
 
 	var logContent string
 	// record all the consume log even if quota is 0
+	logType := 0 // 0 表示使用默认的 LogTypeConsume
 	if totalTokens == 0 {
+		if apiErr := NewEmptyUsageRetryError(relayInfo); apiErr != nil {
+			return apiErr
+		}
 		// in this case, must be some error happened
 		// we cannot just return, because we may have to return the pre-consumed quota
+		logType = model.LogTypeError
 		quota = 0
 		logContent += fmt.Sprintf("（可能是上游出错）")
 		logger.LogError(ctx, fmt.Sprintf("total tokens is 0, cannot consume quota, userId %d, channelId %d, "+
@@ -360,7 +383,6 @@ func PostClaudeConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, 
 		ChannelId:        relayInfo.ChannelId,
 		PromptTokens:     promptTokens,
 		CompletionTokens: completionTokens,
-		InputTokens:      usage.PromptTokens,
 		ModelName:        modelName,
 		TokenName:        tokenName,
 		Quota:            quota,
@@ -370,8 +392,9 @@ func PostClaudeConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, 
 		IsStream:         relayInfo.IsStream,
 		Group:            relayInfo.UsingGroup,
 		Other:            other,
+		LogType:          logType,
 	})
-
+	return nil
 }
 
 func CalcOpenRouterCacheCreateTokens(usage dto.Usage, priceData types.PriceData) int {
@@ -395,7 +418,7 @@ func CalcOpenRouterCacheCreateTokens(usage dto.Usage, priceData types.PriceData)
 		(promptCacheCreatePrice - quotaPrice)))
 }
 
-func PostAudioConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage *dto.Usage, extraContent string) {
+func PostAudioConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage *dto.Usage, extraContent string) *types.NewAPIError {
 
 	useTimeMs := time.Since(relayInfo.StartTime).Milliseconds()
 	textInputTokens := usage.PromptTokensDetails.TextTokens
@@ -454,9 +477,14 @@ func PostAudioConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, u
 	}
 
 	// record all the consume log even if quota is 0
+	logType := 0 // 0 表示使用默认的 LogTypeConsume
 	if totalTokens == 0 {
+		if apiErr := NewEmptyUsageRetryError(relayInfo); apiErr != nil {
+			return apiErr
+		}
 		// in this case, must be some error happened
 		// we cannot just return, because we may have to return the pre-consumed quota
+		logType = model.LogTypeError
 		quota = 0
 		logContent += fmt.Sprintf("（可能是上游超时）")
 		logger.LogError(ctx, fmt.Sprintf("total tokens is 0, cannot consume quota, userId %d, channelId %d, "+
@@ -494,7 +522,9 @@ func PostAudioConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, u
 		IsStream:         relayInfo.IsStream,
 		Group:            relayInfo.UsingGroup,
 		Other:            other,
+		LogType:          logType,
 	})
+	return nil
 }
 
 func PreConsumeTokenQuota(relayInfo *relaycommon.RelayInfo, quota int) error {

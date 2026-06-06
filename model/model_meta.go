@@ -2,6 +2,7 @@ package model
 
 import (
 	"strconv"
+	"strings"
 
 	"github.com/zhongruan0522/new-api/common"
 
@@ -21,18 +22,26 @@ type BoundChannel struct {
 }
 
 type Model struct {
-	Id           int            `json:"id"`
-	ModelName    string         `json:"model_name" gorm:"size:128;not null;uniqueIndex:uk_model_name_delete_at,priority:1"`
-	Description  string         `json:"-" gorm:"type:text"`
-	Icon         string         `json:"icon,omitempty" gorm:"type:varchar(128)"`
-	Tags         string         `json:"tags,omitempty" gorm:"type:varchar(255)"`
-	VendorID     int            `json:"vendor_id,omitempty" gorm:"index"`
-	Endpoints    string         `json:"endpoints,omitempty" gorm:"type:text"`
-	Status       int            `json:"status" gorm:"default:1"`
-	SyncOfficial int            `json:"-" gorm:"default:1"`
-	CreatedTime  int64          `json:"created_time" gorm:"bigint"`
-	UpdatedTime  int64          `json:"updated_time" gorm:"bigint"`
-	DeletedAt    gorm.DeletedAt `json:"-" gorm:"index;uniqueIndex:uk_model_name_delete_at,priority:2"`
+	Id               int            `json:"id"`
+	ModelName        string         `json:"model_name" gorm:"size:128;not null;uniqueIndex:uk_model_name_delete_at,priority:1"`
+	Description      string         `json:"description,omitempty" gorm:"type:text"`
+	Icon             string         `json:"icon,omitempty" gorm:"type:varchar(128)"`
+	Tags             string         `json:"tags,omitempty" gorm:"type:varchar(255)"`
+	VendorID         int            `json:"vendor_id,omitempty" gorm:"index"`
+	Endpoints        string         `json:"endpoints,omitempty" gorm:"type:text"`
+	ContextLength    int            `json:"context_length,omitempty" gorm:"default:0"`
+	MaxOutputTokens  int            `json:"max_output_tokens,omitempty" gorm:"default:0"`
+	InputModalities  []string       `json:"input_modalities,omitempty" gorm:"serializer:json;type:text"`
+	OutputModalities []string       `json:"output_modalities,omitempty" gorm:"serializer:json;type:text"`
+	Capabilities     []string       `json:"capabilities,omitempty" gorm:"serializer:json;type:text"`
+	KnowledgeCutoff  string         `json:"knowledge_cutoff,omitempty" gorm:"type:varchar(32)"`
+	ReleaseDate      string         `json:"release_date,omitempty" gorm:"type:varchar(32)"`
+	ParameterCount   string         `json:"parameter_count,omitempty" gorm:"type:varchar(64)"`
+	Status           int            `json:"status" gorm:"default:1"`
+	SyncOfficial     int            `json:"-" gorm:"default:1"`
+	CreatedTime      int64          `json:"created_time" gorm:"bigint"`
+	UpdatedTime      int64          `json:"updated_time" gorm:"bigint"`
+	DeletedAt        gorm.DeletedAt `json:"-" gorm:"index;uniqueIndex:uk_model_name_delete_at,priority:2"`
 
 	BoundChannels []BoundChannel `json:"bound_channels,omitempty" gorm:"-"`
 	EnableGroups  []string       `json:"enable_groups,omitempty" gorm:"-"`
@@ -77,7 +86,7 @@ func (mi *Model) Update() error {
 	mi.UpdatedTime = common.GetTimestamp()
 	// 使用 Select 强制更新所有字段，包括零值
 	return DB.Model(&Model{}).Where("id = ?", mi.Id).
-		Select("model_name", "description", "icon", "tags", "vendor_id", "endpoints", "status", "sync_official", "name_rule", "updated_time").
+		Select("model_name", "description", "icon", "tags", "vendor_id", "endpoints", "context_length", "max_output_tokens", "input_modalities", "output_modalities", "capabilities", "knowledge_cutoff", "release_date", "parameter_count", "status", "sync_official", "name_rule", "updated_time").
 		Updates(mi).Error
 }
 
@@ -107,6 +116,30 @@ func GetAllModels(offset int, limit int) ([]*Model, error) {
 	var models []*Model
 	err := DB.Order("id DESC").Offset(offset).Limit(limit).Find(&models).Error
 	return models, err
+}
+
+func MatchModelMeta(modelName string, models []Model) *Model {
+	for i := range models {
+		if models[i].NameRule == NameRuleExact && models[i].ModelName == modelName {
+			return &models[i]
+		}
+	}
+	for i := range models {
+		if models[i].NameRule == NameRulePrefix && strings.HasPrefix(modelName, models[i].ModelName) {
+			return &models[i]
+		}
+	}
+	for i := range models {
+		if models[i].NameRule == NameRuleContains && strings.Contains(modelName, models[i].ModelName) {
+			return &models[i]
+		}
+	}
+	for i := range models {
+		if models[i].NameRule == NameRuleSuffix && strings.HasSuffix(modelName, models[i].ModelName) {
+			return &models[i]
+		}
+	}
+	return nil
 }
 
 func GetBoundChannelsByModelsMap(modelNames []string) (map[string][]BoundChannel, error) {

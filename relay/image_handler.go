@@ -130,6 +130,8 @@ func ImageHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *type
 		logContent = append(logContent, fmt.Sprintf("生成数量 %d", request.N))
 	}
 
-	postConsumeQuota(c, info, usage.(*dto.Usage), logContent...)
+	if apiErr := postConsumeQuota(c, info, usage.(*dto.Usage), logContent...); apiErr != nil {
+		return apiErr
+	}
 	return nil
 }

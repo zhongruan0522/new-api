@@ -43,7 +43,7 @@ services:
     environment:
       - SQL_DSN=postgresql://root:123456@postgres:5432/new-api # ⚠️ IMPORTANT: Change the password in production!
       #      - SQL_DSN=root:123456@tcp(mysql:3306)/new-api  # Point to the mysql service, uncomment if using MySQL
-      - REDIS_CONN_STRING=redis://redis
+      - REDIS_CONN_STRING=redis://:123456@redis:6379 # ⚠️ 生产环境必须修改此密码！
       - TZ=Asia/Shanghai
       - ERROR_LOG_ENABLED=true # 是否启用错误日志记录
       - BATCH_UPDATE_ENABLED=true # 是否启用批量更新 batch update enabled
@@ -69,6 +69,7 @@ services:
     image: redis:latest
     container_name: redis
     restart: always
+    command: ['redis-server', '--requirepass', '123456'] # ⚠️ 生产环境必须修改此密码！
 
   postgres:
     image: postgres:15
@@ -141,7 +142,7 @@ New API支持多种环境变量配置，以下是常用的几个：
 | 环境变量            | 说明                   | 示例                                  |
 | ------------------- | ---------------------- | ------------------------------------- |
 | `SQL_DSN`           | 数据库连接字符串       | `root:123456@tcp(mysql:3306)/new-api` |
-| `REDIS_CONN_STRING` | Redis连接字符串        | `redis://redis`                       |
+| `REDIS_CONN_STRING` | Redis连接字符串        | `redis://:123456@redis:6379`          |
 | `TZ`                | 时区设置               | `Asia/Shanghai`                       |
 | `SESSION_SECRET`    | 会话密钥(多机部署必须) | `your_random_string`                  |
 | `NODE_TYPE`         | 节点类型(主/从)        | `master`或`slave`                     |
@@ -165,7 +166,7 @@ services:
       - '3000:3000'
     environment:
       - SQL_DSN=root:123456@tcp(mysql:3306)/new-api
-      - REDIS_CONN_STRING=redis://redis
+      - REDIS_CONN_STRING=redis://:123456@redis:6379
       - SESSION_SECRET=your_unique_session_secret
       - CRYPTO_SECRET=your_unique_crypto_secret
       - TZ=Asia/Shanghai
@@ -185,7 +186,7 @@ services:
       - '3001:3000' # 注意端口映射不同
     environment:
       - SQL_DSN=root:123456@tcp(mysql:3306)/new-api
-      - REDIS_CONN_STRING=redis://redis
+      - REDIS_CONN_STRING=redis://:123456@redis:6379
       - SESSION_SECRET=your_unique_session_secret # 必须与主节点相同
       - CRYPTO_SECRET=your_unique_crypto_secret # 必须与主节点相同
       - NODE_TYPE=slave # 设置为从节点

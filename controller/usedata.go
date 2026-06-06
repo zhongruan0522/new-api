@@ -6,6 +6,7 @@ import (
 
 	"github.com/zhongruan0522/new-api/common"
 	"github.com/zhongruan0522/new-api/model"
+	"github.com/zhongruan0522/new-api/service"
 
 	"github.com/gin-gonic/gin"
 )
@@ -22,6 +23,13 @@ func isUserQuotaRangeTooLong(startTimestamp, endTimestamp int64) bool {
 func GetAllQuotaDates(c *gin.Context) {
 	startTimestamp, _ := strconv.ParseInt(c.Query("start_timestamp"), 10, 64)
 	endTimestamp, _ := strconv.ParseInt(c.Query("end_timestamp"), 10, 64)
+	if isUserQuotaRangeTooLong(startTimestamp, endTimestamp) {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": "时间跨度不能超过 1 个月",
+		})
+		return
+	}
 	username := c.Query("username")
 	dates, err := model.GetAllQuotaDates(startTimestamp, endTimestamp, username)
 	if err != nil {
@@ -34,6 +42,28 @@ func GetAllQuotaDates(c *gin.Context) {
 		"data":    dates,
 	})
 	return
+}
+
+func GetQuotaDataGroupByUser(c *gin.Context) {
+	startTimestamp, _ := strconv.ParseInt(c.Query("start_timestamp"), 10, 64)
+	endTimestamp, _ := strconv.ParseInt(c.Query("end_timestamp"), 10, 64)
+	if isUserQuotaRangeTooLong(startTimestamp, endTimestamp) {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": "时间跨度不能超过 1 个月",
+		})
+		return
+	}
+	dates, err := model.GetQuotaDataGroupByUser(startTimestamp, endTimestamp)
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "",
+		"data":    dates,
+	})
 }
 
 func GetUserQuotaDates(c *gin.Context) {
@@ -58,90 +88,6 @@ func GetUserQuotaDates(c *gin.Context) {
 		"data":    dates,
 	})
 	return
-}
-
-// GetAllRegionStats 管理员查询所有用户的国内/海外模型成功率
-func GetAllRegionStats(c *gin.Context) {
-	startTimestamp, _ := strconv.ParseInt(c.Query("start_timestamp"), 10, 64)
-	endTimestamp, _ := strconv.ParseInt(c.Query("end_timestamp"), 10, 64)
-	username := c.Query("username")
-
-	var stats model.RegionStatsResponse
-	var err error
-	if username != "" {
-		stats, err = model.GetRegionStatsByUsername(username, startTimestamp, endTimestamp)
-	} else {
-		stats, err = model.GetAllRegionStats(startTimestamp, endTimestamp)
-	}
-	if err != nil {
-		common.ApiError(c, err)
-		return
-	}
-	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"message": "",
-		"data":    stats,
-	})
-}
-
-// GetUserRegionStats 普通用户查询自己的国内/海外模型成功率
-func GetUserRegionStats(c *gin.Context) {
-	userId := c.GetInt("id")
-	startTimestamp, _ := strconv.ParseInt(c.Query("start_timestamp"), 10, 64)
-	endTimestamp, _ := strconv.ParseInt(c.Query("end_timestamp"), 10, 64)
-
-	stats, err := model.GetRegionStatsByUserId(userId, startTimestamp, endTimestamp)
-	if err != nil {
-		common.ApiError(c, err)
-		return
-	}
-	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"message": "",
-		"data":    stats,
-	})
-}
-
-// GetAllModelRank 管理员查询所有用户的模型调用排行（全部/国内/海外）
-func GetAllModelRank(c *gin.Context) {
-	startTimestamp, _ := strconv.ParseInt(c.Query("start_timestamp"), 10, 64)
-	endTimestamp, _ := strconv.ParseInt(c.Query("end_timestamp"), 10, 64)
-	username := c.Query("username")
-
-	var rank model.ModelRankResponse
-	var err error
-	if username != "" {
-		rank, err = model.GetModelRankByUsername(username, startTimestamp, endTimestamp)
-	} else {
-		rank, err = model.GetAllModelRank(startTimestamp, endTimestamp)
-	}
-	if err != nil {
-		common.ApiError(c, err)
-		return
-	}
-	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"message": "",
-		"data":    rank,
-	})
-}
-
-// GetUserModelRank 普通用户查询自己的模型调用排行（全部/国内/海外）
-func GetUserModelRank(c *gin.Context) {
-	userId := c.GetInt("id")
-	startTimestamp, _ := strconv.ParseInt(c.Query("start_timestamp"), 10, 64)
-	endTimestamp, _ := strconv.ParseInt(c.Query("end_timestamp"), 10, 64)
-
-	rank, err := model.GetModelRankByUserId(userId, startTimestamp, endTimestamp)
-	if err != nil {
-		common.ApiError(c, err)
-		return
-	}
-	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"message": "",
-		"data":    rank,
-	})
 }
 
 // GetAllMediaConvertStats 管理员查询所有用户的图片/视频转URL统计
@@ -179,6 +125,7 @@ func RecalculateQuotaData(c *gin.Context) {
 		common.ApiError(c, err)
 		return
 	}
+	service.ClearRankingsCache()
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "重新计算完成",

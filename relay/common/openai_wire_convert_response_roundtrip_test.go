@@ -3,6 +3,7 @@ package common
 import (
 	"testing"
 
+	"github.com/zhongruan0522/new-api/common"
 	"github.com/zhongruan0522/new-api/dto"
 )
 
@@ -105,5 +106,219 @@ func TestConvertChatCompletionResponseToResponsesResponse_PreservesReasoning(t *
 	}
 	if got.Output[1].Type != "message" {
 		t.Fatalf("output[1].type = %q, want %q", got.Output[1].Type, "message")
+	}
+}
+
+// Test usage detail mapping because cached and reasoning token fields affect
+// billing when Chat upstream responses are rewritten to Responses clients.
+func TestConvertChatCompletionResponseToResponsesResponse_MapsUsageDetails(t *testing.T) {
+	chatResp := &dto.OpenAITextResponse{
+		Id:      "chatcmpl_usage",
+		Object:  "chat.completion",
+		Created: 1700000000,
+		Model:   "gpt-4.1",
+		Choices: []dto.OpenAITextResponseChoice{{
+			Index:        0,
+			Message:      dto.Message{Role: "assistant", Content: "ok"},
+			FinishReason: "stop",
+		}},
+		Usage: dto.Usage{
+			PromptTokens:     10,
+			CompletionTokens: 7,
+			TotalTokens:      17,
+			PromptTokensDetails: dto.InputTokenDetails{
+				CachedTokens: 3,
+				TextTokens:   10,
+			},
+			CompletionTokenDetails: dto.OutputTokenDetails{
+				ReasoningTokens: 4,
+				TextTokens:      3,
+			},
+		},
+	}
+
+	got, err := ConvertChatCompletionResponseToResponsesResponse(chatResp)
+	if err != nil {
+		t.Fatalf("ConvertChatCompletionResponseToResponsesResponse() error = %v", err)
+	}
+	if got.Usage == nil {
+		t.Fatal("usage is nil")
+	}
+	if got.Usage.InputTokens != 10 || got.Usage.OutputTokens != 7 || got.Usage.TotalTokens != 17 {
+		t.Fatalf("usage = %+v, want input=10 output=7 total=17", got.Usage)
+	}
+	if got.Usage.InputTokensDetails == nil || got.Usage.InputTokensDetails.CachedTokens != 3 || got.Usage.InputTokensDetails.TextTokens != 10 {
+		t.Fatalf("input token details = %+v, want cached=3 text=10", got.Usage.InputTokensDetails)
+	}
+	if got.Usage.OutputTokensDetails == nil || got.Usage.OutputTokensDetails.ReasoningTokens != 4 || got.Usage.OutputTokensDetails.TextTokens != 3 {
+		t.Fatalf("output token details = %+v, want reasoning=4 text=3", got.Usage.OutputTokensDetails)
+	}
+}
+
+// Test the inverse usage mapping because Responses upstream usage is converted
+// back into Chat usage before quota and downstream response handling.
+func TestConvertResponsesResponseToChatCompletionResponse_MapsUsageDetails(t *testing.T) {
+	responsesResp := &dto.OpenAIResponsesResponse{
+		ID:        "resp_usage",
+		Object:    "response",
+		CreatedAt: 1700000000,
+		Status:    "completed",
+		Model:     "gpt-4.1",
+		Output: []dto.ResponsesOutput{{
+			Type:   "message",
+			ID:     "msg_1",
+			Status: "completed",
+			Role:   "assistant",
+			Content: []dto.ResponsesOutputContent{{
+				Type: "output_text",
+				Text: "ok",
+			}},
+		}},
+		Usage: &dto.Usage{
+			InputTokens:  11,
+			OutputTokens: 8,
+			TotalTokens:  19,
+			InputTokensDetails: &dto.InputTokenDetails{
+				CachedTokens: 5,
+				ImageTokens:  2,
+			},
+			OutputTokensDetails: &dto.OutputTokenDetails{
+				ReasoningTokens: 6,
+				AudioTokens:     1,
+			},
+		},
+	}
+
+	got, err := ConvertResponsesResponseToChatCompletionResponse(responsesResp)
+	if err != nil {
+		t.Fatalf("ConvertResponsesResponseToChatCompletionResponse() error = %v", err)
+	}
+	if got.Usage.PromptTokens != 11 || got.Usage.CompletionTokens != 8 || got.Usage.TotalTokens != 19 {
+		t.Fatalf("usage = %+v, want prompt=11 completion=8 total=19", got.Usage)
+	}
+	if got.Usage.PromptTokensDetails.CachedTokens != 5 || got.Usage.PromptTokensDetails.ImageTokens != 2 {
+		t.Fatalf("prompt token details = %+v, want cached=5 image=2", got.Usage.PromptTokensDetails)
+	}
+	if got.Usage.CompletionTokenDetails.ReasoningTokens != 6 || got.Usage.CompletionTokenDetails.AudioTokens != 1 {
+		t.Fatalf("completion token details = %+v, want reasoning=6 audio=1", got.Usage.CompletionTokenDetails)
+	}
+}
+
+// Test custom tool response mapping because Chat custom calls and Responses
+// custom_tool_call items use different field names for the same model action.
+func TestConvertChatCompletionResponseToResponsesResponse_CustomToolCall(t *testing.T) {
+	chatResp := &dto.OpenAITextResponse{
+		Id:      "chatcmpl_custom",
+		Object:  "chat.completion",
+		Created: 1700000000,
+		Model:   "gpt-5",
+		Choices: []dto.OpenAITextResponseChoice{{
+			Index: 0,
+			Message: dto.Message{
+				Role:      "assistant",
+				Content:   nil,
+				ToolCalls: []byte(`[{"id":"call_custom","type":"custom","custom":{"name":"code_exec","input":"print(1)"}}]`),
+			},
+			FinishReason: "tool_calls",
+		}},
+	}
+
+	got, err := ConvertChatCompletionResponseToResponsesResponse(chatResp)
+	if err != nil {
+		t.Fatalf("ConvertChatCompletionResponseToResponsesResponse() error = %v", err)
+	}
+	if len(got.Output) != 1 {
+		t.Fatalf("output len = %d, want 1", len(got.Output))
+	}
+	if got.Output[0].Type != "custom_tool_call" || got.Output[0].CallId != "call_custom" || got.Output[0].Name != "code_exec" || got.Output[0].Input != "print(1)" {
+		t.Fatalf("custom output = %#v, want custom_tool_call", got.Output[0])
+	}
+}
+
+// Test custom tool proxy restoration because Responses custom tools are
+// freeform, while Chat-only upstreams can only represent them as function
+// arguments with an input string.
+func TestResponsesCustomToolProxyRoundTrip_GenericCustomName(t *testing.T) {
+	toolsRaw, err := common.Marshal([]map[string]any{{
+		"type":        "custom",
+		"name":        "shell_exec",
+		"description": "execute shell text",
+		"format":      map[string]any{"type": "text"},
+	}})
+	if err != nil {
+		t.Fatalf("marshal tools error = %v", err)
+	}
+
+	chatReq, toolContext, err := ConvertResponsesRequestToChatCompletionsRequestWithToolContext(&dto.OpenAIResponsesRequest{
+		Model: "gpt-5",
+		Input: []byte(`"run a command"`),
+		Tools: toolsRaw,
+	})
+	if err != nil {
+		t.Fatalf("ConvertResponsesRequestToChatCompletionsRequestWithToolContext() error = %v", err)
+	}
+	if len(chatReq.Tools) != 1 {
+		t.Fatalf("chat tools len = %d, want 1", len(chatReq.Tools))
+	}
+	if chatReq.Tools[0].Type != "function" || chatReq.Tools[0].Function.Name != "shell_exec" {
+		t.Fatalf("chat tool = %#v, want function proxy named shell_exec", chatReq.Tools[0])
+	}
+	params, ok := chatReq.Tools[0].Function.Parameters.(map[string]any)
+	if !ok || params["type"] != "object" {
+		t.Fatalf("chat tool parameters = %#v, want object schema", chatReq.Tools[0].Function.Parameters)
+	}
+	properties, ok := params["properties"].(map[string]any)
+	if !ok {
+		t.Fatalf("chat tool properties = %#v, want object", params["properties"])
+	}
+	inputSchema, ok := properties["input"].(map[string]any)
+	if !ok || inputSchema["type"] != "string" {
+		t.Fatalf("chat tool input schema = %#v, want string input", properties["input"])
+	}
+
+	arguments, err := BuildChatArgumentsForResponsesCustomToolInput("printf 'hi'\n")
+	if err != nil {
+		t.Fatalf("build custom tool arguments error = %v", err)
+	}
+	toolCallsRaw, err := common.Marshal([]map[string]any{{
+		"id":   "call_shell",
+		"type": "function",
+		"function": map[string]any{
+			"name":      "shell_exec",
+			"arguments": arguments,
+		},
+	}})
+	if err != nil {
+		t.Fatalf("marshal chat tool calls error = %v", err)
+	}
+
+	got, err := ConvertChatCompletionResponseToResponsesResponseWithToolContext(&dto.OpenAITextResponse{
+		Id:      "chatcmpl_shell",
+		Object:  "chat.completion",
+		Created: 1700000000,
+		Model:   "gpt-5",
+		Choices: []dto.OpenAITextResponseChoice{{
+			Index: 0,
+			Message: dto.Message{
+				Role:      "assistant",
+				ToolCalls: toolCallsRaw,
+			},
+			FinishReason: "tool_calls",
+		}},
+	}, toolContext)
+	if err != nil {
+		t.Fatalf("ConvertChatCompletionResponseToResponsesResponseWithToolContext() error = %v", err)
+	}
+	if len(got.Output) != 1 {
+		t.Fatalf("output len = %d, want 1", len(got.Output))
+	}
+	if got.Output[0].Type != "custom_tool_call" || got.Output[0].CallId != "call_shell" || got.Output[0].Name != "shell_exec" {
+		t.Fatalf("output item = %#v, want shell_exec custom_tool_call", got.Output[0])
+	}
+	if got.Output[0].Input != "printf 'hi'\n" {
+		t.Fatalf("custom input = %q, want original freeform input", got.Output[0].Input)
+	}
+	if got.Output[0].Arguments != nil {
+		t.Fatalf("custom output arguments = %#v, want nil", got.Output[0].Arguments)
 	}
 }

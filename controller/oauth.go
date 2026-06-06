@@ -179,7 +179,9 @@ func handleOAuthBind(c *gin.Context, provider oauth.Provider) {
 		return
 	}
 
-	common.ApiSuccessI18n(c, i18n.MsgOAuthBindSuccess, nil)
+	common.ApiSuccessI18n(c, i18n.MsgOAuthBindSuccess, gin.H{
+		"action": "bind",
+	})
 }
 
 // findOrCreateOAuthUser finds existing user or creates new user

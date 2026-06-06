@@ -112,6 +112,8 @@ func ClaudeHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *typ
 		return newAPIError
 	}
 
-	service.PostClaudeConsumeQuota(c, info, usage.(*dto.Usage))
+	if apiErr := service.PostClaudeConsumeQuota(c, info, usage.(*dto.Usage)); apiErr != nil {
+		return apiErr
+	}
 	return nil
 }

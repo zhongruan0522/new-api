@@ -11,6 +11,10 @@ import (
 const (
 	// SecureVerificationSessionKey 安全验证的 session key（与 controller 保持一致）
 	SecureVerificationSessionKey = "secure_verified_at"
+	// SecureVerificationUserIDSessionKey 绑定安全验证通过的用户（与 controller 保持一致）
+	SecureVerificationUserIDSessionKey = "secure_verified_user_id"
+	secureVerificationMethodSessionKey = "secure_verified_method"
+	passkeyReadySessionKey             = "secure_passkey_ready_at"
 	// SecureVerificationTimeout 验证有效期（秒）
 	SecureVerificationTimeout = 300 // 5分钟
 )
@@ -48,8 +52,19 @@ func SecureVerificationRequired() gin.HandlerFunc {
 		verifiedAt, ok := verifiedAtRaw.(int64)
 		if !ok {
 			// session 数据格式错误
-			session.Delete(SecureVerificationSessionKey)
-			_ = session.Save()
+			clearSecureVerificationSession(session)
+			c.JSON(http.StatusForbidden, gin.H{
+				"success": false,
+				"message": "验证状态异常，请重新验证",
+				"code":    "VERIFICATION_INVALID",
+			})
+			c.Abort()
+			return
+		}
+
+		verifiedUserId, ok := sessionInt(session.Get(SecureVerificationUserIDSessionKey))
+		if !ok || verifiedUserId != userId {
+			clearSecureVerificationSession(session)
 			c.JSON(http.StatusForbidden, gin.H{
 				"success": false,
 				"message": "验证状态异常，请重新验证",
@@ -63,8 +78,7 @@ func SecureVerificationRequired() gin.HandlerFunc {
 		elapsed := time.Now().Unix() - verifiedAt
 		if elapsed >= SecureVerificationTimeout {
 			// 验证已过期，清除 session
-			session.Delete(SecureVerificationSessionKey)
-			_ = session.Save()
+			clearSecureVerificationSession(session)
 			c.JSON(http.StatusForbidden, gin.H{
 				"success": false,
 				"message": "验证已过期，请重新验证",
@@ -102,6 +116,15 @@ func OptionalSecureVerification() gin.HandlerFunc {
 
 		verifiedAt, ok := verifiedAtRaw.(int64)
 		if !ok {
+			clearSecureVerificationSession(session)
+			c.Set("secure_verified", false)
+			c.Next()
+			return
+		}
+
+		verifiedUserId, ok := sessionInt(session.Get(SecureVerificationUserIDSessionKey))
+		if !ok || verifiedUserId != userId {
+			clearSecureVerificationSession(session)
 			c.Set("secure_verified", false)
 			c.Next()
 			return
@@ -109,8 +132,7 @@ func OptionalSecureVerification() gin.HandlerFunc {
 
 		elapsed := time.Now().Unix() - verifiedAt
 		if elapsed >= SecureVerificationTimeout {
-			session.Delete(SecureVerificationSessionKey)
-			_ = session.Save()
+			clearSecureVerificationSession(session)
 			c.Set("secure_verified", false)
 			c.Next()
 			return
@@ -126,6 +148,26 @@ func OptionalSecureVerification() gin.HandlerFunc {
 // 用于用户登出或需要强制重新验证的场景
 func ClearSecureVerification(c *gin.Context) {
 	session := sessions.Default(c)
+	clearSecureVerificationSession(session)
+}
+
+func clearSecureVerificationSession(session sessions.Session) {
 	session.Delete(SecureVerificationSessionKey)
+	session.Delete(SecureVerificationUserIDSessionKey)
+	session.Delete(secureVerificationMethodSessionKey)
+	session.Delete(passkeyReadySessionKey)
 	_ = session.Save()
+}
+
+func sessionInt(raw interface{}) (int, bool) {
+	switch value := raw.(type) {
+	case int:
+		return value, true
+	case int32:
+		return int(value), true
+	case int64:
+		return int(value), true
+	default:
+		return 0, false
+	}
 }

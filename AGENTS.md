@@ -1,99 +1,98 @@
-# AGENTS.md — Project Conventions for new-api
+# AGENTS.md
 
-## Overview
+本文件是仓库级统一入口。按 https://agents.md/ 的约定，子目录中更近的
+`AGENTS.md` 会补充或覆盖这里的规则；用户在对话中的明确要求优先级最高。
 
-This is an AI API gateway/proxy built with Go. It aggregates 40+ upstream AI providers (OpenAI, Claude, Gemini, Azure, AWS Bedrock, etc.) behind a unified API, with user management, billing, rate limiting, and an admin dashboard.
+## 子规则索引
 
-## Tech Stack
+前端双 UI:
 
-- **Backend**: Go 1.22+, Gin web framework, GORM v2 ORM
-- **Frontend**: React 18, Vite, Semi Design UI (@douyinfe/semi-ui)
-- **Databases**: SQLite, MySQL, PostgreSQL (all three must be supported)
-- **Cache**: Redis (go-redis) + in-memory cache
-- **Auth**: JWT, WebAuthn/Passkeys, OAuth (GitHub, Discord, OIDC, etc.)
-- **Frontend package manager**: Bun (preferred over npm/yarn/pnpm)
+- [web/AGENTS.md](web/AGENTS.md)
+- [web/default/AGENTS.md](web/default/AGENTS.md)
+- [web/classic/AGENTS.md](web/classic/AGENTS.md)
 
-## Architecture
+后端 Go 包:
 
-Layered architecture: Router -> Controller -> Service -> Model
+- [common/AGENTS.md](common/AGENTS.md)
+- [router/AGENTS.md](router/AGENTS.md)
+- [controller/AGENTS.md](controller/AGENTS.md)
+- [middleware/AGENTS.md](middleware/AGENTS.md)
+- [service/AGENTS.md](service/AGENTS.md)
+- [model/AGENTS.md](model/AGENTS.md)
+- [setting/AGENTS.md](setting/AGENTS.md)
+- [relay/AGENTS.md](relay/AGENTS.md)
 
-```
-router/        — HTTP routing (API, relay, dashboard, web)
-controller/    — Request handlers
-service/       — Business logic
-model/         — Data models and DB access (GORM)
-relay/         — AI API relay/proxy with provider adapters
-  relay/channel/ — Provider-specific adapters (openai/, claude/, gemini/, aws/, etc.)
-middleware/    — Auth, rate limiting, CORS, logging, distribution
-setting/       — Configuration management (ratio, model, operation, system, performance)
-common/        — Shared utilities (JSON, crypto, Redis, env, rate-limit, etc.)
-dto/           — Data transfer objects (request/response structs)
-constant/      — Constants (API types, channel types, context keys)
-types/         — Type definitions (relay formats, file sources, errors)
-i18n/          — Backend internationalization (go-i18n, en/zh)
-oauth/         — OAuth provider implementations
-pkg/           — Internal packages (cachex, ionet)
-web/           — React frontend
-  web/src/i18n/  — Frontend i18n (i18next, Chinese only)
-```
+文档:
 
-## Internationalization (i18n)
+- [docs/AGENTS.md](docs/AGENTS.md)
 
-### Backend (`i18n/`)
-- Library: `nicksnyder/go-i18n/v2`
-- Languages: en, zh
+`参考项目/` 是本地参考源码，已被忽略；除非用户明确要求，不要修改其中内容。
 
-### Frontend (`web/src/i18n/`)
-- Library: `i18next` + `react-i18next`
-- Language: zh (Chinese only)
-- Translation file: `web/src/i18n/locales/zh.json` — flat JSON, keys and values are Chinese
-- Usage: `useTranslation()` hook, call `t('中文key')` in components
-- Semi UI locale: fixed to `zh_CN`
+## 项目概览
 
-## Rules
+这是 Go 实现的 AI API 网关和管理后台。后端聚合 OpenAI、Claude、Gemini、
+Azure、AWS Bedrock 等上游能力，提供用户、渠道、计费、限速、认证和管理接口。
 
-### Rule 1: JSON Package — Use `common/json.go`
+主要结构:
 
-All JSON marshal/unmarshal operations MUST use the wrapper functions in `common/json.go`:
+- `main.go`: 启动、资源初始化、双 UI embed 注入。
+- `router/`: API、relay、dashboard、web 静态路由。
+- `controller/`: HTTP 边界、请求校验、响应组织。
+- `middleware/`: 认证、限速、日志、分发、安全校验。
+- `service/`: 业务逻辑、外部请求、计费、迁移编排。
+- `model/`: GORM 模型、迁移、缓存、数据库访问。
+- `setting/`: 系统、运营、模型、倍率、性能等配置。
+- `common/`: JSON、缓存、环境变量、主题静态文件、安全工具。
+- `relay/`: AI 请求中继、协议转换、供应商适配。
+- `web/default/`: 新版 UI，React 19 + TypeScript + Rsbuild。
+- `web/classic/`: 旧版 UI，React 18 + JavaScript + Vite，维稳。
 
-- `common.Marshal(v any) ([]byte, error)`
-- `common.Unmarshal(data []byte, v any) error`
-- `common.UnmarshalJsonStr(data string, v any) error`
-- `common.DecodeJson(reader io.Reader, v any) error`
-- `common.GetJsonType(data json.RawMessage) string`
+## 全局工作规则
 
-Do NOT directly import or call `encoding/json` in business code. These wrappers exist for consistency and future extensibility (e.g., swapping to a faster JSON library).
+- 先建立证据链再改代码：现象、入口、相关代码/配置、根因层级、最小修复点、验证方式。
+- 保持工作区脏改隔离。不要回滚、覆盖或格式化与当前任务无关的用户改动。
+- 不做破坏性 Git 操作，不自动 commit/push；需要提交时只 add 相关具体文件。
+- 不写入 secrets。环境变量、数据库 DSN、OAuth 密钥、API key 都不得硬编码到源码或文档示例的真实值。
+- 不用模拟成功、静默降级、吞错或假数据让流程“看起来能跑”。失败必须清晰暴露。
+- 外部输入必须在系统边界校验：HTTP 参数、表单、文件、网络、数据库、缓存、权限、安全逻辑。
+- 新增通用能力前先搜索现有工具函数；确有复用价值再放入 `common/` 或对应前端 `lib/`。
+- 不要顺手删除、替换或改名项目标识、AGPL/版权头、Go module path、Docker/CI 镜像名等元数据。
 
-Note: `json.RawMessage`, `json.Number`, and other type definitions from `encoding/json` may still be referenced as types, but actual marshal/unmarshal calls must go through `common.*`.
+## 双 UI 架构不变量
 
-### Rule 2: Database Compatibility — SQLite, MySQL >= 5.7.8, PostgreSQL >= 9.6
+- `web/default` 是完整升级的新 UI；`web/classic` 是旧 UI 退化兼容路径。
+- `theme.frontend` 只允许 `default` 或 `classic`，后端通过 `common.GetTheme()` 选择资源。
+- `main.go` 必须 embed 两套 dist，`Dockerfile` 会检查 `web/default/dist/index.html`
+  和 `web/classic/dist/index.html` 同时存在。
 
-All database code MUST be fully compatible with all three databases simultaneously.
+- classic 进入维稳模式：只修 bug 和兼容性问题，不在 classic 上扩展新功能或引入新技术栈。
+- 任何影响共享 API、认证、主题切换、静态资源服务、系统设置的改动，都要考虑两套 UI 的运行路径。
+- 不允许在 default 或 classic 中用 mock 数据替代真实后端能力。
 
-**Use GORM abstractions:**
-- Prefer GORM methods (`Create`, `Find`, `Where`, `Updates`, etc.) over raw SQL.
-- Let GORM handle primary key generation — do not use `AUTO_INCREMENT` or `SERIAL` directly.
+## 后端规则
 
-**When raw SQL is unavoidable:**
-- Column quoting differs: PostgreSQL uses `"column"`, MySQL/SQLite uses `` `column` ``.
-- Use `commonGroupCol`, `commonKeyCol` variables from `model/main.go` for reserved-word columns like `group` and `key`.
-- Boolean values differ: PostgreSQL uses `true`/`false`, MySQL/SQLite uses `1`/`0`. Use `commonTrueVal`/`commonFalseVal`.
-- Use `common.UsingPostgreSQL`, `common.UsingSQLite`, `common.UsingMySQL` flags to branch DB-specific logic.
+- Go 版本以 `go.mod` 为准。
+- JSON 序列化/反序列化调用使用 `common/json.go` 的包装函数；不要在业务代码里直接调用
+  `encoding/json` 的 marshal/unmarshal/decode。
+- 数据库必须兼容 SQLite、MySQL >= 5.7.8、PostgreSQL >= 9.6。优先 GORM；原始 SQL 必须参数化并处理三库差异。
+- 路由层不要承载业务逻辑；控制器只做边界处理；服务层承载业务；模型层承载持久化。
+- relay 改动要保护流式输出、usage 统计、错误映射、计费和供应商协议差异。
+- relay 请求 DTO 中需要转发给上游的可选标量字段，优先用指针类型配合 `omitempty`，保留客户端显式传入的 `0`、`0.0`、`false`。
 
-**Forbidden without cross-DB fallback:**
-- MySQL-only functions (e.g., `GROUP_CONCAT` without PostgreSQL `STRING_AGG` equivalent)
-- PostgreSQL-only operators (e.g., `@>`, `?`, `JSONB` operators)
-- `ALTER COLUMN` in SQLite (unsupported — use column-add workaround)
-- Database-specific column types without fallback — use `TEXT` instead of `JSONB` for JSON storage
+常用验证:
 
-**Migrations:**
-- Ensure all migrations work on all three databases.
-- For SQLite, use `ALTER TABLE ... ADD COLUMN` instead of `ALTER COLUMN` (see `model/main.go` for patterns).
+- `go test ./...`
+- `go test ./relay/... ./controller/... ./service/...`
+- `go build -ldflags "-X 'github.com/zhongruan0522/new-api/common.Version=$(git rev-parse HEAD)'" -o new-api`
 
-### Rule 3: Frontend — Prefer Bun
+## 前端规则
 
-Use `bun` as the preferred package manager and script runner for the frontend (`web/` directory):
-- `bun install` for dependency installation
-- `bun run dev` for development server
-- `bun run build` for production build
-- `bun run i18n:*` for i18n tooling
+- 前端包管理器使用 Bun。各 UI 子项目都有独立 `package.json` 和 `bun.lock`。
+- 不要跨 `web/default` 与 `web/classic` 直接 import 源码或共享 node_modules。
+- 改 `web/default` 后按影响执行 `bun run typecheck`、`bun run lint`、`bun run build`。
+- 改 `web/classic` 后按影响执行 `bun run eslint`、`bun run lint`、`bun run build`。
+- 同时影响共享 API 或主题切换时，两个前端都要构建。
+
+## 文档与参考项目
+
+- `参考项目/` 仅用于比对上游实现。复制代码前必须适配本项目 API、配置和双 UI 约束。

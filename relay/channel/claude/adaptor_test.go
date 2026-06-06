@@ -1,11 +1,13 @@
 package claude
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/zhongruan0522/new-api/common"
 	"github.com/zhongruan0522/new-api/dto"
 	relaycommon "github.com/zhongruan0522/new-api/relay/common"
+	"github.com/zhongruan0522/new-api/types"
 )
 
 func TestAdaptorConvertGeminiRequestPreservesThinkingAndToolResults(t *testing.T) {
@@ -107,5 +109,82 @@ func TestAdaptorConvertGeminiRequestPreservesThinkingAndToolResults(t *testing.T
 	}
 	if len(toolResultContent) != 1 || toolResultContent[0].Type != "tool_result" || toolResultContent[0].ToolUseId != "call_1" {
 		t.Fatalf("tool result content = %+v, want tool_result for call_1", toolResultContent)
+	}
+}
+
+func TestAdaptorConvertOpenAIResponsesRequestUsesSharedRulesForTools(t *testing.T) {
+	toolsRaw, err := common.Marshal([]map[string]any{{
+		"type":        "function",
+		"name":        "weather",
+		"description": "Get weather",
+		"parameters": map[string]any{
+			"type": "object",
+			"properties": map[string]any{
+				"city": map[string]any{"type": "string"},
+			},
+		},
+	}})
+	if err != nil {
+		t.Fatalf("marshal tools error = %v", err)
+	}
+	inputRaw, err := common.Marshal([]map[string]any{
+		{
+			"type":    "message",
+			"role":    "user",
+			"content": "weather in Shanghai?",
+		},
+		{
+			"type":      "function_call",
+			"call_id":   "call_weather",
+			"name":      "weather",
+			"arguments": json.RawMessage(`{"city":"Shanghai"}`),
+		},
+	})
+	if err != nil {
+		t.Fatalf("marshal input error = %v", err)
+	}
+
+	info := &relaycommon.RelayInfo{
+		RelayFormat:            types.RelayFormatOpenAIResponses,
+		RequestConversionChain: []types.RelayFormat{types.RelayFormatOpenAIResponses},
+		ChannelMeta: &relaycommon.ChannelMeta{
+			ChannelType:       1,
+			UpstreamModelName: "claude-3-7-sonnet",
+		},
+	}
+	convertedAny, err := (&Adaptor{}).ConvertOpenAIResponsesRequest(nil, info, dto.OpenAIResponsesRequest{
+		Model:           "claude-3-7-sonnet",
+		Input:           inputRaw,
+		Tools:           toolsRaw,
+		MaxOutputTokens: 1024,
+	})
+	if err != nil {
+		t.Fatalf("ConvertOpenAIResponsesRequest error = %v", err)
+	}
+	converted, ok := convertedAny.(*dto.ClaudeRequest)
+	if !ok {
+		t.Fatalf("converted type = %T, want *dto.ClaudeRequest", convertedAny)
+	}
+	if info.OpenAIResponsesToolContext == nil {
+		t.Fatal("OpenAIResponsesToolContext is nil")
+	}
+	if got, want := info.RequestConversionChain, []types.RelayFormat{types.RelayFormatOpenAIResponses, types.RelayFormatOpenAI, types.RelayFormatClaude}; len(got) != len(want) || got[0] != want[0] || got[1] != want[1] || got[2] != want[2] {
+		t.Fatalf("RequestConversionChain = %#v, want %#v", got, want)
+	}
+	if converted.MaxTokens != 1024 {
+		t.Fatalf("MaxTokens = %d, want 1024", converted.MaxTokens)
+	}
+	if len(converted.GetTools()) != 1 {
+		t.Fatalf("tools len = %d, want 1", len(converted.GetTools()))
+	}
+	if len(converted.Messages) != 2 {
+		t.Fatalf("messages len = %d, want 2", len(converted.Messages))
+	}
+	content, err := converted.Messages[1].ParseContent()
+	if err != nil {
+		t.Fatalf("parse assistant content error = %v", err)
+	}
+	if len(content) != 1 || content[0].Type != "tool_use" || content[0].Id != "call_weather" || content[0].Name != "weather" {
+		t.Fatalf("assistant content = %+v, want weather tool_use", content)
 	}
 }

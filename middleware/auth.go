@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -48,7 +49,18 @@ func authHelper(c *gin.Context, minRole int) {
 			c.Abort()
 			return
 		}
-		user := model.ValidateAccessToken(accessToken)
+		user, authErr := model.ValidateAccessToken(accessToken)
+		if authErr != nil {
+			if errors.Is(authErr, model.ErrDatabase) {
+				common.SysLog("ValidateAccessToken database error: " + authErr.Error())
+			}
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": "无权进行此操作，access token 无效",
+			})
+			c.Abort()
+			return
+		}
 		if user != nil && user.Username != "" {
 			if !validUserInfo(user.Username, user.Role) {
 				c.JSON(http.StatusOK, gin.H{
@@ -229,9 +241,10 @@ func TokenAuthReadOnly() func(c *gin.Context) {
 
 		userCache, err := model.GetUserCache(token.UserId)
 		if err != nil {
+			common.SysLog("TokenAuthReadOnly user cache error: " + err.Error())
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"success": false,
-				"message": err.Error(),
+				"message": "数据库错误，请稍后重试",
 			})
 			c.Abort()
 			return
@@ -314,7 +327,12 @@ func TokenAuth() func(c *gin.Context) {
 			}
 		}
 		if err != nil {
-			abortWithOpenAiMessage(c, http.StatusUnauthorized, err.Error())
+			if errors.Is(err, model.ErrDatabase) {
+				common.SysLog("ValidateUserToken database error: " + err.Error())
+				abortWithOpenAiMessage(c, http.StatusInternalServerError, "数据库错误，请稍后重试")
+			} else {
+				abortWithOpenAiMessage(c, http.StatusUnauthorized, "无效的令牌")
+			}
 			return
 		}
 
@@ -336,7 +354,8 @@ func TokenAuth() func(c *gin.Context) {
 
 		userCache, err := model.GetUserCache(token.UserId)
 		if err != nil {
-			abortWithOpenAiMessage(c, http.StatusInternalServerError, err.Error())
+			common.SysLog("TokenAuth user cache error: " + err.Error())
+			abortWithOpenAiMessage(c, http.StatusInternalServerError, "数据库错误，请稍后重试")
 			return
 		}
 		userEnabled := userCache.Status == common.UserStatusEnabled

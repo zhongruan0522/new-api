@@ -13,9 +13,10 @@ import (
 )
 
 // defaultStoredAssetSignedURLTTL:
-//   - 0   => no expiry by default (URL is valid until the asset is cleaned from DB)
-//   - >0  => add exp+sig for short-lived URLs
-const defaultStoredAssetSignedURLTTL time.Duration = 0
+//
+// Stored media URLs are passed to tools and UI previews; keep them short-lived so
+// leaked links do not grant long-term unauthenticated access.
+const defaultStoredAssetSignedURLTTL = time.Hour
 
 func buildStoredImageURL(c *gin.Context, imageID string) string {
 	return buildStoredAssetURLWithTTL(c, "image", "stored_image", imageID, defaultStoredAssetSignedURLTTL)
@@ -27,19 +28,13 @@ func buildStoredVideoURL(c *gin.Context, videoID string) string {
 
 func buildStoredAssetURLWithTTL(c *gin.Context, routeType string, scope string, id string, ttl time.Duration) string {
 	id = strings.TrimSpace(id)
-	if id == "" || routeType == "" || scope == "" {
+	if id == "" || routeType == "" || scope == "" || ttl <= 0 {
 		return ""
 	}
 
-	var path string
-	if ttl == 0 {
-		sig := common.GenerateHMAC(fmt.Sprintf("%s:%s", scope, id))
-		path = fmt.Sprintf("/mcp/%s/%s?sig=%s", routeType, url.PathEscape(id), sig)
-	} else {
-		exp := time.Now().Add(ttl).Unix()
-		sig := common.GenerateHMAC(fmt.Sprintf("%s:%s:%d", scope, id, exp))
-		path = fmt.Sprintf("/mcp/%s/%s?exp=%d&sig=%s", routeType, url.PathEscape(id), exp, sig)
-	}
+	exp := time.Now().Add(ttl).Unix()
+	sig := common.GenerateHMAC(fmt.Sprintf("%s:%s:%d", scope, id, exp))
+	path := fmt.Sprintf("/mcp/%s/%s?exp=%d&sig=%s", routeType, url.PathEscape(id), exp, sig)
 
 	base := strings.TrimRight(strings.TrimSpace(system_setting.ServerAddress), "/")
 	if base == "" {

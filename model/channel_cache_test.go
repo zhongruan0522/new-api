@@ -7,6 +7,8 @@ import (
 	"github.com/glebarez/sqlite"
 	"github.com/zhongruan0522/new-api/common"
 	"github.com/zhongruan0522/new-api/constant"
+	"github.com/zhongruan0522/new-api/dto"
+	"github.com/zhongruan0522/new-api/types"
 	"gorm.io/gorm"
 )
 
@@ -99,6 +101,100 @@ func createChannelCacheTestChannel(t *testing.T, channel Channel) Channel {
 	return channel
 }
 
+func channelCacheTestSetting(t *testing.T, setting dto.ChannelSettings) *string {
+	t.Helper()
+
+	data, err := common.Marshal(setting)
+	if err != nil {
+		t.Fatalf("marshal channel setting: %v", err)
+	}
+	value := string(data)
+	return &value
+}
+
+func channelCacheTestStringPtr(value string) *string {
+	return &value
+}
+
+func TestSearchChannelsEscapesGroupFilter(t *testing.T) {
+	setupChannelCacheTestDB(t)
+
+	createChannelCacheTestChannel(t, Channel{
+		Name:   "percent-literal",
+		Group:  "vip%,default",
+		Models: "gpt-4",
+	})
+	createChannelCacheTestChannel(t, Channel{
+		Name:   "percent-wildcard-target",
+		Group:  "vip1,default",
+		Models: "gpt-4",
+	})
+
+	channels, err := SearchChannels("", "vip%", "", false)
+	if err != nil {
+		t.Fatalf("SearchChannels error = %v", err)
+	}
+	if len(channels) != 1 || channels[0].Name != "percent-literal" {
+		t.Fatalf("SearchChannels returned %#v, want only literal percent group", channels)
+	}
+}
+
+func TestChannelTagQueriesApplyGroupFilter(t *testing.T) {
+	setupChannelCacheTestDB(t)
+
+	createChannelCacheTestChannel(t, Channel{Name: "alpha tagged", Group: "alpha", Models: "gpt-test", Tag: channelCacheTestStringPtr("shared")})
+	createChannelCacheTestChannel(t, Channel{Name: "beta tagged", Group: "beta", Models: "gpt-test", Tag: channelCacheTestStringPtr("shared")})
+	createChannelCacheTestChannel(t, Channel{Name: "beta only", Group: "beta", Models: "gpt-test", Tag: channelCacheTestStringPtr("beta-only")})
+
+	total, err := CountChannelTags(ApplyChannelGroupFilter(DB.Model(&Channel{}), "alpha"))
+	if err != nil {
+		t.Fatalf("CountChannelTags error = %v", err)
+	}
+	if total != 1 {
+		t.Fatalf("tag total = %d, want 1", total)
+	}
+
+	tags, err := GetPaginatedChannelTags(ApplyChannelGroupFilter(DB.Model(&Channel{}), "alpha"), 0, 20)
+	if err != nil {
+		t.Fatalf("GetPaginatedChannelTags error = %v", err)
+	}
+	if len(tags) != 1 || tags[0] == nil || *tags[0] != "shared" {
+		t.Fatalf("tags = %#v, want only shared", tags)
+	}
+
+	channels, err := GetChannelsByTagWithGroup("shared", "alpha", false, false)
+	if err != nil {
+		t.Fatalf("GetChannelsByTagWithGroup error = %v", err)
+	}
+	if len(channels) != 1 || channels[0].Group != "alpha" {
+		t.Fatalf("channels = %#v, want only alpha shared channel", channels)
+	}
+	if channels[0].Key != "" {
+		t.Fatal("expected non-selectAll tag query to omit channel key")
+	}
+}
+
+func TestApplyChannelGroupFilterNormalizesAllAndNull(t *testing.T) {
+	setupChannelCacheTestDB(t)
+
+	createChannelCacheTestChannel(t, Channel{Name: "default-channel", Group: "default"})
+	createChannelCacheTestChannel(t, Channel{Name: "vip-channel", Group: "vip"})
+
+	var count int64
+	if err := ApplyChannelGroupFilter(DB.Model(&Channel{}), "all").Count(&count).Error; err != nil {
+		t.Fatalf("count all group: %v", err)
+	}
+	if count != 2 {
+		t.Fatalf("all group count = %d, want 2", count)
+	}
+	if err := ApplyChannelGroupFilter(DB.Model(&Channel{}), "null").Count(&count).Error; err != nil {
+		t.Fatalf("count null group: %v", err)
+	}
+	if count != 2 {
+		t.Fatalf("null group count = %d, want 2", count)
+	}
+}
+
 func TestCacheUpdateChannelStatusReaddsEnabledChannel(t *testing.T) {
 	setupChannelCacheTestDB(t)
 	channel := createChannelCacheTestChannel(t, Channel{})
@@ -178,5 +274,78 @@ func TestUpdateChannelStatusRestoresMultiKeyChannelToCache(t *testing.T) {
 	}
 	if selected == nil || selected.Id != channel.Id {
 		t.Fatalf("selected after key re-enable = %+v, want channel %d", selected, channel.Id)
+	}
+}
+
+func TestGetRandomSatisfiedChannelWithRelayFormatPrefersExplicitOpenAIWireSetting(t *testing.T) {
+	setupChannelCacheTestDB(t)
+
+	const modelName = "glm-4.6"
+	openAIChannel := createChannelCacheTestChannel(t, Channel{
+		Name:   "openai-default-wire",
+		Type:   constant.ChannelTypeOpenAI,
+		Models: modelName,
+	})
+	zhipuChatOnly := createChannelCacheTestChannel(t, Channel{
+		Name:    "zhipu-chat-wire",
+		Type:    constant.ChannelTypeZhipu_v4,
+		Models:  modelName,
+		Setting: channelCacheTestSetting(t, dto.ChannelSettings{OpenAIWireAPI: dto.OpenAIWireAPIChat}),
+	})
+
+	InitChannelCache()
+
+	selected, err := GetRandomSatisfiedChannelWithRelayFormat(
+		"Coding",
+		modelName,
+		0,
+		constant.APITypeOpenAI,
+		types.RelayFormatOpenAIResponses,
+		0,
+	)
+	if err != nil {
+		t.Fatalf("channel selection failed: %v", err)
+	}
+	if selected == nil {
+		t.Fatal("selected channel is nil")
+	}
+	if selected.Id != zhipuChatOnly.Id {
+		t.Fatalf("selected channel %d (%s), want explicit chat-only channel %d; openai channel was %d", selected.Id, selected.Name, zhipuChatOnly.Id, openAIChannel.Id)
+	}
+}
+
+func TestGetRandomSatisfiedChannelWithRelayFormatPrefersExplicitOpenAIWireSettingWithoutCache(t *testing.T) {
+	setupChannelCacheTestDB(t)
+	common.MemoryCacheEnabled = false
+
+	const modelName = "glm-4.6"
+	openAIChannel := createChannelCacheTestChannel(t, Channel{
+		Name:   "openai-default-wire",
+		Type:   constant.ChannelTypeOpenAI,
+		Models: modelName,
+	})
+	zhipuChatOnly := createChannelCacheTestChannel(t, Channel{
+		Name:    "zhipu-chat-wire",
+		Type:    constant.ChannelTypeZhipu_v4,
+		Models:  modelName,
+		Setting: channelCacheTestSetting(t, dto.ChannelSettings{OpenAIWireAPI: dto.OpenAIWireAPIChat}),
+	})
+
+	selected, err := GetRandomSatisfiedChannelWithRelayFormat(
+		"Coding",
+		modelName,
+		0,
+		constant.APITypeOpenAI,
+		types.RelayFormatOpenAIResponses,
+		0,
+	)
+	if err != nil {
+		t.Fatalf("channel selection failed: %v", err)
+	}
+	if selected == nil {
+		t.Fatal("selected channel is nil")
+	}
+	if selected.Id != zhipuChatOnly.Id {
+		t.Fatalf("selected channel %d (%s), want explicit chat-only channel %d; openai channel was %d", selected.Id, selected.Name, zhipuChatOnly.Id, openAIChannel.Id)
 	}
 }

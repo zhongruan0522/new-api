@@ -10,21 +10,26 @@ import (
 )
 
 func ConvertResponsesRequestToChatCompletionsRequest(responsesReq *dto.OpenAIResponsesRequest) (*dto.GeneralOpenAIRequest, error) {
+	out, _, err := ConvertResponsesRequestToChatCompletionsRequestWithToolContext(responsesReq)
+	return out, err
+}
+
+func ConvertResponsesRequestToChatCompletionsRequestWithToolContext(responsesReq *dto.OpenAIResponsesRequest) (*dto.GeneralOpenAIRequest, *OpenAIWireToolContext, error) {
 	if responsesReq == nil {
-		return nil, fmt.Errorf("responses request is nil")
+		return nil, nil, fmt.Errorf("responses request is nil")
 	}
 	if strings.TrimSpace(responsesReq.PreviousResponseID) != "" {
-		return nil, fmt.Errorf("previous_response_id is not supported by chat.completions conversion")
+		return nil, nil, fmt.Errorf("previous_response_id is not supported by chat.completions conversion")
 	}
 
 	systemRole := (&dto.GeneralOpenAIRequest{Model: responsesReq.Model}).GetSystemRoleName()
 	systemMsg, err := buildChatSystemMessageFromInstructions(systemRole, responsesReq.Instructions)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	userMsgs, err := buildChatMessagesFromResponsesInput(responsesReq.Input)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	messages := make([]dto.Message, 0, len(userMsgs)+1)
@@ -34,13 +39,14 @@ func ConvertResponsesRequestToChatCompletionsRequest(responsesReq *dto.OpenAIRes
 	messages = append(messages, userMsgs...)
 
 	out := newChatRequestFromResponses(responsesReq, messages)
-	if err := applyResponsesToChatTools(out, responsesReq); err != nil {
-		return nil, err
+	toolContext := NewOpenAIWireToolContext()
+	if err := applyResponsesToChatTools(out, responsesReq, toolContext); err != nil {
+		return nil, nil, err
 	}
 	if err := applyResponsesToChatTextFormat(out, responsesReq.Text); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	return out, nil
+	return out, toolContext, nil
 }
 
 func newChatRequestFromResponses(responsesReq *dto.OpenAIResponsesRequest, messages []dto.Message) *dto.GeneralOpenAIRequest {
@@ -92,7 +98,7 @@ func buildChatSystemMessageFromInstructions(systemRole string, raw json.RawMessa
 	return &dto.Message{Role: systemRole, Content: s}, nil
 }
 
-func applyResponsesToChatTools(out *dto.GeneralOpenAIRequest, responsesReq *dto.OpenAIResponsesRequest) error {
+func applyResponsesToChatTools(out *dto.GeneralOpenAIRequest, responsesReq *dto.OpenAIResponsesRequest, toolContext *OpenAIWireToolContext) error {
 	if len(responsesReq.ToolChoice) > 0 {
 		toolChoice, err := convertResponsesToolChoiceToChatAny(responsesReq.ToolChoice)
 		if err != nil {
@@ -102,11 +108,18 @@ func applyResponsesToChatTools(out *dto.GeneralOpenAIRequest, responsesReq *dto.
 	}
 
 	if len(responsesReq.Tools) > 0 {
-		tools, err := convertResponsesToolsRawToChatTools(responsesReq.Tools)
+		tools, err := convertResponsesToolsRawToChatToolsWithToolContext(responsesReq.Tools, toolContext)
 		if err != nil {
 			return err
 		}
 		out.Tools = tools
+	}
+	if len(responsesReq.Input) > 0 {
+		loadedTools, err := collectChatToolsFromResponsesToolSearchOutputsWithToolContext(responsesReq.Input, toolContext)
+		if err != nil {
+			return err
+		}
+		out.Tools = appendUniqueChatTools(out.Tools, loadedTools)
 	}
 
 	if len(responsesReq.ParallelToolCalls) > 0 {

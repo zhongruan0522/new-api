@@ -12,6 +12,7 @@ import (
 	"github.com/zhongruan0522/new-api/common"
 	"github.com/zhongruan0522/new-api/constant"
 	"github.com/zhongruan0522/new-api/setting/ratio_setting"
+	"github.com/zhongruan0522/new-api/types"
 )
 
 var group2model2channels map[string]map[string][]int // enabled channel
@@ -94,9 +95,13 @@ func SyncChannelCache(frequency int) {
 }
 
 func GetRandomSatisfiedChannel(group string, model string, priorityIndex int, preferredAPIType int, excludeChannelId int) (*Channel, error) {
+	return GetRandomSatisfiedChannelWithRelayFormat(group, model, priorityIndex, preferredAPIType, "", excludeChannelId)
+}
+
+func GetRandomSatisfiedChannelWithRelayFormat(group string, model string, priorityIndex int, preferredAPIType int, relayFormat types.RelayFormat, excludeChannelId int) (*Channel, error) {
 	// if memory cache is disabled, get channel directly from database
 	if !common.MemoryCacheEnabled {
-		return GetChannel(group, model, priorityIndex, preferredAPIType, excludeChannelId)
+		return GetChannelWithRelayFormat(group, model, priorityIndex, preferredAPIType, relayFormat, excludeChannelId)
 	}
 
 	channelSyncLock.RLock()
@@ -180,11 +185,9 @@ func GetRandomSatisfiedChannel(group string, model string, priorityIndex int, pr
 		return nil, nil
 	}
 
-	// If a preferred API type is specified, try to pick from channels that match it first.
+	// Prefer explicit OpenAI wire settings before the broader API-type preference.
 	// If no matching channels exist at this priority, fall back to all channels (format conversion).
-	if preferredAPIType >= 0 {
-		targetChannels = preferChannelsByAPIType(targetChannels, preferredAPIType)
-	}
+	targetChannels = preferChannelsByRequestFormat(targetChannels, preferredAPIType, relayFormat)
 
 	// Recalculate sumWeight after potential filtering by API type
 	sumWeight = 0

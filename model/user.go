@@ -26,8 +26,8 @@ type User struct {
 	Status              int            `json:"status" gorm:"type:int;default:1"` // enabled, disabled
 	Email               string         `json:"email" gorm:"index" validate:"max=50"`
 	GitHubId            string         `json:"github_id" gorm:"column:github_id;index"`
-	VerificationCode    string         `json:"verification_code" gorm:"-:all"`                                    // this field is only for Email verification, don't save it to database!
-	AccessToken         *string        `json:"access_token" gorm:"type:char(32);column:access_token;uniqueIndex"` // this token is for system management
+	VerificationCode    string         `json:"verification_code" gorm:"-:all"`                         // this field is only for Email verification, don't save it to database!
+	AccessToken         *string        `json:"-" gorm:"type:char(32);column:access_token;uniqueIndex"` // this token is for system management
 	Quota               int            `json:"quota" gorm:"type:int;default:0"`
 	UsedQuota           int            `json:"used_quota" gorm:"type:int;default:0;column:used_quota"` // used quota
 	RequestCount        int            `json:"request_count" gorm:"type:int;default:0;"`               // request number
@@ -198,7 +198,7 @@ func GetAllUsers(pageInfo *common.PageInfo) (users []*User, total int64, err err
 	}
 
 	// Get paginated users within same transaction
-	err = tx.Unscoped().Order("id desc").Limit(pageInfo.GetPageSize()).Offset(pageInfo.GetStartIdx()).Omit("password").Find(&users).Error
+	err = tx.Unscoped().Order("id desc").Limit(pageInfo.GetPageSize()).Offset(pageInfo.GetStartIdx()).Omit("password", "access_token").Find(&users).Error
 	if err != nil {
 		tx.Rollback()
 		return nil, 0, err
@@ -275,7 +275,7 @@ func SearchUsers(keyword string, group string, status string, startIdx int, num 
 	}
 
 	// 获取分页数据
-	err = query.Omit("password").Order("id desc").Limit(num).Offset(startIdx).Find(&users).Error
+	err = query.Omit("password", "access_token").Order("id desc").Limit(num).Offset(startIdx).Find(&users).Error
 	if err != nil {
 		tx.Rollback()
 		return nil, 0, err
@@ -298,7 +298,7 @@ func GetUserById(id int, selectAll bool) (*User, error) {
 	if selectAll {
 		err = DB.First(&user, "id = ?", id).Error
 	} else {
-		err = DB.Omit("password").First(&user, "id = ?", id).Error
+		err = DB.Omit("password", "access_token").First(&user, "id = ?", id).Error
 	}
 	return &user, err
 }
@@ -324,8 +324,13 @@ func HardDeleteUserById(id int) error {
 	if id == 0 {
 		return errors.New("id 为空！")
 	}
-	err := DB.Unscoped().Delete(&User{}, "id = ?", id).Error
-	return err
+	if err := DB.Unscoped().Delete(&User{}, "id = ?", id).Error; err != nil {
+		return err
+	}
+	if err := InvalidateUserCache(id); err != nil {
+		return err
+	}
+	return InvalidateUserTokensCache(id)
 }
 
 func inviteUser(inviterId int) (err error) {
@@ -547,16 +552,23 @@ func (user *User) Delete() error {
 		return err
 	}
 
-	// 清除缓存
-	return invalidateUserCache(user.Id)
+	if err := InvalidateUserCache(user.Id); err != nil {
+		return err
+	}
+	return InvalidateUserTokensCache(user.Id)
 }
 
 func (user *User) HardDelete() error {
 	if user.Id == 0 {
 		return errors.New("id 为空！")
 	}
-	err := DB.Unscoped().Delete(user).Error
-	return err
+	if err := DB.Unscoped().Delete(user).Error; err != nil {
+		return err
+	}
+	if err := InvalidateUserCache(user.Id); err != nil {
+		return err
+	}
+	return InvalidateUserTokensCache(user.Id)
 }
 
 // ValidateAndFill check password & user status
@@ -567,13 +579,19 @@ func (user *User) ValidateAndFill() (err error) {
 	password := user.Password
 	username := strings.TrimSpace(user.Username)
 	if username == "" || password == "" {
-		return errors.New("用户名或密码为空")
+		return ErrUserEmptyCredentials
 	}
 	// find buy username or email
-	DB.Where("username = ? OR email = ?", username, username).First(user)
+	err = DB.Where("username = ? OR email = ?", username, username).First(user).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return ErrInvalidCredentials
+		}
+		return fmt.Errorf("%w: %v", ErrDatabase, err)
+	}
 	okay := common.ValidatePasswordAndHash(password, user.Password)
 	if !okay || user.Status != common.UserStatusEnabled {
-		return errors.New("用户名或密码错误，或用户已被封禁")
+		return ErrInvalidCredentials
 	}
 	return nil
 }
@@ -673,16 +691,36 @@ func IsAdmin(userId int) bool {
 //	return user.Status == common.UserStatusEnabled, nil
 //}
 
-func ValidateAccessToken(token string) (user *User) {
+func normalizeAccessToken(authorization string) string {
+	authorization = strings.TrimSpace(authorization)
+	if authorization == "" {
+		return ""
+	}
+	parts := strings.Fields(authorization)
+	if len(parts) > 0 && strings.EqualFold(parts[0], "Bearer") {
+		if len(parts) != 2 {
+			return ""
+		}
+		return strings.TrimSpace(parts[1])
+	}
+	return authorization
+}
+
+func ValidateAccessToken(authorization string) (user *User, err error) {
+	token := normalizeAccessToken(authorization)
 	if token == "" {
-		return nil
+		return nil, ErrTokenInvalid
 	}
-	token = strings.Replace(token, "Bearer ", "", 1)
 	user = &User{}
-	if DB.Where("access_token = ?", token).First(user).RowsAffected == 1 {
-		return user
+	err = DB.Where("access_token = ? AND access_token <> ''", token).First(user).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrTokenInvalid
+		}
+		return nil, fmt.Errorf("%w: %v", ErrDatabase, err)
 	}
-	return nil
+	user.AccessToken = nil
+	return user, nil
 }
 
 // GetUserQuota gets quota from Redis first, falls back to DB if needed

@@ -16,10 +16,18 @@ import (
 
 type Pricing struct {
 	ModelName              string                      `json:"model_name"`
-	Description            string                      `json:"-" gorm:"type:text"`
+	Description            string                      `json:"description,omitempty" gorm:"type:text"`
 	Icon                   string                      `json:"icon,omitempty"`
 	Tags                   string                      `json:"tags,omitempty"`
 	VendorID               int                         `json:"vendor_id,omitempty"`
+	ContextLength          int                         `json:"context_length,omitempty"`
+	MaxOutputTokens        int                         `json:"max_output_tokens,omitempty"`
+	InputModalities        []string                    `json:"input_modalities,omitempty"`
+	OutputModalities       []string                    `json:"output_modalities,omitempty"`
+	Capabilities           []string                    `json:"capabilities,omitempty"`
+	KnowledgeCutoff        string                      `json:"knowledge_cutoff,omitempty"`
+	ReleaseDate            string                      `json:"release_date,omitempty"`
+	ParameterCount         string                      `json:"parameter_count,omitempty"`
 	QuotaType              int                         `json:"quota_type"`
 	ModelRatio             float64                     `json:"model_ratio"`
 	ModelPrice             float64                     `json:"model_price"`
@@ -35,10 +43,12 @@ type Pricing struct {
 }
 
 type PricingVendor struct {
-	ID          int    `json:"id"`
-	Name        string `json:"name"`
-	Description string `json:"-" gorm:"type:text"`
-	Icon        string `json:"icon,omitempty"`
+	ID                int    `json:"id"`
+	Name              string `json:"name"`
+	Description       string `json:"description,omitempty" gorm:"type:text"`
+	Icon              string `json:"icon,omitempty"`
+	DataRetentionDays *int   `json:"data_retention_days,omitempty"`
+	TrainingOptOut    *bool  `json:"training_opt_out,omitempty"`
 }
 
 var (
@@ -168,10 +178,12 @@ func updatePricing() {
 	vendorsList = make([]PricingVendor, 0, len(vendorMap))
 	for _, v := range vendorMap {
 		vendorsList = append(vendorsList, PricingVendor{
-			ID:          v.Id,
-			Name:        v.Name,
-			Description: v.Description,
-			Icon:        v.Icon,
+			ID:                v.Id,
+			Name:              v.Name,
+			Description:       v.Description,
+			Icon:              v.Icon,
+			DataRetentionDays: v.DataRetentionDays,
+			TrainingOptOut:    v.TrainingOptOut,
 		})
 	}
 
@@ -290,6 +302,14 @@ func updatePricing() {
 			pricing.Icon = meta.Icon
 			pricing.Tags = meta.Tags
 			pricing.VendorID = meta.VendorID
+			pricing.ContextLength = meta.ContextLength
+			pricing.MaxOutputTokens = meta.MaxOutputTokens
+			pricing.InputModalities = meta.InputModalities
+			pricing.OutputModalities = meta.OutputModalities
+			pricing.Capabilities = meta.Capabilities
+			pricing.KnowledgeCutoff = meta.KnowledgeCutoff
+			pricing.ReleaseDate = meta.ReleaseDate
+			pricing.ParameterCount = meta.ParameterCount
 		}
 		modelPrice, findPrice := ratio_setting.GetModelPrice(model, false)
 		if findPrice {

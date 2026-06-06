@@ -126,6 +126,25 @@ type ToolCallResponse struct {
 	ID       string           `json:"id,omitempty"`
 	Type     any              `json:"type"`
 	Function FunctionResponse `json:"function"`
+	Custom   json.RawMessage  `json:"custom,omitempty"`
+}
+
+func (t ToolCallResponse) MarshalJSON() ([]byte, error) {
+	type toolCallResponseJSON struct {
+		Index    *int              `json:"index,omitempty"`
+		ID       string            `json:"id,omitempty"`
+		Type     any               `json:"type"`
+		Function *FunctionResponse `json:"function,omitempty"`
+		Custom   json.RawMessage   `json:"custom,omitempty"`
+	}
+
+	out := toolCallResponseJSON{Index: t.Index, ID: t.ID, Type: t.Type}
+	if typeName, _ := t.Type.(string); typeName == CustomType {
+		out.Custom = t.Custom
+	} else {
+		out.Function = &t.Function
+	}
+	return json.Marshal(out)
 }
 
 func (c *ToolCallResponse) SetIndex(i int) {
@@ -227,11 +246,12 @@ type Usage struct {
 	TotalTokens          int `json:"total_tokens"`
 	PromptCacheHitTokens int `json:"prompt_cache_hit_tokens,omitempty"`
 
-	PromptTokensDetails    InputTokenDetails  `json:"prompt_tokens_details"`
-	CompletionTokenDetails OutputTokenDetails `json:"completion_tokens_details"`
-	InputTokens            int                `json:"input_tokens"`
-	OutputTokens           int                `json:"output_tokens"`
-	InputTokensDetails     *InputTokenDetails `json:"input_tokens_details"`
+	PromptTokensDetails    InputTokenDetails   `json:"prompt_tokens_details"`
+	CompletionTokenDetails OutputTokenDetails  `json:"completion_tokens_details"`
+	InputTokens            int                 `json:"input_tokens"`
+	OutputTokens           int                 `json:"output_tokens"`
+	InputTokensDetails     *InputTokenDetails  `json:"input_tokens_details"`
+	OutputTokensDetails    *OutputTokenDetails `json:"output_tokens_details,omitempty"`
 
 	// claude cache 1h
 	ClaudeCacheCreation5mTokens int `json:"claude_cache_creation_5_m_tokens"`
@@ -355,7 +375,10 @@ type ResponsesOutput struct {
 	Size             string                   `json:"size"`
 	CallId           string                   `json:"call_id,omitempty"`
 	Name             string                   `json:"name,omitempty"`
-	Arguments        string                   `json:"arguments,omitempty"`
+	Namespace        string                   `json:"namespace,omitempty"`
+	Arguments        any                      `json:"arguments,omitempty"`
+	Input            string                   `json:"input,omitempty"`
+	Execution        string                   `json:"execution,omitempty"`
 	Summary          []ResponsesContentPart   `json:"summary,omitempty"`
 	EncryptedContent string                   `json:"encrypted_content,omitempty"`
 }
@@ -372,7 +395,7 @@ const (
 )
 
 const (
-	BuildInCallWebSearchCall = "web_search_call"
+	BuildInCallWebSearchCall  = "web_search_call"
 	BuildInCallFileSearchCall = "file_search_call"
 )
 
@@ -387,7 +410,8 @@ type ResponsesStreamResponse struct {
 	Response  *OpenAIResponsesResponse `json:"response,omitempty"`
 	Delta     string                   `json:"delta,omitempty"`
 	Text      string                   `json:"text,omitempty"`
-	Arguments string                   `json:"arguments,omitempty"`
+	Arguments any                      `json:"arguments,omitempty"`
+	Input     string                   `json:"input,omitempty"`
 	Item      *ResponsesOutput         `json:"item,omitempty"`
 	// - response.function_call_arguments.delta
 	// - response.function_call_arguments.done
@@ -395,6 +419,7 @@ type ResponsesStreamResponse struct {
 	ContentIndex *int                  `json:"content_index,omitempty"`
 	SummaryIndex *int                  `json:"summary_index,omitempty"`
 	ItemID       string                `json:"item_id,omitempty"`
+	CallID       string                `json:"call_id,omitempty"`
 	Part         *ResponsesContentPart `json:"part,omitempty"`
 }
 

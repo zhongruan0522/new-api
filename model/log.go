@@ -18,26 +18,28 @@ import (
 )
 
 type Log struct {
-	Id               int    `json:"id" gorm:"index:idx_created_at_id,priority:1;index:idx_user_id_id,priority:2"`
-	UserId           int    `json:"user_id" gorm:"index;index:idx_user_id_id,priority:1"`
-	CreatedAt        int64  `json:"created_at" gorm:"bigint;index:idx_created_at_id,priority:2;index:idx_created_at_type"`
-	Type             int    `json:"type" gorm:"index:idx_created_at_type"`
-	Content          string `json:"content"`
-	Username         string `json:"username" gorm:"index;index:index_username_model_name,priority:2;default:''"`
-	TokenName        string `json:"token_name" gorm:"index;default:''"`
-	ModelName        string `json:"model_name" gorm:"index;index:index_username_model_name,priority:1;default:''"`
-	Quota            int    `json:"quota" gorm:"default:0"`
-	PromptTokens     int    `json:"prompt_tokens" gorm:"default:0"`
-	CompletionTokens int    `json:"completion_tokens" gorm:"default:0"`
-	UseTime          int    `json:"use_time" gorm:"default:0"`
-	IsStream         bool   `json:"is_stream"`
-	ChannelId        int    `json:"channel" gorm:"index"`
-	ChannelName      string `json:"channel_name" gorm:"->"`
-	TokenId          int    `json:"token_id" gorm:"default:0;index"`
-	Group            string `json:"group" gorm:"index"`
-	Ip               string `json:"ip" gorm:"index;default:''"`
-	RequestId        string `json:"request_id,omitempty" gorm:"type:varchar(64);index:idx_logs_request_id;default:''"`
-	Other            string `json:"other"`
+	Id                int    `json:"id" gorm:"index:idx_created_at_id,priority:1;index:idx_user_id_id,priority:2"`
+	UserId            int    `json:"user_id" gorm:"index;index:idx_user_id_id,priority:1"`
+	CreatedAt         int64  `json:"created_at" gorm:"bigint;index:idx_created_at_id,priority:2;index:idx_created_at_type"`
+	Type              int    `json:"type" gorm:"index:idx_created_at_type"`
+	Content           string `json:"content"`
+	Username          string `json:"username" gorm:"index;index:index_username_model_name,priority:2;default:''"`
+	TokenName         string `json:"token_name" gorm:"index;default:''"`
+	ModelName         string `json:"model_name" gorm:"index;index:index_username_model_name,priority:1;default:''"`
+	Quota             int    `json:"quota" gorm:"default:0"`
+	PromptTokens      int    `json:"prompt_tokens" gorm:"default:0"`
+	CompletionTokens  int    `json:"completion_tokens" gorm:"default:0"`
+	UseTime           int    `json:"use_time" gorm:"default:0"`
+	IsStream          bool   `json:"is_stream"`
+	ChannelId         int    `json:"channel" gorm:"index"`
+	ChannelName       string `json:"channel_name" gorm:"->"`
+	TokenId           int    `json:"token_id" gorm:"default:0;index"`
+	Group             string `json:"group" gorm:"index"`
+	Ip                string `json:"ip" gorm:"index;default:''"`
+	RequestId         string `json:"request_id,omitempty" gorm:"type:varchar(64);index:idx_logs_request_id;default:''"`
+	UpstreamRequestId string `json:"upstream_request_id,omitempty" gorm:"type:varchar(128);index:idx_logs_upstream_request_id;default:''"`
+	Other             string `json:"other"`
+	ModelIcon         string `json:"model_icon,omitempty" gorm:"-"`
 }
 
 // don't use iota, avoid change log type value
@@ -66,9 +68,79 @@ func formatUserLogs(logs []*Log, startIdx int) {
 	}
 }
 
+// enrichLogModelIcons 批量填充日志的模型图标字段。
+// 优先使用 models 表的 icon，其次使用关联 vendors 表的 icon。
+func enrichLogModelIcons(logs []*Log) {
+	hasModelName := false
+	for _, l := range logs {
+		if l.ModelName != "" {
+			hasModelName = true
+			break
+		}
+	}
+	if !hasModelName {
+		return
+	}
+
+	var models []Model
+	if err := DB.Where("status = ?", 1).Find(&models).Error; err != nil {
+		return
+	}
+
+	vendorIDs := make(map[int]struct{})
+	for _, m := range models {
+		if m.VendorID != 0 {
+			vendorIDs[m.VendorID] = struct{}{}
+		}
+	}
+
+	vendorIconMap := make(map[int]string)
+	if len(vendorIDs) > 0 {
+		ids := make([]int, 0, len(vendorIDs))
+		for id := range vendorIDs {
+			ids = append(ids, id)
+		}
+		type vendorRow struct {
+			Id   int    `gorm:"column:id"`
+			Icon string `gorm:"column:icon"`
+		}
+		var vendors []vendorRow
+		if err := DB.Table("vendors").
+			Select("id, icon").
+			Where("id IN ? AND deleted_at IS NULL", ids).
+			Find(&vendors).Error; err == nil {
+			for _, v := range vendors {
+				if v.Icon != "" {
+					vendorIconMap[v.Id] = v.Icon
+				}
+			}
+		}
+	}
+
+	for _, l := range logs {
+		if l.ModelName == "" {
+			continue
+		}
+		matched := MatchModelMeta(l.ModelName, models)
+		if matched == nil {
+			continue
+		}
+		if matched.Icon != "" {
+			l.ModelIcon = matched.Icon
+			continue
+		}
+		if matched.VendorID != 0 {
+			if icon, ok := vendorIconMap[matched.VendorID]; ok {
+				l.ModelIcon = icon
+			}
+		}
+	}
+}
+
 func GetLogByTokenId(tokenId int) (logs []*Log, err error) {
 	err = LOG_DB.Model(&Log{}).Where("token_id = ?", tokenId).Order("id desc").Limit(common.MaxRecentItems).Find(&logs).Error
 	formatUserLogs(logs, 0)
+	enrichLogModelIcons(logs)
 	return logs, err
 }
 
@@ -90,32 +162,58 @@ func RecordLog(userId int, logType int, content string) {
 	}
 }
 
+func RecordLogWithAdminInfo(userId int, logType int, content string, adminInfo map[string]interface{}) {
+	if logType == LogTypeConsume && !common.LogConsumeEnabled {
+		return
+	}
+	username, _ := GetUsernameById(userId, false)
+	log := &Log{
+		UserId:    userId,
+		Username:  username,
+		CreatedAt: common.GetTimestamp(),
+		Type:      logType,
+		Content:   content,
+	}
+	if len(adminInfo) > 0 {
+		log.Other = common.MapToJsonStr(map[string]interface{}{
+			"admin_info": adminInfo,
+		})
+	}
+	err := LOG_DB.Create(log).Error
+	if err != nil {
+		common.SysLog("failed to record log: " + err.Error())
+	}
+}
+
 func RecordErrorLog(c *gin.Context, userId int, channelId int, modelName string, tokenName string, content string, tokenId int, useTimeMs int,
 	isStream bool, group string, other map[string]interface{}) {
-	logger.LogInfo(c, fmt.Sprintf("record error log: userId=%d, channelId=%d, modelName=%s, tokenName=%s, content=%s", userId, channelId, modelName, tokenName, content))
+	contentPreview := common.LocalLogPreview(content)
+	logger.LogInfo(c, fmt.Sprintf("record error log: userId=%d, channelId=%d, modelName=%s, tokenName=%s, content=%s", userId, channelId, modelName, tokenName, contentPreview))
 	username := c.GetString("username")
 	requestId := c.GetString(common.RequestIdKey)
+	upstreamRequestId := c.GetString(common.UpstreamRequestIdKey)
 	otherStr := common.MapToJsonStr(other)
 	// 记录请求与错误日志的 IP（强制开启，用于滥用追踪）
 	log := &Log{
-		UserId:           userId,
-		Username:         username,
-		CreatedAt:        common.GetTimestamp(),
-		Type:             LogTypeError,
-		Content:          content,
-		PromptTokens:     0,
-		CompletionTokens: 0,
-		TokenName:        tokenName,
-		ModelName:        modelName,
-		Quota:            0,
-		ChannelId:        channelId,
-		TokenId:          tokenId,
-		UseTime:          useTimeMs,
-		IsStream:         isStream,
-		Group:            group,
-		Ip:               c.ClientIP(),
-		RequestId:        requestId,
-		Other:            otherStr,
+		UserId:            userId,
+		Username:          username,
+		CreatedAt:         common.GetTimestamp(),
+		Type:              LogTypeError,
+		Content:           contentPreview,
+		PromptTokens:      0,
+		CompletionTokens:  0,
+		TokenName:         tokenName,
+		ModelName:         modelName,
+		Quota:             0,
+		ChannelId:         channelId,
+		TokenId:           tokenId,
+		UseTime:           useTimeMs,
+		IsStream:          isStream,
+		Group:             group,
+		Ip:                c.ClientIP(),
+		RequestId:         requestId,
+		UpstreamRequestId: upstreamRequestId,
+		Other:             otherStr,
 	}
 	err := LOG_DB.Create(log).Error
 	if err != nil {
@@ -141,7 +239,7 @@ type RecordConsumeLogParams struct {
 	IsStream         bool                   `json:"is_stream"`
 	Group            string                 `json:"group"`
 	Other            map[string]interface{} `json:"other"`
-	InputTokens      int                    `json:"input_tokens"` // 原始输入 token（未被计费逻辑修改），用于缓存率统计
+	LogType          int                    `json:"log_type"` // 日志类型，0 表示使用默认的 LogTypeConsume
 }
 
 func RecordConsumeLog(c *gin.Context, userId int, params RecordConsumeLogParams) {
@@ -151,6 +249,7 @@ func RecordConsumeLog(c *gin.Context, userId int, params RecordConsumeLogParams)
 	logger.LogInfo(c, fmt.Sprintf("record consume log: userId=%d, params=%s", userId, common.GetJsonString(params)))
 	username := c.GetString("username")
 	requestId := c.GetString(common.RequestIdKey)
+	upstreamRequestId := c.GetString(common.UpstreamRequestIdKey)
 	createdAt := common.GetTimestamp()
 	clientIP := c.ClientIP()
 	other := params.Other
@@ -159,26 +258,31 @@ func RecordConsumeLog(c *gin.Context, userId int, params RecordConsumeLogParams)
 	}
 	appendConsumeLogClientHeaders(c, other)
 	otherStr := common.MapToJsonStr(other)
+	logType := params.LogType
+	if logType == 0 {
+		logType = LogTypeConsume
+	}
 	// 记录请求与错误日志的 IP（强制开启，用于滥用追踪）
 	log := &Log{
-		UserId:           userId,
-		Username:         username,
-		CreatedAt:        createdAt,
-		Type:             LogTypeConsume,
-		Content:          params.Content,
-		PromptTokens:     params.PromptTokens,
-		CompletionTokens: params.CompletionTokens,
-		TokenName:        params.TokenName,
-		ModelName:        params.ModelName,
-		Quota:            params.Quota,
-		ChannelId:        params.ChannelId,
-		TokenId:          params.TokenId,
-		UseTime:          params.UseTimeMs,
-		IsStream:         params.IsStream,
-		Group:            params.Group,
-		Ip:               clientIP,
-		RequestId:        requestId,
-		Other:            otherStr,
+		UserId:            userId,
+		Username:          username,
+		CreatedAt:         createdAt,
+		Type:              logType,
+		Content:           params.Content,
+		PromptTokens:      params.PromptTokens,
+		CompletionTokens:  params.CompletionTokens,
+		TokenName:         params.TokenName,
+		ModelName:         params.ModelName,
+		Quota:             params.Quota,
+		ChannelId:         params.ChannelId,
+		TokenId:           params.TokenId,
+		UseTime:           params.UseTimeMs,
+		IsStream:          params.IsStream,
+		Group:             params.Group,
+		Ip:                clientIP,
+		RequestId:         requestId,
+		UpstreamRequestId: upstreamRequestId,
+		Other:             otherStr,
 	}
 	// 消费日志不影响主流程，异步写入以避免高并发下在请求尾部阻塞数据库。
 	gopool.Go(func() {
@@ -187,25 +291,11 @@ func RecordConsumeLog(c *gin.Context, userId int, params RecordConsumeLogParams)
 			common.SysError(fmt.Sprintf("failed to record consume log (request_id=%s): %s", requestId, err.Error()))
 		}
 		if common.DataExportEnabled {
-			cacheHitTokens := 0
-			cacheCreationTokens := 0
-			if other != nil {
-				if v, ok := other["cache_tokens"].(float64); ok {
-					cacheHitTokens = int(v)
-				} else if v, ok := other["cache_tokens"].(int); ok {
-					cacheHitTokens = v
-				}
-				if v, ok := other["cache_creation_tokens"].(float64); ok {
-					cacheCreationTokens = int(v)
-				} else if v, ok := other["cache_creation_tokens"].(int); ok {
-					cacheCreationTokens = v
-				}
+			if logType == LogTypeError {
+				LogQuotaErrorData(userId, username, params.ModelName, createdAt)
+			} else {
+				LogQuotaData(userId, username, params.ModelName, params.Quota, createdAt, params.PromptTokens+params.CompletionTokens)
 			}
-			inputTokens := params.InputTokens
-			if inputTokens == 0 {
-				inputTokens = params.PromptTokens
-			}
-			LogQuotaData(userId, username, params.ModelName, params.Quota, createdAt, params.PromptTokens+params.CompletionTokens, inputTokens, cacheHitTokens, cacheCreationTokens)
 		}
 	})
 }
@@ -252,7 +342,7 @@ func sanitizeConsumeLogHeaderValue(value string) string {
 	return value
 }
 
-func GetAllLogs(logType int, startTimestamp int64, endTimestamp int64, modelName string, username string, tokenName string, startIdx int, num int, channel int, group string, requestId string) (logs []*Log, total int64, err error) {
+func GetAllLogs(logType int, startTimestamp int64, endTimestamp int64, modelName string, username string, tokenName string, startIdx int, num int, channel int, group string, requestId string, upstreamRequestId string) (logs []*Log, total int64, err error) {
 	var tx *gorm.DB
 	if logType == LogTypeUnknown {
 		tx = LOG_DB
@@ -271,6 +361,9 @@ func GetAllLogs(logType int, startTimestamp int64, endTimestamp int64, modelName
 	}
 	if requestId != "" {
 		tx = tx.Where("logs.request_id = ?", requestId)
+	}
+	if upstreamRequestId != "" {
+		tx = tx.Where("logs.upstream_request_id = ?", upstreamRequestId)
 	}
 	if startTimestamp != 0 {
 		tx = tx.Where("logs.created_at >= ?", startTimestamp)
@@ -317,12 +410,14 @@ func GetAllLogs(logType int, startTimestamp int64, endTimestamp int64, modelName
 		}
 	}
 
+	enrichLogModelIcons(logs)
+
 	return logs, total, err
 }
 
 const logSearchCountLimit = 10000
 
-func GetUserLogs(userId int, logType int, startTimestamp int64, endTimestamp int64, modelName string, tokenName string, startIdx int, num int, group string, requestId string) (logs []*Log, total int64, err error) {
+func GetUserLogs(userId int, logType int, startTimestamp int64, endTimestamp int64, modelName string, tokenName string, startIdx int, num int, group string, requestId string, upstreamRequestId string) (logs []*Log, total int64, err error) {
 	var tx *gorm.DB
 	if logType == LogTypeUnknown {
 		tx = LOG_DB.Where("logs.user_id = ?", userId)
@@ -342,6 +437,9 @@ func GetUserLogs(userId int, logType int, startTimestamp int64, endTimestamp int
 	}
 	if requestId != "" {
 		tx = tx.Where("logs.request_id = ?", requestId)
+	}
+	if upstreamRequestId != "" {
+		tx = tx.Where("logs.upstream_request_id = ?", upstreamRequestId)
 	}
 	if startTimestamp != 0 {
 		tx = tx.Where("logs.created_at >= ?", startTimestamp)
@@ -364,6 +462,7 @@ func GetUserLogs(userId int, logType int, startTimestamp int64, endTimestamp int
 	}
 
 	formatUserLogs(logs, startIdx)
+	enrichLogModelIcons(logs)
 	return logs, total, err
 }
 

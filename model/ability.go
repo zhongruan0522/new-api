@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/zhongruan0522/new-api/common"
+	"github.com/zhongruan0522/new-api/types"
 
 	"github.com/samber/lo"
 	"gorm.io/gorm"
@@ -115,6 +116,10 @@ func getChannelQuery(group string, model string, priorityIndex int, excludeChann
 }
 
 func GetChannel(group string, model string, priorityIndex int, preferredAPIType int, excludeChannelId int) (*Channel, error) {
+	return GetChannelWithRelayFormat(group, model, priorityIndex, preferredAPIType, "", excludeChannelId)
+}
+
+func GetChannelWithRelayFormat(group string, model string, priorityIndex int, preferredAPIType int, relayFormat types.RelayFormat, excludeChannelId int) (*Channel, error) {
 	var abilities []Ability
 
 	var err error = nil
@@ -132,11 +137,9 @@ func GetChannel(group string, model string, priorityIndex int, preferredAPIType 
 	}
 	channel := Channel{}
 	if len(abilities) > 0 {
-		// If a preferred API type is specified, try to pick from matching channels first.
+		// Prefer explicit OpenAI wire settings before the broader API-type preference.
 		// Fall back to all channels if none match (format conversion).
-		if preferredAPIType >= 0 {
-			abilities = preferAbilitiesByAPIType(abilities, preferredAPIType)
-		}
+		abilities = preferAbilitiesByRequestFormat(abilities, preferredAPIType, relayFormat)
 		// Randomly choose one
 		weightSum := uint(0)
 		for _, ability_ := range abilities {
@@ -168,9 +171,7 @@ func GetChannel(group string, model string, priorityIndex int, preferredAPIType 
 				if len(abilities) == 0 {
 					return nil, nil
 				}
-				if preferredAPIType >= 0 {
-					abilities = preferAbilitiesByAPIType(abilities, preferredAPIType)
-				}
+				abilities = preferAbilitiesByRequestFormat(abilities, preferredAPIType, relayFormat)
 				weightSum := uint(0)
 				for _, ability_ := range abilities {
 					weightSum += ability_.Weight + 10

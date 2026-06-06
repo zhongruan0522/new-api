@@ -19,7 +19,7 @@ services:
       - ./data:/data
       - ./logs:/app/logs
     environment:
-      - REDIS_CONN_STRING=redis://redis
+      - REDIS_CONN_STRING=redis://:123456@redis:6379  # IMPORTANT: Change this password in production!
       - TZ=Asia/Shanghai
       - ERROR_LOG_ENABLED=true
       - BATCH_UPDATE_ENABLED=true
@@ -45,8 +45,9 @@ services:
     image: redis:latest
     container_name: redis
     restart: always
+    command: ["redis-server", "--requirepass", "123456"]  # IMPORTANT: Change this password in production!
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "redis-cli", "-a", "123456", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
