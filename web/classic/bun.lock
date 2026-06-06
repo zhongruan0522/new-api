@@ -5,7 +5,7 @@
     "": {
       "name": "react-template",
       "dependencies": {
-        "@douyinfe/semi-icons": "2.99.2",
+        "@douyinfe/semi-icons": "2.99.3",
         "@douyinfe/semi-ui": "2.72.2",
         "@lobehub/icons": "2.48.0",
         "@visactor/react-vchart": "~2.0.22",
@@ -162,7 +162,7 @@
 
     "@douyinfe/semi-foundation": ["@douyinfe/semi-foundation@2.72.2", "", { "dependencies": { "@douyinfe/semi-animation": "2.72.2", "@douyinfe/semi-json-viewer-core": "2.72.2", "@mdx-js/mdx": "^3.0.1", "async-validator": "^3.5.0", "classnames": "^2.2.6", "date-fns": "^2.29.3", "date-fns-tz": "^1.3.8", "fast-copy": "^3.0.1 ", "lodash": "^4.17.21", "lottie-web": "^5.12.2", "memoize-one": "^5.2.1", "prismjs": "^1.29.0", "remark-gfm": "^4.0.0", "scroll-into-view-if-needed": "^2.2.24" } }, "sha512-pIJIz5rrayVyx2Dk4ntCifet5ZL9bEeTRSnauQtKRxq15ZqT10IETeUha235NAXZr+qA8YGhY+v9dhCXM9SMNA=="],
 
-    "@douyinfe/semi-icons": ["@douyinfe/semi-icons@2.99.2", "", { "dependencies": { "classnames": "^2.2.6" }, "peerDependencies": { "react": ">=16.0.0" } }, "sha512-S4TwmY7oPpPj3lg6OI9l2HNbK6KExP8tUO+wrOcPLXSe9XkQr5CCA7T+B3qNb1CPZ6PGsj7v2v51xlvOsD1Hpg=="],
+    "@douyinfe/semi-icons": ["@douyinfe/semi-icons@2.99.3", "", { "dependencies": { "classnames": "^2.2.6" }, "peerDependencies": { "react": ">=16.0.0" } }, "sha512-Pm5H3Ua/PDumUCCsnJWwN+znVoKiyFCqag6DJy9/cuF6OOdd1+QUnvi0NHNg6+0fx/LHH088UwKFoOiZRkbaSw=="],
 
     "@douyinfe/semi-illustrations": ["@douyinfe/semi-illustrations@2.72.2", "", { "peerDependencies": { "react": "^16.8.0 || ^17.0.0 || ^18.0.0" } }, "sha512-Rp1JBcZaEFyIJ+LYfESIp4Xf0rv4h6Es+XOVHtjzuZLD+cSmlhf8zT8WJpLT/9RA16YUFKXTNUFDMjTc/VQKTQ=="],
 
