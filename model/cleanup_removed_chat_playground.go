@@ -52,7 +52,7 @@ func cleanupRemovedChatPlaygroundData() error {
 	}
 
 	// ---------------------------------------------------------------------
-	// 3) Sanitize per-user sidebar modules stored in users.setting
+	// 3) Remove per-user sidebar_modules from users.setting
 	// ---------------------------------------------------------------------
 	var updatedUsers int64
 	var users []User
@@ -65,7 +65,7 @@ func cleanupRemovedChatPlaygroundData() error {
 				if !strings.Contains(u.Setting, "sidebar_modules") {
 					continue
 				}
-				sanitizedSetting, changed, err := sanitizeUserSettingSidebarModulesJSON(u.Setting)
+				sanitizedSetting, changed, err := removeUserSettingSidebarModules(u.Setting)
 				if err != nil {
 					return err
 				}
@@ -83,12 +83,13 @@ func cleanupRemovedChatPlaygroundData() error {
 		return result.Error
 	}
 	if updatedUsers > 0 {
-		common.SysLog(fmt.Sprintf("cleaned %d users.setting.sidebar_modules: removed chat section", updatedUsers))
+		common.SysLog(fmt.Sprintf("removed sidebar_modules from %d users.setting", updatedUsers))
 	}
 	return nil
 }
 
-func sanitizeUserSettingSidebarModulesJSON(settingJSON string) (string, bool, error) {
+// removeUserSettingSidebarModules removes the sidebar_modules key from user setting JSON.
+func removeUserSettingSidebarModules(settingJSON string) (string, bool, error) {
 	settingJSON = strings.TrimSpace(settingJSON)
 	if settingJSON == "" {
 		return settingJSON, false, nil
@@ -100,34 +101,11 @@ func sanitizeUserSettingSidebarModulesJSON(settingJSON string) (string, bool, er
 		return settingJSON, false, nil
 	}
 
-	rawSidebarModules, ok := m["sidebar_modules"]
-	if !ok {
+	if _, ok := m["sidebar_modules"]; !ok {
 		return settingJSON, false, nil
 	}
 
-	var sidebarModulesStr string
-	switch v := rawSidebarModules.(type) {
-	case string:
-		sidebarModulesStr = v
-	default:
-		// Unexpected type (object/array/etc). Marshal to JSON string for sanitation.
-		b, err := common.Marshal(v)
-		if err != nil {
-			return "", false, err
-		}
-		sidebarModulesStr = string(b)
-	}
-
-	sanitizedSidebar, changed, err := SanitizeSidebarModulesConfigJSON(sidebarModulesStr)
-	if err != nil {
-		return "", false, err
-	}
-	if !changed {
-		return settingJSON, false, nil
-	}
-
-	// Store back as string (expected by dto.UserSetting and existing APIs).
-	m["sidebar_modules"] = sanitizedSidebar
+	delete(m, "sidebar_modules")
 
 	b, err := common.Marshal(m)
 	if err != nil {

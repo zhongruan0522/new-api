@@ -18,10 +18,7 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { create } from 'zustand'
 
-export type UserPermissions = {
-  sidebar_settings?: boolean
-  sidebar_modules?: Record<string, unknown>
-}
+export type UserPermissions = Record<string, unknown>
 
 export interface AuthUser {
   id: number
@@ -46,7 +43,6 @@ export interface AuthUser {
   linux_do_id?: string
   setting?: Record<string, unknown> | string
   stripe_customer?: string
-  sidebar_modules?: string
   permissions?: UserPermissions
 }
 

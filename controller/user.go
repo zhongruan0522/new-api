@@ -384,7 +384,6 @@ func GetAffCode(c *gin.Context) {
 
 func GetSelf(c *gin.Context) {
 	id := c.GetInt("id")
-	userRole := c.GetInt("role")
 	user, err := model.GetUserById(id, false)
 	if err != nil {
 		common.ApiError(c, err)
@@ -393,10 +392,7 @@ func GetSelf(c *gin.Context) {
 	// Hide admin remarks: set to empty to trigger omitempty tag, ensuring the remark field is not included in JSON returned to regular users
 	user.Remark = ""
 
-	// 计算用户权限信息
-	permissions := calculateUserPermissions(userRole)
-
-	// 获取用户设置并提取sidebar_modules
+	// 获取用户设置
 	userSetting := user.GetSetting()
 
 	// 重新序列化用户设置，确保已移除的字段不会出现在响应中
@@ -406,7 +402,7 @@ func GetSelf(c *gin.Context) {
 		return
 	}
 
-	// 构建响应数据，包含用户信息和权限
+	// 构建响应数据
 	responseData := map[string]interface{}{
 		"id":                    user.Id,
 		"username":              user.Username,
@@ -427,8 +423,6 @@ func GetSelf(c *gin.Context) {
 		"linux_do_id":           user.LinuxDOId,
 		"setting":               string(settingJSON),
 		"stripe_customer":       user.StripeCustomer,
-		"sidebar_modules":       userSetting.SidebarModules,
-		"permissions":           permissions,
 		"image_converted_count": user.ImageConvertedCount,
 		"video_converted_count": user.VideoConvertedCount,
 	}
@@ -439,34 +433,6 @@ func GetSelf(c *gin.Context) {
 		"data":    responseData,
 	})
 	return
-}
-
-// 计算用户权限的辅助函数
-func calculateUserPermissions(userRole int) map[string]interface{} {
-	permissions := map[string]interface{}{}
-
-	// 根据用户角色计算权限
-	if userRole == common.RoleRootUser {
-		// 超级管理员不需要边栏设置功能
-		permissions["sidebar_settings"] = false
-		permissions["sidebar_modules"] = map[string]interface{}{}
-	} else if userRole == common.RoleAdminUser {
-		// 管理员可以设置边栏，但不包含系统设置功能
-		permissions["sidebar_settings"] = true
-		permissions["sidebar_modules"] = map[string]interface{}{
-			"admin": map[string]interface{}{
-				"setting": false, // 管理员不能访问系统设置
-			},
-		}
-	} else {
-		// 普通用户只能设置个人功能，不包含管理员区域
-		permissions["sidebar_settings"] = true
-		permissions["sidebar_modules"] = map[string]interface{}{
-			"admin": false, // 普通用户不能访问管理员区域
-		}
-	}
-
-	return permissions
 }
 
 func GetUserModels(c *gin.Context) {
@@ -544,65 +510,8 @@ func UpdateUser(c *gin.Context) {
 }
 
 func UpdateSelf(c *gin.Context) {
-	var requestData map[string]interface{}
-	err := common.DecodeJson(c.Request.Body, &requestData)
-	if err != nil {
-		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
-		return
-	}
-
-	// 检查是否是用户设置更新请求 (sidebar_modules)
-	if sidebarModules, sidebarExists := requestData["sidebar_modules"]; sidebarExists {
-		userId := c.GetInt("id")
-		user, err := model.GetUserById(userId, false)
-		if err != nil {
-			common.ApiError(c, err)
-			return
-		}
-
-		// 获取当前用户设置
-		currentSetting := user.GetSetting()
-
-		// 更新sidebar_modules字段
-		var sidebarModulesStr string
-		switch v := sidebarModules.(type) {
-		case string:
-			sidebarModulesStr = v
-		default:
-			b, err := common.Marshal(v)
-			if err != nil {
-				common.ApiErrorI18n(c, i18n.MsgInvalidParams)
-				return
-			}
-			sidebarModulesStr = string(b)
-		}
-		sanitized, _, err := model.SanitizeSidebarModulesConfigJSON(sidebarModulesStr)
-		if err != nil {
-			common.ApiErrorI18n(c, i18n.MsgInvalidParams)
-			return
-		}
-		currentSetting.SidebarModules = sanitized
-
-		// 保存更新后的设置
-		user.SetSetting(currentSetting)
-		if err := user.Update(false); err != nil {
-			common.ApiErrorI18n(c, i18n.MsgUpdateFailed)
-			return
-		}
-		invalidateSecuritySensitiveUserCaches(userId)
-
-		common.ApiSuccessI18n(c, i18n.MsgUpdateSuccess, nil)
-		return
-	}
-
-	// 原有的用户信息更新逻辑
 	var user model.User
-	requestDataBytes, err := common.Marshal(requestData)
-	if err != nil {
-		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
-		return
-	}
-	err = common.Unmarshal(requestDataBytes, &user)
+	err := common.DecodeJson(c.Request.Body, &user)
 	if err != nil {
 		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
 		return

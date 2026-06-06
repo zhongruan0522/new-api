@@ -453,9 +453,6 @@ export const STATIC_I18N_KEYS = [
   'Save failed',
   'Save failed, please retry',
   'Reset to default configuration',
-  'Sidebar Personal Settings',
-  'Customize sidebar display content',
-  'Reset to Default',
 
   // Available models
   'Available Models',

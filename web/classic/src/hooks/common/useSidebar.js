@@ -19,7 +19,7 @@ For commercial licensing, please contact support@quantumnous.com
 
 import { useState, useEffect, useMemo, useContext, useRef } from 'react';
 import { StatusContext } from '../../context/Status';
-import { API } from '../../helpers';
+import { UserContext } from '../../context/User';
 
 // 创建一个全局事件系统来同步所有useSidebar实例
 const sidebarEventTarget = new EventTarget();
@@ -82,7 +82,7 @@ export const mergeAdminConfig = (savedConfig) => {
 
 export const useSidebar = () => {
   const [statusState] = useContext(StatusContext);
-  const [userConfig, setUserConfig] = useState(null);
+  const [userState] = useContext(UserContext);
   const [loading, setLoading] = useState(true);
   const instanceIdRef = useRef(null);
   const hasLoadedOnceRef = useRef(false);
@@ -105,104 +105,18 @@ export const useSidebar = () => {
     return mergeAdminConfig(null);
   }, [statusState?.status?.SidebarModulesAdmin]);
 
-  // 加载用户配置的通用方法
-  const loadUserConfig = async ({ withLoading } = {}) => {
-    const shouldShowLoader =
-      typeof withLoading === 'boolean'
-        ? withLoading
-        : !hasLoadedOnceRef.current;
-
-    try {
-      if (shouldShowLoader) {
-        setLoading(true);
-      }
-
-      const res = await API.get('/api/user/self');
-      if (res.data.success && res.data.data.sidebar_modules) {
-        let config;
-        // 检查sidebar_modules是字符串还是对象
-        if (typeof res.data.data.sidebar_modules === 'string') {
-          config = JSON.parse(res.data.data.sidebar_modules);
-        } else {
-          config = res.data.data.sidebar_modules;
-        }
-        setUserConfig(config);
-      } else {
-        // 当用户没有配置时，生成一个基于管理员配置的默认用户配置
-        // 这样可以确保权限控制正确生效
-        const defaultUserConfig = {};
-        Object.keys(adminConfig).forEach((sectionKey) => {
-          if (adminConfig[sectionKey]?.enabled) {
-            defaultUserConfig[sectionKey] = { enabled: true };
-            // 为每个管理员允许的模块设置默认值为true
-            Object.keys(adminConfig[sectionKey]).forEach((moduleKey) => {
-              if (
-                moduleKey !== 'enabled' &&
-                adminConfig[sectionKey][moduleKey]
-              ) {
-                defaultUserConfig[sectionKey][moduleKey] = true;
-              }
-            });
-          }
-        });
-        setUserConfig(defaultUserConfig);
-      }
-    } catch (error) {
-      // 出错时也生成默认配置，而不是设置为空对象
-      const defaultUserConfig = {};
-      Object.keys(adminConfig).forEach((sectionKey) => {
-        if (adminConfig[sectionKey]?.enabled) {
-          defaultUserConfig[sectionKey] = { enabled: true };
-          Object.keys(adminConfig[sectionKey]).forEach((moduleKey) => {
-            if (moduleKey !== 'enabled' && adminConfig[sectionKey][moduleKey]) {
-              defaultUserConfig[sectionKey][moduleKey] = true;
-            }
-          });
-        }
-      });
-      setUserConfig(defaultUserConfig);
-    } finally {
-      if (shouldShowLoader) {
-        setLoading(false);
-      }
-      hasLoadedOnceRef.current = true;
-    }
-  };
-
-  // 刷新用户配置的方法（供外部调用）
-  const refreshUserConfig = async () => {
-    if (Object.keys(adminConfig).length > 0) {
-      await loadUserConfig({ withLoading: false });
-    }
-
-    // 触发全局刷新事件，通知所有useSidebar实例更新
-    sidebarEventTarget.dispatchEvent(
-      new CustomEvent(SIDEBAR_REFRESH_EVENT, {
-        detail: { sourceId: instanceIdRef.current, skipLoader: true },
-      }),
-    );
-  };
-
-  // 加载用户配置
+  // 初始化加载标记
   useEffect(() => {
-    // 只有当管理员配置加载完成后才加载用户配置
     if (Object.keys(adminConfig).length > 0) {
-      loadUserConfig();
+      setLoading(false);
+      hasLoadedOnceRef.current = true;
     }
   }, [adminConfig]);
 
   // 监听全局刷新事件
   useEffect(() => {
-    const handleRefresh = (event) => {
-      if (event?.detail?.sourceId === instanceIdRef.current) {
-        return;
-      }
-
-      if (Object.keys(adminConfig).length > 0) {
-        loadUserConfig({
-          withLoading: event?.detail?.skipLoader ? false : undefined,
-        });
-      }
+    const handleRefresh = () => {
+      // Admin config is reactive via StatusContext, no manual reload needed
     };
 
     sidebarEventTarget.addEventListener(SIDEBAR_REFRESH_EVENT, handleRefresh);
@@ -213,14 +127,10 @@ export const useSidebar = () => {
         handleRefresh,
       );
     };
-  }, [adminConfig]);
+  }, []);
 
-  // 计算最终的显示配置
+  // 计算最终的显示配置（基于管理员配置 + 用户角色）
   const finalConfig = useMemo(() => {
-    // Modules that should ONLY be controlled by admin global config (SidebarModulesAdmin),
-    // and should not be overridable by per-user sidebar_modules.
-    const GLOBAL_ONLY_MODULES = new Set(['multimodal_files']);
-
     const result = {};
 
     // 确保adminConfig已加载
@@ -228,15 +138,11 @@ export const useSidebar = () => {
       return result;
     }
 
-    // 如果userConfig未加载，等待加载完成
-    if (!userConfig) {
-      return result;
-    }
+    const isRoot = userState?.user?.role >= 100;
 
     // 遍历所有区域
     Object.keys(adminConfig).forEach((sectionKey) => {
       const adminSection = adminConfig[sectionKey];
-      const userSection = userConfig[sectionKey];
 
       // 如果管理员禁用了整个区域，则该区域不显示
       if (!adminSection?.enabled) {
@@ -244,31 +150,22 @@ export const useSidebar = () => {
         return;
       }
 
-      // 区域级别：用户可以选择隐藏管理员允许的区域
-      // 当userSection存在时检查enabled状态，否则默认为true
-      const sectionEnabled = userSection ? userSection.enabled !== false : true;
-      result[sectionKey] = { enabled: sectionEnabled };
+      result[sectionKey] = { enabled: true };
 
-      // 功能级别：只有管理员和用户都允许的功能才显示
+      // 功能级别：只有管理员允许的功能才显示
       Object.keys(adminSection).forEach((moduleKey) => {
         if (moduleKey === 'enabled') return;
-
-        const adminAllowed = adminSection[moduleKey];
-        // 当userSection存在时检查模块状态，否则默认为true
-        let userAllowed = userSection ? userSection[moduleKey] !== false : true;
-
-        // Enforce global-only modules: user config cannot hide them.
-        if (GLOBAL_ONLY_MODULES.has(moduleKey)) {
-          userAllowed = true;
+        // Non-root admins cannot see system settings
+        if (moduleKey === 'setting' && sectionKey === 'admin' && !isRoot) {
+          result[sectionKey][moduleKey] = false;
+          return;
         }
-
-        result[sectionKey][moduleKey] =
-          adminAllowed && userAllowed && sectionEnabled;
+        result[sectionKey][moduleKey] = adminSection[moduleKey];
       });
     });
 
     return result;
-  }, [adminConfig, userConfig]);
+  }, [adminConfig, userState?.user?.role]);
 
   // 检查特定功能是否应该显示
   const isModuleVisible = (sectionKey, moduleKey = null) => {
@@ -302,11 +199,9 @@ export const useSidebar = () => {
   return {
     loading,
     adminConfig,
-    userConfig,
     finalConfig,
     isModuleVisible,
     hasSectionVisibleModules,
     getVisibleModules,
-    refreshUserConfig,
   };
 };

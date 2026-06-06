@@ -20,8 +20,7 @@ import { useState, useEffect } from 'react';
 import { API } from '../../helpers';
 
 /**
- * 用户权限钩子 - 从后端获取用户权限，替代前端角色判断
- * 确保权限控制的安全性，防止前端绕过
+ * 用户权限钩子 - 从后端获取用户权限
  */
 export const useUserPermissions = () => {
   const [permissions, setPermissions] = useState(null);
@@ -37,14 +36,11 @@ export const useUserPermissions = () => {
       if (res.data.success) {
         const userPermissions = res.data.data.permissions;
         setPermissions(userPermissions);
-        console.log('用户权限加载成功:', userPermissions);
       } else {
         setError(res.data.message || '获取权限失败');
-        console.error('获取权限失败:', res.data.message);
       }
     } catch (error) {
       setError('网络错误，请重试');
-      console.error('加载用户权限异常:', error);
     } finally {
       setLoading(false);
     }
@@ -54,65 +50,11 @@ export const useUserPermissions = () => {
     loadPermissions();
   }, []);
 
-  // 检查是否有边栏设置权限
-  const hasSidebarSettingsPermission = () => {
-    return permissions?.sidebar_settings === true;
-  };
-
-  // 检查是否允许访问特定的边栏区域
-  const isSidebarSectionAllowed = (sectionKey) => {
-    if (!permissions?.sidebar_modules) return true;
-    const sectionPerms = permissions.sidebar_modules[sectionKey];
-    return sectionPerms !== false;
-  };
-
-  // 检查是否允许访问特定的边栏模块
-  const isSidebarModuleAllowed = (sectionKey, moduleKey) => {
-    if (!permissions?.sidebar_modules) return true;
-    const sectionPerms = permissions.sidebar_modules[sectionKey];
-
-    // 如果整个区域被禁用
-    if (sectionPerms === false) return false;
-
-    // 如果区域存在但模块被禁用
-    if (sectionPerms && sectionPerms[moduleKey] === false) return false;
-
-    return true;
-  };
-
-  // 获取允许的边栏区域列表
-  const getAllowedSidebarSections = () => {
-    if (!permissions?.sidebar_modules) return [];
-
-    return Object.keys(permissions.sidebar_modules).filter((sectionKey) =>
-      isSidebarSectionAllowed(sectionKey),
-    );
-  };
-
-  // 获取特定区域允许的模块列表
-  const getAllowedSidebarModules = (sectionKey) => {
-    if (!permissions?.sidebar_modules) return [];
-    const sectionPerms = permissions.sidebar_modules[sectionKey];
-
-    if (sectionPerms === false) return [];
-    if (!sectionPerms || typeof sectionPerms !== 'object') return [];
-
-    return Object.keys(sectionPerms).filter(
-      (moduleKey) =>
-        moduleKey !== 'enabled' && sectionPerms[moduleKey] === true,
-    );
-  };
-
   return {
     permissions,
     loading,
     error,
     loadPermissions,
-    hasSidebarSettingsPermission,
-    isSidebarSectionAllowed,
-    isSidebarModuleAllowed,
-    getAllowedSidebarSections,
-    getAllowedSidebarModules,
   };
 };
 
