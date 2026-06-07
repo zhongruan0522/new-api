@@ -57,7 +57,7 @@ type CustomEvent struct {
 	Mutex sync.Mutex
 }
 
-func encode(writer io.Writer, event CustomEvent) error {
+func encode(writer io.Writer, event *CustomEvent) error {
 	w := checkWriter(writer)
 	return writeData(w, event.Data)
 }
@@ -70,12 +70,12 @@ func writeData(w stringWriter, data interface{}) error {
 	return nil
 }
 
-func (r CustomEvent) Render(w http.ResponseWriter) error {
+func (r *CustomEvent) Render(w http.ResponseWriter) error {
 	r.WriteContentType(w)
 	return encode(w, r)
 }
 
-func (r CustomEvent) WriteContentType(w http.ResponseWriter) {
+func (r *CustomEvent) WriteContentType(w http.ResponseWriter) {
 	r.Mutex.Lock()
 	defer r.Mutex.Unlock()
 	header := w.Header()
