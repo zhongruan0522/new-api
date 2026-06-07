@@ -15,7 +15,6 @@
 ## 缓存与配置
 
 - `OptionMap`、channel cache、dynamic ratio cache 等全局缓存要注意锁、同步频率和多节点行为。
-- 主题配置最终要同步到 `common.SetTheme`，只允许 `default` / `classic`。
 - 迁移和 cleanup 必须幂等，可重复运行。
 
 ## 验证

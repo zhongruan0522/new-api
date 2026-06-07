@@ -44,9 +44,6 @@ import { useSettingsForm } from '../hooks/use-settings-form'
 import { useUpdateOption } from '../hooks/use-update-option'
 
 const _systemInfoSchema = z.object({
-  theme: z.object({
-    frontend: z.literal('default'),
-  }),
   SystemName: z.string().min(1),
   ServerAddress: z.string().optional(),
   Logo: z.string().url().optional().or(z.literal('')),
@@ -75,9 +72,6 @@ export function SystemInfoSection({ defaultValues }: SystemInfoSectionProps) {
   const updateOption = useUpdateOption()
 
   const normalizedDefaults: SystemInfoFormValues = {
-    theme: {
-      frontend: 'default',
-    },
     SystemName: normalizeValue(defaultValues.SystemName),
     ServerAddress: normalizeValue(defaultValues.ServerAddress),
     Logo: normalizeValue(defaultValues.Logo),
@@ -91,9 +85,6 @@ export function SystemInfoSection({ defaultValues }: SystemInfoSectionProps) {
   }
 
   const systemInfoSchemaWithI18n = z.object({
-    theme: z.object({
-      frontend: z.literal('default'),
-    }),
     SystemName: z.string().min(1, {
       error: () => t('System name is required'),
     }),
