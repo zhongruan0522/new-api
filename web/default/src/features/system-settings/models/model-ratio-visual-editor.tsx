@@ -64,7 +64,11 @@ export type ModelRatioField =
 
 type NumericMap = Record<string, number>
 type UnknownMap = Record<string, unknown>
-type PricingMode = 'per-request' | 'per-token' | 'per-token-length'
+type PricingMode =
+  | 'per-request'
+  | 'per-token'
+  | 'per-token-length'
+  | 'unconfigured'
 
 type ContextTier = {
   name?: string
@@ -215,7 +219,9 @@ function buildRow(
       ? 'per-request'
       : hasContextPricingConfig
         ? 'per-token-length'
-        : 'per-token'
+        : inputRatio !== undefined
+          ? 'per-token'
+          : 'unconfigured'
 
   // Parse context pricing tiers for display
   const contextConfig = maps.context[name]
@@ -309,6 +315,7 @@ function buildRow(
 }
 
 function getSortRank(mode: PricingMode) {
+  if (mode === 'unconfigured') return 0
   if (mode === 'per-request') return 1
   if (mode === 'per-token') return 2
   return 3
@@ -318,6 +325,9 @@ function getRowSummary(
   row: ModelRow,
   t: (key: string, options?: Record<string, unknown>) => string
 ) {
+  if (row.mode === 'unconfigured') {
+    return t('Not configured')
+  }
   if (row.mode === 'per-request') {
     return row.fixedPrice !== undefined
       ? `$${toInputValue(row.fixedPrice)} / ${t('request')}`
@@ -806,18 +816,22 @@ export function ModelRatioVisualEditor({
                     <TableCell>
                       <Badge
                         variant={
-                          row.mode === 'per-request'
-                            ? 'secondary'
-                            : row.mode === 'per-token-length'
-                              ? 'default'
-                              : 'outline'
+                          row.mode === 'unconfigured'
+                            ? 'destructive'
+                            : row.mode === 'per-request'
+                              ? 'secondary'
+                              : row.mode === 'per-token-length'
+                                ? 'default'
+                                : 'outline'
                         }
                       >
-                        {row.mode === 'per-request'
-                          ? t('Per-request')
-                          : row.mode === 'per-token-length'
-                            ? t('Tiered')
-                            : t('Per-token')}
+                        {row.mode === 'unconfigured'
+                          ? t('Not configured')
+                          : row.mode === 'per-request'
+                            ? t('Per-request')
+                            : row.mode === 'per-token-length'
+                              ? t('Tiered')
+                              : t('Per-token')}
                       </Badge>
                     </TableCell>
                     <TableCell className='max-w-[240px] truncate text-xs'>
@@ -890,10 +904,21 @@ export function ModelRatioVisualEditor({
             </div>
           ) : (
             <div className='space-y-5'>
+              {selectedRow.mode === 'unconfigured' && (
+                <div className='bg-destructive/10 text-destructive rounded-md px-3 py-2 text-sm'>
+                  {t(
+                    'This model has no pricing configured. Please select a billing type and set the price.'
+                  )}
+                </div>
+              )}
               <div className='space-y-2'>
                 <Label>{t('Billing type')}</Label>
                 <RadioGroup
-                  value={selectedRow.mode}
+                  value={
+                    selectedRow.mode === 'unconfigured'
+                      ? undefined
+                      : selectedRow.mode
+                  }
                   onValueChange={(value) =>
                     setMode(selectedRow.name, value as PricingMode)
                   }

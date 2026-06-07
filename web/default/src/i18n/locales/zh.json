@@ -2897,6 +2897,8 @@
         "Per-call": "每次调用",
         "Per-call billing": "按次",
         "Per-feature metered windows split by model or capability.": "按模型或能力拆分的附加计费能力窗口。",
+        "Not configured": "未配置",
+        "This model has no pricing configured. Please select a billing type and set the price.": "该模型尚未配置价格，请选择计费方式并设置价格。",
         "Per-group performance": "各分组性能",
         "Per-request": "按次",
         "Per-request (fixed price)": "按请求计费（固定价格）",

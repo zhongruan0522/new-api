@@ -2897,6 +2897,8 @@
         "Per-call": "Per-call",
         "Per-call billing": "Per-call billing",
         "Per-feature metered windows split by model or capability.": "Per-feature metered windows split by model or capability.",
+        "Not configured": "Not configured",
+        "This model has no pricing configured. Please select a billing type and set the price.": "This model has no pricing configured. Please select a billing type and set the price.",
         "Per-group performance": "Per-group performance",
         "Per-request": "Per-request",
         "Per-request (fixed price)": "Per-request (fixed price)",
