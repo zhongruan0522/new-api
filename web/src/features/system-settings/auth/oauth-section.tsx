@@ -89,6 +89,14 @@ export function OAuthSection({ defaultValues }: OAuthSectionProps) {
       return
     }
 
+    // Sort: put "Enabled" toggle updates last so that ID/Secret are saved
+    // to the backend before the toggle validation checks them.
+    updates.sort((a, b) => {
+      const aIsEnabled = a[0].endsWith('Enabled') ? 1 : 0
+      const bIsEnabled = b[0].endsWith('Enabled') ? 1 : 0
+      return aIsEnabled - bIsEnabled
+    })
+
     for (const [key, value] of updates) {
       await updateOption.mutateAsync({ key, value })
     }
