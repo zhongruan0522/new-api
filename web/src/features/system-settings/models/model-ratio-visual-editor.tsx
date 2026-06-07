@@ -1140,27 +1140,19 @@ export function ModelRatioVisualEditor({
                               </div>
 
                               {contextTierPriceFields.map((field) => (
-                                <div key={field} className='space-y-1.5'>
-                                  <Label className='text-xs'>
-                                    {getContextTierPriceLabel(field, t)} ($/1M)
-                                  </Label>
-                                  <Input
-                                    className='h-8 text-right'
-                                    inputMode='decimal'
-                                    value={tier[field]}
-                                    onChange={(e) => {
-                                      const v = e.target.value
-                                      if (numberInputPattern.test(v)) {
-                                        updateContextTier(
-                                          selectedRow.name,
-                                          tierIdx,
-                                          field,
-                                          v
-                                        )
-                                      }
-                                    }}
-                                  />
-                                </div>
+                                <PriceInput
+                                  key={field}
+                                  label={`${getContextTierPriceLabel(field, t)} ($/1M)`}
+                                  value={tier[field]}
+                                  onChange={(value) =>
+                                    updateContextTier(
+                                      selectedRow.name,
+                                      tierIdx,
+                                      field,
+                                      value
+                                    )
+                                  }
+                                />
                               ))}
                             </div>
                           </div>
