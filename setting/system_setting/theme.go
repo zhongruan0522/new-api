@@ -1,7 +1,6 @@
 package system_setting
 
 import (
-	"github.com/zhongruan0522/new-api/common"
 	"github.com/zhongruan0522/new-api/setting/config"
 )
 
@@ -15,11 +14,6 @@ var themeSettings = ThemeSettings{
 
 func init() {
 	config.GlobalConfig.Register("theme", &themeSettings)
-	syncThemeToCommon()
-}
-
-func syncThemeToCommon() {
-	common.SetTheme(themeSettings.Frontend)
 }
 
 func GetThemeSettings() *ThemeSettings {
@@ -27,5 +21,5 @@ func GetThemeSettings() *ThemeSettings {
 }
 
 func UpdateAndSyncTheme() {
-	syncThemeToCommon()
+	// Theme is now fixed to "default"; kept for config registry compatibility.
 }

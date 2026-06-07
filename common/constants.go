@@ -5,7 +5,6 @@ import (
 	//"os"
 	//"strconv"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/google/uuid"
@@ -16,22 +15,6 @@ var SystemName = "New API"
 var Footer = ""
 var Logo = ""
 var TopUpLink = ""
-
-var themeValue atomic.Value // stores string; safe for concurrent read/write
-
-func init() {
-	themeValue.Store("default")
-}
-
-func GetTheme() string {
-	return themeValue.Load().(string)
-}
-
-func SetTheme(t string) {
-	if t == "default" || t == "classic" {
-		themeValue.Store(t)
-	}
-}
 
 var QuotaPerUnit = 500 * 1000.0 // $0.002 / 1K tokens
 var DataExportEnabled = true
