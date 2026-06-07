@@ -46,9 +46,11 @@ func Playground(c *gin.Context) {
 	userCache.WriteContext(c)
 
 	tempToken := &model.Token{
-		UserId: userId,
-		Name:   fmt.Sprintf("playground-%s", relayInfo.UsingGroup),
-		Group:  relayInfo.UsingGroup,
+		UserId:          userId,
+		Name:            fmt.Sprintf("playground-%s", relayInfo.UsingGroup),
+		Group:           relayInfo.UsingGroup,
+		UnlimitedQuota:  true,  // Playground uses wallet billing, skip token quota checks
+		RemainQuota:     0,
 	}
 	_ = middleware.SetupContextForToken(c, tempToken)
 
