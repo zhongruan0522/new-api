@@ -112,7 +112,6 @@ export const STATIC_I18N_KEYS = [
   'Deleted',
   'User created successfully',
   'User updated successfully',
-  'User updated successfully',
   'Failed to load users',
   'Failed to search users',
   'Failed to create user',
@@ -122,9 +121,7 @@ export const STATIC_I18N_KEYS = [
 
   // Redemption codes
   'Unused',
-  'Disabled',
   'Used',
-  'Expired',
   'Redemption code(s) created successfully',
   'Redemption code updated successfully',
   'Redemption code deleted successfully',
@@ -295,7 +292,6 @@ export const STATIC_I18N_KEYS = [
   'Subscription First',
   'Subscription Only',
   'No Active',
-  'No Reset',
   'Remaining',
   'Received',
   'Payment initiated',
@@ -421,7 +417,6 @@ export const STATIC_I18N_KEYS = [
   'Please select a subscription plan',
   'Added successfully',
   'Has been invalidated',
-  'Deleted',
   'Validity',
   'Actions',
 

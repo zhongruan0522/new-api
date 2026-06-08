@@ -230,7 +230,7 @@ func Register(c *gin.Context) {
 			token.Group = "auto"
 		}
 		if err := token.Insert(); err != nil {
-			common.ApiErrorI18n(c, i18n.MsgCreateDefaultTokenErr)
+			common.ApiErrorI18n(c, i18n.MsgUserDefaultTokenFailed)
 			return
 		}
 	}
