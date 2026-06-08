@@ -93,6 +93,14 @@ export function ProfileDropdown() {
                     </span>
                   </>
                 )}
+                {user?.id != null && (
+                  <>
+                    <span className='text-muted-foreground text-xs'>·</span>
+                    <span className='text-muted-foreground text-xs'>
+                      #{user.id}
+                    </span>
+                  </>
+                )}
               </div>
             </div>
           </div>
