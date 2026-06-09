@@ -35,7 +35,7 @@ export function EmptyState(props: EmptyStateProps) {
       <Search className='text-muted-foreground/40 mb-3 size-10' />
 
       <h3 className='text-foreground mb-1 text-base font-semibold'>
-        {t('No models found')}
+        {t('No Models Found')}
       </h3>
 
       <p className='text-muted-foreground mb-5 max-w-xs text-sm'>

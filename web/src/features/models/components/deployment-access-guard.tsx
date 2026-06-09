@@ -159,7 +159,7 @@ export function DeploymentAccessGuard({
           </Alert>
           <Button onClick={handleGoToSettings} className='w-full'>
             <Settings className='mr-2 h-4 w-4' />
-            {t('Go to settings')}
+            {t('Go to Settings')}
           </Button>
         </div>
       </div>
@@ -190,7 +190,7 @@ export function DeploymentAccessGuard({
             </Button>
             <Button onClick={handleGoToSettings} className='flex-1'>
               <Settings className='mr-2 h-4 w-4' />
-              {t('Go to settings')}
+              {t('Go to Settings')}
             </Button>
           </div>
         </div>

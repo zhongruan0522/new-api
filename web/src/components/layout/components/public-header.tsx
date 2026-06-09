@@ -295,7 +295,7 @@ export function PublicHeader(props: PublicHeaderProps) {
                       className='h-8 rounded-lg px-3.5 text-xs font-medium'
                       render={<Link to='/sign-in' />}
                     >
-                      {t('Sign in')}
+                      {t('Sign In')}
                     </Button>
                   )}
                 </>
@@ -413,7 +413,7 @@ export function PublicHeader(props: PublicHeaderProps) {
                 onClick={() => setMobileOpen(false)}
                 className='bg-foreground text-background inline-flex h-10 items-center justify-center rounded-lg text-sm font-medium transition-opacity hover:opacity-90 active:opacity-80'
               >
-                {isAuthenticated ? t('Go to Dashboard') : t('Sign in')}
+                {isAuthenticated ? t('Go to Dashboard') : t('Sign In')}
               </Link>
             )}
           </div>
@@ -430,7 +430,7 @@ export function PublicHeader(props: PublicHeaderProps) {
       >
         <DialogContent className='sm:max-w-md'>
           <DialogHeader>
-            <DialogTitle>{t('Sign in required')}</DialogTitle>
+            <DialogTitle>{t('Sign In Required')}</DialogTitle>
             <DialogDescription>
               {t('Please sign in to view {{module}}.', {
                 module: authPromptTarget?.title || '',
@@ -446,7 +446,7 @@ export function PublicHeader(props: PublicHeaderProps) {
             <Button variant='outline' onClick={closeAuthPrompt}>
               {t('Cancel')}
             </Button>
-            <Button onClick={navigateToSignIn}>{t('Sign in now')}</Button>
+            <Button onClick={navigateToSignIn}>{t('Sign In Now')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

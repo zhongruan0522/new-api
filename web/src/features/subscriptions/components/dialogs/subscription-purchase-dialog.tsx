@@ -93,7 +93,7 @@ export function SubscriptionPurchaseDialog(props: Props) {
     (props.epayMethods || []).find((m) => m.type === selectedEpayMethod)
       ?.name ||
     selectedEpayMethod ||
-    t('Select payment method')
+    t('Select Payment Method')
   const totalAmount = Number(plan.total_amount || 0)
   const price = Number(plan.price_amount || 0).toFixed(2)
   const limitReached =
@@ -288,7 +288,7 @@ export function SubscriptionPurchaseDialog(props: Props) {
           {hasAnyPayment ? (
             <div className='space-y-3'>
               <p className='text-muted-foreground text-xs'>
-                {t('Select payment method')}
+                {t('Select Payment Method')}
               </p>
               {(hasStripe || hasCreem || hasWaffoPancake) && (
                 <div className='grid grid-cols-2 gap-2 sm:flex'>

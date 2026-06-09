@@ -319,7 +319,7 @@ export function RedemptionsMutateDrawer({
             {t('Close')}
           </SheetClose>
           <Button form='redemption-form' type='submit' disabled={isSubmitting}>
-            {isSubmitting ? t('Saving...') : t('Save changes')}
+            {isSubmitting ? t('Saving...') : t('Save Changes')}
           </Button>
         </SheetFooter>
       </SheetContent>

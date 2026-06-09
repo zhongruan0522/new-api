@@ -116,7 +116,7 @@ export function PasskeyCard({ loading: pageLoading }: PasskeyCardProps) {
     setRestrictedMethod('2fa')
     await startVerification(register, {
       preferredMethod: '2fa',
-      title: t('Security verification'),
+      title: t('Security Verification'),
       description: t(
         'Confirm your identity with Two-factor Authentication before registering a Passkey.'
       ),
@@ -149,7 +149,7 @@ export function PasskeyCard({ loading: pageLoading }: PasskeyCardProps) {
     setRestrictedMethod(required)
     await startVerification(remove, {
       preferredMethod: required,
-      title: t('Security verification'),
+      title: t('Security Verification'),
       description: t(
         'Confirm your identity before removing this Passkey from your account.'
       ),

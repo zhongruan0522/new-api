@@ -177,7 +177,7 @@ function buildQuotaUsage(apiKey: ApiKey): QuotaUsage {
           value: `${formatQuota(cycleLimit.remaining)} / ${formatQuota(cycleLimit.total)}`,
         },
         {
-          labelKey: 'Reset cycle',
+          labelKey: 'Reset Cycle',
           value: `Every ${cycleDays}d`,
         },
       ],
@@ -408,7 +408,7 @@ export function ApiKeyQuotaCell({
                   ? usage.detailLines
                       .map((line) => formatQuotaScheduleValue(line.value, t))
                       .join(', ')
-                  : t('No reset')}
+                  : t('No Reset')}
               </div>
             </>
           )}

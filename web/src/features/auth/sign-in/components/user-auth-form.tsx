@@ -209,7 +209,7 @@ export function UserAuthForm({
       const res = await wechatLoginByCode(wechatCode)
       if (res?.success) {
         await handleLoginSuccess(res.data as { id?: number } | null, redirectTo)
-        toast.success(t('Signed in via WeChat'))
+        toast.success(t('Signed In Via WeChat'))
         handleWeChatDialogChange(false)
       } else {
         toast.error(res?.message || loginFailedMessage)
@@ -275,7 +275,7 @@ export function UserAuthForm({
         finish.data as { id?: number } | null,
         redirectTo
       )
-      toast.success(t('Signed in with Passkey'))
+      toast.success(t('Signed In With Passkey'))
     } catch (error: unknown) {
       if (error instanceof DOMException && error.name === 'NotAllowedError') {
         toast.info(t('Passkey login was cancelled or timed out'))
@@ -305,7 +305,7 @@ export function UserAuthForm({
             ) : (
               <KeyRound className='h-4 w-4' />
             )}
-            {t('Sign in with Passkey')}
+            {t('Sign In With Passkey')}
           </Button>
           {!passkeySupported && (
             <p className='text-muted-foreground text-xs'>
@@ -385,7 +385,7 @@ export function UserAuthForm({
               disabled={isLoading || (requiresLegalConsent && !agreedToLegal)}
             >
               {isLoading ? <Loader2 className='animate-spin' /> : <LogIn />}
-              {t('Sign in')}
+              {t('Sign In')}
             </Button>
 
             {/* Turnstile */}
@@ -440,7 +440,7 @@ export function UserAuthForm({
             )}
 
             <div className='grid gap-2'>
-              <Label htmlFor='wechat-code'>{t('Verification code')}</Label>
+              <Label htmlFor='wechat-code'>{t('Verification Code')}</Label>
               <Input
                 id='wechat-code'
                 placeholder={t('Enter the verification code')}

@@ -1197,7 +1197,7 @@ export function ChannelMutateDrawer({
                       <FormItem>
                         <FormLabel>
                           {t('Full Base URL (supports')} {'{'}
-                          {t('model')}
+                          model
                           {'}'} {t('variable) *')}
                         </FormLabel>
                         <FormControl>
@@ -1210,7 +1210,7 @@ export function ChannelMutateDrawer({
                         </FormControl>
                         <FormDescription>
                           {t('Enter the complete URL, supports')} {'{'}
-                          {t('model')}
+                          model
                           {'}'} {t('variable')}
                         </FormDescription>
                         <FormMessage />
@@ -2788,7 +2788,7 @@ export function ChannelMutateDrawer({
               {isSubmitting && (
                 <Loader2 className='mr-2 h-4 w-4 animate-spin' />
               )}
-              {isEditing ? t('Update Channel') : t('Save changes')}
+              {isEditing ? t('Update Channel') : t('Save Changes')}
             </Button>
           </SheetFooter>
         </SheetContent>

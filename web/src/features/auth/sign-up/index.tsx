@@ -40,7 +40,7 @@ export function SignUp() {
               to='/sign-in'
               className='hover:text-primary font-medium underline underline-offset-4'
             >
-              {t('Sign in')}
+              {t('Sign In')}
             </Link>
             .
           </p>

@@ -217,7 +217,7 @@ export function SignUpForm({
       const res = await wechatLoginByCode(wechatCode)
       if (res?.success) {
         await handleLoginSuccess(res.data as { id?: number } | null)
-        toast.success(t('Signed in via WeChat'))
+        toast.success(t('Signed In Via WeChat'))
         handleWeChatDialogChange(false)
       } else {
         toast.error(res?.message || t('Login failed'))
@@ -312,7 +312,7 @@ export function SignUpForm({
             <div className='flex items-end gap-2'>
               <div className='flex-1'>
                 <Input
-                  placeholder={t('Verification code')}
+                  placeholder={t('Verification Code')}
                   value={verificationCode}
                   onChange={(e) => setVerificationCode(e.target.value)}
                 />
@@ -413,7 +413,7 @@ export function SignUpForm({
             )}
 
             <div className='grid gap-2'>
-              <Label htmlFor='wechat-code'>{t('Verification code')}</Label>
+              <Label htmlFor='wechat-code'>{t('Verification Code')}</Label>
               <Input
                 id='wechat-code'
                 placeholder={t('Enter the verification code')}

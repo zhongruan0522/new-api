@@ -211,7 +211,7 @@ export function RateLimitSection({ defaultValues }: RateLimitSectionProps) {
               name='ModelRequestRateLimitSuccessCount'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('Max successful requests')}</FormLabel>
+                  <FormLabel>{t('Max Successful Requests')}</FormLabel>
                   <FormControl>
                     <div className='flex items-center gap-2'>
                       <Input

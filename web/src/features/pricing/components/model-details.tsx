@@ -81,17 +81,17 @@ function SectionTitle(props: { children: React.ReactNode }) {
 }
 
 const CAPABILITY_LABEL_KEYS: Record<ModelCapability, string> = {
-  function_calling: 'Function calling',
+  function_calling: 'Function Calling',
   streaming: 'Streaming',
   vision: 'Vision',
-  json_mode: 'JSON mode',
-  structured_output: 'Structured output',
+  json_mode: 'JSON Mode',
+  structured_output: 'Structured Output',
   reasoning: 'Reasoning',
   tools: 'Tools',
-  system_prompt: 'System prompt',
-  web_search: 'Web search',
-  code_interpreter: 'Code interpreter',
-  caching: 'Prompt caching',
+  system_prompt: 'System Prompt',
+  web_search: 'Web Search',
+  code_interpreter: 'Code Interpreter',
+  caching: 'Prompt Caching',
   embeddings: 'Embeddings',
 }
 
@@ -331,7 +331,7 @@ function PriceSection(props: {
       available: props.model.cache_ratio != null,
     },
     {
-      label: t('Cache write'),
+      label: t('Cache Write'),
       type: 'create_cache',
       available: props.model.create_cache_ratio != null,
     },
@@ -341,12 +341,12 @@ function PriceSection(props: {
       available: props.model.image_ratio != null,
     },
     {
-      label: t('Audio input'),
+      label: t('Audio Input'),
       type: 'audio_input',
       available: props.model.audio_ratio != null,
     },
     {
-      label: t('Audio output'),
+      label: t('Audio Output'),
       type: 'audio_output',
       available:
         props.model.audio_ratio != null &&
@@ -438,7 +438,7 @@ function PriceSection(props: {
         <SectionTitle>{t('Base Price')}</SectionTitle>
         <div className='flex items-baseline justify-between'>
           <span className='text-muted-foreground text-sm'>
-            {t('Per request')}
+            {t('Per Request')}
           </span>
           <span className='text-foreground font-mono text-sm font-semibold tabular-nums'>
             {formatFixedPrice(

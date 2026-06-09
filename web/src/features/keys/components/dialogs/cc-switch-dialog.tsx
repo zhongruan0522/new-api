@@ -206,7 +206,7 @@ export function CCSwitchDialog(props: Props) {
                   setModels((prev) => ({ ...prev, [field.key]: v }))
                 }
                 placeholder={t('Select or enter model name')}
-                emptyText={t('No models found')}
+                emptyText={t('No Models Found')}
               />
             </div>
           ))}

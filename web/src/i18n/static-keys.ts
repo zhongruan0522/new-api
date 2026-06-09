@@ -105,7 +105,7 @@ export const STATIC_I18N_KEYS = [
   'Window quota',
   'Cycle quota',
   'Reset window',
-  'Reset cycle',
+  'Reset Cycle',
 
   // Users
   'Root',
@@ -286,7 +286,7 @@ export const STATIC_I18N_KEYS = [
   'Purchase limit reached',
   'Limit Reached',
   'No plans available',
-  'Select payment method',
+  'Select Payment Method',
   'Wallet First',
   'Wallet Only',
   'Subscription First',
@@ -400,7 +400,7 @@ export const STATIC_I18N_KEYS = [
 
   // User subscription management
   'User Subscription Management',
-  'Select subscription plan',
+  'Select Subscription Plan',
   'Add subscription',
   'Loading...',
   'No subscription records',
@@ -488,7 +488,7 @@ export const STATIC_I18N_KEYS = [
   'Upgrade Group',
   'Regenerate',
   'Untitled',
-  'Open in new tab',
+  'Open In New Tab',
   'Failed to load',
   'Expired at',
   'Cancelled at',
@@ -520,9 +520,9 @@ export const STATIC_I18N_KEYS = [
   'Updated at',
 
   // Sidebar modules section (dynamic keys from config)
-  'Chat area',
-  'Console area',
-  'Personal area',
+  'Chat Area',
+  'Console Area',
+  'Personal Area',
   'Support area',
   'Admin area',
   'Playground experiments and live conversations.',

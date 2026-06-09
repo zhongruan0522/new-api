@@ -454,7 +454,7 @@ export function UsersMutateDrawer({
               {t('Close')}
             </SheetClose>
             <Button form='user-form' type='submit' disabled={isSubmitting}>
-              {isSubmitting ? t('Saving...') : t('Save changes')}
+              {isSubmitting ? t('Saving...') : t('Save Changes')}
             </Button>
           </SheetFooter>
         </SheetContent>

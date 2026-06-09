@@ -604,7 +604,7 @@ export function OverviewDashboard() {
                     <div className='flex max-w-2xl flex-col gap-1'>
                       <div className='text-muted-foreground flex items-center gap-2 text-xs font-medium tracking-wider uppercase'>
                         <ListChecks className='size-3.5' aria-hidden='true' />
-                        {t('Get started')}
+                        {t('Get Started')}
                       </div>
                       <h3 className='text-xl font-semibold tracking-tight sm:text-2xl'>
                         {t('Build on your API gateway in minutes')}

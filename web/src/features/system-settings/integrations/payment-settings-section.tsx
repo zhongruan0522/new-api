@@ -441,7 +441,7 @@ export function PaymentSettingsSection({
               render={({ field }) => (
                 <FormItem>
                   <div className='mb-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between'>
-                    <FormLabel>{t('Payment methods')}</FormLabel>
+                    <FormLabel>{t('Payment Methods')}</FormLabel>
                     <Button
                       type='button'
                       variant='outline'
@@ -652,7 +652,7 @@ export function PaymentSettingsSection({
                 name='StripeWebhookSecret'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('Webhook secret')}</FormLabel>
+                    <FormLabel>{t('Webhook Secret')}</FormLabel>
                     <FormControl>
                       <Input
                         type='password'

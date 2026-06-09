@@ -129,7 +129,7 @@ export function ApiInfoItemComponent(props: ApiInfoItemProps) {
             variant='ghost'
             size='sm'
             className='hidden size-7 p-0 sm:inline-flex'
-            title={t('Open in New Tab')}
+            title={t('Open In New Tab')}
             render={<a href={item.url} target='_blank' rel='noreferrer' />}
           >
             <ExternalLink className='size-3.5' />

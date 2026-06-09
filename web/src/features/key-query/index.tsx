@@ -157,7 +157,7 @@ export function KeyQuery() {
         ? formatCurrencyUSD(balance - usage)
         : '-'
     const summary = [
-      `${t('Total quota')}: ${
+      `${t('Total Quota')}: ${
         isUnlimited ? t('Unlimited') : formatCurrencyUSD(balance)
       }`,
       `${t('Used quota')}: ${
@@ -260,7 +260,7 @@ export function KeyQuery() {
                 </CardHeader>
                 <CardContent className='grid gap-3 sm:grid-cols-2 lg:grid-cols-3'>
                   <StatBlock
-                    label={t('Total quota')}
+                    label={t('Total Quota')}
                     value={
                       isUnlimited ? t('Unlimited') : formatCurrencyUSD(balance)
                     }

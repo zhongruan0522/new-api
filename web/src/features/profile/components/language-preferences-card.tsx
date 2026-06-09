@@ -128,7 +128,7 @@ export function LanguagePreferencesCard(props: LanguagePreferencesCardProps) {
             disabled={saving}
           >
             <SelectTrigger className='w-full sm:w-48'>
-              <SelectValue placeholder={t('Select language')} />
+              <SelectValue placeholder={t('Select Language')} />
             </SelectTrigger>
             <SelectContent alignItemWithTrigger={false}>
               <SelectGroup>

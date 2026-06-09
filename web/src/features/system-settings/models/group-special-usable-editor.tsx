@@ -168,7 +168,7 @@ function GroupSection(props: GroupSectionProps) {
             </CollapsibleTrigger>
             <span className='font-semibold'>{props.groupName}</span>
             <StatusBadge variant='neutral' copyable={false}>
-              {props.items.length} {t('rules')}
+              {props.items.length} {t('Rules')}
             </StatusBadge>
           </div>
           <div className='flex items-center gap-1'>
@@ -270,7 +270,7 @@ function GroupSection(props: GroupSectionProps) {
                 <Input
                   className='flex-1'
                   value={rule.targetGroup}
-                  placeholder={t('Group name')}
+                  placeholder={t('Group Name')}
                   onChange={(e) =>
                     props.onUpdate(rule._id, 'targetGroup', e.target.value)
                   }

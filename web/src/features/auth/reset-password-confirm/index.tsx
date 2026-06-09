@@ -139,7 +139,7 @@ export function ResetPasswordConfirm({
 
           {newPassword && (
             <div className='space-y-2'>
-              <Label htmlFor='password'>{t('New password')}</Label>
+              <Label htmlFor='password'>{t('New Password')}</Label>
               <div className='flex gap-2'>
                 <Input
                   id='password'
@@ -192,7 +192,7 @@ export function ResetPasswordConfirm({
               className='w-full'
               onClick={() => navigate({ to: '/sign-in', replace: true })}
             >
-              {t('Back to login')}
+              {t('Back To Login')}
             </Button>
           )}
         </div>

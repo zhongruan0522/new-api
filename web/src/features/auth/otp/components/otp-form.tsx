@@ -114,7 +114,7 @@ export function OtpForm({ className, ...props }: OtpFormProps) {
         saveUserId(userData.id)
       }
 
-      toast.success(t('Signed in'))
+      toast.success(t('Signed In'))
       redirectToLogin() // This will redirect to dashboard via the redirect logic
     } catch (error) {
       // eslint-disable-next-line no-console
@@ -228,7 +228,7 @@ export function OtpForm({ className, ...props }: OtpFormProps) {
             className='text-primary h-auto p-0'
             onClick={handleBackToLogin}
           >
-            {t('Back to login')}
+            {t('Back To Login')}
           </Button>
         </div>
       </form>

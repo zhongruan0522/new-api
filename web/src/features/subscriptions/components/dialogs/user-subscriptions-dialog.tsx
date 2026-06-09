@@ -222,7 +222,7 @@ export function UserSubscriptionsDialog(props: Props) {
                 onValueChange={(v) => v !== null && setSelectedPlanId(v)}
               >
                 <SelectTrigger className='flex-1'>
-                  <SelectValue placeholder={t('Select subscription plan')} />
+                  <SelectValue placeholder={t('Select Subscription Plan')} />
                 </SelectTrigger>
                 <SelectContent alignItemWithTrigger={false}>
                   <SelectGroup>

@@ -116,7 +116,7 @@ function AudioClipCard({ clip }: { clip: AudioClip }) {
               onClick={() => window.open(audioUrl, '_blank')}
             >
               <ExternalLink className='h-3 w-3' />
-              {t('Open in new tab')}
+              {t('Open In New Tab')}
             </Button>
             <Button
               variant='outline'

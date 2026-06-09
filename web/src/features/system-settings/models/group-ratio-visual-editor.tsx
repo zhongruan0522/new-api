@@ -431,14 +431,14 @@ export const GroupRatioVisualEditor = memo(function GroupRatioVisualEditor({
               size='sm'
             >
               <Plus className='mr-2 h-4 w-4' />
-              {t('Add group')}
+              {t('Add Group')}
             </Button>
             {topupRatioList.length > 0 && (
               <div className='rounded-md border'>
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>{t('Group name')}</TableHead>
+                      <TableHead>{t('Group Name')}</TableHead>
                       <TableHead>{t('Multiplier')}</TableHead>
                       <TableHead className='text-right'>
                         {t('Actions')}
@@ -623,7 +623,7 @@ export const GroupRatioVisualEditor = memo(function GroupRatioVisualEditor({
           <div className='space-y-4'>
             <Button onClick={handleAutoGroupAdd} size='sm'>
               <Plus className='mr-2 h-4 w-4' />
-              {t('Add group')}
+              {t('Add Group')}
             </Button>
             {autoGroupsList.length > 0 && (
               <div className='space-y-2'>
@@ -691,7 +691,7 @@ export const GroupRatioVisualEditor = memo(function GroupRatioVisualEditor({
               <Input
                 value={autoGroupInput}
                 onChange={(e) => setAutoGroupInput(e.target.value)}
-                placeholder={t('default')}
+                placeholder={t('Default')}
               />
             </div>
           </div>
@@ -855,7 +855,7 @@ function GroupPricingTable({
           </div>
           <Button onClick={addRow} size='sm' className='sm:self-start'>
             <Plus className='mr-2 h-4 w-4' />
-            {t('Add group')}
+            {t('Add Group')}
           </Button>
         </div>
       </CardHeader>
@@ -865,7 +865,7 @@ function GroupPricingTable({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className='min-w-40'>{t('Group name')}</TableHead>
+                  <TableHead className='min-w-40'>{t('Group Name')}</TableHead>
                   <TableHead className='w-28'>{t('Ratio')}</TableHead>
                   <TableHead className='w-28 text-center'>
                     {t('User selectable')}
@@ -995,7 +995,7 @@ function SimpleGroupDialog({
   const [name, setName] = useState('')
   const [value, setValue] = useState('')
 
-  const title = type === 'groupRatio' ? t('group ratio') : t('top-up ratio')
+  const title = type === 'groupRatio' ? t('Group Ratio') : t('top-up ratio')
 
   useEffect(() => {
     if (!open) {
@@ -1030,11 +1030,11 @@ function SimpleGroupDialog({
         </DialogHeader>
         <div className='space-y-4 py-4'>
           <div className='space-y-2'>
-            <Label>{t('Group name')}</Label>
+            <Label>{t('Group Name')}</Label>
             <Input
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder={t('default')}
+              placeholder={t('Default')}
               disabled={!!editData}
             />
           </div>

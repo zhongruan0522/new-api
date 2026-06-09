@@ -400,7 +400,7 @@ export function PrefillGroupFormDrawer({
             {isSaving
               ? t('Saving...')
               : isEdit
-                ? t('Save changes')
+                ? t('Save Changes')
                 : t('Create')}
           </Button>
         </SheetFooter>

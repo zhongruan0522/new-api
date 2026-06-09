@@ -580,7 +580,7 @@ export function AnnouncementsSection({
                     <FormLabel>{t('Extra Notes (Optional)')}</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder={t('Additional information')}
+                        placeholder={t('Additional Information')}
                         {...field}
                       />
                     </FormControl>

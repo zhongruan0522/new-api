@@ -44,7 +44,7 @@ type CapabilityMeta = {
 const CAPABILITY_META: Record<ModelCapability, CapabilityMeta> = {
   function_calling: {
     icon: Workflow,
-    labelKey: 'Function calling',
+    labelKey: 'Function Calling',
     descriptionKey:
       'Invoke developer-defined functions with structured arguments',
   },
@@ -60,12 +60,12 @@ const CAPABILITY_META: Record<ModelCapability, CapabilityMeta> = {
   },
   json_mode: {
     icon: Braces,
-    labelKey: 'JSON mode',
+    labelKey: 'JSON Mode',
     descriptionKey: 'Force a syntactically valid JSON response',
   },
   structured_output: {
     icon: FileCode,
-    labelKey: 'Structured output',
+    labelKey: 'Structured Output',
     descriptionKey: 'Return data conforming to a JSON schema',
   },
   reasoning: {
@@ -80,22 +80,22 @@ const CAPABILITY_META: Record<ModelCapability, CapabilityMeta> = {
   },
   system_prompt: {
     icon: PanelTopOpen,
-    labelKey: 'System prompt',
+    labelKey: 'System Prompt',
     descriptionKey: 'Steer behaviour with a system instruction',
   },
   web_search: {
     icon: Globe,
-    labelKey: 'Web search',
+    labelKey: 'Web Search',
     descriptionKey: 'Search the public web at inference time',
   },
   code_interpreter: {
     icon: Code2,
-    labelKey: 'Code interpreter',
+    labelKey: 'Code Interpreter',
     descriptionKey: 'Execute code in a sandbox during the response',
   },
   caching: {
     icon: Database,
-    labelKey: 'Prompt caching',
+    labelKey: 'Prompt Caching',
     descriptionKey: 'Cache repeated prompt prefixes for cheaper, faster reuse',
   },
   embeddings: {

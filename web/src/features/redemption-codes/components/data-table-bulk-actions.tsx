@@ -122,9 +122,9 @@ export function DataTableBulkActions<TData>({
         title={t('Delete Invalid Redemption Codes?')}
         desc={
           <>
-            {t('This will delete all')} <strong>{t('used')}</strong>,{' '}
+            {t('This will delete all')} <strong>{t('Used')}</strong>,{' '}
             <strong>{t('disabled')}</strong>
-            {t(', and')} <strong>{t('expired')}</strong>{' '}
+            {t(', and')} <strong>{t('Expired')}</strong>{' '}
             {t('redemption codes.')}
             <br />
             {t('This action cannot be undone.')}

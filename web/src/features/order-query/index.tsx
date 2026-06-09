@@ -188,7 +188,7 @@ export function OrderQuery() {
                       <TableHead className='min-w-32'>{t('Payment')}</TableHead>
                       <TableHead className='min-w-32'>{t('Status')}</TableHead>
                       <TableHead className='min-w-40'>
-                        {t('Created at')}
+                        {t('Created At')}
                       </TableHead>
                       {isAdmin ? (
                         <TableHead className='w-32 text-right'>

@@ -280,7 +280,7 @@ export function MultimodalFiles() {
             <Card size='sm'>
               <CardContent className='grid gap-3 lg:grid-cols-[1fr_1fr_auto]'>
                 <div className='grid gap-1.5'>
-                  <Label htmlFor='stored-media-start'>{t('Start time')}</Label>
+                  <Label htmlFor='stored-media-start'>{t('Start Time')}</Label>
                   <Input
                     id='stored-media-start'
                     type='datetime-local'
@@ -293,7 +293,7 @@ export function MultimodalFiles() {
                   />
                 </div>
                 <div className='grid gap-1.5'>
-                  <Label htmlFor='stored-media-end'>{t('End time')}</Label>
+                  <Label htmlFor='stored-media-end'>{t('End Time')}</Label>
                   <Input
                     id='stored-media-end'
                     type='datetime-local'
@@ -332,7 +332,7 @@ export function MultimodalFiles() {
                       </TableHead>
                       <TableHead>{t('Type')}</TableHead>
                       <TableHead>{t('ID')}</TableHead>
-                      <TableHead>{t('Created at')}</TableHead>
+                      <TableHead>{t('Created At')}</TableHead>
                       <TableHead>{t('MIME')}</TableHead>
                       <TableHead>{t('Size')}</TableHead>
                       <TableHead>{t('Converted URL')}</TableHead>
@@ -500,7 +500,7 @@ export function MultimodalFiles() {
                 </div>
                 <div>
                   <span className='text-muted-foreground'>
-                    {t('Created at')}:{' '}
+                    {t('Created At')}:{' '}
                   </span>
                   {formatTimestampToDate(detailItem.created_at)}
                 </div>

@@ -63,15 +63,15 @@ export function SidebarModulesSection({
 
   const sectionMeta: Record<string, { title: string; description: string }> = {
     chat: {
-      title: t('Chat area'),
+      title: t('Chat Area'),
       description: t('Playground experiments and live conversations.'),
     },
     console: {
-      title: t('Console area'),
+      title: t('Console Area'),
       description: t('Dashboards, tokens, and usage analytics.'),
     },
     personal: {
-      title: t('Personal area'),
+      title: t('Personal Area'),
       description: t('Wallet management and personal preferences.'),
     },
     support: {
@@ -104,11 +104,11 @@ export function SidebarModulesSection({
         description: t('Aggregated usage metrics and trend charts.'),
       },
       token: {
-        title: t('Token management'),
+        title: t('Token Management'),
         description: t('Create, revoke, and audit API tokens.'),
       },
       log: {
-        title: t('Usage logs'),
+        title: t('Usage Logs'),
         description: t('Detailed request logs for investigations.'),
       },
       multimodal_files: {
@@ -158,7 +158,7 @@ export function SidebarModulesSection({
         description: t('Administer user accounts and roles.'),
       },
       setting: {
-        title: t('System settings'),
+        title: t('System Settings'),
         description: t('Advanced platform configuration.'),
       },
     },

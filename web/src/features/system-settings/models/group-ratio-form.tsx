@@ -361,7 +361,7 @@ function GroupPricingGuide({ open, onOpenChange }: GroupPricingGuideProps) {
             <div className='text-muted-foreground space-y-2 text-sm leading-6'>
               <p>
                 <span className='text-foreground font-medium'>
-                  {t('User group')}
+                  {t('User Group')}
                 </span>
                 {': '}
                 {t(
@@ -408,7 +408,7 @@ function GroupPricingGuide({ open, onOpenChange }: GroupPricingGuideProps) {
                   )}
                 </p>
                 <GuideCodeBlock>
-                  {`${t('Group name')}   ${t('Ratio')}   ${t('User selectable')}   ${t('Description')}
+                  {`${t('Group Name')}   ${t('Ratio')}   ${t('User selectable')}   ${t('Description')}
 standard     1.0     ${t('Yes')}               ${t('Standard price')}
 premium      0.5     ${t('Yes')}               ${t('Premium plan, half price')}
 vip          0.5     ${t('No')}                ${t('Assigned by administrator only')}`}

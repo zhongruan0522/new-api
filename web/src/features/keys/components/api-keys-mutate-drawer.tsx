@@ -783,7 +783,7 @@ export function ApiKeysMutateDrawer({
             disabled={isSubmitting}
             className='w-full sm:w-auto'
           >
-            {isSubmitting ? t('Saving...') : t('Save changes')}
+            {isSubmitting ? t('Saving...') : t('Save Changes')}
           </Button>
         </SheetFooter>
       </SheetContent>

@@ -145,7 +145,7 @@ function OAuthCallback() {
       const redirectAfterLogin = (target?: string) => {
         const to = target || search?.redirect || '/dashboard'
         safeNavigate(to)
-        toast.success(i18next.t('Signed in successfully!'))
+        toast.success(i18next.t('Signed In Successfully!'))
       }
 
       const handleBindingFailure = (message: string) => {

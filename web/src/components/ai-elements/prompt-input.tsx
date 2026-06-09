@@ -771,12 +771,12 @@ export const PromptInput = ({
       <span aria-hidden='true' className='hidden' ref={anchorRef} />
       <input
         accept={accept}
-        aria-label={t('Upload files')}
+        aria-label={t('Upload Files')}
         className='hidden'
         multiple={multiple}
         onChange={handleChange}
         ref={inputRef}
-        title={t('Upload files')}
+        title={t('Upload Files')}
         type='file'
       />
       <form

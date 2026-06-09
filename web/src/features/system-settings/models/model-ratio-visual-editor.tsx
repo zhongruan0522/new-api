@@ -122,13 +122,13 @@ function getContextTierPriceLabel(
     case 'completionTokenPrice':
       return t('Output')
     case 'cacheTokenPrice':
-      return t('Cache read')
+      return t('Cache Read')
     case 'createCacheTokenPrice':
-      return t('Cache creation')
+      return t('Cache Creation')
     case 'audioTokenPrice':
-      return t('Audio input')
+      return t('Audio Input')
     case 'audioCompletionTokenPrice':
-      return t('Audio output')
+      return t('Audio Output')
   }
 }
 
@@ -330,15 +330,15 @@ function getRowSummary(
   }
   if (row.mode === 'per-request') {
     return row.fixedPrice !== undefined
-      ? `$${toInputValue(row.fixedPrice)} / ${t('request')}`
-      : t('Per-request')
+      ? `$${toInputValue(row.fixedPrice)} / ${t('Request')}`
+      : t('Per Request')
   }
   if (row.mode === 'per-token-length') {
     const tierCount = row.contextTiers?.length ?? 0
     return t('{{count}} tiers', { count: tierCount })
   }
   return row.inputPrice !== undefined
-    ? `$${toInputValue(row.inputPrice)} / 1M ${t('tokens')}`
+    ? `$${toInputValue(row.inputPrice)} / 1M ${t('Tokens')}`
     : t('Per-token')
 }
 
@@ -783,7 +783,7 @@ export function ModelRatioVisualEditor({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className='pl-4'>{t('Model name')}</TableHead>
+                <TableHead className='pl-4'>{t('Model Name')}</TableHead>
                 <TableHead>{t('Billing type')}</TableHead>
                 <TableHead>{t('Price summary')}</TableHead>
               </TableRow>
@@ -797,7 +797,7 @@ export function ModelRatioVisualEditor({
                   >
                     {isLoadingEnabledModels
                       ? t('Loading...')
-                      : t('No models found')}
+                      : t('No Models Found')}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -828,7 +828,7 @@ export function ModelRatioVisualEditor({
                         {row.mode === 'unconfigured'
                           ? t('Not configured')
                           : row.mode === 'per-request'
-                            ? t('Per-request')
+                            ? t('Per Request')
                             : row.mode === 'per-token-length'
                               ? t('Tiered')
                               : t('Per-token')}
@@ -925,7 +925,7 @@ export function ModelRatioVisualEditor({
                   className='grid gap-2 sm:grid-cols-3'
                 >
                   {[
-                    ['per-request', t('Per-request')],
+                    ['per-request', t('Per Request')],
                     ['per-token', t('Per-token')],
                     ['per-token-length', t('Tiered pricing')],
                   ].map(([value, label]) => (
@@ -974,7 +974,7 @@ export function ModelRatioVisualEditor({
                       }
                     />
                     <PriceInput
-                      label={t('Cache read price per 1M tokens')}
+                      label={t('Cache Read Price Per 1M Tokens')}
                       value={toInputValue(selectedRow.cachePrice)}
                       placeholder='0.2'
                       disabled={!selectedRow.inputPrice}
@@ -989,7 +989,7 @@ export function ModelRatioVisualEditor({
                       }
                     />
                     <PriceInput
-                      label={t('Cache write price per 1M tokens')}
+                      label={t('Cache Write Price Per 1M Tokens')}
                       value={toInputValue(selectedRow.createCachePrice)}
                       placeholder='1'
                       disabled={!selectedRow.inputPrice}
@@ -1004,7 +1004,7 @@ export function ModelRatioVisualEditor({
                       }
                     />
                     <PriceInput
-                      label={t('Audio input price per 1M tokens')}
+                      label={t('Audio Input Price Per 1M Tokens')}
                       value={toInputValue(selectedRow.audioInputPrice)}
                       placeholder='8'
                       disabled={!selectedRow.inputPrice}
@@ -1019,7 +1019,7 @@ export function ModelRatioVisualEditor({
                       }
                     />
                     <PriceInput
-                      label={t('Audio output price per 1M tokens')}
+                      label={t('Audio Output Price Per 1M Tokens')}
                       value={toInputValue(selectedRow.audioOutputPrice)}
                       placeholder='16'
                       disabled={!selectedRow.audioInputPrice}

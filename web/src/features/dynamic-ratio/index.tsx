@@ -424,7 +424,7 @@ export function DynamicRatio() {
                       <TableHead>{t('Group')}</TableHead>
                       <TableHead>{t('Concurrency')}</TableHead>
                       <TableHead>{t('Weekdays')}</TableHead>
-                      <TableHead>{t('Time range')}</TableHead>
+                      <TableHead>{t('Time Range')}</TableHead>
                       <TableHead>{t('Ratio')}</TableHead>
                       <TableHead>{t('Priority')}</TableHead>
                       <TableHead className='w-40 text-right'>
@@ -550,7 +550,7 @@ export function DynamicRatio() {
         <DialogContent className='sm:max-w-xl'>
           <DialogHeader>
             <DialogTitle>
-              {editingRule ? t('Edit rule') : t('New rule')}
+              {editingRule ? t('Edit Rule') : t('New rule')}
             </DialogTitle>
           </DialogHeader>
           <div className='grid gap-4'>
@@ -620,7 +620,7 @@ export function DynamicRatio() {
             <div className='grid gap-3 sm:grid-cols-2'>
               <div className='grid gap-1.5'>
                 <Label htmlFor='dynamic-ratio-start-time'>
-                  {t('Start time')}
+                  {t('Start Time')}
                 </Label>
                 <Input
                   id='dynamic-ratio-start-time'
@@ -636,7 +636,7 @@ export function DynamicRatio() {
               </div>
               <div className='grid gap-1.5'>
                 <Label htmlFor='dynamic-ratio-end-time'>
-                  {t('End time')}
+                  {t('End Time')}
                 </Label>
                 <Input
                   id='dynamic-ratio-end-time'
@@ -719,7 +719,7 @@ export function DynamicRatio() {
               onClick={handleSubmit}
               disabled={saveDialogRuleMutation.isPending}
             >
-              {editingRule ? t('Save changes') : t('Create')}
+              {editingRule ? t('Save Changes') : t('Create')}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -138,7 +138,7 @@ export function RateLimitVisualEditor({
         </div>
         <Button onClick={handleAdd}>
           <Plus className='mr-2 h-4 w-4' />
-          {t('Add group')}
+          {t('Add Group')}
         </Button>
       </div>
 

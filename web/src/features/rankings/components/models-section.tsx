@@ -172,7 +172,7 @@ export function ModelsSection(props: ModelsSectionProps) {
             {formatTokens(totalTokens)}
           </div>
           <div className='text-muted-foreground/80 text-[10px] font-medium tracking-widest uppercase'>
-            {t('tokens')}
+            {t('Tokens')}
           </div>
         </div>
       </header>
