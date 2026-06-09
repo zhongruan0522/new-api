@@ -210,6 +210,48 @@ func SearchUserTokens(userId int, keyword string, token string, all bool, offset
 	return tokens, total, nil
 }
 
+func ApplyHistoricalTokenUsedQuota(token *Token) error {
+	if token == nil {
+		return nil
+	}
+	return ApplyHistoricalTokensUsedQuota([]*Token{token})
+}
+
+func ApplyHistoricalTokensUsedQuota(tokens []*Token) error {
+	tokenIDs := make([]int, 0, len(tokens))
+	byID := make(map[int]*Token, len(tokens))
+	for _, token := range tokens {
+		if token == nil || !token.UnlimitedQuota {
+			continue
+		}
+		tokenIDs = append(tokenIDs, token.Id)
+		byID[token.Id] = token
+	}
+	if len(tokenIDs) == 0 {
+		return nil
+	}
+
+	type tokenQuotaSum struct {
+		TokenId int `gorm:"column:token_id"`
+		Quota   int `gorm:"column:quota"`
+	}
+	var sums []tokenQuotaSum
+	if err := LOG_DB.Model(&Log{}).
+		Select("token_id, COALESCE(SUM(quota), 0) AS quota").
+		Where("token_id IN ? AND type = ?", tokenIDs, LogTypeConsume).
+		Group("token_id").
+		Scan(&sums).Error; err != nil {
+		return err
+	}
+	for _, sum := range sums {
+		token := byID[sum.TokenId]
+		if token != nil && sum.Quota > token.UsedQuota {
+			token.UsedQuota = sum.Quota
+		}
+	}
+	return nil
+}
+
 func ValidateUserToken(key string) (token *Token, err error) {
 	if key == "" {
 		return nil, ErrTokenNotProvided

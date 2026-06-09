@@ -24,6 +24,10 @@ func GetAllTokens(c *gin.Context) {
 		common.ApiError(c, err)
 		return
 	}
+	if err := model.ApplyHistoricalTokensUsedQuota(tokens); err != nil {
+		common.ApiError(c, err)
+		return
+	}
 	total, _ := model.CountUserTokens(userId)
 	pageInfo.SetTotal(int(total))
 	pageInfo.SetItems(tokens)
@@ -44,6 +48,10 @@ func SearchTokens(c *gin.Context) {
 		common.ApiError(c, err)
 		return
 	}
+	if err := model.ApplyHistoricalTokensUsedQuota(tokens); err != nil {
+		common.ApiError(c, err)
+		return
+	}
 	pageInfo.SetTotal(int(total))
 	pageInfo.SetItems(tokens)
 	common.ApiSuccess(c, pageInfo)
@@ -59,6 +67,10 @@ func GetToken(c *gin.Context) {
 	}
 	token, err := model.GetTokenByIds(id, userId)
 	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	if err := model.ApplyHistoricalTokenUsedQuota(token); err != nil {
 		common.ApiError(c, err)
 		return
 	}
@@ -99,6 +111,10 @@ func GetTokenStatus(c *gin.Context) {
 		common.ApiError(c, err)
 		return
 	}
+	if err := model.ApplyHistoricalTokenUsedQuota(token); err != nil {
+		common.ApiError(c, err)
+		return
+	}
 	snapshot := token.GetQuotaSnapshot()
 	expiredAt := token.ExpiredTime
 	if expiredAt == -1 {
@@ -135,6 +151,10 @@ func GetTokenUsage(c *gin.Context) {
 	if err != nil {
 		common.SysError("failed to get token by key: " + err.Error())
 		common.ApiErrorI18n(c, i18n.MsgTokenGetInfoFailed)
+		return
+	}
+	if err := model.ApplyHistoricalTokenUsedQuota(token); err != nil {
+		common.ApiError(c, err)
 		return
 	}
 	snapshot := token.GetQuotaSnapshot()

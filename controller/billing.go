@@ -16,6 +16,9 @@ func GetSubscription(c *gin.Context) {
 
 	token, err = getTokenForFeedback(c)
 	if err == nil {
+		err = model.ApplyHistoricalTokenUsedQuota(token)
+	}
+	if err == nil {
 		snapshot := token.GetQuotaSnapshot()
 		expiredTime = token.ExpiredTime
 		remainQuota = snapshot.TotalAvailable
@@ -57,6 +60,9 @@ func GetUsage(c *gin.Context) {
 	var token *model.Token
 
 	token, err = getTokenForFeedback(c)
+	if err == nil {
+		err = model.ApplyHistoricalTokenUsedQuota(token)
+	}
 	if err == nil {
 		snapshot := token.GetQuotaSnapshot()
 		quota = snapshot.TotalUsed
