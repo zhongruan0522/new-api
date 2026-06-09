@@ -160,9 +160,7 @@ export function KeyQuery() {
       `${t('Total Quota')}: ${
         isUnlimited ? t('Unlimited') : formatCurrencyUSD(balance)
       }`,
-      `${t('Used quota')}: ${
-        isUnlimited || usage == null ? '-' : formatCurrencyUSD(usage)
-      }`,
+      `${t('Used quota')}: ${usage == null ? '-' : formatCurrencyUSD(usage)}`,
       `${t('labelWithColon', { label: t('Remaining Quota') })} ${isUnlimited ? t('Unlimited') : remaining}`,
       `${t('Expiration Time')}: ${
         expiredTime === 0 ? t('Never') : formatTimestampToDate(expiredTime ?? 0)
@@ -267,11 +265,7 @@ export function KeyQuery() {
                   />
                   <StatBlock
                     label={t('Used quota')}
-                    value={
-                      isUnlimited || usage == null
-                        ? '-'
-                        : formatCurrencyUSD(usage)
-                    }
+                    value={usage == null ? '-' : formatCurrencyUSD(usage)}
                   />
                   <StatBlock
                     label={t('Remaining Quota')}
