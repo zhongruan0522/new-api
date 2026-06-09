@@ -1917,7 +1917,7 @@ export function ChannelMutateDrawer({
                                 variant='ghost'
                                 size='icon-sm'
                                 className='text-muted-foreground hover:text-foreground size-auto p-0'
-                                aria-label='How model mapping works'
+                                aria-label={t('How model mapping works')}
                               />
                             }
                           >

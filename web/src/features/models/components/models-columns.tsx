@@ -82,14 +82,14 @@ export function useModelsColumns(vendors: Vendor[] = []): ColumnDef<Model>[] {
           checked={table.getIsAllPageRowsSelected()}
           indeterminate={table.getIsSomePageRowsSelected()}
           onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-          aria-label='Select all'
+          aria-label={t('Select all')}
         />
       ),
       cell: ({ row }) => (
         <Checkbox
           checked={row.getIsSelected()}
           onCheckedChange={(value) => row.toggleSelected(!!value)}
-          aria-label='Select row'
+          aria-label={t('Select row')}
         />
       ),
       enableSorting: false,
@@ -102,7 +102,7 @@ export function useModelsColumns(vendors: Vendor[] = []): ColumnDef<Model>[] {
       accessorKey: 'id',
       meta: { label: t('ID'), mobileHidden: true },
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title='ID' />
+        <DataTableColumnHeader column={column} title={t('ID')} />
       ),
       cell: ({ row }) => {
         const id = row.getValue('id') as number

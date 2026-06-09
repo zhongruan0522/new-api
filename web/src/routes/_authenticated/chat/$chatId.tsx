@@ -126,7 +126,7 @@ function ChatRouteComponent() {
     const message =
       error instanceof Error
         ? error.message
-        : 'Unable to generate chat link. Please check your API keys.'
+        : t('Unable to generate chat link. Please check your API keys.')
     return (
       <div className='flex h-full flex-col items-center justify-center p-6'>
         <Alert variant='destructive' className='max-w-xl'>

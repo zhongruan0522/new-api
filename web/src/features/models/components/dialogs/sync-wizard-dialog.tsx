@@ -109,16 +109,23 @@ export function SyncWizardDialog({
         const { created_models, created_vendors, updated_models } =
           response.data || {}
         toast.success(
-          `Sync completed! Created ${created_models || 0} models, updated ${updated_models || 0}, and added ${created_vendors || 0} vendors.`
+          t(
+            'Sync completed: created {{createdModels}} models, updated {{updatedModels}}, and added {{createdVendors}} vendors.',
+            {
+              createdModels: created_models || 0,
+              updatedModels: updated_models || 0,
+              createdVendors: created_vendors || 0,
+            }
+          )
         )
         queryClient.invalidateQueries({ queryKey: modelsQueryKeys.lists() })
         queryClient.invalidateQueries({ queryKey: vendorsQueryKeys.lists() })
         onOpenChange(false)
       } else {
-        toast.error(response.message || 'Sync failed')
+        toast.error(response.message || t('Sync failed'))
       }
     } catch (error: unknown) {
-      toast.error((error as Error)?.message || 'Sync failed')
+      toast.error((error as Error)?.message || t('Sync failed'))
     } finally {
       setIsSyncing(false)
     }

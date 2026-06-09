@@ -208,7 +208,7 @@ function OAuthCallback() {
           safeNavigate('/sign-in')
           return
         }
-        const message = res?.data?.message || 'OAuth failed'
+        const message = res?.data?.message || i18next.t('OAuth failed')
         if (!res?.data?.success && !isBindingFlow) {
           // When logging in with an already bound GitHub account, backend may return this message
           if (message === '该 GitHub 账户已被绑定') {
@@ -231,7 +231,7 @@ function OAuthCallback() {
           (error as { response?: { data?: { message?: string } } }).response
             ?.data?.message) ??
           (error instanceof Error ? error.message : undefined) ??
-          'OAuth failed') as string
+          i18next.t('OAuth failed')) as string
 
         if (isBindingFlow) {
           handleBindingFailure(message)

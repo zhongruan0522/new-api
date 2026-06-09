@@ -87,7 +87,7 @@ export function MultiSelect({
                 <Button
                   variant='ghost'
                   size='icon-sm'
-                  aria-label='Remove'
+                  aria-label={t('Remove')}
                   className='ml-1 size-auto p-0'
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
