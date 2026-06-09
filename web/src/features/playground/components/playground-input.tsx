@@ -147,7 +147,7 @@ export function PlaygroundInput({
                   onClick={() => handleFileAction('upload-file')}
                 >
                   <FileIcon className='mr-2' size={16} />
-                  {t('Upload File')}
+                  {t('Upload Files')}
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => handleFileAction('upload-photo')}

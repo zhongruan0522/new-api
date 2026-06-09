@@ -84,7 +84,7 @@ export const ModelPerfBadge = memo(function ModelPerfBadge(
         className='min-w-0'
       >
         <div className='text-muted-foreground/55 truncate text-[10px] leading-4'>
-          {t('Status short')}
+          {t('Status')}
         </div>
         <div className='flex h-4 items-center justify-end gap-0.5'>
           <span className='bg-muted-foreground/10 h-2 w-1 rounded-full' />

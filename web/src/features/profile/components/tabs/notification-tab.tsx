@@ -295,7 +295,7 @@ export function NotificationTab({ profile, onUpdate }: NotificationTabProps) {
               <li>{t('3. Enter your Gotify server URL and token above')}</li>
             </ol>
             <p className='text-muted-foreground mt-3 text-xs'>
-              {t('Learn more:')}{' '}
+              {t('labelWithColon', { label: t('Learn more') })}{' '}
               <a
                 href='https://gotify.net/'
                 target='_blank'

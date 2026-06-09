@@ -256,7 +256,7 @@ export function PasskeyCard({ loading: pageLoading }: PasskeyCardProps) {
                     )}
                   </div>
                   <p className='text-muted-foreground text-sm'>
-                    {t('Last used:')} {formattedLastUsed}
+                    {t('labelWithColon', { label: t('Last Used') })} {formattedLastUsed}
                   </p>
                 </div>
               </div>

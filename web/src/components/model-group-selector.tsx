@@ -229,13 +229,13 @@ export const ModelSelector: React.FC<ModelSelectorProps> = React.memo(
             onValueChange={setSearchQuery}
           />
         )}
-        <CommandEmpty>{t('No model found.')}</CommandEmpty>
+        <CommandEmpty>{t('No Models Found')}</CommandEmpty>
         <CommandList
           className={isMobile ? '!max-h-full flex-1 p-2' : 'max-h-[300px]'}
         >
           {Object.keys(filteredModels).length === 0 ? (
             <div className='text-muted-foreground px-3 py-6 text-xs'>
-              {t('No model found.')}
+              {t('No Models Found')}
             </div>
           ) : (
             Object.entries(filteredModels).map(

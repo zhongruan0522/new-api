@@ -413,7 +413,7 @@ export function OllamaModelsDialog({
                 {pullProgress && (
                   <div className='space-y-2'>
                     <div className='text-muted-foreground text-xs'>
-                      {t('Status:')} {String(pullProgress.status || '-')}
+                      {t('labelWithColon', { label: t('Status') })} {String(pullProgress.status || '-')}
                     </div>
                     <Progress
                       value={
@@ -499,7 +499,7 @@ export function OllamaModelsDialog({
                 <div className='max-h-[420px] overflow-y-auto'>
                   {filteredModels.length === 0 ? (
                     <div className='text-muted-foreground p-6 text-center text-sm'>
-                      {t('No models found.')}
+                      {t('No Models Found')}
                     </div>
                   ) : (
                     <div className='divide-y'>
@@ -524,7 +524,7 @@ export function OllamaModelsDialog({
                                 </div>
                                 <div className='text-muted-foreground flex flex-wrap gap-x-3 gap-y-1 text-xs'>
                                   <span>
-                                    {t('Size:')} {formatBytes(m.size)}
+                                    {t('labelWithColon', { label: t('Size') })} {formatBytes(m.size)}
                                   </span>
                                   {m.digest && (
                                     <span className='truncate'>

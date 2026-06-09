@@ -71,7 +71,7 @@ export function ImageDialog({
           <DialogTitle>{t('Image Preview')}</DialogTitle>
           <DialogDescription>
             {taskId
-              ? `${t('Task ID:')} ${taskId}`
+              ? `${t('labelWithColon', { label: t('Task ID') })} ${taskId}`
               : t('View the generated image')}
           </DialogDescription>
         </DialogHeader>

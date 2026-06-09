@@ -52,7 +52,7 @@ const SITE_SECTIONS = [
   },
   {
     id: 'notice',
-    titleKey: 'System Notice',
+    titleKey: 'System Announcements',
     build: (settings: SiteSettings) => (
       <NoticeSection defaultValue={settings.Notice ?? ''} />
     ),

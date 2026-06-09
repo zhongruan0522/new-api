@@ -79,7 +79,7 @@ export function DataTableBulkActions<TData>({
 
   return (
     <>
-      <BulkActionsToolbar table={table} entityName={t('redemption code')}>
+      <BulkActionsToolbar table={table} entityName={t('Redemption Codes')}>
         <CopyButton
           value={contentToCopy}
           variant='outline'
@@ -123,7 +123,7 @@ export function DataTableBulkActions<TData>({
         desc={
           <>
             {t('This will delete all')} <strong>{t('Used')}</strong>,{' '}
-            <strong>{t('disabled')}</strong>
+            <strong>{t('Disabled')}</strong>
             {t(', and')} <strong>{t('Expired')}</strong>{' '}
             {t('redemption codes.')}
             <br />

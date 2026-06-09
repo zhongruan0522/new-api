@@ -62,7 +62,7 @@ type DashboardSectionProps = {
 }
 
 const granularityOptions = [
-  { label: 'Hour', value: 'hour' },
+  { label: 'Hours', value: 'hour' },
   { label: 'Day', value: 'day' },
   { label: 'Week', value: 'week' },
 ]

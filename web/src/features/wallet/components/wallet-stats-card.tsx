@@ -49,7 +49,7 @@ export function WalletStatsCard(props: WalletStatsCardProps) {
     {
       label: t('Current Balance'),
       value: formatQuota(props.user?.quota ?? 0),
-      description: t('Remaining quota'),
+      description: t('Remaining Quota'),
       icon: WalletCards,
     },
     {

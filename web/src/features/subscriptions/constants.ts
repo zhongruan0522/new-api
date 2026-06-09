@@ -26,7 +26,7 @@ export const DURATION_UNITS = [
   { value: 'year', labelKey: 'years' },
   { value: 'month', labelKey: 'months' },
   { value: 'day', labelKey: 'days' },
-  { value: 'hour', labelKey: 'hours' },
+  { value: 'hour', labelKey: 'Hours' },
   { value: 'custom', labelKey: 'Custom (seconds)' },
 ] as const
 

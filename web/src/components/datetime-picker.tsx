@@ -54,7 +54,7 @@ export function DateTimePicker({
   className,
 }: DateTimePickerProps) {
   const { t, i18n } = useTranslation()
-  const placeholderText = placeholder ?? t('Select date')
+  const placeholderText = placeholder ?? t('Select Date')
   const calendarLocale =
     calendarLocales[i18n.language as keyof typeof calendarLocales] ?? enUS
   const [open, setOpen] = React.useState(false)

@@ -259,7 +259,7 @@ export function AmountDiscountVisualEditor({
                 </div>
                 <div className='text-sm'>
                   <span className='text-muted-foreground'>
-                    {t('Discount Rate:')}{' '}
+                    {t('labelWithColon', { label: t('Discount Rate') })}{' '}
                   </span>
                   <code className='bg-muted rounded px-1.5 py-0.5 text-xs'>
                     {discount.discountRate.toFixed(2)}

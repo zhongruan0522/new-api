@@ -44,7 +44,7 @@ export function ToggleStatusDialog() {
       const res = await patchPlanStatus(currentRow.plan.id, !isEnabled)
       if (res.success) {
         toast.success(
-          isEnabled ? t('Has been disabled') : t('Has been enabled')
+          isEnabled ? t('Disabled successfully') : t('Enabled successfully')
         )
         triggerRefresh()
         setOpen(null)

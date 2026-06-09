@@ -157,7 +157,7 @@ export function RateLimitVisualEditor({
               <TableRow>
                 <TableHead>{t('Group Name')}</TableHead>
                 <TableHead className='text-right'>
-                  {t('Max Requests (incl. failures)')}
+                  {t('Max Requests (including failures)')}
                 </TableHead>
                 <TableHead className='text-right'>{t('Max Success')}</TableHead>
                 <TableHead className='text-right'>{t('Actions')}</TableHead>

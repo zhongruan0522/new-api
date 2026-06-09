@@ -120,7 +120,7 @@ function formatDurationSeconds(
   const minutes = Math.floor((total % 3600) / 60)
   const secs = total % 60
 
-  if (hours > 0) return `${hours}${t('h')} ${minutes}${t('m')}`
+  if (hours > 0) return `${hours} ${t('Hours')} ${minutes}${t('m')}`
   if (minutes > 0) return `${minutes}${t('m')} ${secs}${t('s')}`
   return `${secs}${t('s')}`
 }
@@ -421,7 +421,7 @@ export function CodexUsageDialog({
             {t('Codex Account & Usage')}
           </DialogTitle>
           <DialogDescription>
-            {t('Channel:')} <strong>{channelName || '-'}</strong>{' '}
+            {t('labelWithColon', { label: t('Channel') })} <strong>{channelName || '-'}</strong>{' '}
             {channelId ? `(#${channelId})` : ''}
           </DialogDescription>
         </DialogHeader>
@@ -445,7 +445,7 @@ export function CodexUsageDialog({
                 {statusBadge}
                 {typeof response?.upstream_status === 'number' && (
                   <StatusBadge
-                    label={`${t('Status:')} ${response.upstream_status}`}
+                    label={`${t('labelWithColon', { label: t('Status') })} ${response.upstream_status}`}
                     variant='neutral'
                     copyable={false}
                   />
@@ -509,7 +509,7 @@ export function CodexUsageDialog({
               <div className='space-y-4 border-t pt-4'>
                 <div>
                   <div className='text-sm font-medium'>
-                    {t('Additional Limits')}
+                    {t('Additional Limit')}
                   </div>
                   <p className='text-muted-foreground text-xs'>
                     {t(

@@ -143,7 +143,7 @@ export function RedemptionsMutateDrawer({
   const { meta: currencyMeta } = getCurrencyDisplay()
   const currencyLabel = getCurrencyLabel()
   const tokensOnly = currencyMeta.kind === 'tokens'
-  const quotaLabel = t('Quota ({{currency}})', { currency: currencyLabel })
+  const quotaLabel = `${t('Quota')} (${currencyLabel})`
   const quotaPlaceholder = tokensOnly
     ? t('Enter quota in tokens')
     : t('Enter quota in {{currency}}', { currency: currencyLabel })
@@ -256,7 +256,7 @@ export function RedemptionsMutateDrawer({
                           size='sm'
                           onClick={() => handleSetExpiry(1, 0, 0)}
                         >
-                          {t('1M')}
+                          {t('1 Month')}
                         </Button>
                         <Button
                           type='button'

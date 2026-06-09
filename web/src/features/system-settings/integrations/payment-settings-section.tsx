@@ -441,7 +441,7 @@ export function PaymentSettingsSection({
               render={({ field }) => (
                 <FormItem>
                   <div className='mb-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between'>
-                    <FormLabel>{t('Payment Methods')}</FormLabel>
+                    <FormLabel>{t('Payment Method')}</FormLabel>
                     <Button
                       type='button'
                       variant='outline'

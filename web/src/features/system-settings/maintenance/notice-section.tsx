@@ -71,7 +71,7 @@ export function NoticeSection({ defaultValue }: NoticeSectionProps) {
   }
 
   return (
-    <SettingsSection title={t('System Notice')}>
+    <SettingsSection title={t('System Announcements')}>
       <Form {...form}>
         <SettingsForm onSubmit={form.handleSubmit(onSubmit)}>
           <SettingsPageFormActions

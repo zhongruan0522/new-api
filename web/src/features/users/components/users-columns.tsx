@@ -204,13 +204,13 @@ export function useUsersColumns(): ColumnDef<User>[] {
             <TooltipContent>
               <div className='space-y-1 text-xs'>
                 <div>
-                  {t('Used:')} {formatQuota(used)}
+                  {t('labelWithColon', { label: t('Used') })} {formatQuota(used)}
                 </div>
                 <div>
-                  {t('Remaining:')} {formatQuota(remaining)}
+                  {t('labelWithColon', { label: t('Remaining') })} {formatQuota(remaining)}
                 </div>
                 <div>
-                  {t('Total:')} {formatQuota(total)}
+                  {t('labelWithColon', { label: t('Total') })} {formatQuota(total)}
                 </div>
                 <div>
                   {t('Percentage:')} {percentage.toFixed(1)}%

@@ -256,7 +256,7 @@ export function CheckinCalendarCard({
       >
         <DialogContent className='sm:max-w-md'>
           <DialogHeader>
-            <DialogTitle>{t('Security Check')}</DialogTitle>
+            <DialogTitle>{t('Security Verification')}</DialogTitle>
           </DialogHeader>
           <div className='text-muted-foreground text-sm'>
             {t('Please complete the security check to continue.')}

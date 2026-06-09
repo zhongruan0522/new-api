@@ -489,7 +489,7 @@ export function MultimodalFiles() {
       <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
         <DialogContent className='sm:max-w-2xl'>
           <DialogHeader>
-            <DialogTitle>{t('Multimodal File')}</DialogTitle>
+            <DialogTitle>{t('Multimodal Files')}</DialogTitle>
           </DialogHeader>
           {detailItem && (
             <div className='space-y-3'>

@@ -212,7 +212,7 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
             }}
             disabled={isRoot}
           >
-            {t('Reset 2FA')}
+            {t('Reset Two-Factor Authentication')}
             <DropdownMenuShortcut>
               <ShieldAlert size={16} />
             </DropdownMenuShortcut>
@@ -247,7 +247,7 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
         onOpenChange={setResetTwoFAOpen}
         title={t('Reset Two-Factor Authentication')}
         desc={`Reset 2FA for ${user.username}? The user must set up 2FA again to continue using it.`}
-        confirmText='Reset 2FA'
+        confirmText='Reset Two-Factor Authentication'
         handleConfirm={handleResetTwoFA}
       />
 

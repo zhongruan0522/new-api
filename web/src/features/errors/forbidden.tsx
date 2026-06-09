@@ -38,7 +38,7 @@ export function ForbiddenError() {
             {t('Go Back')}
           </Button>
           <Button onClick={() => navigate({ to: '/' })}>
-            {t('Back to Home')}
+            {t('Back To Home')}
           </Button>
         </div>
       </div>

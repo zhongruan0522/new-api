@@ -153,7 +153,7 @@ export function SubscriptionsMutateDrawer({
       if (isEdit && currentRow?.plan?.id) {
         const res = await updatePlan(currentRow.plan.id, payload)
         if (res.success) {
-          toast.success(t('Update succeeded'))
+          toast.success(t('Updated successfully'))
           onOpenChange(false)
           triggerRefresh()
         }
@@ -274,7 +274,7 @@ export function SubscriptionsMutateDrawer({
             <SideDrawerSection>
               <h3 className='flex items-center gap-2 text-sm font-medium'>
                 <Settings2 className='h-4 w-4' />
-                {t('Basic Info')}
+                {t('Basic Information')}
               </h3>
 
               <FormField
@@ -567,7 +567,7 @@ export function SubscriptionsMutateDrawer({
                   name='quota_reset_period'
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('Reset Cycle')}</FormLabel>
+                      <FormLabel>{t('Reset Period')}</FormLabel>
                       <Select
                         items={[
                           ...resetPeriodOpts.map((o) => ({

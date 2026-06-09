@@ -88,7 +88,7 @@ export function GeneralError({
               {t('Report an issue')}
             </Button>
             <Button onClick={() => navigate({ to: '/' })}>
-              {t('Back to Home')}
+              {t('Back To Home')}
             </Button>
           </div>
         )}

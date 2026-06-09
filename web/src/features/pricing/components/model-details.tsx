@@ -575,12 +575,12 @@ function GroupPricingSection(props: {
     if (props.model.image_ratio != null)
       types.push({ label: t('Image'), type: 'image' })
     if (props.model.audio_ratio != null)
-      types.push({ label: t('Audio In'), type: 'audio_input' })
+      types.push({ label: t('Audio Input'), type: 'audio_input' })
     if (
       props.model.audio_ratio != null &&
       props.model.audio_completion_ratio != null
     )
-      types.push({ label: t('Audio Out'), type: 'audio_output' })
+      types.push({ label: t('Audio Output'), type: 'audio_output' })
     return types
   }, [props.model, t])
 
@@ -1056,7 +1056,7 @@ export function ModelDetails() {
           className='text-muted-foreground hover:text-foreground mb-4 h-auto gap-1 px-0 py-1 text-xs'
         >
           <ArrowLeft className='size-3.5' />
-          {t('Back')}
+          {t('Go Back')}
         </Button>
 
         <ModelDetailsContent

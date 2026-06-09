@@ -354,7 +354,7 @@ export function PrefillGroupFormDrawer({
                             keyPlaceholder='provider'
                             valuePlaceholder='{"path": "/v1/...","method": "POST"}'
                             keyLabel={t('Provider')}
-                            valueLabel={t('Endpoint config')}
+                            valueLabel={t('Endpoint Configuration')}
                             valueType='any'
                             template={ENDPOINT_TEMPLATES}
                             emptyMessage={t(

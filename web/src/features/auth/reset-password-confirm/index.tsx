@@ -178,7 +178,7 @@ export function ResetPasswordConfirm({
             }
           >
             {newPassword
-              ? t('auth.resetPasswordConfirm.backToLogin')
+              ? t('Back To Login')
               : isActive
                 ? t('auth.resetPasswordConfirm.retry', {
                     seconds: secondsLeft,

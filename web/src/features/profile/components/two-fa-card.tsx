@@ -85,7 +85,7 @@ export function TwoFACard({ loading: pageLoading }: TwoFACardProps) {
                 </div>
                 <div className='space-y-1'>
                   <div className='flex items-center gap-2'>
-                    <p className='font-medium'>{t('Two-Step Verification')}</p>
+                    <p className='font-medium'>{t('Two-Factor Authentication')}</p>
                     {status.enabled ? (
                       <StatusBadge
                         label={t('Enabled')}

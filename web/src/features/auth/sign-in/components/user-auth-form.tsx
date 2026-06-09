@@ -228,7 +228,7 @@ export function UserAuthForm({
     }
 
     if (!passkeySupported) {
-      toast.error(t('Passkey is not supported on this device'))
+      toast.error(t('This device does not support Passkey'))
       return
     }
 

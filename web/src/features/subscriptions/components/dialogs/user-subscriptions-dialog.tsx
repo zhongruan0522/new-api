@@ -174,7 +174,7 @@ export function UserSubscriptionsDialog(props: Props) {
       if (confirmAction.type === 'invalidate') {
         const res = await invalidateUserSubscription(confirmAction.subId)
         if (res.success) {
-          toast.success(res.data?.message || t('Has been invalidated'))
+          toast.success(res.data?.message || t('Invalidated'))
           await loadData()
           props.onSuccess?.()
         }
@@ -251,7 +251,7 @@ export function UserSubscriptionsDialog(props: Props) {
                     <TableHead>{t('ID')}</TableHead>
                     <TableHead>{t('Plan')}</TableHead>
                     <TableHead>{t('Status')}</TableHead>
-                    <TableHead>{t('Validity')}</TableHead>
+                    <TableHead>{t('Validity Period')}</TableHead>
                     <TableHead>{t('Total Quota')}</TableHead>
                     <TableHead className='text-right'>{t('Actions')}</TableHead>
                   </TableRow>

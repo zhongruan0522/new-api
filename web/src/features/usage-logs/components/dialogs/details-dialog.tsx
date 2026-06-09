@@ -1457,7 +1457,7 @@ export function DetailsDialog(props: DetailsDialogProps) {
             {other?.po && Array.isArray(other.po) && other.po.length > 0 && (
               <DetailSection
                 icon={<Settings2 className='size-3.5' aria-hidden='true' />}
-                label={`${t('Param Override')} (${other.po.length})`}
+                label={`${t('Parameter Override')} (${other.po.length})`}
               >
                 {other.po.filter(Boolean).map((line, idx) => {
                   const parsed = parseAuditLine(line)

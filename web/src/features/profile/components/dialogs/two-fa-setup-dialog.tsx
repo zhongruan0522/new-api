@@ -259,7 +259,7 @@ export function TwoFASetupDialog({
               onClick={() => setStep(step - 1)}
               disabled={initializing || loading}
             >
-              {t('Back')}
+              {t('Go Back')}
             </Button>
           )}
           {step < 2 ? (

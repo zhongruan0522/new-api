@@ -273,7 +273,7 @@ function BalanceCell({ channel }: { channel: Channel }) {
           />
           <TooltipContent>
             <p>
-              {t('Used:')} {usedDisplay}
+              {t('labelWithColon', { label: t('Used') })} {usedDisplay}
             </p>
           </TooltipContent>
         </Tooltip>
@@ -294,7 +294,7 @@ function BalanceCell({ channel }: { channel: Channel }) {
           />
           <TooltipContent>
             <p>
-              {t('Remaining:')} {remainingDisplay}
+              {t('labelWithColon', { label: t('Remaining') })} {remainingDisplay}
             </p>
             <p>{t('Click to update balance')}</p>
           </TooltipContent>
@@ -669,12 +669,12 @@ export function useChannelsColumns(): ColumnDef<Channel>[] {
                     <div className='space-y-1 text-xs'>
                       {statusReason && (
                         <div>
-                          {t('Reason:')} {statusReason}
+                          {t('labelWithColon', { label: t('Reason') })} {statusReason}
                         </div>
                       )}
                       {statusTime && (
                         <div>
-                          {t('Time:')} {statusTime}
+                          {t('labelWithColon', { label: t('Time') })} {statusTime}
                         </div>
                       )}
                     </div>

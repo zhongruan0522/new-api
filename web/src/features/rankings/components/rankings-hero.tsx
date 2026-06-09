@@ -59,7 +59,7 @@ export function RankingsHero(props: RankingsHeroProps) {
       {/* Underline tabs for period — clean and unobtrusive. */}
       <div
         role='tablist'
-        aria-label={t('Period')}
+        aria-label={t('Time Range')}
         className='border-border/60 flex items-center border-b'
       >
         {PERIODS.map((p) => {

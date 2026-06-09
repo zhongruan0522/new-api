@@ -129,7 +129,7 @@ function buildQuotaUsage(apiKey: ApiKey): QuotaUsage {
       return {
         detailLines: [
           {
-            labelKey: 'Window quota',
+            labelKey: 'Window Quota',
             value: `${formatQuota(windowLimit.remaining)} / ${formatQuota(windowLimit.total)}`,
           },
           {
@@ -137,7 +137,7 @@ function buildQuotaUsage(apiKey: ApiKey): QuotaUsage {
             value: `Every ${windowHours}h`,
           },
         ],
-        primaryLabelKey: 'Window quota',
+        primaryLabelKey: 'Window Quota',
         quotaType,
         quotaTypeLabelKey: quotaTypeMeta.labelKey,
         quotaTypeVariant: quotaTypeMeta.variant,
@@ -159,13 +159,13 @@ function buildQuotaUsage(apiKey: ApiKey): QuotaUsage {
       windowLimit.remaining <= cycleLimit.remaining ? windowLimit : cycleLimit
     const primaryLabelKey =
       windowLimit.remaining <= cycleLimit.remaining
-        ? 'Window quota'
-        : 'Cycle quota'
+        ? 'Window Quota'
+        : 'Cycle Quota'
 
     return {
       detailLines: [
         {
-          labelKey: 'Window quota',
+          labelKey: 'Window Quota',
           value: `${formatQuota(windowLimit.remaining)} / ${formatQuota(windowLimit.total)}`,
         },
         {
@@ -173,11 +173,11 @@ function buildQuotaUsage(apiKey: ApiKey): QuotaUsage {
           value: `Every ${windowHours}h`,
         },
         {
-          labelKey: 'Cycle quota',
+          labelKey: 'Cycle Quota',
           value: `${formatQuota(cycleLimit.remaining)} / ${formatQuota(cycleLimit.total)}`,
         },
         {
-          labelKey: 'Reset Cycle',
+          labelKey: 'Reset Period',
           value: `Every ${cycleDays}d`,
         },
       ],
@@ -387,23 +387,23 @@ export function ApiKeyQuotaCell({
                 {t('No quota cap; usage still depends on account balance.')}
               </div>
               <div>
-                {t('Used:')} {formatQuota(usage.used)}
+                {t('labelWithColon', { label: t('Used') })} {formatQuota(usage.used)}
               </div>
             </>
           ) : (
             <>
               <div>
-                {t('Used:')} {formatQuota(usage.used)}
+                {t('labelWithColon', { label: t('Used') })} {formatQuota(usage.used)}
               </div>
               <div>
-                {t('Remaining:')} {formatQuota(usage.remaining)} (
+                {t('labelWithColon', { label: t('Remaining') })} {formatQuota(usage.remaining)} (
                 {percentage.toFixed(1)}%)
               </div>
               <div>
-                {t('Total:')} {formatQuota(usage.total)}
+                {t('labelWithColon', { label: t('Total') })} {formatQuota(usage.total)}
               </div>
               <div>
-                {t('Reset:')}{' '}
+                {t('labelWithColon', { label: t('Reset') })}{' '}
                 {usage.detailLines.length > 0
                   ? usage.detailLines
                       .map((line) => formatQuotaScheduleValue(line.value, t))
@@ -433,7 +433,7 @@ export function ModelLimitsCell({ apiKey }: { apiKey: ApiKey }) {
     <Tooltip>
       <TooltipTrigger render={<span />}>
         <StatusBadge
-          label={t('{{count}} model(s)', { count: models.length })}
+          label={t('{{count}} models', { count: models.length })}
           variant='neutral'
           copyable={false}
         />

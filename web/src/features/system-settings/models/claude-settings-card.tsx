@@ -162,7 +162,7 @@ export function ClaudeSettingsCard({ defaultValues }: ClaudeSettingsCardProps) {
             name='claude.model_headers_settings'
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{t('Request Header Overrides')}</FormLabel>
+                <FormLabel>{t('Request Header Override')}</FormLabel>
                 <FormControl>
                   <Textarea rows={8} {...field} />
                 </FormControl>

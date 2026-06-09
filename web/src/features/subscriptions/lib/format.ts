@@ -30,13 +30,13 @@ export function formatDuration(
     year: t('years'),
     month: t('months'),
     day: t('days'),
-    hour: t('hours'),
+    hour: t('Hours'),
     custom: t('Custom (seconds)'),
   }
   if (unit === 'custom') {
     const seconds = plan?.custom_seconds || 0
     if (seconds >= 86400) return `${Math.floor(seconds / 86400)} ${t('days')}`
-    if (seconds >= 3600) return `${Math.floor(seconds / 3600)} ${t('hours')}`
+    if (seconds >= 3600) return `${Math.floor(seconds / 3600)} ${t('Hours')}`
     return `${seconds} ${t('seconds')}`
   }
   return `${value} ${unitLabels[unit] || unit}`
@@ -53,7 +53,7 @@ export function formatResetPeriod(
   if (period === 'custom') {
     const seconds = Number(plan?.quota_reset_custom_seconds || 0)
     if (seconds >= 86400) return `${Math.floor(seconds / 86400)} ${t('days')}`
-    if (seconds >= 3600) return `${Math.floor(seconds / 3600)} ${t('hours')}`
+    if (seconds >= 3600) return `${Math.floor(seconds / 3600)} ${t('Hours')}`
     if (seconds >= 60) return `${Math.floor(seconds / 60)} ${t('minutes')}`
     return `${seconds} ${t('seconds')}`
   }

@@ -476,7 +476,7 @@ export function DynamicRatio() {
                             )}
                           </TableCell>
                           <TableCell>
-                            {formatWeekdays(rule.weekdays, t('Every day'))}
+                            {formatWeekdays(rule.weekdays, t('Daily'))}
                           </TableCell>
                           <TableCell>
                             {rule.start_time && rule.end_time ? (

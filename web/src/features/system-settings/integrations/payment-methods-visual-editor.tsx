@@ -417,7 +417,7 @@ export function PaymentMethodsVisualEditor({
                   <div className='space-y-2 text-sm'>
                     <div className='flex items-center gap-2'>
                       <span className='text-muted-foreground min-w-20'>
-                        {t('Color:')}
+                        {t('labelWithColon', { label: t('Color') })}
                       </span>
                       <div className='flex items-center gap-2'>
                         {colorPreview && (
@@ -434,7 +434,7 @@ export function PaymentMethodsVisualEditor({
                     {method.min_topup && (
                       <div className='flex items-center gap-2'>
                         <span className='text-muted-foreground min-w-20'>
-                          {t('Min Top-up:')}
+                          {t('labelWithColon', { label: t('Min Top-up') })}
                         </span>
                         <span className='font-mono'>{method.min_topup}</span>
                       </div>

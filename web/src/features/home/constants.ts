@@ -52,7 +52,7 @@ export const GATEWAY_FEATURES = [
   'Budgets',
   'Load Balancing',
   'Rate Limiting',
-  'Token Mgmt',
+  'Token Management',
   'Prompt Caching',
   'Pass-Through',
 ] as const

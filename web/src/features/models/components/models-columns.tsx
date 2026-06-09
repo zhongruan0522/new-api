@@ -564,9 +564,9 @@ export function useModelsColumns(vendors: Vendor[] = []): ColumnDef<Model>[] {
     // Updated Time column
     {
       accessorKey: 'updated_time',
-      meta: { label: t('Updated'), mobileHidden: true },
+      meta: { label: t('Updated At'), mobileHidden: true },
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('Updated')} />
+        <DataTableColumnHeader column={column} title={t('Updated At')} />
       ),
       cell: ({ row }) => {
         const timestamp = row.getValue('updated_time') as number

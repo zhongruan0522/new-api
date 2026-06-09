@@ -362,9 +362,7 @@ export function UsersMutateDrawer({
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>
-                          {t('Remaining Quota ({{currency}})', {
-                            currency: currencyLabel,
-                          })}
+                          {t('Remaining Quota')} ({currencyLabel})
                         </FormLabel>
                         <div className='flex gap-2'>
                           <FormControl>

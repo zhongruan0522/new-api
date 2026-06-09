@@ -226,7 +226,7 @@ export function EditTagDialog({ open, onOpenChange }: EditTagDialogProps) {
       <DialogContent className='max-h-[90vh] max-w-2xl'>
         <DialogHeader>
           <DialogTitle>
-            {t('Edit Tag:')} {currentTag}
+            {t('labelWithColon', { label: t('Edit Tag') })} {currentTag}
           </DialogTitle>
           <DialogDescription>
             {t(

@@ -834,7 +834,7 @@ export function ChannelMutateDrawer({
       if (!isEditing && !data.key?.trim()) {
         form.setError('key', {
           type: 'manual',
-          message: 'API key is required',
+          message: 'API Key Required',
         })
         return
       }

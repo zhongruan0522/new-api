@@ -55,7 +55,7 @@ export function useUpdateOption() {
         }
       }
 
-      toast.success(i18next.t('Setting updated successfully'))
+      toast.success(i18next.t('Settings updated successfully'))
     },
     onError: (error: Error) => {
       toast.error(error.message || i18next.t('Failed to update setting'))

@@ -49,7 +49,7 @@ export function DatePicker({
   placeholder,
 }: DatePickerProps) {
   const { t, i18n } = useTranslation()
-  const placeholderText = placeholder ?? t('Pick a date')
+  const placeholderText = placeholder ?? t('Select Date')
   const calendarLocale =
     calendarLocales[i18n.language as keyof typeof calendarLocales] ?? enUS
   return (

@@ -674,7 +674,7 @@ export function Tickets() {
                         {t('Created At')}
                       </TableHead>
                       <TableHead className='min-w-40'>
-                        {t('Updated at')}
+                        {t('Updated At')}
                       </TableHead>
                       <TableHead className='w-14 text-right'>
                         {t('Actions')}

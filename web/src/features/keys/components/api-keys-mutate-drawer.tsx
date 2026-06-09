@@ -251,7 +251,7 @@ export function ApiKeysMutateDrawer({
   const { meta: currencyMeta } = getCurrencyDisplay()
   const currencyLabel = getCurrencyLabel()
   const tokensOnly = currencyMeta.kind === 'tokens'
-  const quotaLabel = t('Quota ({{currency}})', { currency: currencyLabel })
+  const quotaLabel = `${t('Quota')} (${currencyLabel})`
   const quotaPlaceholder = tokensOnly
     ? t('Enter quota in tokens')
     : t('Enter quota in {{currency}}', { currency: currencyLabel })
@@ -576,9 +576,7 @@ export function ApiKeysMutateDrawer({
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>
-                          {t('Window Quota ({{currency}})', {
-                            currency: currencyLabel,
-                          })}
+                          {t('Window Quota')} ({currencyLabel})
                         </FormLabel>
                         <FormControl>
                           <Input
@@ -660,9 +658,7 @@ export function ApiKeysMutateDrawer({
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>
-                          {t('Cycle Quota ({{currency}})', {
-                            currency: currencyLabel,
-                          })}
+                          {t('Cycle Quota')} ({currencyLabel})
                         </FormLabel>
                         <FormControl>
                           <Input

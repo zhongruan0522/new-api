@@ -81,9 +81,9 @@ export function useSubscriptionsColumns(): ColumnDef<PlanRecord>[] {
       },
       {
         id: 'duration',
-        meta: { label: t('Validity') },
+        meta: { label: t('Validity Period') },
         header: ({ column }) => (
-          <DataTableColumnHeader column={column} title={t('Validity')} />
+          <DataTableColumnHeader column={column} title={t('Validity Period')} />
         ),
         cell: ({ row }) => (
           <span className='text-muted-foreground'>

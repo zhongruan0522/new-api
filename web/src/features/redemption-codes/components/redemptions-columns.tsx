@@ -247,7 +247,7 @@ export function useRedemptionsColumns(): ColumnDef<Redemption>[] {
             <TooltipContent>
               <div className='space-y-1 text-xs'>
                 <div>
-                  {t('User ID:')} {userId}
+                  {t('labelWithColon', { label: t('User ID') })} {userId}
                 </div>
                 {redemption.redeemed_time > 0 && (
                   <div>

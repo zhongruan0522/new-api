@@ -26,7 +26,7 @@ import type {
   ProcessedUserChartData,
 } from '@/features/dashboard/types'
 
-type TFunction = (key: string) => string
+type TFunction = (key: string, options?: Record<string, unknown>) => string
 type TooltipLineItem = {
   key: string
   value: string | number
@@ -163,7 +163,7 @@ export function processChartData(
       }
 
       array.unshift({
-        key: tt('Total:'),
+        key: tt('labelWithColon', { label: tt('Total') }),
         value: formatQuotaValue(sum),
       })
       return array
@@ -660,7 +660,7 @@ export function processChartData(
               array[i].value = formatInt(v)
             }
             array.unshift({
-              key: tt('Total:'),
+              key: tt('labelWithColon', { label: tt('Total') }),
               value: formatInt(sum),
             })
             return array
@@ -863,7 +863,7 @@ export function processUserChartData(
       title: {
         visible: true,
         text: tt('User Consumption Ranking'),
-        subtext: `${tt('Total:')} ${formatVal(totalQuota)}`,
+        subtext: `${tt('labelWithColon', { label: tt('Total') })} ${formatVal(totalQuota)}`,
       },
       legends: { visible: false },
       bar: {
@@ -919,7 +919,7 @@ export function processUserChartData(
       title: {
         visible: true,
         text: tt('User Consumption Trend'),
-        subtext: `${tt('Total:')} ${formatVal(totalQuota)}`,
+        subtext: `${tt('labelWithColon', { label: tt('Total') })} ${formatVal(totalQuota)}`,
       },
       legends: { visible: true, selectMode: 'single' },
       axes: [
@@ -966,7 +966,7 @@ export function processUserChartData(
               array[i].value = formatVal(v)
             }
             array.unshift({
-              key: tt('Total:'),
+              key: tt('labelWithColon', { label: tt('Total') }),
               value: formatVal(sum),
             })
             return array

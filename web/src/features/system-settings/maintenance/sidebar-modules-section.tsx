@@ -150,7 +150,7 @@ export function SidebarModulesSection({
         description: t('Manage catalog visibility and pricing.'),
       },
       redemption: {
-        title: t('Redeem codes'),
+        title: t('Redemption Codes'),
         description: t('Create and review invite or credit codes.'),
       },
       user: {

@@ -114,7 +114,7 @@ const typeOptions = [
   },
   {
     value: 'ongoing',
-    label: 'Ongoing',
+    label: 'In Progress',
     color: 'bg-blue-500',
     badgeVariant: 'info' as const,
   },

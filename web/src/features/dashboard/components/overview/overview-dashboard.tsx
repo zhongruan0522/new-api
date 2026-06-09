@@ -545,7 +545,7 @@ export function OverviewDashboard() {
       },
       {
         label: t('Auth configured'),
-        value: preferredKey ? t('Secured') : t('Needs API key'),
+        value: preferredKey ? t('Secured') : t('API Key Required'),
         icon: ShieldCheck,
       },
       {

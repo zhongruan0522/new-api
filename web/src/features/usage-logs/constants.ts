@@ -89,7 +89,7 @@ export const TIME_RANGE_PRESETS = [
  */
 export const LOG_TYPES = [
   { value: 0, label: 'Unknown', color: 'default' },
-  { value: 1, label: 'Top-up', color: 'cyan' },
+  { value: 1, label: 'Recharge', color: 'cyan' },
   { value: 2, label: 'Consume', color: 'green' },
   { value: 3, label: 'Manage', color: 'orange' },
   { value: 4, label: 'System', color: 'purple' },

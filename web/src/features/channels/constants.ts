@@ -193,7 +193,7 @@ export const AUTO_BAN_OPTIONS = [
 export const ERROR_MESSAGES = {
   REQUIRED_NAME: 'Channel name is required',
   REQUIRED_TYPE: 'Channel type is required',
-  REQUIRED_KEY: 'API key is required',
+  REQUIRED_KEY: 'API Key Required',
   REQUIRED_MODELS: 'Models are required',
   REQUIRED_GROUP: 'Group is required',
   INVALID_JSON: 'Invalid JSON format',

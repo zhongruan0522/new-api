@@ -58,7 +58,7 @@ export function CompactDateTimeRangePicker({
   const [draftEnd, setDraftEnd] = useState(toInputValue(end))
 
   const label = useMemo(() => {
-    if (!start && !end) return t('Date Range')
+    if (!start && !end) return t('Time Range')
     // The popover's <input type="datetime-local"> only supports minute
     // precision, so seconds are always 00 (manual pick) or 59 (preset
     // end-of-day). Hide them in the trigger label to keep the button

@@ -46,7 +46,7 @@ export function StepNavigation({
       <div className='flex justify-end gap-2 sm:justify-start'>
         {!isFirstStep && (
           <Button type='button' variant='outline' onClick={onBack}>
-            {t('Back')}
+            {t('Go Back')}
           </Button>
         )}
       </div>

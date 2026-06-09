@@ -78,7 +78,7 @@ const OP_LABELS: Record<string, string> = {
   '>=': '≥',
 }
 const TIME_FUNC_LABELS: Record<string, string> = {
-  hour: 'Hour',
+  hour: 'Hours',
   minute: 'Minute',
   weekday: 'Weekday',
   month: 'Month',
