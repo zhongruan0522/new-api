@@ -19,6 +19,7 @@ const (
 	BatchUpdateTypeRequestCount
 	BatchUpdateTypeWindowQuota
 	BatchUpdateTypeCycleQuota
+	BatchUpdateTypeTokenUsedQuota
 	BatchUpdateTypeCount // if you add a new type, you need to add a new map and a new lock
 )
 
@@ -102,6 +103,11 @@ func batchUpdate() {
 				err := increaseCycleQuota(key, value)
 				if err != nil {
 					common.SysLog("failed to batch update cycle quota: " + err.Error())
+				}
+			case BatchUpdateTypeTokenUsedQuota:
+				err := updateTokenUsedQuota(key, value)
+				if err != nil {
+					common.SysLog("failed to batch update token used quota: " + err.Error())
 				}
 			}
 		}

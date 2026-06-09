@@ -558,6 +558,33 @@ func decreaseTokenQuota(id int, quota int) (err error) {
 	return err
 }
 
+func UpdateTokenUsedQuota(id int, key string, delta int) error {
+	if delta == 0 {
+		return nil
+	}
+	if common.RedisEnabled {
+		gopool.Go(func() {
+			if cacheErr := cacheIncrTokenUsedQuota(key, int64(delta)); cacheErr != nil {
+				common.SysLog("failed to update token used quota: " + cacheErr.Error())
+			}
+		})
+	}
+	if common.BatchUpdateEnabled {
+		addNewRecord(BatchUpdateTypeTokenUsedQuota, id, delta)
+		return nil
+	}
+	return updateTokenUsedQuota(id, delta)
+}
+
+func updateTokenUsedQuota(id int, delta int) error {
+	return DB.Model(&Token{}).Where("id = ?", id).Updates(
+		map[string]interface{}{
+			"used_quota":    gorm.Expr("used_quota + ?", delta),
+			"accessed_time": common.GetTimestamp(),
+		},
+	).Error
+}
+
 // IncreaseWindowQuota 增加窗口已用额度（退还额度时使用）
 func IncreaseWindowQuota(id int, key string, quota int) (err error) {
 	if quota < 0 {

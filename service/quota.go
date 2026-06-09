@@ -534,9 +534,9 @@ func PreConsumeTokenQuota(relayInfo *relaycommon.RelayInfo, quota int) error {
 
 	quotaType := relayInfo.TokenQuotaType
 
-	// 无限额度模式不预扣
+	// 无限额度模式只记录已用额度，不扣减剩余额度
 	if quotaType == 0 {
-		return nil
+		return model.UpdateTokenUsedQuota(relayInfo.TokenId, relayInfo.TokenKey, quota)
 	}
 
 	// 永久限额模式：检查 TokenQuota（即 RemainQuota）
@@ -599,7 +599,8 @@ func PostConsumeQuota(relayInfo *relaycommon.RelayInfo, quota int, preConsumedQu
 	quotaType := relayInfo.TokenQuotaType
 	if quota > 0 {
 		switch quotaType {
-		case 0: // 无限额度，不扣
+		case 0: // 无限额度，只记录已用额度
+			err = model.UpdateTokenUsedQuota(relayInfo.TokenId, relayInfo.TokenKey, quota)
 		case 2:
 			err = model.DecreaseWindowQuota(relayInfo.TokenId, relayInfo.TokenKey, quota)
 		case 3:
@@ -616,7 +617,8 @@ func PostConsumeQuota(relayInfo *relaycommon.RelayInfo, quota int, preConsumedQu
 		}
 	} else {
 		switch quotaType {
-		case 0: // 无限额度，不退还
+		case 0: // 无限额度，只回滚已用额度
+			err = model.UpdateTokenUsedQuota(relayInfo.TokenId, relayInfo.TokenKey, quota)
 		case 2:
 			err = model.IncreaseWindowQuota(relayInfo.TokenId, relayInfo.TokenKey, -quota)
 		case 3:
