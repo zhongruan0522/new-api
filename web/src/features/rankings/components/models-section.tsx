@@ -20,10 +20,8 @@ import { useMemo } from 'react'
 import { VChart } from '@visactor/react-vchart'
 import { BarChart3, Trophy } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { useThemeRadiusPx } from '@/lib/theme-radius'
 import { useChartTheme } from '@/lib/use-chart-theme'
 import { VCHART_OPTION } from '@/lib/vchart'
-import { useThemeCustomization } from '@/context/theme-customization-provider'
 import { formatTokens } from '../lib/format'
 import type { ModelHistorySeries, ModelRanking, RankingPeriod } from '../types'
 import { ModelLeaderboard } from './model-leaderboard'
@@ -52,11 +50,6 @@ type ModelsSectionProps = {
 export function ModelsSection(props: ModelsSectionProps) {
   const { t } = useTranslation()
   const { resolvedTheme, themeReady } = useChartTheme()
-  const { customization } = useThemeCustomization()
-  const barRadius = useThemeRadiusPx(
-    '--radius-sm',
-    `${customization.preset}:${customization.radius}`
-  )
 
   // Order points so the largest model appears at the bottom of every stack.
   const orderedPoints = useMemo(() => {
@@ -85,7 +78,7 @@ export function ModelsSection(props: ModelsSectionProps) {
       seriesField: 'model',
       stack: true,
       bar: {
-        style: barRadius == null ? {} : { cornerRadius: barRadius },
+        style: { cornerRadius: 0 },
       },
       legends: { visible: false },
       axes: [
@@ -159,7 +152,7 @@ export function ModelsSection(props: ModelsSectionProps) {
       },
       animationAppear: { duration: 500 },
     }
-  }, [barRadius, orderedPoints, t])
+  }, [orderedPoints, t])
 
   return (
     <section className='bg-card overflow-hidden rounded-lg border'>
