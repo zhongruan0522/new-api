@@ -44,7 +44,7 @@ function UsageLogsContent() {
   return (
     <>
       <SectionPageLayout>
-        <SectionPageLayout.Title>{t('Common Logs')}</SectionPageLayout.Title>
+        <SectionPageLayout.Title>{t('Usage Logs')}</SectionPageLayout.Title>
         <SectionPageLayout.Content>
           <div className='space-y-4'>
             <UsageLogsTable logCategory='common' />
