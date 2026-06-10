@@ -222,6 +222,44 @@ export function DataTableRowActions<TData>({
         </TooltipContent>
       </Tooltip>
 
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <Button
+              variant='ghost'
+              size='icon-sm'
+              onClick={() => {
+                setCurrentRow(apiKey)
+                setOpen('update')
+              }}
+              aria-label={t('Edit')}
+            />
+          }
+        >
+          <Edit className='size-4' />
+        </TooltipTrigger>
+        <TooltipContent>{t('Edit')}</TooltipContent>
+      </Tooltip>
+
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <Button
+              variant='ghost'
+              size='icon-sm'
+              onClick={() => {
+                setCurrentRow(apiKey)
+                setOpen('reset-key')
+              }}
+              aria-label={t('Reset Key')}
+            />
+          }
+        >
+          <RotateCcw className='size-4' />
+        </TooltipTrigger>
+        <TooltipContent>{t('Reset Key')}</TooltipContent>
+      </Tooltip>
+
       <DropdownMenu modal={false} onOpenChange={handleMenuOpenChange}>
         <DropdownMenuTrigger
           render={
@@ -267,17 +305,6 @@ export function DataTableRowActions<TData>({
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem
-            onClick={() => {
-              setCurrentRow(apiKey)
-              setOpen('update')
-            }}
-          >
-            {t('Edit')}
-            <DropdownMenuShortcut>
-              <Edit size={16} />
-            </DropdownMenuShortcut>
-          </DropdownMenuItem>
-          <DropdownMenuItem
             onClick={async () => {
               const realKey = await resolveRealKey(apiKey.id)
               if (!realKey) return
@@ -289,17 +316,6 @@ export function DataTableRowActions<TData>({
             {t('CC Switch')}
             <DropdownMenuShortcut>
               <ArrowRightLeft size={16} />
-            </DropdownMenuShortcut>
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            onClick={() => {
-              setCurrentRow(apiKey)
-              setOpen('reset-key')
-            }}
-          >
-            {t('Reset Key')}
-            <DropdownMenuShortcut>
-              <RotateCcw size={16} />
             </DropdownMenuShortcut>
           </DropdownMenuItem>
           {hasChatPresets && (
