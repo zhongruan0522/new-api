@@ -248,9 +248,12 @@ export function ApiKeyCell({ apiKey }: { apiKey: ApiKey }) {
       toast.info(t('API key is loading, please try again in a moment'))
       return
     }
-    if (realKey) {
-      const ok = await copyToClipboard(realKey)
-      if (ok) markKeyCopied(apiKey.id)
+    const ok = await copyToClipboard(realKey)
+    if (ok) {
+      markKeyCopied(apiKey.id)
+      toast.success(t('Copied'))
+    } else {
+      toast.error(t('Copy failed'))
     }
   }, [resolvedFullKey, resolveRealKey, apiKey.id, markKeyCopied, t])
 
