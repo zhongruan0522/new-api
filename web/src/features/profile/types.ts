@@ -110,8 +110,6 @@ export interface UserSettings {
   gotify_token?: string
   /** Gotify message priority (0-10) */
   gotify_priority?: number
-  /** Record IP log */
-  record_ip_log?: boolean
   /** Preferred interface/API response language */
   language?: string
 }
@@ -138,7 +136,6 @@ export interface UpdateUserSettingsRequest {
   gotify_url?: string
   gotify_token?: string
   gotify_priority?: number
-  record_ip_log?: boolean
 }
 
 /**
