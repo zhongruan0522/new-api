@@ -40,6 +40,8 @@ export type PricingModel = {
   data_retention_days?: number | null
   training_opt_out?: boolean | null
   quota_type: number
+  /** Whether the model has a configured price/ratio (false = unpriced) */
+  available: boolean
   model_ratio: number
   completion_ratio: number
   model_price?: number

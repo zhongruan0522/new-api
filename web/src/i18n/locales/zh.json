@@ -941,6 +941,7 @@
     "Duration Unit": "有效期单位",
     "Duration Value": "有效期数值",
     "Dynamic Pricing": "动态计费",
+    "Unpriced": "未标价",
     "e.g. 401, 403, 429, 500-599": "例如 401、403、429、500-599",
     "e.g. Basic Plan": "例如：基础套餐",
     "e.g. Clean tool parameters to avoid upstream validation errors": "例如：清理工具参数，避免上游校验错误",

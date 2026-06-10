@@ -253,6 +253,16 @@ export function usePricingColumns(
         const hasContextPricing =
           contextPricing?.enabled && (contextPricing.tiers?.length ?? 0) > 1
 
+        if (!model.available) {
+          return (
+            <div className='min-w-[100px]'>
+              <span className='text-muted-foreground/60 text-sm italic'>
+                {t('Unpriced')}
+              </span>
+            </div>
+          )
+        }
+
         if (isTokenBased && hasContextPricing) {
           return (
             <div className='min-w-[200px]'>

@@ -29,6 +29,7 @@ type Pricing struct {
 	ReleaseDate            string                      `json:"release_date,omitempty"`
 	ParameterCount         string                      `json:"parameter_count,omitempty"`
 	QuotaType              int                         `json:"quota_type"`
+	Available              bool                        `json:"available"`
 	ModelRatio             float64                     `json:"model_ratio"`
 	ModelPrice             float64                     `json:"model_price"`
 	OwnerBy                string                      `json:"owner_by"`
@@ -315,11 +316,13 @@ func updatePricing() {
 		if findPrice {
 			pricing.ModelPrice = modelPrice
 			pricing.QuotaType = 1
+			pricing.Available = true
 		} else {
-			modelRatio, _, _ := ratio_setting.GetModelRatio(model)
+			modelRatio, success, _ := ratio_setting.GetModelRatio(model)
 			pricing.ModelRatio = modelRatio
 			pricing.CompletionRatio = ratio_setting.GetCompletionRatio(model)
 			pricing.QuotaType = 0
+			pricing.Available = success
 		}
 		// 额外倍率：仅在显式配置（含内置默认映射）时写入；避免把兜底默认值(如 1/1.25)暴露给前端
 		if v, ok := ratio_setting.GetCacheRatio(model); ok {
@@ -339,6 +342,7 @@ func updatePricing() {
 		if cfg, ok := ratio_setting.GetContextPricingConfig(model); ok && cfg.Enabled && len(cfg.Tiers) > 0 {
 			pricing.ContextPricing = &cfg
 			pricing.QuotaType = 0
+			pricing.Available = true
 			if result, _, err := ratio_setting.MatchContextPricingTier(model, cfg.Tiers[0].MinTokens); err == nil && result != nil {
 				pricing.ModelPrice = 0
 				pricing.ModelRatio = result.Prices.ModelRatio

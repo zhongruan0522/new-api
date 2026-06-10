@@ -320,6 +320,16 @@ function PriceSection(props: {
     { label: t('Input'), type: 'input' },
     { label: t('Output'), type: 'output' },
   ]
+
+  if (!props.model.available) {
+    return (
+      <section>
+        <SectionTitle>{t('Base Price')}</SectionTitle>
+        <p className='text-muted-foreground/60 italic'>{t('Unpriced')}</p>
+      </section>
+    )
+  }
+
   const secondaryPriceTypes: {
     label: string
     type: PriceType
@@ -583,6 +593,15 @@ function GroupPricingSection(props: {
       types.push({ label: t('Audio Output'), type: 'audio_output' })
     return types
   }, [props.model, t])
+
+  if (!props.model.available) {
+    return (
+      <section>
+        <SectionTitle>{t('Pricing by Group')}</SectionTitle>
+        <p className='text-muted-foreground/60 italic'>{t('Unpriced')}</p>
+      </section>
+    )
+  }
 
   if (availableGroups.length === 0) {
     return (
