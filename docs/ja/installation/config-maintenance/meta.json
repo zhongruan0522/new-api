@@ -1,5 +1,0 @@
-{
-  "title": "設定とメンテナンス",
-  "icon": "Settings",
-  "pages": ["system-update", "environment-variables", "docker-compose-yml"]
-}

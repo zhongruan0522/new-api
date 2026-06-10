@@ -1,7 +1,0 @@
-{
-  "title": "APIリファレンス",
-  "description": "New API の完全なインターフェースドキュメント",
-  "icon": "Code",
-  "root": true,
-  "pages": ["index", "ai-model", "management"]
-}
