@@ -192,10 +192,14 @@ export function LogsFilterToolbar<TData>(props: LogsFilterToolbarProps<TData>) {
         props.className
       )}
     >
-      <div className='grid grid-cols-1 gap-2 sm:grid-cols-[repeat(auto-fit,minmax(10rem,1fr))]'>
+      <div className='grid grid-cols-1 gap-2 sm:grid-cols-5'>
         {props.primaryFilters}
-        {advancedOpen && props.advancedFilters}
       </div>
+      {advancedOpen && (
+        <div className='mt-2 grid grid-cols-1 gap-2 sm:grid-cols-5'>
+          {props.advancedFilters}
+        </div>
+      )}
 
       <div className='mt-2 flex flex-wrap items-center gap-2'>
         {props.stats}
