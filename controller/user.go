@@ -672,6 +672,8 @@ func CreateUser(c *gin.Context) {
 type ManageRequest struct {
 	Id     int    `json:"id"`
 	Action string `json:"action"`
+	Mode   string `json:"mode,omitempty"`   // add, subtract, override (for add_quota)
+	Value  int    `json:"value,omitempty"`   // quota value in quota units (for add_quota)
 }
 
 // ManageUser Only admin user can do this
@@ -738,6 +740,47 @@ func ManageUser(c *gin.Context) {
 			return
 		}
 		user.Role = common.RoleCommonUser
+	case "add_quota":
+		if req.Value < 0 {
+			common.ApiErrorI18n(c, i18n.MsgInvalidParams)
+			return
+		}
+		originQuota := user.Quota
+		switch req.Mode {
+		case "add":
+			if err := model.IncreaseUserQuota(user.Id, req.Value, true); err != nil {
+				common.ApiError(c, err)
+				return
+			}
+			user.Quota = originQuota + req.Value
+		case "subtract":
+			if req.Value > user.Quota {
+				common.ApiErrorI18n(c, i18n.MsgInvalidParams)
+				return
+			}
+			if err := model.DecreaseUserQuota(user.Id, req.Value); err != nil {
+				common.ApiError(c, err)
+				return
+			}
+			user.Quota = originQuota - req.Value
+		case "override":
+			if err := model.DB.Model(&model.User{}).Where("id = ?", user.Id).Update("quota", req.Value).Error; err != nil {
+				common.ApiError(c, err)
+				return
+			}
+			user.Quota = req.Value
+		default:
+			common.ApiErrorI18n(c, i18n.MsgInvalidParams)
+			return
+		}
+		model.RecordLog(user.Id, model.LogTypeManage, fmt.Sprintf("管理员调整用户额度从 %s 到 %s", logger.LogQuota(originQuota), logger.LogQuota(user.Quota)))
+		invalidateSecuritySensitiveUserCaches(user.Id)
+		c.JSON(http.StatusOK, gin.H{
+			"success": true,
+			"message": "",
+			"data":    user,
+		})
+		return
 	}
 
 	if err := user.Update(false); err != nil {
