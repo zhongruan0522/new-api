@@ -35,7 +35,7 @@ func TestMatchDynamicRatio_BasicGroupOnly(t *testing.T) {
 	rules := []DynamicRatioRule{
 		{Id: 1, Enable: true, Group: "vip", Ratio: 2.0, Priority: 0},
 	}
-	ratio := matchDynamicRatio(toParsedRules(rules), "vip", 0, time.Now())
+	ratio := matchDynamicRatio(toParsedRules(rules), "vip", "gpt-4", 0, time.Now())
 	if ratio != 2.0 {
 		t.Errorf("expected 2.0, got %f", ratio)
 	}
@@ -46,7 +46,7 @@ func TestMatchDynamicRatio_GroupNotMatch(t *testing.T) {
 	rules := []DynamicRatioRule{
 		{Id: 1, Enable: true, Group: "vip", Ratio: 2.0, Priority: 0},
 	}
-	ratio := matchDynamicRatio(toParsedRules(rules), "default", 0, time.Now())
+	ratio := matchDynamicRatio(toParsedRules(rules), "default", "gpt-4", 0, time.Now())
 	if ratio != 0 {
 		t.Errorf("expected 0 (no match), got %f", ratio)
 	}
@@ -57,7 +57,7 @@ func TestMatchDynamicRatio_ConcurrencyMatch(t *testing.T) {
 	rules := []DynamicRatioRule{
 		{Id: 1, Enable: true, Group: "vip", Concurrency: int64Ptr(10), Ratio: 1.5, Priority: 0},
 	}
-	ratio := matchDynamicRatio(toParsedRules(rules), "vip", 15, time.Now())
+	ratio := matchDynamicRatio(toParsedRules(rules), "vip", "gpt-4", 15, time.Now())
 	if ratio != 1.5 {
 		t.Errorf("expected 1.5, got %f", ratio)
 	}
@@ -68,7 +68,7 @@ func TestMatchDynamicRatio_ConcurrencyEqual(t *testing.T) {
 	rules := []DynamicRatioRule{
 		{Id: 1, Enable: true, Group: "vip", Concurrency: int64Ptr(10), Ratio: 1.5, Priority: 0},
 	}
-	ratio := matchDynamicRatio(toParsedRules(rules), "vip", 10, time.Now())
+	ratio := matchDynamicRatio(toParsedRules(rules), "vip", "gpt-4", 10, time.Now())
 	if ratio != 0 {
 		t.Errorf("expected 0 (concurrency = threshold, strict >), got %f", ratio)
 	}
@@ -79,7 +79,7 @@ func TestMatchDynamicRatio_ConcurrencyBelow(t *testing.T) {
 	rules := []DynamicRatioRule{
 		{Id: 1, Enable: true, Group: "vip", Concurrency: int64Ptr(10), Ratio: 1.5, Priority: 0},
 	}
-	ratio := matchDynamicRatio(toParsedRules(rules), "vip", 5, time.Now())
+	ratio := matchDynamicRatio(toParsedRules(rules), "vip", "gpt-4", 5, time.Now())
 	if ratio != 0 {
 		t.Errorf("expected 0 (concurrency < threshold), got %f", ratio)
 	}
@@ -92,7 +92,7 @@ func TestMatchDynamicRatio_WeekdayMatch(t *testing.T) {
 	}
 	// Wednesday = 3
 	now := makeTime(10, 0, time.Wednesday)
-	ratio := matchDynamicRatio(toParsedRules(rules), "vip", 0, now)
+	ratio := matchDynamicRatio(toParsedRules(rules), "vip", "gpt-4", 0, now)
 	if ratio != 1.5 {
 		t.Errorf("expected 1.5, got %f", ratio)
 	}
@@ -105,7 +105,7 @@ func TestMatchDynamicRatio_WeekdayNotMatch(t *testing.T) {
 	}
 	// Sunday = 0
 	now := makeTime(10, 0, time.Sunday)
-	ratio := matchDynamicRatio(toParsedRules(rules), "vip", 0, now)
+	ratio := matchDynamicRatio(toParsedRules(rules), "vip", "gpt-4", 0, now)
 	if ratio != 0 {
 		t.Errorf("expected 0 (Sunday not in weekdays), got %f", ratio)
 	}
@@ -116,7 +116,7 @@ func TestMatchDynamicRatio_EmptyWeekdaysMatchesEveryDay(t *testing.T) {
 		{Id: 1, Enable: true, Group: "vip", Weekdays: "[]", Ratio: 1.5, Priority: 0},
 	}
 
-	ratio := matchDynamicRatio(toParsedRules(rules), "vip", 0, makeTime(10, 0, time.Sunday))
+	ratio := matchDynamicRatio(toParsedRules(rules), "vip", "gpt-4", 0, makeTime(10, 0, time.Sunday))
 	if ratio != 1.5 {
 		t.Errorf("expected 1.5 for empty weekdays, got %f", ratio)
 	}
@@ -128,7 +128,7 @@ func TestMatchDynamicRatio_TimeMatch(t *testing.T) {
 		{Id: 1, Enable: true, Group: "vip", StartTime: "09:00", EndTime: "18:00", Ratio: 1.5, Priority: 0},
 	}
 	now := makeTime(12, 30, time.Wednesday)
-	ratio := matchDynamicRatio(toParsedRules(rules), "vip", 0, now)
+	ratio := matchDynamicRatio(toParsedRules(rules), "vip", "gpt-4", 0, now)
 	if ratio != 1.5 {
 		t.Errorf("expected 1.5, got %f", ratio)
 	}
@@ -144,7 +144,7 @@ func TestMatchDynamicRatio_EqualTimeRangeMatchesAllDay(t *testing.T) {
 		makeTime(12, 30, time.Wednesday),
 		makeTime(23, 59, time.Sunday),
 	} {
-		ratio := matchDynamicRatio(toParsedRules(rules), "vip", 0, now)
+		ratio := matchDynamicRatio(toParsedRules(rules), "vip", "gpt-4", 0, now)
 		if ratio != 1.5 {
 			t.Errorf("expected 1.5 for all-day range at %s, got %f", now.Format("15:04"), ratio)
 		}
@@ -157,7 +157,7 @@ func TestMatchDynamicRatio_TimeNotMatch(t *testing.T) {
 		{Id: 1, Enable: true, Group: "vip", StartTime: "09:00", EndTime: "18:00", Ratio: 1.5, Priority: 0},
 	}
 	now := makeTime(20, 0, time.Wednesday)
-	ratio := matchDynamicRatio(toParsedRules(rules), "vip", 0, now)
+	ratio := matchDynamicRatio(toParsedRules(rules), "vip", "gpt-4", 0, now)
 	if ratio != 0 {
 		t.Errorf("expected 0 (outside time range), got %f", ratio)
 	}
@@ -169,7 +169,7 @@ func TestMatchDynamicRatio_CrossDayMatch1(t *testing.T) {
 		{Id: 1, Enable: true, Group: "vip", StartTime: "22:00", EndTime: "06:00", Ratio: 2.0, Priority: 0},
 	}
 	now := makeTime(23, 0, time.Wednesday)
-	ratio := matchDynamicRatio(toParsedRules(rules), "vip", 0, now)
+	ratio := matchDynamicRatio(toParsedRules(rules), "vip", "gpt-4", 0, now)
 	if ratio != 2.0 {
 		t.Errorf("expected 2.0 (23:00 in 22:00-06:00), got %f", ratio)
 	}
@@ -181,7 +181,7 @@ func TestMatchDynamicRatio_CrossDayMatch2(t *testing.T) {
 		{Id: 1, Enable: true, Group: "vip", StartTime: "22:00", EndTime: "06:00", Ratio: 2.0, Priority: 0},
 	}
 	now := makeTime(3, 0, time.Wednesday)
-	ratio := matchDynamicRatio(toParsedRules(rules), "vip", 0, now)
+	ratio := matchDynamicRatio(toParsedRules(rules), "vip", "gpt-4", 0, now)
 	if ratio != 2.0 {
 		t.Errorf("expected 2.0 (03:00 in 22:00-06:00), got %f", ratio)
 	}
@@ -193,7 +193,7 @@ func TestMatchDynamicRatio_CrossDayNotMatch(t *testing.T) {
 		{Id: 1, Enable: true, Group: "vip", StartTime: "22:00", EndTime: "06:00", Ratio: 2.0, Priority: 0},
 	}
 	now := makeTime(12, 0, time.Wednesday)
-	ratio := matchDynamicRatio(toParsedRules(rules), "vip", 0, now)
+	ratio := matchDynamicRatio(toParsedRules(rules), "vip", "gpt-4", 0, now)
 	if ratio != 0 {
 		t.Errorf("expected 0 (12:00 not in 22:00-06:00), got %f", ratio)
 	}
@@ -204,7 +204,7 @@ func TestMatchDynamicRatio_CrossDayUsesPreviousWeekdayAfterMidnight(t *testing.T
 		{Id: 1, Enable: true, Group: "vip", Weekdays: "[1]", StartTime: "22:00", EndTime: "06:00", Ratio: 2.0, Priority: 0},
 	}
 
-	ratio := matchDynamicRatio(toParsedRules(rules), "vip", 0, makeTime(3, 0, time.Tuesday))
+	ratio := matchDynamicRatio(toParsedRules(rules), "vip", "gpt-4", 0, makeTime(3, 0, time.Tuesday))
 	if ratio != 2.0 {
 		t.Errorf("expected 2.0 for Tuesday 03:00 matching Monday overnight rule, got %f", ratio)
 	}
@@ -221,12 +221,12 @@ func TestMatchDynamicRatio_UsesNowLocation(t *testing.T) {
 	}
 	instant := time.Date(2026, 5, 18, 0, 30, 0, 0, time.UTC)
 
-	ratio := matchDynamicRatio(toParsedRules(rules), "vip", 0, instant.In(shanghai))
+	ratio := matchDynamicRatio(toParsedRules(rules), "vip", "gpt-4", 0, instant.In(shanghai))
 	if ratio != 2.0 {
 		t.Errorf("expected 2.0 for Asia/Shanghai 08:30 Monday, got %f", ratio)
 	}
 
-	ratio = matchDynamicRatio(toParsedRules(rules), "vip", 0, instant)
+	ratio = matchDynamicRatio(toParsedRules(rules), "vip", "gpt-4", 0, instant)
 	if ratio != 0 {
 		t.Errorf("expected 0 for UTC 00:30 Monday outside 08:00-09:00, got %f", ratio)
 	}
@@ -238,7 +238,7 @@ func TestMatchDynamicRatio_CompositeAllMatch(t *testing.T) {
 		{Id: 1, Enable: true, Group: "vip", Concurrency: int64Ptr(10), Weekdays: "[1,2,3,4,5]", StartTime: "09:00", EndTime: "18:00", Ratio: 2.5, Priority: 0},
 	}
 	now := makeTime(10, 0, time.Wednesday) // Wednesday=3, 10:00
-	ratio := matchDynamicRatio(toParsedRules(rules), "vip", 15, now)
+	ratio := matchDynamicRatio(toParsedRules(rules), "vip", "gpt-4", 15, now)
 	if ratio != 2.5 {
 		t.Errorf("expected 2.5, got %f", ratio)
 	}
@@ -250,7 +250,7 @@ func TestMatchDynamicRatio_CompositePartialFail(t *testing.T) {
 		{Id: 1, Enable: true, Group: "vip", Concurrency: int64Ptr(10), Weekdays: "[1,2,3,4,5]", StartTime: "09:00", EndTime: "18:00", Ratio: 2.5, Priority: 0},
 	}
 	now := makeTime(10, 0, time.Wednesday)
-	ratio := matchDynamicRatio(toParsedRules(rules), "vip", 5, now) // concurrency too low
+	ratio := matchDynamicRatio(toParsedRules(rules), "vip", "gpt-4", 5, now) // concurrency too low
 	if ratio != 0 {
 		t.Errorf("expected 0 (concurrency not met), got %f", ratio)
 	}
@@ -262,7 +262,7 @@ func TestMatchDynamicRatio_ConcurrencyPriority(t *testing.T) {
 		{Id: 1, Enable: true, Group: "vip", Ratio: 1.5, Priority: 0},
 		{Id: 2, Enable: true, Group: "vip", Concurrency: int64Ptr(10), Ratio: 2.0, Priority: 10},
 	}
-	ratio := matchDynamicRatio(toParsedRules(rules), "vip", 15, time.Now())
+	ratio := matchDynamicRatio(toParsedRules(rules), "vip", "gpt-4", 15, time.Now())
 	if ratio != 2.0 {
 		t.Errorf("expected 2.0 (concurrency rule wins), got %f", ratio)
 	}
@@ -275,7 +275,7 @@ func TestMatchDynamicRatio_ConcurrencyGapMin(t *testing.T) {
 		{Id: 2, Enable: true, Group: "vip", Concurrency: int64Ptr(15), Ratio: 2.0, Priority: 0}, // gap = 5
 		{Id: 3, Enable: true, Group: "vip", Concurrency: int64Ptr(10), Ratio: 3.0, Priority: 0}, // gap = 10
 	}
-	ratio := matchDynamicRatio(toParsedRules(rules), "vip", 20, time.Now())
+	ratio := matchDynamicRatio(toParsedRules(rules), "vip", "gpt-4", 20, time.Now())
 	if ratio != 2.0 {
 		t.Errorf("expected 2.0 (gap=5 is smallest), got %f", ratio)
 	}
@@ -287,7 +287,7 @@ func TestMatchDynamicRatio_PriorityTieBreak(t *testing.T) {
 		{Id: 1, Enable: true, Group: "vip", Concurrency: int64Ptr(10), Ratio: 1.5, Priority: 5},
 		{Id: 2, Enable: true, Group: "vip", Concurrency: int64Ptr(10), Ratio: 2.0, Priority: 2},
 	}
-	ratio := matchDynamicRatio(toParsedRules(rules), "vip", 15, time.Now())
+	ratio := matchDynamicRatio(toParsedRules(rules), "vip", "gpt-4", 15, time.Now())
 	if ratio != 2.0 {
 		t.Errorf("expected 2.0 (priority 2 < 5), got %f", ratio)
 	}
@@ -299,7 +299,7 @@ func TestMatchDynamicRatio_IdTieBreak(t *testing.T) {
 		{Id: 5, Enable: true, Group: "vip", Concurrency: int64Ptr(10), Ratio: 1.5, Priority: 0},
 		{Id: 3, Enable: true, Group: "vip", Concurrency: int64Ptr(10), Ratio: 2.0, Priority: 0},
 	}
-	ratio := matchDynamicRatio(toParsedRules(rules), "vip", 15, time.Now())
+	ratio := matchDynamicRatio(toParsedRules(rules), "vip", "gpt-4", 15, time.Now())
 	if ratio != 2.0 {
 		t.Errorf("expected 2.0 (id 3 < 5), got %f", ratio)
 	}
@@ -310,7 +310,7 @@ func TestMatchDynamicRatio_DisabledRule(t *testing.T) {
 	rules := []DynamicRatioRule{
 		{Id: 1, Enable: false, Group: "vip", Ratio: 2.0, Priority: 0},
 	}
-	ratio := matchDynamicRatio(toParsedRules(rules), "vip", 0, time.Now())
+	ratio := matchDynamicRatio(toParsedRules(rules), "vip", "gpt-4", 0, time.Now())
 	if ratio != 0 {
 		t.Errorf("expected 0 (disabled rule), got %f", ratio)
 	}
@@ -321,7 +321,7 @@ func TestMatchDynamicRatio_NoMatch(t *testing.T) {
 	rules := []DynamicRatioRule{
 		{Id: 1, Enable: true, Group: "vip", Concurrency: int64Ptr(100), Ratio: 2.0, Priority: 0},
 	}
-	ratio := matchDynamicRatio(toParsedRules(rules), "default", 0, time.Now())
+	ratio := matchDynamicRatio(toParsedRules(rules), "default", "gpt-4", 0, time.Now())
 	if ratio != 0 {
 		t.Errorf("expected 0 (no matching rules), got %f", ratio)
 	}
@@ -333,7 +333,7 @@ func TestGetMatchedDynamicRatio_Disabled(t *testing.T) {
 	SetDynamicRatioRulesForTest([]DynamicRatioRule{
 		{Id: 1, Enable: true, Group: "vip", Ratio: 2.0, Priority: 0},
 	})
-	ratio := GetMatchedDynamicRatio("vip")
+	ratio := GetMatchedDynamicRatio("vip", "gpt-4")
 	if ratio != 0 {
 		t.Errorf("expected 0 (global disabled), got %f", ratio)
 	}
@@ -345,7 +345,7 @@ func TestGetMatchedDynamicRatio_Enabled(t *testing.T) {
 	SetDynamicRatioRulesForTest([]DynamicRatioRule{
 		{Id: 1, Enable: true, Group: "vip", Ratio: 2.0, Priority: 0},
 	})
-	ratio := GetMatchedDynamicRatio("vip")
+	ratio := GetMatchedDynamicRatio("vip", "gpt-4")
 	if ratio != 2.0 {
 		t.Errorf("expected 2.0 (global enabled), got %f", ratio)
 	}
@@ -381,7 +381,7 @@ func TestMatchDynamicRatio_NoConcurrencyPriority(t *testing.T) {
 		{Id: 1, Enable: true, Group: "vip", Ratio: 1.5, Priority: 5},
 		{Id: 2, Enable: true, Group: "vip", Ratio: 2.0, Priority: 2},
 	}
-	ratio := matchDynamicRatio(toParsedRules(rules), "vip", 0, time.Now())
+	ratio := matchDynamicRatio(toParsedRules(rules), "vip", "gpt-4", 0, time.Now())
 	if ratio != 2.0 {
 		t.Errorf("expected 2.0 (priority 2 < 5), got %f", ratio)
 	}
@@ -393,7 +393,7 @@ func TestMatchDynamicRatio_TimeBoundaryStart(t *testing.T) {
 		{Id: 1, Enable: true, Group: "vip", StartTime: "09:00", EndTime: "18:00", Ratio: 1.5, Priority: 0},
 	}
 	now := makeTime(9, 0, time.Wednesday)
-	ratio := matchDynamicRatio(toParsedRules(rules), "vip", 0, now)
+	ratio := matchDynamicRatio(toParsedRules(rules), "vip", "gpt-4", 0, now)
 	if ratio != 1.5 {
 		t.Errorf("expected 1.5 (at start time), got %f", ratio)
 	}
@@ -405,7 +405,7 @@ func TestMatchDynamicRatio_TimeBoundaryEnd(t *testing.T) {
 		{Id: 1, Enable: true, Group: "vip", StartTime: "09:00", EndTime: "18:00", Ratio: 1.5, Priority: 0},
 	}
 	now := makeTime(18, 0, time.Wednesday)
-	ratio := matchDynamicRatio(toParsedRules(rules), "vip", 0, now)
+	ratio := matchDynamicRatio(toParsedRules(rules), "vip", "gpt-4", 0, now)
 	if ratio != 0 {
 		t.Errorf("expected 0 (at end time, exclusive), got %f", ratio)
 	}
@@ -422,5 +422,192 @@ func TestDynamicRatioRuleValidateRequiresTimeRangePair(t *testing.T) {
 	err := rule.Validate()
 	if err == nil {
 		t.Fatal("expected missing end time to fail validation")
+	}
+}
+
+// --- 模型匹配测试 ---
+
+// 测试：规则无模型限制时匹配所有模型
+func TestMatchDynamicRatio_NoModelsMatchesAll(t *testing.T) {
+	rules := []DynamicRatioRule{
+		{Id: 1, Enable: true, Group: "vip", Ratio: 2.0, Priority: 0},
+	}
+	for _, model := range []string{"gpt-4", "claude-3-opus", "gemini-pro", ""} {
+		ratio := matchDynamicRatio(toParsedRules(rules), "vip", model, 0, time.Now())
+		if ratio != 2.0 {
+			t.Errorf("expected 2.0 for model %q (no model filter), got %f", model, ratio)
+		}
+	}
+}
+
+// 测试：精确模型匹配
+func TestMatchDynamicRatio_ExactModelMatch(t *testing.T) {
+	rules := []DynamicRatioRule{
+		{Id: 1, Enable: true, Group: "vip", Models: `["gpt-4","claude-3-opus"]`, Ratio: 2.0, Priority: 0},
+	}
+	ratio := matchDynamicRatio(toParsedRules(rules), "vip", "gpt-4", 0, time.Now())
+	if ratio != 2.0 {
+		t.Errorf("expected 2.0 for exact model match, got %f", ratio)
+	}
+}
+
+// 测试：模型不匹配
+func TestMatchDynamicRatio_ModelNotMatch(t *testing.T) {
+	rules := []DynamicRatioRule{
+		{Id: 1, Enable: true, Group: "vip", Models: `["gpt-4","claude-3-opus"]`, Ratio: 2.0, Priority: 0},
+	}
+	ratio := matchDynamicRatio(toParsedRules(rules), "vip", "gemini-pro", 0, time.Now())
+	if ratio != 0 {
+		t.Errorf("expected 0 for model not in list, got %f", ratio)
+	}
+}
+
+// 测试：前缀通配符匹配 gpt-4*
+func TestMatchDynamicRatio_WildcardPrefix(t *testing.T) {
+	rules := []DynamicRatioRule{
+		{Id: 1, Enable: true, Group: "vip", Models: `["gpt-4*"]`, Ratio: 2.0, Priority: 0},
+	}
+	for _, model := range []string{"gpt-4", "gpt-4o", "gpt-4-turbo", "gpt-4o-mini"} {
+		ratio := matchDynamicRatio(toParsedRules(rules), "vip", model, 0, time.Now())
+		if ratio != 2.0 {
+			t.Errorf("expected 2.0 for model %q matching gpt-4*, got %f", model, ratio)
+		}
+	}
+	// 不匹配的模型
+	ratio := matchDynamicRatio(toParsedRules(rules), "vip", "gpt-3.5-turbo", 0, time.Now())
+	if ratio != 0 {
+		t.Errorf("expected 0 for model gpt-3.5-turbo not matching gpt-4*, got %f", ratio)
+	}
+}
+
+// 测试：后缀通配符匹配 *-preview
+func TestMatchDynamicRatio_WildcardSuffix(t *testing.T) {
+	rules := []DynamicRatioRule{
+		{Id: 1, Enable: true, Group: "vip", Models: `["*-preview"]`, Ratio: 2.0, Priority: 0},
+	}
+	ratio := matchDynamicRatio(toParsedRules(rules), "vip", "gpt-4-preview", 0, time.Now())
+	if ratio != 2.0 {
+		t.Errorf("expected 2.0 for model matching *-preview, got %f", ratio)
+	}
+	ratio = matchDynamicRatio(toParsedRules(rules), "vip", "gpt-4", 0, time.Now())
+	if ratio != 0 {
+		t.Errorf("expected 0 for model not matching *-preview, got %f", ratio)
+	}
+}
+
+// 测试：全通配符 * 匹配所有模型
+func TestMatchDynamicRatio_WildcardAll(t *testing.T) {
+	rules := []DynamicRatioRule{
+		{Id: 1, Enable: true, Group: "vip", Models: `["*"]`, Ratio: 2.0, Priority: 0},
+	}
+	ratio := matchDynamicRatio(toParsedRules(rules), "vip", "anything", 0, time.Now())
+	if ratio != 2.0 {
+		t.Errorf("expected 2.0 for wildcard *, got %f", ratio)
+	}
+}
+
+// 测试：有模型条件的规则优先于无模型条件的规则
+func TestMatchDynamicRatio_ModelRulePriority(t *testing.T) {
+	rules := []DynamicRatioRule{
+		{Id: 1, Enable: true, Group: "vip", Ratio: 1.5, Priority: 0},
+		{Id: 2, Enable: true, Group: "vip", Models: `["gpt-4*"]`, Ratio: 2.5, Priority: 0},
+	}
+	// gpt-4o 应匹配有模型条件的规则
+	ratio := matchDynamicRatio(toParsedRules(rules), "vip", "gpt-4o", 0, time.Now())
+	if ratio != 2.5 {
+		t.Errorf("expected 2.5 (model-specific rule wins), got %f", ratio)
+	}
+	// claude 应匹配无模型条件的规则
+	ratio = matchDynamicRatio(toParsedRules(rules), "vip", "claude-3", 0, time.Now())
+	if ratio != 1.5 {
+		t.Errorf("expected 1.5 (fallback to no-model rule), got %f", ratio)
+	}
+}
+
+// 测试：空模型名不匹配有模型限制的规则
+func TestMatchDynamicRatio_EmptyModelWithModelsFilter(t *testing.T) {
+	rules := []DynamicRatioRule{
+		{Id: 1, Enable: true, Group: "vip", Models: `["gpt-4"]`, Ratio: 2.0, Priority: 0},
+	}
+	ratio := matchDynamicRatio(toParsedRules(rules), "vip", "", 0, time.Now())
+	if ratio != 0 {
+		t.Errorf("expected 0 for empty model name with model filter, got %f", ratio)
+	}
+}
+
+// 测试：混合多个模型模式
+func TestMatchDynamicRatio_MixedModelPatterns(t *testing.T) {
+	rules := []DynamicRatioRule{
+		{Id: 1, Enable: true, Group: "vip", Models: `["gpt-4*","claude-3-opus","*-preview"]`, Ratio: 2.0, Priority: 0},
+	}
+	for _, tc := range []struct {
+		model    string
+		expected float64
+	}{
+		{"gpt-4", 2.0},
+		{"gpt-4o-mini", 2.0},
+		{"claude-3-opus", 2.0},
+		{"my-model-preview", 2.0},
+		{"claude-3-sonnet", 0},
+		{"gemini-pro", 0},
+	} {
+		ratio := matchDynamicRatio(toParsedRules(rules), "vip", tc.model, 0, time.Now())
+		if ratio != tc.expected {
+			t.Errorf("model %q: expected %f, got %f", tc.model, tc.expected, ratio)
+		}
+	}
+}
+
+// 测试：Validate 拒绝无效的 Models JSON
+func TestDynamicRatioRuleValidateInvalidModelsJson(t *testing.T) {
+	rule := DynamicRatioRule{
+		Enable: true,
+		Group:  "default",
+		Models: "not-json",
+		Ratio:  1.5,
+	}
+	err := rule.Validate()
+	if err == nil {
+		t.Fatal("expected invalid models JSON to fail validation")
+	}
+}
+
+// 测试：Validate 拒绝 Models 中有空字符串
+func TestDynamicRatioRuleValidateEmptyModelName(t *testing.T) {
+	rule := DynamicRatioRule{
+		Enable: true,
+		Group:  "default",
+		Models: `["gpt-4", ""]`,
+		Ratio:  1.5,
+	}
+	err := rule.Validate()
+	if err == nil {
+		t.Fatal("expected empty model name to fail validation")
+	}
+}
+
+// 测试：matchModelPattern
+func TestMatchModelPattern(t *testing.T) {
+	tests := []struct {
+		model    string
+		pattern  string
+		expected bool
+	}{
+		{"gpt-4", "gpt-4", true},
+		{"gpt-4o", "gpt-4", false},
+		{"gpt-4o", "gpt-4*", true},
+		{"gpt-4-turbo", "gpt-4*", true},
+		{"gpt-3.5-turbo", "gpt-4*", false},
+		{"my-model-preview", "*-preview", true},
+		{"my-model", "*-preview", false},
+		{"anything", "*", true},
+		{"", "gpt-4", false},
+		{"", "*", false},
+	}
+	for _, tc := range tests {
+		result := matchModelPattern(tc.model, tc.pattern)
+		if result != tc.expected {
+			t.Errorf("matchModelPattern(%q, %q) = %v, want %v", tc.model, tc.pattern, result, tc.expected)
+		}
 	}
 }

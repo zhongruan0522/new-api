@@ -45,7 +45,7 @@ func HandleGroupRatio(ctx *gin.Context, relayInfo *relaycommon.RelayInfo) types.
 
 	// 叠加动态倍率
 	originalGroupRatio := groupRatioInfo.GroupRatio
-	dynamicRatio := model.GetMatchedDynamicRatio(relayInfo.UsingGroup)
+	dynamicRatio := model.GetMatchedDynamicRatio(relayInfo.UsingGroup, relayInfo.OriginModelName)
 	if dynamicRatio > 0 {
 		groupRatioInfo.GroupRatio = originalGroupRatio * dynamicRatio
 		groupRatioInfo.DynamicRatio = dynamicRatio

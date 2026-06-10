@@ -87,6 +87,7 @@ import type { DynamicRatioRule, DynamicRatioRulePayload } from './types'
 
 type RuleFormState = {
   group: string
+  models: string
   concurrency: string
   weekdays: number[]
   start_time: string
@@ -98,6 +99,7 @@ type RuleFormState = {
 
 const DEFAULT_FORM: RuleFormState = {
   group: '',
+  models: '',
   concurrency: '',
   weekdays: [],
   start_time: '',
@@ -132,11 +134,12 @@ function ruleToForm(rule: DynamicRatioRule | null): RuleFormState {
     if (!Array.isArray(parsed)) {
       throw new Error('Invalid weekday data')
     }
-    weekdays = parsed.map((day) => Number(day))
+    weekdays = parsed.map((day: unknown) => Number(day))
   }
 
   return {
     group: rule.group,
+    models: rule.models || '',
     concurrency: rule.concurrency == null ? '' : String(rule.concurrency),
     weekdays,
     start_time: rule.start_time || '',
@@ -154,6 +157,18 @@ function buildPayload(form: RuleFormState): DynamicRatioRulePayload {
   const ratio = Number(form.ratio)
   if (!Number.isFinite(ratio) || ratio <= 0) {
     throw new Error('Ratio must be greater than 0')
+  }
+
+  const modelsText = form.models.trim()
+  let models = ''
+  if (modelsText) {
+    const modelList = modelsText
+      .split(',')
+      .map((m) => m.trim())
+      .filter((m) => m.length > 0)
+    if (modelList.length > 0) {
+      models = JSON.stringify(modelList)
+    }
   }
 
   const concurrencyText = form.concurrency.trim()
@@ -181,6 +196,7 @@ function buildPayload(form: RuleFormState): DynamicRatioRulePayload {
 
   return {
     group,
+    models,
     concurrency,
     weekdays: form.weekdays.length > 0 ? JSON.stringify(form.weekdays) : '',
     start_time: startTime,
@@ -207,6 +223,17 @@ function getRatioVariant(ratio: number) {
   if (ratio > 3) return 'destructive'
   if (ratio > 1.5) return 'secondary'
   return 'outline'
+}
+
+function formatModels(value: string, allModelsLabel: string): string {
+  if (!value) return allModelsLabel
+  try {
+    const parsed = JSON.parse(value) as unknown
+    if (!Array.isArray(parsed) || parsed.length === 0) return allModelsLabel
+    return parsed.join(', ')
+  } catch {
+    return value || allModelsLabel
+  }
 }
 
 export function DynamicRatio() {
@@ -420,31 +447,32 @@ export function DynamicRatio() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className='w-16'>{t('Enabled')}</TableHead>
-                      <TableHead>{t('Group')}</TableHead>
-                      <TableHead>{t('Concurrency')}</TableHead>
-                      <TableHead>{t('Weekdays')}</TableHead>
-                      <TableHead>{t('Time Range')}</TableHead>
-                      <TableHead>{t('Ratio')}</TableHead>
-                      <TableHead>{t('Priority')}</TableHead>
-                      <TableHead className='w-40 text-right'>
-                        {t('Actions')}
-                      </TableHead>
-                    </TableRow>
+                       <TableHead className='w-16'>{t('Enabled')}</TableHead>
+                       <TableHead>{t('Group')}</TableHead>
+                       <TableHead>{t('Models')}</TableHead>
+                       <TableHead>{t('Concurrency')}</TableHead>
+                       <TableHead>{t('Weekdays')}</TableHead>
+                       <TableHead>{t('Time Range')}</TableHead>
+                       <TableHead>{t('Ratio')}</TableHead>
+                       <TableHead>{t('Priority')}</TableHead>
+                       <TableHead className='w-40 text-right'>
+                         {t('Actions')}
+                       </TableHead>
+                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {rulesQuery.isLoading ? (
-                      <TableRow>
-                        <TableCell colSpan={8} className='h-24 text-center'>
-                          {t('Loading...')}
-                        </TableCell>
-                      </TableRow>
-                    ) : rules.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={8} className='h-24 text-center'>
-                          {t('No dynamic ratio rules')}
-                        </TableCell>
-                      </TableRow>
+                       <TableRow>
+                         <TableCell colSpan={9} className='h-24 text-center'>
+                           {t('Loading...')}
+                         </TableCell>
+                       </TableRow>
+                     ) : rules.length === 0 ? (
+                       <TableRow>
+                         <TableCell colSpan={9} className='h-24 text-center'>
+                           {t('No dynamic ratio rules')}
+                         </TableCell>
+                       </TableRow>
                     ) : (
                       rules.map((rule, index) => (
                         <TableRow key={rule.id}>
@@ -462,8 +490,11 @@ export function DynamicRatio() {
                             />
                           </TableCell>
                           <TableCell>
-                            <Badge variant='outline'>{rule.group}</Badge>
-                          </TableCell>
+                             <Badge variant='outline'>{rule.group}</Badge>
+                           </TableCell>
+                           <TableCell className='max-w-48 truncate'>
+                             {formatModels(rule.models, t('All Models'))}
+                           </TableCell>
                           <TableCell>
                             {rule.concurrency ? (
                               <Badge variant='secondary'>
@@ -555,30 +586,48 @@ export function DynamicRatio() {
           </DialogHeader>
           <div className='grid gap-4'>
             <div className='grid gap-1.5'>
-              <Label htmlFor='dynamic-ratio-group'>{t('Group')}</Label>
-              <Select
-                value={form.group || null}
-                onValueChange={(value) =>
-                  setForm((current) => ({
-                    ...current,
-                    group: value ?? '',
-                  }))
-                }
-              >
-                <SelectTrigger id='dynamic-ratio-group' className='w-full'>
-                  <SelectValue placeholder={t('Select a group')} />
-                </SelectTrigger>
-                <SelectContent alignItemWithTrigger={false}>
-                  <SelectGroup>
-                    {groups.map((group) => (
-                      <SelectItem key={group} value={group}>
-                        {group}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-            </div>
+               <Label htmlFor='dynamic-ratio-group'>{t('Group')}</Label>
+               <Select
+                 value={form.group || null}
+                 onValueChange={(value) =>
+                   setForm((current) => ({
+                     ...current,
+                     group: value ?? '',
+                   }))
+                 }
+               >
+                 <SelectTrigger id='dynamic-ratio-group' className='w-full'>
+                   <SelectValue placeholder={t('Select a group')} />
+                 </SelectTrigger>
+                 <SelectContent alignItemWithTrigger={false}>
+                   <SelectGroup>
+                     {groups.map((group) => (
+                       <SelectItem key={group} value={group}>
+                         {group}
+                       </SelectItem>
+                     ))}
+                   </SelectGroup>
+                 </SelectContent>
+               </Select>
+             </div>
+
+             <div className='grid gap-1.5'>
+               <Label htmlFor='dynamic-ratio-models'>{t('Models')}</Label>
+               <Input
+                 id='dynamic-ratio-models'
+                 value={form.models}
+                 placeholder={t('e.g. gpt-4*, claude-3-opus (empty = all)')}
+                 onChange={(event) =>
+                   setForm((current) => ({
+                     ...current,
+                     models: event.target.value,
+                   }))
+                 }
+               />
+               <p className='text-muted-foreground text-xs'>
+                 {t('Comma-separated, supports * wildcard. Leave empty for all models.')}
+               </p>
+             </div>
 
             <div className='grid gap-3 sm:grid-cols-2'>
               <div className='grid gap-1.5'>

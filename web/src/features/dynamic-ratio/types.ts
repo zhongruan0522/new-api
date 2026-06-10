@@ -27,6 +27,7 @@ export type DynamicRatioRule = {
   id: number
   enable: boolean
   group: string
+  models: string
   concurrency: number | null
   weekdays: string
   start_time: string
@@ -48,6 +49,7 @@ export type DynamicRatioStatus = {
 
 export type DynamicRatioSummary = {
   group: string
+  models: string
   concurrency: number | null
   weekdays: string
   start_time: string
@@ -60,6 +62,7 @@ export type DynamicRatioRulePayload = {
   id?: number
   enable: boolean
   group: string
+  models: string
   concurrency: number | null
   weekdays: string
   start_time: string

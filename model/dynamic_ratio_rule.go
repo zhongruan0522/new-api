@@ -17,6 +17,7 @@ type DynamicRatioRule struct {
 	Id          int64   `json:"id" gorm:"primaryKey"`
 	Enable      bool    `json:"enable" gorm:"default:true"`
 	Group       string  `json:"group" gorm:"not null;index"`
+	Models      string  `json:"models" gorm:"default:''"` // JSON 数组字符串，为空表示匹配所有模型
 	Concurrency *int64  `json:"concurrency" gorm:""`
 	Weekdays    string  `json:"weekdays" gorm:"default:''"`
 	StartTime   string  `json:"start_time" gorm:"default:''"`
@@ -38,6 +39,17 @@ func (r *DynamicRatioRule) Validate() error {
 	}
 	if !ratio_setting.ContainsGroupRatio(r.Group) {
 		return fmt.Errorf("分组 %s 不存在", r.Group)
+	}
+	if r.Models != "" {
+		var models []string
+		if err := common.UnmarshalJsonStr(r.Models, &models); err != nil {
+			return fmt.Errorf("模型列表格式错误，应为 JSON 字符串数组")
+		}
+		for _, m := range models {
+			if strings.TrimSpace(m) == "" {
+				return fmt.Errorf("模型名称不能为空")
+			}
+		}
 	}
 	if r.Ratio <= 0 {
 		return fmt.Errorf("倍率必须大于 0")
@@ -130,6 +142,7 @@ type DynamicRatioStatus struct {
 // DynamicRatioSummary 规则摘要
 type DynamicRatioSummary struct {
 	Group       string  `json:"group"`
+	Models      string  `json:"models"`
 	Concurrency *int64  `json:"concurrency"`
 	Weekdays    string  `json:"weekdays"`
 	StartTime   string  `json:"start_time"`
@@ -181,6 +194,7 @@ func GetDynamicRatioStatusForGroups(groups []string) DynamicRatioStatus {
 	for _, r := range groupRules {
 		status.Rules = append(status.Rules, DynamicRatioSummary{
 			Group:       r.Group,
+			Models:      r.Models,
 			Concurrency: r.Concurrency,
 			Weekdays:    r.Weekdays,
 			StartTime:   r.StartTime,
@@ -195,7 +209,7 @@ func GetDynamicRatioStatusForGroups(groups []string) DynamicRatioStatus {
 	now := common.NowInStartupTimezone()
 	hasActiveRatio := false
 	for _, group := range groups {
-		activeRatio := matchDynamicRatio(rules, group, concurrency, now)
+		activeRatio := matchDynamicRatio(rules, group, "", concurrency, now)
 		if activeRatio <= 0 {
 			continue
 		}
@@ -228,7 +242,7 @@ func normalizeDynamicRatioGroups(groups []string) []string {
 }
 
 // GetMatchedDynamicRatio 从缓存中匹配动态倍率，返回倍率值（0 表示未命中）
-func GetMatchedDynamicRatio(group string) float64 {
+func GetMatchedDynamicRatio(group string, modelName string) float64 {
 	if !common.DynamicRatioEnabled {
 		return 0
 	}
@@ -237,15 +251,16 @@ func GetMatchedDynamicRatio(group string) float64 {
 	rules := dynamicRatioRules
 	dynamicRatioCacheLock.RUnlock()
 
-	return matchDynamicRatio(rules, group, getActiveConnections(), common.NowInStartupTimezone())
+	return matchDynamicRatio(rules, group, modelName, getActiveConnections(), common.NowInStartupTimezone())
 }
 
 // matchDynamicRatio 核心匹配逻辑（纯函数，方便测试）
-func matchDynamicRatio(rules []parsedDynamicRatioRule, group string, concurrency int64, now time.Time) float64 {
+func matchDynamicRatio(rules []parsedDynamicRatioRule, group string, modelName string, concurrency int64, now time.Time) float64 {
 	type scoredRule struct {
 		rule           parsedDynamicRatioRule
 		hasConcurrency bool
 		concurrencyGap int64
+		hasModel       bool
 	}
 
 	var matched []scoredRule
@@ -257,6 +272,21 @@ func matchDynamicRatio(rules []parsedDynamicRatioRule, group string, concurrency
 		}
 		if r.Group != group {
 			continue
+		}
+
+		// 检查模型条件
+		modelMatched := false
+		if r.ParsedModels != nil {
+			// 规则指定了模型列表，需要匹配
+			for _, pattern := range r.ParsedModels {
+				if matchModelPattern(modelName, pattern) {
+					modelMatched = true
+					break
+				}
+			}
+			if !modelMatched {
+				continue
+			}
 		}
 
 		effectiveWeekday := int(now.Weekday())
@@ -307,6 +337,7 @@ func matchDynamicRatio(rules []parsedDynamicRatioRule, group string, concurrency
 		sr := scoredRule{
 			rule:           r,
 			hasConcurrency: r.Concurrency != nil,
+			hasModel:       r.ParsedModels != nil,
 		}
 		if r.Concurrency != nil {
 			sr.concurrencyGap = concurrency - *r.Concurrency
@@ -321,7 +352,12 @@ func matchDynamicRatio(rules []parsedDynamicRatioRule, group string, concurrency
 	// 优先级裁决
 	best := matched[0]
 	for _, m := range matched[1:] {
-		if m.hasConcurrency && !best.hasConcurrency {
+		// 有模型条件的规则优先于无模型条件的规则
+		if m.hasModel && !best.hasModel {
+			best = m
+		} else if !m.hasModel && best.hasModel {
+			continue
+		} else if m.hasConcurrency && !best.hasConcurrency {
 			best = m
 		} else if !m.hasConcurrency && best.hasConcurrency {
 			continue
@@ -346,6 +382,32 @@ func matchDynamicRatio(rules []parsedDynamicRatioRule, group string, concurrency
 	}
 
 	return best.rule.Ratio
+}
+
+// matchModelPattern 检查模型名是否匹配模式（支持 * 通配符）
+func matchModelPattern(modelName string, pattern string) bool {
+	if modelName == "" {
+		return false
+	}
+	pattern = strings.TrimSpace(pattern)
+	if pattern == "*" {
+		return true
+	}
+	// 精确匹配
+	if pattern == modelName {
+		return true
+	}
+	// 前缀通配符: gpt-4*
+	if strings.HasSuffix(pattern, "*") && !strings.Contains(pattern[:len(pattern)-1], "*") {
+		prefix := pattern[:len(pattern)-1]
+		return strings.HasPrefix(modelName, prefix)
+	}
+	// 后缀通配符: *-preview
+	if strings.HasPrefix(pattern, "*") && !strings.Contains(pattern[1:], "*") {
+		suffix := pattern[1:]
+		return strings.HasSuffix(modelName, suffix)
+	}
+	return false
 }
 
 // getActiveConnections 获取当前 relay 并发数
