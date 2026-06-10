@@ -190,6 +190,7 @@ export function ModelsTable() {
     },
     enableRowSelection: true,
     onRowSelectionChange: setRowSelection,
+    getRowId: (row) => String(row.id),
     onSortingChange: setSorting,
     onColumnFiltersChange,
     onColumnVisibilityChange: setColumnVisibility,

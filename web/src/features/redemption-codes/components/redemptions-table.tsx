@@ -123,6 +123,7 @@ export function RedemptionsTable() {
     },
     enableRowSelection: true,
     onRowSelectionChange: setRowSelection,
+    getRowId: (row) => String(row.id),
     onSortingChange: setSorting,
     onColumnVisibilityChange: setColumnVisibility,
     globalFilterFn: (row, _columnId, filterValue) => {

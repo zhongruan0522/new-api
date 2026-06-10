@@ -517,6 +517,7 @@ export function ChannelTestDialog({
       pagination,
     },
     enableRowSelection: true,
+    getRowId: (row) => row.model,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     onRowSelectionChange: setRowSelection,
