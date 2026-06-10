@@ -204,12 +204,12 @@ func GetDynamicRatioStatusForGroups(groups []string) DynamicRatioStatus {
 		})
 	}
 
-	// 计算当前生效倍率
+	// 计算当前生效倍率（状态概览不区分模型，展示所有匹配规则的最高倍率）
 	concurrency := getActiveConnections()
 	now := common.NowInStartupTimezone()
 	hasActiveRatio := false
 	for _, group := range groups {
-		activeRatio := matchDynamicRatio(rules, group, "", concurrency, now)
+		activeRatio := matchDynamicRatioIgnoreModel(rules, group, concurrency, now)
 		if activeRatio <= 0 {
 			continue
 		}
@@ -408,6 +408,106 @@ func matchModelPattern(modelName string, pattern string) bool {
 		return strings.HasSuffix(modelName, suffix)
 	}
 	return false
+}
+
+// matchDynamicRatioIgnoreModel 匹配动态倍率但忽略模型条件，用于状态概览
+func matchDynamicRatioIgnoreModel(rules []parsedDynamicRatioRule, group string, concurrency int64, now time.Time) float64 {
+	type scoredRule struct {
+		rule           parsedDynamicRatioRule
+		hasConcurrency bool
+		concurrencyGap int64
+	}
+
+	var matched []scoredRule
+	currentMinutes := now.Hour()*60 + now.Minute()
+
+	for _, r := range rules {
+		if !r.Enable {
+			continue
+		}
+		if r.Group != group {
+			continue
+		}
+
+		effectiveWeekday := int(now.Weekday())
+
+		if r.HasTimeRange {
+			startMinutes := r.ParsedStartMin
+			endMinutes := r.ParsedEndMin
+
+			if startMinutes <= endMinutes {
+				if currentMinutes < startMinutes || currentMinutes >= endMinutes {
+					continue
+				}
+			} else {
+				if currentMinutes < startMinutes && currentMinutes >= endMinutes {
+					continue
+				}
+				if currentMinutes < endMinutes {
+					effectiveWeekday = int(now.AddDate(0, 0, -1).Weekday())
+				}
+			}
+		}
+
+		if r.Concurrency != nil {
+			if concurrency <= *r.Concurrency {
+				continue
+			}
+		}
+
+		if r.ParsedWeekdays != nil {
+			found := false
+			for _, d := range r.ParsedWeekdays {
+				if d == effectiveWeekday {
+					found = true
+					break
+				}
+			}
+			if !found {
+				continue
+			}
+		}
+
+		sr := scoredRule{
+			rule:           r,
+			hasConcurrency: r.Concurrency != nil,
+		}
+		if r.Concurrency != nil {
+			sr.concurrencyGap = concurrency - *r.Concurrency
+		}
+		matched = append(matched, sr)
+	}
+
+	if len(matched) == 0 {
+		return 0
+	}
+
+	best := matched[0]
+	for _, m := range matched[1:] {
+		if m.hasConcurrency && !best.hasConcurrency {
+			best = m
+		} else if !m.hasConcurrency && best.hasConcurrency {
+			continue
+		} else if m.hasConcurrency && best.hasConcurrency {
+			if m.concurrencyGap < best.concurrencyGap {
+				best = m
+			} else if m.concurrencyGap == best.concurrencyGap {
+				if m.rule.Priority < best.rule.Priority {
+					best = m
+				} else if m.rule.Priority == best.rule.Priority && m.rule.Id < best.rule.Id {
+					best = m
+				}
+			}
+		} else {
+			if m.rule.Priority < best.rule.Priority {
+				best = m
+			} else if m.rule.Priority == best.rule.Priority && m.rule.Id < best.rule.Id {
+				best = m
+			}
+		}
+	}
+
+	return best.rule.Ratio
 }
 
 // getActiveConnections 获取当前 relay 并发数

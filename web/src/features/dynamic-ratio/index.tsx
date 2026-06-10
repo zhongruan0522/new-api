@@ -137,9 +137,22 @@ function ruleToForm(rule: DynamicRatioRule | null): RuleFormState {
     weekdays = parsed.map((day: unknown) => Number(day))
   }
 
+  // 将 JSON 数组解码为逗号分隔的文本
+  let models = ''
+  if (rule.models) {
+    try {
+      const parsed = JSON.parse(rule.models) as unknown
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        models = parsed.join(', ')
+      }
+    } catch {
+      models = rule.models
+    }
+  }
+
   return {
     group: rule.group,
-    models: rule.models || '',
+    models,
     concurrency: rule.concurrency == null ? '' : String(rule.concurrency),
     weekdays,
     start_time: rule.start_time || '',
