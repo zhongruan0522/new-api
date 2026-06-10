@@ -49,7 +49,6 @@ export type DynamicRatioStatus = {
 
 export type DynamicRatioSummary = {
   group: string
-  models: string
   concurrency: number | null
   weekdays: string
   start_time: string

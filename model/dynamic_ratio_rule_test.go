@@ -1,6 +1,7 @@
 package model
 
 import (
+	"strings"
 	"testing"
 	"time"
 
@@ -422,6 +423,29 @@ func TestDynamicRatioRuleValidateRequiresTimeRangePair(t *testing.T) {
 	err := rule.Validate()
 	if err == nil {
 		t.Fatal("expected missing end time to fail validation")
+	}
+}
+
+func TestDynamicRatioStatusDoesNotExposeRuleModels(t *testing.T) {
+	originalEnabled := common.DynamicRatioEnabled
+	common.DynamicRatioEnabled = true
+	t.Cleanup(func() {
+		common.DynamicRatioEnabled = originalEnabled
+		SetDynamicRatioRulesForTest(nil)
+	})
+
+	SetDynamicRatioRulesForTest([]DynamicRatioRule{
+		{Id: 1, Enable: true, Group: "default", Models: `["sensitive-model*"]`, Ratio: 2.0, Priority: 0},
+	})
+
+	status := GetDynamicRatioStatus("default")
+	payload, err := common.Marshal(status)
+	if err != nil {
+		t.Fatalf("marshal status: %v", err)
+	}
+
+	if strings.Contains(string(payload), "sensitive-model") || strings.Contains(string(payload), `"models"`) {
+		t.Fatalf("dynamic ratio status exposed model filters: %s", payload)
 	}
 }
 

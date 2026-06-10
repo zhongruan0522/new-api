@@ -142,7 +142,6 @@ type DynamicRatioStatus struct {
 // DynamicRatioSummary 规则摘要
 type DynamicRatioSummary struct {
 	Group       string  `json:"group"`
-	Models      string  `json:"models"`
 	Concurrency *int64  `json:"concurrency"`
 	Weekdays    string  `json:"weekdays"`
 	StartTime   string  `json:"start_time"`
@@ -194,7 +193,6 @@ func GetDynamicRatioStatusForGroups(groups []string) DynamicRatioStatus {
 	for _, r := range groupRules {
 		status.Rules = append(status.Rules, DynamicRatioSummary{
 			Group:       r.Group,
-			Models:      r.Models,
 			Concurrency: r.Concurrency,
 			Weekdays:    r.Weekdays,
 			StartTime:   r.StartTime,
