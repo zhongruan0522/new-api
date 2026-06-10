@@ -630,12 +630,12 @@ func ValidateAccessToken(authorization string) (user *User, err error) {
 		return nil, ErrTokenInvalid
 	}
 	user = &User{}
-	err = DB.Where("access_token = ? AND access_token <> ''", token).First(user).Error
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, ErrTokenInvalid
-		}
-		return nil, fmt.Errorf("%w: %v", ErrDatabase, err)
+	result := DB.Where("access_token = ? AND access_token <> ''", token).Limit(1).Find(user)
+	if result.Error != nil {
+		return nil, fmt.Errorf("%w: %v", ErrDatabase, result.Error)
+	}
+	if result.RowsAffected == 0 {
+		return nil, ErrTokenInvalid
 	}
 	user.AccessToken = nil
 	return user, nil
