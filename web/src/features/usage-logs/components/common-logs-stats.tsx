@@ -74,6 +74,18 @@ function buildStatsParams(
     start_timestamp: timestampToSeconds(searchParams.startTime, start),
     end_timestamp: timestampToSeconds(searchParams.endTime, end),
     group: searchParams.group ? String(searchParams.group) : undefined,
+    request_id: searchParams.requestId
+      ? String(searchParams.requestId)
+      : undefined,
+    upstream_request_id: searchParams.upstreamRequestId
+      ? String(searchParams.upstreamRequestId)
+      : undefined,
+    ip: searchParams.ip ? String(searchParams.ip) : undefined,
+    ua: searchParams.ua ? String(searchParams.ua) : undefined,
+    x_title: searchParams.xTitle ? String(searchParams.xTitle) : undefined,
+    http_referer: searchParams.httpReferer
+      ? String(searchParams.httpReferer)
+      : undefined,
     ...(isAdmin && searchParams.username
       ? { username: String(searchParams.username) }
       : {}),

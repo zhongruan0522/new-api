@@ -336,6 +336,10 @@ export interface GetLogStatsParams {
   group?: string
   request_id?: string
   upstream_request_id?: string
+  ip?: string
+  ua?: string
+  x_title?: string
+  http_referer?: string
 }
 
 export interface GetLogStatsResponse {
