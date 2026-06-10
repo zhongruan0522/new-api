@@ -94,6 +94,10 @@ export function CommonLogsFilterBar<TData>(
       username: searchParams.username || undefined,
       requestId: searchParams.requestId || undefined,
       upstreamRequestId: searchParams.upstreamRequestId || undefined,
+      ip: searchParams.ip || undefined,
+      ua: searchParams.ua || undefined,
+      xTitle: searchParams.xTitle || undefined,
+      httpReferer: searchParams.httpReferer || undefined,
     })
 
     const typeArr = searchParams.type
@@ -114,6 +118,10 @@ export function CommonLogsFilterBar<TData>(
     searchParams.username,
     searchParams.requestId,
     searchParams.upstreamRequestId,
+    searchParams.ip,
+    searchParams.ua,
+    searchParams.xTitle,
+    searchParams.httpReferer,
     searchParams.type,
   ])
 
@@ -173,9 +181,12 @@ export function CommonLogsFilterBar<TData>(
     !!filters.requestId ||
     !!filters.upstreamRequestId
 
+  const hasClientExpandedFilters =
+    !!filters.ip || !!filters.ua || !!filters.xTitle || !!filters.httpReferer
+
   const hasTypeFilter = logType !== LOG_TYPE_ALL_VALUE
   const hasAdditionalFilters =
-    !!filters.model || !!filters.group || hasTypeFilter || hasExpandedFilters
+    !!filters.model || !!filters.group || hasTypeFilter || hasExpandedFilters || hasClientExpandedFilters
 
   const expandedFilterCount = [
     filters.token,
@@ -183,6 +194,13 @@ export function CommonLogsFilterBar<TData>(
     isAdmin ? filters.channel : undefined,
     filters.requestId,
     filters.upstreamRequestId,
+  ].filter(Boolean).length
+
+  const clientFilterCount = [
+    filters.ip,
+    filters.ua,
+    filters.xTitle,
+    filters.httpReferer,
   ].filter(Boolean).length
   const sensitiveType = sensitiveVisible ? 'text' : 'password'
   const logTypeItems = useMemo(
@@ -336,6 +354,46 @@ export function CommonLogsFilterBar<TData>(
       </LogsFilterField>
     </>
   )
+  const clientFilters = (
+    <>
+      <LogsFilterField>
+        <LogsFilterInput
+          placeholder="IP"
+          autoComplete="off"
+          value={filters.ip || ''}
+          onChange={(e) => handleChange('ip', e.target.value)}
+          onKeyDown={handleKeyDown}
+        />
+      </LogsFilterField>
+      <LogsFilterField>
+        <LogsFilterInput
+          placeholder="User-Agent"
+          autoComplete="off"
+          value={filters.ua || ''}
+          onChange={(e) => handleChange('ua', e.target.value)}
+          onKeyDown={handleKeyDown}
+        />
+      </LogsFilterField>
+      <LogsFilterField>
+        <LogsFilterInput
+          placeholder="HTTP Title"
+          autoComplete="off"
+          value={filters.xTitle || ''}
+          onChange={(e) => handleChange('xTitle', e.target.value)}
+          onKeyDown={handleKeyDown}
+        />
+      </LogsFilterField>
+      <LogsFilterField>
+        <LogsFilterInput
+          placeholder="Referer"
+          autoComplete="off"
+          value={filters.httpReferer || ''}
+          onChange={(e) => handleChange('httpReferer', e.target.value)}
+          onKeyDown={handleKeyDown}
+        />
+      </LogsFilterField>
+    </>
+  )
 
   return (
     <LogsFilterToolbar
@@ -350,6 +408,7 @@ export function CommonLogsFilterBar<TData>(
         </>
       }
       advancedFilters={advancedFilters}
+      clientFilters={clientFilters}
       mobilePinnedFilters={dateRangeFilter}
       mobileFilters={
         <>
@@ -357,14 +416,18 @@ export function CommonLogsFilterBar<TData>(
           {groupFilter}
           {typeFilter}
           {advancedFilters}
+          {clientFilters}
         </>
       }
       mobileFilterCount={
         [filters.model, filters.group, hasTypeFilter].filter(Boolean).length +
-        expandedFilterCount
+        expandedFilterCount +
+        clientFilterCount
       }
       hasAdvancedActiveFilters={hasExpandedFilters}
       advancedFilterCount={expandedFilterCount}
+      hasClientActiveFilters={hasClientExpandedFilters}
+      clientFilterCount={clientFilterCount}
       hasActiveFilters={hasAdditionalFilters}
       onSearch={handleApply}
       searchLoading={fetchingLogs > 0}

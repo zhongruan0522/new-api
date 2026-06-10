@@ -215,6 +215,12 @@ export function buildApiParams(config: {
     ...(searchParams.upstreamRequestId
       ? { upstream_request_id: String(searchParams.upstreamRequestId) }
       : {}),
+    ...(searchParams.ip ? { ip: String(searchParams.ip) } : {}),
+    ...(searchParams.ua ? { ua: String(searchParams.ua) } : {}),
+    ...(searchParams.xTitle ? { x_title: String(searchParams.xTitle) } : {}),
+    ...(searchParams.httpReferer
+      ? { http_referer: String(searchParams.httpReferer) }
+      : {}),
     ...buildTimeRangeParams(searchParams, false),
   }
 
@@ -247,6 +253,18 @@ export function buildApiParams(config: {
           break
         case 'upstream_request_id':
           params.upstream_request_id = String(value)
+          break
+        case 'ip':
+          params.ip = String(value)
+          break
+        case 'ua':
+          params.ua = String(value)
+          break
+        case 'x_title':
+          params.x_title = String(value)
+          break
+        case 'http_referer':
+          params.http_referer = String(value)
           break
       }
     })

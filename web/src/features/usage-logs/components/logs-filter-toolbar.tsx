@@ -40,13 +40,16 @@ interface LogsFilterToolbarProps<TData> {
   table: Table<TData>
   primaryFilters: ReactNode
   advancedFilters?: ReactNode
+  clientFilters?: ReactNode
   mobilePinnedFilters?: ReactNode
   mobileFilters?: ReactNode
   mobileFilterCount?: number
   stats?: ReactNode
   hasActiveFilters: boolean
   hasAdvancedActiveFilters?: boolean
+  hasClientActiveFilters?: boolean
   advancedFilterCount?: number
+  clientFilterCount?: number
   searchLoading?: boolean
   onReset: () => void
   onSearch: () => void
@@ -85,13 +88,17 @@ export function LogsFilterInput(props: ComponentProps<typeof Input>) {
 export function LogsFilterToolbar<TData>(props: LogsFilterToolbarProps<TData>) {
   const { t } = useTranslation()
   const [advancedOpen, setAdvancedOpen] = useState(false)
+  const [clientOpen, setClientOpen] = useState(false)
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
   const isMobile = useMediaQuery('(max-width: 640px)')
 
   const hasAdvancedFilters = props.advancedFilters != null
+  const hasClientFilters = props.clientFilters != null
   const activeAdvancedCount =
     props.advancedFilterCount ?? (props.hasAdvancedActiveFilters ? 1 : 0)
-  const activeMobileFilterCount = props.mobileFilterCount ?? activeAdvancedCount
+  const activeClientCount =
+    props.clientFilterCount ?? (props.hasClientActiveFilters ? 1 : 0)
+  const activeMobileFilterCount = props.mobileFilterCount ?? activeAdvancedCount + activeClientCount
 
   const handleMobileReset = () => {
     props.onReset()
@@ -158,6 +165,7 @@ export function LogsFilterToolbar<TData>(props: LogsFilterToolbarProps<TData>) {
                 <>
                   {props.primaryFilters}
                   {props.advancedFilters}
+                  {props.clientFilters}
                 </>
               )}
             </div>
@@ -200,6 +208,11 @@ export function LogsFilterToolbar<TData>(props: LogsFilterToolbarProps<TData>) {
           {props.advancedFilters}
         </div>
       )}
+      {clientOpen && (
+        <div className='mt-2 grid grid-cols-1 gap-2 sm:grid-cols-4'>
+          {props.clientFilters}
+        </div>
+      )}
 
       <div className='mt-2 flex flex-wrap items-center gap-2'>
         {props.stats}
@@ -227,6 +240,33 @@ export function LogsFilterToolbar<TData>(props: LogsFilterToolbarProps<TData>) {
                 className={cn(
                   'size-3.5 transition-transform duration-200',
                   advancedOpen && 'rotate-180'
+                )}
+              />
+            </Button>
+          )}
+          {hasClientFilters && (
+            <Button
+              type='button'
+              variant='ghost'
+              onClick={() => setClientOpen((open) => !open)}
+              aria-expanded={clientOpen}
+              className={cn(
+                'text-muted-foreground hover:text-foreground gap-1 px-2',
+                props.hasClientActiveFilters &&
+                  !clientOpen &&
+                  'text-primary hover:text-primary'
+              )}
+            >
+              {clientOpen ? t('Collapse') : t('Client Info')}
+              {activeClientCount > 0 && (
+                <Badge className='ml-0.5 size-5 justify-center p-0 text-[10px]'>
+                  {activeClientCount}
+                </Badge>
+              )}
+              <ChevronDown
+                className={cn(
+                  'size-3.5 transition-transform duration-200',
+                  clientOpen && 'rotate-180'
                 )}
               />
             </Button>

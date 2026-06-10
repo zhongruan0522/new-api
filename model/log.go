@@ -342,7 +342,28 @@ func sanitizeConsumeLogHeaderValue(value string) string {
 	return value
 }
 
-func GetAllLogs(logType int, startTimestamp int64, endTimestamp int64, modelName string, username string, tokenName string, startIdx int, num int, channel int, group string, requestId string, upstreamRequestId string) (logs []*Log, total int64, err error) {
+// sanitizeLikeLiteral escapes SQL LIKE wildcards (% and _) and the ESCAPE
+// character (!) in a user-provided search term, following the project-wide
+// ESCAPE '!' convention (see sanitizeLikePattern in token.go).
+// Use this when wrapping user input with surrounding % wildcards for
+// substring matching.
+func sanitizeLikeLiteral(input string) string {
+	input = strings.ReplaceAll(input, "!", "!!")
+	input = strings.ReplaceAll(input, "_", "!_")
+	input = strings.ReplaceAll(input, "%", "!%")
+	return input
+}
+
+// sanitizeJSONLikeValue extends sanitizeLikeLiteral with backslash escaping
+// for LIKE patterns targeting the JSON-encoded `other` column, where JSON
+// stores `\` as `\\`.
+func sanitizeJSONLikeValue(input string) string {
+	input = sanitizeLikeLiteral(input)
+	input = strings.ReplaceAll(input, `\`, `!\\`)
+	return input
+}
+
+func GetAllLogs(logType int, startTimestamp int64, endTimestamp int64, modelName string, username string, tokenName string, startIdx int, num int, channel int, group string, requestId string, upstreamRequestId string, ip string, ua string, xTitle string, httpReferer string) (logs []*Log, total int64, err error) {
 	var tx *gorm.DB
 	if logType == LogTypeUnknown {
 		tx = LOG_DB
@@ -364,6 +385,18 @@ func GetAllLogs(logType int, startTimestamp int64, endTimestamp int64, modelName
 	}
 	if upstreamRequestId != "" {
 		tx = tx.Where("logs.upstream_request_id = ?", upstreamRequestId)
+	}
+	if ip != "" {
+		tx = tx.Where("logs.ip LIKE ? ESCAPE '!'", "%"+sanitizeLikeLiteral(ip)+"%")
+	}
+	if ua != "" {
+		tx = tx.Where("logs.other LIKE ? ESCAPE '!'", "%\"ua\":\"%"+sanitizeJSONLikeValue(ua)+"%")
+	}
+	if xTitle != "" {
+		tx = tx.Where("logs.other LIKE ? ESCAPE '!'", "%\"x_title\":\"%"+sanitizeJSONLikeValue(xTitle)+"%")
+	}
+	if httpReferer != "" {
+		tx = tx.Where("logs.other LIKE ? ESCAPE '!'", "%\"http_referer\":\"%"+sanitizeJSONLikeValue(httpReferer)+"%")
 	}
 	if startTimestamp != 0 {
 		tx = tx.Where("logs.created_at >= ?", startTimestamp)
@@ -417,7 +450,7 @@ func GetAllLogs(logType int, startTimestamp int64, endTimestamp int64, modelName
 
 const logSearchCountLimit = 10000
 
-func GetUserLogs(userId int, logType int, startTimestamp int64, endTimestamp int64, modelName string, tokenName string, startIdx int, num int, group string, requestId string, upstreamRequestId string) (logs []*Log, total int64, err error) {
+func GetUserLogs(userId int, logType int, startTimestamp int64, endTimestamp int64, modelName string, tokenName string, startIdx int, num int, group string, requestId string, upstreamRequestId string, ip string, ua string, xTitle string, httpReferer string) (logs []*Log, total int64, err error) {
 	var tx *gorm.DB
 	if logType == LogTypeUnknown {
 		tx = LOG_DB.Where("logs.user_id = ?", userId)
@@ -440,6 +473,18 @@ func GetUserLogs(userId int, logType int, startTimestamp int64, endTimestamp int
 	}
 	if upstreamRequestId != "" {
 		tx = tx.Where("logs.upstream_request_id = ?", upstreamRequestId)
+	}
+	if ip != "" {
+		tx = tx.Where("logs.ip LIKE ? ESCAPE '!'", "%"+sanitizeLikeLiteral(ip)+"%")
+	}
+	if ua != "" {
+		tx = tx.Where("logs.other LIKE ? ESCAPE '!'", "%\"ua\":\"%"+sanitizeJSONLikeValue(ua)+"%")
+	}
+	if xTitle != "" {
+		tx = tx.Where("logs.other LIKE ? ESCAPE '!'", "%\"x_title\":\"%"+sanitizeJSONLikeValue(xTitle)+"%")
+	}
+	if httpReferer != "" {
+		tx = tx.Where("logs.other LIKE ? ESCAPE '!'", "%\"http_referer\":\"%"+sanitizeJSONLikeValue(httpReferer)+"%")
 	}
 	if startTimestamp != 0 {
 		tx = tx.Where("logs.created_at >= ?", startTimestamp)
