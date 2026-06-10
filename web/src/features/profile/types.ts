@@ -110,8 +110,6 @@ export interface UserSettings {
   gotify_token?: string
   /** Gotify message priority (0-10) */
   gotify_priority?: number
-  /** Accept unset model ratio model */
-  accept_unset_model_ratio_model?: boolean
   /** Record IP log */
   record_ip_log?: boolean
   /** Preferred interface/API response language */
@@ -140,7 +138,6 @@ export interface UpdateUserSettingsRequest {
   gotify_url?: string
   gotify_token?: string
   gotify_priority?: number
-  accept_unset_model_ratio_model?: boolean
   record_ip_log?: boolean
 }
 

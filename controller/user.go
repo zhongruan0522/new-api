@@ -882,7 +882,6 @@ type UpdateUserSettingRequest struct {
 	GotifyUrl                  string  `json:"gotify_url,omitempty"`
 	GotifyToken                string  `json:"gotify_token,omitempty"`
 	GotifyPriority             int     `json:"gotify_priority,omitempty"`
-	AcceptUnsetModelRatioModel bool    `json:"accept_unset_model_ratio_model"`
 }
 
 func UpdateUserSetting(c *gin.Context) {
@@ -977,7 +976,6 @@ func UpdateUserSetting(c *gin.Context) {
 	settings := dto.UserSetting{
 		NotifyType:            req.QuotaWarningType,
 		QuotaWarningThreshold: req.QuotaWarningThreshold,
-		AcceptUnsetRatioModel: req.AcceptUnsetModelRatioModel,
 	}
 
 	// 如果是webhook类型,添加webhook相关设置
