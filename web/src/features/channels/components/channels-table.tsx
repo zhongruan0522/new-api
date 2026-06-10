@@ -298,7 +298,7 @@ export function ChannelsTable() {
     },
     enableRowSelection: (row: Row<Channel>) => !isTagAggregateRow(row.original),
     onRowSelectionChange: setRowSelection,
-    getRowId: (row) => String(row.id),
+    getRowId: (row) => isTagAggregateRow(row) ? `tag:${row.key}` : String(row.id),
     onSortingChange: handleSortingChange,
     onColumnFiltersChange,
     onColumnVisibilityChange: setColumnVisibility,
