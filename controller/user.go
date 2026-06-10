@@ -113,6 +113,12 @@ func setupLogin(user *model.User, c *gin.Context) {
 		common.ApiErrorI18n(c, i18n.MsgUserSessionSaveFailed)
 		return
 	}
+
+	// 登录成功后更新最后登录时间
+	if err := model.UpdateLastLoginAt(user.Id); err != nil {
+		common.SysError(fmt.Sprintf("failed to update last_login_at for user %d: %v", user.Id, err))
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"message": "",
 		"success": true,

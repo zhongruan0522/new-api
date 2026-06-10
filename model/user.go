@@ -44,6 +44,8 @@ type User struct {
 	StripeCustomer      string         `json:"stripe_customer" gorm:"type:varchar(64);column:stripe_customer;index"`
 	ImageConvertedCount int            `json:"image_converted_count" gorm:"type:int;default:0;column:image_converted_count"`
 	VideoConvertedCount int            `json:"video_converted_count" gorm:"type:int;default:0;column:video_converted_count"`
+	CreatedAt           int64          `json:"created_at" gorm:"bigint;index"`
+	LastLoginAt         int64          `json:"last_login_at" gorm:"bigint"`
 }
 
 func (user *User) ToBaseUser() *UserBase {
@@ -334,6 +336,7 @@ func (user *User) Insert(inviterId int) error {
 	user.Quota = common.QuotaForNewUser
 	//user.SetAccessToken(common.GetUUID())
 	user.AffCode = common.GetRandomString(4)
+	user.CreatedAt = common.GetTimestamp()
 
 	// 初始化用户设置，包括默认的边栏配置
 	if user.Setting == "" {
@@ -377,6 +380,7 @@ func (user *User) InsertWithTx(tx *gorm.DB, inviterId int) error {
 	}
 	user.Quota = common.QuotaForNewUser
 	user.AffCode = common.GetRandomString(4)
+	user.CreatedAt = common.GetTimestamp()
 
 	// 初始化用户设置
 	if user.Setting == "" {
@@ -908,6 +912,11 @@ func (user *User) FillUserByLinuxDOId() error {
 	}
 	err := DB.Where("linux_do_id = ?", user.LinuxDOId).First(user).Error
 	return err
+}
+
+// UpdateLastLoginAt updates the user's last login timestamp
+func UpdateLastLoginAt(id int) error {
+	return DB.Model(&User{}).Where("id = ?", id).Update("last_login_at", common.GetTimestamp()).Error
 }
 
 func RootUserExists() bool {
