@@ -191,15 +191,7 @@ func UpdateOption(c *gin.Context) {
 			return
 		}
 	case "SidebarModulesAdmin":
-		sanitized, _, err := model.SanitizeSidebarModulesConfigJSON(option.Value.(string))
-		if err != nil {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": "无效的参数",
-			})
-			return
-		}
-		option.Value = sanitized
+		// No additional validation needed; frontend manages the config.
 	case "console_setting.api_info":
 		err = console_setting.ValidateConsoleSettings(option.Value.(string), "ApiInfo")
 		if err != nil {

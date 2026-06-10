@@ -1,7 +1,6 @@
 package model
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 
@@ -31,25 +30,8 @@ func cleanupRemovedChatPlaygroundData() error {
 	}
 
 	// ---------------------------------------------------------------------
-	// 2) Sanitize global admin sidebar modules
+	// 2) (Historically sanitized SidebarModulesAdmin chat section — no longer needed)
 	// ---------------------------------------------------------------------
-	var sidebarAdmin Option
-	if err := DB.First(&sidebarAdmin, &Option{Key: "SidebarModulesAdmin"}).Error; err != nil {
-		if !errors.Is(err, gorm.ErrRecordNotFound) {
-			return err
-		}
-	} else {
-		sanitized, changed, err := SanitizeSidebarModulesConfigJSON(sidebarAdmin.Value)
-		if err != nil {
-			return err
-		}
-		if changed {
-			if err := DB.Model(&Option{}).Where(&Option{Key: sidebarAdmin.Key}).Update("value", sanitized).Error; err != nil {
-				return err
-			}
-			common.SysLog("cleaned option SidebarModulesAdmin: removed chat section")
-		}
-	}
 
 	// ---------------------------------------------------------------------
 	// 3) Remove per-user sidebar_modules from users.setting
@@ -114,26 +96,4 @@ func removeUserSettingSidebarModules(settingJSON string) (string, bool, error) {
 	return string(b), true, nil
 }
 
-func SanitizeSidebarModulesConfigJSON(configJSON string) (string, bool, error) {
-	configJSON = strings.TrimSpace(configJSON)
-	if configJSON == "" {
-		return configJSON, false, nil
-	}
 
-	var config map[string]any
-	if err := common.Unmarshal([]byte(configJSON), &config); err != nil {
-		// Invalid sidebar config: clear it so the frontend falls back to defaults.
-		return "", true, nil
-	}
-
-	if _, exists := config["chat"]; !exists {
-		return configJSON, false, nil
-	}
-	delete(config, "chat")
-
-	b, err := common.Marshal(config)
-	if err != nil {
-		return "", false, err
-	}
-	return string(b), true, nil
-}
