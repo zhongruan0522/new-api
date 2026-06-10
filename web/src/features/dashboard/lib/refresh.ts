@@ -16,7 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-const DEFAULT_DATA_DASHBOARD_REFRESH_MINUTES = 5
+const DEFAULT_DATA_DASHBOARD_REFRESH_MINUTES = 60
 
 function readRefreshIntervalMinutes(status: unknown): number {
   if (!status || typeof status !== 'object') {
