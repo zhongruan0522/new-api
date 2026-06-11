@@ -157,11 +157,13 @@ func GetAllUsers(pageInfo *common.PageInfo) (users []*User, total int64, err err
 }
 
 func SearchUsers(keyword string, group string, status string, startIdx int, num int) ([]*User, int64, error) {
+	return SearchUsersAdvanced(keyword, "", "", "", "", status, "", group, startIdx, num)
+}
+
+func SearchUsersAdvanced(username, displayName, email, linuxDoId, githubId, status, role, group string, startIdx, num int) ([]*User, int64, error) {
 	var users []*User
 	var total int64
-	var err error
 
-	// 开始事务
 	tx := DB.Begin()
 	if tx.Error != nil {
 		return nil, 0, tx.Error
@@ -172,36 +174,24 @@ func SearchUsers(keyword string, group string, status string, startIdx int, num 
 		}
 	}()
 
-	// 构建基础查询
 	query := tx.Unscoped().Model(&User{})
 
-	// 构建搜索条件
-	likeCondition := "username LIKE ? OR email LIKE ? OR display_name LIKE ?"
-
-	// 尝试将关键字转换为整数ID
-	keywordInt, err := strconv.Atoi(keyword)
-	if err == nil {
-		// 如果是数字，同时搜索ID和其他字段
-		likeCondition = "id = ? OR " + likeCondition
-		if group != "" {
-			query = query.Where("("+likeCondition+") AND "+commonGroupCol+" = ?",
-				keywordInt, "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%", group)
-		} else {
-			query = query.Where(likeCondition,
-				keywordInt, "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%")
-		}
-	} else {
-		// 非数字关键字，只搜索字符串字段
-		if group != "" {
-			query = query.Where("("+likeCondition+") AND "+commonGroupCol+" = ?",
-				"%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%", group)
-		} else {
-			query = query.Where(likeCondition,
-				"%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%")
-		}
+	if username != "" {
+		query = query.Where("username LIKE ?", "%"+username+"%")
+	}
+	if displayName != "" {
+		query = query.Where("display_name LIKE ?", "%"+displayName+"%")
+	}
+	if email != "" {
+		query = query.Where("email LIKE ?", "%"+email+"%")
+	}
+	if linuxDoId != "" {
+		query = query.Where("linux_do_id LIKE ?", "%"+linuxDoId+"%")
+	}
+	if githubId != "" {
+		query = query.Where("github_id LIKE ?", "%"+githubId+"%")
 	}
 
-	// 按状态筛选
 	switch status {
 	case "1":
 		query = query.Where("status = ? AND deleted_at IS NULL", common.UserStatusEnabled)
@@ -211,21 +201,28 @@ func SearchUsers(keyword string, group string, status string, startIdx int, num 
 		query = query.Where("deleted_at IS NOT NULL")
 	}
 
-	// 获取总数
-	err = query.Count(&total).Error
+	if role != "" {
+		if roleInt, err := strconv.Atoi(role); err == nil {
+			query = query.Where("role = ?", roleInt)
+		}
+	}
+
+	if group != "" {
+		query = query.Where(commonGroupCol+" = ?", group)
+	}
+
+	err := query.Count(&total).Error
 	if err != nil {
 		tx.Rollback()
 		return nil, 0, err
 	}
 
-	// 获取分页数据
 	err = query.Omit("password", "access_token").Order("id desc").Limit(num).Offset(startIdx).Find(&users).Error
 	if err != nil {
 		tx.Rollback()
 		return nil, 0, err
 	}
 
-	// 提交事务
 	if err = tx.Commit().Error; err != nil {
 		return nil, 0, err
 	}

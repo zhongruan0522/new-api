@@ -51,6 +51,11 @@ export async function searchUsers(
 ): Promise<GetUsersResponse> {
   const {
     keyword = '',
+    username = '',
+    display_name = '',
+    email = '',
+    linux_do_id = '',
+    github_id = '',
     group = '',
     role = '',
     status = '',
@@ -58,8 +63,13 @@ export async function searchUsers(
     page_size = 10,
   } = params
   const queryParams = new URLSearchParams()
-  queryParams.set('keyword', keyword)
-  queryParams.set('group', group)
+  if (keyword) queryParams.set('keyword', keyword)
+  if (username) queryParams.set('username', username)
+  if (display_name) queryParams.set('display_name', display_name)
+  if (email) queryParams.set('email', email)
+  if (linux_do_id) queryParams.set('linux_do_id', linux_do_id)
+  if (github_id) queryParams.set('github_id', github_id)
+  if (group) queryParams.set('group', group)
   if (role) queryParams.set('role', role)
   if (status) queryParams.set('status', status)
   queryParams.set('p', String(p))

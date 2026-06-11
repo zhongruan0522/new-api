@@ -266,10 +266,31 @@ func GetAllUsers(c *gin.Context) {
 
 func SearchUsers(c *gin.Context) {
 	keyword := c.Query("keyword")
+	username := c.Query("username")
+	displayName := c.Query("display_name")
+	email := c.Query("email")
+	linuxDoId := c.Query("linux_do_id")
+	githubId := c.Query("github_id")
 	group := c.Query("group")
 	status := c.Query("status")
+	role := c.Query("role")
 	pageInfo := common.GetPageQuery(c)
-	users, total, err := model.SearchUsers(keyword, group, status, pageInfo.GetStartIdx(), pageInfo.GetPageSize())
+
+	// 如果使用旧的 keyword 参数，保持向后兼容
+	if keyword != "" && username == "" && displayName == "" && email == "" {
+		users, total, err := model.SearchUsers(keyword, group, status, pageInfo.GetStartIdx(), pageInfo.GetPageSize())
+		if err != nil {
+			common.ApiError(c, err)
+			return
+		}
+		pageInfo.SetTotal(int(total))
+		pageInfo.SetItems(users)
+		common.ApiSuccess(c, pageInfo)
+		return
+	}
+
+	// 新的多字段搜索
+	users, total, err := model.SearchUsersAdvanced(username, displayName, email, linuxDoId, githubId, status, role, group, pageInfo.GetStartIdx(), pageInfo.GetPageSize())
 	if err != nil {
 		common.ApiError(c, err)
 		return

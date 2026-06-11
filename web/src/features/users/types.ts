@@ -91,6 +91,11 @@ export interface GetUsersResponse {
 
 export interface SearchUsersParams {
   keyword?: string
+  username?: string
+  display_name?: string
+  email?: string
+  linux_do_id?: string
+  github_id?: string
   group?: string
   role?: string
   status?: string

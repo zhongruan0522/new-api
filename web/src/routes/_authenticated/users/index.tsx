@@ -25,16 +25,13 @@ import { Users } from '@/features/users'
 const usersSearchSchema = z.object({
   page: z.number().optional().catch(1),
   pageSize: z.number().optional().catch(undefined),
-  filter: z.string().optional().catch(''),
-  status: z
-    .array(z.enum(['1', '2']))
-    .optional()
-    .catch([]),
-  role: z
-    .array(z.enum(['1', '10', '100']))
-    .optional()
-    .catch([]),
-  group: z.string().optional().catch(''),
+  username: z.string().optional().catch(''),
+  display_name: z.string().optional().catch(''),
+  email: z.string().optional().catch(''),
+  linux_do_id: z.string().optional().catch(''),
+  github_id: z.string().optional().catch(''),
+  status: z.string().optional().catch(''),
+  role: z.string().optional().catch(''),
 })
 
 export const Route = createFileRoute('/_authenticated/users/')({

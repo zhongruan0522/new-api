@@ -42,14 +42,13 @@ import {
 import { getUsers, searchUsers } from '../api'
 import {
   USER_STATUS,
-  getUserStatusOptions,
-  getUserRoleOptions,
   isUserDeleted,
 } from '../constants'
 import type { User } from '../types'
 import { DataTableBulkActions } from './data-table-bulk-actions'
 import { useUsersColumns } from './users-columns'
 import { useUsers } from './users-provider'
+import { UsersFilterBar } from './users-filter-bar'
 
 const route = getRouteApi('/_authenticated/users/')
 
@@ -66,11 +65,8 @@ export function UsersTable() {
   const [sorting, setSorting] = useState<SortingState>([])
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
 
+  const searchParams = route.useSearch()
   const {
-    globalFilter,
-    onGlobalFilterChange,
-    columnFilters,
-    onColumnFiltersChange,
     pagination,
     onPaginationChange,
     ensurePageInRange,
@@ -78,26 +74,15 @@ export function UsersTable() {
     search: route.useSearch(),
     navigate: route.useNavigate(),
     pagination: { defaultPage: 1, defaultPageSize: isMobile ? 10 : 20 },
-    globalFilter: { enabled: true, key: 'filter' },
-    columnFilters: [
-      { columnId: 'status', searchKey: 'status', type: 'array' },
-      { columnId: 'role', searchKey: 'role', type: 'array' },
-      { columnId: 'group', searchKey: 'group', type: 'string' },
-    ],
   })
-  const statusFilter =
-    (columnFilters.find((filter) => filter.id === 'status')?.value as
-      | string[]
-      | undefined) ?? []
-  const roleFilter =
-    (columnFilters.find((filter) => filter.id === 'role')?.value as
-      | string[]
-      | undefined) ?? []
-  const groupFilter =
-    (columnFilters.find((filter) => filter.id === 'group')?.value as string) ??
-    ''
-  const status = statusFilter[0] ?? ''
-  const role = roleFilter[0] ?? ''
+
+  const username = searchParams.username ?? ''
+  const displayName = searchParams.display_name ?? ''
+  const email = searchParams.email ?? ''
+  const linuxDoId = searchParams.linux_do_id ?? ''
+  const githubId = searchParams.github_id ?? ''
+  const status = searchParams.status ?? ''
+  const role = searchParams.role ?? ''
 
   // Fetch data with React Query
   const { data, isLoading, isFetching } = useQuery({
@@ -105,31 +90,33 @@ export function UsersTable() {
       'users',
       pagination.pageIndex + 1,
       pagination.pageSize,
-      globalFilter,
+      username,
+      displayName,
+      email,
+      linuxDoId,
+      githubId,
       status,
       role,
-      statusFilter.length,
-      roleFilter.length,
-      groupFilter,
       refreshTrigger,
     ],
     queryFn: async () => {
-      const hasFilter = globalFilter?.trim()
-      const hasColumnFilter =
-        statusFilter.length > 0 || roleFilter.length > 0 || Boolean(groupFilter)
+      const hasFilter = username || displayName || email || linuxDoId || githubId || status || role
       const params = {
         p: pagination.pageIndex + 1,
         page_size: pagination.pageSize,
       }
 
       const result =
-        hasFilter || hasColumnFilter
+        hasFilter
           ? await searchUsers({
               ...params,
-              keyword: globalFilter,
+              username,
+              display_name: displayName,
+              email,
+              linux_do_id: linuxDoId,
+              github_id: githubId,
               status,
               role,
-              group: groupFilter,
             })
           : await getUsers(params)
 
@@ -157,8 +144,6 @@ export function UsersTable() {
       sorting,
       columnVisibility,
       rowSelection,
-      columnFilters,
-      globalFilter,
       pagination,
     },
     enableRowSelection: true,
@@ -166,19 +151,6 @@ export function UsersTable() {
     getRowId: (row) => String(row.id),
     onSortingChange: setSorting,
     onColumnVisibilityChange: setColumnVisibility,
-    globalFilterFn: (row, _columnId, filterValue) => {
-      const searchValue = String(filterValue).toLowerCase()
-      const fields = [
-        row.getValue('username'),
-        row.original.display_name,
-        row.original.email,
-      ]
-      return fields.some((field) =>
-        String(field || '')
-          .toLowerCase()
-          .includes(searchValue)
-      )
-    },
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
@@ -186,8 +158,6 @@ export function UsersTable() {
     getFacetedRowModel: getFacetedRowModel(),
     getFacetedUniqueValues: getFacetedUniqueValues(),
     onPaginationChange,
-    onGlobalFilterChange,
-    onColumnFiltersChange,
     manualPagination: true,
     pageCount: Math.ceil((data?.total || 0) / pagination.pageSize),
   })
@@ -208,23 +178,7 @@ export function UsersTable() {
         'No users available. Try adjusting your search or filters.'
       )}
       skeletonKeyPrefix='users-skeleton'
-      toolbarProps={{
-        searchPlaceholder: t('Filter by username, name or email...'),
-        filters: [
-          {
-            columnId: 'status',
-            title: t('Status'),
-            options: getUserStatusOptions(t),
-            singleSelect: true,
-          },
-          {
-            columnId: 'role',
-            title: t('Role'),
-            options: getUserRoleOptions(t),
-            singleSelect: true,
-          },
-        ],
-      }}
+      toolbar={<UsersFilterBar table={table} />}
       getRowClassName={(row, { isMobile }) =>
         isDisabledUserRow(row.original)
           ? isMobile
