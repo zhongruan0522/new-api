@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"net/http"
@@ -20,6 +21,16 @@ import (
 
 type PasskeyRegisterRequest struct {
 	DeviceName string `json:"device_name"`
+}
+
+type PasskeyListItem struct {
+	ID             int        `json:"id"`
+	DeviceName     string     `json:"device_name"`
+	Attachment     string     `json:"attachment"`
+	BackupEligible bool       `json:"backup_eligible"`
+	BackupState    bool       `json:"backup_state"`
+	LastUsedAt     *time.Time `json:"last_used_at"`
+	CreatedAt      time.Time  `json:"created_at"`
 }
 
 func PasskeyRegisterBegin(c *gin.Context) {
@@ -271,11 +282,24 @@ func PasskeyStatus(c *gin.Context) {
 		maxPasskeys = 1
 	}
 
+	passkeys := make([]PasskeyListItem, 0, len(credentials))
+	for _, cred := range credentials {
+		passkeys = append(passkeys, PasskeyListItem{
+			ID:             cred.ID,
+			DeviceName:     cred.DeviceName,
+			Attachment:     cred.Attachment,
+			BackupEligible: cred.BackupEligible,
+			BackupState:    cred.BackupState,
+			LastUsedAt:     cred.LastUsedAt,
+			CreatedAt:      cred.CreatedAt,
+		})
+	}
+
 	data := gin.H{
-		"enabled":       len(credentials) > 0,
-		"passkeys":      credentials,
-		"count":         len(credentials),
-		"max_passkeys":  maxPasskeys,
+		"enabled":      len(credentials) > 0,
+		"passkeys":     passkeys,
+		"count":        len(credentials),
+		"max_passkeys": maxPasskeys,
 	}
 
 	c.JSON(http.StatusOK, gin.H{
@@ -541,8 +565,12 @@ func PasskeyVerifyFinish(c *gin.Context) {
 		return
 	}
 
-	credential, err := model.GetPasskeyByUserID(user.Id)
+	credentials, err := model.GetPasskeysByUserID(user.Id)
 	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	if len(credentials) == 0 {
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,
 			"message": "该用户尚未绑定 Passkey",
@@ -556,19 +584,26 @@ func PasskeyVerifyFinish(c *gin.Context) {
 		return
 	}
 
-	waUser := passkeysvc.NewWebAuthnUser(user, credential)
-	_, err = wa.FinishLogin(waUser, *sessionData, c.Request)
+	waUser := passkeysvc.NewWebAuthnUser(user, nil)
+	validatedCred, err := wa.FinishLogin(waUser, *sessionData, c.Request)
 	if err != nil {
 		common.ApiError(c, err)
 		return
 	}
 
-	// 更新凭证的最后使用时间
-	now := time.Now()
-	credential.LastUsedAt = &now
-	if err := model.UpsertPasskeyCredential(credential); err != nil {
-		common.ApiError(c, err)
-		return
+	// 查找被验证的凭证并更新最后使用时间
+	for _, cred := range credentials {
+		credBytes, _ := base64.StdEncoding.DecodeString(cred.CredentialID)
+		if string(credBytes) == string(validatedCred.ID) {
+			now := time.Now()
+			cred.LastUsedAt = &now
+			cred.SignCount = validatedCred.Authenticator.SignCount
+			if err := model.UpdatePasskeyCredential(cred); err != nil {
+				common.ApiError(c, err)
+				return
+			}
+			break
+		}
 	}
 
 	_, err = PasskeyVerifyAndMarkReadySession(c, user.Id)

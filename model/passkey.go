@@ -161,7 +161,13 @@ func GetPasskeysByUserID(userID int) ([]*PasskeyCredential, error) {
 		return nil, fmt.Errorf("无效的用户 ID")
 	}
 	var credentials []*PasskeyCredential
-	if err := DB.Where("user_id = ?", userID).Order("last_used_at DESC NULLS LAST, created_at DESC").Find(&credentials).Error; err != nil {
+	query := DB.Where("user_id = ?", userID)
+	if common.UsingMySQL {
+		query = query.Order("IFNULL(last_used_at, '1970-01-01') DESC, created_at DESC")
+	} else {
+		query = query.Order("last_used_at DESC NULLS LAST, created_at DESC")
+	}
+	if err := query.Find(&credentials).Error; err != nil {
 		common.SysLog(fmt.Sprintf("GetPasskeysByUserID: database error for user %d: %v", userID, err))
 		return nil, fmt.Errorf("获取 Passkey 列表失败")
 	}
