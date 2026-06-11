@@ -505,8 +505,12 @@ func PasskeyVerifyBegin(c *gin.Context) {
 		return
 	}
 
-	credential, err := model.GetPasskeyByUserID(user.Id)
+	credentials, err := model.GetPasskeysByUserID(user.Id)
 	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	if len(credentials) == 0 {
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,
 			"message": "该用户尚未绑定 Passkey",
@@ -520,7 +524,7 @@ func PasskeyVerifyBegin(c *gin.Context) {
 		return
 	}
 
-	waUser := passkeysvc.NewWebAuthnUser(user, credential)
+	waUser := passkeysvc.NewWebAuthnUser(user, nil)
 	assertion, sessionData, err := wa.BeginLogin(waUser)
 	if err != nil {
 		common.ApiError(c, err)
