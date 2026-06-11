@@ -778,7 +778,12 @@ func ManageUser(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"success": true,
 			"message": "",
-			"data":    user,
+			"data": model.User{
+				Id:        user.Id,
+				Username:  user.Username,
+				Quota:     user.Quota,
+				UsedQuota: user.UsedQuota,
+			},
 		})
 		return
 	}
