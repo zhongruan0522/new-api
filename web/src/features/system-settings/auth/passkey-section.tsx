@@ -126,7 +126,7 @@ export function PasskeySection({ defaultValues }: PasskeySectionProps) {
     })
 
     const data = Object.fromEntries(flattenedEntries) as PasskeyFormValues
-    const updates: Array<{ key: string; value: string | boolean }> = []
+    const updates: Array<{ key: string; value: string | boolean | number }> = []
 
     Object.entries(data).forEach(([key, value]) => {
       if (key === 'passkey.origins') {
@@ -360,7 +360,9 @@ export function PasskeySection({ defaultValues }: PasskeySectionProps) {
                     max={20}
                     {...field}
                     value={field.value ?? 1}
-                    onChange={(e) => field.onChange(parseInt(e.target.value) || 1)}
+                    onChange={(e) =>
+                      field.onChange(parseInt(e.target.value) || 1)
+                    }
                   />
                 </FormControl>
                 <FormDescription>

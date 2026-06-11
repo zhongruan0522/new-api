@@ -82,6 +82,8 @@ const AUTH_SECTIONS = [
             | 'none'
             | 'platform'
             | 'cross-platform',
+          'passkey.max_passkeys_per_user':
+            settings['passkey.max_passkeys_per_user'] ?? 1,
         }}
       />
     ),

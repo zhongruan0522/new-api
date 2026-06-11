@@ -17,7 +17,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { useCallback, useMemo, useState } from 'react'
-import { AlertTriangle, KeyRound, Loader2, Pencil, ShieldAlert, Trash2 } from 'lucide-react'
+import { KeyRound, Loader2, Pencil, ShieldAlert, Trash2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import dayjs from '@/lib/dayjs'
@@ -83,7 +83,6 @@ export function PasskeyCard({ loading: pageLoading }: PasskeyCardProps) {
     registering,
     removing,
     supported,
-    enabled,
     fetchStatus,
     register,
     remove,
@@ -138,38 +137,41 @@ export function PasskeyCard({ loading: pageLoading }: PasskeyCardProps) {
     })
   }, [fetchVerificationMethods, register, startVerification, supported, t])
 
-  const handleRemove = useCallback(async (id?: number) => {
-    const methods = await fetchVerificationMethods()
-    const required: VerificationMethod | null = methods.has2FA
-      ? '2fa'
-      : methods.hasPasskey
-        ? 'passkey'
-        : null
+  const handleRemove = useCallback(
+    async (id?: number) => {
+      const methods = await fetchVerificationMethods()
+      const required: VerificationMethod | null = methods.has2FA
+        ? '2fa'
+        : methods.hasPasskey
+          ? 'passkey'
+          : null
 
-    if (!required) {
-      toast.error(
-        t(
-          'Please enable Two-factor Authentication or Passkey before proceeding'
+      if (!required) {
+        toast.error(
+          t(
+            'Please enable Two-factor Authentication or Passkey before proceeding'
+          )
         )
-      )
-      return
-    }
+        return
+      }
 
-    if (required === 'passkey' && !methods.passkeySupported) {
-      toast.info(t('This device does not support Passkey'))
-      return
-    }
+      if (required === 'passkey' && !methods.passkeySupported) {
+        toast.info(t('This device does not support Passkey'))
+        return
+      }
 
-    setConfirmOpen(false)
-    setRestrictedMethod(required)
-    await startVerification(() => remove(id), {
-      preferredMethod: required,
-      title: t('Security Verification'),
-      description: t(
-        'Confirm your identity before removing this Passkey from your account.'
-      ),
-    })
-  }, [fetchVerificationMethods, remove, startVerification, t])
+      setConfirmOpen(false)
+      setRestrictedMethod(required)
+      await startVerification(() => remove(id), {
+        preferredMethod: required,
+        title: t('Security Verification'),
+        description: t(
+          'Confirm your identity before removing this Passkey from your account.'
+        ),
+      })
+    },
+    [fetchVerificationMethods, remove, startVerification, t]
+  )
 
   const handleRename = useCallback((credential: PasskeyCredential) => {
     setRenameId(credential.id)
@@ -263,12 +265,12 @@ export function PasskeyCard({ loading: pageLoading }: PasskeyCardProps) {
                     key={credential.id}
                     className='flex items-start justify-between gap-4 rounded-lg border p-3'
                   >
-                    <div className='flex items-start gap-3 flex-1 min-w-0'>
+                    <div className='flex min-w-0 flex-1 items-start gap-3'>
                       <div className='bg-muted rounded-md p-2'>
                         <KeyRound className='h-4 w-4' />
                       </div>
-                      <div className='space-y-1 flex-1 min-w-0'>
-                        <p className='font-medium truncate'>
+                      <div className='min-w-0 flex-1 space-y-1'>
+                        <p className='truncate font-medium'>
                           {credential.device_name || t('Unnamed Device')}
                         </p>
                         <div className='flex flex-wrap items-center gap-2 text-sm'>
@@ -381,8 +383,9 @@ export function PasskeyCard({ loading: pageLoading }: PasskeyCardProps) {
             )}
 
             {!canAddMore && count > 0 && (
-              <p className='text-muted-foreground text-sm text-center'>
-                {t('You have reached the maximum number of Passkeys')} ({count}/{maxPasskeys})
+              <p className='text-muted-foreground text-center text-sm'>
+                {t('You have reached the maximum number of Passkeys')} ({count}/
+                {maxPasskeys})
               </p>
             )}
 

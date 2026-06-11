@@ -3589,6 +3589,19 @@
     "Enabled successfully": "Enabled successfully",
     "Disabled successfully": "Disabled successfully",
     "API Key Required": "API Key Required",
-    "Back To Home": "Back To Home"
+    "Back To Home": "Back To Home",
+    "Add Another Passkey": "Add Another Passkey",
+    "Device Name": "Device Name",
+    "Device name updated": "Device name updated",
+    "Enter a name for this device (optional)": "Enter a name for this device (optional)",
+    "External": "External",
+    "Failed to update device name": "Failed to update device name",
+    "Give this Passkey a memorable name": "Give this Passkey a memorable name",
+    "Max Passkeys per User": "Max Passkeys per User",
+    "Maximum number of Passkeys each user can register (1-20)": "Maximum number of Passkeys each user can register (1-20)",
+    "Rename Device": "Rename Device",
+    "Unnamed Device": "Unnamed Device",
+    "You have reached the maximum number of Passkeys": "You have reached the maximum number of Passkeys",
+    "e.g. My iPhone, Work Laptop": "e.g. My iPhone, Work Laptop"
   }
 }

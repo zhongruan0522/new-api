@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/zhongruan0522/new-api/common"
@@ -23,6 +24,11 @@ type PasskeyRegisterRequest struct {
 	DeviceName string `json:"device_name"`
 }
 
+const (
+	passkeyRegistrationDeviceNameSessionKey = "passkey_registration_device_name"
+	maxPasskeyDeviceNameLength              = 255
+)
+
 type PasskeyListItem struct {
 	ID             int        `json:"id"`
 	DeviceName     string     `json:"device_name"`
@@ -31,6 +37,15 @@ type PasskeyListItem struct {
 	BackupState    bool       `json:"backup_state"`
 	LastUsedAt     *time.Time `json:"last_used_at"`
 	CreatedAt      time.Time  `json:"created_at"`
+}
+
+func normalizePasskeyDeviceName(deviceName string) string {
+	deviceName = strings.TrimSpace(deviceName)
+	runes := []rune(deviceName)
+	if len(runes) > maxPasskeyDeviceNameLength {
+		deviceName = string(runes[:maxPasskeyDeviceNameLength])
+	}
+	return deviceName
 }
 
 func PasskeyRegisterBegin(c *gin.Context) {
@@ -75,11 +90,6 @@ func PasskeyRegisterBegin(c *gin.Context) {
 		return
 	}
 
-	var req PasskeyRegisterRequest
-	if err := c.ShouldBindJSON(&req); err == nil && req.DeviceName != "" {
-		c.Set("device_name", req.DeviceName)
-	}
-
 	credentials, err := model.GetPasskeysByUserID(user.Id)
 	if err != nil {
 		common.ApiError(c, err)
@@ -107,6 +117,19 @@ func PasskeyRegisterBegin(c *gin.Context) {
 	if err != nil {
 		common.ApiError(c, err)
 		return
+	}
+
+	var req PasskeyRegisterRequest
+	session := sessions.Default(c)
+	if err := c.ShouldBindJSON(&req); err == nil {
+		deviceName := normalizePasskeyDeviceName(req.DeviceName)
+		if deviceName != "" {
+			session.Set(passkeyRegistrationDeviceNameSessionKey, deviceName)
+		} else {
+			session.Delete(passkeyRegistrationDeviceNameSessionKey)
+		}
+	} else {
+		session.Delete(passkeyRegistrationDeviceNameSessionKey)
 	}
 
 	if err := passkeysvc.SaveSessionData(c, passkeysvc.RegistrationSessionKey, sessionData); err != nil {
@@ -190,11 +213,12 @@ func PasskeyRegisterFinish(c *gin.Context) {
 		return
 	}
 
-	if deviceName, exists := c.Get("device_name"); exists {
-		if name, ok := deviceName.(string); ok {
-			passkeyCredential.DeviceName = name
-		}
+	session := sessions.Default(c)
+	if deviceName, ok := session.Get(passkeyRegistrationDeviceNameSessionKey).(string); ok {
+		passkeyCredential.DeviceName = normalizePasskeyDeviceName(deviceName)
 	}
+	session.Delete(passkeyRegistrationDeviceNameSessionKey)
+	_ = session.Save()
 
 	if err := model.CreatePasskeyCredential(passkeyCredential); err != nil {
 		common.ApiError(c, err)
@@ -721,7 +745,7 @@ func PasskeyUpdate(c *gin.Context) {
 		return
 	}
 
-	credential.DeviceName = req.DeviceName
+	credential.DeviceName = normalizePasskeyDeviceName(req.DeviceName)
 	if err := model.UpdatePasskeyCredential(credential); err != nil {
 		common.ApiError(c, err)
 		return
