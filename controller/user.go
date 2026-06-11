@@ -41,6 +41,10 @@ func invalidateSecuritySensitiveUserCaches(userId int) {
 	}
 }
 
+func addWouldOverflowInt(base int, delta int) bool {
+	return delta > 0 && base > math.MaxInt-delta
+}
+
 func Login(c *gin.Context) {
 	if !common.PasswordLoginEnabled {
 		common.ApiErrorI18n(c, i18n.MsgUserPasswordLoginDisabled)
@@ -490,23 +494,48 @@ func GetUserModels(c *gin.Context) {
 	return
 }
 
+type UpdateUserRequest struct {
+	Id          int    `json:"id"`
+	Username    string `json:"username"`
+	Password    string `json:"password"`
+	DisplayName string `json:"display_name"`
+	Role        int    `json:"role"`
+	Quota       *int   `json:"quota"`
+	Group       string `json:"group"`
+	Remark      string `json:"remark"`
+}
+
 func UpdateUser(c *gin.Context) {
-	var updatedUser model.User
-	err := common.DecodeJson(c.Request.Body, &updatedUser)
-	if err != nil || updatedUser.Id == 0 {
+	var req UpdateUserRequest
+	err := common.DecodeJson(c.Request.Body, &req)
+	if err != nil || req.Id == 0 {
 		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
 		return
+	}
+	originUser, err := model.GetUserById(req.Id, false)
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	quota := originUser.Quota
+	if req.Quota != nil {
+		quota = *req.Quota
+	}
+	updatedUser := model.User{
+		Id:          req.Id,
+		Username:    req.Username,
+		Password:    req.Password,
+		DisplayName: req.DisplayName,
+		Role:        req.Role,
+		Quota:       quota,
+		Group:       req.Group,
+		Remark:      req.Remark,
 	}
 	if updatedUser.Password == "" {
 		updatedUser.Password = "$I_LOVE_U" // make Validator happy :)
 	}
 	if err := common.Validate.Struct(&updatedUser); err != nil {
 		common.ApiErrorI18n(c, i18n.MsgUserInputInvalid, map[string]any{"Error": err.Error()})
-		return
-	}
-	originUser, err := model.GetUserById(updatedUser.Id, false)
-	if err != nil {
-		common.ApiError(c, err)
 		return
 	}
 	myRole := c.GetInt("role")
@@ -694,8 +723,8 @@ func CreateUser(c *gin.Context) {
 type ManageRequest struct {
 	Id     int    `json:"id"`
 	Action string `json:"action"`
-	Mode   string `json:"mode,omitempty"`   // add, subtract, override (for add_quota)
-	Value  int    `json:"value,omitempty"`   // quota value in quota units (for add_quota)
+	Mode   string `json:"mode,omitempty"`  // add, subtract, override (for add_quota)
+	Value  int    `json:"value,omitempty"` // quota value in quota units (for add_quota)
 }
 
 // ManageUser Only admin user can do this
@@ -770,7 +799,7 @@ func ManageUser(c *gin.Context) {
 		originQuota := user.Quota
 		switch req.Mode {
 		case "add":
-			if req.Value > math.MaxInt-originQuota {
+			if addWouldOverflowInt(originQuota, req.Value) {
 				common.ApiErrorI18n(c, i18n.MsgInvalidParams)
 				return
 			}
@@ -958,15 +987,15 @@ func TopUp(c *gin.Context) {
 }
 
 type UpdateUserSettingRequest struct {
-	QuotaWarningType           string  `json:"notify_type"`
-	QuotaWarningThreshold      float64 `json:"quota_warning_threshold"`
-	WebhookUrl                 string  `json:"webhook_url,omitempty"`
-	WebhookSecret              string  `json:"webhook_secret,omitempty"`
-	NotificationEmail          string  `json:"notification_email,omitempty"`
-	BarkUrl                    string  `json:"bark_url,omitempty"`
-	GotifyUrl                  string  `json:"gotify_url,omitempty"`
-	GotifyToken                string  `json:"gotify_token,omitempty"`
-	GotifyPriority             int     `json:"gotify_priority,omitempty"`
+	QuotaWarningType      string  `json:"notify_type"`
+	QuotaWarningThreshold float64 `json:"quota_warning_threshold"`
+	WebhookUrl            string  `json:"webhook_url,omitempty"`
+	WebhookSecret         string  `json:"webhook_secret,omitempty"`
+	NotificationEmail     string  `json:"notification_email,omitempty"`
+	BarkUrl               string  `json:"bark_url,omitempty"`
+	GotifyUrl             string  `json:"gotify_url,omitempty"`
+	GotifyToken           string  `json:"gotify_token,omitempty"`
+	GotifyPriority        int     `json:"gotify_priority,omitempty"`
 }
 
 func UpdateUserSetting(c *gin.Context) {

@@ -125,7 +125,7 @@ export function UsersMutateDrawer({
   const currencyLabel = getCurrencyLabel()
   const tokensOnly = currencyMeta.kind === 'tokens'
 
-  const currentQuotaRaw = form.watch('quota_dollars') || 0
+  const currentQuotaRaw = form.watch('quota_dollars') ?? 0
 
   const onSubmit = async (data: UserFormValues) => {
     if (!isUpdate) {
@@ -369,8 +369,8 @@ export function UsersMutateDrawer({
                             <Input
                               value={
                                 tokensOnly
-                                  ? String(field.value || 0)
-                                  : (field.value || 0).toFixed(6)
+                                  ? String(field.value ?? 0)
+                                  : (field.value ?? 0).toFixed(6)
                               }
                               readOnly
                               className='flex-1'
@@ -386,7 +386,7 @@ export function UsersMutateDrawer({
                           </Button>
                         </div>
                         <FormDescription>
-                          {formatQuota(parseQuotaFromDollars(field.value || 0))}
+                          {formatQuota(parseQuotaFromDollars(field.value ?? 0))}
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -464,7 +464,7 @@ export function UsersMutateDrawer({
           open={quotaDialogOpen}
           onOpenChange={setQuotaDialogOpen}
           userId={currentRow.id}
-          currentQuota={parseQuotaFromDollars(currentQuotaRaw || 0)}
+          currentQuota={parseQuotaFromDollars(currentQuotaRaw)}
           onSuccess={refreshUserData}
         />
       )}

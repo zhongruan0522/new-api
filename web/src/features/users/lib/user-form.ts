@@ -30,7 +30,7 @@ export const userFormSchema = z.object({
   display_name: z.string().optional(),
   password: z.string().optional(),
   role: z.number().optional(),
-  quota_dollars: z.number().min(0).optional(),
+  quota_dollars: z.number().optional(),
   group: z.string().optional(),
   remark: z.string().optional(),
 })
