@@ -3,6 +3,7 @@ package controller
 import (
 	"errors"
 	"fmt"
+	"math"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -748,6 +749,10 @@ func ManageUser(c *gin.Context) {
 		originQuota := user.Quota
 		switch req.Mode {
 		case "add":
+			if req.Value > math.MaxInt-originQuota {
+				common.ApiErrorI18n(c, i18n.MsgInvalidParams)
+				return
+			}
 			if err := model.IncreaseUserQuota(user.Id, req.Value, true); err != nil {
 				common.ApiError(c, err)
 				return
