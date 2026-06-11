@@ -24,11 +24,12 @@ export async function getPasskeyStatus(): Promise<ApiResponse<PasskeyStatus>> {
   return res.data
 }
 
-export async function beginPasskeyRegistration(): Promise<
+export async function beginPasskeyRegistration(deviceName?: string): Promise<
   ApiResponse<PasskeyOptionsPayload>
 > {
   const res = await api.post<ApiResponse<PasskeyOptionsPayload>>(
-    '/api/user/passkey/register/begin'
+    '/api/user/passkey/register/begin',
+    deviceName ? { device_name: deviceName } : undefined
   )
   return res.data
 }
@@ -43,8 +44,19 @@ export async function finishPasskeyRegistration(
   return res.data
 }
 
-export async function deletePasskey(): Promise<ApiResponse> {
-  const res = await api.delete<ApiResponse>('/api/user/passkey')
+export async function updatePasskey(
+  id: number,
+  deviceName: string
+): Promise<ApiResponse> {
+  const res = await api.put<ApiResponse>(`/api/user/passkey/${id}`, {
+    device_name: deviceName,
+  })
+  return res.data
+}
+
+export async function deletePasskey(id?: number): Promise<ApiResponse> {
+  const url = id ? `/api/user/passkey/${id}` : '/api/user/passkey'
+  const res = await api.delete<ApiResponse>(url)
   return res.data
 }
 

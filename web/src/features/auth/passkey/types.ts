@@ -22,8 +22,31 @@ export interface ApiResponse<T = unknown> {
   data?: T
 }
 
+export interface PasskeyCredential {
+  id: number
+  user_id: number
+  credential_id: string
+  device_name: string
+  attestation_type: string
+  aaguid: string
+  sign_count: number
+  clone_warning: boolean
+  user_present: boolean
+  user_verified: boolean
+  backup_eligible: boolean
+  backup_state: boolean
+  transports: string
+  attachment: string
+  last_used_at: string | null
+  created_at: string
+  updated_at: string
+}
+
 export interface PasskeyStatus {
   enabled: boolean
+  passkeys: PasskeyCredential[]
+  count: number
+  max_passkeys: number
   last_used_at?: string | null
   backup_eligible?: boolean
   backup_state?: boolean

@@ -49,11 +49,22 @@ func (u *WebAuthnUser) WebAuthnDisplayName() string {
 }
 
 func (u *WebAuthnUser) WebAuthnCredentials() []webauthn.Credential {
-	if u == nil || u.credential == nil {
+	if u == nil {
 		return nil
 	}
-	cred := u.credential.ToWebAuthnCredential()
-	return []webauthn.Credential{cred}
+	if u.credential != nil {
+		cred := u.credential.ToWebAuthnCredential()
+		return []webauthn.Credential{cred}
+	}
+	credentials, err := model.GetPasskeysByUserID(u.user.Id)
+	if err != nil || len(credentials) == 0 {
+		return nil
+	}
+	result := make([]webauthn.Credential, 0, len(credentials))
+	for _, c := range credentials {
+		result = append(result, c.ToWebAuthnCredential())
+	}
+	return result
 }
 
 func (u *WebAuthnUser) ModelUser() *model.User {
