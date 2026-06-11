@@ -769,6 +769,11 @@ func ManageUser(c *gin.Context) {
 			}
 			user.Quota = originQuota - req.Value
 		case "override":
+			maxQuotaLimit := int(100_000_000 * common.QuotaPerUnit)
+			if req.Value > maxQuotaLimit {
+				common.ApiErrorI18n(c, i18n.MsgInvalidParams)
+				return
+			}
 			if err := model.DB.Model(&model.User{}).Where("id = ?", user.Id).Update("quota", req.Value).Error; err != nil {
 				common.ApiError(c, err)
 				return
