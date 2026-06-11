@@ -598,5 +598,8 @@ func GetModelRatioOrPrice(model string) (float64, bool, bool) { // price or rati
 	if success {
 		return modelRatio, false, true
 	}
+	if contextPricing, ok := GetContextPricingConfig(model); ok && contextPricing.Enabled && len(contextPricing.Tiers) > 0 {
+		return contextPricing.Tiers[0].ModelRatio, false, true
+	}
 	return 37.5, false, false
 }

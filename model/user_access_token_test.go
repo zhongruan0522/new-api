@@ -1,13 +1,17 @@
 package model
 
 import (
+	"bytes"
 	"fmt"
+	"log"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/glebarez/sqlite"
 	"github.com/zhongruan0522/new-api/common"
 	"gorm.io/gorm"
+	gormlogger "gorm.io/gorm/logger"
 )
 
 func setupUserAccessTokenTestDB(t *testing.T) {
@@ -114,6 +118,47 @@ func TestValidateAccessTokenAcceptsNonEmptyBearerToken(t *testing.T) {
 				t.Fatalf("ValidateAccessToken(%q) returned user %d, want %d", authorization, got.Id, user.Id)
 			}
 		})
+	}
+}
+
+func TestValidateAccessTokenRejectsUnknownTokenWithoutRecordNotFoundLog(t *testing.T) {
+	var logs bytes.Buffer
+	db, err := gorm.Open(sqlite.Open(fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name())), &gorm.Config{
+		Logger: gormlogger.New(
+			log.New(&logs, "", 0),
+			gormlogger.Config{
+				SlowThreshold:             time.Second,
+				LogLevel:                  gormlogger.Info,
+				IgnoreRecordNotFoundError: false,
+				Colorful:                  false,
+			},
+		),
+	})
+	if err != nil {
+		t.Fatalf("open sqlite test db: %v", err)
+	}
+	if err := db.AutoMigrate(&User{}); err != nil {
+		t.Fatalf("migrate sqlite test db: %v", err)
+	}
+
+	oldDB := DB
+	DB = db
+	t.Cleanup(func() {
+		if sqlDB, err := db.DB(); err == nil {
+			_ = sqlDB.Close()
+		}
+		DB = oldDB
+	})
+
+	got, err := ValidateAccessToken("Bearer missing-management-token")
+	if err != ErrTokenInvalid {
+		t.Fatalf("ValidateAccessToken() err = %v, want %v", err, ErrTokenInvalid)
+	}
+	if got != nil {
+		t.Fatalf("ValidateAccessToken() returned user %d, want nil", got.Id)
+	}
+	if strings.Contains(logs.String(), "record not found") {
+		t.Fatalf("unexpected record not found log: %s", logs.String())
 	}
 }
 

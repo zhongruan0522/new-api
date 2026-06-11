@@ -20,7 +20,7 @@ var defaultFetchSetting = FetchSetting{
 	IpFilterMode:           false,
 	DomainList:             []string{},
 	IpList:                 []string{},
-	AllowedPorts:           []string{"80", "443", "8080", "8443"},
+	AllowedPorts:           []string{"80", "443", "3000", "8080", "8443"},
 	ApplyIPFilterForDomain: true,
 }
 

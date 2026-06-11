@@ -3,6 +3,7 @@ package controller
 import (
 	"errors"
 	"fmt"
+	"math"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -38,6 +39,10 @@ func invalidateSecuritySensitiveUserCaches(userId int) {
 	if err := model.InvalidateUserTokensCache(userId); err != nil {
 		common.SysLog(fmt.Sprintf("failed to invalidate user token cache for user %d: %v", userId, err))
 	}
+}
+
+func addWouldOverflowInt(base int, delta int) bool {
+	return delta > 0 && base > math.MaxInt-delta
 }
 
 func Login(c *gin.Context) {
@@ -113,6 +118,12 @@ func setupLogin(user *model.User, c *gin.Context) {
 		common.ApiErrorI18n(c, i18n.MsgUserSessionSaveFailed)
 		return
 	}
+
+	// 登录成功后更新最后登录时间
+	if err := model.UpdateLastLoginAt(user.Id); err != nil {
+		common.SysError(fmt.Sprintf("failed to update last_login_at for user %d: %v", user.Id, err))
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"message": "",
 		"success": true,
@@ -230,7 +241,7 @@ func Register(c *gin.Context) {
 			token.Group = "auto"
 		}
 		if err := token.Insert(); err != nil {
-			common.ApiErrorI18n(c, i18n.MsgCreateDefaultTokenErr)
+			common.ApiErrorI18n(c, i18n.MsgUserDefaultTokenFailed)
 			return
 		}
 	}
@@ -259,10 +270,31 @@ func GetAllUsers(c *gin.Context) {
 
 func SearchUsers(c *gin.Context) {
 	keyword := c.Query("keyword")
+	username := c.Query("username")
+	displayName := c.Query("display_name")
+	email := c.Query("email")
+	linuxDoId := c.Query("linux_do_id")
+	githubId := c.Query("github_id")
 	group := c.Query("group")
 	status := c.Query("status")
+	role := c.Query("role")
 	pageInfo := common.GetPageQuery(c)
-	users, total, err := model.SearchUsers(keyword, group, status, pageInfo.GetStartIdx(), pageInfo.GetPageSize())
+
+	// 如果使用旧的 keyword 参数，保持向后兼容
+	if keyword != "" && username == "" && displayName == "" && email == "" {
+		users, total, err := model.SearchUsers(keyword, group, status, pageInfo.GetStartIdx(), pageInfo.GetPageSize())
+		if err != nil {
+			common.ApiError(c, err)
+			return
+		}
+		pageInfo.SetTotal(int(total))
+		pageInfo.SetItems(users)
+		common.ApiSuccess(c, pageInfo)
+		return
+	}
+
+	// 新的多字段搜索
+	users, total, err := model.SearchUsersAdvanced(username, displayName, email, linuxDoId, githubId, status, role, group, pageInfo.GetStartIdx(), pageInfo.GetPageSize())
 	if err != nil {
 		common.ApiError(c, err)
 		return
@@ -384,7 +416,6 @@ func GetAffCode(c *gin.Context) {
 
 func GetSelf(c *gin.Context) {
 	id := c.GetInt("id")
-	userRole := c.GetInt("role")
 	user, err := model.GetUserById(id, false)
 	if err != nil {
 		common.ApiError(c, err)
@@ -393,10 +424,7 @@ func GetSelf(c *gin.Context) {
 	// Hide admin remarks: set to empty to trigger omitempty tag, ensuring the remark field is not included in JSON returned to regular users
 	user.Remark = ""
 
-	// 计算用户权限信息
-	permissions := calculateUserPermissions(userRole)
-
-	// 获取用户设置并提取sidebar_modules
+	// 获取用户设置
 	userSetting := user.GetSetting()
 
 	// 重新序列化用户设置，确保已移除的字段不会出现在响应中
@@ -406,7 +434,7 @@ func GetSelf(c *gin.Context) {
 		return
 	}
 
-	// 构建响应数据，包含用户信息和权限
+	// 构建响应数据
 	responseData := map[string]interface{}{
 		"id":                    user.Id,
 		"username":              user.Username,
@@ -427,8 +455,6 @@ func GetSelf(c *gin.Context) {
 		"linux_do_id":           user.LinuxDOId,
 		"setting":               string(settingJSON),
 		"stripe_customer":       user.StripeCustomer,
-		"sidebar_modules":       userSetting.SidebarModules,
-		"permissions":           permissions,
 		"image_converted_count": user.ImageConvertedCount,
 		"video_converted_count": user.VideoConvertedCount,
 	}
@@ -439,34 +465,6 @@ func GetSelf(c *gin.Context) {
 		"data":    responseData,
 	})
 	return
-}
-
-// 计算用户权限的辅助函数
-func calculateUserPermissions(userRole int) map[string]interface{} {
-	permissions := map[string]interface{}{}
-
-	// 根据用户角色计算权限
-	if userRole == common.RoleRootUser {
-		// 超级管理员不需要边栏设置功能
-		permissions["sidebar_settings"] = false
-		permissions["sidebar_modules"] = map[string]interface{}{}
-	} else if userRole == common.RoleAdminUser {
-		// 管理员可以设置边栏，但不包含系统设置功能
-		permissions["sidebar_settings"] = true
-		permissions["sidebar_modules"] = map[string]interface{}{
-			"admin": map[string]interface{}{
-				"setting": false, // 管理员不能访问系统设置
-			},
-		}
-	} else {
-		// 普通用户只能设置个人功能，不包含管理员区域
-		permissions["sidebar_settings"] = true
-		permissions["sidebar_modules"] = map[string]interface{}{
-			"admin": false, // 普通用户不能访问管理员区域
-		}
-	}
-
-	return permissions
 }
 
 func GetUserModels(c *gin.Context) {
@@ -496,23 +494,48 @@ func GetUserModels(c *gin.Context) {
 	return
 }
 
+type UpdateUserRequest struct {
+	Id          int    `json:"id"`
+	Username    string `json:"username"`
+	Password    string `json:"password"`
+	DisplayName string `json:"display_name"`
+	Role        int    `json:"role"`
+	Quota       *int   `json:"quota"`
+	Group       string `json:"group"`
+	Remark      string `json:"remark"`
+}
+
 func UpdateUser(c *gin.Context) {
-	var updatedUser model.User
-	err := common.DecodeJson(c.Request.Body, &updatedUser)
-	if err != nil || updatedUser.Id == 0 {
+	var req UpdateUserRequest
+	err := common.DecodeJson(c.Request.Body, &req)
+	if err != nil || req.Id == 0 {
 		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
 		return
+	}
+	originUser, err := model.GetUserById(req.Id, false)
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	quota := originUser.Quota
+	if req.Quota != nil {
+		quota = *req.Quota
+	}
+	updatedUser := model.User{
+		Id:          req.Id,
+		Username:    req.Username,
+		Password:    req.Password,
+		DisplayName: req.DisplayName,
+		Role:        req.Role,
+		Quota:       quota,
+		Group:       req.Group,
+		Remark:      req.Remark,
 	}
 	if updatedUser.Password == "" {
 		updatedUser.Password = "$I_LOVE_U" // make Validator happy :)
 	}
 	if err := common.Validate.Struct(&updatedUser); err != nil {
 		common.ApiErrorI18n(c, i18n.MsgUserInputInvalid, map[string]any{"Error": err.Error()})
-		return
-	}
-	originUser, err := model.GetUserById(updatedUser.Id, false)
-	if err != nil {
-		common.ApiError(c, err)
 		return
 	}
 	myRole := c.GetInt("role")
@@ -544,65 +567,8 @@ func UpdateUser(c *gin.Context) {
 }
 
 func UpdateSelf(c *gin.Context) {
-	var requestData map[string]interface{}
-	err := common.DecodeJson(c.Request.Body, &requestData)
-	if err != nil {
-		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
-		return
-	}
-
-	// 检查是否是用户设置更新请求 (sidebar_modules)
-	if sidebarModules, sidebarExists := requestData["sidebar_modules"]; sidebarExists {
-		userId := c.GetInt("id")
-		user, err := model.GetUserById(userId, false)
-		if err != nil {
-			common.ApiError(c, err)
-			return
-		}
-
-		// 获取当前用户设置
-		currentSetting := user.GetSetting()
-
-		// 更新sidebar_modules字段
-		var sidebarModulesStr string
-		switch v := sidebarModules.(type) {
-		case string:
-			sidebarModulesStr = v
-		default:
-			b, err := common.Marshal(v)
-			if err != nil {
-				common.ApiErrorI18n(c, i18n.MsgInvalidParams)
-				return
-			}
-			sidebarModulesStr = string(b)
-		}
-		sanitized, _, err := model.SanitizeSidebarModulesConfigJSON(sidebarModulesStr)
-		if err != nil {
-			common.ApiErrorI18n(c, i18n.MsgInvalidParams)
-			return
-		}
-		currentSetting.SidebarModules = sanitized
-
-		// 保存更新后的设置
-		user.SetSetting(currentSetting)
-		if err := user.Update(false); err != nil {
-			common.ApiErrorI18n(c, i18n.MsgUpdateFailed)
-			return
-		}
-		invalidateSecuritySensitiveUserCaches(userId)
-
-		common.ApiSuccessI18n(c, i18n.MsgUpdateSuccess, nil)
-		return
-	}
-
-	// 原有的用户信息更新逻辑
 	var user model.User
-	requestDataBytes, err := common.Marshal(requestData)
-	if err != nil {
-		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
-		return
-	}
-	err = common.Unmarshal(requestDataBytes, &user)
+	err := common.DecodeJson(c.Request.Body, &user)
 	if err != nil {
 		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
 		return
@@ -757,6 +723,8 @@ func CreateUser(c *gin.Context) {
 type ManageRequest struct {
 	Id     int    `json:"id"`
 	Action string `json:"action"`
+	Mode   string `json:"mode,omitempty"`  // add, subtract, override (for add_quota)
+	Value  int    `json:"value,omitempty"` // quota value in quota units (for add_quota)
 }
 
 // ManageUser Only admin user can do this
@@ -823,6 +791,61 @@ func ManageUser(c *gin.Context) {
 			return
 		}
 		user.Role = common.RoleCommonUser
+	case "add_quota":
+		if req.Value < 0 {
+			common.ApiErrorI18n(c, i18n.MsgInvalidParams)
+			return
+		}
+		originQuota := user.Quota
+		switch req.Mode {
+		case "add":
+			if addWouldOverflowInt(originQuota, req.Value) {
+				common.ApiErrorI18n(c, i18n.MsgInvalidParams)
+				return
+			}
+			if err := model.IncreaseUserQuota(user.Id, req.Value, true); err != nil {
+				common.ApiError(c, err)
+				return
+			}
+			user.Quota = originQuota + req.Value
+		case "subtract":
+			if req.Value > user.Quota {
+				common.ApiErrorI18n(c, i18n.MsgInvalidParams)
+				return
+			}
+			if err := model.DecreaseUserQuota(user.Id, req.Value); err != nil {
+				common.ApiError(c, err)
+				return
+			}
+			user.Quota = originQuota - req.Value
+		case "override":
+			maxQuotaLimit := int(100_000_000 * common.QuotaPerUnit)
+			if req.Value > maxQuotaLimit {
+				common.ApiErrorI18n(c, i18n.MsgInvalidParams)
+				return
+			}
+			if err := model.DB.Model(&model.User{}).Where("id = ?", user.Id).Update("quota", req.Value).Error; err != nil {
+				common.ApiError(c, err)
+				return
+			}
+			user.Quota = req.Value
+		default:
+			common.ApiErrorI18n(c, i18n.MsgInvalidParams)
+			return
+		}
+		model.RecordLog(user.Id, model.LogTypeManage, fmt.Sprintf("管理员调整用户额度从 %s 到 %s", logger.LogQuota(originQuota), logger.LogQuota(user.Quota)))
+		invalidateSecuritySensitiveUserCaches(user.Id)
+		c.JSON(http.StatusOK, gin.H{
+			"success": true,
+			"message": "",
+			"data": model.User{
+				Id:        user.Id,
+				Username:  user.Username,
+				Quota:     user.Quota,
+				UsedQuota: user.UsedQuota,
+			},
+		})
+		return
 	}
 
 	if err := user.Update(false); err != nil {
@@ -964,16 +987,15 @@ func TopUp(c *gin.Context) {
 }
 
 type UpdateUserSettingRequest struct {
-	QuotaWarningType           string  `json:"notify_type"`
-	QuotaWarningThreshold      float64 `json:"quota_warning_threshold"`
-	WebhookUrl                 string  `json:"webhook_url,omitempty"`
-	WebhookSecret              string  `json:"webhook_secret,omitempty"`
-	NotificationEmail          string  `json:"notification_email,omitempty"`
-	BarkUrl                    string  `json:"bark_url,omitempty"`
-	GotifyUrl                  string  `json:"gotify_url,omitempty"`
-	GotifyToken                string  `json:"gotify_token,omitempty"`
-	GotifyPriority             int     `json:"gotify_priority,omitempty"`
-	AcceptUnsetModelRatioModel bool    `json:"accept_unset_model_ratio_model"`
+	QuotaWarningType      string  `json:"notify_type"`
+	QuotaWarningThreshold float64 `json:"quota_warning_threshold"`
+	WebhookUrl            string  `json:"webhook_url,omitempty"`
+	WebhookSecret         string  `json:"webhook_secret,omitempty"`
+	NotificationEmail     string  `json:"notification_email,omitempty"`
+	BarkUrl               string  `json:"bark_url,omitempty"`
+	GotifyUrl             string  `json:"gotify_url,omitempty"`
+	GotifyToken           string  `json:"gotify_token,omitempty"`
+	GotifyPriority        int     `json:"gotify_priority,omitempty"`
 }
 
 func UpdateUserSetting(c *gin.Context) {
@@ -1068,7 +1090,6 @@ func UpdateUserSetting(c *gin.Context) {
 	settings := dto.UserSetting{
 		NotifyType:            req.QuotaWarningType,
 		QuotaWarningThreshold: req.QuotaWarningThreshold,
-		AcceptUnsetRatioModel: req.AcceptUnsetModelRatioModel,
 	}
 
 	// 如果是webhook类型,添加webhook相关设置

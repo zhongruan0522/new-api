@@ -1,53 +1,66 @@
 # web/AGENTS.md
 
-本目录包含两套独立前端。子目录规则优先：
+前端规则。上级规则见 [../AGENTS.md](../AGENTS.md)。
 
-- [default 新版 UI](default/AGENTS.md)
-- [classic 旧版 UI](classic/AGENTS.md)
+## 技术栈
 
-## 双 UI 边界
+- React 19、TypeScript、Rsbuild。
+- 路由: `@tanstack/react-router`，文件路由在 `src/routes/`。
+- 数据: `@tanstack/react-query`、Zustand、统一 axios 实例 `src/lib/api.ts`。
+- UI: Base UI、Tailwind CSS 4、`src/components/ui/`、Hugeicons/lucide。
+- 表单: React Hook Form + Zod。
+- 图表: VChart v2。
+- i18n: i18next + react-i18next，`en` 和 `zh`。
 
-- `web/default` 和 `web/classic` 独立构建、独立依赖、独立 i18n。不要跨目录 import 源码。
-- default 是新功能主线；classic 是退化兼容路径，只做维稳和 bug 修复。
-- 后端通过 `theme.frontend` 和 `common.GetTheme()` 选择当前 UI。前端改动不要假设只有一个 UI 会被加载。
-- `web/default/dist` 和 `web/classic/dist` 都是后端 embed 资源，Docker 构建要求两套 dist 同时存在。
-- 如果 default 调用的接口与本项目后端不一致，改 default 前端对齐后端；不要为了 UI 改后端业务 API。
-- 不存在的功能入口应在前端隐藏或降级为明确不可用状态，不得用 mock 数据。
+## 命令
 
-## 常用命令
+- 安装依赖: `bun install`
+- 开发服务: `bun run dev`
+- 类型检查: `bun run typecheck`
+- ESLint: `bun run lint`
+- 格式检查: `bun run format:check`
+- 生产构建: `bun run build`
+- 完整构建检查: `bun run build:check`
+- i18n 同步: `bun run i18n:sync`
 
-default:
+改 TS/TSX 后至少执行 `bun run typecheck`。改路由、API、核心页面或构建配置后执行
+`bun run build` 或 `bun run build:check`。
 
-- `cd web/default && bun install`
-- `cd web/default && bun run typecheck`
-- `cd web/default && bun run lint`
-- `cd web/default && bun run build`
+## 文件组织
 
-classic:
+- 功能模块放 `src/features/<feature>/`，常见结构为 `api.ts`、`types.ts`、`constants.ts`、
+  `components/`、`hooks/`、`lib/`。
+- 路由只负责装配页面和路由级校验，业务逻辑放到 feature。
+- 通用组件放 `src/components/`，基础 UI 原语放 `src/components/ui/`。
+- 通用工具放 `src/lib/`，状态放 `src/stores/`。
+- 类型导入使用 `import type`。
 
-- `cd web/classic && bun install`
-- `cd web/classic && bun run eslint`
-- `cd web/classic && bun run lint`
-- `cd web/classic && DISABLE_ESLINT_PLUGIN='true' bun run build`
+## API 与数据
 
-改共享 API、认证、系统设置、主题切换或静态资源路径时，两套 UI 都要构建。
-
-## API 与状态
-
-- default 统一从 `web/default/src/lib/api.ts` 和各 feature 的 `api.ts` 发请求。
-- classic 统一从 `web/classic/src/helpers/api.js` 发请求。
-- 不要新建绕过统一拦截器的 axios 实例，除非是 SSE、文件下载等确有协议需求，并说明错误处理方式。
-- 请求和响应字段必须与本项目后端实际接口一致。参考项目字段只能作为线索，不能直接假定可用。
+- 使用 `src/lib/api.ts` 的 `api` 实例，保留 cookie、错误处理、GET 去重和 `New-Api-User` 头。
+- 数据获取用 `useQuery`，变更用 `useMutation`，query key 使用数组并保持层级稳定。
+- 成功后按影响范围 invalidate 相关 query。不要手动刷新整个页面替代状态更新。
+- 服务端响应以本项目后端为准。参考项目 API 不存在时，隐藏入口或改前端适配，不新增后端业务 API。
+- 不使用 mock 数据、假分页、假成功状态或静默吞错。
 
 ## i18n
 
-- default 维护 `en` 和 `zh`，动态 key 同步到 `src/i18n/static-keys.ts`。
-- classic 目前只维护 `zh`，不要套用 default 的多语言结构。
-- 面向用户的新增文案不得裸写为不可翻译常量；按对应 UI 的 i18n 机制处理。
+- React 组件中使用 `const { t } = useTranslation()`；非 React 模块可用 `i18next.t`。
+- 新增用户可见文案同步 `src/i18n/locales/en.json` 和 `src/i18n/locales/zh.json`。
+- 常量、配置、枚举等动态 key 要登记到 `src/i18n/static-keys.ts`，或确保以 `t('...')` 字面量出现。
+- `supportedLngs` 目前只有 `en` 和 `zh`，不要添加未维护的语言入口。
 
-## 视觉与交互
+## 类型、表单与错误
 
-- default 使用 Base UI、Tailwind、Hugeicons/lucide、TanStack 体系。
-- classic 使用 Semi Design、react-router-dom、Context 体系。
-- 不要把 default 的 UI 原语迁移到 classic，也不要把 Semi 组件引入 default。
-- 涉及主题设置、系统设置、登录、渠道、令牌、日志、充值、模型定价等核心路径时，至少检查两套 UI 的对应入口是否仍可用。
+- 避免 `any`；确实无法确定时用 `unknown` 并在边界收窄。
+- 表单 schema 放在 feature 的 `lib/` 或相邻模块，用 Zod 定义并通过 `z.infer` 导出类型。
+- 组件 props 保持明确类型。复杂页面优先拆出小组件、hooks、纯函数。
+- toast 使用 `sonner`，文案要走 i18n。
+- 禁止 `no-console` 违规；调试日志不要留在生产路径。
+
+## 样式与交互
+
+- Tailwind 为主，动态类名用项目 `cn()`/`tailwind-merge` 体系。
+- 组件优先复用 `src/components/ui/` 和现有 feature 组件。
+- UI 应支持深浅色、主题 preset、移动端和键盘操作。
+- 不要把页面章节做成嵌套卡片；管理后台优先信息密度、清晰扫描和稳定布局。

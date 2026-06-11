@@ -1,0 +1,17 @@
+{
+  "base": "en.json",
+  "locales": {
+    "en": {
+      "file": "en.json",
+      "missingCount": 0,
+      "extrasCount": 0,
+      "untranslatedCount": 0
+    },
+    "zh": {
+      "file": "zh.json",
+      "missingCount": 0,
+      "extrasCount": 0,
+      "untranslatedCount": 0
+    }
+  }
+}

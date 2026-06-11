@@ -16,6 +16,7 @@ type PasskeySettings struct {
 	AllowInsecureOrigin  bool   `json:"allow_insecure_origin"`
 	UserVerification     string `json:"user_verification"`
 	AttachmentPreference string `json:"attachment_preference"`
+	MaxPasskeysPerUser   int    `json:"max_passkeys_per_user"`
 }
 
 var defaultPasskeySettings = PasskeySettings{
@@ -26,6 +27,7 @@ var defaultPasskeySettings = PasskeySettings{
 	AllowInsecureOrigin:  false,
 	UserVerification:     "preferred",
 	AttachmentPreference: "",
+	MaxPasskeysPerUser:   1,
 }
 
 func init() {

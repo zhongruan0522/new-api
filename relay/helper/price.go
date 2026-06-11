@@ -45,7 +45,7 @@ func HandleGroupRatio(ctx *gin.Context, relayInfo *relaycommon.RelayInfo) types.
 
 	// 叠加动态倍率
 	originalGroupRatio := groupRatioInfo.GroupRatio
-	dynamicRatio := model.GetMatchedDynamicRatio(relayInfo.UsingGroup)
+	dynamicRatio := model.GetMatchedDynamicRatio(relayInfo.UsingGroup, relayInfo.OriginModelName)
 	if dynamicRatio > 0 {
 		groupRatioInfo.GroupRatio = originalGroupRatio * dynamicRatio
 		groupRatioInfo.DynamicRatio = dynamicRatio
@@ -123,13 +123,7 @@ func ModelPriceHelper(c *gin.Context, info *relaycommon.RelayInfo, promptTokens 
 		var matchName string
 		modelRatio, success, matchName = ratio_setting.GetModelRatio(info.OriginModelName)
 		if !success {
-			acceptUnsetRatio := false
-			if info.UserSetting.AcceptUnsetRatioModel {
-				acceptUnsetRatio = true
-			}
-			if !acceptUnsetRatio {
-				return types.PriceData{}, fmt.Errorf("模型 %s 倍率或价格未配置，请联系管理员设置；Model %s ratio or price not set, please contact administrator to configure", matchName, matchName)
-			}
+			return types.PriceData{}, fmt.Errorf("模型 %s 倍率或价格未配置，请联系管理员设置；Model %s ratio or price not set, please contact administrator to configure", matchName, matchName)
 		}
 		completionRatio = ratio_setting.GetCompletionRatio(info.OriginModelName)
 		cacheRatio, _ = ratio_setting.GetCacheRatio(info.OriginModelName)

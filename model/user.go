@@ -44,6 +44,8 @@ type User struct {
 	StripeCustomer      string         `json:"stripe_customer" gorm:"type:varchar(64);column:stripe_customer;index"`
 	ImageConvertedCount int            `json:"image_converted_count" gorm:"type:int;default:0;column:image_converted_count"`
 	VideoConvertedCount int            `json:"video_converted_count" gorm:"type:int;default:0;column:video_converted_count"`
+	CreatedAt           int64          `json:"created_at" gorm:"bigint;index"`
+	LastLoginAt         int64          `json:"last_login_at" gorm:"bigint"`
 }
 
 func (user *User) ToBaseUser() *UserBase {
@@ -88,64 +90,6 @@ func (user *User) SetSetting(setting dto.UserSetting) {
 		return
 	}
 	user.Setting = string(settingBytes)
-}
-
-// 根据用户角色生成默认的边栏配置
-func generateDefaultSidebarConfigForRole(userRole int) string {
-	defaultConfig := map[string]interface{}{}
-
-	// 控制台区域 - 所有用户都可以访问
-	defaultConfig["console"] = map[string]interface{}{
-		"enabled": true,
-		"detail":  true,
-		"token":   true,
-		"log":     true,
-	}
-
-	// 个人中心区域 - 所有用户都可以访问
-	defaultConfig["personal"] = map[string]interface{}{
-		"enabled":  true,
-		"topup":    true,
-		"personal": true,
-	}
-
-	defaultConfig["support"] = map[string]interface{}{
-		"enabled": true,
-		"ticket":  true,
-	}
-
-	// 管理员区域 - 根据角色决定
-	if userRole == common.RoleAdminUser {
-		// 管理员可以访问管理员区域，但不能访问系统设置
-		defaultConfig["admin"] = map[string]interface{}{
-			"enabled":    true,
-			"channel":    true,
-			"models":     true,
-			"redemption": true,
-			"user":       true,
-			"setting":    false, // 管理员不能访问系统设置
-		}
-	} else if userRole == common.RoleRootUser {
-		// 超级管理员可以访问所有功能
-		defaultConfig["admin"] = map[string]interface{}{
-			"enabled":    true,
-			"channel":    true,
-			"models":     true,
-			"redemption": true,
-			"user":       true,
-			"setting":    true,
-		}
-	}
-	// 普通用户不包含admin区域
-
-	// 转换为JSON字符串
-	configBytes, err := common.Marshal(defaultConfig)
-	if err != nil {
-		common.SysLog("生成默认边栏配置失败: " + err.Error())
-		return ""
-	}
-
-	return string(configBytes)
 }
 
 // CheckUserExistOrDeleted check if user exist or deleted, if not exist, return false, nil, if deleted or exist, return true, nil
@@ -213,11 +157,13 @@ func GetAllUsers(pageInfo *common.PageInfo) (users []*User, total int64, err err
 }
 
 func SearchUsers(keyword string, group string, status string, startIdx int, num int) ([]*User, int64, error) {
+	return SearchUsersAdvanced(keyword, "", "", "", "", status, "", group, startIdx, num)
+}
+
+func SearchUsersAdvanced(username, displayName, email, linuxDoId, githubId, status, role, group string, startIdx, num int) ([]*User, int64, error) {
 	var users []*User
 	var total int64
-	var err error
 
-	// 开始事务
 	tx := DB.Begin()
 	if tx.Error != nil {
 		return nil, 0, tx.Error
@@ -228,36 +174,24 @@ func SearchUsers(keyword string, group string, status string, startIdx int, num 
 		}
 	}()
 
-	// 构建基础查询
 	query := tx.Unscoped().Model(&User{})
 
-	// 构建搜索条件
-	likeCondition := "username LIKE ? OR email LIKE ? OR display_name LIKE ?"
-
-	// 尝试将关键字转换为整数ID
-	keywordInt, err := strconv.Atoi(keyword)
-	if err == nil {
-		// 如果是数字，同时搜索ID和其他字段
-		likeCondition = "id = ? OR " + likeCondition
-		if group != "" {
-			query = query.Where("("+likeCondition+") AND "+commonGroupCol+" = ?",
-				keywordInt, "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%", group)
-		} else {
-			query = query.Where(likeCondition,
-				keywordInt, "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%")
-		}
-	} else {
-		// 非数字关键字，只搜索字符串字段
-		if group != "" {
-			query = query.Where("("+likeCondition+") AND "+commonGroupCol+" = ?",
-				"%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%", group)
-		} else {
-			query = query.Where(likeCondition,
-				"%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%")
-		}
+	if username != "" {
+		query = query.Where("username LIKE ?", "%"+username+"%")
+	}
+	if displayName != "" {
+		query = query.Where("display_name LIKE ?", "%"+displayName+"%")
+	}
+	if email != "" {
+		query = query.Where("email LIKE ?", "%"+email+"%")
+	}
+	if linuxDoId != "" {
+		query = query.Where("linux_do_id LIKE ?", "%"+linuxDoId+"%")
+	}
+	if githubId != "" {
+		query = query.Where("github_id LIKE ?", "%"+githubId+"%")
 	}
 
-	// 按状态筛选
 	switch status {
 	case "1":
 		query = query.Where("status = ? AND deleted_at IS NULL", common.UserStatusEnabled)
@@ -267,21 +201,28 @@ func SearchUsers(keyword string, group string, status string, startIdx int, num 
 		query = query.Where("deleted_at IS NOT NULL")
 	}
 
-	// 获取总数
-	err = query.Count(&total).Error
+	if role != "" {
+		if roleInt, err := strconv.Atoi(role); err == nil {
+			query = query.Where("role = ?", roleInt)
+		}
+	}
+
+	if group != "" {
+		query = query.Where(commonGroupCol+" = ?", group)
+	}
+
+	err := query.Count(&total).Error
 	if err != nil {
 		tx.Rollback()
 		return nil, 0, err
 	}
 
-	// 获取分页数据
 	err = query.Omit("password", "access_token").Order("id desc").Limit(num).Offset(startIdx).Find(&users).Error
 	if err != nil {
 		tx.Rollback()
 		return nil, 0, err
 	}
 
-	// 提交事务
 	if err = tx.Commit().Error; err != nil {
 		return nil, 0, err
 	}
@@ -392,6 +333,7 @@ func (user *User) Insert(inviterId int) error {
 	user.Quota = common.QuotaForNewUser
 	//user.SetAccessToken(common.GetUUID())
 	user.AffCode = common.GetRandomString(4)
+	user.CreatedAt = common.GetTimestamp()
 
 	// 初始化用户设置，包括默认的边栏配置
 	if user.Setting == "" {
@@ -403,21 +345,6 @@ func (user *User) Insert(inviterId int) error {
 	result := DB.Create(user)
 	if result.Error != nil {
 		return result.Error
-	}
-
-	// 用户创建成功后，根据角色初始化边栏配置
-	// 需要重新获取用户以确保有正确的ID和Role
-	var createdUser User
-	if err := DB.Where("username = ?", user.Username).First(&createdUser).Error; err == nil {
-		// 生成基于角色的默认边栏配置
-		defaultSidebarConfig := generateDefaultSidebarConfigForRole(createdUser.Role)
-		if defaultSidebarConfig != "" {
-			currentSetting := createdUser.GetSetting()
-			currentSetting.SidebarModules = defaultSidebarConfig
-			createdUser.SetSetting(currentSetting)
-			createdUser.Update(false)
-			common.SysLog(fmt.Sprintf("为新用户 %s (角色: %d) 初始化边栏配置", createdUser.Username, createdUser.Role))
-		}
 	}
 
 	if common.QuotaForNewUser > 0 {
@@ -450,6 +377,7 @@ func (user *User) InsertWithTx(tx *gorm.DB, inviterId int) error {
 	}
 	user.Quota = common.QuotaForNewUser
 	user.AffCode = common.GetRandomString(4)
+	user.CreatedAt = common.GetTimestamp()
 
 	// 初始化用户设置
 	if user.Setting == "" {
@@ -468,19 +396,6 @@ func (user *User) InsertWithTx(tx *gorm.DB, inviterId int) error {
 // FinalizeOAuthUserCreation performs post-transaction tasks for OAuth user creation.
 // This should be called after the transaction commits successfully.
 func (user *User) FinalizeOAuthUserCreation(inviterId int) {
-	// 用户创建成功后，根据角色初始化边栏配置
-	var createdUser User
-	if err := DB.Where("id = ?", user.Id).First(&createdUser).Error; err == nil {
-		defaultSidebarConfig := generateDefaultSidebarConfigForRole(createdUser.Role)
-		if defaultSidebarConfig != "" {
-			currentSetting := createdUser.GetSetting()
-			currentSetting.SidebarModules = defaultSidebarConfig
-			createdUser.SetSetting(currentSetting)
-			createdUser.Update(false)
-			common.SysLog(fmt.Sprintf("为新用户 %s (角色: %d) 初始化边栏配置", createdUser.Username, createdUser.Role))
-		}
-	}
-
 	if common.QuotaForNewUser > 0 {
 		RecordLog(user.Id, LogTypeSystem, fmt.Sprintf("新用户注册赠送 %s", logger.LogQuota(common.QuotaForNewUser)))
 	}
@@ -712,12 +627,12 @@ func ValidateAccessToken(authorization string) (user *User, err error) {
 		return nil, ErrTokenInvalid
 	}
 	user = &User{}
-	err = DB.Where("access_token = ? AND access_token <> ''", token).First(user).Error
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, ErrTokenInvalid
-		}
-		return nil, fmt.Errorf("%w: %v", ErrDatabase, err)
+	result := DB.Where("access_token = ? AND access_token <> ''", token).Limit(1).Find(user)
+	if result.Error != nil {
+		return nil, fmt.Errorf("%w: %v", ErrDatabase, result.Error)
+	}
+	if result.RowsAffected == 0 {
+		return nil, ErrTokenInvalid
 	}
 	user.AccessToken = nil
 	return user, nil
@@ -994,6 +909,11 @@ func (user *User) FillUserByLinuxDOId() error {
 	}
 	err := DB.Where("linux_do_id = ?", user.LinuxDOId).First(user).Error
 	return err
+}
+
+// UpdateLastLoginAt updates the user's last login timestamp
+func UpdateLastLoginAt(id int) error {
+	return DB.Model(&User{}).Where("id = ?", id).Update("last_login_at", common.GetTimestamp()).Error
 }
 
 func RootUserExists() bool {

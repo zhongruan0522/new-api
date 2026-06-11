@@ -1,0 +1,149 @@
+/*
+Copyright (C) 2023-2026 QuantumNous
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as
+published by the Free Software Foundation, either version 3 of the
+License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+For commercial licensing, please contact support@quantumnous.com
+*/
+import { useQuery } from '@tanstack/react-query'
+import { getRouteApi } from '@tanstack/react-router'
+import { useTranslation } from 'react-i18next'
+import { formatLogQuota } from '@/lib/format'
+import { cn } from '@/lib/utils'
+import { useIsAdmin } from '@/hooks/use-admin'
+import { Skeleton } from '@/components/ui/skeleton'
+import { getLogStats, getUserLogStats } from '../api'
+import { DEFAULT_LOG_STATS } from '../constants'
+import { getDefaultTimeRange } from '../lib/utils'
+import type { GetLogStatsParams } from '../types'
+import { useUsageLogsContext } from './usage-logs-provider'
+
+const route = getRouteApi('/_authenticated/usage-logs/$section')
+
+function StatBadge(props: {
+  label: string
+  value: string | number
+  accent: string
+}) {
+  return (
+    <span className='border-border/60 bg-muted/25 inline-flex h-7 items-center gap-2 rounded-md border px-2.5 text-xs shadow-xs'>
+      <span className={cn('h-3.5 w-0.5 rounded-full', props.accent)} />
+      <span className='text-muted-foreground'>{props.label}</span>
+      <span className='text-foreground/85 font-mono font-semibold tabular-nums'>
+        {props.value}
+      </span>
+    </span>
+  )
+}
+
+function getSingleLogType(value: unknown): number {
+  const raw = Array.isArray(value) && value.length === 1 ? value[0] : value
+  const type = Number(raw)
+  return Number.isFinite(type) ? type : 0
+}
+
+function timestampToSeconds(value: unknown, fallback: Date): number {
+  const numericValue = typeof value === 'number' ? value : Number(value)
+  const timestamp = Number.isFinite(numericValue)
+    ? numericValue
+    : fallback.getTime()
+  return Math.floor(timestamp / 1000)
+}
+
+function buildStatsParams(
+  searchParams: Record<string, unknown>,
+  isAdmin: boolean
+): GetLogStatsParams {
+  const { start, end } = getDefaultTimeRange()
+
+  return {
+    type: getSingleLogType(searchParams.type),
+    token_name: searchParams.token ? String(searchParams.token) : undefined,
+    model_name: searchParams.model ? String(searchParams.model) : undefined,
+    start_timestamp: timestampToSeconds(searchParams.startTime, start),
+    end_timestamp: timestampToSeconds(searchParams.endTime, end),
+    group: searchParams.group ? String(searchParams.group) : undefined,
+    request_id: searchParams.requestId
+      ? String(searchParams.requestId)
+      : undefined,
+    upstream_request_id: searchParams.upstreamRequestId
+      ? String(searchParams.upstreamRequestId)
+      : undefined,
+    ip: searchParams.ip ? String(searchParams.ip) : undefined,
+    ua: searchParams.ua ? String(searchParams.ua) : undefined,
+    x_title: searchParams.xTitle ? String(searchParams.xTitle) : undefined,
+    http_referer: searchParams.httpReferer
+      ? String(searchParams.httpReferer)
+      : undefined,
+    ...(isAdmin && searchParams.username
+      ? { username: String(searchParams.username) }
+      : {}),
+    ...(isAdmin && searchParams.channel
+      ? { channel: Number(searchParams.channel) || 0 }
+      : {}),
+  }
+}
+
+export function CommonLogsStats() {
+  const { t } = useTranslation()
+  const isAdmin = useIsAdmin()
+  const searchParams = route.useSearch()
+  const { sensitiveVisible } = useUsageLogsContext()
+
+  const { data: stats, isLoading } = useQuery({
+    queryKey: ['usage-logs-stats', isAdmin, searchParams],
+    queryFn: async () => {
+      const params = buildStatsParams(searchParams, isAdmin)
+
+      const result = isAdmin
+        ? await getLogStats(params)
+        : await getUserLogStats(params)
+
+      return result.success
+        ? result.data || DEFAULT_LOG_STATS
+        : DEFAULT_LOG_STATS
+    },
+    placeholderData: (previousData) => previousData,
+  })
+
+  if (isLoading) {
+    return (
+      <div className='flex items-center gap-2'>
+        <Skeleton className='h-7 w-[150px] rounded-md' />
+        <Skeleton className='h-7 w-[100px] rounded-md' />
+        <Skeleton className='h-7 w-[120px] rounded-md' />
+      </div>
+    )
+  }
+
+  return (
+    <div className='flex flex-wrap items-center gap-2'>
+      <StatBadge
+        label={t('Usage')}
+        value={sensitiveVisible ? formatLogQuota(stats?.quota || 0) : '••••'}
+        accent='bg-sky-500/70'
+      />
+      <StatBadge
+        label={t('RPM')}
+        value={stats?.rpm || 0}
+        accent='bg-rose-500/65'
+      />
+      <StatBadge
+        label={t('TPM')}
+        value={stats?.tpm || 0}
+        accent='bg-slate-400/70'
+      />
+    </div>
+  )
+}

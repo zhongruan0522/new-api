@@ -11,6 +11,7 @@ import (
 
 	"github.com/zhongruan0522/new-api/common"
 	"github.com/zhongruan0522/new-api/constant"
+	"github.com/zhongruan0522/new-api/dto"
 	"github.com/zhongruan0522/new-api/model"
 	relayconstant "github.com/zhongruan0522/new-api/relay/constant"
 	"github.com/zhongruan0522/new-api/service"
@@ -80,6 +81,24 @@ func Distribute() func(c *gin.Context) {
 				var selectGroup string
 				usingGroup := common.GetContextKeyString(c, constant.ContextKeyUsingGroup)
 				relayFormat := guessRelayFormatFromPath(c.Request.URL.Path)
+
+				// Playground: allow user to select a group for the request
+				if strings.HasPrefix(c.Request.URL.Path, "/pg/chat/completions") {
+					playgroundRequest := &dto.PlayGroundRequest{}
+					err = common.UnmarshalBodyReusable(c, playgroundRequest)
+					if err != nil {
+						abortWithOpenAiMessage(c, http.StatusBadRequest, "无效的游乐场请求: "+err.Error())
+						return
+					}
+					if playgroundRequest.Group != "" {
+						if !service.GroupInUserUsableGroups(usingGroup, playgroundRequest.Group) && playgroundRequest.Group != usingGroup {
+							abortWithOpenAiMessage(c, http.StatusForbidden, "无权访问该分组")
+							return
+						}
+						usingGroup = playgroundRequest.Group
+						common.SetContextKey(c, constant.ContextKeyUsingGroup, usingGroup)
+					}
+				}
 
 				if preferredChannelID, found := service.GetPreferredChannelByAffinity(c, modelRequest.Model, usingGroup); found {
 					preferred, err := model.CacheGetChannel(preferredChannelID)
@@ -346,7 +365,8 @@ func guessRelayFormatFromPath(path string) types.RelayFormat {
 		return types.RelayFormatRerank
 	case strings.HasPrefix(path, "/v1/chat/completions"),
 		strings.HasPrefix(path, "/v1/completions"),
-		strings.HasPrefix(path, "/v1/moderations"):
+		strings.HasPrefix(path, "/v1/moderations"),
+		strings.HasPrefix(path, "/pg/chat/completions"):
 		return types.RelayFormatOpenAI
 	default:
 		return ""

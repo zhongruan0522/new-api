@@ -71,6 +71,8 @@ func SetApiRouter(router *gin.Engine) {
 				selfRoute.POST("/passkey/register/finish", controller.PasskeyRegisterFinish)
 				selfRoute.POST("/passkey/verify/begin", controller.PasskeyVerifyBegin)
 				selfRoute.POST("/passkey/verify/finish", controller.PasskeyVerifyFinish)
+				selfRoute.PUT("/passkey/:id", controller.PasskeyUpdate)
+				selfRoute.DELETE("/passkey/:id", controller.PasskeyDelete)
 				selfRoute.DELETE("/passkey", controller.PasskeyDelete)
 				selfRoute.GET("/aff", controller.GetAffCode)
 				selfRoute.GET("/topup/info", controller.GetTopUpInfo)

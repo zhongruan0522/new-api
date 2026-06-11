@@ -7,8 +7,7 @@
 - 外部输入必须在这里或更近边界校验：path/query/body/form/file/header。
 - 控制器不要沉淀复杂业务逻辑；可复用业务放 `service/`，持久化放 `model/`。
 - 响应结构保持现有 `{ success, message, data }` 风格，避免为单个前端新增不兼容格式。
-- 不要为了 default UI 改后端业务 API。字段不匹配时优先改前端适配本项目接口。
-- `theme.frontend` 只允许 `default` 或 `classic`，并要同步 `setting/system_setting` 与 `common`。
+- 不要为了前端改后端业务 API。字段不匹配时优先改前端适配本项目接口。
 - 安全相关控制器要保留二次验证、角色校验、限速和审计日志。
 
 ## 验证

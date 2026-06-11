@@ -66,7 +66,6 @@ func GetStatus(c *gin.Context) {
 		"data_export_default_time":    common.DataExportDefaultTime,
 		"default_collapse_sidebar":    common.DefaultCollapseSidebar,
 		"default_use_auto_group":      setting.DefaultUseAutoGroup,
-		"theme":                       system_setting.GetThemeSettings().Frontend,
 
 		"price":             operation_setting.Price,
 		"stripe_unit_price": setting.StripeUnitPrice,
@@ -237,7 +236,8 @@ func SendEmailVerification(c *gin.Context) {
 		"<p>验证码 %d 分钟内有效，如果不是本人操作，请忽略。</p>", common.SystemName, code, common.VerificationValidMinutes)
 	err := common.SendEmail(subject, email, content)
 	if err != nil {
-		common.ApiError(c, err)
+		common.SysError(fmt.Sprintf("failed to send email verification to %s: %v", email, err))
+		common.ApiErrorMsg(c, "邮件发送失败，请稍后重试或联系管理员")
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{

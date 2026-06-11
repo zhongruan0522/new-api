@@ -192,6 +192,10 @@ func RecordErrorLog(c *gin.Context, userId int, channelId int, modelName string,
 	username := c.GetString("username")
 	requestId := c.GetString(common.RequestIdKey)
 	upstreamRequestId := c.GetString(common.UpstreamRequestIdKey)
+	if other == nil {
+		other = make(map[string]interface{})
+	}
+	appendConsumeLogClientHeaders(c, other)
 	otherStr := common.MapToJsonStr(other)
 	// 记录请求与错误日志的 IP（强制开启，用于滥用追踪）
 	log := &Log{
@@ -342,7 +346,28 @@ func sanitizeConsumeLogHeaderValue(value string) string {
 	return value
 }
 
-func GetAllLogs(logType int, startTimestamp int64, endTimestamp int64, modelName string, username string, tokenName string, startIdx int, num int, channel int, group string, requestId string, upstreamRequestId string) (logs []*Log, total int64, err error) {
+// sanitizeLikeLiteral escapes SQL LIKE wildcards (% and _) and the ESCAPE
+// character (!) in a user-provided search term, following the project-wide
+// ESCAPE '!' convention (see sanitizeLikePattern in token.go).
+// Use this when wrapping user input with surrounding % wildcards for
+// substring matching.
+func sanitizeLikeLiteral(input string) string {
+	input = strings.ReplaceAll(input, "!", "!!")
+	input = strings.ReplaceAll(input, "_", "!_")
+	input = strings.ReplaceAll(input, "%", "!%")
+	return input
+}
+
+// sanitizeJSONLikeValue extends sanitizeLikeLiteral with backslash escaping
+// for LIKE patterns targeting the JSON-encoded `other` column, where JSON
+// stores `\` as `\\`.
+func sanitizeJSONLikeValue(input string) string {
+	input = sanitizeLikeLiteral(input)
+	input = strings.ReplaceAll(input, `\`, `!\\`)
+	return input
+}
+
+func GetAllLogs(logType int, startTimestamp int64, endTimestamp int64, modelName string, username string, tokenName string, startIdx int, num int, channel int, group string, requestId string, upstreamRequestId string, ip string, ua string, xTitle string, httpReferer string) (logs []*Log, total int64, err error) {
 	var tx *gorm.DB
 	if logType == LogTypeUnknown {
 		tx = LOG_DB
@@ -364,6 +389,18 @@ func GetAllLogs(logType int, startTimestamp int64, endTimestamp int64, modelName
 	}
 	if upstreamRequestId != "" {
 		tx = tx.Where("logs.upstream_request_id = ?", upstreamRequestId)
+	}
+	if ip != "" {
+		tx = tx.Where("logs.ip LIKE ? ESCAPE '!'", "%"+sanitizeLikeLiteral(ip)+"%")
+	}
+	if ua != "" {
+		tx = tx.Where("logs.other LIKE ? ESCAPE '!'", "%\"ua\":\"%"+sanitizeJSONLikeValue(ua)+"%")
+	}
+	if xTitle != "" {
+		tx = tx.Where("logs.other LIKE ? ESCAPE '!'", "%\"x_title\":\"%"+sanitizeJSONLikeValue(xTitle)+"%")
+	}
+	if httpReferer != "" {
+		tx = tx.Where("logs.other LIKE ? ESCAPE '!'", "%\"http_referer\":\"%"+sanitizeJSONLikeValue(httpReferer)+"%")
 	}
 	if startTimestamp != 0 {
 		tx = tx.Where("logs.created_at >= ?", startTimestamp)
@@ -417,7 +454,7 @@ func GetAllLogs(logType int, startTimestamp int64, endTimestamp int64, modelName
 
 const logSearchCountLimit = 10000
 
-func GetUserLogs(userId int, logType int, startTimestamp int64, endTimestamp int64, modelName string, tokenName string, startIdx int, num int, group string, requestId string, upstreamRequestId string) (logs []*Log, total int64, err error) {
+func GetUserLogs(userId int, logType int, startTimestamp int64, endTimestamp int64, modelName string, tokenName string, startIdx int, num int, group string, requestId string, upstreamRequestId string, ip string, ua string, xTitle string, httpReferer string) (logs []*Log, total int64, err error) {
 	var tx *gorm.DB
 	if logType == LogTypeUnknown {
 		tx = LOG_DB.Where("logs.user_id = ?", userId)
@@ -440,6 +477,18 @@ func GetUserLogs(userId int, logType int, startTimestamp int64, endTimestamp int
 	}
 	if upstreamRequestId != "" {
 		tx = tx.Where("logs.upstream_request_id = ?", upstreamRequestId)
+	}
+	if ip != "" {
+		tx = tx.Where("logs.ip LIKE ? ESCAPE '!'", "%"+sanitizeLikeLiteral(ip)+"%")
+	}
+	if ua != "" {
+		tx = tx.Where("logs.other LIKE ? ESCAPE '!'", "%\"ua\":\"%"+sanitizeJSONLikeValue(ua)+"%")
+	}
+	if xTitle != "" {
+		tx = tx.Where("logs.other LIKE ? ESCAPE '!'", "%\"x_title\":\"%"+sanitizeJSONLikeValue(xTitle)+"%")
+	}
+	if httpReferer != "" {
+		tx = tx.Where("logs.other LIKE ? ESCAPE '!'", "%\"http_referer\":\"%"+sanitizeJSONLikeValue(httpReferer)+"%")
 	}
 	if startTimestamp != 0 {
 		tx = tx.Where("logs.created_at >= ?", startTimestamp)
@@ -474,40 +523,79 @@ type Stat struct {
 	FailCount    int `json:"fail_count"`
 }
 
+// LogStatFilter contains optional filters shared by log list and stat queries.
+type LogStatFilter struct {
+	Username          string
+	TokenName         string
+	ModelName         string
+	Channel           int
+	Group             string
+	RequestId         string
+	UpstreamRequestId string
+	Ip                string
+	Ua                string
+	XTitle            string
+	HttpReferer       string
+}
+
+// HasLogOnlyFilters reports whether the filter needs fields unavailable in quota_data.
+func (filter LogStatFilter) HasLogOnlyFilters() bool {
+	return filter.RequestId != "" || filter.UpstreamRequestId != "" || filter.Ip != "" || filter.Ua != "" || filter.XTitle != "" || filter.HttpReferer != ""
+}
+
 // buildStatConditions 构建统计查询的通用 WHERE 条件
-func buildStatConditions(tx *gorm.DB, username string, tokenName string, startTimestamp int64, endTimestamp int64, modelName string, channel int, group string) (*gorm.DB, error) {
-	if username != "" {
-		tx = tx.Where("username = ?", username)
+func buildStatConditions(tx *gorm.DB, filter LogStatFilter, startTimestamp int64, endTimestamp int64) (*gorm.DB, error) {
+	if filter.Username != "" {
+		tx = tx.Where("logs.username = ?", filter.Username)
 	}
-	if tokenName != "" {
-		tx = tx.Where("token_name = ?", tokenName)
+	if filter.TokenName != "" {
+		tx = tx.Where("logs.token_name = ?", filter.TokenName)
 	}
 	if startTimestamp != 0 {
-		tx = tx.Where("created_at >= ?", startTimestamp)
+		tx = tx.Where("logs.created_at >= ?", startTimestamp)
 	}
 	if endTimestamp != 0 {
-		tx = tx.Where("created_at <= ?", endTimestamp)
+		tx = tx.Where("logs.created_at <= ?", endTimestamp)
 	}
-	if modelName != "" {
-		modelNamePattern, err := sanitizeLikePattern(modelName)
+	if filter.ModelName != "" {
+		modelNamePattern, err := sanitizeLikePattern(filter.ModelName)
 		if err != nil {
 			return nil, err
 		}
-		tx = tx.Where("model_name LIKE ? ESCAPE '!'", modelNamePattern)
+		tx = tx.Where("logs.model_name LIKE ? ESCAPE '!'", modelNamePattern)
 	}
-	if channel != 0 {
-		tx = tx.Where("channel_id = ?", channel)
+	if filter.Channel != 0 {
+		tx = tx.Where("logs.channel_id = ?", filter.Channel)
 	}
-	if group != "" {
-		tx = tx.Where(logGroupCol+" = ?", group)
+	if filter.Group != "" {
+		tx = tx.Where("logs."+logGroupCol+" = ?", filter.Group)
+	}
+	if filter.RequestId != "" {
+		tx = tx.Where("logs.request_id = ?", filter.RequestId)
+	}
+	if filter.UpstreamRequestId != "" {
+		tx = tx.Where("logs.upstream_request_id = ?", filter.UpstreamRequestId)
+	}
+	if filter.Ip != "" {
+		tx = tx.Where("logs.ip LIKE ? ESCAPE '!'", "%"+sanitizeLikeLiteral(filter.Ip)+"%")
+	}
+	if filter.Ua != "" {
+		tx = tx.Where("logs.other LIKE ? ESCAPE '!'", "%\"ua\":\"%"+sanitizeJSONLikeValue(filter.Ua)+"%")
+	}
+	if filter.XTitle != "" {
+		tx = tx.Where("logs.other LIKE ? ESCAPE '!'", "%\"x_title\":\"%"+sanitizeJSONLikeValue(filter.XTitle)+"%")
+	}
+	if filter.HttpReferer != "" {
+		tx = tx.Where("logs.other LIKE ? ESCAPE '!'", "%\"http_referer\":\"%"+sanitizeJSONLikeValue(filter.HttpReferer)+"%")
 	}
 	return tx, nil
 }
 
-func SumUsedQuota(logType int, startTimestamp int64, endTimestamp int64, modelName string, username string, tokenName string, channel int, group string) (stat Stat, err error) {
+// SumUsedQuota returns quota, realtime RPM/TPM, and success/failure counts for logs matching the filter.
+func SumUsedQuota(logType int, startTimestamp int64, endTimestamp int64, filter LogStatFilter) (stat Stat, err error) {
 	// 额度统计查询
 	tx := LOG_DB.Table("logs").Select("sum(quota) quota")
-	tx, err = buildStatConditions(tx, username, tokenName, startTimestamp, endTimestamp, modelName, channel, group)
+	tx, err = buildStatConditions(tx, filter, startTimestamp, endTimestamp)
 	if err != nil {
 		return stat, err
 	}
@@ -519,7 +607,7 @@ func SumUsedQuota(logType int, startTimestamp int64, endTimestamp int64, modelNa
 
 	// rpm和tpm查询（最近60秒）
 	rpmTpmQuery := LOG_DB.Table("logs").Select("count(*) rpm, sum(prompt_tokens) + sum(completion_tokens) tpm")
-	rpmTpmQuery, err = buildStatConditions(rpmTpmQuery, username, tokenName, 0, 0, modelName, channel, group)
+	rpmTpmQuery, err = buildStatConditions(rpmTpmQuery, filter, 0, 0)
 	if err != nil {
 		return stat, err
 	}
@@ -528,7 +616,7 @@ func SumUsedQuota(logType int, startTimestamp int64, endTimestamp int64, modelNa
 
 	// 成功次数查询
 	successQuery := LOG_DB.Table("logs").Select("count(*) success_count")
-	successQuery, err = buildStatConditions(successQuery, username, tokenName, startTimestamp, endTimestamp, modelName, channel, group)
+	successQuery, err = buildStatConditions(successQuery, filter, startTimestamp, endTimestamp)
 	if err != nil {
 		return stat, err
 	}
@@ -540,37 +628,57 @@ func SumUsedQuota(logType int, startTimestamp int64, endTimestamp int64, modelNa
 
 	// 失败次数查询
 	failQuery := LOG_DB.Table("logs").Select("count(*) fail_count")
-	failQuery, err = buildStatConditions(failQuery, username, tokenName, startTimestamp, endTimestamp, modelName, channel, group)
+	failQuery, err = buildStatConditions(failQuery, filter, startTimestamp, endTimestamp)
 	if err != nil {
 		return stat, err
 	}
 	failQuery = failQuery.Where("type = ?", LogTypeError)
 
+	var quotaResult struct {
+		Quota int `json:"quota"`
+	}
+	var rpmTpmResult struct {
+		Rpm int `json:"rpm"`
+		Tpm int `json:"tpm"`
+	}
+	var successResult struct {
+		SuccessCount int `json:"success_count"`
+	}
+	var failResult struct {
+		FailCount int `json:"fail_count"`
+	}
+
 	// 执行查询
-	if err := tx.Scan(&stat).Error; err != nil {
+	if err := tx.Scan(&quotaResult).Error; err != nil {
 		common.SysError("failed to query log stat: " + err.Error())
 		return stat, errors.New("查询统计数据失败")
 	}
-	if err := rpmTpmQuery.Scan(&stat).Error; err != nil {
+	if err := rpmTpmQuery.Scan(&rpmTpmResult).Error; err != nil {
 		common.SysError("failed to query rpm/tpm stat: " + err.Error())
 		return stat, errors.New("查询统计数据失败")
 	}
-	if err := successQuery.Scan(&stat).Error; err != nil {
+	if err := successQuery.Scan(&successResult).Error; err != nil {
 		common.SysError("failed to query success count stat: " + err.Error())
 		return stat, errors.New("查询统计数据失败")
 	}
-	if err := failQuery.Scan(&stat).Error; err != nil {
+	if err := failQuery.Scan(&failResult).Error; err != nil {
 		common.SysError("failed to query fail count stat: " + err.Error())
 		return stat, errors.New("查询统计数据失败")
 	}
+
+	stat.Quota = quotaResult.Quota
+	stat.Rpm = rpmTpmResult.Rpm
+	stat.Tpm = rpmTpmResult.Tpm
+	stat.SuccessCount = successResult.SuccessCount
+	stat.FailCount = failResult.FailCount
 
 	return stat, nil
 }
 
 // QueryRpmTpm 实时查询最近60秒的 RPM 和 TPM，供 DataExport 模式复用
-func QueryRpmTpm(username string, tokenName string, modelName string, channel int, group string) (rpm int, tpm int, err error) {
+func QueryRpmTpm(filter LogStatFilter) (rpm int, tpm int, err error) {
 	q := LOG_DB.Table("logs").Select("count(*) rpm, sum(prompt_tokens) + sum(completion_tokens) tpm")
-	q, buildErr := buildStatConditions(q, username, tokenName, 0, 0, modelName, channel, group)
+	q, buildErr := buildStatConditions(q, filter, 0, 0)
 	if buildErr != nil {
 		return 0, 0, buildErr
 	}

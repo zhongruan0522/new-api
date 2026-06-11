@@ -22,9 +22,10 @@ var (
 
 type PasskeyCredential struct {
 	ID              int            `json:"id" gorm:"primaryKey"`
-	UserID          int            `json:"user_id" gorm:"uniqueIndex;not null"`
+	UserID          int            `json:"user_id" gorm:"index;not null"`
 	CredentialID    string         `json:"credential_id" gorm:"type:varchar(512);uniqueIndex;not null"` // base64 encoded
 	PublicKey       string         `json:"public_key" gorm:"type:text;not null"`                        // base64 encoded
+	DeviceName      string         `json:"device_name" gorm:"type:varchar(255)"`
 	AttestationType string         `json:"attestation_type" gorm:"type:varchar(255)"`
 	AAGUID          string         `json:"aaguid" gorm:"type:varchar(512)"` // base64 encoded
 	SignCount       uint32         `json:"sign_count" gorm:"default:0"`
@@ -147,14 +148,57 @@ func GetPasskeyByUserID(userID int) (*PasskeyCredential, error) {
 	var credential PasskeyCredential
 	if err := DB.Where("user_id = ?", userID).First(&credential).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			// 未找到记录是正常情况（用户未绑定），返回 ErrPasskeyNotFound 而不记录日志
 			return nil, ErrPasskeyNotFound
 		}
-		// 只有真正的数据库错误才记录日志
 		common.SysLog(fmt.Sprintf("GetPasskeyByUserID: database error for user %d: %v", userID, err))
 		return nil, ErrFriendlyPasskeyNotFound
 	}
 	return &credential, nil
+}
+
+func GetPasskeysByUserID(userID int) ([]*PasskeyCredential, error) {
+	if userID == 0 {
+		return nil, fmt.Errorf("无效的用户 ID")
+	}
+	var credentials []*PasskeyCredential
+	query := DB.Where("user_id = ?", userID)
+	if common.UsingMySQL {
+		query = query.Order("IFNULL(last_used_at, '1970-01-01') DESC, created_at DESC")
+	} else {
+		query = query.Order("last_used_at DESC NULLS LAST, created_at DESC")
+	}
+	if err := query.Find(&credentials).Error; err != nil {
+		common.SysLog(fmt.Sprintf("GetPasskeysByUserID: database error for user %d: %v", userID, err))
+		return nil, fmt.Errorf("获取 Passkey 列表失败")
+	}
+	return credentials, nil
+}
+
+func GetPasskeyByID(id int) (*PasskeyCredential, error) {
+	if id == 0 {
+		return nil, fmt.Errorf("无效的 Passkey ID")
+	}
+	var credential PasskeyCredential
+	if err := DB.Where("id = ?", id).First(&credential).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, fmt.Errorf("Passkey 不存在")
+		}
+		common.SysLog(fmt.Sprintf("GetPasskeyByID: database error for id %d: %v", id, err))
+		return nil, fmt.Errorf("获取 Passkey 失败")
+	}
+	return &credential, nil
+}
+
+func CountPasskeysByUserID(userID int) (int64, error) {
+	if userID == 0 {
+		return 0, fmt.Errorf("无效的用户 ID")
+	}
+	var count int64
+	if err := DB.Model(&PasskeyCredential{}).Where("user_id = ?", userID).Count(&count).Error; err != nil {
+		common.SysLog(fmt.Sprintf("CountPasskeysByUserID: database error for user %d: %v", userID, err))
+		return 0, fmt.Errorf("获取 Passkey 数量失败")
+	}
+	return count, nil
 }
 
 func GetPasskeyByCredentialID(credentialID []byte) (*PasskeyCredential, error) {
@@ -177,13 +221,36 @@ func GetPasskeyByCredentialID(credentialID []byte) (*PasskeyCredential, error) {
 	return &credential, nil
 }
 
+func CreatePasskeyCredential(credential *PasskeyCredential) error {
+	if credential == nil {
+		common.SysLog("CreatePasskeyCredential: nil credential provided")
+		return fmt.Errorf("Passkey 保存失败，请重试")
+	}
+	if err := DB.Create(credential).Error; err != nil {
+		common.SysLog(fmt.Sprintf("CreatePasskeyCredential: failed to create credential for user %d: %v", credential.UserID, err))
+		return fmt.Errorf("Passkey 保存失败，请重试")
+	}
+	return nil
+}
+
+func UpdatePasskeyCredential(credential *PasskeyCredential) error {
+	if credential == nil || credential.ID == 0 {
+		common.SysLog("UpdatePasskeyCredential: invalid credential")
+		return fmt.Errorf("Passkey 更新失败，请重试")
+	}
+	if err := DB.Save(credential).Error; err != nil {
+		common.SysLog(fmt.Sprintf("UpdatePasskeyCredential: failed to update credential %d: %v", credential.ID, err))
+		return fmt.Errorf("Passkey 更新失败，请重试")
+	}
+	return nil
+}
+
 func UpsertPasskeyCredential(credential *PasskeyCredential) error {
 	if credential == nil {
 		common.SysLog("UpsertPasskeyCredential: nil credential provided")
 		return fmt.Errorf("Passkey 保存失败，请重试")
 	}
 	return DB.Transaction(func(tx *gorm.DB) error {
-		// 使用Unscoped()进行硬删除，避免唯一索引冲突
 		if err := tx.Unscoped().Where("user_id = ?", credential.UserID).Delete(&PasskeyCredential{}).Error; err != nil {
 			common.SysLog(fmt.Sprintf("UpsertPasskeyCredential: failed to delete existing credential for user %d: %v", credential.UserID, err))
 			return fmt.Errorf("Passkey 保存失败，请重试")
@@ -196,12 +263,23 @@ func UpsertPasskeyCredential(credential *PasskeyCredential) error {
 	})
 }
 
+func DeletePasskeyByID(id int) error {
+	if id == 0 {
+		common.SysLog("DeletePasskeyByID: empty id")
+		return fmt.Errorf("删除失败，请重试")
+	}
+	if err := DB.Unscoped().Where("id = ?", id).Delete(&PasskeyCredential{}).Error; err != nil {
+		common.SysLog(fmt.Sprintf("DeletePasskeyByID: failed to delete passkey %d: %v", id, err))
+		return fmt.Errorf("删除失败，请重试")
+	}
+	return nil
+}
+
 func DeletePasskeyByUserID(userID int) error {
 	if userID == 0 {
 		common.SysLog("DeletePasskeyByUserID: empty user ID")
 		return fmt.Errorf("删除失败，请重试")
 	}
-	// 使用Unscoped()进行硬删除，避免唯一索引冲突
 	if err := DB.Unscoped().Where("user_id = ?", userID).Delete(&PasskeyCredential{}).Error; err != nil {
 		common.SysLog(fmt.Sprintf("DeletePasskeyByUserID: failed to delete passkey for user %d: %v", userID, err))
 		return fmt.Errorf("删除失败，请重试")

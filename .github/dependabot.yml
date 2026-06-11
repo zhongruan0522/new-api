@@ -8,9 +8,7 @@ updates:
     target-branch: "dev"
 
   - package-ecosystem: "bun"
-    directories:
-      - "/web/classic"
-      - "/web/default"
+    directory: "/web"
     schedule:
       interval: "weekly"
     target-branch: "dev"

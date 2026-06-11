@@ -185,8 +185,8 @@ func (s *BillingSession) decreaseTokenQuota(quota int) error {
 	tokenKey := s.relayInfo.TokenKey
 
 	switch quotaType {
-	case 0: // 无限额度，不扣减
-		return nil
+	case 0: // 无限额度，只记录已用额度，不扣减剩余额度
+		return model.UpdateTokenUsedQuota(tokenId, tokenKey, quota)
 	case 1: // 永久限额
 		return model.DecreaseTokenQuota(tokenId, tokenKey, quota)
 	case 2: // 时段限额
@@ -214,8 +214,8 @@ func (s *BillingSession) increaseTokenQuota(quota int) error {
 	tokenKey := s.relayInfo.TokenKey
 
 	switch quotaType {
-	case 0: // 无限额度，不退还
-		return nil
+	case 0: // 无限额度，只回滚已用额度，不恢复剩余额度
+		return model.UpdateTokenUsedQuota(tokenId, tokenKey, -quota)
 	case 1: // 永久限额
 		return model.IncreaseTokenQuota(tokenId, tokenKey, quota)
 	case 2: // 时段限额
@@ -242,7 +242,7 @@ func (s *BillingSession) increaseTokenQuotaByAmount(tokenId int, tokenKey string
 
 	switch quotaType {
 	case 0:
-		return nil
+		return model.UpdateTokenUsedQuota(tokenId, tokenKey, -quota)
 	case 1:
 		return model.IncreaseTokenQuota(tokenId, tokenKey, quota)
 	case 2:

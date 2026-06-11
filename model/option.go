@@ -192,13 +192,6 @@ func UpdateOption(key string, value string) error {
 		"quota_setting.enable_free_model_pre_consume":
 		return errors.New("option removed")
 	}
-	if key == "SidebarModulesAdmin" {
-		sanitized, _, err := SanitizeSidebarModulesConfigJSON(value)
-		if err != nil {
-			return err
-		}
-		value = sanitized
-	}
 	// Save to database first
 	option := Option{
 		Key: key,
@@ -466,8 +459,6 @@ func handleConfigUpdate(key, value string) bool {
 	if configName == "performance_setting" {
 		// 同步磁盘缓存配置到 common 包
 		performance_setting.UpdateAndSync()
-	} else if configName == "theme" {
-		system_setting.UpdateAndSyncTheme()
 	}
 
 	return true // 已处理

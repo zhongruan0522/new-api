@@ -2,13 +2,11 @@
 
 `router/` 只负责挂载路由和静态资源，不承载业务逻辑。
 
-## 双 UI 路由
+## Web 路由
 
-- `SetWebRouter` 使用 `ThemeAssets`、`common.EmbedFolder` 和 `common.NewThemeAwareFS` 选择
-  `web/default/dist` 或 `web/classic/dist`。
+- `SetWebRouter` 使用 `WebAssets` 和 `common.EmbedFolder` 服务 `web/dist`。
 - `NoRoute` 中 `/v1`、`/api`、`/assets` 仍应返回 relay/API 404，不要误返回前端 HTML。
-- `common.GetTheme() == "classic"` 时返回 classic index，否则返回 default index。
-- 分析脚本注入要同时作用于 `DefaultIndexPage` 和 `ClassicIndexPage`。
+- 分析脚本注入在 `main.go` 中直接修改 `indexPage` 字节。
 - `FRONTEND_BASE_URL` 只在非 master 节点生效，保持现有重定向行为。
 
 ## 路由边界
@@ -19,5 +17,5 @@
 
 ## 验证
 
-- 改 web router、主题或 embed 资源后执行 `go test ./router/... ./common/...` 和 `go build`。
+- 改 web router 或 embed 资源后执行 `go test ./router/... ./common/...` 和 `go build`。
 - 如果影响 relay 路由，执行相关 `relay` 测试并检查流式响应路径。

@@ -67,5 +67,5 @@ func GetDBPreMigrateJob(c *gin.Context) {
 		})
 		return
 	}
-	common.ApiSuccess(c, job)
+	common.ApiSuccess(c, &job)
 }

@@ -13,10 +13,11 @@ import (
 // parsedDynamicRatioRule 预解析后的缓存规则，避免热路径重复 JSON 解析
 type parsedDynamicRatioRule struct {
 	DynamicRatioRule       // 嵌入原始规则，保留所有原始字段供前端展示
-	ParsedWeekdays   []int // 预解析后的星期数组，nil 表示不限
-	ParsedStartMin   int   // 预解析后的开始时间（分钟），-1 表示不限
-	ParsedEndMin     int   // 预解析后的结束时间（分钟），-1 表示不限
-	HasTimeRange     bool  // 是否有时间条件
+	ParsedWeekdays   []int    // 预解析后的星期数组，nil 表示不限
+	ParsedModels     []string // 预解析后的模型列表，nil 表示不限（匹配所有模型）
+	ParsedStartMin   int      // 预解析后的开始时间（分钟），-1 表示不限
+	ParsedEndMin     int      // 预解析后的结束时间（分钟），-1 表示不限
+	HasTimeRange     bool     // 是否有时间条件
 }
 
 var (
@@ -39,6 +40,14 @@ func parseDynamicRatioRules(rules []DynamicRatioRule) []parsedDynamicRatioRule {
 			var days []int
 			if err := common.UnmarshalJsonStr(r.Weekdays, &days); err == nil && len(days) > 0 {
 				parsed.ParsedWeekdays = days
+			}
+		}
+
+		// 预解析 Models
+		if r.Models != "" {
+			var models []string
+			if err := common.UnmarshalJsonStr(r.Models, &models); err == nil && len(models) > 0 {
+				parsed.ParsedModels = models
 			}
 		}
 

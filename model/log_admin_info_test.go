@@ -105,7 +105,7 @@ func TestRecordErrorLogStoresAndFiltersUpstreamRequestId(t *testing.T) {
 		t.Fatalf("stored upstream request id = %q, want upstream-id", stored.UpstreamRequestId)
 	}
 
-	logs, total, err := GetAllLogs(LogTypeUnknown, 0, 0, "", "", "", 0, 20, 0, "", "", "upstream-id")
+	logs, total, err := GetAllLogs(LogTypeUnknown, 0, 0, "", "", "", 0, 20, 0, "", "", "upstream-id", "", "", "", "")
 	if err != nil {
 		t.Fatalf("GetAllLogs error = %v", err)
 	}

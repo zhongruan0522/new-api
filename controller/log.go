@@ -22,7 +22,11 @@ func GetAllLogs(c *gin.Context) {
 	group := c.Query("group")
 	requestId := c.Query("request_id")
 	upstreamRequestId := c.Query("upstream_request_id")
-	logs, total, err := model.GetAllLogs(logType, startTimestamp, endTimestamp, modelName, username, tokenName, pageInfo.GetStartIdx(), pageInfo.GetPageSize(), channel, group, requestId, upstreamRequestId)
+	ip := c.Query("ip")
+	ua := c.Query("ua")
+	xTitle := c.Query("x_title")
+	httpReferer := c.Query("http_referer")
+	logs, total, err := model.GetAllLogs(logType, startTimestamp, endTimestamp, modelName, username, tokenName, pageInfo.GetStartIdx(), pageInfo.GetPageSize(), channel, group, requestId, upstreamRequestId, ip, ua, xTitle, httpReferer)
 	if err != nil {
 		common.ApiError(c, err)
 		return
@@ -44,7 +48,11 @@ func GetUserLogs(c *gin.Context) {
 	group := c.Query("group")
 	requestId := c.Query("request_id")
 	upstreamRequestId := c.Query("upstream_request_id")
-	logs, total, err := model.GetUserLogs(userId, logType, startTimestamp, endTimestamp, modelName, tokenName, pageInfo.GetStartIdx(), pageInfo.GetPageSize(), group, requestId, upstreamRequestId)
+	ip := c.Query("ip")
+	ua := c.Query("ua")
+	xTitle := c.Query("x_title")
+	httpReferer := c.Query("http_referer")
+	logs, total, err := model.GetUserLogs(userId, logType, startTimestamp, endTimestamp, modelName, tokenName, pageInfo.GetStartIdx(), pageInfo.GetPageSize(), group, requestId, upstreamRequestId, ip, ua, xTitle, httpReferer)
 	if err != nil {
 		common.ApiError(c, err)
 		return
@@ -99,18 +107,27 @@ func GetLogsStat(c *gin.Context) {
 	logType, _ := strconv.Atoi(c.Query("type"))
 	startTimestamp, _ := strconv.ParseInt(c.Query("start_timestamp"), 10, 64)
 	endTimestamp, _ := strconv.ParseInt(c.Query("end_timestamp"), 10, 64)
-	tokenName := c.Query("token_name")
-	username := c.Query("username")
-	modelName := c.Query("model_name")
 	channel, _ := strconv.Atoi(c.Query("channel"))
-	group := c.Query("group")
+	filter := model.LogStatFilter{
+		Username:          c.Query("username"),
+		TokenName:         c.Query("token_name"),
+		ModelName:         c.Query("model_name"),
+		Channel:           channel,
+		Group:             c.Query("group"),
+		RequestId:         c.Query("request_id"),
+		UpstreamRequestId: c.Query("upstream_request_id"),
+		Ip:                c.Query("ip"),
+		Ua:                c.Query("ua"),
+		XTitle:            c.Query("x_title"),
+		HttpReferer:       c.Query("http_referer"),
+	}
 
 	var statData model.Stat
-	if common.DataExportEnabled && tokenName == "" && channel == 0 && group == "" && modelName == "" && logType == 0 {
+	if common.DataExportEnabled && filter.TokenName == "" && filter.Channel == 0 && filter.Group == "" && filter.ModelName == "" && !filter.HasLogOnlyFilters() && logType == 0 {
 		var qStat model.QuotaStat
 		var err error
-		if username != "" {
-			qStat, err = model.GetQuotaStatByUsername(username, startTimestamp, endTimestamp)
+		if filter.Username != "" {
+			qStat, err = model.GetQuotaStatByUsername(filter.Username, startTimestamp, endTimestamp)
 		} else {
 			qStat, err = model.GetAllQuotaStat(startTimestamp, endTimestamp)
 		}
@@ -119,7 +136,7 @@ func GetLogsStat(c *gin.Context) {
 			return
 		}
 		// 从 logs 表实时查询 RPM/TPM（最近60秒），quota_data 是小时级预聚合无法提供实时指标
-		rpm, tpm, err := model.QueryRpmTpm(username, tokenName, modelName, channel, group)
+		rpm, tpm, err := model.QueryRpmTpm(filter)
 		if err != nil {
 			common.ApiError(c, err)
 			return
@@ -132,7 +149,7 @@ func GetLogsStat(c *gin.Context) {
 			FailCount:    qStat.FailCount,
 		}
 	} else {
-		stat, err := model.SumUsedQuota(logType, startTimestamp, endTimestamp, modelName, username, tokenName, channel, group)
+		stat, err := model.SumUsedQuota(logType, startTimestamp, endTimestamp, filter)
 		if err != nil {
 			common.ApiError(c, err)
 			return
@@ -148,25 +165,34 @@ func GetLogsStat(c *gin.Context) {
 }
 
 func GetLogsSelfStat(c *gin.Context) {
-	username := c.GetString("username")
 	userId := c.GetInt("id")
 	logType, _ := strconv.Atoi(c.Query("type"))
 	startTimestamp, _ := strconv.ParseInt(c.Query("start_timestamp"), 10, 64)
 	endTimestamp, _ := strconv.ParseInt(c.Query("end_timestamp"), 10, 64)
-	tokenName := c.Query("token_name")
-	modelName := c.Query("model_name")
 	channel, _ := strconv.Atoi(c.Query("channel"))
-	group := c.Query("group")
+	filter := model.LogStatFilter{
+		Username:          c.GetString("username"),
+		TokenName:         c.Query("token_name"),
+		ModelName:         c.Query("model_name"),
+		Channel:           channel,
+		Group:             c.Query("group"),
+		RequestId:         c.Query("request_id"),
+		UpstreamRequestId: c.Query("upstream_request_id"),
+		Ip:                c.Query("ip"),
+		Ua:                c.Query("ua"),
+		XTitle:            c.Query("x_title"),
+		HttpReferer:       c.Query("http_referer"),
+	}
 
 	var statData model.Stat
-	if common.DataExportEnabled && tokenName == "" && channel == 0 && group == "" && modelName == "" && logType == 0 {
+	if common.DataExportEnabled && filter.TokenName == "" && filter.Channel == 0 && filter.Group == "" && filter.ModelName == "" && !filter.HasLogOnlyFilters() && logType == 0 {
 		qStat, err := model.GetQuotaStatByUserId(userId, startTimestamp, endTimestamp)
 		if err != nil {
 			common.ApiError(c, err)
 			return
 		}
 		// 从 logs 表实时查询 RPM/TPM（最近60秒）
-		rpm, tpm, err := model.QueryRpmTpm(username, tokenName, modelName, channel, group)
+		rpm, tpm, err := model.QueryRpmTpm(filter)
 		if err != nil {
 			common.ApiError(c, err)
 			return
@@ -179,7 +205,7 @@ func GetLogsSelfStat(c *gin.Context) {
 			FailCount:    qStat.FailCount,
 		}
 	} else {
-		stat, err := model.SumUsedQuota(logType, startTimestamp, endTimestamp, modelName, username, tokenName, channel, group)
+		stat, err := model.SumUsedQuota(logType, startTimestamp, endTimestamp, filter)
 		if err != nil {
 			common.ApiError(c, err)
 			return
