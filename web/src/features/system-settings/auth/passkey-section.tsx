@@ -63,6 +63,7 @@ const passkeySchema = z.object({
     'platform',
     'cross-platform',
   ]),
+  'passkey.max_passkeys_per_user': z.number().int().min(1).max(20),
 })
 
 type PasskeyFormValues = z.infer<typeof passkeySchema>
@@ -343,6 +344,32 @@ export function PasskeySection({ defaultValues }: PasskeySectionProps) {
                   />
                 </FormControl>
               </SettingsSwitchItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name='passkey.max_passkeys_per_user'
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{t('Max Passkeys per User')}</FormLabel>
+                <FormControl>
+                  <Input
+                    type='number'
+                    min={1}
+                    max={20}
+                    {...field}
+                    value={field.value ?? 1}
+                    onChange={(e) => field.onChange(parseInt(e.target.value) || 1)}
+                  />
+                </FormControl>
+                <FormDescription>
+                  {t(
+                    'Maximum number of Passkeys each user can register (1-20)'
+                  )}
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
             )}
           />
 

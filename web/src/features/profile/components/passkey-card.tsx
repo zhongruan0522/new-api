@@ -17,7 +17,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { useCallback, useMemo, useState } from 'react'
-import { AlertTriangle, KeyRound, Loader2, ShieldAlert } from 'lucide-react'
+import { AlertTriangle, KeyRound, Loader2, Pencil, ShieldAlert, Trash2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import dayjs from '@/lib/dayjs'
@@ -40,9 +40,21 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
 import { StatusBadge } from '@/components/status-badge'
 import { usePasskeyManagement } from '@/features/auth/passkey'
+import { updatePasskey } from '@/features/auth/passkey/api'
+import type { PasskeyCredential } from '@/features/auth/passkey/types'
 import {
   SecureVerificationDialog,
   useSecureVerification,
@@ -57,8 +69,13 @@ interface PasskeyCardProps {
 export function PasskeyCard({ loading: pageLoading }: PasskeyCardProps) {
   const { t } = useTranslation()
   const [confirmOpen, setConfirmOpen] = useState(false)
+  const [deleteId, setDeleteId] = useState<number | undefined>(undefined)
   const [restrictedMethod, setRestrictedMethod] =
     useState<VerificationMethod | null>(null)
+  const [renameOpen, setRenameOpen] = useState(false)
+  const [renameId, setRenameId] = useState<number>(0)
+  const [renameName, setRenameName] = useState('')
+  const [renaming, setRenaming] = useState(false)
 
   const {
     status,
@@ -67,7 +84,7 @@ export function PasskeyCard({ loading: pageLoading }: PasskeyCardProps) {
     removing,
     supported,
     enabled,
-    lastUsed,
+    fetchStatus,
     register,
     remove,
   } = usePasskeyManagement()
@@ -107,8 +124,6 @@ export function PasskeyCard({ loading: pageLoading }: PasskeyCardProps) {
 
     const methods = await fetchVerificationMethods()
     if (!methods.has2FA) {
-      // Without 2FA enabled, register directly. The browser-level Passkey prompt
-      // is itself a strong proof of presence, so no extra verification is needed.
       await register()
       return
     }
@@ -123,7 +138,7 @@ export function PasskeyCard({ loading: pageLoading }: PasskeyCardProps) {
     })
   }, [fetchVerificationMethods, register, startVerification, supported, t])
 
-  const handleRemove = useCallback(async () => {
+  const handleRemove = useCallback(async (id?: number) => {
     const methods = await fetchVerificationMethods()
     const required: VerificationMethod | null = methods.has2FA
       ? '2fa'
@@ -147,7 +162,7 @@ export function PasskeyCard({ loading: pageLoading }: PasskeyCardProps) {
 
     setConfirmOpen(false)
     setRestrictedMethod(required)
-    await startVerification(remove, {
+    await startVerification(() => remove(id), {
       preferredMethod: required,
       title: t('Security Verification'),
       description: t(
@@ -155,6 +170,31 @@ export function PasskeyCard({ loading: pageLoading }: PasskeyCardProps) {
       ),
     })
   }, [fetchVerificationMethods, remove, startVerification, t])
+
+  const handleRename = useCallback((credential: PasskeyCredential) => {
+    setRenameId(credential.id)
+    setRenameName(credential.device_name || '')
+    setRenameOpen(true)
+  }, [])
+
+  const handleRenameSubmit = useCallback(async () => {
+    if (!renameId) return
+    setRenaming(true)
+    try {
+      const res = await updatePasskey(renameId, renameName)
+      if (!res.success) {
+        toast.error(res.message || t('Failed to update device name'))
+        return
+      }
+      toast.success(t('Device name updated'))
+      setRenameOpen(false)
+      await fetchStatus()
+    } catch (error) {
+      toast.error(t('Failed to update device name'))
+    } finally {
+      setRenaming(false)
+    }
+  }, [renameId, renameName, fetchStatus, t])
 
   const handleVerificationCancel = useCallback(() => {
     setRestrictedMethod(null)
@@ -171,9 +211,6 @@ export function PasskeyCard({ loading: pageLoading }: PasskeyCardProps) {
     [setVerificationOpen]
   )
 
-  // Adapt the hook's `Promise<unknown>` return into the dialog's
-  // `void | Promise<void>` signature without losing error propagation
-  // semantics (errors are surfaced via toast inside the hook).
   const handleDialogVerify = useCallback(
     async (method: VerificationMethod, code?: string) => {
       try {
@@ -199,12 +236,11 @@ export function PasskeyCard({ loading: pageLoading }: PasskeyCardProps) {
     )
   }
 
-  const formattedLastUsed =
-    lastUsed && !Number.isNaN(Date.parse(lastUsed))
-      ? dayjs(lastUsed).fromNow()
-      : t('Not used yet')
-
-  const showUnsupportedNotice = !supported && !enabled
+  const passkeys = status?.passkeys || []
+  const count = status?.count || 0
+  const maxPasskeys = status?.max_passkeys || 1
+  const canAddMore = count < maxPasskeys
+  const showUnsupportedNotice = !supported && count === 0
 
   return (
     <>
@@ -220,109 +256,134 @@ export function PasskeyCard({ loading: pageLoading }: PasskeyCardProps) {
 
         <CardContent className='p-3 sm:p-5'>
           <div className='space-y-6'>
-            <div className='flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between xl:flex-col 2xl:flex-row'>
-              <div className='flex items-start gap-4'>
-                <div className='bg-muted rounded-md p-2'>
-                  <KeyRound className='h-5 w-5' />
-                </div>
-                <div className='space-y-1'>
-                  <div className='flex flex-wrap items-center gap-2'>
-                    <p className='font-medium'>{t('Passkey Authentication')}</p>
-                    <StatusBadge
-                      label={enabled ? t('Enabled') : t('Disabled')}
-                      variant={enabled ? 'success' : 'neutral'}
-                      showDot
-                      copyable={false}
-                    />
-                    {status?.backup_eligible !== undefined && (
-                      <StatusBadge
-                        label={
-                          status.backup_eligible
-                            ? status.backup_state
-                              ? t('Backed up')
-                              : t('Not backed up')
-                            : t('No backup')
-                        }
-                        variant={
-                          status.backup_eligible
-                            ? status.backup_state
-                              ? 'success'
-                              : 'warning'
-                            : 'neutral'
-                        }
-                        showDot
-                        copyable={false}
-                      />
-                    )}
-                  </div>
-                  <p className='text-muted-foreground text-sm'>
-                    {t('labelWithColon', { label: t('Last Used') })} {formattedLastUsed}
-                  </p>
-                </div>
-              </div>
-
-              {!enabled && (
-                <Button
-                  className='w-full sm:w-auto xl:w-full 2xl:w-auto'
-                  onClick={handleRegister}
-                  disabled={!supported || registering}
-                >
-                  {registering && (
-                    <Loader2 className='mr-2 h-4 w-4 animate-spin' />
-                  )}
-                  {t('Enable Passkey')}
-                </Button>
-              )}
-            </div>
-
-            {enabled && (
-              <div className='flex flex-col gap-3 border-t pt-6 sm:flex-row xl:flex-col 2xl:flex-row'>
-                <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-                  <AlertDialogTrigger
-                    render={
-                      <Button
-                        variant='destructive'
-                        className='flex-1'
-                        disabled={removing}
-                      />
-                    }
+            {passkeys.length > 0 && (
+              <div className='space-y-3'>
+                {passkeys.map((credential) => (
+                  <div
+                    key={credential.id}
+                    className='flex items-start justify-between gap-4 rounded-lg border p-3'
                   >
-                    {removing ? (
-                      <Loader2 className='mr-2 h-4 w-4 animate-spin' />
-                    ) : (
-                      <AlertTriangle className='mr-2 h-4 w-4' />
-                    )}
-                    {t('Remove Passkey')}
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>
-                        {t('Remove Passkey?')}
-                      </AlertDialogTitle>
-                      <AlertDialogDescription>
-                        {t(
-                          'Removing Passkey will require you to sign in with your password next time. You can re-register anytime.'
-                        )}
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel disabled={removing}>
-                        {t('Cancel')}
-                      </AlertDialogCancel>
-                      <AlertDialogAction
-                        className='bg-destructive text-destructive-foreground hover:bg-destructive/90'
+                    <div className='flex items-start gap-3 flex-1 min-w-0'>
+                      <div className='bg-muted rounded-md p-2'>
+                        <KeyRound className='h-4 w-4' />
+                      </div>
+                      <div className='space-y-1 flex-1 min-w-0'>
+                        <p className='font-medium truncate'>
+                          {credential.device_name || t('Unnamed Device')}
+                        </p>
+                        <div className='flex flex-wrap items-center gap-2 text-sm'>
+                          <StatusBadge
+                            label={
+                              credential.attachment === 'platform'
+                                ? t('Built-in')
+                                : credential.attachment === 'cross-platform'
+                                  ? t('External')
+                                  : t('Unknown')
+                            }
+                            variant='neutral'
+                            copyable={false}
+                          />
+                          {credential.backup_eligible && (
+                            <StatusBadge
+                              label={
+                                credential.backup_state
+                                  ? t('Backed up')
+                                  : t('Not backed up')
+                              }
+                              variant={
+                                credential.backup_state ? 'success' : 'warning'
+                              }
+                              copyable={false}
+                            />
+                          )}
+                        </div>
+                        <p className='text-muted-foreground text-xs'>
+                          {credential.last_used_at
+                            ? t('labelWithColon', { label: t('Last Used') }) +
+                              ' ' +
+                              dayjs(credential.last_used_at).fromNow()
+                            : t('Not used yet')}
+                        </p>
+                      </div>
+                    </div>
+                    <div className='flex gap-2'>
+                      <Button
+                        variant='ghost'
+                        size='icon'
+                        onClick={() => handleRename(credential)}
                         disabled={removing}
-                        onClick={(event) => {
-                          event.preventDefault()
-                          handleRemove()
+                      >
+                        <Pencil className='h-4 w-4' />
+                      </Button>
+                      <AlertDialog
+                        open={confirmOpen && deleteId === credential.id}
+                        onOpenChange={(open) => {
+                          setConfirmOpen(open)
+                          if (open) setDeleteId(credential.id)
                         }}
                       >
-                        {t('Remove')}
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
+                        <AlertDialogTrigger
+                          render={
+                            <Button
+                              variant='ghost'
+                              size='icon'
+                              disabled={removing}
+                            />
+                          }
+                        >
+                          <Trash2 className='h-4 w-4' />
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>
+                              {t('Remove Passkey?')}
+                            </AlertDialogTitle>
+                            <AlertDialogDescription>
+                              {t(
+                                'This Passkey will be removed from your account. You can register it again anytime.'
+                              )}
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel disabled={removing}>
+                              {t('Cancel')}
+                            </AlertDialogCancel>
+                            <AlertDialogAction
+                              className='bg-destructive text-destructive-foreground hover:bg-destructive/90'
+                              disabled={removing}
+                              onClick={(event) => {
+                                event.preventDefault()
+                                handleRemove(credential.id)
+                              }}
+                            >
+                              {t('Remove')}
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                  </div>
+                ))}
               </div>
+            )}
+
+            {canAddMore && (
+              <Button
+                className='w-full'
+                onClick={handleRegister}
+                disabled={!supported || registering}
+              >
+                {registering && (
+                  <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                )}
+                {count === 0 ? t('Enable Passkey') : t('Add Another Passkey')}
+              </Button>
+            )}
+
+            {!canAddMore && count > 0 && (
+              <p className='text-muted-foreground text-sm text-center'>
+                {t('You have reached the maximum number of Passkeys')} ({count}/{maxPasskeys})
+              </p>
             )}
 
             {showUnsupportedNotice && (
@@ -343,6 +404,40 @@ export function PasskeyCard({ loading: pageLoading }: PasskeyCardProps) {
           </div>
         </CardContent>
       </Card>
+
+      <Dialog open={renameOpen} onOpenChange={setRenameOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('Rename Device')}</DialogTitle>
+            <DialogDescription>
+              {t('Give this Passkey a memorable name')}
+            </DialogDescription>
+          </DialogHeader>
+          <div className='space-y-2'>
+            <Label htmlFor='device-name'>{t('Device Name')}</Label>
+            <Input
+              id='device-name'
+              value={renameName}
+              onChange={(e) => setRenameName(e.target.value)}
+              placeholder={t('e.g. My iPhone, Work Laptop')}
+              disabled={renaming}
+            />
+          </div>
+          <DialogFooter>
+            <Button
+              variant='outline'
+              onClick={() => setRenameOpen(false)}
+              disabled={renaming}
+            >
+              {t('Cancel')}
+            </Button>
+            <Button onClick={handleRenameSubmit} disabled={renaming}>
+              {renaming && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
+              {t('Save')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <SecureVerificationDialog
         open={verificationOpen}

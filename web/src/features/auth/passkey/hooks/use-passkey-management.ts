@@ -91,7 +91,8 @@ export function usePasskeyManagement(
 
     setRegistering(true)
     try {
-      const beginResponse = await beginPasskeyRegistration()
+      const deviceName = window.prompt(i18next.t('Enter a name for this device (optional)'))
+      const beginResponse = await beginPasskeyRegistration(deviceName || undefined)
       if (!beginResponse.success) {
         toast.error(
           beginResponse.message ||
@@ -147,10 +148,10 @@ export function usePasskeyManagement(
     }
   }, [supported, fetchStatus])
 
-  const remove = useCallback(async () => {
+  const remove = useCallback(async (id?: number) => {
     setRemoving(true)
     try {
-      const res = await deletePasskey()
+      const res = await deletePasskey(id)
       if (!res.success) {
         toast.error(res.message || i18next.t('Failed to remove Passkey'))
         return false
