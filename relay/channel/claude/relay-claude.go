@@ -30,6 +30,8 @@ const (
 	WebSearchMaxUsesHigh   = 10
 )
 
+var claudeReasoningEffortSuffixes = []string{"-max", "-xhigh", "-high", "-medium", "-low", "-none"}
+
 func stopReasonClaude2OpenAI(reason string) string {
 	return reasonmap.ClaudeStopReasonToOpenAIFinishReason(reason)
 }
@@ -43,7 +45,143 @@ func maybeMarkClaudeRefusal(c *gin.Context, stopReason string) {
 	}
 }
 
-func RequestOpenAI2ClaudeMessage(c *gin.Context, textRequest dto.GeneralOpenAIRequest) (*dto.ClaudeRequest, error) {
+func applyOpenAIReasoningToClaudeRequest(info *relaycommon.RelayInfo, textRequest *dto.GeneralOpenAIRequest, claudeRequest *dto.ClaudeRequest) error {
+	if textRequest == nil || claudeRequest == nil {
+		return nil
+	}
+
+	effort := strings.ToLower(strings.TrimSpace(textRequest.ReasoningEffort))
+	if suffixEffort, model := parseClaudeReasoningEffortFromModelSuffix(claudeRequest.Model); suffixEffort != "" {
+		effort = suffixEffort
+		claudeRequest.Model = model
+		textRequest.Model = model
+		if info != nil && info.ChannelMeta != nil {
+			info.UpstreamModelName = model
+		}
+	}
+
+	reasoningBudget := 0
+	if textRequest.Reasoning != nil {
+		var reasoning openrouter.RequestReasoning
+		if err := common.Unmarshal(textRequest.Reasoning, &reasoning); err != nil {
+			return err
+		}
+		if strings.TrimSpace(reasoning.Effort) != "" {
+			effort = strings.ToLower(strings.TrimSpace(reasoning.Effort))
+		}
+		reasoningBudget = reasoning.MaxTokens
+	}
+
+	if effort == "" && reasoningBudget <= 0 {
+		return nil
+	}
+
+	if effort == "none" {
+		if info != nil {
+			info.ReasoningEffort = effort
+		}
+		claudeRequest.Thinking = &dto.Thinking{Type: "disabled"}
+		claudeRequest.OutputConfig = nil
+		return nil
+	}
+
+	if effort != "" && !isSupportedClaudeReasoningEffort(effort) {
+		return fmt.Errorf("unsupported reasoning_effort for Claude request: %s", effort)
+	}
+	if info != nil && effort != "" {
+		info.ReasoningEffort = effort
+	}
+
+	claudeEffort := normalizeClaudeOutputEffort(effort)
+	if claudeEffort != "" && shouldUseClaudeOutputConfigEffort(info, claudeRequest.Model) {
+		if shouldUseClaudeAdaptiveThinking(info, claudeRequest.Model) {
+			claudeRequest.Thinking = &dto.Thinking{Type: "adaptive"}
+		} else {
+			claudeRequest.Thinking = nil
+		}
+		outputConfig, err := common.Marshal(dto.ClaudeOutputConfig{Effort: claudeEffort})
+		if err != nil {
+			return fmt.Errorf("failed to marshal claude output_config: %w", err)
+		}
+		claudeRequest.OutputConfig = outputConfig
+		return nil
+	}
+
+	if reasoningBudget <= 0 {
+		reasoningBudget = claudeThinkingBudgetForEffort(effort)
+	}
+	if reasoningBudget > 0 {
+		claudeRequest.Thinking = &dto.Thinking{
+			Type:         "enabled",
+			BudgetTokens: &reasoningBudget,
+		}
+	}
+	return nil
+}
+
+func parseClaudeReasoningEffortFromModelSuffix(model string) (string, string) {
+	for _, suffix := range claudeReasoningEffortSuffixes {
+		if strings.HasSuffix(model, suffix) {
+			return strings.TrimPrefix(suffix, "-"), strings.TrimSuffix(model, suffix)
+		}
+	}
+	return "", model
+}
+
+func normalizeClaudeOutputEffort(effort string) string {
+	switch strings.ToLower(strings.TrimSpace(effort)) {
+	case "low", "medium", "high", "max":
+		return strings.ToLower(strings.TrimSpace(effort))
+	case "xhigh":
+		return "max"
+	default:
+		return ""
+	}
+}
+
+func isSupportedClaudeReasoningEffort(effort string) bool {
+	switch strings.ToLower(strings.TrimSpace(effort)) {
+	case "low", "medium", "high", "xhigh", "max":
+		return true
+	default:
+		return false
+	}
+}
+
+func shouldUseClaudeOutputConfigEffort(info *relaycommon.RelayInfo, model string) bool {
+	if info != nil && info.ChannelMeta != nil && info.ChannelType == constant.ChannelTypeDeepSeek {
+		return true
+	}
+
+	model = strings.ToLower(model)
+	return strings.Contains(model, "claude-opus-4-6")
+}
+
+func shouldUseClaudeAdaptiveThinking(info *relaycommon.RelayInfo, model string) bool {
+	if info != nil && info.ChannelMeta != nil && info.ChannelType == constant.ChannelTypeDeepSeek {
+		return false
+	}
+
+	model = strings.ToLower(model)
+	return strings.Contains(model, "claude-opus-4-6")
+}
+
+func claudeThinkingBudgetForEffort(effort string) int {
+	switch strings.ToLower(strings.TrimSpace(effort)) {
+	case "low":
+		return 1280
+	case "medium":
+		return 2048
+	case "high":
+		return 4096
+	case "xhigh", "max":
+		return 8192
+	default:
+		return 0
+	}
+}
+
+func RequestOpenAI2ClaudeMessage(c *gin.Context, info *relaycommon.RelayInfo, textRequest dto.GeneralOpenAIRequest) (*dto.ClaudeRequest, error) {
 	claudeTools := make([]any, 0, len(textRequest.Tools))
 
 	for _, tool := range textRequest.Tools {
@@ -143,45 +281,8 @@ func RequestOpenAI2ClaudeMessage(c *gin.Context, textRequest dto.GeneralOpenAIRe
 		claudeRequest.MaxTokens = uint(model_setting.GetClaudeSettings().GetDefaultMaxTokens(textRequest.Model))
 	}
 
-	if textRequest.ReasoningEffort != "" {
-		switch textRequest.ReasoningEffort {
-		case "low":
-			claudeRequest.Thinking = &dto.Thinking{
-				Type:         "enabled",
-				BudgetTokens: common.GetPointer[int](1280),
-			}
-		case "medium":
-			claudeRequest.Thinking = &dto.Thinking{
-				Type:         "enabled",
-				BudgetTokens: common.GetPointer[int](2048),
-			}
-		case "high":
-			claudeRequest.Thinking = &dto.Thinking{
-				Type:         "enabled",
-				BudgetTokens: common.GetPointer[int](4096),
-			}
-		case "xhigh", "max":
-			claudeRequest.Thinking = &dto.Thinking{
-				Type:         "enabled",
-				BudgetTokens: common.GetPointer[int](8192),
-			}
-		}
-	}
-
-	// 指定了 reasoning 参数,覆盖 budgetTokens
-	if textRequest.Reasoning != nil {
-		var reasoning openrouter.RequestReasoning
-		if err := common.Unmarshal(textRequest.Reasoning, &reasoning); err != nil {
-			return nil, err
-		}
-
-		budgetTokens := reasoning.MaxTokens
-		if budgetTokens > 0 {
-			claudeRequest.Thinking = &dto.Thinking{
-				Type:         "enabled",
-				BudgetTokens: &budgetTokens,
-			}
-		}
+	if err := applyOpenAIReasoningToClaudeRequest(info, &textRequest, &claudeRequest); err != nil {
+		return nil, err
 	}
 
 	if textRequest.Stop != nil {

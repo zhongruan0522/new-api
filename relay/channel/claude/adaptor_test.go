@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/zhongruan0522/new-api/common"
+	"github.com/zhongruan0522/new-api/constant"
 	"github.com/zhongruan0522/new-api/dto"
 	relaycommon "github.com/zhongruan0522/new-api/relay/common"
 	"github.com/zhongruan0522/new-api/types"
@@ -186,5 +187,142 @@ func TestAdaptorConvertOpenAIResponsesRequestUsesSharedRulesForTools(t *testing.
 	}
 	if len(content) != 1 || content[0].Type != "tool_use" || content[0].Id != "call_weather" || content[0].Name != "weather" {
 		t.Fatalf("assistant content = %+v, want weather tool_use", content)
+	}
+}
+
+func TestAdaptorConvertOpenAIRequestClaudeEffortToolCallThinkingEnabled(t *testing.T) {
+	info := &relaycommon.RelayInfo{
+		ChannelMeta: &relaycommon.ChannelMeta{
+			ChannelType:       constant.ChannelTypeAnthropic,
+			UpstreamModelName: "claude-opus-4-6-high",
+		},
+	}
+
+	convertedAny, err := (&Adaptor{}).ConvertOpenAIRequest(nil, info, buildOpenAIWeatherToolRequest("claude-opus-4-6-high", ""))
+	if err != nil {
+		t.Fatalf("ConvertOpenAIRequest error = %v", err)
+	}
+	converted, ok := convertedAny.(*dto.ClaudeRequest)
+	if !ok {
+		t.Fatalf("converted type = %T, want *dto.ClaudeRequest", convertedAny)
+	}
+
+	if converted.Model != "claude-opus-4-6" {
+		t.Fatalf("model = %q, want claude-opus-4-6", converted.Model)
+	}
+	if converted.Thinking == nil || converted.Thinking.Type != "adaptive" || converted.Thinking.BudgetTokens != nil {
+		t.Fatalf("thinking = %+v, want adaptive without budget_tokens", converted.Thinking)
+	}
+	var outputConfig dto.ClaudeOutputConfig
+	if err := common.Unmarshal(converted.OutputConfig, &outputConfig); err != nil {
+		t.Fatalf("unmarshal output_config error = %v", err)
+	}
+	if outputConfig.Effort != "high" {
+		t.Fatalf("output_config.effort = %q, want high", outputConfig.Effort)
+	}
+	if got := converted.GetTools(); len(got) != 1 {
+		t.Fatalf("tools len = %d, want 1", len(got))
+	}
+	if info.ReasoningEffort != "high" {
+		t.Fatalf("info.ReasoningEffort = %q, want high", info.ReasoningEffort)
+	}
+}
+
+func TestAdaptorConvertOpenAIRequestClaudeEffortToolCallThinkingDisabled(t *testing.T) {
+	info := &relaycommon.RelayInfo{
+		ChannelMeta: &relaycommon.ChannelMeta{
+			ChannelType:       constant.ChannelTypeAnthropic,
+			UpstreamModelName: "claude-opus-4-6",
+		},
+	}
+
+	convertedAny, err := (&Adaptor{}).ConvertOpenAIRequest(nil, info, buildOpenAIWeatherToolRequest("claude-opus-4-6", "none"))
+	if err != nil {
+		t.Fatalf("ConvertOpenAIRequest error = %v", err)
+	}
+	converted, ok := convertedAny.(*dto.ClaudeRequest)
+	if !ok {
+		t.Fatalf("converted type = %T, want *dto.ClaudeRequest", convertedAny)
+	}
+
+	if converted.Thinking == nil || converted.Thinking.Type != "disabled" {
+		t.Fatalf("thinking = %+v, want disabled", converted.Thinking)
+	}
+	if len(converted.OutputConfig) != 0 {
+		t.Fatalf("output_config = %s, want empty when thinking is disabled", string(converted.OutputConfig))
+	}
+	if got := converted.GetTools(); len(got) != 1 {
+		t.Fatalf("tools len = %d, want 1", len(got))
+	}
+	if info.ReasoningEffort != "none" {
+		t.Fatalf("info.ReasoningEffort = %q, want none", info.ReasoningEffort)
+	}
+}
+
+func TestAdaptorConvertOpenAIRequestDeepSeekClaudeEffortUsesOutputConfigOnly(t *testing.T) {
+	info := &relaycommon.RelayInfo{
+		ChannelMeta: &relaycommon.ChannelMeta{
+			ChannelType:       constant.ChannelTypeDeepSeek,
+			UpstreamModelName: "deepseek-chat",
+		},
+	}
+
+	convertedAny, err := (&Adaptor{}).ConvertOpenAIRequest(nil, info, buildOpenAIWeatherToolRequest("deepseek-chat", "max"))
+	if err != nil {
+		t.Fatalf("ConvertOpenAIRequest error = %v", err)
+	}
+	converted, ok := convertedAny.(*dto.ClaudeRequest)
+	if !ok {
+		t.Fatalf("converted type = %T, want *dto.ClaudeRequest", convertedAny)
+	}
+
+	if converted.Thinking != nil {
+		t.Fatalf("thinking = %+v, want nil for DeepSeek Anthropic-compatible effort", converted.Thinking)
+	}
+	var outputConfig dto.ClaudeOutputConfig
+	if err := common.Unmarshal(converted.OutputConfig, &outputConfig); err != nil {
+		t.Fatalf("unmarshal output_config error = %v", err)
+	}
+	if outputConfig.Effort != "max" {
+		t.Fatalf("output_config.effort = %q, want max", outputConfig.Effort)
+	}
+}
+
+func TestAdaptorConvertOpenAIRequestRejectsUnsupportedClaudeReasoningEffort(t *testing.T) {
+	_, err := (&Adaptor{}).ConvertOpenAIRequest(nil, &relaycommon.RelayInfo{}, buildOpenAIWeatherToolRequest("claude-3-7-sonnet-20250219", "banana"))
+	if err == nil {
+		t.Fatal("ConvertOpenAIRequest error is nil, want unsupported reasoning_effort error")
+	}
+}
+
+func buildOpenAIWeatherToolRequest(model string, reasoningEffort string) *dto.GeneralOpenAIRequest {
+	return &dto.GeneralOpenAIRequest{
+		Model:           model,
+		ReasoningEffort: reasoningEffort,
+		Messages: []dto.Message{
+			{
+				Role:    "user",
+				Content: "What is the weather in Tokyo? Call the tool if needed.",
+			},
+		},
+		Tools: []dto.ToolCallRequest{
+			{
+				Type: "function",
+				Function: dto.FunctionRequest{
+					Name:        "get_current_weather",
+					Description: "Get the current weather for a city",
+					Parameters: map[string]any{
+						"type": "object",
+						"properties": map[string]any{
+							"location": map[string]any{
+								"type":        "string",
+								"description": "City and country, for example Tokyo, Japan",
+							},
+						},
+						"required": []string{"location"},
+					},
+				},
+			},
+		},
 	}
 }
