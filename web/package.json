@@ -76,7 +76,7 @@
     "@eslint/js": "^10.0.1",
     "@rsbuild/core": "^2.0.7",
     "@rsbuild/plugin-react": "^2.0.0",
-    "@tanstack/eslint-plugin-query": "^5.100.14",
+    "@tanstack/eslint-plugin-query": "^5.101.0",
     "@tanstack/react-query-devtools": "^5.100.14",
     "@tanstack/react-router-devtools": "^1.167.0",
     "@tanstack/router-plugin": "^1.168.11",
