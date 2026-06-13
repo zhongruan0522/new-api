@@ -91,23 +91,8 @@ For commercial licensing, please contact support@quantumnous.com
   }
 }
 
-/* Override auto-skeleton-react inline styles with Vercel shimmer */
-.auto-skeleton-fade [class^='skeleton-'] {
-  background: linear-gradient(
-    90deg,
-    var(--skeleton-base) 0%,
-    var(--skeleton-base) 33%,
-    var(--skeleton-highlight) 50%,
-    var(--skeleton-base) 67%,
-    var(--skeleton-base) 100%
-  ) !important;
-  background-size: 300% 100% !important;
-  animation: skeleton-shimmer 1.8s ease-in-out infinite !important;
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .skeleton-shimmer,
-  .auto-skeleton-fade [class^='skeleton-'] {
+  .skeleton-shimmer {
     animation: none !important;
     background: var(--skeleton-base) !important;
   }
