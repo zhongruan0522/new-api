@@ -30,7 +30,7 @@
     "@tanstack/react-table": "^8.21.3",
     "@visactor/react-vchart": "^2.0.22",
     "@visactor/vchart": "^2.0.22",
-    "ai": "^6.0.201",
+    "ai": "^6.0.204",
     "axios": "^1.16.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
