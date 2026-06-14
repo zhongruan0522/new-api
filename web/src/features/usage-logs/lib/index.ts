@@ -38,6 +38,7 @@ export { buildSearchParams, getLogCategoryLabel } from './filter'
 export {
   isDisplayableLogType,
   isTimingLogType,
+  isClientHeadersLogType,
   getLogTypeConfig,
   isPerCallBilling,
   getDefaultTimeRange,

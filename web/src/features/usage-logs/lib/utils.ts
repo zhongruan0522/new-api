@@ -31,6 +31,7 @@ import {
   LOG_TYPES,
   DISPLAYABLE_LOG_TYPES,
   TIMING_LOG_TYPES,
+  CLIENT_HEADERS_LOG_TYPES,
 } from '../constants'
 import type {
   GetLogsParams,
@@ -56,6 +57,13 @@ export function isDisplayableLogType(type: number): boolean {
  */
 export function isTimingLogType(type: number): boolean {
   return (TIMING_LOG_TYPES as readonly number[]).includes(type)
+}
+
+/**
+ * Check if log type shows client request headers (ua / x_title / http_referer)
+ */
+export function isClientHeadersLogType(type: number): boolean {
+  return (CLIENT_HEADERS_LOG_TYPES as readonly number[]).includes(type)
 }
 
 /**

@@ -63,6 +63,7 @@ import {
   getLogTypeConfig,
   isPerCallBilling,
   isTimingLogType,
+  isClientHeadersLogType,
 } from '../../lib/utils'
 import type { LogOtherData } from '../../types'
 
@@ -849,6 +850,7 @@ export function DetailsDialog(props: DetailsDialogProps) {
     !!other?.expr_b64
   const hasAudioTokens = other?.ws || other?.audio
   const showTiming = isTimingLogType(props.log.type)
+  const showClientHeaders = isClientHeadersLogType(props.log.type)
   const showAdminIp =
     !!props.log.ip && (showTiming || (props.isAdmin && isTopup))
   const adminInfo = other?.admin_info
@@ -1056,8 +1058,8 @@ export function DetailsDialog(props: DetailsDialogProps) {
               )}
             </div>
 
-            {/* Client request headers (consume logs only) */}
-            {isConsume && other && (other.http_referer || other.x_title || other.ua) && (
+            {/* Client request headers (consume & error logs) */}
+            {showClientHeaders && other && (other.http_referer || other.x_title || other.ua) && (
               <DetailSection
                 icon={<Monitor className='size-3.5' aria-hidden='true' />}
                 label={t('Client Request Headers')}
