@@ -12,20 +12,20 @@ import (
 
 // MiniMaxPlanQuotaData MiniMax 套餐额度数据
 type MiniMaxPlanQuotaData struct {
-	PlanName    string          `json:"plan_name"`
-	Tiers       []MiniMaxTier   `json:"tiers"`
-	Credential  string          `json:"credential"` // "valid" | "expired" | "error"
+	PlanName   string        `json:"plan_name"`
+	Tiers      []MiniMaxTier `json:"tiers"`
+	Credential string        `json:"credential"` // "valid" | "expired" | "error"
 }
 
 // MiniMaxTier MiniMax 单个限额维度
 type MiniMaxTier struct {
-	Name        string  `json:"name"`          // "five_hour" | "weekly_limit"
-	Percentage  int     `json:"percentage"`    // 已用百分比 0-100
-	Used        float64 `json:"used"`          // 已用量
-	Limit       float64 `json:"limit"`         // 总量
-	Remaining   float64 `json:"remaining"`     // 剩余量
-	ResetsAt    string  `json:"resets_at,omitempty"` // 重置时间 RFC3339
-	Status      string  `json:"status"`        // "充裕" | "适中" | "紧张"
+	Name       string  `json:"name"`                // "five_hour" | "weekly_limit"
+	Percentage int     `json:"percentage"`          // 已用百分比 0-100
+	Used       float64 `json:"used"`                // 已用量
+	Limit      float64 `json:"limit"`               // 总量
+	Remaining  float64 `json:"remaining"`           // 剩余量
+	ResetsAt   string  `json:"resets_at,omitempty"` // 重置时间 RFC3339
+	Status     string  `json:"status"`              // "充裕" | "适中" | "紧张"
 }
 
 // minimaxResp MiniMax coding_plan/remains 接口返回格式
@@ -35,12 +35,12 @@ type minimaxResp struct {
 		StatusMsg  string `json:"status_msg"`
 	} `json:"base_resp"`
 	ModelRemains []struct {
-		CurrentIntervalTotalCount   float64 `json:"current_interval_total_count"`
-		CurrentIntervalUsageCount   float64 `json:"current_interval_usage_count"`
-		EndTime                     int64   `json:"end_time"`
-		CurrentWeeklyTotalCount     float64 `json:"current_weekly_total_count"`
-		CurrentWeeklyUsageCount     float64 `json:"current_weekly_usage_count"`
-		WeeklyEndTime               int64   `json:"weekly_end_time"`
+		CurrentIntervalTotalCount float64 `json:"current_interval_total_count"`
+		CurrentIntervalUsageCount float64 `json:"current_interval_usage_count"`
+		EndTime                   int64   `json:"end_time"`
+		CurrentWeeklyTotalCount   float64 `json:"current_weekly_total_count"`
+		CurrentWeeklyUsageCount   float64 `json:"current_weekly_usage_count"`
+		WeeklyEndTime             int64   `json:"weekly_end_time"`
 	} `json:"model_remains"`
 }
 

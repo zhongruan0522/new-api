@@ -139,4 +139,3 @@ func TestApplyImageAutoConvertToURL_VideoBlocks(t *testing.T) {
 		}
 	}
 }
-

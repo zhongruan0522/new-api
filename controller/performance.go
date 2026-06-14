@@ -6,8 +6,8 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/zhongruan0522/new-api/common"
 	"github.com/gin-gonic/gin"
+	"github.com/zhongruan0522/new-api/common"
 )
 
 // PerformanceStats 性能统计信息

@@ -24,30 +24,30 @@ const (
 )
 
 var ChannelBaseURLs = []string{
-	"",                          // 0  Unknown
-	"https://api.openai.com",    // 1  OpenAI
-	"https://oa.api2d.net",      // 2  Midjourney
-	"",                          // 3  Azure
-	"http://localhost:11434",    // 4  Ollama
-	"https://api.openai-sb.com", // 5  MidjourneyPlus
+	"",                           // 0  Unknown
+	"https://api.openai.com",     // 1  OpenAI
+	"https://oa.api2d.net",       // 2  Midjourney
+	"",                           // 3  Azure
+	"http://localhost:11434",     // 4  Ollama
+	"https://api.openai-sb.com",  // 5  MidjourneyPlus
 	"https://api.xiaomimimo.com", // 6  Xiaomi
-	"",                          // 7  Dummy
-	"",                          // 8  Custom
-	"",                          // 9  (removed)
-	"",                          // 10 (removed)
-	"",                          // 11 (removed)
-	"",                          // 12 (removed)
-	"",                          // 13 (removed)
-	"https://api.anthropic.com", // 14 Anthropic
-	"",                          // 15 (removed)
-	"",                          // 16 (removed)
-	"",                          // 17 (removed)
-	"",                          // 18 (removed)
-	"",                          // 19 (removed)
-	"https://openrouter.ai/api", // 20 OpenRouter
-	"",                          // 21 (removed)
-	"",                          // 22 (removed)
-	"",                          // 23 (removed)
+	"",                           // 7  Dummy
+	"",                           // 8  Custom
+	"",                           // 9  (removed)
+	"",                           // 10 (removed)
+	"",                           // 11 (removed)
+	"",                           // 12 (removed)
+	"",                           // 13 (removed)
+	"https://api.anthropic.com",  // 14 Anthropic
+	"",                           // 15 (removed)
+	"",                           // 16 (removed)
+	"",                           // 17 (removed)
+	"",                           // 18 (removed)
+	"",                           // 19 (removed)
+	"https://openrouter.ai/api",  // 20 OpenRouter
+	"",                           // 21 (removed)
+	"",                           // 22 (removed)
+	"",                           // 23 (removed)
 	"https://generativelanguage.googleapis.com", // 24 Gemini
 	"https://api.moonshot.cn",                   // 25 Moonshot
 	"https://open.bigmodel.cn",                  // 26 ZhipuV4
@@ -122,10 +122,10 @@ var SupportedPlanQuotaProviders = map[string]bool{
 	"kimi-coding-plan":                  true,
 	"minimax-coding-plan":               true,
 	"minimax-coding-plan-international": true,
-	"ollama-coding-plan":               true,
-	"xiaomi-coding-plan":               true,
-	"xiaomi-coding-plan-sgp":           true,
-	"xiaomi-coding-plan-ams":           true,
+	"ollama-coding-plan":                true,
+	"xiaomi-coding-plan":                true,
+	"xiaomi-coding-plan-sgp":            true,
+	"xiaomi-coding-plan-ams":            true,
 }
 
 var ChannelSpecialBases = map[string]ChannelSpecialBase{

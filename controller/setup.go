@@ -3,10 +3,10 @@ package controller
 import (
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"github.com/zhongruan0522/new-api/common"
 	"github.com/zhongruan0522/new-api/constant"
 	"github.com/zhongruan0522/new-api/model"
-	"github.com/gin-gonic/gin"
 )
 
 type Setup struct {

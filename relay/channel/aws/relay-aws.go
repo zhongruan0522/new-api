@@ -17,13 +17,13 @@ import (
 	"github.com/zhongruan0522/new-api/service"
 	"github.com/zhongruan0522/new-api/types"
 
-	"github.com/gin-gonic/gin"
-	"github.com/pkg/errors"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/bedrockruntime"
 	bedrockruntimeTypes "github.com/aws/aws-sdk-go-v2/service/bedrockruntime/types"
 	"github.com/aws/smithy-go/auth/bearer"
+	"github.com/gin-gonic/gin"
+	"github.com/pkg/errors"
 )
 
 // getAwsErrorStatusCode extracts HTTP status code from AWS SDK error

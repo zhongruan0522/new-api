@@ -1,9 +1,9 @@
 package middleware
 
 import (
-	"github.com/zhongruan0522/new-api/common"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/zhongruan0522/new-api/common"
 )
 
 func CORS() gin.HandlerFunc {

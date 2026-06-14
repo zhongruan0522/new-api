@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/zhongruan0522/new-api/types"
 	"github.com/gin-gonic/gin"
+	"github.com/zhongruan0522/new-api/types"
 )
 
 type RerankRequest struct {
