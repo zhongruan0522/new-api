@@ -15,6 +15,7 @@ import (
 
 	"github.com/zhongruan0522/new-api/common"
 	"github.com/zhongruan0522/new-api/model"
+	"github.com/zhongruan0522/new-api/service"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -446,6 +447,7 @@ func SyncUpstreamModels(c *gin.Context) {
 		}
 	}
 
+	service.RecordAudit(c, model.AuditModuleModel, model.AuditActionUpdate, "同步上游模型", nil, map[string]interface{}{"created": createdModels, "updated": updatedModels})
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"data": gin.H{

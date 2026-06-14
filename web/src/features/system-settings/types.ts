@@ -230,4 +230,8 @@ export type SecuritySettings = {
   'fetch_setting.ip_list': string[]
   'fetch_setting.allowed_ports': number[]
   'fetch_setting.apply_ip_filter_for_domain': boolean
+  'audit_setting.enabled': boolean
+  'audit_setting.modules': string
+  'audit_setting.record_ip': boolean
+  'audit_setting.record_diff': boolean
 }

@@ -559,6 +559,9 @@ func UpdateUser(c *gin.Context) {
 	if originUser.Quota != updatedUser.Quota {
 		model.RecordLog(originUser.Id, model.LogTypeManage, fmt.Sprintf("管理员将用户额度从 %s修改为 %s", logger.LogQuota(originUser.Quota), logger.LogQuota(updatedUser.Quota)))
 	}
+	service.RecordAudit(c, model.AuditModuleUser, model.AuditActionUpdate, "修改用户: "+updatedUser.Username,
+		map[string]interface{}{"id": originUser.Id, "username": originUser.Username, "display_name": originUser.DisplayName, "role": originUser.Role, "status": originUser.Status, "quota": originUser.Quota, "group": originUser.Group},
+		map[string]interface{}{"id": updatedUser.Id, "username": updatedUser.Username, "display_name": updatedUser.DisplayName, "role": updatedUser.Role, "quota": updatedUser.Quota, "group": updatedUser.Group, "remark": updatedUser.Remark})
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
@@ -652,6 +655,8 @@ func DeleteUser(c *gin.Context) {
 		return
 	}
 	invalidateSecuritySensitiveUserCaches(id)
+	service.RecordAudit(c, model.AuditModuleUser, model.AuditActionDelete, "删除用户: "+originUser.Username,
+		map[string]interface{}{"id": originUser.Id, "username": originUser.Username, "display_name": originUser.DisplayName, "role": originUser.Role, "status": originUser.Status}, nil)
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
@@ -713,6 +718,7 @@ func CreateUser(c *gin.Context) {
 		return
 	}
 
+	service.RecordAudit(c, model.AuditModuleUser, model.AuditActionCreate, "新增用户: "+cleanUser.Username, nil, map[string]interface{}{"username": cleanUser.Username, "display_name": cleanUser.DisplayName, "role": cleanUser.Role})
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
@@ -835,6 +841,9 @@ func ManageUser(c *gin.Context) {
 		}
 		model.RecordLog(user.Id, model.LogTypeManage, fmt.Sprintf("管理员调整用户额度从 %s 到 %s", logger.LogQuota(originQuota), logger.LogQuota(user.Quota)))
 		invalidateSecuritySensitiveUserCaches(user.Id)
+		service.RecordAudit(c, model.AuditModuleUser, model.AuditActionUpdate, "管理用户: 调整额度",
+			map[string]interface{}{"id": user.Id, "username": user.Username, "quota": originQuota},
+			map[string]interface{}{"id": user.Id, "username": user.Username, "quota": user.Quota, "mode": req.Mode, "value": req.Value})
 		c.JSON(http.StatusOK, gin.H{
 			"success": true,
 			"message": "",
@@ -853,6 +862,11 @@ func ManageUser(c *gin.Context) {
 		return
 	}
 	invalidateSecuritySensitiveUserCaches(user.Id)
+	auditAction := model.AuditActionUpdate
+	if req.Action == "delete" {
+		auditAction = model.AuditActionDelete
+	}
+	service.RecordAudit(c, model.AuditModuleUser, auditAction, "管理用户: "+req.Action, nil, map[string]interface{}{"username": user.Username, "action": req.Action})
 	clearUser := model.User{
 		Role:   user.Role,
 		Status: user.Status,

@@ -5,6 +5,7 @@ import (
 
 	"github.com/zhongruan0522/new-api/common"
 	"github.com/zhongruan0522/new-api/model"
+	"github.com/zhongruan0522/new-api/service"
 
 	"github.com/gin-gonic/gin"
 )
@@ -44,6 +45,7 @@ func CreatePrefillGroup(c *gin.Context) {
 		common.ApiError(c, err)
 		return
 	}
+	service.RecordAudit(c, model.AuditModulePrefillGroup, model.AuditActionCreate, "新增预填充分组: "+g.Name, nil, g)
 	common.ApiSuccess(c, &g)
 }
 
@@ -56,6 +58,12 @@ func UpdatePrefillGroup(c *gin.Context) {
 	}
 	if g.Id == 0 {
 		common.ApiErrorMsg(c, "缺少组 ID")
+		return
+	}
+	// 查询更新前的原始数据用于审计差异对比
+	var origin model.PrefillGroup
+	if err := model.DB.First(&origin, "id = ?", g.Id).Error; err != nil {
+		common.ApiError(c, err)
 		return
 	}
 	// 名称冲突检查
@@ -71,6 +79,7 @@ func UpdatePrefillGroup(c *gin.Context) {
 		common.ApiError(c, err)
 		return
 	}
+	service.RecordAudit(c, model.AuditModulePrefillGroup, model.AuditActionUpdate, "修改预填充分组: "+g.Name, origin, g)
 	common.ApiSuccess(c, &g)
 }
 
@@ -86,5 +95,6 @@ func DeletePrefillGroup(c *gin.Context) {
 		common.ApiError(c, err)
 		return
 	}
+	service.RecordAudit(c, model.AuditModulePrefillGroup, model.AuditActionDelete, "删除预填充分组 #"+strconv.Itoa(id), nil, map[string]interface{}{"id": id})
 	common.ApiSuccess(c, nil)
 }

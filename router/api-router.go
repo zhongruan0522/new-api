@@ -255,6 +255,13 @@ func SetApiRouter(router *gin.Engine) {
 			logRoute.GET("/token", middleware.TokenAuthReadOnly(), controller.GetLogByKey)
 		}
 
+		auditRoute := apiRouter.Group("/audit")
+		auditRoute.Use(middleware.AdminAuth())
+		{
+			auditRoute.GET("/", controller.GetAuditLogs)
+			auditRoute.GET("/modules", controller.GetAuditModules)
+		}
+
 		storedMediaRoute := apiRouter.Group("/stored_media")
 		{
 			storedMediaRoute.GET("/", middleware.AdminAuth(), controller.GetAllStoredMedia)

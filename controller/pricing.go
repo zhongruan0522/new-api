@@ -67,6 +67,7 @@ func ResetModelRatio(c *gin.Context) {
 		})
 		return
 	}
+	service.RecordAudit(c, model.AuditModuleOption, model.AuditActionUpdate, "重置模型倍率", nil, nil)
 	c.JSON(200, gin.H{
 		"success": true,
 		"message": "重置模型倍率成功",

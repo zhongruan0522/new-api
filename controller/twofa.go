@@ -7,6 +7,7 @@ import (
 
 	"github.com/zhongruan0522/new-api/common"
 	"github.com/zhongruan0522/new-api/model"
+	"github.com/zhongruan0522/new-api/service"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
@@ -551,6 +552,7 @@ func AdminDisable2FA(c *gin.Context) {
 	model.RecordLogWithAdminInfo(userId, model.LogTypeManage,
 		"管理员强制禁用了用户的两步验证", adminInfo)
 
+	service.RecordAudit(c, model.AuditModuleUser, model.AuditActionDelete, "禁用用户 2FA: "+targetUser.Username, nil, map[string]interface{}{"user_id": userId})
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "用户2FA已被强制禁用",

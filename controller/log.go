@@ -6,6 +6,7 @@ import (
 
 	"github.com/zhongruan0522/new-api/common"
 	"github.com/zhongruan0522/new-api/model"
+	"github.com/zhongruan0522/new-api/service"
 
 	"github.com/gin-gonic/gin"
 )
@@ -247,6 +248,7 @@ func DeleteHistoryLogs(c *gin.Context) {
 			common.ApiError(c, err)
 			return
 		}
+		service.RecordAudit(c, model.AuditModuleLog, model.AuditActionDelete, "清理历史日志", nil, map[string]interface{}{"target_timestamp": targetTimestamp})
 		c.JSON(http.StatusOK, gin.H{
 			"success": true,
 			"message": "",
@@ -258,6 +260,7 @@ func DeleteHistoryLogs(c *gin.Context) {
 		})
 		return
 	}
+	service.RecordAudit(c, model.AuditModuleLog, model.AuditActionDelete, "清理历史日志", nil, map[string]interface{}{"target_timestamp": targetTimestamp})
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",

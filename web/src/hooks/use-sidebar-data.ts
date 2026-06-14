@@ -30,6 +30,7 @@ import {
   Radio,
   ReceiptText,
   Settings,
+  ShieldCheck,
   Ticket,
   User,
   Users,
@@ -156,6 +157,11 @@ export function useSidebarData(): SidebarData {
             title: t('Redemption Codes'),
             url: '/redemption-codes',
             icon: Ticket,
+          },
+          {
+            title: t('Audit Logs'),
+            url: '/audit-logs',
+            icon: ShieldCheck,
           },
           {
             title: t('System Settings'),

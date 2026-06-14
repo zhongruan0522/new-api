@@ -246,6 +246,24 @@ func UpdateOption(c *gin.Context) {
 	if option.Key == "DataExportInterval" {
 		service.ClearRankingsCache()
 	}
+	// 审计系统设置变更：对敏感配置值脱敏，防止凭证泄露到审计日志。
+	// 复用 GetOptions 中的敏感 key 后缀规则。
+	auditValue := option.Value
+	if strings.HasSuffix(option.Key, "Token") ||
+		strings.HasSuffix(option.Key, "Secret") ||
+		strings.HasSuffix(option.Key, "Key") ||
+		strings.HasSuffix(option.Key, "secret") ||
+		strings.HasSuffix(option.Key, "api_key") ||
+		strings.Contains(option.Key, "Password") ||
+		strings.Contains(option.Key, "password") {
+		auditValue = "[REDACTED]"
+	}
+	// P1-3: 审计配置本身的变更必须被记录。
+	// model.UpdateOption 已在上面执行，此时 audit_setting 已是最新值。
+	// 如果管理员关闭了审计总开关或 option 模块，RecordAudit 会按新配置跳过。
+	// 因此对 audit_setting.* 的任何变更都强制记录。
+	forceRecord := strings.HasPrefix(option.Key, "audit_setting.")
+	service.RecordAudit(c, model.AuditModuleOption, model.AuditActionUpdate, "修改系统设置 "+option.Key, nil, map[string]interface{}{"key": option.Key, "value": auditValue}, forceRecord)
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",

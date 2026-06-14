@@ -41,6 +41,11 @@ const defaultSecuritySettings: SecuritySettings = {
   'fetch_setting.ip_list': [],
   'fetch_setting.allowed_ports': [],
   'fetch_setting.apply_ip_filter_for_domain': false,
+  'audit_setting.enabled': false,
+  'audit_setting.modules':
+    '{"option":true,"channel":true,"user":true,"token":true,"redemption":true,"model":true,"vendor":true,"dynamic_ratio":true,"prefill_group":true,"db":true,"performance":true,"log":true,"setup":true}',
+  'audit_setting.record_ip': true,
+  'audit_setting.record_diff': true,
 }
 
 export function SecuritySettings() {

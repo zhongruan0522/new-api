@@ -9,6 +9,7 @@ import (
 	"github.com/zhongruan0522/new-api/common"
 	"github.com/zhongruan0522/new-api/constant"
 	"github.com/zhongruan0522/new-api/model"
+	"github.com/zhongruan0522/new-api/service"
 
 	"github.com/gin-gonic/gin"
 )
@@ -102,6 +103,7 @@ func CreateModelMeta(c *gin.Context) {
 		return
 	}
 	model.RefreshPricing()
+	service.RecordAudit(c, model.AuditModuleModel, model.AuditActionCreate, "新增模型: "+m.ModelName, nil, m)
 	common.ApiSuccess(c, &m)
 }
 
@@ -119,12 +121,23 @@ func UpdateModelMeta(c *gin.Context) {
 		return
 	}
 
+	// 查询更新前的原始数据用于审计差异对比
+	var origin model.Model
+	if err := model.DB.First(&origin, "id = ?", m.Id).Error; err != nil {
+		common.ApiError(c, err)
+		return
+	}
+
 	if statusOnly {
 		// 只更新状态，防止误清空其他字段
 		if err := model.DB.Model(&model.Model{}).Where("id = ?", m.Id).Update("status", m.Status).Error; err != nil {
 			common.ApiError(c, err)
 			return
 		}
+		// after 使用 origin 副本+新 status，避免请求体零值字段产生噪声 diff
+		afterModel := origin
+		afterModel.Status = m.Status
+		service.RecordAudit(c, model.AuditModuleModel, model.AuditActionUpdate, "修改模型: "+origin.ModelName, origin, afterModel)
 	} else {
 		// 名称冲突检查
 		if dup, err := model.IsModelNameDuplicated(m.Id, m.ModelName); err != nil {
@@ -139,6 +152,7 @@ func UpdateModelMeta(c *gin.Context) {
 			common.ApiError(c, err)
 			return
 		}
+		service.RecordAudit(c, model.AuditModuleModel, model.AuditActionUpdate, "修改模型: "+m.ModelName, origin, m)
 	}
 	model.RefreshPricing()
 	common.ApiSuccess(c, &m)
@@ -157,6 +171,7 @@ func DeleteModelMeta(c *gin.Context) {
 		return
 	}
 	model.RefreshPricing()
+	service.RecordAudit(c, model.AuditModuleModel, model.AuditActionDelete, "删除模型 #"+strconv.Itoa(id), nil, map[string]interface{}{"id": id})
 	common.ApiSuccess(c, nil)
 }
 

@@ -11,6 +11,7 @@ import (
 
 	"github.com/zhongruan0522/new-api/common"
 	"github.com/zhongruan0522/new-api/model"
+	"github.com/zhongruan0522/new-api/service"
 	passkeysvc "github.com/zhongruan0522/new-api/service/passkey"
 	"github.com/zhongruan0522/new-api/setting/system_setting"
 
@@ -505,6 +506,7 @@ func AdminResetPasskey(c *gin.Context) {
 		return
 	}
 
+	service.RecordAudit(c, model.AuditModuleUser, model.AuditActionDelete, "重置用户 Passkey: "+user.Username, nil, map[string]interface{}{"user_id": user.Id})
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "Passkey 已重置",
