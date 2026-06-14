@@ -346,7 +346,7 @@ export function UpstreamConflictDialog({
         cell: ({ row }) => <ValuePreview value={row.original.upstreamValue} />,
       },
     ]
-  }, [isMobile])
+  }, [isMobile, t])
 
   const table = useReactTable({
     data: conflictRows,
