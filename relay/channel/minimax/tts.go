@@ -163,11 +163,18 @@ func handleTTSResponse(c *gin.Context, resp *http.Response, info *relaycommon.Re
 		c.Data(http.StatusOK, contentType, audioData)
 	}
 
+	// MiniMax TTS 按 usage_characters（合成语音消耗的字符数）计费。
+	// 按产品需求：usage_characters 同时映射到【输入 Token】和【音频输出 Token】，
+	// 触发 audio_handler.go:70 的音频倍率分支 (PostAudioConsumeQuota)，
+	// 让 calculateAudioQuota 同时算输入文本成本和音频输出成本。
+	usageCharacters := int(minimaxResp.ExtraInfo.UsageCharacters)
 	usage = &dto.Usage{
-		PromptTokens:     info.GetEstimatePromptTokens(),
-		CompletionTokens: 0,
-		TotalTokens:      int(minimaxResp.ExtraInfo.UsageCharacters),
+		PromptTokens:     usageCharacters,
+		CompletionTokens: usageCharacters,
+		TotalTokens:      usageCharacters * 2,
 	}
+	usage.(*dto.Usage).PromptTokensDetails.TextTokens = usageCharacters
+	usage.(*dto.Usage).CompletionTokenDetails.AudioTokens = usageCharacters
 
 	return usage, nil
 }
