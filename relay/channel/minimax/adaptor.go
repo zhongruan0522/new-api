@@ -14,6 +14,7 @@ import (
 	"github.com/zhongruan0522/new-api/relay/channel/openai"
 	relaycommon "github.com/zhongruan0522/new-api/relay/common"
 	"github.com/zhongruan0522/new-api/relay/constant"
+	"github.com/zhongruan0522/new-api/setting/model_setting"
 	"github.com/zhongruan0522/new-api/types"
 
 	"github.com/gin-gonic/gin"
@@ -39,13 +40,28 @@ func (a *Adaptor) ConvertAudioRequest(c *gin.Context, info *relaycommon.RelayInf
 	voiceID := request.Voice
 	speed := request.Speed
 	outputFormat := request.ResponseFormat
+	// 使用 UpstreamModelName（渠道级 model_mapping 已由 ModelMappedHelper 处理），
+	// 作为 TTS 专用重定向的输入，支持 alias -> tts-1-hd -> speech-02-hd 链式映射。
+	modelName := info.UpstreamModelName
+	inputText := request.Input
+	emotion := ""
+
+	// MiniMax TTS 增强配置（仅 MiniMax 渠道生效，因为只有 MiniMax adaptor 会走到这里）
+	cfg := model_setting.GetMiniMaxSettings()
+	if cfg.Enabled {
+		modelName = applyModelRedirect(info.UpstreamModelName, cfg)
+		voiceID = applyVoiceRedirect(request.Voice, cfg)
+		emotion, inputText = extractEmotion(inputText, cfg.EmotionPattern, cfg.EmotionRedirect)
+		inputText = replaceToneWords(inputText, cfg.ToneWordPattern, cfg.ToneWordRedirect)
+	}
 
 	minimaxRequest := MiniMaxTTSRequest{
-		Model: info.OriginModelName,
-		Text:  request.Input,
+		Model: modelName,
+		Text:  inputText,
 		VoiceSetting: VoiceSetting{
 			VoiceID: voiceID,
 			Speed:   speed,
+			Emotion: emotion,
 		},
 		AudioSetting: &AudioSetting{
 			Format: outputFormat,
@@ -70,8 +86,12 @@ func (a *Adaptor) ConvertAudioRequest(c *gin.Context, info *relaycommon.RelayInf
 
 	c.Set("response_format", outputFormat)
 
-	// Debug: log the request structure
-	// fmt.Printf("MiniMax TTS Request: %s\n", string(jsonData))
+	// 音色日志：记录 MiniMax TTS 实际使用的 voice_id。
+	// 使用 metadata 合并后的最终 voice_id（用户通过 metadata 覆盖时也能反映真实值）。
+	// 由上层 audio_handler.go 通过 extraContent 传给 PostAudioConsumeQuota。
+	if cfg.Enabled {
+		c.Set("minimax_voice_id", minimaxRequest.VoiceSetting.VoiceID)
+	}
 
 	return bytes.NewReader(jsonData), nil
 }

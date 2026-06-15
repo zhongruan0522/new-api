@@ -67,8 +67,14 @@ func AudioHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *type
 		service.ResetStatusCode(newAPIError, statusCodeMappingStr)
 		return newAPIError
 	}
+	// 音色日志：记录 MiniMax TTS 实际使用的 voice_id（经重定向后的）
+	var extraContent string
+	if voiceID := c.GetString("minimax_voice_id"); voiceID != "" {
+		extraContent = "voice_id: " + voiceID
+	}
+
 	if usage.(*dto.Usage).CompletionTokenDetails.AudioTokens > 0 || usage.(*dto.Usage).PromptTokensDetails.AudioTokens > 0 {
-		if apiErr := service.PostAudioConsumeQuota(c, info, usage.(*dto.Usage), ""); apiErr != nil {
+		if apiErr := service.PostAudioConsumeQuota(c, info, usage.(*dto.Usage), extraContent); apiErr != nil {
 			return apiErr
 		}
 	} else {
