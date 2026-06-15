@@ -145,7 +145,7 @@ var ChannelSpecialBases = map[string]ChannelSpecialBase{
 		ClaudeBaseURL: "https://api.minimaxi.com/anthropic",
 	},
 	"minimax-coding-plan-international": {
-		ClaudeBaseURL: "https://api.minimaxi.io/anthropic",
+		ClaudeBaseURL: "https://api.minimax.io/anthropic",
 	},
 	"ollama-coding-plan": {
 		ClaudeBaseURL: "https://ollama.com",
