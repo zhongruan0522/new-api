@@ -129,6 +129,13 @@ export type ModelSettings = {
   'claude.default_max_tokens': string
   'grok.violation_deduction_enabled': boolean
   'grok.violation_deduction_amount': number
+  'minimax.enabled': boolean
+  'minimax.model_redirect': string
+  'minimax.voice_redirect': string
+  'minimax.emotion_pattern': string
+  'minimax.emotion_redirect': string
+  'minimax.tone_word_pattern': string
+  'minimax.tone_word_redirect': string
   ModelPrice: string
   ModelRatio: string
   CacheRatio: string

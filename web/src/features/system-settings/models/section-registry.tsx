@@ -23,6 +23,7 @@ import { ClaudeSettingsCard } from './claude-settings-card'
 import { GeminiSettingsCard } from './gemini-settings-card'
 import { GlobalSettingsCard } from './global-settings-card'
 import { GrokSettingsCard } from './grok-settings-card'
+import { MiniMaxSettingsCard } from './minimax-settings-card'
 
 const MODELS_SECTIONS = [
   {
@@ -85,6 +86,26 @@ const MODELS_SECTIONS = [
             settings['grok.violation_deduction_enabled'] ?? true,
           'grok.violation_deduction_amount':
             settings['grok.violation_deduction_amount'] ?? 0.05,
+        }}
+      />
+    ),
+  },
+  {
+    id: 'minimax',
+    titleKey: 'MiniMax',
+    build: (settings: ModelSettings) => (
+      <MiniMaxSettingsCard
+        defaultValues={{
+          'minimax.enabled': settings['minimax.enabled'] ?? false,
+          'minimax.model_redirect': settings['minimax.model_redirect'] ?? '{}',
+          'minimax.voice_redirect': settings['minimax.voice_redirect'] ?? '{}',
+          'minimax.emotion_pattern': settings['minimax.emotion_pattern'] ?? '',
+          'minimax.emotion_redirect':
+            settings['minimax.emotion_redirect'] ?? '{}',
+          'minimax.tone_word_pattern':
+            settings['minimax.tone_word_pattern'] ?? '',
+          'minimax.tone_word_redirect':
+            settings['minimax.tone_word_redirect'] ?? '{}',
         }}
       />
     ),
