@@ -102,7 +102,19 @@ func DeleteStoredVideosByIDs(ctx context.Context, ids []string, userId int) (int
 	return result.RowsAffected, result.Error
 }
 
+// DeleteOldStoredVideos 删除 created_at 早于 targetTimestamp 的视频，分批避免单次事务过大。
+// 已被 DeleteStoredVideosInRange 取代，保留用于兼容。
 func DeleteOldStoredVideos(ctx context.Context, targetTimestamp int64, limit int) (int64, error) {
+	return DeleteStoredVideosInRange(ctx, 0, targetTimestamp, limit)
+}
+
+// DeleteStoredVideosInRange 删除 created_at 在 [startTimestamp, endTimestamp] 区间内的视频。
+// startTimestamp 为 0 表示不限下界，endTimestamp 为 0 表示不限上界。
+// 分批删除避免单次事务过大。
+func DeleteStoredVideosInRange(ctx context.Context, startTimestamp, endTimestamp int64, limit int) (int64, error) {
+	if limit <= 0 {
+		limit = 100
+	}
 	var total int64 = 0
 	if ctx == nil {
 		ctx = context.Background()
@@ -113,7 +125,11 @@ func DeleteOldStoredVideos(ctx context.Context, targetTimestamp int64, limit int
 			return total, ctx.Err()
 		}
 
-		result := DB.WithContext(ctx).Where("created_at < ?", targetTimestamp).Limit(limit).Delete(&StoredVideo{})
+		tx := DB.WithContext(ctx).Where("created_at <= ?", endTimestamp)
+		if startTimestamp > 0 {
+			tx = tx.Where("created_at >= ?", startTimestamp)
+		}
+		result := tx.Limit(limit).Delete(&StoredVideo{})
 		if result.Error != nil {
 			return total, result.Error
 		}

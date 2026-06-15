@@ -39,10 +39,26 @@ export type UpdateOptionResponse = {
   message: string
 }
 
-export type DeleteLogsResponse = {
+export type CleanLogsParams = {
+  start_timestamp?: number
+  end_timestamp: number
+  clean_logs?: boolean
+  clean_stored_images?: boolean
+  clean_stored_videos?: boolean
+  clean_audit_logs?: boolean
+}
+
+export type CleanLogsResult = {
+  logs?: number
+  stored_images?: number
+  stored_videos?: number
+  audit_logs?: number
+}
+
+export type CleanLogsResponse = {
   success: boolean
   message: string
-  data?: number
+  data?: CleanLogsResult
 }
 
 export type SiteSettings = {

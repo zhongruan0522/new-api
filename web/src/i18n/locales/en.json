@@ -3644,6 +3644,27 @@
     "Audit: Module - Database Migration": "Database Migration",
     "Audit: Module - Performance": "Performance",
     "Audit: Module - Log Cleanup": "Log Cleanup",
-    "Audit: Module - System Setup": "System Setup"
+    "Audit: Module - System Setup": "System Setup",
+    "Administrative operation records. Deletion cannot be undone.": "Administrative operation records. Deletion cannot be undone.",
+    "Audit logs": "Audit logs",
+    "Audit logs selected: administrative operation records will be permanently deleted.": "Audit logs selected: administrative operation records will be permanently deleted.",
+    "Consume, error, topup, manage and system logs.": "Consume, error, topup, manage and system logs.",
+    "{{count}} entries removed.": "{{count}} entries removed.",
+    "Image bytes cached for the image-to-URL conversion feature.": "Image bytes cached for the image-to-URL conversion feature.",
+    "Last 7 days": "Last 7 days",
+    "Last 30 days": "Last 30 days",
+    "No log entries matched the selected range.": "No log entries matched the selected range.",
+    "No lower bound": "No lower bound",
+    "Select an end time before clearing logs.": "Select an end time before clearing logs.",
+    "Select at least one log type to clean.": "Select at least one log type to clean.",
+    "Select log types and time range to remove matching entries.": "Select log types and time range to remove matching entries.",
+    "Start time must not be later than end time.": "Start time must not be later than end time.",
+    "Stored images": "Stored images",
+    "Stored videos": "Stored videos",
+    "This will permanently remove log entries created in the range {{range}}.": "This will permanently remove log entries created in the range {{range}}.",
+    "This will permanently remove log entries matching the selected range.": "This will permanently remove log entries matching the selected range.",
+    "Time range": "Time range",
+    "Usage logs": "Usage logs",
+    "Video bytes cached for the video-to-URL conversion feature.": "Video bytes cached for the video-to-URL conversion feature."
   }
 }

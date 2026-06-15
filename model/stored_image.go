@@ -159,18 +159,34 @@ func DeleteStoredImagesByIDs(ctx context.Context, ids []string, userId int) (int
 	return result.RowsAffected, result.Error
 }
 
+// DeleteOldStoredImages 删除 created_at 早于 targetTimestamp 的图片，分批避免单次事务过大。
+// 已被 DeleteStoredImagesInRange 取代，保留用于兼容。
 func DeleteOldStoredImages(ctx context.Context, targetTimestamp int64, limit int) (int64, error) {
+	return DeleteStoredImagesInRange(ctx, 0, targetTimestamp, limit)
+}
+
+// DeleteStoredImagesInRange 删除 created_at 在 [startTimestamp, endTimestamp] 区间内的图片。
+// startTimestamp 为 0 表示不限下界，endTimestamp 为 0 表示不限上界。
+// 分批删除避免单次事务过大。
+func DeleteStoredImagesInRange(ctx context.Context, startTimestamp, endTimestamp int64, limit int) (int64, error) {
+	if limit <= 0 {
+		limit = 100
+	}
 	var total int64 = 0
 	if ctx == nil {
 		ctx = context.Background()
 	}
 
 	for {
-		if ctx != nil && ctx.Err() != nil {
+		if ctx.Err() != nil {
 			return total, ctx.Err()
 		}
 
-		result := DB.WithContext(ctx).Where("created_at < ?", targetTimestamp).Limit(limit).Delete(&StoredImage{})
+		tx := DB.WithContext(ctx).Where("created_at <= ?", endTimestamp)
+		if startTimestamp > 0 {
+			tx = tx.Where("created_at >= ?", startTimestamp)
+		}
+		result := tx.Limit(limit).Delete(&StoredImage{})
 		if result.Error != nil {
 			return total, result.Error
 		}

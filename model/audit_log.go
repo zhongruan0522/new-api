@@ -101,10 +101,25 @@ func GetAllAuditLogs(username, module, actionType string, startTime, endTime int
 	return logs, total, nil
 }
 
-// DeleteOldAuditLogs 删除创建时间早于 targetTimestamp 的审计日志。
-// 返回被删除的行数。采用批量删除避免单次事务过大。
+// DeleteOldAuditLogs 删除 created_at 早于 targetTimestamp 的审计日志。
+// 已被 DeleteAuditLogsInRange 取代，保留用于兼容。
+// 返回被删除的行数。
 func DeleteOldAuditLogs(targetTimestamp int64) (int64, error) {
-	result := DB.Where("created_at < ?", targetTimestamp).Delete(&AuditLog{})
+	return DeleteAuditLogsInRange(0, targetTimestamp)
+}
+
+// DeleteAuditLogsInRange 删除 created_at 在 [startTimestamp, endTimestamp] 区间内的审计日志。
+// startTimestamp 为 0 表示不限下界，endTimestamp 为 0 表示不限上界。
+// 返回被删除的行数。
+func DeleteAuditLogsInRange(startTimestamp, endTimestamp int64) (int64, error) {
+	tx := DB.Model(&AuditLog{})
+	if startTimestamp > 0 {
+		tx = tx.Where("created_at >= ?", startTimestamp)
+	}
+	if endTimestamp > 0 {
+		tx = tx.Where("created_at <= ?", endTimestamp)
+	}
+	result := tx.Delete(&AuditLog{})
 	if result.Error != nil {
 		return 0, result.Error
 	}

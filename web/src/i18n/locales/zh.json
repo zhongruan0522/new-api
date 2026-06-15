@@ -3644,6 +3644,27 @@
     "Audit: Module - Database Migration": "数据库迁移",
     "Audit: Module - Performance": "性能管理",
     "Audit: Module - Log Cleanup": "日志清理",
-    "Audit: Module - System Setup": "系统初始化"
+    "Audit: Module - System Setup": "系统初始化",
+    "Administrative operation records. Deletion cannot be undone.": "管理员操作记录。删除后无法恢复。",
+    "Audit logs": "审计日志",
+    "Audit logs selected: administrative operation records will be permanently deleted.": "已选审计日志：管理员操作记录将被永久删除。",
+    "Consume, error, topup, manage and system logs.": "消费、错误、充值、管理和系统日志。",
+    "{{count}} entries removed.": "已删除 {{count}} 条记录。",
+    "Image bytes cached for the image-to-URL conversion feature.": "图片转 URL 功能缓存的图片数据。",
+    "Last 7 days": "最近 7 天",
+    "Last 30 days": "最近 30 天",
+    "No log entries matched the selected range.": "没有日志条目匹配所选时间范围。",
+    "No lower bound": "无下限",
+    "Select an end time before clearing logs.": "清除日志前请选择结束时间。",
+    "Select at least one log type to clean.": "请至少选择一种日志类型。",
+    "Select log types and time range to remove matching entries.": "选择日志类型和时间范围以删除匹配的记录。",
+    "Start time must not be later than end time.": "开始时间不能晚于结束时间。",
+    "Stored images": "存储图片",
+    "Stored videos": "存储视频",
+    "This will permanently remove log entries created in the range {{range}}.": "这将永久删除 {{range}} 范围内创建的日志条目。",
+    "This will permanently remove log entries matching the selected range.": "这将永久删除匹配所选范围的日志条目。",
+    "Time range": "时间范围",
+    "Usage logs": "使用日志",
+    "Video bytes cached for the video-to-URL conversion feature.": "视频转 URL 功能缓存的视频数据。"
   }
 }

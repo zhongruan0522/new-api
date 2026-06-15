@@ -717,7 +717,19 @@ func SumUsedToken(logType int, startTimestamp int64, endTimestamp int64, modelNa
 	return token
 }
 
+// DeleteOldLog 删除 created_at 早于 targetTimestamp 的日志，分批避免单次事务过大。
+// 已被 DeleteLogsInRange 取代，保留用于兼容。
 func DeleteOldLog(ctx context.Context, targetTimestamp int64, limit int) (int64, error) {
+	return DeleteLogsInRange(ctx, 0, targetTimestamp, limit)
+}
+
+// DeleteLogsInRange 删除 created_at 在 [startTimestamp, endTimestamp] 区间内的日志。
+// startTimestamp 为 0 表示不限下界，endTimestamp 为 0 表示不限上界。
+// 分批删除避免单次事务过大。
+func DeleteLogsInRange(ctx context.Context, startTimestamp, endTimestamp int64, limit int) (int64, error) {
+	if limit <= 0 {
+		limit = 100
+	}
 	var total int64 = 0
 
 	for {
@@ -725,7 +737,11 @@ func DeleteOldLog(ctx context.Context, targetTimestamp int64, limit int) (int64,
 			return total, ctx.Err()
 		}
 
-		result := LOG_DB.Where("created_at < ?", targetTimestamp).Limit(limit).Delete(&Log{})
+		tx := LOG_DB.Where("created_at <= ?", endTimestamp)
+		if startTimestamp > 0 {
+			tx = tx.Where("created_at >= ?", startTimestamp)
+		}
+		result := tx.Limit(limit).Delete(&Log{})
 		if nil != result.Error {
 			return total, result.Error
 		}

@@ -222,49 +222,86 @@ func GetLogsSelfStat(c *gin.Context) {
 }
 
 func DeleteHistoryLogs(c *gin.Context) {
-	targetTimestamp, _ := strconv.ParseInt(c.Query("target_timestamp"), 10, 64)
-	cleanStoredMedia := c.Query("clean_stored_media") == "true" || c.Query("clean_stored_media") == "1" ||
-		c.Query("clean_stored_images") == "true" || c.Query("clean_stored_images") == "1"
-	if targetTimestamp == 0 {
+	startTimestamp, _ := strconv.ParseInt(c.Query("start_timestamp"), 10, 64)
+	endTimestamp, _ := strconv.ParseInt(c.Query("end_timestamp"), 10, 64)
+	cleanLogs := c.Query("clean_logs") == "true" || c.Query("clean_logs") == "1"
+	cleanStoredImages := c.Query("clean_stored_images") == "true" || c.Query("clean_stored_images") == "1"
+	cleanStoredVideos := c.Query("clean_stored_videos") == "true" || c.Query("clean_stored_videos") == "1"
+	cleanAuditLogs := c.Query("clean_audit_logs") == "true" || c.Query("clean_audit_logs") == "1"
+
+	if endTimestamp == 0 {
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,
-			"message": "target timestamp is required",
+			"message": "end timestamp is required",
 		})
 		return
 	}
-	count, err := model.DeleteOldLog(c.Request.Context(), targetTimestamp, 100)
-	if err != nil {
-		common.ApiError(c, err)
-		return
-	}
-	if cleanStoredMedia {
-		imgCount, err := model.DeleteOldStoredImages(c.Request.Context(), targetTimestamp, 100)
-		if err != nil {
-			common.ApiError(c, err)
-			return
-		}
-		videoCount, err := model.DeleteOldStoredVideos(c.Request.Context(), targetTimestamp, 100)
-		if err != nil {
-			common.ApiError(c, err)
-			return
-		}
-		service.RecordAudit(c, model.AuditModuleLog, model.AuditActionDelete, "清理历史日志", nil, map[string]interface{}{"target_timestamp": targetTimestamp})
+	if !cleanLogs && !cleanStoredImages && !cleanStoredVideos && !cleanAuditLogs {
 		c.JSON(http.StatusOK, gin.H{
-			"success": true,
-			"message": "",
-			"data": gin.H{
-				"logs":          count,
-				"stored_images": imgCount,
-				"stored_videos": videoCount,
-			},
+			"success": false,
+			"message": "at least one log type must be selected",
 		})
 		return
 	}
-	service.RecordAudit(c, model.AuditModuleLog, model.AuditActionDelete, "清理历史日志", nil, map[string]interface{}{"target_timestamp": targetTimestamp})
+
+	data := gin.H{}
+	// detail 同时作为审计 after 数据，记录每个已选类型的实际删除数量，
+	// 便于事后核对清理范围。
+	detail := map[string]interface{}{
+		"start_timestamp": startTimestamp,
+		"end_timestamp":   endTimestamp,
+	}
+	// 链式执行：任一类型失败记录首个错误，继续执行其余类型，
+	// 确保部分成功的清理也有审计记录。
+	var firstErr error
+
+	if cleanLogs {
+		count, err := model.DeleteLogsInRange(c.Request.Context(), startTimestamp, endTimestamp, 100)
+		if err != nil && firstErr == nil {
+			firstErr = err
+		}
+		data["logs"] = count
+		detail["clean_logs"] = count
+	}
+	if cleanStoredImages {
+		count, err := model.DeleteStoredImagesInRange(c.Request.Context(), startTimestamp, endTimestamp, 100)
+		if err != nil && firstErr == nil {
+			firstErr = err
+		}
+		data["stored_images"] = count
+		detail["clean_stored_images"] = count
+	}
+	if cleanStoredVideos {
+		count, err := model.DeleteStoredVideosInRange(c.Request.Context(), startTimestamp, endTimestamp, 100)
+		if err != nil && firstErr == nil {
+			firstErr = err
+		}
+		data["stored_videos"] = count
+		detail["clean_stored_videos"] = count
+	}
+	if cleanAuditLogs {
+		count, err := model.DeleteAuditLogsInRange(startTimestamp, endTimestamp)
+		if err != nil && firstErr == nil {
+			firstErr = err
+		}
+		data["audit_logs"] = count
+		detail["clean_audit_logs"] = count
+	}
+
+	// 清理日志属于关键运维操作，使用 forceRecord=true 强制审计，
+	// 即使审计总开关或 log 模块被关闭也必须记录，避免审计链断裂。
+	if firstErr != nil {
+		detail["error"] = firstErr.Error()
+	}
+	service.RecordAudit(c, model.AuditModuleLog, model.AuditActionDelete, "清理历史日志", nil, detail, true)
+
+	if firstErr != nil {
+		common.ApiError(c, firstErr)
+		return
+	}
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
-		"data":    count,
+		"data":    data,
 	})
-	return
 }

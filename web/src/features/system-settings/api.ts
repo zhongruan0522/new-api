@@ -18,7 +18,8 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { api } from '@/lib/api'
 import type {
-  DeleteLogsResponse,
+  CleanLogsParams,
+  CleanLogsResponse,
   SystemOptionsResponse,
   UpdateOptionRequest,
   UpdateOptionResponse,
@@ -34,10 +35,8 @@ export async function updateSystemOption(request: UpdateOptionRequest) {
   return res.data
 }
 
-export async function deleteLogsBefore(targetTimestamp: number) {
-  const res = await api.delete<DeleteLogsResponse>('/api/log/', {
-    params: { target_timestamp: targetTimestamp },
-  })
+export async function cleanLogs(params: CleanLogsParams) {
+  const res = await api.delete<CleanLogsResponse>('/api/log/', { params })
   return res.data
 }
 
