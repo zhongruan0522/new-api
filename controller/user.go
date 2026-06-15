@@ -910,6 +910,17 @@ func EmailBind(c *gin.Context) {
 		common.ApiError(c, err)
 		return
 	}
+	// Re-check the authoritative status from DB; the session snapshot may be
+	// stale if an admin disabled this user after login.
+	if user.Status != common.UserStatusEnabled {
+		session.Clear()
+		_ = session.Save()
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": "用户已被封禁",
+		})
+		return
+	}
 	user.Email = email
 	// no need to check if this email already taken, because we have used verification code to check it
 	err = user.Update(false)

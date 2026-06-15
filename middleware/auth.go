@@ -31,6 +31,22 @@ func validUserInfo(username string, role int) bool {
 	return true
 }
 
+// clearAndReject clears the session (so the client's stale cookie is replaced
+// with an empty one) and rejects the request with the given status/message.
+// Used when a session is no longer trustworthy (e.g. user disabled, demoted
+// or deleted by an admin).
+func clearAndReject(c *gin.Context, session sessions.Session, status int, message string) {
+	session.Clear()
+	if err := session.Save(); err != nil {
+		common.SysLog("failed to save cleared session: " + err.Error())
+	}
+	c.JSON(status, gin.H{
+		"success": false,
+		"message": message,
+	})
+	c.Abort()
+}
+
 func authHelper(c *gin.Context, minRole int) {
 	session := sessions.Default(c)
 	username := session.Get("username")
@@ -84,6 +100,31 @@ func authHelper(c *gin.Context, minRole int) {
 			c.Abort()
 			return
 		}
+	} else {
+		// Session-based auth: re-validate the user's role/status against the
+		// latest DB state. The session snapshot is written once at login time
+		// (setupLogin) and stored in a signed cookie, so admin actions like
+		// disable/demote/delete would otherwise not take effect until the
+		// cookie expires (up to 30 days). We query the DB directly rather than
+		// GetUserCache because the Redis cache entry may have been written
+		// before the Role field was added to UserBase (returning 0, which
+		// collides with RoleGuestUser). See middleware/AGENTS.md.
+		userId, ok := id.(int)
+		if !ok || userId <= 0 {
+			clearAndReject(c, session, http.StatusOK, "无权进行此操作，用户信息无效")
+			return
+		}
+		latestUser, dbErr := model.GetUserById(userId, false)
+		if dbErr != nil || latestUser == nil || latestUser.Id == 0 {
+			// User likely deleted, or DB unavailable. Fail closed: drop the
+			// stale session and force re-login.
+			common.SysLog(fmt.Sprintf("authHelper session re-validation failed for user %d: %v", userId, dbErr))
+			clearAndReject(c, session, http.StatusUnauthorized, "登录状态已失效，请重新登录")
+			return
+		}
+		// Override the session snapshot with the authoritative values.
+		role = latestUser.Role
+		status = latestUser.Status
 	}
 	// get header New-Api-User
 	apiUserIdStr := c.Request.Header.Get("New-Api-User")
@@ -114,6 +155,11 @@ func authHelper(c *gin.Context, minRole int) {
 		return
 	}
 	if status.(int) == common.UserStatusDisabled {
+		// Session-based path: clear the stale cookie so the client re-logs in.
+		if !useAccessToken {
+			clearAndReject(c, session, http.StatusOK, "用户已被封禁")
+			return
+		}
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,
 			"message": "用户已被封禁",
@@ -122,6 +168,12 @@ func authHelper(c *gin.Context, minRole int) {
 		return
 	}
 	if role.(int) < minRole {
+		// Session-based path: clear the stale cookie so the client re-logs in
+		// with the demoted role.
+		if !useAccessToken {
+			clearAndReject(c, session, http.StatusOK, "无权进行此操作，权限不足")
+			return
+		}
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,
 			"message": "无权进行此操作，权限不足",

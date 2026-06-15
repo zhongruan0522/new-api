@@ -54,6 +54,7 @@ func (user *User) ToBaseUser() *UserBase {
 		Group:    user.Group,
 		Quota:    user.Quota,
 		Status:   user.Status,
+		Role:     user.Role,
 		Username: user.Username,
 		Setting:  user.Setting,
 		Email:    user.Email,
