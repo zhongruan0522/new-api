@@ -9,6 +9,19 @@
 - 修改配置结构时同步 controller、前端系统设置页面和持久化逻辑。
 - 倍率、价格、状态码区间、限流等配置解析失败必须显式返回错误，不能回落到看似成功的默认值。
 
+## 审计配置
+
+审计日志配置注册在 `setting/operation_setting/audit_setting.go`，通过
+`config.GlobalConfig.Register("audit_setting", ...)` 注册。
+
+- `Enabled`：审计总开关，默认关闭。
+- `Modules`：各模块开关，JSON 字符串 `map[string]bool`，默认全部启用。
+- `RecordIp`：是否记录操作 IP。
+- `RecordDiff`：是否记录前后差异。
+
+新增审计模块时必须在 `defaultAuditModules()` 中注册，详见
+`controller/AGENTS.md` 的"新增资源类型时的检查清单"。
+
 ## 验证
 
 - 改配置解析或校验后执行 `go test ./setting/...`。
