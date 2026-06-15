@@ -10,6 +10,7 @@ import (
 	"github.com/zhongruan0522/new-api/service"
 	"github.com/zhongruan0522/new-api/setting"
 	"github.com/zhongruan0522/new-api/setting/console_setting"
+	"github.com/zhongruan0522/new-api/setting/model_setting"
 	"github.com/zhongruan0522/new-api/setting/operation_setting"
 	"github.com/zhongruan0522/new-api/setting/ratio_setting"
 
@@ -234,6 +235,17 @@ func UpdateOption(c *gin.Context) {
 			c.JSON(http.StatusOK, gin.H{
 				"success": false,
 				"message": "工具计费规则设置失败: " + err.Error(),
+			})
+			return
+		}
+	case "minimax.model_redirect", "minimax.emotion_redirect",
+		"minimax.tone_word_redirect", "minimax.voice_redirect",
+		"minimax.emotion_pattern", "minimax.tone_word_pattern":
+		err = model_setting.ValidateMiniMaxOptionValue(option.Key, option.Value.(string))
+		if err != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": "MiniMax 设置失败: " + err.Error(),
 			})
 			return
 		}
