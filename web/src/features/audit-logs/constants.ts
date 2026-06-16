@@ -38,6 +38,7 @@ export const AUDIT_MODULES = [
   { value: 'performance', label: 'Audit: Module - Performance' },
   { value: 'log', label: 'Audit: Module - Log Cleanup' },
   { value: 'setup', label: 'Audit: Module - System Setup' },
+  { value: 'dashboard_config', label: 'Audit: Module - Dashboard Configuration' },
 ] as const
 
 // Action type -> badge color class mapping for table display

@@ -21,6 +21,7 @@ import { createSectionRegistry } from '../utils/section-registry'
 import { AnnouncementsSection } from './announcements-section'
 import { ApiInfoSection } from './api-info-section'
 import { DashboardSection } from './dashboard-section'
+import { DashboardConfigSection } from './dashboard-config-section'
 import { FAQSection } from './faq-section'
 import { UptimeKumaSection } from './uptime-kuma-section'
 import { UsageLogFieldsSection } from './usage-log-fields-section'
@@ -51,6 +52,11 @@ const CONTENT_SECTIONS = [
         }}
       />
     ),
+  },
+  {
+    id: 'dashboard-config',
+    titleKey: 'Dashboard Configuration',
+    build: () => <DashboardConfigSection />,
   },
   {
     id: 'announcements',

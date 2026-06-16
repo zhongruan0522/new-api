@@ -120,6 +120,26 @@ export type ContentSettings = {
   DataExportInterval: number
 }
 
+export type DashboardSettings = {
+  'dashboard_config.quota_data_enabled': boolean
+  'dashboard_config.user_analytics_enabled': boolean
+  'dashboard_config.rankings_enabled': boolean
+  'dashboard_config.media_convert_stats_enabled': boolean
+  'dashboard_config.api_info_enabled': boolean
+  'dashboard_config.uptime_kuma_enabled': boolean
+  'dashboard_config.announcements_enabled': boolean
+  'dashboard_config.faq_enabled': boolean
+  'dashboard_config.quota_data_refresh_interval': number
+  'dashboard_config.user_analytics_refresh_interval': number
+  'dashboard_config.rankings_refresh_interval': number
+  'dashboard_config.uptime_kuma_refresh_interval': number
+  'dashboard_config.default_time_range_days': number
+  'dashboard_config.max_time_range_days': number
+  'dashboard_config.rankings_model_limit': number
+  'dashboard_config.rankings_vendor_limit': number
+  'dashboard_config.user_analytics_top_n': number
+}
+
 export type ModelSettings = {
   'general_setting.ping_interval_enabled': boolean
   'general_setting.ping_interval_seconds': number
