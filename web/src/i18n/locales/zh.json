@@ -1326,7 +1326,7 @@
     "footer.columns.related.links.oneApi": "One API",
     "footer.columns.related.title": "相关项目",
     "footer.defaultCopyright": "版权所有。",
-    "footer.new\u0061pi.projectAttributionSuffix": "版权所有，由项目贡献者设计与开发。",
+    "footer.newapi.projectAttributionSuffix": "版权所有，由项目贡献者设计与开发。",
     "For channels added after May 10, 2025, no need to remove \".\" from model names during deployment": "对于 2025 年 5 月 10 日之后添加的渠道，在部署时无需从模型名称中移除 \".\"",
     "Force a syntactically valid JSON response": "强制返回语法合法的 JSON",
     "Force Format": "强制格式化",
@@ -3681,5 +3681,19 @@
     "Time range": "时间范围",
     "Usage logs": "使用日志",
     "Video bytes cached for the video-to-URL conversion feature.": "视频转 URL 功能缓存的视频数据。"
-  }
+  },
+  "Usage Log Field Visibility": "使用日志字段可见性",
+  "Usage Log Fields": "使用日志字段",
+  "Field / Description": "字段 / 说明",
+  "Admin Details Access": "管理员详情访问",
+  "User Details Access": "普通用户详情访问",
+  "When enabled, admins can access usage log details dialog": "开启后，管理员可以访问使用日志详情弹窗",
+  "When enabled, regular users can access usage log details dialog": "开启后，普通用户可以访问使用日志详情弹窗",
+  "Reset to defaults. Click \"Save Settings\" to apply.": "已重置为默认值。点击\"保存设置\"生效。",
+  "Usage Log Field Group: Basic": "基本信息",
+  "Usage Log Field Group: Request": "请求信息",
+  "Usage Log Field Group: Billing": "计费",
+  "Usage Log Field Group: Token": "Token",
+  "Usage Log Field Group: System": "系统/管理",
+  "Usage Log Field Group: Other": "其他"
 }

@@ -73,9 +73,55 @@ func ValidateConsoleSettings(settingsStr string, settingType string) error {
 		return validateFAQ(settingsStr)
 	case "UptimeKumaGroups":
 		return validateUptimeKumaGroups(settingsStr)
+	case "UsageLogFields":
+		return validateUsageLogFields(settingsStr)
 	default:
 		return fmt.Errorf("未知的设置类型：%s", settingType)
 	}
+}
+
+// validateUsageLogFields 校验使用日志字段可见性配置 JSON。
+// 格式：{ "<fieldKey>": { "admin": bool, "user": bool }, ... }
+// 校验：JSON 格式合法，所有 key 在已知字段列表中，每个字段必须包含 admin 和 user 两个布尔成员。
+// 拒绝部分配置（如 {"channel":{}}），避免缺少 admin/user 导致字段被静默隐藏。
+func validateUsageLogFields(fieldsStr string) error {
+	// 先解析为 map[string]json.RawMessage，确保每个字段对象显式包含 admin 和 user 键。
+	rawMap := make(map[string]json.RawMessage)
+	if err := json.Unmarshal([]byte(fieldsStr), &rawMap); err != nil {
+		return fmt.Errorf("使用日志字段配置格式错误：%s", err.Error())
+	}
+
+	// 构建已知字段集合
+	knownFields := make(map[string]bool, len(UsageLogFieldsDefaults()))
+	for _, d := range UsageLogFieldsDefaults() {
+		knownFields[d.Key] = true
+	}
+
+	for key, raw := range rawMap {
+		if !knownFields[key] {
+			return fmt.Errorf("未知的字段标识：%s", key)
+		}
+		// 解析单个字段对象，检查 admin 和 user 都存在且为布尔值
+		var obj map[string]interface{}
+		if err := json.Unmarshal(raw, &obj); err != nil {
+			return fmt.Errorf("字段 %s 的配置格式错误：%s", key, err.Error())
+		}
+		adminVal, hasAdmin := obj["admin"]
+		userVal, hasUser := obj["user"]
+		if !hasAdmin {
+			return fmt.Errorf("字段 %s 缺少 admin 配置", key)
+		}
+		if !hasUser {
+			return fmt.Errorf("字段 %s 缺少 user 配置", key)
+		}
+		if _, ok := adminVal.(bool); !ok {
+			return fmt.Errorf("字段 %s 的 admin 值必须为布尔类型", key)
+		}
+		if _, ok := userVal.(bool); !ok {
+			return fmt.Errorf("字段 %s 的 user 值必须为布尔类型", key)
+		}
+	}
+	return nil
 }
 
 func validateApiInfo(apiInfoStr string) error {

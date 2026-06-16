@@ -229,6 +229,15 @@ func UpdateOption(c *gin.Context) {
 			})
 			return
 		}
+	case "console_setting.usage_log_fields":
+		err = console_setting.ValidateConsoleSettings(option.Value.(string), "UsageLogFields")
+		if err != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": err.Error(),
+			})
+			return
+		}
 	case "tool_billing_setting.rules":
 		err = operation_setting.ValidateToolBillingRules(option.Value.(string))
 		if err != nil {

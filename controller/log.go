@@ -7,6 +7,7 @@ import (
 	"github.com/zhongruan0522/new-api/common"
 	"github.com/zhongruan0522/new-api/model"
 	"github.com/zhongruan0522/new-api/service"
+	"github.com/zhongruan0522/new-api/setting/console_setting"
 
 	"github.com/gin-gonic/gin"
 )
@@ -58,10 +59,160 @@ func GetUserLogs(c *gin.Context) {
 		common.ApiError(c, err)
 		return
 	}
+	filterHiddenUsageLogFields(logs)
 	pageInfo.SetTotal(int(total))
 	pageInfo.SetItems(logs)
 	common.ApiSuccess(c, pageInfo)
 	return
+}
+
+// filterHiddenUsageLogFields 根据使用日志字段可见性配置，清空普通用户不可见的字段数据。
+// 仅过滤详情弹窗独有的字段（不影响表格列共享的 prompt_tokens/completion_tokens/quota/model_name 等）。
+// admin_info 相关字段（topup_audit/operator_admin/retry_chain）已由 model.formatUserLogs 删除。
+// stream_status/billing_source/request_conversion 等独立 other 字段在此处过滤。
+// 如果配置解析失败，IsUsageLogFieldVisible 会回退到默认值，此处按默认值过滤。
+func filterHiddenUsageLogFields(logs []*model.Log) {
+	// 构建需要过滤的字段集合（普通用户不可见的字段）
+	hiddenFields := make(map[string]bool)
+	for _, d := range console_setting.UsageLogFieldsDefaults() {
+		if !console_setting.IsUsageLogFieldVisible(d.Key, false) {
+			hiddenFields[d.Key] = true
+		}
+	}
+
+	totalSwitchOff := !console_setting.IsUsageLogDetailsEnabled(false)
+
+	for _, log := range logs {
+		if totalSwitchOff {
+			// 总开关关闭，清空所有详情弹窗独有字段
+			log.RequestId = ""
+			log.UpstreamRequestId = ""
+			log.Ip = ""
+			log.ChannelId = 0
+			log.ChannelName = ""
+			stripHiddenOtherFields(log, nil)
+			continue
+		}
+
+		// 独立顶层字段
+		if hiddenFields[console_setting.UsageLogFieldRequestID] {
+			log.RequestId = ""
+		}
+		if hiddenFields[console_setting.UsageLogFieldUpstreamRequestID] {
+			log.UpstreamRequestId = ""
+		}
+		if hiddenFields[console_setting.UsageLogFieldIPAddress] {
+			log.Ip = ""
+		}
+		if hiddenFields[console_setting.UsageLogFieldChannel] {
+			log.ChannelId = 0
+			log.ChannelName = ""
+		}
+		// other JSON 内的字段
+		stripHiddenOtherFields(log, hiddenFields)
+	}
+}
+
+// stripHiddenOtherFields 从 other JSON 中移除被隐藏字段对应的数据。
+// 如果 hiddenFields 为 nil，表示清空所有详情弹窗独有的 other 字段。
+func stripHiddenOtherFields(log *model.Log, hiddenFields map[string]bool) {
+	if log.Other == "" {
+		return
+	}
+	otherMap, err := common.StrToMap(log.Other)
+	if err != nil || otherMap == nil {
+		return
+	}
+
+	clearAll := hiddenFields == nil
+	if clearAll {
+		// 清空所有详情弹窗独有的 other 字段
+		otherKeys := []string{
+			"http_referer", "x_title", "ua",
+			"reasoning_effort",
+			"is_system_prompt_overwritten",
+			"is_model_mapped", "upstream_model_name",
+			"po",
+			"request_path", "request_conversion",
+			"billing_mode", "expr_b64", "matched_tier",
+			"billing_source",
+			"violation_fee_code", "violation_fee_marker", "fee_quota",
+			"task_id", "reason",
+			"subscription_plan_id", "subscription_plan_title",
+			"subscription_id", "subscription_pre_consumed",
+			"subscription_post_delta", "subscription_consumed",
+			"subscription_remain", "subscription_total",
+			"stream_status",
+			"audio_input", "audio_output", "audio_input_token_count",
+			"text_input", "text_output",
+		}
+		for _, k := range otherKeys {
+			delete(otherMap, k)
+		}
+	} else {
+		// 按字段配置选择性清空
+		if hiddenFields[console_setting.UsageLogFieldClientHeaders] {
+			delete(otherMap, "http_referer")
+			delete(otherMap, "x_title")
+			delete(otherMap, "ua")
+		}
+		if hiddenFields[console_setting.UsageLogFieldReasoningEffort] {
+			delete(otherMap, "reasoning_effort")
+		}
+		if hiddenFields[console_setting.UsageLogFieldSystemPrompt] {
+			delete(otherMap, "is_system_prompt_overwritten")
+		}
+		if hiddenFields[console_setting.UsageLogFieldModelMapping] {
+			delete(otherMap, "is_model_mapped")
+			delete(otherMap, "upstream_model_name")
+		}
+		if hiddenFields[console_setting.UsageLogFieldParameterOverride] {
+			delete(otherMap, "po")
+		}
+		if hiddenFields[console_setting.UsageLogFieldRequestConversion] {
+			delete(otherMap, "request_path")
+			delete(otherMap, "request_conversion")
+		}
+		if hiddenFields[console_setting.UsageLogFieldBillingSource] {
+			delete(otherMap, "billing_source")
+		}
+		if hiddenFields[console_setting.UsageLogFieldTieredPricing] {
+			delete(otherMap, "billing_mode")
+			delete(otherMap, "expr_b64")
+			delete(otherMap, "matched_tier")
+		}
+		if hiddenFields[console_setting.UsageLogFieldViolationFee] {
+			delete(otherMap, "violation_fee_code")
+			delete(otherMap, "violation_fee_marker")
+			delete(otherMap, "fee_quota")
+		}
+		if hiddenFields[console_setting.UsageLogFieldRefundDetails] {
+			delete(otherMap, "task_id")
+			delete(otherMap, "reason")
+		}
+		if hiddenFields[console_setting.UsageLogFieldSubscriptionBilling] {
+			delete(otherMap, "subscription_plan_id")
+			delete(otherMap, "subscription_plan_title")
+			delete(otherMap, "subscription_id")
+			delete(otherMap, "subscription_pre_consumed")
+			delete(otherMap, "subscription_post_delta")
+			delete(otherMap, "subscription_consumed")
+			delete(otherMap, "subscription_remain")
+			delete(otherMap, "subscription_total")
+		}
+		if hiddenFields[console_setting.UsageLogFieldStreamStatus] {
+			delete(otherMap, "stream_status")
+		}
+		if hiddenFields[console_setting.UsageLogFieldAudioTokens] {
+			delete(otherMap, "audio_input")
+			delete(otherMap, "audio_output")
+			delete(otherMap, "audio_input_token_count")
+			delete(otherMap, "text_input")
+			delete(otherMap, "text_output")
+		}
+	}
+
+	log.Other = common.MapToJsonStr(otherMap)
 }
 
 // Deprecated: SearchAllLogs 已废弃，前端未使用该接口。

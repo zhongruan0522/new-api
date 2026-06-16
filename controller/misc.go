@@ -311,3 +311,50 @@ func ResetPassword(c *gin.Context) {
 	})
 	return
 }
+
+// GetUsageLogFieldsVisible 公开接口：返回当前用户角色下使用日志详情弹窗的字段可见性配置。
+// 普通用户和管理员都可访问，区别在于 isAdmin 由中间件注入。
+func GetUsageLogFieldsVisible(c *gin.Context) {
+	role := c.GetInt("role")
+	isAdmin := role >= common.RoleAdminUser
+
+	// 总开关关闭时，返回空字段列表，前端据此隐藏详情按钮
+	if !console_setting.IsUsageLogDetailsEnabled(isAdmin) {
+		c.JSON(http.StatusOK, gin.H{
+			"success": true,
+			"message": "",
+			"data": gin.H{
+				"enabled": false,
+				"fields":  []string{},
+			},
+		})
+		return
+	}
+
+	fieldsMap, err := console_setting.GetUsageLogFieldsVisible()
+	if err != nil {
+		common.SysError("failed to parse usage_log_fields setting: " + err.Error())
+		common.ApiErrorMsg(c, "使用日志字段配置解析失败")
+		return
+	}
+
+	// 返回当前角色可见的字段 key 列表
+	visibleFields := make([]string, 0, len(fieldsMap))
+	for key, cfg := range fieldsMap {
+		if isAdmin && cfg.Admin {
+			visibleFields = append(visibleFields, key)
+		} else if !isAdmin && cfg.User {
+			visibleFields = append(visibleFields, key)
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "",
+		"data": gin.H{
+			"enabled": true,
+			"fields":  visibleFields,
+		},
+	})
+	return
+}

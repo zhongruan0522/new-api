@@ -112,6 +112,9 @@ export type ContentSettings = {
   'console_setting.announcements_enabled': boolean
   'console_setting.faq_enabled': boolean
   'console_setting.uptime_kuma_enabled': boolean
+  'console_setting.usage_log_fields': string
+  'console_setting.usage_log_fields_admin_enabled': boolean
+  'console_setting.usage_log_fields_user_enabled': boolean
   DataExportEnabled: boolean
   DataExportDefaultTime: string
   DataExportInterval: number

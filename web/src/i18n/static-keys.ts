@@ -79,6 +79,14 @@ export const STATIC_I18N_KEYS = [
   'Log Cleanup',
   'System Setup',
 
+  // Usage log field visibility (constants-driven group labels)
+  'Usage Log Field Group: Basic',
+  'Usage Log Field Group: Request',
+  'Usage Log Field Group: Billing',
+  'Usage Log Field Group: Token',
+  'Usage Log Field Group: System',
+  'Usage Log Field Group: Other',
+
   // Pricing constants
   'Name',
   'Price: Low to High',

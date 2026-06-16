@@ -23,6 +23,7 @@ import { ApiInfoSection } from './api-info-section'
 import { DashboardSection } from './dashboard-section'
 import { FAQSection } from './faq-section'
 import { UptimeKumaSection } from './uptime-kuma-section'
+import { UsageLogFieldsSection } from './usage-log-fields-section'
 
 /**
  * Validate and coerce DataExportDefaultTime to a safe value
@@ -88,6 +89,19 @@ const CONTENT_SECTIONS = [
       <UptimeKumaSection
         enabled={settings['console_setting.uptime_kuma_enabled']}
         data={settings['console_setting.uptime_kuma_groups']}
+      />
+    ),
+  },
+  {
+    id: 'usage-log-fields',
+    titleKey: 'Usage Log Fields',
+    build: (settings: ContentSettings) => (
+      <UsageLogFieldsSection
+        fieldsData={settings['console_setting.usage_log_fields']}
+        adminEnabled={
+          settings['console_setting.usage_log_fields_admin_enabled']
+        }
+        userEnabled={settings['console_setting.usage_log_fields_user_enabled']}
       />
     ),
   },

@@ -57,6 +57,24 @@
 5. 在 `web/src/i18n/locales/{en,zh}.json` 中添加翻译。
 6. 在涉及的 controller 函数中添加 `service.RecordAudit` 调用。
 
+## 使用日志字段可见性
+
+管理员可在"系统设置 → 控制台内容 → 使用日志字段"中配置详情弹窗各字段对管理员/普通用户的可见性。
+
+- 后端配置：`setting/console_setting/config.go` 的 `UsageLogFields`（JSON map）、`UsageLogFieldsAdminEnabled`、`UsageLogFieldsUserEnabled`。
+- 字段定义：`UsageLogFieldsDefaults()` 返回所有字段的 key、默认值、中文名和描述。
+- 校验：`setting/console_setting/validation.go` 的 `validateUsageLogFields`。
+- 查询：`console_setting.IsUsageLogFieldVisible(field, isAdmin)` 和 `console_setting.IsUsageLogDetailsEnabled(isAdmin)`。
+- 公开接口：`GET /api/user/self/usage_log_fields`（UserAuth），返回当前角色可见的字段列表。
+- 审计：通过 `UpdateOption` 的通用 `RecordAudit` 自动覆盖，复用 `AuditModuleOption`。
+
+**新增或删除字段时需同步：**
+
+1. 后端 `UsageLogFieldsDefaults()` 添加/移除条目。
+2. 后端 `UsageLogField*` 常量。
+3. 前端 `web/src/features/usage-logs/lib/field-visibility.ts` 的 `USAGE_LOG_FIELD_KEYS`、`USAGE_LOG_FIELDS`。
+4. 前端 `web/src/features/usage-logs/components/dialogs/details-dialog.tsx` 中对应字段的条件渲染改为 `isVisible('<fieldKey>')`。
+
 ## 验证
 
 - 改请求校验、权限或响应字段后执行对应 controller 测试。

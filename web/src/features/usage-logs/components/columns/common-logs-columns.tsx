@@ -59,6 +59,7 @@ import type { LogOtherData } from '../../types'
 import { DetailsDialog } from '../dialogs/details-dialog'
 import { ModelBadge } from '../model-badge'
 import { useUsageLogsContext } from '../usage-logs-provider'
+import { useUsageLogFieldVisibility } from '../../hooks/use-field-visibility'
 
 interface DetailSegment {
   text: string
@@ -773,6 +774,7 @@ export function useCommonLogsColumns(isAdmin: boolean): ColumnDef<UsageLog>[] {
       header: t('Details'),
       cell: function DetailsCell({ row }) {
         const [dialogOpen, setDialogOpen] = useState(false)
+        const { detailsEnabled } = useUsageLogFieldVisibility()
         const log = row.original
         const other = parseLogOther(log.other)
 
@@ -782,38 +784,42 @@ export function useCommonLogsColumns(isAdmin: boolean): ColumnDef<UsageLog>[] {
 
         return (
           <>
-            <button
-              type='button'
-              className='group flex max-w-[200px] items-center gap-1 text-left text-xs'
-              onClick={() => setDialogOpen(true)}
-              title={t('Click to view full details')}
-            >
-              {primary ? (
-                <span
-                  className={cn(
-                    'truncate leading-snug group-hover:underline',
-                    primary.muted
-                      ? 'text-muted-foreground/60'
-                      : primary.danger
-                        ? 'text-red-600 dark:text-red-400'
-                        : 'text-foreground'
-                  )}
-                >
-                  {primary.text}
-                  {hasMore && (
-                    <span className='text-muted-foreground/40 ml-0.5'>
-                      +{segments.length - 1}
-                    </span>
-                  )}
-                </span>
-              ) : log.content ? (
-                <span className='text-muted-foreground truncate group-hover:underline'>
-                  {log.content}
-                </span>
-              ) : (
-                <span className='text-muted-foreground/40'>—</span>
-              )}
-            </button>
+            {detailsEnabled ? (
+              <button
+                type='button'
+                className='group flex max-w-[200px] items-center gap-1 text-left text-xs'
+                onClick={() => setDialogOpen(true)}
+                title={t('Click to view full details')}
+              >
+                {primary ? (
+                  <span
+                    className={cn(
+                      'truncate leading-snug group-hover:underline',
+                      primary.muted
+                        ? 'text-muted-foreground/60'
+                        : primary.danger
+                          ? 'text-red-600 dark:text-red-400'
+                          : 'text-foreground'
+                    )}
+                  >
+                    {primary.text}
+                    {hasMore && (
+                      <span className='text-muted-foreground/40 ml-0.5'>
+                        +{segments.length - 1}
+                      </span>
+                    )}
+                  </span>
+                ) : log.content ? (
+                  <span className='text-muted-foreground truncate group-hover:underline'>
+                    {log.content}
+                  </span>
+                ) : (
+                  <span className='text-muted-foreground/40'>—</span>
+                )}
+              </button>
+            ) : (
+              <span className='text-muted-foreground/40'>—</span>
+            )}
             <DetailsDialog
               log={log}
               isAdmin={isAdmin}

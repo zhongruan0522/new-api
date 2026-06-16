@@ -1326,7 +1326,7 @@
     "footer.columns.related.links.oneApi": "One API",
     "footer.columns.related.title": "Related Projects",
     "footer.defaultCopyright": "All rights reserved.",
-    "footer.new\u0061pi.projectAttributionSuffix": "All rights reserved. Designed and developed by the project contributors.",
+    "footer.newapi.projectAttributionSuffix": "All rights reserved. Designed and developed by the project contributors.",
     "For channels added after May 10, 2025, no need to remove \".\" from model names during deployment": "For channels added after May 10, 2025, no need to remove \".\" from model names during deployment",
     "Force a syntactically valid JSON response": "Force a syntactically valid JSON response",
     "Force Format": "Force Format",
@@ -3681,5 +3681,19 @@
     "Time range": "Time range",
     "Usage logs": "Usage logs",
     "Video bytes cached for the video-to-URL conversion feature.": "Video bytes cached for the video-to-URL conversion feature."
-  }
+  },
+  "Usage Log Field Visibility": "Usage Log Field Visibility",
+  "Usage Log Fields": "Usage Log Fields",
+  "Field / Description": "Field / Description",
+  "Admin Details Access": "Admin Details Access",
+  "User Details Access": "User Details Access",
+  "When enabled, admins can access usage log details dialog": "When enabled, admins can access usage log details dialog",
+  "When enabled, regular users can access usage log details dialog": "When enabled, regular users can access usage log details dialog",
+  "Reset to defaults. Click \"Save Settings\" to apply.": "Reset to defaults. Click \"Save Settings\" to apply.",
+  "Usage Log Field Group: Basic": "Basic Info",
+  "Usage Log Field Group: Request": "Request Info",
+  "Usage Log Field Group: Billing": "Billing",
+  "Usage Log Field Group: Token": "Token",
+  "Usage Log Field Group: System": "System / Admin",
+  "Usage Log Field Group: Other": "Other"
 }
