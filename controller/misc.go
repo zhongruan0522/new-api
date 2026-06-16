@@ -10,7 +10,9 @@ import (
 	"github.com/zhongruan0522/new-api/middleware"
 	"github.com/zhongruan0522/new-api/model"
 	"github.com/zhongruan0522/new-api/setting"
+	"github.com/zhongruan0522/new-api/setting/config"
 	"github.com/zhongruan0522/new-api/setting/console_setting"
+	"github.com/zhongruan0522/new-api/setting/dashboard_setting"
 	"github.com/zhongruan0522/new-api/setting/operation_setting"
 	"github.com/zhongruan0522/new-api/setting/system_setting"
 
@@ -103,6 +105,13 @@ func GetStatus(c *gin.Context) {
 	}
 	if cs.FAQEnabled {
 		data["faq"] = console_setting.GetFAQ()
+	}
+
+	// 注入仪表板配置
+	dashboardConfig := dashboard_setting.GetDashboardConfig()
+	dashboardConfigMap, err := config.ConfigToMap(dashboardConfig)
+	if err == nil {
+		data["dashboard_config"] = dashboardConfigMap
 	}
 
 	c.JSON(http.StatusOK, gin.H{

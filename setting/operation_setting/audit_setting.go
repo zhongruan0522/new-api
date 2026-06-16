@@ -18,19 +18,20 @@ type AuditSetting struct {
 // defaultAuditModules 构造默认模块开关：所有模块默认开启。
 func defaultAuditModules() string {
 	m := map[string]interface{}{
-		"option":        true,
-		"channel":       true,
-		"user":          true,
-		"token":         true,
-		"redemption":    true,
-		"model":         true,
-		"vendor":        true,
-		"dynamic_ratio": true,
-		"prefill_group": true,
-		"db":            true,
-		"performance":   true,
-		"log":           true,
-		"setup":         true,
+		"option":           true,
+		"channel":          true,
+		"user":             true,
+		"token":            true,
+		"redemption":       true,
+		"model":            true,
+		"vendor":           true,
+		"dynamic_ratio":    true,
+		"prefill_group":    true,
+		"db":               true,
+		"performance":      true,
+		"log":              true,
+		"setup":            true,
+		"dashboard_config": true,
 	}
 	return common.MapToJsonStr(m)
 }

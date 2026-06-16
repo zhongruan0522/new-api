@@ -251,6 +251,14 @@ func SetApiRouter(router *gin.Engine) {
 		dataRoute.GET("/self/media_convert_stats", middleware.UserAuth(), controller.GetUserMediaConvertStats)
 		dataRoute.POST("/recalculate", middleware.AdminAuth(), controller.RecalculateQuotaData)
 
+		dashboardRoute := apiRouter.Group("/dashboard")
+		dashboardRoute.Use(middleware.AdminAuth())
+		{
+			dashboardRoute.GET("/config", controller.GetDashboardConfig)
+			dashboardRoute.PUT("/config", controller.UpdateDashboardConfig)
+			dashboardRoute.POST("/config/reset", controller.ResetDashboardConfig)
+		}
+
 		logRoute.Use(middleware.CORS(), middleware.CriticalRateLimit())
 		{
 			logRoute.GET("/token", middleware.TokenAuthReadOnly(), controller.GetLogByKey)

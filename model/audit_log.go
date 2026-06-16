@@ -16,19 +16,20 @@ type AuditLog struct {
 
 // 审计模块常量。取值需稳定，前端与控制器通过常量引用，避免拼写不一致。
 const (
-	AuditModuleOption       = "option"        // 系统设置
-	AuditModuleChannel      = "channel"       // 渠道
-	AuditModuleUser         = "user"          // 用户
-	AuditModuleToken        = "token"         // 令牌
-	AuditModuleRedemption   = "redemption"    // 兑换码
-	AuditModuleModel        = "model"         // 模型
-	AuditModuleVendor       = "vendor"        // 供应商
-	AuditModuleDynamicRatio = "dynamic_ratio" // 动态倍率
-	AuditModulePrefillGroup = "prefill_group" // 预填充分组
-	AuditModuleDB           = "db"            // 数据库迁移
-	AuditModulePerformance  = "performance"   // 性能管理
-	AuditModuleLog          = "log"           // 日志清理
-	AuditModuleSetup        = "setup"         // 系统初始化
+	AuditModuleOption         = "option"          // 系统设置
+	AuditModuleChannel        = "channel"         // 渠道
+	AuditModuleUser           = "user"            // 用户
+	AuditModuleToken          = "token"           // 令牌
+	AuditModuleRedemption     = "redemption"      // 兑换码
+	AuditModuleModel          = "model"           // 模型
+	AuditModuleVendor         = "vendor"          // 供应商
+	AuditModuleDynamicRatio   = "dynamic_ratio"   // 动态倍率
+	AuditModulePrefillGroup   = "prefill_group"   // 预填充分组
+	AuditModuleDB             = "db"              // 数据库迁移
+	AuditModulePerformance    = "performance"     // 性能管理
+	AuditModuleLog            = "log"             // 日志清理
+	AuditModuleSetup          = "setup"           // 系统初始化
+	AuditModuleDashboardConfig = "dashboard_config" // 仪表板配置
 )
 
 // 审计操作类型常量。
@@ -59,6 +60,7 @@ var AuditModuleList = []AuditModuleInfo{
 	{AuditModulePerformance, "性能管理"},
 	{AuditModuleLog, "日志清理"},
 	{AuditModuleSetup, "系统初始化"},
+	{AuditModuleDashboardConfig, "仪表板配置"},
 }
 
 // CreateAuditLog 插入一条审计日志。
