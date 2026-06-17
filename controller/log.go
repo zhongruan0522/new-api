@@ -248,6 +248,9 @@ func GetLogByKey(c *gin.Context) {
 		})
 		return
 	}
+	// 与 GetUserLogs 共用脱敏入口，按使用日志字段可见性配置裁剪普通用户不可见的字段。
+	// GetLogByKey 经 TokenAuthReadOnly 认证，访问者为持有该 token 的普通用户。
+	filterHiddenUsageLogFields(logs)
 	c.JSON(200, gin.H{
 		"success": true,
 		"message": "",
@@ -336,6 +339,15 @@ func GetLogsSelfStat(c *gin.Context) {
 		HttpReferer:       c.Query("http_referer"),
 	}
 
+	// 普通用户统计接口禁止使用不可见字段做过滤条件，避免通过统计结果变化做侧信道探测。
+	if msg := validateSelfStatFilters(filter); msg != "" {
+		c.JSON(200, gin.H{
+			"success": false,
+			"message": msg,
+		})
+		return
+	}
+
 	var statData model.Stat
 	if common.DataExportEnabled && filter.TokenName == "" && filter.Channel == 0 && filter.Group == "" && filter.ModelName == "" && !filter.HasLogOnlyFilters() && logType == 0 {
 		qStat, err := model.GetQuotaStatByUserId(userId, startTimestamp, endTimestamp)
@@ -370,6 +382,39 @@ func GetLogsSelfStat(c *gin.Context) {
 		"message": "",
 		"data":    statData,
 	})
+}
+
+// validateSelfStatFilters 校验普通用户统计接口的过滤条件是否使用了不可见字段。
+// 返回非空字符串表示校验失败，内容为给用户的错误信息；空字符串表示通过。
+// model_name 和 token_name 默认对普通用户可见，不在可见性配置范围内，不需要校验。
+// 使用 UsageLogField 常量做映射，参考 setting/console_setting/config.go 的字段定义。
+func validateSelfStatFilters(filter model.LogStatFilter) string {
+	type filterFieldCheck struct {
+		value    string
+		fieldKey string
+		fieldMsg string
+	}
+	// filter 字段 → UsageLogField 常量 → 中文展示名
+	checks := []filterFieldCheck{
+		{strconv.Itoa(filter.Channel), console_setting.UsageLogFieldChannel, "channel"},
+		{filter.Group, console_setting.UsageLogFieldGroup, "group"},
+		{filter.RequestId, console_setting.UsageLogFieldRequestID, "request_id"},
+		{filter.UpstreamRequestId, console_setting.UsageLogFieldUpstreamRequestID, "upstream_request_id"},
+		{filter.Ip, console_setting.UsageLogFieldIPAddress, "ip"},
+		{filter.Ua, console_setting.UsageLogFieldClientHeaders, "ua"},
+		{filter.XTitle, console_setting.UsageLogFieldClientHeaders, "x_title"},
+		{filter.HttpReferer, console_setting.UsageLogFieldClientHeaders, "http_referer"},
+	}
+	for _, chk := range checks {
+		// channel=0 表示未传，跳过；其余空值同样跳过。
+		if chk.value == "" || (chk.fieldKey == console_setting.UsageLogFieldChannel && chk.value == "0") {
+			continue
+		}
+		if !console_setting.IsUsageLogFieldVisible(chk.fieldKey, false) {
+			return "无权使用此过滤条件: " + chk.fieldMsg
+		}
+	}
+	return ""
 }
 
 func DeleteHistoryLogs(c *gin.Context) {
