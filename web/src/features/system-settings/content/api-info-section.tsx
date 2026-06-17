@@ -71,7 +71,6 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { StatusBadge } from '@/components/status-badge'
-import { SettingsSwitchField } from '../components/settings-form-layout'
 import { SettingsSection } from '../components/settings-section'
 import { useUpdateOption } from '../hooks/use-update-option'
 
@@ -84,7 +83,6 @@ type ApiInfo = {
 }
 
 type ApiInfoSectionProps = {
-  enabled: boolean
   data: string
 }
 
@@ -115,12 +113,11 @@ const colorOptions = [
   { value: 'slate', label: 'Slate' },
 ]
 
-export function ApiInfoSection({ enabled, data }: ApiInfoSectionProps) {
+export function ApiInfoSection({ data }: ApiInfoSectionProps) {
   const { t } = useTranslation()
   const updateOption = useUpdateOption()
   const apiInfoSchema = createApiInfoSchema(t)
   const [apiInfoList, setApiInfoList] = useState<ApiInfo[]>([])
-  const [isEnabled, setIsEnabled] = useState(enabled)
   const [hasChanges, setHasChanges] = useState(false)
   const [selectedIds, setSelectedIds] = useState<number[]>([])
   const [showDialog, setShowDialog] = useState(false)
@@ -153,23 +150,6 @@ export function ApiInfoSection({ enabled, data }: ApiInfoSectionProps) {
       setApiInfoList([])
     }
   }, [data])
-
-  useEffect(() => {
-    setIsEnabled(enabled)
-  }, [enabled])
-
-  const handleToggleEnabled = async (checked: boolean) => {
-    try {
-      await updateOption.mutateAsync({
-        key: 'console_setting.api_info_enabled',
-        value: checked,
-      })
-      setIsEnabled(checked)
-      toast.success(t('Setting saved'))
-    } catch {
-      toast.error(t('Failed to update setting'))
-    }
-  }
 
   const handleAdd = () => {
     setEditingApiInfo(null)
@@ -303,12 +283,6 @@ export function ApiInfoSection({ enabled, data }: ApiInfoSectionProps) {
               {updateOption.isPending ? t('Saving...') : t('Save Settings')}
             </Button>
           </div>
-          <SettingsSwitchField
-            checked={isEnabled}
-            onCheckedChange={handleToggleEnabled}
-            label={t('Enabled')}
-            className='border-b-0 py-0'
-          />
         </div>
 
         <div className='rounded-md border'>

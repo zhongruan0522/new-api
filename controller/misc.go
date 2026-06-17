@@ -11,6 +11,7 @@ import (
 	"github.com/zhongruan0522/new-api/model"
 	"github.com/zhongruan0522/new-api/setting"
 	"github.com/zhongruan0522/new-api/setting/console_setting"
+	"github.com/zhongruan0522/new-api/setting/dashboard_setting"
 	"github.com/zhongruan0522/new-api/setting/operation_setting"
 	"github.com/zhongruan0522/new-api/setting/system_setting"
 
@@ -38,7 +39,9 @@ func TestStatus(c *gin.Context) {
 
 func GetStatus(c *gin.Context) {
 
-	cs := console_setting.GetConsoleSetting()
+	// 面板启用开关的单一权威源是 dashboard_config（#112）。
+	// console_setting 仍用于读取内容数据（ApiInfo/Announcements/FAQ）。
+	dc := dashboard_setting.GetDashboardConfig()
 	common.OptionMapRWMutex.RLock()
 	defer common.OptionMapRWMutex.RUnlock()
 
@@ -70,11 +73,11 @@ func GetStatus(c *gin.Context) {
 		"price":             operation_setting.Price,
 		"stripe_unit_price": setting.StripeUnitPrice,
 
-		// 面板启用开关
-		"api_info_enabled":      cs.ApiInfoEnabled,
-		"uptime_kuma_enabled":   cs.UptimeKumaEnabled,
-		"announcements_enabled": cs.AnnouncementsEnabled,
-		"faq_enabled":           cs.FAQEnabled,
+		// 面板启用开关（单一配置源：dashboard_config）
+		"api_info_enabled":      dc.ApiInfoEnabled,
+		"uptime_kuma_enabled":   dc.UptimeKumaEnabled,
+		"announcements_enabled": dc.AnnouncementsEnabled,
+		"faq_enabled":           dc.FAQEnabled,
 
 		// 模块管理配置
 		"HeaderNavModules":          common.OptionMap["HeaderNavModules"],
@@ -94,14 +97,14 @@ func GetStatus(c *gin.Context) {
 		"_qn":                       "new-api",
 	}
 
-	// 根据启用状态注入可选内容
-	if cs.ApiInfoEnabled {
+	// 根据启用状态注入可选内容（开关读 dashboard_config，内容数据读 console_setting）
+	if dc.ApiInfoEnabled {
 		data["api_info"] = console_setting.GetApiInfo()
 	}
-	if cs.AnnouncementsEnabled {
+	if dc.AnnouncementsEnabled {
 		data["announcements"] = console_setting.GetAnnouncements()
 	}
-	if cs.FAQEnabled {
+	if dc.FAQEnabled {
 		data["faq"] = console_setting.GetFAQ()
 	}
 

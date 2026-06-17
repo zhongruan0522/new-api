@@ -63,7 +63,6 @@ const CONTENT_SECTIONS = [
     titleKey: 'Announcements',
     build: (settings: ContentSettings) => (
       <AnnouncementsSection
-        enabled={settings['console_setting.announcements_enabled']}
         data={settings['console_setting.announcements']}
       />
     ),
@@ -72,30 +71,21 @@ const CONTENT_SECTIONS = [
     id: 'api-info',
     titleKey: 'API Addresses',
     build: (settings: ContentSettings) => (
-      <ApiInfoSection
-        enabled={settings['console_setting.api_info_enabled']}
-        data={settings['console_setting.api_info']}
-      />
+      <ApiInfoSection data={settings['console_setting.api_info']} />
     ),
   },
   {
     id: 'faq',
     titleKey: 'FAQ',
     build: (settings: ContentSettings) => (
-      <FAQSection
-        enabled={settings['console_setting.faq_enabled']}
-        data={settings['console_setting.faq']}
-      />
+      <FAQSection data={settings['console_setting.faq']} />
     ),
   },
   {
     id: 'uptime-kuma',
     titleKey: 'Uptime Kuma',
     build: (settings: ContentSettings) => (
-      <UptimeKumaSection
-        enabled={settings['console_setting.uptime_kuma_enabled']}
-        data={settings['console_setting.uptime_kuma_groups']}
-      />
+      <UptimeKumaSection data={settings['console_setting.uptime_kuma_groups']} />
     ),
   },
   {
