@@ -88,6 +88,7 @@
   - disk-backed request body
   - unknown token encoder model
   - stream scanner handler
+  - 128 并发 stream scanner handler
 
 验证：
 
@@ -109,6 +110,34 @@
   - `BenchmarkGetRequestBodyDiskStorage`: 约 142167 ns/op，106266 B/op，44 allocs/op
   - `BenchmarkUnknownTokenEncoderModels`: 约 608.7 ns/op，40 B/op，1 alloc/op
   - `BenchmarkStreamScannerHandler`: 约 179729 ns/op，90734 B/op，243 allocs/op
+
+### 4. 追加验证：128 并发流式核心路径
+
+追加变更：
+
+- `relay/helper/stream_scanner_test.go` 新增 `BenchmarkStreamScannerHandlerConcurrent128`。
+- benchmark 在单进程内启动 128 个并发 stream scanner，每个 scanner 处理 200 个 SSE data frame。
+- 每个并发请求都使用独立 gin context、HTTP response body、scanner goroutine 和 data handler。
+- 第一个 frame 会同步阻塞，让 128 个 scanner 同时驻留，再释放并处理完整流。
+- 不连接外网、不依赖 Docker、不写大文件。
+
+验证命令：
+
+- `go test ./relay/helper -run '^$' -bench 'BenchmarkStreamScannerHandler(Concurrent128)?$' -benchmem -count=1`
+
+当前样本：
+
+- `BenchmarkStreamScannerHandler`: 约 175989 ns/op，90734 B/op，243 allocs/op
+- `BenchmarkStreamScannerHandlerConcurrent128`: 约 17.43 ms/op，11.64 MB/op，31395 allocs/op
+- `BenchmarkStreamScannerHandlerConcurrent128` 额外指标：
+  - `peak_heap_mb/op`: 约 10.61MB
+  - `retained_heap_mb/op`: 约 0.0026MB
+
+边界说明：
+
+- 该 benchmark 证明的是 relay 流式扫描/转发核心路径在 128 并发下的内存形态。
+- 它不等价于完整 HTTP + 鉴权 + 数据库 + 真实上游的端到端压测。
+- 完整目标仍建议用真实运行服务采集 RSS、heap profile、goroutine profile 和 CPU profile。
 
 ## 总体思路
 
