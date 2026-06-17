@@ -49,12 +49,13 @@ export const USAGE_LOG_FIELD_KEYS = {
 export type UsageLogFieldKey =
   (typeof USAGE_LOG_FIELD_KEYS)[keyof typeof USAGE_LOG_FIELD_KEYS]
 
-// 字段默认可见性元数据：key → { nameZH, description, group, admin, user }
+// 字段默认可见性元数据：key → { nameKey, descriptionKey, group, admin, user }
+// nameKey / descriptionKey 为 i18n 翻译 key，在渲染时通过 t() 解析。
 // 默认值严格映射 details-dialog.tsx 中现有的 isAdmin 条件渲染逻辑。
 export interface UsageLogFieldMeta {
   key: UsageLogFieldKey
-  nameZH: string
-  description: string
+  nameKey: string
+  descriptionKey: string
   group: UsageLogFieldGroup
   admin: boolean
   user: boolean
@@ -82,32 +83,32 @@ export const USAGE_LOG_FIELD_GROUPS: {
 
 export const USAGE_LOG_FIELDS: UsageLogFieldMeta[] = [
   // 基本信息
-  { key: 'request_id', nameZH: '请求ID', description: '本次请求的唯一标识', group: 'basic', admin: true, user: true },
-  { key: 'upstream_request_id', nameZH: '上游请求ID', description: '上游供应商返回的请求ID', group: 'basic', admin: true, user: true },
-  { key: 'retry_chain', nameZH: '重试链路', description: '请求在多渠道间的重试路径', group: 'basic', admin: true, user: false },
-  { key: 'ip_address', nameZH: 'IP地址', description: '请求来源的客户端IP', group: 'basic', admin: true, user: true },
+  { key: 'request_id', nameKey: 'UsageLogField.name.request_id', descriptionKey: 'UsageLogField.desc.request_id', group: 'basic', admin: true, user: true },
+  { key: 'upstream_request_id', nameKey: 'UsageLogField.name.upstream_request_id', descriptionKey: 'UsageLogField.desc.upstream_request_id', group: 'basic', admin: true, user: true },
+  { key: 'retry_chain', nameKey: 'UsageLogField.name.retry_chain', descriptionKey: 'UsageLogField.desc.retry_chain', group: 'basic', admin: true, user: false },
+  { key: 'ip_address', nameKey: 'UsageLogField.name.ip_address', descriptionKey: 'UsageLogField.desc.ip_address', group: 'basic', admin: true, user: true },
   // 请求信息
-  { key: 'client_headers', nameZH: '客户端请求头', description: 'HTTP-Referer、X-Title、UA', group: 'request', admin: true, user: true },
-  { key: 'request_conversion', nameZH: '请求转换', description: '协议转换路径与实际请求路径', group: 'request', admin: true, user: false },
-  { key: 'reasoning_effort', nameZH: '推理强度', description: '模型的推理强度设置', group: 'request', admin: true, user: true },
-  { key: 'system_prompt_override', nameZH: '系统提示覆盖', description: '是否覆盖了系统提示词', group: 'request', admin: true, user: true },
-  { key: 'model_mapping', nameZH: '模型映射', description: '请求模型与实际上游模型的映射', group: 'request', admin: true, user: true },
-  { key: 'parameter_override', nameZH: '参数覆盖', description: '请求中被覆盖的参数列表', group: 'request', admin: true, user: true },
+  { key: 'client_headers', nameKey: 'UsageLogField.name.client_headers', descriptionKey: 'UsageLogField.desc.client_headers', group: 'request', admin: true, user: true },
+  { key: 'request_conversion', nameKey: 'UsageLogField.name.request_conversion', descriptionKey: 'UsageLogField.desc.request_conversion', group: 'request', admin: true, user: false },
+  { key: 'reasoning_effort', nameKey: 'UsageLogField.name.reasoning_effort', descriptionKey: 'UsageLogField.desc.reasoning_effort', group: 'request', admin: true, user: true },
+  { key: 'system_prompt_override', nameKey: 'UsageLogField.name.system_prompt_override', descriptionKey: 'UsageLogField.desc.system_prompt_override', group: 'request', admin: true, user: true },
+  { key: 'model_mapping', nameKey: 'UsageLogField.name.model_mapping', descriptionKey: 'UsageLogField.desc.model_mapping', group: 'request', admin: true, user: true },
+  { key: 'parameter_override', nameKey: 'UsageLogField.name.parameter_override', descriptionKey: 'UsageLogField.desc.parameter_override', group: 'request', admin: true, user: true },
   // 计费
-  { key: 'billing_source', nameZH: '计费来源', description: '本地计费或上游响应计费', group: 'billing', admin: true, user: false },
-  { key: 'billing_details', nameZH: '计费详情', description: '计费模式、倍率与总费用', group: 'billing', admin: true, user: true },
-  { key: 'price_table', nameZH: '当前价格表格', description: '各计费项的数量、单价、小计', group: 'billing', admin: true, user: true },
-  { key: 'tiered_pricing', nameZH: '阶梯定价详情', description: '动态阶梯计费的匹配详情', group: 'billing', admin: true, user: true },
-  { key: 'violation_fee', nameZH: '违规费用', description: '违规扣费的代码、标记与金额', group: 'billing', admin: true, user: true },
-  { key: 'refund_details', nameZH: '退款详情', description: '退款的任务ID与原因', group: 'billing', admin: true, user: true },
-  { key: 'subscription_billing', nameZH: '订阅计费', description: '订阅实例的计费详情', group: 'billing', admin: true, user: true },
+  { key: 'billing_source', nameKey: 'UsageLogField.name.billing_source', descriptionKey: 'UsageLogField.desc.billing_source', group: 'billing', admin: true, user: false },
+  { key: 'billing_details', nameKey: 'UsageLogField.name.billing_details', descriptionKey: 'UsageLogField.desc.billing_details', group: 'billing', admin: true, user: true },
+  { key: 'price_table', nameKey: 'UsageLogField.name.price_table', descriptionKey: 'UsageLogField.desc.price_table', group: 'billing', admin: true, user: true },
+  { key: 'tiered_pricing', nameKey: 'UsageLogField.name.tiered_pricing', descriptionKey: 'UsageLogField.desc.tiered_pricing', group: 'billing', admin: true, user: true },
+  { key: 'violation_fee', nameKey: 'UsageLogField.name.violation_fee', descriptionKey: 'UsageLogField.desc.violation_fee', group: 'billing', admin: true, user: true },
+  { key: 'refund_details', nameKey: 'UsageLogField.name.refund_details', descriptionKey: 'UsageLogField.desc.refund_details', group: 'billing', admin: true, user: true },
+  { key: 'subscription_billing', nameKey: 'UsageLogField.name.subscription_billing', descriptionKey: 'UsageLogField.desc.subscription_billing', group: 'billing', admin: true, user: true },
   // Token
-  { key: 'token_breakdown', nameZH: 'Token明细', description: '标准/缓存/多模态Token细分', group: 'token', admin: true, user: true },
-  { key: 'audio_tokens', nameZH: '音频Token', description: '音频/文本的输入输出统计', group: 'token', admin: true, user: true },
+  { key: 'token_breakdown', nameKey: 'UsageLogField.name.token_breakdown', descriptionKey: 'UsageLogField.desc.token_breakdown', group: 'token', admin: true, user: true },
+  { key: 'audio_tokens', nameKey: 'UsageLogField.name.audio_tokens', descriptionKey: 'UsageLogField.desc.audio_tokens', group: 'token', admin: true, user: true },
   // 系统/管理
-  { key: 'topup_audit', nameZH: '充值审计', description: '充值订单的支付方式、回调IP等', group: 'system', admin: true, user: false },
-  { key: 'operator_admin', nameZH: '操作管理员', description: '执行管理操作的管理员信息', group: 'system', admin: true, user: false },
-  { key: 'stream_status', nameZH: '流式状态', description: '流式响应的状态与错误信息', group: 'system', admin: true, user: false },
+  { key: 'topup_audit', nameKey: 'UsageLogField.name.topup_audit', descriptionKey: 'UsageLogField.desc.topup_audit', group: 'system', admin: true, user: false },
+  { key: 'operator_admin', nameKey: 'UsageLogField.name.operator_admin', descriptionKey: 'UsageLogField.desc.operator_admin', group: 'system', admin: true, user: false },
+  { key: 'stream_status', nameKey: 'UsageLogField.name.stream_status', descriptionKey: 'UsageLogField.desc.stream_status', group: 'system', admin: true, user: false },
 ]
 
 // 构建 UsageLogFields 配置的默认 JSON 字符串。

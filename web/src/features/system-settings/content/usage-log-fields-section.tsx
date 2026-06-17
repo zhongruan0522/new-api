@@ -213,6 +213,7 @@ export function UsageLogFieldsSection({
                     fields={fields}
                     config={config}
                     onToggle={toggleField}
+                    t={t}
                   />
                 )
               })}
@@ -229,6 +230,7 @@ function FieldGroupRows({
   fields,
   config,
   onToggle,
+  t,
 }: {
   groupLabel: string
   fields: typeof USAGE_LOG_FIELDS
@@ -238,6 +240,7 @@ function FieldGroupRows({
     role: 'admin' | 'user',
     value: boolean
   ) => void
+  t: (key: string) => string
 }) {
   return (
     <>
@@ -252,9 +255,9 @@ function FieldGroupRows({
           <TableRow key={field.key}>
             <TableCell>
               <div className='flex flex-col gap-0.5'>
-                <span className='text-sm font-medium'>{field.nameZH}</span>
+                <span className='text-sm font-medium'>{t(field.nameKey)}</span>
                 <span className='text-muted-foreground text-xs'>
-                  {field.description}
+                  {t(field.descriptionKey)}
                 </span>
               </div>
             </TableCell>
