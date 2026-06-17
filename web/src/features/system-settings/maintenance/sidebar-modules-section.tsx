@@ -161,6 +161,10 @@ export function SidebarModulesSection({
         title: t('System Settings'),
         description: t('Advanced platform configuration.'),
       },
+      audit_log: {
+        title: t('Audit Logs'),
+        description: t('Review administrative operation records.'),
+      },
     },
   }
   const formDefaults = useMemo(() => config, [config])
