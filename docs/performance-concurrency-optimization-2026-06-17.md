@@ -12,6 +12,17 @@
 - 避免占满磁盘，构建后清理临时二进制。
 - 优先修根因，不用模拟数据或静默降级。
 
+## `.br` / `.gz` 影响结论
+
+本轮前端静态资源选择只预生成 `.br`，不预生成 `.gz`。这个改动不会导致项目不能运行，原因如下：
+
+- 现代浏览器请求静态资源时通常带 `Accept-Encoding: br, gzip`，web router 会优先返回 `.br`，并设置 `Content-Encoding: br`。
+- 只支持 gzip 的客户端不会命中 `.br`，会继续走原有 `gin-contrib/gzip` 动态压缩中间件，功能仍然可用。
+- 不支持压缩的客户端会拿原始静态资源，功能仍然可用，只是传输体积更大。
+- 不生成 `.gz` 可以避免 `web/dist` 和最终 `go:embed` 包体同时携带 `.br` / `.gz` 两份压缩产物，减少磁盘和二进制体积膨胀。
+
+需要注意的代价：少数只支持 gzip、不支持 Brotli 的客户端访问 `/static/*` 时，会回退到运行时 gzip，因此会有一点 CPU 开销；但这类请求已叠加长缓存，且主流浏览器会走 `.br`，不会影响 API relay 主路径。
+
 ## Commit 清单
 
 ### 1. `2c7d212c perf: reduce relay streaming memory overhead`
@@ -111,7 +122,23 @@
   - `BenchmarkUnknownTokenEncoderModels`: 约 608.7 ns/op，40 B/op，1 alloc/op
   - `BenchmarkStreamScannerHandler`: 约 179729 ns/op，90734 B/op，243 allocs/op
 
-### 4. 追加验证：128 并发流式核心路径
+### 4. `a00d15ea docs: summarize concurrency performance optimizations`
+
+问题层级：
+
+- 前三组优化分别落在 relay、cache/request body、web 静态资源路径，如果没有统一文档，后续很难判断这些改动解决了哪些驻留来源、验证覆盖到哪里。
+- 高并发内存优化需要保留可复跑命令，避免之后只凭体感判断是否退化。
+
+解决办法：
+
+- 新增本文件，记录本轮性能问题背景、约束、每个优化点的根因层级、解决办法和验证命令。
+- 明确 scanner-only、OpenAI wire benchmark 与完整业务路由压测之间的边界，避免把局部 benchmark 误当成完整生产压测。
+
+验证：
+
+- 文档链接目标位于 `docs/` 当前文件，不包含 secrets、token、DSN 或真实密钥。
+
+### 5. `d480b899 test: add concurrent stream scanner memory benchmark`
 
 追加变更：
 
@@ -139,7 +166,7 @@
 - 它不等价于完整 HTTP + 鉴权 + 数据库 + 真实上游的端到端压测。
 - 完整目标仍建议用真实运行服务采集 RSS、heap profile、goroutine profile 和 CPU profile。
 
-### 5. 追加验证：128 并发 OpenAI 流式 relay + fake upstream
+### 6. `9e10ae68 test: benchmark openai stream relay concurrency`
 
 追加变更：
 
