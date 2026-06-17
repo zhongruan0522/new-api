@@ -2,7 +2,6 @@ package minimax
 
 import (
 	"encoding/hex"
-	"encoding/json"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -10,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/gin-gonic/gin"
+	"github.com/zhongruan0522/new-api/common"
 	"github.com/zhongruan0522/new-api/dto"
 	relaycommon "github.com/zhongruan0522/new-api/relay/common"
 	"github.com/zhongruan0522/new-api/relay/constant"
@@ -33,7 +33,7 @@ func TestHandleTTSResponse_BillingFields(t *testing.T) {
 		ExtraInfo: MiniMaxExtraInfo{UsageCharacters: 42},
 		BaseResp:  MiniMaxBaseResp{StatusCode: 0},
 	}
-	body, _ := json.Marshal(respBody)
+	body, _ := common.Marshal(respBody)
 
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
@@ -91,7 +91,7 @@ func TestHandleTTSResponse_ZeroUsage(t *testing.T) {
 		ExtraInfo: MiniMaxExtraInfo{UsageCharacters: 0},
 		BaseResp:  MiniMaxBaseResp{StatusCode: 0},
 	}
-	body, _ := json.Marshal(respBody)
+	body, _ := common.Marshal(respBody)
 
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
@@ -131,7 +131,7 @@ func TestHandleTTSResponse_ErrorStatus(t *testing.T) {
 	respBody := MiniMaxTTSResponse{
 		BaseResp: MiniMaxBaseResp{StatusCode: 1001, StatusMsg: "invalid voice"},
 	}
-	body, _ := json.Marshal(respBody)
+	body, _ := common.Marshal(respBody)
 
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)

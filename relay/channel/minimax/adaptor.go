@@ -2,12 +2,12 @@ package minimax
 
 import (
 	"bytes"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
 
+	"github.com/zhongruan0522/new-api/common"
 	"github.com/zhongruan0522/new-api/dto"
 	"github.com/zhongruan0522/new-api/relay/channel"
 	"github.com/zhongruan0522/new-api/relay/channel/claude"
@@ -37,31 +37,17 @@ func (a *Adaptor) ConvertAudioRequest(c *gin.Context, info *relaycommon.RelayInf
 		return nil, errors.New("unsupported audio relay mode")
 	}
 
-	voiceID := request.Voice
-	speed := request.Speed
 	outputFormat := request.ResponseFormat
-	// 使用 UpstreamModelName（渠道级 model_mapping 已由 ModelMappedHelper 处理），
-	// 作为 TTS 专用重定向的输入，支持 alias -> tts-1-hd -> speech-02-hd 链式映射。
-	modelName := info.UpstreamModelName
-	inputText := request.Input
-	emotion := ""
 
-	// MiniMax TTS 增强配置（仅 MiniMax 渠道生效，因为只有 MiniMax adaptor 会走到这里）
-	cfg := model_setting.GetMiniMaxSettings()
-	if cfg.Enabled {
-		modelName = applyModelRedirect(info.UpstreamModelName, cfg)
-		voiceID = applyVoiceRedirect(request.Voice, cfg)
-		emotion, inputText = extractEmotion(inputText, cfg.EmotionPattern, cfg.EmotionRedirect)
-		inputText = replaceToneWords(inputText, cfg.ToneWordPattern, cfg.ToneWordRedirect)
-	}
-
+	// 1) 先用用户请求原始值构造基础请求（不应用管理员重定向）。
+	//    使用 UpstreamModelName（渠道级 model_mapping 已由 ModelMappedHelper 处理），
+	//    作为 TTS 专用重定向的输入，支持 alias -> tts-1-hd -> speech-02-hd 链式映射。
 	minimaxRequest := MiniMaxTTSRequest{
-		Model: modelName,
-		Text:  inputText,
+		Model: info.UpstreamModelName,
+		Text:  request.Input,
 		VoiceSetting: VoiceSetting{
-			VoiceID: voiceID,
-			Speed:   speed,
-			Emotion: emotion,
+			VoiceID: request.Voice,
+			Speed:   request.Speed,
 		},
 		AudioSetting: &AudioSetting{
 			Format: outputFormat,
@@ -69,25 +55,41 @@ func (a *Adaptor) ConvertAudioRequest(c *gin.Context, info *relaycommon.RelayInf
 		OutputFormat: outputFormat,
 	}
 
-	// 同步扩展字段的厂商自定义metadata
+	// 2) 合并用户 metadata（扩展字段的厂商自定义值）。
+	//    必须在管理员强制策略之前合并，使管理员映射具有最高优先级，
+	//    防止用户通过 metadata 覆盖 model/voice_id 等策略字段 (issue #107)。
 	if len(request.Metadata) > 0 {
-		if err := json.Unmarshal(request.Metadata, &minimaxRequest); err != nil {
+		if err := common.Unmarshal(request.Metadata, &minimaxRequest); err != nil {
 			return nil, fmt.Errorf("error unmarshalling metadata to minimax request: %w", err)
 		}
 	}
 
-	jsonData, err := json.Marshal(minimaxRequest)
+	// 3) 应用管理员强制策略：在 metadata 合并之后，用映射结果覆盖策略字段。
+	//    仅当 cfg.Enabled 时生效；关闭时保留用户原始值（含 metadata）。
+	cfg := model_setting.GetMiniMaxSettings()
+	if cfg.Enabled {
+		minimaxRequest.Model = applyModelRedirect(info.UpstreamModelName, cfg)
+		minimaxRequest.VoiceSetting.VoiceID = applyVoiceRedirect(request.Voice, cfg)
+		emotion, inputText := extractEmotion(request.Input, cfg.EmotionPattern, cfg.EmotionRedirect)
+		inputText = replaceToneWords(inputText, cfg.ToneWordPattern, cfg.ToneWordRedirect)
+		minimaxRequest.VoiceSetting.Emotion = emotion
+		minimaxRequest.Text = inputText
+		minimaxRequest.AudioSetting.Format = outputFormat
+		minimaxRequest.OutputFormat = outputFormat
+	}
+
+	jsonData, err := common.Marshal(minimaxRequest)
 	if err != nil {
 		return nil, fmt.Errorf("error marshalling minimax request: %w", err)
 	}
-	if outputFormat != "hex" {
-		outputFormat = "url"
+
+	normalizedFormat := outputFormat
+	if normalizedFormat != "hex" {
+		normalizedFormat = "url"
 	}
+	c.Set("response_format", normalizedFormat)
 
-	c.Set("response_format", outputFormat)
-
-	// 音色日志：记录 MiniMax TTS 实际使用的 voice_id。
-	// 使用 metadata 合并后的最终 voice_id（用户通过 metadata 覆盖时也能反映真实值）。
+	// 音色日志：记录 MiniMax TTS 实际使用的 voice_id（管理员策略最终覆盖后的值）。
 	// 由上层 audio_handler.go 通过 extraContent 传给 PostAudioConsumeQuota。
 	if cfg.Enabled {
 		c.Set("minimax_voice_id", minimaxRequest.VoiceSetting.VoiceID)
