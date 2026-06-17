@@ -67,7 +67,11 @@ This document provides all environment variables supported by New API and their 
 | `GLOBAL_API_RATE_LIMIT`          | Global API Rate Limit (per IP, three minutes)                | `180`         | `GLOBAL_API_RATE_LIMIT=100`          |
 | `GLOBAL_WEB_RATE_LIMIT`          | Global Web Rate Limit (per IP, three minutes)                | `60`          | `GLOBAL_WEB_RATE_LIMIT=30`           |
 | `RELAY_TIMEOUT`                  | Relay Request Timeout (seconds)                              | `0`           | `RELAY_TIMEOUT=60`                   |
+| `RELAY_MAX_IDLE_CONNS`           | Maximum idle connections for the relay HTTP client           | `200`         | `RELAY_MAX_IDLE_CONNS=100`           |
+| `RELAY_MAX_IDLE_CONNS_PER_HOST`  | Maximum idle connections per host for the relay HTTP client  | `32`          | `RELAY_MAX_IDLE_CONNS_PER_HOST=16`   |
+| `RELAY_IDLE_CONN_TIMEOUT`        | Relay HTTP client idle connection retention time (seconds)   | `90`          | `RELAY_IDLE_CONN_TIMEOUT=30`         |
 | `STREAMING_TIMEOUT`              | Streaming Single Reply Timeout (seconds)                     | `300`         | `STREAMING_TIMEOUT=120`              |
+| `STREAM_SCANNER_MAX_BUFFER_MB`   | Maximum buffer size for a single streaming SSE frame (MB)    | `8`           | `STREAM_SCANNER_MAX_BUFFER_MB=16`    |
 | `MAX_FILE_DOWNLOAD_MB`           | Maximum File Download Size (MB)                              | `20`          | `MAX_FILE_DOWNLOAD_MB=50`            |
 | `MAX_REQUEST_BODY_MB`            | Maximum Request Body Size (MB, calculated after decompression; prevents excessively large requests/zip bombs causing memory spikes) | `64`          | `MAX_REQUEST_BODY_MB=100`            |
 | `GLOBAL_API_RATE_LIMIT_ENABLE`   | Global API Rate Limit Switch                                 | `true`        | `GLOBAL_API_RATE_LIMIT_ENABLE=false` |

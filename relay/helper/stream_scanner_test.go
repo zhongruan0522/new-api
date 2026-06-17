@@ -47,3 +47,15 @@ func TestStreamScannerHandlerTrimsAndSkipsEmptyDataFrames(t *testing.T) {
 		t.Fatalf("data frames = %#v, want %#v", got, want)
 	}
 }
+
+func TestGetScannerBufferSizeUsesConservativeDefault(t *testing.T) {
+	oldMaxBufferMB := constant.StreamScannerMaxBufferMB
+	constant.StreamScannerMaxBufferMB = 0
+	t.Cleanup(func() {
+		constant.StreamScannerMaxBufferMB = oldMaxBufferMB
+	})
+
+	if got := getScannerBufferSize(); got != 8<<20 {
+		t.Fatalf("scanner buffer size = %d, want %d", got, 8<<20)
+	}
+}

@@ -119,7 +119,6 @@ func OaiStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Re
 	var responseTextBuilder strings.Builder
 	var toolCount int
 	var usage = &dto.Usage{}
-	var streamItems []string // store stream items
 	var lastStreamData string
 	var secondLastStreamData string // 存储倒数第二个stream data，用于音频模型
 
@@ -132,6 +131,9 @@ func OaiStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Re
 			if err != nil {
 				common.SysLog("error handling stream format: " + err.Error())
 			}
+			if err := ProcessStreamFrame(info.RelayMode, lastStreamData, &responseTextBuilder, &toolCount); err != nil {
+				logger.LogError(c, "error processing stream token frame: "+err.Error())
+			}
 		}
 		if len(data) > 0 {
 			// 对音频模型，保存倒数第二个stream data
@@ -140,7 +142,6 @@ func OaiStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Re
 			}
 
 			lastStreamData = data
-			streamItems = append(streamItems, data)
 		}
 		return true
 	})
@@ -176,9 +177,10 @@ func OaiStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Re
 		}
 	}
 
-	// 处理token计算
-	if err := processTokens(info.RelayMode, streamItems, &responseTextBuilder, &toolCount); err != nil {
-		logger.LogError(c, "error processing tokens: "+err.Error())
+	if !containStreamUsage && lastStreamData != "" {
+		if err := ProcessStreamFrame(info.RelayMode, lastStreamData, &responseTextBuilder, &toolCount); err != nil {
+			logger.LogError(c, "error processing final stream token frame: "+err.Error())
+		}
 	}
 
 	if !containStreamUsage {

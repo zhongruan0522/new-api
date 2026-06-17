@@ -67,7 +67,11 @@ title: 环境变量配置指南
 | `GLOBAL_API_RATE_LIMIT`        | 全局API速率限制(单IP三分钟) | `180`  | `GLOBAL_API_RATE_LIMIT=100`       |
 | `GLOBAL_WEB_RATE_LIMIT`        | 全局Web速率限制(单IP三分钟) | `60`   | `GLOBAL_WEB_RATE_LIMIT=30`        |
 | `RELAY_TIMEOUT`                | 中继请求超时时间(秒)        | `0`    | `RELAY_TIMEOUT=60`                |
+| `RELAY_MAX_IDLE_CONNS`         | 中继HTTP客户端最大空闲连接数 | `200`  | `RELAY_MAX_IDLE_CONNS=100`        |
+| `RELAY_MAX_IDLE_CONNS_PER_HOST` | 中继HTTP客户端每Host最大空闲连接数 | `32` | `RELAY_MAX_IDLE_CONNS_PER_HOST=16` |
+| `RELAY_IDLE_CONN_TIMEOUT`      | 中继HTTP客户端空闲连接保留时间(秒) | `90` | `RELAY_IDLE_CONN_TIMEOUT=30`      |
 | `STREAMING_TIMEOUT`            | 流式一次回复的超时时间(秒)  | `300`  | `STREAMING_TIMEOUT=120`           |
+| `STREAM_SCANNER_MAX_BUFFER_MB` | 单个流式SSE帧最大缓冲(MB)   | `8`    | `STREAM_SCANNER_MAX_BUFFER_MB=16` |
 | `MAX_FILE_DOWNLOAD_MB`         | 最大文件下载大小(MB)        | `20`   | `MAX_FILE_DOWNLOAD_MB=50`         |
 | `MAX_REQUEST_BODY_MB`          | 最大请求体大小(MB，解压后计；防止超大请求/zip bomb导致内存暴涨) | `64`   | `MAX_REQUEST_BODY_MB=100`         |
 | `GLOBAL_API_RATE_LIMIT_ENABLE` | 全局API速率限制开关         | `true` | `GLOBAL_API_RATE_LIMIT_ENABLE=false` |
