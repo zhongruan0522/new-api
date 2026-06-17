@@ -12,13 +12,18 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-const maxUserQuotaRangeSeconds = 31 * 24 * 60 * 60
-
 func isUserQuotaRangeTooLong(startTimestamp, endTimestamp int64) bool {
+	cfg := dashboard_setting.GetDashboardConfig()
+	maxDays := cfg.MaxTimeRangeDays
+	if maxDays <= 0 {
+		// 防御性兜底：配置异常（被显式置 0/负数）时保留默认 31 天行为
+		maxDays = 31
+	}
+	maxRange := int64(maxDays) * 24 * 60 * 60
 	if startTimestamp <= 0 || endTimestamp <= 0 || endTimestamp <= startTimestamp {
 		return false
 	}
-	return endTimestamp-startTimestamp > maxUserQuotaRangeSeconds
+	return endTimestamp-startTimestamp > maxRange
 }
 
 func GetAllQuotaDates(c *gin.Context) {

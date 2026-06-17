@@ -9,6 +9,7 @@ import (
 
 	"github.com/zhongruan0522/new-api/common"
 	"github.com/zhongruan0522/new-api/model"
+	"github.com/zhongruan0522/new-api/setting/dashboard_setting"
 )
 
 const (
@@ -149,10 +150,25 @@ func GetRankingsSnapshot(period string) (*RankingsResponse, error) {
 		return nil, err
 	}
 
+	cfg := dashboard_setting.GetDashboardConfig()
+	modelLimit := cfg.RankingsModelLimit
+	if modelLimit <= 0 {
+		modelLimit = rankingLeaderboardLimit
+	}
+	vendorLimit := cfg.RankingsVendorLimit
+	if vendorLimit <= 0 {
+		vendorLimit = rankingVendorLimit
+	}
+	userTopN := cfg.UserAnalyticsTopN
+	if userTopN <= 0 {
+		userTopN = rankingLeaderboardLimit
+	}
+	cacheKey := fmt.Sprintf("%s-m%d-v%d-u%d", config.id, modelLimit, vendorLimit, userTopN)
+
 	now := time.Now()
 	cacheTTL := rankingCacheTTL()
 	rankingCacheMu.Lock()
-	if item, ok := rankingCache[config.id]; ok && now.Before(item.expiresAt) {
+	if item, ok := rankingCache[cacheKey]; ok && now.Before(item.expiresAt) {
 		rankingCacheMu.Unlock()
 		return item.data, nil
 	}
@@ -164,7 +180,7 @@ func GetRankingsSnapshot(period string) (*RankingsResponse, error) {
 	}
 
 	rankingCacheMu.Lock()
-	rankingCache[config.id] = rankingCacheItem{
+	rankingCache[cacheKey] = rankingCacheItem{
 		expiresAt: now.Add(cacheTTL),
 		data:      data,
 	}
@@ -199,6 +215,16 @@ func rankingConfig(period string) (rankingPeriodConfig, error) {
 }
 
 func buildRankingsSnapshot(config rankingPeriodConfig, now time.Time) (*RankingsResponse, error) {
+	cfg := dashboard_setting.GetDashboardConfig()
+	modelLimit := cfg.RankingsModelLimit
+	if modelLimit <= 0 {
+		modelLimit = rankingLeaderboardLimit
+	}
+	vendorLimit := cfg.RankingsVendorLimit
+	if vendorLimit <= 0 {
+		vendorLimit = rankingVendorLimit
+	}
+
 	startTime, endTime := rankingTimeRange(config, now)
 	currentTotals, err := model.GetRankingQuotaTotals(startTime, endTime)
 	if err != nil {
@@ -228,13 +254,13 @@ func buildRankingsSnapshot(config rankingPeriodConfig, now time.Time) (*Rankings
 
 	rankedModels := buildRankedModels(currentTotals, totalTokens, previousRankByModel, previousTokensByModel, meta, config.hasPrevious)
 	vendors := buildRankedVendors(currentTotals, previousTotals, totalTokens, meta, config.hasPrevious)
-	modelHistory := buildModelHistory(currentBuckets, currentTotals, meta, config)
-	vendorHistory := buildVendorShareHistory(currentBuckets, vendors, totalTokens, meta, config)
+	modelHistory := buildModelHistory(currentBuckets, currentTotals, meta, config, modelLimit)
+	vendorHistory := buildVendorShareHistory(currentBuckets, vendors, totalTokens, meta, config, vendorLimit)
 	movers, droppers := buildRankingMovers(rankedModels)
 
 	return &RankingsResponse{
-		Models:             limitRankedModels(rankedModels, rankingLeaderboardLimit),
-		Vendors:            vendors,
+		Models:             limitRankedModels(rankedModels, modelLimit),
+		Vendors:            limitRankedVendors(vendors, vendorLimit),
 		TopMovers:          movers,
 		TopDroppers:        droppers,
 		ModelsHistory:      modelHistory,
@@ -433,12 +459,12 @@ func ensureVendorAggregate(aggregates map[string]*vendorAggregate, meta rankingM
 	return agg
 }
 
-func buildModelHistory(buckets []model.RankingQuotaBucket, totals []model.RankingQuotaTotal, meta map[string]rankingModelMeta, config rankingPeriodConfig) ModelHistorySeries {
+func buildModelHistory(buckets []model.RankingQuotaBucket, totals []model.RankingQuotaTotal, meta map[string]rankingModelMeta, config rankingPeriodConfig, modelLimit int) ModelHistorySeries {
 	topModels := make(map[string]struct{})
-	models := make([]ModelHistoryModel, 0, minInt(len(totals), rankingHistoryLimit)+1)
+	models := make([]ModelHistoryModel, 0, minInt(len(totals), modelLimit)+1)
 	otherTotal := int64(0)
 	for idx, item := range totals {
-		if idx < rankingHistoryLimit {
+		if idx < modelLimit {
 			topModels[item.ModelName] = struct{}{}
 			modelMeta := modelMeta(item.ModelName, meta)
 			models = append(models, ModelHistoryModel{Name: item.ModelName, Vendor: modelMeta.vendor, Total: item.TotalTokens})
@@ -489,12 +515,12 @@ func buildModelHistory(buckets []model.RankingQuotaBucket, totals []model.Rankin
 	}
 }
 
-func buildVendorShareHistory(buckets []model.RankingQuotaBucket, vendors []RankedVendor, totalTokens int64, meta map[string]rankingModelMeta, config rankingPeriodConfig) VendorShareSeries {
+func buildVendorShareHistory(buckets []model.RankingQuotaBucket, vendors []RankedVendor, totalTokens int64, meta map[string]rankingModelMeta, config rankingPeriodConfig, vendorLimit int) VendorShareSeries {
 	topVendors := make(map[string]struct{})
-	vendorRows := make([]VendorShareVendor, 0, minInt(len(vendors), rankingVendorLimit)+1)
+	vendorRows := make([]VendorShareVendor, 0, minInt(len(vendors), vendorLimit)+1)
 	otherTotal := int64(0)
 	for idx, vendor := range vendors {
-		if idx < rankingVendorLimit {
+		if idx < vendorLimit {
 			topVendors[vendor.Vendor] = struct{}{}
 			vendorRows = append(vendorRows, VendorShareVendor{Name: vendor.Vendor, Total: vendor.TotalTokens, Share: vendor.Share})
 			continue
@@ -653,6 +679,13 @@ func roundRankingFloat(value float64) float64 {
 }
 
 func limitRankedModels(rows []RankedModel, limit int) []RankedModel {
+	if limit <= 0 || len(rows) <= limit {
+		return rows
+	}
+	return rows[:limit]
+}
+
+func limitRankedVendors(rows []RankedVendor, limit int) []RankedVendor {
 	if limit <= 0 || len(rows) <= limit {
 		return rows
 	}
