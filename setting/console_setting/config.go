@@ -11,6 +11,7 @@ import (
 //  2. 前端 web/src/features/usage-logs/lib/field-visibility.ts 的 DEFAULT_FIELDS
 //  3. 前端配置页 usage-log-fields-section.tsx 的字段元数据
 //  4. details-dialog.tsx 中对应字段的 isVisible(fieldKey) 判断
+//
 // 详见根 AGENTS.md "使用日志字段可见性" 章节。
 const (
 	UsageLogFieldRequestID           = "request_id"
@@ -52,20 +53,18 @@ type UsageLogFieldDefault struct {
 	Group       string `json:"group"`
 }
 
-// UsageLogFieldsDefaults 返回完整的字段默认可见性列表。
-// 默认值严格映射 details-dialog.tsx 中现有的 isAdmin 条件渲染逻辑：
-// 管理员专属字段 admin=true/user=false，公共字段 admin=true/user=true。
+// UsageLogFieldsDefaults 返回详情弹窗可独立配置可见性的字段默认值列表。
+//
+// 仅包含详情弹窗独有字段。同时出现在列表表格列和详情弹窗中的字段
+// （channel/token/group/response_time/content）不在配置范围内——表格列字段始终
+// 对普通用户可见，不需要也无法配置隐藏。详见根 AGENTS.md "使用日志字段可见性"。
 func UsageLogFieldsDefaults() []UsageLogFieldDefault {
 	return []UsageLogFieldDefault{
 		// 基本信息
 		{Key: UsageLogFieldRequestID, Admin: true, User: true, NameZH: "请求ID", Description: "本次请求的唯一标识", Group: "basic"},
 		{Key: UsageLogFieldUpstreamRequestID, Admin: true, User: true, NameZH: "上游请求ID", Description: "上游供应商返回的请求ID", Group: "basic"},
-		{Key: UsageLogFieldChannel, Admin: true, User: false, NameZH: "渠道", Description: "处理本次请求的渠道", Group: "basic"},
 		{Key: UsageLogFieldRetryChain, Admin: true, User: false, NameZH: "重试链路", Description: "请求在多渠道间的重试路径", Group: "basic"},
-		{Key: UsageLogFieldToken, Admin: true, User: true, NameZH: "令牌", Description: "发起请求的API令牌名称", Group: "basic"},
-		{Key: UsageLogFieldGroup, Admin: true, User: true, NameZH: "分组", Description: "令牌所属的用户分组", Group: "basic"},
 		{Key: UsageLogFieldIPAddress, Admin: true, User: true, NameZH: "IP地址", Description: "请求来源的客户端IP", Group: "basic"},
-		{Key: UsageLogFieldResponseTime, Admin: true, User: true, NameZH: "响应时间", Description: "请求总耗时及首次响应时间", Group: "basic"},
 		// 请求信息
 		{Key: UsageLogFieldClientHeaders, Admin: true, User: true, NameZH: "客户端请求头", Description: "HTTP-Referer、X-Title、UA", Group: "request"},
 		{Key: UsageLogFieldRequestConversion, Admin: true, User: false, NameZH: "请求转换", Description: "协议转换路径与实际请求路径", Group: "request"},
@@ -88,8 +87,6 @@ func UsageLogFieldsDefaults() []UsageLogFieldDefault {
 		{Key: UsageLogFieldTopupAudit, Admin: true, User: false, NameZH: "充值审计", Description: "充值订单的支付方式、回调IP等", Group: "system"},
 		{Key: UsageLogFieldOperatorAdmin, Admin: true, User: false, NameZH: "操作管理员", Description: "执行管理操作的管理员信息", Group: "system"},
 		{Key: UsageLogFieldStreamStatus, Admin: true, User: false, NameZH: "流式状态", Description: "流式响应的状态与错误信息", Group: "system"},
-		// 其他
-		{Key: UsageLogFieldContent, Admin: true, User: true, NameZH: "报错内容", Description: "日志主内容、错误信息与拒绝原因", Group: "other"},
 	}
 }
 
@@ -173,9 +170,22 @@ func parseUsageLogFields(raw string) (map[string]UsageLogFieldVisibleConfig, err
 	return m, nil
 }
 
+// removedUsageLogFields 是已从配置范围移除的字段集合。
+// 这些字段同时出现在列表表格列和详情弹窗中，产品决策是表格列字段始终可见、
+// 不可配置隐藏。旧配置 JSON 可能仍包含这些 key，运行时必须剔除，
+// 否则 IsUsageLogFieldVisible 会读到遗留值而非回退到 return false。
+var removedUsageLogFields = map[string]bool{
+	UsageLogFieldChannel:      true,
+	UsageLogFieldToken:        true,
+	UsageLogFieldGroup:        true,
+	UsageLogFieldResponseTime: true,
+	UsageLogFieldContent:      true,
+}
+
 // GetUsageLogFieldsVisible 返回当前配置的字段可见性 map。
 // 如果配置为空（未配置），返回基于默认值的 map。
 // 如果配置解析失败，返回 error。
+// 已从配置范围移除的字段（removedUsageLogFields）会被剔除，不返回给调用方。
 func GetUsageLogFieldsVisible() (map[string]UsageLogFieldVisibleConfig, error) {
 	m, err := parseUsageLogFields(consoleSetting.UsageLogFields)
 	if err != nil {
@@ -188,6 +198,10 @@ func GetUsageLogFieldsVisible() (map[string]UsageLogFieldVisibleConfig, error) {
 		for _, d := range defaults {
 			m[d.Key] = UsageLogFieldVisibleConfig{Admin: d.Admin, User: d.User}
 		}
+	}
+	// 剔除已移除字段，防止旧配置的遗留值绕过安全规则
+	for key := range removedUsageLogFields {
+		delete(m, key)
 	}
 	return m, nil
 }

@@ -973,7 +973,7 @@ export function DetailsDialog(props: DetailsDialogProps) {
                   />
                 )}
 
-              {isVisible('channel') && props.log.channel > 0 && (
+              {props.log.channel > 0 && (
                 <DetailRow
                   label={t('Channel')}
                   value={
@@ -995,7 +995,7 @@ export function DetailsDialog(props: DetailsDialogProps) {
                 <DetailRow label={t('Retry Chain')} value={channelChain} mono />
               )}
 
-              {isVisible('token') && props.log.token_name && (
+              {props.log.token_name && (
                 <DetailRow
                   label={t('Token')}
                   value={props.log.token_name}
@@ -1003,7 +1003,7 @@ export function DetailsDialog(props: DetailsDialogProps) {
                 />
               )}
 
-              {isVisible('group') && (props.log.group || other?.group) && (
+              {(props.log.group || other?.group) && (
                 <DetailRow
                   label={t('Group')}
                   value={props.log.group || other?.group || ''}
@@ -1027,43 +1027,41 @@ export function DetailsDialog(props: DetailsDialogProps) {
                 />
               )}
 
-              {isVisible('response_time') &&
-                showTiming &&
-                props.log.use_time > 0 && (
-                  <DetailRow
-                    label={t('Response Time')}
-                    value={
-                      <span
-                        className={cn(
-                          'font-medium',
-                          timingTextColorClass(
-                            getResponseTimeColor(
-                              props.log.use_time / 1000,
-                              props.log.completion_tokens
-                            )
+              {showTiming && props.log.use_time > 0 && (
+                <DetailRow
+                  label={t('Response Time')}
+                  value={
+                    <span
+                      className={cn(
+                        'font-medium',
+                        timingTextColorClass(
+                          getResponseTimeColor(
+                            props.log.use_time / 1000,
+                            props.log.completion_tokens
                           )
+                        )
+                      )}
+                    >
+                      {formatUseTime(props.log.use_time / 1000)}
+                      {props.log.is_stream &&
+                        other?.frt != null &&
+                        other.frt > 0 && (
+                          <span
+                            className={cn(
+                              'font-normal',
+                              timingTextColorClass(
+                                getFirstResponseTimeColor(other.frt / 1000)
+                              )
+                            )}
+                          >
+                            {' '}
+                            (FRT: {formatUseTime(other.frt / 1000)})
+                          </span>
                         )}
-                      >
-                        {formatUseTime(props.log.use_time / 1000)}
-                        {props.log.is_stream &&
-                          other?.frt != null &&
-                          other.frt > 0 && (
-                            <span
-                              className={cn(
-                                'font-normal',
-                                timingTextColorClass(
-                                  getFirstResponseTimeColor(other.frt / 1000)
-                                )
-                              )}
-                            >
-                              {' '}
-                              (FRT: {formatUseTime(other.frt / 1000)})
-                            </span>
-                          )}
-                      </span>
-                    }
-                  />
-                )}
+                    </span>
+                  }
+                />
+              )}
             </div>
 
             {/* Client request headers (consume & error logs) */}
@@ -1140,7 +1138,7 @@ export function DetailsDialog(props: DetailsDialogProps) {
             )}
 
             {/* Reject reason & error content */}
-            {isVisible('content') && props.isAdmin && other?.reject_reason && (
+            {props.isAdmin && other?.reject_reason && (
               <DetailSection
                 icon={<AlertTriangle className='size-3.5' aria-hidden='true' />}
                 label={t('Reject Reason')}
@@ -1512,7 +1510,7 @@ export function DetailsDialog(props: DetailsDialogProps) {
               )}
 
             {/* Content */}
-            {isVisible('content') && details && (
+            {details && (
               <div className='space-y-1.5'>
                 <Label className='text-xs font-semibold'>{t('Content')}</Label>
                 <div className='bg-muted/30 relative min-w-0 overflow-hidden rounded-md border p-2.5'>

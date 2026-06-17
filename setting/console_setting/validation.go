@@ -100,6 +100,10 @@ func validateUsageLogFields(fieldsStr string) error {
 	}
 
 	for key, raw := range rawMap {
+		if removedUsageLogFields[key] {
+			// 已移除字段（表格列字段），静默忽略，向后兼容旧配置
+			continue
+		}
 		if !knownFields[key] {
 			return fmt.Errorf("未知的字段标识：%s", key)
 		}

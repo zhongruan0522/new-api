@@ -89,27 +89,22 @@ func GetUserLogs(c *gin.Context) {
 	return
 }
 
-// filterHiddenUsageLogFields 根据使用日志字段可见性配置，清空普通用户不可见的字段数据。
+// filterHiddenUsageLogFields 根据使用日志字段可见性配置，清空普通用户不可见的详情弹窗独有字段数据。
 //
-// 后端安全裁剪范围（此处处理的字段）：
-//   - 顶层独立字段：content、token_name、group、use_time、request_id、upstream_request_id、
-//     ip、channel/channel_name。
+// 后端安全裁剪范围（此处处理的字段，均为详情弹窗独有、不在列表表格列中）：
+//   - 顶层独立字段：request_id、upstream_request_id、ip。
 //   - other JSON 内字段：通过 stripHiddenOtherFields 处理。
 //
-// 不在裁剪范围的字段（表格列共享字段，详情弹窗中由聚合区块控制，非单一字段开关）：
-//   - prompt_tokens / completion_tokens / quota / model_name / is_stream / created_at /
-//     username / user_id。
-//   - 这些字段同时用于列表表格列，对应配置项（如 TokenBreakdown/BillingDetails/PriceTable）
-//     控制的是详情弹窗内的聚合视图（如 Token 明细区块、计费详情区块、价格表区块），
-//     不是单一字段开关。前端用 isVisible('token_breakdown') 等控制的是包含多字段的区块渲染，
-//     不是 prompt_tokens 本身。因此在后端按顶层字段裁剪会导致列表表格列数据丢失，
-//     与产品语义不符。
+// 不在裁剪范围的字段（同时出现在列表表格列中，始终对普通用户可见，不可配置隐藏）：
+//   - content、token_name、group、use_time、channel/channel_name。
+//   - 这些字段的产品语义是"表格列字段"，返回值不裁剪，过滤条件不校验。
+//   - 详见根 AGENTS.md "使用日志字段可见性" 章节。
 //
 // admin_info 相关字段（topup_audit/operator_admin/retry_chain）已由 model.formatUserLogs 删除。
 // stream_status/billing_source/request_conversion 等独立 other 字段在 stripHiddenOtherFields 中过滤。
 // 如果配置解析失败，IsUsageLogFieldVisible 会回退到默认值，此处按默认值过滤。
 func filterHiddenUsageLogFields(logs []*model.Log) {
-	// 构建需要过滤的字段集合（普通用户不可见的字段）
+	// 构建需要过滤的字段集合（普通用户不可见的详情弹窗独有字段）
 	hiddenFields := make(map[string]bool)
 	for _, d := range console_setting.UsageLogFieldsDefaults() {
 		if !console_setting.IsUsageLogFieldVisible(d.Key, false) {
@@ -122,32 +117,14 @@ func filterHiddenUsageLogFields(logs []*model.Log) {
 	for _, log := range logs {
 		if totalSwitchOff {
 			// 总开关关闭，清空所有详情弹窗独有字段
-			log.Content = ""
-			log.TokenName = ""
-			log.Group = ""
-			log.UseTime = 0
 			log.RequestId = ""
 			log.UpstreamRequestId = ""
 			log.Ip = ""
-			log.ChannelId = 0
-			log.ChannelName = ""
 			stripHiddenOtherFields(log, nil)
 			continue
 		}
 
-		// 独立顶层字段
-		if hiddenFields[console_setting.UsageLogFieldContent] {
-			log.Content = ""
-		}
-		if hiddenFields[console_setting.UsageLogFieldToken] {
-			log.TokenName = ""
-		}
-		if hiddenFields[console_setting.UsageLogFieldGroup] {
-			log.Group = ""
-		}
-		if hiddenFields[console_setting.UsageLogFieldResponseTime] {
-			log.UseTime = 0
-		}
+		// 详情弹窗独有的顶层字段
 		if hiddenFields[console_setting.UsageLogFieldRequestID] {
 			log.RequestId = ""
 		}
@@ -156,10 +133,6 @@ func filterHiddenUsageLogFields(logs []*model.Log) {
 		}
 		if hiddenFields[console_setting.UsageLogFieldIPAddress] {
 			log.Ip = ""
-		}
-		if hiddenFields[console_setting.UsageLogFieldChannel] {
-			log.ChannelId = 0
-			log.ChannelName = ""
 		}
 		// other JSON 内的字段
 		stripHiddenOtherFields(log, hiddenFields)
@@ -441,10 +414,19 @@ func GetLogsSelfStat(c *gin.Context) {
 // 返回非空字符串表示校验失败，内容为给用户的错误信息；空字符串表示通过。
 // 同时用于 GetUserLogs（列表接口）和 GetLogsSelfStat（统计接口），
 // 封堵通过 total/items/stat 结果变化对隐藏字段做侧信道探测。
-// model_name 和 token_name 默认对普通用户可见，不在可见性配置范围内，不需要校验。
-// channel 字段 GetUserLogs 不接受（不在此参数中），GetLogsSelfStat 接受，统一校验。
-// 使用 UsageLogField 常量做映射，参考 setting/console_setting/config.go 的字段定义。
+//
+// 字段语义说明（详见根 AGENTS.md "使用日志字段可见性"）：
+//   - 表格列字段（token_name/group/content/use_time）不在此校验：始终可过滤。
+//   - channel 虽是表格列，但普通用户不应按 channel 过滤，这是硬安全规则，
+//     不依赖配置（channel 已从 Defaults 移除，IsUsageLogFieldVisible 回退到 return false）。
+//   - 详情弹窗独有字段（request_id/upstream_request_id/ip/ua/x_title/http_referer）
+//     受总开关和单字段可见性双重控制。
 func validateUserLogFilters(filter model.LogStatFilter) string {
+	// 详情弹窗独有字段受总开关和单字段可见性双重控制。
+	// 总开关关闭时，详情弹窗独有字段都不可作为过滤条件。
+	// 但表格列字段（token_name/group/model_name 等）不受此限制，始终可过滤。
+	detailsDisabled := !console_setting.IsUsageLogDetailsEnabled(false)
+
 	type filterFieldCheck struct {
 		value    string
 		fieldKey string
@@ -453,7 +435,6 @@ func validateUserLogFilters(filter model.LogStatFilter) string {
 	// filter 字段 → UsageLogField 常量 → 中文展示名
 	checks := []filterFieldCheck{
 		{strconv.Itoa(filter.Channel), console_setting.UsageLogFieldChannel, "channel"},
-		{filter.Group, console_setting.UsageLogFieldGroup, "group"},
 		{filter.RequestId, console_setting.UsageLogFieldRequestID, "request_id"},
 		{filter.UpstreamRequestId, console_setting.UsageLogFieldUpstreamRequestID, "upstream_request_id"},
 		{filter.Ip, console_setting.UsageLogFieldIPAddress, "ip"},
@@ -465,6 +446,10 @@ func validateUserLogFilters(filter model.LogStatFilter) string {
 		// channel=0 表示未传，跳过；其余空值同样跳过。
 		if chk.value == "" || (chk.fieldKey == console_setting.UsageLogFieldChannel && chk.value == "0") {
 			continue
+		}
+		// 总开关关闭时，所有详情弹窗独有字段都不可过滤
+		if detailsDisabled {
+			return "使用日志详情已禁用，不支持按详情字段过滤"
 		}
 		if !console_setting.IsUsageLogFieldVisible(chk.fieldKey, false) {
 			return "无权使用此过滤条件: " + chk.fieldMsg

@@ -19,16 +19,13 @@ For commercial licensing, please contact support@quantumnous.com
 
 // 使用日志详情弹窗字段 key 常量。
 // 必须与后端 setting/console_setting/config.go 中的 UsageLogField* 常量保持一致。
-// 新增或删除字段时，需同步更新后端 UsageLogFieldsDefaults 和此处的元数据表。
+// 仅包含详情弹窗独有字段；同时出现在列表表格列和详情弹窗中的字段
+// （channel/token/group/response_time/content）不在配置范围内。
 export const USAGE_LOG_FIELD_KEYS = {
   request_id: 'request_id',
   upstream_request_id: 'upstream_request_id',
-  channel: 'channel',
   retry_chain: 'retry_chain',
-  token: 'token',
-  group: 'group',
   ip_address: 'ip_address',
-  response_time: 'response_time',
   client_headers: 'client_headers',
   request_conversion: 'request_conversion',
   reasoning_effort: 'reasoning_effort',
@@ -47,7 +44,6 @@ export const USAGE_LOG_FIELD_KEYS = {
   topup_audit: 'topup_audit',
   operator_admin: 'operator_admin',
   stream_status: 'stream_status',
-  content: 'content',
 } as const
 
 export type UsageLogFieldKey =
@@ -88,12 +84,8 @@ export const USAGE_LOG_FIELDS: UsageLogFieldMeta[] = [
   // 基本信息
   { key: 'request_id', nameZH: '请求ID', description: '本次请求的唯一标识', group: 'basic', admin: true, user: true },
   { key: 'upstream_request_id', nameZH: '上游请求ID', description: '上游供应商返回的请求ID', group: 'basic', admin: true, user: true },
-  { key: 'channel', nameZH: '渠道', description: '处理本次请求的渠道', group: 'basic', admin: true, user: false },
   { key: 'retry_chain', nameZH: '重试链路', description: '请求在多渠道间的重试路径', group: 'basic', admin: true, user: false },
-  { key: 'token', nameZH: '令牌', description: '发起请求的API令牌名称', group: 'basic', admin: true, user: true },
-  { key: 'group', nameZH: '分组', description: '令牌所属的用户分组', group: 'basic', admin: true, user: true },
   { key: 'ip_address', nameZH: 'IP地址', description: '请求来源的客户端IP', group: 'basic', admin: true, user: true },
-  { key: 'response_time', nameZH: '响应时间', description: '请求总耗时及首次响应时间', group: 'basic', admin: true, user: true },
   // 请求信息
   { key: 'client_headers', nameZH: '客户端请求头', description: 'HTTP-Referer、X-Title、UA', group: 'request', admin: true, user: true },
   { key: 'request_conversion', nameZH: '请求转换', description: '协议转换路径与实际请求路径', group: 'request', admin: true, user: false },
@@ -116,8 +108,6 @@ export const USAGE_LOG_FIELDS: UsageLogFieldMeta[] = [
   { key: 'topup_audit', nameZH: '充值审计', description: '充值订单的支付方式、回调IP等', group: 'system', admin: true, user: false },
   { key: 'operator_admin', nameZH: '操作管理员', description: '执行管理操作的管理员信息', group: 'system', admin: true, user: false },
   { key: 'stream_status', nameZH: '流式状态', description: '流式响应的状态与错误信息', group: 'system', admin: true, user: false },
-  // 其他
-  { key: 'content', nameZH: '报错内容', description: '日志主内容、错误信息与拒绝原因', group: 'other', admin: true, user: true },
 ]
 
 // 构建 UsageLogFields 配置的默认 JSON 字符串。
