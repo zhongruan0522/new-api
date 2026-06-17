@@ -27,6 +27,11 @@ export interface DashboardConfig {
   rankings_enabled: boolean
   media_convert_stats_enabled: boolean
 
+  // 写入层聚合粒度控制
+  quota_data_track_tokens: boolean
+  quota_data_track_by_model: boolean
+  quota_data_track_by_user: boolean
+
   // 面板启用开关
   api_info_enabled: boolean
   uptime_kuma_enabled: boolean

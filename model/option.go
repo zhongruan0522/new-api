@@ -2,6 +2,7 @@ package model
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -460,6 +461,24 @@ func handleConfigUpdate(key, value string) bool {
 		// 同步磁盘缓存配置到 common 包
 		performance_setting.UpdateAndSync()
 	}
+	if configName == "dashboard_config" {
+		// 同步写入层聚合粒度配置到 model 包级变量，避免 model 反向依赖 dashboard_setting
+		syncDashboardTrackingConfig(cfg)
+	}
 
 	return true // 已处理
+}
+
+// syncDashboardTrackingConfig 从已更新的 dashboard_config 配置对象读取写入层配置，同步到 model 包级变量。
+// 通过 config.ConfigToMap 反射读取，不直接依赖 dashboard_setting.DashboardConfig 类型，避免循环导入。
+func syncDashboardTrackingConfig(cfg interface{}) {
+	m, err := config.ConfigToMap(cfg)
+	if err != nil {
+		common.SysError(fmt.Sprintf("syncDashboardTrackingConfig: 解析 dashboard_config 失败: %s", err))
+		return
+	}
+	tokens, _ := strconv.ParseBool(m["quota_data_track_tokens"])
+	byModel, _ := strconv.ParseBool(m["quota_data_track_by_model"])
+	byUser, _ := strconv.ParseBool(m["quota_data_track_by_user"])
+	SyncQuotaDataTrackingConfig(tokens, byModel, byUser)
 }

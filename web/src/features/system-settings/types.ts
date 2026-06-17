@@ -125,6 +125,9 @@ export type DashboardSettings = {
   'dashboard_config.user_analytics_enabled': boolean
   'dashboard_config.rankings_enabled': boolean
   'dashboard_config.media_convert_stats_enabled': boolean
+  'dashboard_config.quota_data_track_tokens': boolean
+  'dashboard_config.quota_data_track_by_model': boolean
+  'dashboard_config.quota_data_track_by_user': boolean
   'dashboard_config.api_info_enabled': boolean
   'dashboard_config.uptime_kuma_enabled': boolean
   'dashboard_config.announcements_enabled': boolean

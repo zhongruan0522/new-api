@@ -100,6 +100,39 @@ export function DashboardMetricsSection() {
             'Enable image/video to URL conversion statistics display.'
           )}
         />
+
+        <SettingsSwitchField
+          checked={config.quota_data_track_tokens}
+          onCheckedChange={(checked) =>
+            handleToggle('quota_data_track_tokens', checked)
+          }
+          label={t('Track Token Usage')}
+          description={t(
+            'Record token_used in quota data. Disabling reduces write cost when token analytics are not needed.'
+          )}
+        />
+
+        <SettingsSwitchField
+          checked={config.quota_data_track_by_model}
+          onCheckedChange={(checked) =>
+            handleToggle('quota_data_track_by_model', checked)
+          }
+          label={t('Aggregate by Model')}
+          description={t(
+            'Aggregate quota data per model. Disabling collapses all models into a single global bucket, reducing row count.'
+          )}
+        />
+
+        <SettingsSwitchField
+          checked={config.quota_data_track_by_user}
+          onCheckedChange={(checked) =>
+            handleToggle('quota_data_track_by_user', checked)
+          }
+          label={t('Aggregate by User')}
+          description={t(
+            'Aggregate quota data per user. Disabling collapses all users into a single anonymous bucket, reducing row count.'
+          )}
+        />
       </div>
     </SettingsSection>
   )
