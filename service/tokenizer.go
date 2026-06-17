@@ -1,6 +1,7 @@
 package service
 
 import (
+	"strings"
 	"sync"
 
 	"github.com/tiktoken-go/tokenizer"
@@ -8,11 +9,13 @@ import (
 	"github.com/zhongruan0522/new-api/common"
 )
 
-// tokenEncoderMap won't grow after initialization
+const maxTokenEncoderCacheSize = 64
+
 var defaultTokenEncoder tokenizer.Codec
 
 // tokenEncoderMap is used to store token encoders for different models
 var tokenEncoderMap = make(map[string]tokenizer.Codec)
+var tokenEncoderOrder []string
 
 // tokenEncoderMutex protects tokenEncoderMap for concurrent access
 var tokenEncoderMutex sync.RWMutex
@@ -24,6 +27,11 @@ func InitTokenEncoders() {
 }
 
 func getTokenEncoder(model string) tokenizer.Codec {
+	model = normalizeTokenEncoderModel(model)
+	if model == "" {
+		return defaultTokenEncoder
+	}
+
 	// First, try to get the encoder from cache with read lock
 	tokenEncoderMutex.RLock()
 	if encoder, exists := tokenEncoderMap[model]; exists {
@@ -44,14 +52,57 @@ func getTokenEncoder(model string) tokenizer.Codec {
 	// Create new encoder
 	modelCodec, err := tokenizer.ForModel(tokenizer.Model(model))
 	if err != nil {
-		// Cache the default encoder for this model to avoid repeated failures
-		tokenEncoderMap[model] = defaultTokenEncoder
 		return defaultTokenEncoder
 	}
 
 	// Cache the new encoder
-	tokenEncoderMap[model] = modelCodec
+	storeTokenEncoderLocked(model, modelCodec)
 	return modelCodec
+}
+
+func normalizeTokenEncoderModel(model string) string {
+	model = strings.ToLower(strings.TrimSpace(model))
+	if model == "" {
+		return ""
+	}
+
+	switch {
+	case strings.HasPrefix(model, "gpt-5"):
+		return "gpt-4o"
+	case strings.HasPrefix(model, "gpt-4o"):
+		return "gpt-4o"
+	case strings.HasPrefix(model, "gpt-4.1"):
+		return "gpt-4"
+	case strings.HasPrefix(model, "gpt-4"):
+		return "gpt-4"
+	case strings.HasPrefix(model, "gpt-3.5"):
+		return "gpt-3.5-turbo"
+	case strings.HasPrefix(model, "o1"):
+		return "o1"
+	case strings.HasPrefix(model, "o3"):
+		return "o3"
+	case strings.HasPrefix(model, "o4"):
+		return "o4-mini"
+	case strings.HasPrefix(model, "chatgpt"):
+		return "gpt-4o"
+	default:
+		return model
+	}
+}
+
+func storeTokenEncoderLocked(model string, encoder tokenizer.Codec) {
+	if len(tokenEncoderMap) >= maxTokenEncoderCacheSize {
+		for len(tokenEncoderOrder) > 0 {
+			evict := tokenEncoderOrder[0]
+			tokenEncoderOrder = tokenEncoderOrder[1:]
+			if _, ok := tokenEncoderMap[evict]; ok {
+				delete(tokenEncoderMap, evict)
+				break
+			}
+		}
+	}
+	tokenEncoderMap[model] = encoder
+	tokenEncoderOrder = append(tokenEncoderOrder, model)
 }
 
 func getTokenNum(tokenEncoder tokenizer.Codec, text string) int {

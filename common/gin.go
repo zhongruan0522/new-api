@@ -80,8 +80,11 @@ func GetRequestBody(c *gin.Context) ([]byte, error) {
 		return nil, err
 	}
 
-	// 同时设置旧的缓存键以保持兼容性
-	c.Set(KeyRequestBody, body)
+	// Keep the legacy byte cache only for in-memory storage. Disk-backed bodies
+	// should stay on disk between reads instead of pinning another large []byte.
+	if !storage.IsDisk() {
+		c.Set(KeyRequestBody, body)
+	}
 
 	return body, nil
 }

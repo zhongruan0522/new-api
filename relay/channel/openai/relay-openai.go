@@ -346,8 +346,6 @@ func OpenaiRealtimeHandler(c *gin.Context, info *relaycommon.RelayInfo) (*types.
 
 	clientClosed := make(chan struct{})
 	targetClosed := make(chan struct{})
-	sendChan := make(chan []byte, 100)
-	receiveChan := make(chan []byte, 100)
 	errChan := make(chan error, 2)
 
 	usage := &dto.RealtimeUsage{}
@@ -394,7 +392,7 @@ func OpenaiRealtimeHandler(c *gin.Context, info *relaycommon.RelayInfo) (*types.
 					errChan <- fmt.Errorf("error counting text token: %v", err)
 					return
 				}
-				logger.LogInfo(c, fmt.Sprintf("type: %s, textToken: %d, audioToken: %d", realtimeEvent.Type, textToken, audioToken))
+				logger.LogDebug(c, "realtime event type=%s textToken=%d audioToken=%d", realtimeEvent.Type, textToken, audioToken)
 				localUsage.TotalTokens += textToken + audioToken
 				localUsage.InputTokens += textToken + audioToken
 				localUsage.InputTokenDetails.TextTokens += textToken
@@ -404,11 +402,6 @@ func OpenaiRealtimeHandler(c *gin.Context, info *relaycommon.RelayInfo) (*types.
 				if err != nil {
 					errChan <- fmt.Errorf("error writing to target: %v", err)
 					return
-				}
-
-				select {
-				case sendChan <- message:
-				default:
 				}
 			}
 		}
@@ -467,7 +460,7 @@ func OpenaiRealtimeHandler(c *gin.Context, info *relaycommon.RelayInfo) (*types.
 							errChan <- fmt.Errorf("error counting text token: %v", err)
 							return
 						}
-						logger.LogInfo(c, fmt.Sprintf("type: %s, textToken: %d, audioToken: %d", realtimeEvent.Type, textToken, audioToken))
+						logger.LogDebug(c, "realtime event type=%s textToken=%d audioToken=%d", realtimeEvent.Type, textToken, audioToken)
 						localUsage.TotalTokens += textToken + audioToken
 						info.IsFirstRequest = false
 						localUsage.InputTokens += textToken + audioToken
@@ -482,9 +475,7 @@ func OpenaiRealtimeHandler(c *gin.Context, info *relaycommon.RelayInfo) (*types.
 						localUsage = &dto.RealtimeUsage{}
 						// print now usage
 					}
-					logger.LogInfo(c, fmt.Sprintf("realtime streaming sumUsage: %v", sumUsage))
-					logger.LogInfo(c, fmt.Sprintf("realtime streaming localUsage: %v", localUsage))
-					logger.LogInfo(c, fmt.Sprintf("realtime streaming localUsage: %v", localUsage))
+					logger.LogDebug(c, "realtime streaming sumUsage=%v localUsage=%v", sumUsage, localUsage)
 
 				} else if realtimeEvent.Type == dto.RealtimeEventTypeSessionUpdated || realtimeEvent.Type == dto.RealtimeEventTypeSessionCreated {
 					realtimeSession := realtimeEvent.Session
@@ -499,7 +490,7 @@ func OpenaiRealtimeHandler(c *gin.Context, info *relaycommon.RelayInfo) (*types.
 						errChan <- fmt.Errorf("error counting text token: %v", err)
 						return
 					}
-					logger.LogInfo(c, fmt.Sprintf("type: %s, textToken: %d, audioToken: %d", realtimeEvent.Type, textToken, audioToken))
+					logger.LogDebug(c, "realtime event type=%s textToken=%d audioToken=%d", realtimeEvent.Type, textToken, audioToken)
 					localUsage.TotalTokens += textToken + audioToken
 					localUsage.OutputTokens += textToken + audioToken
 					localUsage.OutputTokenDetails.TextTokens += textToken
@@ -510,11 +501,6 @@ func OpenaiRealtimeHandler(c *gin.Context, info *relaycommon.RelayInfo) (*types.
 				if err != nil {
 					errChan <- fmt.Errorf("error writing to client: %v", err)
 					return
-				}
-
-				select {
-				case receiveChan <- message:
-				default:
 				}
 			}
 		}
