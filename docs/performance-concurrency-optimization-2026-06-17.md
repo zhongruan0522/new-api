@@ -139,6 +139,40 @@
 - 它不等价于完整 HTTP + 鉴权 + 数据库 + 真实上游的端到端压测。
 - 完整目标仍建议用真实运行服务采集 RSS、heap profile、goroutine profile 和 CPU profile。
 
+### 5. 追加验证：128 并发 OpenAI 流式 relay + fake upstream
+
+追加变更：
+
+- `relay/openai_wire_concurrency_benchmark_test.go` 新增 `BenchmarkOpenAIStreamRelayConcurrent128`。
+- benchmark 使用 `httptest.Server` 作为 fake OpenAI-compatible upstream，不连接外网。
+- 单轮启动 128 个并发请求，每个请求覆盖：
+  - gin context 和 OpenAI chat completions 请求体
+  - `GenRelayInfo`
+  - OpenAI adaptor 初始化和请求转换
+  - `DoApiRequest` 发起真实 HTTP 请求到 fake upstream
+  - fake upstream 返回 SSE stream
+  - OpenAI stream response handler
+  - 下游 SSE 写回与 usage 解析
+- fake upstream 在第一个 SSE frame 后阻塞，等 128 个请求都进入流式状态后再释放，确保并发驻留。
+- benchmark 不经过 `TokenAuth`、`Distribute`、预扣费/结算和数据库写入，因此它是 relay HTTP + upstream + stream handler 层验证，不是完整业务路由压测。
+
+验证命令：
+
+- `go test ./relay -run '^$' -bench 'BenchmarkOpenAIStreamRelayConcurrent128$' -benchmem -count=1`
+
+当前样本：
+
+- `BenchmarkOpenAIStreamRelayConcurrent128`: 约 83.32 ms/op，41.66 MB/op，343438 allocs/op
+- 额外指标：
+  - `peak_heap_mb/op`: 约 22.36MB
+  - `retained_heap_mb/op`: 约 0.0735MB
+
+边界说明：
+
+- 该 benchmark 比 scanner-only 更接近 API 请求真实形态，覆盖了 relay adaptor、上游 HTTP、SSE 处理和下游响应写回。
+- 仍缺少完整运行服务中的鉴权、渠道分发、限流、计费、DB、日志以及真实进程 RSS 证据。
+- 若要最终证明“完整系统 >100 并发”目标，需要再运行真实服务压测并采集进程级 RSS/heap/CPU。
+
 ## 总体思路
 
 本轮没有从单点“表面省一点内存”下手，而是按高并发下的长期驻留来源拆分：
