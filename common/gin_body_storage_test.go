@@ -52,3 +52,40 @@ func TestGetRequestBodyDoesNotKeepLegacyBytesForDiskStorage(t *testing.T) {
 	}
 	CleanupBodyStorage(c)
 }
+
+func BenchmarkGetRequestBodyDiskStorage(b *testing.B) {
+	gin.SetMode(gin.TestMode)
+
+	oldConfig := GetDiskCacheConfig()
+	oldMaxRequestBodyMB := constant.MaxRequestBodyMB
+	SetDiskCacheConfig(DiskCacheConfig{
+		Enabled:     true,
+		ThresholdMB: 0,
+		MaxSizeMB:   64,
+		Path:        b.TempDir(),
+	})
+	constant.MaxRequestBodyMB = 1
+	b.Cleanup(func() {
+		SetDiskCacheConfig(oldConfig)
+		constant.MaxRequestBodyMB = oldMaxRequestBodyMB
+	})
+
+	body := strings.Repeat("x", 64<<10)
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		recorder := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(recorder)
+		c.Request = httptest.NewRequest("POST", "/v1/chat/completions", strings.NewReader(body))
+		c.Request.ContentLength = int64(len(body))
+
+		if _, err := GetRequestBody(c); err != nil {
+			b.Fatalf("GetRequestBody returned error: %v", err)
+		}
+		if _, exists := c.Get(KeyRequestBody); exists {
+			b.Fatal("disk-backed body was also stored in legacy byte cache")
+		}
+		CleanupBodyStorage(c)
+	}
+}

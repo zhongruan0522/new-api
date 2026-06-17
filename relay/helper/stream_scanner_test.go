@@ -59,3 +59,36 @@ func TestGetScannerBufferSizeUsesConservativeDefault(t *testing.T) {
 		t.Fatalf("scanner buffer size = %d, want %d", got, 8<<20)
 	}
 }
+
+func BenchmarkStreamScannerHandler(b *testing.B) {
+	gin.SetMode(gin.TestMode)
+	oldStreamingTimeout := constant.StreamingTimeout
+	constant.StreamingTimeout = 30
+	b.Cleanup(func() {
+		constant.StreamingTimeout = oldStreamingTimeout
+	})
+
+	frame := `data: {"id":"chatcmpl","choices":[{"delta":{"content":"hello"}}]}`
+	body := strings.Repeat(frame+"\n", 200) + "data: [DONE]\n"
+
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		recorder := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(recorder)
+		c.Request = httptest.NewRequest(http.MethodPost, "/v1/chat/completions", nil)
+		resp := &http.Response{
+			StatusCode: http.StatusOK,
+			Body:       io.NopCloser(strings.NewReader(body)),
+		}
+		count := 0
+		StreamScannerHandler(c, resp, &relaycommon.RelayInfo{}, func(data string) bool {
+			count++
+			return data != ""
+		})
+		if count != 200 {
+			b.Fatalf("handled %d frames, want 200", count)
+		}
+	}
+}

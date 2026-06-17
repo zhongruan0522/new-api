@@ -11,6 +11,11 @@ import (
 func resetTokenEncoderCacheForTest(t *testing.T) {
 	t.Helper()
 
+	restore := resetTokenEncoderCache()
+	t.Cleanup(restore)
+}
+
+func resetTokenEncoderCache() func() {
 	tokenEncoderMutex.Lock()
 	oldDefault := defaultTokenEncoder
 	oldMap := tokenEncoderMap
@@ -20,13 +25,13 @@ func resetTokenEncoderCacheForTest(t *testing.T) {
 	tokenEncoderOrder = nil
 	tokenEncoderMutex.Unlock()
 
-	t.Cleanup(func() {
+	return func() {
 		tokenEncoderMutex.Lock()
 		defaultTokenEncoder = oldDefault
 		tokenEncoderMap = oldMap
 		tokenEncoderOrder = oldOrder
 		tokenEncoderMutex.Unlock()
-	})
+	}
 }
 
 func TestNormalizeTokenEncoderModelCollapsesDynamicVariants(t *testing.T) {
@@ -59,5 +64,22 @@ func TestUnknownTokenEncoderModelsDoNotGrowCache(t *testing.T) {
 
 	if cacheSize != 0 {
 		t.Fatalf("unknown model cache size = %d, want 0", cacheSize)
+	}
+}
+
+func BenchmarkUnknownTokenEncoderModels(b *testing.B) {
+	restore := resetTokenEncoderCache()
+	defer restore()
+	b.ReportAllocs()
+
+	for i := 0; i < b.N; i++ {
+		_ = getTokenEncoder(fmt.Sprintf("unknown-dynamic-model-%d", i))
+	}
+
+	tokenEncoderMutex.RLock()
+	cacheSize := len(tokenEncoderMap)
+	tokenEncoderMutex.RUnlock()
+	if cacheSize != 0 {
+		b.Fatalf("unknown model cache size = %d, want 0", cacheSize)
 	}
 }
