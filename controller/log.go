@@ -54,6 +54,29 @@ func GetUserLogs(c *gin.Context) {
 	ua := c.Query("ua")
 	xTitle := c.Query("x_title")
 	httpReferer := c.Query("http_referer")
+
+	// 普通用户列表接口同样禁止使用不可见字段做过滤条件，
+	// 避免通过 total/items 变化做侧信道探测（与 GetLogsSelfStat 一致）。
+	filter := model.LogStatFilter{
+		Username:          c.GetString("username"),
+		TokenName:         tokenName,
+		ModelName:         modelName,
+		Group:             group,
+		RequestId:         requestId,
+		UpstreamRequestId: upstreamRequestId,
+		Ip:                ip,
+		Ua:                ua,
+		XTitle:            xTitle,
+		HttpReferer:       httpReferer,
+	}
+	if msg := validateUserLogFilters(filter); msg != "" {
+		c.JSON(200, gin.H{
+			"success": false,
+			"message": msg,
+		})
+		return
+	}
+
 	logs, total, err := model.GetUserLogs(userId, logType, startTimestamp, endTimestamp, modelName, tokenName, pageInfo.GetStartIdx(), pageInfo.GetPageSize(), group, requestId, upstreamRequestId, ip, ua, xTitle, httpReferer)
 	if err != nil {
 		common.ApiError(c, err)
@@ -67,9 +90,23 @@ func GetUserLogs(c *gin.Context) {
 }
 
 // filterHiddenUsageLogFields 根据使用日志字段可见性配置，清空普通用户不可见的字段数据。
-// 仅过滤详情弹窗独有的字段（不影响表格列共享的 prompt_tokens/completion_tokens/quota/model_name 等）。
+//
+// 后端安全裁剪范围（此处处理的字段）：
+//   - 顶层独立字段：content、token_name、group、use_time、request_id、upstream_request_id、
+//     ip、channel/channel_name。
+//   - other JSON 内字段：通过 stripHiddenOtherFields 处理。
+//
+// 不在裁剪范围的字段（表格列共享字段，详情弹窗中由聚合区块控制，非单一字段开关）：
+//   - prompt_tokens / completion_tokens / quota / model_name / is_stream / created_at /
+//     username / user_id。
+//   - 这些字段同时用于列表表格列，对应配置项（如 TokenBreakdown/BillingDetails/PriceTable）
+//     控制的是详情弹窗内的聚合视图（如 Token 明细区块、计费详情区块、价格表区块），
+//     不是单一字段开关。前端用 isVisible('token_breakdown') 等控制的是包含多字段的区块渲染，
+//     不是 prompt_tokens 本身。因此在后端按顶层字段裁剪会导致列表表格列数据丢失，
+//     与产品语义不符。
+//
 // admin_info 相关字段（topup_audit/operator_admin/retry_chain）已由 model.formatUserLogs 删除。
-// stream_status/billing_source/request_conversion 等独立 other 字段在此处过滤。
+// stream_status/billing_source/request_conversion 等独立 other 字段在 stripHiddenOtherFields 中过滤。
 // 如果配置解析失败，IsUsageLogFieldVisible 会回退到默认值，此处按默认值过滤。
 func filterHiddenUsageLogFields(logs []*model.Log) {
 	// 构建需要过滤的字段集合（普通用户不可见的字段）
@@ -85,6 +122,10 @@ func filterHiddenUsageLogFields(logs []*model.Log) {
 	for _, log := range logs {
 		if totalSwitchOff {
 			// 总开关关闭，清空所有详情弹窗独有字段
+			log.Content = ""
+			log.TokenName = ""
+			log.Group = ""
+			log.UseTime = 0
 			log.RequestId = ""
 			log.UpstreamRequestId = ""
 			log.Ip = ""
@@ -95,6 +136,18 @@ func filterHiddenUsageLogFields(logs []*model.Log) {
 		}
 
 		// 独立顶层字段
+		if hiddenFields[console_setting.UsageLogFieldContent] {
+			log.Content = ""
+		}
+		if hiddenFields[console_setting.UsageLogFieldToken] {
+			log.TokenName = ""
+		}
+		if hiddenFields[console_setting.UsageLogFieldGroup] {
+			log.Group = ""
+		}
+		if hiddenFields[console_setting.UsageLogFieldResponseTime] {
+			log.UseTime = 0
+		}
 		if hiddenFields[console_setting.UsageLogFieldRequestID] {
 			log.RequestId = ""
 		}
@@ -340,7 +393,7 @@ func GetLogsSelfStat(c *gin.Context) {
 	}
 
 	// 普通用户统计接口禁止使用不可见字段做过滤条件，避免通过统计结果变化做侧信道探测。
-	if msg := validateSelfStatFilters(filter); msg != "" {
+	if msg := validateUserLogFilters(filter); msg != "" {
 		c.JSON(200, gin.H{
 			"success": false,
 			"message": msg,
@@ -384,11 +437,14 @@ func GetLogsSelfStat(c *gin.Context) {
 	})
 }
 
-// validateSelfStatFilters 校验普通用户统计接口的过滤条件是否使用了不可见字段。
+// validateUserLogFilters 校验普通用户日志接口的过滤条件是否使用了不可见字段。
 // 返回非空字符串表示校验失败，内容为给用户的错误信息；空字符串表示通过。
+// 同时用于 GetUserLogs（列表接口）和 GetLogsSelfStat（统计接口），
+// 封堵通过 total/items/stat 结果变化对隐藏字段做侧信道探测。
 // model_name 和 token_name 默认对普通用户可见，不在可见性配置范围内，不需要校验。
+// channel 字段 GetUserLogs 不接受（不在此参数中），GetLogsSelfStat 接受，统一校验。
 // 使用 UsageLogField 常量做映射，参考 setting/console_setting/config.go 的字段定义。
-func validateSelfStatFilters(filter model.LogStatFilter) string {
+func validateUserLogFilters(filter model.LogStatFilter) string {
 	type filterFieldCheck struct {
 		value    string
 		fieldKey string
