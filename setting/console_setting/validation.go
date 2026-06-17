@@ -8,6 +8,8 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/zhongruan0522/new-api/common"
 )
 
 var (
@@ -24,7 +26,7 @@ var (
 
 func parseJSONArray(jsonStr string, typeName string) ([]map[string]interface{}, error) {
 	var list []map[string]interface{}
-	if err := json.Unmarshal([]byte(jsonStr), &list); err != nil {
+	if err := common.UnmarshalJsonStr(jsonStr, &list); err != nil {
 		return nil, fmt.Errorf("%s格式错误：%s", typeName, err.Error())
 	}
 	return list, nil
@@ -55,7 +57,7 @@ func getJSONList(jsonStr string) []map[string]interface{} {
 		return []map[string]interface{}{}
 	}
 	var list []map[string]interface{}
-	json.Unmarshal([]byte(jsonStr), &list)
+	common.UnmarshalJsonStr(jsonStr, &list)
 	return list
 }
 
@@ -87,7 +89,7 @@ func ValidateConsoleSettings(settingsStr string, settingType string) error {
 func validateUsageLogFields(fieldsStr string) error {
 	// 先解析为 map[string]json.RawMessage，确保每个字段对象显式包含 admin 和 user 键。
 	rawMap := make(map[string]json.RawMessage)
-	if err := json.Unmarshal([]byte(fieldsStr), &rawMap); err != nil {
+	if err := common.UnmarshalJsonStr(fieldsStr, &rawMap); err != nil {
 		return fmt.Errorf("使用日志字段配置格式错误：%s", err.Error())
 	}
 
@@ -103,7 +105,7 @@ func validateUsageLogFields(fieldsStr string) error {
 		}
 		// 解析单个字段对象，检查 admin 和 user 都存在且为布尔值
 		var obj map[string]interface{}
-		if err := json.Unmarshal(raw, &obj); err != nil {
+		if err := common.Unmarshal(raw, &obj); err != nil {
 			return fmt.Errorf("字段 %s 的配置格式错误：%s", key, err.Error())
 		}
 		adminVal, hasAdmin := obj["admin"]
