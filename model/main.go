@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"github.com/zhongruan0522/new-api/common"
 	"github.com/zhongruan0522/new-api/constant"
 
@@ -16,6 +17,7 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
+	gormlogger "gorm.io/gorm/logger"
 )
 
 var commonGroupCol string
@@ -137,9 +139,7 @@ func chooseDB(envName string, isLog bool) (*gorm.DB, error) {
 			return gorm.Open(postgres.New(postgres.Config{
 				DSN:                  dsn,
 				PreferSimpleProtocol: true, // disables implicit prepared statement usage
-			}), &gorm.Config{
-				PrepareStmt: true, // precompile SQL
-			})
+			}), newGormConfig())
 		}
 		if strings.HasPrefix(dsn, "local") {
 			common.SysLog("SQL_DSN not set, using SQLite as database")
@@ -148,9 +148,7 @@ func chooseDB(envName string, isLog bool) (*gorm.DB, error) {
 			} else {
 				common.LogSqlType = common.DatabaseTypeSQLite
 			}
-			return gorm.Open(sqlite.Open(common.SQLitePath), &gorm.Config{
-				PrepareStmt: true, // precompile SQL
-			})
+			return gorm.Open(sqlite.Open(common.SQLitePath), newGormConfig())
 		}
 		// Use MySQL
 		common.SysLog("using MySQL as database")
@@ -167,16 +165,40 @@ func chooseDB(envName string, isLog bool) (*gorm.DB, error) {
 		} else {
 			common.LogSqlType = common.DatabaseTypeMySQL
 		}
-		return gorm.Open(mysql.Open(dsn), &gorm.Config{
-			PrepareStmt: true, // precompile SQL
-		})
+		return gorm.Open(mysql.Open(dsn), newGormConfig())
 	}
 	// Use SQLite
 	common.SysLog("SQL_DSN not set, using SQLite as database")
 	common.UsingSQLite = true
-	return gorm.Open(sqlite.Open(common.SQLitePath), &gorm.Config{
+	return gorm.Open(sqlite.Open(common.SQLitePath), newGormConfig())
+}
+
+// newGormConfig 构建统一的 GORM 配置。
+//
+// 关键点：默认 logger 的 IgnoreRecordNotFoundError 为 false，会把
+// gorm.ErrRecordNotFound 当作 SQL 错误日志打印。在本项目中，按 key/id 查
+// token、user、channel 等实体时"记录不存在"是合法的业务路径（无效 key、
+// 过期、扫描、缓存回填探测等都会命中），不应该污染运行日志。
+//
+// 这里显式打开 IgnoreRecordNotFoundError，仅屏蔽 not-found 类日志，
+// 慢查询和真正的 SQL 错误仍会正常输出。
+func newGormConfig() *gorm.Config {
+	logLevel := gormlogger.Warn
+	if common.DebugEnabled {
+		logLevel = gormlogger.Info
+	}
+	return &gorm.Config{
 		PrepareStmt: true, // precompile SQL
-	})
+		Logger: gormlogger.New(
+			log.New(gin.DefaultWriter, "\n", log.LstdFlags),
+			gormlogger.Config{
+				SlowThreshold:             200 * time.Millisecond,
+				LogLevel:                  logLevel,
+				IgnoreRecordNotFoundError: true,
+				Colorful:                  true,
+			},
+		),
+	}
 }
 
 func InitDB() (err error) {
