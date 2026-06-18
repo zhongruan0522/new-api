@@ -11,6 +11,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/zhongruan0522/new-api/common"
+	"github.com/zhongruan0522/new-api/constant"
 )
 
 func TestRelayErrorHandlerTruncatesInvalidJSONBodyInLog(t *testing.T) {
@@ -96,6 +97,33 @@ func TestRelayErrorHandlerKeepsStructuredErrorMessage(t *testing.T) {
 	}
 }
 
+func TestRelayErrorHandlerCapsAndClosesOversizedBody(t *testing.T) {
+	oldMaxResponseBodyMB := constant.MaxResponseBodyMB
+	constant.MaxResponseBodyMB = 1
+	t.Cleanup(func() {
+		constant.MaxResponseBodyMB = oldMaxResponseBodyMB
+	})
+
+	body := strings.NewReader(strings.Repeat("x", (1<<20)+1))
+	tracker := &closeTrackingReadCloser{Reader: body}
+	resp := &http.Response{
+		StatusCode: http.StatusBadGateway,
+		Body:       tracker,
+	}
+
+	newAPIError := RelayErrorHandler(context.Background(), resp, false)
+
+	if newAPIError == nil {
+		t.Fatal("RelayErrorHandler returned nil error")
+	}
+	if !tracker.closed {
+		t.Fatal("oversized upstream error response body was not closed")
+	}
+	if !strings.Contains(newAPIError.Error(), "upstream response body exceeds 1 MB limit") {
+		t.Fatalf("error = %q, want oversized body limit error", newAPIError.Error())
+	}
+}
+
 func withDebugEnabled(t *testing.T, enabled bool) {
 	t.Helper()
 
@@ -104,4 +132,14 @@ func withDebugEnabled(t *testing.T, enabled bool) {
 	t.Cleanup(func() {
 		common.DebugEnabled = oldDebug
 	})
+}
+
+type closeTrackingReadCloser struct {
+	*strings.Reader
+	closed bool
+}
+
+func (r *closeTrackingReadCloser) Close() error {
+	r.closed = true
+	return nil
 }
