@@ -8,6 +8,7 @@ import (
 	"mime"
 	"net/http"
 	"path"
+	"strconv"
 	"strings"
 
 	"github.com/gin-contrib/gzip"
@@ -124,8 +125,11 @@ func parseAcceptEncodingToken(value string) (string, bool) {
 	token := strings.ToLower(strings.TrimSpace(parts[0]))
 	for _, part := range parts[1:] {
 		param := strings.ToLower(strings.ReplaceAll(strings.TrimSpace(part), " ", ""))
-		if strings.HasPrefix(param, "q=0") {
-			return token, false
+		if strings.HasPrefix(param, "q=") {
+			q, err := strconv.ParseFloat(strings.TrimPrefix(param, "q="), 64)
+			if err == nil && q <= 0 {
+				return token, false
+			}
 		}
 	}
 	return token, token != ""

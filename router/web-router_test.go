@@ -27,6 +27,16 @@ func TestAcceptsBrotli(t *testing.T) {
 			want:           false,
 		},
 		{
+			name:           "allows weighted brotli",
+			acceptEncoding: "gzip, br;q=0.8",
+			want:           true,
+		},
+		{
+			name:           "skips zero decimal brotli",
+			acceptEncoding: "gzip, br;q=0.0",
+			want:           false,
+		},
+		{
 			name:           "empty",
 			acceptEncoding: "",
 		},
