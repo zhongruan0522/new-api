@@ -114,10 +114,6 @@ func main() {
 	}
 
 	if os.Getenv("ENABLE_PPROF") == "true" {
-		// Register net/http/pprof handlers on DefaultServeMux and start the
-		// debug HTTP server. The blank import is inside this function's
-		// dependency (common.EnablePprofServer) so the pprof init() only runs
-		// when profiling is requested, not on every startup.
 		go common.EnablePprofServer()
 		go common.Monitor()
 		common.SysLog("pprof enabled")

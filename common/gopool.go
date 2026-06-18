@@ -3,6 +3,7 @@ package common
 import (
 	"context"
 	"fmt"
+	"math"
 	"os"
 	"strconv"
 
@@ -25,7 +26,7 @@ const defaultRelayPoolCap = 256
 func init() {
 	cap := int32(defaultRelayPoolCap)
 	if v := os.Getenv("RELAY_POOL_CAP"); v != "" {
-		if n, err := strconv.ParseInt(v, 10, 64); err == nil && n > 0 {
+		if n, err := strconv.ParseInt(v, 10, 64); err == nil && n > 0 && n <= math.MaxInt32 {
 			cap = int32(n)
 		}
 	}

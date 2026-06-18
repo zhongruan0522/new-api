@@ -109,17 +109,16 @@ func StreamScannerHandler(c *gin.Context, resp *http.Response, info *relaycommon
 	scanner.Split(bufio.ScanLines)
 	SetEventStreamHeaders(c)
 
-	// Return the buffer to the pool when streaming finishes. We must use a
-	// separate variable because scanner.Buffer may internally reference the
-	// slice and grow it via copying; the original slice we put into the pool
-	// is no longer referenced by the scanner after the last scan completes.
-	defer scannerBufferPool.Put(bufPtr)
-
 	stop := make(chan struct{})
 	defer close(stop)
 	dataChan := make(chan string, 16)
 	done := make(chan struct{})
 	go func() {
+		// The scanner borrows bufPtr's backing array. Return it to the pool
+		// only after the scan loop has definitively exited so that no other
+		// goroutine can acquire and mutate the same buffer via the pool while
+		// scanner.Scan() may still be reading into it.
+		defer scannerBufferPool.Put(bufPtr)
 		defer close(done)
 		for scanner.Scan() {
 			data := scanner.Text()

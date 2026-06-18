@@ -2,36 +2,29 @@ package common
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 	"os"
-	"runtime/pprof"
+	runtimepprof "runtime/pprof"
 	"time"
 
 	"github.com/shirou/gopsutil/cpu"
 
-	// Trigger pprofinit.init which registers net/http/pprof handlers.
-	"github.com/zhongruan0522/new-api/common/pprofinit"
+	// Register pprof debug handlers on http.DefaultServeMux via init().
+	// The handlers are only reachable through the debug server started by
+	// EnablePprofServer when ENABLE_PPROF=true.
+	_ "net/http/pprof"
 )
 
-// EnablePprofServer imports net/http/pprof (which registers handlers on
-// http.DefaultServeMux via init()) and starts the debug HTTP server on :8005.
+// EnablePprofServer starts the debug HTTP server on :8005 with pprof handlers
+// registered on http.DefaultServeMux.
 //
-// This is called only when ENABLE_PPROF=true so that pprof's init overhead is
-// avoided in normal production builds. The blank import of net/http/pprof is
-// in the pprofinit package; referencing it here forces the compiler to link
-// those handlers.
+// The net/http/pprof blank import at the package level registers the handlers
+// unconditionally, but the server itself only starts when ENABLE_PPROF=true.
 func EnablePprofServer() {
-	// Force the pprofinit package init to run (it registers handlers).
-	_ = pprofinit.PackageInitMarker
-	registerPprofHandlers()
-	log.Println(http.ListenAndServe("0.0.0.0:8005", http.DefaultServeMux))
+	if err := http.ListenAndServe("0.0.0.0:8005", http.DefaultServeMux); err != nil {
+		SysError(fmt.Sprintf("pprof server stopped: %v", err))
+	}
 }
-
-// registerPprofHandlers is a no-op placeholder; the actual registration happens
-// via pprofinit's init(). Keeping this function makes the intent explicit and
-// gives a place to add manual handler wiring if needed in the future.
-func registerPprofHandlers() {}
 
 // Monitor 定时监控cpu使用率，超过阈值输出pprof文件
 func Monitor() {
@@ -55,13 +48,13 @@ func Monitor() {
 				SysLog("创建pprof文件失败 " + err.Error())
 				continue
 			}
-			err = pprof.StartCPUProfile(f)
+			err = runtimepprof.StartCPUProfile(f)
 			if err != nil {
 				SysLog("启动pprof失败 " + err.Error())
 				continue
 			}
 			time.Sleep(10 * time.Second) // profile for 30 seconds
-			pprof.StopCPUProfile()
+			runtimepprof.StopCPUProfile()
 			f.Close()
 		}
 		time.Sleep(30 * time.Second)
