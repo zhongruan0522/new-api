@@ -43,7 +43,21 @@ func UpdateQuotaData() {
 			SaveQuotaDataCache()
 			lastUpdatedAt = time.Now()
 		}
-		time.Sleep(time.Second)
+		// When data export is disabled there is nothing to do. Sleep in larger
+		// increments (10s) instead of waking every second just to re-check a
+		// boolean. The previous 1-second tick forced a goroutine wake-up and
+		// cache-line bounce on every core, which is pure overhead for the
+		// common deployment where data export is off.
+		sleepDuration := time.Second
+		if !common.DataExportEnabled {
+			sleepDuration = 10 * time.Second
+		} else if interval > 5*time.Minute {
+			// When the flush interval is long, check at most every minute so
+			// that enabling DataExportEnabled at runtime is picked up without
+			// waiting the full interval.
+			sleepDuration = time.Minute
+		}
+		time.Sleep(sleepDuration)
 	}
 }
 
