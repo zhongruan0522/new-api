@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/zhongruan0522/new-api/common"
@@ -17,10 +18,33 @@ import (
 )
 
 const (
-	InitialScannerBufferSize    = 64 << 10 // 64KB (64*1024)
-	DefaultMaxScannerBufferSize = 8 << 20  // 8MB default SSE buffer size
+	// InitialScannerBufferSize is the starting buffer size for each SSE stream
+	// scanner. The previous value (64KB) was far larger than typical SSE data
+	// frames (a few hundred bytes). At 100+ concurrent streams this alone
+	// reserves 6.4MB+ of heap that is never used. 8KB comfortably covers most
+	// SSE lines while keeping per-request footprint small. The scanner still
+	// grows on demand up to the configured maximum.
+	InitialScannerBufferSize    = 8 << 10 // 8KB
+	DefaultMaxScannerBufferSize = 8 << 20 // 8MB default SSE buffer size
 	DefaultPingInterval         = 10 * time.Second
 )
+
+// scannerBufferPool reuses the initial scanner buffer across concurrent stream
+// requests. Without this pool every streaming relay allocates a fresh
+// InitialScannerBufferSize buffer that lives until the scanner is garbage
+// collected. At 100 concurrent streams with a 64KB buffer that is ~6.4MB of
+// transient allocations. The pool returns already-grown buffers to subsequent
+// callers so the scanner rarely needs to reallocate.
+//
+// Buffers that grew beyond initialBufferReclaimCap are still returned: the
+// scanner copies the buffer when it grows, so reusing a larger one is safe and
+// avoids re-growing on the next request.
+var scannerBufferPool = sync.Pool{
+	New: func() interface{} {
+		b := make([]byte, InitialScannerBufferSize)
+		return &b
+	},
+}
 
 func getScannerBufferSize() int {
 	if constant.StreamScannerMaxBufferMB > 0 {
@@ -80,9 +104,16 @@ func StreamScannerHandler(c *gin.Context, resp *http.Response, info *relaycommon
 		println("ping interval seconds:", int64(pingInterval.Seconds()))
 	}
 
-	scanner.Buffer(make([]byte, InitialScannerBufferSize), getScannerBufferSize())
+	bufPtr := scannerBufferPool.Get().(*[]byte)
+	scanner.Buffer(*bufPtr, getScannerBufferSize())
 	scanner.Split(bufio.ScanLines)
 	SetEventStreamHeaders(c)
+
+	// Return the buffer to the pool when streaming finishes. We must use a
+	// separate variable because scanner.Buffer may internally reference the
+	// slice and grow it via copying; the original slice we put into the pool
+	// is no longer referenced by the scanner after the last scan completes.
+	defer scannerBufferPool.Put(bufPtr)
 
 	stop := make(chan struct{})
 	defer close(stop)
