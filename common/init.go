@@ -104,8 +104,16 @@ func InitEnv() {
 	SyncFrequency = GetEnvOrDefault("SYNC_FREQUENCY", 60)
 	BatchUpdateInterval = GetEnvOrDefault("BATCH_UPDATE_INTERVAL", 5)
 	RelayTimeout = GetEnvOrDefault("RELAY_TIMEOUT", 0)
+	// RelayMaxIdleConns caps the global idle connection pool. The default of
+	// 200 is adequate for most deployments.
 	RelayMaxIdleConns = GetEnvOrDefault("RELAY_MAX_IDLE_CONNS", 200)
-	RelayMaxIdleConnsPerHost = GetEnvOrDefault("RELAY_MAX_IDLE_CONNS_PER_HOST", 32)
+	// RelayMaxIdleConnsPerHost was previously 32. AI gateway traffic typically
+	// targets a small number of upstream hosts (OpenAI, Claude, etc.), so a
+	// low per-host cap causes connection churn: idle conns are closed and
+	// re-established (including TLS handshake) on every burst. Raising to 100
+	// keeps warm connections available for concurrent relay requests while
+	// staying within the global cap.
+	RelayMaxIdleConnsPerHost = GetEnvOrDefault("RELAY_MAX_IDLE_CONNS_PER_HOST", 100)
 	RelayIdleConnTimeout = GetEnvOrDefault("RELAY_IDLE_CONN_TIMEOUT", 90)
 
 	// Initialize string variables with GetEnvOrDefaultString

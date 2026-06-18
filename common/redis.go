@@ -36,7 +36,19 @@ func InitRedisClient() (err error) {
 	if err != nil {
 		FatalLog("failed to parse Redis connection string: " + err.Error())
 	}
-	opt.PoolSize = GetEnvOrDefault("REDIS_POOL_SIZE", 10)
+	opt.PoolSize = GetEnvOrDefault("REDIS_POOL_SIZE", 50)
+	// Keep a few idle connections warm so the first requests don't pay the
+	// TLS/TCP handshake cost. The previous configuration had no MinIdleConns,
+	// so under burst traffic every new connection was established on-demand.
+	opt.MinIdleConns = GetEnvOrDefault("REDIS_MIN_IDLE_CONNS", 5)
+	// Bound dial/read/write timeouts so a stalled Redis does not pin goroutines
+	// indefinitely. Without these the defaults (no write timeout) can cause
+	// goroutine and connection leaks under network partitions.
+	opt.DialTimeout = time.Duration(GetEnvOrDefault("REDIS_DIAL_TIMEOUT", 5)) * time.Second
+	opt.ReadTimeout = time.Duration(GetEnvOrDefault("REDIS_READ_TIMEOUT", 3)) * time.Second
+	opt.WriteTimeout = time.Duration(GetEnvOrDefault("REDIS_WRITE_TIMEOUT", 3)) * time.Second
+	// Retry on transient errors instead of failing the request immediately.
+	opt.MaxRetries = GetEnvOrDefault("REDIS_MAX_RETRIES", 3)
 	RDB = redis.NewClient(opt)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
