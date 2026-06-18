@@ -98,10 +98,10 @@ func TestRelayErrorHandlerKeepsStructuredErrorMessage(t *testing.T) {
 }
 
 func TestRelayErrorHandlerCapsAndClosesOversizedBody(t *testing.T) {
-	oldMaxResponseBodyMB := constant.MaxResponseBodyMB
-	constant.MaxResponseBodyMB = 1
+	oldMaxErrorResponseBodyMB := constant.MaxErrorResponseBodyMB
+	constant.MaxErrorResponseBodyMB = 1
 	t.Cleanup(func() {
-		constant.MaxResponseBodyMB = oldMaxResponseBodyMB
+		constant.MaxErrorResponseBodyMB = oldMaxErrorResponseBodyMB
 	})
 
 	body := strings.NewReader(strings.Repeat("x", (1<<20)+1))

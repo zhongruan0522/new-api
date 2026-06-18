@@ -11,10 +11,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/zhongruan0522/new-api/common"
-
-	"github.com/bytedance/gopkg/util/gopool"
 	"github.com/gin-gonic/gin"
+	"github.com/zhongruan0522/new-api/common"
 )
 
 const (
@@ -89,7 +87,7 @@ func logHelper(ctx context.Context, level string, msg string) {
 	if logCount > maxLogCount && !setupLogWorking {
 		logCount = 0
 		setupLogWorking = true
-		gopool.Go(func() {
+		common.RelayGo(func() {
 			SetupLogger()
 		})
 	}

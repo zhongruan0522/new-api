@@ -6,8 +6,6 @@ import (
 	"time"
 
 	"github.com/zhongruan0522/new-api/common"
-
-	"github.com/bytedance/gopkg/util/gopool"
 	"gorm.io/gorm"
 )
 
@@ -34,7 +32,7 @@ func init() {
 }
 
 func InitBatchUpdater() {
-	gopool.Go(func() {
+	common.RelayGo(func() {
 		for {
 			time.Sleep(time.Duration(common.BatchUpdateInterval) * time.Second)
 			batchUpdate()

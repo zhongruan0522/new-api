@@ -9,8 +9,6 @@ import (
 	"github.com/zhongruan0522/new-api/dto"
 
 	"github.com/gin-gonic/gin"
-
-	"github.com/bytedance/gopkg/util/gopool"
 )
 
 // UserBase struct remains the same as it represents the cached data structure
@@ -83,7 +81,7 @@ func GetUserCache(userId int) (userCache *UserBase, err error) {
 	defer func() {
 		// Update Redis cache asynchronously on successful DB read
 		if shouldUpdateRedis(fromDB, err) && user != nil {
-			gopool.Go(func() {
+			common.RelayGo(func() {
 				if err := updateUserCache(*user); err != nil {
 					common.SysLog("failed to update user status cache: " + err.Error())
 				}

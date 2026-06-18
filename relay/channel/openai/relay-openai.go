@@ -12,14 +12,13 @@ import (
 	"github.com/zhongruan0522/new-api/logger"
 	"github.com/zhongruan0522/new-api/relay/channel/openrouter"
 	relaycommon "github.com/zhongruan0522/new-api/relay/common"
+	relayconstant "github.com/zhongruan0522/new-api/relay/constant"
 	"github.com/zhongruan0522/new-api/relay/helper"
 	"github.com/zhongruan0522/new-api/service"
 
-	"github.com/zhongruan0522/new-api/types"
-
-	"github.com/bytedance/gopkg/util/gopool"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
+	"github.com/zhongruan0522/new-api/types"
 )
 
 func sendStreamData(c *gin.Context, info *relaycommon.RelayInfo, data string, forceFormat bool, thinkToContent bool) error {
@@ -199,7 +198,7 @@ func OpenaiHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Respo
 	defer service.CloseResponseBodyGracefully(resp)
 
 	var simpleResponse dto.OpenAITextResponse
-	responseBody, err := common.ReadResponseBody(resp.Body)
+	responseBody, err := readOpenAIResponseBody(info, resp.Body)
 	if err != nil {
 		return nil, types.NewOpenAIError(err, types.ErrorCodeReadResponseBodyFailed, http.StatusInternalServerError)
 	}
@@ -352,7 +351,7 @@ func OpenaiRealtimeHandler(c *gin.Context, info *relaycommon.RelayInfo) (*types.
 	localUsage := &dto.RealtimeUsage{}
 	sumUsage := &dto.RealtimeUsage{}
 
-	gopool.Go(func() {
+	go func() {
 		defer func() {
 			if r := recover(); r != nil {
 				errChan <- fmt.Errorf("panic in client reader: %v", r)
@@ -405,9 +404,9 @@ func OpenaiRealtimeHandler(c *gin.Context, info *relaycommon.RelayInfo) (*types.
 				}
 			}
 		}
-	})
+	}()
 
-	gopool.Go(func() {
+	go func() {
 		defer func() {
 			if r := recover(); r != nil {
 				errChan <- fmt.Errorf("panic in target reader: %v", r)
@@ -504,7 +503,7 @@ func OpenaiRealtimeHandler(c *gin.Context, info *relaycommon.RelayInfo) (*types.
 				}
 			}
 		}
-	})
+	}()
 
 	select {
 	case <-clientClosed:
@@ -549,7 +548,7 @@ func preConsumeUsage(ctx *gin.Context, info *relaycommon.RelayInfo, usage *dto.R
 func OpenaiHandlerWithUsage(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Response) (*dto.Usage, *types.NewAPIError) {
 	defer service.CloseResponseBodyGracefully(resp)
 
-	responseBody, err := common.ReadResponseBody(resp.Body)
+	responseBody, err := common.ReadMediaResponseBody(resp.Body)
 	if err != nil {
 		return nil, types.NewOpenAIError(err, types.ErrorCodeReadResponseBodyFailed, http.StatusInternalServerError)
 	}
@@ -579,6 +578,13 @@ func OpenaiHandlerWithUsage(c *gin.Context, info *relaycommon.RelayInfo, resp *h
 	}
 	applyUsagePostProcessing(info, &usageResp.Usage, responseBody)
 	return &usageResp.Usage, nil
+}
+
+func readOpenAIResponseBody(info *relaycommon.RelayInfo, body io.Reader) ([]byte, error) {
+	if info != nil && info.RelayMode == relayconstant.RelayModeEmbeddings {
+		return common.ReadEmbeddingResponseBody(body)
+	}
+	return common.ReadResponseBody(body)
 }
 
 func applyUsagePostProcessing(info *relaycommon.RelayInfo, usage *dto.Usage, responseBody []byte) {

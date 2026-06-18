@@ -17,17 +17,36 @@ func (e *MaxResponseBodyExceededError) Error() string {
 	return fmt.Sprintf("upstream response body exceeds %d MB limit", e.LimitMB)
 }
 
-// ReadResponseBody reads an upstream HTTP response body into memory with a
-// size cap derived from constant.MaxResponseBodyMB.
+// ReadResponseBody reads a regular upstream text/JSON response body into
+// memory with a size cap.
 //
 // io.ReadAll has no upper bound, so a misbehaving or hostile upstream that
 // returns an arbitrarily large body can exhaust server memory under
-// concurrency. Every relay channel handler that loads non-streaming responses
-// should use this instead of io.ReadAll.
+// concurrency. Relay channel handlers should use one of the typed helpers
+// below instead of io.ReadAll so each business path has an explicit budget.
 func ReadResponseBody(r io.Reader) ([]byte, error) {
-	maxMB := constant.MaxResponseBodyMB
+	return readResponseBodyWithLimit(r, constant.MaxTextResponseBodyMB, 16)
+}
+
+func ReadEmbeddingResponseBody(r io.Reader) ([]byte, error) {
+	return readResponseBodyWithLimit(r, constant.MaxEmbeddingResponseBodyMB, 64)
+}
+
+func ReadMediaResponseBody(r io.Reader) ([]byte, error) {
+	return readResponseBodyWithLimit(r, constant.MaxMediaResponseBodyMB, 64)
+}
+
+func ReadErrorResponseBody(r io.Reader) ([]byte, error) {
+	return readResponseBodyWithLimit(r, constant.MaxErrorResponseBodyMB, 4)
+}
+
+func ReadModelListResponseBody(r io.Reader) ([]byte, error) {
+	return readResponseBodyWithLimit(r, constant.MaxModelListResponseBodyMB, 8)
+}
+
+func readResponseBodyWithLimit(r io.Reader, maxMB int, fallbackMB int) ([]byte, error) {
 	if maxMB <= 0 {
-		maxMB = 128
+		maxMB = fallbackMB
 	}
 	maxBytes := int64(maxMB) << 20
 

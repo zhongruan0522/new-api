@@ -12,8 +12,6 @@ import (
 	"github.com/zhongruan0522/new-api/types"
 
 	"github.com/gin-gonic/gin"
-
-	"github.com/bytedance/gopkg/util/gopool"
 	"gorm.io/gorm"
 )
 
@@ -224,7 +222,7 @@ func RecordErrorLog(c *gin.Context, userId int, channelId int, modelName string,
 		logger.LogError(c, "failed to record log: "+err.Error())
 	}
 	if common.DataExportEnabled {
-		gopool.Go(func() {
+		common.RelayGo(func() {
 			LogQuotaErrorData(userId, username, modelName, common.GetTimestamp())
 		})
 	}
@@ -289,7 +287,7 @@ func RecordConsumeLog(c *gin.Context, userId int, params RecordConsumeLogParams)
 		Other:             otherStr,
 	}
 	// 消费日志不影响主流程，异步写入以避免高并发下在请求尾部阻塞数据库。
-	gopool.Go(func() {
+	common.RelayGo(func() {
 		err := LOG_DB.Create(log).Error
 		if err != nil {
 			common.SysError(fmt.Sprintf("failed to record consume log (request_id=%s): %s", requestId, err.Error()))

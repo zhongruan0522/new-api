@@ -42,3 +42,7 @@ func init() {
 func RelayCtxGo(ctx context.Context, f func()) {
 	relayGoPool.CtxGo(ctx, f)
 }
+
+func RelayGo(f func()) {
+	RelayCtxGo(context.Background(), f)
+}

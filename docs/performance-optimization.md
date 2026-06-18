@@ -128,7 +128,7 @@ buffer 在 scanner goroutine 退出后才放回 pool，避免 data race。
 
 ---
 
-## Commit 5: `07b56f0e` — 上游响应体读取限制 128MB
+## Commit 5: `07b56f0e` — 上游响应体读取限制
 
 **问题**
 
@@ -138,7 +138,7 @@ buffer 在 scanner goroutine 退出后才放回 pool，避免 data race。
 
 **修复**
 
-新增 `common.ReadResponseBody()`，基于 `io.LimitReader` 限制为 `constant.MaxResponseBodyMB`（默认 128MB，可通过 `MAX_RESPONSE_BODY_MB` 环境变量配置）。替换所有 relay 路径上的 `io.ReadAll(resp.Body)` 调用。
+新增 `common.ReadResponseBody()` 及按用途划分的 typed helpers，基于 `io.LimitReader` 限制上游非流式响应体大小。默认上限按业务类型区分：文本/JSON 16MB、错误体 4MB、模型列表 8MB、embedding 64MB、媒体类 64MB；均可通过环境变量配置。替换 relay 路径上的无界 `io.ReadAll(resp.Body)` 调用。
 
 ```go
 func ReadResponseBody(r io.Reader) ([]byte, error) {
@@ -234,7 +234,12 @@ scanner buffer 原先在外层 handler 的 defer 中放回 pool。当 handler �
 | 变量名 | 默认值 | 说明 |
 |--------|--------|------|
 | `RELAY_POOL_CAP` | 256 | relay 异步任务 goroutine 池上限 |
-| `MAX_RESPONSE_BODY_MB` | 128 | 上游非流式响应体最大读取大小（MB） |
+| `MAX_RESPONSE_BODY_MB` | 16 | 兼容旧配置；作为文本响应体默认上限（MB） |
+| `MAX_TEXT_RESPONSE_BODY_MB` | `MAX_RESPONSE_BODY_MB` | 文本/JSON 非流式响应体最大读取大小（MB） |
+| `MAX_EMBEDDING_RESPONSE_BODY_MB` | 64 | embedding 响应体最大读取大小（MB） |
+| `MAX_MEDIA_RESPONSE_BODY_MB` | 64 | 音频、图片等媒体响应体最大读取大小（MB） |
+| `MAX_ERROR_RESPONSE_BODY_MB` | 4 | 上游错误响应体最大读取大小（MB） |
+| `MAX_MODEL_LIST_RESPONSE_BODY_MB` | 8 | 上游模型列表响应体最大读取大小（MB） |
 | `REDIS_POOL_SIZE` | 50 | Redis 连接池大小 |
 | `REDIS_MIN_IDLE_CONNS` | 5 | Redis 最小空闲连接数 |
 | `REDIS_DIAL_TIMEOUT` | 5 | Redis 拨号超时（秒） |

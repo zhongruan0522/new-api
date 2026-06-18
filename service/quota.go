@@ -17,8 +17,6 @@ import (
 	"github.com/zhongruan0522/new-api/setting/system_setting"
 	"github.com/zhongruan0522/new-api/types"
 
-	"github.com/bytedance/gopkg/util/gopool"
-
 	"github.com/gin-gonic/gin"
 	"github.com/shopspring/decimal"
 )
@@ -648,7 +646,7 @@ func PostConsumeQuota(relayInfo *relaycommon.RelayInfo, quota int, preConsumedQu
 }
 
 func checkAndSendQuotaNotify(relayInfo *relaycommon.RelayInfo, quota int, preConsumedQuota int) {
-	gopool.Go(func() {
+	common.RelayGo(func() {
 		userSetting := relayInfo.UserSetting
 		threshold := common.QuotaRemindThreshold
 		if userSetting.QuotaWarningThreshold != 0 {

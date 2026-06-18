@@ -56,7 +56,7 @@ func OpenaiTTSHandler(c *gin.Context, resp *http.Response, info *relaycommon.Rel
 	} else {
 		common.SetContextKey(c, constant.ContextKeyLocalCountTokens, true)
 		// 读取响应体到缓冲区
-		bodyBytes, err := common.ReadResponseBody(resp.Body)
+		bodyBytes, err := common.ReadMediaResponseBody(resp.Body)
 		if err != nil {
 			logger.LogError(c, fmt.Sprintf("failed to read TTS response body: %v", err))
 			c.Writer.WriteHeaderNow()

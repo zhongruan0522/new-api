@@ -15,6 +15,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/samber/lo"
+	"github.com/tidwall/gjson"
 	"github.com/zhongruan0522/new-api/common"
 	"github.com/zhongruan0522/new-api/constant"
 	"github.com/zhongruan0522/new-api/dto"
@@ -28,10 +30,6 @@ import (
 	"github.com/zhongruan0522/new-api/setting/operation_setting"
 	"github.com/zhongruan0522/new-api/setting/ratio_setting"
 	"github.com/zhongruan0522/new-api/types"
-
-	"github.com/bytedance/gopkg/util/gopool"
-	"github.com/samber/lo"
-	"github.com/tidwall/gjson"
 
 	"github.com/gin-gonic/gin"
 )
@@ -786,7 +784,7 @@ func testAllChannels(notify bool) error {
 	if disableThreshold == 0 {
 		disableThreshold = 10000000 // a impossible value
 	}
-	gopool.Go(func() {
+	common.RelayGo(func() {
 		// 使用 defer 确保无论如何都会重置运行状态，防止死锁
 		defer func() {
 			testAllChannelsLock.Lock()

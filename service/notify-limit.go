@@ -2,13 +2,11 @@ package service
 
 import (
 	"fmt"
+	"github.com/zhongruan0522/new-api/common"
+	"github.com/zhongruan0522/new-api/constant"
 	"strconv"
 	"sync"
 	"time"
-
-	"github.com/bytedance/gopkg/util/gopool"
-	"github.com/zhongruan0522/new-api/common"
-	"github.com/zhongruan0522/new-api/constant"
 )
 
 // notifyLimitStore is used for in-memory rate limiting when Redis is disabled
@@ -29,7 +27,7 @@ func getDuration() time.Duration {
 
 // startCleanupTask starts a background task to clean up expired entries
 func startCleanupTask() {
-	gopool.Go(func() {
+	common.RelayGo(func() {
 		for {
 			time.Sleep(time.Hour)
 			now := time.Now()

@@ -10,11 +10,15 @@ var CountToken bool
 var GetMediaToken bool
 var GetMediaTokenNotStream bool
 var MaxRequestBodyMB int
-// MaxResponseBodyMB caps the size of upstream non-streaming response bodies
-// (chat completions, embeddings, rerank, etc.) read into memory. Without a
-// cap a misbehaving or hostile upstream can return an arbitrarily large body
-// and exhaust server memory under concurrency.
+
+// MaxResponseBodyMB is the legacy generic cap for upstream non-streaming
+// response bodies. New code should prefer the typed caps below.
 var MaxResponseBodyMB int
+var MaxTextResponseBodyMB int
+var MaxEmbeddingResponseBodyMB int
+var MaxMediaResponseBodyMB int
+var MaxErrorResponseBodyMB int
+var MaxModelListResponseBodyMB int
 var AzureDefaultAPIVersion string
 var NotifyLimitCount int
 var NotificationLimitDurationMinute int

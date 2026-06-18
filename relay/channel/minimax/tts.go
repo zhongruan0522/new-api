@@ -106,7 +106,7 @@ func getContentTypeByFormat(format string) string {
 
 func handleTTSResponse(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (usage any, err *types.NewAPIError) {
 	defer resp.Body.Close()
-	body, readErr := common.ReadResponseBody(resp.Body)
+	body, readErr := common.ReadMediaResponseBody(resp.Body)
 	if readErr != nil {
 		return nil, types.NewErrorWithStatusCode(
 			fmt.Errorf("failed to read minimax response: %w", readErr),

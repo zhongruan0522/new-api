@@ -5,14 +5,12 @@ import (
 	"net/http"
 	"sync"
 
+	"github.com/gin-gonic/gin"
 	"github.com/zhongruan0522/new-api/common"
 	"github.com/zhongruan0522/new-api/logger"
 	"github.com/zhongruan0522/new-api/model"
 	relaycommon "github.com/zhongruan0522/new-api/relay/common"
 	"github.com/zhongruan0522/new-api/types"
-
-	"github.com/bytedance/gopkg/util/gopool"
-	"github.com/gin-gonic/gin"
 )
 
 type BillingSession struct {
@@ -84,7 +82,7 @@ func (s *BillingSession) Refund(c *gin.Context) {
 	tokenConsumed := s.tokenConsumed
 	funding := s.funding
 
-	gopool.Go(func() {
+	common.RelayGo(func() {
 		if err := funding.Refund(); err != nil {
 			common.SysLog("error refunding billing source: " + err.Error())
 		}
