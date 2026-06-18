@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"math"
 	"os"
+	"runtime/debug"
 	"strconv"
-
-	"github.com/bytedance/gopkg/util/gopool"
+	"sync"
 )
 
-var relayGoPool gopool.Pool
+var relayGoPool *boundedRelayPool
 
 // defaultRelayPoolCap limits the number of background goroutines spawned by the
 // relay pool for async work (billing, logging, audit, etc.).
@@ -22,6 +22,17 @@ var relayGoPool gopool.Pool
 // requests). A bounded cap keeps memory predictable while still allowing enough
 // parallelism for async bookkeeping.
 const defaultRelayPoolCap = 256
+const defaultRelayPoolQueueSize = 4096
+
+type relayTask struct {
+	ctx context.Context
+	f   func()
+}
+
+type boundedRelayPool struct {
+	tasks chan relayTask
+	once  sync.Once
+}
 
 func init() {
 	cap := int32(defaultRelayPoolCap)
@@ -30,13 +41,57 @@ func init() {
 			cap = int32(n)
 		}
 	}
-	relayGoPool = gopool.NewPool("gopool.RelayPool", cap, gopool.NewConfig())
-	relayGoPool.SetPanicHandler(func(ctx context.Context, i interface{}) {
-		if stopChan, ok := ctx.Value("stop_chan").(chan bool); ok {
-			SafeSendBool(stopChan, true)
+	queueSize := defaultRelayPoolQueueSize
+	if v := os.Getenv("RELAY_POOL_QUEUE_SIZE"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 {
+			queueSize = n
 		}
-		SysError(fmt.Sprintf("panic in gopool.RelayPool: %v", i))
+	}
+	relayGoPool = newBoundedRelayPool(int(cap), queueSize)
+}
+
+func newBoundedRelayPool(workerCount int, queueSize int) *boundedRelayPool {
+	if workerCount <= 0 {
+		workerCount = defaultRelayPoolCap
+	}
+	if queueSize <= 0 {
+		queueSize = defaultRelayPoolQueueSize
+	}
+
+	p := &boundedRelayPool{
+		tasks: make(chan relayTask, queueSize),
+	}
+	p.once.Do(func() {
+		for i := 0; i < workerCount; i++ {
+			go p.worker()
+		}
 	})
+	return p
+}
+
+func (p *boundedRelayPool) worker() {
+	for task := range p.tasks {
+		runRelayTask(task)
+	}
+}
+
+func runRelayTask(task relayTask) {
+	defer func() {
+		if r := recover(); r != nil {
+			if stopChan, ok := task.ctx.Value("stop_chan").(chan bool); ok {
+				SafeSendBool(stopChan, true)
+			}
+			SysError(fmt.Sprintf("panic in gopool.RelayPool: %v\n%s", r, debug.Stack()))
+		}
+	}()
+	task.f()
+}
+
+func (p *boundedRelayPool) CtxGo(ctx context.Context, f func()) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	p.tasks <- relayTask{ctx: ctx, f: f}
 }
 
 func RelayCtxGo(ctx context.Context, f func()) {
