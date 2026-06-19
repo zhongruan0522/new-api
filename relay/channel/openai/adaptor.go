@@ -115,15 +115,6 @@ func (a *Adaptor) ConvertClaudeRequest(c *gin.Context, info *relaycommon.RelayIn
 
 func (a *Adaptor) Init(info *relaycommon.RelayInfo) {
 	a.ChannelType = info.ChannelType
-
-	// initialize ThinkingContentInfo when thinking_to_content is enabled
-	if info.ChannelSetting.ThinkingToContent {
-		info.ThinkingContentInfo = relaycommon.ThinkingContentInfo{
-			IsFirstThinkingContent:  true,
-			SendLastThinkingContent: false,
-			HasSentThinkingContent:  false,
-		}
-	}
 }
 
 func (a *Adaptor) GetRequestURL(info *relaycommon.RelayInfo) (string, error) {

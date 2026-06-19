@@ -239,7 +239,6 @@ function hasAdvancedSettingsValues(values: ChannelFormValues): boolean {
     values.weight ||
     values.proxy?.trim() ||
     values.force_format ||
-    values.thinking_to_content ||
     values.pass_through_body_enabled ||
     values.pass_through_headers_enabled === false ||
     values.openai_wire_api !== 'both' ||
@@ -2602,29 +2601,6 @@ export function ChannelMutateDrawer({
                           )}
                         />
                       )}
-
-                      <FormField
-                        control={form.control}
-                        name='thinking_to_content'
-                        render={({ field }) => (
-                          <FormItem className='flex items-center justify-between px-4 py-3'>
-                            <div className='space-y-0.5'>
-                              <FormLabel>{t('Thinking to Content')}</FormLabel>
-                              <FormDescription>
-                                {t(
-                                  'Convert reasoning_content to <think> tag in content'
-                                )}
-                              </FormDescription>
-                            </div>
-                            <FormControl>
-                              <Switch
-                                checked={field.value}
-                                onCheckedChange={field.onChange}
-                              />
-                            </FormControl>
-                          </FormItem>
-                        )}
-                      />
 
                       <FormField
                         control={form.control}

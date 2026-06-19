@@ -3,8 +3,7 @@ package dto
 import "strings"
 
 type ChannelSettings struct {
-	ForceFormat       bool `json:"force_format,omitempty"`
-	ThinkingToContent bool `json:"thinking_to_content,omitempty"`
+	ForceFormat bool `json:"force_format,omitempty"`
 	// OpenAIWireAPI controls which OpenAI wire API this channel should treat as its default upstream spec.
 	// Supported values:
 	//   - "both"      : channel is compatible with both /v1/chat/completions and /v1/responses (no auto conversion)

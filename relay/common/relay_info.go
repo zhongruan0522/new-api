@@ -17,12 +17,6 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-type ThinkingContentInfo struct {
-	IsFirstThinkingContent  bool
-	SendLastThinkingContent bool
-	HasSentThinkingContent  bool
-}
-
 const (
 	LastMessageTypeNone     = "none"
 	LastMessageTypeText     = "text"
@@ -152,7 +146,6 @@ type RelayInfo struct {
 	// 最终请求到上游的格式 TODO: 当前仅设置了Claude
 	FinalRequestRelayFormat types.RelayFormat
 
-	ThinkingContentInfo
 	TokenCountMeta
 	*ClaudeConvertInfo
 	*GeminiConvertInfo
@@ -452,10 +445,6 @@ func genBaseRelayInfo(c *gin.Context, request dto.Request) *RelayInfo {
 
 		StartTime:         startTime,
 		FirstResponseTime: startTime.Add(-time.Second),
-		ThinkingContentInfo: ThinkingContentInfo{
-			IsFirstThinkingContent:  true,
-			SendLastThinkingContent: false,
-		},
 		GeminiConvertInfo: &GeminiConvertInfo{
 			ToolCallArguments: make(map[int]map[int]string),
 			ToolCallNames:     make(map[int]map[int]string),

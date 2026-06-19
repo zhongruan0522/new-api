@@ -43,7 +43,7 @@ func (a *Adaptor) ConvertImageRequest(c *gin.Context, info *relaycommon.RelayInf
 }
 
 func (a *Adaptor) Init(info *relaycommon.RelayInfo) {
-	// 复用 OpenAI adaptor 的通用初始化，保持 thinking_to_content 等特性一致。
+	// 复用 OpenAI adaptor 的通用初始化。
 	delegate := &openai.Adaptor{}
 	delegate.Init(info)
 }
