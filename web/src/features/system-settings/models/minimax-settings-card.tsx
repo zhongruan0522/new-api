@@ -31,7 +31,7 @@ import {
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
-import { Textarea } from '@/components/ui/textarea'
+import { ModelMappingEditor } from '@/features/channels/components/model-mapping-editor'
 import {
   SettingsForm,
   SettingsSwitchContent,
@@ -189,7 +189,23 @@ export function MiniMaxSettingsCard(props: Props) {
               <FormItem>
                 <FormLabel>{t('Model Redirect')}</FormLabel>
                 <FormControl>
-                  <Textarea rows={6} {...field} />
+                  <ModelMappingEditor
+                    value={field.value}
+                    onChange={field.onChange}
+                    fromLabel='Client Model'
+                    toLabel='MiniMax Model'
+                    fromPlaceholder='tts-1'
+                    toPlaceholder='speech-01-turbo'
+                    jsonPlaceholder={t(
+                      '{"client-model": "minimax-model"}'
+                    )}
+                    template={JSON.stringify(
+                      { 'tts-1': 'speech-01-turbo', 'tts-1-hd': 'speech-01-240228' },
+                      null,
+                      2
+                    )}
+                    emptyText='No redirects configured. Click "Add Mapping" to get started.'
+                  />
                 </FormControl>
                 <FormDescription>
                   {t(
@@ -209,7 +225,21 @@ export function MiniMaxSettingsCard(props: Props) {
               <FormItem>
                 <FormLabel>{t('Voice Redirect')}</FormLabel>
                 <FormControl>
-                  <Textarea rows={6} {...field} />
+                  <ModelMappingEditor
+                    value={field.value}
+                    onChange={field.onChange}
+                    fromLabel='OpenAI Voice'
+                    toLabel='MiniMax Voice ID'
+                    fromPlaceholder='alloy'
+                    toPlaceholder='male-qn-qingse'
+                    jsonPlaceholder={t('{"openai-voice": "minimax-voice_id"}')}
+                    template={JSON.stringify(
+                      { alloy: 'male-qn-qingse', nova: 'female-shaonv' },
+                      null,
+                      2
+                    )}
+                    emptyText='No redirects configured. Click "Add Mapping" to get started.'
+                  />
                 </FormControl>
                 <FormDescription>
                   {t(
@@ -248,7 +278,21 @@ export function MiniMaxSettingsCard(props: Props) {
               <FormItem>
                 <FormLabel>{t('Emotion Redirect')}</FormLabel>
                 <FormControl>
-                  <Textarea rows={6} {...field} />
+                  <ModelMappingEditor
+                    value={field.value}
+                    onChange={field.onChange}
+                    fromLabel='Emotion Tag'
+                    toLabel='MiniMax Emotion'
+                    fromPlaceholder='happy'
+                    toPlaceholder='happy'
+                    jsonPlaceholder={t('{"tag-value": "minimax-emotion"}')}
+                    template={JSON.stringify(
+                      { happy: 'happy', sad: 'sad' },
+                      null,
+                      2
+                    )}
+                    emptyText='No redirects configured. Click "Add Mapping" to get started.'
+                  />
                 </FormControl>
                 <FormDescription>
                   {t(
@@ -287,7 +331,21 @@ export function MiniMaxSettingsCard(props: Props) {
               <FormItem>
                 <FormLabel>{t('Tone Word Redirect')}</FormLabel>
                 <FormControl>
-                  <Textarea rows={6} {...field} />
+                  <ModelMappingEditor
+                    value={field.value}
+                    onChange={field.onChange}
+                    fromLabel='Tone Word Tag'
+                    toLabel='Replacement'
+                    fromPlaceholder='laughs'
+                    toPlaceholder='笑'
+                    jsonPlaceholder={t('{"tag-value": "replacement"}')}
+                    template={JSON.stringify(
+                      { laughs: '笑', crying: '哭' },
+                      null,
+                      2
+                    )}
+                    emptyText='No redirects configured. Click "Add Mapping" to get started.'
+                  />
                 </FormControl>
                 <FormDescription>
                   {t(
