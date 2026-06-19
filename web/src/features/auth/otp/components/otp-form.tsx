@@ -140,29 +140,29 @@ export function OtpForm({ className, ...props }: OtpFormProps) {
     ? otp.length >= BACKUP_CODE_LENGTH
     : otp.length >= OTP_LENGTH
 
-  // Track whether auto-submit has already fired for the current OTP input,
-  // so we don't repeatedly fire requests while the value stays full.
+  // Track whether auto-submit has already fired for the current input,
+  // so we don't repeatedly fire requests while the value stays complete.
   const autoSubmittedRef = useRef(false)
 
-  // Auto-submit when the 6-digit OTP is complete (authenticator mode only).
-  // Backup code mode keeps manual submission because the length-based trigger
-  // is ambiguous mid-input.
+  // Auto-submit when the input reaches its full valid length:
+  // - OTP mode: 6 digits entered
+  // - Backup code mode: full XXXX-XXXX format and passes validation
   useEffect(() => {
-    if (useBackupCode) {
-      autoSubmittedRef.current = false
-      return
-    }
-    if (otp.length >= OTP_LENGTH && !isLoading && !autoSubmittedRef.current) {
+    const ready = useBackupCode
+      ? otp.length >= BACKUP_CODE_LENGTH && isValidBackupCode(otp)
+      : otp.length >= OTP_LENGTH
+
+    if (ready && !isLoading && !autoSubmittedRef.current) {
       autoSubmittedRef.current = true
       form.handleSubmit(onSubmit)()
     }
-    // Reset the guard when the user clears/edits the code back below threshold,
+    // Reset the guard when the user edits back below the valid threshold,
     // allowing a fresh auto-submit on the next complete input.
-    if (otp.length < OTP_LENGTH) {
+    if (!ready) {
       autoSubmittedRef.current = false
     }
     // onSubmit intentionally excluded: it's a non-memoized closure and we only
-    // want this effect to fire on otp/length/loading changes, not every render.
+    // want this effect to fire on otp/mode/loading changes, not every render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [otp, useBackupCode, isLoading])
 
