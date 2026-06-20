@@ -342,6 +342,14 @@ func convertOneResponsesToolToChatTools(index int, tool openAIResponsesFunctionT
 		return []dto.ToolCallRequest{newResponsesToolSearchChatTool()}, nil
 	case openAIResponsesToolTypeNamespace:
 		return convertOneResponsesNamespaceToolToChatTools(index, tool, toolContext)
+	case openAIResponsesToolTypeWebSearch,
+		openAIResponsesToolTypeWebSearchPreview,
+		openAIResponsesToolTypeImageGeneration:
+		// 这些是 Responses 服务端内置工具（web 搜索、图片生成），由上游在
+		// Responses 端点直接执行。Chat Completions 上游无法识别它们，因此
+		// 在 Responses → Chat 请求转换时直接丢弃，不返回错误，避免阻断请求。
+		// Chat → Responses 方向无需对称处理，因为 Chat 客户端不会声明这些工具。
+		return nil, nil
 	default:
 		return nil, fmt.Errorf("tools[%d].type %q is not supported for chat.completions conversion", index, tool.Type)
 	}
