@@ -53,7 +53,7 @@ import {
 } from '../../lib'
 import { useChannels } from '../channels-provider'
 
-function normalizeModelNameList(models: readonly string[]): string[] {
+function normalizeModelNameList(models: readonly unknown[]): string[] {
   return Array.from(
     new Set(models.map((m) => normalizeModelName(m)).filter(Boolean))
   )
@@ -124,7 +124,7 @@ export function FetchModelsDialog({
       if (fetchedModelSet.has(model)) return false
       if (redirectSourceKeysSet.has(model)) return false
       if (!kw) return true
-      return model.toLowerCase().includes(kw)
+      return typeof model === 'string' && model.toLowerCase().includes(kw)
     })
   }, [fetchedModelSet, redirectSourceKeysSet, searchKeyword, selectedModels])
 
@@ -141,17 +141,19 @@ export function FetchModelsDialog({
     setIsFetching(true)
     try {
       if (customFetcher) {
-        const list = await customFetcher()
-        setFetchedModels(list)
+        const list = (await customFetcher()) as unknown[]
+        const normalized = normalizeModelNameList(list)
+        setFetchedModels(normalized)
         setSelectedModels(existingModels)
-        toast.success(t('Fetched {{count}} models', { count: list.length }))
+        toast.success(t('Fetched {{count}} models', { count: normalized.length }))
       } else {
         const response = await fetchUpstreamModels(activeChannel!.id)
         if (response.success) {
           const list = Array.isArray(response.data) ? response.data : []
-          setFetchedModels(list)
+          const normalized = normalizeModelNameList(list)
+          setFetchedModels(normalized)
           setSelectedModels(existingModels)
-          toast.success(t('Fetched {{count}} models', { count: list.length }))
+          toast.success(t('Fetched {{count}} models', { count: normalized.length }))
         } else {
           toast.error(response.message || t('Failed to fetch models'))
           setFetchedModels([])
@@ -212,6 +214,7 @@ export function FetchModelsDialog({
     const categories: Record<string, string[]> = {}
 
     models.forEach((model) => {
+      if (typeof model !== 'string') return
       let category = 'Other'
 
       // Determine category based on model name
@@ -249,8 +252,9 @@ export function FetchModelsDialog({
   // Filter models by search
   const filteredModels = useMemo(() => {
     if (!searchKeyword) return fetchedModels
+    const kw = searchKeyword.toLowerCase()
     return fetchedModels.filter((model) =>
-      model.toLowerCase().includes(searchKeyword.toLowerCase())
+      typeof model === 'string' ? model.toLowerCase().includes(kw) : false
     )
   }, [fetchedModels, searchKeyword])
 

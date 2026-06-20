@@ -681,7 +681,9 @@ export function ChannelMutateDrawer({
       base_url: form.getValues('base_url') || '',
     })
     if (response.success && response.data) {
-      return response.data
+      return response.data.map((m) =>
+        typeof m === 'string' ? m : String(m ?? '')
+      )
     }
     throw new Error(response.message || 'No models fetched from upstream')
   }, [form])

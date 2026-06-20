@@ -61,6 +61,37 @@ func parseStatusFilter(statusParam string) int {
 	}
 }
 
+// normalizeModelID coerces a model id from upstream /v1/models responses into
+// a trimmed string. Some providers return non-string ids (numbers, booleans,
+// objects) which break downstream UI code that assumes strings. Empty results
+// are returned for nil and objects without a useful string form.
+func normalizeModelID(raw any) string {
+	switch v := raw.(type) {
+	case string:
+		return strings.TrimSpace(v)
+	case float64:
+		return strings.TrimSpace(strconv.FormatFloat(v, 'f', -1, 64))
+	case int:
+		return strings.TrimSpace(strconv.Itoa(v))
+	case int64:
+		return strings.TrimSpace(strconv.FormatInt(v, 10))
+	case json.Number:
+		return strings.TrimSpace(v.String())
+	case bool:
+		if v {
+			return "true"
+		}
+		return "false"
+	case nil:
+		return ""
+	default:
+		if bytes, err := json.Marshal(raw); err == nil {
+			return strings.Trim(string(bytes), `"`)
+		}
+		return ""
+	}
+}
+
 func clearChannelInfo(channel *model.Channel) {
 	if channel.ChannelInfo.IsMultiKey {
 		channel.ChannelInfo.MultiKeyDisabledReason = nil
@@ -350,45 +381,18 @@ func FetchUpstreamModels(c *gin.Context) {
 			return
 		}
 
-		result := OpenAIModelsResponse{
-			Data: make([]OpenAIModel, 0, len(models)),
-		}
-
+		ids := make([]string, 0, len(models))
 		for _, modelInfo := range models {
-			metadata := map[string]any{}
-			if modelInfo.Size > 0 {
-				metadata["size"] = modelInfo.Size
+			if modelInfo.Name == "" {
+				continue
 			}
-			if modelInfo.Digest != "" {
-				metadata["digest"] = modelInfo.Digest
-			}
-			if modelInfo.ModifiedAt != "" {
-				metadata["modified_at"] = modelInfo.ModifiedAt
-			}
-			details := modelInfo.Details
-			if details.ParentModel != "" || details.Format != "" || details.Family != "" || len(details.Families) > 0 || details.ParameterSize != "" || details.QuantizationLevel != "" {
-				metadata["details"] = modelInfo.Details
-			}
-			if len(metadata) == 0 {
-				metadata = nil
-			}
-			ownedBy := modelInfo.OwnedBy
-			if ownedBy == "" {
-				ownedBy = "ollama"
-			}
-
-			result.Data = append(result.Data, OpenAIModel{
-				ID:       modelInfo.Name,
-				Object:   "model",
-				Created:  modelInfo.Created,
-				OwnedBy:  ownedBy,
-				Metadata: metadata,
-			})
+			ids = append(ids, modelInfo.Name)
 		}
 
 		c.JSON(http.StatusOK, gin.H{
 			"success": true,
-			"data":    result.Data,
+			"message": "",
+			"data":    ids,
 		})
 		return
 	}
@@ -468,7 +472,12 @@ func FetchUpstreamModels(c *gin.Context) {
 		return
 	}
 
-	var result OpenAIModelsResponse
+	var result struct {
+		Data []struct {
+			ID any `json:"id"`
+		} `json:"data"`
+	}
+
 	if err = json.Unmarshal(body, &result); err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,
@@ -479,9 +488,12 @@ func FetchUpstreamModels(c *gin.Context) {
 
 	var ids []string
 	for _, model := range result.Data {
-		id := model.ID
+		id := normalizeModelID(model.ID)
 		if channel.Type == constant.ChannelTypeGemini {
 			id = strings.TrimPrefix(id, "models/")
+		}
+		if id == "" {
+			continue
 		}
 		ids = append(ids, id)
 	}
@@ -1384,7 +1396,7 @@ func FetchModels(c *gin.Context) {
 
 	var result struct {
 		Data []struct {
-			ID string `json:"id"`
+			ID any `json:"id"`
 		} `json:"data"`
 	}
 
@@ -1398,7 +1410,11 @@ func FetchModels(c *gin.Context) {
 
 	var models []string
 	for _, model := range result.Data {
-		models = append(models, model.ID)
+		id := normalizeModelID(model.ID)
+		if id == "" {
+			continue
+		}
+		models = append(models, id)
 	}
 
 	c.JSON(http.StatusOK, gin.H{

@@ -155,7 +155,7 @@ export interface ChannelBalanceResponse {
 export interface FetchModelsResponse {
   success: boolean
   message?: string
-  data?: string[]
+  data?: unknown[]
 }
 
 export interface CopyChannelResponse {
