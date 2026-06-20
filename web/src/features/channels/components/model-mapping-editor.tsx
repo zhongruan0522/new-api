@@ -67,6 +67,12 @@ export function ModelMappingEditor({
   const [rows, setRows] = useState<MappingRow[]>([])
   const [jsonValue, setJsonValue] = useState(value)
   const nextRowIdRef = useRef(0)
+  // Tracks the last JSON string we pushed up via onChange. The external-sync
+  // effect uses this to ignore echoes of our own changes, which would otherwise
+  // discard in-progress rows that aren't yet representable in JSON (e.g. a row
+  // whose "from" is still empty gets dropped by convertRowsToJson -> "{}",
+  // then re-parsed back into zero rows).
+  const emittedValueRef = useRef<string | null>(null)
 
   const createRowId = useCallback(() => {
     nextRowIdRef.current += 1
@@ -114,9 +120,15 @@ export function ModelMappingEditor({
     [createRowId]
   )
 
-  // Parse JSON to rows when value changes externally
+  // Sync external value changes into local rows/json state. Skip the re-parse
+  // when the incoming value is just the echo of our own onChange, so in-progress
+  // rows (e.g. with an empty "from") are not wiped out.
   useEffect(() => {
     setJsonValue(value)
+    if (value === emittedValueRef.current) {
+      return
+    }
+    emittedValueRef.current = null
     parseJsonToRows(value)
   }, [parseJsonToRows, value])
 
@@ -133,6 +145,14 @@ export function ModelMappingEditor({
     return JSON.stringify(obj, null, 2)
   }
 
+  // Push a JSON change up to the parent and remember it so the sync effect
+  // treats the resulting prop update as our own and does not re-parse it.
+  const emitChange = (json: string) => {
+    emittedValueRef.current = json
+    setJsonValue(json)
+    onChange(json)
+  }
+
   const handleAddRow = () => {
     const newRow: MappingRow = {
       id: createRowId(),
@@ -146,9 +166,7 @@ export function ModelMappingEditor({
   const handleDeleteRow = (id: string) => {
     const updatedRows = rows.filter((row) => row.id !== id)
     setRows(updatedRows)
-    const json = convertRowsToJson(updatedRows)
-    setJsonValue(json)
-    onChange(json)
+    emitChange(convertRowsToJson(updatedRows))
   }
 
   const handleRowChange = (
@@ -160,14 +178,11 @@ export function ModelMappingEditor({
       row.id === id ? { ...row, [field]: newValue } : row
     )
     setRows(updatedRows)
-    const json = convertRowsToJson(updatedRows)
-    setJsonValue(json)
-    onChange(json)
+    emitChange(convertRowsToJson(updatedRows))
   }
 
   const handleJsonChange = (newJson: string) => {
-    setJsonValue(newJson)
-    onChange(newJson)
+    emitChange(newJson)
     parseJsonToRows(newJson)
   }
 
@@ -175,17 +190,14 @@ export function ModelMappingEditor({
     const templateJson =
       template ??
       JSON.stringify({ 'gpt-3.5-turbo': 'gpt-3.5-turbo-0125' }, null, 2)
-    setJsonValue(templateJson)
-    onChange(templateJson)
+    emitChange(templateJson)
     parseJsonToRows(templateJson)
   }
 
   const toggleMode = () => {
     if (mode === 'visual') {
       // Switching to JSON mode: sync rows to JSON
-      const json = convertRowsToJson(rows)
-      setJsonValue(json)
-      onChange(json)
+      emitChange(convertRowsToJson(rows))
       setMode('json')
     } else {
       // Switching to visual mode: sync JSON to rows
