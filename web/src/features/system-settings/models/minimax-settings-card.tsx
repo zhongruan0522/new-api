@@ -154,7 +154,10 @@ export function MiniMaxSettingsCard(props: Props) {
   return (
     <SettingsSection title={t('MiniMax TTS Enhancement')}>
       <Form {...form}>
-        <SettingsForm onSubmit={form.handleSubmit(onSubmit)}>
+        <SettingsForm
+          className='lg:grid-cols-1'
+          onSubmit={form.handleSubmit(onSubmit)}
+        >
           <SettingsPageFormActions
             onSave={form.handleSubmit(onSubmit)}
             isSaving={updateOption.isPending}
@@ -256,7 +259,7 @@ export function MiniMaxSettingsCard(props: Props) {
             control={form.control}
             name='minimax.emotion_pattern'
             render={({ field }) => (
-              <FormItem className='max-w-md'>
+              <FormItem>
                 <FormLabel>{t('Emotion Pattern')}</FormLabel>
                 <FormControl>
                   <Input {...field} />
@@ -309,7 +312,7 @@ export function MiniMaxSettingsCard(props: Props) {
             control={form.control}
             name='minimax.tone_word_pattern'
             render={({ field }) => (
-              <FormItem className='max-w-md'>
+              <FormItem>
                 <FormLabel>{t('Tone Word Pattern')}</FormLabel>
                 <FormControl>
                   <Input {...field} />
