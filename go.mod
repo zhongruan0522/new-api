@@ -5,12 +5,12 @@ go 1.26.2
 
 require (
 	github.com/Calcium-Ion/go-epay v0.0.4
-	github.com/abema/go-mp4 v1.6.0
+	github.com/abema/go-mp4 v1.7.1
 	github.com/andybalholm/brotli v1.2.1
 	github.com/anknown/ahocorasick v0.0.0-20190904063843-d75dbd5169c0
 	github.com/aws/aws-sdk-go-v2 v1.42.0
 	github.com/aws/aws-sdk-go-v2/credentials v1.19.24
-	github.com/aws/aws-sdk-go-v2/service/bedrockruntime v1.53.5
+	github.com/aws/aws-sdk-go-v2/service/bedrockruntime v1.54.0
 	github.com/aws/smithy-go v1.27.2
 	github.com/bytedance/gopkg v0.1.4
 	github.com/gin-contrib/cors v1.7.7
@@ -48,7 +48,7 @@ require (
 	github.com/tiktoken-go/tokenizer v0.8.0
 	github.com/yapingcat/gomedia v0.0.0-20240906162731-17feea57090c
 	golang.org/x/crypto v0.53.0
-	golang.org/x/image v0.42.0
+	golang.org/x/image v0.43.0
 	golang.org/x/net v0.56.0
 	golang.org/x/sync v0.21.0
 	golang.org/x/sys v0.46.0
