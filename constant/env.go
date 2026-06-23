@@ -10,6 +10,7 @@ var CountToken bool
 var GetMediaToken bool
 var GetMediaTokenNotStream bool
 var MaxRequestBodyMB int
+var AnonymousRequestBodyLimitKB int
 
 // MaxResponseBodyMB is the legacy generic cap for upstream non-streaming
 // response bodies. New code should prefer the typed caps below.
