@@ -60,6 +60,10 @@ export function getMultiKeyConfirmMessage(
   }
 }
 
+export function formatMultiKeyDisplayIndex(index: number): string {
+  return `#${index + 1}`
+}
+
 /**
  * Check if action is destructive
  */
