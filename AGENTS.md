@@ -92,7 +92,7 @@ setting、前端常量和 i18n。
 ## 前端规则
 
 - 前端包管理器使用 Bun。`web/` 目录有独立 `package.json` 和 `bun.lock`。
-- 改 `web/` 后按影响执行 `bun run typecheck`、`bun run lint`、`bun run build`。
+- 改 `web/` 后按影响执行 `bun run typecheck`、`bun run lint`、`bun run build`，适度使用knip。
 - 不允许用 mock 数据替代真实后端能力。
 
 ## 文档与参考项目
