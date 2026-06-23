@@ -16,10 +16,12 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
+import { useEffect, useRef } from 'react'
 import * as z from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useTranslation } from 'react-i18next'
+import { toast } from 'sonner'
 import {
   Form,
   FormControl,
@@ -37,46 +39,87 @@ import {
 } from '../components/settings-form-layout'
 import { SettingsPageFormActions } from '../components/settings-page-context'
 import { SettingsSection } from '../components/settings-section'
-import { useResetForm } from '../hooks/use-reset-form'
 import { useUpdateOption } from '../hooks/use-update-option'
 
 const XAI_VIOLATION_FEE_DOC_URL =
   'https://docs.x.ai/docs/models#usage-guidelines-violation-fee'
 
-const grokSchema = z.object({
-  'grok.violation_deduction_enabled': z.boolean(),
-  'grok.violation_deduction_amount': z.coerce.number().min(0),
+// Fields are grouped under a `grok` object so that the dotted option keys
+// (`grok.*`) map onto a real nested structure. React Hook Form treats dots in
+// field names as nested paths; a flat defaultValues map with literal dotted
+// keys desyncs from the registered paths and the submitted data never reflects
+// user edits.
+const schema = z.object({
+  grok: z.object({
+    violation_deduction_enabled: z.boolean(),
+    violation_deduction_amount: z.coerce.number().min(0),
+  }),
 })
 
-type GrokFormValues = z.infer<typeof grokSchema>
+type GrokFormValues = z.infer<typeof schema>
 
-interface Props {
+type FlatGrokSettings = {
+  'grok.violation_deduction_enabled': boolean
+  'grok.violation_deduction_amount': number
+}
+
+type GrokSettingsCardProps = {
   defaultValues: GrokFormValues
 }
 
-export function GrokSettingsCard(props: Props) {
+export function GrokSettingsCard({ defaultValues }: GrokSettingsCardProps) {
   const { t } = useTranslation()
   const updateOption = useUpdateOption()
 
-  const form = useForm<GrokFormValues>({
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    resolver: zodResolver(grokSchema) as any,
-    defaultValues: props.defaultValues,
+  const buildDefaults = (values: GrokFormValues): GrokFormValues => ({
+    grok: {
+      violation_deduction_enabled: values.grok.violation_deduction_enabled,
+      violation_deduction_amount: values.grok.violation_deduction_amount,
+    },
   })
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  useResetForm(form as any, props.defaultValues)
+  const normalizedDefaultsRef = useRef<FlatGrokSettings>({
+    'grok.violation_deduction_enabled':
+      defaultValues.grok.violation_deduction_enabled,
+    'grok.violation_deduction_amount':
+      defaultValues.grok.violation_deduction_amount,
+  })
 
-  const onSubmit = async (data: GrokFormValues) => {
-    const entries = Object.entries(data) as [string, unknown][]
-    const updates = entries.filter(
-      ([key, value]) =>
-        value !== (props.defaultValues[key as keyof GrokFormValues] as unknown)
-    )
-    for (const [key, value] of updates) {
+  const form = useForm<GrokFormValues>({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    resolver: zodResolver(schema) as any,
+    defaultValues: buildDefaults(defaultValues),
+  })
+
+  useEffect(() => {
+    normalizedDefaultsRef.current = {
+      'grok.violation_deduction_enabled':
+        defaultValues.grok.violation_deduction_enabled,
+      'grok.violation_deduction_amount':
+        defaultValues.grok.violation_deduction_amount,
+    }
+    form.reset(buildDefaults(defaultValues))
+  }, [defaultValues, form])
+
+  const onSubmit = async (values: GrokFormValues) => {
+    const normalized: FlatGrokSettings = {
+      'grok.violation_deduction_enabled': values.grok.violation_deduction_enabled,
+      'grok.violation_deduction_amount': values.grok.violation_deduction_amount,
+    }
+
+    const updates = (
+      Object.keys(normalized) as Array<keyof FlatGrokSettings>
+    ).filter((key) => normalized[key] !== normalizedDefaultsRef.current[key])
+
+    if (updates.length === 0) {
+      toast.info(t('No changes to save'))
+      return
+    }
+
+    for (const key of updates) {
       await updateOption.mutateAsync({
         key,
-        value: value as string | number | boolean,
+        value: normalized[key],
       })
     }
   }

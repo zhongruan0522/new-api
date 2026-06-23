@@ -82,10 +82,12 @@ const MODELS_SECTIONS = [
     build: (settings: ModelSettings) => (
       <GrokSettingsCard
         defaultValues={{
-          'grok.violation_deduction_enabled':
-            settings['grok.violation_deduction_enabled'] ?? true,
-          'grok.violation_deduction_amount':
-            settings['grok.violation_deduction_amount'] ?? 0.05,
+          grok: {
+            violation_deduction_enabled:
+              settings['grok.violation_deduction_enabled'] ?? true,
+            violation_deduction_amount:
+              settings['grok.violation_deduction_amount'] ?? 0.05,
+          },
         }}
       />
     ),
@@ -96,16 +98,15 @@ const MODELS_SECTIONS = [
     build: (settings: ModelSettings) => (
       <MiniMaxSettingsCard
         defaultValues={{
-          'minimax.enabled': settings['minimax.enabled'] ?? false,
-          'minimax.model_redirect': settings['minimax.model_redirect'] ?? '{}',
-          'minimax.voice_redirect': settings['minimax.voice_redirect'] ?? '{}',
-          'minimax.emotion_pattern': settings['minimax.emotion_pattern'] ?? '',
-          'minimax.emotion_redirect':
-            settings['minimax.emotion_redirect'] ?? '{}',
-          'minimax.tone_word_pattern':
-            settings['minimax.tone_word_pattern'] ?? '',
-          'minimax.tone_word_redirect':
-            settings['minimax.tone_word_redirect'] ?? '{}',
+          minimax: {
+            enabled: settings['minimax.enabled'] ?? false,
+            model_redirect: settings['minimax.model_redirect'] ?? '{}',
+            voice_redirect: settings['minimax.voice_redirect'] ?? '{}',
+            emotion_pattern: settings['minimax.emotion_pattern'] ?? '',
+            emotion_redirect: settings['minimax.emotion_redirect'] ?? '{}',
+            tone_word_pattern: settings['minimax.tone_word_pattern'] ?? '',
+            tone_word_redirect: settings['minimax.tone_word_redirect'] ?? '{}',
+          },
         }}
       />
     ),

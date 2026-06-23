@@ -16,10 +16,12 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
+import { useEffect, useRef } from 'react'
 import * as z from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useTranslation } from 'react-i18next'
+import { toast } from 'sonner'
 import {
   Form,
   FormControl,
@@ -39,7 +41,6 @@ import {
 } from '../components/settings-form-layout'
 import { SettingsPageFormActions } from '../components/settings-page-context'
 import { SettingsSection } from '../components/settings-section'
-import { useResetForm } from '../hooks/use-reset-form'
 import { useUpdateOption } from '../hooks/use-update-option'
 import {
   formatJsonForTextarea,
@@ -47,8 +48,8 @@ import {
   validateJsonString,
 } from './utils'
 
-// JSON map fields share the same validation: must parse as non-empty JSON object.
-// 后端拒绝空串（清空请用 "{}"），因此前端也必须 allowEmpty=false。
+// JSON map fields share the same validation: must parse as a non-empty JSON
+// object. 后端拒绝空串（清空请用 "{}"），因此前端也必须 allowEmpty=false。
 function jsonMapField(value: string, ctx: z.RefinementCtx) {
   const result = validateJsonString(value, { allowEmpty: false })
   if (!result.valid) {
@@ -59,94 +60,117 @@ function jsonMapField(value: string, ctx: z.RefinementCtx) {
   }
 }
 
-const minimaxSchema = z.object({
-  'minimax.enabled': z.boolean(),
-  'minimax.model_redirect': z.string().superRefine(jsonMapField),
-  'minimax.voice_redirect': z.string().superRefine(jsonMapField),
-  'minimax.emotion_pattern': z.string(),
-  'minimax.emotion_redirect': z.string().superRefine(jsonMapField),
-  'minimax.tone_word_pattern': z.string(),
-  'minimax.tone_word_redirect': z.string().superRefine(jsonMapField),
+// Fields are grouped under a `minimax` object. React Hook Form treats dots in
+// field names as nested paths; a flat defaultValues map with literal dotted
+// keys desyncs from the registered paths, so user edits never reach the
+// submitted data. See grok-settings-card / gemini-settings-card for the same
+// pattern.
+const schema = z.object({
+  minimax: z.object({
+    enabled: z.boolean(),
+    model_redirect: z.string().superRefine(jsonMapField),
+    voice_redirect: z.string().superRefine(jsonMapField),
+    emotion_pattern: z.string(),
+    emotion_redirect: z.string().superRefine(jsonMapField),
+    tone_word_pattern: z.string(),
+    tone_word_redirect: z.string().superRefine(jsonMapField),
+  }),
 })
 
-type MiniMaxFormValues = z.infer<typeof minimaxSchema>
+type MiniMaxFormValues = z.output<typeof schema>
+type MiniMaxFormInput = z.input<typeof schema>
 
-interface Props {
-  defaultValues: MiniMaxFormValues
+type FlatMiniMaxSettings = {
+  'minimax.enabled': boolean
+  'minimax.model_redirect': string
+  'minimax.voice_redirect': string
+  'minimax.emotion_pattern': string
+  'minimax.emotion_redirect': string
+  'minimax.tone_word_pattern': string
+  'minimax.tone_word_redirect': string
 }
 
-const MINIMAX_JSON_KEYS = [
-  'minimax.model_redirect',
-  'minimax.voice_redirect',
-  'minimax.emotion_redirect',
-  'minimax.tone_word_redirect',
-] as const
+interface Props {
+  defaultValues: MiniMaxFormInput
+}
 
-export function MiniMaxSettingsCard(props: Props) {
+export function MiniMaxSettingsCard({ defaultValues }: Props) {
   const { t } = useTranslation()
   const updateOption = useUpdateOption()
 
-  // Format JSON defaults for display once, so the textarea shows pretty JSON
-  // while the user edits raw text. Saving normalizes via normalizeJsonString.
-  const formattedDefaults: MiniMaxFormValues = {
-    ...props.defaultValues,
-    'minimax.model_redirect': formatJsonForTextarea(
-      props.defaultValues['minimax.model_redirect']
-    ),
-    'minimax.voice_redirect': formatJsonForTextarea(
-      props.defaultValues['minimax.voice_redirect']
-    ),
-    'minimax.emotion_redirect': formatJsonForTextarea(
-      props.defaultValues['minimax.emotion_redirect']
-    ),
-    'minimax.tone_word_redirect': formatJsonForTextarea(
-      props.defaultValues['minimax.tone_word_redirect']
-    ),
-  }
-
-  // normalizedDefaults 用于保存时的差异比较基线。
-  // 必须与 onSubmit 中对用户输入的 normalize 方式一致，否则会误判变化。
-  const normalizedDefaults: MiniMaxFormValues = {
-    ...props.defaultValues,
-    'minimax.model_redirect': normalizeJsonString(
-      props.defaultValues['minimax.model_redirect']
-    ),
-    'minimax.voice_redirect': normalizeJsonString(
-      props.defaultValues['minimax.voice_redirect']
-    ),
-    'minimax.emotion_redirect': normalizeJsonString(
-      props.defaultValues['minimax.emotion_redirect']
-    ),
-    'minimax.tone_word_redirect': normalizeJsonString(
-      props.defaultValues['minimax.tone_word_redirect']
-    ),
-  }
-
-  const form = useForm<MiniMaxFormValues>({
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    resolver: zodResolver(minimaxSchema) as any,
-    defaultValues: formattedDefaults,
+  const buildFormDefaults = (values: MiniMaxFormInput): MiniMaxFormInput => ({
+    minimax: {
+      enabled: values.minimax.enabled ?? false,
+      model_redirect: formatJsonForTextarea(values.minimax.model_redirect),
+      voice_redirect: formatJsonForTextarea(values.minimax.voice_redirect),
+      emotion_pattern: values.minimax.emotion_pattern ?? '',
+      emotion_redirect: formatJsonForTextarea(values.minimax.emotion_redirect),
+      tone_word_pattern: values.minimax.tone_word_pattern ?? '',
+      tone_word_redirect: formatJsonForTextarea(
+        values.minimax.tone_word_redirect
+      ),
+    },
   })
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  useResetForm(form as any, formattedDefaults)
+  // normalizedDefaultsRef holds the server-side baseline (JSON normalized to a
+  // stable compact form) so we only PUT fields that actually changed.
+  const buildNormalizedDefaults = (values: MiniMaxFormInput): FlatMiniMaxSettings => ({
+    'minimax.enabled': values.minimax.enabled ?? false,
+    'minimax.model_redirect': normalizeJsonString(values.minimax.model_redirect),
+    'minimax.voice_redirect': normalizeJsonString(values.minimax.voice_redirect),
+    'minimax.emotion_pattern': values.minimax.emotion_pattern ?? '',
+    'minimax.emotion_redirect': normalizeJsonString(
+      values.minimax.emotion_redirect
+    ),
+    'minimax.tone_word_pattern': values.minimax.tone_word_pattern ?? '',
+    'minimax.tone_word_redirect': normalizeJsonString(
+      values.minimax.tone_word_redirect
+    ),
+  })
 
-  const onSubmit = async (data: MiniMaxFormValues) => {
-    // Normalize JSON map fields before comparing/saving
-    const normalized = { ...data }
-    for (const key of MINIMAX_JSON_KEYS) {
-      normalized[key] = normalizeJsonString(data[key]) as never
+  const normalizedDefaultsRef = useRef<FlatMiniMaxSettings>(
+    buildNormalizedDefaults(defaultValues)
+  )
+
+  const form = useForm<MiniMaxFormInput, unknown, MiniMaxFormValues>({
+    resolver: zodResolver(schema),
+    defaultValues: buildFormDefaults(defaultValues),
+  })
+
+  useEffect(() => {
+    normalizedDefaultsRef.current = buildNormalizedDefaults(defaultValues)
+    form.reset(buildFormDefaults(defaultValues))
+  }, [defaultValues, form])
+
+  const onSubmit = async (values: MiniMaxFormValues) => {
+    const normalized: FlatMiniMaxSettings = {
+      'minimax.enabled': values.minimax.enabled,
+      'minimax.model_redirect': normalizeJsonString(values.minimax.model_redirect),
+      'minimax.voice_redirect': normalizeJsonString(values.minimax.voice_redirect),
+      'minimax.emotion_pattern': values.minimax.emotion_pattern,
+      'minimax.emotion_redirect': normalizeJsonString(
+        values.minimax.emotion_redirect
+      ),
+      'minimax.tone_word_pattern': values.minimax.tone_word_pattern,
+      'minimax.tone_word_redirect': normalizeJsonString(
+        values.minimax.tone_word_redirect
+      ),
     }
 
-    const entries = Object.entries(normalized) as [string, unknown][]
-    const updates = entries.filter(
-      ([key, value]) =>
-        value !== (normalizedDefaults[key as keyof MiniMaxFormValues] as unknown)
-    )
-    for (const [key, value] of updates) {
+    const updates = (
+      Object.keys(normalized) as Array<keyof FlatMiniMaxSettings>
+    ).filter((key) => normalized[key] !== normalizedDefaultsRef.current[key])
+
+    if (updates.length === 0) {
+      toast.info(t('No changes to save'))
+      return
+    }
+
+    for (const key of updates) {
+      const value = normalized[key]
       await updateOption.mutateAsync({
         key,
-        value: value as string | number | boolean,
+        value,
       })
     }
   }
