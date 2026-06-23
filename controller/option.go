@@ -3,6 +3,8 @@ package controller
 import (
 	"fmt"
 	"net/http"
+	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/zhongruan0522/new-api/common"
@@ -19,6 +21,7 @@ import (
 
 func GetOptions(c *gin.Context) {
 	var options []*model.Option
+	excludeLargeOptions := c.Query("exclude_large_options") == "true"
 	common.OptionMapRWMutex.Lock()
 	for k, v := range common.OptionMap {
 		if strings.HasSuffix(k, "Token") ||
@@ -28,9 +31,13 @@ func GetOptions(c *gin.Context) {
 			strings.HasSuffix(k, "api_key") {
 			continue
 		}
+		value := common.Interface2String(v)
+		if excludeLargeOptions && model_setting.IsMiniMaxStringMapOption(k) {
+			value = "{}"
+		}
 		options = append(options, &model.Option{
 			Key:   k,
-			Value: common.Interface2String(v),
+			Value: value,
 		})
 	}
 	common.OptionMapRWMutex.Unlock()
@@ -40,6 +47,213 @@ func GetOptions(c *gin.Context) {
 		"data":    options,
 	})
 	return
+}
+
+type optionJsonMapEntry struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
+}
+
+type optionJsonMapResponse struct {
+	Items    []optionJsonMapEntry `json:"items"`
+	Page     int                  `json:"page"`
+	PageSize int                  `json:"page_size"`
+	Total    int                  `json:"total"`
+}
+
+type OptionJsonMapDeleteRequest struct {
+	Key    string `json:"key"`
+	MapKey string `json:"map_key"`
+}
+
+func isSensitiveOptionKey(key string) bool {
+	return strings.HasSuffix(key, "Token") ||
+		strings.HasSuffix(key, "Secret") ||
+		strings.HasSuffix(key, "Key") ||
+		strings.HasSuffix(key, "secret") ||
+		strings.HasSuffix(key, "api_key") ||
+		strings.Contains(key, "Password") ||
+		strings.Contains(key, "password")
+}
+
+func readOptionValue(key string) (string, bool) {
+	common.OptionMapRWMutex.RLock()
+	value, ok := common.OptionMap[key]
+	common.OptionMapRWMutex.RUnlock()
+	return value, ok
+}
+
+func GetOptionValue(c *gin.Context) {
+	key := c.Query("key")
+	if key == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"message": "缺少配置项 key",
+		})
+		return
+	}
+	if isSensitiveOptionKey(key) {
+		c.JSON(http.StatusForbidden, gin.H{
+			"success": false,
+			"message": "该配置项不允许读取",
+		})
+		return
+	}
+	value, ok := readOptionValue(key)
+	if !ok {
+		c.JSON(http.StatusNotFound, gin.H{
+			"success": false,
+			"message": "配置项不存在",
+		})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "",
+		"data": gin.H{
+			"key":   key,
+			"value": value,
+		},
+	})
+}
+
+func readMiniMaxStringMapOption(c *gin.Context, key string) (map[string]string, string, bool) {
+	if !model_setting.IsMiniMaxStringMapOption(key) {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"message": "不支持的 JSON 映射配置项",
+		})
+		return nil, "", false
+	}
+	value, ok := readOptionValue(key)
+	if !ok || strings.TrimSpace(value) == "" {
+		value = "{}"
+	}
+	items := map[string]string{}
+	if err := common.UnmarshalJsonStr(value, &items); err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": "JSON 映射配置解析失败: " + err.Error(),
+		})
+		return nil, "", false
+	}
+	return items, value, true
+}
+
+func GetOptionJsonMap(c *gin.Context) {
+	key := c.Query("key")
+	items, _, ok := readMiniMaxStringMapOption(c, key)
+	if !ok {
+		return
+	}
+
+	page, err := strconv.Atoi(c.DefaultQuery("page", "1"))
+	if err != nil || page < 1 {
+		page = 1
+	}
+	pageSize, err := strconv.Atoi(c.DefaultQuery("page_size", "10"))
+	if err != nil || pageSize < 1 {
+		pageSize = 10
+	}
+	if pageSize > 100 {
+		pageSize = 100
+	}
+
+	keys := make([]string, 0, len(items))
+	for itemKey := range items {
+		keys = append(keys, itemKey)
+	}
+	sort.Strings(keys)
+
+	total := len(keys)
+	start := (page - 1) * pageSize
+	if start > total {
+		start = total
+	}
+	end := start + pageSize
+	if end > total {
+		end = total
+	}
+
+	entries := make([]optionJsonMapEntry, 0, end-start)
+	for _, itemKey := range keys[start:end] {
+		entries = append(entries, optionJsonMapEntry{
+			Key:   itemKey,
+			Value: items[itemKey],
+		})
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "",
+		"data": optionJsonMapResponse{
+			Items:    entries,
+			Page:     page,
+			PageSize: pageSize,
+			Total:    total,
+		},
+	})
+}
+
+func DeleteOptionJsonMapEntry(c *gin.Context) {
+	var req OptionJsonMapDeleteRequest
+	if err := common.DecodeJson(c.Request.Body, &req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"message": "无效的参数",
+		})
+		return
+	}
+	if strings.TrimSpace(req.MapKey) == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"message": "映射键不能为空",
+		})
+		return
+	}
+	items, beforeValue, ok := readMiniMaxStringMapOption(c, req.Key)
+	if !ok {
+		return
+	}
+	if _, exists := items[req.MapKey]; !exists {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": "映射项不存在",
+		})
+		return
+	}
+
+	delete(items, req.MapKey)
+	bytes, err := common.Marshal(items)
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	nextValue := string(bytes)
+	if err := model_setting.ValidateMiniMaxOptionValue(req.Key, nextValue); err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": "MiniMax 设置失败: " + err.Error(),
+		})
+		return
+	}
+	if err := model.UpdateOption(req.Key, nextValue); err != nil {
+		common.ApiError(c, err)
+		return
+	}
+
+	service.RecordAudit(
+		c,
+		model.AuditModuleOption,
+		model.AuditActionUpdate,
+		"删除 JSON 映射配置项 "+req.Key+"."+req.MapKey,
+		map[string]interface{}{"option": req.Key, "value": beforeValue},
+		map[string]interface{}{"option": req.Key, "value": nextValue},
+	)
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "",
+	})
 }
 
 type OptionUpdateRequest struct {

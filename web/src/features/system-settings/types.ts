@@ -29,6 +29,33 @@ export type SystemOptionsResponse = {
   data: SystemOption[]
 }
 
+export type SystemOptionValueResponse = {
+  success: boolean
+  message: string
+  data: SystemOption
+}
+
+export type OptionJsonMapEntry = {
+  key: string
+  value: string
+}
+
+export type OptionJsonMapResponse = {
+  success: boolean
+  message: string
+  data: {
+    items: OptionJsonMapEntry[]
+    page: number
+    page_size: number
+    total: number
+  }
+}
+
+export type DeleteOptionJsonMapEntryRequest = {
+  key: string
+  map_key: string
+}
+
 export type UpdateOptionRequest = {
   key: string
   value: string | boolean | number

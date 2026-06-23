@@ -2591,6 +2591,7 @@
     "Routing & Overrides": "Routing & Overrides",
     "Routing Strategy": "Routing Strategy",
     "Rows per page": "Rows per page",
+    "Showing {{start}}-{{end}} of {{count}} mappings": "Showing {{start}}-{{end}} of {{count}} mappings",
     "RPM": "RPM",
     "Rule": "Rule",
     "Rule {{line}} is missing source field": "Rule {{line}} is missing source field",

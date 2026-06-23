@@ -16,13 +16,20 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { useCallback, useState, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Code, Table, Plus, Trash2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import {
+  deleteOptionJsonMapEntry,
+  getOptionJsonMap,
+  getSystemOptionValue,
+} from '@/features/system-settings/api'
 
 type ModelMappingEditorProps = {
   value: string
@@ -42,6 +49,8 @@ type ModelMappingEditorProps = {
   template?: string
   /** 空状态提示文案，默认复用模型映射默认值 */
   emptyText?: string
+  /** 系统设置 option key。传入后可视模式改为服务端分页，只支持删除。 */
+  optionKey?: string
 }
 
 type MappingRow = {
@@ -49,6 +58,8 @@ type MappingRow = {
   from: string
   to: string
 }
+
+const PAGE_SIZE_OPTIONS = [10, 20, 50]
 
 export function ModelMappingEditor({
   value,
@@ -61,11 +72,15 @@ export function ModelMappingEditor({
   jsonPlaceholder,
   template,
   emptyText,
+  optionKey,
 }: ModelMappingEditorProps) {
   const { t } = useTranslation()
+  const queryClient = useQueryClient()
   const [mode, setMode] = useState<'visual' | 'json'>('visual')
   const [rows, setRows] = useState<MappingRow[]>([])
   const [jsonValue, setJsonValue] = useState(value)
+  const [pageIndex, setPageIndex] = useState(0)
+  const [pageSize, setPageSize] = useState(PAGE_SIZE_OPTIONS[0])
   const nextRowIdRef = useRef(0)
   // Tracks the last JSON string we pushed up via onChange. The external-sync
   // effect uses this to ignore echoes of our own changes, which would otherwise
@@ -78,6 +93,64 @@ export function ModelMappingEditor({
     nextRowIdRef.current += 1
     return `mapping-${nextRowIdRef.current}`
   }, [])
+
+  const isServerPaginated = Boolean(optionKey)
+
+  const jsonMapQuery = useQuery({
+    queryKey: ['system-option-json-map', optionKey, pageIndex + 1, pageSize],
+    queryFn: async () => {
+      const data = await getOptionJsonMap({
+        key: optionKey ?? '',
+        page: pageIndex + 1,
+        pageSize,
+      })
+      if (!data.success) {
+        throw new Error(data.message || t('Failed to load settings'))
+      }
+      return data.data
+    },
+    enabled: isServerPaginated && mode === 'visual',
+  })
+
+  const fullJsonQuery = useQuery({
+    queryKey: ['system-option-value', optionKey],
+    queryFn: async () => {
+      const data = await getSystemOptionValue(optionKey ?? '')
+      if (!data.success) {
+        throw new Error(data.message || t('Failed to load settings'))
+      }
+      return data.data.value
+    },
+    enabled: false,
+  })
+
+  const deleteEntryMutation = useMutation({
+    mutationFn: async (mapKey: string) => {
+      if (!optionKey) return
+      const data = await deleteOptionJsonMapEntry({
+        key: optionKey,
+        map_key: mapKey,
+      })
+      if (!data.success) {
+        throw new Error(data.message || t('Failed to update setting'))
+      }
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: ['system-option-json-map', optionKey],
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ['system-option-value', optionKey],
+        }),
+        queryClient.invalidateQueries({ queryKey: ['system-options'] }),
+      ])
+      toast.success(t('Settings updated successfully'))
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || t('Failed to update setting'))
+    },
+  })
 
   const parseJsonToRows = useCallback(
     (json: string) => {
@@ -124,13 +197,17 @@ export function ModelMappingEditor({
   // when the incoming value is just the echo of our own onChange, so in-progress
   // rows (e.g. with an empty "from") are not wiped out.
   useEffect(() => {
+    if (isServerPaginated) {
+      setJsonValue(value)
+      return
+    }
     setJsonValue(value)
     if (value === emittedValueRef.current) {
       return
     }
     emittedValueRef.current = null
     parseJsonToRows(value)
-  }, [parseJsonToRows, value])
+  }, [isServerPaginated, parseJsonToRows, value])
 
   const convertRowsToJson = (updatedRows: MappingRow[]): string => {
     if (updatedRows.length === 0) {
@@ -144,6 +221,51 @@ export function ModelMappingEditor({
     })
     return JSON.stringify(obj, null, 2)
   }
+
+  const pageCount = useMemo(
+    () =>
+      Math.max(
+        1,
+        Math.ceil(
+          (isServerPaginated ? (jsonMapQuery.data?.total ?? 0) : rows.length) /
+            pageSize
+        )
+      ),
+    [isServerPaginated, jsonMapQuery.data?.total, pageSize, rows.length]
+  )
+
+  const safePageIndex = Math.min(pageIndex, pageCount - 1)
+
+  const pageRows = useMemo(
+    () =>
+      rows.slice(
+        safePageIndex * pageSize,
+        safePageIndex * pageSize + pageSize
+      ),
+    [pageSize, rows, safePageIndex]
+  )
+
+  const serverRows = useMemo<MappingRow[]>(
+    () =>
+      (jsonMapQuery.data?.items ?? []).map((item) => ({
+        id: item.key,
+        from: item.key,
+        to: item.value,
+      })),
+    [jsonMapQuery.data?.items]
+  )
+
+  const visibleRows = isServerPaginated ? serverRows : pageRows
+  const totalRows = isServerPaginated
+    ? (jsonMapQuery.data?.total ?? 0)
+    : rows.length
+  const isLoadingRows = isServerPaginated && jsonMapQuery.isLoading
+
+  useEffect(() => {
+    if (pageIndex !== safePageIndex) {
+      setPageIndex(safePageIndex)
+    }
+  }, [pageIndex, safePageIndex])
 
   // Push a JSON change up to the parent and remember it so the sync effect
   // treats the resulting prop update as our own and does not re-parse it.
@@ -161,9 +283,14 @@ export function ModelMappingEditor({
     }
     const updatedRows = [...rows, newRow]
     setRows(updatedRows)
+    setPageIndex(Math.max(0, Math.ceil(updatedRows.length / pageSize) - 1))
   }
 
   const handleDeleteRow = (id: string) => {
+    if (isServerPaginated) {
+      deleteEntryMutation.mutate(id)
+      return
+    }
     const updatedRows = rows.filter((row) => row.id !== id)
     setRows(updatedRows)
     emitChange(convertRowsToJson(updatedRows))
@@ -183,7 +310,9 @@ export function ModelMappingEditor({
 
   const handleJsonChange = (newJson: string) => {
     emitChange(newJson)
-    parseJsonToRows(newJson)
+    if (!isServerPaginated) {
+      parseJsonToRows(newJson)
+    }
   }
 
   const handleFillTemplate = () => {
@@ -191,24 +320,37 @@ export function ModelMappingEditor({
       template ??
       JSON.stringify({ 'gpt-3.5-turbo': 'gpt-3.5-turbo-0125' }, null, 2)
     emitChange(templateJson)
-    parseJsonToRows(templateJson)
+    if (!isServerPaginated) {
+      parseJsonToRows(templateJson)
+    }
   }
 
-  const toggleMode = () => {
+  const toggleMode = async () => {
     if (mode === 'visual') {
-      // Switching to JSON mode: sync rows to JSON
-      emitChange(convertRowsToJson(rows))
+      if (isServerPaginated) {
+        const result = await fullJsonQuery.refetch()
+        if (result.isError) {
+          toast.error(result.error.message || t('Failed to load settings'))
+          return
+        }
+        setJsonValue(result.data ?? '{}')
+      } else {
+        // Switching to JSON mode: sync rows to JSON
+        emitChange(convertRowsToJson(rows))
+      }
       setMode('json')
     } else {
       // Switching to visual mode: sync JSON to rows
-      parseJsonToRows(jsonValue)
+      if (!isServerPaginated) {
+        parseJsonToRows(jsonValue)
+      }
       setMode('visual')
     }
   }
 
   return (
     <div className='space-y-2'>
-      <div className='flex items-center justify-between'>
+      <div className='flex flex-wrap items-center justify-between gap-2'>
         <div className='flex gap-2'>
           <Button
             type='button'
@@ -229,29 +371,48 @@ export function ModelMappingEditor({
               </>
             )}
           </Button>
+          {!isServerPaginated || mode === 'json' ? (
+            <Button
+              type='button'
+              variant='link'
+              size='sm'
+              className='h-auto p-0'
+              onClick={handleFillTemplate}
+              disabled={disabled}
+            >
+              {t('Fill Template')}
+            </Button>
+          ) : null}
+        </div>
+        {mode === 'visual' && !isServerPaginated ? (
           <Button
             type='button'
-            variant='link'
+            variant='outline'
             size='sm'
-            className='h-auto p-0'
-            onClick={handleFillTemplate}
+            onClick={handleAddRow}
             disabled={disabled}
           >
-            {t('Fill Template')}
+            <Plus className='mr-2 h-4 w-4' />
+            {t('Add Mapping')}
           </Button>
-        </div>
+        ) : null}
       </div>
 
       {mode === 'visual' ? (
         <div className='space-y-2'>
-          {rows.length > 0 ? (
+          {isLoadingRows || totalRows > 0 ? (
             <div className='space-y-2'>
               <div className='grid grid-cols-[1fr_1fr_auto] gap-2 text-sm font-medium'>
                 <div>{fromLabel ? t(fromLabel) : t('Original Model')}</div>
                 <div>{toLabel ? t(toLabel) : t('Replacement Model')}</div>
                 <div className='w-10'></div>
               </div>
-              {rows.map((row) => (
+              {isLoadingRows ? (
+                <div className='text-muted-foreground flex h-24 items-center justify-center rounded-md border border-dashed text-sm'>
+                  {t('Loading...')}
+                </div>
+              ) : null}
+              {visibleRows.map((row) => (
                 <div
                   key={row.id}
                   className='grid grid-cols-[1fr_1fr_auto] gap-2'
@@ -262,7 +423,7 @@ export function ModelMappingEditor({
                       handleRowChange(row.id, 'from', e.target.value)
                     }
                     placeholder={fromPlaceholder}
-                    disabled={disabled}
+                    disabled={disabled || isServerPaginated}
                   />
                   <Input
                     value={row.to}
@@ -270,14 +431,14 @@ export function ModelMappingEditor({
                       handleRowChange(row.id, 'to', e.target.value)
                     }
                     placeholder={toPlaceholder}
-                    disabled={disabled}
+                    disabled={disabled || isServerPaginated}
                   />
                   <Button
                     type='button'
                     variant='ghost'
                     size='icon'
                     onClick={() => handleDeleteRow(row.id)}
-                    disabled={disabled}
+                    disabled={disabled || deleteEntryMutation.isPending}
                     className='h-10 w-10'
                   >
                     <Trash2 className='h-4 w-4' />
@@ -294,17 +455,70 @@ export function ModelMappingEditor({
                   )}
             </div>
           )}
-          <Button
-            type='button'
-            variant='outline'
-            size='sm'
-            onClick={handleAddRow}
-            disabled={disabled}
-            className='w-full'
-          >
-            <Plus className='mr-2 h-4 w-4' />
-            {t('Add Mapping')}
-          </Button>
+          {totalRows > 0 ? (
+            <div className='flex flex-col gap-3 border-t pt-3 sm:flex-row sm:items-center sm:justify-between'>
+              <div className='text-muted-foreground flex flex-wrap items-center gap-3 text-xs'>
+                <span>
+                  {t('Showing {{start}}-{{end}} of {{count}} mappings', {
+                    start: Math.min(
+                      totalRows,
+                      safePageIndex * pageSize + 1
+                    ),
+                    end: Math.min(
+                      totalRows,
+                      safePageIndex * pageSize + visibleRows.length
+                    ),
+                    count: totalRows,
+                  })}
+                </span>
+                <div className='flex items-center gap-2'>
+                  <span>{t('Rows per page')}</span>
+                  <select
+                    className='border-input bg-background h-8 rounded-md border px-2 text-sm'
+                    value={pageSize}
+                    onChange={(event) => {
+                      setPageSize(Number(event.target.value))
+                      setPageIndex(0)
+                    }}
+                    disabled={disabled}
+                  >
+                    {PAGE_SIZE_OPTIONS.map((size) => (
+                      <option key={size} value={size}>
+                        {size}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div className='flex items-center gap-2'>
+                <Button
+                  type='button'
+                  variant='outline'
+                  size='sm'
+                  disabled={disabled || safePageIndex === 0}
+                  onClick={() =>
+                    setPageIndex(() => Math.max(0, safePageIndex - 1))
+                  }
+                >
+                  {t('Previous')}
+                </Button>
+                <span className='text-muted-foreground text-xs'>
+                  {safePageIndex + 1} / {pageCount}
+                </span>
+                <Button
+                  type='button'
+                  variant='outline'
+                  size='sm'
+                  disabled={disabled || safePageIndex >= pageCount - 1}
+                  onClick={() =>
+                    setPageIndex(() => Math.min(pageCount - 1, safePageIndex + 1))
+                  }
+                >
+                  {t('Next')}
+                </Button>
+              </div>
+            </div>
+          ) : null}
         </div>
       ) : (
         <Textarea

@@ -123,7 +123,10 @@ func SetApiRouter(router *gin.Engine) {
 		optionRoute.Use(middleware.RootAuth())
 		{
 			optionRoute.GET("/", controller.GetOptions)
+			optionRoute.GET("/value", controller.GetOptionValue)
+			optionRoute.GET("/json_map", controller.GetOptionJsonMap)
 			optionRoute.PUT("/", controller.UpdateOption)
+			optionRoute.DELETE("/json_map", controller.DeleteOptionJsonMapEntry)
 			optionRoute.GET("/channel_affinity_cache", controller.GetChannelAffinityCacheStats)
 			optionRoute.DELETE("/channel_affinity_cache", controller.ClearChannelAffinityCache)
 			optionRoute.POST("/rest_model_ratio", controller.ResetModelRatio)

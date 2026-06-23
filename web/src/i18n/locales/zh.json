@@ -2591,6 +2591,7 @@
     "Routing & Overrides": "路由与覆盖",
     "Routing Strategy": "路由策略",
     "Rows per page": "每页行数",
+    "Showing {{start}}-{{end}} of {{count}} mappings": "显示第 {{start}}-{{end}} 条，共 {{count}} 条映射",
     "RPM": "RPM",
     "Rule": "规则",
     "Rule {{line}} is missing source field": "第 {{line}} 条操作缺少来源字段",

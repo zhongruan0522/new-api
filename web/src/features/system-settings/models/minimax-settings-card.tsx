@@ -219,6 +219,7 @@ export function MiniMaxSettingsCard({ defaultValues }: Props) {
                   <ModelMappingEditor
                     value={field.value}
                     onChange={field.onChange}
+                    optionKey='minimax.model_redirect'
                     fromLabel='Client Model'
                     toLabel='MiniMax Model'
                     fromPlaceholder='tts-1'
@@ -255,6 +256,7 @@ export function MiniMaxSettingsCard({ defaultValues }: Props) {
                   <ModelMappingEditor
                     value={field.value}
                     onChange={field.onChange}
+                    optionKey='minimax.voice_redirect'
                     fromLabel='OpenAI Voice'
                     toLabel='MiniMax Voice ID'
                     fromPlaceholder='alloy'
@@ -308,6 +310,7 @@ export function MiniMaxSettingsCard({ defaultValues }: Props) {
                   <ModelMappingEditor
                     value={field.value}
                     onChange={field.onChange}
+                    optionKey='minimax.emotion_redirect'
                     fromLabel='Emotion Tag'
                     toLabel='MiniMax Emotion'
                     fromPlaceholder='happy'
@@ -361,6 +364,7 @@ export function MiniMaxSettingsCard({ defaultValues }: Props) {
                   <ModelMappingEditor
                     value={field.value}
                     onChange={field.onChange}
+                    optionKey='minimax.tone_word_redirect'
                     fromLabel='Tone Word Tag'
                     toLabel='Replacement'
                     fromPlaceholder='laughs'

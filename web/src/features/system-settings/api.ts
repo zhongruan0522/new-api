@@ -20,13 +20,53 @@ import { api } from '@/lib/api'
 import type {
   CleanLogsParams,
   CleanLogsResponse,
+  DeleteOptionJsonMapEntryRequest,
+  OptionJsonMapResponse,
+  SystemOptionValueResponse,
   SystemOptionsResponse,
   UpdateOptionRequest,
   UpdateOptionResponse,
 } from './types'
 
-export async function getSystemOptions() {
-  const res = await api.get<SystemOptionsResponse>('/api/option/')
+export async function getSystemOptions(options?: {
+  excludeLargeOptions?: boolean
+}) {
+  const res = await api.get<SystemOptionsResponse>('/api/option/', {
+    params: options?.excludeLargeOptions
+      ? { exclude_large_options: true }
+      : undefined,
+  })
+  return res.data
+}
+
+export async function getSystemOptionValue(key: string) {
+  const res = await api.get<SystemOptionValueResponse>('/api/option/value', {
+    params: { key },
+  })
+  return res.data
+}
+
+export async function getOptionJsonMap(params: {
+  key: string
+  page: number
+  pageSize: number
+}) {
+  const res = await api.get<OptionJsonMapResponse>('/api/option/json_map', {
+    params: {
+      key: params.key,
+      page: params.page,
+      page_size: params.pageSize,
+    },
+  })
+  return res.data
+}
+
+export async function deleteOptionJsonMapEntry(
+  request: DeleteOptionJsonMapEntryRequest
+) {
+  const res = await api.delete<UpdateOptionResponse>('/api/option/json_map', {
+    data: request,
+  })
   return res.data
 }
 

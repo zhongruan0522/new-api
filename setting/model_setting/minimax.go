@@ -49,6 +49,16 @@ func GetMiniMaxSettings() *MiniMaxSettings {
 	return &minimaxSettings
 }
 
+func IsMiniMaxStringMapOption(key string) bool {
+	switch key {
+	case "minimax.model_redirect", "minimax.emotion_redirect",
+		"minimax.tone_word_redirect", "minimax.voice_redirect":
+		return true
+	default:
+		return false
+	}
+}
+
 // ValidateMiniMaxOptionValue 校验 minimax.* 系统设置项的值。
 // 在 controller.UpdateOption 中保存前调用，校验失败返回错误。
 // 不属于 minimax.* 的 key 直接返回 nil。
