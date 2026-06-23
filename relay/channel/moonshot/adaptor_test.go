@@ -1,0 +1,80 @@
+package moonshot
+
+import (
+	"testing"
+
+	"github.com/zhongruan0522/new-api/common"
+	"github.com/zhongruan0522/new-api/dto"
+	relaycommon "github.com/zhongruan0522/new-api/relay/common"
+)
+
+func TestConvertOpenAIRequestKimiK26UsesOnlyAllowedTemperature(t *testing.T) {
+	request := &dto.GeneralOpenAIRequest{
+		Model:       "kimi-k2.6",
+		Temperature: common.GetPointer[float64](0.7),
+	}
+	info := &relaycommon.RelayInfo{
+		ChannelMeta: &relaycommon.ChannelMeta{
+			UpstreamModelName: "kimi-k2.6",
+		},
+	}
+
+	converted, err := (&Adaptor{}).ConvertOpenAIRequest(nil, info, request)
+	if err != nil {
+		t.Fatalf("ConvertOpenAIRequest error: %v", err)
+	}
+	convertedRequest, ok := converted.(*dto.GeneralOpenAIRequest)
+	if !ok {
+		t.Fatalf("converted request type = %T, want *dto.GeneralOpenAIRequest", converted)
+	}
+	if convertedRequest.Temperature == nil || *convertedRequest.Temperature != 1.0 {
+		t.Fatalf("temperature = %v, want 1.0", convertedRequest.Temperature)
+	}
+}
+
+func TestConvertOpenAIRequestKimiK26KeepsOmittedTemperatureOmitted(t *testing.T) {
+	request := &dto.GeneralOpenAIRequest{
+		Model: "kimi-k2.6",
+	}
+	info := &relaycommon.RelayInfo{
+		ChannelMeta: &relaycommon.ChannelMeta{
+			UpstreamModelName: "kimi-k2.6",
+		},
+	}
+
+	converted, err := (&Adaptor{}).ConvertOpenAIRequest(nil, info, request)
+	if err != nil {
+		t.Fatalf("ConvertOpenAIRequest error: %v", err)
+	}
+	convertedRequest, ok := converted.(*dto.GeneralOpenAIRequest)
+	if !ok {
+		t.Fatalf("converted request type = %T, want *dto.GeneralOpenAIRequest", converted)
+	}
+	if convertedRequest.Temperature != nil {
+		t.Fatalf("temperature = %v, want nil", *convertedRequest.Temperature)
+	}
+}
+
+func TestConvertOpenAIRequestOtherMoonshotModelKeepsTemperature(t *testing.T) {
+	request := &dto.GeneralOpenAIRequest{
+		Model:       "kimi-k2.5",
+		Temperature: common.GetPointer[float64](0.7),
+	}
+	info := &relaycommon.RelayInfo{
+		ChannelMeta: &relaycommon.ChannelMeta{
+			UpstreamModelName: "kimi-k2.5",
+		},
+	}
+
+	converted, err := (&Adaptor{}).ConvertOpenAIRequest(nil, info, request)
+	if err != nil {
+		t.Fatalf("ConvertOpenAIRequest error: %v", err)
+	}
+	convertedRequest, ok := converted.(*dto.GeneralOpenAIRequest)
+	if !ok {
+		t.Fatalf("converted request type = %T, want *dto.GeneralOpenAIRequest", converted)
+	}
+	if convertedRequest.Temperature == nil || *convertedRequest.Temperature != 0.7 {
+		t.Fatalf("temperature = %v, want 0.7", convertedRequest.Temperature)
+	}
+}
