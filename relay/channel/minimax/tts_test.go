@@ -154,6 +154,41 @@ func TestHandleTTSResponse_ErrorStatus(t *testing.T) {
 	if !strings.Contains(apiErr.Error(), "1001") {
 		t.Errorf("error should contain status code 1001, got: %v", apiErr)
 	}
+	if strings.Contains(strings.ToLower(apiErr.Error()), "minimax") {
+		t.Errorf("error should not expose provider name, got: %v", apiErr)
+	}
+}
+
+func TestHandleTTSResponse_ErrorStatusSanitizesProviderName(t *testing.T) {
+	respBody := MiniMaxTTSResponse{
+		BaseResp: MiniMaxBaseResp{StatusCode: 1001, StatusMsg: "MiniMax invalid voice"},
+	}
+	body, _ := common.Marshal(respBody)
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest(http.MethodPost, "/v1/audio/speech", strings.NewReader(""))
+
+	info := &relaycommon.RelayInfo{
+		RelayMode: constant.RelayModeAudioSpeech,
+	}
+
+	resp := &http.Response{
+		StatusCode: http.StatusOK,
+		Body:       io.NopCloser(strings.NewReader(string(body))),
+		Header:     make(http.Header),
+	}
+
+	_, apiErr := handleTTSResponse(c, resp, info)
+	if apiErr == nil {
+		t.Fatal("expected error for non-zero base_resp.status_code, got nil")
+	}
+	if strings.Contains(strings.ToLower(apiErr.Error()), "minimax") {
+		t.Errorf("error should not expose provider name, got: %v", apiErr)
+	}
+	if !strings.Contains(apiErr.Error(), "upstream invalid voice") {
+		t.Errorf("error should keep sanitized upstream message, got: %v", apiErr)
+	}
 }
 
 // 编译期类型检查：确保 types 包仍被引用（避免 import 残留告警）

@@ -23,6 +23,7 @@ import (
 	"github.com/zhongruan0522/new-api/relay/common_handler"
 	relayconstant "github.com/zhongruan0522/new-api/relay/constant"
 	"github.com/zhongruan0522/new-api/service"
+	"github.com/zhongruan0522/new-api/setting/model_setting"
 	"github.com/zhongruan0522/new-api/types"
 
 	"github.com/gin-gonic/gin"
@@ -346,20 +347,17 @@ func (a *Adaptor) ConvertEmbeddingRequest(c *gin.Context, info *relaycommon.Rela
 func (a *Adaptor) ConvertAudioRequest(c *gin.Context, info *relaycommon.RelayInfo, request dto.AudioRequest) (io.Reader, error) {
 	a.ResponseFormat = request.ResponseFormat
 	if info.RelayMode == relayconstant.RelayModeAudioSpeech {
-		// <editor-fold desc="debug H1 minimax openai-compatible tts path">
-		relaycommon.DebugMiniMaxTTS("relay/channel/openai/adaptor.go:350", "openai-audio-speech-convert", map[string]any{
-			"hypothesisId":      "H1",
-			"channelType":       info.ChannelType,
-			"apiType":           info.ApiType,
-			"requestUrlPath":    info.RequestURLPath,
-			"requestModel":      request.Model,
-			"upstreamModelName": info.UpstreamModelName,
-			"requestVoice":      request.Voice,
-			"responseFormat":    request.ResponseFormat,
-		})
-		// </editor-fold>
+		if info.ChannelType == constant.ChannelTypeMiniMax {
+			policy := model_setting.ApplyMiniMaxTTSPolicy(info.UpstreamModelName, request.Voice, request.Input, request.ResponseFormat)
+			if policy.Enabled {
+				request.Model = policy.Model
+				request.Voice = policy.Voice
+				request.Input = policy.Text
+				c.Set("minimax_voice_id", policy.Voice)
+			}
+		}
 
-		jsonData, err := json.Marshal(request)
+		jsonData, err := common.Marshal(request)
 		if err != nil {
 			return nil, fmt.Errorf("error marshalling object: %w", err)
 		}

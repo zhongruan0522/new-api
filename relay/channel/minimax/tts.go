@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"regexp"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -14,6 +15,8 @@ import (
 	"github.com/zhongruan0522/new-api/service"
 	"github.com/zhongruan0522/new-api/types"
 )
+
+var minimaxNamePattern = regexp.MustCompile(`(?i)minimax`)
 
 type MiniMaxTTSRequest struct {
 	Model             string             `json:"model"`
@@ -104,12 +107,26 @@ func getContentTypeByFormat(format string) string {
 	return "audio/mpeg" // default to mp3
 }
 
+func sanitizeTTSProviderName(message string, info *relaycommon.RelayInfo) string {
+	if message == "" || info == nil {
+		return minimaxNamePattern.ReplaceAllString(message, "upstream")
+	}
+	if strings.Contains(strings.ToLower(info.OriginModelName), "minimax") {
+		return message
+	}
+	if info.ChannelMeta != nil &&
+		strings.Contains(strings.ToLower(info.UpstreamModelName), "minimax") {
+		return message
+	}
+	return minimaxNamePattern.ReplaceAllString(message, "upstream")
+}
+
 func handleTTSResponse(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (usage any, err *types.NewAPIError) {
 	defer resp.Body.Close()
 	body, readErr := common.ReadMediaResponseBody(resp.Body)
 	if readErr != nil {
 		return nil, types.NewErrorWithStatusCode(
-			fmt.Errorf("failed to read minimax response: %w", readErr),
+			fmt.Errorf("failed to read upstream response: %w", readErr),
 			types.ErrorCodeReadResponseBodyFailed,
 			http.StatusInternalServerError,
 		)
@@ -119,7 +136,7 @@ func handleTTSResponse(c *gin.Context, resp *http.Response, info *relaycommon.Re
 	var minimaxResp MiniMaxTTSResponse
 	if unmarshalErr := common.Unmarshal(body, &minimaxResp); unmarshalErr != nil {
 		return nil, types.NewErrorWithStatusCode(
-			fmt.Errorf("failed to unmarshal minimax TTS response: %w", unmarshalErr),
+			fmt.Errorf("failed to parse TTS response: %w", unmarshalErr),
 			types.ErrorCodeBadResponseBody,
 			http.StatusInternalServerError,
 		)
@@ -127,16 +144,9 @@ func handleTTSResponse(c *gin.Context, resp *http.Response, info *relaycommon.Re
 
 	// Check base_resp status code
 	if minimaxResp.BaseResp.StatusCode != 0 {
-		// <editor-fold desc="debug H4 minimax tts upstream error message">
-		relaycommon.DebugMiniMaxTTS("relay/channel/minimax/tts.go:121", "tts-base-resp-error", map[string]any{
-			"hypothesisId": "H4",
-			"statusCode":   minimaxResp.BaseResp.StatusCode,
-			"statusMsg":    minimaxResp.BaseResp.StatusMsg,
-		})
-		// </editor-fold>
-
+		statusMsg := sanitizeTTSProviderName(minimaxResp.BaseResp.StatusMsg, info)
 		return nil, types.NewErrorWithStatusCode(
-			fmt.Errorf("minimax TTS error: %d - %s", minimaxResp.BaseResp.StatusCode, minimaxResp.BaseResp.StatusMsg),
+			fmt.Errorf("TTS upstream error: %d - %s", minimaxResp.BaseResp.StatusCode, statusMsg),
 			types.ErrorCodeBadResponse,
 			http.StatusBadRequest,
 		)
@@ -145,7 +155,7 @@ func handleTTSResponse(c *gin.Context, resp *http.Response, info *relaycommon.Re
 	// Check if we have audio data
 	if minimaxResp.Data.Audio == "" {
 		return nil, types.NewErrorWithStatusCode(
-			fmt.Errorf("no audio data in minimax TTS response"),
+			fmt.Errorf("no audio data in TTS response"),
 			types.ErrorCodeBadResponse,
 			http.StatusBadRequest,
 		)
@@ -191,7 +201,7 @@ func handleChatCompletionResponse(c *gin.Context, resp *http.Response, info *rel
 	body, readErr := common.ReadResponseBody(resp.Body)
 	if readErr != nil {
 		return nil, types.NewErrorWithStatusCode(
-			errors.New("failed to read minimax response"),
+			errors.New("failed to read upstream response"),
 			types.ErrorCodeReadResponseBodyFailed,
 			http.StatusInternalServerError,
 		)

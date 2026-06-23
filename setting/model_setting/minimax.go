@@ -3,6 +3,7 @@ package model_setting
 import (
 	"fmt"
 	"regexp"
+	"strings"
 
 	"github.com/zhongruan0522/new-api/common"
 	"github.com/zhongruan0522/new-api/setting/config"
@@ -31,6 +32,15 @@ type MiniMaxSettings struct {
 	VoiceRedirect map[string]string `json:"voice_redirect"`
 }
 
+type MiniMaxTTSPolicyResult struct {
+	Enabled      bool
+	Model        string
+	Voice        string
+	Text         string
+	Emotion      string
+	OutputFormat string
+}
+
 var defaultMiniMaxSettings = MiniMaxSettings{
 	Enabled:          false,
 	ModelRedirect:    map[string]string{},
@@ -47,6 +57,101 @@ func init() {
 
 func GetMiniMaxSettings() *MiniMaxSettings {
 	return &minimaxSettings
+}
+
+func ApplyMiniMaxTTSPolicy(model, voice, text, outputFormat string) MiniMaxTTSPolicyResult {
+	cfg := GetMiniMaxSettings()
+	result := MiniMaxTTSPolicyResult{
+		Enabled:      cfg.Enabled,
+		Model:        model,
+		Voice:        voice,
+		Text:         text,
+		OutputFormat: outputFormat,
+	}
+	if !cfg.Enabled {
+		return result
+	}
+	result.Model = ApplyMiniMaxModelRedirect(model, cfg)
+	result.Voice = ApplyMiniMaxVoiceRedirect(voice, cfg)
+	emotion, cleaned := ExtractMiniMaxEmotion(text, cfg.EmotionPattern, cfg.EmotionRedirect)
+	result.Emotion = emotion
+	result.Text = ReplaceMiniMaxToneWords(cleaned, cfg.ToneWordPattern, cfg.ToneWordRedirect)
+	return result
+}
+
+func ApplyMiniMaxModelRedirect(originModel string, cfg *MiniMaxSettings) string {
+	if cfg == nil || cfg.ModelRedirect == nil {
+		return originModel
+	}
+	if mapped, ok := cfg.ModelRedirect[originModel]; ok && mapped != "" {
+		return mapped
+	}
+	return originModel
+}
+
+func ApplyMiniMaxVoiceRedirect(voice string, cfg *MiniMaxSettings) string {
+	if cfg == nil || cfg.VoiceRedirect == nil {
+		return voice
+	}
+	if mapped, ok := cfg.VoiceRedirect[voice]; ok && mapped != "" {
+		return mapped
+	}
+	return voice
+}
+
+func ExtractMiniMaxEmotion(text string, pattern string, redirect map[string]string) (emotion string, cleaned string) {
+	if pattern == "" {
+		return "", text
+	}
+	re, err := regexp.Compile(pattern)
+	if err != nil {
+		return "", text
+	}
+	matches := re.FindStringSubmatch(text)
+	var emotionValue string
+	if len(matches) >= 2 {
+		tagValue := matches[1]
+		if mapped, ok := redirect[tagValue]; ok && mapped != "" {
+			emotionValue = mapped
+		}
+	} else if len(matches) == 1 {
+		tagValue := ExtractMiniMaxParenContent(matches[0])
+		if tagValue != "" {
+			if mapped, ok := redirect[tagValue]; ok && mapped != "" {
+				emotionValue = mapped
+			}
+		}
+	}
+	cleaned = re.ReplaceAllString(text, "")
+	cleaned = strings.TrimSpace(cleaned)
+	return emotionValue, cleaned
+}
+
+func ReplaceMiniMaxToneWords(text string, pattern string, redirect map[string]string) string {
+	if pattern == "" {
+		return text
+	}
+	re, err := regexp.Compile(pattern)
+	if err != nil {
+		return text
+	}
+	return re.ReplaceAllStringFunc(text, func(match string) string {
+		tagValue := ExtractMiniMaxParenContent(match)
+		if tagValue == "" {
+			return match
+		}
+		if mapped, ok := redirect[tagValue]; ok && mapped != "" {
+			return "(" + mapped + ")"
+		}
+		return match
+	})
+}
+
+func ExtractMiniMaxParenContent(s string) string {
+	if len(s) < 2 || s[0] != '(' || s[len(s)-1] != ')' {
+		return ""
+	}
+	return s[1 : len(s)-1]
 }
 
 func IsMiniMaxStringMapOption(key string) bool {

@@ -202,6 +202,51 @@ func TestConvertAudioRequest_MetadataNonPolicyFieldsPreserved(t *testing.T) {
 	})
 }
 
+func TestConvertAudioRequest_NullAudioSettingMetadataDoesNotBypassPolicy(t *testing.T) {
+	cfg := model_setting.MiniMaxSettings{
+		Enabled:       true,
+		ModelRedirect: map[string]string{"tts-1-hd": "speech-02-hd"},
+		VoiceRedirect: map[string]string{"alloy": "female-shaonv"},
+	}
+
+	metadata := []byte(`{"audio_setting":null}`)
+
+	info := &relaycommon.RelayInfo{
+		RelayMode:   constant.RelayModeAudioSpeech,
+		ChannelMeta: &relaycommon.ChannelMeta{UpstreamModelName: "tts-1-hd"},
+	}
+	request := dto.AudioRequest{
+		Model:          "tts-1-hd",
+		Input:          "hello",
+		Voice:          "alloy",
+		ResponseFormat: "mp3",
+		Metadata:       metadata,
+	}
+
+	withMiniMaxSettings(t, cfg, func() {
+		c := newConvertAudioContext()
+		a := &Adaptor{}
+		reader, err := a.ConvertAudioRequest(c, info, request)
+		if err != nil {
+			t.Fatalf("ConvertAudioRequest error: %v", err)
+		}
+
+		got := decodeTTSBody(t, reader)
+		if got.AudioSetting == nil {
+			t.Fatal("AudioSetting is nil, want initialized setting")
+		}
+		if got.AudioSetting.Format != "mp3" {
+			t.Errorf("AudioSetting.Format = %q, want mp3", got.AudioSetting.Format)
+		}
+		if got.Model != "speech-02-hd" {
+			t.Errorf("Model = %q, want speech-02-hd", got.Model)
+		}
+		if got.VoiceSetting.VoiceID != "female-shaonv" {
+			t.Errorf("VoiceSetting.VoiceID = %q, want female-shaonv", got.VoiceSetting.VoiceID)
+		}
+	})
+}
+
 // TestConvertAudioRequest_EmptyMetadataUsesAdminRedirect 验证无 metadata 时仍正常应用管理员重定向。
 func TestConvertAudioRequest_EmptyMetadataUsesAdminRedirect(t *testing.T) {
 	cfg := model_setting.MiniMaxSettings{
