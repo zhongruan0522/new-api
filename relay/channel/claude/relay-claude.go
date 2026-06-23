@@ -95,6 +95,12 @@ func applyOpenAIReasoningToClaudeRequest(info *relaycommon.RelayInfo, textReques
 	if claudeEffort != "" && shouldUseClaudeOutputConfigEffort(info, claudeRequest.Model) {
 		if shouldUseClaudeAdaptiveThinking(info, claudeRequest.Model) {
 			claudeRequest.Thinking = &dto.Thinking{Type: "adaptive"}
+			if isClaudeOpus47Model(claudeRequest.Model) {
+				claudeRequest.Thinking.Display = "summarized"
+				claudeRequest.Temperature = nil
+				claudeRequest.TopP = 0
+				claudeRequest.TopK = 0
+			}
 		} else {
 			claudeRequest.Thinking = nil
 		}
@@ -119,6 +125,9 @@ func applyOpenAIReasoningToClaudeRequest(info *relaycommon.RelayInfo, textReques
 }
 
 func parseClaudeReasoningEffortFromModelSuffix(model string) (string, string) {
+	if strings.HasSuffix(model, "-thinking") && isClaudeOpus47Model(model) {
+		return "high", strings.TrimSuffix(model, "-thinking")
+	}
 	for _, suffix := range claudeReasoningEffortSuffixes {
 		if strings.HasSuffix(model, suffix) {
 			return strings.TrimPrefix(suffix, "-"), strings.TrimSuffix(model, suffix)
@@ -153,7 +162,7 @@ func shouldUseClaudeOutputConfigEffort(info *relaycommon.RelayInfo, model string
 	}
 
 	model = strings.ToLower(model)
-	return strings.Contains(model, "claude-opus-4-6")
+	return isClaudeAdaptiveOutputModel(model)
 }
 
 func shouldUseClaudeAdaptiveThinking(info *relaycommon.RelayInfo, model string) bool {
@@ -162,7 +171,15 @@ func shouldUseClaudeAdaptiveThinking(info *relaycommon.RelayInfo, model string) 
 	}
 
 	model = strings.ToLower(model)
-	return strings.Contains(model, "claude-opus-4-6")
+	return isClaudeAdaptiveOutputModel(model)
+}
+
+func isClaudeAdaptiveOutputModel(model string) bool {
+	return strings.Contains(model, "claude-opus-4-6") || strings.Contains(model, "claude-opus-4-7")
+}
+
+func isClaudeOpus47Model(model string) bool {
+	return strings.Contains(strings.ToLower(model), "claude-opus-4-7")
 }
 
 func claudeThinkingBudgetForEffort(effort string) int {
