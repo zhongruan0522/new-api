@@ -34,6 +34,7 @@ import {
   User,
   Users,
   Wallet,
+  WandSparkles,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { type SidebarData } from '@/components/layout/types'
@@ -51,12 +52,22 @@ export function useSidebarData(): SidebarData {
     navGroups: [
       {
         id: 'chat',
-        title: t('Chat'),
+        title: t('Experience Center'),
         items: [
           {
             title: t('Playground'),
             url: '/playground',
             icon: FlaskConical,
+          },
+          {
+            title: t('Multimodal'),
+            icon: WandSparkles,
+            items: [
+              {
+                title: t('Custom Voice'),
+                url: '/multimodal/custom-voice',
+              },
+            ],
           },
         ],
       },

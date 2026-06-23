@@ -59,6 +59,7 @@ export const SIDEBAR_MODULES_DEFAULT: SidebarModulesAdminConfig = {
   chat: {
     enabled: true,
     playground: true,
+    custom_voice: true,
   },
   console: {
     enabled: true,

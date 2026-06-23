@@ -510,6 +510,9 @@ export const STATIC_I18N_KEYS = [
 
   // Sidebar modules
   'Chat Area',
+  'Experience Center',
+  'Multimodal',
+  'Custom Voice',
   'Playground and chat functions',
   'Playground',
   'AI model testing environment',
@@ -609,6 +612,9 @@ export const STATIC_I18N_KEYS = [
 
   // Sidebar modules section (dynamic keys from config)
   'Chat Area',
+  'Experience Center',
+  'Multimodal',
+  'Custom Voice',
   'Console Area',
   'Personal Area',
   'Support area',
@@ -619,6 +625,7 @@ export const STATIC_I18N_KEYS = [
   'Ticket support and user assistance.',
   'Global configuration and administrative tools.',
   'Experiment with prompts and models in real time.',
+  'Customize voice configurations.',
   'Access previous conversations and start new ones.',
   'Aggregated usage metrics and trend charts.',
   'Create, revoke, and audit API tokens.',
