@@ -36,7 +36,6 @@ const DEFAULT_SIDEBAR_MODULES: SidebarModulesAdminConfig = {
   chat: {
     enabled: true,
     playground: true,
-    chat: true,
   },
   console: {
     enabled: true,
@@ -168,12 +167,6 @@ function isNavItemVisible(
   item: NavItem,
   adminConfig: SidebarModulesAdminConfig
 ): boolean {
-  // Handle dynamic chat presets type
-  if ('type' in item && item.type === 'chat-presets') {
-    const adminChat = adminConfig.chat
-    return Boolean(adminChat?.enabled && adminChat.chat === true)
-  }
-
   // Handle direct link type
   if ('url' in item && item.url) {
     const configUrls = item.configUrls ?? [item.url]

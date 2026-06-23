@@ -59,7 +59,6 @@ export const SIDEBAR_MODULES_DEFAULT: SidebarModulesAdminConfig = {
   chat: {
     enabled: true,
     playground: true,
-    chat: true,
   },
   console: {
     enabled: true,
@@ -198,42 +197,34 @@ export function parseSidebarModulesAdmin(
     const parsed = JSON.parse(value) as Record<string, unknown>
     const result: SidebarModulesAdminConfig = {}
 
-    Object.entries(parsed).forEach(([sectionKey, raw]) => {
-      if (!raw || typeof raw !== 'object') return
+    // Iterate defaults first so the returned (and re-serialized) section order
+    // is stable regardless of how the value was stored. Stale sections/modules
+    // not present in the defaults are dropped, which keeps the UI order
+    // predictable (e.g. the chat section always renders at the top).
+    Object.entries(defaults).forEach(([sectionKey, defaultSection]) => {
+      const raw = parsed[sectionKey]
 
-      const defaultSection = defaults[sectionKey] ?? { enabled: true }
-      const sectionConfig: SidebarSectionConfig = {
-        enabled: toBoolean(
-          (raw as Record<string, unknown>).enabled,
-          defaultSection.enabled ?? true
-        ),
+      if (!raw || typeof raw !== 'object') {
+        result[sectionKey] = { ...defaultSection }
+        return
       }
 
-      Object.entries(raw as Record<string, unknown>).forEach(
+      const rawRecord = raw as Record<string, unknown>
+      const sectionConfig: SidebarSectionConfig = {
+        enabled: toBoolean(rawRecord.enabled, defaultSection.enabled ?? true),
+      }
+
+      Object.entries(defaultSection).forEach(
         ([moduleKey, moduleValue]) => {
           if (moduleKey === 'enabled') return
           sectionConfig[moduleKey] = toBoolean(
-            moduleValue,
-            defaultSection[moduleKey] ?? true
+            rawRecord[moduleKey],
+            moduleValue ?? true
           )
         }
       )
 
       result[sectionKey] = sectionConfig
-    })
-
-    // Merge defaults to ensure expected sections exist
-    Object.entries(defaults).forEach(([sectionKey, config]) => {
-      if (!result[sectionKey]) {
-        result[sectionKey] = { ...config }
-        return
-      }
-
-      Object.entries(config).forEach(([moduleKey, moduleValue]) => {
-        if (!(moduleKey in result[sectionKey])) {
-          result[sectionKey][moduleKey] = moduleValue
-        }
-      })
     })
 
     return result
