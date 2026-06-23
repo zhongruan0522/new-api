@@ -100,7 +100,10 @@ func (a *Adaptor) ConvertAudioRequest(c *gin.Context, info *relaycommon.RelayInf
 }
 
 func (a *Adaptor) ConvertImageRequest(c *gin.Context, info *relaycommon.RelayInfo, request dto.ImageRequest) (any, error) {
-	return request, nil
+	if info.RelayMode != constant.RelayModeImagesGenerations {
+		return nil, fmt.Errorf("unsupported image relay mode: %d", info.RelayMode)
+	}
+	return oaiImage2MiniMaxImageRequest(request), nil
 }
 
 func (a *Adaptor) Init(info *relaycommon.RelayInfo) {
@@ -149,6 +152,9 @@ func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, info *relaycom
 
 	if info.RelayMode == constant.RelayModeAudioSpeech {
 		return handleTTSResponse(c, resp, info)
+	}
+	if info.RelayMode == constant.RelayModeImagesGenerations {
+		return miniMaxImageHandler(c, resp, info)
 	}
 
 	adaptor := openai.Adaptor{}

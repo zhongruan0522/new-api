@@ -2,8 +2,11 @@ package minimax
 
 import (
 	"io"
+	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/zhongruan0522/new-api/common"
@@ -322,5 +325,107 @@ func TestConvertAudioRequest_ResponseFormatNormalization(t *testing.T) {
 				}
 			})
 		})
+	}
+}
+
+func TestGetRequestURLForImageGeneration(t *testing.T) {
+	info := &relaycommon.RelayInfo{
+		RelayMode: constant.RelayModeImagesGenerations,
+		ChannelMeta: &relaycommon.ChannelMeta{
+			ChannelBaseUrl: "https://api.minimaxi.com/v1",
+		},
+	}
+
+	got, err := GetRequestURL(info)
+	if err != nil {
+		t.Fatalf("GetRequestURL error: %v", err)
+	}
+	if got != "https://api.minimaxi.com/v1/image_generation" {
+		t.Fatalf("GetRequestURL = %q, want MiniMax image endpoint", got)
+	}
+}
+
+func TestConvertImageRequestBuildsMiniMaxPayload(t *testing.T) {
+	adaptor := &Adaptor{}
+	info := &relaycommon.RelayInfo{
+		RelayMode:       constant.RelayModeImagesGenerations,
+		OriginModelName: "image-01",
+	}
+	request := dto.ImageRequest{
+		Model:          "image-01",
+		Prompt:         "a red fox in snowfall",
+		Size:           "1536x1024",
+		ResponseFormat: "b64_json",
+		N:              2,
+	}
+
+	got, err := adaptor.ConvertImageRequest(newConvertAudioContext(), info, request)
+	if err != nil {
+		t.Fatalf("ConvertImageRequest error: %v", err)
+	}
+	payload, ok := got.(MiniMaxImageRequest)
+	if !ok {
+		t.Fatalf("converted request type = %T, want MiniMaxImageRequest", got)
+	}
+	if payload.Model != "image-01" {
+		t.Fatalf("Model = %q, want image-01", payload.Model)
+	}
+	if payload.Prompt != request.Prompt {
+		t.Fatalf("Prompt = %q, want %q", payload.Prompt, request.Prompt)
+	}
+	if payload.N != 2 {
+		t.Fatalf("N = %d, want 2", payload.N)
+	}
+	if payload.AspectRatio != "3:2" {
+		t.Fatalf("AspectRatio = %q, want 3:2", payload.AspectRatio)
+	}
+	if payload.ResponseFormat != "base64" {
+		t.Fatalf("ResponseFormat = %q, want base64", payload.ResponseFormat)
+	}
+}
+
+func TestDoResponseForImageGenerationReturnsOpenAIImageResponse(t *testing.T) {
+	recorder := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(recorder)
+	c.Request = httptest.NewRequest(http.MethodPost, "/v1/images/generations", nil)
+
+	info := &relaycommon.RelayInfo{
+		RelayMode: constant.RelayModeImagesGenerations,
+		StartTime: time.Unix(1700000000, 0),
+	}
+	resp := &http.Response{
+		StatusCode: http.StatusOK,
+		Header:     make(http.Header),
+		Body: io.NopCloser(strings.NewReader(`{
+			"data": {
+				"image_urls": ["https://example.com/minimax.png"]
+			},
+			"base_resp": {
+				"status_code": 0
+			}
+		}`)),
+	}
+
+	usage, apiErr := (&Adaptor{}).DoResponse(c, resp, info)
+	if apiErr != nil {
+		t.Fatalf("DoResponse error: %v", apiErr)
+	}
+	imageUsage, ok := usage.(*dto.Usage)
+	if !ok {
+		t.Fatalf("usage type = %T, want *dto.Usage", usage)
+	}
+	if imageUsage.TotalTokens != 0 {
+		t.Fatalf("TotalTokens = %d, want 0 so ImageHelper can apply request N", imageUsage.TotalTokens)
+	}
+
+	var body dto.ImageResponse
+	if err := common.Unmarshal(recorder.Body.Bytes(), &body); err != nil {
+		t.Fatalf("unmarshal response: %v, body=%s", err, recorder.Body.String())
+	}
+	if len(body.Data) != 1 || body.Data[0].Url != "https://example.com/minimax.png" {
+		t.Fatalf("response data = %+v, want OpenAI image URL", body.Data)
+	}
+	if strings.Contains(recorder.Body.String(), "image_urls") {
+		t.Fatalf("response body = %s, should not expose raw MiniMax image_urls payload", recorder.Body.String())
 	}
 }
