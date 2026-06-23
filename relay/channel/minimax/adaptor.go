@@ -37,6 +37,20 @@ func (a *Adaptor) ConvertAudioRequest(c *gin.Context, info *relaycommon.RelayInf
 		return nil, errors.New("unsupported audio relay mode")
 	}
 
+	// <editor-fold desc="debug H2/H3 minimax tts adapter inputs">
+	relaycommon.DebugMiniMaxTTS("relay/channel/minimax/adaptor.go:37", "convert-audio-request-start", map[string]any{
+		"hypothesisId":      "H2-H3",
+		"relayMode":         info.RelayMode,
+		"channelType":       info.ChannelType,
+		"apiType":           info.ApiType,
+		"requestModel":      request.Model,
+		"upstreamModelName": info.UpstreamModelName,
+		"requestVoice":      request.Voice,
+		"responseFormat":    request.ResponseFormat,
+		"metadataLen":       len(request.Metadata),
+	})
+	// </editor-fold>
+
 	outputFormat := request.ResponseFormat
 
 	// 1) 先用用户请求原始值构造基础请求（不应用管理员重定向）。
@@ -64,6 +78,21 @@ func (a *Adaptor) ConvertAudioRequest(c *gin.Context, info *relaycommon.RelayInf
 		}
 	}
 
+	// <editor-fold desc="debug H2/H3 minimax tts after metadata merge">
+	relaycommon.DebugMiniMaxTTS("relay/channel/minimax/adaptor.go:63", "after-metadata-merge", map[string]any{
+		"hypothesisId":       "H2-H3",
+		"model":              minimaxRequest.Model,
+		"voiceId":            minimaxRequest.VoiceSetting.VoiceID,
+		"emotion":            minimaxRequest.VoiceSetting.Emotion,
+		"text":               minimaxRequest.Text,
+		"audioFormat":        minimaxRequest.AudioSetting.Format,
+		"outputFormat":       minimaxRequest.OutputFormat,
+		"cfgEnabled":         model_setting.GetMiniMaxSettings().Enabled,
+		"redirectCountModel": len(model_setting.GetMiniMaxSettings().ModelRedirect),
+		"redirectCountVoice": len(model_setting.GetMiniMaxSettings().VoiceRedirect),
+	})
+	// </editor-fold>
+
 	// 3) 应用管理员强制策略：在 metadata 合并之后，用映射结果覆盖策略字段。
 	//    仅当 cfg.Enabled 时生效；关闭时保留用户原始值（含 metadata）。
 	cfg := model_setting.GetMiniMaxSettings()
@@ -78,16 +107,30 @@ func (a *Adaptor) ConvertAudioRequest(c *gin.Context, info *relaycommon.RelayInf
 		minimaxRequest.OutputFormat = outputFormat
 	}
 
-	jsonData, err := common.Marshal(minimaxRequest)
-	if err != nil {
-		return nil, fmt.Errorf("error marshalling minimax request: %w", err)
-	}
-
 	normalizedFormat := outputFormat
 	if normalizedFormat != "hex" {
 		normalizedFormat = "url"
 	}
 	c.Set("response_format", normalizedFormat)
+
+	// <editor-fold desc="debug H1/H2/H3 minimax tts final outbound request">
+	relaycommon.DebugMiniMaxTTS("relay/channel/minimax/adaptor.go:81", "final-outbound-request", map[string]any{
+		"hypothesisId":   "H1-H2-H3",
+		"cfgEnabled":     cfg.Enabled,
+		"finalModel":     minimaxRequest.Model,
+		"finalVoiceId":   minimaxRequest.VoiceSetting.VoiceID,
+		"finalEmotion":   minimaxRequest.VoiceSetting.Emotion,
+		"finalText":      minimaxRequest.Text,
+		"finalAudioFmt":  minimaxRequest.AudioSetting.Format,
+		"finalOutFormat": minimaxRequest.OutputFormat,
+		"responseFormat": normalizedFormat,
+	})
+	// </editor-fold>
+
+	jsonData, err := common.Marshal(minimaxRequest)
+	if err != nil {
+		return nil, fmt.Errorf("error marshalling minimax request: %w", err)
+	}
 
 	// 音色日志：记录 MiniMax TTS 实际使用的 voice_id（管理员策略最终覆盖后的值）。
 	// 由上层 audio_handler.go 通过 extraContent 传给 PostAudioConsumeQuota。

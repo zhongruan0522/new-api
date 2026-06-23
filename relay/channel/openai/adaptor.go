@@ -346,6 +346,19 @@ func (a *Adaptor) ConvertEmbeddingRequest(c *gin.Context, info *relaycommon.Rela
 func (a *Adaptor) ConvertAudioRequest(c *gin.Context, info *relaycommon.RelayInfo, request dto.AudioRequest) (io.Reader, error) {
 	a.ResponseFormat = request.ResponseFormat
 	if info.RelayMode == relayconstant.RelayModeAudioSpeech {
+		// <editor-fold desc="debug H1 minimax openai-compatible tts path">
+		relaycommon.DebugMiniMaxTTS("relay/channel/openai/adaptor.go:350", "openai-audio-speech-convert", map[string]any{
+			"hypothesisId":      "H1",
+			"channelType":       info.ChannelType,
+			"apiType":           info.ApiType,
+			"requestUrlPath":    info.RequestURLPath,
+			"requestModel":      request.Model,
+			"upstreamModelName": info.UpstreamModelName,
+			"requestVoice":      request.Voice,
+			"responseFormat":    request.ResponseFormat,
+		})
+		// </editor-fold>
+
 		jsonData, err := json.Marshal(request)
 		if err != nil {
 			return nil, fmt.Errorf("error marshalling object: %w", err)

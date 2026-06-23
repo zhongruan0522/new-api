@@ -33,11 +33,37 @@ func AudioHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *type
 		return types.NewError(err, types.ErrorCodeChannelModelMappedError, types.ErrOptionWithSkipRetry())
 	}
 
+	// <editor-fold desc="debug H1 audio dispatcher route">
+	relaycommon.DebugMiniMaxTTS("relay/audio_handler.go:33", "audio-helper-after-model-mapping", map[string]any{
+		"hypothesisId":      "H1-H3",
+		"relayMode":         info.RelayMode,
+		"requestUrlPath":    info.RequestURLPath,
+		"channelType":       info.ChannelType,
+		"apiType":           info.ApiType,
+		"originModelName":   info.OriginModelName,
+		"requestModel":      request.Model,
+		"upstreamModelName": info.UpstreamModelName,
+		"isModelMapped":     info.IsModelMapped,
+		"voice":             request.Voice,
+	})
+	// </editor-fold>
+
 	adaptor := GetAdaptor(info.ApiType)
 	if adaptor == nil {
 		return types.NewError(fmt.Errorf("invalid api type: %d", info.ApiType), types.ErrorCodeInvalidApiType, types.ErrOptionWithSkipRetry())
 	}
 	adaptor.Init(info)
+
+	// <editor-fold desc="debug H1 selected audio adapter">
+	relaycommon.DebugMiniMaxTTS("relay/audio_handler.go:45", "audio-helper-selected-adapter", map[string]any{
+		"hypothesisId":      "H1",
+		"channelType":       info.ChannelType,
+		"apiType":           info.ApiType,
+		"upstreamModelName": info.UpstreamModelName,
+		"requestUrlPath":    info.RequestURLPath,
+		"adaptorType":       fmt.Sprintf("%T", adaptor),
+	})
+	// </editor-fold>
 
 	ioReader, err := adaptor.ConvertAudioRequest(c, info, *request)
 	if err != nil {

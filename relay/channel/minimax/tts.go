@@ -127,6 +127,14 @@ func handleTTSResponse(c *gin.Context, resp *http.Response, info *relaycommon.Re
 
 	// Check base_resp status code
 	if minimaxResp.BaseResp.StatusCode != 0 {
+		// <editor-fold desc="debug H4 minimax tts upstream error message">
+		relaycommon.DebugMiniMaxTTS("relay/channel/minimax/tts.go:121", "tts-base-resp-error", map[string]any{
+			"hypothesisId": "H4",
+			"statusCode":   minimaxResp.BaseResp.StatusCode,
+			"statusMsg":    minimaxResp.BaseResp.StatusMsg,
+		})
+		// </editor-fold>
+
 		return nil, types.NewErrorWithStatusCode(
 			fmt.Errorf("minimax TTS error: %d - %s", minimaxResp.BaseResp.StatusCode, minimaxResp.BaseResp.StatusMsg),
 			types.ErrorCodeBadResponse,
