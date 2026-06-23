@@ -131,14 +131,33 @@ func CleanupBodyStorage(c *gin.Context) {
 }
 
 func UnmarshalBodyReusable(c *gin.Context, v any) error {
-	requestBody, err := GetRequestBody(c)
+	storage, err := GetBodyStorage(c)
+	if err != nil {
+		return err
+	}
+	contentType := c.Request.Header.Get("Content-Type")
+
+	if storage.IsDisk() && strings.HasPrefix(contentType, "application/json") {
+		if _, err := storage.Seek(0, io.SeekStart); err != nil {
+			return err
+		}
+		if err := DecodeJson(storage, v); err != nil {
+			return err
+		}
+		if _, err := storage.Seek(0, io.SeekStart); err != nil {
+			return err
+		}
+		c.Request.Body = io.NopCloser(storage)
+		return nil
+	}
+
+	requestBody, err := storage.Bytes()
 	if err != nil {
 		return err
 	}
 	//if DebugEnabled {
 	//	println("UnmarshalBodyReusable request body:", string(requestBody))
 	//}
-	contentType := c.Request.Header.Get("Content-Type")
 	if strings.HasPrefix(contentType, "application/json") {
 		err = Unmarshal(requestBody, v)
 	} else if strings.Contains(contentType, gin.MIMEPOSTForm) {

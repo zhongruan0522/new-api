@@ -132,6 +132,10 @@ type RelayInfo struct {
 	IsClaudeBetaQuery bool // /v1/messages?beta=true
 	IsChannelTest     bool // channel test request
 
+	// UpstreamRequestBodySize is set when the marshaled upstream request body
+	// is wrapped in BodyStorage so DoApiRequest can preserve Content-Length.
+	UpstreamRequestBodySize int64
+
 	PriceData types.PriceData
 
 	Request dto.Request

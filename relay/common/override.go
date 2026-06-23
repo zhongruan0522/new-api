@@ -39,9 +39,7 @@ func ApplyParamOverride(jsonData []byte, paramOverride map[string]interface{}, c
 
 	// 尝试断言为操作格式
 	if operations, ok := tryParseOperations(paramOverride); ok {
-		// 使用新方法
-		result, err := applyOperations(string(jsonData), operations, conditionContext)
-		return []byte(result), err
+		return applyOperations(jsonData, operations, conditionContext)
 	}
 
 	// 直接使用旧方法
@@ -125,13 +123,13 @@ func tryParseOperations(paramOverride map[string]interface{}) ([]ParamOperation,
 	return nil, false
 }
 
-func checkConditions(jsonStr, contextJSON string, conditions []ConditionOperation, logic string) (bool, error) {
+func checkConditions(data []byte, contextJSON string, conditions []ConditionOperation, logic string) (bool, error) {
 	if len(conditions) == 0 {
 		return true, nil // 没有条件，直接通过
 	}
 	results := make([]bool, len(conditions))
 	for i, condition := range conditions {
-		result, err := checkSingleCondition(jsonStr, contextJSON, condition)
+		result, err := checkSingleCondition(data, contextJSON, condition)
 		if err != nil {
 			return false, err
 		}
@@ -155,10 +153,10 @@ func checkConditions(jsonStr, contextJSON string, conditions []ConditionOperatio
 	}
 }
 
-func checkSingleCondition(jsonStr, contextJSON string, condition ConditionOperation) (bool, error) {
+func checkSingleCondition(data []byte, contextJSON string, condition ConditionOperation) (bool, error) {
 	// 处理负数索引
-	path := processNegativeIndex(jsonStr, condition.Path)
-	value := gjson.Get(jsonStr, path)
+	path := processNegativeIndex(data, condition.Path)
+	value := gjson.GetBytes(data, path)
 	if !value.Exists() && contextJSON != "" {
 		value = gjson.Get(contextJSON, condition.Path)
 	}
@@ -187,7 +185,7 @@ func checkSingleCondition(jsonStr, contextJSON string, condition ConditionOperat
 	return result, nil
 }
 
-func processNegativeIndex(jsonStr string, path string) string {
+func processNegativeIndex(data []byte, path string) string {
 	matches := negativeIndexRegexp.FindAllStringSubmatch(path, -1)
 
 	if len(matches) == 0 {
@@ -204,7 +202,7 @@ func processNegativeIndex(jsonStr string, path string) string {
 			arrayPath = arrayPath[:len(arrayPath)-1]
 		}
 
-		array := gjson.Get(jsonStr, arrayPath)
+		array := gjson.GetBytes(data, arrayPath)
 		if array.IsArray() {
 			length := len(array.Array())
 			actualIndex := length + index
@@ -295,35 +293,39 @@ func compareNumeric(jsonValue, targetValue gjson.Result, operator string) (bool,
 
 // applyOperationsLegacy 原参数覆盖方法
 func applyOperationsLegacy(jsonData []byte, paramOverride map[string]interface{}) ([]byte, error) {
-	reqMap := make(map[string]interface{})
-	err := common.Unmarshal(jsonData, &reqMap)
-	if err != nil {
-		return nil, err
-	}
-
+	result := jsonData
+	var err error
 	for key, value := range paramOverride {
-		reqMap[key] = value
+		result, err = sjson.SetBytes(result, escapeSJSONPathKey(key), value)
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	return common.Marshal(reqMap)
+	return result, nil
 }
 
-func applyOperations(jsonStr string, operations []ParamOperation, conditionContext map[string]interface{}) (string, error) {
+func escapeSJSONPathKey(key string) string {
+	replacer := strings.NewReplacer(`\`, `\\`, `.`, `\.`, `*`, `\*`, `?`, `\?`)
+	return replacer.Replace(key)
+}
+
+func applyOperations(data []byte, operations []ParamOperation, conditionContext map[string]interface{}) ([]byte, error) {
 	var contextJSON string
 	if conditionContext != nil && len(conditionContext) > 0 {
 		ctxBytes, err := common.Marshal(conditionContext)
 		if err != nil {
-			return "", fmt.Errorf("failed to marshal condition context: %v", err)
+			return nil, fmt.Errorf("failed to marshal condition context: %v", err)
 		}
 		contextJSON = string(ctxBytes)
 	}
 
-	result := jsonStr
+	result := data
 	for _, op := range operations {
 		// 检查条件是否满足
 		ok, err := checkConditions(result, contextJSON, op.Conditions, op.Logic)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 		if !ok {
 			continue // 条件不满足，跳过当前操作
@@ -333,19 +335,19 @@ func applyOperations(jsonStr string, operations []ParamOperation, conditionConte
 
 		switch op.Mode {
 		case "delete":
-			result, err = sjson.Delete(result, opPath)
+			result, err = sjson.DeleteBytes(result, opPath)
 		case "set":
-			if op.KeepOrigin && gjson.Get(result, opPath).Exists() {
+			if op.KeepOrigin && gjson.GetBytes(result, opPath).Exists() {
 				continue
 			}
-			result, err = sjson.Set(result, opPath, op.Value)
+			result, err = sjson.SetBytes(result, opPath, op.Value)
 		case "move":
 			opFrom := processNegativeIndex(result, op.From)
 			opTo := processNegativeIndex(result, op.To)
 			result, err = moveValue(result, opFrom, opTo)
 		case "copy":
 			if op.From == "" || op.To == "" {
-				return "", fmt.Errorf("copy from/to is required")
+				return nil, fmt.Errorf("copy from/to is required")
 			}
 			opFrom := processNegativeIndex(result, op.From)
 			opTo := processNegativeIndex(result, op.To)
@@ -373,50 +375,50 @@ func applyOperations(jsonStr string, operations []ParamOperation, conditionConte
 		case "regex_replace":
 			result, err = regexReplaceStringValue(result, opPath, op.From, op.To)
 		default:
-			return "", fmt.Errorf("unknown operation: %s", op.Mode)
+			return nil, fmt.Errorf("unknown operation: %s", op.Mode)
 		}
 		if err != nil {
-			return "", fmt.Errorf("operation %s failed: %v", op.Mode, err)
+			return nil, fmt.Errorf("operation %s failed: %v", op.Mode, err)
 		}
 	}
 	return result, nil
 }
 
-func moveValue(jsonStr, fromPath, toPath string) (string, error) {
-	sourceValue := gjson.Get(jsonStr, fromPath)
+func moveValue(data []byte, fromPath, toPath string) ([]byte, error) {
+	sourceValue := gjson.GetBytes(data, fromPath)
 	if !sourceValue.Exists() {
-		return jsonStr, fmt.Errorf("source path does not exist: %s", fromPath)
+		return data, fmt.Errorf("source path does not exist: %s", fromPath)
 	}
-	result, err := sjson.Set(jsonStr, toPath, sourceValue.Value())
+	result, err := sjson.SetBytes(data, toPath, sourceValue.Value())
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	return sjson.Delete(result, fromPath)
+	return sjson.DeleteBytes(result, fromPath)
 }
 
-func copyValue(jsonStr, fromPath, toPath string) (string, error) {
-	sourceValue := gjson.Get(jsonStr, fromPath)
+func copyValue(data []byte, fromPath, toPath string) ([]byte, error) {
+	sourceValue := gjson.GetBytes(data, fromPath)
 	if !sourceValue.Exists() {
-		return jsonStr, fmt.Errorf("source path does not exist: %s", fromPath)
+		return data, fmt.Errorf("source path does not exist: %s", fromPath)
 	}
-	return sjson.Set(jsonStr, toPath, sourceValue.Value())
+	return sjson.SetBytes(data, toPath, sourceValue.Value())
 }
 
-func modifyValue(jsonStr, path string, value interface{}, keepOrigin, isPrepend bool) (string, error) {
-	current := gjson.Get(jsonStr, path)
+func modifyValue(data []byte, path string, value interface{}, keepOrigin, isPrepend bool) ([]byte, error) {
+	current := gjson.GetBytes(data, path)
 	switch {
 	case current.IsArray():
-		return modifyArray(jsonStr, path, value, isPrepend)
+		return modifyArray(data, path, value, isPrepend)
 	case current.Type == gjson.String:
-		return modifyString(jsonStr, path, value, isPrepend)
+		return modifyString(data, path, value, isPrepend)
 	case current.Type == gjson.JSON:
-		return mergeObjects(jsonStr, path, value, keepOrigin)
+		return mergeObjects(data, path, value, keepOrigin)
 	}
-	return jsonStr, fmt.Errorf("operation not supported for type: %v", current.Type)
+	return data, fmt.Errorf("operation not supported for type: %v", current.Type)
 }
 
-func modifyArray(jsonStr, path string, value interface{}, isPrepend bool) (string, error) {
-	current := gjson.Get(jsonStr, path)
+func modifyArray(data []byte, path string, value interface{}, isPrepend bool) ([]byte, error) {
+	current := gjson.GetBytes(data, path)
 	var newArray []interface{}
 	// 添加新值
 	addValue := func() {
@@ -440,11 +442,11 @@ func modifyArray(jsonStr, path string, value interface{}, isPrepend bool) (strin
 		addOriginal()
 		addValue()
 	}
-	return sjson.Set(jsonStr, path, newArray)
+	return sjson.SetBytes(data, path, newArray)
 }
 
-func modifyString(jsonStr, path string, value interface{}, isPrepend bool) (string, error) {
-	current := gjson.Get(jsonStr, path)
+func modifyString(data []byte, path string, value interface{}, isPrepend bool) ([]byte, error) {
+	current := gjson.GetBytes(data, path)
 	valueStr := fmt.Sprintf("%v", value)
 	var newStr string
 	if isPrepend {
@@ -452,17 +454,17 @@ func modifyString(jsonStr, path string, value interface{}, isPrepend bool) (stri
 	} else {
 		newStr = current.String() + valueStr
 	}
-	return sjson.Set(jsonStr, path, newStr)
+	return sjson.SetBytes(data, path, newStr)
 }
 
-func trimStringValue(jsonStr, path string, value interface{}, isPrefix bool) (string, error) {
-	current := gjson.Get(jsonStr, path)
+func trimStringValue(data []byte, path string, value interface{}, isPrefix bool) ([]byte, error) {
+	current := gjson.GetBytes(data, path)
 	if current.Type != gjson.String {
-		return jsonStr, fmt.Errorf("operation not supported for type: %v", current.Type)
+		return data, fmt.Errorf("operation not supported for type: %v", current.Type)
 	}
 
 	if value == nil {
-		return jsonStr, fmt.Errorf("trim value is required")
+		return data, fmt.Errorf("trim value is required")
 	}
 	valueStr := fmt.Sprintf("%v", value)
 
@@ -472,78 +474,78 @@ func trimStringValue(jsonStr, path string, value interface{}, isPrefix bool) (st
 	} else {
 		newStr = strings.TrimSuffix(current.String(), valueStr)
 	}
-	return sjson.Set(jsonStr, path, newStr)
+	return sjson.SetBytes(data, path, newStr)
 }
 
-func ensureStringAffix(jsonStr, path string, value interface{}, isPrefix bool) (string, error) {
-	current := gjson.Get(jsonStr, path)
+func ensureStringAffix(data []byte, path string, value interface{}, isPrefix bool) ([]byte, error) {
+	current := gjson.GetBytes(data, path)
 	if current.Type != gjson.String {
-		return jsonStr, fmt.Errorf("operation not supported for type: %v", current.Type)
+		return data, fmt.Errorf("operation not supported for type: %v", current.Type)
 	}
 
 	if value == nil {
-		return jsonStr, fmt.Errorf("ensure value is required")
+		return data, fmt.Errorf("ensure value is required")
 	}
 	valueStr := fmt.Sprintf("%v", value)
 	if valueStr == "" {
-		return jsonStr, fmt.Errorf("ensure value is required")
+		return data, fmt.Errorf("ensure value is required")
 	}
 
 	currentStr := current.String()
 	if isPrefix {
 		if strings.HasPrefix(currentStr, valueStr) {
-			return jsonStr, nil
+			return data, nil
 		}
-		return sjson.Set(jsonStr, path, valueStr+currentStr)
+		return sjson.SetBytes(data, path, valueStr+currentStr)
 	}
 
 	if strings.HasSuffix(currentStr, valueStr) {
-		return jsonStr, nil
+		return data, nil
 	}
-	return sjson.Set(jsonStr, path, currentStr+valueStr)
+	return sjson.SetBytes(data, path, currentStr+valueStr)
 }
 
-func transformStringValue(jsonStr, path string, transform func(string) string) (string, error) {
-	current := gjson.Get(jsonStr, path)
+func transformStringValue(data []byte, path string, transform func(string) string) ([]byte, error) {
+	current := gjson.GetBytes(data, path)
 	if current.Type != gjson.String {
-		return jsonStr, fmt.Errorf("operation not supported for type: %v", current.Type)
+		return data, fmt.Errorf("operation not supported for type: %v", current.Type)
 	}
-	return sjson.Set(jsonStr, path, transform(current.String()))
+	return sjson.SetBytes(data, path, transform(current.String()))
 }
 
-func replaceStringValue(jsonStr, path, from, to string) (string, error) {
-	current := gjson.Get(jsonStr, path)
+func replaceStringValue(data []byte, path, from, to string) ([]byte, error) {
+	current := gjson.GetBytes(data, path)
 	if current.Type != gjson.String {
-		return jsonStr, fmt.Errorf("operation not supported for type: %v", current.Type)
+		return data, fmt.Errorf("operation not supported for type: %v", current.Type)
 	}
 	if from == "" {
-		return jsonStr, fmt.Errorf("replace from is required")
+		return data, fmt.Errorf("replace from is required")
 	}
-	return sjson.Set(jsonStr, path, strings.ReplaceAll(current.String(), from, to))
+	return sjson.SetBytes(data, path, strings.ReplaceAll(current.String(), from, to))
 }
 
-func regexReplaceStringValue(jsonStr, path, pattern, replacement string) (string, error) {
-	current := gjson.Get(jsonStr, path)
+func regexReplaceStringValue(data []byte, path, pattern, replacement string) ([]byte, error) {
+	current := gjson.GetBytes(data, path)
 	if current.Type != gjson.String {
-		return jsonStr, fmt.Errorf("operation not supported for type: %v", current.Type)
+		return data, fmt.Errorf("operation not supported for type: %v", current.Type)
 	}
 	if pattern == "" {
-		return jsonStr, fmt.Errorf("regex pattern is required")
+		return data, fmt.Errorf("regex pattern is required")
 	}
 	re, err := regexp.Compile(pattern)
 	if err != nil {
-		return jsonStr, err
+		return data, err
 	}
-	return sjson.Set(jsonStr, path, re.ReplaceAllString(current.String(), replacement))
+	return sjson.SetBytes(data, path, re.ReplaceAllString(current.String(), replacement))
 }
 
-func mergeObjects(jsonStr, path string, value interface{}, keepOrigin bool) (string, error) {
-	current := gjson.Get(jsonStr, path)
+func mergeObjects(data []byte, path string, value interface{}, keepOrigin bool) ([]byte, error) {
+	current := gjson.GetBytes(data, path)
 	var currentMap, newMap map[string]interface{}
 
 	// 解析当前值
-	if err := common.Unmarshal([]byte(current.Raw), &currentMap); err != nil {
-		return "", err
+	if err := common.UnmarshalJsonStr(current.Raw, &currentMap); err != nil {
+		return nil, err
 	}
 	// 解析新值
 	switch v := value.(type) {
@@ -552,7 +554,7 @@ func mergeObjects(jsonStr, path string, value interface{}, keepOrigin bool) (str
 	default:
 		jsonBytes, _ := common.Marshal(v)
 		if err := common.Unmarshal(jsonBytes, &newMap); err != nil {
-			return "", err
+			return nil, err
 		}
 	}
 	// 合并
@@ -565,7 +567,7 @@ func mergeObjects(jsonStr, path string, value interface{}, keepOrigin bool) (str
 			result[k] = v
 		}
 	}
-	return sjson.Set(jsonStr, path, result)
+	return sjson.SetBytes(data, path, result)
 }
 
 // BuildParamOverrideContext 提供 ApplyParamOverride 可用的上下文信息。

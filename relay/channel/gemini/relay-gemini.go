@@ -959,7 +959,23 @@ func responseGeminiChat2OpenAI(c *gin.Context, response *dto.GeminiChatResponse)
 		}
 		hasToolCalls := false
 		if len(candidate.Content.Parts) > 0 {
-			var texts []string
+			var content strings.Builder
+			var inlineGrow int
+			for _, part := range candidate.Content.Parts {
+				if part.InlineData != nil {
+					inlineGrow += len(part.InlineData.MimeType) + len(part.InlineData.Data) + 32
+				}
+			}
+			if inlineGrow > 0 {
+				content.Grow(inlineGrow)
+			}
+			appended := 0
+			writeSep := func() {
+				if appended > 0 {
+					content.WriteByte('\n')
+				}
+				appended++
+			}
 			var reasoningTexts []string
 			reasoningSignature := ""
 			var toolCalls []dto.ToolCallResponse
@@ -970,11 +986,20 @@ func responseGeminiChat2OpenAI(c *gin.Context, response *dto.GeminiChatResponse)
 				if part.InlineData != nil {
 					// 媒体内容
 					if strings.HasPrefix(part.InlineData.MimeType, "image") {
-						imgText := "![image](data:" + part.InlineData.MimeType + ";base64," + part.InlineData.Data + ")"
-						texts = append(texts, imgText)
+						writeSep()
+						content.WriteString("![image](data:")
+						content.WriteString(part.InlineData.MimeType)
+						content.WriteString(";base64,")
+						content.WriteString(part.InlineData.Data)
+						content.WriteByte(')')
 					} else {
 						// 其他媒体类型，直接显示链接
-						texts = append(texts, fmt.Sprintf("[media](data:%s;base64,%s)", part.InlineData.MimeType, part.InlineData.Data))
+						writeSep()
+						content.WriteString("[media](data:")
+						content.WriteString(part.InlineData.MimeType)
+						content.WriteString(";base64,")
+						content.WriteString(part.InlineData.Data)
+						content.WriteByte(')')
 					}
 				} else if part.FunctionCall != nil {
 					choice.FinishReason = constant.FinishReasonToolCalls
@@ -985,13 +1010,22 @@ func responseGeminiChat2OpenAI(c *gin.Context, response *dto.GeminiChatResponse)
 					reasoningTexts = append(reasoningTexts, part.Text)
 				} else {
 					if part.ExecutableCode != nil {
-						texts = append(texts, "```"+part.ExecutableCode.Language+"\n"+part.ExecutableCode.Code+"\n```")
+						writeSep()
+						content.WriteString("```")
+						content.WriteString(part.ExecutableCode.Language)
+						content.WriteByte('\n')
+						content.WriteString(part.ExecutableCode.Code)
+						content.WriteString("\n```")
 					} else if part.CodeExecutionResult != nil {
-						texts = append(texts, "```output\n"+part.CodeExecutionResult.Output+"\n```")
+						writeSep()
+						content.WriteString("```output\n")
+						content.WriteString(part.CodeExecutionResult.Output)
+						content.WriteString("\n```")
 					} else {
 						// 过滤掉空行
 						if part.Text != "\n" {
-							texts = append(texts, part.Text)
+							writeSep()
+							content.WriteString(part.Text)
 						}
 					}
 				}
@@ -1007,7 +1041,7 @@ func responseGeminiChat2OpenAI(c *gin.Context, response *dto.GeminiChatResponse)
 			if reasoningSignature != "" {
 				choice.Message.ReasoningSignature = reasoningSignature
 			}
-			choice.Message.SetStringContent(strings.Join(texts, "\n"))
+			choice.Message.SetStringContent(content.String())
 
 		}
 		if candidate.FinishReason != nil {
@@ -1064,7 +1098,23 @@ func streamResponseGeminiChat2OpenAI(geminiResponse *dto.GeminiChatResponse) (*d
 				//Role: "assistant",
 			},
 		}
-		var texts []string
+		var content strings.Builder
+		var inlineGrow int
+		for _, part := range candidate.Content.Parts {
+			if part.InlineData != nil {
+				inlineGrow += len(part.InlineData.MimeType) + len(part.InlineData.Data) + 32
+			}
+		}
+		if inlineGrow > 0 {
+			content.Grow(inlineGrow)
+		}
+		appended := 0
+		writeSep := func() {
+			if appended > 0 {
+				content.WriteByte('\n')
+			}
+			appended++
+		}
 		var reasoningTexts []string
 		reasoningSignature := ""
 		isTools := false
@@ -1106,8 +1156,12 @@ func streamResponseGeminiChat2OpenAI(geminiResponse *dto.GeminiChatResponse) (*d
 			}
 			if part.InlineData != nil {
 				if strings.HasPrefix(part.InlineData.MimeType, "image") {
-					imgText := "![image](data:" + part.InlineData.MimeType + ";base64," + part.InlineData.Data + ")"
-					texts = append(texts, imgText)
+					writeSep()
+					content.WriteString("![image](data:")
+					content.WriteString(part.InlineData.MimeType)
+					content.WriteString(";base64,")
+					content.WriteString(part.InlineData.Data)
+					content.WriteByte(')')
 				}
 			} else if part.FunctionCall != nil {
 				isTools = true
@@ -1120,18 +1174,27 @@ func streamResponseGeminiChat2OpenAI(geminiResponse *dto.GeminiChatResponse) (*d
 				reasoningTexts = append(reasoningTexts, part.Text)
 			} else {
 				if part.ExecutableCode != nil {
-					texts = append(texts, "```"+part.ExecutableCode.Language+"\n"+part.ExecutableCode.Code+"\n```\n")
+					writeSep()
+					content.WriteString("```")
+					content.WriteString(part.ExecutableCode.Language)
+					content.WriteByte('\n')
+					content.WriteString(part.ExecutableCode.Code)
+					content.WriteString("\n```\n")
 				} else if part.CodeExecutionResult != nil {
-					texts = append(texts, "```output\n"+part.CodeExecutionResult.Output+"\n```\n")
+					writeSep()
+					content.WriteString("```output\n")
+					content.WriteString(part.CodeExecutionResult.Output)
+					content.WriteString("\n```\n")
 				} else {
 					if part.Text != "\n" {
-						texts = append(texts, part.Text)
+						writeSep()
+						content.WriteString(part.Text)
 					}
 				}
 			}
 		}
-		if len(texts) > 0 {
-			choice.Delta.SetContentString(strings.Join(texts, "\n"))
+		if content.Len() > 0 {
+			choice.Delta.SetContentString(content.String())
 		}
 		if len(reasoningTexts) > 0 {
 			choice.Delta.SetReasoningContent(strings.Join(reasoningTexts, "\n"))
