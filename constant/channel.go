@@ -19,6 +19,7 @@ const (
 	ChannelTypeSiliconFlow    = 40
 	ChannelTypeVertexAi       = 41
 	ChannelTypeDeepSeek       = 43
+	ChannelTypeByteDance      = 44
 	ChannelTypeXiaomi         = 6
 	ChannelTypeDummy          = 7 // this one is only for count, do not add any channel after this
 )
@@ -68,11 +69,11 @@ var ChannelBaseURLs = []string{
 	"",                                          // 41 VertexAi
 	"",                                          // 42 (removed)
 	"https://api.deepseek.com",                  // 43 DeepSeek
-	"",                                          // 44 (removed)
-	"",                                          // 45 (removed)
-	"",                                          // 46 (removed)
-	"",                                          // 47 (removed)
-	"",                                          // 48 (removed)
+	"https://ark.cn-beijing.volces.com/api/v3", // 44 ByteDance
+	"", // 45 (removed)
+	"", // 46 (removed)
+	"", // 47 (removed)
+	"", // 48 (removed)
 }
 
 var ChannelTypeNames = map[int]string{
@@ -91,6 +92,7 @@ var ChannelTypeNames = map[int]string{
 	ChannelTypeSiliconFlow: "SiliconFlow",
 	ChannelTypeVertexAi:    "VertexAI",
 	ChannelTypeDeepSeek:    "DeepSeek",
+	ChannelTypeByteDance:   "ByteDance",
 	ChannelTypeXiaomi:      "Xiaomi",
 }
 

@@ -291,6 +291,7 @@ var streamSupportedChannels = map[int]bool{
 	constant.ChannelTypeOllama:    true,
 	constant.ChannelTypeDeepSeek:  true,
 	constant.ChannelTypeZhipu_v4:  true,
+	constant.ChannelTypeByteDance: true,
 }
 
 func GenRelayInfoWs(c *gin.Context, ws *websocket.Conn) *RelayInfo {

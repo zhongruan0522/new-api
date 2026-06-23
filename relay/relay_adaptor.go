@@ -4,6 +4,7 @@ import (
 	"github.com/zhongruan0522/new-api/constant"
 	"github.com/zhongruan0522/new-api/relay/channel"
 	"github.com/zhongruan0522/new-api/relay/channel/aws"
+	"github.com/zhongruan0522/new-api/relay/channel/bytedance"
 	"github.com/zhongruan0522/new-api/relay/channel/claude"
 	"github.com/zhongruan0522/new-api/relay/channel/deepseek"
 	"github.com/zhongruan0522/new-api/relay/channel/gemini"
@@ -45,6 +46,8 @@ func GetAdaptor(apiType int) channel.Adaptor {
 		return &minimax.Adaptor{}
 	case constant.APITypeXiaomi:
 		return &xiaomi.Adaptor{}
+	case constant.APITypeByteDance:
+		return &bytedance.Adaptor{}
 	}
 	return nil
 }

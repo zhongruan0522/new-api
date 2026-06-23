@@ -61,8 +61,8 @@ export function getChannelTypeIcon(type: number): string {
     40: 'SiliconCloud', // SiliconFlow
     41: 'Gemini', // Vertex AI
     43: 'DeepSeek', // DeepSeek
+    44: 'ByteDance', // ByteDance
   }
-
   return TYPE_TO_ICON[type] || 'OpenAI'
 }
 
