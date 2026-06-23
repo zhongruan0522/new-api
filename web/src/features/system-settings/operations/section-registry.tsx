@@ -121,7 +121,7 @@ const OPERATIONS_SECTIONS = [
           'performance_setting.monitor_memory_threshold':
             settings['performance_setting.monitor_memory_threshold'] ?? 90,
           'performance_setting.monitor_disk_threshold':
-            settings['performance_setting.monitor_disk_threshold'] ?? 90,
+            settings['performance_setting.monitor_disk_threshold'] ?? 95,
         }}
       />
     ),
