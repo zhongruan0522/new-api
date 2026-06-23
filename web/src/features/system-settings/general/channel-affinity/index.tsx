@@ -83,7 +83,12 @@ function RuleBadgeList(props: { items: string[] }) {
 }
 
 function serializeRules(rules: AffinityRule[]): string {
-  return JSON.stringify(rules.map(({ id: _, ...rest }) => rest))
+  return JSON.stringify(
+    rules.map(({ id: _, ...rest }) => ({
+      ...rest,
+      skip_retry_on_failure: !!rest.skip_retry_on_failure,
+    }))
+  )
 }
 
 interface Props {
