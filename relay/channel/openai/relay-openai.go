@@ -21,12 +21,13 @@ import (
 	"github.com/zhongruan0522/new-api/types"
 )
 
-func sendStreamData(c *gin.Context, data string, forceFormat bool) error {
+func sendStreamData(c *gin.Context, info *relaycommon.RelayInfo, data string, forceFormat bool) error {
 	if data == "" {
 		return nil
 	}
 
 	if !forceFormat {
+		data = string(helper.MaskTopLevelModelJSON(common.StringToByteSlice(data), info))
 		return helper.StringData(c, data)
 	}
 
@@ -34,6 +35,7 @@ func sendStreamData(c *gin.Context, data string, forceFormat bool) error {
 	if err := common.UnmarshalJsonStr(data, &lastStreamResponse); err != nil {
 		return err
 	}
+	helper.MaskChatStreamResponseModel(&lastStreamResponse, info)
 
 	return helper.ObjectData(c, lastStreamResponse)
 }
@@ -108,7 +110,7 @@ func OaiStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Re
 
 	if info.RelayFormat == types.RelayFormatOpenAI {
 		if shouldSendLastResp {
-			_ = sendStreamData(c, lastStreamData, info.ChannelSetting.ForceFormat)
+			_ = sendStreamData(c, info, lastStreamData, info.ChannelSetting.ForceFormat)
 		}
 	}
 
@@ -172,6 +174,7 @@ func OpenaiHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Respo
 			break
 		}
 	}
+	helper.MaskTextResponseModel(&simpleResponse, info)
 
 	forceFormat := false
 	if info.ChannelSetting.ForceFormat {
@@ -214,6 +217,7 @@ func OpenaiHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Respo
 				return nil, types.NewError(err, types.ErrorCodeBadResponseBody)
 			}
 		} else {
+			responseBody = helper.MaskTopLevelModelJSON(responseBody, info)
 			break
 		}
 	case types.RelayFormatClaude:
@@ -432,6 +436,7 @@ func OpenaiRealtimeHandler(c *gin.Context, info *relaycommon.RelayInfo) (*types.
 					localUsage.OutputTokenDetails.AudioTokens += audioToken
 				}
 
+				message = helper.MaskRealtimeEventModelJSON(message, info)
 				err = helper.WssString(c, clientConn, string(message))
 				if err != nil {
 					errChan <- fmt.Errorf("error writing to client: %v", err)
@@ -494,6 +499,8 @@ func OpenaiHandlerWithUsage(c *gin.Context, info *relaycommon.RelayInfo, resp *h
 	if err != nil {
 		return nil, types.NewOpenAIError(err, types.ErrorCodeBadResponseBody, http.StatusInternalServerError)
 	}
+
+	responseBody = helper.MaskTopLevelModelJSON(responseBody, info)
 
 	// 写入新的 response body
 	service.IOCopyBytesGracefully(c, resp, responseBody)

@@ -2,11 +2,17 @@ package claude
 
 import (
 	"encoding/base64"
+	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 
+	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"
+	"github.com/zhongruan0522/new-api/common"
 	"github.com/zhongruan0522/new-api/dto"
+	relaycommon "github.com/zhongruan0522/new-api/relay/common"
+	"github.com/zhongruan0522/new-api/types"
 )
 
 func TestFormatClaudeResponseInfo_MessageStart(t *testing.T) {
@@ -173,6 +179,50 @@ func TestFormatClaudeResponseInfo_ContentBlockDelta(t *testing.T) {
 	}
 	if claudeInfo.ResponseText.String() != "hello" {
 		t.Errorf("ResponseText = %q, want %q", claudeInfo.ResponseText.String(), "hello")
+	}
+}
+
+func TestClaudeOpenAIStreamMasksResponseModel(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest(http.MethodPost, "/v1/chat/completions", nil)
+	info := &relaycommon.RelayInfo{
+		OriginModelName:    "alias-model",
+		ResponseModelName:  "alias-model",
+		RelayFormat:        types.RelayFormatOpenAI,
+		ShouldIncludeUsage: true,
+		ClaudeConvertInfo:  &relaycommon.ClaudeConvertInfo{LastMessagesType: relaycommon.LastMessageTypeNone},
+		ChannelMeta:        &relaycommon.ChannelMeta{UpstreamModelName: "real-model"},
+	}
+	claudeInfo := &ClaudeResponseInfo{
+		ResponseId: "msg_1",
+		Created:    1710000000,
+		Model:      "real-model",
+		Usage:      &dto.Usage{PromptTokens: 1, CompletionTokens: 1, TotalTokens: 2},
+		Done:       true,
+	}
+	messageStart, err := common.Marshal(dto.ClaudeResponse{
+		Type: "message_start",
+		Message: &dto.ClaudeMediaMessage{
+			Id:    "msg_1",
+			Model: "real-model",
+			Usage: &dto.ClaudeUsage{InputTokens: 1},
+		},
+	})
+	if err != nil {
+		t.Fatalf("marshal message_start: %v", err)
+	}
+	if apiErr := HandleStreamResponseData(c, info, claudeInfo, string(messageStart)); apiErr != nil {
+		t.Fatalf("HandleStreamResponseData error: %v", apiErr)
+	}
+	HandleStreamFinalResponse(c, info, claudeInfo)
+
+	out := w.Body.String()
+	if strings.Contains(out, `"model":"real-model"`) {
+		t.Fatalf("claude stream output leaked upstream model: %s", out)
+	}
+	if !strings.Contains(out, `"model":"alias-model"`) {
+		t.Fatalf("claude stream output missing alias model: %s", out)
 	}
 }
 

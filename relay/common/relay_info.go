@@ -103,24 +103,26 @@ type RelayInfo struct {
 	UsePrice               bool
 	RelayMode              int
 	OriginModelName        string
-	RequestURLPath         string
-	ShouldIncludeUsage     bool
-	DisablePing            bool // 是否禁止向下游发送自定义 Ping
-	ClientWs               *websocket.Conn
-	TargetWs               *websocket.Conn
-	InputAudioFormat       string
-	OutputAudioFormat      string
-	RealtimeTools          []dto.RealTimeTool
-	IsFirstRequest         bool
-	AudioUsage             bool
-	ReasoningEffort        string
-	UserSetting            dto.UserSetting
-	UserEmail              string
-	UserQuota              int
-	RelayFormat            types.RelayFormat
-	SendResponseCount      int
-	ReceivedResponseCount  int
-	FinalPreConsumedQuota  int // 最终预消耗的配额
+	// ResponseModelName preserves the model ID the client requested for downstream responses.
+	ResponseModelName     string
+	RequestURLPath        string
+	ShouldIncludeUsage    bool
+	DisablePing           bool // 是否禁止向下游发送自定义 Ping
+	ClientWs              *websocket.Conn
+	TargetWs              *websocket.Conn
+	InputAudioFormat      string
+	OutputAudioFormat     string
+	RealtimeTools         []dto.RealTimeTool
+	IsFirstRequest        bool
+	AudioUsage            bool
+	ReasoningEffort       string
+	UserSetting           dto.UserSetting
+	UserEmail             string
+	UserQuota             int
+	RelayFormat           types.RelayFormat
+	SendResponseCount     int
+	ReceivedResponseCount int
+	FinalPreConsumedQuota int // 最终预消耗的配额
 	// Billing 是计费会话，封装了预扣费/结算/退款的统一生命周期。
 	// 免费模型和按次计费（MJ/Task）时为 nil。
 	Billing BillingSettler
@@ -203,12 +205,25 @@ func (info *RelayInfo) InitChannelMeta(c *gin.Context) {
 	}
 
 	info.ChannelMeta = channelMeta
+	if info.ResponseModelName == "" {
+		info.ResponseModelName = info.OriginModelName
+	}
 
 	// reset some fields based on channel meta
 	// 重置某些字段，例如模型名称等
 	if info.Request != nil {
 		info.Request.SetModelName(info.OriginModelName)
 	}
+}
+
+func (info *RelayInfo) GetResponseModelName() string {
+	if info == nil {
+		return ""
+	}
+	if info.ResponseModelName != "" {
+		return info.ResponseModelName
+	}
+	return info.OriginModelName
 }
 
 func (info *RelayInfo) ToString() string {
@@ -434,7 +449,8 @@ func genBaseRelayInfo(c *gin.Context, request dto.Request) *RelayInfo {
 		UserQuota:  common.GetContextKeyInt(c, constant.ContextKeyUserQuota),
 		UserEmail:  common.GetContextKeyString(c, constant.ContextKeyUserEmail),
 
-		OriginModelName: common.GetContextKeyString(c, constant.ContextKeyOriginalModel),
+		OriginModelName:   common.GetContextKeyString(c, constant.ContextKeyOriginalModel),
+		ResponseModelName: common.GetContextKeyString(c, constant.ContextKeyOriginalModel),
 
 		TokenId:        common.GetContextKeyInt(c, constant.ContextKeyTokenId),
 		TokenKey:       common.GetContextKeyString(c, constant.ContextKeyTokenKey),

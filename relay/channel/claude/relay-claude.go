@@ -899,6 +899,7 @@ func HandleStreamResponseData(c *gin.Context, info *relaycommon.RelayInfo, claud
 				data = patchClaudeMessageDeltaUsageData(data, buildMessageDeltaPatchUsage(&claudeResponse, claudeInfo))
 			}
 		}
+		data = string(helper.MaskClaudeEventModelJSON(common.StringToByteSlice(data), info))
 		helper.ClaudeChunkData(c, claudeResponse, data)
 	} else if info.RelayFormat == types.RelayFormatOpenAI {
 		response := StreamResponseClaude2OpenAI(&claudeResponse)
@@ -906,6 +907,7 @@ func HandleStreamResponseData(c *gin.Context, info *relaycommon.RelayInfo, claud
 		if !FormatClaudeResponseInfo(&claudeResponse, response, claudeInfo) {
 			return nil
 		}
+		helper.MaskChatStreamResponseModel(response, info)
 
 		err = helper.ObjectData(c, response)
 		if err != nil {
@@ -920,6 +922,7 @@ func HandleStreamResponseData(c *gin.Context, info *relaycommon.RelayInfo, claud
 		if response == nil {
 			return nil
 		}
+		helper.MaskChatStreamResponseModel(response, info)
 
 		if err := writeClaudeChatChunkAsResponsesEvent(c, info, claudeInfo, response); err != nil {
 			return err
@@ -933,6 +936,7 @@ func HandleStreamResponseData(c *gin.Context, info *relaycommon.RelayInfo, claud
 		if response == nil {
 			return nil
 		}
+		helper.MaskChatStreamResponseModel(response, info)
 
 		geminiResponse := service.StreamResponseOpenAI2Gemini(response, info)
 		if geminiResponse == nil {
@@ -964,7 +968,7 @@ func HandleStreamFinalResponse(c *gin.Context, info *relaycommon.RelayInfo, clau
 		//
 	} else if info.RelayFormat == types.RelayFormatOpenAI {
 		if info.ShouldIncludeUsage {
-			response := helper.GenerateFinalUsageResponse(claudeInfo.ResponseId, claudeInfo.Created, info.UpstreamModelName, *claudeInfo.Usage)
+			response := helper.GenerateFinalUsageResponse(claudeInfo.ResponseId, claudeInfo.Created, info.GetResponseModelName(), *claudeInfo.Usage)
 			err := helper.ObjectData(c, response)
 			if err != nil {
 				common.SysLog("send final response failed: " + err.Error())
@@ -976,7 +980,7 @@ func HandleStreamFinalResponse(c *gin.Context, info *relaycommon.RelayInfo, clau
 			common.SysLog("send final responses response failed: " + err.Error())
 		}
 	} else if info.RelayFormat == types.RelayFormatGemini {
-		response := helper.GenerateFinalUsageResponse(claudeInfo.ResponseId, claudeInfo.Created, info.UpstreamModelName, *claudeInfo.Usage)
+		response := helper.GenerateFinalUsageResponse(claudeInfo.ResponseId, claudeInfo.Created, info.GetResponseModelName(), *claudeInfo.Usage)
 		geminiResponse := service.StreamResponseOpenAI2Gemini(response, info)
 		if geminiResponse == nil {
 			return
@@ -1027,7 +1031,7 @@ func writeClaudeResponsesFinalEvent(c *gin.Context, info *relaycommon.RelayInfo,
 	converter := ensureClaudeResponsesStreamConverter(info, claudeInfo)
 
 	if claudeInfo.Usage != nil {
-		usageChunk := helper.GenerateFinalUsageResponse(claudeInfo.ResponseId, claudeInfo.Created, info.UpstreamModelName, *claudeInfo.Usage)
+		usageChunk := helper.GenerateFinalUsageResponse(claudeInfo.ResponseId, claudeInfo.Created, info.GetResponseModelName(), *claudeInfo.Usage)
 		data, err := common.Marshal(usageChunk)
 		if err != nil {
 			return types.NewError(err, types.ErrorCodeBadResponseBody)
@@ -1097,6 +1101,7 @@ func HandleClaudeResponseData(c *gin.Context, info *relaycommon.RelayInfo, claud
 	switch info.RelayFormat {
 	case types.RelayFormatOpenAI:
 		openaiResponse := ResponseClaude2OpenAI(&claudeResponse)
+		helper.MaskTextResponseModel(openaiResponse, info)
 		openaiResponse.Usage = *claudeInfo.Usage
 		responseData, err = json.Marshal(openaiResponse)
 		if err != nil {
@@ -1104,6 +1109,7 @@ func HandleClaudeResponseData(c *gin.Context, info *relaycommon.RelayInfo, claud
 		}
 	case types.RelayFormatOpenAIResponses:
 		openaiResponse := ResponseClaude2OpenAI(&claudeResponse)
+		helper.MaskTextResponseModel(openaiResponse, info)
 		openaiResponse.Usage = *claudeInfo.Usage
 		responsesResp, convErr := relaycommon.ConvertChatCompletionResponseToResponsesResponseWithToolContext(openaiResponse, info.OpenAIResponsesToolContext)
 		if convErr != nil {
@@ -1114,9 +1120,10 @@ func HandleClaudeResponseData(c *gin.Context, info *relaycommon.RelayInfo, claud
 			return types.NewError(err, types.ErrorCodeBadResponseBody)
 		}
 	case types.RelayFormatClaude:
-		responseData = data
+		responseData = helper.MaskTopLevelModelJSON(data, info)
 	case types.RelayFormatGemini:
 		openaiResponse := ResponseClaude2OpenAI(&claudeResponse)
+		helper.MaskTextResponseModel(openaiResponse, info)
 		openaiResponse.Usage = *claudeInfo.Usage
 		geminiResponse := service.ResponseOpenAI2Gemini(openaiResponse, info)
 		responseData, err = common.Marshal(geminiResponse)

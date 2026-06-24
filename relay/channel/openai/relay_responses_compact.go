@@ -6,13 +6,14 @@ import (
 	"github.com/zhongruan0522/new-api/common"
 	"github.com/zhongruan0522/new-api/dto"
 	relaycommon "github.com/zhongruan0522/new-api/relay/common"
+	"github.com/zhongruan0522/new-api/relay/helper"
 	"github.com/zhongruan0522/new-api/service"
 	"github.com/zhongruan0522/new-api/types"
 
 	"github.com/gin-gonic/gin"
 )
 
-func OaiResponsesCompactionHandler(c *gin.Context, resp *http.Response) (*dto.Usage, *types.NewAPIError) {
+func OaiResponsesCompactionHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Response) (*dto.Usage, *types.NewAPIError) {
 	defer service.CloseResponseBodyGracefully(resp)
 
 	responseBody, err := common.ReadResponseBody(resp.Body)
@@ -27,6 +28,8 @@ func OaiResponsesCompactionHandler(c *gin.Context, resp *http.Response) (*dto.Us
 	if oaiError := compactResp.GetOpenAIError(); oaiError != nil && oaiError.Type != "" {
 		return nil, types.WithOpenAIError(*oaiError, resp.StatusCode)
 	}
+
+	responseBody = helper.MaskTopLevelModelJSON(responseBody, info)
 
 	service.IOCopyBytesGracefully(c, resp, responseBody)
 

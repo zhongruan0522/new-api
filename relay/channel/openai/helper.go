@@ -23,7 +23,7 @@ func HandleStreamFormat(c *gin.Context, info *relaycommon.RelayInfo, data string
 
 	switch info.RelayFormat {
 	case types.RelayFormatOpenAI:
-		return sendStreamData(c, data, forceFormat)
+		return sendStreamData(c, info, data, forceFormat)
 	case types.RelayFormatClaude:
 		return handleClaudeFormat(c, data, info)
 	case types.RelayFormatGemini:
@@ -37,6 +37,7 @@ func handleClaudeFormat(c *gin.Context, data string, info *relaycommon.RelayInfo
 	if err := common.Unmarshal(common.StringToByteSlice(data), &streamResponse); err != nil {
 		return err
 	}
+	helper.MaskChatStreamResponseModel(&streamResponse, info)
 
 	if streamResponse.Usage != nil {
 		info.ClaudeConvertInfo.Usage = streamResponse.Usage
@@ -54,6 +55,7 @@ func handleGeminiFormat(c *gin.Context, data string, info *relaycommon.RelayInfo
 		logger.LogError(c, "failed to unmarshal stream response: "+err.Error())
 		return err
 	}
+	helper.MaskChatStreamResponseModel(&streamResponse, info)
 
 	geminiResponse := service.StreamResponseOpenAI2Gemini(&streamResponse, info)
 
@@ -146,7 +148,11 @@ func HandleFinalResponse(c *gin.Context, info *relaycommon.RelayInfo, lastStream
 	switch info.RelayFormat {
 	case types.RelayFormatOpenAI:
 		if info.ShouldIncludeUsage && !containStreamUsage {
-			response := helper.GenerateFinalUsageResponse(responseId, createAt, model, *usage)
+			responseModel := model
+			if info.GetResponseModelName() != "" {
+				responseModel = info.GetResponseModelName()
+			}
+			response := helper.GenerateFinalUsageResponse(responseId, createAt, responseModel, *usage)
 			response.SetSystemFingerprint(systemFingerprint)
 			helper.ObjectData(c, response)
 		}
@@ -158,6 +164,7 @@ func HandleFinalResponse(c *gin.Context, info *relaycommon.RelayInfo, lastStream
 			common.SysLog("error unmarshalling stream response: " + err.Error())
 			return
 		}
+		helper.MaskChatStreamResponseModel(&streamResponse, info)
 
 		info.ClaudeConvertInfo.Usage = usage
 
@@ -173,6 +180,7 @@ func HandleFinalResponse(c *gin.Context, info *relaycommon.RelayInfo, lastStream
 			common.SysLog("error unmarshalling stream response: " + err.Error())
 			return
 		}
+		helper.MaskChatStreamResponseModel(&streamResponse, info)
 
 		// 这里处理的是 openai 最后一个流响应，其 delta 为空，有 finish_reason 字段
 		// 因此相比较于 google 官方的流响应，由 openai 转换而来会多一个 parts 为空，finishReason 为 STOP 的响应

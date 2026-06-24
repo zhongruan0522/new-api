@@ -1293,6 +1293,7 @@ func geminiStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http
 func GeminiChatStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Response) (*dto.Usage, *types.NewAPIError) {
 	id := helper.GetResponseID(c)
 	createAt := common.GetTimestamp()
+	responseModel := info.GetResponseModelName()
 	finishReason := constant.FinishReasonStop
 	toolCallIDByChoice := make(map[int]map[int]string)
 
@@ -1301,7 +1302,7 @@ func GeminiChatStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *
 
 		response.Id = id
 		response.Created = createAt
-		response.Model = info.UpstreamModelName
+		response.Model = responseModel
 		for choiceIdx := range response.Choices {
 			choiceKey := response.Choices[choiceIdx].Index
 			idState := toolCallIDByChoice[choiceKey]
@@ -1327,7 +1328,7 @@ func GeminiChatStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *
 		logger.LogDebug(c, fmt.Sprintf("info.SendResponseCount = %d", info.SendResponseCount))
 		if info.SendResponseCount == 0 {
 			// send first response
-			emptyResponse := helper.GenerateStartEmptyResponse(id, createAt, info.UpstreamModelName, nil)
+			emptyResponse := helper.GenerateStartEmptyResponse(id, createAt, responseModel, nil)
 			if response.IsToolCall() {
 				if len(emptyResponse.Choices) > 0 && len(response.Choices) > 0 {
 					toolCalls := response.Choices[0].Delta.ToolCalls
@@ -1361,7 +1362,7 @@ func GeminiChatStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *
 			logger.LogError(c, err.Error())
 		}
 		if isStop {
-			_ = handleStream(c, info, helper.GenerateStopResponse(id, createAt, info.UpstreamModelName, finishReason))
+			_ = handleStream(c, info, helper.GenerateStopResponse(id, createAt, responseModel, finishReason))
 		}
 		return true
 	})
@@ -1370,7 +1371,7 @@ func GeminiChatStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *
 		return usage, err
 	}
 
-	response := helper.GenerateFinalUsageResponse(id, createAt, info.UpstreamModelName, *usage)
+	response := helper.GenerateFinalUsageResponse(id, createAt, responseModel, *usage)
 	handleErr := handleFinalStream(c, info, response)
 	if handleErr != nil {
 		common.SysLog("send final response failed: " + handleErr.Error())
@@ -1435,7 +1436,7 @@ func GeminiChatHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.R
 		return &usage, nil
 	}
 	fullTextResponse := responseGeminiChat2OpenAI(c, &geminiResponse)
-	fullTextResponse.Model = info.UpstreamModelName
+	fullTextResponse.Model = info.GetResponseModelName()
 	usage := service.GeminiUsageMetadataToOpenAIUsage(geminiResponse.UsageMetadata)
 
 	fullTextResponse.Usage = usage
@@ -1479,7 +1480,7 @@ func GeminiEmbeddingHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *h
 	openAIResponse := dto.OpenAIEmbeddingResponse{
 		Object: "list",
 		Data:   make([]dto.OpenAIEmbeddingResponseItem, 0, len(geminiResponse.Embeddings)),
-		Model:  info.UpstreamModelName,
+		Model:  info.GetResponseModelName(),
 	}
 
 	for i, embedding := range geminiResponse.Embeddings {
