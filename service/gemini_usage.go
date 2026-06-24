@@ -9,22 +9,26 @@ import (
 // HasGeminiUsageMetadata reports whether Gemini returned any usage payload worth mapping.
 func HasGeminiUsageMetadata(metadata dto.GeminiUsageMetadata) bool {
 	return metadata.PromptTokenCount > 0 ||
+		metadata.ToolUsePromptTokenCount > 0 ||
 		metadata.CandidatesTokenCount > 0 ||
 		metadata.TotalTokenCount > 0 ||
 		metadata.ThoughtsTokenCount > 0 ||
 		metadata.CachedContentTokenCount > 0 ||
 		len(metadata.PromptTokensDetails) > 0 ||
+		len(metadata.ToolUsePromptTokensDetails) > 0 ||
 		len(metadata.CandidatesTokensDetails) > 0
 }
 
 // GeminiUsageMetadataToOpenAIUsage normalizes Gemini usage metadata into the local OpenAI-compatible shape.
 func GeminiUsageMetadataToOpenAIUsage(metadata dto.GeminiUsageMetadata) dto.Usage {
+	promptTokens := metadata.PromptTokenCount + metadata.ToolUsePromptTokenCount
+	completionTokens := metadata.CandidatesTokenCount + metadata.ThoughtsTokenCount
 	usage := dto.Usage{
-		PromptTokens:     metadata.PromptTokenCount,
-		CompletionTokens: metadata.CandidatesTokenCount + metadata.ThoughtsTokenCount,
+		PromptTokens:     promptTokens,
+		CompletionTokens: completionTokens,
 		TotalTokens:      metadata.TotalTokenCount,
-		InputTokens:      metadata.PromptTokenCount,
-		OutputTokens:     metadata.CandidatesTokenCount + metadata.ThoughtsTokenCount,
+		InputTokens:      promptTokens,
+		OutputTokens:     completionTokens,
 	}
 
 	if usage.TotalTokens == 0 {
@@ -35,14 +39,14 @@ func GeminiUsageMetadataToOpenAIUsage(metadata dto.GeminiUsageMetadata) dto.Usag
 	usage.PromptTokensDetails.CachedTokens = metadata.CachedContentTokenCount
 	usage.CompletionTokenDetails.ReasoningTokens = metadata.ThoughtsTokenCount
 
-	for _, detail := range metadata.PromptTokensDetails {
+	for _, detail := range append(metadata.PromptTokensDetails, metadata.ToolUsePromptTokensDetails...) {
 		switch strings.ToUpper(strings.TrimSpace(detail.Modality)) {
 		case "TEXT":
-			usage.PromptTokensDetails.TextTokens = detail.TokenCount
+			usage.PromptTokensDetails.TextTokens += detail.TokenCount
 		case "AUDIO":
-			usage.PromptTokensDetails.AudioTokens = detail.TokenCount
+			usage.PromptTokensDetails.AudioTokens += detail.TokenCount
 		case "IMAGE":
-			usage.PromptTokensDetails.ImageTokens = detail.TokenCount
+			usage.PromptTokensDetails.ImageTokens += detail.TokenCount
 		}
 	}
 
@@ -56,7 +60,7 @@ func GeminiUsageMetadataToOpenAIUsage(metadata dto.GeminiUsageMetadata) dto.Usag
 	}
 
 	// Gemini often omits modality breakdowns; keep a text fallback only when no finer detail exists.
-	if len(metadata.PromptTokensDetails) == 0 && usage.PromptTokens > 0 {
+	if len(metadata.PromptTokensDetails) == 0 && len(metadata.ToolUsePromptTokensDetails) == 0 && usage.PromptTokens > 0 {
 		usage.PromptTokensDetails.TextTokens = usage.PromptTokens
 	}
 	if len(metadata.CandidatesTokensDetails) == 0 && metadata.CandidatesTokenCount > 0 {
