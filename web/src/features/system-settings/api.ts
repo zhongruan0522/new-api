@@ -26,6 +26,7 @@ import type {
   SystemOptionsResponse,
   UpdateOptionRequest,
   UpdateOptionResponse,
+  UpsertOptionJsonMapEntryRequest,
 } from './types'
 
 export async function getSystemOptions(options?: {
@@ -67,6 +68,16 @@ export async function deleteOptionJsonMapEntry(
   const res = await api.delete<UpdateOptionResponse>('/api/option/json_map', {
     data: request,
   })
+  return res.data
+}
+
+export async function upsertOptionJsonMapEntry(
+  request: UpsertOptionJsonMapEntryRequest
+) {
+  const res = await api.put<UpdateOptionResponse>(
+    '/api/option/json_map',
+    request
+  )
   return res.data
 }
 

@@ -18,7 +18,7 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Code, Table, Plus, Trash2 } from 'lucide-react'
+import { Code, Plus, Save, Table, Trash2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
@@ -29,6 +29,7 @@ import {
   deleteOptionJsonMapEntry,
   getOptionJsonMap,
   getSystemOptionValue,
+  upsertOptionJsonMapEntry,
 } from '@/features/system-settings/api'
 
 type ModelMappingEditorProps = {
@@ -49,7 +50,7 @@ type ModelMappingEditorProps = {
   template?: string
   /** 空状态提示文案，默认复用模型映射默认值 */
   emptyText?: string
-  /** 系统设置 option key。传入后可视模式改为服务端分页，只支持删除。 */
+  /** 系统设置 option key。传入后可视模式改为服务端分页编辑。 */
   optionKey?: string
 }
 
@@ -57,6 +58,9 @@ type MappingRow = {
   id: string
   from: string
   to: string
+  originalFrom?: string
+  originalTo?: string
+  isNew?: boolean
 }
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50]
@@ -152,6 +156,40 @@ export function ModelMappingEditor({
     },
   })
 
+  const upsertEntryMutation = useMutation({
+    mutationFn: async (row: MappingRow) => {
+      if (!optionKey) return
+      const mapKey = row.from.trim()
+      if (!mapKey) {
+        throw new Error(t('Mapping key cannot be empty'))
+      }
+      const data = await upsertOptionJsonMapEntry({
+        key: optionKey,
+        map_key: mapKey,
+        old_map_key: row.isNew ? undefined : row.originalFrom,
+        value: row.to.trim(),
+      })
+      if (!data.success) {
+        throw new Error(data.message || t('Failed to update setting'))
+      }
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: ['system-option-json-map', optionKey],
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ['system-option-value', optionKey],
+        }),
+        queryClient.invalidateQueries({ queryKey: ['system-options'] }),
+      ])
+      toast.success(t('Settings updated successfully'))
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || t('Failed to update setting'))
+    },
+  })
+
   const parseJsonToRows = useCallback(
     (json: string) => {
       try {
@@ -209,6 +247,21 @@ export function ModelMappingEditor({
     parseJsonToRows(value)
   }, [isServerPaginated, parseJsonToRows, value])
 
+  useEffect(() => {
+    if (!isServerPaginated || !jsonMapQuery.data) {
+      return
+    }
+    setRows(
+      (jsonMapQuery.data.items ?? []).map((item) => ({
+        id: `server-${item.key}`,
+        from: item.key,
+        to: item.value,
+        originalFrom: item.key,
+        originalTo: item.value,
+      }))
+    )
+  }, [isServerPaginated, jsonMapQuery.data])
+
   const convertRowsToJson = (updatedRows: MappingRow[]): string => {
     if (updatedRows.length === 0) {
       return ''
@@ -222,16 +275,29 @@ export function ModelMappingEditor({
     return JSON.stringify(obj, null, 2)
   }
 
+  const unsavedServerRowCount = useMemo(
+    () => (isServerPaginated ? rows.filter((row) => row.isNew).length : 0),
+    [isServerPaginated, rows]
+  )
+
   const pageCount = useMemo(
     () =>
       Math.max(
         1,
         Math.ceil(
-          (isServerPaginated ? (jsonMapQuery.data?.total ?? 0) : rows.length) /
+          (isServerPaginated
+            ? (jsonMapQuery.data?.total ?? 0) + unsavedServerRowCount
+            : rows.length) /
             pageSize
         )
       ),
-    [isServerPaginated, jsonMapQuery.data?.total, pageSize, rows.length]
+    [
+      isServerPaginated,
+      jsonMapQuery.data?.total,
+      pageSize,
+      rows.length,
+      unsavedServerRowCount,
+    ]
   )
 
   const safePageIndex = Math.min(pageIndex, pageCount - 1)
@@ -245,19 +311,9 @@ export function ModelMappingEditor({
     [pageSize, rows, safePageIndex]
   )
 
-  const serverRows = useMemo<MappingRow[]>(
-    () =>
-      (jsonMapQuery.data?.items ?? []).map((item) => ({
-        id: item.key,
-        from: item.key,
-        to: item.value,
-      })),
-    [jsonMapQuery.data?.items]
-  )
-
-  const visibleRows = isServerPaginated ? serverRows : pageRows
+  const visibleRows = isServerPaginated ? rows : pageRows
   const totalRows = isServerPaginated
-    ? (jsonMapQuery.data?.total ?? 0)
+    ? (jsonMapQuery.data?.total ?? 0) + unsavedServerRowCount
     : rows.length
   const isLoadingRows = isServerPaginated && jsonMapQuery.isLoading
 
@@ -280,6 +336,11 @@ export function ModelMappingEditor({
       id: createRowId(),
       from: '',
       to: '',
+      isNew: true,
+    }
+    if (isServerPaginated) {
+      setRows((currentRows) => [...currentRows, newRow])
+      return
     }
     const updatedRows = [...rows, newRow]
     setRows(updatedRows)
@@ -288,7 +349,13 @@ export function ModelMappingEditor({
 
   const handleDeleteRow = (id: string) => {
     if (isServerPaginated) {
-      deleteEntryMutation.mutate(id)
+      const row = rows.find((item) => item.id === id)
+      if (row?.isNew) {
+        setRows((currentRows) => currentRows.filter((item) => item.id !== id))
+        return
+      }
+      const mapKey = row?.originalFrom ?? row?.from ?? id
+      deleteEntryMutation.mutate(mapKey)
       return
     }
     const updatedRows = rows.filter((row) => row.id !== id)
@@ -305,7 +372,19 @@ export function ModelMappingEditor({
       row.id === id ? { ...row, [field]: newValue } : row
     )
     setRows(updatedRows)
+    if (isServerPaginated) {
+      return
+    }
     emitChange(convertRowsToJson(updatedRows))
+  }
+
+  const isRowDirty = (row: MappingRow) =>
+    Boolean(
+      row.isNew || row.from !== row.originalFrom || row.to !== row.originalTo
+    )
+
+  const handleSaveRow = (row: MappingRow) => {
+    upsertEntryMutation.mutate(row)
   }
 
   const handleJsonChange = (newJson: string) => {
@@ -384,7 +463,7 @@ export function ModelMappingEditor({
             </Button>
           ) : null}
         </div>
-        {mode === 'visual' && !isServerPaginated ? (
+        {mode === 'visual' ? (
           <Button
             type='button'
             variant='outline'
@@ -402,10 +481,10 @@ export function ModelMappingEditor({
         <div className='space-y-2'>
           {isLoadingRows || totalRows > 0 ? (
             <div className='space-y-2'>
-              <div className='grid grid-cols-[1fr_1fr_auto] gap-2 text-sm font-medium'>
+              <div className='grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] gap-2 text-sm font-medium'>
                 <div>{fromLabel ? t(fromLabel) : t('Original Model')}</div>
                 <div>{toLabel ? t(toLabel) : t('Replacement Model')}</div>
-                <div className='w-10'></div>
+                <div className={isServerPaginated ? 'w-20' : 'w-10'}></div>
               </div>
               {isLoadingRows ? (
                 <div className='text-muted-foreground flex h-24 items-center justify-center rounded-md border border-dashed text-sm'>
@@ -415,7 +494,7 @@ export function ModelMappingEditor({
               {visibleRows.map((row) => (
                 <div
                   key={row.id}
-                  className='grid grid-cols-[1fr_1fr_auto] gap-2'
+                  className='grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] gap-2'
                 >
                   <Input
                     value={row.from}
@@ -423,7 +502,8 @@ export function ModelMappingEditor({
                       handleRowChange(row.id, 'from', e.target.value)
                     }
                     placeholder={fromPlaceholder}
-                    disabled={disabled || isServerPaginated}
+                    disabled={disabled}
+                    className='min-w-0'
                   />
                   <Input
                     value={row.to}
@@ -431,18 +511,39 @@ export function ModelMappingEditor({
                       handleRowChange(row.id, 'to', e.target.value)
                     }
                     placeholder={toPlaceholder}
-                    disabled={disabled || isServerPaginated}
+                    disabled={disabled}
+                    className='min-w-0'
                   />
-                  <Button
-                    type='button'
-                    variant='ghost'
-                    size='icon'
-                    onClick={() => handleDeleteRow(row.id)}
-                    disabled={disabled || deleteEntryMutation.isPending}
-                    className='h-10 w-10'
-                  >
-                    <Trash2 className='h-4 w-4' />
-                  </Button>
+                  <div className='flex items-center justify-end gap-1'>
+                    {isServerPaginated ? (
+                      <Button
+                        type='button'
+                        variant='ghost'
+                        size='icon'
+                        onClick={() => handleSaveRow(row)}
+                        disabled={
+                          disabled ||
+                          upsertEntryMutation.isPending ||
+                          !row.from.trim() ||
+                          !isRowDirty(row)
+                        }
+                        className='h-10 w-10'
+                        aria-label={t('Save')}
+                      >
+                        <Save className='h-4 w-4' />
+                      </Button>
+                    ) : null}
+                    <Button
+                      type='button'
+                      variant='ghost'
+                      size='icon'
+                      onClick={() => handleDeleteRow(row.id)}
+                      disabled={disabled || deleteEntryMutation.isPending}
+                      className='h-10 w-10'
+                    >
+                      <Trash2 className='h-4 w-4' />
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -521,14 +622,19 @@ export function ModelMappingEditor({
           ) : null}
         </div>
       ) : (
-        <Textarea
-          value={jsonValue}
-          onChange={(e) => handleJsonChange(e.target.value)}
-          placeholder={jsonPlaceholder ?? t('{"original-model": "replacement-model"}')}
-          disabled={disabled}
-          rows={8}
-          className={cn('font-mono text-sm')}
-        />
+        <div className='min-w-0 max-w-full overflow-hidden'>
+          <Textarea
+            value={jsonValue}
+            onChange={(e) => handleJsonChange(e.target.value)}
+            placeholder={jsonPlaceholder ?? t('{"original-model": "replacement-model"}')}
+            disabled={disabled}
+            rows={8}
+            wrap='off'
+            className={cn(
+              'max-h-80 min-h-48 w-full min-w-0 max-w-full resize-y overflow-auto whitespace-pre font-mono text-sm'
+            )}
+          />
+        </div>
       )}
     </div>
   )

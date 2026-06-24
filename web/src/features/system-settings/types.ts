@@ -56,6 +56,13 @@ export type DeleteOptionJsonMapEntryRequest = {
   map_key: string
 }
 
+export type UpsertOptionJsonMapEntryRequest = {
+  key: string
+  map_key: string
+  old_map_key?: string
+  value: string
+}
+
 export type UpdateOptionRequest = {
   key: string
   value: string | boolean | number

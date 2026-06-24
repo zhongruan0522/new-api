@@ -127,6 +127,7 @@ func SetApiRouter(router *gin.Engine) {
 			optionRoute.GET("/value", controller.GetOptionValue)
 			optionRoute.GET("/json_map", controller.GetOptionJsonMap)
 			optionRoute.PUT("/", controller.UpdateOption)
+			optionRoute.PUT("/json_map", controller.UpsertOptionJsonMapEntry)
 			optionRoute.DELETE("/json_map", controller.DeleteOptionJsonMapEntry)
 			optionRoute.GET("/channel_affinity_cache", controller.GetChannelAffinityCacheStats)
 			optionRoute.DELETE("/channel_affinity_cache", controller.ClearChannelAffinityCache)

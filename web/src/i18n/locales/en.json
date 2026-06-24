@@ -2614,6 +2614,7 @@
     "Safety Settings": "Safety Settings",
     "Sampling temperature; lower is more deterministic": "Sampling temperature; lower is more deterministic",
     "Save": "Save",
+    "Mapping key cannot be empty": "Mapping key cannot be empty",
     "Save Backup Codes": "Save Backup Codes",
     "Save Changes": "Save Changes",
     "Save check-in settings": "Save check-in settings",

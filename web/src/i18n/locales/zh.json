@@ -2614,6 +2614,7 @@
     "Safety Settings": "安全设置",
     "Sampling temperature; lower is more deterministic": "采样温度；越低越稳定",
     "Save": "保存",
+    "Mapping key cannot be empty": "映射键不能为空",
     "Save Backup Codes": "保存备份代码",
     "Save Changes": "保存更改",
     "Save check-in settings": "保存签到设置",

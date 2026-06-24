@@ -66,6 +66,13 @@ type OptionJsonMapDeleteRequest struct {
 	MapKey string `json:"map_key"`
 }
 
+type OptionJsonMapUpsertRequest struct {
+	Key       string `json:"key"`
+	MapKey    string `json:"map_key"`
+	OldMapKey string `json:"old_map_key"`
+	Value     string `json:"value"`
+}
+
 func isSensitiveOptionKey(key string) bool {
 	return strings.HasSuffix(key, "Token") ||
 		strings.HasSuffix(key, "Secret") ||
@@ -247,6 +254,82 @@ func DeleteOptionJsonMapEntry(c *gin.Context) {
 		model.AuditModuleOption,
 		model.AuditActionUpdate,
 		"删除 JSON 映射配置项 "+req.Key+"."+req.MapKey,
+		map[string]interface{}{"option": req.Key, "value": beforeValue},
+		map[string]interface{}{"option": req.Key, "value": nextValue},
+	)
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "",
+	})
+}
+
+func UpsertOptionJsonMapEntry(c *gin.Context) {
+	var req OptionJsonMapUpsertRequest
+	if err := common.DecodeJson(c.Request.Body, &req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"message": "无效的参数",
+		})
+		return
+	}
+
+	mapKey := strings.TrimSpace(req.MapKey)
+	oldMapKey := strings.TrimSpace(req.OldMapKey)
+	if mapKey == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"message": "映射键不能为空",
+		})
+		return
+	}
+
+	items, beforeValue, ok := readMiniMaxStringMapOption(c, req.Key)
+	if !ok {
+		return
+	}
+
+	if oldMapKey != "" && oldMapKey != mapKey {
+		if _, exists := items[oldMapKey]; !exists {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": "原映射项不存在",
+			})
+			return
+		}
+		if _, exists := items[mapKey]; exists {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": "映射键已存在",
+			})
+			return
+		}
+		delete(items, oldMapKey)
+	}
+
+	items[mapKey] = strings.TrimSpace(req.Value)
+	bytes, err := common.Marshal(items)
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	nextValue := string(bytes)
+	if err := model_setting.ValidateMiniMaxOptionValue(req.Key, nextValue); err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": "MiniMax 设置失败: " + err.Error(),
+		})
+		return
+	}
+	if err := model.UpdateOption(req.Key, nextValue); err != nil {
+		common.ApiError(c, err)
+		return
+	}
+
+	service.RecordAudit(
+		c,
+		model.AuditModuleOption,
+		model.AuditActionUpdate,
+		"修改 JSON 映射配置项 "+req.Key+"."+mapKey,
 		map[string]interface{}{"option": req.Key, "value": beforeValue},
 		map[string]interface{}{"option": req.Key, "value": nextValue},
 	)
