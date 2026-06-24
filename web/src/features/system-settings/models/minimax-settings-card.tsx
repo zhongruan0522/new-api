@@ -49,8 +49,8 @@ import {
   validateJsonString,
 } from './utils'
 
-// JSON map fields share the same validation: must parse as a non-empty JSON
-// object. 后端拒绝空串（清空请用 "{}"），因此前端也必须 allowEmpty=false。
+// JSON map fields share the same validation: must parse as JSON. The backend
+// rejects empty strings, so clearing a map must use "{}" instead.
 function jsonMapField(value: string, ctx: z.RefinementCtx) {
   const result = validateJsonString(value, { allowEmpty: false })
   if (!result.valid) {
@@ -90,6 +90,12 @@ type FlatMiniMaxSettings = {
   'minimax.tone_word_pattern': string
   'minimax.tone_word_redirect': string
 }
+
+type MiniMaxJsonMapKey =
+  | 'minimax.model_redirect'
+  | 'minimax.voice_redirect'
+  | 'minimax.emotion_redirect'
+  | 'minimax.tone_word_redirect'
 
 interface Props {
   defaultValues: MiniMaxFormInput
@@ -138,6 +144,21 @@ export function MiniMaxSettingsCard({ defaultValues }: Props) {
     defaultValues: buildFormDefaults(defaultValues),
   })
   const enabled = form.watch('minimax.enabled')
+
+  const syncJsonMapBaseline =
+    (key: MiniMaxJsonMapKey, fieldName: MiniMaxJsonMapKey) =>
+    (loadedValue: string) => {
+      const safeValue = loadedValue.trim() ? loadedValue : '{}'
+      normalizedDefaultsRef.current = {
+        ...normalizedDefaultsRef.current,
+        [key]: normalizeJsonString(safeValue),
+      }
+      form.setValue(fieldName, formatJsonForTextarea(safeValue), {
+        shouldDirty: false,
+        shouldTouch: false,
+        shouldValidate: false,
+      })
+    }
 
   useEffect(() => {
     normalizedDefaultsRef.current = buildNormalizedDefaults(defaultValues)
@@ -237,6 +258,10 @@ export function MiniMaxSettingsCard({ defaultValues }: Props) {
                       2
                     )}
                     emptyText='No redirects configured. Click "Add Mapping" to get started.'
+                    onFullValueLoaded={syncJsonMapBaseline(
+                      'minimax.model_redirect',
+                      'minimax.model_redirect'
+                    )}
                   />
                 </FormControl>
                 <FormDescription>
@@ -272,6 +297,10 @@ export function MiniMaxSettingsCard({ defaultValues }: Props) {
                       2
                     )}
                     emptyText='No redirects configured. Click "Add Mapping" to get started.'
+                    onFullValueLoaded={syncJsonMapBaseline(
+                      'minimax.voice_redirect',
+                      'minimax.voice_redirect'
+                    )}
                   />
                 </FormControl>
                 <FormDescription>
@@ -326,6 +355,10 @@ export function MiniMaxSettingsCard({ defaultValues }: Props) {
                       2
                     )}
                     emptyText='No redirects configured. Click "Add Mapping" to get started.'
+                    onFullValueLoaded={syncJsonMapBaseline(
+                      'minimax.emotion_redirect',
+                      'minimax.emotion_redirect'
+                    )}
                   />
                 </FormControl>
                 <FormDescription>
@@ -380,6 +413,10 @@ export function MiniMaxSettingsCard({ defaultValues }: Props) {
                       2
                     )}
                     emptyText='No redirects configured. Click "Add Mapping" to get started.'
+                    onFullValueLoaded={syncJsonMapBaseline(
+                      'minimax.tone_word_redirect',
+                      'minimax.tone_word_redirect'
+                    )}
                   />
                 </FormControl>
                 <FormDescription>

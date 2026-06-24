@@ -52,6 +52,8 @@ type ModelMappingEditorProps = {
   emptyText?: string
   /** 系统设置 option key。传入后可视模式改为服务端分页编辑。 */
   optionKey?: string
+  /** 服务端分页模式下，切换到 JSON 模式后回传完整原始值。 */
+  onFullValueLoaded?: (value: string) => void
 }
 
 type MappingRow = {
@@ -65,6 +67,19 @@ type MappingRow = {
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50]
 
+function formatJsonForEditor(value: string) {
+  const trimmed = value.trim()
+  if (!trimmed) {
+    return '{}'
+  }
+
+  try {
+    return JSON.stringify(JSON.parse(trimmed), null, 2)
+  } catch {
+    return value
+  }
+}
+
 export function ModelMappingEditor({
   value,
   onChange,
@@ -77,6 +92,7 @@ export function ModelMappingEditor({
   template,
   emptyText,
   optionKey,
+  onFullValueLoaded,
 }: ModelMappingEditorProps) {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
@@ -263,9 +279,6 @@ export function ModelMappingEditor({
   }, [isServerPaginated, jsonMapQuery.data])
 
   const convertRowsToJson = (updatedRows: MappingRow[]): string => {
-    if (updatedRows.length === 0) {
-      return ''
-    }
     const obj: Record<string, string> = {}
     updatedRows.forEach((row) => {
       if (row.from.trim()) {
@@ -412,7 +425,9 @@ export function ModelMappingEditor({
           toast.error(result.error.message || t('Failed to load settings'))
           return
         }
-        setJsonValue(result.data ?? '{}')
+        const fullValue = result.data ?? '{}'
+        onFullValueLoaded?.(fullValue)
+        setJsonValue(formatJsonForEditor(fullValue))
       } else {
         // Switching to JSON mode: sync rows to JSON
         emitChange(convertRowsToJson(rows))
@@ -631,7 +646,7 @@ export function ModelMappingEditor({
             rows={8}
             wrap='off'
             className={cn(
-              'max-h-80 min-h-48 w-full min-w-0 max-w-full resize-y overflow-auto whitespace-pre font-mono text-sm'
+              'h-48 max-h-48 min-h-48 w-full min-w-0 max-w-full resize-none overflow-auto whitespace-pre font-mono text-sm [field-sizing:fixed]'
             )}
           />
         </div>
