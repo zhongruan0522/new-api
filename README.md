@@ -26,12 +26,14 @@
 
 - OpenCode
 - Codex
+- CurSor
 
 ### 使用的 AI 模型
 
 - GLM-5 系列  
   - GLM-5
   - GLM-5.1
+  - GLM-5.2
 
 - GLM-5-Turbo 系列
   - GLM-5-Turbo
