@@ -224,11 +224,22 @@ func ClaudeToOpenAIRequest(claudeRequest dto.ClaudeRequest, info *relaycommon.Re
 	}
 
 	isOpenRouter := info.ChannelType == constant.ChannelTypeOpenRouter
-	openAIRequest.ReasoningEffort = extractClaudeReasoningEffort(claudeRequest)
+	if isOpenRouter {
+		if effort := extractClaudeOutputConfigEffort(claudeRequest.OutputConfig); effort != "" {
+			verbosity, err := common.Marshal(effort)
+			if err != nil {
+				return nil, fmt.Errorf("failed to marshal verbosity: %w", err)
+			}
+			openAIRequest.Verbosity = verbosity
+		}
+	} else {
+		openAIRequest.ReasoningEffort = extractClaudeReasoningEffort(claudeRequest)
+	}
 
 	if claudeRequest.Thinking != nil && claudeRequest.Thinking.Type == "enabled" {
 		if isOpenRouter {
 			reasoning := openrouter.RequestReasoning{
+				Enabled:   true,
 				MaxTokens: claudeRequest.Thinking.GetBudgetTokens(),
 			}
 			reasoningJSON, err := common.Marshal(reasoning)
@@ -244,10 +255,18 @@ func ClaudeToOpenAIRequest(claudeRequest dto.ClaudeRequest, info *relaycommon.Re
 			}
 		}
 	}
-	if claudeRequest.Thinking != nil && claudeRequest.Thinking.Type == "adaptive" && openAIRequest.ReasoningEffort == "" {
-		// Claude adaptive thinking has no direct Chat Completions equivalent, so we
-		// expose it as high effort to preserve the intent when routing through OpenAI-style channels.
-		openAIRequest.ReasoningEffort = "high"
+	if claudeRequest.Thinking != nil && claudeRequest.Thinking.Type == "adaptive" {
+		if isOpenRouter {
+			reasoningJSON, err := common.Marshal(openrouter.RequestReasoning{Enabled: true})
+			if err != nil {
+				return nil, fmt.Errorf("failed to marshal reasoning: %w", err)
+			}
+			openAIRequest.Reasoning = reasoningJSON
+		} else if openAIRequest.ReasoningEffort == "" {
+			// Claude adaptive thinking has no direct Chat Completions equivalent, so we
+			// expose it as high effort to preserve the intent when routing through OpenAI-style channels.
+			openAIRequest.ReasoningEffort = "high"
+		}
 	}
 
 	// Convert stop sequences

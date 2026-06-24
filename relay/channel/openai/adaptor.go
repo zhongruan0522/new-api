@@ -255,22 +255,30 @@ func (a *Adaptor) ConvertOpenAIRequest(c *gin.Context, info *relaycommon.RelayIn
 		// 没有做排除3.5Haiku等，要出问题再加吧，最佳兼容性（不是
 		if request.THINKING != nil && strings.HasPrefix(info.UpstreamModelName, "anthropic") {
 			var thinking dto.Thinking // Claude标准Thinking格式
-			if err := json.Unmarshal(request.THINKING, &thinking); err != nil {
+			if err := common.Unmarshal(request.THINKING, &thinking); err != nil {
 				return nil, fmt.Errorf("error Unmarshal thinking: %w", err)
 			}
 
-			// 只有当 thinking.Type 是 "enabled" 时才处理
-			if thinking.Type == "enabled" {
+			switch thinking.Type {
+			case "enabled":
 				// 检查 BudgetTokens 是否为 nil
 				if thinking.BudgetTokens == nil {
 					return nil, fmt.Errorf("BudgetTokens is nil when thinking is enabled")
 				}
 
 				reasoning := openrouter.RequestReasoning{
+					Enabled:   true,
 					MaxTokens: *thinking.BudgetTokens,
 				}
 
 				marshal, err := common.Marshal(reasoning)
+				if err != nil {
+					return nil, fmt.Errorf("error marshalling reasoning: %w", err)
+				}
+
+				request.Reasoning = marshal
+			case "adaptive":
+				marshal, err := common.Marshal(openrouter.RequestReasoning{Enabled: true})
 				if err != nil {
 					return nil, fmt.Errorf("error marshalling reasoning: %w", err)
 				}

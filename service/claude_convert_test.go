@@ -75,6 +75,89 @@ func TestClaudeToOpenAIRequestPreservesThinkingSignatureAndToolErrors(t *testing
 	}
 }
 
+func TestClaudeToOpenAIRequestMapsOpenRouterEnabledThinking(t *testing.T) {
+	budget := 2048
+	request := dto.ClaudeRequest{
+		Model:    "anthropic/claude-sonnet-4",
+		Thinking: &dto.Thinking{Type: "enabled", BudgetTokens: &budget},
+	}
+	info := &relaycommon.RelayInfo{
+		OriginModelName: "anthropic/claude-sonnet-4",
+		ChannelMeta: &relaycommon.ChannelMeta{
+			ChannelType:       constant.ChannelTypeOpenRouter,
+			UpstreamModelName: "anthropic/claude-sonnet-4",
+		},
+	}
+
+	openAIRequest, err := ClaudeToOpenAIRequest(request, info)
+	if err != nil {
+		t.Fatalf("ClaudeToOpenAIRequest error = %v", err)
+	}
+
+	var reasoning map[string]any
+	if err := common.Unmarshal(openAIRequest.Reasoning, &reasoning); err != nil {
+		t.Fatalf("unmarshal reasoning: %v", err)
+	}
+	if reasoning["enabled"] != true || reasoning["max_tokens"].(float64) != 2048 {
+		t.Fatalf("reasoning = %#v, want enabled=true max_tokens=2048", reasoning)
+	}
+	if openAIRequest.ReasoningEffort != "" {
+		t.Fatalf("ReasoningEffort = %q, want empty for OpenRouter", openAIRequest.ReasoningEffort)
+	}
+}
+
+func TestClaudeToOpenAIRequestMapsOpenRouterAdaptiveThinking(t *testing.T) {
+	request := dto.ClaudeRequest{
+		Model:    "anthropic/claude-sonnet-4",
+		Thinking: &dto.Thinking{Type: "adaptive"},
+	}
+	info := &relaycommon.RelayInfo{
+		OriginModelName: "anthropic/claude-sonnet-4",
+		ChannelMeta: &relaycommon.ChannelMeta{
+			ChannelType:       constant.ChannelTypeOpenRouter,
+			UpstreamModelName: "anthropic/claude-sonnet-4",
+		},
+	}
+
+	openAIRequest, err := ClaudeToOpenAIRequest(request, info)
+	if err != nil {
+		t.Fatalf("ClaudeToOpenAIRequest error = %v", err)
+	}
+
+	var reasoning map[string]any
+	if err := common.Unmarshal(openAIRequest.Reasoning, &reasoning); err != nil {
+		t.Fatalf("unmarshal reasoning: %v", err)
+	}
+	if reasoning["enabled"] != true || len(reasoning) != 1 {
+		t.Fatalf("reasoning = %#v, want only enabled=true", reasoning)
+	}
+}
+
+func TestClaudeToOpenAIRequestMapsOpenRouterOutputConfigEffortToVerbosity(t *testing.T) {
+	request := dto.ClaudeRequest{
+		Model:        "anthropic/claude-sonnet-4",
+		OutputConfig: []byte(`{"effort":"high"}`),
+	}
+	info := &relaycommon.RelayInfo{
+		OriginModelName: "anthropic/claude-sonnet-4",
+		ChannelMeta: &relaycommon.ChannelMeta{
+			ChannelType:       constant.ChannelTypeOpenRouter,
+			UpstreamModelName: "anthropic/claude-sonnet-4",
+		},
+	}
+
+	openAIRequest, err := ClaudeToOpenAIRequest(request, info)
+	if err != nil {
+		t.Fatalf("ClaudeToOpenAIRequest error = %v", err)
+	}
+	if string(openAIRequest.Verbosity) != `"high"` {
+		t.Fatalf("Verbosity = %s, want %q", openAIRequest.Verbosity, `"high"`)
+	}
+	if openAIRequest.ReasoningEffort != "" {
+		t.Fatalf("ReasoningEffort = %q, want empty for OpenRouter", openAIRequest.ReasoningEffort)
+	}
+}
+
 func TestStreamResponseOpenAI2ClaudeEmitsThinkingSignatureAfterThinkingDelta(t *testing.T) {
 	reasoning := "plan"
 	signature := "sig_123"
