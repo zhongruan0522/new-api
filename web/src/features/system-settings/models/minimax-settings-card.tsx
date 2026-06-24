@@ -34,6 +34,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import { ModelMappingEditor } from '@/features/channels/components/model-mapping-editor'
+import { DisabledSettingsNotice } from '../components/disabled-settings-notice'
 import {
   SettingsForm,
   SettingsSwitchContent,
@@ -136,6 +137,7 @@ export function MiniMaxSettingsCard({ defaultValues }: Props) {
     resolver: zodResolver(schema),
     defaultValues: buildFormDefaults(defaultValues),
   })
+  const enabled = form.watch('minimax.enabled')
 
   useEffect(() => {
     normalizedDefaultsRef.current = buildNormalizedDefaults(defaultValues)
@@ -186,6 +188,8 @@ export function MiniMaxSettingsCard({ defaultValues }: Props) {
             onSave={form.handleSubmit(onSubmit)}
             isSaving={updateOption.isPending}
           />
+          <DisabledSettingsNotice enabled={enabled} />
+
           <FormField
             control={form.control}
             name='minimax.enabled'

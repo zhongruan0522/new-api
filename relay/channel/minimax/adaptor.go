@@ -90,10 +90,10 @@ func (a *Adaptor) ConvertAudioRequest(c *gin.Context, info *relaycommon.RelayInf
 		return nil, fmt.Errorf("error marshalling TTS request: %w", err)
 	}
 
-	// 音色日志：记录 MiniMax TTS 实际使用的 voice_id（管理员策略最终覆盖后的值）。
+	// 音色日志：只记录用户请求中的 OpenAI TTS voice，避免暴露重定向后的真实上游 voice_id。
 	// 由上层 audio_handler.go 通过 extraContent 传给 PostAudioConsumeQuota。
-	if policy.Enabled {
-		c.Set("minimax_voice_id", minimaxRequest.VoiceSetting.VoiceID)
+	if request.Voice != "" {
+		c.Set("minimax_voice_id", request.Voice)
 	}
 
 	return bytes.NewReader(jsonData), nil

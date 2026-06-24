@@ -30,6 +30,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { DisabledSettingsNotice } from '../components/disabled-settings-notice'
 import { SettingsSwitchField } from '../components/settings-form-layout'
 import { SettingsSection } from '../components/settings-section'
 import { useUpdateOption } from '../hooks/use-update-option'
@@ -144,6 +145,7 @@ export function UsageLogFieldsSection({
       <div className='space-y-4'>
         {/* 总开关 */}
         <div className='space-y-1 rounded-md border p-3'>
+          <DisabledSettingsNotice enabled={isAdminEnabled} />
           <SettingsSwitchField
             checked={isAdminEnabled}
             onCheckedChange={handleToggleAdminEnabled}
@@ -153,6 +155,7 @@ export function UsageLogFieldsSection({
             )}
             className='border-b-0 py-0'
           />
+          <DisabledSettingsNotice enabled={isUserEnabled} />
           <SettingsSwitchField
             checked={isUserEnabled}
             onCheckedChange={handleToggleUserEnabled}

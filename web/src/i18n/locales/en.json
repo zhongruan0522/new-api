@@ -9,6 +9,8 @@
     ". The previous key will become invalid immediately and this action cannot be undone.": ". The previous key will become invalid immediately and this action cannot be undone.",
     ". This action cannot be undone.": ". This action cannot be undone.",
     "...": "...",
+    "This setting is currently disabled": "This setting is currently disabled",
+    "If you are reporting a related issue, enable this setting first and retest before confirming whether the issue still exists.": "If you are reporting a related issue, enable this setting first and retest before confirming whether the issue still exists.",
     "\"default\": \"us-central1\", \"claude-3-5-sonnet-20240620\": \"europe-west1\"": "\"default\": \"us-central1\", \"claude-3-5-sonnet-20240620\": \"europe-west1\"",
     "(Leave empty to dissolve tag)": "(Leave empty to dissolve tag)",
     "(Optional: redirect model names)": "(Optional: redirect model names)",

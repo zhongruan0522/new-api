@@ -31,6 +31,7 @@ import {
   FormLabel,
 } from '@/components/ui/form'
 import { Switch } from '@/components/ui/switch'
+import { DisabledSettingsNotice } from '../components/disabled-settings-notice'
 import {
   SettingsForm,
   SettingsFormGrid,
@@ -170,6 +171,7 @@ export function AuditSection({ defaultValues }: AuditSectionProps) {
     resolver: zodResolver(auditSchema),
     defaultValues: formDefaults,
   })
+  const enabled = form.watch('enabled')
 
   useEffect(() => {
     baselineRef.current = normalizeDefaults(defaultValues)
@@ -206,6 +208,7 @@ export function AuditSection({ defaultValues }: AuditSectionProps) {
             isSaving={updateOption.isPending}
             saveLabel='Save audit settings'
           />
+          <DisabledSettingsNotice enabled={enabled} />
 
           <FormField
             control={form.control}

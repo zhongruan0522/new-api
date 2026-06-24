@@ -27,6 +27,7 @@ import {
   FormLabel,
 } from '@/components/ui/form'
 import { Switch } from '@/components/ui/switch'
+import { DisabledSettingsNotice } from '../components/disabled-settings-notice'
 import {
   SettingsControlChildren,
   SettingsForm,
@@ -245,9 +246,12 @@ export function SidebarModulesSection({
                 moduleKey !== 'enabled' &&
                 (!knownModuleKeys || knownModuleKeys.has(moduleKey))
             )
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const sectionEnabled = Boolean(form.watch(`${sectionKey}.enabled` as any))
 
             return (
               <SettingsControlGroup key={sectionKey}>
+                <DisabledSettingsNotice enabled={sectionEnabled} />
                 <FormField
                   control={form.control}
                   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -294,10 +298,7 @@ export function SidebarModulesSection({
                               <Switch
                                 checked={Boolean(field.value)}
                                 onCheckedChange={field.onChange}
-                                disabled={
-                                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                                  !form.watch(`${sectionKey}.enabled` as any)
-                                }
+                                disabled={!sectionEnabled}
                               />
                             </FormControl>
                           </SettingsSwitchItem>

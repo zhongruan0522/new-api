@@ -32,6 +32,7 @@ import {
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
+import { DisabledSettingsNotice } from '../components/disabled-settings-notice'
 import {
   SettingsForm,
   SettingsSwitchContent,
@@ -134,6 +135,8 @@ export function GrokSettingsCard({ defaultValues }: GrokSettingsCardProps) {
             onSave={form.handleSubmit(onSubmit)}
             isSaving={updateOption.isPending}
           />
+          <DisabledSettingsNotice enabled={enabled} />
+
           <FormField
             control={form.control}
             name='grok.violation_deduction_enabled'

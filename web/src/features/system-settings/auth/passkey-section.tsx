@@ -41,6 +41,7 @@ import {
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
+import { DisabledSettingsNotice } from '../components/disabled-settings-notice'
 import {
   SettingsForm,
   SettingsSwitchContent,
@@ -98,6 +99,7 @@ export function PasskeySection({ defaultValues }: PasskeySectionProps) {
     resolver: zodResolver(passkeySchema),
     defaultValues: formDefaults,
   })
+  const enabled = form.watch('passkey.enabled')
 
   useResetForm(form, formDefaults)
 
@@ -169,6 +171,8 @@ export function PasskeySection({ defaultValues }: PasskeySectionProps) {
             onSave={form.handleSubmit(onSubmit)}
             isSaving={updateOption.isPending}
           />
+          <DisabledSettingsNotice enabled={enabled} />
+
           <FormField
             control={form.control}
             name='passkey.enabled'

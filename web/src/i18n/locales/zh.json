@@ -9,6 +9,8 @@
     ". The previous key will become invalid immediately and this action cannot be undone.": "。旧密钥将立即失效，且此操作无法撤销。",
     ". This action cannot be undone.": "。此操作无法撤销。",
     "...": "...",
+    "This setting is currently disabled": "当前设置未开启",
+    "If you are reporting a related issue, enable this setting first and retest before confirming whether the issue still exists.": "如反馈相关功能问题，请先开启该设置并复测后再确认是否仍存在问题。",
     "\"default\": \"us-central1\", \"claude-3-5-sonnet-20240620\": \"europe-west1\"": "\"default\": \"us-central1\", \"claude-3-5-sonnet-20240620\": \"europe-west1\"",
     "(Leave empty to dissolve tag)": "（留空以删除标签）",
     "(Optional: redirect model names)": "（可选：重定向模型名称）",

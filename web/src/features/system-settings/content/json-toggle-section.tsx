@@ -32,6 +32,7 @@ import {
 } from '@/components/ui/form'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
+import { DisabledSettingsNotice } from '../components/disabled-settings-notice'
 import { SettingsAccordion } from '../components/settings-accordion'
 import {
   SettingsForm,
@@ -129,6 +130,7 @@ export function JsonToggleSection({
     normalizeJsonString(defaultValue, fallbackValue)
   )
   const initialEnabledRef = useRef(defaultEnabled)
+  const enabled = form.watch('enabled')
 
   useEffect(() => {
     initialNormalizedRef.current = normalizeJsonString(
@@ -169,6 +171,8 @@ export function JsonToggleSection({
             isSaving={updateOption.isPending}
             saveLabel={submitLabel}
           />
+          <DisabledSettingsNotice enabled={enabled} />
+
           <FormField
             control={form.control}
             name='enabled'

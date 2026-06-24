@@ -96,9 +96,9 @@ func TestConvertAudioRequest_MetadataCannotOverrideModelAndVoice(t *testing.T) {
 			t.Errorf("VoiceSetting.VoiceID = %q, want female-shaonv (admin redirect must win over metadata)", got.VoiceSetting.VoiceID)
 		}
 
-		// 同时校验音色日志记录的是管理员映射后的值
-		if v, ok := c.Get("minimax_voice_id"); !ok || v != "female-shaonv" {
-			t.Errorf("minimax_voice_id = %v (ok=%v), want female-shaonv", v, ok)
+		// 音色日志记录用户请求中的 OpenAI voice，不暴露重定向后的真实上游 voice_id。
+		if v, ok := c.Get("minimax_voice_id"); !ok || v != "alloy" {
+			t.Errorf("minimax_voice_id = %v (ok=%v), want alloy", v, ok)
 		}
 	})
 }
@@ -144,11 +144,73 @@ func TestConvertAudioRequest_DisabledKeepsMetadataValues(t *testing.T) {
 			t.Errorf("VoiceSetting.VoiceID = %q, want user-voice (disabled: metadata should win)", got.VoiceSetting.VoiceID)
 		}
 
-		// 关闭增强时不应设置 minimax_voice_id
-		if _, ok := c.Get("minimax_voice_id"); ok {
-			t.Errorf("minimax_voice_id should not be set when cfg.Enabled=false")
+		// 关闭增强时仍记录用户请求 voice，便于从用户侧排查 TTS 请求。
+		if v, ok := c.Get("minimax_voice_id"); !ok || v != "alloy" {
+			t.Errorf("minimax_voice_id = %v (ok=%v), want alloy", v, ok)
 		}
 	})
+}
+
+func TestConvertAudioRequest_UserVoiceLogDoesNotExposeRedirectedVoice(t *testing.T) {
+	cases := []struct {
+		name              string
+		enabled           bool
+		wantModel         string
+		wantUpstreamVoice string
+	}{
+		{
+			name:              "enabled_applies_redirect_but_logs_user_voice",
+			enabled:           true,
+			wantModel:         "speech-02-turbo",
+			wantUpstreamVoice: "Chinese (Mandarin)_Warm_Girl",
+		},
+		{
+			name:              "disabled_keeps_user_values_and_logs_user_voice",
+			enabled:           false,
+			wantModel:         "tts-1-turbo",
+			wantUpstreamVoice: "voice_2",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg := model_setting.MiniMaxSettings{
+				Enabled:       tc.enabled,
+				ModelRedirect: map[string]string{"tts-1-turbo": "speech-02-turbo"},
+				VoiceRedirect: map[string]string{"voice_2": "Chinese (Mandarin)_Warm_Girl"},
+			}
+			info := &relaycommon.RelayInfo{
+				RelayMode:   constant.RelayModeAudioSpeech,
+				ChannelMeta: &relaycommon.ChannelMeta{UpstreamModelName: "tts-1-turbo"},
+			}
+			request := dto.AudioRequest{
+				Model:          "tts-1-turbo",
+				Input:          "hello",
+				Voice:          "voice_2",
+				ResponseFormat: "mp3",
+			}
+
+			withMiniMaxSettings(t, cfg, func() {
+				c := newConvertAudioContext()
+				a := &Adaptor{}
+				reader, err := a.ConvertAudioRequest(c, info, request)
+				if err != nil {
+					t.Fatalf("ConvertAudioRequest error: %v", err)
+				}
+
+				got := decodeTTSBody(t, reader)
+				if got.Model != tc.wantModel {
+					t.Errorf("Model = %q, want %q", got.Model, tc.wantModel)
+				}
+				if got.VoiceSetting.VoiceID != tc.wantUpstreamVoice {
+					t.Errorf("VoiceSetting.VoiceID = %q, want %q", got.VoiceSetting.VoiceID, tc.wantUpstreamVoice)
+				}
+				if v, ok := c.Get("minimax_voice_id"); !ok || v != "voice_2" {
+					t.Errorf("minimax_voice_id = %v (ok=%v), want voice_2", v, ok)
+				}
+			})
+		})
+	}
 }
 
 // TestConvertAudioRequest_MetadataNonPolicyFieldsPreserved 验证非策略字段（如 audio_setting.sample_rate）
