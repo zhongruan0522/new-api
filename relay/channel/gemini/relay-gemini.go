@@ -1295,7 +1295,8 @@ func GeminiChatStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *
 	createAt := common.GetTimestamp()
 	responseModel := info.GetResponseModelName()
 	finishReason := constant.FinishReasonStop
-	toolCallIDByChoice := make(map[int]map[int]string)
+	toolCallIndexByChoice := make(map[int]map[string]int)
+	nextToolCallIndexByChoice := make(map[int]int)
 
 	usage, err := geminiStreamHandler(c, info, resp, func(data string, geminiResponse *dto.GeminiChatResponse) bool {
 		response, isStop := streamResponseGeminiChat2OpenAI(geminiResponse)
@@ -1305,23 +1306,33 @@ func GeminiChatStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *
 		response.Model = responseModel
 		for choiceIdx := range response.Choices {
 			choiceKey := response.Choices[choiceIdx].Index
-			idState := toolCallIDByChoice[choiceKey]
-			if idState == nil {
-				idState = make(map[int]string)
-				toolCallIDByChoice[choiceKey] = idState
+			indexState := toolCallIndexByChoice[choiceKey]
+			if indexState == nil {
+				indexState = make(map[string]int)
+				toolCallIndexByChoice[choiceKey] = indexState
 			}
 			for toolIdx := range response.Choices[choiceIdx].Delta.ToolCalls {
 				tool := &response.Choices[choiceIdx].Delta.ToolCalls[toolIdx]
-				stableID := idState[toolIdx]
-				if stableID == "" {
-					stableID = tool.ID
-					if stableID == "" {
-						stableID = fmt.Sprintf("call_%s", common.GetUUID())
-					}
-					idState[toolIdx] = stableID
+				toolID := tool.ID
+				if toolID == "" {
+					toolID = fmt.Sprintf("call_%s", common.GetUUID())
+					tool.ID = toolID
 				}
-				tool.ID = stableID
-				tool.SetIndex(toolIdx)
+				stableIndex, ok := indexState[toolID]
+				if !ok {
+					stableIndex = nextToolCallIndexByChoice[choiceKey]
+					indexState[toolID] = stableIndex
+					nextToolCallIndexByChoice[choiceKey] = stableIndex + 1
+				}
+				tool.SetIndex(stableIndex)
+			}
+		}
+		if response.IsToolCall() {
+			finishReason = constant.FinishReasonToolCalls
+			if info.RelayFormat == types.RelayFormatClaude {
+				for choiceIdx := range response.Choices {
+					response.Choices[choiceIdx].FinishReason = nil
+				}
 			}
 		}
 
@@ -1361,7 +1372,7 @@ func GeminiChatStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *
 		if err != nil {
 			logger.LogError(c, err.Error())
 		}
-		if isStop {
+		if isStop && info.RelayFormat != types.RelayFormatClaude {
 			_ = handleStream(c, info, helper.GenerateStopResponse(id, createAt, responseModel, finishReason))
 		}
 		return true
@@ -1372,6 +1383,10 @@ func GeminiChatStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *
 	}
 
 	response := helper.GenerateFinalUsageResponse(id, createAt, responseModel, *usage)
+	if info.RelayFormat == types.RelayFormatClaude && info.ClaudeConvertInfo != nil && !info.ClaudeConvertInfo.Done {
+		response = helper.GenerateStopResponse(id, createAt, responseModel, finishReason)
+		response.Usage = usage
+	}
 	handleErr := handleFinalStream(c, info, response)
 	if handleErr != nil {
 		common.SysLog("send final response failed: " + handleErr.Error())
