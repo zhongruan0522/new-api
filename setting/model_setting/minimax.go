@@ -1,13 +1,38 @@
 package model_setting
 
 import (
+	"encoding/json"
 	"fmt"
 	"regexp"
+	"sort"
 	"strings"
 
 	"github.com/zhongruan0522/new-api/common"
 	"github.com/zhongruan0522/new-api/setting/config"
 )
+
+const (
+	maxMiniMaxVoiceWhitelistEntries = 100000
+	maxMiniMaxVoiceIDLength         = 512
+)
+
+type MiniMaxVoiceWhitelist []string
+
+func (w MiniMaxVoiceWhitelist) MarshalJSON() ([]byte, error) {
+	if len(w) == 0 {
+		return []byte("{}"), nil
+	}
+	return json.Marshal([]string(w))
+}
+
+func (w *MiniMaxVoiceWhitelist) UnmarshalJSON(data []byte) error {
+	voices, _, err := parseMiniMaxVoiceWhitelistJSON(string(data))
+	if err != nil {
+		return err
+	}
+	*w = MiniMaxVoiceWhitelist(voices)
+	return nil
+}
 
 // MiniMaxSettings 定义 MiniMax TTS 增强配置。
 // 仅对 MiniMax 渠道的 /v1/audio/speech 生效。
@@ -30,6 +55,8 @@ type MiniMaxSettings struct {
 	// VoiceRedirect 是 OpenAI voice 名到 MiniMax voice_id 的映射表。
 	// 例如 {"narrator": "male-qn-qingse", "alloy": "female-shaonv"}
 	VoiceRedirect map[string]string `json:"voice_redirect"`
+	// VoiceWhitelist 是允许客户端请求的音色 ID 列表，空对象/空数组表示不限制。
+	VoiceWhitelist MiniMaxVoiceWhitelist `json:"voice_whitelist"`
 }
 
 type MiniMaxTTSPolicyResult struct {
@@ -47,6 +74,7 @@ var defaultMiniMaxSettings = MiniMaxSettings{
 	EmotionRedirect:  map[string]string{},
 	ToneWordRedirect: map[string]string{},
 	VoiceRedirect:    map[string]string{},
+	VoiceWhitelist:   MiniMaxVoiceWhitelist{},
 }
 
 var minimaxSettings = defaultMiniMaxSettings
@@ -97,6 +125,27 @@ func ApplyMiniMaxVoiceRedirect(voice string, cfg *MiniMaxSettings) string {
 		return mapped
 	}
 	return voice
+}
+
+func IsMiniMaxVoiceWhitelistEnabled() bool {
+	cfg := GetMiniMaxSettings()
+	return cfg != nil && len(cfg.VoiceWhitelist) > 0
+}
+
+func ValidateMiniMaxVoiceAllowed(voice string) error {
+	cfg := GetMiniMaxSettings()
+	if cfg == nil || len(cfg.VoiceWhitelist) == 0 {
+		return nil
+	}
+	voice = strings.TrimSpace(voice)
+	if voice == "" {
+		return fmt.Errorf("minimax voice is not allowed: empty voice")
+	}
+	index := sort.SearchStrings([]string(cfg.VoiceWhitelist), voice)
+	if index < len(cfg.VoiceWhitelist) && cfg.VoiceWhitelist[index] == voice {
+		return nil
+	}
+	return fmt.Errorf("minimax voice is not allowed: %s", voice)
 }
 
 func ExtractMiniMaxEmotion(text string, pattern string, redirect map[string]string) (emotion string, cleaned string) {
@@ -164,6 +213,14 @@ func IsMiniMaxStringMapOption(key string) bool {
 	}
 }
 
+func IsMiniMaxStringArrayOption(key string) bool {
+	return key == "minimax.voice_whitelist"
+}
+
+func IsMiniMaxLargeOption(key string) bool {
+	return IsMiniMaxStringMapOption(key) || IsMiniMaxStringArrayOption(key)
+}
+
 // ValidateMiniMaxOptionValue 校验 minimax.* 系统设置项的值。
 // 在 controller.UpdateOption 中保存前调用，校验失败返回错误。
 // 不属于 minimax.* 的 key 直接返回 nil。
@@ -172,6 +229,9 @@ func ValidateMiniMaxOptionValue(key, value string) error {
 	case "minimax.model_redirect", "minimax.emotion_redirect",
 		"minimax.tone_word_redirect", "minimax.voice_redirect":
 		return validateStringMap(value)
+	case "minimax.voice_whitelist":
+		_, _, err := parseMiniMaxVoiceWhitelistJSON(value)
+		return err
 	case "minimax.emotion_pattern", "minimax.tone_word_pattern":
 		if value == "" {
 			return nil
@@ -185,6 +245,27 @@ func ValidateMiniMaxOptionValue(key, value string) error {
 	}
 }
 
+func NormalizeMiniMaxOptionValue(key, value string) (string, error) {
+	if key != "minimax.voice_whitelist" {
+		return value, ValidateMiniMaxOptionValue(key, value)
+	}
+	voices, emptyObject, err := parseMiniMaxVoiceWhitelistJSON(value)
+	if err != nil {
+		return "", err
+	}
+	if len(voices) == 0 {
+		if emptyObject {
+			return "{}", nil
+		}
+		return "[]", nil
+	}
+	bytes, err := common.Marshal(voices)
+	if err != nil {
+		return "", err
+	}
+	return string(bytes), nil
+}
+
 // validateStringMap 校验 value 是合法 JSON 且类型为 map[string]string。
 // 拒绝空串：空串在 config.UpdateConfigFromMap 中 unmarshal 失败会被静默跳过，
 // 导致配置显示已清空但运行时仍使用旧值。清空请传 "{}"。
@@ -194,4 +275,53 @@ func validateStringMap(value string) error {
 		return fmt.Errorf("invalid JSON for string map: %w", err)
 	}
 	return nil
+}
+
+func parseMiniMaxVoiceWhitelistJSON(value string) ([]string, bool, error) {
+	trimmed := strings.TrimSpace(value)
+	if trimmed == "" {
+		return nil, false, fmt.Errorf("invalid JSON for voice whitelist: empty value")
+	}
+	if trimmed == "null" {
+		return nil, false, fmt.Errorf("invalid voice whitelist: use JSON array or {} to disable")
+	}
+	var raw json.RawMessage
+	if err := json.Unmarshal([]byte(trimmed), &raw); err != nil {
+		return nil, false, fmt.Errorf("invalid JSON for voice whitelist: %w", err)
+	}
+
+	var emptyObject map[string]json.RawMessage
+	if err := json.Unmarshal(raw, &emptyObject); err == nil {
+		if len(emptyObject) == 0 {
+			return []string{}, true, nil
+		}
+		return nil, false, fmt.Errorf("invalid voice whitelist: use JSON array or {} to disable")
+	}
+
+	var voices []string
+	if err := json.Unmarshal(raw, &voices); err != nil {
+		return nil, false, fmt.Errorf("invalid JSON for voice whitelist array: %w", err)
+	}
+	if len(voices) > maxMiniMaxVoiceWhitelistEntries {
+		return nil, false, fmt.Errorf("voice whitelist exceeds maximum entries: %d", maxMiniMaxVoiceWhitelistEntries)
+	}
+
+	seen := make(map[string]struct{}, len(voices))
+	normalized := make([]string, 0, len(voices))
+	for _, voice := range voices {
+		voice = strings.TrimSpace(voice)
+		if voice == "" {
+			return nil, false, fmt.Errorf("voice whitelist contains empty voice id")
+		}
+		if len(voice) > maxMiniMaxVoiceIDLength {
+			return nil, false, fmt.Errorf("voice id exceeds maximum length: %d", maxMiniMaxVoiceIDLength)
+		}
+		if _, exists := seen[voice]; exists {
+			continue
+		}
+		seen[voice] = struct{}{}
+		normalized = append(normalized, voice)
+	}
+	sort.Strings(normalized)
+	return normalized, false, nil
 }

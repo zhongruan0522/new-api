@@ -32,7 +32,7 @@ func GetOptions(c *gin.Context) {
 			continue
 		}
 		value := common.Interface2String(v)
-		if excludeLargeOptions && model_setting.IsMiniMaxStringMapOption(k) {
+		if excludeLargeOptions && model_setting.IsMiniMaxLargeOption(k) {
 			value = "{}"
 		}
 		options = append(options, &model.Option{
@@ -61,6 +61,17 @@ type optionJsonMapResponse struct {
 	Total    int                  `json:"total"`
 }
 
+type optionJsonArrayEntry struct {
+	Value string `json:"value"`
+}
+
+type optionJsonArrayResponse struct {
+	Items    []optionJsonArrayEntry `json:"items"`
+	Page     int                    `json:"page"`
+	PageSize int                    `json:"page_size"`
+	Total    int                    `json:"total"`
+}
+
 type OptionJsonMapDeleteRequest struct {
 	Key    string `json:"key"`
 	MapKey string `json:"map_key"`
@@ -71,6 +82,17 @@ type OptionJsonMapUpsertRequest struct {
 	MapKey    string `json:"map_key"`
 	OldMapKey string `json:"old_map_key"`
 	Value     string `json:"value"`
+}
+
+type OptionJsonArrayDeleteRequest struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
+}
+
+type OptionJsonArrayUpsertRequest struct {
+	Key      string `json:"key"`
+	Value    string `json:"value"`
+	OldValue string `json:"old_value"`
 }
 
 func isSensitiveOptionKey(key string) bool {
@@ -147,6 +169,24 @@ func readMiniMaxStringMapOption(c *gin.Context, key string) (map[string]string, 
 	return items, value, true
 }
 
+func readMiniMaxStringArrayOption(c *gin.Context, key string) (model_setting.MiniMaxVoiceWhitelist, string, bool) {
+	if !model_setting.IsMiniMaxStringArrayOption(key) {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"message": "不支持的 JSON 数组配置项",
+		})
+		return nil, "", false
+	}
+	value, ok := readOptionValue(key)
+	if !ok || strings.TrimSpace(value) == "" {
+		value = "{}"
+	}
+	cfg := model_setting.GetMiniMaxSettings()
+	items := make(model_setting.MiniMaxVoiceWhitelist, len(cfg.VoiceWhitelist))
+	copy(items, cfg.VoiceWhitelist)
+	return items, value, true
+}
+
 func GetOptionJsonMap(c *gin.Context) {
 	key := c.Query("key")
 	items, _, ok := readMiniMaxStringMapOption(c, key)
@@ -200,6 +240,164 @@ func GetOptionJsonMap(c *gin.Context) {
 			Total:    total,
 		},
 	})
+}
+
+func GetOptionJsonArray(c *gin.Context) {
+	key := c.Query("key")
+	items, _, ok := readMiniMaxStringArrayOption(c, key)
+	if !ok {
+		return
+	}
+
+	page, err := strconv.Atoi(c.DefaultQuery("page", "1"))
+	if err != nil || page < 1 {
+		page = 1
+	}
+	pageSize, err := strconv.Atoi(c.DefaultQuery("page_size", "10"))
+	if err != nil || pageSize < 1 {
+		pageSize = 10
+	}
+	if pageSize > 100 {
+		pageSize = 100
+	}
+
+	total := len(items)
+	start := (page - 1) * pageSize
+	if start > total {
+		start = total
+	}
+	end := start + pageSize
+	if end > total {
+		end = total
+	}
+
+	entries := make([]optionJsonArrayEntry, 0, end-start)
+	for _, item := range items[start:end] {
+		entries = append(entries, optionJsonArrayEntry{Value: item})
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "",
+		"data": optionJsonArrayResponse{
+			Items:    entries,
+			Page:     page,
+			PageSize: pageSize,
+			Total:    total,
+		},
+	})
+}
+
+func DeleteOptionJsonArrayEntry(c *gin.Context) {
+	var req OptionJsonArrayDeleteRequest
+	if err := common.DecodeJson(c.Request.Body, &req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "无效的参数"})
+		return
+	}
+	value := strings.TrimSpace(req.Value)
+	if value == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "数组项不能为空"})
+		return
+	}
+
+	items, beforeValue, ok := readMiniMaxStringArrayOption(c, req.Key)
+	if !ok {
+		return
+	}
+	index := sort.SearchStrings([]string(items), value)
+	if index >= len(items) || items[index] != value {
+		c.JSON(http.StatusOK, gin.H{"success": false, "message": "数组项不存在"})
+		return
+	}
+	items = append(items[:index], items[index+1:]...)
+	bytes, err := common.Marshal(items)
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	nextValue := string(bytes)
+	if nextValue, err = model_setting.NormalizeMiniMaxOptionValue(req.Key, nextValue); err != nil {
+		c.JSON(http.StatusOK, gin.H{"success": false, "message": "MiniMax 设置失败: " + err.Error()})
+		return
+	}
+	if err := model.UpdateOption(req.Key, nextValue); err != nil {
+		common.ApiError(c, err)
+		return
+	}
+
+	service.RecordAudit(
+		c,
+		model.AuditModuleOption,
+		model.AuditActionUpdate,
+		"删除 JSON 数组配置项 "+req.Key+"."+value,
+		map[string]interface{}{"option": req.Key, "value": beforeValue},
+		map[string]interface{}{"option": req.Key, "value": nextValue},
+	)
+	c.JSON(http.StatusOK, gin.H{"success": true, "message": ""})
+}
+
+func UpsertOptionJsonArrayEntry(c *gin.Context) {
+	var req OptionJsonArrayUpsertRequest
+	if err := common.DecodeJson(c.Request.Body, &req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "无效的参数"})
+		return
+	}
+	value := strings.TrimSpace(req.Value)
+	oldValue := strings.TrimSpace(req.OldValue)
+	if value == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "数组项不能为空"})
+		return
+	}
+
+	items, beforeValue, ok := readMiniMaxStringArrayOption(c, req.Key)
+	if !ok {
+		return
+	}
+	if oldValue != "" && oldValue != value {
+		oldIndex := sort.SearchStrings([]string(items), oldValue)
+		if oldIndex >= len(items) || items[oldIndex] != oldValue {
+			c.JSON(http.StatusOK, gin.H{"success": false, "message": "原数组项不存在"})
+			return
+		}
+		items = append(items[:oldIndex], items[oldIndex+1:]...)
+	}
+	index := sort.SearchStrings([]string(items), value)
+	if index < len(items) && items[index] == value {
+		if oldValue == value {
+			c.JSON(http.StatusOK, gin.H{"success": true, "message": ""})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"success": false, "message": "数组项已存在"})
+		return
+	}
+	items = append(items, "")
+	copy(items[index+1:], items[index:])
+	items[index] = value
+
+	bytes, err := common.Marshal(items)
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	nextValue := string(bytes)
+	if nextValue, err = model_setting.NormalizeMiniMaxOptionValue(req.Key, nextValue); err != nil {
+		c.JSON(http.StatusOK, gin.H{"success": false, "message": "MiniMax 设置失败: " + err.Error()})
+		return
+	}
+	if err := model.UpdateOption(req.Key, nextValue); err != nil {
+		common.ApiError(c, err)
+		return
+	}
+
+	service.RecordAudit(
+		c,
+		model.AuditModuleOption,
+		model.AuditActionUpdate,
+		"修改 JSON 数组配置项 "+req.Key+"."+value,
+		map[string]interface{}{"option": req.Key, "value": beforeValue},
+		map[string]interface{}{"option": req.Key, "value": nextValue},
+	)
+	c.JSON(http.StatusOK, gin.H{"success": true, "message": ""})
 }
 
 func DeleteOptionJsonMapEntry(c *gin.Context) {
@@ -546,8 +744,8 @@ func UpdateOption(c *gin.Context) {
 		}
 	case "minimax.model_redirect", "minimax.emotion_redirect",
 		"minimax.tone_word_redirect", "minimax.voice_redirect",
-		"minimax.emotion_pattern", "minimax.tone_word_pattern":
-		err = model_setting.ValidateMiniMaxOptionValue(option.Key, option.Value.(string))
+		"minimax.voice_whitelist", "minimax.emotion_pattern", "minimax.tone_word_pattern":
+		option.Value, err = model_setting.NormalizeMiniMaxOptionValue(option.Key, option.Value.(string))
 		if err != nil {
 			c.JSON(http.StatusOK, gin.H{
 				"success": false,

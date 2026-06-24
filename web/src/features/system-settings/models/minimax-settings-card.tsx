@@ -34,6 +34,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import { ModelMappingEditor } from '@/features/channels/components/model-mapping-editor'
+import { JsonArrayEditor } from '../components/json-array-editor'
 import { DisabledSettingsNotice } from '../components/disabled-settings-notice'
 import {
   SettingsForm,
@@ -61,6 +62,25 @@ function jsonMapField(value: string, ctx: z.RefinementCtx) {
   }
 }
 
+function jsonArrayField(value: string, ctx: z.RefinementCtx) {
+  const result = validateJsonString(value, {
+    allowEmpty: false,
+    predicate: (parsed) =>
+      Array.isArray(parsed) ||
+      (typeof parsed === 'object' &&
+        parsed !== null &&
+        !Array.isArray(parsed) &&
+        Object.keys(parsed).length === 0),
+    predicateMessage: 'JSON must be an array, or {} to disable.',
+  })
+  if (!result.valid) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: result.message || 'Invalid JSON',
+    })
+  }
+}
+
 // Fields are grouped under a `minimax` object. React Hook Form treats dots in
 // field names as nested paths; a flat defaultValues map with literal dotted
 // keys desyncs from the registered paths, so user edits never reach the
@@ -71,6 +91,7 @@ const schema = z.object({
     enabled: z.boolean(),
     model_redirect: z.string().superRefine(jsonMapField),
     voice_redirect: z.string().superRefine(jsonMapField),
+    voice_whitelist: z.string().superRefine(jsonArrayField),
     emotion_pattern: z.string(),
     emotion_redirect: z.string().superRefine(jsonMapField),
     tone_word_pattern: z.string(),
@@ -85,6 +106,7 @@ type FlatMiniMaxSettings = {
   'minimax.enabled': boolean
   'minimax.model_redirect': string
   'minimax.voice_redirect': string
+  'minimax.voice_whitelist': string
   'minimax.emotion_pattern': string
   'minimax.emotion_redirect': string
   'minimax.tone_word_pattern': string
@@ -96,6 +118,8 @@ type MiniMaxJsonMapKey =
   | 'minimax.voice_redirect'
   | 'minimax.emotion_redirect'
   | 'minimax.tone_word_redirect'
+
+type MiniMaxJsonArrayKey = 'minimax.voice_whitelist'
 
 interface Props {
   defaultValues: MiniMaxFormInput
@@ -110,6 +134,7 @@ export function MiniMaxSettingsCard({ defaultValues }: Props) {
       enabled: values.minimax.enabled ?? false,
       model_redirect: formatJsonForTextarea(values.minimax.model_redirect),
       voice_redirect: formatJsonForTextarea(values.minimax.voice_redirect),
+      voice_whitelist: formatJsonForTextarea(values.minimax.voice_whitelist),
       emotion_pattern: values.minimax.emotion_pattern ?? '',
       emotion_redirect: formatJsonForTextarea(values.minimax.emotion_redirect),
       tone_word_pattern: values.minimax.tone_word_pattern ?? '',
@@ -125,6 +150,9 @@ export function MiniMaxSettingsCard({ defaultValues }: Props) {
     'minimax.enabled': values.minimax.enabled ?? false,
     'minimax.model_redirect': normalizeJsonString(values.minimax.model_redirect),
     'minimax.voice_redirect': normalizeJsonString(values.minimax.voice_redirect),
+    'minimax.voice_whitelist': normalizeJsonString(
+      values.minimax.voice_whitelist
+    ),
     'minimax.emotion_pattern': values.minimax.emotion_pattern ?? '',
     'minimax.emotion_redirect': normalizeJsonString(
       values.minimax.emotion_redirect
@@ -160,6 +188,21 @@ export function MiniMaxSettingsCard({ defaultValues }: Props) {
       })
     }
 
+  const syncJsonArrayBaseline =
+    (key: MiniMaxJsonArrayKey, fieldName: MiniMaxJsonArrayKey) =>
+    (loadedValue: string) => {
+      const safeValue = loadedValue.trim() ? loadedValue : '{}'
+      normalizedDefaultsRef.current = {
+        ...normalizedDefaultsRef.current,
+        [key]: normalizeJsonString(safeValue),
+      }
+      form.setValue(fieldName, formatJsonForTextarea(safeValue), {
+        shouldDirty: false,
+        shouldTouch: false,
+        shouldValidate: false,
+      })
+    }
+
   useEffect(() => {
     normalizedDefaultsRef.current = buildNormalizedDefaults(defaultValues)
     form.reset(buildFormDefaults(defaultValues))
@@ -170,6 +213,9 @@ export function MiniMaxSettingsCard({ defaultValues }: Props) {
       'minimax.enabled': values.minimax.enabled,
       'minimax.model_redirect': normalizeJsonString(values.minimax.model_redirect),
       'minimax.voice_redirect': normalizeJsonString(values.minimax.voice_redirect),
+      'minimax.voice_whitelist': normalizeJsonString(
+        values.minimax.voice_whitelist
+      ),
       'minimax.emotion_pattern': values.minimax.emotion_pattern,
       'minimax.emotion_redirect': normalizeJsonString(
         values.minimax.emotion_redirect
@@ -308,6 +354,44 @@ export function MiniMaxSettingsCard({ defaultValues }: Props) {
                     'JSON map of OpenAI voice name to MiniMax voice_id. Example'
                   )}{' '}
                   {`{ "alloy": "male-qn-qingse", "nova": "female-shaonv" }`}
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name='minimax.voice_whitelist'
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{t('Voice Whitelist')}</FormLabel>
+                <FormControl>
+                  <JsonArrayEditor
+                    value={field.value}
+                    onChange={field.onChange}
+                    optionKey='minimax.voice_whitelist'
+                    itemLabel='Voice ID'
+                    itemPlaceholder='male-qn-qingse'
+                    addButtonText='Add Voice'
+                    jsonPlaceholder={t('["voice-id"]')}
+                    template={JSON.stringify(
+                      ['male-qn-qingse', 'female-shaonv'],
+                      null,
+                      2
+                    )}
+                    emptyText='No voices configured. Click "Add Voice" to get started.'
+                    onFullValueLoaded={syncJsonArrayBaseline(
+                      'minimax.voice_whitelist',
+                      'minimax.voice_whitelist'
+                    )}
+                  />
+                </FormControl>
+                <FormDescription>
+                  {t(
+                    'JSON array of client-requested MiniMax voice IDs allowed for MiniMax TTS requests. Use {} or [] to disable the whitelist. Example'
+                  )}{' '}
+                  {`["male-qn-qingse", "female-shaonv"]`}
                 </FormDescription>
                 <FormMessage />
               </FormItem>

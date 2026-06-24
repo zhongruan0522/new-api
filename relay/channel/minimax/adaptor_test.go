@@ -213,6 +213,72 @@ func TestConvertAudioRequest_UserVoiceLogDoesNotExposeRedirectedVoice(t *testing
 	}
 }
 
+func TestConvertAudioRequest_VoiceWhitelist(t *testing.T) {
+	info := &relaycommon.RelayInfo{
+		RelayMode:   constant.RelayModeAudioSpeech,
+		ChannelMeta: &relaycommon.ChannelMeta{UpstreamModelName: "tts-1"},
+	}
+	request := dto.AudioRequest{
+		Model:          "tts-1",
+		Input:          "hello",
+		Voice:          "allowed-voice",
+		ResponseFormat: "mp3",
+	}
+
+	cases := []struct {
+		name      string
+		whitelist model_setting.MiniMaxVoiceWhitelist
+		request   dto.AudioRequest
+		wantErr   bool
+	}{
+		{
+			name:      "empty_whitelist_allows",
+			whitelist: model_setting.MiniMaxVoiceWhitelist{},
+			request:   request,
+		},
+		{
+			name:      "allowed_request_voice",
+			whitelist: model_setting.MiniMaxVoiceWhitelist{"allowed-voice"},
+			request:   request,
+		},
+		{
+			name:      "disallowed_request_voice",
+			whitelist: model_setting.MiniMaxVoiceWhitelist{"other-voice"},
+			request:   request,
+			wantErr:   true,
+		},
+		{
+			name:      "metadata_voice_is_checked",
+			whitelist: model_setting.MiniMaxVoiceWhitelist{"allowed-voice"},
+			request: dto.AudioRequest{
+				Model:          "tts-1",
+				Input:          "hello",
+				Voice:          "allowed-voice",
+				ResponseFormat: "mp3",
+				Metadata:       []byte(`{"voice_setting":{"voice_id":"blocked-voice"}}`),
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg := model_setting.MiniMaxSettings{VoiceWhitelist: tc.whitelist}
+			withMiniMaxSettings(t, cfg, func() {
+				c := newConvertAudioContext()
+				a := &Adaptor{}
+				_, err := a.ConvertAudioRequest(c, info, tc.request)
+				if tc.wantErr && err == nil {
+					t.Fatalf("expected whitelist error, got nil")
+				}
+				if !tc.wantErr && err != nil {
+					t.Fatalf("unexpected whitelist error: %v", err)
+				}
+			})
+		})
+	}
+}
+
 // TestConvertAudioRequest_MetadataNonPolicyFieldsPreserved 验证非策略字段（如 audio_setting.sample_rate）
 // 在 cfg.Enabled=true 时仍由 metadata 提供，管理员策略只覆盖 model/voice/emotion/text/format。
 func TestConvertAudioRequest_MetadataNonPolicyFieldsPreserved(t *testing.T) {

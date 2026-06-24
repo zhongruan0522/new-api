@@ -39,6 +39,7 @@ const defaultModelSettings: ModelSettings = {
   'minimax.enabled': false,
   'minimax.model_redirect': '{}',
   'minimax.voice_redirect': '{}',
+  'minimax.voice_whitelist': '{}',
   'minimax.emotion_pattern': '',
   'minimax.emotion_redirect': '{}',
   'minimax.tone_word_pattern': '',

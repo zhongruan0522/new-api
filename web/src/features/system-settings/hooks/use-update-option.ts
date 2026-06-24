@@ -46,6 +46,7 @@ export function useUpdateOption() {
       queryClient.invalidateQueries({ queryKey: ['system-options'] })
       if (variables.key.startsWith('minimax.')) {
         queryClient.invalidateQueries({ queryKey: ['system-option-json-map'] })
+        queryClient.invalidateQueries({ queryKey: ['system-option-json-array'] })
         queryClient.invalidateQueries({ queryKey: ['system-option-value'] })
       }
 

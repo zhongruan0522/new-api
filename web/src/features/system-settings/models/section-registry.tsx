@@ -102,6 +102,7 @@ const MODELS_SECTIONS = [
             enabled: settings['minimax.enabled'] ?? false,
             model_redirect: settings['minimax.model_redirect'] ?? '{}',
             voice_redirect: settings['minimax.voice_redirect'] ?? '{}',
+            voice_whitelist: settings['minimax.voice_whitelist'] ?? '{}',
             emotion_pattern: settings['minimax.emotion_pattern'] ?? '',
             emotion_redirect: settings['minimax.emotion_redirect'] ?? '{}',
             tone_word_pattern: settings['minimax.tone_word_pattern'] ?? '',

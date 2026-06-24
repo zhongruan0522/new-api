@@ -63,6 +63,13 @@ func (a *Adaptor) ConvertAudioRequest(c *gin.Context, info *relaycommon.RelayInf
 			return nil, fmt.Errorf("error unmarshalling metadata to TTS request: %w", err)
 		}
 	}
+	clientVoice := minimaxRequest.VoiceSetting.VoiceID
+	if clientVoice == "" {
+		clientVoice = request.Voice
+	}
+	if err := model_setting.ValidateMiniMaxVoiceAllowed(clientVoice); err != nil {
+		return nil, err
+	}
 
 	// 3) 应用管理员强制策略：在 metadata 合并之后，用映射结果覆盖策略字段。
 	//    仅当 cfg.Enabled 时生效；关闭时保留用户原始值（含 metadata）。

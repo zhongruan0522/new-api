@@ -84,3 +84,87 @@ func TestConvertAudioRequestMiniMaxOpenAIPathAppliesSystemPolicy(t *testing.T) {
 		}
 	})
 }
+
+func TestConvertAudioRequestMiniMaxOpenAIPathVoiceWhitelist(t *testing.T) {
+	info := &relaycommon.RelayInfo{
+		RelayMode: relayconstant.RelayModeAudioSpeech,
+		ChannelMeta: &relaycommon.ChannelMeta{
+			ChannelType:       channelconstant.ChannelTypeMiniMax,
+			UpstreamModelName: "tts-1-hd",
+		},
+	}
+	request := dto.AudioRequest{
+		Model:          "tts-1-hd",
+		Input:          "hello",
+		Voice:          "alloy",
+		ResponseFormat: "mp3",
+	}
+
+	cases := []struct {
+		name      string
+		cfg       model_setting.MiniMaxSettings
+		request   dto.AudioRequest
+		wantVoice string
+		wantErr   bool
+	}{
+		{
+			name:      "empty_whitelist_allows",
+			cfg:       model_setting.MiniMaxSettings{},
+			request:   request,
+			wantVoice: "alloy",
+		},
+		{
+			name: "checks_client_voice_before_redirect",
+			cfg: model_setting.MiniMaxSettings{
+				Enabled:        true,
+				VoiceRedirect:  map[string]string{"alloy": "female-shaonv"},
+				VoiceWhitelist: model_setting.MiniMaxVoiceWhitelist{"alloy"},
+			},
+			request:   request,
+			wantVoice: "female-shaonv",
+		},
+		{
+			name: "rejects_disallowed_client_voice",
+			cfg: model_setting.MiniMaxSettings{
+				Enabled:        true,
+				VoiceRedirect:  map[string]string{"alloy": "female-shaonv"},
+				VoiceWhitelist: model_setting.MiniMaxVoiceWhitelist{"female-shaonv"},
+			},
+			request: request,
+			wantErr: true,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			withMiniMaxSettings(t, tc.cfg, func() {
+				w := httptest.NewRecorder()
+				c, _ := gin.CreateTestContext(w)
+				c.Request = httptest.NewRequest("POST", "/v1/audio/speech", nil)
+
+				a := &Adaptor{}
+				reader, err := a.ConvertAudioRequest(c, info, tc.request)
+				if tc.wantErr {
+					if err == nil {
+						t.Fatalf("expected whitelist error, got nil")
+					}
+					return
+				}
+				if err != nil {
+					t.Fatalf("ConvertAudioRequest error: %v", err)
+				}
+				body, err := io.ReadAll(reader)
+				if err != nil {
+					t.Fatalf("read body: %v", err)
+				}
+				var got dto.AudioRequest
+				if err := common.Unmarshal(body, &got); err != nil {
+					t.Fatalf("unmarshal body: %v", err)
+				}
+				if got.Voice != tc.wantVoice {
+					t.Errorf("Voice = %q, want %q", got.Voice, tc.wantVoice)
+				}
+			})
+		})
+	}
+}

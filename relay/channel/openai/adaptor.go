@@ -334,6 +334,9 @@ func (a *Adaptor) ConvertAudioRequest(c *gin.Context, info *relaycommon.RelayInf
 	a.ResponseFormat = request.ResponseFormat
 	if info.RelayMode == relayconstant.RelayModeAudioSpeech {
 		if info.ChannelType == constant.ChannelTypeMiniMax {
+			if err := model_setting.ValidateMiniMaxVoiceAllowed(request.Voice); err != nil {
+				return nil, err
+			}
 			policy := model_setting.ApplyMiniMaxTTSPolicy(info.UpstreamModelName, request.Voice, request.Input, request.ResponseFormat)
 			if policy.Enabled {
 				request.Model = policy.Model
