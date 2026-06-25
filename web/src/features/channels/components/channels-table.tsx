@@ -174,7 +174,7 @@ export function ChannelsTable() {
         isGlobalFilterComposing
       )
     ) {
-      onGlobalFilterChange(debouncedGlobalFilter)
+      onGlobalFilterChange?.(debouncedGlobalFilter)
     }
   }, [
     debouncedGlobalFilter,
