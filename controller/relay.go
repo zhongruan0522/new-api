@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -335,12 +336,30 @@ func shouldRetry(c *gin.Context, openaiErr *types.NewAPIError, retryTimes int) b
 	if _, ok := c.Get("specific_channel_id"); ok {
 		return false
 	}
-	code := openaiErr.StatusCode
-	if code >= 200 && code < 300 {
+	statusCode := openaiErr.StatusCode
+	if statusCode >= 200 && statusCode < 300 {
+		return shouldRetryByNumericErrorCode(openaiErr)
+	}
+	if statusCode < 100 || statusCode > 9999 {
+		return true
+	}
+	if operation_setting.ShouldRetryByStatusCode(statusCode) {
+		return true
+	}
+	return shouldRetryByNumericErrorCode(openaiErr)
+}
+
+func shouldRetryByNumericErrorCode(openaiErr *types.NewAPIError) bool {
+	if openaiErr == nil {
 		return false
 	}
-	if code < 100 || code > 9999 {
-		return true
+	codeStr := strings.TrimSpace(string(openaiErr.GetErrorCode()))
+	if codeStr == "" {
+		return false
+	}
+	code, err := strconv.Atoi(codeStr)
+	if err != nil {
+		return false
 	}
 	return operation_setting.ShouldRetryByStatusCode(code)
 }
