@@ -30,7 +30,7 @@ const HAS_LOCATION =
   typeof globalThis !== 'undefined' && 'location' in globalThis
 
 /**
- * Resolves a backend-provided image URL to http(s) only. Rejects javascript:,
+ * Resolves a backend-provided image URL to HTTPS only. Rejects javascript:,
  * data:, blob:, file:, and URLs with userinfo, which are unsafe in <img src/>.
  */
 function normalizeHttpIconUrl(raw: string | undefined | null): string | null {
@@ -50,6 +50,9 @@ function normalizeHttpIconUrl(raw: string | undefined | null): string | null {
   }
   if (url.username || url.password) {
     return null
+  }
+  if (url.protocol === 'http:') {
+    url.protocol = 'https:'
   }
   return url.toString()
 }
