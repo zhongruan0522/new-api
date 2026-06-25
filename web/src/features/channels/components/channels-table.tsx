@@ -75,6 +75,19 @@ function isDisabledChannelRow(channel: Channel) {
   )
 }
 
+export function shouldCommitDebouncedSearch(
+  inputValue: string,
+  debouncedValue: string,
+  currentValue: string,
+  isComposing: boolean
+) {
+  return (
+    !isComposing &&
+    debouncedValue === inputValue &&
+    debouncedValue !== currentValue
+  )
+}
+
 export function ChannelsTable() {
   const { t } = useTranslation()
   const { enableTagMode, idSort } = useChannels()
@@ -127,18 +140,59 @@ export function ChannelsTable() {
   const modelFilterFromUrl =
     (columnFilters.find((f) => f.id === 'model')?.value as string) || ''
 
+  const globalFilterFromUrl = globalFilter ?? ''
+
   // Local state for immediate input feedback
+  const [globalFilterInput, setGlobalFilterInput] =
+    useState(globalFilterFromUrl)
+  const [isGlobalFilterComposing, setIsGlobalFilterComposing] = useState(false)
+  const debouncedGlobalFilter = useDebounce(globalFilterInput, 500)
   const [modelFilterInput, setModelFilterInput] = useState(modelFilterFromUrl)
+  const [isModelFilterComposing, setIsModelFilterComposing] = useState(false)
   const debouncedModelFilter = useDebounce(modelFilterInput, 500)
 
   // Sync local input with URL when URL changes (e.g., from back/forward navigation)
   useEffect(() => {
-    setModelFilterInput(modelFilterFromUrl)
-  }, [modelFilterFromUrl])
+    if (!isGlobalFilterComposing) {
+      setGlobalFilterInput(globalFilterFromUrl)
+    }
+  }, [globalFilterFromUrl, isGlobalFilterComposing])
+
+  useEffect(() => {
+    if (!isModelFilterComposing) {
+      setModelFilterInput(modelFilterFromUrl)
+    }
+  }, [modelFilterFromUrl, isModelFilterComposing])
 
   // Update URL when debounced value changes
   useEffect(() => {
-    if (debouncedModelFilter !== modelFilterFromUrl) {
+    if (
+      shouldCommitDebouncedSearch(
+        globalFilterInput,
+        debouncedGlobalFilter,
+        globalFilterFromUrl,
+        isGlobalFilterComposing
+      )
+    ) {
+      onGlobalFilterChange(debouncedGlobalFilter)
+    }
+  }, [
+    debouncedGlobalFilter,
+    globalFilterFromUrl,
+    globalFilterInput,
+    isGlobalFilterComposing,
+    onGlobalFilterChange,
+  ])
+
+  useEffect(() => {
+    if (
+      shouldCommitDebouncedSearch(
+        modelFilterInput,
+        debouncedModelFilter,
+        modelFilterFromUrl,
+        isModelFilterComposing
+      )
+    ) {
       onColumnFiltersChange((prev) => {
         const filtered = prev.filter((f) => f.id !== 'model')
         return debouncedModelFilter
@@ -146,7 +200,13 @@ export function ChannelsTable() {
           : filtered
       })
     }
-  }, [debouncedModelFilter, modelFilterFromUrl, onColumnFiltersChange])
+  }, [
+    debouncedModelFilter,
+    isModelFilterComposing,
+    modelFilterFromUrl,
+    modelFilterInput,
+    onColumnFiltersChange,
+  ])
 
   const modelFilter = modelFilterFromUrl
 
@@ -298,7 +358,8 @@ export function ChannelsTable() {
     },
     enableRowSelection: (row: Row<Channel>) => !isTagAggregateRow(row.original),
     onRowSelectionChange: setRowSelection,
-    getRowId: (row) => isTagAggregateRow(row) ? `tag:${row.key}` : String(row.id),
+    getRowId: (row) =>
+      isTagAggregateRow(row) ? `tag:${row.key}` : String(row.id),
     onSortingChange: handleSortingChange,
     onColumnFiltersChange,
     onColumnVisibilityChange: setColumnVisibility,
@@ -390,11 +451,23 @@ export function ChannelsTable() {
       applyHeaderSize
       toolbarProps={{
         searchPlaceholder: t('Filter by name, ID, or key...'),
+        searchValue: globalFilterInput,
+        onSearchValueChange: setGlobalFilterInput,
+        onSearchCompositionStart: () => setIsGlobalFilterComposing(true),
+        onSearchCompositionEnd: (event) => {
+          setIsGlobalFilterComposing(false)
+          setGlobalFilterInput(event.currentTarget.value)
+        },
         additionalSearch: (
           <Input
             placeholder={t('Filter by model...')}
             value={modelFilterInput}
             onChange={(e) => setModelFilterInput(e.target.value)}
+            onCompositionStart={() => setIsModelFilterComposing(true)}
+            onCompositionEnd={(event) => {
+              setIsModelFilterComposing(false)
+              setModelFilterInput(event.currentTarget.value)
+            }}
             className='w-full sm:w-[150px] lg:w-[180px]'
           />
         ),
