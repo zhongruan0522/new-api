@@ -35,6 +35,7 @@ i18n
     fallbackLng: 'en',
     supportedLngs: ['en', 'zh'],
     load: 'languageOnly', // Convert zh-CN -> zh
+    keySeparator: false, // Allow flat translation keys containing dots
     nsSeparator: false, // Allow literal colons in keys (e.g., URLs, labels)
     debug: import.meta.env.DEV,
     interpolation: {
