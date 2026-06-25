@@ -43,6 +43,7 @@ const defaultOperationsSettings: OperationsSettings = {
   SMTPFrom: '',
   SMTPToken: '',
   SMTPSSLEnabled: false,
+  SMTPForceLoginAuthEnabled: false,
   WorkerUrl: '',
   WorkerValidKey: '',
   WorkerAllowHttpImageRequestEnabled: false,

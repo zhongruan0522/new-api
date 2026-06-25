@@ -57,6 +57,7 @@ const createEmailSchema = (t: (key: string) => string) =>
     }, t('Enter a valid email or leave blank')),
     SMTPToken: z.string(),
     SMTPSSLEnabled: z.boolean(),
+    SMTPForceLoginAuthEnabled: z.boolean(),
   })
 
 type EmailFormValues = z.infer<ReturnType<typeof createEmailSchema>>
@@ -87,6 +88,7 @@ export function EmailSettingsSection({
       SMTPFrom: values.SMTPFrom.trim(),
       SMTPToken: values.SMTPToken.trim(),
       SMTPSSLEnabled: values.SMTPSSLEnabled,
+      SMTPForceLoginAuthEnabled: values.SMTPForceLoginAuthEnabled,
     }
 
     const initial = {
@@ -96,6 +98,7 @@ export function EmailSettingsSection({
       SMTPFrom: defaultValues.SMTPFrom.trim(),
       SMTPToken: defaultValues.SMTPToken.trim(),
       SMTPSSLEnabled: defaultValues.SMTPSSLEnabled,
+      SMTPForceLoginAuthEnabled: defaultValues.SMTPForceLoginAuthEnabled,
     }
 
     const updates: Array<{ key: string; value: string | boolean }> = []
@@ -124,6 +127,15 @@ export function EmailSettingsSection({
       updates.push({
         key: 'SMTPSSLEnabled',
         value: sanitized.SMTPSSLEnabled,
+      })
+    }
+
+    if (
+      sanitized.SMTPForceLoginAuthEnabled !== initial.SMTPForceLoginAuthEnabled
+    ) {
+      updates.push({
+        key: 'SMTPForceLoginAuthEnabled',
+        value: sanitized.SMTPForceLoginAuthEnabled,
       })
     }
 
@@ -196,6 +208,27 @@ export function EmailSettingsSection({
                     <FormLabel>{t('Enable SSL/TLS')}</FormLabel>
                     <FormDescription>
                       {t('Use secure connection when sending emails')}
+                    </FormDescription>
+                  </SettingsSwitchContent>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                </SettingsSwitchItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name='SMTPForceLoginAuthEnabled'
+              render={({ field }) => (
+                <SettingsSwitchItem>
+                  <SettingsSwitchContent>
+                    <FormLabel>{t('Force AUTH LOGIN')}</FormLabel>
+                    <FormDescription>
+                      {t('Always use SMTP LOGIN auth for outbound mail')}
                     </FormDescription>
                   </SettingsSwitchContent>
                   <FormControl>

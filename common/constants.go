@@ -59,6 +59,8 @@ var EmailLoginAuthServerList = []string{
 	"smtp.azurecomm.net",
 }
 
+var SMTPForceLoginAuthEnabled = false
+
 var DebugEnabled bool
 var MemoryCacheEnabled bool
 
