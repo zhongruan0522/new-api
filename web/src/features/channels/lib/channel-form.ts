@@ -67,6 +67,8 @@ export const channelFormSchema = z.object({
   azure_responses_version: z.string().optional(), // Azure specific
   image_auto_convert_to_url_mode: z.enum(['off', 'mcp']).optional(),
   // Field passthrough controls (stored in settings JSON)
+  allow_cache_control: z.boolean().optional(), // Anthropic cache_control
+  allow_speed: z.boolean().optional(), // Anthropic speed
   allow_service_tier: z.boolean().optional(), // OpenAI/Anthropic
   disable_store: z.boolean().optional(), // OpenAI only
   allow_safety_identifier: z.boolean().optional(), // OpenAI only
@@ -118,6 +120,8 @@ export const CHANNEL_FORM_DEFAULT_VALUES: ChannelFormValues = {
   azure_responses_version: '',
   image_auto_convert_to_url_mode: 'off',
   // Field passthrough controls
+  allow_cache_control: false,
+  allow_speed: false,
   allow_service_tier: false,
   disable_store: false,
   allow_safety_identifier: false,
@@ -170,6 +174,8 @@ export function transformChannelToFormDefaults(
   let isEnterpriseAccount = false
   let awsKeyType: 'ak_sk' | 'api_key' = 'ak_sk'
   let imageAutoConvertToUrlMode: 'off' | 'mcp' = 'off'
+  let allowCacheControl = false
+  let allowSpeed = false
   let allowServiceTier = false
   let disableStore = false
   let allowSafetyIdentifier = false
@@ -188,6 +194,8 @@ export function transformChannelToFormDefaults(
           ? 'mcp'
           : 'off'
       allowServiceTier = parsed.allow_service_tier === true
+      allowCacheControl = parsed.allow_cache_control === true
+      allowSpeed = parsed.allow_speed === true
       disableStore = parsed.disable_store === true
       allowSafetyIdentifier = parsed.allow_safety_identifier === true
       claudeBetaQuery = parsed.claude_beta_query === true
@@ -231,6 +239,8 @@ export function transformChannelToFormDefaults(
     azure_responses_version: azureResponsesVersion,
     aws_key_type: awsKeyType,
     image_auto_convert_to_url_mode: imageAutoConvertToUrlMode,
+    allow_cache_control: allowCacheControl,
+    allow_speed: allowSpeed,
     allow_service_tier: allowServiceTier,
     disable_store: disableStore,
     claude_beta_query: claudeBetaQuery,
@@ -319,8 +329,13 @@ function buildSettingsJSON(formData: ChannelFormValues): string {
   // Anthropic (type 14): claude_beta_query
   if (formData.type === 14) {
     settingsObj.claude_beta_query = formData.claude_beta_query === true
+    settingsObj.allow_cache_control = formData.allow_cache_control === true
+    settingsObj.allow_speed = formData.allow_speed === true
   } else {
     if ('claude_beta_query' in settingsObj) delete settingsObj.claude_beta_query
+    if ('allow_cache_control' in settingsObj)
+      delete settingsObj.allow_cache_control
+    if ('allow_speed' in settingsObj) delete settingsObj.allow_speed
   }
 
   if (formData.image_auto_convert_to_url_mode === 'mcp') {
@@ -331,7 +346,6 @@ function buildSettingsJSON(formData: ChannelFormValues): string {
   delete settingsObj.image_auto_convert_to_url
   delete settingsObj.allow_include_obfuscation
   delete settingsObj.allow_inference_geo
-  delete settingsObj.allow_speed
   delete settingsObj.upstream_model_update_check_enabled
   delete settingsObj.upstream_model_update_auto_sync_enabled
   delete settingsObj.upstream_model_update_ignored_models

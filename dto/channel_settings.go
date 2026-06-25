@@ -58,6 +58,8 @@ type ChannelOtherSettings struct {
 	OpenRouterEnterprise  *bool         `json:"openrouter_enterprise,omitempty"`
 
 	ClaudeBetaQuery       bool       `json:"claude_beta_query,omitempty"`
+	AllowCacheControl     bool       `json:"allow_cache_control,omitempty"`
+	AllowSpeed            bool       `json:"allow_speed,omitempty"`
 	AllowServiceTier      bool       `json:"allow_service_tier,omitempty"`
 	DisableStore          bool       `json:"disable_store,omitempty"`
 	AllowSafetyIdentifier bool       `json:"allow_safety_identifier,omitempty"`

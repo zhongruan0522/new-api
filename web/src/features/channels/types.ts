@@ -97,6 +97,8 @@ export interface ChannelOtherSettings {
   openrouter_enterprise?: boolean
   aws_key_type?: 'ak_sk' | 'api_key'
   image_auto_convert_to_url_mode?: 'off' | 'mcp'
+  allow_cache_control?: boolean
+  allow_speed?: boolean
   allow_service_tier?: boolean
   disable_store?: boolean
   allow_safety_identifier?: boolean

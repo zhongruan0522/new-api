@@ -243,6 +243,8 @@ function hasAdvancedSettingsValues(values: ChannelFormValues): boolean {
     values.pass_through_headers_enabled === false ||
     values.openai_wire_api !== 'both' ||
     values.image_auto_convert_to_url_mode === 'mcp' ||
+    values.allow_cache_control ||
+    values.allow_speed ||
     values.claude_beta_query
   )
 }
@@ -2540,12 +2542,59 @@ export function ChannelMutateDrawer({
                                   </FormItem>
                                 )}
                               />
-
                             </>
                           )}
 
                           {currentType === 14 && (
                             <>
+                              <FormField
+                                control={form.control}
+                                name='allow_cache_control'
+                                render={({ field }) => (
+                                  <FormItem className='flex items-center justify-between gap-3 px-4 py-3'>
+                                    <div className='space-y-0.5'>
+                                      <FormLabel className='text-sm'>
+                                        {t('Allow cache_control passthrough')}
+                                      </FormLabel>
+                                      <FormDescription>
+                                        {t(
+                                          'Pass through Claude cache_control fields'
+                                        )}
+                                      </FormDescription>
+                                    </div>
+                                    <FormControl>
+                                      <Switch
+                                        checked={field.value}
+                                        onCheckedChange={field.onChange}
+                                      />
+                                    </FormControl>
+                                  </FormItem>
+                                )}
+                              />
+
+                              <FormField
+                                control={form.control}
+                                name='allow_speed'
+                                render={({ field }) => (
+                                  <FormItem className='flex items-center justify-between gap-3 px-4 py-3'>
+                                    <div className='space-y-0.5'>
+                                      <FormLabel className='text-sm'>
+                                        {t('Allow speed passthrough')}
+                                      </FormLabel>
+                                      <FormDescription>
+                                        {t('Pass through Claude speed field')}
+                                      </FormDescription>
+                                    </div>
+                                    <FormControl>
+                                      <Switch
+                                        checked={field.value}
+                                        onCheckedChange={field.onChange}
+                                      />
+                                    </FormControl>
+                                  </FormItem>
+                                )}
+                              />
+
                               <FormField
                                 control={form.control}
                                 name='claude_beta_query'
@@ -2631,9 +2680,7 @@ export function ChannelMutateDrawer({
                         render={({ field }) => (
                           <FormItem className='flex items-center justify-between px-4 py-3'>
                             <div className='space-y-0.5'>
-                              <FormLabel>
-                                {t('Pass Through Headers')}
-                              </FormLabel>
+                              <FormLabel>{t('Pass Through Headers')}</FormLabel>
                               <FormDescription>
                                 {t(
                                   'Pass client request headers upstream and merge them with header overrides'
@@ -2749,7 +2796,6 @@ export function ChannelMutateDrawer({
                         </FormItem>
                       )}
                     />
-
                   </div>
                 </CollapsibleContent>
               </Collapsible>

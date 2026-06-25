@@ -642,6 +642,54 @@ func RemoveDisabledFields(jsonData []byte, channelOtherSettings dto.ChannelOther
 	return jsonDataAfter, nil
 }
 
+// RemoveClaudeDisabledFields applies the common field passthrough policy plus
+// Claude-specific controls for cache_control and speed.
+func RemoveClaudeDisabledFields(jsonData []byte, channelOtherSettings dto.ChannelOtherSettings) ([]byte, error) {
+	jsonData, err := RemoveDisabledFields(jsonData, channelOtherSettings)
+	if err != nil {
+		return jsonData, err
+	}
+
+	if channelOtherSettings.AllowCacheControl && channelOtherSettings.AllowSpeed {
+		return jsonData, nil
+	}
+
+	var data any
+	if err := common.Unmarshal(jsonData, &data); err != nil {
+		common.SysError("RemoveClaudeDisabledFields Unmarshal error :" + err.Error())
+		return jsonData, nil
+	}
+
+	if root, ok := data.(map[string]interface{}); ok && !channelOtherSettings.AllowSpeed {
+		delete(root, "speed")
+	}
+
+	if !channelOtherSettings.AllowCacheControl {
+		removeJSONFieldRecursive(data, "cache_control")
+	}
+
+	jsonDataAfter, err := common.Marshal(data)
+	if err != nil {
+		common.SysError("RemoveClaudeDisabledFields Marshal error :" + err.Error())
+		return jsonData, nil
+	}
+	return jsonDataAfter, nil
+}
+
+func removeJSONFieldRecursive(value any, fieldName string) {
+	switch typed := value.(type) {
+	case map[string]interface{}:
+		delete(typed, fieldName)
+		for _, child := range typed {
+			removeJSONFieldRecursive(child, fieldName)
+		}
+	case []interface{}:
+		for _, child := range typed {
+			removeJSONFieldRecursive(child, fieldName)
+		}
+	}
+}
+
 // RemoveGeminiDisabledFields removes disabled fields from Gemini request JSON data
 // Currently supports removing functionResponse.id field which Vertex AI does not support
 func RemoveGeminiDisabledFields(jsonData []byte) ([]byte, error) {
