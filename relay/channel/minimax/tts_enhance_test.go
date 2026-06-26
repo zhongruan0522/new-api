@@ -263,6 +263,14 @@ func TestReplaceToneWords_EmptyTarget(t *testing.T) {
 	}
 }
 
+func TestReplaceToneWords_DeleteDirectTargetValue(t *testing.T) {
+	// 源 key (111) 命中 -> 替换为 (222)；用户直接传入映射目标值 (222) -> 整个删除
+	got := replaceToneWords("a(111)b(222)c", `\((111|222)\)`, map[string]string{"111": "222"})
+	if got != "a(222)bc" {
+		t.Errorf("got %q, want a(222)bc", got)
+	}
+}
+
 // ---------- 组合场景：情绪剥离 + 语气词替换 ----------
 
 func TestCombined_EmotionThenToneWord(t *testing.T) {

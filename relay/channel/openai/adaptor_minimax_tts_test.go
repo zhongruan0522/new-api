@@ -168,3 +168,55 @@ func TestConvertAudioRequestMiniMaxOpenAIPathVoiceWhitelist(t *testing.T) {
 		})
 	}
 }
+
+// OpenAI /v1/audio/speech 转 MiniMax：<tts emotion> 剥离后保留正文，
+// 括号语气词按映射原地替换。emotion 值不在 OpenAI AudioRequest 中体现，
+// 仅验证最终落到上游的 Input 文本。
+func TestConvertAudioRequestMiniMaxOpenAIPathTTSEmotion(t *testing.T) {
+	cfg := model_setting.MiniMaxSettings{
+		Enabled:         true,
+		EmotionPattern:  `<tts\s+emotion="([^"]+)">([\s\S]*?)</tts>`,
+		EmotionRedirect: map[string]string{},
+		ToneWordPattern: `\(([^()]+)\)`,
+		ToneWordRedirect: map[string]string{
+			"laugh": "笑",
+		},
+	}
+
+	withMiniMaxSettings(t, cfg, func() {
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = httptest.NewRequest("POST", "/v1/audio/speech", nil)
+
+		info := &relaycommon.RelayInfo{
+			RelayMode: relayconstant.RelayModeAudioSpeech,
+			ChannelMeta: &relaycommon.ChannelMeta{
+				ChannelType:       channelconstant.ChannelTypeMiniMax,
+				UpstreamModelName: "tts-1-hd",
+			},
+		}
+		request := dto.AudioRequest{
+			Model:          "tts-1-hd",
+			Input:          `<tts emotion="happy">文本(laugh)</tts>`,
+			Voice:          "alloy",
+			ResponseFormat: "mp3",
+		}
+
+		a := &Adaptor{}
+		reader, err := a.ConvertAudioRequest(c, info, request)
+		if err != nil {
+			t.Fatalf("ConvertAudioRequest error: %v", err)
+		}
+		body, err := io.ReadAll(reader)
+		if err != nil {
+			t.Fatalf("read body: %v", err)
+		}
+		var got dto.AudioRequest
+		if err := common.Unmarshal(body, &got); err != nil {
+			t.Fatalf("unmarshal body: %v", err)
+		}
+		if got.Input != "文本(笑)" {
+			t.Errorf("Input = %q, want 文本(笑)", got.Input)
+		}
+	})
+}

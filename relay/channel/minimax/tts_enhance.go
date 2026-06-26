@@ -17,9 +17,9 @@ func applyVoiceRedirect(voice string, cfg *model_setting.MiniMaxSettings) string
 }
 
 // extractEmotion 用情绪正则识别文本中的情绪标签。
-// 返回：映射后的 emotion 值（未命中映射或无标签时为空串）、剥离标签后的文本。
-// 行为：找到第一个匹配，提取括号内文本查 EmotionRedirect 映射；
-// 无论是否命中映射，都从文本中剥离所有匹配的情绪标签。
+// 返回：emotion 值、剥离标签包裹后的文本。
+// 行为：找到第一个匹配，按 EmotionRedirect 解析 emotion 值（映射表为空时直接用捕获值）；
+// 清洗时若正则带第 2 个捕获组则保留正文，否则删除整个匹配。
 // 正则编译失败时跳过增强（返回原文本和空 emotion），不在请求路径上崩溃——
 // 正则错误属于管理员配置问题，不应阻断用户请求。
 func extractEmotion(text string, pattern string, redirect map[string]string) (emotion string, cleaned string) {
@@ -27,7 +27,8 @@ func extractEmotion(text string, pattern string, redirect map[string]string) (em
 }
 
 // replaceToneWords 用语气词正则识别文本中的语气词标签，原地替换括号内文本。
-// 括号位置不变，只替换内容。映射表无此 key 时保留原标签。
+// 括号位置不变，只替换内容。映射表无此 key 时保留原标签；若用户直接传入映射
+// 目标值（替换值），则整个 (替换值) 标签被删除，不发给上游。
 // 正则编译失败时跳过增强（返回原文本）。
 func replaceToneWords(text string, pattern string, redirect map[string]string) string {
 	return model_setting.ReplaceMiniMaxToneWords(text, pattern, redirect)

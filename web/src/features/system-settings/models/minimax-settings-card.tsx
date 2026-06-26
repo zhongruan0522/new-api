@@ -405,12 +405,16 @@ export function MiniMaxSettingsCard({ defaultValues }: Props) {
               <FormItem>
                 <FormLabel>{t('Emotion Pattern')}</FormLabel>
                 <FormControl>
-                  <Input {...field} />
+                  <Input
+                    {...field}
+                    placeholder={`<tts\\s+emotion="([^"]+)">([\\s\\S]*?)</tts>`}
+                  />
                 </FormControl>
                 <FormDescription>
                   {t(
-                    'Regex to identify emotion tags in text, e.g. \\((happy\\|sad)\\)'
-                  )}
+                    'Regex to extract MiniMax voice_setting.emotion from text. Only English punctuation (< > " and parentheses) is matched. The first match wins; when a 2nd capture group exists its text is kept. Default'
+                  )}{' '}
+                  {`<tts\\s+emotion="happy">text</tts> -> emotion="happy", text kept`}
                 </FormDescription>
                 <FormMessage />
               </FormItem>
@@ -447,7 +451,7 @@ export function MiniMaxSettingsCard({ defaultValues }: Props) {
                 </FormControl>
                 <FormDescription>
                   {t(
-                    'JSON map of emotion tag value (inside parentheses) to MiniMax voice_setting.emotion. Tags are stripped from text. Example'
+                    'JSON map of emotion tag value to MiniMax voice_setting.emotion. Empty map uses the captured tag value directly; non-empty map uses the mapped value and ignores unmapped tags. Example'
                   )}{' '}
                   {`{ "happy": "happy", "sad": "sad" }`}
                 </FormDescription>
@@ -463,12 +467,13 @@ export function MiniMaxSettingsCard({ defaultValues }: Props) {
               <FormItem>
                 <FormLabel>{t('Tone Word Pattern')}</FormLabel>
                 <FormControl>
-                  <Input {...field} />
+                  <Input {...field} placeholder={`\\(([^()]+)\\)`} />
                 </FormControl>
                 <FormDescription>
                   {t(
-                    'Regex to identify tone word tags in text, e.g. \\((laughs\\|crying)\\)'
-                  )}
+                    'Regex to identify tone word tags in text. Only English half-width parentheses are matched. All matches are replaced in place. Default'
+                  )}{' '}
+                  {`\\(([^()]+)\\) -> (laugh) (crying)`}
                 </FormDescription>
                 <FormMessage />
               </FormItem>
@@ -505,7 +510,7 @@ export function MiniMaxSettingsCard({ defaultValues }: Props) {
                 </FormControl>
                 <FormDescription>
                   {t(
-                    'JSON map of tone word tag value to replacement. Parentheses are preserved, only content is replaced. Example'
+                    'JSON map of tone word tag value to replacement. Parentheses are preserved, only content is replaced. If the user passes a tag whose value equals a configured replacement, the whole tag is deleted (not sent upstream). Example'
                   )}{' '}
                   {`{ "laughs": "笑", "crying": "哭" }`}
                 </FormDescription>

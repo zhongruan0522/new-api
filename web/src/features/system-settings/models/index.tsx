@@ -40,9 +40,10 @@ const defaultModelSettings: ModelSettings = {
   'minimax.model_redirect': '{}',
   'minimax.voice_redirect': '{}',
   'minimax.voice_whitelist': '{}',
-  'minimax.emotion_pattern': '',
+  'minimax.emotion_pattern':
+    '<tts\\s+emotion="([^"]+)">([\\s\\S]*?)</tts>',
   'minimax.emotion_redirect': '{}',
-  'minimax.tone_word_pattern': '',
+  'minimax.tone_word_pattern': '\\(([^()]+)\\)',
   'minimax.tone_word_redirect': '{}',
   ModelPrice: '',
   ModelRatio: '',

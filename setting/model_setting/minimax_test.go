@@ -1,6 +1,9 @@
 package model_setting
 
-import "testing"
+import (
+	"regexp"
+	"testing"
+)
 
 func TestValidateMiniMaxOptionValue(t *testing.T) {
 	cases := []struct {
@@ -103,5 +106,118 @@ func TestValidateMiniMaxVoiceAllowed(t *testing.T) {
 	}
 	if err := ValidateMiniMaxVoiceAllowed(""); err == nil {
 		t.Fatalf("empty voice should be rejected when whitelist is enabled")
+	}
+}
+
+// ---------- 内置默认正则 ----------
+
+func TestMiniMaxDefaultPatternsCompile(t *testing.T) {
+	if defaultMiniMaxSettings.EmotionPattern == "" || defaultMiniMaxSettings.ToneWordPattern == "" {
+		t.Fatalf("default EmotionPattern/ToneWordPattern must be non-empty")
+	}
+	if _, err := regexp.Compile(defaultMiniMaxSettings.EmotionPattern); err != nil {
+		t.Fatalf("default EmotionPattern invalid: %v", err)
+	}
+	if _, err := regexp.Compile(defaultMiniMaxSettings.ToneWordPattern); err != nil {
+		t.Fatalf("default ToneWordPattern invalid: %v", err)
+	}
+}
+
+// ---------- ExtractMiniMaxEmotion：<tts emotion> 形式 ----------
+
+func TestExtractMiniMaxEmotion_TTSEmotionFirstWinsKeepsText(t *testing.T) {
+	// 多个 <tts emotion> 时，仅第一个 emotion 落地；正则带第 2 个捕获组时保留正文
+	emotion, cleaned := ExtractMiniMaxEmotion(
+		`<tts emotion="happy">你好</tts><tts emotion="sad">世界</tts>`,
+		`<tts\s+emotion="([^"]+)">([\s\S]*?)</tts>`,
+		map[string]string{}, // 空映射直接用捕获值
+	)
+	if emotion != "happy" {
+		t.Errorf("emotion = %q, want happy (first match)", emotion)
+	}
+	if cleaned != "你好世界" {
+		t.Errorf("cleaned = %q, want 你好世界", cleaned)
+	}
+}
+
+func TestExtractMiniMaxEmotion_TTSEmotionMapping(t *testing.T) {
+	emotion, cleaned := ExtractMiniMaxEmotion(
+		`前缀<tts emotion="高兴">真实文本</tts>后缀`,
+		`<tts\s+emotion="([^"]+)">([\s\S]*?)</tts>`,
+		map[string]string{"高兴": "happy"},
+	)
+	if emotion != "happy" {
+		t.Errorf("emotion = %q, want happy", emotion)
+	}
+	if cleaned != "前缀真实文本后缀" {
+		t.Errorf("cleaned = %q, want 前缀真实文本后缀", cleaned)
+	}
+}
+
+func TestExtractMiniMaxEmotion_TTSEmotionUnmappedIgnored(t *testing.T) {
+	// 非空映射表 + 未命中：emotion 为空，正文仍保留
+	emotion, cleaned := ExtractMiniMaxEmotion(
+		`<tts emotion="unknown">文本</tts>`,
+		`<tts\s+emotion="([^"]+)">([\s\S]*?)</tts>`,
+		map[string]string{"happy": "happy"},
+	)
+	if emotion != "" {
+		t.Errorf("emotion = %q, want empty (unmapped)", emotion)
+	}
+	if cleaned != "文本" {
+		t.Errorf("cleaned = %q, want 文本", cleaned)
+	}
+}
+
+// ---------- ReplaceMiniMaxToneWords：替换值直传删除 ----------
+
+func TestReplaceMiniMaxToneWords_SourceKeyStillReplaced(t *testing.T) {
+	// 源 key (111) 命中映射 -> 替换为 (222)
+	got := ReplaceMiniMaxToneWords("前(111)后", `\(([^()]+)\)`, map[string]string{"111": "222"})
+	if got != "前(222)后" {
+		t.Errorf("got %q, want 前(222)后", got)
+	}
+}
+
+func TestReplaceMiniMaxToneWords_DeleteDirectTargetValue(t *testing.T) {
+	// 用户直接传入映射目标值 (222) -> 整个标签被删除
+	got := ReplaceMiniMaxToneWords("前(222)后", `\(([^()]+)\)`, map[string]string{"111": "222"})
+	if got != "前后" {
+		t.Errorf("got %q, want 前后 (target value deleted)", got)
+	}
+}
+
+func TestReplaceMiniMaxToneWords_OnlyTargetDeleted(t *testing.T) {
+	// 未配置映射的标签保持原样；只有映射目标值被删除
+	got := ReplaceMiniMaxToneWords(
+		"a(111)b(222)c(333)d",
+		`\(([^()]+)\)`,
+		map[string]string{"111": "222"},
+	)
+	if got != "a(222)bc(333)d" {
+		t.Errorf("got %q, want a(222)bc(333)d", got)
+	}
+}
+
+// ---------- 组合：ApplyMiniMaxTTSPolicy ----------
+
+func TestApplyMiniMaxTTSPolicy_TTSEmotionPlusParenTag(t *testing.T) {
+	// 用户样例：<tts emotion="happy">文本(laugh)</tts>
+	// emotion 落地到 voice_setting.emotion；括号语气词无映射时保留
+	prev := *GetMiniMaxSettings()
+	defer func() { *GetMiniMaxSettings() = prev }()
+	*GetMiniMaxSettings() = MiniMaxSettings{
+		Enabled:          true,
+		EmotionPattern:   `<tts\s+emotion="([^"]+)">([\s\S]*?)</tts>`,
+		EmotionRedirect:  map[string]string{},
+		ToneWordPattern:  `\(([^()]+)\)`,
+		ToneWordRedirect: map[string]string{},
+	}
+	res := ApplyMiniMaxTTSPolicy("speech-02-hd", "alloy", `<tts emotion="happy">文本(laugh)</tts>`, "mp3")
+	if res.Emotion != "happy" {
+		t.Errorf("Emotion = %q, want happy", res.Emotion)
+	}
+	if res.Text != "文本(laugh)" {
+		t.Errorf("Text = %q, want 文本(laugh)", res.Text)
 	}
 }

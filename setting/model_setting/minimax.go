@@ -42,15 +42,19 @@ type MiniMaxSettings struct {
 	// ModelRedirect 是 TTS 模型重定向表，键是客户端请求的模型名，值是发给 MiniMax 的真实模型名。
 	// 例如 {"tts-1-hd": "speech-02-hd"}
 	ModelRedirect map[string]string `json:"model_redirect"`
-	// EmotionPattern 识别文本中情绪标签的正则表达式，如 `\((happy|sad|高兴)\)`。
+	// EmotionPattern 识别文本中情绪标签的正则表达式。
+	// 默认匹配英文标点包裹的 <tts emotion="...">text</tts>，第一个 emotion 值落地到
+	// MiniMax voice_setting.emotion，标签包裹的正文会保留。也兼容旧的括号形式 \((happy|sad)\)。
 	EmotionPattern string `json:"emotion_pattern"`
-	// EmotionRedirect 是情绪标签值（括号内文本）到 MiniMax voice_setting.emotion 的映射表。
-	// 例如 {"happy": "happy", "高兴": "happy"}
+	// EmotionRedirect 是标签值到 MiniMax voice_setting.emotion 的映射表，例如 {"happy": "happy"}。
+	// 为空时直接使用正则捕获到的标签值；非空时优先用映射值，未命中则不设置 emotion。
 	EmotionRedirect map[string]string `json:"emotion_redirect"`
-	// ToneWordPattern 识别文本中语气词标签的正则表达式，如 `\((laughs|crying)\)`。
+	// ToneWordPattern 识别文本中语气词标签的正则表达式。
+	// 默认匹配英文半角括号包裹的 (laugh)，原地替换括号内文本。
 	ToneWordPattern string `json:"tone_word_pattern"`
-	// ToneWordRedirect 是语气词标签值（括号内文本）到替换值的映射表。
-	// 标签**原地替换**：括号位置不变，只替换内容。例如 {"laughs": "aaa", "xxx": "bbb"}
+	// ToneWordRedirect 是语气词标签值到替换值的映射表。
+	// 标签**原地替换**：括号位置不变，只替换内容，例如 {"laughs": "笑"}。
+	// 若用户直接传入任一映射目标值（替换值），则整个 (替换值) 标签会被删除，不发给上游。
 	ToneWordRedirect map[string]string `json:"tone_word_redirect"`
 	// VoiceRedirect 是 OpenAI voice 名到 MiniMax voice_id 的映射表。
 	// 例如 {"narrator": "male-qn-qingse", "alloy": "female-shaonv"}
@@ -71,7 +75,9 @@ type MiniMaxTTSPolicyResult struct {
 var defaultMiniMaxSettings = MiniMaxSettings{
 	Enabled:          false,
 	ModelRedirect:    map[string]string{},
+	EmotionPattern:   `<tts\s+emotion="([^"]+)">([\s\S]*?)</tts>`,
 	EmotionRedirect:  map[string]string{},
+	ToneWordPattern:  `\(([^()]+)\)`,
 	ToneWordRedirect: map[string]string{},
 	VoiceRedirect:    map[string]string{},
 	VoiceWhitelist:   MiniMaxVoiceWhitelist{},
@@ -156,24 +162,45 @@ func ExtractMiniMaxEmotion(text string, pattern string, redirect map[string]stri
 	if err != nil {
 		return "", text
 	}
+	// 多个标签时，仅第一个匹配的 emotion 值落地到 voice_setting.emotion。
 	matches := re.FindStringSubmatch(text)
 	var emotionValue string
 	if len(matches) >= 2 {
-		tagValue := matches[1]
-		if mapped, ok := redirect[tagValue]; ok && mapped != "" {
-			emotionValue = mapped
-		}
+		emotionValue = resolveMiniMaxTagValue(matches[1], redirect)
 	} else if len(matches) == 1 {
-		tagValue := ExtractMiniMaxParenContent(matches[0])
-		if tagValue != "" {
-			if mapped, ok := redirect[tagValue]; ok && mapped != "" {
-				emotionValue = mapped
-			}
+		if tagValue := ExtractMiniMaxParenContent(matches[0]); tagValue != "" {
+			emotionValue = resolveMiniMaxTagValue(tagValue, redirect)
 		}
 	}
-	cleaned = re.ReplaceAllString(text, "")
+	// 清洗：当正则带第 2 个捕获组（如 <tts emotion="...">text</tts>）时，
+	// 保留捕获的正文，只剥离标签包裹；否则整体删除匹配。
+	cleaned = replaceMiniMaxEmotionTags(text, re)
 	cleaned = strings.TrimSpace(cleaned)
 	return emotionValue, cleaned
+}
+
+// resolveMiniMaxTagValue 解析标签值到最终的 emotion：
+// 映射表为空时直接使用捕获到的标签值；非空时优先取映射值，未命中返回空串。
+func resolveMiniMaxTagValue(tagValue string, redirect map[string]string) string {
+	if tagValue == "" {
+		return ""
+	}
+	if len(redirect) == 0 {
+		return tagValue
+	}
+	if mapped, ok := redirect[tagValue]; ok && mapped != "" {
+		return mapped
+	}
+	return ""
+}
+
+// replaceMiniMaxEmotionTags 按正则捕获组数量决定如何清洗文本。
+// 至少 2 个捕获组时用第 2 组正文替换整个标签（保留正文），否则删除整个匹配。
+func replaceMiniMaxEmotionTags(text string, re *regexp.Regexp) string {
+	if re.NumSubexp() >= 2 {
+		return re.ReplaceAllString(text, "${2}")
+	}
+	return re.ReplaceAllString(text, "")
 }
 
 func ReplaceMiniMaxToneWords(text string, pattern string, redirect map[string]string) string {
@@ -184,10 +211,22 @@ func ReplaceMiniMaxToneWords(text string, pattern string, redirect map[string]st
 	if err != nil {
 		return text
 	}
+	// 收集所有映射目标值（替换值）：若用户直接传入某个替换值，则整个 (替换值)
+	// 标签会被删除，避免再次发给上游或进入日志文本。替换是单趟处理，不会对
+	// 本轮替换出的 (替换值) 重复扫描。
+	targetValues := make(map[string]struct{}, len(redirect))
+	for _, v := range redirect {
+		if v != "" {
+			targetValues[v] = struct{}{}
+		}
+	}
 	return re.ReplaceAllStringFunc(text, func(match string) string {
 		tagValue := ExtractMiniMaxParenContent(match)
 		if tagValue == "" {
 			return match
+		}
+		if _, isTarget := targetValues[tagValue]; isTarget {
+			return ""
 		}
 		if mapped, ok := redirect[tagValue]; ok && mapped != "" {
 			return "(" + mapped + ")"
