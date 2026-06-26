@@ -128,12 +128,12 @@ func TestClaudeToOpenAIRequestMapsOpenRouterAdaptiveThinking(t *testing.T) {
 	if err := common.Unmarshal(openAIRequest.Reasoning, &reasoning); err != nil {
 		t.Fatalf("unmarshal reasoning: %v", err)
 	}
-	if reasoning["enabled"] != true || len(reasoning) != 1 {
-		t.Fatalf("reasoning = %#v, want only enabled=true", reasoning)
+	if reasoning["enabled"] != true || reasoning["effort"] != "high" || len(reasoning) != 2 {
+		t.Fatalf("reasoning = %#v, want enabled=true effort=high", reasoning)
 	}
 }
 
-func TestClaudeToOpenAIRequestMapsOpenRouterOutputConfigEffortToVerbosity(t *testing.T) {
+func TestClaudeToOpenAIRequestMapsOpenRouterOutputConfigEffortToReasoning(t *testing.T) {
 	request := dto.ClaudeRequest{
 		Model:        "anthropic/claude-sonnet-4",
 		OutputConfig: []byte(`{"effort":"high"}`),
@@ -150,8 +150,15 @@ func TestClaudeToOpenAIRequestMapsOpenRouterOutputConfigEffortToVerbosity(t *tes
 	if err != nil {
 		t.Fatalf("ClaudeToOpenAIRequest error = %v", err)
 	}
-	if string(openAIRequest.Verbosity) != `"high"` {
-		t.Fatalf("Verbosity = %s, want %q", openAIRequest.Verbosity, `"high"`)
+	var reasoning map[string]any
+	if err := common.Unmarshal(openAIRequest.Reasoning, &reasoning); err != nil {
+		t.Fatalf("unmarshal reasoning: %v", err)
+	}
+	if reasoning["enabled"] != true || reasoning["effort"] != "high" || len(reasoning) != 2 {
+		t.Fatalf("reasoning = %#v, want enabled=true effort=high", reasoning)
+	}
+	if len(openAIRequest.Verbosity) != 0 {
+		t.Fatalf("Verbosity = %s, want empty for OpenRouter reasoning effort", openAIRequest.Verbosity)
 	}
 	if openAIRequest.ReasoningEffort != "" {
 		t.Fatalf("ReasoningEffort = %q, want empty for OpenRouter", openAIRequest.ReasoningEffort)
