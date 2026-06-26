@@ -72,6 +72,9 @@ Azure、AWS Bedrock 等上游能力，提供用户、渠道、计费、限速、
 - JSON 序列化/反序列化调用使用 `common/json.go` 的包装函数；不要在业务代码里直接调用
   `encoding/json` 的 marshal/unmarshal/decode。
 - 数据库必须兼容 SQLite、MySQL >= 5.7.8、PostgreSQL >= 9.6。优先 GORM；原始 SQL 必须参数化并处理三库差异。
+- 待机内存相关默认值必须保守：连接池 idle 上限、prepared statement 缓存、后台 worker/goroutine 池、
+  ticker 唤醒频率等常驻资源不能为追求峰值吞吐随意调大。确需调大时必须保留环境变量覆盖、同步
+  `.env.example` 和中英文环境变量文档，并说明低流量/待机场景的内存影响。
 - 路由层不要承载业务逻辑；控制器只做边界处理；服务层承载业务；模型层承载持久化。
 - relay 改动要保护流式输出、usage 统计、错误映射、计费和供应商协议差异。
 - relay 请求 DTO 中需要转发给上游的可选标量字段，优先用指针类型配合 `omitempty`，保留客户端显式传入的 `0`、`0.0`、`false`。

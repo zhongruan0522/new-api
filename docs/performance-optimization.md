@@ -246,7 +246,7 @@ scanner buffer 原先在外层 handler 的 defer 中放回 pool。当 handler �
 | `REDIS_READ_TIMEOUT` | 3 | Redis 读超时（秒） |
 | `REDIS_WRITE_TIMEOUT` | 3 | Redis 写超时（秒） |
 | `REDIS_MAX_RETRIES` | 3 | Redis 最大重试次数 |
-| `RELAY_MAX_IDLE_CONNS_PER_HOST` | 100 | 每上游 host 最大空闲连接数 |
+| `RELAY_MAX_IDLE_CONNS_PER_HOST` | 32 | 每上游 host 最大空闲连接数 |
 
 ---
 

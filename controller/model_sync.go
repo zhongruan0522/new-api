@@ -92,10 +92,18 @@ type syncRequest struct {
 
 func newHTTPClient() *http.Client {
 	timeoutSec := common.GetEnvOrDefault("SYNC_HTTP_TIMEOUT_SECONDS", 10)
+	maxIdleConns := common.GetEnvOrDefault("SYNC_HTTP_MAX_IDLE_CONNS", 10)
+	if maxIdleConns <= 0 {
+		maxIdleConns = 10
+	}
+	idleConnTimeoutSec := common.GetEnvOrDefault("SYNC_HTTP_IDLE_CONN_TIMEOUT", 30)
+	if idleConnTimeoutSec <= 0 {
+		idleConnTimeoutSec = 30
+	}
 	dialer := &net.Dialer{Timeout: time.Duration(timeoutSec) * time.Second}
 	transport := &http.Transport{
-		MaxIdleConns:          100,
-		IdleConnTimeout:       90 * time.Second,
+		MaxIdleConns:          maxIdleConns,
+		IdleConnTimeout:       time.Duration(idleConnTimeoutSec) * time.Second,
 		TLSHandshakeTimeout:   time.Duration(timeoutSec) * time.Second,
 		ExpectContinueTimeout: 1 * time.Second,
 		ResponseHeaderTimeout: time.Duration(timeoutSec) * time.Second,

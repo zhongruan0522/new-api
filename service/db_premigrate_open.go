@@ -23,16 +23,16 @@ func openDBByType(dsn string, dbType string) (*gorm.DB, error) {
 			DSN:                  dsn,
 			PreferSimpleProtocol: true,
 		}), &gorm.Config{
-			PrepareStmt: true,
+			PrepareStmt: common.GetEnvOrDefaultBool("SQL_PREPARE_STMT", false),
 		})
 	case common.DatabaseTypeMySQL:
 		dsn = ensureMySQLParseTime(dsn)
 		return gorm.Open(mysql.Open(dsn), &gorm.Config{
-			PrepareStmt: true,
+			PrepareStmt: common.GetEnvOrDefaultBool("SQL_PREPARE_STMT", false),
 		})
 	case common.DatabaseTypeSQLite:
 		return gorm.Open(sqlite.Open(dsn), &gorm.Config{
-			PrepareStmt: true,
+			PrepareStmt: common.GetEnvOrDefaultBool("SQL_PREPARE_STMT", false),
 		})
 	default:
 		return nil, errors.New("不支持的数据库类型")

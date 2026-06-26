@@ -22,9 +22,10 @@ This document provides all environment variables supported by New API and their 
 | Environment Variable    | Description                                  | Default Value            | Example                                                                                                                             |
 | ----------------------- | -------------------------------------------- | ------------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
 | `SQL_DSN`               | Database Connection String                   | SQLite (data/one-api.db) | MySQL: `SQL_DSN=root:123456@tcp(localhost:3306)/new-api` \| PostgreSQL: `SQL_DSN=postgresql://root:123456@postgres:5432/new-api` |
-| `SQL_MAX_IDLE_CONNS`    | Maximum Number of Idle Connections in Connection Pool | `100`                    | `SQL_MAX_IDLE_CONNS=50`                                                                                                          |
+| `SQL_MAX_IDLE_CONNS`    | Maximum Number of Idle Connections in Connection Pool | `20`                     | `SQL_MAX_IDLE_CONNS=50`                                                                                                          |
 | `SQL_MAX_OPEN_CONNS`    | Maximum Number of Open Connections in Connection Pool | `1000`                   | `SQL_MAX_OPEN_CONNS=500`                                                                                                         |
 | `SQL_MAX_LIFETIME`      | Maximum Connection Lifetime (minutes)        | `60`                     | `SQL_MAX_LIFETIME=120`                                                                                                          |
+| `SQL_PREPARE_STMT`      | Enable GORM prepared statement cache for hot SQL paths | `false`                  | `SQL_PREPARE_STMT=true`                                                                                                         |
 | `LOG_SQL_DSN`           | Separate Database Connection String for Log Table | -                        | `LOG_SQL_DSN=root:123456@tcp(localhost:3306)/oneapi_logs`                                                                        |
 | `SQLITE_PATH`           | SQLite Database Path                         | `/path/to/sqlite.db`     | `SQLITE_PATH=/var/lib/new-api/new-api.db`                                                                                        |
 
@@ -70,6 +71,8 @@ This document provides all environment variables supported by New API and their 
 | `RELAY_MAX_IDLE_CONNS`           | Maximum idle connections for the relay HTTP client           | `200`         | `RELAY_MAX_IDLE_CONNS=100`           |
 | `RELAY_MAX_IDLE_CONNS_PER_HOST`  | Maximum idle connections per host for the relay HTTP client  | `32`          | `RELAY_MAX_IDLE_CONNS_PER_HOST=16`   |
 | `RELAY_IDLE_CONN_TIMEOUT`        | Relay HTTP client idle connection retention time (seconds)   | `90`          | `RELAY_IDLE_CONN_TIMEOUT=30`         |
+| `SYNC_HTTP_MAX_IDLE_CONNS`       | Maximum idle connections for the model metadata sync client  | `10`          | `SYNC_HTTP_MAX_IDLE_CONNS=20`        |
+| `SYNC_HTTP_IDLE_CONN_TIMEOUT`    | Idle connection timeout for the model metadata sync client (seconds) | `30`   | `SYNC_HTTP_IDLE_CONN_TIMEOUT=60`     |
 | `STREAMING_TIMEOUT`              | Streaming Single Reply Timeout (seconds)                     | `300`         | `STREAMING_TIMEOUT=120`              |
 | `STREAM_SCANNER_MAX_BUFFER_MB`   | Maximum buffer size for a single streaming SSE frame (MB)    | `8`           | `STREAM_SCANNER_MAX_BUFFER_MB=16`    |
 | `MAX_FILE_DOWNLOAD_MB`           | Maximum File Download Size (MB)                              | `20`          | `MAX_FILE_DOWNLOAD_MB=50`            |

@@ -8,6 +8,7 @@ import (
 	"runtime/debug"
 	"strconv"
 	"sync"
+	"time"
 )
 
 var relayGoPool *boundedRelayPool
@@ -23,6 +24,7 @@ var relayGoPool *boundedRelayPool
 // parallelism for async bookkeeping.
 const defaultRelayPoolCap = 256
 const defaultRelayPoolQueueSize = 4096
+const defaultRelayPoolIdleTimeout = 30 * time.Second
 
 type relayTask struct {
 	ctx context.Context
@@ -30,8 +32,11 @@ type relayTask struct {
 }
 
 type boundedRelayPool struct {
-	tasks chan relayTask
-	once  sync.Once
+	tasks       chan relayTask
+	maxWorkers  int
+	idleTimeout time.Duration
+	mu          sync.Mutex
+	workers     int
 }
 
 func init() {
@@ -51,28 +56,72 @@ func init() {
 }
 
 func newBoundedRelayPool(workerCount int, queueSize int) *boundedRelayPool {
+	return newBoundedRelayPoolWithIdleTimeout(workerCount, queueSize, defaultRelayPoolIdleTimeout)
+}
+
+func newBoundedRelayPoolWithIdleTimeout(workerCount int, queueSize int, idleTimeout time.Duration) *boundedRelayPool {
 	if workerCount <= 0 {
 		workerCount = defaultRelayPoolCap
 	}
 	if queueSize <= 0 {
 		queueSize = defaultRelayPoolQueueSize
 	}
-
-	p := &boundedRelayPool{
-		tasks: make(chan relayTask, queueSize),
+	if idleTimeout <= 0 {
+		idleTimeout = defaultRelayPoolIdleTimeout
 	}
-	p.once.Do(func() {
-		for i := 0; i < workerCount; i++ {
-			go p.worker()
-		}
-	})
-	return p
+
+	return &boundedRelayPool{
+		tasks:       make(chan relayTask, queueSize),
+		maxWorkers:  workerCount,
+		idleTimeout: idleTimeout,
+	}
 }
 
 func (p *boundedRelayPool) worker() {
-	for task := range p.tasks {
-		runRelayTask(task)
+	idleTimer := time.NewTimer(p.idleTimeout)
+	defer idleTimer.Stop()
+
+	for {
+		select {
+		case task := <-p.tasks:
+			if !idleTimer.Stop() {
+				select {
+				case <-idleTimer.C:
+				default:
+				}
+			}
+			runRelayTask(task)
+			idleTimer.Reset(p.idleTimeout)
+		case <-idleTimer.C:
+			if len(p.tasks) > 0 {
+				idleTimer.Reset(p.idleTimeout)
+				continue
+			}
+			p.mu.Lock()
+			p.workers--
+			p.mu.Unlock()
+			return
+		}
 	}
+}
+
+func (p *boundedRelayPool) startWorkerIfNeeded() {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	if p.workers >= p.maxWorkers {
+		return
+	}
+	if p.workers > 0 && len(p.tasks) < p.workers {
+		return
+	}
+	p.workers++
+	go p.worker()
+}
+
+func (p *boundedRelayPool) activeWorkers() int {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	return p.workers
 }
 
 func runRelayTask(task relayTask) {
@@ -91,7 +140,9 @@ func (p *boundedRelayPool) CtxGo(ctx context.Context, f func()) {
 	if ctx == nil {
 		ctx = context.Background()
 	}
+	p.startWorkerIfNeeded()
 	p.tasks <- relayTask{ctx: ctx, f: f}
+	p.startWorkerIfNeeded()
 }
 
 func RelayCtxGo(ctx context.Context, f func()) {

@@ -72,6 +72,8 @@ var DB *gorm.DB
 
 var LOG_DB *gorm.DB
 
+const defaultSQLMaxIdleConns = 20
+
 func createRootAccountIfNeed() error {
 	var user User
 	//if user.Status != common.UserStatusEnabled {
@@ -188,7 +190,9 @@ func newGormConfig() *gorm.Config {
 		logLevel = gormlogger.Info
 	}
 	return &gorm.Config{
-		PrepareStmt: true, // precompile SQL
+		// Prepared statement caching improves hot SQL paths but retains driver and
+		// GORM statement state while idle. Keep it opt-in for small deployments.
+		PrepareStmt: common.GetEnvOrDefaultBool("SQL_PREPARE_STMT", false),
 		Logger: gormlogger.New(
 			log.New(gin.DefaultWriter, "\n", log.LstdFlags),
 			gormlogger.Config{
@@ -218,7 +222,7 @@ func InitDB() (err error) {
 		if err != nil {
 			return err
 		}
-		sqlDB.SetMaxIdleConns(common.GetEnvOrDefault("SQL_MAX_IDLE_CONNS", 100))
+		sqlDB.SetMaxIdleConns(common.GetEnvOrDefault("SQL_MAX_IDLE_CONNS", defaultSQLMaxIdleConns))
 		sqlDB.SetMaxOpenConns(common.GetEnvOrDefault("SQL_MAX_OPEN_CONNS", 1000))
 		sqlDB.SetConnMaxLifetime(time.Second * time.Duration(common.GetEnvOrDefault("SQL_MAX_LIFETIME", 60)))
 
@@ -258,7 +262,7 @@ func InitLogDB() (err error) {
 		if err != nil {
 			return err
 		}
-		sqlDB.SetMaxIdleConns(common.GetEnvOrDefault("SQL_MAX_IDLE_CONNS", 100))
+		sqlDB.SetMaxIdleConns(common.GetEnvOrDefault("SQL_MAX_IDLE_CONNS", defaultSQLMaxIdleConns))
 		sqlDB.SetMaxOpenConns(common.GetEnvOrDefault("SQL_MAX_OPEN_CONNS", 1000))
 		sqlDB.SetConnMaxLifetime(time.Second * time.Duration(common.GetEnvOrDefault("SQL_MAX_LIFETIME", 60)))
 
