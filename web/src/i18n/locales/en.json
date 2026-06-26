@@ -27,6 +27,8 @@
     "Item": "Item",
     "No items configured. Click \"Add Item\" to get started.": "No items configured. Click \"Add Item\" to get started.",
     "No voices configured. Click \"Add Voice\" to get started.": "No voices configured. Click \"Add Voice\" to get started.",
+    "Save or delete pending rows in this list before using the page save button.": "Save or delete pending rows in this list before using the page save button.",
+    "Please save or delete pending voice whitelist rows first": "Please save or delete pending voice whitelist rows first",
     "Voice ID": "Voice ID",
     "Voice Whitelist": "Voice Whitelist",
     "JSON array of client-requested MiniMax voice IDs allowed for MiniMax TTS requests. Use {} or [] to disable the whitelist. Example": "JSON array of client-requested MiniMax voice IDs allowed for MiniMax TTS requests. Use {} or [] to disable the whitelist. Example",

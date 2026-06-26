@@ -67,6 +67,11 @@ func (a *Adaptor) ConvertAudioRequest(c *gin.Context, info *relaycommon.RelayInf
 	if clientVoice == "" {
 		clientVoice = request.Voice
 	}
+	if request.Voice != "" && request.Voice != clientVoice {
+		if err := model_setting.ValidateMiniMaxVoiceAllowed(request.Voice); err != nil {
+			return nil, newMiniMaxVoiceNotAllowedError(c, request.Voice)
+		}
+	}
 	if err := model_setting.ValidateMiniMaxVoiceAllowed(clientVoice); err != nil {
 		return nil, newMiniMaxVoiceNotAllowedError(c, clientVoice)
 	}

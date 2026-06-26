@@ -16,7 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import * as z from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -128,6 +128,8 @@ interface Props {
 export function MiniMaxSettingsCard({ defaultValues }: Props) {
   const { t } = useTranslation()
   const updateOption = useUpdateOption()
+  const [hasPendingWhitelistRows, setHasPendingWhitelistRows] =
+    useState(false)
 
   const buildFormDefaults = (values: MiniMaxFormInput): MiniMaxFormInput => ({
     minimax: {
@@ -209,6 +211,13 @@ export function MiniMaxSettingsCard({ defaultValues }: Props) {
   }, [defaultValues, form])
 
   const onSubmit = async (values: MiniMaxFormValues) => {
+    if (hasPendingWhitelistRows) {
+      toast.error(
+        t('Please save or delete pending voice whitelist rows first')
+      )
+      return
+    }
+
     const normalized: FlatMiniMaxSettings = {
       'minimax.enabled': values.minimax.enabled,
       'minimax.model_redirect': normalizeJsonString(values.minimax.model_redirect),
@@ -506,6 +515,7 @@ export function MiniMaxSettingsCard({ defaultValues }: Props) {
                       'minimax.voice_whitelist',
                       'minimax.voice_whitelist'
                     )}
+                    onPendingChange={setHasPendingWhitelistRows}
                   />
                 </FormControl>
                 <FormDescription>

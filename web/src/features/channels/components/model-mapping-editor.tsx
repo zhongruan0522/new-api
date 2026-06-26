@@ -115,9 +115,16 @@ export function ModelMappingEditor({
   }, [])
 
   const isServerPaginated = Boolean(optionKey)
+  const failedToLoadSettingsMessage = t('Failed to load settings')
 
   const jsonMapQuery = useQuery({
-    queryKey: ['system-option-json-map', optionKey, pageIndex + 1, pageSize],
+    queryKey: [
+      'system-option-json-map',
+      optionKey,
+      pageIndex + 1,
+      pageSize,
+      failedToLoadSettingsMessage,
+    ],
     queryFn: async () => {
       const data = await getOptionJsonMap({
         key: optionKey ?? '',
@@ -125,7 +132,7 @@ export function ModelMappingEditor({
         pageSize,
       })
       if (!data.success) {
-        throw new Error(data.message || t('Failed to load settings'))
+        throw new Error(data.message || failedToLoadSettingsMessage)
       }
       return data.data
     },
@@ -133,11 +140,11 @@ export function ModelMappingEditor({
   })
 
   const fullJsonQuery = useQuery({
-    queryKey: ['system-option-value', optionKey],
+    queryKey: ['system-option-value', optionKey, failedToLoadSettingsMessage],
     queryFn: async () => {
       const data = await getSystemOptionValue(optionKey ?? '')
       if (!data.success) {
-        throw new Error(data.message || t('Failed to load settings'))
+        throw new Error(data.message || failedToLoadSettingsMessage)
       }
       return data.data.value
     },

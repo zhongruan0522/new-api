@@ -10,6 +10,7 @@ import (
 	"github.com/zhongruan0522/new-api/common"
 	"github.com/zhongruan0522/new-api/setting"
 	"github.com/zhongruan0522/new-api/setting/config"
+	"github.com/zhongruan0522/new-api/setting/model_setting"
 	"github.com/zhongruan0522/new-api/setting/operation_setting"
 	"github.com/zhongruan0522/new-api/setting/performance_setting"
 	"github.com/zhongruan0522/new-api/setting/ratio_setting"
@@ -455,6 +456,11 @@ func validateConfigUpdate(key, value string) error {
 	if cfg == nil {
 		return nil
 	}
+	if parts[0] == "minimax" {
+		return model_setting.WithMiniMaxSettingsReadLock(func() error {
+			return config.ValidateConfigFromMap(cfg, map[string]string{parts[1]: value})
+		})
+	}
 
 	return config.ValidateConfigFromMap(cfg, map[string]string{parts[1]: value})
 }
@@ -479,7 +485,16 @@ func handleConfigUpdate(key, value string) (bool, error) {
 	configMap := map[string]string{
 		configKey: value,
 	}
-	if err := config.UpdateConfigFromMap(cfg, configMap); err != nil {
+	updateConfig := func() error {
+		return config.UpdateConfigFromMap(cfg, configMap)
+	}
+	var err error
+	if configName == "minimax" {
+		err = model_setting.WithMiniMaxSettingsWriteLock(updateConfig)
+	} else {
+		err = updateConfig()
+	}
+	if err != nil {
 		return true, err
 	}
 

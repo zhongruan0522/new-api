@@ -1,11 +1,11 @@
 package model_setting
 
 import (
-	"encoding/json"
 	"fmt"
 	"regexp"
 	"sort"
 	"strings"
+	"sync"
 
 	"github.com/zhongruan0522/new-api/common"
 	"github.com/zhongruan0522/new-api/setting/config"
@@ -14,6 +14,7 @@ import (
 const (
 	maxMiniMaxVoiceWhitelistEntries = 100000
 	maxMiniMaxVoiceIDLength         = 512
+	maxMiniMaxVoiceWhitelistBytes   = 4 * 1024 * 1024
 )
 
 type MiniMaxVoiceWhitelist []string
@@ -22,7 +23,7 @@ func (w MiniMaxVoiceWhitelist) MarshalJSON() ([]byte, error) {
 	if len(w) == 0 {
 		return []byte("{}"), nil
 	}
-	return json.Marshal([]string(w))
+	return common.Marshal([]string(w))
 }
 
 func (w *MiniMaxVoiceWhitelist) UnmarshalJSON(data []byte) error {
@@ -84,6 +85,7 @@ var defaultMiniMaxSettings = MiniMaxSettings{
 }
 
 var minimaxSettings = defaultMiniMaxSettings
+var minimaxSettingsMu sync.RWMutex
 
 func init() {
 	config.GlobalConfig.Register("minimax", &minimaxSettings)
@@ -93,8 +95,53 @@ func GetMiniMaxSettings() *MiniMaxSettings {
 	return &minimaxSettings
 }
 
+func WithMiniMaxSettingsReadLock(fn func() error) error {
+	minimaxSettingsMu.RLock()
+	defer minimaxSettingsMu.RUnlock()
+	return fn()
+}
+
+func WithMiniMaxSettingsWriteLock(fn func() error) error {
+	minimaxSettingsMu.Lock()
+	defer minimaxSettingsMu.Unlock()
+	return fn()
+}
+
+func GetMiniMaxVoiceWhitelistSnapshot() MiniMaxVoiceWhitelist {
+	minimaxSettingsMu.RLock()
+	defer minimaxSettingsMu.RUnlock()
+	items := make(MiniMaxVoiceWhitelist, len(minimaxSettings.VoiceWhitelist))
+	copy(items, minimaxSettings.VoiceWhitelist)
+	return items
+}
+
+func snapshotMiniMaxPolicySettings() MiniMaxSettings {
+	minimaxSettingsMu.RLock()
+	defer minimaxSettingsMu.RUnlock()
+	return MiniMaxSettings{
+		Enabled:          minimaxSettings.Enabled,
+		ModelRedirect:    cloneStringMap(minimaxSettings.ModelRedirect),
+		EmotionPattern:   minimaxSettings.EmotionPattern,
+		EmotionRedirect:  cloneStringMap(minimaxSettings.EmotionRedirect),
+		ToneWordPattern:  minimaxSettings.ToneWordPattern,
+		ToneWordRedirect: cloneStringMap(minimaxSettings.ToneWordRedirect),
+		VoiceRedirect:    cloneStringMap(minimaxSettings.VoiceRedirect),
+	}
+}
+
+func cloneStringMap(source map[string]string) map[string]string {
+	if len(source) == 0 {
+		return map[string]string{}
+	}
+	cloned := make(map[string]string, len(source))
+	for k, v := range source {
+		cloned[k] = v
+	}
+	return cloned
+}
+
 func ApplyMiniMaxTTSPolicy(model, voice, text, outputFormat string) MiniMaxTTSPolicyResult {
-	cfg := GetMiniMaxSettings()
+	cfg := snapshotMiniMaxPolicySettings()
 	result := MiniMaxTTSPolicyResult{
 		Enabled:      cfg.Enabled,
 		Model:        model,
@@ -105,8 +152,8 @@ func ApplyMiniMaxTTSPolicy(model, voice, text, outputFormat string) MiniMaxTTSPo
 	if !cfg.Enabled {
 		return result
 	}
-	result.Model = ApplyMiniMaxModelRedirect(model, cfg)
-	result.Voice = ApplyMiniMaxVoiceRedirect(voice, cfg)
+	result.Model = ApplyMiniMaxModelRedirect(model, &cfg)
+	result.Voice = ApplyMiniMaxVoiceRedirect(voice, &cfg)
 	emotion, cleaned := ExtractMiniMaxEmotion(text, cfg.EmotionPattern, cfg.EmotionRedirect)
 	result.Emotion = emotion
 	result.Text = ReplaceMiniMaxToneWords(cleaned, cfg.ToneWordPattern, cfg.ToneWordRedirect)
@@ -134,21 +181,23 @@ func ApplyMiniMaxVoiceRedirect(voice string, cfg *MiniMaxSettings) string {
 }
 
 func IsMiniMaxVoiceWhitelistEnabled() bool {
-	cfg := GetMiniMaxSettings()
-	return cfg != nil && len(cfg.VoiceWhitelist) > 0
+	minimaxSettingsMu.RLock()
+	defer minimaxSettingsMu.RUnlock()
+	return len(minimaxSettings.VoiceWhitelist) > 0
 }
 
 func ValidateMiniMaxVoiceAllowed(voice string) error {
-	cfg := GetMiniMaxSettings()
-	if cfg == nil || len(cfg.VoiceWhitelist) == 0 {
+	minimaxSettingsMu.RLock()
+	defer minimaxSettingsMu.RUnlock()
+	if len(minimaxSettings.VoiceWhitelist) == 0 {
 		return nil
 	}
 	voice = strings.TrimSpace(voice)
 	if voice == "" {
 		return fmt.Errorf("minimax voice is not allowed: empty voice")
 	}
-	index := sort.SearchStrings([]string(cfg.VoiceWhitelist), voice)
-	if index < len(cfg.VoiceWhitelist) && cfg.VoiceWhitelist[index] == voice {
+	index := sort.SearchStrings([]string(minimaxSettings.VoiceWhitelist), voice)
+	if index < len(minimaxSettings.VoiceWhitelist) && minimaxSettings.VoiceWhitelist[index] == voice {
 		return nil
 	}
 	return fmt.Errorf("minimax voice is not allowed: %s", voice)
@@ -324,13 +373,15 @@ func parseMiniMaxVoiceWhitelistJSON(value string) ([]string, bool, error) {
 	if trimmed == "null" {
 		return nil, false, fmt.Errorf("invalid voice whitelist: use JSON array or {} to disable")
 	}
-	var raw json.RawMessage
-	if err := json.Unmarshal([]byte(trimmed), &raw); err != nil {
+	if len(trimmed) > maxMiniMaxVoiceWhitelistBytes {
+		return nil, false, fmt.Errorf("voice whitelist JSON exceeds maximum size: %d bytes", maxMiniMaxVoiceWhitelistBytes)
+	}
+	var parsed any
+	if err := common.Unmarshal([]byte(trimmed), &parsed); err != nil {
 		return nil, false, fmt.Errorf("invalid JSON for voice whitelist: %w", err)
 	}
 
-	var emptyObject map[string]json.RawMessage
-	if err := json.Unmarshal(raw, &emptyObject); err == nil {
+	if emptyObject, ok := parsed.(map[string]any); ok {
 		if len(emptyObject) == 0 {
 			return []string{}, true, nil
 		}
@@ -338,7 +389,7 @@ func parseMiniMaxVoiceWhitelistJSON(value string) ([]string, bool, error) {
 	}
 
 	var voices []string
-	if err := json.Unmarshal(raw, &voices); err != nil {
+	if err := common.Unmarshal([]byte(trimmed), &voices); err != nil {
 		return nil, false, fmt.Errorf("invalid JSON for voice whitelist array: %w", err)
 	}
 	if len(voices) > maxMiniMaxVoiceWhitelistEntries {

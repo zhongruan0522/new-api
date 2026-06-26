@@ -27,6 +27,8 @@
     "Item": "项目",
     "No items configured. Click \"Add Item\" to get started.": "暂无配置项。点击“添加项”开始。",
     "No voices configured. Click \"Add Voice\" to get started.": "暂无音色配置。点击“添加音色”开始。",
+    "Save or delete pending rows in this list before using the page save button.": "请先保存或删除此列表中的待处理行，再使用页面保存按钮。",
+    "Please save or delete pending voice whitelist rows first": "请先保存或删除待处理的音色白名单行",
     "Voice ID": "音色 ID",
     "Voice Whitelist": "音色白名单",
     "JSON array of client-requested MiniMax voice IDs allowed for MiniMax TTS requests. Use {} or [] to disable the whitelist. Example": "允许 MiniMax TTS 请求使用的客户端原始音色 ID JSON 数组。使用 {} 或 [] 关闭白名单。示例",

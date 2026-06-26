@@ -1,11 +1,11 @@
 package controller
 
 import (
-	"fmt"
 	"net/http"
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/zhongruan0522/new-api/common"
 	"github.com/zhongruan0522/new-api/model"
@@ -95,6 +95,8 @@ type OptionJsonArrayUpsertRequest struct {
 	OldValue string `json:"old_value"`
 }
 
+var minimaxVoiceWhitelistMutationMu sync.Mutex
+
 func isSensitiveOptionKey(key string) bool {
 	return strings.HasSuffix(key, "Token") ||
 		strings.HasSuffix(key, "Secret") ||
@@ -181,9 +183,7 @@ func readMiniMaxStringArrayOption(c *gin.Context, key string) (model_setting.Min
 	if !ok || strings.TrimSpace(value) == "" {
 		value = "{}"
 	}
-	cfg := model_setting.GetMiniMaxSettings()
-	items := make(model_setting.MiniMaxVoiceWhitelist, len(cfg.VoiceWhitelist))
-	copy(items, cfg.VoiceWhitelist)
+	items := model_setting.GetMiniMaxVoiceWhitelistSnapshot()
 	return items, value, true
 }
 
@@ -300,38 +300,45 @@ func DeleteOptionJsonArrayEntry(c *gin.Context) {
 		return
 	}
 
-	items, beforeValue, ok := readMiniMaxStringArrayOption(c, req.Key)
+	minimaxVoiceWhitelistMutationMu.Lock()
+	items, _, ok := readMiniMaxStringArrayOption(c, req.Key)
 	if !ok {
+		minimaxVoiceWhitelistMutationMu.Unlock()
 		return
 	}
 	index := sort.SearchStrings([]string(items), value)
 	if index >= len(items) || items[index] != value {
+		minimaxVoiceWhitelistMutationMu.Unlock()
 		c.JSON(http.StatusOK, gin.H{"success": false, "message": "数组项不存在"})
 		return
 	}
 	items = append(items[:index], items[index+1:]...)
 	bytes, err := common.Marshal(items)
 	if err != nil {
+		minimaxVoiceWhitelistMutationMu.Unlock()
 		common.ApiError(c, err)
 		return
 	}
 	nextValue := string(bytes)
 	if nextValue, err = model_setting.NormalizeMiniMaxOptionValue(req.Key, nextValue); err != nil {
+		minimaxVoiceWhitelistMutationMu.Unlock()
 		c.JSON(http.StatusOK, gin.H{"success": false, "message": "MiniMax 设置失败: " + err.Error()})
 		return
 	}
 	if err := model.UpdateOption(req.Key, nextValue); err != nil {
+		minimaxVoiceWhitelistMutationMu.Unlock()
 		common.ApiError(c, err)
 		return
 	}
+	minimaxVoiceWhitelistMutationMu.Unlock()
 
 	service.RecordAudit(
 		c,
 		model.AuditModuleOption,
 		model.AuditActionUpdate,
 		"删除 JSON 数组配置项 "+req.Key+"."+value,
-		map[string]interface{}{"option": req.Key, "value": beforeValue},
-		map[string]interface{}{"option": req.Key, "value": nextValue},
+		map[string]interface{}{"option": req.Key, "value": value},
+		map[string]interface{}{"option": req.Key, "removed": value, "total": len(items)},
 	)
 	c.JSON(http.StatusOK, gin.H{"success": true, "message": ""})
 }
@@ -349,13 +356,16 @@ func UpsertOptionJsonArrayEntry(c *gin.Context) {
 		return
 	}
 
-	items, beforeValue, ok := readMiniMaxStringArrayOption(c, req.Key)
+	minimaxVoiceWhitelistMutationMu.Lock()
+	items, _, ok := readMiniMaxStringArrayOption(c, req.Key)
 	if !ok {
+		minimaxVoiceWhitelistMutationMu.Unlock()
 		return
 	}
 	if oldValue != "" && oldValue != value {
 		oldIndex := sort.SearchStrings([]string(items), oldValue)
 		if oldIndex >= len(items) || items[oldIndex] != oldValue {
+			minimaxVoiceWhitelistMutationMu.Unlock()
 			c.JSON(http.StatusOK, gin.H{"success": false, "message": "原数组项不存在"})
 			return
 		}
@@ -364,9 +374,11 @@ func UpsertOptionJsonArrayEntry(c *gin.Context) {
 	index := sort.SearchStrings([]string(items), value)
 	if index < len(items) && items[index] == value {
 		if oldValue == value {
+			minimaxVoiceWhitelistMutationMu.Unlock()
 			c.JSON(http.StatusOK, gin.H{"success": true, "message": ""})
 			return
 		}
+		minimaxVoiceWhitelistMutationMu.Unlock()
 		c.JSON(http.StatusOK, gin.H{"success": false, "message": "数组项已存在"})
 		return
 	}
@@ -376,26 +388,34 @@ func UpsertOptionJsonArrayEntry(c *gin.Context) {
 
 	bytes, err := common.Marshal(items)
 	if err != nil {
+		minimaxVoiceWhitelistMutationMu.Unlock()
 		common.ApiError(c, err)
 		return
 	}
 	nextValue := string(bytes)
 	if nextValue, err = model_setting.NormalizeMiniMaxOptionValue(req.Key, nextValue); err != nil {
+		minimaxVoiceWhitelistMutationMu.Unlock()
 		c.JSON(http.StatusOK, gin.H{"success": false, "message": "MiniMax 设置失败: " + err.Error()})
 		return
 	}
 	if err := model.UpdateOption(req.Key, nextValue); err != nil {
+		minimaxVoiceWhitelistMutationMu.Unlock()
 		common.ApiError(c, err)
 		return
 	}
+	minimaxVoiceWhitelistMutationMu.Unlock()
 
+	beforeAudit := map[string]interface{}{"option": req.Key, "value": oldValue}
+	if oldValue == "" {
+		beforeAudit = nil
+	}
 	service.RecordAudit(
 		c,
 		model.AuditModuleOption,
 		model.AuditActionUpdate,
 		"修改 JSON 数组配置项 "+req.Key+"."+value,
-		map[string]interface{}{"option": req.Key, "value": beforeValue},
-		map[string]interface{}{"option": req.Key, "value": nextValue},
+		beforeAudit,
+		map[string]interface{}{"option": req.Key, "value": value, "total": len(items)},
 	)
 	c.JSON(http.StatusOK, gin.H{"success": true, "message": ""})
 }
@@ -542,6 +562,21 @@ type OptionUpdateRequest struct {
 	Value any    `json:"value"`
 }
 
+func optionUpdateValueToString(value any) (string, bool) {
+	switch v := value.(type) {
+	case string:
+		return v, true
+	case bool:
+		return common.Interface2String(v), true
+	case float64:
+		return common.Interface2String(v), true
+	case int:
+		return common.Interface2String(v), true
+	default:
+		return "", false
+	}
+}
+
 func UpdateOption(c *gin.Context) {
 	var option OptionUpdateRequest
 	err := common.DecodeJson(c.Request.Body, &option)
@@ -570,16 +605,15 @@ func UpdateOption(c *gin.Context) {
 		})
 		return
 	}
-	switch option.Value.(type) {
-	case bool:
-		option.Value = common.Interface2String(option.Value.(bool))
-	case float64:
-		option.Value = common.Interface2String(option.Value.(float64))
-	case int:
-		option.Value = common.Interface2String(option.Value.(int))
-	default:
-		option.Value = fmt.Sprintf("%v", option.Value)
+	value, ok := optionUpdateValueToString(option.Value)
+	if !ok {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"message": "配置值必须是字符串、布尔值或数字",
+		})
+		return
 	}
+	option.Value = value
 	switch option.Key {
 	case "GitHubOAuthEnabled":
 		if option.Value == "true" && common.GitHubClientId == "" {

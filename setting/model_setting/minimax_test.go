@@ -2,10 +2,12 @@ package model_setting
 
 import (
 	"regexp"
+	"strings"
 	"testing"
 )
 
 func TestValidateMiniMaxOptionValue(t *testing.T) {
+	oversizedVoiceWhitelist := `[` + `"` + strings.Repeat("a", maxMiniMaxVoiceWhitelistBytes) + `"` + `]`
 	cases := []struct {
 		name    string
 		key     string
@@ -39,6 +41,7 @@ func TestValidateMiniMaxOptionValue(t *testing.T) {
 		{"voice_whitelist_object", "minimax.voice_whitelist", `{"a":"b"}`, true},
 		{"voice_whitelist_blank_item", "minimax.voice_whitelist", `[" "]`, true},
 		{"voice_whitelist_invalid_json", "minimax.voice_whitelist", `{not json}`, true},
+		{"voice_whitelist_too_large", "minimax.voice_whitelist", oversizedVoiceWhitelist, true},
 		// 正则字段：空串放行
 		{"emotion_pattern_empty", "minimax.emotion_pattern", "", false},
 		// 正则字段：合法正则放行

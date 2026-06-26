@@ -279,6 +279,33 @@ func TestConvertAudioRequest_VoiceWhitelist(t *testing.T) {
 	}
 }
 
+func TestConvertAudioRequest_MetadataVoiceCannotWhitelistBlockedRequestVoice(t *testing.T) {
+	cfg := model_setting.MiniMaxSettings{
+		Enabled:        true,
+		VoiceWhitelist: model_setting.MiniMaxVoiceWhitelist{"allowed-voice"},
+	}
+	info := &relaycommon.RelayInfo{
+		RelayMode:   constant.RelayModeAudioSpeech,
+		ChannelMeta: &relaycommon.ChannelMeta{UpstreamModelName: "tts-1"},
+	}
+	request := dto.AudioRequest{
+		Model:          "tts-1",
+		Input:          "hello",
+		Voice:          "blocked-voice",
+		ResponseFormat: "mp3",
+		Metadata:       []byte(`{"voice_setting":{"voice_id":"allowed-voice"}}`),
+	}
+
+	withMiniMaxSettings(t, cfg, func() {
+		c := newConvertAudioContext()
+		a := &Adaptor{}
+		_, err := a.ConvertAudioRequest(c, info, request)
+		if err == nil {
+			t.Fatalf("expected whitelist error when request voice is blocked")
+		}
+	})
+}
+
 // TestConvertAudioRequest_MetadataNonPolicyFieldsPreserved 验证非策略字段（如 audio_setting.sample_rate）
 // 在 cfg.Enabled=true 时仍由 metadata 提供，管理员策略只覆盖 model/voice/emotion/text/format。
 func TestConvertAudioRequest_MetadataNonPolicyFieldsPreserved(t *testing.T) {

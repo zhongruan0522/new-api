@@ -43,6 +43,7 @@ type JsonArrayEditorProps = {
   addButtonText?: string
   optionKey?: string
   onFullValueLoaded?: (value: string) => void
+  onPendingChange?: (hasPending: boolean) => void
 }
 
 type ArrayRow = {
@@ -90,6 +91,7 @@ export function JsonArrayEditor({
   addButtonText,
   optionKey,
   onFullValueLoaded,
+  onPendingChange,
 }: JsonArrayEditorProps) {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
@@ -107,9 +109,16 @@ export function JsonArrayEditor({
   }, [])
 
   const isServerPaginated = Boolean(optionKey)
+  const failedToLoadSettingsMessage = t('Failed to load settings')
 
   const jsonArrayQuery = useQuery({
-    queryKey: ['system-option-json-array', optionKey, pageIndex + 1, pageSize],
+    queryKey: [
+      'system-option-json-array',
+      optionKey,
+      pageIndex + 1,
+      pageSize,
+      failedToLoadSettingsMessage,
+    ],
     queryFn: async () => {
       const data = await getOptionJsonArray({
         key: optionKey ?? '',
@@ -117,7 +126,7 @@ export function JsonArrayEditor({
         pageSize,
       })
       if (!data.success) {
-        throw new Error(data.message || t('Failed to load settings'))
+        throw new Error(data.message || failedToLoadSettingsMessage)
       }
       return data.data
     },
@@ -125,11 +134,11 @@ export function JsonArrayEditor({
   })
 
   const fullJsonQuery = useQuery({
-    queryKey: ['system-option-value', optionKey],
+    queryKey: ['system-option-value', optionKey, failedToLoadSettingsMessage],
     queryFn: async () => {
       const data = await getSystemOptionValue(optionKey ?? '')
       if (!data.success) {
-        throw new Error(data.message || t('Failed to load settings'))
+        throw new Error(data.message || failedToLoadSettingsMessage)
       }
       return data.data.value
     },
@@ -250,6 +259,18 @@ export function JsonArrayEditor({
     return JSON.stringify(values, null, 2)
   }
 
+  const isRowDirty = (row: ArrayRow) =>
+    Boolean(row.isNew || row.value !== row.originalValue)
+
+  const hasPendingServerRows = useMemo(
+    () => isServerPaginated && rows.some(isRowDirty),
+    [isServerPaginated, rows]
+  )
+
+  useEffect(() => {
+    onPendingChange?.(hasPendingServerRows)
+  }, [hasPendingServerRows, onPendingChange])
+
   const unsavedServerRowCount = useMemo(
     () => (isServerPaginated ? rows.filter((row) => row.isNew).length : 0),
     [isServerPaginated, rows]
@@ -330,9 +351,6 @@ export function JsonArrayEditor({
     }
     emitChange(convertRowsToJson(updatedRows))
   }
-
-  const isRowDirty = (row: ArrayRow) =>
-    Boolean(row.isNew || row.value !== row.originalValue)
 
   const handleSaveRow = (row: ArrayRow) => {
     upsertEntryMutation.mutate(row)
@@ -430,6 +448,13 @@ export function JsonArrayEditor({
         <div className='space-y-2'>
           {isLoadingRows || totalRows > 0 ? (
             <div className='space-y-2'>
+              {hasPendingServerRows ? (
+                <div className='text-muted-foreground rounded-md border border-dashed px-3 py-2 text-sm'>
+                  {t(
+                    'Save or delete pending rows in this list before using the page save button.'
+                  )}
+                </div>
+              ) : null}
               <div className='grid grid-cols-[minmax(0,1fr)_auto] gap-2 text-sm font-medium'>
                 <div>{itemLabel ? t(itemLabel) : t('Item')}</div>
                 <div className={isServerPaginated ? 'w-20' : 'w-10'}></div>
