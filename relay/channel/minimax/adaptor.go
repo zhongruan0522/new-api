@@ -68,7 +68,7 @@ func (a *Adaptor) ConvertAudioRequest(c *gin.Context, info *relaycommon.RelayInf
 		clientVoice = request.Voice
 	}
 	if err := model_setting.ValidateMiniMaxVoiceAllowed(clientVoice); err != nil {
-		return nil, err
+		return nil, newMiniMaxVoiceNotAllowedError(c, clientVoice)
 	}
 
 	// 3) 应用管理员强制策略：在 metadata 合并之后，用映射结果覆盖策略字段。

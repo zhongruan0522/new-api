@@ -104,3 +104,9 @@ const (
 	MsgUuidDuplicate = "common.uuid_duplicate"
 	MsgInvalidInput  = "common.invalid_input"
 )
+
+// MiniMax TTS related messages
+const (
+	MsgMiniMaxVoiceNotAuthorized       = "minimax.voice_not_authorized"
+	MsgMiniMaxVoiceNotAuthorizedWithID = "minimax.voice_not_authorized_with_id"
+)

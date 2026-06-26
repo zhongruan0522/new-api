@@ -1,7 +1,13 @@
 package minimax
 
 import (
+	"errors"
+	"strings"
+
+	"github.com/zhongruan0522/new-api/i18n"
 	"github.com/zhongruan0522/new-api/setting/model_setting"
+
+	"github.com/gin-gonic/gin"
 )
 
 // applyModelRedirect 按 TTS 模型重定向表查找。
@@ -38,4 +44,17 @@ func replaceToneWords(text string, pattern string, redirect map[string]string) s
 // 无括号或空内容返回空串。
 func extractParenContent(s string) string {
 	return model_setting.ExtractMiniMaxParenContent(s)
+}
+
+// newMiniMaxVoiceNotAllowedError returns a localized error for voice whitelist
+// rejection. The message language is chosen from the request's Accept-Language
+// header. When the voice is non-empty it is included for diagnostics.
+func newMiniMaxVoiceNotAllowedError(c *gin.Context, voice string) error {
+	trimmed := strings.TrimSpace(voice)
+	if trimmed == "" {
+		return errors.New(i18n.T(c, i18n.MsgMiniMaxVoiceNotAuthorized))
+	}
+	return errors.New(i18n.T(c, i18n.MsgMiniMaxVoiceNotAuthorizedWithID, map[string]any{
+		"Voice": trimmed,
+	}))
 }

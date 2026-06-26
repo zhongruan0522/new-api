@@ -15,6 +15,7 @@ import (
 	"github.com/zhongruan0522/new-api/common"
 	"github.com/zhongruan0522/new-api/constant"
 	"github.com/zhongruan0522/new-api/dto"
+	"github.com/zhongruan0522/new-api/i18n"
 	"github.com/zhongruan0522/new-api/logger"
 	"github.com/zhongruan0522/new-api/relay/channel"
 
@@ -343,7 +344,11 @@ func (a *Adaptor) ConvertAudioRequest(c *gin.Context, info *relaycommon.RelayInf
 	if info.RelayMode == relayconstant.RelayModeAudioSpeech {
 		if info.ChannelType == constant.ChannelTypeMiniMax {
 			if err := model_setting.ValidateMiniMaxVoiceAllowed(request.Voice); err != nil {
-				return nil, err
+				voice := strings.TrimSpace(request.Voice)
+				if voice == "" {
+					return nil, errors.New(i18n.T(c, i18n.MsgMiniMaxVoiceNotAuthorized))
+				}
+				return nil, errors.New(i18n.T(c, i18n.MsgMiniMaxVoiceNotAuthorizedWithID, map[string]any{"Voice": voice}))
 			}
 			policy := model_setting.ApplyMiniMaxTTSPolicy(info.UpstreamModelName, request.Voice, request.Input, request.ResponseFormat)
 			if policy.Enabled {

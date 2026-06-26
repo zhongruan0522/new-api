@@ -362,44 +362,6 @@ export function MiniMaxSettingsCard({ defaultValues }: Props) {
 
           <FormField
             control={form.control}
-            name='minimax.voice_whitelist'
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>{t('Voice Whitelist')}</FormLabel>
-                <FormControl>
-                  <JsonArrayEditor
-                    value={field.value}
-                    onChange={field.onChange}
-                    optionKey='minimax.voice_whitelist'
-                    itemLabel='Voice ID'
-                    itemPlaceholder='male-qn-qingse'
-                    addButtonText='Add Voice'
-                    jsonPlaceholder={t('["voice-id"]')}
-                    template={JSON.stringify(
-                      ['male-qn-qingse', 'female-shaonv'],
-                      null,
-                      2
-                    )}
-                    emptyText='No voices configured. Click "Add Voice" to get started.'
-                    onFullValueLoaded={syncJsonArrayBaseline(
-                      'minimax.voice_whitelist',
-                      'minimax.voice_whitelist'
-                    )}
-                  />
-                </FormControl>
-                <FormDescription>
-                  {t(
-                    'JSON array of client-requested MiniMax voice IDs allowed for MiniMax TTS requests. Use {} or [] to disable the whitelist. Example'
-                  )}{' '}
-                  {`["male-qn-qingse", "female-shaonv"]`}
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
             name='minimax.emotion_pattern'
             render={({ field }) => (
               <FormItem>
@@ -513,6 +475,44 @@ export function MiniMaxSettingsCard({ defaultValues }: Props) {
                     'JSON map of tone word tag value to replacement. Parentheses are preserved, only content is replaced. If the user passes a tag whose value equals a configured replacement, the whole tag is deleted (not sent upstream). Example'
                   )}{' '}
                   {`{ "laughs": "笑", "crying": "哭" }`}
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name='minimax.voice_whitelist'
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{t('Voice Whitelist')}</FormLabel>
+                <FormControl>
+                  <JsonArrayEditor
+                    value={field.value}
+                    onChange={field.onChange}
+                    optionKey='minimax.voice_whitelist'
+                    itemLabel='Voice ID'
+                    itemPlaceholder='male-qn-qingse'
+                    addButtonText='Add Voice'
+                    jsonPlaceholder={t('["voice-id"]')}
+                    template={JSON.stringify(
+                      ['male-qn-qingse', 'female-shaonv'],
+                      null,
+                      2
+                    )}
+                    emptyText='No voices configured. Click "Add Voice" to get started.'
+                    onFullValueLoaded={syncJsonArrayBaseline(
+                      'minimax.voice_whitelist',
+                      'minimax.voice_whitelist'
+                    )}
+                  />
+                </FormControl>
+                <FormDescription>
+                  {t(
+                    'JSON array of client-requested MiniMax voice IDs allowed for MiniMax TTS requests. Use {} or [] to disable the whitelist. Example'
+                  )}{' '}
+                  {`["male-qn-qingse", "female-shaonv"]`}
                 </FormDescription>
                 <FormMessage />
               </FormItem>

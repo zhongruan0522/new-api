@@ -82,6 +82,10 @@ oauth.token_failed: "{{.Provider}} 获取 Token 失败，请检查设置"
 oauth.user_info_empty: "{{.Provider}} 获取用户信息为空，请检查设置"
 oauth.trust_level_low: "Linux DO 信任等级未达到管理员设置的最低信任等级"
 
+# MiniMax TTS messages
+minimax.voice_not_authorized: "音色ID未授权"
+minimax.voice_not_authorized_with_id: "音色ID未授权: {{.Voice}}"
+
 # Model layer error messages
 redeem.failed: "兑换失败，请稍后重试"
 common.uuid_duplicate: "请重试，系统生成的 UUID 竟然重复了！"
