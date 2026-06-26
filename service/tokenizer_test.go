@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/tiktoken-go/tokenizer"
-	"github.com/tiktoken-go/tokenizer/codec"
 )
 
 func resetTokenEncoderCacheForTest(t *testing.T) {
@@ -20,7 +19,7 @@ func resetTokenEncoderCache() func() {
 	oldDefault := defaultTokenEncoder
 	oldMap := tokenEncoderMap
 	oldOrder := tokenEncoderOrder
-	defaultTokenEncoder = codec.NewCl100kBase()
+	defaultTokenEncoder = nil
 	tokenEncoderMap = make(map[string]tokenizer.Codec)
 	tokenEncoderOrder = nil
 	tokenEncoderMutex.Unlock()
@@ -31,6 +30,35 @@ func resetTokenEncoderCache() func() {
 		tokenEncoderMap = oldMap
 		tokenEncoderOrder = oldOrder
 		tokenEncoderMutex.Unlock()
+	}
+}
+
+func TestInitTokenEncodersDefersDefaultEncoderAllocation(t *testing.T) {
+	resetTokenEncoderCacheForTest(t)
+
+	InitTokenEncoders()
+
+	tokenEncoderMutex.RLock()
+	deferred := defaultTokenEncoder == nil
+	tokenEncoderMutex.RUnlock()
+	if !deferred {
+		t.Fatal("default token encoder was initialized during InitTokenEncoders")
+	}
+}
+
+func TestGetTokenEncoderInitializesDefaultEncoderOnDemand(t *testing.T) {
+	resetTokenEncoderCacheForTest(t)
+
+	encoder := getTokenEncoder("")
+	if encoder == nil {
+		t.Fatal("default token encoder is nil")
+	}
+
+	tokenEncoderMutex.RLock()
+	initialized := defaultTokenEncoder != nil
+	tokenEncoderMutex.RUnlock()
+	if !initialized {
+		t.Fatal("default token encoder was not cached after first use")
 	}
 }
 

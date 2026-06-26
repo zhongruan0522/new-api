@@ -21,15 +21,33 @@ var tokenEncoderOrder []string
 var tokenEncoderMutex sync.RWMutex
 
 func InitTokenEncoders() {
-	common.SysLog("initializing token encoders")
-	defaultTokenEncoder = codec.NewCl100kBase()
-	common.SysLog("token encoders initialized")
+	common.SysLog("token encoders will be initialized on first use")
+}
+
+func getDefaultTokenEncoder() tokenizer.Codec {
+	tokenEncoderMutex.RLock()
+	encoder := defaultTokenEncoder
+	tokenEncoderMutex.RUnlock()
+	if encoder != nil {
+		return encoder
+	}
+
+	tokenEncoderMutex.Lock()
+	defer tokenEncoderMutex.Unlock()
+	return getDefaultTokenEncoderLocked()
+}
+
+func getDefaultTokenEncoderLocked() tokenizer.Codec {
+	if defaultTokenEncoder == nil {
+		defaultTokenEncoder = codec.NewCl100kBase()
+	}
+	return defaultTokenEncoder
 }
 
 func getTokenEncoder(model string) tokenizer.Codec {
 	model = normalizeTokenEncoderModel(model)
 	if model == "" {
-		return defaultTokenEncoder
+		return getDefaultTokenEncoder()
 	}
 
 	// First, try to get the encoder from cache with read lock
@@ -52,7 +70,7 @@ func getTokenEncoder(model string) tokenizer.Codec {
 	// Create new encoder
 	modelCodec, err := tokenizer.ForModel(tokenizer.Model(model))
 	if err != nil {
-		return defaultTokenEncoder
+		return getDefaultTokenEncoderLocked()
 	}
 
 	// Cache the new encoder
