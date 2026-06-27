@@ -46,9 +46,18 @@
 ## i18n
 
 - React 组件中使用 `const { t } = useTranslation()`；非 React 模块可用 `i18next.t`。
-- 新增用户可见文案同步 `src/i18n/locales/en.json` 和 `src/i18n/locales/zh.json`。
+- 文案按 feature 物理拆分到 `src/i18n/locales/<locale>/<section>.json`（`<locale>` 为 `en` 或
+  `zh`，`<section>` 对应 feature，如 `auth`、`channels`、`system-settings`，共用/品牌/壳层分别用
+  `common.json` 和 `layout.json`）。每个 section 文件是扁平的 `Record<string, string>`，不包
+  `translation` 包装层；运行时在 `src/i18n/config.ts` 用对象展开合并回单一 `translation` namespace。
+- 新增用户可见文案：在相关 feature 的 `src/i18n/locales/en/<section>.json` 和
+  `src/i18n/locales/zh/<section>.json` 中各加一行；新增 section 文件后必须在
+  `src/i18n/config.ts` 里导入并展开到对应语言的 `translation`。
+- 用 `bun run i18n:sync` 校验 en/zh key 是否对齐（脚本会按 base 顺序重排各 section、产出
+  `_extras`、`_reports`，不再写回单一大文件）。
 - 常量、配置、枚举等动态 key 要登记到 `src/i18n/static-keys.ts`，或确保以 `t('...')` 字面量出现。
-- `supportedLngs` 目前只有 `en` 和 `zh`，不要添加未维护的语言入口。
+- `keySeparator: false`、`nsSeparator: false`、text-as-key 模式不变；`supportedLngs` 目前只有
+  `en` 和 `zh`，不要添加未维护的语言入口。
 
 ## 类型、表单与错误
 

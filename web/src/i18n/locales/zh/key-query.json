@@ -1,0 +1,23 @@
+{
+  "Call Details": "调用详情",
+  "Completion": "补全",
+  "Copy failed": "复制失败",
+  "Cost": "费用",
+  "Duration": "耗时",
+  "Expiration Time": "过期时间",
+  "Export CSV": "导出 CSV",
+  "Key Information": "密钥信息",
+  "Key Usage Query": "密钥用量查询",
+  "Never": "永不",
+  "No token logs": "暂无 Token 日志",
+  "Non-stream": "非流式",
+  "Prompt": "提示",
+  "Query": "查询",
+  "Query balance, recent usage, and token logs by API key.": "通过 API 密钥查询余额、近期用量和 Token 日志。",
+  "Recent calls": "近期调用",
+  "Recent log cost": "近期日志成本",
+  "Remaining Quota": "剩余配额",
+  "Stream": "流",
+  "Unlimited": "无限制",
+  "Used quota": "已用额度"
+}

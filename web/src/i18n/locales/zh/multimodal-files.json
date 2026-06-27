@@ -1,0 +1,15 @@
+{
+  "Converted URL": "转换后 URL",
+  "Created At": "创建时间",
+  "Delete {{count}} selected file(s)?": "删除选中的 {{count}} 个文件？",
+  "Delete file": "删除文件",
+  "Delete selected": "删除所选",
+  "Delete this multimodal file?": "删除此多模态文件？",
+  "Deleted {{count}} file(s)": "已删除 {{count}} 个文件",
+  "MIME": "MIME",
+  "Multimodal Files": "多模态文件",
+  "No multimodal files": "暂无多模态文件",
+  "Select file": "选择文件",
+  "Select visible files": "选择当前页文件",
+  "Selected {{selected}} of {{total}}": "已选择 {{selected}} / {{total}}"
+}

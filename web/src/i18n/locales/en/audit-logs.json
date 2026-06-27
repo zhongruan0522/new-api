@@ -1,0 +1,19 @@
+{
+  "Action Type": "Action Type",
+  "After": "After",
+  "All Action Types": "All Action Types",
+  "All Modules": "All Modules",
+  "Audit Log Details": "Audit Log Details",
+  "Audit Logs": "Audit Logs",
+  "Before": "Before",
+  "Description": "Description",
+  "Details": "Details",
+  "Failed to load audit logs": "Failed to load audit logs",
+  "IP": "IP",
+  "Module": "Module",
+  "No audit logs available. Logs will appear here once administrative operations are performed.": "No audit logs available. Logs will appear here once administrative operations are performed.",
+  "No Audit Logs Found": "No Audit Logs Found",
+  "Operator": "Operator",
+  "Time": "Time",
+  "View Details": "View Details"
+}

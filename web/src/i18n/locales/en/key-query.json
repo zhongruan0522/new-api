@@ -1,0 +1,23 @@
+{
+  "Call Details": "Call Details",
+  "Completion": "Completion",
+  "Copy failed": "Copy failed",
+  "Cost": "Cost",
+  "Duration": "Duration",
+  "Expiration Time": "Expiration Time",
+  "Export CSV": "Export CSV",
+  "Key Information": "Key Information",
+  "Key Usage Query": "Key Usage Query",
+  "Never": "Never",
+  "No token logs": "No token logs",
+  "Non-stream": "Non-stream",
+  "Prompt": "Prompt",
+  "Query": "Query",
+  "Query balance, recent usage, and token logs by API key.": "Query balance, recent usage, and token logs by API key.",
+  "Recent calls": "Recent calls",
+  "Recent log cost": "Recent log cost",
+  "Remaining Quota": "Remaining Quota",
+  "Stream": "Stream",
+  "Unlimited": "Unlimited",
+  "Used quota": "Used quota"
+}

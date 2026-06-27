@@ -1,0 +1,23 @@
+{
+  "changed status to": "将状态更改为",
+  "Close ticket": "关闭工单",
+  "Describe the question or request": "描述问题或请求",
+  "Enter a concise title": "输入简洁的标题",
+  "New ticket": "新建工单",
+  "No messages": "暂无消息",
+  "No tickets": "暂无工单",
+  "Please enter a ticket title": "请输入工单标题",
+  "Please enter ticket content": "请输入工单内容",
+  "Reopen": "重新打开",
+  "Reopen ticket": "重新打开工单",
+  "Reply": "回复",
+  "Reply sent": "回复已发送",
+  "Search tickets...": "搜索工单...",
+  "The ticket status will change to completed.": "工单状态将变为已完成。",
+  "The ticket status will change to pending.": "工单状态将变为待处理。",
+  "Ticket closed": "工单已关闭",
+  "Ticket created": "工单已创建",
+  "Ticket detail": "工单详情",
+  "Ticket reopened": "工单已重新打开",
+  "Type a reply...": "输入回复..."
+}
