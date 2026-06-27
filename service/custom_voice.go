@@ -2,6 +2,7 @@ package service
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -43,25 +44,91 @@ var (
 
 // CustomVoicePreviewRequest 试听（上传并克隆）请求参数。
 type CustomVoicePreviewRequest struct {
-	Model                 string // 客户端选择的 TTS 模型，用于按所选模型计费
-	VoiceId               string // 用户填写的音色 ID
-	PreviewText           string // 可选试听文本
-	NeedNoiseReduction    bool
+	Model                   string // 客户端选择的 TTS 模型，用于按所选模型计费
+	VoiceId                 string // 用户填写的音色 ID
+	PreviewText             string // 可选试听文本
+	NeedNoiseReduction      bool
 	NeedVolumeNormalization bool
 }
 
 // CustomVoicePreviewResult 试听返回结果。
 type CustomVoicePreviewResult struct {
-	VoiceId    string `json:"voice_id"`
-	DemoAudio  string `json:"demo_audio"`   // 试听音频 URL（上游返回）
-	FileId     string `json:"file_id"`      // 上游文件 ID（便于调试，不回传敏感信息）
-	RecordId   int64  `json:"record_id"`    // 写入的试听中记录 ID
+	VoiceId   string `json:"voice_id"`
+	DemoAudio string `json:"demo_audio"` // 试听音频 URL（上游返回）
+	FileId    string `json:"file_id"`    // 上游文件 ID（便于调试，不回传敏感信息）
+	RecordId  int64  `json:"record_id"`  // 写入的试听中记录 ID
 }
 
 // CustomVoiceConfirmResult 确认定制返回结果。
 type CustomVoiceConfirmResult struct {
 	VoiceId string `json:"voice_id"`
 	Status  string `json:"status"`
+}
+
+// customVoiceFileID preserves the upstream JSON type while exposing a safe
+// string form for local records and frontend responses. MiniMax may return a
+// numeric file_id from /files/upload, and voice_clone expects that ID to be
+// sent back without changing its JSON type.
+type customVoiceFileID struct {
+	Display string
+	Raw     json.RawMessage
+}
+
+func (id *customVoiceFileID) UnmarshalJSON(data []byte) error {
+	trimmed := bytes.TrimSpace(data)
+	if len(trimmed) == 0 || bytes.Equal(trimmed, []byte("null")) {
+		id.Display = ""
+		id.Raw = nil
+		return nil
+	}
+
+	id.Raw = append(id.Raw[:0], trimmed...)
+	if common.GetJsonType(trimmed) == "string" {
+		var value string
+		if err := common.Unmarshal(trimmed, &value); err != nil {
+			return err
+		}
+		id.Display = strings.TrimSpace(value)
+		return nil
+	}
+	if common.GetJsonType(trimmed) == "number" {
+		id.Display = string(trimmed)
+		return nil
+	}
+	return fmt.Errorf("unsupported file_id json type: %s", common.GetJsonType(trimmed))
+}
+
+func (id customVoiceFileID) String() string {
+	return id.Display
+}
+
+func (id customVoiceFileID) IsZero() bool {
+	return strings.TrimSpace(id.Display) == ""
+}
+
+func (id customVoiceFileID) upstreamValue() interface{} {
+	if len(id.Raw) > 0 {
+		return id.Raw
+	}
+	return id.Display
+}
+
+func resolveCustomVoiceCloneModel(modelName string) string {
+	modelName = strings.TrimSpace(modelName)
+	if modelName == "" {
+		return ""
+	}
+
+	redirected := modelName
+	_ = model_setting.WithMiniMaxSettingsReadLock(func() error {
+		redirected = model_setting.ApplyMiniMaxModelRedirect(modelName, model_setting.GetMiniMaxSettings())
+		return nil
+	})
+	redirected = strings.TrimSpace(redirected)
+	if redirected == "" {
+		redirected = modelName
+	}
+	return redirected
 }
 
 // validateCustomVoiceID 校验音色 ID：长度 8-256，字母开头，字母数字/下划线/连字符，不能以 _ - 结尾。
@@ -96,10 +163,10 @@ func validateCustomVoiceFile(header *multipart.FileHeader) error {
 
 // minimaxUpstream 是从渠道解析出的上游调用所需信息。
 type minimaxUpstream struct {
-	baseURL  string
-	apiKey   string
-	groupId  string
-	channel  *model.Channel
+	baseURL string
+	apiKey  string
+	groupId string
+	channel *model.Channel
 }
 
 // resolveMiniMaxUpstream 解析定制音色分组的上游 MiniMax 渠道信息。
@@ -469,16 +536,16 @@ func CustomVoicePreview(c *gin.Context, userId int, req CustomVoicePreviewReques
 	return &CustomVoicePreviewResult{
 		VoiceId:   req.VoiceId,
 		DemoAudio: demoAudio,
-		FileId:    fileId,
+		FileId:    fileId.String(),
 		RecordId:  voice.Id,
 	}, nil
 }
 
 // uploadFileUpstream 把用户上传的音频转发到上游文件接口，返回上游 file_id。
-func uploadFileUpstream(c *gin.Context, up *minimaxUpstream, header *multipart.FileHeader) (string, error) {
+func uploadFileUpstream(c *gin.Context, up *minimaxUpstream, header *multipart.FileHeader) (customVoiceFileID, error) {
 	src, err := header.Open()
 	if err != nil {
-		return "", errors.New("音频文件读取失败")
+		return customVoiceFileID{}, errors.New("音频文件读取失败")
 	}
 	defer src.Close()
 
@@ -486,17 +553,17 @@ func uploadFileUpstream(c *gin.Context, up *minimaxUpstream, header *multipart.F
 	writer := multipart.NewWriter(&buf)
 	// purpose=voice_clone
 	if werr := writer.WriteField("purpose", "voice_clone"); werr != nil {
-		return "", errors.New("音频上传准备失败")
+		return customVoiceFileID{}, errors.New("音频上传准备失败")
 	}
 	part, err := writer.CreateFormFile("file", header.Filename)
 	if err != nil {
-		return "", errors.New("音频上传准备失败")
+		return customVoiceFileID{}, errors.New("音频上传准备失败")
 	}
 	if _, err := io.Copy(part, src); err != nil {
-		return "", errors.New("音频上传准备失败")
+		return customVoiceFileID{}, errors.New("音频上传准备失败")
 	}
 	if err := writer.Close(); err != nil {
-		return "", errors.New("音频上传准备失败")
+		return customVoiceFileID{}, errors.New("音频上传准备失败")
 	}
 
 	url := up.baseURL + "/files/upload"
@@ -505,28 +572,28 @@ func uploadFileUpstream(c *gin.Context, up *minimaxUpstream, header *multipart.F
 	}
 	status, body, err := doUpstreamRequest(url, writer.FormDataContentType(), &buf, up.apiKey)
 	if err != nil {
-		return "", err
+		return customVoiceFileID{}, err
 	}
 	if status != http.StatusOK {
-		return "", normalizeUpstreamError(status, body)
+		return customVoiceFileID{}, normalizeUpstreamError(status, body)
 	}
 	var resp struct {
 		File struct {
-			FileId string `json:"file_id"`
+			FileId customVoiceFileID `json:"file_id"`
 		} `json:"file"`
 		upstreamBaseResp
 	}
 	if err := common.Unmarshal(body, &resp); err != nil {
-		return "", errors.New("上游响应解析失败")
+		return customVoiceFileID{}, errors.New("上游响应解析失败")
 	}
-	if resp.BaseResp.StatusCode != 0 || resp.File.FileId == "" {
-		return "", normalizeUpstreamError(status, body)
+	if resp.BaseResp.StatusCode != 0 || resp.File.FileId.IsZero() {
+		return customVoiceFileID{}, normalizeUpstreamError(status, body)
 	}
 	return resp.File.FileId, nil
 }
 
 // cloneVoiceUpstream 调用上游 voice_clone 接口生成试听音频，返回 demo_audio URL。
-func cloneVoiceUpstream(up *minimaxUpstream, fileId string, req CustomVoicePreviewRequest) (string, error) {
+func cloneVoiceUpstream(up *minimaxUpstream, fileId customVoiceFileID, req CustomVoicePreviewRequest) (string, error) {
 	payload := buildVoiceClonePayload(fileId, req)
 	bodyBytes, err := common.Marshal(payload)
 	if err != nil {
@@ -566,9 +633,13 @@ func cloneVoiceUpstream(up *minimaxUpstream, fileId string, req CustomVoicePrevi
 //
 // 用户看到和输入的始终是 redirect map 的 key（源标签）；
 // 发给上游的是现有策略处理后的 value。策略未启用时原样透传用户输入。
-func buildVoiceClonePayload(fileId string, req CustomVoicePreviewRequest) map[string]interface{} {
+func buildVoiceClonePayload(fileId interface{}, req CustomVoicePreviewRequest) map[string]interface{} {
+	upstreamFileID := fileId
+	if id, ok := fileId.(customVoiceFileID); ok {
+		upstreamFileID = id.upstreamValue()
+	}
 	payload := map[string]interface{}{
-		"file_id":                   fileId,
+		"file_id":                   upstreamFileID,
 		"voice_id":                  req.VoiceId,
 		"need_noise_reduction":      req.NeedNoiseReduction,
 		"need_volume_normalization": req.NeedVolumeNormalization,
@@ -580,12 +651,9 @@ func buildVoiceClonePayload(fileId string, req CustomVoicePreviewRequest) map[st
 
 	policy := model_setting.ApplyMiniMaxTTSPolicy(req.Model, "", previewText, "")
 	payload["text"] = policy.Text
-	// 仅当策略映射出非空模型时覆盖；未启用/未命中时保留用户选择。
-	if policy.Enabled && policy.Model != "" {
-		payload["model"] = policy.Model
-	} else {
-		payload["model"] = req.Model
-	}
+	// voice_clone 的 model 必须由管理员配置映射到 MiniMax 原生 speech-* ID。
+	// 这里始终应用管理员重定向，但不内置兜底别名，避免配置不可控。
+	payload["model"] = resolveCustomVoiceCloneModel(policy.Model)
 	if policy.Emotion != "" {
 		payload["emotion"] = policy.Emotion
 	}

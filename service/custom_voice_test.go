@@ -1,8 +1,10 @@
 package service
 
 import (
+	"strings"
 	"testing"
 
+	"github.com/zhongruan0522/new-api/common"
 	"github.com/zhongruan0522/new-api/setting/model_setting"
 )
 
@@ -113,6 +115,51 @@ func TestBuildVoiceClonePayload_ModelRedirect(t *testing.T) {
 			t.Errorf("model = %v, want speech-02-hd (redirected)", payload["model"])
 		}
 	})
+}
+
+// TestBuildVoiceClonePayload_ModelRedirectWhenEnhanceDisabled ensures custom
+// voice always applies the administrator model redirect before calling MiniMax,
+// even when the broader TTS enhance switch is disabled.
+func TestBuildVoiceClonePayload_ModelRedirectWhenEnhanceDisabled(t *testing.T) {
+	withMiniMaxSettings(model_setting.MiniMaxSettings{
+		Enabled:       false,
+		ModelRedirect: map[string]string{"tts-2-hd": "speech-2.8-hd"},
+	}, func() {
+		payload := buildVoiceClonePayload("file-1", CustomVoicePreviewRequest{
+			Model:       "tts-2-hd",
+			VoiceId:     "voice-id",
+			PreviewText: "你好",
+		})
+		if payload["model"] != "speech-2.8-hd" {
+			t.Errorf("model = %v, want speech-2.8-hd (redirected with enhance disabled)", payload["model"])
+		}
+	})
+}
+
+// TestCustomVoiceFileID_NumericRoundTrip covers MiniMax upload responses where
+// file_id is a JSON number. The frontend still receives a string for display,
+// but the upstream voice_clone payload must preserve the numeric JSON type.
+func TestCustomVoiceFileID_NumericRoundTrip(t *testing.T) {
+	var resp struct {
+		File struct {
+			FileId customVoiceFileID `json:"file_id"`
+		} `json:"file"`
+	}
+	if err := common.Unmarshal([]byte(`{"file":{"file_id":123456789}}`), &resp); err != nil {
+		t.Fatalf("unmarshal numeric file_id failed: %v", err)
+	}
+	if got := resp.File.FileId.String(); got != "123456789" {
+		t.Fatalf("display file_id = %q, want 123456789", got)
+	}
+
+	payload := buildVoiceClonePayload(resp.File.FileId, CustomVoicePreviewRequest{VoiceId: "voice-id"})
+	body, err := common.Marshal(payload)
+	if err != nil {
+		t.Fatalf("marshal voice_clone payload failed: %v", err)
+	}
+	if !strings.Contains(string(body), `"file_id":123456789`) {
+		t.Fatalf("payload should preserve numeric file_id, got %s", string(body))
+	}
 }
 
 // TestResolveCustomVoiceGroupRatio 验证分组倍率解析包含动态倍率叠加，
