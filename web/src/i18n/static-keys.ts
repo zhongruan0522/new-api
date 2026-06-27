@@ -58,6 +58,7 @@ export const STATIC_I18N_KEYS = [
   'Audit: Module - Tokens',
   'Audit: Module - Redemption Codes',
   'Audit: Module - Models',
+  'Audit: Module - Voice Management',
   'Audit: Module - Vendors',
   'Audit: Module - Dynamic Ratio',
   'Audit: Module - Prefill Groups',

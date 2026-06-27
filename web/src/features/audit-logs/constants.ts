@@ -31,6 +31,7 @@ export const AUDIT_MODULES = [
   { value: 'token', label: 'Audit: Module - Tokens' },
   { value: 'redemption', label: 'Audit: Module - Redemption Codes' },
   { value: 'model', label: 'Audit: Module - Models' },
+  { value: 'voice', label: 'Audit: Module - Voice Management' },
   { value: 'vendor', label: 'Audit: Module - Vendors' },
   { value: 'dynamic_ratio', label: 'Audit: Module - Dynamic Ratio' },
   { value: 'prefill_group', label: 'Audit: Module - Prefill Groups' },
@@ -38,7 +39,10 @@ export const AUDIT_MODULES = [
   { value: 'performance', label: 'Audit: Module - Performance' },
   { value: 'log', label: 'Audit: Module - Log Cleanup' },
   { value: 'setup', label: 'Audit: Module - System Setup' },
-  { value: 'dashboard_config', label: 'Audit: Module - Dashboard Configuration' },
+  {
+    value: 'dashboard_config',
+    label: 'Audit: Module - Dashboard Configuration',
+  },
 ] as const
 
 // Action type -> badge color class mapping for table display

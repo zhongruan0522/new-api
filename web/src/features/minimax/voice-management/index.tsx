@@ -5,45 +5,24 @@ This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Affero General Public License as
 published by the Free Software Foundation, version 3 of the License.
 */
-import { useEffect, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
+import type { OnChangeFn, PaginationState } from '@tanstack/react-table'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
-import { SectionPageLayout } from '@/components/layout'
-import { Button } from '@/components/ui/button'
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import { Checkbox } from '@/components/ui/checkbox'
-import { formatTimestampToDate } from '@/lib/format'
 import { useAuthStore } from '@/stores/auth-store'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import { Button } from '@/components/ui/button'
+import { SectionPageLayout } from '@/components/layout'
 import { USER_ROLE } from '@/features/users/constants'
 import {
   createVoice,
@@ -51,127 +30,219 @@ import {
   extractApiErrorMessage,
   listVoices,
   updateVoice,
+  type VoiceListParams,
   type VoiceRecord,
   type VoiceUpsertParams,
 } from './api'
+import { VoiceDialog } from './components/voice-dialog'
+import {
+  VoiceFilterBar,
+  type VoiceFilterState,
+} from './components/voice-filter-bar'
+import { VoiceManagementTable } from './components/voice-management-table'
 
-const PAGE_SIZE_OPTIONS = [10, 20, 50, 100]
+const DEFAULT_PAGE_SIZE = 20
 
-const TYPE_OPTIONS = [
-  { value: '', label: 'all' },
-  { value: 'created', label: 'created' },
-  { value: 'preview', label: 'preview' },
-]
+const EMPTY_FILTERS: VoiceFilterState = {
+  startTime: '',
+  endTime: '',
+  type: '',
+  operatorId: '',
+  voiceId: '',
+}
+
+const EMPTY_FORM: VoiceUpsertParams = {
+  voice_id: '',
+  type: 'created',
+  redirect_id: '',
+  allowed: false,
+  remark: '',
+}
+
+function toUnixSeconds(value: string): number | undefined {
+  if (!value) return undefined
+
+  const ms = new Date(value).getTime()
+  if (!Number.isFinite(ms)) return undefined
+
+  return Math.floor(ms / 1000)
+}
+
+function normalizeOperatorId(value: string): number | undefined {
+  const trimmed = value.trim()
+  if (!trimmed) return undefined
+
+  const id = Number(trimmed)
+  if (!Number.isInteger(id) || id <= 0) return undefined
+
+  return id
+}
+
+function toListParams(
+  filters: VoiceFilterState,
+  pagination: PaginationState
+): VoiceListParams {
+  return {
+    page: pagination.pageIndex + 1,
+    page_size: pagination.pageSize,
+    type: filters.type || undefined,
+    operator_id: normalizeOperatorId(filters.operatorId),
+    voice_id: filters.voiceId.trim() || undefined,
+    start_timestamp: toUnixSeconds(filters.startTime),
+    end_timestamp: toUnixSeconds(filters.endTime),
+  }
+}
+
+function hasFilters(filters: VoiceFilterState): boolean {
+  return Boolean(
+    filters.startTime ||
+    filters.endTime ||
+    filters.type ||
+    filters.operatorId.trim() ||
+    filters.voiceId.trim()
+  )
+}
 
 export function VoiceManagement() {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
-  const role = useAuthStore((s) => s.auth.user?.role)
+  const role = useAuthStore((state) => state.auth.user?.role)
   const isRoot = role === USER_ROLE.ROOT
 
-  const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(10)
-  const [filterType, setFilterType] = useState('')
-  const [filterOperatorId, setFilterOperatorId] = useState('')
-  const [filterVoiceId, setFilterVoiceId] = useState('')
-
+  const [pagination, setPagination] = useState<PaginationState>({
+    pageIndex: 0,
+    pageSize: DEFAULT_PAGE_SIZE,
+  })
+  const [draftFilters, setDraftFilters] =
+    useState<VoiceFilterState>(EMPTY_FILTERS)
+  const [appliedFilters, setAppliedFilters] =
+    useState<VoiceFilterState>(EMPTY_FILTERS)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editing, setEditing] = useState<VoiceRecord | null>(null)
-  const [form, setForm] = useState<VoiceUpsertParams>({
-    voice_id: '',
-    type: 'created',
-    redirect_id: '',
-    allowed: false,
-    remark: '',
+  const [form, setForm] = useState<VoiceUpsertParams>(EMPTY_FORM)
+  const [deleteTarget, setDeleteTarget] = useState<VoiceRecord | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+
+  const queryParams = useMemo(
+    () => toListParams(appliedFilters, pagination),
+    [appliedFilters, pagination]
+  )
+
+  const { data, isLoading, isFetching } = useQuery({
+    queryKey: ['minimax-voices', queryParams],
+    queryFn: () => listVoices(queryParams),
   })
-
-  const queryKey = ['minimax-voices', page, pageSize, filterType, filterOperatorId, filterVoiceId]
-
-  const { data, isLoading } = useQuery({
-    queryKey,
-    queryFn: () =>
-      listVoices({
-        page,
-        page_size: pageSize,
-        type: filterType || undefined,
-        operator_id: filterOperatorId ? Number(filterOperatorId) : undefined,
-        voice_id: filterVoiceId || undefined,
-      }),
-  })
-
-  useEffect(() => {
-    setPage(1)
-  }, [filterType, filterOperatorId, filterVoiceId, pageSize])
 
   const items = data?.data?.items ?? []
   const total = data?.data?.total ?? 0
-  const totalPages = Math.max(1, Math.ceil(total / pageSize))
 
   const invalidate = () =>
     queryClient.invalidateQueries({ queryKey: ['minimax-voices'] })
 
+  const handlePaginationChange: OnChangeFn<PaginationState> = (updater) => {
+    setPagination((current) =>
+      typeof updater === 'function' ? updater(current) : updater
+    )
+  }
+
+  const handleSearch = () => {
+    if (
+      draftFilters.operatorId.trim() &&
+      !normalizeOperatorId(draftFilters.operatorId)
+    ) {
+      toast.error(t('Operator ID must be a positive integer'))
+      return
+    }
+
+    const startTimestamp = toUnixSeconds(draftFilters.startTime)
+    const endTimestamp = toUnixSeconds(draftFilters.endTime)
+    if (startTimestamp && endTimestamp && startTimestamp > endTimestamp) {
+      toast.error(t('Start time cannot be later than end time'))
+      return
+    }
+
+    setAppliedFilters(draftFilters)
+    setPagination((current) => ({ ...current, pageIndex: 0 }))
+  }
+
+  const handleResetFilters = () => {
+    setDraftFilters(EMPTY_FILTERS)
+    setAppliedFilters(EMPTY_FILTERS)
+    setPagination((current) => ({ ...current, pageIndex: 0 }))
+  }
+
   const openCreate = () => {
     setEditing(null)
-    setForm({
-      voice_id: '',
-      type: 'created',
-      redirect_id: '',
-      allowed: false,
-      remark: '',
-    })
+    setForm(EMPTY_FORM)
     setDialogOpen(true)
   }
 
-  const openEdit = (rec: VoiceRecord) => {
-    setEditing(rec)
+  const openEdit = (record: VoiceRecord) => {
+    setEditing(record)
     setForm({
-      voice_id: rec.voice_id,
-      type: rec.type,
-      redirect_id: rec.redirect_id,
-      allowed: rec.allowed,
-      remark: rec.remark,
+      voice_id: record.voice_id,
+      type: record.type,
+      redirect_id: record.redirect_id,
+      allowed: record.allowed,
+      remark: record.remark,
     })
     setDialogOpen(true)
   }
 
   const handleSubmit = async () => {
+    if (!form.voice_id.trim()) {
+      toast.error(t('Voice ID is required'))
+      return
+    }
+
+    setIsSubmitting(true)
     try {
       if (editing) {
-        const res = await updateVoice(editing.id, form)
-        if (!res.success) {
-          toast.error(res.message || t('Update failed'))
+        const response = await updateVoice(editing.id, form)
+        if (!response.success) {
+          toast.error(response.message || t('Update failed'))
           return
         }
-        toast.success(t('Updated'))
+        toast.success(t('Voice updated'))
       } else {
-        const res = await createVoice(form)
-        if (!res.success) {
-          toast.error(res.message || t('Create failed'))
+        const response = await createVoice(form)
+        if (!response.success) {
+          toast.error(response.message || t('Create failed'))
           return
         }
-        toast.success(t('Created'))
+        toast.success(t('Voice created'))
       }
+
       setDialogOpen(false)
       invalidate()
-    } catch (e) {
-      const msg = extractApiErrorMessage(e)
-      toast.error(msg || t('Operation failed'))
+    } catch (error) {
+      const message = extractApiErrorMessage(error)
+      toast.error(message || t('Operation failed'))
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
-  const handleDelete = async (rec: VoiceRecord) => {
-    if (!confirm(t('Confirm delete?'))) return
+  const handleDelete = async () => {
+    if (!deleteTarget) return
+
+    setIsDeleting(true)
     try {
-      const res = await deleteVoice(rec.id)
-      if (!res.success) {
-        toast.error(res.message || t('Delete failed'))
+      const response = await deleteVoice(deleteTarget.id)
+      if (!response.success) {
+        toast.error(response.message || t('Delete failed'))
         return
       }
-      toast.success(t('Deleted'))
+
+      toast.success(t('Voice deleted'))
+      setDeleteTarget(null)
       invalidate()
-    } catch (e) {
-      const msg = extractApiErrorMessage(e)
-      toast.error(msg || t('Delete failed'))
+    } catch (error) {
+      const message = extractApiErrorMessage(error)
+      toast.error(message || t('Delete failed'))
+    } finally {
+      setIsDeleting(false)
     }
   }
 
@@ -181,232 +252,73 @@ export function VoiceManagement() {
       <SectionPageLayout.Actions>
         <Button onClick={openCreate}>{t('Add Voice')}</Button>
       </SectionPageLayout.Actions>
+
       <SectionPageLayout.Content>
-        <div className='space-y-4'>
-          <Card>
-            <CardHeader>
-              <CardTitle>{t('Filters')}</CardTitle>
-            </CardHeader>
-            <CardContent className='grid gap-4 md:grid-cols-4'>
-              <div className='space-y-2'>
-                <Label>{t('Type')}</Label>
-                <Select value={filterType} onValueChange={(v) => setFilterType(v ?? '')}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {TYPE_OPTIONS.map((o) => (
-                      <SelectItem key={o.value || 'all'} value={o.value}>
-                        {o.value === '' ? t('All') : t(o.label)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className='space-y-2'>
-                <Label>{t('Operator ID')}</Label>
-                <Input
-                  value={filterOperatorId}
-                  onChange={(e) => setFilterOperatorId(e.target.value)}
-                  placeholder={t('Operator ID')}
-                />
-              </div>
-              <div className='space-y-2'>
-                <Label>{t('Voice ID')}</Label>
-                <Input
-                  value={filterVoiceId}
-                  onChange={(e) => setFilterVoiceId(e.target.value)}
-                  placeholder={t('Voice ID')}
-                />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className='p-0'>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{t('Time')}</TableHead>
-                    <TableHead>{t('Type')}</TableHead>
-                    <TableHead>{t('Operator ID')}</TableHead>
-                    <TableHead>{t('Voice ID')}</TableHead>
-                    <TableHead>{t('Cost')}</TableHead>
-                    <TableHead>{t('Redirect ID')}</TableHead>
-                    <TableHead>{t('Allowed')}</TableHead>
-                    {isRoot && <TableHead>{t('Actions')}</TableHead>}
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {isLoading ? (
-                    <TableRow>
-                      <TableCell colSpan={isRoot ? 8 : 7} className='text-center text-muted-foreground'>
-                        {t('Loading...')}
-                      </TableCell>
-                    </TableRow>
-                  ) : items.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={isRoot ? 8 : 7} className='text-center text-muted-foreground'>
-                        {t('No voices found')}
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    items.map((v) => (
-                      <TableRow key={v.id}>
-                        <TableCell>
-                          {formatTimestampToDate(v.created_at)}
-                        </TableCell>
-                        <TableCell>
-                          {v.type === 'created' ? t('Created') : t('Preview')}
-                        </TableCell>
-                        <TableCell>
-                          {v.operator_id}
-                          {v.operator_kind ? ` (${v.operator_kind})` : ''}
-                        </TableCell>
-                        <TableCell>{v.voice_id}</TableCell>
-                        <TableCell>{v.quota_cost}</TableCell>
-                        <TableCell>{v.redirect_id || '-'}</TableCell>
-                        <TableCell>{v.allowed ? t('Yes') : t('No')}</TableCell>
-                        {isRoot && (
-                          <TableCell className='space-x-2'>
-                            <Button
-                              variant='outline'
-                              size='sm'
-                              onClick={() => openEdit(v)}
-                            >
-                              {t('Edit')}
-                            </Button>
-                            <Button
-                              variant='destructive'
-                              size='sm'
-                              onClick={() => handleDelete(v)}
-                            >
-                              {t('Delete')}
-                            </Button>
-                          </TableCell>
-                        )}
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-
-          <div className='flex items-center justify-between'>
-            <div className='flex items-center gap-2'>
-              <span className='text-sm text-muted-foreground'>
-                {t('Page Size')}
-              </span>
-              <Select
-                value={String(pageSize)}
-                onValueChange={(v) => setPageSize(Number(v))}
-              >
-                <SelectTrigger className='w-20'>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {PAGE_SIZE_OPTIONS.map((s) => (
-                    <SelectItem key={s} value={String(s)}>
-                      {s}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className='flex items-center gap-2'>
-              <Button
-                variant='outline'
-                size='sm'
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page <= 1}
-              >
-                {t('Prev')}
-              </Button>
-              <span className='text-sm text-muted-foreground'>
-                {page} / {totalPages}
-              </span>
-              <Button
-                variant='outline'
-                size='sm'
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                disabled={page >= totalPages}
-              >
-                {t('Next')}
-              </Button>
-            </div>
-          </div>
-        </div>
+        <VoiceManagementTable
+          items={items}
+          total={total}
+          isLoading={isLoading}
+          isFetching={isFetching}
+          isRoot={isRoot}
+          pagination={pagination}
+          onPaginationChange={handlePaginationChange}
+          onEdit={openEdit}
+          onRequestDelete={setDeleteTarget}
+          toolbar={
+            <VoiceFilterBar
+              filters={draftFilters}
+              hasActiveFilters={
+                hasFilters(draftFilters) || hasFilters(appliedFilters)
+              }
+              isSearching={isFetching}
+              onFiltersChange={setDraftFilters}
+              onSearch={handleSearch}
+              onReset={handleResetFilters}
+            />
+          }
+        />
       </SectionPageLayout.Content>
 
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              {editing ? t('Edit Voice') : t('Add Voice')}
-            </DialogTitle>
-          </DialogHeader>
-          <div className='space-y-4'>
-            <div className='space-y-2'>
-              <Label>{t('Voice ID')}</Label>
-              <Input
-                value={form.voice_id}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, voice_id: e.target.value }))
+      <VoiceDialog
+        open={dialogOpen}
+        editing={editing}
+        form={form}
+        isSubmitting={isSubmitting}
+        onOpenChange={setDialogOpen}
+        onFormChange={setForm}
+        onSubmit={handleSubmit}
+      />
+
+      <AlertDialog
+        open={deleteTarget !== null}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('Delete Voice')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t(
+                'Are you sure you want to delete voice {{voiceId}}? This action cannot be undone.',
+                {
+                  voiceId: deleteTarget?.voice_id ?? '-',
                 }
-              />
-            </div>
-            <div className='space-y-2'>
-              <Label>{t('Type')}</Label>
-              <Select
-                value={form.type || 'created'}
-                onValueChange={(v) => setForm((f) => ({ ...f, type: v ?? 'created' }))}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value='created'>{t('Created')}</SelectItem>
-                  <SelectItem value='preview'>{t('Preview')}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className='space-y-2'>
-              <Label>{t('Redirect ID')}</Label>
-              <Input
-                value={form.redirect_id || ''}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, redirect_id: e.target.value }))
-                }
-              />
-            </div>
-            <label className='flex items-center gap-2'>
-              <Checkbox
-                checked={!!form.allowed}
-                onCheckedChange={(v) =>
-                  setForm((f) => ({ ...f, allowed: v === true }))
-                }
-              />
-              {t('Allowed for TTS')}
-            </label>
-            <div className='space-y-2'>
-              <Label>{t('Remark')}</Label>
-              <Input
-                value={form.remark || ''}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, remark: e.target.value }))
-                }
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant='outline' onClick={() => setDialogOpen(false)}>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>
               {t('Cancel')}
-            </Button>
-            <Button onClick={handleSubmit}>{t('Save')}</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            </AlertDialogCancel>
+            <AlertDialogAction
+              variant='destructive'
+              onClick={handleDelete}
+              disabled={isDeleting}
+            >
+              {isDeleting ? t('Deleting...') : t('Delete')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </SectionPageLayout>
   )
 }
