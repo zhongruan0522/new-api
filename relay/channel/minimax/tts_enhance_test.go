@@ -53,45 +53,6 @@ func TestApplyModelRedirect_NilMap(t *testing.T) {
 	}
 }
 
-// ---------- applyVoiceRedirect ----------
-
-func TestApplyVoiceRedirect_Hit(t *testing.T) {
-	cfg := &model_setting.MiniMaxSettings{
-		VoiceRedirect: map[string]string{"alloy": "female-shaonv"},
-	}
-	got := applyVoiceRedirect("alloy", cfg)
-	if got != "female-shaonv" {
-		t.Errorf("got %q, want female-shaonv", got)
-	}
-}
-
-func TestApplyVoiceRedirect_Miss(t *testing.T) {
-	cfg := &model_setting.MiniMaxSettings{
-		VoiceRedirect: map[string]string{"alloy": "female-shaonv"},
-	}
-	got := applyVoiceRedirect("nova", cfg)
-	if got != "nova" {
-		t.Errorf("got %q, want nova", got)
-	}
-}
-
-func TestApplyVoiceRedirect_EmptyTarget(t *testing.T) {
-	cfg := &model_setting.MiniMaxSettings{
-		VoiceRedirect: map[string]string{"alloy": ""},
-	}
-	got := applyVoiceRedirect("alloy", cfg)
-	if got != "alloy" {
-		t.Errorf("got %q, want alloy", got)
-	}
-}
-
-func TestApplyVoiceRedirect_NilCfg(t *testing.T) {
-	got := applyVoiceRedirect("alloy", nil)
-	if got != "alloy" {
-		t.Errorf("got %q, want alloy", got)
-	}
-}
-
 // ---------- extractEmotion ----------
 
 func TestExtractEmotion_SingleHit(t *testing.T) {

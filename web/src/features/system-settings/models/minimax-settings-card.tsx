@@ -3,20 +3,13 @@ Copyright (C) 2023-2026 QuantumNous
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Affero General Public License as
-published by the Free Software Foundation, either version 3 of the
-License, or (at your option) any later version.
+published by the Free Software Foundation, version 3 of the License.
 
 This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-GNU Affero General Public License for more details.
-
-You should have received a copy of the GNU Affero General Public License
-along with this program. If not, see <https://www.gnu.org/licenses/>.
-
-For commercial licensing, please contact support@quantumnous.com
+but WITHOUT ANY WARRANTY. See the GNU Affero General Public License
+for more details.
 */
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import * as z from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -34,7 +27,6 @@ import {
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import { ModelMappingEditor } from '@/features/channels/components/model-mapping-editor'
-import { JsonArrayEditor } from '../components/json-array-editor'
 import { DisabledSettingsNotice } from '../components/disabled-settings-notice'
 import {
   SettingsForm,
@@ -50,8 +42,6 @@ import {
   validateJsonString,
 } from './utils'
 
-// JSON map fields share the same validation: must parse as JSON. The backend
-// rejects empty strings, so clearing a map must use "{}" instead.
 function jsonMapField(value: string, ctx: z.RefinementCtx) {
   const result = validateJsonString(value, { allowEmpty: false })
   if (!result.valid) {
@@ -62,36 +52,15 @@ function jsonMapField(value: string, ctx: z.RefinementCtx) {
   }
 }
 
-function jsonArrayField(value: string, ctx: z.RefinementCtx) {
-  const result = validateJsonString(value, {
-    allowEmpty: false,
-    predicate: (parsed) =>
-      Array.isArray(parsed) ||
-      (typeof parsed === 'object' &&
-        parsed !== null &&
-        !Array.isArray(parsed) &&
-        Object.keys(parsed).length === 0),
-    predicateMessage: 'JSON must be an array, or {} to disable.',
-  })
-  if (!result.valid) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: result.message || 'Invalid JSON',
-    })
-  }
-}
-
-// Fields are grouped under a `minimax` object. React Hook Form treats dots in
-// field names as nested paths; a flat defaultValues map with literal dotted
-// keys desyncs from the registered paths, so user edits never reach the
-// submitted data. See grok-settings-card / gemini-settings-card for the same
-// pattern.
+// 音色白名单/重定向已迁移到数据库音色管理表，这里只保留 TTS 增强（模型/情绪/语气词）。
 const schema = z.object({
   minimax: z.object({
     enabled: z.boolean(),
     model_redirect: z.string().superRefine(jsonMapField),
-    voice_redirect: z.string().superRefine(jsonMapField),
-    voice_whitelist: z.string().superRefine(jsonArrayField),
+    voice_whitelist_enabled: z.boolean(),
+    custom_voice_enabled: z.boolean(),
+    custom_voice_group: z.string(),
+    custom_voice_billing_model_id: z.string(),
     emotion_pattern: z.string(),
     emotion_redirect: z.string().superRefine(jsonMapField),
     tone_word_pattern: z.string(),
@@ -105,8 +74,10 @@ type MiniMaxFormInput = z.input<typeof schema>
 type FlatMiniMaxSettings = {
   'minimax.enabled': boolean
   'minimax.model_redirect': string
-  'minimax.voice_redirect': string
-  'minimax.voice_whitelist': string
+  'minimax.voice_whitelist_enabled': boolean
+  'minimax.custom_voice_enabled': boolean
+  'minimax.custom_voice_group': string
+  'minimax.custom_voice_billing_model_id': string
   'minimax.emotion_pattern': string
   'minimax.emotion_redirect': string
   'minimax.tone_word_pattern': string
@@ -115,11 +86,8 @@ type FlatMiniMaxSettings = {
 
 type MiniMaxJsonMapKey =
   | 'minimax.model_redirect'
-  | 'minimax.voice_redirect'
   | 'minimax.emotion_redirect'
   | 'minimax.tone_word_redirect'
-
-type MiniMaxJsonArrayKey = 'minimax.voice_whitelist'
 
 interface Props {
   defaultValues: MiniMaxFormInput
@@ -128,15 +96,16 @@ interface Props {
 export function MiniMaxSettingsCard({ defaultValues }: Props) {
   const { t } = useTranslation()
   const updateOption = useUpdateOption()
-  const [hasPendingWhitelistRows, setHasPendingWhitelistRows] =
-    useState(false)
 
   const buildFormDefaults = (values: MiniMaxFormInput): MiniMaxFormInput => ({
     minimax: {
       enabled: values.minimax.enabled ?? false,
       model_redirect: formatJsonForTextarea(values.minimax.model_redirect),
-      voice_redirect: formatJsonForTextarea(values.minimax.voice_redirect),
-      voice_whitelist: formatJsonForTextarea(values.minimax.voice_whitelist),
+      voice_whitelist_enabled: values.minimax.voice_whitelist_enabled ?? false,
+      custom_voice_enabled: values.minimax.custom_voice_enabled ?? false,
+      custom_voice_group: values.minimax.custom_voice_group ?? '',
+      custom_voice_billing_model_id:
+        values.minimax.custom_voice_billing_model_id ?? '',
       emotion_pattern: values.minimax.emotion_pattern ?? '',
       emotion_redirect: formatJsonForTextarea(values.minimax.emotion_redirect),
       tone_word_pattern: values.minimax.tone_word_pattern ?? '',
@@ -146,15 +115,17 @@ export function MiniMaxSettingsCard({ defaultValues }: Props) {
     },
   })
 
-  // normalizedDefaultsRef holds the server-side baseline (JSON normalized to a
-  // stable compact form) so we only PUT fields that actually changed.
-  const buildNormalizedDefaults = (values: MiniMaxFormInput): FlatMiniMaxSettings => ({
+  const buildNormalizedDefaults = (
+    values: MiniMaxFormInput
+  ): FlatMiniMaxSettings => ({
     'minimax.enabled': values.minimax.enabled ?? false,
     'minimax.model_redirect': normalizeJsonString(values.minimax.model_redirect),
-    'minimax.voice_redirect': normalizeJsonString(values.minimax.voice_redirect),
-    'minimax.voice_whitelist': normalizeJsonString(
-      values.minimax.voice_whitelist
-    ),
+    'minimax.voice_whitelist_enabled':
+      values.minimax.voice_whitelist_enabled ?? false,
+    'minimax.custom_voice_enabled': values.minimax.custom_voice_enabled ?? false,
+    'minimax.custom_voice_group': values.minimax.custom_voice_group ?? '',
+    'minimax.custom_voice_billing_model_id':
+      values.minimax.custom_voice_billing_model_id ?? '',
     'minimax.emotion_pattern': values.minimax.emotion_pattern ?? '',
     'minimax.emotion_redirect': normalizeJsonString(
       values.minimax.emotion_redirect
@@ -190,41 +161,22 @@ export function MiniMaxSettingsCard({ defaultValues }: Props) {
       })
     }
 
-  const syncJsonArrayBaseline =
-    (key: MiniMaxJsonArrayKey, fieldName: MiniMaxJsonArrayKey) =>
-    (loadedValue: string) => {
-      const safeValue = loadedValue.trim() ? loadedValue : '{}'
-      normalizedDefaultsRef.current = {
-        ...normalizedDefaultsRef.current,
-        [key]: normalizeJsonString(safeValue),
-      }
-      form.setValue(fieldName, formatJsonForTextarea(safeValue), {
-        shouldDirty: false,
-        shouldTouch: false,
-        shouldValidate: false,
-      })
-    }
-
   useEffect(() => {
     normalizedDefaultsRef.current = buildNormalizedDefaults(defaultValues)
     form.reset(buildFormDefaults(defaultValues))
   }, [defaultValues, form])
 
   const onSubmit = async (values: MiniMaxFormValues) => {
-    if (hasPendingWhitelistRows) {
-      toast.error(
-        t('Please save or delete pending voice whitelist rows first')
-      )
-      return
-    }
-
     const normalized: FlatMiniMaxSettings = {
       'minimax.enabled': values.minimax.enabled,
-      'minimax.model_redirect': normalizeJsonString(values.minimax.model_redirect),
-      'minimax.voice_redirect': normalizeJsonString(values.minimax.voice_redirect),
-      'minimax.voice_whitelist': normalizeJsonString(
-        values.minimax.voice_whitelist
+      'minimax.model_redirect': normalizeJsonString(
+        values.minimax.model_redirect
       ),
+      'minimax.voice_whitelist_enabled': values.minimax.voice_whitelist_enabled,
+      'minimax.custom_voice_enabled': values.minimax.custom_voice_enabled,
+      'minimax.custom_voice_group': values.minimax.custom_voice_group,
+      'minimax.custom_voice_billing_model_id':
+        values.minimax.custom_voice_billing_model_id,
       'minimax.emotion_pattern': values.minimax.emotion_pattern,
       'minimax.emotion_redirect': normalizeJsonString(
         values.minimax.emotion_redirect
@@ -275,7 +227,7 @@ export function MiniMaxSettingsCard({ defaultValues }: Props) {
                   <FormLabel>{t('Enable TTS Enhancement')}</FormLabel>
                   <FormDescription>
                     {t(
-                      'When enabled, model redirect, emotion tag, tone word tag and voice redirect will be applied to MiniMax TTS requests.'
+                      'When enabled, model redirect, emotion tag and tone word tag will be applied to MiniMax TTS requests.'
                     )}
                   </FormDescription>
                 </SettingsSwitchContent>
@@ -304,11 +256,12 @@ export function MiniMaxSettingsCard({ defaultValues }: Props) {
                     toLabel='MiniMax Model'
                     fromPlaceholder='tts-1'
                     toPlaceholder='speech-01-turbo'
-                    jsonPlaceholder={t(
-                      '{"client-model": "minimax-model"}'
-                    )}
+                    jsonPlaceholder={t('{"client-model": "minimax-model"}')}
                     template={JSON.stringify(
-                      { 'tts-1': 'speech-01-turbo', 'tts-1-hd': 'speech-01-240228' },
+                      {
+                        'tts-1': 'speech-01-turbo',
+                        'tts-1-hd': 'speech-01-240228',
+                      },
                       null,
                       2
                     )}
@@ -324,45 +277,6 @@ export function MiniMaxSettingsCard({ defaultValues }: Props) {
                     'JSON map of client model name to MiniMax real model name. Example'
                   )}{' '}
                   {`{ "tts-1": "speech-01-turbo", "tts-1-hd": "speech-01-240228" }`}
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name='minimax.voice_redirect'
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>{t('Voice Redirect')}</FormLabel>
-                <FormControl>
-                  <ModelMappingEditor
-                    value={field.value}
-                    onChange={field.onChange}
-                    optionKey='minimax.voice_redirect'
-                    fromLabel='OpenAI Voice'
-                    toLabel='MiniMax Voice ID'
-                    fromPlaceholder='alloy'
-                    toPlaceholder='male-qn-qingse'
-                    jsonPlaceholder={t('{"openai-voice": "minimax-voice_id"}')}
-                    template={JSON.stringify(
-                      { alloy: 'male-qn-qingse', nova: 'female-shaonv' },
-                      null,
-                      2
-                    )}
-                    emptyText='No redirects configured. Click "Add Mapping" to get started.'
-                    onFullValueLoaded={syncJsonMapBaseline(
-                      'minimax.voice_redirect',
-                      'minimax.voice_redirect'
-                    )}
-                  />
-                </FormControl>
-                <FormDescription>
-                  {t(
-                    'JSON map of OpenAI voice name to MiniMax voice_id. Example'
-                  )}{' '}
-                  {`{ "alloy": "male-qn-qingse", "nova": "female-shaonv" }`}
                 </FormDescription>
                 <FormMessage />
               </FormItem>
@@ -489,47 +403,118 @@ export function MiniMaxSettingsCard({ defaultValues }: Props) {
               </FormItem>
             )}
           />
-
-          <FormField
-            control={form.control}
-            name='minimax.voice_whitelist'
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>{t('Voice Whitelist')}</FormLabel>
-                <FormControl>
-                  <JsonArrayEditor
-                    value={field.value}
-                    onChange={field.onChange}
-                    optionKey='minimax.voice_whitelist'
-                    itemLabel='Voice ID'
-                    itemPlaceholder='male-qn-qingse'
-                    addButtonText='Add Voice'
-                    jsonPlaceholder={t('["voice-id"]')}
-                    template={JSON.stringify(
-                      ['male-qn-qingse', 'female-shaonv'],
-                      null,
-                      2
-                    )}
-                    emptyText='No voices configured. Click "Add Voice" to get started.'
-                    onFullValueLoaded={syncJsonArrayBaseline(
-                      'minimax.voice_whitelist',
-                      'minimax.voice_whitelist'
-                    )}
-                    onPendingChange={setHasPendingWhitelistRows}
-                  />
-                </FormControl>
-                <FormDescription>
-                  {t(
-                    'JSON array of client-requested MiniMax voice IDs allowed for MiniMax TTS requests. Use {} or [] to disable the whitelist. Example'
-                  )}{' '}
-                  {`["male-qn-qingse", "female-shaonv"]`}
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
         </SettingsForm>
       </Form>
+
+      <div className='mt-8'>
+        <SettingsSection title={t('Custom Voice')}>
+          <Form {...form}>
+            <SettingsForm
+              className='lg:grid-cols-1'
+              onSubmit={form.handleSubmit(onSubmit)}
+            >
+              <SettingsPageFormActions
+                onSave={form.handleSubmit(onSubmit)}
+                isSaving={updateOption.isPending}
+              />
+              <DisabledSettingsNotice
+                enabled={form.watch('minimax.custom_voice_enabled')}
+              />
+
+              <FormField
+                control={form.control}
+                name='minimax.custom_voice_enabled'
+                render={({ field }) => (
+                  <SettingsSwitchItem>
+                    <SettingsSwitchContent>
+                      <FormLabel>
+                        {t('Enable Custom Voice')}
+                      </FormLabel>
+                      <FormDescription>
+                        {t(
+                          'When enabled, users can use the Custom Voice page to upload samples, generate preview audio and confirm voice customization.'
+                        )}
+                      </FormDescription>
+                    </SettingsSwitchContent>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                  </SettingsSwitchItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name='minimax.custom_voice_group'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t('Custom Voice Group')}</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        placeholder='default'
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      {t(
+                        'User group used by the Custom Voice page. It decides which channels are used for upload/preview and the billing group ratio.'
+                      )}
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name='minimax.custom_voice_billing_model_id'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      {t('Custom Voice Billing Model ID')}
+                    </FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder='voice-clone' />
+                    </FormControl>
+                    <FormDescription>
+                      {t(
+                        'Model ID charged once when a user confirms voice customization. It must have a configured Model Price or Model Ratio.'
+                      )}
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name='minimax.voice_whitelist_enabled'
+                render={({ field }) => (
+                  <SettingsSwitchItem>
+                    <SettingsSwitchContent>
+                      <FormLabel>{t('Enable Voice Whitelist')}</FormLabel>
+                      <FormDescription>
+                        {t(
+                          'When enabled, only voices marked as allowed in Voice Management (status: created) can be used for TTS. Voice IDs and redirects are managed in Voice Management.'
+                        )}
+                      </FormDescription>
+                    </SettingsSwitchContent>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                  </SettingsSwitchItem>
+                )}
+              />
+            </SettingsForm>
+          </Form>
+        </SettingsSection>
+      </div>
     </SettingsSection>
   )
 }

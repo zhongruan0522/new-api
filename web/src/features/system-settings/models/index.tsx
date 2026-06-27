@@ -38,8 +38,10 @@ const defaultModelSettings: ModelSettings = {
   'grok.violation_deduction_amount': 0.05,
   'minimax.enabled': false,
   'minimax.model_redirect': '{}',
-  'minimax.voice_redirect': '{}',
-  'minimax.voice_whitelist': '{}',
+  'minimax.voice_whitelist_enabled': false,
+  'minimax.custom_voice_enabled': false,
+  'minimax.custom_voice_group': '',
+  'minimax.custom_voice_billing_model_id': '',
   'minimax.emotion_pattern':
     '<tts\\s+emotion="([^"]+)">([\\s\\S]*?)</tts>',
   'minimax.emotion_redirect': '{}',

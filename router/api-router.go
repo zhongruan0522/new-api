@@ -337,5 +337,22 @@ func SetApiRouter(router *gin.Engine) {
 			dynamicRatioRoute.PUT("/rules/reorder", middleware.RootAuth(), controller.ReorderDynamicRatioRules)
 			dynamicRatioRoute.PUT("/enabled", middleware.RootAuth(), controller.SetDynamicRatioEnabled)
 		}
+
+		// 定制音色（用户侧）：上传试听 + 确认定制
+		customVoiceRoute := apiRouter.Group("/custom_voice")
+		customVoiceRoute.Use(middleware.UserAuth())
+		{
+			customVoiceRoute.POST("/preview", controller.CustomVoicePreviewHandler)
+			customVoiceRoute.POST("/confirm", controller.CustomVoiceConfirmHandler)
+		}
+
+		// 音色管理（管理员）：列表/新增（Admin），修改/删除（Root）
+		minimaxVoiceRoute := apiRouter.Group("/minimax/voices")
+		{
+			minimaxVoiceRoute.GET("/", middleware.AdminAuth(), controller.GetMiniMaxVoices)
+			minimaxVoiceRoute.POST("/", middleware.AdminAuth(), controller.CreateMiniMaxVoice)
+			minimaxVoiceRoute.PUT("/:id", middleware.RootAuth(), controller.UpdateMiniMaxVoice)
+			minimaxVoiceRoute.DELETE("/:id", middleware.RootAuth(), controller.DeleteMiniMaxVoice)
+		}
 	}
 }

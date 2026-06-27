@@ -30,6 +30,7 @@ const (
 	AuditModuleLog            = "log"             // 日志清理
 	AuditModuleSetup          = "setup"           // 系统初始化
 	AuditModuleDashboardConfig = "dashboard_config" // 仪表板配置
+	AuditModuleVoice           = "voice"            // 音色管理
 )
 
 // 审计操作类型常量。
@@ -61,6 +62,7 @@ var AuditModuleList = []AuditModuleInfo{
 	{AuditModuleLog, "日志清理"},
 	{AuditModuleSetup, "系统初始化"},
 	{AuditModuleDashboardConfig, "仪表板配置"},
+	{AuditModuleVoice, "音色管理"},
 }
 
 // CreateAuditLog 插入一条审计日志。

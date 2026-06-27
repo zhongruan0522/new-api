@@ -67,21 +67,29 @@ func (a *Adaptor) ConvertAudioRequest(c *gin.Context, info *relaycommon.RelayInf
 	if clientVoice == "" {
 		clientVoice = request.Voice
 	}
-	if request.Voice != "" && request.Voice != clientVoice {
-		if err := model_setting.ValidateMiniMaxVoiceAllowed(request.Voice); err != nil {
-			return nil, newMiniMaxVoiceNotAllowedError(c, request.Voice)
+	// 音色白名单/重定向已迁移到数据库音色表：始终按用户原始音色 ID 查库，
+	// 校验通过后再用 redirect_id 替换发给上游，避免直接传 redirect_id 绕过白名单。
+	if request.Voice != "" {
+		resolvedRequestVoice, vErr := ResolveVoiceForTTSUpstream(c, request.Voice)
+		if vErr != nil {
+			return nil, vErr
 		}
+		minimaxRequest.VoiceSetting.VoiceID = resolvedRequestVoice
 	}
-	if err := model_setting.ValidateMiniMaxVoiceAllowed(clientVoice); err != nil {
-		return nil, newMiniMaxVoiceNotAllowedError(c, clientVoice)
+	if clientVoice != "" && clientVoice != request.Voice {
+		resolvedClientVoice, vErr := ResolveVoiceForTTSUpstream(c, clientVoice)
+		if vErr != nil {
+			return nil, vErr
+		}
+		minimaxRequest.VoiceSetting.VoiceID = resolvedClientVoice
 	}
 
-	// 3) 应用管理员强制策略：在 metadata 合并之后，用映射结果覆盖策略字段。
-	//    仅当 cfg.Enabled 时生效；关闭时保留用户原始值（含 metadata）。
+	// 3) 应用管理员强制策略：在 metadata 合并之后覆盖策略字段。
+	//    仅当 cfg.Enabled 时生效。注意：音色重定向已由上一步数据库解析完成，
+	//    策略不再覆盖 VoiceSetting.VoiceID，避免回退掉 redirect_id。
 	policy := model_setting.ApplyMiniMaxTTSPolicy(info.UpstreamModelName, request.Voice, request.Input, outputFormat)
 	if policy.Enabled {
 		minimaxRequest.Model = policy.Model
-		minimaxRequest.VoiceSetting.VoiceID = policy.Voice
 		minimaxRequest.VoiceSetting.Emotion = policy.Emotion
 		minimaxRequest.Text = policy.Text
 		if minimaxRequest.AudioSetting == nil {

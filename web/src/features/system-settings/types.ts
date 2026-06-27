@@ -213,8 +213,10 @@ export type ModelSettings = {
   'grok.violation_deduction_amount': number
   'minimax.enabled': boolean
   'minimax.model_redirect': string
-  'minimax.voice_redirect': string
-  'minimax.voice_whitelist': string
+  'minimax.voice_whitelist_enabled': boolean
+  'minimax.custom_voice_enabled': boolean
+  'minimax.custom_voice_group': string
+  'minimax.custom_voice_billing_model_id': string
   'minimax.emotion_pattern': string
   'minimax.emotion_redirect': string
   'minimax.tone_word_pattern': string

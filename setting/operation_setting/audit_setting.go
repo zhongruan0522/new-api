@@ -32,6 +32,7 @@ func defaultAuditModules() string {
 		"log":              true,
 		"setup":            true,
 		"dashboard_config": true,
+		"voice":            true,
 	}
 	return common.MapToJsonStr(m)
 }

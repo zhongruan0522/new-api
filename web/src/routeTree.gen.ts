@@ -66,6 +66,7 @@ import { Route as AuthenticatedSystemSettingsContentIndexRouteImport } from './r
 import { Route as AuthenticatedSystemSettingsBillingIndexRouteImport } from './routes/_authenticated/system-settings/billing/index'
 import { Route as AuthenticatedSystemSettingsAuthIndexRouteImport } from './routes/_authenticated/system-settings/auth/index'
 import { Route as AuthenticatedMultimodalCustomVoiceIndexRouteImport } from './routes/_authenticated/multimodal/custom-voice/index'
+import { Route as AuthenticatedMinimaxVoiceManagementIndexRouteImport } from './routes/_authenticated/minimax/voice-management/index'
 import { Route as AuthenticatedSystemSettingsSiteSectionRouteImport } from './routes/_authenticated/system-settings/site/$section'
 import { Route as AuthenticatedSystemSettingsSecuritySectionRouteImport } from './routes/_authenticated/system-settings/security/$section'
 import { Route as AuthenticatedSystemSettingsOperationsSectionRouteImport } from './routes/_authenticated/system-settings/operations/$section'
@@ -385,6 +386,12 @@ const AuthenticatedMultimodalCustomVoiceIndexRoute =
     path: '/multimodal/custom-voice/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedMinimaxVoiceManagementIndexRoute =
+  AuthenticatedMinimaxVoiceManagementIndexRouteImport.update({
+    id: '/minimax/voice-management/',
+    path: '/minimax/voice-management/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedSystemSettingsSiteSectionRoute =
   AuthenticatedSystemSettingsSiteSectionRouteImport.update({
     id: '/site/$section',
@@ -483,6 +490,7 @@ export interface FileRoutesByFullPath {
   '/system-settings/operations/$section': typeof AuthenticatedSystemSettingsOperationsSectionRoute
   '/system-settings/security/$section': typeof AuthenticatedSystemSettingsSecuritySectionRoute
   '/system-settings/site/$section': typeof AuthenticatedSystemSettingsSiteSectionRoute
+  '/minimax/voice-management/': typeof AuthenticatedMinimaxVoiceManagementIndexRoute
   '/multimodal/custom-voice/': typeof AuthenticatedMultimodalCustomVoiceIndexRoute
   '/system-settings/auth/': typeof AuthenticatedSystemSettingsAuthIndexRoute
   '/system-settings/billing/': typeof AuthenticatedSystemSettingsBillingIndexRoute
@@ -546,6 +554,7 @@ export interface FileRoutesByTo {
   '/system-settings/operations/$section': typeof AuthenticatedSystemSettingsOperationsSectionRoute
   '/system-settings/security/$section': typeof AuthenticatedSystemSettingsSecuritySectionRoute
   '/system-settings/site/$section': typeof AuthenticatedSystemSettingsSiteSectionRoute
+  '/minimax/voice-management': typeof AuthenticatedMinimaxVoiceManagementIndexRoute
   '/multimodal/custom-voice': typeof AuthenticatedMultimodalCustomVoiceIndexRoute
   '/system-settings/auth': typeof AuthenticatedSystemSettingsAuthIndexRoute
   '/system-settings/billing': typeof AuthenticatedSystemSettingsBillingIndexRoute
@@ -613,6 +622,7 @@ export interface FileRoutesById {
   '/_authenticated/system-settings/operations/$section': typeof AuthenticatedSystemSettingsOperationsSectionRoute
   '/_authenticated/system-settings/security/$section': typeof AuthenticatedSystemSettingsSecuritySectionRoute
   '/_authenticated/system-settings/site/$section': typeof AuthenticatedSystemSettingsSiteSectionRoute
+  '/_authenticated/minimax/voice-management/': typeof AuthenticatedMinimaxVoiceManagementIndexRoute
   '/_authenticated/multimodal/custom-voice/': typeof AuthenticatedMultimodalCustomVoiceIndexRoute
   '/_authenticated/system-settings/auth/': typeof AuthenticatedSystemSettingsAuthIndexRoute
   '/_authenticated/system-settings/billing/': typeof AuthenticatedSystemSettingsBillingIndexRoute
@@ -679,6 +689,7 @@ export interface FileRouteTypes {
     | '/system-settings/operations/$section'
     | '/system-settings/security/$section'
     | '/system-settings/site/$section'
+    | '/minimax/voice-management/'
     | '/multimodal/custom-voice/'
     | '/system-settings/auth/'
     | '/system-settings/billing/'
@@ -742,6 +753,7 @@ export interface FileRouteTypes {
     | '/system-settings/operations/$section'
     | '/system-settings/security/$section'
     | '/system-settings/site/$section'
+    | '/minimax/voice-management'
     | '/multimodal/custom-voice'
     | '/system-settings/auth'
     | '/system-settings/billing'
@@ -808,6 +820,7 @@ export interface FileRouteTypes {
     | '/_authenticated/system-settings/operations/$section'
     | '/_authenticated/system-settings/security/$section'
     | '/_authenticated/system-settings/site/$section'
+    | '/_authenticated/minimax/voice-management/'
     | '/_authenticated/multimodal/custom-voice/'
     | '/_authenticated/system-settings/auth/'
     | '/_authenticated/system-settings/billing/'
@@ -1241,6 +1254,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedMultimodalCustomVoiceIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/minimax/voice-management/': {
+      id: '/_authenticated/minimax/voice-management/'
+      path: '/minimax/voice-management'
+      fullPath: '/minimax/voice-management/'
+      preLoaderRoute: typeof AuthenticatedMinimaxVoiceManagementIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/system-settings/site/$section': {
       id: '/_authenticated/system-settings/site/$section'
       path: '/site/$section'
@@ -1398,6 +1418,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedUsageLogsIndexRoute: typeof AuthenticatedUsageLogsIndexRoute
   AuthenticatedUsersIndexRoute: typeof AuthenticatedUsersIndexRoute
   AuthenticatedWalletIndexRoute: typeof AuthenticatedWalletIndexRoute
+  AuthenticatedMinimaxVoiceManagementIndexRoute: typeof AuthenticatedMinimaxVoiceManagementIndexRoute
   AuthenticatedMultimodalCustomVoiceIndexRoute: typeof AuthenticatedMultimodalCustomVoiceIndexRoute
 }
 
@@ -1426,6 +1447,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedUsageLogsIndexRoute: AuthenticatedUsageLogsIndexRoute,
   AuthenticatedUsersIndexRoute: AuthenticatedUsersIndexRoute,
   AuthenticatedWalletIndexRoute: AuthenticatedWalletIndexRoute,
+  AuthenticatedMinimaxVoiceManagementIndexRoute:
+    AuthenticatedMinimaxVoiceManagementIndexRoute,
   AuthenticatedMultimodalCustomVoiceIndexRoute:
     AuthenticatedMultimodalCustomVoiceIndexRoute,
 }

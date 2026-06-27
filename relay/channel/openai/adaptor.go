@@ -17,6 +17,7 @@ import (
 	"github.com/zhongruan0522/new-api/dto"
 	"github.com/zhongruan0522/new-api/i18n"
 	"github.com/zhongruan0522/new-api/logger"
+	"github.com/zhongruan0522/new-api/model"
 	"github.com/zhongruan0522/new-api/relay/channel"
 
 	"github.com/zhongruan0522/new-api/relay/channel/openrouter"
@@ -339,23 +340,47 @@ func (a *Adaptor) ConvertEmbeddingRequest(c *gin.Context, info *relaycommon.Rela
 	return request, nil
 }
 
+// resolveMiniMaxVoiceOpenAI 按原始音色 ID 查库解析白名单/重定向。
+// 与 minimax.ResolveVoiceForTTSUpstream 等价，但内联在 openai 包内以避免
+// relay/channel/minimax 与 relay/channel/openai 之间的循环依赖。
+func resolveMiniMaxVoiceOpenAI(c *gin.Context, voiceId string) (string, error) {
+	voiceId = strings.TrimSpace(voiceId)
+	if voiceId == "" {
+		return "", nil
+	}
+	found, upstreamId, allowed, err := model.ResolveMiniMaxVoiceForTTS(voiceId)
+	if err != nil {
+		if model_setting.IsMiniMaxVoiceWhitelistEnabled() {
+			return "", errors.New(i18n.T(c, i18n.MsgMiniMaxVoiceNotAuthorizedWithID, map[string]any{"Voice": voiceId}))
+		}
+		return voiceId, nil
+	}
+	if model_setting.IsMiniMaxVoiceWhitelistEnabled() {
+		if !found || !allowed {
+			return "", errors.New(i18n.T(c, i18n.MsgMiniMaxVoiceNotAuthorizedWithID, map[string]any{"Voice": voiceId}))
+		}
+	}
+	if found {
+		return upstreamId, nil
+	}
+	return voiceId, nil
+}
+
 func (a *Adaptor) ConvertAudioRequest(c *gin.Context, info *relaycommon.RelayInfo, request dto.AudioRequest) (io.Reader, error) {
 	a.ResponseFormat = request.ResponseFormat
 	if info.RelayMode == relayconstant.RelayModeAudioSpeech {
 		if info.ChannelType == constant.ChannelTypeMiniMax {
-			if err := model_setting.ValidateMiniMaxVoiceAllowed(request.Voice); err != nil {
-				voice := strings.TrimSpace(request.Voice)
-				if voice == "" {
-					return nil, errors.New(i18n.T(c, i18n.MsgMiniMaxVoiceNotAuthorized))
-				}
-				return nil, errors.New(i18n.T(c, i18n.MsgMiniMaxVoiceNotAuthorizedWithID, map[string]any{"Voice": voice}))
+			// 音色白名单/重定向已迁移到数据库音色表。
+			resolvedVoice, vErr := resolveMiniMaxVoiceOpenAI(c, request.Voice)
+			if vErr != nil {
+				return nil, vErr
 			}
+			request.Voice = resolvedVoice
 			policy := model_setting.ApplyMiniMaxTTSPolicy(info.UpstreamModelName, request.Voice, request.Input, request.ResponseFormat)
 			if policy.Enabled {
 				request.Model = policy.Model
-				request.Voice = policy.Voice
 				request.Input = policy.Text
-				c.Set("minimax_voice_id", policy.Voice)
+				c.Set("minimax_voice_id", request.Voice)
 			}
 		}
 

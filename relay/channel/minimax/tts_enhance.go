@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/zhongruan0522/new-api/i18n"
+	"github.com/zhongruan0522/new-api/model"
 	"github.com/zhongruan0522/new-api/setting/model_setting"
 
 	"github.com/gin-gonic/gin"
@@ -16,34 +17,55 @@ func applyModelRedirect(originModel string, cfg *model_setting.MiniMaxSettings) 
 	return model_setting.ApplyMiniMaxModelRedirect(originModel, cfg)
 }
 
-// applyVoiceRedirect 按音色重定向表查找 voice_id。
-// 返回映射后的 voice_id；未命中返回原值。
-func applyVoiceRedirect(voice string, cfg *model_setting.MiniMaxSettings) string {
-	return model_setting.ApplyMiniMaxVoiceRedirect(voice, cfg)
-}
-
 // extractEmotion 用情绪正则识别文本中的情绪标签。
-// 返回：emotion 值、剥离标签包裹后的文本。
-// 行为：找到第一个匹配，按 EmotionRedirect 解析 emotion 值（映射表为空时直接用捕获值）；
-// 清洗时若正则带第 2 个捕获组则保留正文，否则删除整个匹配。
-// 正则编译失败时跳过增强（返回原文本和空 emotion），不在请求路径上崩溃——
-// 正则错误属于管理员配置问题，不应阻断用户请求。
 func extractEmotion(text string, pattern string, redirect map[string]string) (emotion string, cleaned string) {
 	return model_setting.ExtractMiniMaxEmotion(text, pattern, redirect)
 }
 
 // replaceToneWords 用语气词正则识别文本中的语气词标签，原地替换括号内文本。
-// 括号位置不变，只替换内容。映射表无此 key 时保留原标签；若用户直接传入映射
-// 目标值（替换值），则整个 (替换值) 标签被删除，不发给上游。
-// 正则编译失败时跳过增强（返回原文本）。
 func replaceToneWords(text string, pattern string, redirect map[string]string) string {
 	return model_setting.ReplaceMiniMaxToneWords(text, pattern, redirect)
 }
 
 // extractParenContent 从 "(content)" 格式的字符串提取 content。
-// 无括号或空内容返回空串。
 func extractParenContent(s string) string {
 	return model_setting.ExtractMiniMaxParenContent(s)
+}
+
+// ResolveVoiceForTTSUpstream 按用户请求的原始音色 ID 解析并发往上游的音色 ID。
+//
+// 校验逻辑（防绕过）：
+//   - 始终按原始音色 ID 查库，校验通过后再用 redirect_id 替换发给上游，
+//     用户无法通过直接传 redirect_id 绕过白名单。
+//   - 当音色白名单总开关开启时，只有库内“已创建”且 allowed=true 的音色才允许使用。
+//   - 白名单关闭时，仍会应用库内的 redirect_id（若该音色在库中且有重定向配置），
+//     但不限制音色来源。
+//
+// 返回应发给上游的音色 ID；校验失败时返回面向用户的普通业务错误（不暴露渠道信息）。
+func ResolveVoiceForTTSUpstream(c *gin.Context, voiceId string) (string, error) {
+	voiceId = strings.TrimSpace(voiceId)
+	if voiceId == "" {
+		return "", nil
+	}
+	found, upstreamId, allowed, err := model.ResolveMiniMaxVoiceForTTS(voiceId)
+	if err != nil {
+		// DB 查询失败时，若白名单开启则 fail-closed，否则放行原 ID。
+		if model_setting.IsMiniMaxVoiceWhitelistEnabled() {
+			return "", errors.New(i18n.T(c, i18n.MsgMiniMaxVoiceNotAuthorizedWithID, map[string]any{"Voice": voiceId}))
+		}
+		return voiceId, nil
+	}
+	if model_setting.IsMiniMaxVoiceWhitelistEnabled() {
+		// 白名单开启：必须命中且允许。
+		if !found || !allowed {
+			return "", newMiniMaxVoiceNotAllowedError(c, voiceId)
+		}
+	}
+	// 命中记录时优先使用 redirect_id；未命中且白名单关闭时用原 ID。
+	if found {
+		return upstreamId, nil
+	}
+	return voiceId, nil
 }
 
 // newMiniMaxVoiceNotAllowedError returns a localized error for voice whitelist

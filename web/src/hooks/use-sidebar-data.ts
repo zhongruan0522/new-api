@@ -26,6 +26,7 @@ import {
   Key,
   LayoutDashboard,
   LifeBuoy,
+  Mic,
   Radio,
   ReceiptText,
   Settings,
@@ -167,6 +168,16 @@ export function useSidebarData(): SidebarData {
             title: t('Audit Logs'),
             url: '/audit-logs',
             icon: ShieldCheck,
+          },
+          {
+            title: t('MiniMax'),
+            icon: Mic,
+            items: [
+              {
+                title: t('Voice Management'),
+                url: '/minimax/voice-management',
+              },
+            ],
           },
           {
             title: t('System Settings'),

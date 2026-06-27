@@ -5,7 +5,6 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"sync"
 
 	"github.com/zhongruan0522/new-api/common"
 	"github.com/zhongruan0522/new-api/model"
@@ -32,7 +31,7 @@ func GetOptions(c *gin.Context) {
 			continue
 		}
 		value := common.Interface2String(v)
-		if excludeLargeOptions && model_setting.IsMiniMaxLargeOption(k) {
+		if excludeLargeOptions && model_setting.IsMiniMaxLegacyRemovedOption(k) {
 			value = "{}"
 		}
 		options = append(options, &model.Option{
@@ -83,19 +82,6 @@ type OptionJsonMapUpsertRequest struct {
 	OldMapKey string `json:"old_map_key"`
 	Value     string `json:"value"`
 }
-
-type OptionJsonArrayDeleteRequest struct {
-	Key   string `json:"key"`
-	Value string `json:"value"`
-}
-
-type OptionJsonArrayUpsertRequest struct {
-	Key      string `json:"key"`
-	Value    string `json:"value"`
-	OldValue string `json:"old_value"`
-}
-
-var minimaxVoiceWhitelistMutationMu sync.Mutex
 
 func isSensitiveOptionKey(key string) bool {
 	return strings.HasSuffix(key, "Token") ||
@@ -171,20 +157,19 @@ func readMiniMaxStringMapOption(c *gin.Context, key string) (map[string]string, 
 	return items, value, true
 }
 
-func readMiniMaxStringArrayOption(c *gin.Context, key string) (model_setting.MiniMaxVoiceWhitelist, string, bool) {
-	if !model_setting.IsMiniMaxStringArrayOption(key) {
+// readMiniMaxStringArrayOption 仅用于兼容旧的 JSON 数组配置读取。
+// 音色白名单已迁移到数据库音色表，这里对已废弃的 key 直接返回空数组与提示，
+// 防止旧前端在数组编辑器里看到陈旧数据后误操作。
+func readMiniMaxStringArrayOption(c *gin.Context, key string) ([]string, string, bool) {
+	if key != "minimax.voice_whitelist" {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
 			"message": "不支持的 JSON 数组配置项",
 		})
 		return nil, "", false
 	}
-	value, ok := readOptionValue(key)
-	if !ok || strings.TrimSpace(value) == "" {
-		value = "{}"
-	}
-	items := model_setting.GetMiniMaxVoiceWhitelistSnapshot()
-	return items, value, true
+	// 已迁移至音色管理页面，统一返回空列表，避免暴露历史残留数据。
+	return []string{}, "[]", true
 }
 
 func GetOptionJsonMap(c *gin.Context) {
@@ -289,135 +274,20 @@ func GetOptionJsonArray(c *gin.Context) {
 }
 
 func DeleteOptionJsonArrayEntry(c *gin.Context) {
-	var req OptionJsonArrayDeleteRequest
-	if err := common.DecodeJson(c.Request.Body, &req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "无效的参数"})
-		return
-	}
-	value := strings.TrimSpace(req.Value)
-	if value == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "数组项不能为空"})
-		return
-	}
-
-	minimaxVoiceWhitelistMutationMu.Lock()
-	items, _, ok := readMiniMaxStringArrayOption(c, req.Key)
-	if !ok {
-		minimaxVoiceWhitelistMutationMu.Unlock()
-		return
-	}
-	index := sort.SearchStrings([]string(items), value)
-	if index >= len(items) || items[index] != value {
-		minimaxVoiceWhitelistMutationMu.Unlock()
-		c.JSON(http.StatusOK, gin.H{"success": false, "message": "数组项不存在"})
-		return
-	}
-	items = append(items[:index], items[index+1:]...)
-	bytes, err := common.Marshal(items)
-	if err != nil {
-		minimaxVoiceWhitelistMutationMu.Unlock()
-		common.ApiError(c, err)
-		return
-	}
-	nextValue := string(bytes)
-	if nextValue, err = model_setting.NormalizeMiniMaxOptionValue(req.Key, nextValue); err != nil {
-		minimaxVoiceWhitelistMutationMu.Unlock()
-		c.JSON(http.StatusOK, gin.H{"success": false, "message": "MiniMax 设置失败: " + err.Error()})
-		return
-	}
-	if err := model.UpdateOption(req.Key, nextValue); err != nil {
-		minimaxVoiceWhitelistMutationMu.Unlock()
-		common.ApiError(c, err)
-		return
-	}
-	minimaxVoiceWhitelistMutationMu.Unlock()
-
-	service.RecordAudit(
-		c,
-		model.AuditModuleOption,
-		model.AuditActionUpdate,
-		"删除 JSON 数组配置项 "+req.Key+"."+value,
-		map[string]interface{}{"option": req.Key, "value": value},
-		map[string]interface{}{"option": req.Key, "removed": value, "total": len(items)},
-	)
-	c.JSON(http.StatusOK, gin.H{"success": true, "message": ""})
+	// 音色白名单已迁移到数据库音色表，旧的 JSON 数组增删改接口不再支持写入。
+	// 保留路由以兼容旧前端，但所有写入统一返回“已迁移”提示。
+	c.JSON(http.StatusOK, gin.H{
+		"success": false,
+		"message": "该配置已迁移至音色管理页面，请通过音色管理进行维护",
+	})
 }
 
 func UpsertOptionJsonArrayEntry(c *gin.Context) {
-	var req OptionJsonArrayUpsertRequest
-	if err := common.DecodeJson(c.Request.Body, &req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "无效的参数"})
-		return
-	}
-	value := strings.TrimSpace(req.Value)
-	oldValue := strings.TrimSpace(req.OldValue)
-	if value == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "数组项不能为空"})
-		return
-	}
-
-	minimaxVoiceWhitelistMutationMu.Lock()
-	items, _, ok := readMiniMaxStringArrayOption(c, req.Key)
-	if !ok {
-		minimaxVoiceWhitelistMutationMu.Unlock()
-		return
-	}
-	if oldValue != "" && oldValue != value {
-		oldIndex := sort.SearchStrings([]string(items), oldValue)
-		if oldIndex >= len(items) || items[oldIndex] != oldValue {
-			minimaxVoiceWhitelistMutationMu.Unlock()
-			c.JSON(http.StatusOK, gin.H{"success": false, "message": "原数组项不存在"})
-			return
-		}
-		items = append(items[:oldIndex], items[oldIndex+1:]...)
-	}
-	index := sort.SearchStrings([]string(items), value)
-	if index < len(items) && items[index] == value {
-		if oldValue == value {
-			minimaxVoiceWhitelistMutationMu.Unlock()
-			c.JSON(http.StatusOK, gin.H{"success": true, "message": ""})
-			return
-		}
-		minimaxVoiceWhitelistMutationMu.Unlock()
-		c.JSON(http.StatusOK, gin.H{"success": false, "message": "数组项已存在"})
-		return
-	}
-	items = append(items, "")
-	copy(items[index+1:], items[index:])
-	items[index] = value
-
-	bytes, err := common.Marshal(items)
-	if err != nil {
-		minimaxVoiceWhitelistMutationMu.Unlock()
-		common.ApiError(c, err)
-		return
-	}
-	nextValue := string(bytes)
-	if nextValue, err = model_setting.NormalizeMiniMaxOptionValue(req.Key, nextValue); err != nil {
-		minimaxVoiceWhitelistMutationMu.Unlock()
-		c.JSON(http.StatusOK, gin.H{"success": false, "message": "MiniMax 设置失败: " + err.Error()})
-		return
-	}
-	if err := model.UpdateOption(req.Key, nextValue); err != nil {
-		minimaxVoiceWhitelistMutationMu.Unlock()
-		common.ApiError(c, err)
-		return
-	}
-	minimaxVoiceWhitelistMutationMu.Unlock()
-
-	beforeAudit := map[string]interface{}{"option": req.Key, "value": oldValue}
-	if oldValue == "" {
-		beforeAudit = nil
-	}
-	service.RecordAudit(
-		c,
-		model.AuditModuleOption,
-		model.AuditActionUpdate,
-		"修改 JSON 数组配置项 "+req.Key+"."+value,
-		beforeAudit,
-		map[string]interface{}{"option": req.Key, "value": value, "total": len(items)},
-	)
-	c.JSON(http.StatusOK, gin.H{"success": true, "message": ""})
+	// 同上：音色白名单已迁移，写入不再支持。
+	c.JSON(http.StatusOK, gin.H{
+		"success": false,
+		"message": "该配置已迁移至音色管理页面，请通过音色管理进行维护",
+	})
 }
 
 func DeleteOptionJsonMapEntry(c *gin.Context) {
@@ -777,16 +647,30 @@ func UpdateOption(c *gin.Context) {
 			return
 		}
 	case "minimax.model_redirect", "minimax.emotion_redirect",
-		"minimax.tone_word_redirect", "minimax.voice_redirect",
-		"minimax.voice_whitelist", "minimax.emotion_pattern", "minimax.tone_word_pattern":
-		option.Value, err = model_setting.NormalizeMiniMaxOptionValue(option.Key, option.Value.(string))
-		if err != nil {
+		"minimax.tone_word_redirect":
+		// 仍保留的 JSON 映射型 MiniMax 选项：保存前校验。
+		if err := model_setting.ValidateMiniMaxOptionValue(option.Key, option.Value.(string)); err != nil {
 			c.JSON(http.StatusOK, gin.H{
 				"success": false,
 				"message": "MiniMax 设置失败: " + err.Error(),
 			})
 			return
 		}
+	case "minimax.emotion_pattern", "minimax.tone_word_pattern":
+		if err := model_setting.ValidateMiniMaxOptionValue(option.Key, option.Value.(string)); err != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": "MiniMax 设置失败: " + err.Error(),
+			})
+			return
+		}
+	case "minimax.voice_whitelist", "minimax.voice_redirect":
+		// 已迁移到数据库音色表，拒绝写入旧 key，提示通过音色管理维护。
+		c.JSON(http.StatusNotFound, gin.H{
+			"success": false,
+			"message": "该配置已迁移至音色管理页面，请通过音色管理进行维护",
+		})
+		return
 	}
 	// 读取旧值用于审计 before 字段。必须在 UpdateOption 之前读取，
 	// 否则 OptionMap 已被新值覆盖。OptionMap 中可能不存在该 key（首次创建）。
