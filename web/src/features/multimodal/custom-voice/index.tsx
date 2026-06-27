@@ -6,6 +6,7 @@ it under the terms of the GNU Affero General Public License as
 published by the Free Software Foundation, version 3 of the License.
 */
 import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -16,10 +17,9 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { Checkbox } from '@/components/ui/checkbox'
 import {
   Select,
   SelectContent,
@@ -27,14 +27,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Textarea } from '@/components/ui/textarea'
 import {
   confirmCustomVoice,
   extractApiErrorMessage,
+  getTtsModels,
   previewCustomVoice,
   type CustomVoicePreviewResult,
 } from './api'
 
-const TTS_MODELS = [
+const FALLBACK_MODELS = [
   { value: 'tts-2-hd', label: 'tts-2-hd' },
   { value: 'tts-2-turbo', label: 'tts-2-turbo' },
   { value: 'tts-1-hd', label: 'tts-1-hd' },
@@ -55,6 +57,27 @@ export function CustomVoice() {
   const [confirming, setConfirming] = useState(false)
   const [preview, setPreview] = useState<CustomVoicePreviewResult | null>(null)
 
+  // 从后端拉取可用模型并筛选 tts- 前缀；拉取失败时回退到内置列表，保证页面可用。
+  const { data: ttsModels } = useQuery({
+    queryKey: ['custom-voice-tts-models'],
+    queryFn: async () => {
+      try {
+        return await getTtsModels()
+      } catch {
+        return null
+      }
+    },
+  })
+
+  const modelOptions =
+    ttsModels && ttsModels.length > 0 ? ttsModels : FALLBACK_MODELS
+
+  // 当前选中的模型不在可用列表中时，回落到第一个可用模型。
+  const effectiveModel =
+    modelOptions.some((m) => m.value === model) && modelOptions.length > 0
+      ? model
+      : (modelOptions[0]?.value ?? model)
+
   const validateVoiceId = (id: string) => {
     const regex = /^[a-zA-Z][a-zA-Z0-9_-]*[^-_]$/
     return id.length >= 8 && id.length <= 256 && regex.test(id)
@@ -74,7 +97,7 @@ export function CustomVoice() {
     try {
       const res = await previewCustomVoice({
         file,
-        model,
+        model: effectiveModel,
         voice_id: voiceId,
         text: previewText,
         need_noise_reduction: noiseReduction,
@@ -139,7 +162,7 @@ export function CustomVoice() {
               accept='.mp3,.m4a,.wav'
               onChange={(e) => setFile(e.target.files?.[0] ?? null)}
             />
-            <p className='text-xs text-muted-foreground'>
+            <p className='text-muted-foreground text-xs'>
               {t('Supports mp3, m4a, wav. Duration 10s-5min, max 20MB.')}
             </p>
           </div>
@@ -153,7 +176,7 @@ export function CustomVoice() {
                 maxLength={256}
                 placeholder='myVoice123'
               />
-              <p className='text-xs text-muted-foreground'>
+              <p className='text-muted-foreground text-xs'>
                 {t(
                   'Must start with a letter, only letters, numbers, - and _, length 8-256.'
                 )}
@@ -162,12 +185,15 @@ export function CustomVoice() {
 
             <div className='space-y-2'>
               <Label>{t('Preview Model')}</Label>
-              <Select value={model} onValueChange={(v) => v && setModel(v)}>
+              <Select
+                value={effectiveModel}
+                onValueChange={(v) => v && setModel(v)}
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {TTS_MODELS.map((m) => (
+                  {modelOptions.map((m) => (
                     <SelectItem key={m.value} value={m.value}>
                       {m.label}
                     </SelectItem>
@@ -222,7 +248,7 @@ export function CustomVoice() {
                 <source src={preview.demo_audio} type='audio/mpeg' />
               </audio>
             ) : (
-              <p className='text-sm text-muted-foreground'>
+              <p className='text-muted-foreground text-sm'>
                 {t('No preview audio returned.')}
               </p>
             )}
