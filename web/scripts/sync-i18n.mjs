@@ -22,6 +22,11 @@ import path from 'node:path'
 // This script is executed from the web/ package root (see package.json script).
 const LOCALES_DIR = path.resolve('src/i18n/locales')
 const FALLBACK_COMPARE_LOCALE = 'en' // used for "still English" detection only
+
+// i18next is configured with defaultNS "translation" and nsSeparator:false (see src/i18n/config.ts),
+// so each locale file must keep all its leaf keys under the single `translation` namespace.
+const SINGLE_NAMESPACE = true
+const ALLOWED_TOP_LEVEL_KEYS = ['translation']
 const OBFUSCATED_KEYS = [
   {
     runtime: ['footer', 'new' + 'api', 'projectAttributionSuffix'].join('.'),
@@ -213,6 +218,25 @@ function isLikelyUntranslated({ locale, baseValue, value }) {
   return false
 }
 
+function getTopLevelLeafKeys(json) {
+  if (!isPlainObject(json)) return []
+  return Object.keys(json).filter((k) => {
+    const v = json[k]
+    return !(isPlainObject(v) || Array.isArray(v))
+  })
+}
+
+function assertSingleNamespaceLocale(locale, json) {
+  if (!SINGLE_NAMESPACE) return
+  const offenders = getTopLevelLeafKeys(json).filter((k) => !ALLOWED_TOP_LEVEL_KEYS.includes(k))
+  if (offenders.length === 0) return
+  const preview = offenders.slice(0, 5).map((k) => `"${k}"`).join(', ')
+  const more = offenders.length > 5 ? ` (and ${offenders.length - 5} more)` : ''
+  throw new Error(
+    `Locale "${locale}" is in single-namespace mode but has ${offenders.length} top-level leaf key(s) outside of ${ALLOWED_TOP_LEVEL_KEYS.join(', ')}: ${preview}${more}. Move them into the "translation" namespace.`,
+  )
+}
+
 async function main() {
   const entries = await fs.readdir(LOCALES_DIR, { withFileTypes: true })
   const localeFiles = entries
@@ -225,7 +249,10 @@ async function main() {
   for (const filename of localeFiles) {
     const locale = filename.replace(/\.json$/i, '')
     const raw = await fs.readFile(path.join(LOCALES_DIR, filename), 'utf8')
-    parsedByLocale[locale] = JSON.parse(raw)
+    const parsed = JSON.parse(raw)
+    // Fail fast: in single-namespace mode no leaf key may live outside `translation`.
+    assertSingleNamespaceLocale(locale, parsed)
+    parsedByLocale[locale] = parsed
   }
 
   const baseLocale = Object.keys(parsedByLocale)
