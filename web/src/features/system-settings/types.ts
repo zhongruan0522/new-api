@@ -121,6 +121,64 @@ export type CleanLogsResponse = {
   data?: CleanLogsResult
 }
 
+export type DatabaseMigrationMode = 'pre_migrate' | 'same_type_migrate'
+
+export type DatabaseMigrationInfo = {
+  main_db_type: string
+  log_db_type: string
+  log_db_is_separated: boolean
+}
+
+export type DatabaseMigrationTableProgress = {
+  name: string
+  copied: number
+  total: number
+}
+
+export type DatabaseMigrationJobStatus = 'running' | 'success' | 'failed'
+
+export type DatabaseMigrationJob = {
+  id: string
+  status: DatabaseMigrationJobStatus
+  started_at: number
+  finished_at?: number
+  source_db_type: string
+  target_db_type: string
+  include_logs: boolean
+  force: boolean
+  current_step: string
+  tables: DatabaseMigrationTableProgress[]
+  logs: string[]
+  error?: string
+}
+
+export type DatabaseMigrationStartRequest = {
+  target_dsn: string
+  target_log_dsn?: string
+  include_logs: boolean
+  force: boolean
+}
+
+export type DatabaseMigrationInfoResponse = {
+  success: boolean
+  message: string
+  data: DatabaseMigrationInfo
+}
+
+export type DatabaseMigrationStartResponse = {
+  success: boolean
+  message: string
+  data?: {
+    job_id: string
+  }
+}
+
+export type DatabaseMigrationJobResponse = {
+  success: boolean
+  message: string
+  data: DatabaseMigrationJob
+}
+
 export type SiteSettings = {
   Notice: string
   SystemName: string

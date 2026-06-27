@@ -329,6 +329,9 @@ export const STATIC_I18N_KEYS = [
   'Sync from the public upstream metadata repository.',
   'Upload or reference a local configuration file.',
 
+  // Operations section-registry nav (dynamic titleKey)
+  'Database Maintenance',
+
   // Subscription constants (dynamic labelKey)
   'years',
   'months',

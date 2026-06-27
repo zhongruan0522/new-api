@@ -20,6 +20,11 @@ import { api } from '@/lib/api'
 import type {
   CleanLogsParams,
   CleanLogsResponse,
+  DatabaseMigrationInfoResponse,
+  DatabaseMigrationJobResponse,
+  DatabaseMigrationMode,
+  DatabaseMigrationStartRequest,
+  DatabaseMigrationStartResponse,
   DeleteOptionJsonArrayEntryRequest,
   DeleteOptionJsonMapEntryRequest,
   OptionJsonArrayResponse,
@@ -131,6 +136,36 @@ export async function cleanLogs(params: CleanLogsParams) {
 export async function resetModelRatios() {
   const res = await api.post<UpdateOptionResponse>(
     '/api/option/rest_model_ratio'
+  )
+  return res.data
+}
+
+export async function getDatabaseMigrationInfo(
+  mode: DatabaseMigrationMode
+) {
+  const res = await api.get<DatabaseMigrationInfoResponse>(
+    `/api/db/${mode}/info`
+  )
+  return res.data
+}
+
+export async function startDatabaseMigration(
+  mode: DatabaseMigrationMode,
+  request: DatabaseMigrationStartRequest
+) {
+  const res = await api.post<DatabaseMigrationStartResponse>(
+    `/api/db/${mode}`,
+    request
+  )
+  return res.data
+}
+
+export async function getDatabaseMigrationJob(
+  mode: DatabaseMigrationMode,
+  jobId: string
+) {
+  const res = await api.get<DatabaseMigrationJobResponse>(
+    `/api/db/${mode}/${jobId}`
   )
   return res.data
 }
