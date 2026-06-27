@@ -392,17 +392,7 @@ func uploadFileUpstream(c *gin.Context, up *minimaxUpstream, header *multipart.F
 
 // cloneVoiceUpstream 调用上游 voice_clone 接口生成试听音频，返回 demo_audio URL。
 func cloneVoiceUpstream(up *minimaxUpstream, fileId string, req CustomVoicePreviewRequest) (string, error) {
-	payload := map[string]interface{}{
-		"file_id":                    fileId,
-		"voice_id":                   req.VoiceId,
-		"need_noise_reduction":       req.NeedNoiseReduction,
-		"need_volume_normalization":  req.NeedVolumeNormalization,
-	}
-	previewText := strings.TrimSpace(req.PreviewText)
-	if previewText != "" {
-		payload["text"] = previewText
-		payload["model"] = req.Model
-	}
+	payload := buildVoiceClonePayload(fileId, req)
 	bodyBytes, err := common.Marshal(payload)
 	if err != nil {
 		return "", errors.New("请求构建失败")
@@ -430,6 +420,41 @@ func cloneVoiceUpstream(up *minimaxUpstream, fileId string, req CustomVoicePrevi
 		return "", normalizeUpstreamError(status, respBody)
 	}
 	return resp.DemoAudio, nil
+}
+
+// buildVoiceClonePayload 构造发给 MiniMax voice_clone 接口的 payload。
+//
+// 当试听文本非空时，复用 MiniMax TTS 增强策略：
+//   - 文本：移除情绪标签、替换语气词标签后的文本（policy.Text）。
+//   - 模型：按模型重定向表映射后的上游模型名（policy.Model）。
+//   - 情绪：识别到的情绪标签经 redirect 映射后的上游 emotion 值（policy.Emotion）。
+//
+// 用户看到和输入的始终是 redirect map 的 key（源标签）；
+// 发给上游的是现有策略处理后的 value。策略未启用时原样透传用户输入。
+func buildVoiceClonePayload(fileId string, req CustomVoicePreviewRequest) map[string]interface{} {
+	payload := map[string]interface{}{
+		"file_id":                   fileId,
+		"voice_id":                  req.VoiceId,
+		"need_noise_reduction":      req.NeedNoiseReduction,
+		"need_volume_normalization": req.NeedVolumeNormalization,
+	}
+	previewText := strings.TrimSpace(req.PreviewText)
+	if previewText == "" {
+		return payload
+	}
+
+	policy := model_setting.ApplyMiniMaxTTSPolicy(req.Model, "", previewText, "")
+	payload["text"] = policy.Text
+	// 仅当策略映射出非空模型时覆盖；未启用/未命中时保留用户选择。
+	if policy.Enabled && policy.Model != "" {
+		payload["model"] = policy.Model
+	} else {
+		payload["model"] = req.Model
+	}
+	if policy.Emotion != "" {
+		payload["emotion"] = policy.Emotion
+	}
+	return payload
 }
 
 // CustomVoiceConfirm 确认定制：按配置的扣费模型 ID 扣费，成功后把记录从试听中转为已创建。

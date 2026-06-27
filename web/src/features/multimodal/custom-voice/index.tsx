@@ -28,9 +28,11 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
+import { Badge } from '@/components/ui/badge'
 import {
   confirmCustomVoice,
   extractApiErrorMessage,
+  getCustomVoiceTags,
   getTtsModels,
   previewCustomVoice,
   type CustomVoicePreviewResult,
@@ -68,6 +70,23 @@ export function CustomVoice() {
       }
     },
   })
+
+  // 拉取管理员配置的情绪/语气词标签源值（后端只返回 redirect map 的 key）。
+  // 仅展示用户应输入的源标签，不展示会被现有逻辑删除的上游重定向目标值。
+  const { data: voiceTags } = useQuery({
+    queryKey: ['custom-voice-tags'],
+    queryFn: async () => {
+      try {
+        return await getCustomVoiceTags()
+      } catch {
+        return null
+      }
+    },
+  })
+
+  const emotionTags = voiceTags?.enabled ? voiceTags.emotion_tags ?? [] : []
+  const toneWordTags = voiceTags?.enabled ? voiceTags.tone_word_tags ?? [] : []
+  const hasTags = emotionTags.length > 0 || toneWordTags.length > 0
 
   const modelOptions =
     ttsModels && ttsModels.length > 0 ? ttsModels : FALLBACK_MODELS
@@ -213,6 +232,49 @@ export function CustomVoice() {
               placeholder={t('Optional preview text')}
             />
           </div>
+
+          {voiceTags && !voiceTags.enabled && (
+            <p className='text-muted-foreground text-xs'>
+              {t('TTS enhancement is disabled.')}
+            </p>
+          )}
+          {voiceTags?.enabled && !hasTags && (
+            <p className='text-muted-foreground text-xs'>
+              {t('No emotion or tone-word tags configured.')}
+            </p>
+          )}
+          {voiceTags?.enabled && hasTags && (
+            <div className='space-y-2'>
+              {emotionTags.length > 0 && (
+                <div className='space-y-1'>
+                  <p className='text-muted-foreground text-xs'>
+                    {t('Emotion tags')}
+                  </p>
+                  <div className='flex flex-wrap gap-1.5'>
+                    {emotionTags.map((tag) => (
+                      <Badge key={tag} variant='secondary'>
+                        {tag}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {toneWordTags.length > 0 && (
+                <div className='space-y-1'>
+                  <p className='text-muted-foreground text-xs'>
+                    {t('Tone-word tags (wrap with parentheses)')}
+                  </p>
+                  <div className='flex flex-wrap gap-1.5'>
+                    {toneWordTags.map((tag) => (
+                      <Badge key={tag} variant='secondary'>
+                        ({tag})
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           <div className='flex gap-6'>
             <label className='flex items-center gap-2'>

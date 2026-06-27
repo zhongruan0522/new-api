@@ -58,6 +58,21 @@ export type TtsModelOption = {
   label: string
 }
 
+// 定制音色试听可用的 TTS 增强标签快照（仅暴露 redirect map 的 key）。
+export type CustomVoiceTags = {
+  enabled: boolean
+  emotion_pattern: string
+  tone_word_pattern: string
+  emotion_tags: string[] | null
+  tone_word_tags: string[] | null
+}
+
+export type CustomVoiceTagsResponse = {
+  success: boolean
+  message: string
+  data: CustomVoiceTags
+}
+
 // 仅展示以 tts- 开头的可用模型，与游乐场保持一致地复用 /api/user/models。
 export async function getTtsModels(): Promise<TtsModelOption[]> {
   const res = await api.get<{ success: boolean; data?: unknown }>(
@@ -69,6 +84,22 @@ export async function getTtsModels(): Promise<TtsModelOption[]> {
   return (data.data as string[])
     .filter((m) => typeof m === 'string' && m.startsWith('tts-'))
     .map((m) => ({ label: m, value: m }))
+}
+
+// 拉取用户侧可见的情绪/语气词标签源值。后端只返回 redirect map 的 key。
+export async function getCustomVoiceTags(): Promise<CustomVoiceTags> {
+  const res = await api.get<CustomVoiceTagsResponse>('/api/custom_voice/tags')
+  const { data } = res
+  if (!data?.success || !data.data) {
+    return {
+      enabled: false,
+      emotion_pattern: '',
+      tone_word_pattern: '',
+      emotion_tags: null,
+      tone_word_tags: null,
+    }
+  }
+  return data.data
 }
 
 export async function confirmCustomVoice(

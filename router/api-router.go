@@ -342,6 +342,7 @@ func SetApiRouter(router *gin.Engine) {
 		customVoiceRoute := apiRouter.Group("/custom_voice")
 		customVoiceRoute.Use(middleware.UserAuth())
 		{
+			customVoiceRoute.GET("/tags", controller.CustomVoiceTagsHandler)
 			customVoiceRoute.POST("/preview", controller.CustomVoicePreviewHandler)
 			customVoiceRoute.POST("/confirm", controller.CustomVoiceConfirmHandler)
 		}

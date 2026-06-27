@@ -7,6 +7,7 @@ import (
 
 	"github.com/zhongruan0522/new-api/common"
 	"github.com/zhongruan0522/new-api/service"
+	"github.com/zhongruan0522/new-api/setting/model_setting"
 )
 
 // customVoiceConfirmRequest 确认定制请求体。
@@ -73,5 +74,17 @@ func CustomVoiceConfirmHandler(c *gin.Context) {
 		"success": true,
 		"message": "",
 		"data":    result,
+	})
+}
+
+// CustomVoiceTagsHandler 用户侧：返回定制音色试听可用的情绪/语气词标签源值。
+//
+// 只暴露 redirect map 的 key（用户应输入的源标签），不暴露 value（上游真实标签），
+// 避免前端直接展示上游标签后被现有语气词/情绪逻辑误删除。
+func CustomVoiceTagsHandler(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "",
+		"data":    model_setting.GetCustomVoiceTagsSnapshot(),
 	})
 }

@@ -77,6 +77,70 @@ func TestCustomVoiceConfigDefaults(t *testing.T) {
 	}
 }
 
+// ---------- GetCustomVoiceTagsSnapshot：只暴露 redirect map 的 key ----------
+
+func TestGetCustomVoiceTagsSnapshot_DefaultsAndKeysOnly(t *testing.T) {
+	prev := *GetMiniMaxSettings()
+	defer func() { *GetMiniMaxSettings() = prev }()
+
+	*GetMiniMaxSettings() = MiniMaxSettings{
+		Enabled:          true,
+		EmotionPattern:   `\(([^()]+)\)`,
+		EmotionRedirect:  map[string]string{"1": "2", "b-emo": "happy"},
+		ToneWordPattern:  `\(([^()]+)\)`,
+		ToneWordRedirect: map[string]string{"z-ton": "target"},
+	}
+
+	snap := GetCustomVoiceTagsSnapshot()
+	if !snap.Enabled {
+		t.Fatalf("Enabled = false, want true")
+	}
+	if snap.EmotionPattern != `\(([^()]+)\)` {
+		t.Fatalf("EmotionPattern = %q, want \\(([^()]+)\\)", snap.EmotionPattern)
+	}
+	if snap.ToneWordPattern != `\(([^()]+)\)` {
+		t.Fatalf("ToneWordPattern = %q, want \\(([^()]+)\\)", snap.ToneWordPattern)
+	}
+	// emotion_tags 只应包含 redirect map 的 key（已排序）
+	wantEmotion := []string{"1", "b-emo"}
+	if len(snap.EmotionTags) != len(wantEmotion) {
+		t.Fatalf("EmotionTags len = %d, want %d (%v)", len(snap.EmotionTags), len(wantEmotion), snap.EmotionTags)
+	}
+	for i, want := range wantEmotion {
+		if snap.EmotionTags[i] != want {
+			t.Errorf("EmotionTags[%d] = %q, want %q", i, snap.EmotionTags[i], want)
+		}
+	}
+	// tone_word_tags 只应包含 redirect map 的 key
+	wantTone := []string{"z-ton"}
+	if len(snap.ToneWordTags) != len(wantTone) {
+		t.Fatalf("ToneWordTags len = %d, want %d (%v)", len(snap.ToneWordTags), len(wantTone), snap.ToneWordTags)
+	}
+	for i, want := range wantTone {
+		if snap.ToneWordTags[i] != want {
+			t.Errorf("ToneWordTags[%d] = %q, want %q", i, snap.ToneWordTags[i], want)
+		}
+	}
+}
+
+func TestGetCustomVoiceTagsSnapshot_EmptyMapsReturnNil(t *testing.T) {
+	prev := *GetMiniMaxSettings()
+	defer func() { *GetMiniMaxSettings() = prev }()
+
+	*GetMiniMaxSettings() = MiniMaxSettings{
+		Enabled:         true,
+		EmotionRedirect: map[string]string{},
+		ToneWordRedirect: map[string]string{},
+	}
+	snap := GetCustomVoiceTagsSnapshot()
+	if snap.EmotionTags != nil {
+		t.Errorf("EmotionTags = %v, want nil when map empty", snap.EmotionTags)
+	}
+	if snap.ToneWordTags != nil {
+		t.Errorf("ToneWordTags = %v, want nil when map empty", snap.ToneWordTags)
+	}
+}
+
 // ---------- 内置默认正则 ----------
 
 func TestMiniMaxDefaultPatternsCompile(t *testing.T) {

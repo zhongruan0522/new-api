@@ -3,6 +3,7 @@ package model_setting
 import (
 	"fmt"
 	"regexp"
+	"sort"
 	"strings"
 	"sync"
 
@@ -166,6 +167,45 @@ func GetCustomVoiceConfig() (group string, billingModelId string) {
 	minimaxSettingsMu.RLock()
 	defer minimaxSettingsMu.RUnlock()
 	return minimaxSettings.CustomVoiceGroup, minimaxSettings.CustomVoiceBillingModelId
+}
+
+// CustomVoiceTagsSnapshot 是面向用户侧的 TTS 增强标签只读视图。
+// 只暴露标签源值（redirect map 的 key），不暴露上游真实标签（redirect map 的 value），
+// 避免前端直接展示上游标签后被现有语气词/情绪逻辑误删除。
+type CustomVoiceTagsSnapshot struct {
+	Enabled        bool     `json:"enabled"`
+	EmotionPattern string   `json:"emotion_pattern"`
+	ToneWordPattern string  `json:"tone_word_pattern"`
+	EmotionTags    []string `json:"emotion_tags"`
+	ToneWordTags   []string `json:"tone_word_tags"`
+}
+
+// GetCustomVoiceTagsSnapshot 返回用户侧可见的 TTS 增强标签快照。
+// emotion_tags / tone_word_tags 取各自 redirect map 的 key 并排序，
+// 不返回 value，避免把上游真实标签作为用户应输入的标签暴露。
+func GetCustomVoiceTagsSnapshot() CustomVoiceTagsSnapshot {
+	minimaxSettingsMu.RLock()
+	defer minimaxSettingsMu.RUnlock()
+	return CustomVoiceTagsSnapshot{
+		Enabled:         minimaxSettings.Enabled,
+		EmotionPattern:  minimaxSettings.EmotionPattern,
+		ToneWordPattern: minimaxSettings.ToneWordPattern,
+		EmotionTags:     sortedKeys(minimaxSettings.EmotionRedirect),
+		ToneWordTags:    sortedKeys(minimaxSettings.ToneWordRedirect),
+	}
+}
+
+// sortedKeys 返回 map 的 key 排序后的切片，map 为空时返回 nil（JSON 序列化为 null）。
+func sortedKeys(m map[string]string) []string {
+	if len(m) == 0 {
+		return nil
+	}
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	return keys
 }
 
 func ExtractMiniMaxEmotion(text string, pattern string, redirect map[string]string) (emotion string, cleaned string) {
