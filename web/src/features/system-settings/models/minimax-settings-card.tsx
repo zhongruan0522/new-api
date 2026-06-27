@@ -449,7 +449,7 @@ export function MiniMaxSettingsCard({ defaultValues }: Props) {
                     </FormControl>
                     <FormDescription>
                       {t(
-                        'User group used by the Custom Voice page. It decides which channels are used for upload/preview and the billing group ratio.'
+                        'User group used by the Custom Voice page. It decides which channels are used for upload/preview and the billing group ratio applied to both preview and confirmation billing.'
                       )}
                     </FormDescription>
                     <FormMessage />
@@ -466,11 +466,11 @@ export function MiniMaxSettingsCard({ defaultValues }: Props) {
                       {t('Custom Voice Billing Model ID')}
                     </FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder='voice-clone' />
+                      <Input {...field} placeholder='音色定制' />
                     </FormControl>
                     <FormDescription>
                       {t(
-                        'Model ID charged once when a user confirms voice customization. It must have a configured Model Price or Model Ratio.'
+                        'Model ID charged ONCE when a user confirms voice customization (e.g. 音色定制). It must have a configured Model Price or Model Ratio. This is NOT the preview model: the preview model is chosen by the user on the Custom Voice page and billed per normal TTS usage based on preview text length.'
                       )}
                     </FormDescription>
                     <FormMessage />

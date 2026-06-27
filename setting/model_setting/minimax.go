@@ -333,9 +333,33 @@ func ValidateMiniMaxOptionValue(key, value string) error {
 			return fmt.Errorf("invalid regex %s: %w", key, err)
 		}
 		return nil
+	case "minimax.custom_voice_billing_model_id":
+		// 允许清空，但启用定制音色时不能为空（由 GetCustomVoiceConfigReady 综合判断）。
+		// 这里只做 trim，不做存在性校验：模型价格可能是运行时才配置的。
+		return nil
+	case "minimax.custom_voice_group":
+		return nil
 	default:
 		return nil
 	}
+}
+
+// GetCustomVoiceConfigReady 返回定制音色功能是否“可用”：
+// 开关已开启、扣费模型 ID 非空、分组非空（用于计费分组倍率与渠道路由）。
+// 供前端/管理员判断是否真正可用，避免半配置状态导致用户看到定制页面却无法成功扣费。
+func GetCustomVoiceConfigReady() bool {
+	minimaxSettingsMu.RLock()
+	defer minimaxSettingsMu.RUnlock()
+	if !minimaxSettings.CustomVoiceEnabled {
+		return false
+	}
+	if strings.TrimSpace(minimaxSettings.CustomVoiceBillingModelId) == "" {
+		return false
+	}
+	if strings.TrimSpace(minimaxSettings.CustomVoiceGroup) == "" {
+		return false
+	}
+	return true
 }
 
 // validateStringMap 校验 value 是合法 JSON 且类型为 map[string]string。

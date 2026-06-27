@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/shopspring/decimal"
 	"github.com/zhongruan0522/new-api/common"
 	"github.com/zhongruan0522/new-api/model"
 	"github.com/zhongruan0522/new-api/setting/model_setting"
@@ -191,12 +192,13 @@ func normalizeUpstreamError(status int, rawBody []byte) error {
 	return errors.New(msg)
 }
 
-// chargeModelOnce 按模型 ID 扣费一次（基于 ModelPrice，乘以分组倍率）。
-// 用于：试听阶段按所选 TTS 模型计费、确认定制阶段按配置的扣费模型 ID 计费。
+// chargeModelOnce 按模型 ID 扣费一次（按次计费，ModelPrice 优先，乘以分组倍率）。
+// 仅用于确认定制阶段：按系统设置的“音色定制”计费模型按次扣费。
 //
 // 计费原则（防越权/防漏扣）：
-//   - 必须能解析出有效价格（ModelPrice 优先，否则按 ModelRatio 每千 token 折算 1 单位），
-//     解析失败则失败即中断，绝不“无扣费成功”。
+//   - ModelPrice 优先：按价格 * 分组倍率扣费。
+//   - 否则尝试 ModelRatio：按每千 token 倍率 * 分组倍率折算一次基准 quota。
+//   - 解析失败或价格为 0 则 fail closed，绝不“无扣费成功”。
 //   - 仅扣减用户钱包额度（custom voice 流程无 token 上下文），并记录消费日志。
 //   - userId/tokenName/channelId 仅用于日志展示。
 //
@@ -206,11 +208,13 @@ func chargeModelOnce(c *gin.Context, userId int, channelId int, modelName, group
 	if modelName == "" {
 		return 0, errors.New("计费模型未配置，请联系管理员")
 	}
+	groupRatio := resolveCustomVoiceGroupRatio(group, modelName)
+
 	price, ok := ratio_setting.GetModelPrice(modelName, false)
 	usePrice := ok && price > 0
 	quota := 0
 	if usePrice {
-		quota = int(price * common.QuotaPerUnit)
+		quota = int(price * common.QuotaPerUnit * groupRatio)
 	} else {
 		ratio, ratioOk, _ := ratio_setting.GetModelRatio(modelName)
 		if !ratioOk {
@@ -218,7 +222,7 @@ func chargeModelOnce(c *gin.Context, userId int, channelId int, modelName, group
 			return 0, errors.New("所选计费模型暂不可用，请联系管理员")
 		}
 		// 按 1 千 token 计算一次调用的基准 quota（ratio 为每千 token 倍率）。
-		quota = int(ratio * common.QuotaPerUnit)
+		quota = int(ratio * common.QuotaPerUnit * groupRatio)
 	}
 	if quota <= 0 {
 		// 价格为 0 视为未正确配置，避免免费滥用。
@@ -238,30 +242,156 @@ func chargeModelOnce(c *gin.Context, userId int, channelId int, modelName, group
 		return 0, errors.New("扣费失败，请稍后重试")
 	}
 	model.UpdateUserUsedQuotaAndRequestCount(userId, quota)
+	if channelId > 0 {
+		model.UpdateChannelUsedQuota(channelId, quota)
+	}
 
 	// 记录消费日志（按 token 0 的方式记录一次调用）。
 	tokenName := c.GetString("token_name")
 	model.RecordConsumeLog(c, userId, model.RecordConsumeLogParams{
-		ChannelId:   channelId,
-		PromptTokens: 0,
+		ChannelId:        channelId,
+		PromptTokens:     0,
 		CompletionTokens: 0,
-		ModelName:   modelName,
-		TokenName:   tokenName,
-		Quota:       quota,
-		Content:     "音色定制相关消费",
-		UseTimeMs:   0,
-		IsStream:    false,
-		Group:       group,
+		ModelName:        modelName,
+		TokenName:        tokenName,
+		Quota:            quota,
+		Content:          "音色定制确认消费",
+		UseTimeMs:        0,
+		IsStream:         false,
+		Group:            group,
 	})
 	return quota, nil
+}
+
+// chargePreviewTTS 按正常 TTS 口径对试听文本计费：
+//   - 按 ModelPrice 优先（按次）或 ModelRatio（按字符 usage）结算到所选试听模型；
+//   - 字符 usage 同时映射到输入文本 token 与音频输出 token，与 relay 层 MiniMax TTS 一致，
+//     让 calculateAudioQuota 同时计入文本成本和音频输出成本；
+//   - 真正乘以 custom_voice_group 分组倍率与动态倍率；
+//   - 失败时不落消费日志，由调用方决定是否退款。
+//
+// 用于定制音色试听阶段：试听模型（如 tts-3-turbo）只用于生成 demo_audio，
+// 不应被记录为“音色定制”扣费。
+//
+// 返回扣减的 quota；返回 error 时不会扣减额度，也不会落消费日志。
+func chargePreviewTTS(c *gin.Context, userId, channelId int, modelName, group, previewText string) (int, error) {
+	modelName = strings.TrimSpace(modelName)
+	if modelName == "" {
+		return 0, errors.New("试听模型未配置，请联系管理员")
+	}
+	previewText = strings.TrimSpace(previewText)
+	// 没有试听文本时不产生 TTS usage，不扣费（voice_clone 仍可只克隆不合成 demo）。
+	if previewText == "" {
+		return 0, nil
+	}
+
+	groupRatio := resolveCustomVoiceGroupRatio(group, modelName)
+
+	price, ok := ratio_setting.GetModelPrice(modelName, false)
+	usePrice := ok && price > 0
+
+	// usage_characters：试听合成的字符数，与 MiniMax TTS 计费口径一致。
+	usageCharacters := len([]rune(previewText))
+
+	var quota int
+	if usePrice {
+		quota = int(price * common.QuotaPerUnit * groupRatio)
+	} else {
+		modelRatio, ratioOk, _ := ratio_setting.GetModelRatio(modelName)
+		if !ratioOk {
+			return 0, errors.New("试听计费模型暂不可用，请联系管理员")
+		}
+		audioRatio := ratio_setting.GetAudioRatio(modelName)
+		audioCompletionRatio := ratio_setting.GetAudioCompletionRatio(modelName)
+
+		inputTextTokens := decimal.NewFromInt(int64(usageCharacters))
+		outputAudioTokens := decimal.NewFromInt(int64(usageCharacters))
+
+		ratio := decimal.NewFromFloat(modelRatio * groupRatio)
+		sum := decimal.Zero
+		sum = sum.Add(inputTextTokens)
+		sum = sum.Add(outputAudioTokens.Mul(decimal.NewFromFloat(audioRatio)).Mul(decimal.NewFromFloat(audioCompletionRatio)))
+		quotaVal := sum.Mul(ratio)
+		if !ratio.IsZero() && quotaVal.LessThanOrEqual(decimal.Zero) {
+			quotaVal = decimal.NewFromInt(1)
+		}
+		quota = int(quotaVal.Round(0).IntPart())
+	}
+	if quota <= 0 {
+		return 0, errors.New("试听计费模型价格无效，请联系管理员")
+	}
+
+	remain, err := model.GetUserQuota(userId, true)
+	if err != nil {
+		return 0, errors.New("额度查询失败，请稍后重试")
+	}
+	if remain < quota {
+		return 0, errors.New("额度不足，请充值后再试")
+	}
+
+	if err := model.DecreaseUserQuota(userId, quota); err != nil {
+		return 0, errors.New("扣费失败，请稍后重试")
+	}
+	model.UpdateUserUsedQuotaAndRequestCount(userId, quota)
+	if channelId > 0 {
+		model.UpdateChannelUsedQuota(channelId, quota)
+	}
+
+	tokenName := c.GetString("token_name")
+	logContent := fmt.Sprintf("定制音色试听，字符数 %d，分组倍率 %.4f", usageCharacters, groupRatio)
+	if usePrice {
+		logContent = fmt.Sprintf("定制音色试听，模型价格 %.4f，分组倍率 %.4f", price, groupRatio)
+	}
+	model.RecordConsumeLog(c, userId, model.RecordConsumeLogParams{
+		ChannelId:        channelId,
+		PromptTokens:     usageCharacters,
+		CompletionTokens: usageCharacters,
+		ModelName:        modelName,
+		TokenName:        tokenName,
+		Quota:            quota,
+		Content:          logContent,
+		UseTimeMs:        0,
+		IsStream:         false,
+		Group:            group,
+	})
+	return quota, nil
+}
+
+// resolveCustomVoiceGroupRatio 解析定制音色分组的最终倍率：
+// 分组倍率 * 动态倍率（若配置）。与 relay 层 HandleGroupRatio 的口径保持一致，
+// 但定制音色走 UserAuth（无 token/用户分组上下文），因此只按 custom_voice_group 解析。
+func resolveCustomVoiceGroupRatio(group, modelName string) float64 {
+	groupRatio := ratio_setting.GetGroupRatio(group)
+	if dynamicRatio := model.GetMatchedDynamicRatio(group, modelName); dynamicRatio > 0 {
+		groupRatio *= dynamicRatio
+	}
+	return groupRatio
+}
+
+// refundQuota 退还定制音色流程中已扣减的钱包额度。
+// 仅在试听上游失败时作为尽力而为的补偿，不抛错给用户。
+// 注意：已用额度/渠道统计是批量异步累加的，没有对称的回滚接口；
+// 这里只恢复钱包余额，保证用户不会因上游失败白白损失额度。
+func refundQuota(userId, quota int) {
+	if quota <= 0 {
+		return
+	}
+	if err := model.IncreaseUserQuota(userId, quota, false); err != nil {
+		common.SysError(fmt.Sprintf("custom voice refund increase quota failed: userId=%d quota=%d err=%s", userId, quota, err.Error()))
+	}
 }
 
 // CustomVoicePreview 执行“上传音频 + 生成试听”流程：
 //  1. 校验文件、音色 ID；
 //  2. 查重音色 ID（已存在则返回泛化的“不合规”提示）；
-//  3. 按所选 TTS 模型计费（试听阶段）；
-//  4. 上传文件到上游、调用 voice_clone 获取 demo_audio；
+//  3. 上传文件到上游、调用 voice_clone 获取 demo_audio；
+//  4. 试听成功后，按所选 TTS 模型按正常 TTS 口径计费（仅在有试听文本时）；
 //  5. 写入“试听中”音色记录。
+//
+// 计费时序说明：
+//   - 先调用上游拿到 demo_audio，再按试听文本字符数结算到试听模型；
+//   - 上游失败时不扣费、不落消费日志；
+//   - 试听扣费失败（余额不足等）时，已生成的 demo_audio 不返回，并向用户报错。
 //
 // 该函数不写审计日志（用户创建音色不审计）。
 func CustomVoicePreview(c *gin.Context, userId int, req CustomVoicePreviewRequest, fileHeader *multipart.FileHeader) (*CustomVoicePreviewResult, error) {
@@ -299,18 +429,20 @@ func CustomVoicePreview(c *gin.Context, userId int, req CustomVoicePreviewReques
 		return nil, errors.New("音色ID不合规")
 	}
 
-	// 试听阶段按所选 TTS 模型计费。计费失败即中断，不调用上游。
-	if _, err := chargeModelOnce(c, userId, upstream.channel.Id, req.Model, group); err != nil {
-		return nil, err
-	}
-
 	// 上传文件到上游。
 	fileId, err := uploadFileUpstream(c, upstream, fileHeader)
 	if err != nil {
 		return nil, err
 	}
-	// 调用 voice_clone。
+	// 调用 voice_clone 生成 demo_audio。
 	demoAudio, err := cloneVoiceUpstream(upstream, fileId, req)
+	if err != nil {
+		return nil, err
+	}
+
+	// 试听阶段按所选 TTS 模型按正常 TTS 口径计费（不是“音色定制”按次扣费）。
+	// 没有试听文本时不产生 TTS usage，不扣费。
+	previewQuota, err := chargePreviewTTS(c, userId, upstream.channel.Id, req.Model, group, req.PreviewText)
 	if err != nil {
 		return nil, err
 	}
@@ -326,8 +458,11 @@ func CustomVoicePreview(c *gin.Context, userId int, req CustomVoicePreviewReques
 	if err := model.InsertMiniMaxVoice(voice); err != nil {
 		// 唯一索引冲突也归一为“不合规”，避免暴露重复。
 		if isDuplicateKeyErr(err) {
+			// 记录写入失败时退还试听扣费，避免用户已付费却拿不到试听记录。
+			refundQuota(userId, previewQuota)
 			return nil, errors.New("音色ID不合规")
 		}
+		refundQuota(userId, previewQuota)
 		return nil, errors.New("音色记录保存失败，请稍后重试")
 	}
 
@@ -463,6 +598,8 @@ func buildVoiceClonePayload(fileId string, req CustomVoicePreviewRequest) map[st
 //   - 必须命中本用户的“试听中”记录，防止越权确认他人音色。
 //   - 一个“试听中”音色 ID 只能确认成功一次：通过条件更新（type=preview -> created）实现幂等。
 //   - 扣费失败即中断，记录不会变为已创建。
+//   - 扣费与状态流转使用一次性条件更新，避免旧实现里 DB.Save(voice) 把内存中残留的
+//     preview 状态回写到数据库。
 func CustomVoiceConfirm(c *gin.Context, userId int, voiceId string) (*CustomVoiceConfirmResult, error) {
 	voiceId = strings.TrimSpace(voiceId)
 	if voiceId == "" {
@@ -472,6 +609,9 @@ func CustomVoiceConfirm(c *gin.Context, userId int, voiceId string) (*CustomVoic
 		return nil, errors.New("定制音色功能未开启，请联系管理员")
 	}
 	group, billingModel := getCustomVoiceGroupAndBilling()
+	if billingModel == "" {
+		return nil, errors.New("计费模型未配置，请联系管理员")
+	}
 
 	// 先清理超过 7 天未确认的试听记录：过期试听不能再确认（系统自动清理，不写审计）。
 	if err := cleanupExpiredCustomVoicePreviews(); err != nil {
@@ -496,15 +636,18 @@ func CustomVoiceConfirm(c *gin.Context, userId int, voiceId string) (*CustomVoic
 		return nil, err
 	}
 
-	// 扣费成功后流转状态；记录扣费额度便于审计展示。
-	if err := model.UpdateMiniMaxVoiceType(voice.Id, model.MiniMaxVoiceTypeCreated); err != nil {
+	// 原子地把 preview -> created 并写入扣费额度，杜绝状态回滚风险。
+	ok, err := model.ConfirmMiniMaxVoice(voice.Id, userId, quota)
+	if err != nil {
 		// 状态更新失败：尽力退还额度，避免无音色却扣费。
-		_ = model.IncreaseUserQuota(userId, quota, false)
+		refundQuota(userId, quota)
 		return nil, errors.New("音色激活失败，已退还费用")
 	}
-	// 回写扣费额度（用户流程不写审计，仅落库）。
-	voice.QuotaCost = quota
-	_ = model.UpdateMiniMaxVoice(voice)
+	if !ok {
+		// 并发场景下记录已不再是 preview（被他人确认或清理），退还本次扣费。
+		refundQuota(userId, quota)
+		return nil, errors.New("该音色无需确认或已处理")
+	}
 
 	return &CustomVoiceConfirmResult{
 		VoiceId: voiceId,

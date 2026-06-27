@@ -22,6 +22,7 @@ import { useTranslation } from 'react-i18next'
 import { formatLogQuota } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { useIsAdmin } from '@/hooks/use-admin'
+import { useAuthStore } from '@/stores/auth-store'
 import { Skeleton } from '@/components/ui/skeleton'
 import { getLogStats, getUserLogStats } from '../api'
 import { DEFAULT_LOG_STATS } from '../constants'
@@ -98,11 +99,14 @@ function buildStatsParams(
 export function CommonLogsStats() {
   const { t } = useTranslation()
   const isAdmin = useIsAdmin()
+  // 未登录时不发起 stats 请求，避免 session 失效后仍以 stale 角色打 admin/self 接口。
+  const userId = useAuthStore((state) => state.auth.user?.id)
   const searchParams = route.useSearch()
   const { sensitiveVisible } = useUsageLogsContext()
 
   const { data: stats, isLoading } = useQuery({
     queryKey: ['usage-logs-stats', isAdmin, searchParams],
+    enabled: !!userId,
     queryFn: async () => {
       const params = buildStatsParams(searchParams, isAdmin)
 

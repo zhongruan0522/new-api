@@ -32,7 +32,10 @@ interface UsageLogFieldsVisibleResponse {
 
 async function fetchUsageLogFieldsVisible() {
   const res = await api.get<UsageLogFieldsVisibleResponse>(
-    '/api/user/self/usage_log_fields'
+    '/api/user/self/usage_log_fields',
+    // 辅助字段可见性请求：401 时不触发全局 "Session expired!" toast，
+    // 避免在 session 失效瞬间多个辅助请求各自弹一次。
+    { skipErrorHandler: true } as Record<string, unknown>
   )
   // Fail closed: 后端返回 success=false 时视为不可访问
   if (!res.data.success || !res.data.data) {

@@ -103,6 +103,28 @@ func UpdateMiniMaxVoiceType(id int64, newType string) error {
 		Updates(map[string]interface{}{"type": newType, "updated_at": time.Now().Unix()}).Error
 }
 
+// ConfirmMiniMaxVoice 原子地把“试听中”记录流转为“已创建”并写入扣费额度。
+// 仅当当前 type=preview 且操作人匹配时更新成功，避免并发/越权覆盖。
+// 返回是否更新成功（rowsAffected>0）。
+//
+// 修复要点：旧实现先 UpdateMiniMaxVoiceType 再 UpdateMiniMaxVoice(voice)，
+// 内存里的 voice.Type 仍是 preview，DB.Save 会把 type 覆盖回 preview。
+// 这里改为一次性条件更新 type + quota_cost，杜绝状态回滚风险。
+func ConfirmMiniMaxVoice(id int64, operatorId int, quotaCost int) (bool, error) {
+	updates := map[string]interface{}{
+		"type":       MiniMaxVoiceTypeCreated,
+		"quota_cost": quotaCost,
+		"updated_at": time.Now().Unix(),
+	}
+	tx := DB.Model(&MiniMaxVoice{}).
+		Where("id = ? AND type = ?", id, MiniMaxVoiceTypePreview)
+	if operatorId > 0 {
+		tx = tx.Where("operator_id = ?", operatorId)
+	}
+	res := tx.Updates(updates)
+	return res.RowsAffected > 0, res.Error
+}
+
 // DeleteMiniMaxVoiceById 按主键删除。
 func DeleteMiniMaxVoiceById(id int64) error {
 	return DB.Delete(&MiniMaxVoice{}, "id = ?", id).Error

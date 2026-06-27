@@ -114,3 +114,16 @@ func TestBuildVoiceClonePayload_ModelRedirect(t *testing.T) {
 		}
 	})
 }
+
+// TestResolveCustomVoiceGroupRatio 验证分组倍率解析包含动态倍率叠加，
+// 且未配置动态倍率时返回纯分组倍率。
+func TestResolveCustomVoiceGroupRatio(t *testing.T) {
+	// "default" 分组默认倍率为 1.0。
+	if r := resolveCustomVoiceGroupRatio("default", "tts-3-turbo"); r != 1.0 {
+		t.Errorf("default group ratio = %v, want 1.0", r)
+	}
+	// 未配置分组时也返回默认 1.0（GetGroupRatio 找不到时回退 1）。
+	if r := resolveCustomVoiceGroupRatio("nonexistent-group", "tts-3-turbo"); r != 1.0 {
+		t.Errorf("nonexistent group ratio = %v, want 1.0", r)
+	}
+}

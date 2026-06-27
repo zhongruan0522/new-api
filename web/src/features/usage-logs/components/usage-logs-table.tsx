@@ -33,6 +33,7 @@ import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { useIsAdmin } from '@/hooks/use-admin'
+import { useAuthStore } from '@/stores/auth-store'
 import { useTableUrlState } from '@/hooks/use-table-url-state'
 import { TableCell, TableRow } from '@/components/ui/table'
 import { DataTablePage } from '@/components/data-table'
@@ -66,6 +67,9 @@ interface UsageLogsTableProps {
 export function UsageLogsTable({ logCategory }: UsageLogsTableProps) {
   const { t } = useTranslation()
   const isAdmin = useIsAdmin()
+  // 只有在已登录（存在 user）时才允许发起日志查询，避免 session 失效后仍以
+  // stale 角色打 admin/self 接口触发 401。
+  const userId = useAuthStore((state) => state.auth.user?.id)
   const isMobile = useMediaQuery('(max-width: 640px)')
   const searchParams = route.useSearch()
 
@@ -118,6 +122,8 @@ export function UsageLogsTable({ logCategory }: UsageLogsTableProps) {
       searchParams,
       t,
     ],
+    // 未登录（session 已失效被 reset）时不发起请求，避免以 stale 角色打 admin/self 接口。
+    enabled: !!userId,
     queryFn: async () => {
       const result = await fetchLogsByCategory({
         logCategory,

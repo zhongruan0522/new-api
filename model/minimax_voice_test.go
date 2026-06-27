@@ -128,3 +128,68 @@ func TestDeleteExpiredMiniMaxVoicePreviews_NoopOnNilDB(t *testing.T) {
 		t.Fatalf("affected = %d, want 0 on nil DB", affected)
 	}
 }
+
+// TestConfirmMiniMaxVoice_AtomicTransitionAndQuotaCost 验证确认定制时：
+//  1. preview -> created 流转成功；
+//  2. quota_cost 被写入；
+//  3. 再次确认返回 false（幂等，防止重复扣费）。
+//
+// 这是回归保护：旧实现先 UpdateMiniMaxVoiceType 再 UpdateMiniMaxVoice(voice)，
+// 内存里的 voice.Type 仍是 preview，DB.Save 会把 type 覆盖回 preview。
+func TestConfirmMiniMaxVoice_AtomicTransitionAndQuotaCost(t *testing.T) {
+	setupMiniMaxVoiceTestDB(t)
+
+	voice := createMiniMaxVoice(t, "confirm-target-1", MiniMaxVoiceTypePreview, time.Now().Unix())
+
+	ok, err := ConfirmMiniMaxVoice(voice.Id, voice.OperatorId, 220)
+	if err != nil {
+		t.Fatalf("ConfirmMiniMaxVoice error: %v", err)
+	}
+	if !ok {
+		t.Fatalf("ConfirmMiniMaxVoice should return true for a preview record")
+	}
+
+	var got MiniMaxVoice
+	if err := DB.Where("voice_id = ?", voice.VoiceId).First(&got).Error; err != nil {
+		t.Fatalf("query voice after confirm: %v", err)
+	}
+	if got.Type != MiniMaxVoiceTypeCreated {
+		t.Fatalf("type = %s, want %s (must not revert to preview)", got.Type, MiniMaxVoiceTypeCreated)
+	}
+	if got.QuotaCost != 220 {
+		t.Fatalf("quota_cost = %d, want 220", got.QuotaCost)
+	}
+
+	// 再次确认同一记录应返回 false（已不是 preview），避免重复扣费。
+	ok2, err := ConfirmMiniMaxVoice(voice.Id, voice.OperatorId, 220)
+	if err != nil {
+		t.Fatalf("second ConfirmMiniMaxVoice error: %v", err)
+	}
+	if ok2 {
+		t.Fatalf("second ConfirmMiniMaxVoice should return false for an already-created record")
+	}
+}
+
+// TestConfirmMiniMaxVoice_OperatorMismatch 验证操作人不匹配时不流转状态（防越权）。
+func TestConfirmMiniMaxVoice_OperatorMismatch(t *testing.T) {
+	setupMiniMaxVoiceTestDB(t)
+
+	voice := createMiniMaxVoice(t, "confirm-target-2", MiniMaxVoiceTypePreview, time.Now().Unix())
+
+	// 用不同的 operatorId 确认，应返回 false 且不改变状态。
+	ok, err := ConfirmMiniMaxVoice(voice.Id, voice.OperatorId+999, 100)
+	if err != nil {
+		t.Fatalf("ConfirmMiniMaxVoice error: %v", err)
+	}
+	if ok {
+		t.Fatalf("ConfirmMiniMaxVoice should return false when operator mismatch")
+	}
+
+	var got MiniMaxVoice
+	if err := DB.Where("voice_id = ?", voice.VoiceId).First(&got).Error; err != nil {
+		t.Fatalf("query voice: %v", err)
+	}
+	if got.Type != MiniMaxVoiceTypePreview {
+		t.Fatalf("type should remain preview on operator mismatch, got %s", got.Type)
+	}
+}
