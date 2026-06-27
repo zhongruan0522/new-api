@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -19,20 +20,25 @@ import (
 	"github.com/zhongruan0522/new-api/model"
 	"github.com/zhongruan0522/new-api/setting/model_setting"
 	"github.com/zhongruan0522/new-api/setting/ratio_setting"
+	"github.com/zhongruan0522/new-api/setting/system_setting"
 )
 
 // 定制音色流程的常量与校验规则。
 const (
-	customVoiceMaxFileSize    = 20 << 20 // 20MB，与旧版一致
-	customVoicePreviewTextMax = 2000
-	customVoicePreviewTimeout = 90 * time.Second
+	customVoiceMaxFileSize       = 20 << 20 // 20MB，与旧版一致
+	customVoicePreviewTextMax    = 2000
+	customVoicePreviewTimeout    = 90 * time.Second
+	customVoiceDemoAudioTTL      = 30 * time.Minute
+	customVoiceDemoAudioMaxBytes = 32 << 20
 	// customVoicePreviewTTL 试听记录保留时长：超过该时长未确认的“试听中”记录将被自动清理。
 	// 业务规则：7 天内未确认的试听视为放弃，直接删除记录（不写审计日志）。
 	customVoicePreviewTTL = 7 * 24 * time.Hour
 )
 
 var (
-	customVoiceIDPattern = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9_-]*[^-_]$`)
+	customVoiceIDPattern            = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9_-]*[^-_]$`)
+	ErrCustomVoiceDemoAudioExpired  = errors.New("试听音频已过缓存期限")
+	ErrCustomVoiceDemoAudioNotFound = errors.New("试听音频不存在")
 
 	// 允许上传的音频扩展名。旧版仅做前端 accept 限制，这里服务端强制校验。
 	customVoiceAllowedExts = map[string]struct{}{
@@ -40,7 +46,22 @@ var (
 		".m4a": {},
 		".wav": {},
 	}
+
+	customVoiceDemoAudioCache = struct {
+		sync.RWMutex
+		items map[customVoiceDemoAudioCacheKey]customVoiceDemoAudioCacheEntry
+	}{items: make(map[customVoiceDemoAudioCacheKey]customVoiceDemoAudioCacheEntry)}
 )
+
+type customVoiceDemoAudioCacheKey struct {
+	userId   int
+	recordId int64
+}
+
+type customVoiceDemoAudioCacheEntry struct {
+	url       string
+	expiresAt time.Time
+}
 
 // CustomVoicePreviewRequest 试听（上传并克隆）请求参数。
 type CustomVoicePreviewRequest struct {
@@ -54,7 +75,7 @@ type CustomVoicePreviewRequest struct {
 // CustomVoicePreviewResult 试听返回结果。
 type CustomVoicePreviewResult struct {
 	VoiceId   string `json:"voice_id"`
-	DemoAudio string `json:"demo_audio"` // 试听音频 URL（上游返回）
+	DemoAudio string `json:"demo_audio"` // 项目内试听音频代理 URL
 	FileId    string `json:"file_id"`    // 上游文件 ID（便于调试，不回传敏感信息）
 	RecordId  int64  `json:"record_id"`  // 写入的试听中记录 ID
 }
@@ -63,6 +84,12 @@ type CustomVoicePreviewResult struct {
 type CustomVoiceConfirmResult struct {
 	VoiceId string `json:"voice_id"`
 	Status  string `json:"status"`
+}
+
+// CustomVoicePreviewAudio 是项目内试听音频代理返回给 controller 的安全音频内容。
+type CustomVoicePreviewAudio struct {
+	ContentType string
+	Data        []byte
 }
 
 // customVoiceFileID preserves the upstream JSON type while exposing a safe
@@ -111,6 +138,71 @@ func (id customVoiceFileID) upstreamValue() interface{} {
 		return id.Raw
 	}
 	return id.Display
+}
+
+func registerCustomVoiceDemoAudio(userId int, recordId int64, demoAudioURL string) string {
+	demoAudioURL = strings.TrimSpace(demoAudioURL)
+	if userId <= 0 || recordId <= 0 || demoAudioURL == "" {
+		return ""
+	}
+
+	now := time.Now()
+	customVoiceDemoAudioCache.Lock()
+	defer customVoiceDemoAudioCache.Unlock()
+	pruneExpiredCustomVoiceDemoAudioLocked(now)
+	customVoiceDemoAudioCache.items[customVoiceDemoAudioCacheKey{userId: userId, recordId: recordId}] = customVoiceDemoAudioCacheEntry{
+		url:       demoAudioURL,
+		expiresAt: now.Add(customVoiceDemoAudioTTL),
+	}
+	return fmt.Sprintf("/api/custom_voice/preview/%d/audio", recordId)
+}
+
+func pruneExpiredCustomVoiceDemoAudioLocked(now time.Time) {
+	for key, entry := range customVoiceDemoAudioCache.items {
+		if !entry.expiresAt.IsZero() && now.After(entry.expiresAt) {
+			delete(customVoiceDemoAudioCache.items, key)
+		}
+	}
+}
+
+func getCustomVoiceDemoAudioURL(userId int, recordId int64) (string, error) {
+	key := customVoiceDemoAudioCacheKey{userId: userId, recordId: recordId}
+	now := time.Now()
+
+	customVoiceDemoAudioCache.RLock()
+	entry, ok := customVoiceDemoAudioCache.items[key]
+	customVoiceDemoAudioCache.RUnlock()
+	if !ok {
+		return "", ErrCustomVoiceDemoAudioExpired
+	}
+	if !entry.expiresAt.IsZero() && now.After(entry.expiresAt) {
+		customVoiceDemoAudioCache.Lock()
+		if current, exists := customVoiceDemoAudioCache.items[key]; exists && current.expiresAt.Equal(entry.expiresAt) {
+			delete(customVoiceDemoAudioCache.items, key)
+		}
+		customVoiceDemoAudioCache.Unlock()
+		return "", ErrCustomVoiceDemoAudioExpired
+	}
+	if strings.TrimSpace(entry.url) == "" {
+		return "", ErrCustomVoiceDemoAudioExpired
+	}
+	return entry.url, nil
+}
+
+func isAllowedCustomVoiceAudioContentType(contentType string) bool {
+	contentType = strings.ToLower(strings.TrimSpace(strings.Split(contentType, ";")[0]))
+	return strings.HasPrefix(contentType, "audio/") || contentType == "application/octet-stream"
+}
+
+func fetchCustomVoiceDemoAudio(originURL string) (*http.Response, error) {
+	fetchSetting := system_setting.GetFetchSetting()
+	if err := common.ValidateURLWithFetchSetting(originURL, fetchSetting.EnableSSRFProtection, fetchSetting.AllowPrivateIp, fetchSetting.DomainFilterMode, fetchSetting.IpFilterMode, fetchSetting.DomainList, fetchSetting.IpList, fetchSetting.AllowedPorts, fetchSetting.ApplyIPFilterForDomain); err != nil {
+		return nil, err
+	}
+	if system_setting.EnableWorker() {
+		return DoWorkerRequest(&WorkerRequest{URL: originURL, Key: system_setting.WorkerValidKey})
+	}
+	return GetHttpClient().Get(originURL)
 }
 
 func resolveCustomVoiceCloneModel(modelName string) string {
@@ -533,9 +625,11 @@ func CustomVoicePreview(c *gin.Context, userId int, req CustomVoicePreviewReques
 		return nil, errors.New("音色记录保存失败，请稍后重试")
 	}
 
+	proxyDemoAudio := registerCustomVoiceDemoAudio(userId, voice.Id, demoAudio)
+
 	return &CustomVoicePreviewResult{
 		VoiceId:   req.VoiceId,
-		DemoAudio: demoAudio,
+		DemoAudio: proxyDemoAudio,
 		FileId:    fileId.String(),
 		RecordId:  voice.Id,
 	}, nil
@@ -622,6 +716,51 @@ func cloneVoiceUpstream(up *minimaxUpstream, fileId customVoiceFileID, req Custo
 		return "", normalizeUpstreamError(status, respBody)
 	}
 	return resp.DemoAudio, nil
+}
+
+// GetCustomVoicePreviewAudio 拉取并校验当前用户的试听音频代理内容。
+func GetCustomVoicePreviewAudio(userId int, recordId int64) (*CustomVoicePreviewAudio, error) {
+	if userId <= 0 || recordId <= 0 {
+		return nil, ErrCustomVoiceDemoAudioNotFound
+	}
+	voice, err := model.GetMiniMaxVoiceById(recordId)
+	if err != nil || voice == nil || voice.Type != model.MiniMaxVoiceTypePreview || voice.OperatorKind != "user" || voice.OperatorId != userId {
+		return nil, ErrCustomVoiceDemoAudioNotFound
+	}
+
+	demoAudioURL, err := getCustomVoiceDemoAudioURL(userId, recordId)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := fetchCustomVoiceDemoAudio(demoAudioURL)
+	if err != nil {
+		return nil, errors.New("试听音频拉取失败")
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, errors.New("试听音频拉取失败")
+	}
+	contentType := strings.TrimSpace(resp.Header.Get("Content-Type"))
+	if contentType == "" {
+		contentType = "audio/mpeg"
+	}
+	if !isAllowedCustomVoiceAudioContentType(contentType) {
+		return nil, errors.New("试听音频类型异常")
+	}
+	if resp.ContentLength > customVoiceDemoAudioMaxBytes {
+		return nil, errors.New("试听音频过大")
+	}
+
+	data, err := io.ReadAll(io.LimitReader(resp.Body, customVoiceDemoAudioMaxBytes+1))
+	if err != nil {
+		return nil, errors.New("读取试听音频失败")
+	}
+	if int64(len(data)) > customVoiceDemoAudioMaxBytes {
+		return nil, errors.New("试听音频过大")
+	}
+	return &CustomVoicePreviewAudio{ContentType: contentType, Data: data}, nil
 }
 
 // buildVoiceClonePayload 构造发给 MiniMax voice_clone 接口的 payload。
