@@ -283,6 +283,10 @@ func migrateDB() error {
 	// 详见 cleanupPrefillGroupLegacyIndex 和 CleanupLegacyUniqueConstraints 的注释。
 	cleanupLegacyUniqueIndexes()
 
+	// PostgreSQL：把旧库中可能漂移成 json/jsonb 的渠道 JSON-like 列改回 TEXT，
+	// 避免写入空字符串/非 JSON 内容时触发 SQLSTATE 22P02。必须在 AutoMigrate 之前执行。
+	cleanupLegacyChannelJSONColumns()
+
 	err := DB.AutoMigrate(
 		&Channel{},
 		&Ticket{},
@@ -331,6 +335,10 @@ func migrateDB() error {
 func migrateDBFast() error {
 	// 同 migrateDB 中的说明
 	cleanupLegacyUniqueIndexes()
+
+	// PostgreSQL：把旧库中可能漂移成 json/jsonb 的渠道 JSON-like 列改回 TEXT，
+	// 避免写入空字符串/非 JSON 内容时触发 SQLSTATE 22P02。必须在 AutoMigrate 之前执行。
+	cleanupLegacyChannelJSONColumns()
 
 	var wg sync.WaitGroup
 
@@ -432,6 +440,70 @@ func cleanupLegacyUniqueIndexes() {
 	CleanupLegacyUniqueConstraints(DB, "models", "model_name", []string{"uni_models_model_name", "idx_models_model_name"})
 	// Vendor: 旧版 gorm:"uniqueIndex" → 新版 gorm:"uniqueIndex:uk_vendor_name_delete_at,priority:1"
 	CleanupLegacyUniqueConstraints(DB, "vendors", "name", []string{"uni_vendors_name", "idx_vendors_name"})
+}
+
+// cleanupLegacyChannelJSONColumns 把 PostgreSQL 旧库中可能漂移成 json/jsonb 的渠道
+// JSON-like 列改回 TEXT。当前模型意图是把这些字段当作 JSON 文本存储（TEXT），
+// 这样写入空字符串或非 JSON 内容不会被 PostgreSQL 校验拒绝。
+//
+// 仅影响 PostgreSQL；对 MySQL/SQLite 无操作。必须在 AutoMigrate(&Channel{}) 之前执行，
+// 以免 AutoMigrate 检测到类型不一致时再触发列类型变更或报错。
+//
+// 幂等：只对实际类型为 json/jsonb 的列执行 ALTER，列已是 text 时跳过。
+func cleanupLegacyChannelJSONColumns() {
+	if !common.UsingPostgreSQL {
+		return
+	}
+	// 当前模型中这些字段都是 TEXT 存储意图（gorm:"type:text" 或无 JSON 类型）
+	columns := []string{"other", "setting", "param_override", "header_override", "settings"}
+	for _, col := range columns {
+		alterChannelColumnToTextIfJSON(DB, "channels", col)
+	}
+}
+
+// alterChannelColumnToTextIfJSON 检查指定列的数据类型，若为 json/jsonb 则转为 text。
+// 仅 PostgreSQL 调用。使用 information_schema 探测类型，避免硬编码 schema。
+func alterChannelColumnToTextIfJSON(db *gorm.DB, tableName string, columnName string) {
+	var dataType string
+	err := db.Raw(
+		`SELECT data_type FROM information_schema.columns WHERE table_name = ? AND column_name = ? LIMIT 1`,
+		tableName, columnName,
+	).Row().Scan(&dataType)
+	if err != nil {
+		// 表或列可能尚不存在（首次初始化），直接跳过，交给 AutoMigrate 创建。
+		return
+	}
+	// data_type 为 'json' 或 'USER-DEFINED'（jsonb 在 information_schema 中显示为 USER-DEFINED，
+	// 需进一步用 pg_attribute/format_type 精确判断）。这里同时处理两种情况。
+	needsMigrate := false
+	switch strings.ToLower(dataType) {
+	case "json":
+		needsMigrate = true
+	case "user-defined":
+		// 进一步用 pg_catalog.format_type 判断 jsonb
+		var udtName string
+		err = db.Raw(
+			`SELECT format_type(a.atttypid, a.atttypmod) FROM pg_attribute a
+			 JOIN pg_class c ON a.attrelid = c.oid
+			 JOIN pg_namespace n ON c.relnamespace = n.oid
+			 WHERE c.relname = ? AND a.attname = ? AND a.attnum > 0`,
+			tableName, columnName,
+		).Row().Scan(&udtName)
+		if err == nil && (strings.Contains(strings.ToLower(udtName), "json")) {
+			needsMigrate = true
+		}
+	}
+	if !needsMigrate {
+		return
+	}
+	// USING 子句把现有 JSON 值转换为 text；NULL 保持 NULL。
+	// 表名/列名来自常量，不拼接外部输入，避免 SQL 注入。
+	stmt := fmt.Sprintf(`ALTER TABLE %s ALTER COLUMN %s TYPE text USING %s::text`, tableName, columnName, columnName)
+	if err := db.Exec(stmt).Error; err != nil {
+		common.SysError(fmt.Sprintf("failed to migrate channel column %s.%s from JSON to TEXT: %v", tableName, columnName, err))
+	} else {
+		common.SysLog(fmt.Sprintf("migrated channel column %s.%s from JSON to TEXT", tableName, columnName))
+	}
 }
 
 // CleanupLegacyUniqueConstraints 动态查询并删除指定表/列的所有 UNIQUE 约束和已知旧索引。

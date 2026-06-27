@@ -155,7 +155,6 @@ import {
   collectNewDisallowedStatusCodeRedirects,
 } from '../../lib/status-code-risk-guard'
 import type { Channel } from '../../types'
-import { useChannels } from '../channels-provider'
 import { FetchModelsDialog } from '../dialogs/fetch-models-dialog'
 import {
   MissingModelsConfirmationDialog,
@@ -280,7 +279,6 @@ export function ChannelMutateDrawer({
 }: ChannelMutateDrawerProps) {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
-  const { setOpen } = useChannels()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [customModel, setCustomModel] = useState('')
   const [fetchModelsDialogOpen, setFetchModelsDialogOpen] = useState(false)
@@ -775,8 +773,7 @@ export function ChannelMutateDrawer({
   const handleSuccess = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: channelsQueryKeys.lists() })
     onOpenChange(false)
-    setOpen(null)
-  }, [queryClient, onOpenChange, setOpen])
+  }, [queryClient, onOpenChange])
 
   // Show missing models confirmation dialog
   const confirmMissingModelMappings = useCallback(

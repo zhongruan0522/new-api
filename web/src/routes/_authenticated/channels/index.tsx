@@ -22,13 +22,21 @@ import { useAuthStore } from '@/stores/auth-store'
 import { ROLE } from '@/lib/roles'
 import { Channels } from '@/features/channels'
 
+// URL search params 经 preload/navigation 传入时可能是字符串、单值或数组，
+// 使用 coerce/preprocess 做宽容归一化，避免校验抛错引发 TanStack Router 内部异常。
+const stringArraySearchParam = z.preprocess((value) => {
+  if (Array.isArray(value)) return value
+  if (typeof value === 'string' && value !== '') return [value]
+  return []
+}, z.array(z.string()))
+
 const channelsSearchSchema = z.object({
-  page: z.number().optional().catch(1),
-  pageSize: z.number().optional().catch(undefined),
+  page: z.coerce.number().int().positive().optional().catch(1),
+  pageSize: z.coerce.number().int().positive().optional().catch(undefined),
   filter: z.string().optional().catch(''),
-  status: z.array(z.string()).optional().catch([]),
-  type: z.array(z.string()).optional().catch([]),
-  group: z.array(z.string()).optional().catch([]),
+  status: stringArraySearchParam.optional().catch([]),
+  type: stringArraySearchParam.optional().catch([]),
+  group: stringArraySearchParam.optional().catch([]),
   model: z.string().optional().catch(''),
 })
 
