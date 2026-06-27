@@ -24,6 +24,9 @@ const (
 	customVoiceMaxFileSize    = 20 << 20 // 20MB，与旧版一致
 	customVoicePreviewTextMax = 2000
 	customVoicePreviewTimeout = 90 * time.Second
+	// customVoicePreviewTTL 试听记录保留时长：超过该时长未确认的“试听中”记录将被自动清理。
+	// 业务规则：7 天内未确认的试听视为放弃，直接删除记录（不写审计日志）。
+	customVoicePreviewTTL = 7 * 24 * time.Hour
 )
 
 var (
@@ -282,6 +285,11 @@ func CustomVoicePreview(c *gin.Context, userId int, req CustomVoicePreviewReques
 		return nil, err
 	}
 
+	// 先清理超过 7 天未确认的试听记录，确保过期音色 ID 可被重新使用（系统自动清理，不写审计）。
+	if err := cleanupExpiredCustomVoicePreviews(); err != nil {
+		return nil, err
+	}
+
 	// 查重：已存在则提示不合规（不暴露“重复”）。
 	exists, err := model.IsMiniMaxVoiceIdExists(req.VoiceId)
 	if err != nil {
@@ -440,6 +448,11 @@ func CustomVoiceConfirm(c *gin.Context, userId int, voiceId string) (*CustomVoic
 	}
 	group, billingModel := getCustomVoiceGroupAndBilling()
 
+	// 先清理超过 7 天未确认的试听记录：过期试听不能再确认（系统自动清理，不写审计）。
+	if err := cleanupExpiredCustomVoicePreviews(); err != nil {
+		return nil, err
+	}
+
 	// 必须命中本用户的试听中记录，防止越权。
 	voice, err := model.GetMiniMaxVoiceByVoiceId(voiceId)
 	if err != nil || voice == nil {
@@ -478,6 +491,18 @@ func CustomVoiceConfirm(c *gin.Context, userId int, voiceId string) (*CustomVoic
 // 分组允许为空（按默认分组路由），但开关必须打开。
 func isCustomVoiceConfigReady() bool {
 	return model_setting.IsCustomVoiceEnabled()
+}
+
+// cleanupExpiredCustomVoicePreviews 清理超过试听保留时长的“试听中”记录。
+// 业务规则：试听阶段超过 customVoicePreviewTTL 仍未确认的记录视为放弃，直接删除。
+// 该清理是系统自动行为，不走 controller 删除路径，因此不写审计日志。
+// 清理失败时显式返回错误，避免后续查重/确认逻辑基于脏数据做出错误决策。
+func cleanupExpiredCustomVoicePreviews() error {
+	cutoff := time.Now().Add(-customVoicePreviewTTL).Unix()
+	if _, err := model.DeleteExpiredMiniMaxVoicePreviews(cutoff); err != nil {
+		return errors.New("音色校验失败，请稍后重试")
+	}
+	return nil
 }
 
 // getCustomVoiceGroupAndBilling 返回定制音色分组与扣费模型 ID。

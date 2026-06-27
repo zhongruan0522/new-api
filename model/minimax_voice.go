@@ -108,6 +108,25 @@ func DeleteMiniMaxVoiceById(id int64) error {
 	return DB.Delete(&MiniMaxVoice{}, "id = ?", id).Error
 }
 
+// DeleteExpiredMiniMaxVoicePreviews 删除“试听中”且创建时间早于 cutoff 的记录。
+//
+// 用途：定制音色流程中清理长期未确认的试听记录（默认 7 天）。
+// 该删除属于系统自动清理，不经过 controller 的删除路径，因此不写审计日志。
+// 返回受影响的行数。
+//
+// 使用 GORM 条件删除以保持 SQLite/MySQL/PostgreSQL 兼容；DB 未初始化时安全跳过。
+func DeleteExpiredMiniMaxVoicePreviews(cutoff int64) (int64, error) {
+	if DB == nil {
+		return 0, nil
+	}
+	if cutoff <= 0 {
+		return 0, nil
+	}
+	res := DB.Where("type = ? AND created_at < ?", MiniMaxVoiceTypePreview, cutoff).
+		Delete(&MiniMaxVoice{})
+	return res.RowsAffected, res.Error
+}
+
 // MiniMaxVoiceListParams 音色管理列表查询参数。
 type MiniMaxVoiceListParams struct {
 	Type       string // 可选：preview/created
