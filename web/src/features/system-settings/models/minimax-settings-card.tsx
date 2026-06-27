@@ -292,14 +292,14 @@ export function MiniMaxSettingsCard({ defaultValues }: Props) {
                 <FormControl>
                   <Input
                     {...field}
-                    placeholder={`<tts\\s+emotion="([^"]+)">([\\s\\S]*?)</tts>`}
+                    placeholder={`<tts(?:\\s+emotion="([^"]+)")?>([\\s\\S]*?)</tts>`}
                   />
                 </FormControl>
                 <FormDescription>
                   {t(
-                    'Regex to extract MiniMax voice_setting.emotion from text. Only English punctuation (< > " and parentheses) is matched. The first match wins; when a 2nd capture group exists its text is kept. Default'
+                    'Regex to extract MiniMax voice_setting.emotion from text and strip the surrounding <tts> tags. The emotion attribute is optional: when present its value is captured as emotion; when absent (plain <tts>...</tts>) the tags are still removed and the inner text is kept. Only English punctuation (< > " and parentheses) is matched. The first match wins; when a 2nd capture group exists its text is kept. Default'
                   )}{' '}
-                  {`<tts\\s+emotion="happy">text</tts> -> emotion="happy", text kept`}
+                  {`<tts\\s+emotion="happy">text</tts> -> emotion="happy", text kept; <tts>text</tts> -> tags stripped, text kept`}
                 </FormDescription>
                 <FormMessage />
               </FormItem>
@@ -403,20 +403,9 @@ export function MiniMaxSettingsCard({ defaultValues }: Props) {
               </FormItem>
             )}
           />
-        </SettingsForm>
-      </Form>
 
-      <div className='mt-8'>
-        <SettingsSection title={t('Custom Voice')}>
-          <Form {...form}>
-            <SettingsForm
-              className='lg:grid-cols-1'
-              onSubmit={form.handleSubmit(onSubmit)}
-            >
-              <SettingsPageFormActions
-                onSave={form.handleSubmit(onSubmit)}
-                isSaving={updateOption.isPending}
-              />
+          <div className='mt-8'>
+            <SettingsSection title={t('Custom Voice')}>
               <DisabledSettingsNotice
                 enabled={form.watch('minimax.custom_voice_enabled')}
               />
@@ -511,10 +500,10 @@ export function MiniMaxSettingsCard({ defaultValues }: Props) {
                   </SettingsSwitchItem>
                 )}
               />
-            </SettingsForm>
-          </Form>
-        </SettingsSection>
-      </div>
+            </SettingsSection>
+          </div>
+        </SettingsForm>
+      </Form>
     </SettingsSection>
   )
 }

@@ -199,6 +199,75 @@ func TestExtractMiniMaxEmotion_TTSEmotionUnmappedIgnored(t *testing.T) {
 	}
 }
 
+// ---------- 新默认正则（emotion 属性可选）：<tts> 纯标签也要剥离 ----------
+
+// 新默认正则让 emotion 属性可选：带属性时提取 emotion 值并保留内部文本，
+// 不带属性（纯 <tts>...</tts>）时也剥离外层标签只保留内部文本，
+// 避免“对外的 <tts> 标签”原样透传给上游。
+const optionalEmotionPattern = `<tts(?:\s+emotion="([^"]+)")?>([\s\S]*?)</tts>`
+
+func TestExtractMiniMaxEmotion_PlainTtsTagStripped(t *testing.T) {
+	// 纯 <tts>标签，无 emotion 属性：emotion 为空，外层标签被剥离，内部文本保留
+	emotion, cleaned := ExtractMiniMaxEmotion(
+		`<tts>在线上真实用户流量中，速度提升了 60%。</tts>`,
+		optionalEmotionPattern,
+		map[string]string{},
+	)
+	if emotion != "" {
+		t.Errorf("emotion = %q, want empty (no emotion attribute)", emotion)
+	}
+	if cleaned != "在线上真实用户流量中，速度提升了 60%。" {
+		t.Errorf("cleaned = %q, want inner text with tags stripped", cleaned)
+	}
+}
+
+func TestExtractMiniMaxEmotion_OptionalEmotionStillExtracted(t *testing.T) {
+	// 带 emotion 属性时仍正常提取并剥离标签，行为与旧默认正则一致
+	emotion, cleaned := ExtractMiniMaxEmotion(
+		`<tts emotion="happy">你好</tts>`,
+		optionalEmotionPattern,
+		map[string]string{},
+	)
+	if emotion != "happy" {
+		t.Errorf("emotion = %q, want happy", emotion)
+	}
+	if cleaned != "你好" {
+		t.Errorf("cleaned = %q, want 你好", cleaned)
+	}
+}
+
+func TestExtractMiniMaxEmotion_MixedPlainAndEmotionTags(t *testing.T) {
+	// 混合：第一个是带 emotion 的标签，第二个是纯标签
+	// emotion 取第一个匹配的值，所有 <tts> 标签都被剥离
+	emotion, cleaned := ExtractMiniMaxEmotion(
+		`<tts emotion="happy">开心</tts>中间<tts>普通</tts>`,
+		optionalEmotionPattern,
+		map[string]string{},
+	)
+	if emotion != "happy" {
+		t.Errorf("emotion = %q, want happy (first match)", emotion)
+	}
+	if cleaned != "开心中间普通" {
+		t.Errorf("cleaned = %q, want 开心中间普通", cleaned)
+	}
+}
+
+func TestExtractMiniMaxEmotion_PlainTagWithParenToneWord(t *testing.T) {
+	// 用户真实场景变体：<tts>纯标签包裹含语气词的文本；emotion 为空，
+	// 标签剥离后由后续 ReplaceMiniMaxToneWords 处理 (laugh)
+	emotion, cleaned := ExtractMiniMaxEmotion(
+		`<tts>文本(laugh)</tts>`,
+		optionalEmotionPattern,
+		map[string]string{},
+	)
+	if emotion != "" {
+		t.Errorf("emotion = %q, want empty", emotion)
+	}
+	if cleaned != "文本(laugh)" {
+		t.Errorf("cleaned = %q, want 文本(laugh)", cleaned)
+	}
+}
+
 // ---------- ReplaceMiniMaxToneWords：替换值直传删除 ----------
 
 func TestReplaceMiniMaxToneWords_SourceKeyStillReplaced(t *testing.T) {
@@ -248,5 +317,50 @@ func TestApplyMiniMaxTTSPolicy_TTSEmotionPlusParenTag(t *testing.T) {
 	// voice 字段不再由设置层重定向，应原样返回
 	if res.Voice != "alloy" {
 		t.Errorf("Voice = %q, want alloy (no settings-level redirect)", res.Voice)
+	}
+}
+
+// 新默认正则（emotion 属性可选）端到端：用户真实场景。
+// <tts emotion="xxxx">长文本</tts> -> emotion 取 xxxx，标签剥离后只保留内部长文本。
+func TestApplyMiniMaxTTSPolicy_OptionalEmotionDefaultPattern(t *testing.T) {
+	prev := *GetMiniMaxSettings()
+	defer func() { *GetMiniMaxSettings() = prev }()
+	*GetMiniMaxSettings() = MiniMaxSettings{
+		Enabled:         true,
+		EmotionPattern:  defaultMiniMaxSettings.EmotionPattern, // 新默认正则
+		EmotionRedirect: map[string]string{},                  // 空 map：emotion 直传 xxxx
+		ToneWordPattern: defaultMiniMaxSettings.ToneWordPattern,
+		ToneWordRedirect: map[string]string{},
+	}
+	input := `<tts emotion="xxxx">在线上真实用户流量中，速度提升了 60% 至 85%。</tts>`
+	wantText := "在线上真实用户流量中，速度提升了 60% 至 85%。"
+	res := ApplyMiniMaxTTSPolicy("speech-02-hd", "alloy", input, "mp3")
+	if res.Emotion != "xxxx" {
+		t.Errorf("Emotion = %q, want xxxx", res.Emotion)
+	}
+	if res.Text != wantText {
+		t.Errorf("Text = %q, want %q", res.Text, wantText)
+	}
+}
+
+// 新默认正则：纯 <tts>无 emotion 标签也被剥离，不会原样透传给上游。
+func TestApplyMiniMaxTTSPolicy_PlainTtsTagStripped(t *testing.T) {
+	prev := *GetMiniMaxSettings()
+	defer func() { *GetMiniMaxSettings() = prev }()
+	*GetMiniMaxSettings() = MiniMaxSettings{
+		Enabled:          true,
+		EmotionPattern:   defaultMiniMaxSettings.EmotionPattern, // 新默认正则
+		EmotionRedirect:  map[string]string{"happy": "happy"},   // 非空 map
+		ToneWordPattern:  defaultMiniMaxSettings.ToneWordPattern,
+		ToneWordRedirect: map[string]string{},
+	}
+	input := `<tts>纯标签包裹的文本</tts>`
+	wantText := "纯标签包裹的文本"
+	res := ApplyMiniMaxTTSPolicy("speech-02-hd", "alloy", input, "mp3")
+	if res.Emotion != "" {
+		t.Errorf("Emotion = %q, want empty (no emotion attribute)", res.Emotion)
+	}
+	if res.Text != wantText {
+		t.Errorf("Text = %q, want %q (tags stripped, no leak to upstream)", res.Text, wantText)
 	}
 }

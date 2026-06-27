@@ -27,6 +27,9 @@ type MiniMaxSettings struct {
 	// 例如 {"tts-1-hd": "speech-02-hd"}
 	ModelRedirect map[string]string `json:"model_redirect"`
 	// EmotionPattern 识别文本中情绪标签的正则表达式。
+	// 默认正则让 emotion 属性可选：带 emotion 属性时提取其值，
+	// 不带 emotion 属性（纯 <tts>...</tts>）时也剥离外层标签只保留内部文本，
+	// 避免对外的 <tts> 标签原样透传给上游。
 	EmotionPattern string `json:"emotion_pattern"`
 	// EmotionRedirect 是标签值到 MiniMax voice_setting.emotion 的映射表。
 	EmotionRedirect map[string]string `json:"emotion_redirect"`
@@ -62,7 +65,7 @@ type MiniMaxTTSPolicyResult struct {
 var defaultMiniMaxSettings = MiniMaxSettings{
 	Enabled:          false,
 	ModelRedirect:    map[string]string{},
-	EmotionPattern:   `<tts\s+emotion="([^"]+)">([\s\S]*?)</tts>`,
+	EmotionPattern:   `<tts(?:\s+emotion="([^"]+)")?>([\s\S]*?)</tts>`,
 	EmotionRedirect:  map[string]string{},
 	ToneWordPattern:  `\(([^()]+)\)`,
 	ToneWordRedirect: map[string]string{},
