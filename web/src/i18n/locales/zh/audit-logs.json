@@ -1,0 +1,20 @@
+{
+  "Action Type": "操作类型",
+  "After": "修改后",
+  "All Action Types": "全部操作类型",
+  "All Modules": "全部模块",
+  "Audit Log Details": "审计日志详情",
+  "Audit Logs": "审计日志",
+  "Audit: Module - Voice Management": "音色管理",
+  "Before": "修改前",
+  "Description": "说明信息",
+  "Details": "详情",
+  "Failed to load audit logs": "加载审计日志失败",
+  "IP": "IP",
+  "Module": "操作模块",
+  "No audit logs available. Logs will appear here once administrative operations are performed.": "暂无审计日志。管理员执行操作后，日志将显示在此处。",
+  "No Audit Logs Found": "未找到审计日志",
+  "Operator": "操作人",
+  "Time": "时间",
+  "View Details": "查看"
+}

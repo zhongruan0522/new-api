@@ -42,6 +42,7 @@ import {
 import { Textarea } from '@/components/ui/textarea'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { StatusBadge, StatusBadgeList } from '@/components/status-badge'
+import { DisabledSettingsNotice } from '../../components/disabled-settings-notice'
 import { SettingsSwitchField } from '../../components/settings-form-layout'
 import { SettingsPageActionsPortal } from '../../components/settings-page-context'
 import { SettingsSection } from '../../components/settings-section'
@@ -83,7 +84,12 @@ function RuleBadgeList(props: { items: string[] }) {
 }
 
 function serializeRules(rules: AffinityRule[]): string {
-  return JSON.stringify(rules.map(({ id: _, ...rest }) => rest))
+  return JSON.stringify(
+    rules.map(({ id: _, ...rest }) => ({
+      ...rest,
+      skip_retry_on_failure: !!rest.skip_retry_on_failure,
+    }))
+  )
 }
 
 interface Props {
@@ -360,6 +366,8 @@ export function ChannelAffinitySection(props: Props) {
             )}
           </AlertDescription>
         </Alert>
+
+        <DisabledSettingsNotice enabled={enabled} />
 
         {/* Basic Settings */}
         <div className='grid grid-cols-1 gap-4 md:grid-cols-3'>

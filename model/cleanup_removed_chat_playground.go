@@ -95,5 +95,3 @@ func removeUserSettingSidebarModules(settingJSON string) (string, bool, error) {
 	}
 	return string(b), true, nil
 }
-
-

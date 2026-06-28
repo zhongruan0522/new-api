@@ -34,6 +34,8 @@ services:
     depends_on:
       redis:
         condition: service_healthy
+    networks:
+      - new-api-network
     healthcheck:
       test: ["CMD-SHELL", "wget -q -O - http://localhost:3000/api/status | grep -o '\"success\":\\s*true' || exit 1"]
       interval: 30s
@@ -46,9 +48,15 @@ services:
     container_name: redis
     restart: always
     command: ["redis-server", "--requirepass", "123456"]  # IMPORTANT: Change this password in production!
+    networks:
+      - new-api-network
     healthcheck:
       test: ["CMD", "redis-cli", "-a", "123456", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 10s
+
+networks:
+  new-api-network:
+    driver: bridge

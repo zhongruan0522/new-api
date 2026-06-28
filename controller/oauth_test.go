@@ -72,7 +72,7 @@ func TestHandleOAuthBindReturnsStructuredBindAction(t *testing.T) {
 	}
 
 	var body struct {
-		Success bool `json:"success"`
+		Success bool   `json:"success"`
 		Message string `json:"message"`
 		Data    struct {
 			Action string `json:"action"`

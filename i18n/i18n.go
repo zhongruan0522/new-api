@@ -90,6 +90,9 @@ func T(c *gin.Context, key string, args ...map[string]any) string {
 
 // Translate translates a message key for the specified language
 func Translate(lang, key string, args ...map[string]any) string {
+	if bundle == nil {
+		return key
+	}
 	loc := GetLocalizer(lang)
 
 	config := &i18n.LocalizeConfig{

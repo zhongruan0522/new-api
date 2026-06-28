@@ -49,6 +49,7 @@ import { Progress } from '@/components/ui/progress'
 import { Separator } from '@/components/ui/separator'
 import { Switch } from '@/components/ui/switch'
 import { StatusBadge } from '@/components/status-badge'
+import { DisabledSettingsNotice } from '../components/disabled-settings-notice'
 import {
   SettingsForm,
   SettingsSwitchContent,
@@ -254,6 +255,8 @@ export function PerformanceSection(props: Props) {
             </p>
           </div>
 
+          <DisabledSettingsNotice enabled={diskEnabled} />
+
           <div className='grid grid-cols-1 gap-4 md:grid-cols-3'>
             <FormField
               control={form.control}
@@ -353,6 +356,8 @@ export function PerformanceSection(props: Props) {
               )}
             </p>
           </div>
+
+          <DisabledSettingsNotice enabled={monitorEnabled} />
 
           <div className='grid grid-cols-1 gap-4 md:grid-cols-4'>
             <FormField

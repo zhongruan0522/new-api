@@ -27,6 +27,7 @@ import {
   FormLabel,
 } from '@/components/ui/form'
 import { Switch } from '@/components/ui/switch'
+import { DisabledSettingsNotice } from '../components/disabled-settings-notice'
 import {
   SettingsControlChildren,
   SettingsForm,
@@ -93,9 +94,9 @@ export function SidebarModulesSection({
         title: t('Playground'),
         description: t('Experiment with prompts and models in real time.'),
       },
-      chat: {
-        title: t('Chat'),
-        description: t('Access previous conversations and start new ones.'),
+      custom_voice: {
+        title: t('Custom Voice'),
+        description: t('Customize voice configurations.'),
       },
     },
     console: {
@@ -160,6 +161,10 @@ export function SidebarModulesSection({
       setting: {
         title: t('System Settings'),
         description: t('Advanced platform configuration.'),
+      },
+      audit_log: {
+        title: t('Audit Logs'),
+        description: t('Review administrative operation records.'),
       },
     },
   }
@@ -241,9 +246,12 @@ export function SidebarModulesSection({
                 moduleKey !== 'enabled' &&
                 (!knownModuleKeys || knownModuleKeys.has(moduleKey))
             )
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const sectionEnabled = Boolean(form.watch(`${sectionKey}.enabled` as any))
 
             return (
               <SettingsControlGroup key={sectionKey}>
+                <DisabledSettingsNotice enabled={sectionEnabled} />
                 <FormField
                   control={form.control}
                   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -290,10 +298,7 @@ export function SidebarModulesSection({
                               <Switch
                                 checked={Boolean(field.value)}
                                 onCheckedChange={field.onChange}
-                                disabled={
-                                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                                  !form.watch(`${sectionKey}.enabled` as any)
-                                }
+                                disabled={!sectionEnabled}
                               />
                             </FormControl>
                           </SettingsSwitchItem>

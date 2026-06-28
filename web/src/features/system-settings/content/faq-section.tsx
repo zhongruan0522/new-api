@@ -62,7 +62,6 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Textarea } from '@/components/ui/textarea'
-import { SettingsSwitchField } from '../components/settings-form-layout'
 import { SettingsSection } from '../components/settings-section'
 import { useUpdateOption } from '../hooks/use-update-option'
 
@@ -73,7 +72,6 @@ type FAQ = {
 }
 
 type FAQSectionProps = {
-  enabled: boolean
   data: string
 }
 
@@ -90,11 +88,10 @@ const faqSchema = z.object({
 
 type FAQFormValues = z.infer<typeof faqSchema>
 
-export function FAQSection({ enabled, data }: FAQSectionProps) {
+export function FAQSection({ data }: FAQSectionProps) {
   const { t } = useTranslation()
   const updateOption = useUpdateOption()
   const [faqList, setFaqList] = useState<FAQ[]>([])
-  const [isEnabled, setIsEnabled] = useState(enabled)
   const [hasChanges, setHasChanges] = useState(false)
   const [selectedIds, setSelectedIds] = useState<number[]>([])
   const [showDialog, setShowDialog] = useState(false)
@@ -125,23 +122,6 @@ export function FAQSection({ enabled, data }: FAQSectionProps) {
       setFaqList([])
     }
   }, [data])
-
-  useEffect(() => {
-    setIsEnabled(enabled)
-  }, [enabled])
-
-  const handleToggleEnabled = async (checked: boolean) => {
-    try {
-      await updateOption.mutateAsync({
-        key: 'console_setting.faq_enabled',
-        value: checked,
-      })
-      setIsEnabled(checked)
-      toast.success(t('Setting saved'))
-    } catch {
-      toast.error(t('Failed to update setting'))
-    }
-  }
 
   const handleAdd = () => {
     setEditingFaq(null)
@@ -266,12 +246,6 @@ export function FAQSection({ enabled, data }: FAQSectionProps) {
               {updateOption.isPending ? t('Saving...') : t('Save Settings')}
             </Button>
           </div>
-          <SettingsSwitchField
-            checked={isEnabled}
-            onCheckedChange={handleToggleEnabled}
-            label={t('Enabled')}
-            className='border-b-0 py-0'
-          />
         </div>
 
         <div className='rounded-md border'>

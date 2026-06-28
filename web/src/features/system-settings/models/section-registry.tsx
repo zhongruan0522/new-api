@@ -23,6 +23,7 @@ import { ClaudeSettingsCard } from './claude-settings-card'
 import { GeminiSettingsCard } from './gemini-settings-card'
 import { GlobalSettingsCard } from './global-settings-card'
 import { GrokSettingsCard } from './grok-settings-card'
+import { MiniMaxSettingsCard } from './minimax-settings-card'
 
 const MODELS_SECTIONS = [
   {
@@ -81,10 +82,37 @@ const MODELS_SECTIONS = [
     build: (settings: ModelSettings) => (
       <GrokSettingsCard
         defaultValues={{
-          'grok.violation_deduction_enabled':
-            settings['grok.violation_deduction_enabled'] ?? true,
-          'grok.violation_deduction_amount':
-            settings['grok.violation_deduction_amount'] ?? 0.05,
+          grok: {
+            violation_deduction_enabled:
+              settings['grok.violation_deduction_enabled'] ?? true,
+            violation_deduction_amount:
+              settings['grok.violation_deduction_amount'] ?? 0.05,
+          },
+        }}
+      />
+    ),
+  },
+  {
+    id: 'minimax',
+    titleKey: 'MiniMax',
+    build: (settings: ModelSettings) => (
+      <MiniMaxSettingsCard
+        defaultValues={{
+          minimax: {
+            enabled: settings['minimax.enabled'] ?? false,
+            model_redirect: settings['minimax.model_redirect'] ?? '{}',
+            voice_whitelist_enabled:
+              settings['minimax.voice_whitelist_enabled'] ?? false,
+            custom_voice_enabled:
+              settings['minimax.custom_voice_enabled'] ?? false,
+            custom_voice_group: settings['minimax.custom_voice_group'] ?? '',
+            custom_voice_billing_model_id:
+              settings['minimax.custom_voice_billing_model_id'] ?? '',
+            emotion_pattern: settings['minimax.emotion_pattern'] ?? '',
+            emotion_redirect: settings['minimax.emotion_redirect'] ?? '{}',
+            tone_word_pattern: settings['minimax.tone_word_pattern'] ?? '',
+            tone_word_redirect: settings['minimax.tone_word_redirect'] ?? '{}',
+          },
         }}
       />
     ),

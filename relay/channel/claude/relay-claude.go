@@ -1,10 +1,11 @@
 package claude
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
+	"path/filepath"
 	"strings"
 
 	"github.com/zhongruan0522/new-api/common"
@@ -30,6 +31,8 @@ const (
 	WebSearchMaxUsesHigh   = 10
 )
 
+var claudeReasoningEffortSuffixes = []string{"-max", "-xhigh", "-high", "-medium", "-low", "-none"}
+
 func stopReasonClaude2OpenAI(reason string) string {
 	return reasonmap.ClaudeStopReasonToOpenAIFinishReason(reason)
 }
@@ -43,7 +46,215 @@ func maybeMarkClaudeRefusal(c *gin.Context, stopReason string) {
 	}
 }
 
-func RequestOpenAI2ClaudeMessage(c *gin.Context, textRequest dto.GeneralOpenAIRequest) (*dto.ClaudeRequest, error) {
+func createClaudeFileSource(file *dto.MessageFile) *types.FileSource {
+	if file == nil || file.FileData == "" {
+		return nil
+	}
+	if strings.HasPrefix(file.FileData, "http://") || strings.HasPrefix(file.FileData, "https://") {
+		return types.NewURLFileSource(file.FileData)
+	}
+	mimeType := ""
+	if ext := strings.TrimPrefix(strings.ToLower(filepath.Ext(file.FileName)), "."); ext != "" {
+		if detected := service.GetMimeTypeByExtension(ext); detected != "application/octet-stream" {
+			mimeType = detected
+		}
+	}
+	return types.NewBase64FileSource(file.FileData, mimeType)
+}
+
+func buildClaudeFileMessage(c *gin.Context, file *dto.MessageFile) (*dto.ClaudeMediaMessage, error) {
+	source := createClaudeFileSource(file)
+	if source == nil {
+		return nil, nil
+	}
+	base64Data, mimeType, err := service.GetBase64Data(c, source, "formatting document for Claude")
+	if err != nil {
+		return nil, fmt.Errorf("get file data failed: %w", err)
+	}
+	switch strings.ToLower(mimeType) {
+	case "application/pdf":
+		return &dto.ClaudeMediaMessage{
+			Type: "document",
+			Source: &dto.ClaudeMessageSource{
+				Type:      "base64",
+				MediaType: mimeType,
+				Data:      base64Data,
+			},
+		}, nil
+	case "text/plain":
+		decodedData, err := base64.StdEncoding.DecodeString(base64Data)
+		if err != nil {
+			return nil, fmt.Errorf("decode text file data failed: %w", err)
+		}
+		return &dto.ClaudeMediaMessage{
+			Type: "text",
+			Text: common.GetPointer(string(decodedData)),
+		}, nil
+	default:
+		msg := fmt.Sprintf("claude: skip unsupported file content, filename=%q, mime=%q", file.FileName, mimeType)
+		if c != nil {
+			logger.LogInfo(c, msg)
+		} else {
+			common.SysLog(msg)
+		}
+		return nil, nil
+	}
+}
+
+func applyOpenAIReasoningToClaudeRequest(info *relaycommon.RelayInfo, textRequest *dto.GeneralOpenAIRequest, claudeRequest *dto.ClaudeRequest) error {
+	if textRequest == nil || claudeRequest == nil {
+		return nil
+	}
+
+	effort := strings.ToLower(strings.TrimSpace(textRequest.ReasoningEffort))
+	if suffixEffort, model := parseClaudeReasoningEffortFromModelSuffix(claudeRequest.Model); suffixEffort != "" {
+		effort = suffixEffort
+		claudeRequest.Model = model
+		textRequest.Model = model
+		if info != nil && info.ChannelMeta != nil {
+			info.UpstreamModelName = model
+		}
+	}
+
+	reasoningBudget := 0
+	if textRequest.Reasoning != nil {
+		var reasoning openrouter.RequestReasoning
+		if err := common.Unmarshal(textRequest.Reasoning, &reasoning); err != nil {
+			return err
+		}
+		if strings.TrimSpace(reasoning.Effort) != "" {
+			effort = strings.ToLower(strings.TrimSpace(reasoning.Effort))
+		}
+		reasoningBudget = reasoning.MaxTokens
+	}
+
+	if effort == "" && reasoningBudget <= 0 {
+		return nil
+	}
+
+	if effort == "none" {
+		if info != nil {
+			info.ReasoningEffort = effort
+		}
+		claudeRequest.Thinking = &dto.Thinking{Type: "disabled"}
+		claudeRequest.OutputConfig = nil
+		return nil
+	}
+
+	if effort != "" && !isSupportedClaudeReasoningEffort(effort) {
+		return fmt.Errorf("unsupported reasoning_effort for Claude request: %s", effort)
+	}
+	if info != nil && effort != "" {
+		info.ReasoningEffort = effort
+	}
+
+	claudeEffort := normalizeClaudeOutputEffort(effort)
+	if claudeEffort != "" && shouldUseClaudeOutputConfigEffort(info, claudeRequest.Model) {
+		if shouldUseClaudeAdaptiveThinking(info, claudeRequest.Model) {
+			claudeRequest.Thinking = &dto.Thinking{Type: "adaptive"}
+			if isClaudeOpus47Model(claudeRequest.Model) {
+				claudeRequest.Thinking.Display = "summarized"
+				claudeRequest.Temperature = nil
+				claudeRequest.TopP = 0
+				claudeRequest.TopK = 0
+			}
+		} else {
+			claudeRequest.Thinking = nil
+		}
+		outputConfig, err := common.Marshal(dto.ClaudeOutputConfig{Effort: claudeEffort})
+		if err != nil {
+			return fmt.Errorf("failed to marshal claude output_config: %w", err)
+		}
+		claudeRequest.OutputConfig = outputConfig
+		return nil
+	}
+
+	if reasoningBudget <= 0 {
+		reasoningBudget = claudeThinkingBudgetForEffort(effort)
+	}
+	if reasoningBudget > 0 {
+		claudeRequest.Thinking = &dto.Thinking{
+			Type:         "enabled",
+			BudgetTokens: &reasoningBudget,
+		}
+	}
+	return nil
+}
+
+func parseClaudeReasoningEffortFromModelSuffix(model string) (string, string) {
+	if strings.HasSuffix(model, "-thinking") && isClaudeOpus47Model(model) {
+		return "high", strings.TrimSuffix(model, "-thinking")
+	}
+	for _, suffix := range claudeReasoningEffortSuffixes {
+		if strings.HasSuffix(model, suffix) {
+			return strings.TrimPrefix(suffix, "-"), strings.TrimSuffix(model, suffix)
+		}
+	}
+	return "", model
+}
+
+func normalizeClaudeOutputEffort(effort string) string {
+	switch strings.ToLower(strings.TrimSpace(effort)) {
+	case "low", "medium", "high", "max":
+		return strings.ToLower(strings.TrimSpace(effort))
+	case "xhigh":
+		return "max"
+	default:
+		return ""
+	}
+}
+
+func isSupportedClaudeReasoningEffort(effort string) bool {
+	switch strings.ToLower(strings.TrimSpace(effort)) {
+	case "low", "medium", "high", "xhigh", "max":
+		return true
+	default:
+		return false
+	}
+}
+
+func shouldUseClaudeOutputConfigEffort(info *relaycommon.RelayInfo, model string) bool {
+	if info != nil && info.ChannelMeta != nil && info.ChannelType == constant.ChannelTypeDeepSeek {
+		return true
+	}
+
+	model = strings.ToLower(model)
+	return isClaudeAdaptiveOutputModel(model)
+}
+
+func shouldUseClaudeAdaptiveThinking(info *relaycommon.RelayInfo, model string) bool {
+	if info != nil && info.ChannelMeta != nil && info.ChannelType == constant.ChannelTypeDeepSeek {
+		return false
+	}
+
+	model = strings.ToLower(model)
+	return isClaudeAdaptiveOutputModel(model)
+}
+
+func isClaudeAdaptiveOutputModel(model string) bool {
+	return strings.Contains(model, "claude-opus-4-6") || strings.Contains(model, "claude-opus-4-7")
+}
+
+func isClaudeOpus47Model(model string) bool {
+	return strings.Contains(strings.ToLower(model), "claude-opus-4-7")
+}
+
+func claudeThinkingBudgetForEffort(effort string) int {
+	switch strings.ToLower(strings.TrimSpace(effort)) {
+	case "low":
+		return 1280
+	case "medium":
+		return 2048
+	case "high":
+		return 4096
+	case "xhigh", "max":
+		return 8192
+	default:
+		return 0
+	}
+}
+
+func RequestOpenAI2ClaudeMessage(c *gin.Context, info *relaycommon.RelayInfo, textRequest dto.GeneralOpenAIRequest) (*dto.ClaudeRequest, error) {
 	claudeTools := make([]any, 0, len(textRequest.Tools))
 
 	for _, tool := range textRequest.Tools {
@@ -143,45 +354,8 @@ func RequestOpenAI2ClaudeMessage(c *gin.Context, textRequest dto.GeneralOpenAIRe
 		claudeRequest.MaxTokens = uint(model_setting.GetClaudeSettings().GetDefaultMaxTokens(textRequest.Model))
 	}
 
-	if textRequest.ReasoningEffort != "" {
-		switch textRequest.ReasoningEffort {
-		case "low":
-			claudeRequest.Thinking = &dto.Thinking{
-				Type:         "enabled",
-				BudgetTokens: common.GetPointer[int](1280),
-			}
-		case "medium":
-			claudeRequest.Thinking = &dto.Thinking{
-				Type:         "enabled",
-				BudgetTokens: common.GetPointer[int](2048),
-			}
-		case "high":
-			claudeRequest.Thinking = &dto.Thinking{
-				Type:         "enabled",
-				BudgetTokens: common.GetPointer[int](4096),
-			}
-		case "xhigh", "max":
-			claudeRequest.Thinking = &dto.Thinking{
-				Type:         "enabled",
-				BudgetTokens: common.GetPointer[int](8192),
-			}
-		}
-	}
-
-	// 指定了 reasoning 参数,覆盖 budgetTokens
-	if textRequest.Reasoning != nil {
-		var reasoning openrouter.RequestReasoning
-		if err := common.Unmarshal(textRequest.Reasoning, &reasoning); err != nil {
-			return nil, err
-		}
-
-		budgetTokens := reasoning.MaxTokens
-		if budgetTokens > 0 {
-			claudeRequest.Thinking = &dto.Thinking{
-				Type:         "enabled",
-				BudgetTokens: &budgetTokens,
-			}
-		}
+	if err := applyOpenAIReasoningToClaudeRequest(info, &textRequest, &claudeRequest); err != nil {
+		return nil, err
 	}
 
 	if textRequest.Stop != nil {
@@ -323,16 +497,22 @@ func RequestOpenAI2ClaudeMessage(c *gin.Context, textRequest dto.GeneralOpenAIRe
 					}
 				}
 				for _, mediaMessage := range message.ParseContent() {
-					claudeMediaMessage := dto.ClaudeMediaMessage{
-						Type: mediaMessage.Type,
-					}
-					if mediaMessage.Type == "text" {
-						claudeMediaMessage.Text = common.GetPointer[string](mediaMessage.Text)
-					} else {
+					switch mediaMessage.Type {
+					case "text":
+						claudeMediaMessages = append(claudeMediaMessages, dto.ClaudeMediaMessage{
+							Type: "text",
+							Text: common.GetPointer[string](mediaMessage.Text),
+						})
+					case dto.ContentTypeImageURL:
+						claudeMediaMessage := dto.ClaudeMediaMessage{
+							Type: "image",
+							Source: &dto.ClaudeMessageSource{
+								Type: "base64",
+							},
+						}
 						imageUrl := mediaMessage.GetImageMedia()
-						claudeMediaMessage.Type = "image"
-						claudeMediaMessage.Source = &dto.ClaudeMessageSource{
-							Type: "base64",
+						if imageUrl == nil {
+							continue
 						}
 						// 使用统一的文件服务获取图片数据
 						var source *types.FileSource
@@ -347,8 +527,18 @@ func RequestOpenAI2ClaudeMessage(c *gin.Context, textRequest dto.GeneralOpenAIRe
 						}
 						claudeMediaMessage.Source.MediaType = mimeType
 						claudeMediaMessage.Source.Data = base64Data
+						claudeMediaMessages = append(claudeMediaMessages, claudeMediaMessage)
+					case dto.ContentTypeFile:
+						claudeFileMessage, err := buildClaudeFileMessage(c, mediaMessage.GetFile())
+						if err != nil {
+							return nil, err
+						}
+						if claudeFileMessage != nil {
+							claudeMediaMessages = append(claudeMediaMessages, *claudeFileMessage)
+						}
+					default:
+						continue
 					}
-					claudeMediaMessages = append(claudeMediaMessages, claudeMediaMessage)
 				}
 				if message.ToolCalls != nil {
 					for _, toolCall := range message.ParseToolCalls() {
@@ -709,6 +899,7 @@ func HandleStreamResponseData(c *gin.Context, info *relaycommon.RelayInfo, claud
 				data = patchClaudeMessageDeltaUsageData(data, buildMessageDeltaPatchUsage(&claudeResponse, claudeInfo))
 			}
 		}
+		data = string(helper.MaskClaudeEventModelJSON(common.StringToByteSlice(data), info))
 		helper.ClaudeChunkData(c, claudeResponse, data)
 	} else if info.RelayFormat == types.RelayFormatOpenAI {
 		response := StreamResponseClaude2OpenAI(&claudeResponse)
@@ -716,6 +907,7 @@ func HandleStreamResponseData(c *gin.Context, info *relaycommon.RelayInfo, claud
 		if !FormatClaudeResponseInfo(&claudeResponse, response, claudeInfo) {
 			return nil
 		}
+		helper.MaskChatStreamResponseModel(response, info)
 
 		err = helper.ObjectData(c, response)
 		if err != nil {
@@ -730,6 +922,7 @@ func HandleStreamResponseData(c *gin.Context, info *relaycommon.RelayInfo, claud
 		if response == nil {
 			return nil
 		}
+		helper.MaskChatStreamResponseModel(response, info)
 
 		if err := writeClaudeChatChunkAsResponsesEvent(c, info, claudeInfo, response); err != nil {
 			return err
@@ -743,6 +936,7 @@ func HandleStreamResponseData(c *gin.Context, info *relaycommon.RelayInfo, claud
 		if response == nil {
 			return nil
 		}
+		helper.MaskChatStreamResponseModel(response, info)
 
 		geminiResponse := service.StreamResponseOpenAI2Gemini(response, info)
 		if geminiResponse == nil {
@@ -774,7 +968,7 @@ func HandleStreamFinalResponse(c *gin.Context, info *relaycommon.RelayInfo, clau
 		//
 	} else if info.RelayFormat == types.RelayFormatOpenAI {
 		if info.ShouldIncludeUsage {
-			response := helper.GenerateFinalUsageResponse(claudeInfo.ResponseId, claudeInfo.Created, info.UpstreamModelName, *claudeInfo.Usage)
+			response := helper.GenerateFinalUsageResponse(claudeInfo.ResponseId, claudeInfo.Created, info.GetResponseModelName(), *claudeInfo.Usage)
 			err := helper.ObjectData(c, response)
 			if err != nil {
 				common.SysLog("send final response failed: " + err.Error())
@@ -786,7 +980,7 @@ func HandleStreamFinalResponse(c *gin.Context, info *relaycommon.RelayInfo, clau
 			common.SysLog("send final responses response failed: " + err.Error())
 		}
 	} else if info.RelayFormat == types.RelayFormatGemini {
-		response := helper.GenerateFinalUsageResponse(claudeInfo.ResponseId, claudeInfo.Created, info.UpstreamModelName, *claudeInfo.Usage)
+		response := helper.GenerateFinalUsageResponse(claudeInfo.ResponseId, claudeInfo.Created, info.GetResponseModelName(), *claudeInfo.Usage)
 		geminiResponse := service.StreamResponseOpenAI2Gemini(response, info)
 		if geminiResponse == nil {
 			return
@@ -837,7 +1031,7 @@ func writeClaudeResponsesFinalEvent(c *gin.Context, info *relaycommon.RelayInfo,
 	converter := ensureClaudeResponsesStreamConverter(info, claudeInfo)
 
 	if claudeInfo.Usage != nil {
-		usageChunk := helper.GenerateFinalUsageResponse(claudeInfo.ResponseId, claudeInfo.Created, info.UpstreamModelName, *claudeInfo.Usage)
+		usageChunk := helper.GenerateFinalUsageResponse(claudeInfo.ResponseId, claudeInfo.Created, info.GetResponseModelName(), *claudeInfo.Usage)
 		data, err := common.Marshal(usageChunk)
 		if err != nil {
 			return types.NewError(err, types.ErrorCodeBadResponseBody)
@@ -907,6 +1101,7 @@ func HandleClaudeResponseData(c *gin.Context, info *relaycommon.RelayInfo, claud
 	switch info.RelayFormat {
 	case types.RelayFormatOpenAI:
 		openaiResponse := ResponseClaude2OpenAI(&claudeResponse)
+		helper.MaskTextResponseModel(openaiResponse, info)
 		openaiResponse.Usage = *claudeInfo.Usage
 		responseData, err = json.Marshal(openaiResponse)
 		if err != nil {
@@ -914,6 +1109,7 @@ func HandleClaudeResponseData(c *gin.Context, info *relaycommon.RelayInfo, claud
 		}
 	case types.RelayFormatOpenAIResponses:
 		openaiResponse := ResponseClaude2OpenAI(&claudeResponse)
+		helper.MaskTextResponseModel(openaiResponse, info)
 		openaiResponse.Usage = *claudeInfo.Usage
 		responsesResp, convErr := relaycommon.ConvertChatCompletionResponseToResponsesResponseWithToolContext(openaiResponse, info.OpenAIResponsesToolContext)
 		if convErr != nil {
@@ -924,9 +1120,10 @@ func HandleClaudeResponseData(c *gin.Context, info *relaycommon.RelayInfo, claud
 			return types.NewError(err, types.ErrorCodeBadResponseBody)
 		}
 	case types.RelayFormatClaude:
-		responseData = data
+		responseData = helper.MaskTopLevelModelJSON(data, info)
 	case types.RelayFormatGemini:
 		openaiResponse := ResponseClaude2OpenAI(&claudeResponse)
+		helper.MaskTextResponseModel(openaiResponse, info)
 		openaiResponse.Usage = *claudeInfo.Usage
 		geminiResponse := service.ResponseOpenAI2Gemini(openaiResponse, info)
 		responseData, err = common.Marshal(geminiResponse)
@@ -953,7 +1150,7 @@ func ClaudeHandler(c *gin.Context, resp *http.Response, info *relaycommon.RelayI
 		ResponseText: strings.Builder{},
 		Usage:        &dto.Usage{},
 	}
-	responseBody, err := io.ReadAll(resp.Body)
+	responseBody, err := common.ReadResponseBody(resp.Body)
 	if err != nil {
 		return nil, types.NewError(err, types.ErrorCodeBadResponseBody)
 	}

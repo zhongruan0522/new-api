@@ -46,6 +46,13 @@ export type DataTableToolbarProps<TData> = {
    * Placeholder for the default search input. Defaults to `t('Filter...')`.
    */
   searchPlaceholder?: string
+  /** Controlled value for the default search input. */
+  searchValue?: string
+  /** Controlled change handler for the default search input. */
+  onSearchValueChange?: (value: string) => void
+  /** IME composition handlers for callers that debounce remote search. */
+  onSearchCompositionStart?: React.CompositionEventHandler<HTMLInputElement>
+  onSearchCompositionEnd?: React.CompositionEventHandler<HTMLInputElement>
   /**
    * Column id to filter on. When provided, the search input filters
    * a specific column. When omitted, the search input updates the
@@ -148,25 +155,43 @@ export function DataTableToolbar<TData>(props: DataTableToolbarProps<TData>) {
 
   const placeholder = props.searchPlaceholder ?? t('Filter...')
 
+  const searchValue = props.searchKey
+    ? ((props.table.getColumn(props.searchKey)?.getFilterValue() as string) ??
+      '')
+    : (props.table.getState().globalFilter ?? '')
+
+  const handleSearchInputChange = (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const nextValue = event.target.value
+    if (props.onSearchValueChange) {
+      props.onSearchValueChange(nextValue)
+      return
+    }
+
+    if (props.searchKey) {
+      props.table.getColumn(props.searchKey)?.setFilterValue(nextValue)
+    } else {
+      props.table.setGlobalFilter(nextValue)
+    }
+  }
+
   const searchInput = props.searchKey ? (
     <Input
       placeholder={placeholder}
-      value={
-        (props.table.getColumn(props.searchKey)?.getFilterValue() as string) ??
-        ''
-      }
-      onChange={(event) =>
-        props.table
-          .getColumn(props.searchKey!)
-          ?.setFilterValue(event.target.value)
-      }
+      value={props.searchValue ?? searchValue}
+      onChange={handleSearchInputChange}
+      onCompositionStart={props.onSearchCompositionStart}
+      onCompositionEnd={props.onSearchCompositionEnd}
       className='w-full sm:w-[200px] lg:w-[240px]'
     />
   ) : (
     <Input
       placeholder={placeholder}
-      value={props.table.getState().globalFilter ?? ''}
-      onChange={(event) => props.table.setGlobalFilter(event.target.value)}
+      value={props.searchValue ?? searchValue}
+      onChange={handleSearchInputChange}
+      onCompositionStart={props.onSearchCompositionStart}
+      onCompositionEnd={props.onSearchCompositionEnd}
       className='w-full sm:w-[200px] lg:w-[240px]'
     />
   )
@@ -188,6 +213,7 @@ export function DataTableToolbar<TData>(props: DataTableToolbarProps<TData>) {
   const handleReset = () => {
     props.table.resetColumnFilters()
     props.table.setGlobalFilter('')
+    props.onSearchValueChange?.('')
     props.onReset?.()
   }
 

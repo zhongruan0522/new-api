@@ -101,15 +101,39 @@ func ApplyChannelGroupFilter(query *gorm.DB, group string) *gorm.DB {
 	return query.Where(channelGroupFilterCondition(), channelGroupFilterPattern(group))
 }
 
-// Value implements driver.Valuer interface
+// Value implements driver.Valuer interface.
+// PostgreSQL 的 json/jsonb 列在 pgx 驱动下对 []byte 参数支持不稳定，
+// 返回 string 形式的 JSON 能同时兼容 SQLite/MySQL/PostgreSQL。
 func (c ChannelInfo) Value() (driver.Value, error) {
-	return common.Marshal(&c)
+	bytes, err := common.Marshal(&c)
+	if err != nil {
+		return nil, err
+	}
+	return string(bytes), nil
 }
 
-// Scan implements sql.Scanner interface
+// Scan implements sql.Scanner interface.
+// 兼容 nil、string、[]byte，以及空值（恢复为零值 ChannelInfo），
+// 避免旧数据/NULL/空字符串导致 Scan 失败。
 func (c *ChannelInfo) Scan(value interface{}) error {
-	bytesValue, _ := value.([]byte)
-	return common.Unmarshal(bytesValue, c)
+	if value == nil {
+		*c = ChannelInfo{}
+		return nil
+	}
+	var raw []byte
+	switch v := value.(type) {
+	case []byte:
+		raw = v
+	case string:
+		raw = []byte(v)
+	default:
+		return fmt.Errorf("failed to scan ChannelInfo: unsupported type %T", value)
+	}
+	if len(strings.TrimSpace(string(raw))) == 0 {
+		*c = ChannelInfo{}
+		return nil
+	}
+	return common.Unmarshal(raw, c)
 }
 
 func (channel *Channel) GetKeys() []string {
@@ -935,7 +959,48 @@ func (channel *Channel) ValidateSettings() error {
 			}
 		}
 	}
+
+	// 校验 param_override / header_override：非空时必须是合法 JSON，避免在数据库边界报 SQLSTATE 22P02
+	if err := validateOptionalJSONField(channel.ParamOverride, "param_override"); err != nil {
+		return err
+	}
+	if err := validateOptionalJSONField(channel.HeaderOverride, "header_override"); err != nil {
+		return err
+	}
+	// 规整化：空白指针统一为 nil，避免把空字符串写入可能的 JSON 列
+	channel.ParamOverride = normalizeOptionalJSONPointer(channel.ParamOverride)
+	channel.HeaderOverride = normalizeOptionalJSONPointer(channel.HeaderOverride)
+	channel.Setting = normalizeOptionalJSONPointer(channel.Setting)
 	return nil
+}
+
+// validateOptionalJSONField 校验可选 JSON 字符串指针字段：nil 或空白视为未设置，非空必须是合法 JSON。
+func validateOptionalJSONField(value *string, fieldName string) error {
+	if value == nil {
+		return nil
+	}
+	trimmed := strings.TrimSpace(*value)
+	if trimmed == "" {
+		return nil
+	}
+	var raw json.RawMessage
+	if err := common.Unmarshal([]byte(trimmed), &raw); err != nil {
+		return fmt.Errorf("channel %s 必须是合法的 JSON：%v", fieldName, err)
+	}
+	return nil
+}
+
+// normalizeOptionalJSONPointer 把空白/纯空白的指针字段归一化为 nil，
+// 非空白则去除首尾空白，避免向数据库写入可能被解析为 JSON 的空字符串。
+func normalizeOptionalJSONPointer(value *string) *string {
+	if value == nil {
+		return nil
+	}
+	trimmed := strings.TrimSpace(*value)
+	if trimmed == "" {
+		return nil
+	}
+	return &trimmed
 }
 
 func (channel *Channel) GetSetting() dto.ChannelSettings {

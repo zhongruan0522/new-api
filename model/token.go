@@ -3,13 +3,11 @@ package model
 import (
 	"errors"
 	"fmt"
-	"strings"
-	"sync"
-
-	"github.com/bytedance/gopkg/util/gopool"
 	"github.com/zhongruan0522/new-api/common"
 	"golang.org/x/sync/singleflight"
 	"gorm.io/gorm"
+	"strings"
+	"sync"
 )
 
 // maxUserTokens 每用户最大令牌数量（硬编码）
@@ -352,7 +350,7 @@ func GetTokenById(id int) (*Token, error) {
 	var err error = nil
 	err = DB.First(&token, "id = ?", id).Error
 	if shouldUpdateRedis(true, err) {
-		gopool.Go(func() {
+		common.RelayGo(func() {
 			if err := cacheSetToken(token); err != nil {
 				common.SysLog("failed to update user status cache: " + err.Error())
 			}
@@ -365,7 +363,7 @@ func GetTokenByKey(key string, fromDB bool) (token *Token, err error) {
 	defer func() {
 		// Update Redis cache asynchronously on successful DB read
 		if shouldUpdateRedis(fromDB, err) && token != nil {
-			gopool.Go(func() {
+			common.RelayGo(func() {
 				if err := cacheSetToken(*token); err != nil {
 					common.SysLog("failed to update user status cache: " + err.Error())
 				}
@@ -424,7 +422,7 @@ func (token *Token) Update() (err error) {
 func (token *Token) SelectUpdate() (err error) {
 	defer func() {
 		if shouldUpdateRedis(true, err) {
-			gopool.Go(func() {
+			common.RelayGo(func() {
 				err := cacheSetToken(*token)
 				if err != nil {
 					common.SysLog("failed to update token cache: " + err.Error())
@@ -439,7 +437,7 @@ func (token *Token) SelectUpdate() (err error) {
 func (token *Token) Delete() (err error) {
 	defer func() {
 		if shouldUpdateRedis(true, err) {
-			gopool.Go(func() {
+			common.RelayGo(func() {
 				err := cacheDeleteToken(token.Key)
 				if err != nil {
 					common.SysLog("failed to delete token cache: " + err.Error())
@@ -499,7 +497,7 @@ func IncreaseTokenQuota(id int, key string, quota int) (err error) {
 		return errors.New("quota 不能为负数！")
 	}
 	if common.RedisEnabled {
-		gopool.Go(func() {
+		common.RelayGo(func() {
 			if cacheErr := cacheIncrTokenQuota(key, int64(quota)); cacheErr != nil {
 				common.SysLog("failed to increase token quota: " + cacheErr.Error())
 			}
@@ -531,7 +529,7 @@ func DecreaseTokenQuota(id int, key string, quota int) (err error) {
 		return errors.New("quota 不能为负数！")
 	}
 	if common.RedisEnabled {
-		gopool.Go(func() {
+		common.RelayGo(func() {
 			if cacheErr := cacheDecrTokenQuota(key, int64(quota)); cacheErr != nil {
 				common.SysLog("failed to decrease token quota: " + cacheErr.Error())
 			}
@@ -563,7 +561,7 @@ func UpdateTokenUsedQuota(id int, key string, delta int) error {
 		return nil
 	}
 	if common.RedisEnabled {
-		gopool.Go(func() {
+		common.RelayGo(func() {
 			if cacheErr := cacheIncrTokenUsedQuota(key, int64(delta)); cacheErr != nil {
 				common.SysLog("failed to update token used quota: " + cacheErr.Error())
 			}
@@ -595,7 +593,7 @@ func IncreaseWindowQuota(id int, key string, quota int) (err error) {
 		return err
 	}
 	if common.RedisEnabled {
-		gopool.Go(func() {
+		common.RelayGo(func() {
 			err := cacheIncrWindowUsedQuota(key, -int64(quota))
 			if err != nil {
 				common.SysLog("failed to increase window quota: " + err.Error())
@@ -615,7 +613,7 @@ func DecreaseWindowQuota(id int, key string, quota int) (err error) {
 		return err
 	}
 	if common.RedisEnabled {
-		gopool.Go(func() {
+		common.RelayGo(func() {
 			if cacheErr := cacheIncrWindowUsedQuota(key, int64(quota)); cacheErr != nil {
 				common.SysLog("failed to increase window used quota: " + cacheErr.Error())
 			}
@@ -659,7 +657,7 @@ func IncreaseCycleQuota(id int, key string, quota int) (err error) {
 		return err
 	}
 	if common.RedisEnabled {
-		gopool.Go(func() {
+		common.RelayGo(func() {
 			err := cacheIncrCycleUsedQuota(key, -int64(quota))
 			if err != nil {
 				common.SysLog("failed to increase cycle quota: " + err.Error())
@@ -679,7 +677,7 @@ func DecreaseCycleQuota(id int, key string, quota int) (err error) {
 		return err
 	}
 	if common.RedisEnabled {
-		gopool.Go(func() {
+		common.RelayGo(func() {
 			if cacheErr := cacheIncrCycleUsedQuota(key, int64(quota)); cacheErr != nil {
 				common.SysLog("failed to increase cycle used quota: " + cacheErr.Error())
 			}
@@ -822,7 +820,7 @@ func BatchDeleteTokens(ids []int, userId int) (int, error) {
 	}
 
 	if common.RedisEnabled {
-		gopool.Go(func() {
+		common.RelayGo(func() {
 			for _, t := range tokens {
 				_ = cacheDeleteToken(t.Key)
 			}

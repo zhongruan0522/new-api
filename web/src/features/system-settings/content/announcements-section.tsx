@@ -73,7 +73,6 @@ import {
 import { Textarea } from '@/components/ui/textarea'
 import { DateTimePicker } from '@/components/datetime-picker'
 import { StatusBadge } from '@/components/status-badge'
-import { SettingsSwitchField } from '../components/settings-form-layout'
 import { SettingsSection } from '../components/settings-section'
 import { useUpdateOption } from '../hooks/use-update-option'
 
@@ -86,7 +85,6 @@ type Announcement = {
 }
 
 type AnnouncementsSectionProps = {
-  enabled: boolean
   data: string
 }
 
@@ -138,14 +136,10 @@ const typeOptions = [
   },
 ]
 
-export function AnnouncementsSection({
-  enabled,
-  data,
-}: AnnouncementsSectionProps) {
+export function AnnouncementsSection({ data }: AnnouncementsSectionProps) {
   const { t } = useTranslation()
   const updateOption = useUpdateOption()
   const [announcements, setAnnouncements] = useState<Announcement[]>([])
-  const [isEnabled, setIsEnabled] = useState(enabled)
   const [hasChanges, setHasChanges] = useState(false)
   const [selectedIds, setSelectedIds] = useState<number[]>([])
   const [showDialog, setShowDialog] = useState(false)
@@ -179,23 +173,6 @@ export function AnnouncementsSection({
       setAnnouncements([])
     }
   }, [data])
-
-  useEffect(() => {
-    setIsEnabled(enabled)
-  }, [enabled])
-
-  const handleToggleEnabled = async (checked: boolean) => {
-    try {
-      await updateOption.mutateAsync({
-        key: 'console_setting.announcements_enabled',
-        value: checked,
-      })
-      setIsEnabled(checked)
-      toast.success(t('Setting saved'))
-    } catch {
-      toast.error(t('Failed to update setting'))
-    }
-  }
 
   const handleAdd = () => {
     setEditingAnnouncement(null)
@@ -347,12 +324,6 @@ export function AnnouncementsSection({
               {updateOption.isPending ? t('Saving...') : t('Save Settings')}
             </Button>
           </div>
-          <SettingsSwitchField
-            checked={isEnabled}
-            onCheckedChange={handleToggleEnabled}
-            label={t('Enabled')}
-            className='border-b-0 py-0'
-          />
         </div>
 
         <div className='rounded-md border'>

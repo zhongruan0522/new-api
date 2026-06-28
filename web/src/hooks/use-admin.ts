@@ -23,9 +23,13 @@ import { useAuthStore } from '@/stores/auth-store'
 import { ROLE } from '@/lib/roles'
 
 /**
- * Check if current user has admin privileges
+ * Check if current user has admin privileges.
+ * Returns false when there is no authenticated user, so queries that depend on
+ * admin/self endpoint selection do not fire against admin endpoints after a
+ * session reset.
  */
 export function useIsAdmin(): boolean {
-  const { user } = useAuthStore((state) => state.auth)
-  return (user?.role ?? 0) >= ROLE.ADMIN
+  const user = useAuthStore((state) => state.auth.user)
+  if (!user) return false
+  return (user.role ?? 0) >= ROLE.ADMIN
 }

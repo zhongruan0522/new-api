@@ -59,6 +59,8 @@ var EmailLoginAuthServerList = []string{
 	"smtp.azurecomm.net",
 }
 
+var SMTPForceLoginAuthEnabled = false
+
 var DebugEnabled bool
 var MemoryCacheEnabled bool
 
@@ -116,6 +118,7 @@ var RelayTimeout int // unit is second
 
 var RelayMaxIdleConns int
 var RelayMaxIdleConnsPerHost int
+var RelayIdleConnTimeout int
 
 var GeminiSafetySetting string
 

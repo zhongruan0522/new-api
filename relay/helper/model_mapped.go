@@ -6,11 +6,11 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/gin-gonic/gin"
 	"github.com/zhongruan0522/new-api/dto"
 	"github.com/zhongruan0522/new-api/relay/common"
 	relayconstant "github.com/zhongruan0522/new-api/relay/constant"
 	"github.com/zhongruan0522/new-api/setting/ratio_setting"
-	"github.com/gin-gonic/gin"
 )
 
 func ModelMappedHelper(c *gin.Context, info *common.RelayInfo, request dto.Request) error {

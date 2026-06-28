@@ -4,14 +4,12 @@ import (
 	"bytes"
 	"embed"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/bytedance/gopkg/util/gopool"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
@@ -24,10 +22,9 @@ import (
 	"github.com/zhongruan0522/new-api/model"
 	"github.com/zhongruan0522/new-api/router"
 	"github.com/zhongruan0522/new-api/service"
+	"github.com/zhongruan0522/new-api/setting/dashboard_setting"
 	_ "github.com/zhongruan0522/new-api/setting/performance_setting"
 	"github.com/zhongruan0522/new-api/setting/ratio_setting"
-
-	_ "net/http/pprof"
 )
 
 //go:embed web/dist
@@ -117,9 +114,7 @@ func main() {
 	}
 
 	if os.Getenv("ENABLE_PPROF") == "true" {
-		gopool.Go(func() {
-			log.Println(http.ListenAndServe("0.0.0.0:8005", nil))
-		})
+		go common.EnablePprofServer()
 		go common.Monitor()
 		common.SysLog("pprof enabled")
 	}
@@ -253,6 +248,12 @@ func InitResources() error {
 
 	// Initialize options, should after model.InitDB()
 	model.InitOptionMap()
+
+	// 迁移 console_setting 面板开关到 dashboard_config（一次性，幂等）
+	// 失败仅记日志不阻断启动，console_setting 仍可作为 fallback 直到双源统一
+	if err := dashboard_setting.MigrateFromConsoleSetting(); err != nil {
+		common.SysError("dashboard config migration failed: " + err.Error())
+	}
 
 	// 清理旧的磁盘缓存文件
 	common.CleanupOldCacheFiles()

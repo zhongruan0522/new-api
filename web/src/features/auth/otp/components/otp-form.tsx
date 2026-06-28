@@ -16,7 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -139,6 +139,32 @@ export function OtpForm({ className, ...props }: OtpFormProps) {
   const isFormValid = useBackupCode
     ? otp.length >= BACKUP_CODE_LENGTH
     : otp.length >= OTP_LENGTH
+
+  // Track whether auto-submit has already fired for the current input,
+  // so we don't repeatedly fire requests while the value stays complete.
+  const autoSubmittedRef = useRef(false)
+
+  // Auto-submit when the input reaches its full valid length:
+  // - OTP mode: 6 digits entered
+  // - Backup code mode: full XXXX-XXXX format and passes validation
+  useEffect(() => {
+    const ready = useBackupCode
+      ? otp.length >= BACKUP_CODE_LENGTH && isValidBackupCode(otp)
+      : otp.length >= OTP_LENGTH
+
+    if (ready && !isLoading && !autoSubmittedRef.current) {
+      autoSubmittedRef.current = true
+      form.handleSubmit(onSubmit)()
+    }
+    // Reset the guard when the user edits back below the valid threshold,
+    // allowing a fresh auto-submit on the next complete input.
+    if (!ready) {
+      autoSubmittedRef.current = false
+    }
+    // onSubmit intentionally excluded: it's a non-memoized closure and we only
+    // want this effect to fire on otp/mode/loading changes, not every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [otp, useBackupCode, isLoading])
 
   return (
     <Form {...form}>

@@ -4,8 +4,9 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/zhongruan0522/new-api/service"
 	"github.com/gin-gonic/gin"
+	"github.com/zhongruan0522/new-api/model"
+	"github.com/zhongruan0522/new-api/service"
 )
 
 func GetChannelAffinityCacheStats(c *gin.Context) {
@@ -23,6 +24,7 @@ func ClearChannelAffinityCache(c *gin.Context) {
 
 	if all == "true" {
 		deleted := service.ClearChannelAffinityCacheAll()
+		service.RecordAudit(c, model.AuditModuleOption, model.AuditActionDelete, "清空渠道亲和缓存", nil, nil)
 		c.JSON(http.StatusOK, gin.H{
 			"success": true,
 			"message": "",
@@ -50,6 +52,7 @@ func ClearChannelAffinityCache(c *gin.Context) {
 		return
 	}
 
+	service.RecordAudit(c, model.AuditModuleOption, model.AuditActionDelete, "清空渠道亲和缓存: "+ruleName, nil, map[string]interface{}{"rule_name": ruleName})
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",

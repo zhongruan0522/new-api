@@ -489,6 +489,21 @@ export function ModelRatioVisualEditor({
 
   const pageCount = Math.max(1, Math.ceil(filteredRows.length / pageSize))
   const safePageIndex = Math.min(pageIndex, pageCount - 1)
+
+  // 当选中模型因定价模式切换导致排序变化、落到当前可视页之外时，
+  // 自动将分页指针跳到该模型所在的页，保持编辑连续性。
+  useEffect(() => {
+    if (!selectedName) return
+    const targetIndex = filteredRows.findIndex(
+      (row) => row.name === selectedName
+    )
+    if (targetIndex === -1) return
+    const targetPage = Math.floor(targetIndex / pageSize)
+    if (targetPage !== safePageIndex) {
+      setPageIndex(targetPage)
+    }
+  }, [filteredRows, selectedName, pageSize, safePageIndex])
+
   const pageRows = filteredRows.slice(
     safePageIndex * pageSize,
     safePageIndex * pageSize + pageSize

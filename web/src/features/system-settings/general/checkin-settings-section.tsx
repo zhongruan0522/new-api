@@ -35,6 +35,7 @@ import {
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
+import { DisabledSettingsNotice } from '../components/disabled-settings-notice'
 import {
   SettingsForm,
   SettingsSwitchContent,
@@ -127,6 +128,8 @@ export function CheckinSettingsSection({
             isSaveDisabled={!isDirty}
             saveLabel='Save check-in settings'
           />
+          <DisabledSettingsNotice enabled={enabled} />
+
           <FormField
             control={form.control}
             name='enabled'

@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -8,7 +9,10 @@ import (
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
+	"github.com/glebarez/sqlite"
 	"github.com/zhongruan0522/new-api/common"
+	"github.com/zhongruan0522/new-api/model"
+	"gorm.io/gorm"
 )
 
 func withHeaderNavModules(t *testing.T, raw string) {
@@ -33,8 +37,55 @@ func withHeaderNavModules(t *testing.T, raw string) {
 	})
 }
 
+// setupHeaderNavTestDB initialises an in-memory SQLite DB with a single enabled
+// common user (id=1) so the session re-validation path in authHelper can look
+// up the latest role/status.
+func setupHeaderNavTestDB(t *testing.T) {
+	t.Helper()
+
+	oldDB := model.DB
+	oldRedisEnabled := common.RedisEnabled
+	oldMemoryCacheEnabled := common.MemoryCacheEnabled
+
+	db, err := gorm.Open(sqlite.Open(fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name())), &gorm.Config{})
+	if err != nil {
+		t.Fatalf("open sqlite test db: %v", err)
+	}
+	if err := db.AutoMigrate(&model.User{}); err != nil {
+		t.Fatalf("migrate sqlite test db: %v", err)
+	}
+	model.DB = db
+	common.RedisEnabled = false
+	common.MemoryCacheEnabled = false
+
+	if err := model.DB.Create(&model.User{
+		Id:       1,
+		Username: "tester",
+		Password: "password123",
+		Role:     common.RoleCommonUser,
+		Status:   common.UserStatusEnabled,
+		Group:    "default",
+		AffCode:  "header-nav-aff",
+	}).Error; err != nil {
+		t.Fatalf("create header nav test user: %v", err)
+	}
+
+	t.Cleanup(func() {
+		if sqlDB, err := db.DB(); err == nil {
+			_ = sqlDB.Close()
+		}
+		model.DB = oldDB
+		common.RedisEnabled = oldRedisEnabled
+		common.MemoryCacheEnabled = oldMemoryCacheEnabled
+	})
+}
+
 func performHeaderNavRequest(t *testing.T, handler gin.HandlerFunc, authenticated bool) *httptest.ResponseRecorder {
 	t.Helper()
+
+	if authenticated {
+		setupHeaderNavTestDB(t)
+	}
 
 	gin.SetMode(gin.TestMode)
 	router := gin.New()

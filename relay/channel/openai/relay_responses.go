@@ -2,7 +2,6 @@ package openai
 
 import (
 	"fmt"
-	"io"
 	"net/http"
 	"strings"
 
@@ -22,7 +21,7 @@ func OaiResponsesHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http
 
 	// read response body
 	var responsesResponse dto.OpenAIResponsesResponse
-	responseBody, err := io.ReadAll(resp.Body)
+	responseBody, err := common.ReadResponseBody(resp.Body)
 	if err != nil {
 		return nil, types.NewOpenAIError(err, types.ErrorCodeReadResponseBodyFailed, http.StatusInternalServerError)
 	}
@@ -39,6 +38,7 @@ func OaiResponsesHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http
 		c.Set("image_generation_call_quality", responsesResponse.GetQuality())
 		c.Set("image_generation_call_size", responsesResponse.GetSize())
 	}
+	helper.MaskResponsesResponseModel(&responsesResponse, info)
 
 	// compute usage
 	usage := dto.Usage{}
@@ -49,6 +49,8 @@ func OaiResponsesHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http
 		if err != nil {
 			return nil, types.NewError(err, types.ErrorCodeBadResponseBody)
 		}
+	} else {
+		responseBody = helper.MaskTopLevelModelJSON(responseBody, info)
 	}
 
 	// 写入新的 response body
@@ -95,10 +97,13 @@ func OaiResponsesStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp
 	}
 
 	helper.StreamScannerHandler(c, resp, info, func(data string) bool {
+		maskedData := data
 
 		// 检查当前数据是否包含 completed 状态和 usage 信息
 		var streamResponse dto.ResponsesStreamResponse
 		if err := common.UnmarshalJsonStr(data, &streamResponse); err == nil {
+			helper.MaskResponsesStreamResponseModel(&streamResponse, info)
+			maskedData = string(helper.MaskResponseEventModelJSON(common.StringToByteSlice(data), info))
 			switch streamResponse.Type {
 			case "response.completed":
 				if streamResponse.Response != nil {
@@ -137,7 +142,7 @@ func OaiResponsesStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp
 		}
 
 		if info.RelayFormat == types.RelayFormatClaude {
-			if err := writeResponsesStreamAsClaude(c, info, responsesToChat, data); err != nil {
+			if err := writeResponsesStreamAsClaude(c, info, responsesToChat, maskedData); err != nil {
 				logger.LogError(c, "failed to convert responses stream to claude: "+err.Error())
 				return false
 			}
@@ -145,7 +150,7 @@ func OaiResponsesStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp
 		}
 
 		if streamResponse.Type != "" {
-			sendResponsesStreamData(c, streamResponse, data)
+			sendResponsesStreamData(c, streamResponse, maskedData)
 		}
 		return true
 	})

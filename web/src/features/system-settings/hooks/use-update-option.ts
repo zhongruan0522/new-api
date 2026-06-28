@@ -44,6 +44,11 @@ export function useUpdateOption() {
     onSuccess: (_data, variables) => {
       // Always refresh system-options
       queryClient.invalidateQueries({ queryKey: ['system-options'] })
+      if (variables.key.startsWith('minimax.')) {
+        queryClient.invalidateQueries({ queryKey: ['system-option-json-map'] })
+        queryClient.invalidateQueries({ queryKey: ['system-option-json-array'] })
+        queryClient.invalidateQueries({ queryKey: ['system-option-value'] })
+      }
 
       // If updating frontend-display-related config, also refresh status
       if (STATUS_RELATED_KEYS.includes(variables.key)) {

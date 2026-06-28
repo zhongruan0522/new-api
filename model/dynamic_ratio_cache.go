@@ -12,7 +12,7 @@ import (
 
 // parsedDynamicRatioRule 预解析后的缓存规则，避免热路径重复 JSON 解析
 type parsedDynamicRatioRule struct {
-	DynamicRatioRule       // 嵌入原始规则，保留所有原始字段供前端展示
+	DynamicRatioRule          // 嵌入原始规则，保留所有原始字段供前端展示
 	ParsedWeekdays   []int    // 预解析后的星期数组，nil 表示不限
 	ParsedModels     []string // 预解析后的模型列表，nil 表示不限（匹配所有模型）
 	ParsedStartMin   int      // 预解析后的开始时间（分钟），-1 表示不限

@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"github.com/zhongruan0522/new-api/common"
 	"github.com/zhongruan0522/new-api/constant"
 
@@ -16,6 +17,7 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
+	gormlogger "gorm.io/gorm/logger"
 )
 
 var commonGroupCol string
@@ -69,6 +71,8 @@ func initCol() {
 var DB *gorm.DB
 
 var LOG_DB *gorm.DB
+
+const defaultSQLMaxIdleConns = 20
 
 func createRootAccountIfNeed() error {
 	var user User
@@ -137,9 +141,7 @@ func chooseDB(envName string, isLog bool) (*gorm.DB, error) {
 			return gorm.Open(postgres.New(postgres.Config{
 				DSN:                  dsn,
 				PreferSimpleProtocol: true, // disables implicit prepared statement usage
-			}), &gorm.Config{
-				PrepareStmt: true, // precompile SQL
-			})
+			}), newGormConfig())
 		}
 		if strings.HasPrefix(dsn, "local") {
 			common.SysLog("SQL_DSN not set, using SQLite as database")
@@ -148,9 +150,7 @@ func chooseDB(envName string, isLog bool) (*gorm.DB, error) {
 			} else {
 				common.LogSqlType = common.DatabaseTypeSQLite
 			}
-			return gorm.Open(sqlite.Open(common.SQLitePath), &gorm.Config{
-				PrepareStmt: true, // precompile SQL
-			})
+			return gorm.Open(sqlite.Open(common.SQLitePath), newGormConfig())
 		}
 		// Use MySQL
 		common.SysLog("using MySQL as database")
@@ -167,16 +167,42 @@ func chooseDB(envName string, isLog bool) (*gorm.DB, error) {
 		} else {
 			common.LogSqlType = common.DatabaseTypeMySQL
 		}
-		return gorm.Open(mysql.Open(dsn), &gorm.Config{
-			PrepareStmt: true, // precompile SQL
-		})
+		return gorm.Open(mysql.Open(dsn), newGormConfig())
 	}
 	// Use SQLite
 	common.SysLog("SQL_DSN not set, using SQLite as database")
 	common.UsingSQLite = true
-	return gorm.Open(sqlite.Open(common.SQLitePath), &gorm.Config{
-		PrepareStmt: true, // precompile SQL
-	})
+	return gorm.Open(sqlite.Open(common.SQLitePath), newGormConfig())
+}
+
+// newGormConfig 构建统一的 GORM 配置。
+//
+// 关键点：默认 logger 的 IgnoreRecordNotFoundError 为 false，会把
+// gorm.ErrRecordNotFound 当作 SQL 错误日志打印。在本项目中，按 key/id 查
+// token、user、channel 等实体时"记录不存在"是合法的业务路径（无效 key、
+// 过期、扫描、缓存回填探测等都会命中），不应该污染运行日志。
+//
+// 这里显式打开 IgnoreRecordNotFoundError，仅屏蔽 not-found 类日志，
+// 慢查询和真正的 SQL 错误仍会正常输出。
+func newGormConfig() *gorm.Config {
+	logLevel := gormlogger.Warn
+	if common.DebugEnabled {
+		logLevel = gormlogger.Info
+	}
+	return &gorm.Config{
+		// Prepared statement caching improves hot SQL paths but retains driver and
+		// GORM statement state while idle. Keep it opt-in for small deployments.
+		PrepareStmt: common.GetEnvOrDefaultBool("SQL_PREPARE_STMT", false),
+		Logger: gormlogger.New(
+			log.New(gin.DefaultWriter, "\n", log.LstdFlags),
+			gormlogger.Config{
+				SlowThreshold:             200 * time.Millisecond,
+				LogLevel:                  logLevel,
+				IgnoreRecordNotFoundError: true,
+				Colorful:                  true,
+			},
+		),
+	}
 }
 
 func InitDB() (err error) {
@@ -196,7 +222,7 @@ func InitDB() (err error) {
 		if err != nil {
 			return err
 		}
-		sqlDB.SetMaxIdleConns(common.GetEnvOrDefault("SQL_MAX_IDLE_CONNS", 100))
+		sqlDB.SetMaxIdleConns(common.GetEnvOrDefault("SQL_MAX_IDLE_CONNS", defaultSQLMaxIdleConns))
 		sqlDB.SetMaxOpenConns(common.GetEnvOrDefault("SQL_MAX_OPEN_CONNS", 1000))
 		sqlDB.SetConnMaxLifetime(time.Second * time.Duration(common.GetEnvOrDefault("SQL_MAX_LIFETIME", 60)))
 
@@ -236,7 +262,7 @@ func InitLogDB() (err error) {
 		if err != nil {
 			return err
 		}
-		sqlDB.SetMaxIdleConns(common.GetEnvOrDefault("SQL_MAX_IDLE_CONNS", 100))
+		sqlDB.SetMaxIdleConns(common.GetEnvOrDefault("SQL_MAX_IDLE_CONNS", defaultSQLMaxIdleConns))
 		sqlDB.SetMaxOpenConns(common.GetEnvOrDefault("SQL_MAX_OPEN_CONNS", 1000))
 		sqlDB.SetConnMaxLifetime(time.Second * time.Duration(common.GetEnvOrDefault("SQL_MAX_LIFETIME", 60)))
 
@@ -256,6 +282,10 @@ func migrateDB() error {
 	// 清理旧版唯一约束/索引，防止 GORM AutoMigrate 的 MigrateColumnUnique 报 SQLSTATE 42704。
 	// 详见 cleanupPrefillGroupLegacyIndex 和 CleanupLegacyUniqueConstraints 的注释。
 	cleanupLegacyUniqueIndexes()
+
+	// PostgreSQL：把旧库中可能漂移成 json/jsonb 的渠道 JSON-like 列改回 TEXT，
+	// 避免写入空字符串/非 JSON 内容时触发 SQLSTATE 22P02。必须在 AutoMigrate 之前执行。
+	cleanupLegacyChannelJSONColumns()
 
 	err := DB.AutoMigrate(
 		&Channel{},
@@ -280,6 +310,8 @@ func migrateDB() error {
 		&TwoFABackupCode{},
 		&Checkin{},
 		&DynamicRatioRule{},
+		&AuditLog{},
+		&MiniMaxVoice{},
 	)
 	if err != nil {
 		return err
@@ -303,6 +335,10 @@ func migrateDB() error {
 func migrateDBFast() error {
 	// 同 migrateDB 中的说明
 	cleanupLegacyUniqueIndexes()
+
+	// PostgreSQL：把旧库中可能漂移成 json/jsonb 的渠道 JSON-like 列改回 TEXT，
+	// 避免写入空字符串/非 JSON 内容时触发 SQLSTATE 22P02。必须在 AutoMigrate 之前执行。
+	cleanupLegacyChannelJSONColumns()
 
 	var wg sync.WaitGroup
 
@@ -332,6 +368,8 @@ func migrateDBFast() error {
 		{&TwoFABackupCode{}, "TwoFABackupCode"},
 		{&Checkin{}, "Checkin"},
 		{&DynamicRatioRule{}, "DynamicRatioRule"},
+		{&AuditLog{}, "AuditLog"},
+		{&MiniMaxVoice{}, "MiniMaxVoice"},
 	}
 	// 动态计算migration数量，确保errChan缓冲区足够大
 	errChan := make(chan error, len(migrations))
@@ -402,6 +440,70 @@ func cleanupLegacyUniqueIndexes() {
 	CleanupLegacyUniqueConstraints(DB, "models", "model_name", []string{"uni_models_model_name", "idx_models_model_name"})
 	// Vendor: 旧版 gorm:"uniqueIndex" → 新版 gorm:"uniqueIndex:uk_vendor_name_delete_at,priority:1"
 	CleanupLegacyUniqueConstraints(DB, "vendors", "name", []string{"uni_vendors_name", "idx_vendors_name"})
+}
+
+// cleanupLegacyChannelJSONColumns 把 PostgreSQL 旧库中可能漂移成 json/jsonb 的渠道
+// JSON-like 列改回 TEXT。当前模型意图是把这些字段当作 JSON 文本存储（TEXT），
+// 这样写入空字符串或非 JSON 内容不会被 PostgreSQL 校验拒绝。
+//
+// 仅影响 PostgreSQL；对 MySQL/SQLite 无操作。必须在 AutoMigrate(&Channel{}) 之前执行，
+// 以免 AutoMigrate 检测到类型不一致时再触发列类型变更或报错。
+//
+// 幂等：只对实际类型为 json/jsonb 的列执行 ALTER，列已是 text 时跳过。
+func cleanupLegacyChannelJSONColumns() {
+	if !common.UsingPostgreSQL {
+		return
+	}
+	// 当前模型中这些字段都是 TEXT 存储意图（gorm:"type:text" 或无 JSON 类型）
+	columns := []string{"other", "setting", "param_override", "header_override", "settings"}
+	for _, col := range columns {
+		alterChannelColumnToTextIfJSON(DB, "channels", col)
+	}
+}
+
+// alterChannelColumnToTextIfJSON 检查指定列的数据类型，若为 json/jsonb 则转为 text。
+// 仅 PostgreSQL 调用。使用 information_schema 探测类型，避免硬编码 schema。
+func alterChannelColumnToTextIfJSON(db *gorm.DB, tableName string, columnName string) {
+	var dataType string
+	err := db.Raw(
+		`SELECT data_type FROM information_schema.columns WHERE table_name = ? AND column_name = ? LIMIT 1`,
+		tableName, columnName,
+	).Row().Scan(&dataType)
+	if err != nil {
+		// 表或列可能尚不存在（首次初始化），直接跳过，交给 AutoMigrate 创建。
+		return
+	}
+	// data_type 为 'json' 或 'USER-DEFINED'（jsonb 在 information_schema 中显示为 USER-DEFINED，
+	// 需进一步用 pg_attribute/format_type 精确判断）。这里同时处理两种情况。
+	needsMigrate := false
+	switch strings.ToLower(dataType) {
+	case "json":
+		needsMigrate = true
+	case "user-defined":
+		// 进一步用 pg_catalog.format_type 判断 jsonb
+		var udtName string
+		err = db.Raw(
+			`SELECT format_type(a.atttypid, a.atttypmod) FROM pg_attribute a
+			 JOIN pg_class c ON a.attrelid = c.oid
+			 JOIN pg_namespace n ON c.relnamespace = n.oid
+			 WHERE c.relname = ? AND a.attname = ? AND a.attnum > 0`,
+			tableName, columnName,
+		).Row().Scan(&udtName)
+		if err == nil && (strings.Contains(strings.ToLower(udtName), "json")) {
+			needsMigrate = true
+		}
+	}
+	if !needsMigrate {
+		return
+	}
+	// USING 子句把现有 JSON 值转换为 text；NULL 保持 NULL。
+	// 表名/列名来自常量，不拼接外部输入，避免 SQL 注入。
+	stmt := fmt.Sprintf(`ALTER TABLE %s ALTER COLUMN %s TYPE text USING %s::text`, tableName, columnName, columnName)
+	if err := db.Exec(stmt).Error; err != nil {
+		common.SysError(fmt.Sprintf("failed to migrate channel column %s.%s from JSON to TEXT: %v", tableName, columnName, err))
+	} else {
+		common.SysLog(fmt.Sprintf("migrated channel column %s.%s from JSON to TEXT", tableName, columnName))
+	}
 }
 
 // CleanupLegacyUniqueConstraints 动态查询并删除指定表/列的所有 UNIQUE 约束和已知旧索引。

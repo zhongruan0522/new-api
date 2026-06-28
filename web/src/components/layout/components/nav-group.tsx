@@ -48,11 +48,9 @@ import {
 import { checkIsActive } from '../lib/url-utils'
 import {
   type NavCollapsible,
-  type NavChatPresets,
   type NavLink,
   type NavGroup as NavGroupProps,
 } from '../types'
-import { ChatPresetsItem } from './chat-presets-item'
 
 /**
  * Sidebar navigation group component
@@ -70,11 +68,6 @@ export function NavGroup({ title, items }: NavGroupProps) {
       <SidebarMenu>
         {items.map((item) => {
           const key = `${item.title}-${item.url || item.type}`
-
-          // Special handling: dynamic chat presets list
-          if (item.type === 'chat-presets') {
-            return <ChatPresetsItem key={key} item={item as NavChatPresets} />
-          }
 
           // If no sub-items, render regular link
           if (!item.items) {

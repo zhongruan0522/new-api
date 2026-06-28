@@ -73,7 +73,7 @@ func TestShouldRetryByStatusCode_DefaultMatchesLegacyBehavior(t *testing.T) {
 	require.False(t, ShouldRetryByStatusCode(408))
 	require.True(t, ShouldRetryByStatusCode(429))
 	require.True(t, ShouldRetryByStatusCode(500))
-	require.False(t, ShouldRetryByStatusCode(504))
+	require.True(t, ShouldRetryByStatusCode(504))
 	require.False(t, ShouldRetryByStatusCode(524))
 	require.True(t, ShouldRetryByStatusCode(599))
 }
@@ -90,7 +90,7 @@ func TestAutomaticRetryStatusCodesFromString_EmptyRestoresDefault(t *testing.T) 
 	require.Equal(t, defaultRanges, AutomaticRetryStatusCodeRanges)
 	require.True(t, ShouldRetryByStatusCode(429))
 	require.True(t, ShouldRetryByStatusCode(500))
-	require.False(t, ShouldRetryByStatusCode(504))
+	require.True(t, ShouldRetryByStatusCode(504))
 }
 
 func TestParseHTTPStatusCodeRanges_BusinessErrorCodes(t *testing.T) {

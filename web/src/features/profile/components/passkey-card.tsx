@@ -191,7 +191,7 @@ export function PasskeyCard({ loading: pageLoading }: PasskeyCardProps) {
       toast.success(t('Device name updated'))
       setRenameOpen(false)
       await fetchStatus()
-    } catch (error) {
+    } catch (_error) {
       toast.error(t('Failed to update device name'))
     } finally {
       setRenaming(false)

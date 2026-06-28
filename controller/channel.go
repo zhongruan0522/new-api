@@ -61,6 +61,37 @@ func parseStatusFilter(statusParam string) int {
 	}
 }
 
+// normalizeModelID coerces a model id from upstream /v1/models responses into
+// a trimmed string. Some providers return non-string ids (numbers, booleans,
+// objects) which break downstream UI code that assumes strings. Empty results
+// are returned for nil and objects without a useful string form.
+func normalizeModelID(raw any) string {
+	switch v := raw.(type) {
+	case string:
+		return strings.TrimSpace(v)
+	case float64:
+		return strings.TrimSpace(strconv.FormatFloat(v, 'f', -1, 64))
+	case int:
+		return strings.TrimSpace(strconv.Itoa(v))
+	case int64:
+		return strings.TrimSpace(strconv.FormatInt(v, 10))
+	case json.Number:
+		return strings.TrimSpace(v.String())
+	case bool:
+		if v {
+			return "true"
+		}
+		return "false"
+	case nil:
+		return ""
+	default:
+		if bytes, err := json.Marshal(raw); err == nil {
+			return strings.Trim(string(bytes), `"`)
+		}
+		return ""
+	}
+}
+
 func clearChannelInfo(channel *model.Channel) {
 	if channel.ChannelInfo.IsMultiKey {
 		channel.ChannelInfo.MultiKeyDisabledReason = nil
@@ -350,45 +381,18 @@ func FetchUpstreamModels(c *gin.Context) {
 			return
 		}
 
-		result := OpenAIModelsResponse{
-			Data: make([]OpenAIModel, 0, len(models)),
-		}
-
+		ids := make([]string, 0, len(models))
 		for _, modelInfo := range models {
-			metadata := map[string]any{}
-			if modelInfo.Size > 0 {
-				metadata["size"] = modelInfo.Size
+			if modelInfo.Name == "" {
+				continue
 			}
-			if modelInfo.Digest != "" {
-				metadata["digest"] = modelInfo.Digest
-			}
-			if modelInfo.ModifiedAt != "" {
-				metadata["modified_at"] = modelInfo.ModifiedAt
-			}
-			details := modelInfo.Details
-			if details.ParentModel != "" || details.Format != "" || details.Family != "" || len(details.Families) > 0 || details.ParameterSize != "" || details.QuantizationLevel != "" {
-				metadata["details"] = modelInfo.Details
-			}
-			if len(metadata) == 0 {
-				metadata = nil
-			}
-			ownedBy := modelInfo.OwnedBy
-			if ownedBy == "" {
-				ownedBy = "ollama"
-			}
-
-			result.Data = append(result.Data, OpenAIModel{
-				ID:       modelInfo.Name,
-				Object:   "model",
-				Created:  modelInfo.Created,
-				OwnedBy:  ownedBy,
-				Metadata: metadata,
-			})
+			ids = append(ids, modelInfo.Name)
 		}
 
 		c.JSON(http.StatusOK, gin.H{
 			"success": true,
-			"data":    result.Data,
+			"message": "",
+			"data":    ids,
 		})
 		return
 	}
@@ -468,7 +472,12 @@ func FetchUpstreamModels(c *gin.Context) {
 		return
 	}
 
-	var result OpenAIModelsResponse
+	var result struct {
+		Data []struct {
+			ID any `json:"id"`
+		} `json:"data"`
+	}
+
 	if err = json.Unmarshal(body, &result); err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,
@@ -479,9 +488,12 @@ func FetchUpstreamModels(c *gin.Context) {
 
 	var ids []string
 	for _, model := range result.Data {
-		id := model.ID
+		id := normalizeModelID(model.ID)
 		if channel.Type == constant.ChannelTypeGemini {
 			id = strings.TrimPrefix(id, "models/")
+		}
+		if id == "" {
+			continue
 		}
 		ids = append(ids, id)
 	}
@@ -874,6 +886,7 @@ func AddChannel(c *gin.Context) {
 		return
 	}
 	service.ResetProxyClientCache()
+	service.RecordAudit(c, model.AuditModuleChannel, model.AuditActionCreate, "新增渠道: "+addChannelRequest.Channel.Name, nil, map[string]interface{}{"name": addChannelRequest.Channel.Name, "type": addChannelRequest.Channel.Type, "models": addChannelRequest.Channel.Models})
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
@@ -890,6 +903,7 @@ func DeleteChannel(c *gin.Context) {
 		return
 	}
 	model.InitChannelCache()
+	service.RecordAudit(c, model.AuditModuleChannel, model.AuditActionDelete, "删除渠道 #"+strconv.Itoa(id), nil, map[string]interface{}{"id": id})
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
@@ -904,6 +918,7 @@ func DeleteDisabledChannel(c *gin.Context) {
 		return
 	}
 	model.InitChannelCache()
+	service.RecordAudit(c, model.AuditModuleChannel, model.AuditActionDelete, "删除所有已禁用渠道", nil, nil)
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
@@ -940,6 +955,7 @@ func DisableTagChannels(c *gin.Context) {
 		return
 	}
 	model.InitChannelCache()
+	service.RecordAudit(c, model.AuditModuleChannel, model.AuditActionUpdate, "按标签禁用渠道: "+channelTag.Tag, nil, map[string]interface{}{"tag": channelTag.Tag})
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
@@ -963,6 +979,7 @@ func EnableTagChannels(c *gin.Context) {
 		return
 	}
 	model.InitChannelCache()
+	service.RecordAudit(c, model.AuditModuleChannel, model.AuditActionUpdate, "按标签启用渠道: "+channelTag.Tag, nil, map[string]interface{}{"tag": channelTag.Tag})
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
@@ -1015,6 +1032,7 @@ func EditTagChannels(c *gin.Context) {
 		return
 	}
 	model.InitChannelCache()
+	service.RecordAudit(c, model.AuditModuleChannel, model.AuditActionUpdate, "按标签编辑渠道: "+channelTag.Tag, nil, channelTag)
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
@@ -1043,6 +1061,7 @@ func DeleteChannelBatch(c *gin.Context) {
 		return
 	}
 	model.InitChannelCache()
+	service.RecordAudit(c, model.AuditModuleChannel, model.AuditActionDelete, "批量删除渠道", nil, map[string]interface{}{"ids": channelBatch.Ids})
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
@@ -1208,6 +1227,7 @@ func UpdateChannel(c *gin.Context) {
 	}
 	model.InitChannelCache()
 	service.ResetProxyClientCache()
+	service.RecordAudit(c, model.AuditModuleChannel, model.AuditActionUpdate, "修改渠道: "+channel.Name, originChannel, channel)
 	channel.Key = ""
 	clearChannelInfo(&channel.Channel)
 	c.JSON(http.StatusOK, gin.H{
@@ -1376,7 +1396,7 @@ func FetchModels(c *gin.Context) {
 
 	var result struct {
 		Data []struct {
-			ID string `json:"id"`
+			ID any `json:"id"`
 		} `json:"data"`
 	}
 
@@ -1390,7 +1410,11 @@ func FetchModels(c *gin.Context) {
 
 	var models []string
 	for _, model := range result.Data {
-		models = append(models, model.ID)
+		id := normalizeModelID(model.ID)
+		if id == "" {
+			continue
+		}
+		models = append(models, id)
 	}
 
 	c.JSON(http.StatusOK, gin.H{
@@ -1415,6 +1439,7 @@ func BatchSetChannelTag(c *gin.Context) {
 		return
 	}
 	model.InitChannelCache()
+	service.RecordAudit(c, model.AuditModuleChannel, model.AuditActionUpdate, "批量设置渠道标签", nil, map[string]interface{}{"ids": channelBatch.Ids, "tag": channelBatch.Tag})
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
@@ -1512,6 +1537,7 @@ func CopyChannel(c *gin.Context) {
 		return
 	}
 	model.InitChannelCache()
+	service.RecordAudit(c, model.AuditModuleChannel, model.AuditActionCreate, "复制渠道: "+clone.Name, map[string]interface{}{"source_id": id}, map[string]interface{}{"name": clone.Name, "type": clone.Type})
 	// success
 	c.JSON(http.StatusOK, gin.H{"success": true, "message": "", "data": gin.H{"id": clone.Id}})
 }
@@ -1576,6 +1602,20 @@ func ManageMultiKeys(c *gin.Context) {
 	lock := model.GetChannelPollingLock(channel.Id)
 	lock.Lock()
 	defer lock.Unlock()
+
+	// 保存更新前的 channel 快照（map 副本），用于审计差异对比。
+	// 使用 JSON 往返实现深拷贝，避免指针修改导致 before 数据被污染。
+	originChannelMap := func() map[string]interface{} {
+		bytes, err := common.Marshal(channel)
+		if err != nil {
+			return nil
+		}
+		var m map[string]interface{}
+		if err := common.Unmarshal(bytes, &m); err != nil {
+			return nil
+		}
+		return m
+	}()
 
 	switch request.Action {
 	case "get_key_status":
@@ -1729,6 +1769,7 @@ func ManageMultiKeys(c *gin.Context) {
 		}
 
 		model.InitChannelCache()
+		service.RecordAudit(c, model.AuditModuleChannel, model.AuditActionUpdate, "管理多密钥渠道: "+request.Action, originChannelMap, channel)
 		c.JSON(http.StatusOK, gin.H{
 			"success": true,
 			"message": "密钥已禁用",
@@ -1771,6 +1812,7 @@ func ManageMultiKeys(c *gin.Context) {
 		}
 
 		model.InitChannelCache()
+		service.RecordAudit(c, model.AuditModuleChannel, model.AuditActionUpdate, "管理多密钥渠道: "+request.Action, originChannelMap, channel)
 		c.JSON(http.StatusOK, gin.H{
 			"success": true,
 			"message": "密钥已启用",
@@ -1795,6 +1837,7 @@ func ManageMultiKeys(c *gin.Context) {
 		}
 
 		model.InitChannelCache()
+		service.RecordAudit(c, model.AuditModuleChannel, model.AuditActionUpdate, "管理多密钥渠道: "+request.Action, originChannelMap, channel)
 		c.JSON(http.StatusOK, gin.H{
 			"success": true,
 			"message": fmt.Sprintf("已启用 %d 个密钥", enabledCount),
@@ -1842,6 +1885,7 @@ func ManageMultiKeys(c *gin.Context) {
 		}
 
 		model.InitChannelCache()
+		service.RecordAudit(c, model.AuditModuleChannel, model.AuditActionUpdate, "管理多密钥渠道: "+request.Action, originChannelMap, channel)
 		c.JSON(http.StatusOK, gin.H{
 			"success": true,
 			"message": fmt.Sprintf("已禁用 %d 个密钥", disabledCount),
@@ -1922,6 +1966,7 @@ func ManageMultiKeys(c *gin.Context) {
 		}
 
 		model.InitChannelCache()
+		service.RecordAudit(c, model.AuditModuleChannel, model.AuditActionUpdate, "管理多密钥渠道: "+request.Action, originChannelMap, channel)
 		c.JSON(http.StatusOK, gin.H{
 			"success": true,
 			"message": "密钥已删除",
@@ -1990,6 +2035,7 @@ func ManageMultiKeys(c *gin.Context) {
 		}
 
 		model.InitChannelCache()
+		service.RecordAudit(c, model.AuditModuleChannel, model.AuditActionUpdate, "管理多密钥渠道: "+request.Action, originChannelMap, channel)
 		c.JSON(http.StatusOK, gin.H{
 			"success": true,
 			"message": fmt.Sprintf("已删除 %d 个自动禁用的密钥", deletedCount),
@@ -2208,6 +2254,7 @@ func OllamaDeleteModel(c *gin.Context) {
 		return
 	}
 
+	service.RecordAudit(c, model.AuditModuleChannel, model.AuditActionDelete, "删除 Ollama 模型: "+req.ModelName, nil, map[string]interface{}{"model_name": req.ModelName})
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": fmt.Sprintf("Model %s deleted successfully", req.ModelName),

@@ -31,9 +31,8 @@ title: Feature Description
         - - Add suffix `-low` to set as low reasoning effort (e.g.: `o3-mini-low`)
     2.  Claude thinking models
         - - Add suffix `-thinking` to enable thinking mode (e.g.: `claude-3-7-sonnet-20250219-thinking`)
-18. 🔄 Thinking to Content, supports setting the `thinking_to_content` option in `Channel - Edit - Channel Extra Settings`, default `false`. When enabled, it will convert the thinking content `reasoning_content` into a `<think>` tag and append it to the returned content.
-19. 🔄 Model Rate Limiting, supports setting model rate limits in `System Settings - Rate Limit Settings`, including total request count limit and successful request count limit.
-20. 💰 Cache Billing Support, when enabled, billing can occur at a set Ratio upon cache hit:
+18. 🔄 Model Rate Limiting, supports setting model rate limits in `System Settings - Rate Limit Settings`, including total request count limit and successful request count limit.
+19. 💰 Cache Billing Support, when enabled, billing can occur at a set Ratio upon cache hit:
     1.  Set the Prompt Cache Ratio option in `System Settings - Operation Settings`
     2.  Set the Prompt Cache Ratio in the Channel, range 0-1. For example, setting it to 0.5 means billing at 50% upon cache hit.
     3.  Supported Channels:

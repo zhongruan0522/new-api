@@ -5,11 +5,11 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"github.com/zhongruan0522/new-api/common"
 	"github.com/zhongruan0522/new-api/logger"
 	"github.com/zhongruan0522/new-api/model"
 	"github.com/zhongruan0522/new-api/setting/operation_setting"
-	"github.com/gin-gonic/gin"
 )
 
 // GetCheckinStatus 获取用户签到状态和历史记录

@@ -85,7 +85,6 @@ export type Channel = z.infer<typeof channelSchema>
 
 export interface ChannelSettings {
   force_format?: boolean
-  thinking_to_content?: boolean
   proxy?: string
   pass_through_body_enabled?: boolean
   pass_through_headers_enabled?: boolean
@@ -98,6 +97,8 @@ export interface ChannelOtherSettings {
   openrouter_enterprise?: boolean
   aws_key_type?: 'ak_sk' | 'api_key'
   image_auto_convert_to_url_mode?: 'off' | 'mcp'
+  allow_cache_control?: boolean
+  allow_speed?: boolean
   allow_service_tier?: boolean
   disable_store?: boolean
   allow_safety_identifier?: boolean
@@ -156,7 +157,7 @@ export interface ChannelBalanceResponse {
 export interface FetchModelsResponse {
   success: boolean
   message?: string
-  data?: string[]
+  data?: unknown[]
 }
 
 export interface CopyChannelResponse {

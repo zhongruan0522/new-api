@@ -3,6 +3,17 @@
 本文件是仓库级统一入口。按 https://agents.md/ 的约定，子目录中更近的
 `AGENTS.md` 会补充或覆盖这里的规则；用户在对话中的明确要求优先级最高。
 
+## ⚠ 必读：分层规则
+
+**修改某个包/目录下的代码前，必须先阅读该目录下的 `AGENTS.md`。** 根文件只包含
+全局规则和概览，每个子目录的 `AGENTS.md` 包含该包特有的约定、模式和检查清单。
+跳过子目录规则会导致违反项目约定（如遗漏审计埋点、数据库兼容性问题、前端 i18n 缺失等）。
+
+阅读顺序：根 `AGENTS.md` → 目标目录的 `AGENTS.md` → 如有更深层级继续向下。
+
+涉及跨包改动时，阅读所有受影响包的 `AGENTS.md`。例如改 controller 调用
+service 的逻辑时，同时阅读 `controller/AGENTS.md` 和 `service/AGENTS.md`。
+
 ## 子规则索引
 
 前端:
@@ -37,9 +48,9 @@ Azure、AWS Bedrock 等上游能力，提供用户、渠道、计费、限速、
 - `router/`: API、relay、dashboard、web 静态路由。
 - `controller/`: HTTP 边界、请求校验、响应组织。
 - `middleware/`: 认证、限速、日志、分发、安全校验。
-- `service/`: 业务逻辑、外部请求、计费、迁移编排。
+- `service/`: 业务逻辑、外部请求、计费、迁移编排、审计日志。
 - `model/`: GORM 模型、迁移、缓存、数据库访问。
-- `setting/`: 系统、运营、模型、倍率、性能等配置。
+- `setting/`: 系统、运营、模型、倍率、性能、审计等配置。
 - `common/`: JSON、缓存、环境变量、静态文件服务、安全工具。
 - `relay/`: AI 请求中继、协议转换、供应商适配。
 - `web/`: 前端 UI，React 19 + TypeScript + Rsbuild。
@@ -61,9 +72,19 @@ Azure、AWS Bedrock 等上游能力，提供用户、渠道、计费、限速、
 - JSON 序列化/反序列化调用使用 `common/json.go` 的包装函数；不要在业务代码里直接调用
   `encoding/json` 的 marshal/unmarshal/decode。
 - 数据库必须兼容 SQLite、MySQL >= 5.7.8、PostgreSQL >= 9.6。优先 GORM；原始 SQL 必须参数化并处理三库差异。
+- 待机内存相关默认值必须保守：连接池 idle 上限、prepared statement 缓存、后台 worker/goroutine 池、
+  ticker 唤醒频率等常驻资源不能为追求峰值吞吐随意调大。确需调大时必须保留环境变量覆盖、同步
+  `.env.example` 和中英文环境变量文档，并说明低流量/待机场景的内存影响。
 - 路由层不要承载业务逻辑；控制器只做边界处理；服务层承载业务；模型层承载持久化。
 - relay 改动要保护流式输出、usage 统计、错误映射、计费和供应商协议差异。
 - relay 请求 DTO 中需要转发给上游的可选标量字段，优先用指针类型配合 `omitempty`，保留客户端显式传入的 `0`、`0.0`、`false`。
+
+### 审计日志
+
+管理员对系统资源（渠道、用户、令牌、系统设置等）的增删改操作必须接入审计日志。
+通过 `service.RecordAudit(...)` 记录，详见 `controller/AGENTS.md` 和 `service/AGENTS.md`。
+新增需要审计的资源类型时，按 `controller/AGENTS.md` 中的检查清单同步更新 model、
+setting、前端常量和 i18n。
 
 常用验证:
 
@@ -74,7 +95,7 @@ Azure、AWS Bedrock 等上游能力，提供用户、渠道、计费、限速、
 ## 前端规则
 
 - 前端包管理器使用 Bun。`web/` 目录有独立 `package.json` 和 `bun.lock`。
-- 改 `web/` 后按影响执行 `bun run typecheck`、`bun run lint`、`bun run build`。
+- 改 `web/` 后按影响执行 `bun run typecheck`、`bun run lint`、`bun run build`，适度使用knip。
 - 不允许用 mock 数据替代真实后端能力。
 
 ## 文档与参考项目

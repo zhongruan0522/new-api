@@ -1,0 +1,13 @@
+{
+  "Amount": "金额",
+  "Are you sure you want to manually complete this order? The user will be credited with the corresponding quota.": "您确定要手动完成此订单吗？用户将获得相应的配额。",
+  "Complete Order": "补单",
+  "Copy order number": "复制订单号",
+  "No orders found": "未找到订单",
+  "Order number": "订单号",
+  "Order Query": "订单查询",
+  "Payment": "支付",
+  "Payment Method": "付款方式",
+  "Search by order number...": "按订单号搜索...",
+  "User ID": "用户 ID"
+}

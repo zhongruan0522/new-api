@@ -1,10 +1,18 @@
 package claude
 
 import (
+	"encoding/base64"
+	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 
+	"github.com/gin-gonic/gin"
+	"github.com/stretchr/testify/require"
+	"github.com/zhongruan0522/new-api/common"
 	"github.com/zhongruan0522/new-api/dto"
+	relaycommon "github.com/zhongruan0522/new-api/relay/common"
+	"github.com/zhongruan0522/new-api/types"
 )
 
 func TestFormatClaudeResponseInfo_MessageStart(t *testing.T) {
@@ -172,4 +180,154 @@ func TestFormatClaudeResponseInfo_ContentBlockDelta(t *testing.T) {
 	if claudeInfo.ResponseText.String() != "hello" {
 		t.Errorf("ResponseText = %q, want %q", claudeInfo.ResponseText.String(), "hello")
 	}
+}
+
+func TestClaudeOpenAIStreamMasksResponseModel(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest(http.MethodPost, "/v1/chat/completions", nil)
+	info := &relaycommon.RelayInfo{
+		OriginModelName:    "alias-model",
+		ResponseModelName:  "alias-model",
+		RelayFormat:        types.RelayFormatOpenAI,
+		ShouldIncludeUsage: true,
+		ClaudeConvertInfo:  &relaycommon.ClaudeConvertInfo{LastMessagesType: relaycommon.LastMessageTypeNone},
+		ChannelMeta:        &relaycommon.ChannelMeta{UpstreamModelName: "real-model"},
+	}
+	claudeInfo := &ClaudeResponseInfo{
+		ResponseId: "msg_1",
+		Created:    1710000000,
+		Model:      "real-model",
+		Usage:      &dto.Usage{PromptTokens: 1, CompletionTokens: 1, TotalTokens: 2},
+		Done:       true,
+	}
+	messageStart, err := common.Marshal(dto.ClaudeResponse{
+		Type: "message_start",
+		Message: &dto.ClaudeMediaMessage{
+			Id:    "msg_1",
+			Model: "real-model",
+			Usage: &dto.ClaudeUsage{InputTokens: 1},
+		},
+	})
+	if err != nil {
+		t.Fatalf("marshal message_start: %v", err)
+	}
+	if apiErr := HandleStreamResponseData(c, info, claudeInfo, string(messageStart)); apiErr != nil {
+		t.Fatalf("HandleStreamResponseData error: %v", apiErr)
+	}
+	HandleStreamFinalResponse(c, info, claudeInfo)
+
+	out := w.Body.String()
+	if strings.Contains(out, `"model":"real-model"`) {
+		t.Fatalf("claude stream output leaked upstream model: %s", out)
+	}
+	if !strings.Contains(out, `"model":"alias-model"`) {
+		t.Fatalf("claude stream output missing alias model: %s", out)
+	}
+}
+
+func TestRequestOpenAI2ClaudeMessageIgnoresUnsupportedFileContent(t *testing.T) {
+	request := dto.GeneralOpenAIRequest{
+		Model: "claude-3-5-sonnet",
+		Messages: []dto.Message{
+			{
+				Role: "user",
+				Content: []any{
+					dto.MediaContent{
+						Type: dto.ContentTypeText,
+						Text: "see attachment",
+					},
+					dto.MediaContent{
+						Type: dto.ContentTypeFile,
+						File: &dto.MessageFile{
+							FileName: "blob.bin",
+							FileData: "JVBERi0xLjQK",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	claudeRequest, err := RequestOpenAI2ClaudeMessage(nil, nil, request)
+	require.NoError(t, err)
+	require.Len(t, claudeRequest.Messages, 1)
+
+	content, ok := claudeRequest.Messages[0].Content.([]dto.ClaudeMediaMessage)
+	require.True(t, ok)
+	require.Len(t, content, 1)
+	require.Equal(t, "text", content[0].Type)
+	require.NotNil(t, content[0].Text)
+	require.Equal(t, "see attachment", *content[0].Text)
+}
+
+func TestRequestOpenAI2ClaudeMessageSupportsPDFFileContent(t *testing.T) {
+	request := dto.GeneralOpenAIRequest{
+		Model: "claude-3-5-sonnet",
+		Messages: []dto.Message{
+			{
+				Role: "user",
+				Content: []any{
+					dto.MediaContent{
+						Type: dto.ContentTypeFile,
+						File: &dto.MessageFile{
+							FileName: "spec.pdf",
+							FileData: "JVBERi0xLjQK",
+						},
+					},
+					dto.MediaContent{
+						Type: dto.ContentTypeText,
+						Text: "summarize it",
+					},
+				},
+			},
+		},
+	}
+
+	claudeRequest, err := RequestOpenAI2ClaudeMessage(nil, nil, request)
+	require.NoError(t, err)
+	require.Len(t, claudeRequest.Messages, 1)
+
+	content, ok := claudeRequest.Messages[0].Content.([]dto.ClaudeMediaMessage)
+	require.True(t, ok)
+	require.Len(t, content, 2)
+	require.Equal(t, "document", content[0].Type)
+	require.NotNil(t, content[0].Source)
+	require.Equal(t, "base64", content[0].Source.Type)
+	require.Equal(t, "application/pdf", content[0].Source.MediaType)
+	require.Equal(t, "JVBERi0xLjQK", content[0].Source.Data)
+	require.Equal(t, "text", content[1].Type)
+	require.NotNil(t, content[1].Text)
+	require.Equal(t, "summarize it", *content[1].Text)
+}
+
+func TestRequestOpenAI2ClaudeMessageConvertsTextFileContentToText(t *testing.T) {
+	request := dto.GeneralOpenAIRequest{
+		Model: "claude-3-5-sonnet",
+		Messages: []dto.Message{
+			{
+				Role: "user",
+				Content: []any{
+					dto.MediaContent{
+						Type: dto.ContentTypeFile,
+						File: &dto.MessageFile{
+							FileName: "notes.txt",
+							FileData: base64.StdEncoding.EncodeToString([]byte("alpha\nbeta")),
+						},
+					},
+				},
+			},
+		},
+	}
+
+	claudeRequest, err := RequestOpenAI2ClaudeMessage(nil, nil, request)
+	require.NoError(t, err)
+	require.Len(t, claudeRequest.Messages, 1)
+
+	content, ok := claudeRequest.Messages[0].Content.([]dto.ClaudeMediaMessage)
+	require.True(t, ok)
+	require.Len(t, content, 1)
+	require.Equal(t, "text", content[0].Type)
+	require.NotNil(t, content[0].Text)
+	require.Equal(t, "alpha\nbeta", *content[0].Text)
 }

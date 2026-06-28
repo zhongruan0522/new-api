@@ -18,14 +18,108 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { api } from '@/lib/api'
 import type {
-  DeleteLogsResponse,
+  CleanLogsParams,
+  CleanLogsResponse,
+  DatabaseMigrationInfoResponse,
+  DatabaseMigrationJobResponse,
+  DatabaseMigrationMode,
+  DatabaseMigrationStartRequest,
+  DatabaseMigrationStartResponse,
+  DeleteOptionJsonArrayEntryRequest,
+  DeleteOptionJsonMapEntryRequest,
+  OptionJsonArrayResponse,
+  OptionJsonMapResponse,
+  SystemOptionValueResponse,
   SystemOptionsResponse,
   UpdateOptionRequest,
   UpdateOptionResponse,
+  UpsertOptionJsonArrayEntryRequest,
+  UpsertOptionJsonMapEntryRequest,
 } from './types'
 
-export async function getSystemOptions() {
-  const res = await api.get<SystemOptionsResponse>('/api/option/')
+export async function getSystemOptions(options?: {
+  excludeLargeOptions?: boolean
+}) {
+  const res = await api.get<SystemOptionsResponse>('/api/option/', {
+    params: options?.excludeLargeOptions
+      ? { exclude_large_options: true }
+      : undefined,
+  })
+  return res.data
+}
+
+export async function getSystemOptionValue(key: string) {
+  const res = await api.get<SystemOptionValueResponse>('/api/option/value', {
+    params: { key },
+  })
+  return res.data
+}
+
+export async function getOptionJsonMap(params: {
+  key: string
+  page: number
+  pageSize: number
+}) {
+  const res = await api.get<OptionJsonMapResponse>('/api/option/json_map', {
+    params: {
+      key: params.key,
+      page: params.page,
+      page_size: params.pageSize,
+    },
+  })
+  return res.data
+}
+
+export async function getOptionJsonArray(params: {
+  key: string
+  page: number
+  pageSize: number
+}) {
+  const res = await api.get<OptionJsonArrayResponse>('/api/option/json_array', {
+    params: {
+      key: params.key,
+      page: params.page,
+      page_size: params.pageSize,
+    },
+  })
+  return res.data
+}
+
+export async function deleteOptionJsonMapEntry(
+  request: DeleteOptionJsonMapEntryRequest
+) {
+  const res = await api.delete<UpdateOptionResponse>('/api/option/json_map', {
+    data: request,
+  })
+  return res.data
+}
+
+export async function upsertOptionJsonMapEntry(
+  request: UpsertOptionJsonMapEntryRequest
+) {
+  const res = await api.put<UpdateOptionResponse>(
+    '/api/option/json_map',
+    request
+  )
+  return res.data
+}
+
+export async function deleteOptionJsonArrayEntry(
+  request: DeleteOptionJsonArrayEntryRequest
+) {
+  const res = await api.delete<UpdateOptionResponse>('/api/option/json_array', {
+    data: request,
+  })
+  return res.data
+}
+
+export async function upsertOptionJsonArrayEntry(
+  request: UpsertOptionJsonArrayEntryRequest
+) {
+  const res = await api.put<UpdateOptionResponse>(
+    '/api/option/json_array',
+    request
+  )
   return res.data
 }
 
@@ -34,16 +128,44 @@ export async function updateSystemOption(request: UpdateOptionRequest) {
   return res.data
 }
 
-export async function deleteLogsBefore(targetTimestamp: number) {
-  const res = await api.delete<DeleteLogsResponse>('/api/log/', {
-    params: { target_timestamp: targetTimestamp },
-  })
+export async function cleanLogs(params: CleanLogsParams) {
+  const res = await api.delete<CleanLogsResponse>('/api/log/', { params })
   return res.data
 }
 
 export async function resetModelRatios() {
   const res = await api.post<UpdateOptionResponse>(
     '/api/option/rest_model_ratio'
+  )
+  return res.data
+}
+
+export async function getDatabaseMigrationInfo(
+  mode: DatabaseMigrationMode
+) {
+  const res = await api.get<DatabaseMigrationInfoResponse>(
+    `/api/db/${mode}/info`
+  )
+  return res.data
+}
+
+export async function startDatabaseMigration(
+  mode: DatabaseMigrationMode,
+  request: DatabaseMigrationStartRequest
+) {
+  const res = await api.post<DatabaseMigrationStartResponse>(
+    `/api/db/${mode}`,
+    request
+  )
+  return res.data
+}
+
+export async function getDatabaseMigrationJob(
+  mode: DatabaseMigrationMode,
+  jobId: string
+) {
+  const res = await api.get<DatabaseMigrationJobResponse>(
+    `/api/db/${mode}/${jobId}`
   )
   return res.data
 }

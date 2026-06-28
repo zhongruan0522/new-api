@@ -283,3 +283,64 @@ func TestConvertResponsesRequestToChatCompletionsRequest_LoadedNamespaceTools(t 
 		t.Fatalf("tool_search output message = %#v, want raw loaded tools content", got.Messages[1])
 	}
 }
+
+func TestConvertResponsesRequestToChatCompletionsRequest_DropsBuiltInTools(t *testing.T) {
+	toolsRaw, err := common.Marshal([]map[string]any{
+		{"type": "function", "name": "get_weather"},
+		{"type": "web_search"},
+		{"type": "web_search_preview", "search_context_size": "medium"},
+		{"type": "image_generation", "quality": "high", "size": "1024x1024"},
+		{"type": "function", "name": "get_stock"},
+	})
+	if err != nil {
+		t.Fatalf("marshal tools error = %v", err)
+	}
+	inputRaw, err := common.Marshal("hi")
+	if err != nil {
+		t.Fatalf("marshal input error = %v", err)
+	}
+
+	got, err := ConvertResponsesRequestToChatCompletionsRequest(&dto.OpenAIResponsesRequest{
+		Model: "gpt-5",
+		Input: inputRaw,
+		Tools: toolsRaw,
+	})
+	if err != nil {
+		t.Fatalf("ConvertResponsesRequestToChatCompletionsRequest() error = %v", err)
+	}
+
+	if len(got.Tools) != 2 {
+		t.Fatalf("tools len = %d, want 2 (built-in tools should be dropped): %#v", len(got.Tools), got.Tools)
+	}
+	names := []string{got.Tools[0].Function.Name, got.Tools[1].Function.Name}
+	if names[0] != "get_weather" || names[1] != "get_stock" {
+		t.Fatalf("tools names = %v, want [get_weather get_stock]", names)
+	}
+}
+
+func TestConvertResponsesRequestToChatCompletionsRequest_OnlyBuiltInTools(t *testing.T) {
+	// 当请求只包含内置工具时，转换不应报错，且 tools 为空。
+	toolsRaw, err := common.Marshal([]map[string]any{
+		{"type": "web_search"},
+		{"type": "image_generation"},
+	})
+	if err != nil {
+		t.Fatalf("marshal tools error = %v", err)
+	}
+	inputRaw, err := common.Marshal("draw a cat")
+	if err != nil {
+		t.Fatalf("marshal input error = %v", err)
+	}
+
+	got, err := ConvertResponsesRequestToChatCompletionsRequest(&dto.OpenAIResponsesRequest{
+		Model: "gpt-5",
+		Input: inputRaw,
+		Tools: toolsRaw,
+	})
+	if err != nil {
+		t.Fatalf("ConvertResponsesRequestToChatCompletionsRequest() error = %v", err)
+	}
+	if len(got.Tools) != 0 {
+		t.Fatalf("tools len = %d, want 0: %#v", len(got.Tools), got.Tools)
+	}
+}

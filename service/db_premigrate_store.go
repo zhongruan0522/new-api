@@ -5,8 +5,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/zhongruan0522/new-api/common"
 	"github.com/google/uuid"
+	"github.com/zhongruan0522/new-api/common"
 )
 
 var (

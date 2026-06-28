@@ -66,7 +66,7 @@ export function SettingsFormGridItem(props: SettingsFormGridItemProps) {
       data-settings-form-span={props.span === 'full' ? 'full' : undefined}
       className={cn(
         'min-w-0',
-        props.span === 'full' && 'lg:col-span-2',
+        props.span === 'full' && 'lg:col-span-full',
         props.className
       )}
     >
@@ -168,12 +168,18 @@ export function SettingsForm({ className, ...props }: ComponentProps<'form'>) {
     <form
       className={cn(
         'grid min-w-0 gap-x-5 gap-y-6 lg:grid-cols-2',
-        'lg:[&>*:not([data-slot=form-item])]:col-span-2',
-        'lg:[&>[data-settings-form-span=full]]:col-span-2',
-        'lg:[&>[data-slot=alert]]:col-span-2',
+        // col-span-full (= 1 / -1) instead of col-span-2: "full width" must hold
+        // regardless of the grid's column count. With col-span-2, overriding the
+        // grid to a single column (lg:grid-cols-1) still produced a phantom second
+        // column, because span-2 extends past the single explicit track — the
+        // auto-placed fields then flowed two-per-row. col-span-full never creates
+        // implicit columns, so a single-column override yields a true single column.
+        'lg:[&>*:not([data-slot=form-item])]:col-span-full',
+        'lg:[&>[data-settings-form-span=full]]:col-span-full',
+        'lg:[&>[data-slot=alert]]:col-span-full',
         '[&>[data-slot=form-item]]:min-w-0',
-        'lg:[&>[data-slot=form-item]:has(textarea)]:col-span-2',
-        'lg:[&>[data-slot=form-item]:has([data-slot=switch])]:col-span-2',
+        'lg:[&>[data-slot=form-item]:has(textarea)]:col-span-full',
+        'lg:[&>[data-slot=form-item]:has([data-slot=switch])]:col-span-full',
         className
       )}
       {...props}

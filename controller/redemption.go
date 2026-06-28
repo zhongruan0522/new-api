@@ -8,6 +8,7 @@ import (
 	"github.com/zhongruan0522/new-api/common"
 	"github.com/zhongruan0522/new-api/i18n"
 	"github.com/zhongruan0522/new-api/model"
+	"github.com/zhongruan0522/new-api/service"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -113,6 +114,7 @@ func AddRedemption(c *gin.Context) {
 		})
 		return
 	}
+	service.RecordAudit(c, model.AuditModuleRedemption, model.AuditActionCreate, "新增兑换码", nil, map[string]interface{}{"name": redemption.Name, "count": redemption.Count})
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
@@ -128,6 +130,7 @@ func DeleteRedemption(c *gin.Context) {
 		common.ApiError(c, err)
 		return
 	}
+	service.RecordAudit(c, model.AuditModuleRedemption, model.AuditActionDelete, "删除兑换码", nil, map[string]interface{}{"id": id})
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
@@ -148,6 +151,8 @@ func UpdateRedemption(c *gin.Context) {
 		common.ApiError(c, err)
 		return
 	}
+	// 保存更新前快照用于审计差异对比
+	originRedemption := *cleanRedemption
 	if statusOnly == "" {
 		if valid, msg := validateExpiredTime(c, redemption.ExpiredTime); !valid {
 			c.JSON(http.StatusOK, gin.H{"success": false, "message": msg})
@@ -166,6 +171,7 @@ func UpdateRedemption(c *gin.Context) {
 		common.ApiError(c, err)
 		return
 	}
+	service.RecordAudit(c, model.AuditModuleRedemption, model.AuditActionUpdate, "修改兑换码: "+cleanRedemption.Name, originRedemption, cleanRedemption)
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
@@ -180,6 +186,7 @@ func DeleteInvalidRedemption(c *gin.Context) {
 		common.ApiError(c, err)
 		return
 	}
+	service.RecordAudit(c, model.AuditModuleRedemption, model.AuditActionDelete, "删除无效兑换码", nil, nil)
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",

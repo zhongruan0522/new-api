@@ -21,8 +21,10 @@ import { createSectionRegistry } from '../utils/section-registry'
 import { AnnouncementsSection } from './announcements-section'
 import { ApiInfoSection } from './api-info-section'
 import { DashboardSection } from './dashboard-section'
+import { DashboardConfigSection } from './dashboard-config-section'
 import { FAQSection } from './faq-section'
 import { UptimeKumaSection } from './uptime-kuma-section'
+import { UsageLogFieldsSection } from './usage-log-fields-section'
 
 /**
  * Validate and coerce DataExportDefaultTime to a safe value
@@ -52,11 +54,15 @@ const CONTENT_SECTIONS = [
     ),
   },
   {
+    id: 'dashboard-config',
+    titleKey: 'Dashboard Configuration',
+    build: () => <DashboardConfigSection />,
+  },
+  {
     id: 'announcements',
     titleKey: 'Announcements',
     build: (settings: ContentSettings) => (
       <AnnouncementsSection
-        enabled={settings['console_setting.announcements_enabled']}
         data={settings['console_setting.announcements']}
       />
     ),
@@ -65,29 +71,33 @@ const CONTENT_SECTIONS = [
     id: 'api-info',
     titleKey: 'API Addresses',
     build: (settings: ContentSettings) => (
-      <ApiInfoSection
-        enabled={settings['console_setting.api_info_enabled']}
-        data={settings['console_setting.api_info']}
-      />
+      <ApiInfoSection data={settings['console_setting.api_info']} />
     ),
   },
   {
     id: 'faq',
     titleKey: 'FAQ',
     build: (settings: ContentSettings) => (
-      <FAQSection
-        enabled={settings['console_setting.faq_enabled']}
-        data={settings['console_setting.faq']}
-      />
+      <FAQSection data={settings['console_setting.faq']} />
     ),
   },
   {
     id: 'uptime-kuma',
     titleKey: 'Uptime Kuma',
     build: (settings: ContentSettings) => (
-      <UptimeKumaSection
-        enabled={settings['console_setting.uptime_kuma_enabled']}
-        data={settings['console_setting.uptime_kuma_groups']}
+      <UptimeKumaSection data={settings['console_setting.uptime_kuma_groups']} />
+    ),
+  },
+  {
+    id: 'usage-log-fields',
+    titleKey: 'Usage Log Fields',
+    build: (settings: ContentSettings) => (
+      <UsageLogFieldsSection
+        fieldsData={settings['console_setting.usage_log_fields']}
+        adminEnabled={
+          settings['console_setting.usage_log_fields_admin_enabled']
+        }
+        userEnabled={settings['console_setting.usage_log_fields_user_enabled']}
       />
     ),
   },

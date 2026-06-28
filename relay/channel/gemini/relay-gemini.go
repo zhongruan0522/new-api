@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"strconv"
 	"strings"
@@ -76,6 +75,8 @@ var geminiSupportedMimeTypes = map[string]bool{
 	"image/jpeg":      true,
 	"image/jpg":       true,
 	"image/webp":      true,
+	"image/heic":      true,
+	"image/heif":      true,
 	"text/plain":      true,
 	"video/mov":       true,
 	"video/mpeg":      true,
@@ -958,7 +959,23 @@ func responseGeminiChat2OpenAI(c *gin.Context, response *dto.GeminiChatResponse)
 		}
 		hasToolCalls := false
 		if len(candidate.Content.Parts) > 0 {
-			var texts []string
+			var content strings.Builder
+			var inlineGrow int
+			for _, part := range candidate.Content.Parts {
+				if part.InlineData != nil {
+					inlineGrow += len(part.InlineData.MimeType) + len(part.InlineData.Data) + 32
+				}
+			}
+			if inlineGrow > 0 {
+				content.Grow(inlineGrow)
+			}
+			appended := 0
+			writeSep := func() {
+				if appended > 0 {
+					content.WriteByte('\n')
+				}
+				appended++
+			}
 			var reasoningTexts []string
 			reasoningSignature := ""
 			var toolCalls []dto.ToolCallResponse
@@ -969,11 +986,20 @@ func responseGeminiChat2OpenAI(c *gin.Context, response *dto.GeminiChatResponse)
 				if part.InlineData != nil {
 					// 媒体内容
 					if strings.HasPrefix(part.InlineData.MimeType, "image") {
-						imgText := "![image](data:" + part.InlineData.MimeType + ";base64," + part.InlineData.Data + ")"
-						texts = append(texts, imgText)
+						writeSep()
+						content.WriteString("![image](data:")
+						content.WriteString(part.InlineData.MimeType)
+						content.WriteString(";base64,")
+						content.WriteString(part.InlineData.Data)
+						content.WriteByte(')')
 					} else {
 						// 其他媒体类型，直接显示链接
-						texts = append(texts, fmt.Sprintf("[media](data:%s;base64,%s)", part.InlineData.MimeType, part.InlineData.Data))
+						writeSep()
+						content.WriteString("[media](data:")
+						content.WriteString(part.InlineData.MimeType)
+						content.WriteString(";base64,")
+						content.WriteString(part.InlineData.Data)
+						content.WriteByte(')')
 					}
 				} else if part.FunctionCall != nil {
 					choice.FinishReason = constant.FinishReasonToolCalls
@@ -984,13 +1010,22 @@ func responseGeminiChat2OpenAI(c *gin.Context, response *dto.GeminiChatResponse)
 					reasoningTexts = append(reasoningTexts, part.Text)
 				} else {
 					if part.ExecutableCode != nil {
-						texts = append(texts, "```"+part.ExecutableCode.Language+"\n"+part.ExecutableCode.Code+"\n```")
+						writeSep()
+						content.WriteString("```")
+						content.WriteString(part.ExecutableCode.Language)
+						content.WriteByte('\n')
+						content.WriteString(part.ExecutableCode.Code)
+						content.WriteString("\n```")
 					} else if part.CodeExecutionResult != nil {
-						texts = append(texts, "```output\n"+part.CodeExecutionResult.Output+"\n```")
+						writeSep()
+						content.WriteString("```output\n")
+						content.WriteString(part.CodeExecutionResult.Output)
+						content.WriteString("\n```")
 					} else {
 						// 过滤掉空行
 						if part.Text != "\n" {
-							texts = append(texts, part.Text)
+							writeSep()
+							content.WriteString(part.Text)
 						}
 					}
 				}
@@ -1006,7 +1041,7 @@ func responseGeminiChat2OpenAI(c *gin.Context, response *dto.GeminiChatResponse)
 			if reasoningSignature != "" {
 				choice.Message.ReasoningSignature = reasoningSignature
 			}
-			choice.Message.SetStringContent(strings.Join(texts, "\n"))
+			choice.Message.SetStringContent(content.String())
 
 		}
 		if candidate.FinishReason != nil {
@@ -1063,7 +1098,23 @@ func streamResponseGeminiChat2OpenAI(geminiResponse *dto.GeminiChatResponse) (*d
 				//Role: "assistant",
 			},
 		}
-		var texts []string
+		var content strings.Builder
+		var inlineGrow int
+		for _, part := range candidate.Content.Parts {
+			if part.InlineData != nil {
+				inlineGrow += len(part.InlineData.MimeType) + len(part.InlineData.Data) + 32
+			}
+		}
+		if inlineGrow > 0 {
+			content.Grow(inlineGrow)
+		}
+		appended := 0
+		writeSep := func() {
+			if appended > 0 {
+				content.WriteByte('\n')
+			}
+			appended++
+		}
 		var reasoningTexts []string
 		reasoningSignature := ""
 		isTools := false
@@ -1105,8 +1156,12 @@ func streamResponseGeminiChat2OpenAI(geminiResponse *dto.GeminiChatResponse) (*d
 			}
 			if part.InlineData != nil {
 				if strings.HasPrefix(part.InlineData.MimeType, "image") {
-					imgText := "![image](data:" + part.InlineData.MimeType + ";base64," + part.InlineData.Data + ")"
-					texts = append(texts, imgText)
+					writeSep()
+					content.WriteString("![image](data:")
+					content.WriteString(part.InlineData.MimeType)
+					content.WriteString(";base64,")
+					content.WriteString(part.InlineData.Data)
+					content.WriteByte(')')
 				}
 			} else if part.FunctionCall != nil {
 				isTools = true
@@ -1119,18 +1174,27 @@ func streamResponseGeminiChat2OpenAI(geminiResponse *dto.GeminiChatResponse) (*d
 				reasoningTexts = append(reasoningTexts, part.Text)
 			} else {
 				if part.ExecutableCode != nil {
-					texts = append(texts, "```"+part.ExecutableCode.Language+"\n"+part.ExecutableCode.Code+"\n```\n")
+					writeSep()
+					content.WriteString("```")
+					content.WriteString(part.ExecutableCode.Language)
+					content.WriteByte('\n')
+					content.WriteString(part.ExecutableCode.Code)
+					content.WriteString("\n```\n")
 				} else if part.CodeExecutionResult != nil {
-					texts = append(texts, "```output\n"+part.CodeExecutionResult.Output+"\n```\n")
+					writeSep()
+					content.WriteString("```output\n")
+					content.WriteString(part.CodeExecutionResult.Output)
+					content.WriteString("\n```\n")
 				} else {
 					if part.Text != "\n" {
-						texts = append(texts, part.Text)
+						writeSep()
+						content.WriteString(part.Text)
 					}
 				}
 			}
 		}
-		if len(texts) > 0 {
-			choice.Delta.SetContentString(strings.Join(texts, "\n"))
+		if content.Len() > 0 {
+			choice.Delta.SetContentString(content.String())
 		}
 		if len(reasoningTexts) > 0 {
 			choice.Delta.SetReasoningContent(strings.Join(reasoningTexts, "\n"))
@@ -1155,7 +1219,7 @@ func handleStream(c *gin.Context, info *relaycommon.RelayInfo, resp *dto.ChatCom
 	if err != nil {
 		return fmt.Errorf("failed to marshal stream response: %w", err)
 	}
-	err = openai.HandleStreamFormat(c, info, string(streamData), info.ChannelSetting.ForceFormat, info.ChannelSetting.ThinkingToContent)
+	err = openai.HandleStreamFormat(c, info, string(streamData), info.ChannelSetting.ForceFormat)
 	if err != nil {
 		return fmt.Errorf("failed to handle stream format: %w", err)
 	}
@@ -1229,41 +1293,53 @@ func geminiStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http
 func GeminiChatStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Response) (*dto.Usage, *types.NewAPIError) {
 	id := helper.GetResponseID(c)
 	createAt := common.GetTimestamp()
+	responseModel := info.GetResponseModelName()
 	finishReason := constant.FinishReasonStop
-	toolCallIDByChoice := make(map[int]map[int]string)
+	toolCallIndexByChoice := make(map[int]map[string]int)
+	nextToolCallIndexByChoice := make(map[int]int)
 
 	usage, err := geminiStreamHandler(c, info, resp, func(data string, geminiResponse *dto.GeminiChatResponse) bool {
 		response, isStop := streamResponseGeminiChat2OpenAI(geminiResponse)
 
 		response.Id = id
 		response.Created = createAt
-		response.Model = info.UpstreamModelName
+		response.Model = responseModel
 		for choiceIdx := range response.Choices {
 			choiceKey := response.Choices[choiceIdx].Index
-			idState := toolCallIDByChoice[choiceKey]
-			if idState == nil {
-				idState = make(map[int]string)
-				toolCallIDByChoice[choiceKey] = idState
+			indexState := toolCallIndexByChoice[choiceKey]
+			if indexState == nil {
+				indexState = make(map[string]int)
+				toolCallIndexByChoice[choiceKey] = indexState
 			}
 			for toolIdx := range response.Choices[choiceIdx].Delta.ToolCalls {
 				tool := &response.Choices[choiceIdx].Delta.ToolCalls[toolIdx]
-				stableID := idState[toolIdx]
-				if stableID == "" {
-					stableID = tool.ID
-					if stableID == "" {
-						stableID = fmt.Sprintf("call_%s", common.GetUUID())
-					}
-					idState[toolIdx] = stableID
+				toolID := tool.ID
+				if toolID == "" {
+					toolID = fmt.Sprintf("call_%s", common.GetUUID())
+					tool.ID = toolID
 				}
-				tool.ID = stableID
-				tool.SetIndex(toolIdx)
+				stableIndex, ok := indexState[toolID]
+				if !ok {
+					stableIndex = nextToolCallIndexByChoice[choiceKey]
+					indexState[toolID] = stableIndex
+					nextToolCallIndexByChoice[choiceKey] = stableIndex + 1
+				}
+				tool.SetIndex(stableIndex)
+			}
+		}
+		if response.IsToolCall() {
+			finishReason = constant.FinishReasonToolCalls
+			if info.RelayFormat == types.RelayFormatClaude {
+				for choiceIdx := range response.Choices {
+					response.Choices[choiceIdx].FinishReason = nil
+				}
 			}
 		}
 
 		logger.LogDebug(c, fmt.Sprintf("info.SendResponseCount = %d", info.SendResponseCount))
 		if info.SendResponseCount == 0 {
 			// send first response
-			emptyResponse := helper.GenerateStartEmptyResponse(id, createAt, info.UpstreamModelName, nil)
+			emptyResponse := helper.GenerateStartEmptyResponse(id, createAt, responseModel, nil)
 			if response.IsToolCall() {
 				if len(emptyResponse.Choices) > 0 && len(response.Choices) > 0 {
 					toolCalls := response.Choices[0].Delta.ToolCalls
@@ -1296,8 +1372,8 @@ func GeminiChatStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *
 		if err != nil {
 			logger.LogError(c, err.Error())
 		}
-		if isStop {
-			_ = handleStream(c, info, helper.GenerateStopResponse(id, createAt, info.UpstreamModelName, finishReason))
+		if isStop && info.RelayFormat != types.RelayFormatClaude {
+			_ = handleStream(c, info, helper.GenerateStopResponse(id, createAt, responseModel, finishReason))
 		}
 		return true
 	})
@@ -1306,7 +1382,11 @@ func GeminiChatStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *
 		return usage, err
 	}
 
-	response := helper.GenerateFinalUsageResponse(id, createAt, info.UpstreamModelName, *usage)
+	response := helper.GenerateFinalUsageResponse(id, createAt, responseModel, *usage)
+	if info.RelayFormat == types.RelayFormatClaude && info.ClaudeConvertInfo != nil && !info.ClaudeConvertInfo.Done {
+		response = helper.GenerateStopResponse(id, createAt, responseModel, finishReason)
+		response.Usage = usage
+	}
 	handleErr := handleFinalStream(c, info, response)
 	if handleErr != nil {
 		common.SysLog("send final response failed: " + handleErr.Error())
@@ -1315,11 +1395,12 @@ func GeminiChatStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *
 }
 
 func GeminiChatHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Response) (*dto.Usage, *types.NewAPIError) {
-	responseBody, err := io.ReadAll(resp.Body)
+	defer service.CloseResponseBodyGracefully(resp)
+
+	responseBody, err := common.ReadResponseBody(resp.Body)
 	if err != nil {
 		return nil, types.NewOpenAIError(err, types.ErrorCodeBadResponseBody, http.StatusInternalServerError)
 	}
-	service.CloseResponseBodyGracefully(resp)
 	if common.DebugEnabled {
 		println(string(responseBody))
 	}
@@ -1370,7 +1451,7 @@ func GeminiChatHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.R
 		return &usage, nil
 	}
 	fullTextResponse := responseGeminiChat2OpenAI(c, &geminiResponse)
-	fullTextResponse.Model = info.UpstreamModelName
+	fullTextResponse.Model = info.GetResponseModelName()
 	usage := service.GeminiUsageMetadataToOpenAIUsage(geminiResponse.UsageMetadata)
 
 	fullTextResponse.Usage = usage
@@ -1400,7 +1481,7 @@ func GeminiChatHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.R
 func GeminiEmbeddingHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Response) (*dto.Usage, *types.NewAPIError) {
 	defer service.CloseResponseBodyGracefully(resp)
 
-	responseBody, readErr := io.ReadAll(resp.Body)
+	responseBody, readErr := common.ReadEmbeddingResponseBody(resp.Body)
 	if readErr != nil {
 		return nil, types.NewOpenAIError(readErr, types.ErrorCodeBadResponseBody, http.StatusInternalServerError)
 	}
@@ -1414,7 +1495,7 @@ func GeminiEmbeddingHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *h
 	openAIResponse := dto.OpenAIEmbeddingResponse{
 		Object: "list",
 		Data:   make([]dto.OpenAIEmbeddingResponseItem, 0, len(geminiResponse.Embeddings)),
-		Model:  info.UpstreamModelName,
+		Model:  info.GetResponseModelName(),
 	}
 
 	for i, embedding := range geminiResponse.Embeddings {
@@ -1443,11 +1524,12 @@ func GeminiEmbeddingHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *h
 }
 
 func GeminiImageHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Response) (*dto.Usage, *types.NewAPIError) {
-	responseBody, readErr := io.ReadAll(resp.Body)
+	defer service.CloseResponseBodyGracefully(resp)
+
+	responseBody, readErr := common.ReadMediaResponseBody(resp.Body)
 	if readErr != nil {
 		return nil, types.NewOpenAIError(readErr, types.ErrorCodeBadResponseBody, http.StatusInternalServerError)
 	}
-	_ = resp.Body.Close()
 
 	var geminiResponse dto.GeminiImageResponse
 	if jsonErr := common.Unmarshal(responseBody, &geminiResponse); jsonErr != nil {
@@ -1563,13 +1645,13 @@ func FetchGeminiModelsWithHeaders(baseURL, apiKey, proxyURL string, headers http
 		}
 
 		if response.StatusCode != http.StatusOK {
-			body, _ := io.ReadAll(response.Body)
+			body, _ := common.ReadErrorResponseBody(response.Body)
 			response.Body.Close()
 			cancel()
 			return nil, fmt.Errorf("服务器返回错误 %d: %s", response.StatusCode, string(body))
 		}
 
-		body, err := io.ReadAll(response.Body)
+		body, err := common.ReadModelListResponseBody(response.Body)
 		response.Body.Close()
 		cancel()
 		if err != nil {

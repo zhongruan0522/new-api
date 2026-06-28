@@ -2,6 +2,7 @@ package model
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -9,6 +10,7 @@ import (
 	"github.com/zhongruan0522/new-api/common"
 	"github.com/zhongruan0522/new-api/setting"
 	"github.com/zhongruan0522/new-api/setting/config"
+	"github.com/zhongruan0522/new-api/setting/model_setting"
 	"github.com/zhongruan0522/new-api/setting/operation_setting"
 	"github.com/zhongruan0522/new-api/setting/performance_setting"
 	"github.com/zhongruan0522/new-api/setting/ratio_setting"
@@ -57,6 +59,7 @@ func InitOptionMap() {
 	common.OptionMap["SMTPAccount"] = ""
 	common.OptionMap["SMTPToken"] = ""
 	common.OptionMap["SMTPSSLEnabled"] = strconv.FormatBool(common.SMTPSSLEnabled)
+	common.OptionMap["SMTPForceLoginAuthEnabled"] = strconv.FormatBool(common.SMTPForceLoginAuthEnabled)
 	common.OptionMap["Notice"] = ""
 	common.OptionMap["About"] = ""
 	common.OptionMap["HomePageContent"] = ""
@@ -192,17 +195,24 @@ func UpdateOption(key string, value string) error {
 		"quota_setting.enable_free_model_pre_consume":
 		return errors.New("option removed")
 	}
+	if err := validateConfigUpdate(key, value); err != nil {
+		return err
+	}
 	// Save to database first
 	option := Option{
 		Key: key,
 	}
 	// https://gorm.io/docs/update.html#Save-All-Fields
-	DB.FirstOrCreate(&option, Option{Key: key})
+	if err := DB.FirstOrCreate(&option, Option{Key: key}).Error; err != nil {
+		return err
+	}
 	option.Value = value
 	// Save is a combination function.
 	// If save value does not contain primary key, it will execute Create,
 	// otherwise it will execute Update (with all fields).
-	DB.Save(&option)
+	if err := DB.Save(&option).Error; err != nil {
+		return err
+	}
 	// Update OptionMap
 	return updateOptionMap(key, value)
 }
@@ -227,12 +237,15 @@ func updateOptionMap(key string, value string) (err error) {
 		delete(common.OptionMap, key)
 		return nil
 	}
-	common.OptionMap[key] = value
-
 	// 检查是否是模型配置 - 使用更规范的方式处理
-	if handleConfigUpdate(key, value) {
+	if handled, cfgErr := handleConfigUpdate(key, value); handled {
+		if cfgErr != nil {
+			return cfgErr
+		}
+		common.OptionMap[key] = value
 		return nil // 已由配置系统处理
 	}
+	common.OptionMap[key] = value
 
 	// 处理传统配置项...
 	if strings.HasSuffix(key, "Permission") {
@@ -433,11 +446,30 @@ func updateOptionMap(key string, value string) (err error) {
 	return err
 }
 
-// handleConfigUpdate 处理分层配置更新，返回是否已处理
-func handleConfigUpdate(key, value string) bool {
+func validateConfigUpdate(key, value string) error {
 	parts := strings.SplitN(key, ".", 2)
 	if len(parts) != 2 {
-		return false // 不是分层配置
+		return nil
+	}
+
+	cfg := config.GlobalConfig.Get(parts[0])
+	if cfg == nil {
+		return nil
+	}
+	if parts[0] == "minimax" {
+		return model_setting.WithMiniMaxSettingsReadLock(func() error {
+			return config.ValidateConfigFromMap(cfg, map[string]string{parts[1]: value})
+		})
+	}
+
+	return config.ValidateConfigFromMap(cfg, map[string]string{parts[1]: value})
+}
+
+// handleConfigUpdate 处理分层配置更新，返回是否已处理
+func handleConfigUpdate(key, value string) (bool, error) {
+	parts := strings.SplitN(key, ".", 2)
+	if len(parts) != 2 {
+		return false, nil // 不是分层配置
 	}
 
 	configName := parts[0]
@@ -446,20 +478,49 @@ func handleConfigUpdate(key, value string) bool {
 	// 获取配置对象
 	cfg := config.GlobalConfig.Get(configName)
 	if cfg == nil {
-		return false // 未注册的配置
+		return false, nil // 未注册的配置
 	}
 
 	// 更新配置
 	configMap := map[string]string{
 		configKey: value,
 	}
-	config.UpdateConfigFromMap(cfg, configMap)
+	updateConfig := func() error {
+		return config.UpdateConfigFromMap(cfg, configMap)
+	}
+	var err error
+	if configName == "minimax" {
+		err = model_setting.WithMiniMaxSettingsWriteLock(updateConfig)
+	} else {
+		err = updateConfig()
+	}
+	if err != nil {
+		return true, err
+	}
 
 	// 特定配置的后处理
 	if configName == "performance_setting" {
 		// 同步磁盘缓存配置到 common 包
 		performance_setting.UpdateAndSync()
 	}
+	if configName == "dashboard_config" {
+		// 同步写入层聚合粒度配置到 model 包级变量，避免 model 反向依赖 dashboard_setting
+		syncDashboardTrackingConfig(cfg)
+	}
 
-	return true // 已处理
+	return true, nil // 已处理
+}
+
+// syncDashboardTrackingConfig 从已更新的 dashboard_config 配置对象读取写入层配置，同步到 model 包级变量。
+// 通过 config.ConfigToMap 反射读取，不直接依赖 dashboard_setting.DashboardConfig 类型，避免循环导入。
+func syncDashboardTrackingConfig(cfg interface{}) {
+	m, err := config.ConfigToMap(cfg)
+	if err != nil {
+		common.SysError(fmt.Sprintf("syncDashboardTrackingConfig: 解析 dashboard_config 失败: %s", err))
+		return
+	}
+	tokens, _ := strconv.ParseBool(m["quota_data_track_tokens"])
+	byModel, _ := strconv.ParseBool(m["quota_data_track_by_model"])
+	byUser, _ := strconv.ParseBool(m["quota_data_track_by_user"])
+	SyncQuotaDataTrackingConfig(tokens, byModel, byUser)
 }

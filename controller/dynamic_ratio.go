@@ -37,6 +37,7 @@ func CreateDynamicRatioRule(c *gin.Context) {
 		return
 	}
 	model.RefreshDynamicRatioCache()
+	service.RecordAudit(c, model.AuditModuleDynamicRatio, model.AuditActionCreate, "新增动态倍率规则", nil, rule)
 	common.ApiSuccess(c, rule)
 }
 
@@ -55,11 +56,18 @@ func UpdateDynamicRatioRule(c *gin.Context) {
 		common.ApiError(c, err)
 		return
 	}
+	// 查询更新前的原始数据用于审计差异对比
+	origin, err := model.GetDynamicRatioRuleById(rule.Id)
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
 	if err := model.UpdateDynamicRatioRule(&rule); err != nil {
 		common.ApiError(c, err)
 		return
 	}
 	model.RefreshDynamicRatioCache()
+	service.RecordAudit(c, model.AuditModuleDynamicRatio, model.AuditActionUpdate, "修改动态倍率规则", origin, rule)
 	common.ApiSuccess(c, rule)
 }
 
@@ -76,6 +84,7 @@ func DeleteDynamicRatioRule(c *gin.Context) {
 		return
 	}
 	model.RefreshDynamicRatioCache()
+	service.RecordAudit(c, model.AuditModuleDynamicRatio, model.AuditActionDelete, "删除动态倍率规则 #"+strconv.FormatInt(id, 10), nil, map[string]interface{}{"id": id})
 	common.ApiSuccess(c, nil)
 }
 
@@ -97,6 +106,7 @@ func ReorderDynamicRatioRules(c *gin.Context) {
 		return
 	}
 	model.RefreshDynamicRatioCache()
+	service.RecordAudit(c, model.AuditModuleDynamicRatio, model.AuditActionUpdate, "重排动态倍率规则", nil, map[string]interface{}{"ids": req.Ids})
 	common.ApiSuccess(c, nil)
 }
 
@@ -113,6 +123,7 @@ func SetDynamicRatioEnabled(c *gin.Context) {
 		common.ApiError(c, err)
 		return
 	}
+	service.RecordAudit(c, model.AuditModuleDynamicRatio, model.AuditActionUpdate, "设置动态倍率开关: "+strconv.FormatBool(req.Enabled), nil, map[string]interface{}{"enabled": req.Enabled})
 	common.ApiSuccess(c, nil)
 }
 

@@ -36,7 +36,7 @@ const DEFAULT_SIDEBAR_MODULES: SidebarModulesAdminConfig = {
   chat: {
     enabled: true,
     playground: true,
-    chat: true,
+    custom_voice: true,
   },
   console: {
     enabled: true,
@@ -63,6 +63,7 @@ const DEFAULT_SIDEBAR_MODULES: SidebarModulesAdminConfig = {
     redemption: true,
     user: true,
     setting: true,
+    audit_log: true,
   },
 }
 
@@ -96,6 +97,7 @@ const mergeWithDefaultSidebarModules = (
  */
 const URL_TO_CONFIG_MAP: Record<string, { section: string; module: string }> = {
   '/playground': { section: 'chat', module: 'playground' },
+  '/multimodal/custom-voice': { section: 'chat', module: 'custom_voice' },
   '/dashboard': { section: 'console', module: 'detail' },
   '/dashboard/overview': { section: 'console', module: 'detail' },
   '/dashboard/models': { section: 'console', module: 'detail' },
@@ -114,6 +116,7 @@ const URL_TO_CONFIG_MAP: Record<string, { section: string; module: string }> = {
   '/models/metadata': { section: 'admin', module: 'models' },
   '/users': { section: 'admin', module: 'user' },
   '/redemption-codes': { section: 'admin', module: 'redemption' },
+  '/audit-logs': { section: 'admin', module: 'audit_log' },
   '/system-settings': { section: 'admin', module: 'setting' },
   '/system-settings/site': { section: 'admin', module: 'setting' },
 }
@@ -166,12 +169,6 @@ function isNavItemVisible(
   item: NavItem,
   adminConfig: SidebarModulesAdminConfig
 ): boolean {
-  // Handle dynamic chat presets type
-  if ('type' in item && item.type === 'chat-presets') {
-    const adminChat = adminConfig.chat
-    return Boolean(adminChat?.enabled && adminChat.chat === true)
-  }
-
   // Handle direct link type
   if ('url' in item && item.url) {
     const configUrls = item.configUrls ?? [item.url]

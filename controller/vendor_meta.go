@@ -5,6 +5,7 @@ import (
 
 	"github.com/zhongruan0522/new-api/common"
 	"github.com/zhongruan0522/new-api/model"
+	"github.com/zhongruan0522/new-api/service"
 
 	"github.com/gin-gonic/gin"
 )
@@ -78,6 +79,7 @@ func CreateVendorMeta(c *gin.Context) {
 		common.ApiError(c, err)
 		return
 	}
+	service.RecordAudit(c, model.AuditModuleVendor, model.AuditActionCreate, "新增供应商: "+v.Name, nil, v)
 	common.ApiSuccess(c, &v)
 }
 
@@ -90,6 +92,12 @@ func UpdateVendorMeta(c *gin.Context) {
 	}
 	if v.Id == 0 {
 		common.ApiErrorMsg(c, "缺少供应商 ID")
+		return
+	}
+	// 查询更新前的原始数据用于审计差异对比
+	var origin model.Vendor
+	if err := model.DB.First(&origin, "id = ?", v.Id).Error; err != nil {
+		common.ApiError(c, err)
 		return
 	}
 	// 名称冲突检查
@@ -105,6 +113,7 @@ func UpdateVendorMeta(c *gin.Context) {
 		common.ApiError(c, err)
 		return
 	}
+	service.RecordAudit(c, model.AuditModuleVendor, model.AuditActionUpdate, "修改供应商: "+v.Name, origin, v)
 	common.ApiSuccess(c, &v)
 }
 
@@ -120,5 +129,6 @@ func DeleteVendorMeta(c *gin.Context) {
 		common.ApiError(c, err)
 		return
 	}
+	service.RecordAudit(c, model.AuditModuleVendor, model.AuditActionDelete, "删除供应商 #"+strconv.Itoa(id), nil, map[string]interface{}{"id": id})
 	common.ApiSuccess(c, nil)
 }

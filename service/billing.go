@@ -3,10 +3,10 @@ package service
 import (
 	"fmt"
 
+	"github.com/gin-gonic/gin"
 	"github.com/zhongruan0522/new-api/logger"
 	relaycommon "github.com/zhongruan0522/new-api/relay/common"
 	"github.com/zhongruan0522/new-api/types"
-	"github.com/gin-gonic/gin"
 )
 
 const (

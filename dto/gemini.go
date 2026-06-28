@@ -582,13 +582,15 @@ func (r *GeminiChatResponse) UnmarshalJSON(data []byte) error {
 }
 
 type GeminiUsageMetadata struct {
-	PromptTokenCount        int                         `json:"promptTokenCount"`
-	CandidatesTokenCount    int                         `json:"candidatesTokenCount"`
-	TotalTokenCount         int                         `json:"totalTokenCount"`
-	ThoughtsTokenCount      int                         `json:"thoughtsTokenCount"`
-	CachedContentTokenCount int                         `json:"cachedContentTokenCount"`
-	PromptTokensDetails     []GeminiPromptTokensDetails `json:"promptTokensDetails"`
-	CandidatesTokensDetails []GeminiPromptTokensDetails `json:"candidatesTokensDetails"`
+	PromptTokenCount           int                         `json:"promptTokenCount"`
+	ToolUsePromptTokenCount    int                         `json:"toolUsePromptTokenCount"`
+	CandidatesTokenCount       int                         `json:"candidatesTokenCount"`
+	TotalTokenCount            int                         `json:"totalTokenCount"`
+	ThoughtsTokenCount         int                         `json:"thoughtsTokenCount"`
+	CachedContentTokenCount    int                         `json:"cachedContentTokenCount"`
+	PromptTokensDetails        []GeminiPromptTokensDetails `json:"promptTokensDetails"`
+	ToolUsePromptTokensDetails []GeminiPromptTokensDetails `json:"toolUsePromptTokensDetails"`
+	CandidatesTokensDetails    []GeminiPromptTokensDetails `json:"candidatesTokensDetails"`
 }
 
 // UnmarshalJSON allows GeminiUsageMetadata to accept both snake_case and camelCase fields.
@@ -596,13 +598,15 @@ func (m *GeminiUsageMetadata) UnmarshalJSON(data []byte) error {
 	type Alias GeminiUsageMetadata
 	var aux struct {
 		Alias
-		PromptTokenCountSnake        int                         `json:"prompt_token_count,omitempty"`
-		CandidatesTokenCountSnake    int                         `json:"candidates_token_count,omitempty"`
-		TotalTokenCountSnake         int                         `json:"total_token_count,omitempty"`
-		ThoughtsTokenCountSnake      int                         `json:"thoughts_token_count,omitempty"`
-		CachedContentTokenCountSnake int                         `json:"cached_content_token_count,omitempty"`
-		PromptTokensDetailsSnake     []GeminiPromptTokensDetails `json:"prompt_tokens_details,omitempty"`
-		CandidatesTokensDetailsSnake []GeminiPromptTokensDetails `json:"candidates_tokens_details,omitempty"`
+		PromptTokenCountSnake           int                         `json:"prompt_token_count,omitempty"`
+		ToolUsePromptTokenCountSnake    int                         `json:"tool_use_prompt_token_count,omitempty"`
+		CandidatesTokenCountSnake       int                         `json:"candidates_token_count,omitempty"`
+		TotalTokenCountSnake            int                         `json:"total_token_count,omitempty"`
+		ThoughtsTokenCountSnake         int                         `json:"thoughts_token_count,omitempty"`
+		CachedContentTokenCountSnake    int                         `json:"cached_content_token_count,omitempty"`
+		PromptTokensDetailsSnake        []GeminiPromptTokensDetails `json:"prompt_tokens_details,omitempty"`
+		ToolUsePromptTokensDetailsSnake []GeminiPromptTokensDetails `json:"tool_use_prompt_tokens_details,omitempty"`
+		CandidatesTokensDetailsSnake    []GeminiPromptTokensDetails `json:"candidates_tokens_details,omitempty"`
 	}
 
 	if err := common.Unmarshal(data, &aux); err != nil {
@@ -612,6 +616,9 @@ func (m *GeminiUsageMetadata) UnmarshalJSON(data []byte) error {
 	*m = GeminiUsageMetadata(aux.Alias)
 	if aux.PromptTokenCountSnake != 0 {
 		m.PromptTokenCount = aux.PromptTokenCountSnake
+	}
+	if aux.ToolUsePromptTokenCountSnake != 0 {
+		m.ToolUsePromptTokenCount = aux.ToolUsePromptTokenCountSnake
 	}
 	if aux.CandidatesTokenCountSnake != 0 {
 		m.CandidatesTokenCount = aux.CandidatesTokenCountSnake
@@ -627,6 +634,9 @@ func (m *GeminiUsageMetadata) UnmarshalJSON(data []byte) error {
 	}
 	if len(aux.PromptTokensDetailsSnake) > 0 {
 		m.PromptTokensDetails = aux.PromptTokensDetailsSnake
+	}
+	if len(aux.ToolUsePromptTokensDetailsSnake) > 0 {
+		m.ToolUsePromptTokensDetails = aux.ToolUsePromptTokensDetailsSnake
 	}
 	if len(aux.CandidatesTokensDetailsSnake) > 0 {
 		m.CandidatesTokensDetails = aux.CandidatesTokensDetailsSnake

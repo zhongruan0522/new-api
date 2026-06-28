@@ -155,7 +155,6 @@ import {
   collectNewDisallowedStatusCodeRedirects,
 } from '../../lib/status-code-risk-guard'
 import type { Channel } from '../../types'
-import { useChannels } from '../channels-provider'
 import { FetchModelsDialog } from '../dialogs/fetch-models-dialog'
 import {
   MissingModelsConfirmationDialog,
@@ -220,7 +219,7 @@ const MODEL_MAPPING_PREVIEW_FALLBACK: Array<{
 }> = [{ source: 'client-model', target: 'upstream-model' }]
 
 const ADVANCED_SETTINGS_EXPANDED_KEY = 'channel-advanced-settings-expanded'
-const OPENAI_WIRE_API_CHANNEL_TYPES = new Set([1, 4, 6, 25, 26, 35])
+const OPENAI_WIRE_API_CHANNEL_TYPES = new Set([1, 4, 6, 25, 26, 35, 44])
 
 function readAdvancedSettingsPreference(): boolean {
   if (typeof window === 'undefined') return false
@@ -239,11 +238,12 @@ function hasAdvancedSettingsValues(values: ChannelFormValues): boolean {
     values.weight ||
     values.proxy?.trim() ||
     values.force_format ||
-    values.thinking_to_content ||
     values.pass_through_body_enabled ||
     values.pass_through_headers_enabled === false ||
     values.openai_wire_api !== 'both' ||
     values.image_auto_convert_to_url_mode === 'mcp' ||
+    values.allow_cache_control ||
+    values.allow_speed ||
     values.claude_beta_query
   )
 }
@@ -279,7 +279,6 @@ export function ChannelMutateDrawer({
 }: ChannelMutateDrawerProps) {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
-  const { setOpen } = useChannels()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [customModel, setCustomModel] = useState('')
   const [fetchModelsDialogOpen, setFetchModelsDialogOpen] = useState(false)
@@ -682,7 +681,9 @@ export function ChannelMutateDrawer({
       base_url: form.getValues('base_url') || '',
     })
     if (response.success && response.data) {
-      return response.data
+      return response.data.map((m) =>
+        typeof m === 'string' ? m : String(m ?? '')
+      )
     }
     throw new Error(response.message || 'No models fetched from upstream')
   }, [form])
@@ -772,8 +773,7 @@ export function ChannelMutateDrawer({
   const handleSuccess = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: channelsQueryKeys.lists() })
     onOpenChange(false)
-    setOpen(null)
-  }, [queryClient, onOpenChange, setOpen])
+  }, [queryClient, onOpenChange])
 
   // Show missing models confirmation dialog
   const confirmMissingModelMappings = useCallback(
@@ -2539,12 +2539,59 @@ export function ChannelMutateDrawer({
                                   </FormItem>
                                 )}
                               />
-
                             </>
                           )}
 
                           {currentType === 14 && (
                             <>
+                              <FormField
+                                control={form.control}
+                                name='allow_cache_control'
+                                render={({ field }) => (
+                                  <FormItem className='flex items-center justify-between gap-3 px-4 py-3'>
+                                    <div className='space-y-0.5'>
+                                      <FormLabel className='text-sm'>
+                                        {t('Allow cache_control passthrough')}
+                                      </FormLabel>
+                                      <FormDescription>
+                                        {t(
+                                          'Pass through Claude cache_control fields'
+                                        )}
+                                      </FormDescription>
+                                    </div>
+                                    <FormControl>
+                                      <Switch
+                                        checked={field.value}
+                                        onCheckedChange={field.onChange}
+                                      />
+                                    </FormControl>
+                                  </FormItem>
+                                )}
+                              />
+
+                              <FormField
+                                control={form.control}
+                                name='allow_speed'
+                                render={({ field }) => (
+                                  <FormItem className='flex items-center justify-between gap-3 px-4 py-3'>
+                                    <div className='space-y-0.5'>
+                                      <FormLabel className='text-sm'>
+                                        {t('Allow speed passthrough')}
+                                      </FormLabel>
+                                      <FormDescription>
+                                        {t('Pass through Claude speed field')}
+                                      </FormDescription>
+                                    </div>
+                                    <FormControl>
+                                      <Switch
+                                        checked={field.value}
+                                        onCheckedChange={field.onChange}
+                                      />
+                                    </FormControl>
+                                  </FormItem>
+                                )}
+                              />
+
                               <FormField
                                 control={form.control}
                                 name='claude_beta_query'
@@ -2605,29 +2652,6 @@ export function ChannelMutateDrawer({
 
                       <FormField
                         control={form.control}
-                        name='thinking_to_content'
-                        render={({ field }) => (
-                          <FormItem className='flex items-center justify-between px-4 py-3'>
-                            <div className='space-y-0.5'>
-                              <FormLabel>{t('Thinking to Content')}</FormLabel>
-                              <FormDescription>
-                                {t(
-                                  'Convert reasoning_content to <think> tag in content'
-                                )}
-                              </FormDescription>
-                            </div>
-                            <FormControl>
-                              <Switch
-                                checked={field.value}
-                                onCheckedChange={field.onChange}
-                              />
-                            </FormControl>
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
                         name='pass_through_body_enabled'
                         render={({ field }) => (
                           <FormItem className='flex items-center justify-between px-4 py-3'>
@@ -2653,9 +2677,7 @@ export function ChannelMutateDrawer({
                         render={({ field }) => (
                           <FormItem className='flex items-center justify-between px-4 py-3'>
                             <div className='space-y-0.5'>
-                              <FormLabel>
-                                {t('Pass Through Headers')}
-                              </FormLabel>
+                              <FormLabel>{t('Pass Through Headers')}</FormLabel>
                               <FormDescription>
                                 {t(
                                   'Pass client request headers upstream and merge them with header overrides'
@@ -2771,7 +2793,6 @@ export function ChannelMutateDrawer({
                         </FormItem>
                       )}
                     />
-
                   </div>
                 </CollapsibleContent>
               </Collapsible>

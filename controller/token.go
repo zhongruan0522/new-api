@@ -9,6 +9,7 @@ import (
 	"github.com/zhongruan0522/new-api/common"
 	"github.com/zhongruan0522/new-api/i18n"
 	"github.com/zhongruan0522/new-api/model"
+	"github.com/zhongruan0522/new-api/service"
 
 	"github.com/gin-gonic/gin"
 )
@@ -313,6 +314,7 @@ func AddToken(c *gin.Context) {
 		common.ApiError(c, err)
 		return
 	}
+	service.RecordAudit(c, model.AuditModuleToken, model.AuditActionCreate, "新增令牌: "+cleanToken.Name, nil, map[string]interface{}{"name": cleanToken.Name, "user_id": cleanToken.UserId})
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
@@ -331,6 +333,7 @@ func DeleteToken(c *gin.Context) {
 		common.ApiError(c, err)
 		return
 	}
+	service.RecordAudit(c, model.AuditModuleToken, model.AuditActionDelete, "删除令牌", nil, map[string]interface{}{"id": id})
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
@@ -440,6 +443,8 @@ func UpdateToken(c *gin.Context) {
 		common.ApiError(c, err)
 		return
 	}
+	// 保存更新前快照用于审计差异对比
+	originToken := *cleanToken
 	if token.Status == common.TokenStatusEnabled {
 		if cleanToken.Status == common.TokenStatusExpired && cleanToken.ExpiredTime <= common.GetTimestamp() && cleanToken.ExpiredTime != -1 {
 			common.ApiErrorI18n(c, i18n.MsgTokenExpiredCannotEnable)
@@ -493,6 +498,7 @@ func UpdateToken(c *gin.Context) {
 		common.ApiError(c, err)
 		return
 	}
+	service.RecordAudit(c, model.AuditModuleToken, model.AuditActionUpdate, "修改令牌: "+cleanToken.Name, originToken, cleanToken)
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
@@ -516,6 +522,7 @@ func DeleteTokenBatch(c *gin.Context) {
 		common.ApiError(c, err)
 		return
 	}
+	service.RecordAudit(c, model.AuditModuleToken, model.AuditActionDelete, "批量删除令牌", nil, map[string]interface{}{"ids": tokenBatch.Ids})
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
@@ -560,6 +567,7 @@ func ResetTokenKey(c *gin.Context) {
 		common.ApiError(c, err)
 		return
 	}
+	service.RecordAudit(c, model.AuditModuleToken, model.AuditActionUpdate, "重置令牌密钥", nil, map[string]interface{}{"id": id})
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",

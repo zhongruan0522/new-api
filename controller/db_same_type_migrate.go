@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/zhongruan0522/new-api/common"
+	"github.com/zhongruan0522/new-api/model"
 	"github.com/zhongruan0522/new-api/service"
 
 	"github.com/gin-gonic/gin"
@@ -46,6 +47,7 @@ func StartDBSameTypeMigrate(c *gin.Context) {
 		common.ApiError(c, err)
 		return
 	}
+	service.RecordAudit(c, model.AuditModuleDB, model.AuditActionUpdate, "启动同类型数据库迁移", nil, req)
 	common.ApiSuccess(c, gin.H{"job_id": jobID})
 }
 

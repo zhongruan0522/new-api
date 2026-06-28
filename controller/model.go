@@ -42,6 +42,7 @@ func init() {
 		constant.APITypeMoonshot,
 		constant.APITypeMiniMax,
 		constant.APITypeXiaomi,
+		constant.APITypeByteDance,
 	}
 	for _, apiType := range allAPITypes {
 		adaptor := relay.GetAdaptor(apiType)

@@ -20,6 +20,7 @@ import { SystemBehaviorSection } from '../general/system-behavior-section'
 import { EmailSettingsSection } from '../integrations/email-settings-section'
 import { MonitoringSettingsSection } from '../integrations/monitoring-settings-section'
 import { WorkerSettingsSection } from '../integrations/worker-settings-section'
+import { DatabaseMaintenanceSection } from '../maintenance/database-maintenance-section'
 import { LogSettingsSection } from '../maintenance/log-settings-section'
 import { PerformanceSection } from '../maintenance/performance-section'
 import { SystemMaintenanceSection } from '../maintenance/system-maintenance-section'
@@ -73,6 +74,7 @@ const OPERATIONS_SECTIONS = [
           SMTPFrom: settings.SMTPFrom,
           SMTPToken: settings.SMTPToken,
           SMTPSSLEnabled: settings.SMTPSSLEnabled,
+          SMTPForceLoginAuthEnabled: settings.SMTPForceLoginAuthEnabled,
         }}
       />
     ),
@@ -101,6 +103,11 @@ const OPERATIONS_SECTIONS = [
     ),
   },
   {
+    id: 'database',
+    titleKey: 'Database Maintenance',
+    build: () => <DatabaseMaintenanceSection />,
+  },
+  {
     id: 'performance',
     titleKey: 'Performance',
     build: (settings: OperationsSettings) => (
@@ -121,7 +128,7 @@ const OPERATIONS_SECTIONS = [
           'performance_setting.monitor_memory_threshold':
             settings['performance_setting.monitor_memory_threshold'] ?? 90,
           'performance_setting.monitor_disk_threshold':
-            settings['performance_setting.monitor_disk_threshold'] ?? 90,
+            settings['performance_setting.monitor_disk_threshold'] ?? 95,
         }}
       />
     ),

@@ -29,6 +29,66 @@ export type SystemOptionsResponse = {
   data: SystemOption[]
 }
 
+export type SystemOptionValueResponse = {
+  success: boolean
+  message: string
+  data: SystemOption
+}
+
+export type OptionJsonMapEntry = {
+  key: string
+  value: string
+}
+
+export type OptionJsonMapResponse = {
+  success: boolean
+  message: string
+  data: {
+    items: OptionJsonMapEntry[]
+    page: number
+    page_size: number
+    total: number
+  }
+}
+
+export type OptionJsonArrayEntry = {
+  value: string
+}
+
+export type OptionJsonArrayResponse = {
+  success: boolean
+  message: string
+  data: {
+    items: OptionJsonArrayEntry[]
+    page: number
+    page_size: number
+    total: number
+  }
+}
+
+export type DeleteOptionJsonMapEntryRequest = {
+  key: string
+  map_key: string
+}
+
+export type UpsertOptionJsonMapEntryRequest = {
+  key: string
+  map_key: string
+  old_map_key?: string
+  value: string
+}
+
+export type DeleteOptionJsonArrayEntryRequest = {
+  key: string
+  value: string
+}
+
+export type UpsertOptionJsonArrayEntryRequest = {
+  key: string
+  value: string
+  old_value?: string
+}
+
 export type UpdateOptionRequest = {
   key: string
   value: string | boolean | number
@@ -39,10 +99,84 @@ export type UpdateOptionResponse = {
   message: string
 }
 
-export type DeleteLogsResponse = {
+export type CleanLogsParams = {
+  start_timestamp?: number
+  end_timestamp: number
+  clean_logs?: boolean
+  clean_stored_images?: boolean
+  clean_stored_videos?: boolean
+  clean_audit_logs?: boolean
+}
+
+export type CleanLogsResult = {
+  logs?: number
+  stored_images?: number
+  stored_videos?: number
+  audit_logs?: number
+}
+
+export type CleanLogsResponse = {
   success: boolean
   message: string
-  data?: number
+  data?: CleanLogsResult
+}
+
+export type DatabaseMigrationMode = 'pre_migrate' | 'same_type_migrate'
+
+export type DatabaseMigrationInfo = {
+  main_db_type: string
+  log_db_type: string
+  log_db_is_separated: boolean
+}
+
+export type DatabaseMigrationTableProgress = {
+  name: string
+  copied: number
+  total: number
+}
+
+export type DatabaseMigrationJobStatus = 'running' | 'success' | 'failed'
+
+export type DatabaseMigrationJob = {
+  id: string
+  status: DatabaseMigrationJobStatus
+  started_at: number
+  finished_at?: number
+  source_db_type: string
+  target_db_type: string
+  include_logs: boolean
+  force: boolean
+  current_step: string
+  tables: DatabaseMigrationTableProgress[]
+  logs: string[]
+  error?: string
+}
+
+export type DatabaseMigrationStartRequest = {
+  target_dsn: string
+  target_log_dsn?: string
+  include_logs: boolean
+  force: boolean
+}
+
+export type DatabaseMigrationInfoResponse = {
+  success: boolean
+  message: string
+  data: DatabaseMigrationInfo
+}
+
+export type DatabaseMigrationStartResponse = {
+  success: boolean
+  message: string
+  data?: {
+    job_id: string
+  }
+}
+
+export type DatabaseMigrationJobResponse = {
+  success: boolean
+  message: string
+  data: DatabaseMigrationJob
 }
 
 export type SiteSettings = {
@@ -92,13 +226,35 @@ export type ContentSettings = {
   'console_setting.announcements': string
   'console_setting.faq': string
   'console_setting.uptime_kuma_groups': string
-  'console_setting.api_info_enabled': boolean
-  'console_setting.announcements_enabled': boolean
-  'console_setting.faq_enabled': boolean
-  'console_setting.uptime_kuma_enabled': boolean
+  'console_setting.usage_log_fields': string
+  'console_setting.usage_log_fields_admin_enabled': boolean
+  'console_setting.usage_log_fields_user_enabled': boolean
   DataExportEnabled: boolean
   DataExportDefaultTime: string
   DataExportInterval: number
+}
+
+export type DashboardSettings = {
+  'dashboard_config.quota_data_enabled': boolean
+  'dashboard_config.user_analytics_enabled': boolean
+  'dashboard_config.rankings_enabled': boolean
+  'dashboard_config.media_convert_stats_enabled': boolean
+  'dashboard_config.quota_data_track_tokens': boolean
+  'dashboard_config.quota_data_track_by_model': boolean
+  'dashboard_config.quota_data_track_by_user': boolean
+  'dashboard_config.api_info_enabled': boolean
+  'dashboard_config.uptime_kuma_enabled': boolean
+  'dashboard_config.announcements_enabled': boolean
+  'dashboard_config.faq_enabled': boolean
+  'dashboard_config.quota_data_refresh_interval': number
+  'dashboard_config.user_analytics_refresh_interval': number
+  'dashboard_config.rankings_refresh_interval': number
+  'dashboard_config.uptime_kuma_refresh_interval': number
+  'dashboard_config.default_time_range_days': number
+  'dashboard_config.max_time_range_days': number
+  'dashboard_config.rankings_model_limit': number
+  'dashboard_config.rankings_vendor_limit': number
+  'dashboard_config.user_analytics_top_n': number
 }
 
 export type ModelSettings = {
@@ -113,6 +269,16 @@ export type ModelSettings = {
   'claude.default_max_tokens': string
   'grok.violation_deduction_enabled': boolean
   'grok.violation_deduction_amount': number
+  'minimax.enabled': boolean
+  'minimax.model_redirect': string
+  'minimax.voice_whitelist_enabled': boolean
+  'minimax.custom_voice_enabled': boolean
+  'minimax.custom_voice_group': string
+  'minimax.custom_voice_billing_model_id': string
+  'minimax.emotion_pattern': string
+  'minimax.emotion_redirect': string
+  'minimax.tone_word_pattern': string
+  'minimax.tone_word_redirect': string
   ModelPrice: string
   ModelRatio: string
   CacheRatio: string
@@ -199,6 +365,7 @@ export type OperationsSettings = {
   SMTPFrom: string
   SMTPToken: string
   SMTPSSLEnabled: boolean
+  SMTPForceLoginAuthEnabled: boolean
   WorkerUrl: string
   WorkerValidKey: string
   WorkerAllowHttpImageRequestEnabled: boolean
@@ -230,4 +397,8 @@ export type SecuritySettings = {
   'fetch_setting.ip_list': string[]
   'fetch_setting.allowed_ports': number[]
   'fetch_setting.apply_ip_filter_for_domain': boolean
+  'audit_setting.enabled': boolean
+  'audit_setting.modules': string
+  'audit_setting.record_ip': boolean
+  'audit_setting.record_diff': boolean
 }

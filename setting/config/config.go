@@ -1,7 +1,7 @@
 package config
 
 import (
-	"encoding/json"
+	"fmt"
 	"reflect"
 	"strconv"
 	"strings"
@@ -112,10 +112,9 @@ func configToMap(config interface{}) (map[string]string, error) {
 			continue
 		}
 
-		// 获取json标签作为键名
-		key := fieldType.Tag.Get("json")
-		if key == "" || key == "-" {
-			key = fieldType.Name
+		key, ok := jsonFieldName(fieldType)
+		if !ok {
+			continue
 		}
 
 		// 处理不同类型的字段
@@ -134,7 +133,7 @@ func configToMap(config interface{}) (map[string]string, error) {
 		case reflect.Ptr:
 			// 处理指针类型：如果非 nil，序列化指向的值
 			if !field.IsNil() {
-				bytes, err := json.Marshal(field.Interface())
+				bytes, err := common.Marshal(field.Interface())
 				if err != nil {
 					return nil, err
 				}
@@ -145,7 +144,7 @@ func configToMap(config interface{}) (map[string]string, error) {
 			}
 		case reflect.Map, reflect.Slice, reflect.Struct:
 			// 复杂类型使用JSON序列化
-			bytes, err := json.Marshal(field.Interface())
+			bytes, err := common.Marshal(field.Interface())
 			if err != nil {
 				return nil, err
 			}
@@ -183,10 +182,9 @@ func updateConfigFromMap(config interface{}, configMap map[string]string) error 
 			continue
 		}
 
-		// 获取json标签作为键名
-		key := fieldType.Tag.Get("json")
-		if key == "" || key == "-" {
-			key = fieldType.Name
+		key, ok := jsonFieldName(fieldType)
+		if !ok {
+			continue
 		}
 
 		// 检查map中是否有对应的值
@@ -195,73 +193,120 @@ func updateConfigFromMap(config interface{}, configMap map[string]string) error 
 			continue
 		}
 
-		// 根据字段类型设置值
 		if !field.CanSet() {
 			continue
 		}
 
-		switch field.Kind() {
-		case reflect.String:
-			field.SetString(strValue)
-		case reflect.Bool:
-			boolValue, err := strconv.ParseBool(strValue)
-			if err != nil {
-				continue
-			}
-			field.SetBool(boolValue)
-		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-			intValue, err := strconv.ParseInt(strValue, 10, 64)
-			if err != nil {
-				// 兼容 float 格式的字符串（如 "2.000000"）
-				floatValue, fErr := strconv.ParseFloat(strValue, 64)
-				if fErr != nil {
-					continue
-				}
-				intValue = int64(floatValue)
-			}
-			field.SetInt(intValue)
-		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-			uintValue, err := strconv.ParseUint(strValue, 10, 64)
-			if err != nil {
-				// 兼容 float 格式的字符串
-				floatValue, fErr := strconv.ParseFloat(strValue, 64)
-				if fErr != nil || floatValue < 0 {
-					continue
-				}
-				uintValue = uint64(floatValue)
-			}
-			field.SetUint(uintValue)
-		case reflect.Float32, reflect.Float64:
-			floatValue, err := strconv.ParseFloat(strValue, 64)
-			if err != nil {
-				continue
-			}
-			field.SetFloat(floatValue)
-		case reflect.Ptr:
-			// 处理指针类型
-			if strValue == "null" {
-				field.Set(reflect.Zero(field.Type()))
-			} else {
-				// 如果指针是 nil，需要先初始化
-				if field.IsNil() {
-					field.Set(reflect.New(field.Type().Elem()))
-				}
-				// 反序列化到指针指向的值
-				err := json.Unmarshal([]byte(strValue), field.Interface())
-				if err != nil {
-					continue
-				}
-			}
-		case reflect.Map, reflect.Slice, reflect.Struct:
-			// 复杂类型使用JSON反序列化
-			err := json.Unmarshal([]byte(strValue), field.Addr().Interface())
-			if err != nil {
-				continue
-			}
+		if err := setFieldFromString(field, strValue); err != nil {
+			return fmt.Errorf("update config field %s: %w", key, err)
 		}
 	}
 
 	return nil
+}
+
+func validateConfigFromMap(config interface{}, configMap map[string]string) error {
+	val := reflect.ValueOf(config)
+	if val.Kind() != reflect.Ptr {
+		return nil
+	}
+	val = val.Elem()
+
+	if val.Kind() != reflect.Struct {
+		return nil
+	}
+
+	clone := reflect.New(val.Type())
+	clone.Elem().Set(val)
+	return updateConfigFromMap(clone.Interface(), configMap)
+}
+
+func jsonFieldName(fieldType reflect.StructField) (string, bool) {
+	tag := fieldType.Tag.Get("json")
+	name := strings.Split(tag, ",")[0]
+	if name == "-" {
+		return "", false
+	}
+	if name == "" {
+		name = fieldType.Name
+	}
+	return name, true
+}
+
+func setFieldFromString(field reflect.Value, strValue string) error {
+	switch field.Kind() {
+	case reflect.String:
+		field.SetString(strValue)
+	case reflect.Bool:
+		boolValue, err := strconv.ParseBool(strValue)
+		if err != nil {
+			return err
+		}
+		field.SetBool(boolValue)
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		intValue, err := parseIntConfigValue(strValue)
+		if err != nil {
+			return err
+		}
+		field.SetInt(intValue)
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		uintValue, err := parseUintConfigValue(strValue)
+		if err != nil {
+			return err
+		}
+		field.SetUint(uintValue)
+	case reflect.Float32, reflect.Float64:
+		floatValue, err := strconv.ParseFloat(strValue, 64)
+		if err != nil {
+			return err
+		}
+		field.SetFloat(floatValue)
+	case reflect.Ptr:
+		if strValue == "null" {
+			field.Set(reflect.Zero(field.Type()))
+			return nil
+		}
+		newValue := reflect.New(field.Type().Elem())
+		if err := common.Unmarshal([]byte(strValue), newValue.Interface()); err != nil {
+			return err
+		}
+		field.Set(newValue)
+	case reflect.Map, reflect.Slice, reflect.Struct:
+		newValue := reflect.New(field.Type())
+		if err := common.Unmarshal([]byte(strValue), newValue.Interface()); err != nil {
+			return err
+		}
+		field.Set(newValue.Elem())
+	}
+	return nil
+}
+
+func parseIntConfigValue(strValue string) (int64, error) {
+	intValue, err := strconv.ParseInt(strValue, 10, 64)
+	if err == nil {
+		return intValue, nil
+	}
+
+	// 兼容 float 格式的字符串（如 "2.000000"）
+	floatValue, fErr := strconv.ParseFloat(strValue, 64)
+	if fErr != nil {
+		return 0, err
+	}
+	return int64(floatValue), nil
+}
+
+func parseUintConfigValue(strValue string) (uint64, error) {
+	uintValue, err := strconv.ParseUint(strValue, 10, 64)
+	if err == nil {
+		return uintValue, nil
+	}
+
+	// 兼容 float 格式的字符串
+	floatValue, fErr := strconv.ParseFloat(strValue, 64)
+	if fErr != nil || floatValue < 0 {
+		return 0, err
+	}
+	return uint64(floatValue), nil
 }
 
 // ConfigToMap 将配置对象转换为map（导出函数）
@@ -272,6 +317,11 @@ func ConfigToMap(config interface{}) (map[string]string, error) {
 // UpdateConfigFromMap 从map更新配置对象（导出函数）
 func UpdateConfigFromMap(config interface{}, configMap map[string]string) error {
 	return updateConfigFromMap(config, configMap)
+}
+
+// ValidateConfigFromMap validates a config update without mutating the current config object.
+func ValidateConfigFromMap(config interface{}, configMap map[string]string) error {
+	return validateConfigFromMap(config, configMap)
 }
 
 // ExportAllConfigs 导出所有已注册的配置为扁平结构

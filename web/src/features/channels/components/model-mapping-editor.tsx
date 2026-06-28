@@ -16,41 +16,202 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { useCallback, useState, useEffect, useRef } from 'react'
-import { Code, Table, Plus, Trash2 } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { Code, Plus, Save, Table, Trash2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import {
+  deleteOptionJsonMapEntry,
+  getOptionJsonMap,
+  getSystemOptionValue,
+  upsertOptionJsonMapEntry,
+} from '@/features/system-settings/api'
 
 type ModelMappingEditorProps = {
   value: string
   onChange: (value: string) => void
   disabled?: boolean
+  /** 可视模式左列标题，默认 "Original Model" */
+  fromLabel?: string
+  /** 可视模式右列标题，默认 "Replacement Model" */
+  toLabel?: string
+  /** 左列输入框 placeholder */
+  fromPlaceholder?: string
+  /** 右列输入框 placeholder */
+  toPlaceholder?: string
+  /** JSON 模式 placeholder */
+  jsonPlaceholder?: string
+  /** "填入模板"按钮写入的 JSON 字符串；不传则使用内置默认模板 */
+  template?: string
+  /** 空状态提示文案，默认复用模型映射默认值 */
+  emptyText?: string
+  /** 系统设置 option key。传入后可视模式改为服务端分页编辑。 */
+  optionKey?: string
+  /** 服务端分页模式下，切换到 JSON 模式后回传完整原始值。 */
+  onFullValueLoaded?: (value: string) => void
 }
 
 type MappingRow = {
   id: string
   from: string
   to: string
+  originalFrom?: string
+  originalTo?: string
+  isNew?: boolean
+}
+
+const PAGE_SIZE_OPTIONS = [10, 20, 50]
+
+function formatJsonForEditor(value: string) {
+  const trimmed = value.trim()
+  if (!trimmed) {
+    return '{}'
+  }
+
+  try {
+    return JSON.stringify(JSON.parse(trimmed), null, 2)
+  } catch {
+    return value
+  }
 }
 
 export function ModelMappingEditor({
   value,
   onChange,
   disabled = false,
+  fromLabel,
+  toLabel,
+  fromPlaceholder = 'gpt-3.5-turbo',
+  toPlaceholder = 'gpt-3.5-turbo-0125',
+  jsonPlaceholder,
+  template,
+  emptyText,
+  optionKey,
+  onFullValueLoaded,
 }: ModelMappingEditorProps) {
   const { t } = useTranslation()
+  const queryClient = useQueryClient()
   const [mode, setMode] = useState<'visual' | 'json'>('visual')
   const [rows, setRows] = useState<MappingRow[]>([])
   const [jsonValue, setJsonValue] = useState(value)
+  const [pageIndex, setPageIndex] = useState(0)
+  const [pageSize, setPageSize] = useState(PAGE_SIZE_OPTIONS[0])
   const nextRowIdRef = useRef(0)
+  // Tracks the last JSON string we pushed up via onChange. The external-sync
+  // effect uses this to ignore echoes of our own changes, which would otherwise
+  // discard in-progress rows that aren't yet representable in JSON (e.g. a row
+  // whose "from" is still empty gets dropped by convertRowsToJson -> "{}",
+  // then re-parsed back into zero rows).
+  const emittedValueRef = useRef<string | null>(null)
 
   const createRowId = useCallback(() => {
     nextRowIdRef.current += 1
     return `mapping-${nextRowIdRef.current}`
   }, [])
+
+  const isServerPaginated = Boolean(optionKey)
+  const failedToLoadSettingsMessage = t('Failed to load settings')
+
+  const jsonMapQuery = useQuery({
+    queryKey: [
+      'system-option-json-map',
+      optionKey,
+      pageIndex + 1,
+      pageSize,
+      failedToLoadSettingsMessage,
+    ],
+    queryFn: async () => {
+      const data = await getOptionJsonMap({
+        key: optionKey ?? '',
+        page: pageIndex + 1,
+        pageSize,
+      })
+      if (!data.success) {
+        throw new Error(data.message || failedToLoadSettingsMessage)
+      }
+      return data.data
+    },
+    enabled: isServerPaginated && mode === 'visual',
+  })
+
+  const fullJsonQuery = useQuery({
+    queryKey: ['system-option-value', optionKey, failedToLoadSettingsMessage],
+    queryFn: async () => {
+      const data = await getSystemOptionValue(optionKey ?? '')
+      if (!data.success) {
+        throw new Error(data.message || failedToLoadSettingsMessage)
+      }
+      return data.data.value
+    },
+    enabled: false,
+  })
+
+  const deleteEntryMutation = useMutation({
+    mutationFn: async (mapKey: string) => {
+      if (!optionKey) return
+      const data = await deleteOptionJsonMapEntry({
+        key: optionKey,
+        map_key: mapKey,
+      })
+      if (!data.success) {
+        throw new Error(data.message || t('Failed to update setting'))
+      }
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: ['system-option-json-map', optionKey],
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ['system-option-value', optionKey],
+        }),
+        queryClient.invalidateQueries({ queryKey: ['system-options'] }),
+      ])
+      toast.success(t('Settings updated successfully'))
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || t('Failed to update setting'))
+    },
+  })
+
+  const upsertEntryMutation = useMutation({
+    mutationFn: async (row: MappingRow) => {
+      if (!optionKey) return
+      const mapKey = row.from.trim()
+      if (!mapKey) {
+        throw new Error(t('Mapping key cannot be empty'))
+      }
+      const data = await upsertOptionJsonMapEntry({
+        key: optionKey,
+        map_key: mapKey,
+        old_map_key: row.isNew ? undefined : row.originalFrom,
+        value: row.to.trim(),
+      })
+      if (!data.success) {
+        throw new Error(data.message || t('Failed to update setting'))
+      }
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: ['system-option-json-map', optionKey],
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ['system-option-value', optionKey],
+        }),
+        queryClient.invalidateQueries({ queryKey: ['system-options'] }),
+      ])
+      toast.success(t('Settings updated successfully'))
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || t('Failed to update setting'))
+    },
+  })
 
   const parseJsonToRows = useCallback(
     (json: string) => {
@@ -93,16 +254,38 @@ export function ModelMappingEditor({
     [createRowId]
   )
 
-  // Parse JSON to rows when value changes externally
+  // Sync external value changes into local rows/json state. Skip the re-parse
+  // when the incoming value is just the echo of our own onChange, so in-progress
+  // rows (e.g. with an empty "from") are not wiped out.
   useEffect(() => {
+    if (isServerPaginated) {
+      setJsonValue(value)
+      return
+    }
     setJsonValue(value)
+    if (value === emittedValueRef.current) {
+      return
+    }
+    emittedValueRef.current = null
     parseJsonToRows(value)
-  }, [parseJsonToRows, value])
+  }, [isServerPaginated, parseJsonToRows, value])
+
+  useEffect(() => {
+    if (!isServerPaginated || !jsonMapQuery.data) {
+      return
+    }
+    setRows(
+      (jsonMapQuery.data.items ?? []).map((item) => ({
+        id: `server-${item.key}`,
+        from: item.key,
+        to: item.value,
+        originalFrom: item.key,
+        originalTo: item.value,
+      }))
+    )
+  }, [isServerPaginated, jsonMapQuery.data])
 
   const convertRowsToJson = (updatedRows: MappingRow[]): string => {
-    if (updatedRows.length === 0) {
-      return ''
-    }
     const obj: Record<string, string> = {}
     updatedRows.forEach((row) => {
       if (row.from.trim()) {
@@ -112,22 +295,92 @@ export function ModelMappingEditor({
     return JSON.stringify(obj, null, 2)
   }
 
+  const unsavedServerRowCount = useMemo(
+    () => (isServerPaginated ? rows.filter((row) => row.isNew).length : 0),
+    [isServerPaginated, rows]
+  )
+
+  const pageCount = useMemo(
+    () =>
+      Math.max(
+        1,
+        Math.ceil(
+          (isServerPaginated
+            ? (jsonMapQuery.data?.total ?? 0) + unsavedServerRowCount
+            : rows.length) /
+            pageSize
+        )
+      ),
+    [
+      isServerPaginated,
+      jsonMapQuery.data?.total,
+      pageSize,
+      rows.length,
+      unsavedServerRowCount,
+    ]
+  )
+
+  const safePageIndex = Math.min(pageIndex, pageCount - 1)
+
+  const pageRows = useMemo(
+    () =>
+      rows.slice(
+        safePageIndex * pageSize,
+        safePageIndex * pageSize + pageSize
+      ),
+    [pageSize, rows, safePageIndex]
+  )
+
+  const visibleRows = isServerPaginated ? rows : pageRows
+  const totalRows = isServerPaginated
+    ? (jsonMapQuery.data?.total ?? 0) + unsavedServerRowCount
+    : rows.length
+  const isLoadingRows = isServerPaginated && jsonMapQuery.isLoading
+
+  useEffect(() => {
+    if (pageIndex !== safePageIndex) {
+      setPageIndex(safePageIndex)
+    }
+  }, [pageIndex, safePageIndex])
+
+  // Push a JSON change up to the parent and remember it so the sync effect
+  // treats the resulting prop update as our own and does not re-parse it.
+  const emitChange = (json: string) => {
+    emittedValueRef.current = json
+    setJsonValue(json)
+    onChange(json)
+  }
+
   const handleAddRow = () => {
     const newRow: MappingRow = {
       id: createRowId(),
       from: '',
       to: '',
+      isNew: true,
+    }
+    if (isServerPaginated) {
+      setRows((currentRows) => [...currentRows, newRow])
+      return
     }
     const updatedRows = [...rows, newRow]
     setRows(updatedRows)
+    setPageIndex(Math.max(0, Math.ceil(updatedRows.length / pageSize) - 1))
   }
 
   const handleDeleteRow = (id: string) => {
+    if (isServerPaginated) {
+      const row = rows.find((item) => item.id === id)
+      if (row?.isNew) {
+        setRows((currentRows) => currentRows.filter((item) => item.id !== id))
+        return
+      }
+      const mapKey = row?.originalFrom ?? row?.from ?? id
+      deleteEntryMutation.mutate(mapKey)
+      return
+    }
     const updatedRows = rows.filter((row) => row.id !== id)
     setRows(updatedRows)
-    const json = convertRowsToJson(updatedRows)
-    setJsonValue(json)
-    onChange(json)
+    emitChange(convertRowsToJson(updatedRows))
   }
 
   const handleRowChange = (
@@ -139,45 +392,66 @@ export function ModelMappingEditor({
       row.id === id ? { ...row, [field]: newValue } : row
     )
     setRows(updatedRows)
-    const json = convertRowsToJson(updatedRows)
-    setJsonValue(json)
-    onChange(json)
+    if (isServerPaginated) {
+      return
+    }
+    emitChange(convertRowsToJson(updatedRows))
+  }
+
+  const isRowDirty = (row: MappingRow) =>
+    Boolean(
+      row.isNew || row.from !== row.originalFrom || row.to !== row.originalTo
+    )
+
+  const handleSaveRow = (row: MappingRow) => {
+    upsertEntryMutation.mutate(row)
   }
 
   const handleJsonChange = (newJson: string) => {
-    setJsonValue(newJson)
-    onChange(newJson)
-    parseJsonToRows(newJson)
+    emitChange(newJson)
+    if (!isServerPaginated) {
+      parseJsonToRows(newJson)
+    }
   }
 
   const handleFillTemplate = () => {
-    const template = JSON.stringify(
-      { 'gpt-3.5-turbo': 'gpt-3.5-turbo-0125' },
-      null,
-      2
-    )
-    setJsonValue(template)
-    onChange(template)
-    parseJsonToRows(template)
+    const templateJson =
+      template ??
+      JSON.stringify({ 'gpt-3.5-turbo': 'gpt-3.5-turbo-0125' }, null, 2)
+    emitChange(templateJson)
+    if (!isServerPaginated) {
+      parseJsonToRows(templateJson)
+    }
   }
 
-  const toggleMode = () => {
+  const toggleMode = async () => {
     if (mode === 'visual') {
-      // Switching to JSON mode: sync rows to JSON
-      const json = convertRowsToJson(rows)
-      setJsonValue(json)
-      onChange(json)
+      if (isServerPaginated) {
+        const result = await fullJsonQuery.refetch()
+        if (result.isError) {
+          toast.error(result.error.message || t('Failed to load settings'))
+          return
+        }
+        const fullValue = result.data ?? '{}'
+        onFullValueLoaded?.(fullValue)
+        setJsonValue(formatJsonForEditor(fullValue))
+      } else {
+        // Switching to JSON mode: sync rows to JSON
+        emitChange(convertRowsToJson(rows))
+      }
       setMode('json')
     } else {
       // Switching to visual mode: sync JSON to rows
-      parseJsonToRows(jsonValue)
+      if (!isServerPaginated) {
+        parseJsonToRows(jsonValue)
+      }
       setMode('visual')
     }
   }
 
   return (
     <div className='space-y-2'>
-      <div className='flex items-center justify-between'>
+      <div className='flex flex-wrap items-center justify-between gap-2'>
         <div className='flex gap-2'>
           <Button
             type='button'
@@ -198,90 +472,191 @@ export function ModelMappingEditor({
               </>
             )}
           </Button>
-          <Button
-            type='button'
-            variant='link'
-            size='sm'
-            className='h-auto p-0'
-            onClick={handleFillTemplate}
-            disabled={disabled}
-          >
-            {t('Fill Template')}
-          </Button>
+          {!isServerPaginated || mode === 'json' ? (
+            <Button
+              type='button'
+              variant='link'
+              size='sm'
+              className='h-auto p-0'
+              onClick={handleFillTemplate}
+              disabled={disabled}
+            >
+              {t('Fill Template')}
+            </Button>
+          ) : null}
         </div>
-      </div>
-
-      {mode === 'visual' ? (
-        <div className='space-y-2'>
-          {rows.length > 0 ? (
-            <div className='space-y-2'>
-              <div className='grid grid-cols-[1fr_1fr_auto] gap-2 text-sm font-medium'>
-                <div>{t('Original Model')}</div>
-                <div>{t('Replacement Model')}</div>
-                <div className='w-10'></div>
-              </div>
-              {rows.map((row) => (
-                <div
-                  key={row.id}
-                  className='grid grid-cols-[1fr_1fr_auto] gap-2'
-                >
-                  <Input
-                    value={row.from}
-                    onChange={(e) =>
-                      handleRowChange(row.id, 'from', e.target.value)
-                    }
-                    placeholder='gpt-3.5-turbo'
-                    disabled={disabled}
-                  />
-                  <Input
-                    value={row.to}
-                    onChange={(e) =>
-                      handleRowChange(row.id, 'to', e.target.value)
-                    }
-                    placeholder='gpt-3.5-turbo-0125'
-                    disabled={disabled}
-                  />
-                  <Button
-                    type='button'
-                    variant='ghost'
-                    size='icon'
-                    onClick={() => handleDeleteRow(row.id)}
-                    disabled={disabled}
-                    className='h-10 w-10'
-                  >
-                    <Trash2 className='h-4 w-4' />
-                  </Button>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className='text-muted-foreground flex h-24 items-center justify-center rounded-md border border-dashed text-sm'>
-              {t(
-                'No model mappings configured. Click "Add Mapping" to get started.'
-              )}
-            </div>
-          )}
+        {mode === 'visual' ? (
           <Button
             type='button'
             variant='outline'
             size='sm'
             onClick={handleAddRow}
             disabled={disabled}
-            className='w-full'
           >
             <Plus className='mr-2 h-4 w-4' />
             {t('Add Mapping')}
           </Button>
+        ) : null}
+      </div>
+
+      {mode === 'visual' ? (
+        <div className='space-y-2'>
+          {isLoadingRows || totalRows > 0 ? (
+            <div className='space-y-2'>
+              <div className='grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] gap-2 text-sm font-medium'>
+                <div>{fromLabel ? t(fromLabel) : t('Original Model')}</div>
+                <div>{toLabel ? t(toLabel) : t('Replacement Model')}</div>
+                <div className={isServerPaginated ? 'w-20' : 'w-10'}></div>
+              </div>
+              {isLoadingRows ? (
+                <div className='text-muted-foreground flex h-24 items-center justify-center rounded-md border border-dashed text-sm'>
+                  {t('Loading...')}
+                </div>
+              ) : null}
+              {visibleRows.map((row) => (
+                <div
+                  key={row.id}
+                  className='grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] gap-2'
+                >
+                  <Input
+                    value={row.from}
+                    onChange={(e) =>
+                      handleRowChange(row.id, 'from', e.target.value)
+                    }
+                    placeholder={fromPlaceholder}
+                    disabled={disabled}
+                    className='min-w-0'
+                  />
+                  <Input
+                    value={row.to}
+                    onChange={(e) =>
+                      handleRowChange(row.id, 'to', e.target.value)
+                    }
+                    placeholder={toPlaceholder}
+                    disabled={disabled}
+                    className='min-w-0'
+                  />
+                  <div className='flex items-center justify-end gap-1'>
+                    {isServerPaginated ? (
+                      <Button
+                        type='button'
+                        variant='ghost'
+                        size='icon'
+                        onClick={() => handleSaveRow(row)}
+                        disabled={
+                          disabled ||
+                          upsertEntryMutation.isPending ||
+                          !row.from.trim() ||
+                          !isRowDirty(row)
+                        }
+                        className='h-10 w-10'
+                        aria-label={t('Save')}
+                      >
+                        <Save className='h-4 w-4' />
+                      </Button>
+                    ) : null}
+                    <Button
+                      type='button'
+                      variant='ghost'
+                      size='icon'
+                      onClick={() => handleDeleteRow(row.id)}
+                      disabled={disabled || deleteEntryMutation.isPending}
+                      className='h-10 w-10'
+                    >
+                      <Trash2 className='h-4 w-4' />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className='text-muted-foreground flex h-24 items-center justify-center rounded-md border border-dashed text-sm'>
+              {emptyText
+                ? t(emptyText)
+                : t(
+                    'No model mappings configured. Click "Add Mapping" to get started.'
+                  )}
+            </div>
+          )}
+          {totalRows > 0 ? (
+            <div className='flex flex-col gap-3 border-t pt-3 sm:flex-row sm:items-center sm:justify-between'>
+              <div className='text-muted-foreground flex flex-wrap items-center gap-3 text-xs'>
+                <span>
+                  {t('Showing {{start}}-{{end}} of {{count}} mappings', {
+                    start: Math.min(
+                      totalRows,
+                      safePageIndex * pageSize + 1
+                    ),
+                    end: Math.min(
+                      totalRows,
+                      safePageIndex * pageSize + visibleRows.length
+                    ),
+                    count: totalRows,
+                  })}
+                </span>
+                <div className='flex items-center gap-2'>
+                  <span>{t('Rows per page')}</span>
+                  <select
+                    className='border-input bg-background h-8 rounded-md border px-2 text-sm'
+                    value={pageSize}
+                    onChange={(event) => {
+                      setPageSize(Number(event.target.value))
+                      setPageIndex(0)
+                    }}
+                    disabled={disabled}
+                  >
+                    {PAGE_SIZE_OPTIONS.map((size) => (
+                      <option key={size} value={size}>
+                        {size}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div className='flex items-center gap-2'>
+                <Button
+                  type='button'
+                  variant='outline'
+                  size='sm'
+                  disabled={disabled || safePageIndex === 0}
+                  onClick={() =>
+                    setPageIndex(() => Math.max(0, safePageIndex - 1))
+                  }
+                >
+                  {t('Previous')}
+                </Button>
+                <span className='text-muted-foreground text-xs'>
+                  {safePageIndex + 1} / {pageCount}
+                </span>
+                <Button
+                  type='button'
+                  variant='outline'
+                  size='sm'
+                  disabled={disabled || safePageIndex >= pageCount - 1}
+                  onClick={() =>
+                    setPageIndex(() => Math.min(pageCount - 1, safePageIndex + 1))
+                  }
+                >
+                  {t('Next')}
+                </Button>
+              </div>
+            </div>
+          ) : null}
         </div>
       ) : (
-        <Textarea
-          value={jsonValue}
-          onChange={(e) => handleJsonChange(e.target.value)}
-          placeholder={t('{"original-model": "replacement-model"}')}
-          disabled={disabled}
-          rows={8}
-          className={cn('font-mono text-sm')}
-        />
+        <div className='min-w-0 max-w-full overflow-hidden'>
+          <Textarea
+            value={jsonValue}
+            onChange={(e) => handleJsonChange(e.target.value)}
+            placeholder={jsonPlaceholder ?? t('{"original-model": "replacement-model"}')}
+            disabled={disabled}
+            rows={8}
+            wrap='off'
+            className={cn(
+              'h-48 max-h-48 min-h-48 w-full min-w-0 max-w-full resize-none overflow-auto whitespace-pre font-mono text-sm [field-sizing:fixed]'
+            )}
+          />
+        </div>
       )}
     </div>
   )

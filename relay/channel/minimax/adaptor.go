@@ -2,18 +2,19 @@ package minimax
 
 import (
 	"bytes"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
 
+	"github.com/zhongruan0522/new-api/common"
 	"github.com/zhongruan0522/new-api/dto"
 	"github.com/zhongruan0522/new-api/relay/channel"
 	"github.com/zhongruan0522/new-api/relay/channel/claude"
 	"github.com/zhongruan0522/new-api/relay/channel/openai"
 	relaycommon "github.com/zhongruan0522/new-api/relay/common"
 	"github.com/zhongruan0522/new-api/relay/constant"
+	"github.com/zhongruan0522/new-api/setting/model_setting"
 	"github.com/zhongruan0522/new-api/types"
 
 	"github.com/gin-gonic/gin"
@@ -36,16 +37,17 @@ func (a *Adaptor) ConvertAudioRequest(c *gin.Context, info *relaycommon.RelayInf
 		return nil, errors.New("unsupported audio relay mode")
 	}
 
-	voiceID := request.Voice
-	speed := request.Speed
 	outputFormat := request.ResponseFormat
 
+	// 1) 先用用户请求原始值构造基础请求（不应用管理员重定向）。
+	//    使用 UpstreamModelName（渠道级 model_mapping 已由 ModelMappedHelper 处理），
+	//    作为 TTS 专用重定向的输入，支持 alias -> tts-1-hd -> speech-02-hd 链式映射。
 	minimaxRequest := MiniMaxTTSRequest{
-		Model: info.OriginModelName,
+		Model: info.UpstreamModelName,
 		Text:  request.Input,
 		VoiceSetting: VoiceSetting{
-			VoiceID: voiceID,
-			Speed:   speed,
+			VoiceID: request.Voice,
+			Speed:   request.Speed,
 		},
 		AudioSetting: &AudioSetting{
 			Format: outputFormat,
@@ -53,31 +55,75 @@ func (a *Adaptor) ConvertAudioRequest(c *gin.Context, info *relaycommon.RelayInf
 		OutputFormat: outputFormat,
 	}
 
-	// 同步扩展字段的厂商自定义metadata
+	// 2) 合并用户 metadata（扩展字段的厂商自定义值）。
+	//    必须在管理员强制策略之前合并，使管理员映射具有最高优先级，
+	//    防止用户通过 metadata 覆盖 model/voice_id 等策略字段 (issue #107)。
 	if len(request.Metadata) > 0 {
-		if err := json.Unmarshal(request.Metadata, &minimaxRequest); err != nil {
-			return nil, fmt.Errorf("error unmarshalling metadata to minimax request: %w", err)
+		if err := common.Unmarshal(request.Metadata, &minimaxRequest); err != nil {
+			return nil, fmt.Errorf("error unmarshalling metadata to TTS request: %w", err)
 		}
 	}
+	clientVoice := minimaxRequest.VoiceSetting.VoiceID
+	if clientVoice == "" {
+		clientVoice = request.Voice
+	}
+	// 音色白名单/重定向已迁移到数据库音色表：始终按用户原始音色 ID 查库，
+	// 校验通过后再用 redirect_id 替换发给上游，避免直接传 redirect_id 绕过白名单。
+	if request.Voice != "" {
+		resolvedRequestVoice, vErr := ResolveVoiceForTTSUpstream(c, request.Voice)
+		if vErr != nil {
+			return nil, vErr
+		}
+		minimaxRequest.VoiceSetting.VoiceID = resolvedRequestVoice
+	}
+	if clientVoice != "" && clientVoice != request.Voice {
+		resolvedClientVoice, vErr := ResolveVoiceForTTSUpstream(c, clientVoice)
+		if vErr != nil {
+			return nil, vErr
+		}
+		minimaxRequest.VoiceSetting.VoiceID = resolvedClientVoice
+	}
 
-	jsonData, err := json.Marshal(minimaxRequest)
+	// 3) 应用管理员强制策略：在 metadata 合并之后覆盖策略字段。
+	//    仅当 cfg.Enabled 时生效。注意：音色重定向已由上一步数据库解析完成，
+	//    策略不再覆盖 VoiceSetting.VoiceID，避免回退掉 redirect_id。
+	policy := model_setting.ApplyMiniMaxTTSPolicy(info.UpstreamModelName, request.Voice, request.Input, outputFormat)
+	if policy.Enabled {
+		minimaxRequest.Model = policy.Model
+		minimaxRequest.VoiceSetting.Emotion = policy.Emotion
+		minimaxRequest.Text = policy.Text
+		if minimaxRequest.AudioSetting == nil {
+			minimaxRequest.AudioSetting = &AudioSetting{}
+		}
+		minimaxRequest.AudioSetting.Format = outputFormat
+		minimaxRequest.OutputFormat = outputFormat
+	}
+
+	normalizedFormat := outputFormat
+	if normalizedFormat != "hex" {
+		normalizedFormat = "url"
+	}
+	c.Set("response_format", normalizedFormat)
+
+	jsonData, err := common.Marshal(minimaxRequest)
 	if err != nil {
-		return nil, fmt.Errorf("error marshalling minimax request: %w", err)
-	}
-	if outputFormat != "hex" {
-		outputFormat = "url"
+		return nil, fmt.Errorf("error marshalling TTS request: %w", err)
 	}
 
-	c.Set("response_format", outputFormat)
-
-	// Debug: log the request structure
-	// fmt.Printf("MiniMax TTS Request: %s\n", string(jsonData))
+	// 音色日志：只记录用户请求中的 OpenAI TTS voice，避免暴露重定向后的真实上游 voice_id。
+	// 由上层 audio_handler.go 通过 extraContent 传给 PostAudioConsumeQuota。
+	if request.Voice != "" {
+		c.Set("minimax_voice_id", request.Voice)
+	}
 
 	return bytes.NewReader(jsonData), nil
 }
 
 func (a *Adaptor) ConvertImageRequest(c *gin.Context, info *relaycommon.RelayInfo, request dto.ImageRequest) (any, error) {
-	return request, nil
+	if info.RelayMode != constant.RelayModeImagesGenerations {
+		return nil, fmt.Errorf("unsupported image relay mode: %d", info.RelayMode)
+	}
+	return oaiImage2MiniMaxImageRequest(request), nil
 }
 
 func (a *Adaptor) Init(info *relaycommon.RelayInfo) {
@@ -126,6 +172,9 @@ func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, info *relaycom
 
 	if info.RelayMode == constant.RelayModeAudioSpeech {
 		return handleTTSResponse(c, resp, info)
+	}
+	if info.RelayMode == constant.RelayModeImagesGenerations {
+		return miniMaxImageHandler(c, resp, info)
 	}
 
 	adaptor := openai.Adaptor{}

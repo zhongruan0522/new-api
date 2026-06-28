@@ -16,6 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
+import { AuditSection } from './audit-section'
 import { RateLimitSection } from '../request-limits/rate-limit-section'
 import { SensitiveWordsSection } from '../request-limits/sensitive-words-section'
 import { SSRFSection } from '../request-limits/ssrf-section'
@@ -73,6 +74,20 @@ const SECURITY_SECTIONS = [
             settings['fetch_setting.allowed_ports'],
           'fetch_setting.apply_ip_filter_for_domain':
             settings['fetch_setting.apply_ip_filter_for_domain'],
+        }}
+      />
+    ),
+  },
+  {
+    id: 'audit',
+    titleKey: 'Audit Log',
+    build: (settings: SecuritySettings) => (
+      <AuditSection
+        defaultValues={{
+          'audit_setting.enabled': settings['audit_setting.enabled'],
+          'audit_setting.modules': settings['audit_setting.modules'],
+          'audit_setting.record_ip': settings['audit_setting.record_ip'],
+          'audit_setting.record_diff': settings['audit_setting.record_diff'],
         }}
       />
     ),

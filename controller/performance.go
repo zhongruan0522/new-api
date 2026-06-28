@@ -7,6 +7,9 @@ import (
 	"time"
 
 	"github.com/zhongruan0522/new-api/common"
+	"github.com/zhongruan0522/new-api/model"
+	"github.com/zhongruan0522/new-api/service"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -143,6 +146,8 @@ func ClearDiskCache(c *gin.Context) {
 		return
 	}
 
+	service.RecordAudit(c, model.AuditModulePerformance, model.AuditActionDelete, "清理磁盘缓存", nil, nil)
+
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "不活跃的磁盘缓存已清理",
@@ -153,6 +158,8 @@ func ClearDiskCache(c *gin.Context) {
 func ResetPerformanceStats(c *gin.Context) {
 	common.ResetDiskCacheStats()
 
+	service.RecordAudit(c, model.AuditModulePerformance, model.AuditActionUpdate, "重置性能统计", nil, nil)
+
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "统计信息已重置",
@@ -162,6 +169,8 @@ func ResetPerformanceStats(c *gin.Context) {
 // ForceGC 强制执行 GC
 func ForceGC(c *gin.Context) {
 	runtime.GC()
+
+	service.RecordAudit(c, model.AuditModulePerformance, model.AuditActionUpdate, "强制垃圾回收", nil, nil)
 
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,

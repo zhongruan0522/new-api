@@ -60,6 +60,7 @@ import {
 import { MULTI_KEY_FILTER_OPTIONS } from '../../constants'
 import {
   channelsQueryKeys,
+  formatMultiKeyDisplayIndex,
   formatTimestamp,
   getMultiKeyStatusConfig,
   getMultiKeyConfirmMessage,
@@ -380,7 +381,7 @@ export function MultiKeyManageDialog({
                       {keys.map((key) => (
                         <TableRow key={key.index}>
                           <TableCell className='font-mono text-sm'>
-                            #{key.index + 1}
+                            {formatMultiKeyDisplayIndex(key.index)}
                           </TableCell>
                           <TableCell>{renderStatusBadge(key.status)}</TableCell>
                           <TableCell className='max-w-xs truncate text-sm'>

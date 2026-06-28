@@ -26,14 +26,16 @@ import {
   Key,
   LayoutDashboard,
   LifeBuoy,
-  MessageSquare,
+  Mic,
   Radio,
   ReceiptText,
   Settings,
+  ShieldCheck,
   Ticket,
   User,
   Users,
   Wallet,
+  WandSparkles,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { type SidebarData } from '@/components/layout/types'
@@ -51,7 +53,7 @@ export function useSidebarData(): SidebarData {
     navGroups: [
       {
         id: 'chat',
-        title: t('Chat'),
+        title: t('Experience Center'),
         items: [
           {
             title: t('Playground'),
@@ -59,9 +61,14 @@ export function useSidebarData(): SidebarData {
             icon: FlaskConical,
           },
           {
-            title: t('Chat'),
-            icon: MessageSquare,
-            type: 'chat-presets',
+            title: t('Multimodal'),
+            icon: WandSparkles,
+            items: [
+              {
+                title: t('Custom Voice'),
+                url: '/multimodal/custom-voice',
+              },
+            ],
           },
         ],
       },
@@ -156,6 +163,21 @@ export function useSidebarData(): SidebarData {
             title: t('Redemption Codes'),
             url: '/redemption-codes',
             icon: Ticket,
+          },
+          {
+            title: t('Audit Logs'),
+            url: '/audit-logs',
+            icon: ShieldCheck,
+          },
+          {
+            title: t('MiniMax'),
+            icon: Mic,
+            items: [
+              {
+                title: t('Voice Management'),
+                url: '/minimax/voice-management',
+              },
+            ],
           },
           {
             title: t('System Settings'),

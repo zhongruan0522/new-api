@@ -2,19 +2,21 @@ package minimax
 
 import (
 	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
+	"regexp"
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/zhongruan0522/new-api/common"
 	"github.com/zhongruan0522/new-api/dto"
 	relaycommon "github.com/zhongruan0522/new-api/relay/common"
 	"github.com/zhongruan0522/new-api/service"
 	"github.com/zhongruan0522/new-api/types"
 )
+
+var minimaxNamePattern = regexp.MustCompile(`(?i)minimax`)
 
 type MiniMaxTTSRequest struct {
 	Model             string             `json:"model"`
@@ -105,22 +107,36 @@ func getContentTypeByFormat(format string) string {
 	return "audio/mpeg" // default to mp3
 }
 
+func sanitizeTTSProviderName(message string, info *relaycommon.RelayInfo) string {
+	if message == "" || info == nil {
+		return minimaxNamePattern.ReplaceAllString(message, "upstream")
+	}
+	if strings.Contains(strings.ToLower(info.OriginModelName), "minimax") {
+		return message
+	}
+	if info.ChannelMeta != nil &&
+		strings.Contains(strings.ToLower(info.UpstreamModelName), "minimax") {
+		return message
+	}
+	return minimaxNamePattern.ReplaceAllString(message, "upstream")
+}
+
 func handleTTSResponse(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (usage any, err *types.NewAPIError) {
-	body, readErr := io.ReadAll(resp.Body)
+	defer resp.Body.Close()
+	body, readErr := common.ReadMediaResponseBody(resp.Body)
 	if readErr != nil {
 		return nil, types.NewErrorWithStatusCode(
-			fmt.Errorf("failed to read minimax response: %w", readErr),
+			fmt.Errorf("failed to read upstream response: %w", readErr),
 			types.ErrorCodeReadResponseBodyFailed,
 			http.StatusInternalServerError,
 		)
 	}
-	defer resp.Body.Close()
 
 	// Parse response
 	var minimaxResp MiniMaxTTSResponse
-	if unmarshalErr := json.Unmarshal(body, &minimaxResp); unmarshalErr != nil {
+	if unmarshalErr := common.Unmarshal(body, &minimaxResp); unmarshalErr != nil {
 		return nil, types.NewErrorWithStatusCode(
-			fmt.Errorf("failed to unmarshal minimax TTS response: %w", unmarshalErr),
+			fmt.Errorf("failed to parse TTS response: %w", unmarshalErr),
 			types.ErrorCodeBadResponseBody,
 			http.StatusInternalServerError,
 		)
@@ -128,8 +144,9 @@ func handleTTSResponse(c *gin.Context, resp *http.Response, info *relaycommon.Re
 
 	// Check base_resp status code
 	if minimaxResp.BaseResp.StatusCode != 0 {
+		statusMsg := sanitizeTTSProviderName(minimaxResp.BaseResp.StatusMsg, info)
 		return nil, types.NewErrorWithStatusCode(
-			fmt.Errorf("minimax TTS error: %d - %s", minimaxResp.BaseResp.StatusCode, minimaxResp.BaseResp.StatusMsg),
+			fmt.Errorf("TTS upstream error: %d - %s", minimaxResp.BaseResp.StatusCode, statusMsg),
 			types.ErrorCodeBadResponse,
 			http.StatusBadRequest,
 		)
@@ -138,7 +155,7 @@ func handleTTSResponse(c *gin.Context, resp *http.Response, info *relaycommon.Re
 	// Check if we have audio data
 	if minimaxResp.Data.Audio == "" {
 		return nil, types.NewErrorWithStatusCode(
-			fmt.Errorf("no audio data in minimax TTS response"),
+			fmt.Errorf("no audio data in TTS response"),
 			types.ErrorCodeBadResponse,
 			http.StatusBadRequest,
 		)
@@ -163,25 +180,32 @@ func handleTTSResponse(c *gin.Context, resp *http.Response, info *relaycommon.Re
 		c.Data(http.StatusOK, contentType, audioData)
 	}
 
+	// MiniMax TTS 按 usage_characters（合成语音消耗的字符数）计费。
+	// 按产品需求：usage_characters 同时映射到【输入 Token】和【音频输出 Token】，
+	// 触发 audio_handler.go:70 的音频倍率分支 (PostAudioConsumeQuota)，
+	// 让 calculateAudioQuota 同时算输入文本成本和音频输出成本。
+	usageCharacters := int(minimaxResp.ExtraInfo.UsageCharacters)
 	usage = &dto.Usage{
-		PromptTokens:     info.GetEstimatePromptTokens(),
-		CompletionTokens: 0,
-		TotalTokens:      int(minimaxResp.ExtraInfo.UsageCharacters),
+		PromptTokens:     usageCharacters,
+		CompletionTokens: usageCharacters,
+		TotalTokens:      usageCharacters * 2,
 	}
+	usage.(*dto.Usage).PromptTokensDetails.TextTokens = usageCharacters
+	usage.(*dto.Usage).CompletionTokenDetails.AudioTokens = usageCharacters
 
 	return usage, nil
 }
 
 func handleChatCompletionResponse(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (usage any, err *types.NewAPIError) {
-	body, readErr := io.ReadAll(resp.Body)
+	defer resp.Body.Close()
+	body, readErr := common.ReadResponseBody(resp.Body)
 	if readErr != nil {
 		return nil, types.NewErrorWithStatusCode(
-			errors.New("failed to read minimax response"),
+			errors.New("failed to read upstream response"),
 			types.ErrorCodeReadResponseBodyFailed,
 			http.StatusInternalServerError,
 		)
 	}
-	defer resp.Body.Close()
 
 	// Set response headers
 	for key, values := range resp.Header {

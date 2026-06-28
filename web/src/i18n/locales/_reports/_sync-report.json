@@ -1,14 +1,14 @@
 {
-  "base": "en.json",
+  "base": "en/",
   "locales": {
     "en": {
-      "file": "en.json",
+      "dir": "en/",
       "missingCount": 0,
       "extrasCount": 0,
       "untranslatedCount": 0
     },
     "zh": {
-      "file": "zh.json",
+      "dir": "zh/",
       "missingCount": 0,
       "extrasCount": 0,
       "untranslatedCount": 0

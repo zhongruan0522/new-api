@@ -10,6 +10,16 @@ var CountToken bool
 var GetMediaToken bool
 var GetMediaTokenNotStream bool
 var MaxRequestBodyMB int
+var AnonymousRequestBodyLimitKB int
+
+// MaxResponseBodyMB is the legacy generic cap for upstream non-streaming
+// response bodies. New code should prefer the typed caps below.
+var MaxResponseBodyMB int
+var MaxTextResponseBodyMB int
+var MaxEmbeddingResponseBodyMB int
+var MaxMediaResponseBodyMB int
+var MaxErrorResponseBodyMB int
+var MaxModelListResponseBodyMB int
 var AzureDefaultAPIVersion string
 var NotifyLimitCount int
 var NotificationLimitDurationMinute int

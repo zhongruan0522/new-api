@@ -26,12 +26,14 @@
 
 - OpenCode
 - Codex
+- CurSor
 
 ### 使用的 AI 模型
 
 - GLM-5 系列  
   - GLM-5
   - GLM-5.1
+  - GLM-5.2
 
 - GLM-5-Turbo 系列
   - GLM-5-Turbo
@@ -48,3 +50,4 @@
 - **[newapi](https://github.com/QuantumNous/new-api)** — 本项目的上游基础项目。
 - **[MicroWARP](https://github.com/ccbkkb/MicroWARP)** — 极简高性能的 Cloudflare WARP SOCKS5 Docker 代理，为 AI API 网关提供稳定的网络出口方案。
 - **[AxonHub](https://github.com/looplj/axonhub)** — 优秀的 AI API 网关参考实现。
+- **[Openafw](https://github.com/openafw/openafw)** - 本地AI流量安全过滤方案参考

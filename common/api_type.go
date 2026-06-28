@@ -31,6 +31,8 @@ func ChannelType2APIType(channelType int) (int, bool) {
 		apiType = constant.APITypeMiniMax
 	case constant.ChannelTypeXiaomi:
 		apiType = constant.APITypeXiaomi
+	case constant.ChannelTypeByteDance:
+		apiType = constant.APITypeByteDance
 	}
 	if apiType == -1 {
 		return constant.APITypeOpenAI, false

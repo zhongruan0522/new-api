@@ -151,6 +151,26 @@ func doApiRequestToTestServer(t *testing.T, info *relaycommon.RelayInfo, clientH
 	}
 }
 
+func TestApplyUpstreamContentLengthUsesRelayInfoSize(t *testing.T) {
+	req := httptest.NewRequest(http.MethodPost, "http://example.test", readerWithoutKnownLength{r: strings.NewReader("hello")})
+	req.ContentLength = -1
+	info := &relaycommon.RelayInfo{UpstreamRequestBodySize: 5}
+
+	applyUpstreamContentLength(req, info)
+
+	if req.ContentLength != 5 {
+		t.Fatalf("ContentLength = %d, want 5", req.ContentLength)
+	}
+}
+
+type readerWithoutKnownLength struct {
+	r io.Reader
+}
+
+func (r readerWithoutKnownLength) Read(p []byte) (int, error) {
+	return r.r.Read(p)
+}
+
 func TestDoApiRequest_PassthroughIncludesIdentityHeaders(t *testing.T) {
 	info := newTestRelayInfo(true, map[string]interface{}{})
 	got := doApiRequestToTestServer(t, info, defaultClientHeaders())

@@ -12,22 +12,22 @@ import (
 	"github.com/zhongruan0522/new-api/logger"
 	"github.com/zhongruan0522/new-api/relay/channel/openrouter"
 	relaycommon "github.com/zhongruan0522/new-api/relay/common"
+	relayconstant "github.com/zhongruan0522/new-api/relay/constant"
 	"github.com/zhongruan0522/new-api/relay/helper"
 	"github.com/zhongruan0522/new-api/service"
 
-	"github.com/zhongruan0522/new-api/types"
-
-	"github.com/bytedance/gopkg/util/gopool"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
+	"github.com/zhongruan0522/new-api/types"
 )
 
-func sendStreamData(c *gin.Context, info *relaycommon.RelayInfo, data string, forceFormat bool, thinkToContent bool) error {
+func sendStreamData(c *gin.Context, info *relaycommon.RelayInfo, data string, forceFormat bool) error {
 	if data == "" {
 		return nil
 	}
 
-	if !forceFormat && !thinkToContent {
+	if !forceFormat {
+		data = string(helper.MaskTopLevelModelJSON(common.StringToByteSlice(data), info))
 		return helper.StringData(c, data)
 	}
 
@@ -35,70 +35,7 @@ func sendStreamData(c *gin.Context, info *relaycommon.RelayInfo, data string, fo
 	if err := common.UnmarshalJsonStr(data, &lastStreamResponse); err != nil {
 		return err
 	}
-
-	if !thinkToContent {
-		return helper.ObjectData(c, lastStreamResponse)
-	}
-
-	hasThinkingContent := false
-	hasContent := false
-	var thinkingContent strings.Builder
-	for _, choice := range lastStreamResponse.Choices {
-		if len(choice.Delta.GetReasoningContent()) > 0 {
-			hasThinkingContent = true
-			thinkingContent.WriteString(choice.Delta.GetReasoningContent())
-		}
-		if len(choice.Delta.GetContentString()) > 0 {
-			hasContent = true
-		}
-	}
-
-	// Handle think to content conversion
-	if info.ThinkingContentInfo.IsFirstThinkingContent {
-		if hasThinkingContent {
-			response := lastStreamResponse.Copy()
-			for i := range response.Choices {
-				// send `think` tag with thinking content
-				response.Choices[i].Delta.SetContentString("<think>\n" + thinkingContent.String())
-				response.Choices[i].Delta.ReasoningContent = nil
-				response.Choices[i].Delta.Reasoning = nil
-			}
-			info.ThinkingContentInfo.IsFirstThinkingContent = false
-			info.ThinkingContentInfo.HasSentThinkingContent = true
-			return helper.ObjectData(c, response)
-		}
-	}
-
-	if lastStreamResponse.Choices == nil || len(lastStreamResponse.Choices) == 0 {
-		return helper.ObjectData(c, lastStreamResponse)
-	}
-
-	// Process each choice
-	for i, choice := range lastStreamResponse.Choices {
-		// Handle transition from thinking to content
-		// only send `</think>` tag when previous thinking content has been sent
-		if hasContent && !info.ThinkingContentInfo.SendLastThinkingContent && info.ThinkingContentInfo.HasSentThinkingContent {
-			response := lastStreamResponse.Copy()
-			for j := range response.Choices {
-				response.Choices[j].Delta.SetContentString("\n</think>\n")
-				response.Choices[j].Delta.ReasoningContent = nil
-				response.Choices[j].Delta.Reasoning = nil
-			}
-			info.ThinkingContentInfo.SendLastThinkingContent = true
-			helper.ObjectData(c, response)
-		}
-
-		// Convert reasoning content to regular content if any
-		if len(choice.Delta.GetReasoningContent()) > 0 {
-			lastStreamResponse.Choices[i].Delta.SetContentString(choice.Delta.GetReasoningContent())
-			lastStreamResponse.Choices[i].Delta.ReasoningContent = nil
-			lastStreamResponse.Choices[i].Delta.Reasoning = nil
-		} else if !hasThinkingContent && !hasContent {
-			// flush thinking content
-			lastStreamResponse.Choices[i].Delta.ReasoningContent = nil
-			lastStreamResponse.Choices[i].Delta.Reasoning = nil
-		}
-	}
+	helper.MaskChatStreamResponseModel(&lastStreamResponse, info)
 
 	return helper.ObjectData(c, lastStreamResponse)
 }
@@ -119,7 +56,6 @@ func OaiStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Re
 	var responseTextBuilder strings.Builder
 	var toolCount int
 	var usage = &dto.Usage{}
-	var streamItems []string // store stream items
 	var lastStreamData string
 	var secondLastStreamData string // 存储倒数第二个stream data，用于音频模型
 
@@ -128,9 +64,12 @@ func OaiStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Re
 
 	helper.StreamScannerHandler(c, resp, info, func(data string) bool {
 		if lastStreamData != "" {
-			err := HandleStreamFormat(c, info, lastStreamData, info.ChannelSetting.ForceFormat, info.ChannelSetting.ThinkingToContent)
+			err := HandleStreamFormat(c, info, lastStreamData, info.ChannelSetting.ForceFormat)
 			if err != nil {
 				common.SysLog("error handling stream format: " + err.Error())
+			}
+			if err := ProcessStreamFrame(info.RelayMode, lastStreamData, &responseTextBuilder, &toolCount); err != nil {
+				logger.LogError(c, "error processing stream token frame: "+err.Error())
 			}
 		}
 		if len(data) > 0 {
@@ -140,7 +79,6 @@ func OaiStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Re
 			}
 
 			lastStreamData = data
-			streamItems = append(streamItems, data)
 		}
 		return true
 	})
@@ -172,13 +110,14 @@ func OaiStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Re
 
 	if info.RelayFormat == types.RelayFormatOpenAI {
 		if shouldSendLastResp {
-			_ = sendStreamData(c, info, lastStreamData, info.ChannelSetting.ForceFormat, info.ChannelSetting.ThinkingToContent)
+			_ = sendStreamData(c, info, lastStreamData, info.ChannelSetting.ForceFormat)
 		}
 	}
 
-	// 处理token计算
-	if err := processTokens(info.RelayMode, streamItems, &responseTextBuilder, &toolCount); err != nil {
-		logger.LogError(c, "error processing tokens: "+err.Error())
+	if !containStreamUsage && lastStreamData != "" {
+		if err := ProcessStreamFrame(info.RelayMode, lastStreamData, &responseTextBuilder, &toolCount); err != nil {
+			logger.LogError(c, "error processing final stream token frame: "+err.Error())
+		}
 	}
 
 	if !containStreamUsage {
@@ -197,7 +136,7 @@ func OpenaiHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Respo
 	defer service.CloseResponseBodyGracefully(resp)
 
 	var simpleResponse dto.OpenAITextResponse
-	responseBody, err := io.ReadAll(resp.Body)
+	responseBody, err := readOpenAIResponseBody(info, resp.Body)
 	if err != nil {
 		return nil, types.NewOpenAIError(err, types.ErrorCodeReadResponseBodyFailed, http.StatusInternalServerError)
 	}
@@ -235,6 +174,7 @@ func OpenaiHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Respo
 			break
 		}
 	}
+	helper.MaskTextResponseModel(&simpleResponse, info)
 
 	forceFormat := false
 	if info.ChannelSetting.ForceFormat {
@@ -277,6 +217,7 @@ func OpenaiHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Respo
 				return nil, types.NewError(err, types.ErrorCodeBadResponseBody)
 			}
 		} else {
+			responseBody = helper.MaskTopLevelModelJSON(responseBody, info)
 			break
 		}
 	case types.RelayFormatClaude:
@@ -344,15 +285,13 @@ func OpenaiRealtimeHandler(c *gin.Context, info *relaycommon.RelayInfo) (*types.
 
 	clientClosed := make(chan struct{})
 	targetClosed := make(chan struct{})
-	sendChan := make(chan []byte, 100)
-	receiveChan := make(chan []byte, 100)
 	errChan := make(chan error, 2)
 
 	usage := &dto.RealtimeUsage{}
 	localUsage := &dto.RealtimeUsage{}
 	sumUsage := &dto.RealtimeUsage{}
 
-	gopool.Go(func() {
+	go func() {
 		defer func() {
 			if r := recover(); r != nil {
 				errChan <- fmt.Errorf("panic in client reader: %v", r)
@@ -392,7 +331,7 @@ func OpenaiRealtimeHandler(c *gin.Context, info *relaycommon.RelayInfo) (*types.
 					errChan <- fmt.Errorf("error counting text token: %v", err)
 					return
 				}
-				logger.LogInfo(c, fmt.Sprintf("type: %s, textToken: %d, audioToken: %d", realtimeEvent.Type, textToken, audioToken))
+				logger.LogDebug(c, "realtime event type=%s textToken=%d audioToken=%d", realtimeEvent.Type, textToken, audioToken)
 				localUsage.TotalTokens += textToken + audioToken
 				localUsage.InputTokens += textToken + audioToken
 				localUsage.InputTokenDetails.TextTokens += textToken
@@ -403,16 +342,11 @@ func OpenaiRealtimeHandler(c *gin.Context, info *relaycommon.RelayInfo) (*types.
 					errChan <- fmt.Errorf("error writing to target: %v", err)
 					return
 				}
-
-				select {
-				case sendChan <- message:
-				default:
-				}
 			}
 		}
-	})
+	}()
 
-	gopool.Go(func() {
+	go func() {
 		defer func() {
 			if r := recover(); r != nil {
 				errChan <- fmt.Errorf("panic in target reader: %v", r)
@@ -465,7 +399,7 @@ func OpenaiRealtimeHandler(c *gin.Context, info *relaycommon.RelayInfo) (*types.
 							errChan <- fmt.Errorf("error counting text token: %v", err)
 							return
 						}
-						logger.LogInfo(c, fmt.Sprintf("type: %s, textToken: %d, audioToken: %d", realtimeEvent.Type, textToken, audioToken))
+						logger.LogDebug(c, "realtime event type=%s textToken=%d audioToken=%d", realtimeEvent.Type, textToken, audioToken)
 						localUsage.TotalTokens += textToken + audioToken
 						info.IsFirstRequest = false
 						localUsage.InputTokens += textToken + audioToken
@@ -480,9 +414,7 @@ func OpenaiRealtimeHandler(c *gin.Context, info *relaycommon.RelayInfo) (*types.
 						localUsage = &dto.RealtimeUsage{}
 						// print now usage
 					}
-					logger.LogInfo(c, fmt.Sprintf("realtime streaming sumUsage: %v", sumUsage))
-					logger.LogInfo(c, fmt.Sprintf("realtime streaming localUsage: %v", localUsage))
-					logger.LogInfo(c, fmt.Sprintf("realtime streaming localUsage: %v", localUsage))
+					logger.LogDebug(c, "realtime streaming sumUsage=%v localUsage=%v", sumUsage, localUsage)
 
 				} else if realtimeEvent.Type == dto.RealtimeEventTypeSessionUpdated || realtimeEvent.Type == dto.RealtimeEventTypeSessionCreated {
 					realtimeSession := realtimeEvent.Session
@@ -497,26 +429,22 @@ func OpenaiRealtimeHandler(c *gin.Context, info *relaycommon.RelayInfo) (*types.
 						errChan <- fmt.Errorf("error counting text token: %v", err)
 						return
 					}
-					logger.LogInfo(c, fmt.Sprintf("type: %s, textToken: %d, audioToken: %d", realtimeEvent.Type, textToken, audioToken))
+					logger.LogDebug(c, "realtime event type=%s textToken=%d audioToken=%d", realtimeEvent.Type, textToken, audioToken)
 					localUsage.TotalTokens += textToken + audioToken
 					localUsage.OutputTokens += textToken + audioToken
 					localUsage.OutputTokenDetails.TextTokens += textToken
 					localUsage.OutputTokenDetails.AudioTokens += audioToken
 				}
 
+				message = helper.MaskRealtimeEventModelJSON(message, info)
 				err = helper.WssString(c, clientConn, string(message))
 				if err != nil {
 					errChan <- fmt.Errorf("error writing to client: %v", err)
 					return
 				}
-
-				select {
-				case receiveChan <- message:
-				default:
-				}
 			}
 		}
-	})
+	}()
 
 	select {
 	case <-clientClosed:
@@ -561,7 +489,7 @@ func preConsumeUsage(ctx *gin.Context, info *relaycommon.RelayInfo, usage *dto.R
 func OpenaiHandlerWithUsage(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Response) (*dto.Usage, *types.NewAPIError) {
 	defer service.CloseResponseBodyGracefully(resp)
 
-	responseBody, err := io.ReadAll(resp.Body)
+	responseBody, err := common.ReadMediaResponseBody(resp.Body)
 	if err != nil {
 		return nil, types.NewOpenAIError(err, types.ErrorCodeReadResponseBodyFailed, http.StatusInternalServerError)
 	}
@@ -571,6 +499,8 @@ func OpenaiHandlerWithUsage(c *gin.Context, info *relaycommon.RelayInfo, resp *h
 	if err != nil {
 		return nil, types.NewOpenAIError(err, types.ErrorCodeBadResponseBody, http.StatusInternalServerError)
 	}
+
+	responseBody = helper.MaskTopLevelModelJSON(responseBody, info)
 
 	// 写入新的 response body
 	service.IOCopyBytesGracefully(c, resp, responseBody)
@@ -591,6 +521,13 @@ func OpenaiHandlerWithUsage(c *gin.Context, info *relaycommon.RelayInfo, resp *h
 	}
 	applyUsagePostProcessing(info, &usageResp.Usage, responseBody)
 	return &usageResp.Usage, nil
+}
+
+func readOpenAIResponseBody(info *relaycommon.RelayInfo, body io.Reader) ([]byte, error) {
+	if info != nil && info.RelayMode == relayconstant.RelayModeEmbeddings {
+		return common.ReadEmbeddingResponseBody(body)
+	}
+	return common.ReadResponseBody(body)
 }
 
 func applyUsagePostProcessing(info *relaycommon.RelayInfo, usage *dto.Usage, responseBody []byte) {
@@ -625,6 +562,12 @@ func applyUsagePostProcessing(info *relaycommon.RelayInfo, usage *dto.Usage, res
 				usage.PromptTokensDetails.CachedTokens = cachedTokens
 			} else if usage.PromptCacheHitTokens > 0 {
 				usage.PromptTokensDetails.CachedTokens = usage.PromptCacheHitTokens
+			}
+		}
+	case constant.ChannelTypeOpenAI:
+		if usage.PromptTokensDetails.CachedTokens == 0 {
+			if cachedTokens, ok := extractLlamaCachedTokensFromBody(responseBody); ok {
+				usage.PromptTokensDetails.CachedTokens = cachedTokens
 			}
 		}
 	}
@@ -688,4 +631,25 @@ func extractMoonshotCachedTokensFromBody(body []byte) (int, bool) {
 	}
 
 	return 0, false
+}
+
+// extractLlamaCachedTokensFromBody 从 llama.cpp/vLLM 兼容响应的非标准 timings.cache_n 提取缓存命中 token。
+func extractLlamaCachedTokensFromBody(body []byte) (int, bool) {
+	if len(body) == 0 {
+		return 0, false
+	}
+
+	var payload struct {
+		Timings struct {
+			CachedTokens *int `json:"cache_n"`
+		} `json:"timings"`
+	}
+
+	if err := common.Unmarshal(body, &payload); err != nil {
+		return 0, false
+	}
+	if payload.Timings.CachedTokens == nil {
+		return 0, false
+	}
+	return *payload.Timings.CachedTokens, true
 }

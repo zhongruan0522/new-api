@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -23,8 +24,6 @@ import (
 	"github.com/zhongruan0522/new-api/setting"
 	"github.com/zhongruan0522/new-api/setting/operation_setting"
 	"github.com/zhongruan0522/new-api/types"
-
-	"github.com/bytedance/gopkg/util/gopool"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
@@ -337,12 +336,30 @@ func shouldRetry(c *gin.Context, openaiErr *types.NewAPIError, retryTimes int) b
 	if _, ok := c.Get("specific_channel_id"); ok {
 		return false
 	}
-	code := openaiErr.StatusCode
-	if code >= 200 && code < 300 {
+	statusCode := openaiErr.StatusCode
+	if statusCode >= 200 && statusCode < 300 {
+		return shouldRetryByNumericErrorCode(openaiErr)
+	}
+	if statusCode < 100 || statusCode > 9999 {
+		return true
+	}
+	if operation_setting.ShouldRetryByStatusCode(statusCode) {
+		return true
+	}
+	return shouldRetryByNumericErrorCode(openaiErr)
+}
+
+func shouldRetryByNumericErrorCode(openaiErr *types.NewAPIError) bool {
+	if openaiErr == nil {
 		return false
 	}
-	if code < 100 || code > 9999 {
-		return true
+	codeStr := strings.TrimSpace(string(openaiErr.GetErrorCode()))
+	if codeStr == "" {
+		return false
+	}
+	code, err := strconv.Atoi(codeStr)
+	if err != nil {
+		return false
 	}
 	return operation_setting.ShouldRetryByStatusCode(code)
 }
@@ -352,7 +369,7 @@ func processChannelError(c *gin.Context, channelError types.ChannelError, err *t
 	// 不要使用context获取渠道信息，异步处理时可能会出现渠道信息不一致的情况
 	// do not use context to get channel info, there may be inconsistent channel info when processing asynchronously
 	if service.ShouldDisableChannel(channelError.ChannelType, err) && channelError.AutoBan {
-		gopool.Go(func() {
+		common.RelayGo(func() {
 			service.DisableChannel(channelError, err.ErrorWithStatusCode())
 		})
 	}

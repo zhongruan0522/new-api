@@ -3,10 +3,11 @@ package controller
 import (
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"github.com/zhongruan0522/new-api/common"
 	"github.com/zhongruan0522/new-api/constant"
 	"github.com/zhongruan0522/new-api/model"
-	"github.com/gin-gonic/gin"
+	"github.com/zhongruan0522/new-api/service"
 )
 
 type Setup struct {
@@ -141,6 +142,10 @@ func PostSetup(c *gin.Context) {
 		})
 		return
 	}
+
+	// 系统初始化时无鉴权，手动设置操作人信息用于审计记录
+	c.Set("username", req.Username)
+	service.RecordAudit(c, model.AuditModuleSetup, model.AuditActionCreate, "系统初始化", nil, map[string]interface{}{"username": req.Username}, true)
 
 	c.JSON(200, gin.H{
 		"success": true,

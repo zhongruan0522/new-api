@@ -35,6 +35,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
+import { DisabledSettingsNotice } from '../components/disabled-settings-notice'
 import {
   SettingsForm,
   SettingsSwitchContent,
@@ -214,6 +215,7 @@ export function MonitoringSettingsSection({
 
   useResetForm(form, formDefaults)
 
+  const autoTestEnabled = form.watch('monitor_setting.auto_test_channel_enabled')
   const autoDisableStatusCodes = form.watch('AutomaticDisableStatusCodes')
   const autoRetryStatusCodes = form.watch('AutomaticRetryStatusCodes')
   const autoDisableParsed = useMemo(
@@ -256,6 +258,8 @@ export function MonitoringSettingsSection({
             isSaving={updateOption.isPending}
             saveLabel='Save monitoring rules'
           />
+          <DisabledSettingsNotice enabled={autoTestEnabled} />
+
           <div className='grid gap-6 md:grid-cols-2'>
             <FormField
               control={form.control}

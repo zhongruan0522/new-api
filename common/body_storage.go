@@ -22,6 +22,16 @@ type BodyStorage interface {
 	IsDisk() bool
 }
 
+type readerOnly struct {
+	io.Reader
+}
+
+// ReaderOnly hides Close/Seek methods from callers that should only consume a
+// stream view of the underlying storage.
+func ReaderOnly(r io.Reader) io.Reader {
+	return readerOnly{Reader: r}
+}
+
 // ErrStorageClosed 存储已关闭错误
 var ErrStorageClosed = fmt.Errorf("body storage is closed")
 

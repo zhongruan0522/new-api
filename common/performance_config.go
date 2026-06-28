@@ -18,7 +18,7 @@ func init() {
 		Enabled:         true,
 		CPUThreshold:    90,
 		MemoryThreshold: 90,
-		DiskThreshold:   90,
+		DiskThreshold:   95,
 	})
 }
 

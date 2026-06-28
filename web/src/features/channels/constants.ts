@@ -38,10 +38,11 @@ export const CHANNEL_TYPES = {
   40: 'SiliconFlow',
   41: 'Vertex AI',
   43: 'DeepSeek',
+  44: 'ByteDance',
 } as const
 
 const CHANNEL_TYPE_DISPLAY_ORDER: number[] = [
-  14, 33, 3, 43, 24, 35, 25, 4, 1, 20, 40, 41, 26, 6, 8,
+  14, 33, 3, 43, 24, 35, 25, 44, 4, 1, 20, 40, 41, 26, 6, 8,
 ]
 
 export const CHANNEL_TYPE_OPTIONS: { value: number; label: string }[] = (() => {
@@ -336,7 +337,7 @@ export const FIELD_DESCRIPTIONS = {
 // ============================================================================
 
 export const MODEL_FETCHABLE_TYPES = new Set([
-  1, 4, 14, 20, 24, 25, 26, 40, 43,
+  1, 4, 14, 20, 24, 25, 26, 40, 43, 44,
 ])
 
 export const TYPE_TO_KEY_PROMPT: Record<number, string> = {

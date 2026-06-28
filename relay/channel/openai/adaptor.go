@@ -15,7 +15,9 @@ import (
 	"github.com/zhongruan0522/new-api/common"
 	"github.com/zhongruan0522/new-api/constant"
 	"github.com/zhongruan0522/new-api/dto"
+	"github.com/zhongruan0522/new-api/i18n"
 	"github.com/zhongruan0522/new-api/logger"
+	"github.com/zhongruan0522/new-api/model"
 	"github.com/zhongruan0522/new-api/relay/channel"
 
 	"github.com/zhongruan0522/new-api/relay/channel/openrouter"
@@ -23,6 +25,8 @@ import (
 	"github.com/zhongruan0522/new-api/relay/common_handler"
 	relayconstant "github.com/zhongruan0522/new-api/relay/constant"
 	"github.com/zhongruan0522/new-api/service"
+	"github.com/zhongruan0522/new-api/setting/model_setting"
+	"github.com/zhongruan0522/new-api/setting/reasoning"
 	"github.com/zhongruan0522/new-api/types"
 
 	"github.com/gin-gonic/gin"
@@ -31,21 +35,6 @@ import (
 type Adaptor struct {
 	ChannelType    int
 	ResponseFormat string
-}
-
-// parseReasoningEffortFromModelSuffix 从模型名称中解析推理级别
-// support OAI models: o1-mini/o3-mini/o4-mini/o1/o3 etc...
-// minimal effort only available in gpt-5
-func parseReasoningEffortFromModelSuffix(model string) (string, string) {
-	effortSuffixes := []string{"-high", "-minimal", "-low", "-medium", "-none", "-xhigh"}
-	for _, suffix := range effortSuffixes {
-		if strings.HasSuffix(model, suffix) {
-			effort := strings.TrimPrefix(suffix, "-")
-			originModel := strings.TrimSuffix(model, suffix)
-			return effort, originModel
-		}
-	}
-	return "", model
 }
 
 func (a *Adaptor) ConvertGeminiRequest(c *gin.Context, info *relaycommon.RelayInfo, request *dto.GeminiChatRequest) (any, error) {
@@ -115,15 +104,6 @@ func (a *Adaptor) ConvertClaudeRequest(c *gin.Context, info *relaycommon.RelayIn
 
 func (a *Adaptor) Init(info *relaycommon.RelayInfo) {
 	a.ChannelType = info.ChannelType
-
-	// initialize ThinkingContentInfo when thinking_to_content is enabled
-	if info.ChannelSetting.ThinkingToContent {
-		info.ThinkingContentInfo = relaycommon.ThinkingContentInfo{
-			IsFirstThinkingContent:  true,
-			SendLastThinkingContent: false,
-			HasSentThinkingContent:  false,
-		}
-	}
 }
 
 func (a *Adaptor) GetRequestURL(info *relaycommon.RelayInfo) (string, error) {
@@ -277,22 +257,30 @@ func (a *Adaptor) ConvertOpenAIRequest(c *gin.Context, info *relaycommon.RelayIn
 		// 没有做排除3.5Haiku等，要出问题再加吧，最佳兼容性（不是
 		if request.THINKING != nil && strings.HasPrefix(info.UpstreamModelName, "anthropic") {
 			var thinking dto.Thinking // Claude标准Thinking格式
-			if err := json.Unmarshal(request.THINKING, &thinking); err != nil {
+			if err := common.Unmarshal(request.THINKING, &thinking); err != nil {
 				return nil, fmt.Errorf("error Unmarshal thinking: %w", err)
 			}
 
-			// 只有当 thinking.Type 是 "enabled" 时才处理
-			if thinking.Type == "enabled" {
+			switch thinking.Type {
+			case "enabled":
 				// 检查 BudgetTokens 是否为 nil
 				if thinking.BudgetTokens == nil {
 					return nil, fmt.Errorf("BudgetTokens is nil when thinking is enabled")
 				}
 
 				reasoning := openrouter.RequestReasoning{
+					Enabled:   true,
 					MaxTokens: *thinking.BudgetTokens,
 				}
 
 				marshal, err := common.Marshal(reasoning)
+				if err != nil {
+					return nil, fmt.Errorf("error marshalling reasoning: %w", err)
+				}
+
+				request.Reasoning = marshal
+			case "adaptive":
+				marshal, err := common.Marshal(openrouter.RequestReasoning{Enabled: true})
 				if err != nil {
 					return nil, fmt.Errorf("error marshalling reasoning: %w", err)
 				}
@@ -323,7 +311,7 @@ func (a *Adaptor) ConvertOpenAIRequest(c *gin.Context, info *relaycommon.RelayIn
 		}
 
 		// 转换模型推理力度后缀
-		effort, originModel := parseReasoningEffortFromModelSuffix(info.UpstreamModelName)
+		effort, originModel := reasoning.ParseOpenAIReasoningEffortFromModelSuffix(info.UpstreamModelName)
 		if effort != "" {
 			request.ReasoningEffort = effort
 			info.UpstreamModelName = originModel
@@ -352,10 +340,51 @@ func (a *Adaptor) ConvertEmbeddingRequest(c *gin.Context, info *relaycommon.Rela
 	return request, nil
 }
 
+// resolveMiniMaxVoiceOpenAI 按原始音色 ID 查库解析白名单/重定向。
+// 与 minimax.ResolveVoiceForTTSUpstream 等价，但内联在 openai 包内以避免
+// relay/channel/minimax 与 relay/channel/openai 之间的循环依赖。
+func resolveMiniMaxVoiceOpenAI(c *gin.Context, voiceId string) (string, error) {
+	voiceId = strings.TrimSpace(voiceId)
+	if voiceId == "" {
+		return "", nil
+	}
+	found, upstreamId, allowed, err := model.ResolveMiniMaxVoiceForTTS(voiceId)
+	if err != nil {
+		if model_setting.IsMiniMaxVoiceWhitelistEnabled() {
+			return "", errors.New(i18n.T(c, i18n.MsgMiniMaxVoiceNotAuthorizedWithID, map[string]any{"Voice": voiceId}))
+		}
+		return voiceId, nil
+	}
+	if model_setting.IsMiniMaxVoiceWhitelistEnabled() {
+		if !found || !allowed {
+			return "", errors.New(i18n.T(c, i18n.MsgMiniMaxVoiceNotAuthorizedWithID, map[string]any{"Voice": voiceId}))
+		}
+	}
+	if found {
+		return upstreamId, nil
+	}
+	return voiceId, nil
+}
+
 func (a *Adaptor) ConvertAudioRequest(c *gin.Context, info *relaycommon.RelayInfo, request dto.AudioRequest) (io.Reader, error) {
 	a.ResponseFormat = request.ResponseFormat
 	if info.RelayMode == relayconstant.RelayModeAudioSpeech {
-		jsonData, err := json.Marshal(request)
+		if info.ChannelType == constant.ChannelTypeMiniMax {
+			// 音色白名单/重定向已迁移到数据库音色表。
+			resolvedVoice, vErr := resolveMiniMaxVoiceOpenAI(c, request.Voice)
+			if vErr != nil {
+				return nil, vErr
+			}
+			request.Voice = resolvedVoice
+			policy := model_setting.ApplyMiniMaxTTSPolicy(info.UpstreamModelName, request.Voice, request.Input, request.ResponseFormat)
+			if policy.Enabled {
+				request.Model = policy.Model
+				request.Input = policy.Text
+				c.Set("minimax_voice_id", request.Voice)
+			}
+		}
+
+		jsonData, err := common.Marshal(request)
 		if err != nil {
 			return nil, fmt.Errorf("error marshalling object: %w", err)
 		}
@@ -568,7 +597,7 @@ func detectImageMimeType(filename string) string {
 
 func (a *Adaptor) ConvertOpenAIResponsesRequest(c *gin.Context, info *relaycommon.RelayInfo, request dto.OpenAIResponsesRequest) (any, error) {
 	//  转换模型推理力度后缀
-	effort, originModel := parseReasoningEffortFromModelSuffix(request.Model)
+	effort, originModel := reasoning.ParseOpenAIReasoningEffortFromModelSuffix(request.Model)
 	if effort != "" {
 		if request.Reasoning == nil {
 			request.Reasoning = &dto.Reasoning{
@@ -618,7 +647,7 @@ func (a *Adaptor) DoResponse(c *gin.Context, resp *http.Response, info *relaycom
 			usage, err = OaiResponsesHandler(c, info, resp)
 		}
 	case relayconstant.RelayModeResponsesCompact:
-		usage, err = OaiResponsesCompactionHandler(c, resp)
+		usage, err = OaiResponsesCompactionHandler(c, info, resp)
 	default:
 		if info.IsStream {
 			usage, err = OaiStreamHandler(c, info, resp)

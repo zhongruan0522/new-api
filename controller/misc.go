@@ -11,6 +11,7 @@ import (
 	"github.com/zhongruan0522/new-api/model"
 	"github.com/zhongruan0522/new-api/setting"
 	"github.com/zhongruan0522/new-api/setting/console_setting"
+	"github.com/zhongruan0522/new-api/setting/dashboard_setting"
 	"github.com/zhongruan0522/new-api/setting/operation_setting"
 	"github.com/zhongruan0522/new-api/setting/system_setting"
 
@@ -38,7 +39,9 @@ func TestStatus(c *gin.Context) {
 
 func GetStatus(c *gin.Context) {
 
-	cs := console_setting.GetConsoleSetting()
+	// 面板启用开关的单一权威源是 dashboard_config（#112）。
+	// console_setting 仍用于读取内容数据（ApiInfo/Announcements/FAQ）。
+	dc := dashboard_setting.GetDashboardConfig()
 	common.OptionMapRWMutex.RLock()
 	defer common.OptionMapRWMutex.RUnlock()
 
@@ -70,11 +73,11 @@ func GetStatus(c *gin.Context) {
 		"price":             operation_setting.Price,
 		"stripe_unit_price": setting.StripeUnitPrice,
 
-		// 面板启用开关
-		"api_info_enabled":      cs.ApiInfoEnabled,
-		"uptime_kuma_enabled":   cs.UptimeKumaEnabled,
-		"announcements_enabled": cs.AnnouncementsEnabled,
-		"faq_enabled":           cs.FAQEnabled,
+		// 面板启用开关（单一配置源：dashboard_config）
+		"api_info_enabled":      dc.ApiInfoEnabled,
+		"uptime_kuma_enabled":   dc.UptimeKumaEnabled,
+		"announcements_enabled": dc.AnnouncementsEnabled,
+		"faq_enabled":           dc.FAQEnabled,
 
 		// 模块管理配置
 		"HeaderNavModules":          common.OptionMap["HeaderNavModules"],
@@ -94,14 +97,14 @@ func GetStatus(c *gin.Context) {
 		"_qn":                       "new-api",
 	}
 
-	// 根据启用状态注入可选内容
-	if cs.ApiInfoEnabled {
+	// 根据启用状态注入可选内容（开关读 dashboard_config，内容数据读 console_setting）
+	if dc.ApiInfoEnabled {
 		data["api_info"] = console_setting.GetApiInfo()
 	}
-	if cs.AnnouncementsEnabled {
+	if dc.AnnouncementsEnabled {
 		data["announcements"] = console_setting.GetAnnouncements()
 	}
-	if cs.FAQEnabled {
+	if dc.FAQEnabled {
 		data["faq"] = console_setting.GetFAQ()
 	}
 
@@ -308,6 +311,53 @@ func ResetPassword(c *gin.Context) {
 		"success": true,
 		"message": "",
 		"data":    password,
+	})
+	return
+}
+
+// GetUsageLogFieldsVisible 公开接口：返回当前用户角色下使用日志详情弹窗的字段可见性配置。
+// 普通用户和管理员都可访问，区别在于 isAdmin 由中间件注入。
+func GetUsageLogFieldsVisible(c *gin.Context) {
+	role := c.GetInt("role")
+	isAdmin := role >= common.RoleAdminUser
+
+	// 总开关关闭时，返回空字段列表，前端据此隐藏详情按钮
+	if !console_setting.IsUsageLogDetailsEnabled(isAdmin) {
+		c.JSON(http.StatusOK, gin.H{
+			"success": true,
+			"message": "",
+			"data": gin.H{
+				"enabled": false,
+				"fields":  []string{},
+			},
+		})
+		return
+	}
+
+	fieldsMap, err := console_setting.GetUsageLogFieldsVisible()
+	if err != nil {
+		common.SysError("failed to parse usage_log_fields setting: " + err.Error())
+		common.ApiErrorMsg(c, "使用日志字段配置解析失败")
+		return
+	}
+
+	// 返回当前角色可见的字段 key 列表
+	visibleFields := make([]string, 0, len(fieldsMap))
+	for key, cfg := range fieldsMap {
+		if isAdmin && cfg.Admin {
+			visibleFields = append(visibleFields, key)
+		} else if !isAdmin && cfg.User {
+			visibleFields = append(visibleFields, key)
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "",
+		"data": gin.H{
+			"enabled": true,
+			"fields":  visibleFields,
+		},
 	})
 	return
 }

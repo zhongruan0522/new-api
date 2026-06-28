@@ -143,6 +143,18 @@ export const CHANNEL_TYPE_CONFIGS: Record<number, ChannelTypeConfig> = {
       models: 'deepseek-chat,deepseek-coder',
     },
   },
+  44: {
+    id: 44,
+    name: CHANNEL_TYPES[44],
+    icon: 'ByteDance',
+    defaultBaseUrl: 'https://ark.cn-beijing.volces.com/api/v3',
+    hints: {
+      baseUrl:
+        'Default: https://ark.cn-beijing.volces.com/api/v3',
+      key: 'Volcengine Ark API Key',
+      models: 'Model endpoints enabled in Ark, e.g. doubao-1-5-pro, ep-xxxx',
+    },
+  },
   20: {
     id: 20,
     name: CHANNEL_TYPES[20],

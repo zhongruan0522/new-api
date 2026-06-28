@@ -17,12 +17,6 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-type ThinkingContentInfo struct {
-	IsFirstThinkingContent  bool
-	SendLastThinkingContent bool
-	HasSentThinkingContent  bool
-}
-
 const (
 	LastMessageTypeNone     = "none"
 	LastMessageTypeText     = "text"
@@ -109,24 +103,26 @@ type RelayInfo struct {
 	UsePrice               bool
 	RelayMode              int
 	OriginModelName        string
-	RequestURLPath         string
-	ShouldIncludeUsage     bool
-	DisablePing            bool // 是否禁止向下游发送自定义 Ping
-	ClientWs               *websocket.Conn
-	TargetWs               *websocket.Conn
-	InputAudioFormat       string
-	OutputAudioFormat      string
-	RealtimeTools          []dto.RealTimeTool
-	IsFirstRequest         bool
-	AudioUsage             bool
-	ReasoningEffort        string
-	UserSetting            dto.UserSetting
-	UserEmail              string
-	UserQuota              int
-	RelayFormat            types.RelayFormat
-	SendResponseCount      int
-	ReceivedResponseCount  int
-	FinalPreConsumedQuota  int // 最终预消耗的配额
+	// ResponseModelName preserves the model ID the client requested for downstream responses.
+	ResponseModelName     string
+	RequestURLPath        string
+	ShouldIncludeUsage    bool
+	DisablePing           bool // 是否禁止向下游发送自定义 Ping
+	ClientWs              *websocket.Conn
+	TargetWs              *websocket.Conn
+	InputAudioFormat      string
+	OutputAudioFormat     string
+	RealtimeTools         []dto.RealTimeTool
+	IsFirstRequest        bool
+	AudioUsage            bool
+	ReasoningEffort       string
+	UserSetting           dto.UserSetting
+	UserEmail             string
+	UserQuota             int
+	RelayFormat           types.RelayFormat
+	SendResponseCount     int
+	ReceivedResponseCount int
+	FinalPreConsumedQuota int // 最终预消耗的配额
 	// Billing 是计费会话，封装了预扣费/结算/退款的统一生命周期。
 	// 免费模型和按次计费（MJ/Task）时为 nil。
 	Billing BillingSettler
@@ -137,6 +133,10 @@ type RelayInfo struct {
 	RequestId         string
 	IsClaudeBetaQuery bool // /v1/messages?beta=true
 	IsChannelTest     bool // channel test request
+
+	// UpstreamRequestBodySize is set when the marshaled upstream request body
+	// is wrapped in BodyStorage so DoApiRequest can preserve Content-Length.
+	UpstreamRequestBodySize int64
 
 	PriceData types.PriceData
 
@@ -152,7 +152,6 @@ type RelayInfo struct {
 	// 最终请求到上游的格式 TODO: 当前仅设置了Claude
 	FinalRequestRelayFormat types.RelayFormat
 
-	ThinkingContentInfo
 	TokenCountMeta
 	*ClaudeConvertInfo
 	*GeminiConvertInfo
@@ -206,12 +205,25 @@ func (info *RelayInfo) InitChannelMeta(c *gin.Context) {
 	}
 
 	info.ChannelMeta = channelMeta
+	if info.ResponseModelName == "" {
+		info.ResponseModelName = info.OriginModelName
+	}
 
 	// reset some fields based on channel meta
 	// 重置某些字段，例如模型名称等
 	if info.Request != nil {
 		info.Request.SetModelName(info.OriginModelName)
 	}
+}
+
+func (info *RelayInfo) GetResponseModelName() string {
+	if info == nil {
+		return ""
+	}
+	if info.ResponseModelName != "" {
+		return info.ResponseModelName
+	}
+	return info.OriginModelName
 }
 
 func (info *RelayInfo) ToString() string {
@@ -298,6 +310,7 @@ var streamSupportedChannels = map[int]bool{
 	constant.ChannelTypeOllama:    true,
 	constant.ChannelTypeDeepSeek:  true,
 	constant.ChannelTypeZhipu_v4:  true,
+	constant.ChannelTypeByteDance: true,
 }
 
 func GenRelayInfoWs(c *gin.Context, ws *websocket.Conn) *RelayInfo {
@@ -436,7 +449,8 @@ func genBaseRelayInfo(c *gin.Context, request dto.Request) *RelayInfo {
 		UserQuota:  common.GetContextKeyInt(c, constant.ContextKeyUserQuota),
 		UserEmail:  common.GetContextKeyString(c, constant.ContextKeyUserEmail),
 
-		OriginModelName: common.GetContextKeyString(c, constant.ContextKeyOriginalModel),
+		OriginModelName:   common.GetContextKeyString(c, constant.ContextKeyOriginalModel),
+		ResponseModelName: common.GetContextKeyString(c, constant.ContextKeyOriginalModel),
 
 		TokenId:        common.GetContextKeyInt(c, constant.ContextKeyTokenId),
 		TokenKey:       common.GetContextKeyString(c, constant.ContextKeyTokenKey),
@@ -452,10 +466,6 @@ func genBaseRelayInfo(c *gin.Context, request dto.Request) *RelayInfo {
 
 		StartTime:         startTime,
 		FirstResponseTime: startTime.Add(-time.Second),
-		ThinkingContentInfo: ThinkingContentInfo{
-			IsFirstThinkingContent:  true,
-			SendLastThinkingContent: false,
-		},
 		GeminiConvertInfo: &GeminiConvertInfo{
 			ToolCallArguments: make(map[int]map[int]string),
 			ToolCallNames:     make(map[int]map[int]string),
@@ -630,6 +640,54 @@ func RemoveDisabledFields(jsonData []byte, channelOtherSettings dto.ChannelOther
 		return jsonData, nil
 	}
 	return jsonDataAfter, nil
+}
+
+// RemoveClaudeDisabledFields applies the common field passthrough policy plus
+// Claude-specific controls for cache_control and speed.
+func RemoveClaudeDisabledFields(jsonData []byte, channelOtherSettings dto.ChannelOtherSettings) ([]byte, error) {
+	jsonData, err := RemoveDisabledFields(jsonData, channelOtherSettings)
+	if err != nil {
+		return jsonData, err
+	}
+
+	if channelOtherSettings.AllowCacheControl && channelOtherSettings.AllowSpeed {
+		return jsonData, nil
+	}
+
+	var data any
+	if err := common.Unmarshal(jsonData, &data); err != nil {
+		common.SysError("RemoveClaudeDisabledFields Unmarshal error :" + err.Error())
+		return jsonData, nil
+	}
+
+	if root, ok := data.(map[string]interface{}); ok && !channelOtherSettings.AllowSpeed {
+		delete(root, "speed")
+	}
+
+	if !channelOtherSettings.AllowCacheControl {
+		removeJSONFieldRecursive(data, "cache_control")
+	}
+
+	jsonDataAfter, err := common.Marshal(data)
+	if err != nil {
+		common.SysError("RemoveClaudeDisabledFields Marshal error :" + err.Error())
+		return jsonData, nil
+	}
+	return jsonDataAfter, nil
+}
+
+func removeJSONFieldRecursive(value any, fieldName string) {
+	switch typed := value.(type) {
+	case map[string]interface{}:
+		delete(typed, fieldName)
+		for _, child := range typed {
+			removeJSONFieldRecursive(child, fieldName)
+		}
+	case []interface{}:
+		for _, child := range typed {
+			removeJSONFieldRecursive(child, fieldName)
+		}
+	}
 }
 
 // RemoveGeminiDisabledFields removes disabled fields from Gemini request JSON data

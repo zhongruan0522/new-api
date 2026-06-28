@@ -16,9 +16,10 @@ func SetApiRouter(router *gin.Engine) {
 	apiRouter.Use(gzip.Gzip(gzip.DefaultCompression))
 	apiRouter.Use(middleware.BodyStorageCleanup()) // 清理请求体存储
 	apiRouter.Use(middleware.GlobalAPIRateLimit())
+	anonymousRequestBodyLimit := middleware.AnonymousRequestBodyLimit()
 	{
 		apiRouter.GET("/setup", controller.GetSetup)
-		apiRouter.POST("/setup", controller.PostSetup)
+		apiRouter.POST("/setup", anonymousRequestBodyLimit, controller.PostSetup)
 		apiRouter.GET("/status", controller.GetStatus)
 		apiRouter.GET("/uptime/status", controller.GetUptimeKumaStatus)
 		apiRouter.GET("/models", middleware.UserAuth(), controller.DashboardListModels)
@@ -32,28 +33,28 @@ func SetApiRouter(router *gin.Engine) {
 		apiRouter.GET("/rankings", middleware.HeaderNavModuleAuth("rankings"), controller.GetRankings)
 		apiRouter.GET("/verification", middleware.EmailVerificationRateLimit(), middleware.TurnstileCheck(), controller.SendEmailVerification)
 		apiRouter.GET("/reset_password", middleware.CriticalRateLimit(), middleware.TurnstileCheck(), controller.SendPasswordResetEmail)
-		apiRouter.POST("/user/reset", middleware.CriticalRateLimit(), controller.ResetPassword)
+		apiRouter.POST("/user/reset", middleware.CriticalRateLimit(), anonymousRequestBodyLimit, controller.ResetPassword)
 		// OAuth routes - specific routes must come before :provider wildcard
 		apiRouter.GET("/oauth/state", middleware.CriticalRateLimit(), controller.GenerateOAuthCode)
-		apiRouter.POST("/oauth/email/bind", middleware.CriticalRateLimit(), controller.EmailBind)
+		apiRouter.POST("/oauth/email/bind", middleware.CriticalRateLimit(), anonymousRequestBodyLimit, controller.EmailBind)
 		// Standard OAuth providers (GitHub, LinuxDO) - unified route
 		apiRouter.GET("/oauth/:provider", middleware.CriticalRateLimit(), controller.HandleOAuth)
 
-		apiRouter.POST("/stripe/webhook", controller.StripeWebhook)
+		apiRouter.POST("/stripe/webhook", anonymousRequestBodyLimit, controller.StripeWebhook)
 
 		// Universal secure verification routes
 		apiRouter.POST("/verify", middleware.UserAuth(), middleware.CriticalRateLimit(), controller.UniversalVerify)
 
 		userRoute := apiRouter.Group("/user")
 		{
-			userRoute.POST("/register", middleware.CriticalRateLimit(), middleware.TurnstileCheck(), controller.Register)
-			userRoute.POST("/login", middleware.CriticalRateLimit(), middleware.TurnstileCheck(), controller.Login)
-			userRoute.POST("/login/2fa", middleware.CriticalRateLimit(), controller.Verify2FALogin)
-			userRoute.POST("/passkey/login/begin", middleware.CriticalRateLimit(), controller.PasskeyLoginBegin)
-			userRoute.POST("/passkey/login/finish", middleware.CriticalRateLimit(), controller.PasskeyLoginFinish)
+			userRoute.POST("/register", middleware.CriticalRateLimit(), anonymousRequestBodyLimit, middleware.TurnstileCheck(), controller.Register)
+			userRoute.POST("/login", middleware.CriticalRateLimit(), anonymousRequestBodyLimit, middleware.TurnstileCheck(), controller.Login)
+			userRoute.POST("/login/2fa", middleware.CriticalRateLimit(), anonymousRequestBodyLimit, controller.Verify2FALogin)
+			userRoute.POST("/passkey/login/begin", middleware.CriticalRateLimit(), anonymousRequestBodyLimit, controller.PasskeyLoginBegin)
+			userRoute.POST("/passkey/login/finish", middleware.CriticalRateLimit(), anonymousRequestBodyLimit, controller.PasskeyLoginFinish)
 			//userRoute.POST("/tokenlog", middleware.CriticalRateLimit(), controller.TokenLog)
 			userRoute.GET("/logout", controller.Logout)
-			userRoute.POST("/epay/notify", controller.EpayNotify)
+			userRoute.POST("/epay/notify", anonymousRequestBodyLimit, controller.EpayNotify)
 			userRoute.GET("/epay/notify", controller.EpayNotify)
 			userRoute.GET("/groups", controller.GetUserGroups)
 
@@ -63,6 +64,7 @@ func SetApiRouter(router *gin.Engine) {
 				selfRoute.GET("/self/groups", controller.GetUserGroups)
 				selfRoute.GET("/self", controller.GetSelf)
 				selfRoute.GET("/models", controller.GetUserModels)
+				selfRoute.GET("/self/usage_log_fields", controller.GetUsageLogFieldsVisible)
 				selfRoute.PUT("/self", controller.UpdateSelf)
 				selfRoute.DELETE("/self", controller.DeleteSelf)
 				selfRoute.GET("/token", controller.GenerateAccessToken)
@@ -122,7 +124,14 @@ func SetApiRouter(router *gin.Engine) {
 		optionRoute.Use(middleware.RootAuth())
 		{
 			optionRoute.GET("/", controller.GetOptions)
+			optionRoute.GET("/value", controller.GetOptionValue)
+			optionRoute.GET("/json_map", controller.GetOptionJsonMap)
+			optionRoute.GET("/json_array", controller.GetOptionJsonArray)
 			optionRoute.PUT("/", controller.UpdateOption)
+			optionRoute.PUT("/json_map", controller.UpsertOptionJsonMapEntry)
+			optionRoute.PUT("/json_array", controller.UpsertOptionJsonArrayEntry)
+			optionRoute.DELETE("/json_map", controller.DeleteOptionJsonMapEntry)
+			optionRoute.DELETE("/json_array", controller.DeleteOptionJsonArrayEntry)
 			optionRoute.GET("/channel_affinity_cache", controller.GetChannelAffinityCacheStats)
 			optionRoute.DELETE("/channel_affinity_cache", controller.ClearChannelAffinityCache)
 			optionRoute.POST("/rest_model_ratio", controller.ResetModelRatio)
@@ -250,9 +259,24 @@ func SetApiRouter(router *gin.Engine) {
 		dataRoute.GET("/self/media_convert_stats", middleware.UserAuth(), controller.GetUserMediaConvertStats)
 		dataRoute.POST("/recalculate", middleware.AdminAuth(), controller.RecalculateQuotaData)
 
+		dashboardRoute := apiRouter.Group("/dashboard")
+		dashboardRoute.Use(middleware.AdminAuth())
+		{
+			dashboardRoute.GET("/config", controller.GetDashboardConfig)
+			dashboardRoute.PUT("/config", controller.UpdateDashboardConfig)
+			dashboardRoute.POST("/config/reset", controller.ResetDashboardConfig)
+		}
+
 		logRoute.Use(middleware.CORS(), middleware.CriticalRateLimit())
 		{
 			logRoute.GET("/token", middleware.TokenAuthReadOnly(), controller.GetLogByKey)
+		}
+
+		auditRoute := apiRouter.Group("/audit")
+		auditRoute.Use(middleware.AdminAuth())
+		{
+			auditRoute.GET("/", controller.GetAuditLogs)
+			auditRoute.GET("/modules", controller.GetAuditModules)
 		}
 
 		storedMediaRoute := apiRouter.Group("/stored_media")
@@ -312,6 +336,25 @@ func SetApiRouter(router *gin.Engine) {
 			dynamicRatioRoute.DELETE("/rules/:id", middleware.RootAuth(), controller.DeleteDynamicRatioRule)
 			dynamicRatioRoute.PUT("/rules/reorder", middleware.RootAuth(), controller.ReorderDynamicRatioRules)
 			dynamicRatioRoute.PUT("/enabled", middleware.RootAuth(), controller.SetDynamicRatioEnabled)
+		}
+
+		// 定制音色（用户侧）：上传试听 + 确认定制
+		customVoiceRoute := apiRouter.Group("/custom_voice")
+		customVoiceRoute.Use(middleware.UserAuth())
+		{
+			customVoiceRoute.GET("/tags", controller.CustomVoiceTagsHandler)
+			customVoiceRoute.POST("/preview", controller.CustomVoicePreviewHandler)
+			customVoiceRoute.GET("/preview/:record_id/audio", controller.CustomVoicePreviewAudioHandler)
+			customVoiceRoute.POST("/confirm", controller.CustomVoiceConfirmHandler)
+		}
+
+		// 音色管理（管理员）：列表/新增（Admin），修改/删除（Root）
+		minimaxVoiceRoute := apiRouter.Group("/minimax/voices")
+		{
+			minimaxVoiceRoute.GET("/", middleware.AdminAuth(), controller.GetMiniMaxVoices)
+			minimaxVoiceRoute.POST("/", middleware.AdminAuth(), controller.CreateMiniMaxVoice)
+			minimaxVoiceRoute.PUT("/:id", middleware.RootAuth(), controller.UpdateMiniMaxVoice)
+			minimaxVoiceRoute.DELETE("/:id", middleware.RootAuth(), controller.DeleteMiniMaxVoice)
 		}
 	}
 }

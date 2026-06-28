@@ -171,6 +171,14 @@ func handleOAuthBind(c *gin.Context, provider oauth.Provider) {
 		common.ApiError(c, err)
 		return
 	}
+	// Re-check the authoritative status from DB; the session snapshot may be
+	// stale if an admin disabled this user after login.
+	if user.Status != common.UserStatusEnabled {
+		session.Clear()
+		_ = session.Save()
+		common.ApiErrorI18n(c, i18n.MsgOAuthUserBanned)
+		return
+	}
 
 	provider.SetProviderUserID(&user, oauthUser.ProviderUserID)
 	err = user.Update(false)

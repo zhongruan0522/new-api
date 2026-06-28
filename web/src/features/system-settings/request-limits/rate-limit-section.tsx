@@ -35,6 +35,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
+import { DisabledSettingsNotice } from '../components/disabled-settings-notice'
 import {
   SettingsForm,
   SettingsSwitchContent,
@@ -100,6 +101,7 @@ export function RateLimitSection({ defaultValues }: RateLimitSectionProps) {
   useEffect(() => {
     form.reset(defaultValues)
   }, [defaultValues, form])
+  const enabled = form.watch('ModelRequestRateLimitEnabled')
 
   const onSubmit = async (values: RateLimitFormValues) => {
     const updates = Object.entries(values).filter(
@@ -121,6 +123,8 @@ export function RateLimitSection({ defaultValues }: RateLimitSectionProps) {
             isSaving={updateOption.isPending}
             saveLabel='Save rate limits'
           />
+          <DisabledSettingsNotice enabled={enabled} />
+
           <FormField
             control={form.control}
             name='ModelRequestRateLimitEnabled'

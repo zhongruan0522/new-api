@@ -1,7 +1,6 @@
 package zhipu_4v
 
 import (
-	"io"
 	"net/http"
 
 	"github.com/zhongruan0522/new-api/common"
@@ -55,11 +54,12 @@ type openAIImageData struct {
 }
 
 func zhipu4vImageHandler(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (*dto.Usage, *types.NewAPIError) {
-	responseBody, err := io.ReadAll(resp.Body)
+	defer service.CloseResponseBodyGracefully(resp)
+
+	responseBody, err := common.ReadMediaResponseBody(resp.Body)
 	if err != nil {
 		return nil, types.NewOpenAIError(err, types.ErrorCodeReadResponseBodyFailed, http.StatusInternalServerError)
 	}
-	service.CloseResponseBodyGracefully(resp)
 
 	var zhipuResp zhipuImageResponse
 	if err := common.Unmarshal(responseBody, &zhipuResp); err != nil {

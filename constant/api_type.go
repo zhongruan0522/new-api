@@ -33,4 +33,5 @@ const (
 	APITypeMiniMax     = 29
 	APITypeDummy       = 30
 	APITypeXiaomi      = 31
+	APITypeByteDance   = 32
 )

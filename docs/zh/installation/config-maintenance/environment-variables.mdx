@@ -22,9 +22,10 @@ title: 环境变量配置指南
 | 环境变量                | 说明                       | 默认值                   | 示例                                                                                                                             |
 | ----------------------- | -------------------------- | ------------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
 | `SQL_DSN`               | 数据库连接字符串           | SQLite (data/one-api.db) | MySQL: `SQL_DSN=root:123456@tcp(localhost:3306)/new-api` \| PostgreSQL: `SQL_DSN=postgresql://root:123456@postgres:5432/new-api` |
-| `SQL_MAX_IDLE_CONNS`    | 空闲连接池最大连接数       | `100`                    | `SQL_MAX_IDLE_CONNS=50`                                                                                                          |
+| `SQL_MAX_IDLE_CONNS`    | 空闲连接池最大连接数       | `20`                     | `SQL_MAX_IDLE_CONNS=50`                                                                                                          |
 | `SQL_MAX_OPEN_CONNS`    | 连接池最大打开连接数       | `1000`                   | `SQL_MAX_OPEN_CONNS=500`                                                                                                         |
 | `SQL_MAX_LIFETIME`      | 连接最大生命周期(分钟)     | `60`                     | `SQL_MAX_LIFETIME=120`                                                                                                          |
+| `SQL_PREPARE_STMT`      | 启用 GORM 预编译语句缓存（适合高频 SQL 路径） | `false`                  | `SQL_PREPARE_STMT=true`                                                                                                         |
 | `LOG_SQL_DSN`           | 日志表独立数据库连接字符串 | -                        | `LOG_SQL_DSN=root:123456@tcp(localhost:3306)/oneapi_logs`                                                                        |
 | `SQLITE_PATH`           | SQLite数据库路径           | `/path/to/sqlite.db`     | `SQLITE_PATH=/var/lib/new-api/new-api.db`                                                                                        |
 
@@ -67,7 +68,13 @@ title: 环境变量配置指南
 | `GLOBAL_API_RATE_LIMIT`        | 全局API速率限制(单IP三分钟) | `180`  | `GLOBAL_API_RATE_LIMIT=100`       |
 | `GLOBAL_WEB_RATE_LIMIT`        | 全局Web速率限制(单IP三分钟) | `60`   | `GLOBAL_WEB_RATE_LIMIT=30`        |
 | `RELAY_TIMEOUT`                | 中继请求超时时间(秒)        | `0`    | `RELAY_TIMEOUT=60`                |
+| `RELAY_MAX_IDLE_CONNS`         | 中继HTTP客户端最大空闲连接数 | `200`  | `RELAY_MAX_IDLE_CONNS=100`        |
+| `RELAY_MAX_IDLE_CONNS_PER_HOST` | 中继HTTP客户端每Host最大空闲连接数 | `32` | `RELAY_MAX_IDLE_CONNS_PER_HOST=16` |
+| `RELAY_IDLE_CONN_TIMEOUT`      | 中继HTTP客户端空闲连接保留时间(秒) | `90` | `RELAY_IDLE_CONN_TIMEOUT=30`      |
+| `SYNC_HTTP_MAX_IDLE_CONNS`     | 模型元数据同步客户端最大空闲连接数 | `10` | `SYNC_HTTP_MAX_IDLE_CONNS=20`     |
+| `SYNC_HTTP_IDLE_CONN_TIMEOUT`  | 模型元数据同步客户端空闲连接保留时间(秒) | `30` | `SYNC_HTTP_IDLE_CONN_TIMEOUT=60`  |
 | `STREAMING_TIMEOUT`            | 流式一次回复的超时时间(秒)  | `300`  | `STREAMING_TIMEOUT=120`           |
+| `STREAM_SCANNER_MAX_BUFFER_MB` | 单个流式SSE帧最大缓冲(MB)   | `8`    | `STREAM_SCANNER_MAX_BUFFER_MB=16` |
 | `MAX_FILE_DOWNLOAD_MB`         | 最大文件下载大小(MB)        | `20`   | `MAX_FILE_DOWNLOAD_MB=50`         |
 | `MAX_REQUEST_BODY_MB`          | 最大请求体大小(MB，解压后计；防止超大请求/zip bomb导致内存暴涨) | `64`   | `MAX_REQUEST_BODY_MB=100`         |
 | `GLOBAL_API_RATE_LIMIT_ENABLE` | 全局API速率限制开关         | `true` | `GLOBAL_API_RATE_LIMIT_ENABLE=false` |

@@ -14,35 +14,35 @@ import (
 
 // KimiPlanQuotaData Kimi 套餐额度数据
 type KimiPlanQuotaData struct {
-	PlanName    string        `json:"plan_name"`
-	Tiers       []KimiTier    `json:"tiers"`
-	Credential string        `json:"credential"` // "valid" | "expired" | "error"
+	PlanName   string     `json:"plan_name"`
+	Tiers      []KimiTier `json:"tiers"`
+	Credential string     `json:"credential"` // "valid" | "expired" | "error"
 }
 
 // KimiTier Kimi 单个限额维度
 type KimiTier struct {
-	Name        string  `json:"name"`         // "five_hour" | "weekly_limit"
-	Percentage  int     `json:"percentage"`   // 已用百分比 0-100
-	Used        float64 `json:"used"`         // 已用量
-	Limit       float64 `json:"limit"`        // 总量
-	Remaining   float64 `json:"remaining"`    // 剩余量
-	ResetsAt    string  `json:"resets_at,omitempty"` // 重置时间 RFC3339
-	Status      string  `json:"status"`       // "充裕" | "适中" | "紧张"
+	Name       string  `json:"name"`                // "five_hour" | "weekly_limit"
+	Percentage int     `json:"percentage"`          // 已用百分比 0-100
+	Used       float64 `json:"used"`                // 已用量
+	Limit      float64 `json:"limit"`               // 总量
+	Remaining  float64 `json:"remaining"`           // 剩余量
+	ResetsAt   string  `json:"resets_at,omitempty"` // 重置时间 RFC3339
+	Status     string  `json:"status"`              // "充裕" | "适中" | "紧张"
 }
 
 // kimiUsageResp Kimi /coding/v1/usages 接口返回格式
 type kimiUsageResp struct {
 	Limits []struct {
 		Detail struct {
-			Limit     json.Number  `json:"limit"`
-			Remaining json.Number  `json:"remaining"`
-			ResetTime interface{}  `json:"resetTime"`
+			Limit     json.Number `json:"limit"`
+			Remaining json.Number `json:"remaining"`
+			ResetTime interface{} `json:"resetTime"`
 		} `json:"detail"`
 	} `json:"limits"`
 	Usage struct {
-		Limit     json.Number  `json:"limit"`
-		Remaining json.Number  `json:"remaining"`
-		ResetTime interface{}  `json:"resetTime"`
+		Limit     json.Number `json:"limit"`
+		Remaining json.Number `json:"remaining"`
+		ResetTime interface{} `json:"resetTime"`
 	} `json:"usage"`
 }
 
@@ -83,8 +83,8 @@ func FetchKimiPlanQuota(apiKey string) (*KimiPlanQuotaData, error) {
 
 	if res.StatusCode == http.StatusUnauthorized || res.StatusCode == http.StatusForbidden {
 		return &KimiPlanQuotaData{
-			PlanName:    "kimi-coding-plan",
-			Credential:  "expired",
+			PlanName:   "kimi-coding-plan",
+			Credential: "expired",
 		}, nil
 	}
 
@@ -101,14 +101,14 @@ func FetchKimiPlanQuota(apiKey string) (*KimiPlanQuotaData, error) {
 	var resp kimiUsageResp
 	if err := common.Unmarshal(body, &resp); err != nil {
 		return &KimiPlanQuotaData{
-			PlanName:    "kimi-coding-plan",
-			Credential:  "error",
+			PlanName:   "kimi-coding-plan",
+			Credential: "error",
 		}, nil
 	}
 
 	data := &KimiPlanQuotaData{
-		PlanName:    "kimi-coding-plan",
-		Credential:  "valid",
+		PlanName:   "kimi-coding-plan",
+		Credential: "valid",
 	}
 
 	// 解析 5 小时窗口限额 (limits 数组)

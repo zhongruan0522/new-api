@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/gin-gonic/gin"
 	"github.com/zhongruan0522/new-api/common"
 	"github.com/zhongruan0522/new-api/types"
-	"github.com/gin-gonic/gin"
 )
 
 // SystemPerformanceCheck 检查系统性能中间件

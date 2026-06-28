@@ -104,6 +104,10 @@ func GetFileTypeFromUrl(c *gin.Context, url string, reason ...string) (string, e
 			return sniffed, nil
 		}
 
+		if heifMime := detectHEIF(readData); heifMime != "" {
+			return heifMime, nil
+		}
+
 		if _, format, err := image.DecodeConfig(bytes.NewReader(readData)); err == nil {
 			switch strings.ToLower(format) {
 			case "jpeg", "jpg":
@@ -168,6 +172,10 @@ func GetMimeTypeByExtension(ext string) string {
 		return "image/gif"
 	case "jfif":
 		return "image/jpeg"
+	case "heic":
+		return "image/heic"
+	case "heif":
+		return "image/heif"
 
 	// Audio files
 	case "mp3":

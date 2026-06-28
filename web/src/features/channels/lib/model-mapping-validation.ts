@@ -42,7 +42,7 @@ export function formatModelsArray(models: string[]): string {
 /**
  * Normalize model name
  */
-export function normalizeModelName(model: string): string {
+export function normalizeModelName(model: unknown): string {
   return typeof model === 'string' ? model.trim() : ''
 }
 

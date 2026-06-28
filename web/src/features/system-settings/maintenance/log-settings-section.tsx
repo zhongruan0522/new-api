@@ -34,6 +34,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   Form,
   FormControl,
@@ -44,7 +45,8 @@ import {
 } from '@/components/ui/form'
 import { Switch } from '@/components/ui/switch'
 import { DateTimePicker } from '@/components/datetime-picker'
-import { deleteLogsBefore } from '../api'
+import { cleanLogs } from '../api'
+import type { CleanLogsResult } from '../types'
 import {
   SettingsControlGroup,
   SettingsForm,
@@ -75,20 +77,12 @@ const getDateHoursAgo = (hours: number) => {
 
 const getDateDaysAgo = (days: number) => getDateHoursAgo(days * HOURS_IN_DAY)
 
-const quickSelectOptions = [
-  {
-    label: '24 hours ago',
-    getValue: () => getDateHoursAgo(24),
-  },
-  {
-    label: '7 days ago',
-    getValue: () => getDateDaysAgo(7),
-  },
-  {
-    label: '30 days ago',
-    getValue: () => getDateDaysAgo(30),
-  },
-]
+type CleanTargets = {
+  cleanLogs: boolean
+  cleanStoredImages: boolean
+  cleanStoredVideos: boolean
+  cleanAuditLogs: boolean
+}
 
 export function LogSettingsSection({
   defaultEnabled,
@@ -102,9 +96,17 @@ export function LogSettingsSection({
     },
   })
 
-  const [purgeDate, setPurgeDate] = useState<Date | undefined>(() =>
+  // 默认仅勾选使用日志
+  const [targets, setTargets] = useState<CleanTargets>({
+    cleanLogs: true,
+    cleanStoredImages: false,
+    cleanStoredVideos: false,
+    cleanAuditLogs: false,
+  })
+  const [startDate, setStartDate] = useState<Date | undefined>(() =>
     getDateDaysAgo(30)
   )
+  const [endDate, setEndDate] = useState<Date | undefined>(() => getDateDaysAgo(0))
   const [isCleaning, setIsCleaning] = useState(false)
   const [showConfirmDialog, setShowConfirmDialog] = useState(false)
 
@@ -112,15 +114,32 @@ export function LogSettingsSection({
     form.reset({ LogConsumeEnabled: defaultEnabled })
   }, [defaultEnabled, form])
 
-  const purgeTimestamp = useMemo(() => {
-    if (!purgeDate) return null
-    return Math.floor(purgeDate.getTime() / 1000)
-  }, [purgeDate])
+  const startTimestamp = useMemo(() => {
+    if (!startDate) return null
+    return Math.floor(startDate.getTime() / 1000)
+  }, [startDate])
 
-  const formattedPurgeDate = useMemo(() => {
-    if (!purgeDate) return ''
-    return formatTimestampToDate(purgeDate.getTime(), 'milliseconds')
-  }, [purgeDate])
+  const endTimestamp = useMemo(() => {
+    if (!endDate) return null
+    return Math.floor(endDate.getTime() / 1000)
+  }, [endDate])
+
+  const formattedRange = useMemo(() => {
+    const parts: string[] = []
+    if (startTimestamp) {
+      parts.push(formatTimestampToDate(startTimestamp * 1000, 'milliseconds'))
+    }
+    if (endTimestamp) {
+      parts.push(formatTimestampToDate(endTimestamp * 1000, 'milliseconds'))
+    }
+    return parts.join(' ~ ')
+  }, [startTimestamp, endTimestamp])
+
+  const noTargetSelected =
+    !targets.cleanLogs &&
+    !targets.cleanStoredImages &&
+    !targets.cleanStoredVideos &&
+    !targets.cleanAuditLogs
 
   const onSubmit = async (values: LogSettingsFormValues) => {
     if (values.LogConsumeEnabled === defaultEnabled) return
@@ -131,8 +150,16 @@ export function LogSettingsSection({
   }
 
   const handleRequestCleanLogs = () => {
-    if (!purgeTimestamp) {
-      toast.error(t('Select a timestamp before clearing logs.'))
+    if (!endTimestamp) {
+      toast.error(t('Select an end time before clearing logs.'))
+      return
+    }
+    if (startTimestamp && endTimestamp && startTimestamp > endTimestamp) {
+      toast.error(t('Start time must not be later than end time.'))
+      return
+    }
+    if (noTargetSelected) {
+      toast.error(t('Select at least one log type to clean.'))
       return
     }
 
@@ -140,23 +167,34 @@ export function LogSettingsSection({
   }
 
   const handleCleanLogs = async () => {
-    if (!purgeTimestamp) {
-      toast.error(t('Select a timestamp before clearing logs.'))
+    if (!endTimestamp) {
+      toast.error(t('Select an end time before clearing logs.'))
       return
     }
 
     setIsCleaning(true)
     try {
-      const res = await deleteLogsBefore(purgeTimestamp)
+      const res = await cleanLogs({
+        start_timestamp: startTimestamp ?? undefined,
+        end_timestamp: endTimestamp,
+        clean_logs: targets.cleanLogs,
+        clean_stored_images: targets.cleanStoredImages,
+        clean_stored_videos: targets.cleanStoredVideos,
+        clean_audit_logs: targets.cleanAuditLogs,
+      })
       if (!res.success) {
         throw new Error(res.message || t('Failed to clean logs'))
       }
-      const count = res.data ?? 0
-      toast.success(
-        count > 0
-          ? t('{{count}} log entries removed.', { count })
-          : t('No log entries matched the selected time.')
-      )
+      const summary = summarizeResult(res.data)
+      if (summary.total > 0) {
+        toast.success(
+          t('{{count}} entries removed.', { count: summary.total }) +
+            ' ' +
+            summary.detail
+        )
+      } else {
+        toast.success(t('No log entries matched the selected range.'))
+      }
     } catch (error) {
       const message =
         error instanceof Error ? error.message : t('Failed to clean logs')
@@ -165,6 +203,61 @@ export function LogSettingsSection({
       setIsCleaning(false)
     }
   }
+
+  const summarizeResult = (result?: CleanLogsResult) => {
+    const parts: string[] = []
+    let total = 0
+    if (result?.logs !== undefined) {
+      parts.push(`${t('Usage logs')}: ${result.logs}`)
+      total += result.logs
+    }
+    if (result?.stored_images !== undefined) {
+      parts.push(`${t('Stored images')}: ${result.stored_images}`)
+      total += result.stored_images
+    }
+    if (result?.stored_videos !== undefined) {
+      parts.push(`${t('Stored videos')}: ${result.stored_videos}`)
+      total += result.stored_videos
+    }
+    if (result?.audit_logs !== undefined) {
+      parts.push(`${t('Audit logs')}: ${result.audit_logs}`)
+      total += result.audit_logs
+    }
+    return { total, detail: parts.join(', ') }
+  }
+
+  const targetOptions: Array<{
+    key: keyof CleanTargets
+    label: string
+    description: string
+  }> = [
+    {
+      key: 'cleanLogs',
+      label: t('Usage logs'),
+      description: t('Consume, error, topup, manage and system logs.'),
+    },
+    {
+      key: 'cleanStoredImages',
+      label: t('Stored images'),
+      description: t(
+        'Image bytes cached for the image-to-URL conversion feature.'
+      ),
+    },
+    {
+      key: 'cleanStoredVideos',
+      label: t('Stored videos'),
+      description: t(
+        'Video bytes cached for the video-to-URL conversion feature.'
+      ),
+    },
+    {
+      key: 'cleanAuditLogs',
+      label: t('Audit logs'),
+      description: t(
+        'Administrative operation records. Deletion cannot be undone.'
+      ),
+    },
+  ]
 
   return (
     <SettingsSection title={t('Log Maintenance')}>
@@ -204,27 +297,91 @@ export function LogSettingsSection({
               <h4 className='text-sm font-medium'>{t('Clean history logs')}</h4>
               <p className='text-muted-foreground text-sm'>
                 {t(
-                  'Remove all log entries created before the selected timestamp.'
+                  'Select log types and time range to remove matching entries.'
                 )}
               </p>
             </div>
-            <DateTimePicker value={purgeDate} onChange={setPurgeDate} />
-            <div className='flex flex-wrap gap-3'>
-              {quickSelectOptions.map((option) => (
-                <Button
-                  key={option.label}
-                  type='button'
-                  variant='outline'
-                  onClick={() => setPurgeDate(option.getValue())}
+
+            <div className='space-y-2'>
+              {targetOptions.map((option) => (
+                <label
+                  key={option.key}
+                  className='flex items-start gap-3 rounded-md border p-3 cursor-pointer hover:bg-accent/50'
                 >
-                  {t(option.label)}
-                </Button>
+                  <Checkbox
+                    checked={targets[option.key]}
+                    onCheckedChange={(value) =>
+                      setTargets((prev) => ({
+                        ...prev,
+                        [option.key]: value === true,
+                      }))
+                    }
+                    className='mt-0.5'
+                  />
+                  <div className='space-y-0.5'>
+                    <div className='text-sm font-medium leading-none'>
+                      {option.label}
+                    </div>
+                    <p className='text-muted-foreground text-xs'>
+                      {option.description}
+                    </p>
+                  </div>
+                </label>
               ))}
+            </div>
+
+            <div className='space-y-2'>
+              <div className='text-sm font-medium'>{t('Time range')}</div>
+              <div className='grid gap-2 sm:grid-cols-2'>
+                <div className='space-y-1'>
+                  <div className='text-muted-foreground text-xs'>
+                    {t('Start')}
+                  </div>
+                  <DateTimePicker
+                    value={startDate}
+                    onChange={setStartDate}
+                    placeholder={t('No lower bound')}
+                  />
+                </div>
+                <div className='space-y-1'>
+                  <div className='text-muted-foreground text-xs'>
+                    {t('End')}
+                  </div>
+                  <DateTimePicker
+                    value={endDate}
+                    onChange={setEndDate}
+                    placeholder={t('Required')}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className='flex flex-wrap gap-3'>
+              <Button
+                type='button'
+                variant='outline'
+                onClick={() => {
+                  setStartDate(getDateDaysAgo(7))
+                  setEndDate(getDateDaysAgo(0))
+                }}
+              >
+                {t('Last 7 days')}
+              </Button>
+              <Button
+                type='button'
+                variant='outline'
+                onClick={() => {
+                  setStartDate(getDateDaysAgo(30))
+                  setEndDate(getDateDaysAgo(0))
+                }}
+              >
+                {t('Last 30 days')}
+              </Button>
               <Button
                 type='button'
                 variant='destructive'
                 onClick={handleRequestCleanLogs}
-                disabled={isCleaning}
+                disabled={isCleaning || noTargetSelected}
               >
                 {isCleaning ? t('Cleaning...') : t('Clean logs')}
               </Button>
@@ -237,15 +394,22 @@ export function LogSettingsSection({
           <AlertDialogHeader>
             <AlertDialogTitle>{t('Confirm log cleanup')}</AlertDialogTitle>
             <AlertDialogDescription>
-              {formattedPurgeDate
+              {formattedRange
                 ? t(
-                    'This will permanently remove all log entries created before {{date}}.',
-                    { date: formattedPurgeDate }
+                    'This will permanently remove log entries created in the range {{range}}.',
+                    { range: formattedRange }
                   )
                 : t(
-                    'This will permanently remove log entries before the selected timestamp.'
+                    'This will permanently remove log entries matching the selected range.'
                   )}{' '}
               {t('This action cannot be undone.')}
+              {targets.cleanAuditLogs && (
+                <span className='mt-2 block font-medium text-destructive'>
+                  {t(
+                    'Audit logs selected: administrative operation records will be permanently deleted.'
+                  )}
+                </span>
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

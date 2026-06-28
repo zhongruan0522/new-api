@@ -39,6 +39,9 @@ func SendEmail(subject string, receiver string, content string) error {
 		"Content-Type: text/html; charset=UTF-8\r\n\r\n%s\r\n",
 		receiver, SystemName, SMTPFrom, encodedSubject, time.Now().Format(time.RFC1123Z), id, content))
 	auth := smtp.PlainAuth("", SMTPAccount, SMTPToken, SMTPServer)
+	if SMTPForceLoginAuthEnabled {
+		auth = LoginAuth(SMTPAccount, SMTPToken)
+	}
 	addr := fmt.Sprintf("%s:%d", SMTPServer, SMTPPort)
 	to := strings.Split(receiver, ";")
 	var err error
@@ -80,7 +83,7 @@ func SendEmail(subject string, receiver string, content string) error {
 		if err != nil {
 			return err
 		}
-	} else if isOutlookServer(SMTPAccount) || slices.Contains(EmailLoginAuthServerList, SMTPServer) {
+	} else if !SMTPForceLoginAuthEnabled && (isOutlookServer(SMTPAccount) || slices.Contains(EmailLoginAuthServerList, SMTPServer)) {
 		auth = LoginAuth(SMTPAccount, SMTPToken)
 		err = smtp.SendMail(addr, auth, SMTPFrom, to, mail)
 	} else {

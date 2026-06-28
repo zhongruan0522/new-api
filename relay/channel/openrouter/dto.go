@@ -4,6 +4,7 @@ import "encoding/json"
 
 type RequestReasoning struct {
 	// One of the following (not both):
+	Enabled   bool   `json:"enabled,omitempty"`    // Anthropic/OpenRouter-style switch
 	Effort    string `json:"effort,omitempty"`     // Can be "high", "medium", or "low" (OpenAI-style)
 	MaxTokens int    `json:"max_tokens,omitempty"` // Specific token limit (Anthropic-style)
 	// Optional: Default is false. All models support this.

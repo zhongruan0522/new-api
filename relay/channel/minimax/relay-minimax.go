@@ -28,6 +28,8 @@ func GetRequestURL(info *relaycommon.RelayInfo) (string, error) {
 		return fmt.Sprintf("%s/chat/completions", baseUrl), nil
 	case constant.RelayModeAudioSpeech:
 		return fmt.Sprintf("%s/t2a_v2", baseUrl), nil
+	case constant.RelayModeImagesGenerations:
+		return fmt.Sprintf("%s/image_generation", baseUrl), nil
 	default:
 		return "", fmt.Errorf("unsupported relay mode: %d", info.RelayMode)
 	}

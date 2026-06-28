@@ -129,4 +129,3 @@ func GetAllMediaConvertStats(startTime, endTime int64) (MediaConvertStats, error
 		Count(&stats.VideoCount).Error
 	return stats, err
 }
-

@@ -9,6 +9,15 @@ import (
 	"gorm.io/gorm"
 )
 
+// 写入层聚合粒度配置。由 option.go 的 handleConfigUpdate 在 dashboard_config 更新时同步，
+// 避免 model 包反向依赖 setting/dashboard_setting（dashboard_setting 依赖 model 完成迁移）。
+// 默认全部启用，保持向后兼容。
+var (
+	quotaDataTrackTokens  = true
+	quotaDataTrackByModel = true
+	quotaDataTrackByUser  = true
+)
+
 // QuotaData 柱状图数据
 type QuotaData struct {
 	Id        int    `json:"id"`
@@ -34,7 +43,21 @@ func UpdateQuotaData() {
 			SaveQuotaDataCache()
 			lastUpdatedAt = time.Now()
 		}
-		time.Sleep(time.Second)
+		// When data export is disabled there is nothing to do. Sleep in larger
+		// increments (10s) instead of waking every second just to re-check a
+		// boolean. The previous 1-second tick forced a goroutine wake-up and
+		// cache-line bounce on every core, which is pure overhead for the
+		// common deployment where data export is off.
+		sleepDuration := time.Second
+		if !common.DataExportEnabled {
+			sleepDuration = 10 * time.Second
+		} else if interval > 5*time.Minute {
+			// When the flush interval is long, check at most every minute so
+			// that enabling DataExportEnabled at runtime is picked up without
+			// waiting the full interval.
+			sleepDuration = time.Minute
+		}
+		time.Sleep(sleepDuration)
 	}
 }
 
@@ -62,9 +85,34 @@ func logQuotaDataCache(userId int, username string, modelName string, quota int,
 	CacheQuotaData[key] = quotaData
 }
 
+// applyTrackingConfig 根据写入层聚合粒度配置调整聚合维度和 token 记录。
+// 禁用 by_user 时聚合到匿名桶（userId=0/username=""），禁用 by_model 时聚合到全局模型桶（modelName=""），
+// 禁用 tokens 时强制 tokenUsed=0。返回调整后的维度值和 token 数。
+func applyTrackingConfig(userId int, username string, modelName string, tokenUsed int) (int, string, string, int) {
+	if !quotaDataTrackByUser {
+		userId = 0
+		username = ""
+	}
+	if !quotaDataTrackByModel {
+		modelName = ""
+	}
+	if !quotaDataTrackTokens {
+		tokenUsed = 0
+	}
+	return userId, username, modelName, tokenUsed
+}
+
+// SyncQuotaDataTrackingConfig 由 option 同步路径调用，把 dashboard_config 的写入层配置同步到 model 包级变量。
+func SyncQuotaDataTrackingConfig(trackTokens, byModel, byUser bool) {
+	quotaDataTrackTokens = trackTokens
+	quotaDataTrackByModel = byModel
+	quotaDataTrackByUser = byUser
+}
+
 // LogQuotaData 记录成功请求数据到内存缓存
 func LogQuotaData(userId int, username string, modelName string, quota int, createdAt int64, tokenUsed int) {
 	createdAt = createdAt - (createdAt % 3600)
+	userId, username, modelName, tokenUsed = applyTrackingConfig(userId, username, modelName, tokenUsed)
 
 	CacheQuotaDataLock.Lock()
 	defer CacheQuotaDataLock.Unlock()
@@ -74,6 +122,7 @@ func LogQuotaData(userId int, username string, modelName string, quota int, crea
 // LogQuotaErrorData 记录失败请求数据到内存缓存
 func LogQuotaErrorData(userId int, username string, modelName string, createdAt int64) {
 	createdAt = createdAt - (createdAt % 3600)
+	userId, username, modelName, _ = applyTrackingConfig(userId, username, modelName, 0)
 
 	CacheQuotaDataLock.Lock()
 	defer CacheQuotaDataLock.Unlock()
@@ -271,7 +320,9 @@ func RecalculateQuotaData(startTime int64, endTime int64) error {
 	// 聚合成功日志
 	for _, r := range successLogs {
 		hourStart := r.CreatedAt - (r.CreatedAt % 3600)
-		key := aggKey{UserId: r.UserId, Username: r.Username, ModelName: r.ModelName, HourStart: hourStart}
+		// 根据写入层聚合粒度配置调整 key 维度和 token 记录
+		userId, username, modelName, tokenUsed := applyTrackingConfig(r.UserId, r.Username, r.ModelName, r.PromptTokens+r.CompletionTokens)
+		key := aggKey{UserId: userId, Username: username, ModelName: modelName, HourStart: hourStart}
 		v, ok := merged[key]
 		if !ok {
 			v = &aggVal{}
@@ -279,13 +330,15 @@ func RecalculateQuotaData(startTime int64, endTime int64) error {
 		}
 		v.Count++
 		v.Quota += r.Quota
-		v.TokenUsed += r.PromptTokens + r.CompletionTokens
+		v.TokenUsed += tokenUsed
 	}
 
 	// 聚合失败日志
 	for _, r := range failLogs {
 		hourStart := r.CreatedAt - (r.CreatedAt % 3600)
-		key := aggKey{UserId: r.UserId, Username: r.Username, ModelName: r.ModelName, HourStart: hourStart}
+		// 失败日志按同一配置聚合 key 维度（不记录 token）
+		userId, username, modelName, _ := applyTrackingConfig(r.UserId, r.Username, r.ModelName, 0)
+		key := aggKey{UserId: userId, Username: username, ModelName: modelName, HourStart: hourStart}
 		v, ok := merged[key]
 		if !ok {
 			v = &aggVal{}

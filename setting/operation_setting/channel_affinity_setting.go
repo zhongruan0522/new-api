@@ -18,7 +18,7 @@ type ChannelAffinityRule struct {
 	ValueRegex string `json:"value_regex"`
 	TTLSeconds int    `json:"ttl_seconds"`
 
-	SkipRetryOnFailure bool `json:"skip_retry_on_failure,omitempty"`
+	SkipRetryOnFailure bool `json:"skip_retry_on_failure"`
 
 	IncludeUsingGroup bool `json:"include_using_group"`
 	IncludeRuleName   bool `json:"include_rule_name"`

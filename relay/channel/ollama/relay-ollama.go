@@ -3,7 +3,6 @@ package ollama
 import (
 	"bufio"
 	"fmt"
-	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -46,12 +45,12 @@ func FetchOllamaModels(baseURL, apiKey string) ([]OllamaModel, error) {
 	defer response.Body.Close()
 
 	if response.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(response.Body)
+		body, _ := common.ReadErrorResponseBody(response.Body)
 		return nil, fmt.Errorf("服务器返回错误 %d: %s", response.StatusCode, string(body))
 	}
 
 	var listResponse OllamaOpenAIModelListResponse
-	body, err := io.ReadAll(response.Body)
+	body, err := common.ReadModelListResponseBody(response.Body)
 	if err != nil {
 		return nil, fmt.Errorf("读取响应失败: %v", err)
 	}
@@ -111,7 +110,7 @@ func PullOllamaModel(baseURL, apiKey, modelName string) error {
 	defer response.Body.Close()
 
 	if response.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(response.Body)
+		body, _ := common.ReadErrorResponseBody(response.Body)
 		return fmt.Errorf("拉取模型失败 %d: %s", response.StatusCode, string(body))
 	}
 
@@ -152,7 +151,7 @@ func PullOllamaModelStream(baseURL, apiKey, modelName string, progressCallback f
 	defer response.Body.Close()
 
 	if response.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(response.Body)
+		body, _ := common.ReadErrorResponseBody(response.Body)
 		return fmt.Errorf("拉取模型失败 %d: %s", response.StatusCode, string(body))
 	}
 
@@ -226,7 +225,7 @@ func DeleteOllamaModel(baseURL, apiKey, modelName string) error {
 	defer response.Body.Close()
 
 	if response.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(response.Body)
+		body, _ := common.ReadErrorResponseBody(response.Body)
 		return fmt.Errorf("删除模型失败 %d: %s", response.StatusCode, string(body))
 	}
 
@@ -257,7 +256,7 @@ func FetchOllamaVersion(baseURL, apiKey string) (string, error) {
 	}
 	defer response.Body.Close()
 
-	body, err := io.ReadAll(response.Body)
+	body, err := common.ReadModelListResponseBody(response.Body)
 	if err != nil {
 		return "", fmt.Errorf("读取响应失败: %v", err)
 	}

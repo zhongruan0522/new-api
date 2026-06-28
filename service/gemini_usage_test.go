@@ -33,6 +33,58 @@ func TestGeminiUsageMetadataToOpenAIUsage(t *testing.T) {
 	}
 }
 
+func TestGeminiUsageMetadataToOpenAIUsageIncludesToolUsePromptTokens(t *testing.T) {
+	usage := GeminiUsageMetadataToOpenAIUsage(dto.GeminiUsageMetadata{
+		PromptTokenCount:        151,
+		ToolUsePromptTokenCount: 18329,
+		CandidatesTokenCount:    1089,
+		ThoughtsTokenCount:      1120,
+		TotalTokenCount:         20689,
+		PromptTokensDetails: []dto.GeminiPromptTokensDetails{
+			{Modality: "TEXT", TokenCount: 151},
+		},
+		ToolUsePromptTokensDetails: []dto.GeminiPromptTokensDetails{
+			{Modality: "TEXT", TokenCount: 18329},
+		},
+		CandidatesTokensDetails: []dto.GeminiPromptTokensDetails{
+			{Modality: "TEXT", TokenCount: 1089},
+		},
+	})
+
+	if usage.PromptTokens != 18480 || usage.InputTokens != 18480 {
+		t.Fatalf("prompt/input tokens = %d/%d, want 18480/18480", usage.PromptTokens, usage.InputTokens)
+	}
+	if usage.CompletionTokens != 2209 || usage.OutputTokens != 2209 || usage.TotalTokens != 20689 {
+		t.Fatalf("completion/output/total = %d/%d/%d, want 2209/2209/20689", usage.CompletionTokens, usage.OutputTokens, usage.TotalTokens)
+	}
+	if usage.PromptTokensDetails.TextTokens != 18480 {
+		t.Fatalf("prompt text token details = %d, want 18480", usage.PromptTokensDetails.TextTokens)
+	}
+	if usage.CompletionTokenDetails.TextTokens != 1089 || usage.CompletionTokenDetails.ReasoningTokens != 1120 {
+		t.Fatalf("completion token details = %+v, want text=1089 reasoning=1120", usage.CompletionTokenDetails)
+	}
+}
+
+func TestGeminiUsageMetadataToOpenAIUsageAcceptsSnakeCaseToolUseFields(t *testing.T) {
+	var metadata dto.GeminiUsageMetadata
+	if err := common.Unmarshal([]byte(`{
+		"prompt_token_count": 2,
+		"tool_use_prompt_token_count": 3,
+		"candidates_token_count": 5,
+		"tool_use_prompt_tokens_details": [{"modality":"TEXT","tokenCount":3}]
+	}`), &metadata); err != nil {
+		t.Fatalf("unmarshal metadata: %v", err)
+	}
+
+	usage := GeminiUsageMetadataToOpenAIUsage(metadata)
+	if usage.PromptTokens != 5 || usage.InputTokens != 5 {
+		t.Fatalf("prompt/input tokens = %d/%d, want 5/5", usage.PromptTokens, usage.InputTokens)
+	}
+	if usage.PromptTokensDetails.TextTokens != 3 {
+		t.Fatalf("tool prompt text details = %d, want 3", usage.PromptTokensDetails.TextTokens)
+	}
+}
+
 func TestOpenAIUsageToGeminiUsage(t *testing.T) {
 	metadata := OpenAIUsageToGeminiUsage(dto.Usage{
 		PromptTokens:     12,

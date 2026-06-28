@@ -32,6 +32,7 @@ import {
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
+import { DisabledSettingsNotice } from '../components/disabled-settings-notice'
 import {
   SettingsForm,
   SettingsSwitchContent,
@@ -108,6 +109,8 @@ export function GlobalSettingsCard({ defaultValues }: GlobalSettingsCardProps) {
             onSave={form.handleSubmit(onSubmit)}
             isSaving={updateOption.isPending}
           />
+          <DisabledSettingsNotice enabled={pingEnabled} />
+
           <FormField
             control={form.control}
             name='general_setting.ping_interval_enabled'
