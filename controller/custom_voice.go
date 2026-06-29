@@ -1,9 +1,7 @@
 package controller
 
 import (
-	"errors"
 	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 
@@ -51,37 +49,6 @@ func CustomVoicePreviewHandler(c *gin.Context) {
 		"message": "",
 		"data":    result,
 	})
-}
-
-// CustomVoicePreviewAudioHandler 用户侧：代理转发 30 分钟内有效的试听音频。
-func CustomVoicePreviewAudioHandler(c *gin.Context) {
-	userId := c.GetInt("id")
-	if userId <= 0 {
-		c.JSON(http.StatusUnauthorized, gin.H{"success": false, "message": "未登录"})
-		return
-	}
-
-	recordId, err := strconv.ParseInt(c.Param("record_id"), 10, 64)
-	if err != nil || recordId <= 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "无效的试听记录"})
-		return
-	}
-
-	audio, err := service.GetCustomVoicePreviewAudio(userId, recordId)
-	if err != nil {
-		if errors.Is(err, service.ErrCustomVoiceDemoAudioExpired) {
-			c.JSON(http.StatusGone, gin.H{"success": false, "message": "试听音频已过缓存期限"})
-			return
-		}
-		if errors.Is(err, service.ErrCustomVoiceDemoAudioNotFound) {
-			c.JSON(http.StatusNotFound, gin.H{"success": false, "message": "试听音频不存在"})
-			return
-		}
-		c.JSON(http.StatusBadGateway, gin.H{"success": false, "message": err.Error()})
-		return
-	}
-
-	c.Data(http.StatusOK, audio.ContentType, audio.Data)
 }
 
 // CustomVoiceConfirmHandler 用户侧：确认定制。扣费并把记录从“试听中”转为“已创建”。

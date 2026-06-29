@@ -1,10 +1,8 @@
 package service
 
 import (
-	"errors"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/zhongruan0522/new-api/common"
 	"github.com/zhongruan0522/new-api/setting/model_setting"
@@ -17,48 +15,6 @@ func withMiniMaxSettings(cfg model_setting.MiniMaxSettings, fn func()) {
 	defer func() { *model_setting.GetMiniMaxSettings() = prev }()
 	*model_setting.GetMiniMaxSettings() = cfg
 	fn()
-}
-
-func resetCustomVoiceDemoAudioCacheForTest() {
-	customVoiceDemoAudioCache.Lock()
-	defer customVoiceDemoAudioCache.Unlock()
-	customVoiceDemoAudioCache.items = make(map[customVoiceDemoAudioCacheKey]customVoiceDemoAudioCacheEntry)
-}
-
-func TestCustomVoiceDemoAudioCache_RegisterAndExpire(t *testing.T) {
-	resetCustomVoiceDemoAudioCacheForTest()
-	defer resetCustomVoiceDemoAudioCacheForTest()
-
-	proxyURL := registerCustomVoiceDemoAudio(12, 34, "https://cdn.example.test/audio.mp3")
-	if proxyURL != "/api/custom_voice/preview/34/audio" {
-		t.Fatalf("proxyURL = %q, want /api/custom_voice/preview/34/audio", proxyURL)
-	}
-	got, err := getCustomVoiceDemoAudioURL(12, 34)
-	if err != nil {
-		t.Fatalf("get cached url failed: %v", err)
-	}
-	if got != "https://cdn.example.test/audio.mp3" {
-		t.Fatalf("cached url = %q, want upstream url", got)
-	}
-
-	key := customVoiceDemoAudioCacheKey{userId: 12, recordId: 34}
-	customVoiceDemoAudioCache.Lock()
-	customVoiceDemoAudioCache.items[key] = customVoiceDemoAudioCacheEntry{
-		url:       "https://cdn.example.test/audio.mp3",
-		expiresAt: time.Now().Add(-time.Second),
-	}
-	customVoiceDemoAudioCache.Unlock()
-
-	_, err = getCustomVoiceDemoAudioURL(12, 34)
-	if !errors.Is(err, ErrCustomVoiceDemoAudioExpired) {
-		t.Fatalf("expired cache err = %v, want ErrCustomVoiceDemoAudioExpired", err)
-	}
-	customVoiceDemoAudioCache.RLock()
-	_, exists := customVoiceDemoAudioCache.items[key]
-	customVoiceDemoAudioCache.RUnlock()
-	if exists {
-		t.Fatalf("expired cache entry should be deleted")
-	}
 }
 
 // TestBuildVoiceClonePayload_NoPreviewText 无试听文本时只透传基础字段。
