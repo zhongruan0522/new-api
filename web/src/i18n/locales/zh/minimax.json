@@ -11,18 +11,20 @@
   "Leave empty to send voice ID upstream": "留空则向上游发送音色 ID",
   "No voices found": "未找到音色记录",
   "Not Allowed": "未允许",
-  "Only created and allowed voices can pass the whitelist.": "只有已创建且被允许的音色才能通过白名单。",
+  "Only paid voices with TTS enabled can pass the whitelist.": "只有已付款且允许 TTS 的音色才能通过白名单校验。",
   "Operator ID": "操作人 ID",
   "Operator ID must be a positive integer": "操作人 ID 必须是正整数",
   "Redirect ID": "重定向 ID",
   "Start time cannot be later than end time": "开始时间不能晚于结束时间",
   "Update failed": "更新失败",
   "Voice Management": "音色管理",
+  "Voice Status - Paid": "已付款",
+  "Voice Status - Preview": "预览",
   "Voice created": "音色已创建",
   "Voice deleted": "音色已删除",
   "Voice ID": "音色 ID",
   "Voice ID is required": "音色 ID 不能为空",
   "Voice records will appear here after users create voices or admins add them.": "用户创建音色或管理员添加音色后，记录将显示在这里。",
   "Voice updated": "音色已更新",
-  "Whitelist": "白名单"
+  "Whitelist": "TTS 白名单"
 }

@@ -11,18 +11,20 @@
   "Leave empty to send voice ID upstream": "Leave empty to send voice ID upstream",
   "No voices found": "No voices found",
   "Not Allowed": "Not Allowed",
-  "Only created and allowed voices can pass the whitelist.": "Only created and allowed voices can pass the whitelist.",
+  "Only paid voices with TTS enabled can pass the whitelist.": "Only paid voices with TTS enabled can pass the whitelist.",
   "Operator ID": "Operator ID",
   "Operator ID must be a positive integer": "Operator ID must be a positive integer",
   "Redirect ID": "Redirect ID",
   "Start time cannot be later than end time": "Start time cannot be later than end time",
   "Update failed": "Update failed",
   "Voice Management": "Voice Management",
+  "Voice Status - Paid": "Paid",
+  "Voice Status - Preview": "Preview",
   "Voice created": "Voice created",
   "Voice deleted": "Voice deleted",
   "Voice ID": "Voice ID",
   "Voice ID is required": "Voice ID is required",
   "Voice records will appear here after users create voices or admins add them.": "Voice records will appear here after users create voices or admins add them.",
   "Voice updated": "Voice updated",
-  "Whitelist": "Whitelist"
+  "Whitelist": "TTS Whitelist"
 }

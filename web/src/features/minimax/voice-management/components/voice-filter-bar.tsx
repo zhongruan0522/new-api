@@ -39,8 +39,8 @@ type VoiceFilterBarProps = {
 
 const TYPE_OPTIONS: Array<{ value: VoiceTypeFilter; labelKey: string }> = [
   { value: '', labelKey: 'All' },
-  { value: 'created', labelKey: 'Created' },
-  { value: 'preview', labelKey: 'Preview' },
+  { value: 'created', labelKey: 'Voice Status - Paid' },
+  { value: 'preview', labelKey: 'Voice Status - Preview' },
 ]
 
 function updateFilter(
@@ -56,7 +56,7 @@ export function VoiceFilterBar(props: VoiceFilterBarProps) {
 
   return (
     <div className='bg-card/50 rounded-lg border p-2.5 sm:p-3'>
-      <div className='grid grid-cols-1 gap-2 sm:grid-cols-6'>
+      <div className='grid grid-cols-1 gap-2 sm:grid-cols-12 sm:items-end'>
         <div className='min-w-0 sm:col-span-2'>
           <Label className='text-muted-foreground mb-1.5 block text-xs'>
             {t('Start Time')}
@@ -89,7 +89,7 @@ export function VoiceFilterBar(props: VoiceFilterBarProps) {
           />
         </div>
 
-        <div className='min-w-0'>
+        <div className='min-w-0 sm:col-span-2'>
           <Label className='text-muted-foreground mb-1.5 block text-xs'>
             {t('Type')}
           </Label>
@@ -105,7 +105,7 @@ export function VoiceFilterBar(props: VoiceFilterBarProps) {
             <SelectTrigger className='h-8 min-w-0 text-sm leading-5'>
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent alignItemWithTrigger={false}>
               {TYPE_OPTIONS.map((option) => (
                 <SelectItem
                   key={option.value || 'all'}
@@ -118,7 +118,7 @@ export function VoiceFilterBar(props: VoiceFilterBarProps) {
           </Select>
         </div>
 
-        <div className='min-w-0'>
+        <div className='min-w-0 sm:col-span-2'>
           <Label className='text-muted-foreground mb-1.5 block text-xs'>
             {t('Operator ID')}
           </Label>
@@ -136,10 +136,8 @@ export function VoiceFilterBar(props: VoiceFilterBarProps) {
             }
           />
         </div>
-      </div>
 
-      <div className='mt-2 grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_auto]'>
-        <div className='min-w-0'>
+        <div className='min-w-0 sm:col-span-2'>
           <Label className='text-muted-foreground mb-1.5 block text-xs'>
             {t('Voice ID')}
           </Label>
@@ -155,7 +153,7 @@ export function VoiceFilterBar(props: VoiceFilterBarProps) {
           />
         </div>
 
-        <div className='flex items-end justify-end gap-1.5 sm:gap-2'>
+        <div className='flex items-end justify-end gap-1.5 sm:col-span-2 sm:gap-2'>
           <Button
             type='button'
             variant='outline'

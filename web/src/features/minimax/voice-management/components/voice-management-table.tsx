@@ -39,8 +39,8 @@ type VoiceManagementTableProps = {
 }
 
 function getVoiceTypeLabelKey(type: string): string {
-  if (type === 'created') return 'Created'
-  if (type === 'preview') return 'Preview'
+  if (type === 'created') return 'Voice Status - Paid'
+  if (type === 'preview') return 'Voice Status - Preview'
   return type || '-'
 }
 
