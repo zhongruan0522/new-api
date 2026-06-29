@@ -74,8 +74,12 @@ export function VoiceDialog(props: VoiceDialogProps) {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value='created'>{t('Created')}</SelectItem>
-                <SelectItem value='preview'>{t('Preview')}</SelectItem>
+                <SelectItem value='created'>
+                  {t('Voice Status - Paid')}
+                </SelectItem>
+                <SelectItem value='preview'>
+                  {t('Voice Status - Preview')}
+                </SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -102,7 +106,7 @@ export function VoiceDialog(props: VoiceDialogProps) {
             <span>
               <span className='block font-medium'>{t('Allowed for TTS')}</span>
               <span className='text-muted-foreground'>
-                {t('Only created and allowed voices can pass the whitelist.')}
+                {t('Only paid voices with TTS enabled can pass the whitelist.')}
               </span>
             </span>
           </label>

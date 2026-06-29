@@ -247,37 +247,41 @@ export function VoiceManagement() {
   }
 
   return (
-    <SectionPageLayout>
-      <SectionPageLayout.Title>{t('Voice Management')}</SectionPageLayout.Title>
-      <SectionPageLayout.Actions>
-        <Button onClick={openCreate}>{t('Add Voice')}</Button>
-      </SectionPageLayout.Actions>
+    <>
+      <SectionPageLayout>
+        <SectionPageLayout.Title>
+          {t('Voice Management')}
+        </SectionPageLayout.Title>
+        <SectionPageLayout.Actions>
+          <Button onClick={openCreate}>{t('Add Voice')}</Button>
+        </SectionPageLayout.Actions>
 
-      <SectionPageLayout.Content>
-        <VoiceManagementTable
-          items={items}
-          total={total}
-          isLoading={isLoading}
-          isFetching={isFetching}
-          isRoot={isRoot}
-          pagination={pagination}
-          onPaginationChange={handlePaginationChange}
-          onEdit={openEdit}
-          onRequestDelete={setDeleteTarget}
-          toolbar={
-            <VoiceFilterBar
-              filters={draftFilters}
-              hasActiveFilters={
-                hasFilters(draftFilters) || hasFilters(appliedFilters)
-              }
-              isSearching={isFetching}
-              onFiltersChange={setDraftFilters}
-              onSearch={handleSearch}
-              onReset={handleResetFilters}
-            />
-          }
-        />
-      </SectionPageLayout.Content>
+        <SectionPageLayout.Content>
+          <VoiceManagementTable
+            items={items}
+            total={total}
+            isLoading={isLoading}
+            isFetching={isFetching}
+            isRoot={isRoot}
+            pagination={pagination}
+            onPaginationChange={handlePaginationChange}
+            onEdit={openEdit}
+            onRequestDelete={setDeleteTarget}
+            toolbar={
+              <VoiceFilterBar
+                filters={draftFilters}
+                hasActiveFilters={
+                  hasFilters(draftFilters) || hasFilters(appliedFilters)
+                }
+                isSearching={isFetching}
+                onFiltersChange={setDraftFilters}
+                onSearch={handleSearch}
+                onReset={handleResetFilters}
+              />
+            }
+          />
+        </SectionPageLayout.Content>
+      </SectionPageLayout>
 
       <VoiceDialog
         open={dialogOpen}
@@ -319,6 +323,6 @@ export function VoiceManagement() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </SectionPageLayout>
+    </>
   )
 }
