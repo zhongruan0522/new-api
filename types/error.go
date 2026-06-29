@@ -95,6 +95,9 @@ type NewAPIError struct {
 	errorCode      ErrorCode
 	StatusCode     int
 	Metadata       json.RawMessage
+	// exemptStrings are values (e.g. current model name, group name) that should
+	// be preserved as-is during sensitive info masking.
+	exemptStrings []string
 }
 
 // Unwrap enables errors.Is / errors.As to work with NewAPIError by exposing the underlying error.
@@ -155,7 +158,7 @@ func (e *NewAPIError) MaskSensitiveError() string {
 	if e.errorCode == ErrorCodeCountTokenFailed {
 		return errStr
 	}
-	return common.MaskSensitiveInfo(errStr)
+	return common.MaskSensitiveInfoWithExemptions(errStr, e.exemptStrings)
 }
 
 func (e *NewAPIError) MaskSensitiveErrorWithStatusCode() string {
@@ -174,6 +177,16 @@ func (e *NewAPIError) MaskSensitiveErrorWithStatusCode() string {
 
 func (e *NewAPIError) SetMessage(message string) {
 	e.Err = errors.New(message)
+}
+
+// SetExemptStrings records values (e.g. model name, group name) that should be
+// preserved during sensitive info masking. It should be called before the error
+// is serialized for the client or error log.
+func (e *NewAPIError) SetExemptStrings(strs ...string) {
+	if e == nil {
+		return
+	}
+	e.exemptStrings = strs
 }
 
 func (e *NewAPIError) ToOpenAIError() OpenAIError {
@@ -201,7 +214,7 @@ func (e *NewAPIError) ToOpenAIError() OpenAIError {
 		}
 	}
 	if e.errorCode != ErrorCodeCountTokenFailed {
-		result.Message = common.MaskSensitiveInfo(result.Message)
+		result.Message = common.MaskSensitiveInfoWithExemptions(result.Message, e.exemptStrings)
 	}
 	if result.Message == "" {
 		result.Message = string(e.errorType)
@@ -230,7 +243,7 @@ func (e *NewAPIError) ToClaudeError() ClaudeError {
 		}
 	}
 	if e.errorCode != ErrorCodeCountTokenFailed {
-		result.Message = common.MaskSensitiveInfo(result.Message)
+		result.Message = common.MaskSensitiveInfoWithExemptions(result.Message, e.exemptStrings)
 	}
 	if result.Message == "" {
 		result.Message = string(e.errorType)

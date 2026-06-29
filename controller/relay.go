@@ -86,6 +86,10 @@ func Relay(c *gin.Context, relayFormat types.RelayFormat) {
 	defer func() {
 		if newAPIError != nil {
 			logger.LogError(c, fmt.Sprintf("relay error: %s", common.LocalLogPreview(newAPIError.Error())))
+			newAPIError.SetExemptStrings(
+				common.GetContextKeyString(c, constant.ContextKeyOriginalModel),
+				common.GetContextKeyString(c, constant.ContextKeyUsingGroup),
+			)
 			newAPIError.SetMessage(common.MessageWithRequestId(newAPIError.Error(), requestId))
 			switch relayFormat {
 			case types.RelayFormatOpenAIRealtime:
@@ -406,6 +410,7 @@ func processChannelError(c *gin.Context, channelError types.ChannelError, err *t
 			startTime = time.Now()
 		}
 		useTimeMs := int(time.Since(startTime).Milliseconds())
+		err.SetExemptStrings(modelName, userGroup)
 		model.RecordErrorLog(c, userId, channelId, modelName, tokenName, err.MaskSensitiveErrorWithStatusCode(), tokenId, useTimeMs, false, userGroup, other)
 	}
 
