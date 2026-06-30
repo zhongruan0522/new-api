@@ -115,6 +115,9 @@ func RelayErrorHandler(ctx context.Context, resp *http.Response, showBodyWhenFai
 }
 
 func ResetStatusCode(newApiErr *types.NewAPIError, statusCodeMappingStr string) {
+	if newApiErr == nil {
+		return
+	}
 	if statusCodeMappingStr == "" || statusCodeMappingStr == "{}" {
 		return
 	}
@@ -128,6 +131,9 @@ func ResetStatusCode(newApiErr *types.NewAPIError, statusCodeMappingStr string) 
 	}
 	codeStr := strconv.Itoa(newApiErr.StatusCode)
 	if _, ok := statusCodeMapping[codeStr]; ok {
+		if newApiErr.OriginalStatusCode == 0 {
+			newApiErr.OriginalStatusCode = newApiErr.StatusCode
+		}
 		intCode, _ := strconv.Atoi(statusCodeMapping[codeStr])
 		newApiErr.StatusCode = intCode
 	}

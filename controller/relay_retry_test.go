@@ -7,6 +7,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"
+	"github.com/zhongruan0522/new-api/service"
 	"github.com/zhongruan0522/new-api/setting/operation_setting"
 	"github.com/zhongruan0522/new-api/types"
 )
@@ -43,4 +44,23 @@ func TestShouldRetryIgnoresNonNumericUpstreamErrorCode(t *testing.T) {
 	}, http.StatusBadRequest)
 
 	require.False(t, shouldRetry(c, err, 1))
+}
+
+func TestShouldRetryUsesOriginalStatusCodeAfterMapping(t *testing.T) {
+	orig := operation_setting.AutomaticRetryStatusCodeRanges
+	t.Cleanup(func() { operation_setting.AutomaticRetryStatusCodeRanges = orig })
+	operation_setting.AutomaticRetryStatusCodeRanges = []operation_setting.StatusCodeRange{{Start: 429, End: 429}}
+
+	c, _ := gin.CreateTestContext(httptest.NewRecorder())
+	err := types.WithOpenAIError(types.OpenAIError{
+		Message: "rate limited",
+		Type:    "upstream_error",
+		Code:    "rate_limit_exceeded",
+	}, http.StatusTooManyRequests)
+
+	service.ResetStatusCode(err, `{"429":"200"}`)
+
+	require.Equal(t, http.StatusTooManyRequests, err.OriginalStatusCode)
+	require.Equal(t, http.StatusOK, err.StatusCode)
+	require.True(t, shouldRetry(c, err, 1))
 }

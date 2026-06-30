@@ -348,17 +348,27 @@ func shouldRetry(c *gin.Context, openaiErr *types.NewAPIError, retryTimes int) b
 	if _, ok := c.Get("specific_channel_id"); ok {
 		return false
 	}
-	statusCode := openaiErr.StatusCode
+	if shouldRetryByHTTPStatusCode(openaiErr.OriginalStatusCode) {
+		return true
+	}
+	if shouldRetryByHTTPStatusCode(openaiErr.StatusCode) {
+		return true
+	}
+
+	return shouldRetryByNumericErrorCode(openaiErr)
+}
+
+func shouldRetryByHTTPStatusCode(statusCode int) bool {
+	if statusCode == 0 {
+		return false
+	}
 	if statusCode >= 200 && statusCode < 300 {
-		return shouldRetryByNumericErrorCode(openaiErr)
+		return false
 	}
 	if statusCode < 100 || statusCode > 9999 {
 		return true
 	}
-	if operation_setting.ShouldRetryByStatusCode(statusCode) {
-		return true
-	}
-	return shouldRetryByNumericErrorCode(openaiErr)
+	return operation_setting.ShouldRetryByStatusCode(statusCode)
 }
 
 func shouldRetryByNumericErrorCode(openaiErr *types.NewAPIError) bool {

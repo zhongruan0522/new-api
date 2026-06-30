@@ -94,7 +94,10 @@ type NewAPIError struct {
 	errorType      ErrorType
 	errorCode      ErrorCode
 	StatusCode     int
-	Metadata       json.RawMessage
+	// OriginalStatusCode preserves the upstream HTTP status before channel-level
+	// status-code mapping rewrites the response returned to the client.
+	OriginalStatusCode int
+	Metadata           json.RawMessage
 	// exemptStrings are values (e.g. current model name, group name) that should
 	// be preserved as-is during sensitive info masking.
 	exemptStrings []string
