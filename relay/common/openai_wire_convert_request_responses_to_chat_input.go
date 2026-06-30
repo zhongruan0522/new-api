@@ -132,7 +132,9 @@ func buildChatMessagesFromResponsesInputArray(raw json.RawMessage) ([]dto.Messag
 		return nil, err
 	}
 	if strings.TrimSpace(pendingReasoning) != "" {
-		out = append(out, dto.Message{Role: "assistant", ReasoningContent: pendingReasoning})
+		msg := dto.Message{Role: "assistant"}
+		msg.SetReasoningContent(pendingReasoning)
+		out = append(out, msg)
 	}
 	return out, nil
 }
@@ -149,7 +151,9 @@ func buildChatMessagesFromResponsesInputItemByType(itemType string, raw json.Raw
 		if strings.TrimSpace(reasoning) == "" {
 			return nil, nil
 		}
-		return []dto.Message{{Role: "assistant", ReasoningContent: reasoning}}, nil
+		msg := dto.Message{Role: "assistant"}
+		msg.SetReasoningContent(reasoning)
+		return []dto.Message{msg}, nil
 	case openAIResponsesInputItemTypeFunctionCall, openAIResponsesInputItemTypeCustomToolCall, openAIResponsesInputItemTypeToolSearchCall:
 		msg, err := buildChatToolCallMessageFromResponsesFunctionCall(raw)
 		if err != nil {
@@ -322,7 +326,7 @@ func appendToolCallsToChatAssistantMessage(msg *dto.Message, reasoning string, t
 		return nil
 	}
 	if strings.TrimSpace(reasoning) != "" {
-		msg.ReasoningContent = appendReasoningSummary(msg.ReasoningContent, reasoning)
+		msg.SetReasoningContent(appendReasoningSummary(msg.GetReasoningContent(), reasoning))
 	}
 	existing := make([]dto.ToolCallResponse, 0)
 	if len(msg.ToolCalls) > 0 && common.GetJsonType(msg.ToolCalls) != "null" {
@@ -469,11 +473,13 @@ func attachReasoningToMessages(msgs *[]dto.Message, reasoning string) {
 	}
 	for i := range *msgs {
 		if strings.EqualFold((*msgs)[i].Role, "assistant") {
-			(*msgs)[i].ReasoningContent = reasoning
+			(*msgs)[i].SetReasoningContent(reasoning)
 			return
 		}
 	}
-	*msgs = append([]dto.Message{{Role: "assistant", ReasoningContent: reasoning}}, (*msgs)...)
+	*msgs = append([]dto.Message{{Role: "assistant"}}, (*msgs)...)
+	msg := &(*msgs)[0]
+	msg.SetReasoningContent(reasoning)
 }
 
 func extractResponsesFile(part map[string]any) *dto.MessageFile {

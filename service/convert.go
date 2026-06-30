@@ -425,7 +425,7 @@ func ClaudeToOpenAIRequest(claudeRequest dto.ClaudeRequest, info *relaycommon.Re
 			}
 
 			if reasoningBuilder.Len() > 0 {
-				openAIMessage.ReasoningContent = reasoningBuilder.String()
+				openAIMessage.SetReasoningContent(reasoningBuilder.String())
 			}
 			if reasoningSignature != "" {
 				openAIMessage.ReasoningSignature = reasoningSignature
@@ -442,7 +442,7 @@ func ClaudeToOpenAIRequest(claudeRequest dto.ClaudeRequest, info *relaycommon.Re
 				openAIMessage.SetMediaContent(mediaMessages)
 			}
 		}
-		if len(openAIMessage.ParseContent()) > 0 || len(openAIMessage.ToolCalls) > 0 || openAIMessage.ReasoningContent != "" || openAIMessage.ReasoningSignature != "" || openAIMessage.RedactedReasoningContent != "" {
+		if len(openAIMessage.ParseContent()) > 0 || len(openAIMessage.ToolCalls) > 0 || openAIMessage.ReasoningContent != nil || openAIMessage.ReasoningSignature != "" || openAIMessage.RedactedReasoningContent != "" {
 			openAIMessages = append(openAIMessages, openAIMessage)
 		}
 	}
@@ -910,10 +910,7 @@ func ResponseOpenAI2Claude(openAIResponse *dto.OpenAITextResponse, info *relayco
 	for _, choice := range openAIResponse.Choices {
 		stopReason = stopReasonOpenAI2Claude(choice.FinishReason)
 
-		reasoningText := choice.Message.ReasoningContent
-		if reasoningText == "" {
-			reasoningText = choice.Message.Reasoning
-		}
+		reasoningText := choice.Message.GetReasoningContent()
 		if reasoningText != "" || choice.Message.ReasoningSignature != "" {
 			claudeContent := dto.ClaudeMediaMessage{Type: "thinking", Signature: choice.Message.ReasoningSignature}
 			claudeContent.Thinking = common.GetPointer[string](reasoningText)
@@ -1104,7 +1101,7 @@ func GeminiToOpenAIRequest(geminiRequest *dto.GeminiChatRequest, info *relaycomm
 			}
 		}
 		if len(reasoningTexts) > 0 {
-			message.ReasoningContent = strings.Join(reasoningTexts, "\n")
+			message.SetReasoningContent(strings.Join(reasoningTexts, "\n"))
 		}
 		if reasoningSignature != "" {
 			message.ReasoningSignature = reasoningSignature
@@ -1123,7 +1120,7 @@ func GeminiToOpenAIRequest(geminiRequest *dto.GeminiChatRequest, info *relaycomm
 		}
 
 		// 只有当消息有内容或工具调用时才添加
-		if len(message.ParseContent()) > 0 || len(message.ToolCalls) > 0 || message.ReasoningContent != "" || message.ReasoningSignature != "" {
+		if len(message.ParseContent()) > 0 || len(message.ToolCalls) > 0 || message.ReasoningContent != nil || message.ReasoningSignature != "" {
 			messages = append(messages, message)
 		}
 	}
@@ -1250,10 +1247,7 @@ func ResponseOpenAI2Gemini(openAIResponse *dto.OpenAITextResponse, info *relayco
 			Parts: make([]dto.GeminiPart, 0),
 		}
 
-		reasoningContent := choice.Message.ReasoningContent
-		if reasoningContent == "" {
-			reasoningContent = choice.Message.Reasoning
-		}
+		reasoningContent := choice.Message.GetReasoningContent()
 		if reasoningContent != "" || choice.Message.ReasoningSignature != "" {
 			thoughtPart := dto.GeminiPart{
 				Text:    reasoningContent,

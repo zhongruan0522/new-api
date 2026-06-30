@@ -294,8 +294,8 @@ type Message struct {
 	Content                  any             `json:"content"`
 	Name                     *string         `json:"name,omitempty"`
 	Prefix                   *bool           `json:"prefix,omitempty"`
-	ReasoningContent         string          `json:"reasoning_content,omitempty"`
-	Reasoning                string          `json:"reasoning,omitempty"`
+	ReasoningContent         *string         `json:"reasoning_content,omitempty"`
+	Reasoning                *string         `json:"reasoning,omitempty"`
 	ReasoningSignature       string          `json:"reasoning_signature,omitempty"`
 	RedactedReasoningContent string          `json:"redacted_reasoning_content,omitempty"`
 	ToolCalls                json.RawMessage `json:"tool_calls,omitempty"`
@@ -424,6 +424,26 @@ func (m *Message) GetPrefix() bool {
 
 func (m *Message) SetPrefix(prefix bool) {
 	m.Prefix = &prefix
+}
+
+// GetReasoningContent returns the reasoning text carried by a message, preferring
+// reasoning_content and falling back to reasoning. It dereferences nil pointers
+// as the empty string, so callers that only need the value can use it directly.
+func (m *Message) GetReasoningContent() string {
+	if m.ReasoningContent == nil && m.Reasoning == nil {
+		return ""
+	}
+	if m.ReasoningContent != nil {
+		return *m.ReasoningContent
+	}
+	return *m.Reasoning
+}
+
+// SetReasoningContent assigns reasoning_content. Passing "" sets a non-nil
+// pointer to the empty string, which preserves an explicit empty value through
+// JSON marshalling (see relay/AGENTS.md Rule 6).
+func (m *Message) SetReasoningContent(s string) {
+	m.ReasoningContent = &s
 }
 
 func (m *Message) ParseToolCalls() []ToolCallRequest {

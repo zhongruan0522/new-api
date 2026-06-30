@@ -479,14 +479,15 @@ func RequestOpenAI2ClaudeMessage(c *gin.Context, info *relaycommon.RelayInfo, te
 						},
 					}
 				}
-			} else if message.IsStringContent() && message.ToolCalls == nil && message.ReasoningContent == "" && message.ReasoningSignature == "" && message.RedactedReasoningContent == "" {
+			} else if message.IsStringContent() && message.ToolCalls == nil && message.ReasoningContent == nil && message.ReasoningSignature == "" && message.RedactedReasoningContent == "" {
 				claudeMessage.Content = message.StringContent()
 			} else {
 				claudeMediaMessages := make([]dto.ClaudeMediaMessage, 0)
 				if message.Role == "assistant" {
-					if message.ReasoningContent != "" || message.ReasoningSignature != "" {
+					if message.ReasoningContent != nil || message.ReasoningSignature != "" {
 						claudeThinking := dto.ClaudeMediaMessage{Type: "thinking", Signature: message.ReasoningSignature}
-						claudeThinking.Thinking = common.GetPointer[string](message.ReasoningContent)
+						reasoningText := message.GetReasoningContent()
+						claudeThinking.Thinking = common.GetPointer[string](reasoningText)
 						claudeMediaMessages = append(claudeMediaMessages, claudeThinking)
 					}
 					if message.RedactedReasoningContent != "" {
@@ -708,7 +709,7 @@ func ResponseClaude2OpenAI(claudeResponse *dto.ClaudeResponse) *dto.OpenAITextRe
 	if len(tools) > 0 {
 		choice.Message.SetToolCalls(tools)
 	}
-	choice.Message.ReasoningContent = thinkingContent.String()
+	choice.Message.SetReasoningContent(thinkingContent.String())
 	choice.Message.ReasoningSignature = thinkingSignature
 	choice.Message.RedactedReasoningContent = redactedReasoning.String()
 	fullTextResponse.Model = claudeResponse.Model

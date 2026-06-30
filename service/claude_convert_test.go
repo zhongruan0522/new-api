@@ -51,8 +51,8 @@ func TestClaudeToOpenAIRequestPreservesThinkingSignatureAndToolErrors(t *testing
 		t.Fatalf("messages len = %d, want 2", len(openAIRequest.Messages))
 	}
 	assistant := openAIRequest.Messages[0]
-	if assistant.ReasoningContent != "plan" {
-		t.Fatalf("ReasoningContent = %q, want %q", assistant.ReasoningContent, "plan")
+	if assistant.ReasoningContent == nil || *assistant.ReasoningContent != "plan" {
+		t.Fatalf("ReasoningContent = %v, want %q", assistant.ReasoningContent, "plan")
 	}
 	if assistant.ReasoningSignature != "sig_123" {
 		t.Fatalf("ReasoningSignature = %q, want %q", assistant.ReasoningSignature, "sig_123")

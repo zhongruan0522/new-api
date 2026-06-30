@@ -172,9 +172,12 @@ func mapResponsesStatusToChatFinishReason(status string, sawToolCalls bool) stri
 }
 
 func buildChatAssistantMessage(content string, reasoning string, toolCalls []dto.ToolCallResponse) (dto.Message, error) {
-	msg := dto.Message{Role: "assistant", Content: content, ReasoningContent: reasoning}
+	msg := dto.Message{Role: "assistant", Content: content}
 	if strings.TrimSpace(content) == "" {
 		msg.Content = nil
+	}
+	if reasoning != "" {
+		msg.SetReasoningContent(reasoning)
 	}
 	if len(toolCalls) == 0 {
 		return msg, nil
@@ -276,10 +279,7 @@ func mapChatFinishReasonToResponsesStatus(finishReason string) string {
 }
 
 func normalizeChatResponseReasoning(msg dto.Message) string {
-	if strings.TrimSpace(msg.ReasoningContent) != "" {
-		return strings.TrimSpace(msg.ReasoningContent)
-	}
-	return strings.TrimSpace(msg.Reasoning)
+	return strings.TrimSpace(msg.GetReasoningContent())
 }
 
 func coerceCreatedAtFromChat(v any) int {

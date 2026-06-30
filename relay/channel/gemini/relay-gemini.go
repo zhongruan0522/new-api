@@ -348,10 +348,7 @@ func CovertOpenAI2Gemini(c *gin.Context, textRequest dto.GeneralOpenAIRequest, i
 		content := dto.GeminiChatContent{
 			Role: message.Role,
 		}
-		reasoningText := message.ReasoningContent
-		if reasoningText == "" {
-			reasoningText = message.Reasoning
-		}
+		reasoningText := message.GetReasoningContent()
 		if reasoningText != "" || message.ReasoningSignature != "" {
 			reasoningPart := dto.GeminiPart{
 				Text:    reasoningText,
@@ -1036,7 +1033,7 @@ func responseGeminiChat2OpenAI(c *gin.Context, response *dto.GeminiChatResponse)
 				choice.FinishReason = constant.FinishReasonToolCalls
 			}
 			if len(reasoningTexts) > 0 {
-				choice.Message.ReasoningContent = strings.Join(reasoningTexts, "\n")
+				choice.Message.SetReasoningContent(strings.Join(reasoningTexts, "\n"))
 			}
 			if reasoningSignature != "" {
 				choice.Message.ReasoningSignature = reasoningSignature

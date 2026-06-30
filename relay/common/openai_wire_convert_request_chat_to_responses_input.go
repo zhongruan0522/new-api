@@ -225,10 +225,7 @@ func buildResponsesContentFromChatMessage(role string, msg dto.Message) (any, er
 // normalizeChatMessageReasoning keeps reasoning on assistant history messages so
 // prior chain-of-thought summaries survive Chat -> Responses rewrites.
 func normalizeChatMessageReasoning(msg dto.Message) string {
-	if strings.TrimSpace(msg.ReasoningContent) != "" {
-		return strings.TrimSpace(msg.ReasoningContent)
-	}
-	return strings.TrimSpace(msg.Reasoning)
+	return strings.TrimSpace(msg.GetReasoningContent())
 }
 
 func responsesTextPartTypeForRole(role string) string {

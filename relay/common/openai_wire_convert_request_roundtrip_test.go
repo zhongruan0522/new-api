@@ -202,8 +202,8 @@ func TestConvertResponsesRequestToChatCompletionsRequest_GroupsParallelToolCalls
 	if assistant.Role != "assistant" {
 		t.Fatalf("messages[0].role = %q, want assistant", assistant.Role)
 	}
-	if assistant.ReasoningContent != "Need tools" {
-		t.Fatalf("reasoning_content = %q, want Need tools", assistant.ReasoningContent)
+	if assistant.ReasoningContent == nil || *assistant.ReasoningContent != "Need tools" {
+		t.Fatalf("reasoning_content = %v, want Need tools", assistant.ReasoningContent)
 	}
 	toolCalls := assistant.ParseToolCalls()
 	if len(toolCalls) != 2 {

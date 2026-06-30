@@ -64,8 +64,8 @@ func TestResponseClaude2OpenAIAggregatesThinkingTextAndTools(t *testing.T) {
 	if message.StringContent() != "hello world" {
 		t.Fatalf("content = %q, want %q", message.StringContent(), "hello world")
 	}
-	if message.ReasoningContent != "plan" {
-		t.Fatalf("ReasoningContent = %q, want %q", message.ReasoningContent, "plan")
+	if message.ReasoningContent == nil || *message.ReasoningContent != "plan" {
+		t.Fatalf("ReasoningContent = %v, want %q", message.ReasoningContent, "plan")
 	}
 	if message.ReasoningSignature != "sig_123" {
 		t.Fatalf("ReasoningSignature = %q, want %q", message.ReasoningSignature, "sig_123")

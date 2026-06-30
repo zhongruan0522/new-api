@@ -115,13 +115,14 @@ func TestOpenAIUsageToGeminiUsage(t *testing.T) {
 }
 
 func TestResponseOpenAI2GeminiPreservesReasoningAndUsage(t *testing.T) {
+	thinking := "thinking"
 	resp := ResponseOpenAI2Gemini(&dto.OpenAITextResponse{
 		Choices: []dto.OpenAITextResponseChoice{{
 			Index: 0,
 			Message: dto.Message{
 				Role:               "assistant",
 				Content:            "answer",
-				ReasoningContent:   "thinking",
+				ReasoningContent:   &thinking,
 				ReasoningSignature: "sig_123",
 			},
 			FinishReason: "stop",
