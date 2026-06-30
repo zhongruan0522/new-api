@@ -135,7 +135,8 @@ func (a *Adaptor) GetRequestURL(info *relaycommon.RelayInfo) (string, error) {
 		}
 
 		// 特殊处理 responses API
-		if info.RelayMode == relayconstant.RelayModeResponses {
+		if info.RelayMode == relayconstant.RelayModeResponses ||
+			info.RelayMode == relayconstant.RelayModeResponsesCompact {
 			responsesApiVersion := "preview"
 
 			subUrl := "/openai/v1/responses"
@@ -146,6 +147,10 @@ func (a *Adaptor) GetRequestURL(info *relaycommon.RelayInfo) (string, error) {
 
 			if info.ChannelOtherSettings.AzureResponsesVersion != "" {
 				responsesApiVersion = info.ChannelOtherSettings.AzureResponsesVersion
+			}
+
+			if info.RelayMode == relayconstant.RelayModeResponsesCompact {
+				subUrl = subUrl + "/compact"
 			}
 
 			requestURL = fmt.Sprintf("%s?api-version=%s", subUrl, responsesApiVersion)
