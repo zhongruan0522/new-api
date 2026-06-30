@@ -126,6 +126,45 @@ func TestHandleTTSResponse_ZeroUsage(t *testing.T) {
 	}
 }
 
+func TestHandleTTSResponse_UsesRequestedContentType(t *testing.T) {
+	audioBytes := []byte{0x52, 0x49, 0x46, 0x46}
+	hexAudio := hex.EncodeToString(audioBytes)
+
+	respBody := MiniMaxTTSResponse{
+		Data:      MiniMaxTTSData{Audio: hexAudio, Status: 2},
+		ExtraInfo: MiniMaxExtraInfo{UsageCharacters: 1},
+		BaseResp:  MiniMaxBaseResp{StatusCode: 0},
+	}
+	body, _ := common.Marshal(respBody)
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest(http.MethodPost, "/v1/audio/speech", strings.NewReader(""))
+	c.Set("minimax_audio_format", "wav")
+
+	info := &relaycommon.RelayInfo{
+		RelayMode: constant.RelayModeAudioSpeech,
+		StartTime: time.Now(),
+	}
+
+	resp := &http.Response{
+		StatusCode: http.StatusOK,
+		Body:       io.NopCloser(strings.NewReader(string(body))),
+		Header:     make(http.Header),
+	}
+
+	_, apiErr := handleTTSResponse(c, resp, info)
+	if apiErr != nil {
+		t.Fatalf("unexpected error: %v", apiErr)
+	}
+	if got := w.Header().Get("Content-Type"); got != "audio/wav" {
+		t.Fatalf("Content-Type = %q, want audio/wav", got)
+	}
+	if got := w.Body.Bytes(); string(got) != string(audioBytes) {
+		t.Fatalf("body = %v, want %v", got, audioBytes)
+	}
+}
+
 // TestHandleTTSResponse_ErrorStatus 验证上游业务错误 (status_code != 0) 被正确暴露
 func TestHandleTTSResponse_ErrorStatus(t *testing.T) {
 	respBody := MiniMaxTTSResponse{

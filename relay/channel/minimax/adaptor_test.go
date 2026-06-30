@@ -244,15 +244,20 @@ func TestConvertAudioRequest_NullAudioSettingMetadataDoesNotBypassPolicy(t *test
 	})
 }
 
-// TestConvertAudioRequest_ResponseFormatContext 设置 response_format 上下文。
-func TestConvertAudioRequest_ResponseFormatContext(t *testing.T) {
+// TestConvertAudioRequest_NormalizesFormats 验证 OpenAI response_format 映射到
+// MiniMax audio_setting.format，且 output_format 固定为 hex。
+func TestConvertAudioRequest_NormalizesFormats(t *testing.T) {
 	cases := []struct {
-		name    string
-		format  string
-		wantSet string
+		name            string
+		format          string
+		wantAudioFormat string
 	}{
-		{"hex", "hex", "hex"},
-		{"url_default", "mp3", "url"},
+		{"default_mp3", "", "mp3"},
+		{"mp3", "mp3", "mp3"},
+		{"opus", "opus", "opus"},
+		{"flac", "flac", "flac"},
+		{"wav", "wav", "wav"},
+		{"pcm", "pcm", "pcm"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -267,20 +272,57 @@ func TestConvertAudioRequest_ResponseFormatContext(t *testing.T) {
 					Input:          "hello",
 					ResponseFormat: tc.format,
 				}
-				_, err := a.ConvertAudioRequest(c, info, request)
+				reader, err := a.ConvertAudioRequest(c, info, request)
 				if err != nil {
 					t.Fatalf("ConvertAudioRequest error: %v", err)
+				}
+				got := decodeTTSBody(t, reader)
+				if got.OutputFormat != "hex" {
+					t.Errorf("OutputFormat = %q, want hex", got.OutputFormat)
+				}
+				if got.AudioSetting == nil || got.AudioSetting.Format != tc.wantAudioFormat {
+					t.Fatalf("AudioSetting.Format = %v, want %s", got.AudioSetting, tc.wantAudioFormat)
 				}
 				v, ok := c.Get("response_format")
 				if !ok {
 					t.Fatalf("response_format not set")
 				}
-				if v != tc.wantSet {
-					t.Errorf("response_format = %v, want %v", v, tc.wantSet)
+				if v != "hex" {
+					t.Errorf("response_format = %v, want hex", v)
+				}
+				if v, ok := c.Get("minimax_audio_format"); !ok || v != tc.wantAudioFormat {
+					t.Errorf("minimax_audio_format = %v (ok=%v), want %s", v, ok, tc.wantAudioFormat)
 				}
 			})
 		})
 	}
+}
+
+func TestConvertAudioRequest_AACReturnsSupportedFormatList(t *testing.T) {
+	withMiniMaxSettings(t, model_setting.MiniMaxSettings{Enabled: false}, func() {
+		c := newConvertAudioContext()
+		a := &Adaptor{}
+		info := &relaycommon.RelayInfo{
+			RelayMode:   constant.RelayModeAudioSpeech,
+			ChannelMeta: &relaycommon.ChannelMeta{UpstreamModelName: "tts-1-hd"},
+		}
+		request := dto.AudioRequest{
+			Input:          "hello",
+			ResponseFormat: "aac",
+		}
+
+		_, err := a.ConvertAudioRequest(c, info, request)
+		if err == nil {
+			t.Fatal("ConvertAudioRequest error = nil, want unsupported aac error")
+		}
+		msg := err.Error()
+		if !strings.Contains(msg, "aac") {
+			t.Fatalf("error = %q, want mention aac", msg)
+		}
+		if !strings.Contains(msg, miniMaxTTSSupportedAudioFormats) {
+			t.Fatalf("error = %q, want supported format list %q", msg, miniMaxTTSSupportedAudioFormats)
+		}
+	})
 }
 
 func TestGetRequestURLForImageGeneration(t *testing.T) {

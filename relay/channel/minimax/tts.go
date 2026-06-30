@@ -99,6 +99,7 @@ func getContentTypeByFormat(format string) string {
 		"wav":  "audio/wav",
 		"flac": "audio/flac",
 		"aac":  "audio/aac",
+		"opus": "audio/ogg",
 		"pcm":  "audio/pcm",
 	}
 	if ct, ok := contentTypeMap[format]; ok {
@@ -174,8 +175,15 @@ func handleTTSResponse(c *gin.Context, resp *http.Response, info *relaycommon.Re
 			)
 		}
 
-		// Determine content type - default to mp3
-		contentType := "audio/mpeg"
+		audioFormat := c.GetString("minimax_audio_format")
+		if audioFormat == "" {
+			if audioReq, ok := info.Request.(*dto.AudioRequest); ok {
+				if normalizedFormat, formatErr := normalizeMiniMaxTTSAudioFormat(audioReq.ResponseFormat); formatErr == nil {
+					audioFormat = normalizedFormat
+				}
+			}
+		}
+		contentType := getContentTypeByFormat(audioFormat)
 
 		c.Data(http.StatusOK, contentType, audioData)
 	}

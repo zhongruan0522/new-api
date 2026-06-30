@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 
 	"github.com/zhongruan0522/new-api/common"
 	"github.com/zhongruan0522/new-api/dto"
@@ -23,6 +24,23 @@ import (
 type Adaptor struct {
 }
 
+const miniMaxTTSSupportedAudioFormats = "mp3, opus, flac, wav, pcm"
+
+func normalizeMiniMaxTTSAudioFormat(responseFormat string) (string, error) {
+	format := strings.ToLower(strings.TrimSpace(responseFormat))
+	if format == "" {
+		return "mp3", nil
+	}
+	switch format {
+	case "mp3", "opus", "flac", "wav", "pcm":
+		return format, nil
+	case "aac":
+		return "", fmt.Errorf("MiniMax TTS does not support response_format %q; supported formats: %s", responseFormat, miniMaxTTSSupportedAudioFormats)
+	default:
+		return "", fmt.Errorf("unsupported response_format %q for MiniMax TTS; supported formats: %s", responseFormat, miniMaxTTSSupportedAudioFormats)
+	}
+}
+
 func (a *Adaptor) ConvertGeminiRequest(*gin.Context, *relaycommon.RelayInfo, *dto.GeminiChatRequest) (any, error) {
 	return nil, errors.New("not implemented")
 }
@@ -37,7 +55,10 @@ func (a *Adaptor) ConvertAudioRequest(c *gin.Context, info *relaycommon.RelayInf
 		return nil, errors.New("unsupported audio relay mode")
 	}
 
-	outputFormat := request.ResponseFormat
+	audioFormat, err := normalizeMiniMaxTTSAudioFormat(request.ResponseFormat)
+	if err != nil {
+		return nil, err
+	}
 
 	// 1) 先用用户请求原始值构造基础请求（不应用管理员重定向）。
 	//    使用 UpstreamModelName（渠道级 model_mapping 已由 ModelMappedHelper 处理），
@@ -50,9 +71,9 @@ func (a *Adaptor) ConvertAudioRequest(c *gin.Context, info *relaycommon.RelayInf
 			Speed:   request.Speed,
 		},
 		AudioSetting: &AudioSetting{
-			Format: outputFormat,
+			Format: audioFormat,
 		},
-		OutputFormat: outputFormat,
+		OutputFormat: "hex",
 	}
 
 	// 2) 合并用户 metadata（扩展字段的厂商自定义值）。
@@ -87,7 +108,7 @@ func (a *Adaptor) ConvertAudioRequest(c *gin.Context, info *relaycommon.RelayInf
 	// 3) 应用管理员强制策略：在 metadata 合并之后覆盖策略字段。
 	//    仅当 cfg.Enabled 时生效。注意：音色重定向已由上一步数据库解析完成，
 	//    策略不再覆盖 VoiceSetting.VoiceID，避免回退掉 redirect_id。
-	policy := model_setting.ApplyMiniMaxTTSPolicy(info.UpstreamModelName, request.Voice, request.Input, outputFormat)
+	policy := model_setting.ApplyMiniMaxTTSPolicy(info.UpstreamModelName, request.Voice, request.Input, audioFormat)
 	if policy.Enabled {
 		minimaxRequest.Model = policy.Model
 		minimaxRequest.VoiceSetting.Emotion = policy.Emotion
@@ -95,15 +116,18 @@ func (a *Adaptor) ConvertAudioRequest(c *gin.Context, info *relaycommon.RelayInf
 		if minimaxRequest.AudioSetting == nil {
 			minimaxRequest.AudioSetting = &AudioSetting{}
 		}
-		minimaxRequest.AudioSetting.Format = outputFormat
-		minimaxRequest.OutputFormat = outputFormat
+		minimaxRequest.AudioSetting.Format = audioFormat
 	}
 
-	normalizedFormat := outputFormat
-	if normalizedFormat != "hex" {
-		normalizedFormat = "url"
+	if minimaxRequest.AudioSetting == nil {
+		minimaxRequest.AudioSetting = &AudioSetting{}
 	}
-	c.Set("response_format", normalizedFormat)
+	if minimaxRequest.AudioSetting.Format == "" {
+		minimaxRequest.AudioSetting.Format = audioFormat
+	}
+	minimaxRequest.OutputFormat = "hex"
+	c.Set("response_format", "hex")
+	c.Set("minimax_audio_format", minimaxRequest.AudioSetting.Format)
 
 	jsonData, err := common.Marshal(minimaxRequest)
 	if err != nil {
