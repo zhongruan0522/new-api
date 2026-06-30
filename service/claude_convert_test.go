@@ -197,3 +197,94 @@ func TestStreamResponseOpenAI2ClaudeEmitsThinkingSignatureAfterThinkingDelta(t *
 		t.Fatalf("third response = %+v, want signature_delta(sig_123)", responses[2])
 	}
 }
+
+func TestStreamResponseOpenAI2ClaudeEmitsUsageOnlyFinalMessageDelta(t *testing.T) {
+	info := &relaycommon.RelayInfo{
+		SendResponseCount: 2,
+		ClaudeConvertInfo: &relaycommon.ClaudeConvertInfo{
+			FinishReason:     "stop",
+			LastMessagesType: relaycommon.LastMessageTypeText,
+			Index:            0,
+		},
+	}
+	usage := &dto.Usage{
+		PromptTokens:     180,
+		CompletionTokens: 53,
+		PromptTokensDetails: dto.InputTokenDetails{
+			CachedTokens:         30,
+			CachedCreationTokens: 50,
+		},
+	}
+
+	responses := StreamResponseOpenAI2Claude(&dto.ChatCompletionsStreamResponse{Usage: usage}, info)
+
+	if len(responses) != 3 {
+		t.Fatalf("responses len = %d, want content_block_stop + message_delta + message_stop", len(responses))
+	}
+	if responses[0].Type != "content_block_stop" {
+		t.Fatalf("first response type = %q, want content_block_stop", responses[0].Type)
+	}
+	if responses[1].Type != "message_delta" || responses[1].Usage == nil || responses[1].Delta == nil {
+		t.Fatalf("second response = %+v, want message_delta with usage", responses[1])
+	}
+	if responses[1].Usage.InputTokens != 100 || responses[1].Usage.CacheReadInputTokens != 30 || responses[1].Usage.CacheCreationInputTokens != 50 || responses[1].Usage.OutputTokens != 53 {
+		t.Fatalf("claude usage = %+v, want input=100 cache_read=30 cache_creation=50 output=53", responses[1].Usage)
+	}
+	if responses[1].Usage.CacheCreation == nil || responses[1].Usage.CacheCreation.Ephemeral5mInputTokens != 50 || responses[1].Usage.CacheCreation.Ephemeral1hInputTokens != 0 {
+		t.Fatalf("cache creation split = %+v, want aggregate defaulted to 5m", responses[1].Usage.CacheCreation)
+	}
+	if responses[1].Delta.StopReason == nil || *responses[1].Delta.StopReason != "end_turn" {
+		t.Fatalf("stop reason = %v, want end_turn", responses[1].Delta.StopReason)
+	}
+	if responses[2].Type != "message_stop" {
+		t.Fatalf("third response type = %q, want message_stop", responses[2].Type)
+	}
+	if !info.ClaudeConvertInfo.Done {
+		t.Fatal("converter should be marked done after usage-only final chunk")
+	}
+}
+
+func TestStreamResponseOpenAI2ClaudeDefersStopUntilUsageOnlyChunk(t *testing.T) {
+	finish := "stop"
+	info := &relaycommon.RelayInfo{
+		SendResponseCount: 2,
+		ClaudeConvertInfo: &relaycommon.ClaudeConvertInfo{
+			LastMessagesType: relaycommon.LastMessageTypeText,
+			Index:            0,
+		},
+	}
+
+	first := StreamResponseOpenAI2Claude(&dto.ChatCompletionsStreamResponse{
+		Choices: []dto.ChatCompletionsStreamResponseChoice{{FinishReason: &finish}},
+	}, info)
+	if len(first) != 0 {
+		t.Fatalf("finish-only chunk without usage should be deferred, got %+v", first)
+	}
+	if info.ClaudeConvertInfo.Done {
+		t.Fatal("converter should not be done before final usage arrives")
+	}
+
+	usage := &dto.Usage{PromptTokens: 7, CompletionTokens: 3}
+	second := StreamResponseOpenAI2Claude(&dto.ChatCompletionsStreamResponse{Usage: usage}, info)
+	if len(second) != 3 {
+		t.Fatalf("responses len = %d, want deferred close with usage", len(second))
+	}
+	if second[1].Type != "message_delta" || second[1].Usage == nil || second[1].Usage.InputTokens != 7 || second[1].Usage.OutputTokens != 3 {
+		t.Fatalf("message_delta = %+v, want final usage", second[1])
+	}
+	if second[2].Type != "message_stop" {
+		t.Fatalf("last response type = %q, want message_stop", second[2].Type)
+	}
+}
+
+func TestNormalizeCacheCreationSplitDefaultsRemainderTo5m(t *testing.T) {
+	fiveMin, oneHour := NormalizeCacheCreationSplit(50, 10, 20)
+	if fiveMin != 30 || oneHour != 20 {
+		t.Fatalf("split = %d/%d, want 30/20", fiveMin, oneHour)
+	}
+
+	fiveMin, oneHour = NormalizeCacheCreationSplit(50, 0, 0)
+	if fiveMin != 50 || oneHour != 0 {
+		t.Fatalf("aggregate-only split = %d/%d, want 50/0", fiveMin, oneHour)
+	}
+}

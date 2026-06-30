@@ -141,8 +141,8 @@ func TestFormatClaudeResponseInfo_MessageDelta_OnlyOutputTokens(t *testing.T) {
 	if claudeInfo.Usage.PromptTokensDetails.CachedCreationTokens != 50 {
 		t.Errorf("CachedCreationTokens = %d, want 50", claudeInfo.Usage.PromptTokensDetails.CachedCreationTokens)
 	}
-	if claudeInfo.Usage.ClaudeCacheCreation5mTokens != 10 {
-		t.Errorf("ClaudeCacheCreation5mTokens = %d, want 10", claudeInfo.Usage.ClaudeCacheCreation5mTokens)
+	if claudeInfo.Usage.ClaudeCacheCreation5mTokens != 30 {
+		t.Errorf("ClaudeCacheCreation5mTokens = %d, want 30", claudeInfo.Usage.ClaudeCacheCreation5mTokens)
 	}
 	if claudeInfo.Usage.ClaudeCacheCreation1hTokens != 20 {
 		t.Errorf("ClaudeCacheCreation1hTokens = %d, want 20", claudeInfo.Usage.ClaudeCacheCreation1hTokens)
@@ -521,7 +521,7 @@ func TestStreamResponseClaude2OpenAINilInputJSONDeltaDoesNotPanic(t *testing.T) 
 			Type:  "content_block_delta",
 			Index: &idx,
 			Delta: &dto.ClaudeMediaMessage{
-				Type:       "input_json_delta",
+				Type:        "input_json_delta",
 				PartialJson: nil,
 			},
 		})
@@ -561,4 +561,47 @@ func TestStreamResponseClaude2OpenAIParallelToolArgumentDeltasKeepIndexes(t *tes
 	require.Equal(t, `{"a"`, a.Choices[0].Delta.ToolCalls[0].Function.Arguments)
 	require.Equal(t, 1, *b.Choices[0].Delta.ToolCalls[0].Index)
 	require.Equal(t, `{"b"`, b.Choices[0].Delta.ToolCalls[0].Function.Arguments)
+}
+
+// 断流或上游缺 message_delta usage 时，fallback 只能补 completion/prompt 缺口，不能清空已记录的 cache 计费字段。
+func TestHandleStreamFinalResponseFallbackPreservesCacheUsage(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest(http.MethodPost, "/v1/messages", nil)
+
+	info := &relaycommon.RelayInfo{
+		RelayFormat: types.RelayFormatClaude,
+		ChannelMeta: &relaycommon.ChannelMeta{UpstreamModelName: "claude-3-5-sonnet"},
+	}
+	claudeInfo := &ClaudeResponseInfo{
+		Usage: &dto.Usage{
+			PromptTokens: 180,
+			PromptTokensDetails: dto.InputTokenDetails{
+				CachedTokens:         30,
+				CachedCreationTokens: 50,
+			},
+			InputTokensDetails: &dto.InputTokenDetails{
+				CachedTokens:         30,
+				CachedCreationTokens: 50,
+			},
+			ClaudeCacheCreation5mTokens: 30,
+			ClaudeCacheCreation1hTokens: 20,
+		},
+		ResponseText: strings.Builder{},
+		Done:         false,
+	}
+	claudeInfo.ResponseText.WriteString("fallback output")
+
+	HandleStreamFinalResponse(c, info, claudeInfo)
+
+	require.Equal(t, 180, claudeInfo.Usage.PromptTokens)
+	require.Equal(t, 30, claudeInfo.Usage.PromptTokensDetails.CachedTokens)
+	require.Equal(t, 50, claudeInfo.Usage.PromptTokensDetails.CachedCreationTokens)
+	require.NotNil(t, claudeInfo.Usage.InputTokensDetails)
+	require.Equal(t, 30, claudeInfo.Usage.InputTokensDetails.CachedTokens)
+	require.Equal(t, 50, claudeInfo.Usage.InputTokensDetails.CachedCreationTokens)
+	require.Equal(t, 30, claudeInfo.Usage.ClaudeCacheCreation5mTokens)
+	require.Equal(t, 20, claudeInfo.Usage.ClaudeCacheCreation1hTokens)
+	require.Greater(t, claudeInfo.Usage.CompletionTokens, 0, "fallback should backfill completion tokens")
+	require.Equal(t, claudeInfo.Usage.PromptTokens+claudeInfo.Usage.CompletionTokens, claudeInfo.Usage.TotalTokens)
 }

@@ -749,6 +749,60 @@ type ClaudeResponseInfo struct {
 	ResponsesCompletedEmitted bool
 }
 
+func mergeClaudeUsageIntoOpenAIUsage(current *dto.Usage, claudeUsage *dto.ClaudeUsage) *dto.Usage {
+	if current == nil {
+		current = &dto.Usage{}
+	}
+	if claudeUsage == nil {
+		current.TotalTokens = current.PromptTokens + current.CompletionTokens
+		return current
+	}
+
+	cacheReadTokens := current.PromptTokensDetails.CachedTokens
+	if claudeUsage.CacheReadInputTokens > 0 {
+		cacheReadTokens = claudeUsage.CacheReadInputTokens
+	}
+
+	cacheCreationTokens := current.PromptTokensDetails.CachedCreationTokens
+	if incomingCacheCreation := claudeUsage.GetCacheCreationTotalTokens(); incomingCacheCreation > 0 {
+		cacheCreationTokens = incomingCacheCreation
+	}
+
+	cacheCreation5m := current.ClaudeCacheCreation5mTokens
+	cacheCreation1h := current.ClaudeCacheCreation1hTokens
+	if incoming5m := claudeUsage.GetCacheCreation5mTokens(); incoming5m > 0 {
+		cacheCreation5m = incoming5m
+	}
+	if incoming1h := claudeUsage.GetCacheCreation1hTokens(); incoming1h > 0 {
+		cacheCreation1h = incoming1h
+	}
+	cacheCreation5m, cacheCreation1h = service.NormalizeCacheCreationSplit(cacheCreationTokens, cacheCreation5m, cacheCreation1h)
+
+	if claudeUsage.InputTokens > 0 {
+		current.PromptTokens = claudeUsage.InputTokens + cacheReadTokens + cacheCreationTokens
+	} else if current.PromptTokens == 0 && (cacheReadTokens > 0 || cacheCreationTokens > 0) {
+		current.PromptTokens = cacheReadTokens + cacheCreationTokens
+	}
+	current.InputTokens = current.PromptTokens
+	current.PromptCacheHitTokens = cacheReadTokens
+	current.PromptTokensDetails.CachedTokens = cacheReadTokens
+	current.PromptTokensDetails.CachedCreationTokens = cacheCreationTokens
+	if current.InputTokensDetails == nil {
+		current.InputTokensDetails = &dto.InputTokenDetails{}
+	}
+	current.InputTokensDetails.CachedTokens = cacheReadTokens
+	current.InputTokensDetails.CachedCreationTokens = cacheCreationTokens
+	current.ClaudeCacheCreation5mTokens = cacheCreation5m
+	current.ClaudeCacheCreation1hTokens = cacheCreation1h
+
+	if claudeUsage.OutputTokens > 0 {
+		current.CompletionTokens = claudeUsage.OutputTokens
+		current.OutputTokens = claudeUsage.OutputTokens
+	}
+	current.TotalTokens = current.PromptTokens + current.CompletionTokens
+	return current
+}
+
 func buildMessageDeltaPatchUsage(claudeResponse *dto.ClaudeResponse, claudeInfo *ClaudeResponseInfo) *dto.ClaudeUsage {
 	usage := &dto.ClaudeUsage{}
 	if claudeResponse != nil && claudeResponse.Usage != nil {
@@ -772,10 +826,20 @@ func buildMessageDeltaPatchUsage(claudeResponse *dto.ClaudeResponse, claudeInfo 
 	if usage.CacheCreationInputTokens == 0 && localUsage.CacheCreationInputTokens > 0 {
 		usage.CacheCreationInputTokens = localUsage.CacheCreationInputTokens
 	}
-	if usage.CacheCreation == nil && localUsage.CacheCreation != nil {
+	cacheCreation5m := 0
+	cacheCreation1h := 0
+	if usage.CacheCreation != nil {
+		cacheCreation5m = usage.CacheCreation.Ephemeral5mInputTokens
+		cacheCreation1h = usage.CacheCreation.Ephemeral1hInputTokens
+	} else if localUsage.CacheCreation != nil {
+		cacheCreation5m = localUsage.CacheCreation.Ephemeral5mInputTokens
+		cacheCreation1h = localUsage.CacheCreation.Ephemeral1hInputTokens
+	}
+	cacheCreation5m, cacheCreation1h = service.NormalizeCacheCreationSplit(usage.CacheCreationInputTokens, cacheCreation5m, cacheCreation1h)
+	if cacheCreation5m > 0 || cacheCreation1h > 0 {
 		usage.CacheCreation = &dto.ClaudeCacheCreationUsage{
-			Ephemeral5mInputTokens: localUsage.CacheCreation.Ephemeral5mInputTokens,
-			Ephemeral1hInputTokens: localUsage.CacheCreation.Ephemeral1hInputTokens,
+			Ephemeral5mInputTokens: cacheCreation5m,
+			Ephemeral1hInputTokens: cacheCreation1h,
 		}
 	}
 	return usage
@@ -837,7 +901,7 @@ func FormatClaudeResponseInfo(claudeResponse *dto.ClaudeResponse, oaiResponse *d
 
 		// message_start, 获取usage
 		if claudeResponse.Message != nil && claudeResponse.Message.Usage != nil {
-			claudeInfo.Usage = dto.ClaudeUsageToOpenAIUsage(claudeResponse.Message.Usage)
+			claudeInfo.Usage = mergeClaudeUsageIntoOpenAIUsage(claudeInfo.Usage, claudeResponse.Message.Usage)
 		}
 	} else if claudeResponse.Type == "content_block_delta" {
 		if claudeResponse.Delta != nil {
@@ -849,22 +913,9 @@ func FormatClaudeResponseInfo(claudeResponse *dto.ClaudeResponse, oaiResponse *d
 			}
 		}
 	} else if claudeResponse.Type == "message_delta" {
-		// 最终的usage获取
+		// 最终的usage获取：只合并上游非零字段，避免 message_delta 缺 cache 字段时覆盖 message_start 已记录的数据。
 		if claudeResponse.Usage != nil {
-			updatedUsage := dto.ClaudeUsageToOpenAIUsage(claudeResponse.Usage)
-			if updatedUsage != nil {
-				if updatedUsage.PromptTokens == 0 && claudeInfo.Usage != nil && claudeInfo.Usage.PromptTokens > 0 {
-					updatedUsage.PromptTokens = claudeInfo.Usage.PromptTokens
-					updatedUsage.InputTokens = claudeInfo.Usage.InputTokens
-					updatedUsage.PromptCacheHitTokens = claudeInfo.Usage.PromptCacheHitTokens
-					updatedUsage.PromptTokensDetails = claudeInfo.Usage.PromptTokensDetails
-					updatedUsage.InputTokensDetails = claudeInfo.Usage.InputTokensDetails
-					updatedUsage.ClaudeCacheCreation5mTokens = claudeInfo.Usage.ClaudeCacheCreation5mTokens
-					updatedUsage.ClaudeCacheCreation1hTokens = claudeInfo.Usage.ClaudeCacheCreation1hTokens
-				}
-				updatedUsage.TotalTokens = updatedUsage.PromptTokens + updatedUsage.CompletionTokens
-				claudeInfo.Usage = updatedUsage
-			}
+			claudeInfo.Usage = mergeClaudeUsageIntoOpenAIUsage(claudeInfo.Usage, claudeResponse.Usage)
 		}
 
 		// 判断是否完整
@@ -975,11 +1026,24 @@ func HandleStreamFinalResponse(c *gin.Context, info *relaycommon.RelayInfo, clau
 	if claudeInfo.Usage.PromptTokens == 0 {
 		//上游出错
 	}
+	if claudeInfo.Usage == nil {
+		claudeInfo.Usage = &dto.Usage{}
+	}
 	if claudeInfo.Usage.CompletionTokens == 0 || !claudeInfo.Done {
 		if common.DebugEnabled {
 			common.SysLog("claude response usage is not complete, maybe upstream error")
 		}
-		claudeInfo.Usage = service.ResponseText2Usage(c, claudeInfo.ResponseText.String(), info.UpstreamModelName, claudeInfo.Usage.PromptTokens)
+		// 只补缺失字段，不整份覆盖，保留 message_start 已拿到的 cache 计费字段。
+		fallback := service.ResponseText2Usage(c, claudeInfo.ResponseText.String(), info.UpstreamModelName, claudeInfo.Usage.PromptTokens)
+		if claudeInfo.Usage.CompletionTokens == 0 || (!claudeInfo.Done && fallback.CompletionTokens > claudeInfo.Usage.CompletionTokens) {
+			claudeInfo.Usage.CompletionTokens = fallback.CompletionTokens
+			claudeInfo.Usage.OutputTokens = fallback.CompletionTokens
+		}
+		if claudeInfo.Usage.PromptTokens == 0 {
+			claudeInfo.Usage.PromptTokens = fallback.PromptTokens
+			claudeInfo.Usage.InputTokens = fallback.PromptTokens
+		}
+		claudeInfo.Usage.TotalTokens = claudeInfo.Usage.PromptTokens + claudeInfo.Usage.CompletionTokens
 	}
 
 	if info.RelayFormat == types.RelayFormatClaude {

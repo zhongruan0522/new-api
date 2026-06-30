@@ -75,7 +75,7 @@ func TestBuildMessageDeltaPatchUsage(t *testing.T) {
 		require.EqualValues(t, 50, usage.CacheCreationInputTokens)
 		require.EqualValues(t, 53, usage.OutputTokens)
 		require.NotNil(t, usage.CacheCreation)
-		require.EqualValues(t, 10, usage.CacheCreation.Ephemeral5mInputTokens)
+		require.EqualValues(t, 30, usage.CacheCreation.Ephemeral5mInputTokens)
 		require.EqualValues(t, 20, usage.CacheCreation.Ephemeral1hInputTokens)
 	})
 

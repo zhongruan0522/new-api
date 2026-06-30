@@ -224,6 +224,38 @@ func buildOpenAIWebSearchOptions(tool *dto.ClaudeWebSearchTool) *dto.WebSearchOp
 	return options
 }
 
+// NormalizeCacheCreationSplit keeps Anthropic's aggregate cache-creation total
+// consistent with its optional 5m/1h split. If the provider only reports an
+// aggregate total, the remainder defaults to the 5m bucket.
+func NormalizeCacheCreationSplit(totalTokens int, tokens5m int, tokens1h int) (int, int) {
+	remainder := totalTokens - tokens5m - tokens1h
+	if remainder < 0 {
+		remainder = 0
+	}
+	return tokens5m + remainder, tokens1h
+}
+
+func buildClaudeUsageFromOpenAIUsage(openAIUsage *dto.Usage) *dto.ClaudeUsage {
+	usage := dto.OpenAIUsageToClaudeUsage(openAIUsage)
+	if usage == nil {
+		return nil
+	}
+	cacheCreation5m := 0
+	cacheCreation1h := 0
+	if usage.CacheCreation != nil {
+		cacheCreation5m = usage.CacheCreation.Ephemeral5mInputTokens
+		cacheCreation1h = usage.CacheCreation.Ephemeral1hInputTokens
+	}
+	cacheCreation5m, cacheCreation1h = NormalizeCacheCreationSplit(usage.CacheCreationInputTokens, cacheCreation5m, cacheCreation1h)
+	if cacheCreation5m > 0 || cacheCreation1h > 0 {
+		usage.CacheCreation = &dto.ClaudeCacheCreationUsage{
+			Ephemeral5mInputTokens: cacheCreation5m,
+			Ephemeral1hInputTokens: cacheCreation1h,
+		}
+	}
+	return usage
+}
+
 func appendOpenAIToolMessage(openAIMessages *[]dto.Message, claudeRequest dto.ClaudeRequest, mediaMsg dto.ClaudeMediaMessage) {
 	toolName := mediaMsg.Name
 	if toolName == "" {
@@ -691,7 +723,7 @@ func StreamResponseOpenAI2Claude(openAIResponse *dto.ChatCompletionsStreamRespon
 				oaiUsage = info.ClaudeConvertInfo.Usage
 			}
 			if oaiUsage != nil {
-				claudeUsage := dto.OpenAIUsageToClaudeUsage(oaiUsage)
+				claudeUsage := buildClaudeUsageFromOpenAIUsage(oaiUsage)
 				claudeResponses = append(claudeResponses, &dto.ClaudeResponse{
 					Type:  "message_delta",
 					Usage: claudeUsage,
@@ -709,25 +741,29 @@ func StreamResponseOpenAI2Claude(openAIResponse *dto.ChatCompletionsStreamRespon
 	}
 
 	if len(openAIResponse.Choices) == 0 {
-		// no choices
-		// 可能为非标准的 OpenAI 响应，判断是否已经完成
-		if info.ClaudeConvertInfo.Done {
+		// Some OpenAI-compatible upstreams end with a usage-only SSE chunk.
+		oaiUsage := openAIResponse.Usage
+		if oaiUsage == nil {
+			oaiUsage = info.ClaudeConvertInfo.Usage
+		}
+		if oaiUsage != nil {
 			flushPendingThinkingSignature(true)
 			stopOpenBlocks()
-			oaiUsage := info.ClaudeConvertInfo.Usage
-			if oaiUsage != nil {
-				claudeUsage := dto.OpenAIUsageToClaudeUsage(oaiUsage)
-				claudeResponses = append(claudeResponses, &dto.ClaudeResponse{
-					Type:  "message_delta",
-					Usage: claudeUsage,
-					Delta: &dto.ClaudeMediaMessage{
-						StopReason: common.GetPointer[string](stopReasonOpenAI2Claude(info.FinishReason)),
-					},
-				})
+			stopReason := stopReasonOpenAI2Claude(info.FinishReason)
+			if stopReason == "" {
+				stopReason = "end_turn"
 			}
+			claudeResponses = append(claudeResponses, &dto.ClaudeResponse{
+				Type:  "message_delta",
+				Usage: buildClaudeUsageFromOpenAIUsage(oaiUsage),
+				Delta: &dto.ClaudeMediaMessage{
+					StopReason: common.GetPointer[string](stopReason),
+				},
+			})
 			claudeResponses = append(claudeResponses, &dto.ClaudeResponse{
 				Type: "message_stop",
 			})
+			info.ClaudeConvertInfo.Done = true
 		}
 		return claudeResponses
 	} else {
@@ -735,6 +771,11 @@ func StreamResponseOpenAI2Claude(openAIResponse *dto.ChatCompletionsStreamRespon
 		doneChunk := chosenChoice.FinishReason != nil && *chosenChoice.FinishReason != ""
 		if doneChunk {
 			info.FinishReason = *chosenChoice.FinishReason
+			if openAIResponse.Usage == nil && info.ClaudeConvertInfo.Usage == nil {
+				// Some upstreams emit finish_reason first, then a final usage-only chunk.
+				// Defer message_delta/message_stop so final Claude output carries usage.
+				return claudeResponses
+			}
 		}
 		if chosenChoice.Delta.ReasoningSignature != nil && *chosenChoice.Delta.ReasoningSignature != "" && chosenChoice.Delta.GetReasoningContent() == "" {
 			info.ClaudeConvertInfo.PendingReasoningSignature = *chosenChoice.Delta.ReasoningSignature
@@ -878,7 +919,7 @@ func StreamResponseOpenAI2Claude(openAIResponse *dto.ChatCompletionsStreamRespon
 				oaiUsage = info.ClaudeConvertInfo.Usage
 			}
 			if oaiUsage != nil {
-				claudeUsage := dto.OpenAIUsageToClaudeUsage(oaiUsage)
+				claudeUsage := buildClaudeUsageFromOpenAIUsage(oaiUsage)
 				claudeResponses = append(claudeResponses, &dto.ClaudeResponse{
 					Type:  "message_delta",
 					Usage: claudeUsage,
@@ -979,7 +1020,7 @@ func ResponseOpenAI2Claude(openAIResponse *dto.OpenAITextResponse, info *relayco
 	}
 	claudeResponse.Content = contents
 	claudeResponse.StopReason = stopReason
-	claudeResponse.Usage = dto.OpenAIUsageToClaudeUsage(&openAIResponse.Usage)
+	claudeResponse.Usage = buildClaudeUsageFromOpenAIUsage(&openAIResponse.Usage)
 
 	return claudeResponse
 }
