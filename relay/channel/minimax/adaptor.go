@@ -35,9 +35,9 @@ func normalizeMiniMaxTTSAudioFormat(responseFormat string) (string, error) {
 	case "mp3", "opus", "flac", "wav", "pcm":
 		return format, nil
 	case "aac":
-		return "", fmt.Errorf("MiniMax TTS does not support response_format %q; supported formats: %s", responseFormat, miniMaxTTSSupportedAudioFormats)
+		return "", fmt.Errorf("upstream TTS does not support response_format %q; supported formats: %s", responseFormat, miniMaxTTSSupportedAudioFormats)
 	default:
-		return "", fmt.Errorf("unsupported response_format %q for MiniMax TTS; supported formats: %s", responseFormat, miniMaxTTSSupportedAudioFormats)
+		return "", fmt.Errorf("unsupported response_format %q for upstream TTS; supported formats: %s", responseFormat, miniMaxTTSSupportedAudioFormats)
 	}
 }
 
