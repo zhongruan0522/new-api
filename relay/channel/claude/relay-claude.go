@@ -480,7 +480,12 @@ func RequestOpenAI2ClaudeMessage(c *gin.Context, info *relaycommon.RelayInfo, te
 					}
 				}
 			} else if message.IsStringContent() && message.ToolCalls == nil && message.ReasoningContent == nil && message.ReasoningSignature == "" && message.RedactedReasoningContent == "" {
-				claudeMessage.Content = message.StringContent()
+				stringContent := message.StringContent()
+				// AWS Bedrock 等上游拒绝空字符串内容（返回 400），用占位符兜底
+				if strings.TrimSpace(stringContent) == "" {
+					stringContent = "..."
+				}
+				claudeMessage.Content = stringContent
 			} else {
 				claudeMediaMessages := make([]dto.ClaudeMediaMessage, 0)
 				if message.Role == "assistant" {
@@ -500,6 +505,10 @@ func RequestOpenAI2ClaudeMessage(c *gin.Context, info *relaycommon.RelayInfo, te
 				for _, mediaMessage := range message.ParseContent() {
 					switch mediaMessage.Type {
 					case "text":
+						// AWS Bedrock 等上游拒绝空文本块（返回 400），跳过空 text 部分
+						if strings.TrimSpace(mediaMessage.Text) == "" {
+							continue
+						}
 						claudeMediaMessages = append(claudeMediaMessages, dto.ClaudeMediaMessage{
 							Type: "text",
 							Text: common.GetPointer[string](mediaMessage.Text),
@@ -544,9 +553,10 @@ func RequestOpenAI2ClaudeMessage(c *gin.Context, info *relaycommon.RelayInfo, te
 				if message.ToolCalls != nil {
 					for _, toolCall := range message.ParseToolCalls() {
 						inputObj := make(map[string]any)
-						if err := json.Unmarshal([]byte(toolCall.Function.Arguments), &inputObj); err != nil {
-							common.SysLog("tool call function arguments is not a map[string]any: " + fmt.Sprintf("%v", toolCall.Function.Arguments))
-							continue
+						if args := toolCall.Function.Arguments; args != "" {
+							if err := json.Unmarshal([]byte(args), &inputObj); err != nil {
+								common.SysLog("tool call function arguments is not a map[string]any: " + fmt.Sprintf("%v", toolCall.Function.Arguments))
+							}
 						}
 						claudeMediaMessages = append(claudeMediaMessages, dto.ClaudeMediaMessage{
 							Type:  "tool_use",
@@ -556,7 +566,12 @@ func RequestOpenAI2ClaudeMessage(c *gin.Context, info *relaycommon.RelayInfo, te
 						})
 					}
 				}
-				claudeMessage.Content = claudeMediaMessages
+				// AWS Bedrock 等上游拒绝空 content 数组（返回 400），用占位符兜底
+				if len(claudeMediaMessages) == 0 {
+					claudeMessage.Content = []dto.ClaudeMediaMessage{{Type: "text", Text: common.GetPointer[string]("...")}}
+				} else {
+					claudeMessage.Content = claudeMediaMessages
+				}
 			}
 			claudeMessages = append(claudeMessages, claudeMessage)
 		}
@@ -580,10 +595,7 @@ func StreamResponseClaude2OpenAI(claudeResponse *dto.ClaudeResponse) *dto.ChatCo
 	tools := make([]dto.ToolCallResponse, 0)
 	fcIdx := 0
 	if claudeResponse.Index != nil {
-		fcIdx = *claudeResponse.Index - 1
-		if fcIdx < 0 {
-			fcIdx = 0
-		}
+		fcIdx = *claudeResponse.Index
 	}
 	var choice dto.ChatCompletionsStreamResponseChoice
 	if claudeResponse.Type == "message_start" {
@@ -622,11 +634,16 @@ func StreamResponseClaude2OpenAI(claudeResponse *dto.ClaudeResponse) *dto.ChatCo
 			choice.Delta.Content = claudeResponse.Delta.Text
 			switch claudeResponse.Delta.Type {
 			case "input_json_delta":
+				// 防御空 partial_json（部分上游或断流场景 delta 携带 nil 字段），避免解引用 nil 崩溃
+				arguments := ""
+				if claudeResponse.Delta.PartialJson != nil {
+					arguments = *claudeResponse.Delta.PartialJson
+				}
 				tools = append(tools, dto.ToolCallResponse{
 					Type:  "function",
 					Index: common.GetPointer(fcIdx),
 					Function: dto.FunctionResponse{
-						Arguments: *claudeResponse.Delta.PartialJson,
+						Arguments: arguments,
 					},
 				})
 			case "signature_delta":
