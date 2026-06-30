@@ -188,7 +188,15 @@ func Relay(c *gin.Context, relayFormat types.RelayFormat) {
 	}
 	lastFailedChannelId := 0
 
-	for ; retryParam.GetRetry() <= common.RetryTimes; retryParam.IncreaseRetry() {
+	// When the global automatic-retry toggle is off, only the first attempt runs.
+	// The configured RetryTimes and status-code rules are preserved so toggling
+	// retry back on later resumes the previous behavior without data loss.
+	maxRetry := common.RetryTimes
+	if !common.AutomaticRetryEnabled {
+		maxRetry = 0
+	}
+
+	for ; retryParam.GetRetry() <= maxRetry; retryParam.IncreaseRetry() {
 		// retry%2==1 means same-priority retry: exclude the previously failed channel
 		// retry%2==1 表示同优先级重试：排除上次失败的渠道
 		if retryParam.GetRetry()%2 == 1 {

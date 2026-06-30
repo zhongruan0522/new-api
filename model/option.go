@@ -113,6 +113,7 @@ func InitOptionMap() {
 	common.OptionMap["TopUpLink"] = common.TopUpLink
 	common.OptionMap["QuotaPerUnit"] = strconv.FormatFloat(common.QuotaPerUnit, 'f', -1, 64)
 	common.OptionMap["RetryTimes"] = strconv.Itoa(common.RetryTimes)
+	common.OptionMap["AutomaticRetryEnabled"] = strconv.FormatBool(common.AutomaticRetryEnabled)
 	common.OptionMap["DataExportInterval"] = strconv.Itoa(common.DataExportInterval)
 	common.OptionMap["DataExportDefaultTime"] = common.DataExportDefaultTime
 	common.OptionMap["DefaultCollapseSidebar"] = strconv.FormatBool(common.DefaultCollapseSidebar)
@@ -170,6 +171,27 @@ func loadOptionsFromDatabase() {
 			DB.Where(commonKeyCol+" = ?", "quota_setting.enable_free_model_pre_consume").Delete(&Option{})
 			break
 		}
+	}
+
+	// Backward-compatibility migration: AutomaticRetryEnabled was introduced as a
+	// standalone toggle. On older deployments the row may not exist yet. To avoid
+	// silently turning off an already-configured retry setup after upgrade, derive
+	// the initial enabled state from the existing RetryTimes: if an admin had set
+	// RetryTimes > 0 we treat automatic retry as enabled.
+	retryEnabledExists := false
+	for _, option := range options {
+		if option.Key == "AutomaticRetryEnabled" {
+			retryEnabledExists = true
+			break
+		}
+	}
+	if !retryEnabledExists {
+		derivedEnabled := common.RetryTimes > 0
+		common.AutomaticRetryEnabled = derivedEnabled
+		common.OptionMap["AutomaticRetryEnabled"] = strconv.FormatBool(derivedEnabled)
+		migratedOption := Option{Key: "AutomaticRetryEnabled"}
+		DB.FirstOrCreate(&migratedOption, Option{Key: "AutomaticRetryEnabled"})
+		DB.Model(&migratedOption).Update("value", strconv.FormatBool(derivedEnabled))
 	}
 }
 
@@ -308,6 +330,8 @@ func updateOptionMap(key string, value string) (err error) {
 			setting.DefaultUseAutoGroup = boolValue
 		case "DynamicRatioEnabled":
 			common.DynamicRatioEnabled = boolValue
+		case "AutomaticRetryEnabled":
+			common.AutomaticRetryEnabled = boolValue
 		}
 	}
 	switch key {

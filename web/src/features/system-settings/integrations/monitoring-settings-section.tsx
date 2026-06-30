@@ -60,7 +60,6 @@ const monitoringSchema = z
     AutomaticEnableChannelEnabled: z.boolean(),
     AutomaticDisableKeywords: z.string(),
     AutomaticDisableStatusCodes: z.string(),
-    AutomaticRetryStatusCodes: z.string(),
     monitor_setting: z.object({
       auto_test_channel_enabled: z.boolean(),
       auto_test_channel_minutes: z.coerce
@@ -82,19 +81,6 @@ const monitoringSchema = z
         )}`,
       })
     }
-
-    const retryParsed = parseHttpStatusCodeRules(
-      values.AutomaticRetryStatusCodes
-    )
-    if (!retryParsed.ok) {
-      ctx.addIssue({
-        code: 'custom',
-        path: ['AutomaticRetryStatusCodes'],
-        message: `Invalid status code rules: ${retryParsed.invalidTokens.join(
-          ', '
-        )}`,
-      })
-    }
   })
 
 type MonitoringFormValues = z.output<typeof monitoringSchema>
@@ -108,7 +94,6 @@ type MonitoringSettingsSectionProps = {
     AutomaticEnableChannelEnabled: boolean
     AutomaticDisableKeywords: string
     AutomaticDisableStatusCodes: string
-    AutomaticRetryStatusCodes: string
     'monitor_setting.auto_test_channel_enabled': boolean
     'monitor_setting.auto_test_channel_minutes': number
   }
@@ -125,7 +110,6 @@ type NormalizedMonitoringValues = {
   AutomaticEnableChannelEnabled: boolean
   AutomaticDisableKeywords: string
   AutomaticDisableStatusCodes: string
-  AutomaticRetryStatusCodes: string
   'monitor_setting.auto_test_channel_enabled': boolean
   'monitor_setting.auto_test_channel_minutes': number
 }
@@ -141,7 +125,6 @@ const buildFormDefaults = (
     defaults.AutomaticDisableKeywords ?? ''
   ),
   AutomaticDisableStatusCodes: defaults.AutomaticDisableStatusCodes ?? '',
-  AutomaticRetryStatusCodes: defaults.AutomaticRetryStatusCodes ?? '',
   monitor_setting: {
     auto_test_channel_enabled:
       defaults['monitor_setting.auto_test_channel_enabled'],
@@ -163,9 +146,6 @@ const normalizeDefaults = (
   AutomaticDisableStatusCodes: parseHttpStatusCodeRules(
     defaults.AutomaticDisableStatusCodes ?? ''
   ).normalized,
-  AutomaticRetryStatusCodes: parseHttpStatusCodeRules(
-    defaults.AutomaticRetryStatusCodes ?? ''
-  ).normalized,
   'monitor_setting.auto_test_channel_enabled':
     defaults['monitor_setting.auto_test_channel_enabled'],
   'monitor_setting.auto_test_channel_minutes':
@@ -184,9 +164,6 @@ const normalizeFormValues = (
   ),
   AutomaticDisableStatusCodes: parseHttpStatusCodeRules(
     values.AutomaticDisableStatusCodes
-  ).normalized,
-  AutomaticRetryStatusCodes: parseHttpStatusCodeRules(
-    values.AutomaticRetryStatusCodes
   ).normalized,
   'monitor_setting.auto_test_channel_enabled':
     values.monitor_setting.auto_test_channel_enabled,
@@ -217,14 +194,9 @@ export function MonitoringSettingsSection({
 
   const autoTestEnabled = form.watch('monitor_setting.auto_test_channel_enabled')
   const autoDisableStatusCodes = form.watch('AutomaticDisableStatusCodes')
-  const autoRetryStatusCodes = form.watch('AutomaticRetryStatusCodes')
   const autoDisableParsed = useMemo(
     () => parseHttpStatusCodeRules(autoDisableStatusCodes),
     [autoDisableStatusCodes]
-  )
-  const autoRetryParsed = useMemo(
-    () => parseHttpStatusCodeRules(autoRetryStatusCodes),
-    [autoRetryStatusCodes]
   )
 
   const onSubmit = async (values: MonitoringFormValues) => {
@@ -347,7 +319,7 @@ export function MonitoringSettingsSection({
               name='QuotaRemindThreshold'
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('Quota reminder (tokens)')}</FormLabel>
+                  <FormLabel>{t('Default quota reminder threshold')}</FormLabel>
                   <FormControl>
                     <Input
                       type='number'
@@ -358,7 +330,9 @@ export function MonitoringSettingsSection({
                     />
                   </FormControl>
                   <FormDescription>
-                    {t('Send email alerts when a user falls below this quota')}
+                    {t(
+                      'Default reminder threshold in backend quota units (tokens). Users can override it in their personal settings.'
+                    )}
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -434,67 +408,35 @@ export function MonitoringSettingsSection({
             )}
           />
 
-          <div className='grid gap-6 md:grid-cols-2'>
-            <FormField
-              control={form.control}
-              name='AutomaticDisableStatusCodes'
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t('Auto-disable status codes')}</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder={t('e.g. 401, 403, 429, 500-599')}
-                      value={field.value}
-                      onChange={(event) => field.onChange(event.target.value)}
-                    />
-                  </FormControl>
-                  <FormDescription>
-                    {t(
-                      'Accepts comma-separated status codes and inclusive ranges.'
-                    )}{' '}
-                    {autoDisableParsed.ok &&
-                      autoDisableParsed.normalized &&
-                      autoDisableParsed.normalized !== field.value.trim() && (
-                        <span className='text-muted-foreground'>
-                          {t('Normalized:')} {autoDisableParsed.normalized}
-                        </span>
-                      )}
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name='AutomaticRetryStatusCodes'
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t('Auto-retry status codes')}</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder={t('e.g. 401, 403, 429, 500-599')}
-                      value={field.value}
-                      onChange={(event) => field.onChange(event.target.value)}
-                    />
-                  </FormControl>
-                  <FormDescription>
-                    {t(
-                      'Accepts comma-separated status codes and inclusive ranges.'
-                    )}{' '}
-                    {autoRetryParsed.ok &&
-                      autoRetryParsed.normalized &&
-                      autoRetryParsed.normalized !== field.value.trim() && (
-                        <span className='text-muted-foreground'>
-                          {t('Normalized:')} {autoRetryParsed.normalized}
-                        </span>
-                      )}
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
+          <FormField
+            control={form.control}
+            name='AutomaticDisableStatusCodes'
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{t('Auto-disable status codes')}</FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder={t('e.g. 401, 403, 429, 500-599')}
+                    value={field.value}
+                    onChange={(event) => field.onChange(event.target.value)}
+                  />
+                </FormControl>
+                <FormDescription>
+                  {t(
+                    'Accepts comma-separated status codes and inclusive ranges.'
+                  )}{' '}
+                  {autoDisableParsed.ok &&
+                    autoDisableParsed.normalized &&
+                    autoDisableParsed.normalized !== field.value.trim() && (
+                      <span className='text-muted-foreground'>
+                        {t('Normalized:')} {autoDisableParsed.normalized}
+                      </span>
+                    )}
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
         </SettingsForm>
       </Form>
     </SettingsSection>

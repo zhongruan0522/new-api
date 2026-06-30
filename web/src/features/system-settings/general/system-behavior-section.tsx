@@ -16,10 +16,12 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
+import { useMemo } from 'react'
 import * as z from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useTranslation } from 'react-i18next'
+import { parseHttpStatusCodeRules } from '@/lib/http-status-code-rules'
 import {
   Form,
   FormControl,
@@ -31,7 +33,10 @@ import {
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
+import { DisabledSettingsNotice } from '../components/disabled-settings-notice'
 import {
+  SettingsControlChildren,
+  SettingsControlGroup,
   SettingsForm,
   SettingsSwitchContent,
   SettingsSwitchItem,
@@ -41,16 +46,62 @@ import { SettingsSection } from '../components/settings-section'
 import { useResetForm } from '../hooks/use-reset-form'
 import { useUpdateOption } from '../hooks/use-update-option'
 
-const behaviorSchema = z.object({
-  RetryTimes: z.coerce.number().min(0).max(10),
-  DefaultCollapseSidebar: z.boolean(),
-})
+const behaviorSchema = z
+  .object({
+    RetryTimes: z.coerce.number().int().min(0).max(10),
+    AutomaticRetryEnabled: z.boolean(),
+    AutomaticRetryStatusCodes: z.string(),
+    DefaultCollapseSidebar: z.boolean(),
+  })
+  .superRefine((values, ctx) => {
+    if (values.AutomaticRetryEnabled && values.RetryTimes <= 0) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['RetryTimes'],
+        message: 'Retry times must be greater than 0 when retry is enabled',
+      })
+    }
 
-type BehaviorFormValues = z.infer<typeof behaviorSchema>
+    const parsed = parseHttpStatusCodeRules(values.AutomaticRetryStatusCodes)
+    if (!parsed.ok) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['AutomaticRetryStatusCodes'],
+        message: `Invalid status code rules: ${parsed.invalidTokens.join(', ')}`,
+      })
+    }
+  })
+
+type BehaviorFormValues = z.output<typeof behaviorSchema>
+type BehaviorFormInput = z.input<typeof behaviorSchema>
 
 type SystemBehaviorSectionProps = {
   defaultValues: BehaviorFormValues
 }
+
+type OptionKey =
+  | 'RetryTimes'
+  | 'AutomaticRetryEnabled'
+  | 'AutomaticRetryStatusCodes'
+  | 'DefaultCollapseSidebar'
+
+type NormalizedBehaviorValues = {
+  RetryTimes: number
+  AutomaticRetryEnabled: boolean
+  AutomaticRetryStatusCodes: string
+  DefaultCollapseSidebar: boolean
+}
+
+const normalizeDefaults = (
+  defaults: BehaviorFormValues
+): NormalizedBehaviorValues => ({
+  RetryTimes: defaults.RetryTimes,
+  AutomaticRetryEnabled: defaults.AutomaticRetryEnabled,
+  AutomaticRetryStatusCodes: parseHttpStatusCodeRules(
+    defaults.AutomaticRetryStatusCodes ?? ''
+  ).normalized,
+  DefaultCollapseSidebar: defaults.DefaultCollapseSidebar,
+})
 
 export function SystemBehaviorSection({
   defaultValues,
@@ -58,21 +109,56 @@ export function SystemBehaviorSection({
   const { t } = useTranslation()
   const updateOption = useUpdateOption()
 
-  const form = useForm({
+  const form = useForm<BehaviorFormInput, unknown, BehaviorFormValues>({
     resolver: zodResolver(behaviorSchema),
     defaultValues,
   })
 
   useResetForm(form, defaultValues)
 
+  const retryEnabled = form.watch('AutomaticRetryEnabled')
+  const autoRetryStatusCodes = form.watch('AutomaticRetryStatusCodes')
+  const autoRetryParsed = useMemo(
+    () => parseHttpStatusCodeRules(autoRetryStatusCodes),
+    [autoRetryStatusCodes]
+  )
+
+  const baseline = useMemo(() => normalizeDefaults(defaultValues), [
+    defaultValues,
+  ])
+
   const onSubmit = async (data: BehaviorFormValues) => {
-    const updates = Object.entries(data).filter(
-      ([key, value]) => value !== defaultValues[key as keyof BehaviorFormValues]
+    const normalized: NormalizedBehaviorValues = {
+      RetryTimes: data.RetryTimes,
+      AutomaticRetryEnabled: data.AutomaticRetryEnabled,
+      AutomaticRetryStatusCodes: parseHttpStatusCodeRules(
+        data.AutomaticRetryStatusCodes
+      ).normalized,
+      DefaultCollapseSidebar: data.DefaultCollapseSidebar,
+    }
+
+    const changed = (Object.keys(normalized) as OptionKey[]).filter(
+      (key) => normalized[key] !== baseline[key]
     )
 
-    for (const [key, value] of updates) {
-      await updateOption.mutateAsync({ key, value })
+    if (changed.length === 0) {
+      return
     }
+
+    // Save retry count and status codes before enabling retry so the backend
+    // validation (RetryTimes > 0 when enabled) passes in the same batch.
+    const orderedKeys = changed.sort((a) =>
+      a === 'AutomaticRetryEnabled' ? 1 : -1
+    )
+
+    for (const key of orderedKeys) {
+      await updateOption.mutateAsync({ key, value: normalized[key] })
+    }
+
+    baseline.RetryTimes = normalized.RetryTimes
+    baseline.AutomaticRetryEnabled = normalized.AutomaticRetryEnabled
+    baseline.AutomaticRetryStatusCodes = normalized.AutomaticRetryStatusCodes
+    baseline.DefaultCollapseSidebar = normalized.DefaultCollapseSidebar
   }
 
   return (
@@ -83,31 +169,105 @@ export function SystemBehaviorSection({
             onSave={form.handleSubmit(onSubmit)}
             isSaving={updateOption.isPending}
           />
-          <FormField
-            control={form.control}
-            name='RetryTimes'
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>{t('Retry Times')}</FormLabel>
-                <FormControl>
-                  <Input
-                    type='number'
-                    min='0'
-                    max='10'
-                    value={field.value as number}
-                    onChange={(e) => field.onChange(e.target.valueAsNumber)}
-                    name={field.name}
-                    onBlur={field.onBlur}
-                    ref={field.ref}
-                  />
-                </FormControl>
-                <FormDescription>
-                  {t('Number of times to retry failed requests (0-10)')}
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+
+          <SettingsControlGroup>
+            <DisabledSettingsNotice enabled={retryEnabled} />
+            <FormField
+              control={form.control}
+              name='AutomaticRetryEnabled'
+              render={({ field }) => (
+                <SettingsSwitchItem>
+                  <SettingsSwitchContent>
+                    <FormLabel>{t('Automatic Retry')}</FormLabel>
+                    <FormDescription>
+                      {t(
+                        'Retry failed requests on alternate channels before returning an error'
+                      )}
+                    </FormDescription>
+                  </SettingsSwitchContent>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                </SettingsSwitchItem>
+              )}
+            />
+
+            <SettingsControlChildren>
+              <FormField
+                control={form.control}
+                name='RetryTimes'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t('Retry Times')}</FormLabel>
+                    <FormControl>
+                      <Input
+                        type='number'
+                        min='0'
+                        max='10'
+                        step='1'
+                        value={
+                          typeof field.value === 'number' &&
+                          Number.isFinite(field.value)
+                            ? field.value
+                            : ''
+                        }
+                        onChange={(e) =>
+                          field.onChange(e.target.valueAsNumber)
+                        }
+                        name={field.name}
+                        onBlur={field.onBlur}
+                        ref={field.ref}
+                        disabled={!retryEnabled}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      {t(
+                        'Number of retry attempts beyond the first request (0-10)'
+                      )}
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name='AutomaticRetryStatusCodes'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t('Auto-retry status codes')}</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder={t('e.g. 401, 403, 429, 500-599')}
+                        value={field.value}
+                        onChange={(event) =>
+                          field.onChange(event.target.value)
+                        }
+                        disabled={!retryEnabled}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      {t(
+                        'Accepts comma-separated status codes and inclusive ranges.'
+                      )}{' '}
+                      {autoRetryParsed.ok &&
+                        autoRetryParsed.normalized &&
+                        autoRetryParsed.normalized !==
+                          field.value.trim() && (
+                          <span className='text-muted-foreground'>
+                            {t('Normalized:')} {autoRetryParsed.normalized}
+                          </span>
+                        )}
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </SettingsControlChildren>
+          </SettingsControlGroup>
 
           <FormField
             control={form.control}

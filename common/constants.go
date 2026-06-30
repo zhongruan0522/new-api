@@ -95,6 +95,7 @@ var QuotaRemindThreshold = 1000
 var PreConsumedQuota = 500
 
 var RetryTimes = 0
+var AutomaticRetryEnabled = false
 
 // DynamicRatioEnabled 全局动态倍率开关
 var DynamicRatioEnabled = false

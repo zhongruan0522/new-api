@@ -590,6 +590,40 @@ func UpdateOption(c *gin.Context) {
 			})
 			return
 		}
+	case "RetryTimes":
+		// RetryTimes must be a non-negative integer capped at 10.
+		retryValue, parseErr := strconv.Atoi(strings.TrimSpace(option.Value.(string)))
+		if parseErr != nil || retryValue < 0 || retryValue > 10 {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": "重试次数必须是 0 到 10 之间的整数",
+			})
+			return
+		}
+		// When enabling retry the count must be positive; allow 0 only when retry is disabled.
+		if common.AutomaticRetryEnabled && retryValue <= 0 {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": "自动重试已启用，重试次数必须大于 0",
+			})
+			return
+		}
+	case "AutomaticRetryEnabled":
+		if option.Value != "true" && option.Value != "false" {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": "自动重试开关必须是布尔值",
+			})
+			return
+		}
+		// Turning retry on requires a positive RetryTimes.
+		if option.Value == "true" && common.RetryTimes <= 0 {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": "无法启用自动重试：请先将重试次数设置为大于 0 的值",
+			})
+			return
+		}
 	case "SidebarModulesAdmin":
 		// No additional validation needed; frontend manages the config.
 	case "console_setting.api_info":

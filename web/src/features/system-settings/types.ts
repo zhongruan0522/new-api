@@ -349,6 +349,7 @@ export type BillingSettings = {
 
 export type OperationsSettings = {
   RetryTimes: number
+  AutomaticRetryEnabled: boolean
   DefaultCollapseSidebar: boolean
   ChannelDisableThreshold: string
   QuotaRemindThreshold: string
