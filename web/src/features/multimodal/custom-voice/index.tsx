@@ -156,7 +156,7 @@ export function CustomVoice() {
   }
 
   return (
-    <div className='space-y-6'>
+    <div className='min-h-0 flex-1 space-y-6 overflow-auto'>
       <div>
         <h1 className='mb-2 text-2xl font-semibold'>{t('Custom Voice')}</h1>
         <p className='text-muted-foreground'>
