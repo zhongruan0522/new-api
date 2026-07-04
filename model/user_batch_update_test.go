@@ -1,40 +1,68 @@
 package model
 
 import (
+	"context"
 	"fmt"
+	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/glebarez/sqlite"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/zhongruan0522/new-api/common"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
-func setupUserBatchUpdateTestDB(t *testing.T) func() {
+type userUpdateCountingLogger struct {
+	logger.Interface
+	userUpdates *int64
+}
+
+func (l userUpdateCountingLogger) Trace(ctx context.Context, begin time.Time, fc func() (string, int64), err error) {
+	sql, rows := fc()
+	normalizedSQL := strings.ToLower(strings.TrimSpace(sql))
+	if strings.HasPrefix(normalizedSQL, "update") &&
+		(strings.Contains(normalizedSQL, "`users`") || strings.Contains(normalizedSQL, `"users"`)) {
+		atomic.AddInt64(l.userUpdates, 1)
+	}
+	l.Interface.Trace(ctx, begin, func() (string, int64) {
+		return sql, rows
+	}, err)
+}
+
+func setupUserBatchUpdateTestDB(t *testing.T, userUpdateCounter *int64) func() {
 	t.Helper()
 
 	oldDB := DB
-	oldRedisEnabled := common.RedisEnabled
-	oldBatchUpdateEnabled := common.BatchUpdateEnabled
 
-	db, err := gorm.Open(sqlite.Open(fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name())), &gorm.Config{})
-	if err != nil {
-		t.Fatalf("open sqlite test db: %v", err)
+	config := &gorm.Config{Logger: logger.Default.LogMode(logger.Silent)}
+	if userUpdateCounter != nil {
+		config.Logger = userUpdateCountingLogger{
+			Interface:   logger.Default.LogMode(logger.Silent),
+			userUpdates: userUpdateCounter,
+		}
 	}
-	if err := db.AutoMigrate(&User{}); err != nil {
-		t.Fatalf("migrate sqlite test db: %v", err)
-	}
+	db, err := gorm.Open(sqlite.Open(fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name())), config)
+	require.NoError(t, err, "open sqlite test db")
+	require.NoError(t, db.AutoMigrate(&User{}), "migrate sqlite test db")
 
+	resetBatchUpdateStores()
 	DB = db
-	common.RedisEnabled = false
-	common.BatchUpdateEnabled = true
 
 	return func() {
-		// DecreaseUserQuota updates quota cache asynchronously; wait before restoring RedisEnabled.
-		time.Sleep(50 * time.Millisecond)
+		resetBatchUpdateStores()
 		DB = oldDB
-		common.RedisEnabled = oldRedisEnabled
-		common.BatchUpdateEnabled = oldBatchUpdateEnabled
+	}
+}
+
+func resetBatchUpdateStores() {
+	for i := 0; i < BatchUpdateTypeCount; i++ {
+		batchUpdateLocks[i].Lock()
+		batchUpdateStores[i] = make(map[int]int)
+		batchUpdateLocks[i].Unlock()
 	}
 }
 
@@ -51,9 +79,7 @@ func createBatchUpdateTestUser(t *testing.T, username, affCode string, quota, us
 		UsedQuota:    usedQuota,
 		RequestCount: requestCount,
 	}
-	if err := DB.Create(&user).Error; err != nil {
-		t.Fatalf("create user: %v", err)
-	}
+	require.NoError(t, DB.Create(&user).Error, "create user")
 	return user
 }
 
@@ -61,83 +87,82 @@ func loadUser(t *testing.T, id int) User {
 	t.Helper()
 
 	var user User
-	if err := DB.First(&user, id).Error; err != nil {
-		t.Fatalf("load user: %v", err)
-	}
+	require.NoError(t, DB.First(&user, id).Error, "load user")
 	return user
 }
 
-// Simulates one relay billing cycle: deduct remaining quota and record usage + request count.
-func simulateRelayBilling(t *testing.T, userID int, cost int) {
-	t.Helper()
-
-	if err := DecreaseUserQuota(userID, cost); err != nil {
-		t.Fatalf("decrease user quota: %v", err)
-	}
-	UpdateUserUsedQuotaAndRequestCount(userID, cost)
+func queueRelayBilling(userID int, cost int) {
+	addNewRecord(BatchUpdateTypeUserQuota, userID, -cost)
+	addNewRecord(BatchUpdateTypeUsedQuota, userID, cost)
+	addNewRecord(BatchUpdateTypeRequestCount, userID, 1)
 }
 
 func TestBatchUpdateFlushesQuotaUsageAndRequestCountTogether(t *testing.T) {
-	cleanup := setupUserBatchUpdateTestDB(t)
+	cleanup := setupUserBatchUpdateTestDB(t, nil)
 	defer cleanup()
 
 	user := createBatchUpdateTestUser(t, "batch-u1", "batch-aff-1", 10_000, 0, 0)
-	simulateRelayBilling(t, user.Id, 300)
+	queueRelayBilling(user.Id, 300)
 	batchUpdate()
 
 	got := loadUser(t, user.Id)
-	if got.Quota != 9700 {
-		t.Fatalf("quota = %d, want 9700", got.Quota)
-	}
-	if got.UsedQuota != 300 {
-		t.Fatalf("used_quota = %d, want 300", got.UsedQuota)
-	}
-	if got.RequestCount != 1 {
-		t.Fatalf("request_count = %d, want 1", got.RequestCount)
-	}
+	assert.Equal(t, 9700, got.Quota)
+	assert.Equal(t, 300, got.UsedQuota)
+	assert.Equal(t, 1, got.RequestCount)
 }
 
 func TestBatchUpdateAccumulatesMultiplePendingUserUpdates(t *testing.T) {
-	cleanup := setupUserBatchUpdateTestDB(t)
+	cleanup := setupUserBatchUpdateTestDB(t, nil)
 	defer cleanup()
 
 	user := createBatchUpdateTestUser(t, "batch-u2", "batch-aff-2", 10_000, 100, 5)
-	simulateRelayBilling(t, user.Id, 200)
-	simulateRelayBilling(t, user.Id, 150)
+	queueRelayBilling(user.Id, 200)
+	queueRelayBilling(user.Id, 150)
 	batchUpdate()
 
 	got := loadUser(t, user.Id)
-	if got.Quota != 9650 {
-		t.Fatalf("quota = %d, want 9650", got.Quota)
-	}
-	if got.UsedQuota != 450 {
-		t.Fatalf("used_quota = %d, want 450", got.UsedQuota)
-	}
-	if got.RequestCount != 7 {
-		t.Fatalf("request_count = %d, want 7", got.RequestCount)
-	}
+	assert.Equal(t, 9650, got.Quota)
+	assert.Equal(t, 450, got.UsedQuota)
+	assert.Equal(t, 7, got.RequestCount)
 }
 
 func TestBatchUpdateDoesNotMixUsers(t *testing.T) {
-	cleanup := setupUserBatchUpdateTestDB(t)
+	cleanup := setupUserBatchUpdateTestDB(t, nil)
 	defer cleanup()
 
 	alice := createBatchUpdateTestUser(t, "batch-alice", "batch-aff-a", 5_000, 0, 0)
 	bob := createBatchUpdateTestUser(t, "batch-bob", "batch-aff-b", 8_000, 50, 2)
 
-	simulateRelayBilling(t, alice.Id, 100)
-	simulateRelayBilling(t, bob.Id, 200)
+	queueRelayBilling(alice.Id, 100)
+	queueRelayBilling(bob.Id, 200)
 	batchUpdate()
 
 	gotAlice := loadUser(t, alice.Id)
 	gotBob := loadUser(t, bob.Id)
 
-	if gotAlice.Quota != 4900 || gotAlice.UsedQuota != 100 || gotAlice.RequestCount != 1 {
-		t.Fatalf("alice: quota=%d used=%d requests=%d, want 4900/100/1",
-			gotAlice.Quota, gotAlice.UsedQuota, gotAlice.RequestCount)
-	}
-	if gotBob.Quota != 7800 || gotBob.UsedQuota != 250 || gotBob.RequestCount != 3 {
-		t.Fatalf("bob: quota=%d used=%d requests=%d, want 7800/250/3",
-			gotBob.Quota, gotBob.UsedQuota, gotBob.RequestCount)
-	}
+	assert.Equal(t, 4900, gotAlice.Quota)
+	assert.Equal(t, 100, gotAlice.UsedQuota)
+	assert.Equal(t, 1, gotAlice.RequestCount)
+	assert.Equal(t, 7800, gotBob.Quota)
+	assert.Equal(t, 250, gotBob.UsedQuota)
+	assert.Equal(t, 3, gotBob.RequestCount)
+}
+
+func TestBatchUpdateWritesUserQuotaUsageAndRequestCountOncePerUser(t *testing.T) {
+	var userUpdateCount int64
+	cleanup := setupUserBatchUpdateTestDB(t, &userUpdateCount)
+	defer cleanup()
+
+	user := createBatchUpdateTestUser(t, "batch-count", "batch-aff-count", 10_000, 0, 0)
+	atomic.StoreInt64(&userUpdateCount, 0)
+
+	queueRelayBilling(user.Id, 200)
+	queueRelayBilling(user.Id, 150)
+	batchUpdate()
+
+	got := loadUser(t, user.Id)
+	assert.Equal(t, 9650, got.Quota)
+	assert.Equal(t, 350, got.UsedQuota)
+	assert.Equal(t, 2, got.RequestCount)
+	assert.Equal(t, int64(1), atomic.LoadInt64(&userUpdateCount))
 }
