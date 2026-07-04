@@ -591,12 +591,12 @@ func UpdateOption(c *gin.Context) {
 			return
 		}
 	case "RetryTimes":
-		// RetryTimes must be a non-negative integer capped at 10.
+		// RetryTimes must be a non-negative integer strictly less than 100.
 		retryValue, parseErr := strconv.Atoi(strings.TrimSpace(option.Value.(string)))
-		if parseErr != nil || retryValue < 0 || retryValue > 10 {
+		if parseErr != nil || retryValue < 0 || retryValue >= 100 {
 			c.JSON(http.StatusOK, gin.H{
 				"success": false,
-				"message": "重试次数必须是 0 到 10 之间的整数",
+				"message": "重试次数必须是 0 到 99 之间的整数",
 			})
 			return
 		}

@@ -48,7 +48,7 @@ import { useUpdateOption } from '../hooks/use-update-option'
 
 const behaviorSchema = z
   .object({
-    RetryTimes: z.coerce.number().int().min(0).max(10),
+    RetryTimes: z.coerce.number().int().min(0).max(99),
     AutomaticRetryEnabled: z.boolean(),
     AutomaticRetryStatusCodes: z.string(),
     DefaultCollapseSidebar: z.boolean(),
@@ -206,7 +206,7 @@ export function SystemBehaviorSection({
                       <Input
                         type='number'
                         min='0'
-                        max='10'
+                        max='99'
                         step='1'
                         value={
                           typeof field.value === 'number' &&
@@ -225,7 +225,7 @@ export function SystemBehaviorSection({
                     </FormControl>
                     <FormDescription>
                       {t(
-                        'Number of retry attempts beyond the first request (0-10)'
+                        'Number of retry attempts beyond the first request (0-99)'
                       )}
                     </FormDescription>
                     <FormMessage />
