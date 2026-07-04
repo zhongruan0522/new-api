@@ -24,8 +24,9 @@ type AwsClaudeRequest struct {
 	TopK             int                 `json:"top_k,omitempty"`
 	StopSequences    []string            `json:"stop_sequences,omitempty"`
 	Tools            any                 `json:"tools,omitempty"`
-	ToolChoice       any                 `json:"tool_choice,omitempty"`
-	Thinking         *dto.Thinking       `json:"thinking,omitempty"`
+	ToolChoice        any                 `json:"tool_choice,omitempty"`
+	ContextManagement json.RawMessage     `json:"context_management,omitempty"`
+	Thinking          *dto.Thinking       `json:"thinking,omitempty"`
 	OutputConfig     json.RawMessage     `json:"output_config,omitempty"`
 }
 
