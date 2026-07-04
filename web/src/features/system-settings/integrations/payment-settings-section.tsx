@@ -99,6 +99,7 @@ const paymentSchema = z.object({
   StripeUnitPrice: z.number().min(0),
   StripeMinTopUp: z.number().min(0),
   StripePromotionCodesEnabled: z.boolean(),
+  TopUpLink: z.string(),
 })
 
 type PaymentFormValues = z.infer<typeof paymentSchema>
@@ -170,6 +171,7 @@ export function PaymentSettingsSection({
       StripeUnitPrice: values.StripeUnitPrice,
       StripeMinTopUp: values.StripeMinTopUp,
       StripePromotionCodesEnabled: values.StripePromotionCodesEnabled,
+      TopUpLink: values.TopUpLink,
     }
 
     const initial = {
@@ -188,6 +190,7 @@ export function PaymentSettingsSection({
       StripeMinTopUp: initialRef.current.StripeMinTopUp,
       StripePromotionCodesEnabled:
         initialRef.current.StripePromotionCodesEnabled,
+      TopUpLink: initialRef.current.TopUpLink,
     }
 
     const updates: Array<{ key: string; value: string | number | boolean }> = []
@@ -263,6 +266,9 @@ export function PaymentSettingsSection({
         key: 'StripePromotionCodesEnabled',
         value: sanitized.StripePromotionCodesEnabled,
       })
+    }
+    if (sanitized.TopUpLink !== initial.TopUpLink) {
+      updates.push({ key: 'TopUpLink', value: sanitized.TopUpLink })
     }
 
     if (updates.length === 0) {
@@ -754,6 +760,31 @@ export function PaymentSettingsSection({
                       />
                     </FormControl>
                   </SettingsSwitchItem>
+                )}
+              />
+            </div>
+
+            <div className='grid gap-6 md:grid-cols-3'>
+              <FormField
+                control={form.control}
+                name='TopUpLink'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t('Top-Up Link')}</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder={t('https://example.com/topup')}
+                        {...field}
+                        onChange={(event) =>
+                          field.onChange(event.target.value)
+                        }
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      {t('External link for users to purchase quota')}
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
                 )}
               />
             </div>
