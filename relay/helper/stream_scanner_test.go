@@ -1,6 +1,7 @@
 package helper
 
 import (
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -17,17 +18,23 @@ import (
 	relaycommon "github.com/zhongruan0522/new-api/relay/common"
 )
 
-func TestStreamScannerHandlerTrimsAndSkipsEmptyDataFrames(t *testing.T) {
+func streamScannerTestContext(t *testing.T) (*gin.Context, func()) {
+	t.Helper()
 	gin.SetMode(gin.TestMode)
 	oldStreamingTimeout := constant.StreamingTimeout
 	constant.StreamingTimeout = 30
-	t.Cleanup(func() {
+	cleanup := func() {
 		constant.StreamingTimeout = oldStreamingTimeout
-	})
-
+	}
 	recorder := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(recorder)
 	c.Request = httptest.NewRequest(http.MethodPost, "/v1/chat/completions", nil)
+	return c, cleanup
+}
+
+func TestStreamScannerHandlerTrimsAndSkipsEmptyDataFrames(t *testing.T) {
+	c, cleanup := streamScannerTestContext(t)
+	t.Cleanup(cleanup)
 
 	resp := &http.Response{
 		StatusCode: http.StatusOK,
@@ -49,6 +56,80 @@ func TestStreamScannerHandlerTrimsAndSkipsEmptyDataFrames(t *testing.T) {
 	want := []string{`{"ok":true}`}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("data frames = %#v, want %#v", got, want)
+	}
+}
+
+func TestStreamScannerHandlerSkipsNonDataLines(t *testing.T) {
+	c, cleanup := streamScannerTestContext(t)
+	t.Cleanup(cleanup)
+
+	var b strings.Builder
+	b.WriteString(": comment line\n")
+	b.WriteString("event: message\n")
+	b.WriteString("id: 12345\n")
+	for i := 0; i < 100; i++ {
+		fmt.Fprintf(&b, "data: payload_%d\n", i)
+		b.WriteString(": interleaved comment\n")
+	}
+	b.WriteString("data: [DONE]\n")
+
+	resp := &http.Response{
+		StatusCode: http.StatusOK,
+		Body:       io.NopCloser(strings.NewReader(b.String())),
+	}
+
+	var count int
+	StreamScannerHandler(c, resp, &relaycommon.RelayInfo{}, func(data string) bool {
+		count++
+		return true
+	})
+	if count != 100 {
+		t.Fatalf("handled %d data frames, want 100", count)
+	}
+}
+
+func TestStreamScannerHandlerDataWithExtraSpaces(t *testing.T) {
+	c, cleanup := streamScannerTestContext(t)
+	t.Cleanup(cleanup)
+
+	resp := &http.Response{
+		StatusCode: http.StatusOK,
+		Body:       io.NopCloser(strings.NewReader("data:   {\"trimmed\":true}  \r\ndata: [DONE]\n")),
+	}
+
+	var got string
+	StreamScannerHandler(c, resp, &relaycommon.RelayInfo{}, func(data string) bool {
+		got = data
+		return true
+	})
+	if got != `{"trimmed":true}` {
+		t.Fatalf("payload = %q, want %q", got, `{"trimmed":true}`)
+	}
+}
+
+func TestStreamScannerHandlerDoneStopsScanner(t *testing.T) {
+	c, cleanup := streamScannerTestContext(t)
+	t.Cleanup(cleanup)
+
+	var b strings.Builder
+	for i := 0; i < 50; i++ {
+		fmt.Fprintf(&b, "data: {\"n\":%d}\n", i)
+	}
+	b.WriteString("data: [DONE]\n")
+	b.WriteString("data: should_not_appear\n")
+
+	resp := &http.Response{
+		StatusCode: http.StatusOK,
+		Body:       io.NopCloser(strings.NewReader(b.String())),
+	}
+
+	var count int
+	StreamScannerHandler(c, resp, &relaycommon.RelayInfo{}, func(data string) bool {
+		count++
+		return true
+	})
+	if count != 50 {
+		t.Fatalf("handled %d frames, want 50 (nothing after [DONE])", count)
 	}
 }
 
