@@ -2,6 +2,7 @@ package helper
 
 import (
 	"bufio"
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -114,12 +115,13 @@ func StreamScannerHandler(c *gin.Context, resp *http.Response, info *relaycommon
 	dataChan := make(chan string, 16)
 	done := make(chan struct{})
 	go func() {
-		// The scanner borrows bufPtr's backing array. Return it to the pool
-		// only after the scan loop has definitively exited so that no other
-		// goroutine can acquire and mutate the same buffer via the pool while
-		// scanner.Scan() may still be reading into it.
-		defer scannerBufferPool.Put(bufPtr)
-		defer close(done)
+		defer func() {
+			if r := recover(); r != nil {
+				logger.LogError(c, fmt.Sprintf("stream scanner panic: %v", r))
+			}
+			scannerBufferPool.Put(bufPtr)
+			close(done)
+		}()
 		for scanner.Scan() {
 			data := scanner.Text()
 			if common.DebugEnabled {
@@ -167,7 +169,7 @@ func StreamScannerHandler(c *gin.Context, resp *http.Response, info *relaycommon
 		select {
 		case data := <-dataChan:
 			resetTimer(timeoutTimer, streamingTimeout)
-			if !dataHandler(data) {
+			if !safeStreamDataHandler(c, dataHandler, data) {
 				return
 			}
 		case <-done:
@@ -175,7 +177,7 @@ func StreamScannerHandler(c *gin.Context, resp *http.Response, info *relaycommon
 				select {
 				case data := <-dataChan:
 					resetTimer(timeoutTimer, streamingTimeout)
-					if !dataHandler(data) {
+					if !safeStreamDataHandler(c, dataHandler, data) {
 						return
 					}
 				default:
@@ -199,6 +201,18 @@ func StreamScannerHandler(c *gin.Context, resp *http.Response, info *relaycommon
 			return
 		}
 	}
+}
+
+func safeStreamDataHandler(c *gin.Context, dataHandler func(string) bool, data string) (ok bool) {
+	ok = true
+	defer func() {
+		if r := recover(); r != nil {
+			logger.LogError(c, fmt.Sprintf("stream data handler panic: %v", r))
+			ok = false
+		}
+	}()
+	ok = dataHandler(data)
+	return ok
 }
 
 func resetTimer(timer *time.Timer, timeout time.Duration) {
