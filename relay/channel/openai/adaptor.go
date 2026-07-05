@@ -196,8 +196,9 @@ func (a *Adaptor) SetupRequestHeader(c *gin.Context, header *http.Header, info *
 	// 检查 Header Override 是否已设置 Authorization，如果已设置则跳过默认设置
 	// 这样可以避免在 Header Override 应用时被覆盖（虽然 Header Override 会在之后应用，但这里作为额外保护）
 	hasAuthOverride := false
-	if len(info.HeadersOverride) > 0 {
-		for k := range info.HeadersOverride {
+	effectiveHeaderOverride := relaycommon.GetEffectiveHeaderOverride(info)
+	if len(effectiveHeaderOverride) > 0 {
+		for k := range effectiveHeaderOverride {
 			if strings.EqualFold(k, "Authorization") {
 				hasAuthOverride = true
 				break

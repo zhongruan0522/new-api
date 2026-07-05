@@ -342,6 +342,8 @@ const AWS_BEDROCK_ANTHROPIC_COMPAT_TEMPLATE = {
       mode: 'set_header',
       path: 'anthropic-beta',
       value: {
+        $append: ['context-1m-2025-08-07', 'computer-use-2025-01-24'],
+        $keep_only_declared: true,
         'advanced-tool-use-2025-11-20': 'tool-search-tool-2025-10-19',
         bash_20241022: null,
         bash_20250124: null,
@@ -418,6 +420,25 @@ const TEMPLATE_PRESET_CONFIG: Record<string, TemplatePresetConfig> = {
     label: 'Codex CLI Header Passthrough',
     kind: 'operations',
     payload: CODEX_CLI_HEADER_PASSTHROUGH_TEMPLATE,
+  },
+  anthropic_beta_append_keep_only: {
+    label: 'Claude Header Append + Keep Only',
+    kind: 'operations',
+    payload: {
+      operations: [
+        {
+          description:
+            'Append anthropic-beta tokens, dedupe existing values, and drop undeclared tokens.',
+          mode: 'set_header',
+          path: 'anthropic-beta',
+          value: {
+            $append: ['context-1m-2025-08-07', 'computer-use-2025-01-24'],
+            $keep_only_declared: true,
+            'computer-use-2025-01-24': 'computer-use-2025-01-24',
+          },
+        },
+      ],
+    },
   },
   aws_bedrock_anthropic_beta_override: {
     label: 'AWS Bedrock Claude Compat',

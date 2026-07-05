@@ -130,9 +130,12 @@ type RelayInfo struct {
 	// Subscription billing is removed; "" or "wallet" means wallet.
 	BillingSource string
 	// RequestId is used for idempotent pre-consume/refund
-	RequestId         string
-	IsClaudeBetaQuery bool // /v1/messages?beta=true
-	IsChannelTest     bool // channel test request
+	RequestId                 string
+	IsClaudeBetaQuery         bool // /v1/messages?beta=true
+	IsChannelTest             bool // channel test request
+	RuntimeHeadersOverride    map[string]interface{}
+	UseRuntimeHeadersOverride bool
+	ParamOverrideAudit        []string
 
 	// UpstreamRequestBodySize is set when the marshaled upstream request body
 	// is wrapped in BodyStorage so DoApiRequest can preserve Content-Length.
@@ -302,15 +305,15 @@ func (info *RelayInfo) ToString() string {
 
 // 定义支持流式选项的通道类型
 var streamSupportedChannels = map[int]bool{
-	constant.ChannelTypeOpenAI:    true,
-	constant.ChannelTypeAnthropic: true,
-	constant.ChannelTypeAws:       true,
-	constant.ChannelTypeGemini:    true,
-	constant.ChannelTypeAzure:     true,
-	constant.ChannelTypeOllama:    true,
-	constant.ChannelTypeDeepSeek:  true,
-	constant.ChannelTypeZhipu_v4:  true,
-	constant.ChannelTypeByteDance: true,
+	constant.ChannelTypeOpenAI:      true,
+	constant.ChannelTypeAnthropic:   true,
+	constant.ChannelTypeAws:         true,
+	constant.ChannelTypeGemini:      true,
+	constant.ChannelTypeAzure:       true,
+	constant.ChannelTypeOllama:      true,
+	constant.ChannelTypeDeepSeek:    true,
+	constant.ChannelTypeZhipu_v4:    true,
+	constant.ChannelTypeByteDance:   true,
 	constant.ChannelTypeMoonshot:    true,
 	constant.ChannelTypeMiniMax:     true,
 	constant.ChannelTypeSiliconFlow: true,

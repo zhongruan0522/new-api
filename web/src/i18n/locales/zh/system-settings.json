@@ -770,7 +770,6 @@
   "When performance monitoring is enabled and system resource usage exceeds the set threshold, new Relay requests will be rejected.": "启用性能监控后，当系统资源使用率超过设定阈值时，将拒绝新的 Relay 请求。",
   "Whether to record before/after data diff": "是否记录操作前后的数据差异",
   "Whether to record the operator IP address": "是否记录操作人的 IP 地址",
-  "Whitelist": "白名单",
   "Whitelist (Only allow listed domains)": "白名单（仅允许列出的域）",
   "Whitelist (Only allow listed IPs)": "白名单（仅允许列出的 IP）",
   "whsec_xxx": "whsec_xxx",

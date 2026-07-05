@@ -770,7 +770,6 @@
   "When performance monitoring is enabled and system resource usage exceeds the set threshold, new Relay requests will be rejected.": "When performance monitoring is enabled and system resource usage exceeds the set threshold, new Relay requests will be rejected.",
   "Whether to record before/after data diff": "Whether to record before/after data diff",
   "Whether to record the operator IP address": "Whether to record the operator IP address",
-  "Whitelist": "Whitelist",
   "Whitelist (Only allow listed domains)": "Whitelist (Only allow listed domains)",
   "Whitelist (Only allow listed IPs)": "Whitelist (Only allow listed IPs)",
   "whsec_xxx": "whsec_xxx",
