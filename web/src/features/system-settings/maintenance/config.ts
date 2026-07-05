@@ -87,6 +87,7 @@ export const SIDEBAR_MODULES_DEFAULT: SidebarModulesAdminConfig = {
     user: true,
     setting: true,
     audit_log: true,
+    minimax: true,
   },
 }
 

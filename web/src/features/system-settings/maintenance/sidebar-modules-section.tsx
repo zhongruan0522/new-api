@@ -166,6 +166,10 @@ export function SidebarModulesSection({
         title: t('Audit Logs'),
         description: t('Review administrative operation records.'),
       },
+      minimax: {
+        title: t('Minimax'),
+        description: t('Configure Minimax channel settings.'),
+      },
     },
   }
   const formDefaults = useMemo(() => config, [config])
