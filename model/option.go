@@ -149,6 +149,10 @@ func loadOptionsFromDatabase() {
 		}
 	}
 
+	if err := SyncModelPricingTableAndCache(); err != nil {
+		common.SysLog("failed to sync model pricing table and cache: " + err.Error())
+	}
+
 	// One-time migration: if the removed toggle "quota_setting.enable_free_model_pre_consume"
 	// exists in DB and is "false", override FreeModelPreConsumedQuota to 0 so that
 	// users who had disabled free-model pre-consumption don't suddenly get charged
@@ -234,6 +238,9 @@ func UpdateOption(key string, value string) error {
 	// otherwise it will execute Update (with all fields).
 	if err := DB.Save(&option).Error; err != nil {
 		return err
+	}
+	if IsModelPricingOptionKey(key) {
+		return UpdateModelPricingByOption(key, value)
 	}
 	// Update OptionMap
 	return updateOptionMap(key, value)

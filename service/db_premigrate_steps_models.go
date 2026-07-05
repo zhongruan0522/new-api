@@ -21,6 +21,7 @@ var dbPreMigrateMainSteps = []dbPreMigrateStep{
 	gormTableCopyStep[model.TwoFA]{name: "two_fas", batchSize: dbPreMigrateBatchDefault},
 	gormTableCopyStep[model.TwoFABackupCode]{name: "two_fa_backup_codes", batchSize: dbPreMigrateBatchDefault},
 	gormTableCopyStep[model.Checkin]{name: "checkins", batchSize: dbPreMigrateBatchDefault},
+	gormTableCopyStep[model.ModelPricing]{name: "model_pricings", batchSize: dbPreMigrateBatchDefault},
 	// Tables kept in sync with model.migrateDB()'s AutoMigrate list. They were
 	// previously omitted here, which would drop their data on a pre-/same-type DB
 	// migration. MiniMaxVoice uses a custom TableName ("minimax_voices").
