@@ -51,6 +51,32 @@ func CustomVoicePreviewHandler(c *gin.Context) {
 	})
 }
 
+// CustomVoiceConfirmQuoteHandler 用户侧：确认定制前查询本次应扣额度，不执行扣费。
+func CustomVoiceConfirmQuoteHandler(c *gin.Context) {
+	userId := c.GetInt("id")
+	if userId <= 0 {
+		c.JSON(http.StatusUnauthorized, gin.H{"success": false, "message": "未登录"})
+		return
+	}
+
+	var req customVoiceConfirmRequest
+	if err := common.DecodeJson(c.Request.Body, &req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "无效的参数"})
+		return
+	}
+
+	result, err := service.CustomVoiceConfirmQuote(c, userId, req.VoiceId)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "",
+		"data":    result,
+	})
+}
+
 // CustomVoiceConfirmHandler 用户侧：确认定制。扣费并把记录从“试听中”转为“已创建”。
 func CustomVoiceConfirmHandler(c *gin.Context) {
 	userId := c.GetInt("id")

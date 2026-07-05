@@ -65,6 +65,19 @@ type CustomVoiceConfirmResult struct {
 	Status  string `json:"status"`
 }
 
+// CustomVoiceConfirmQuoteResult 确认定制报价返回结果。
+type CustomVoiceConfirmQuoteResult struct {
+	VoiceId   string `json:"voice_id"`
+	QuotaCost int    `json:"quota_cost"`
+}
+
+type customVoiceConfirmContext struct {
+	voiceId      string
+	group        string
+	billingModel string
+	voice        *model.MiniMaxVoice
+}
+
 // customVoiceFileID preserves the upstream JSON type while exposing a safe
 // string form for local records and frontend responses. MiniMax may return a
 // numeric file_id from /files/upload, and voice_clone expects that ID to be
@@ -259,18 +272,8 @@ func normalizeUpstreamError(status int, rawBody []byte) error {
 	return errors.New(msg)
 }
 
-// chargeModelOnce 按模型 ID 扣费一次（按次计费，ModelPrice 优先，乘以分组倍率）。
-// 仅用于确认定制阶段：按系统设置的“音色定制”计费模型按次扣费。
-//
-// 计费原则（防越权/防漏扣）：
-//   - ModelPrice 优先：按价格 * 分组倍率扣费。
-//   - 否则尝试 ModelRatio：按每千 token 倍率 * 分组倍率折算一次基准 quota。
-//   - 解析失败或价格为 0 则 fail closed，绝不“无扣费成功”。
-//   - 仅扣减用户钱包额度（custom voice 流程无 token 上下文），并记录消费日志。
-//   - userId/tokenName/channelId 仅用于日志展示。
-//
-// 返回扣减的 quota。
-func chargeModelOnce(c *gin.Context, userId int, channelId int, modelName, group string) (int, error) {
+// calculateModelOnceQuota 计算确认定制阶段的按次扣费额度，但不扣费。
+func calculateModelOnceQuota(modelName, group string) (int, error) {
 	modelName = strings.TrimSpace(modelName)
 	if modelName == "" {
 		return 0, errors.New("计费模型未配置，请联系管理员")
@@ -294,6 +297,25 @@ func chargeModelOnce(c *gin.Context, userId int, channelId int, modelName, group
 	if quota <= 0 {
 		// 价格为 0 视为未正确配置，避免免费滥用。
 		return 0, errors.New("所选计费模型价格无效，请联系管理员")
+	}
+	return quota, nil
+}
+
+// chargeModelOnce 按模型 ID 扣费一次（按次计费，ModelPrice 优先，乘以分组倍率）。
+// 仅用于确认定制阶段：按系统设置的“音色定制”计费模型按次扣费。
+//
+// 计费原则（防越权/防漏扣）：
+//   - ModelPrice 优先：按价格 * 分组倍率扣费。
+//   - 否则尝试 ModelRatio：按每千 token 倍率 * 分组倍率折算一次基准 quota。
+//   - 解析失败或价格为 0 则 fail closed，绝不“无扣费成功”。
+//   - 仅扣减用户钱包额度（custom voice 流程无 token 上下文），并记录消费日志。
+//   - userId/tokenName/channelId 仅用于日志展示。
+//
+// 返回扣减的 quota。
+func chargeModelOnce(c *gin.Context, userId int, channelId int, modelName, group string) (int, error) {
+	quota, err := calculateModelOnceQuota(modelName, group)
+	if err != nil {
+		return 0, err
 	}
 
 	// 预检用户余额，避免无效的上游调用与负数额度。
@@ -660,15 +682,7 @@ func buildVoiceClonePayload(fileId interface{}, req CustomVoicePreviewRequest) m
 	return payload
 }
 
-// CustomVoiceConfirm 确认定制：按配置的扣费模型 ID 扣费，成功后把记录从试听中转为已创建。
-//
-// 安全要点：
-//   - 必须命中本用户的“试听中”记录，防止越权确认他人音色。
-//   - 一个“试听中”音色 ID 只能确认成功一次：通过条件更新（type=preview -> created）实现幂等。
-//   - 扣费失败即中断，记录不会变为已创建。
-//   - 扣费与状态流转使用一次性条件更新，避免旧实现里 DB.Save(voice) 把内存中残留的
-//     preview 状态回写到数据库。
-func CustomVoiceConfirm(c *gin.Context, userId int, voiceId string) (*CustomVoiceConfirmResult, error) {
+func prepareCustomVoiceConfirm(userId int, voiceId string) (*customVoiceConfirmContext, error) {
 	voiceId = strings.TrimSpace(voiceId)
 	if voiceId == "" {
 		return nil, errors.New("音色ID不能为空")
@@ -686,7 +700,7 @@ func CustomVoiceConfirm(c *gin.Context, userId int, voiceId string) (*CustomVoic
 		return nil, err
 	}
 
-	// 必须命中本用户的试听中记录，防止越权。
+	// 必须命中本用户的试听中记录，防止越权报价或确认他人音色。
 	voice, err := model.GetMiniMaxVoiceByVoiceId(voiceId)
 	if err != nil || voice == nil {
 		return nil, errors.New("音色ID不合规")
@@ -698,14 +712,54 @@ func CustomVoiceConfirm(c *gin.Context, userId int, voiceId string) (*CustomVoic
 		return nil, errors.New("无权操作该音色")
 	}
 
+	return &customVoiceConfirmContext{
+		voiceId:      voiceId,
+		group:        group,
+		billingModel: billingModel,
+		voice:        voice,
+	}, nil
+}
+
+// CustomVoiceConfirmQuote 查询确认定制阶段应扣额度，只报价不扣费、不激活音色。
+func CustomVoiceConfirmQuote(c *gin.Context, userId int, voiceId string) (*CustomVoiceConfirmQuoteResult, error) {
+	confirmContext, err := prepareCustomVoiceConfirm(userId, voiceId)
+	if err != nil {
+		return nil, err
+	}
+
+	quotaCost, err := calculateModelOnceQuota(confirmContext.billingModel, confirmContext.group)
+	if err != nil {
+		return nil, err
+	}
+
+	return &CustomVoiceConfirmQuoteResult{
+		VoiceId:   confirmContext.voiceId,
+		QuotaCost: quotaCost,
+	}, nil
+}
+
+// CustomVoiceConfirm 确认定制：按配置的扣费模型 ID 扣费，成功后把记录从试听中转为已创建。
+//
+// 安全要点：
+//   - 必须命中本用户的“试听中”记录，防止越权确认他人音色。
+//   - 一个“试听中”音色 ID 只能确认成功一次：通过条件更新（type=preview -> created）实现幂等。
+//   - 扣费失败即中断，记录不会变为已创建。
+//   - 扣费与状态流转使用一次性条件更新，避免旧实现里 DB.Save(voice) 把内存中残留的
+//     preview 状态回写到数据库。
+func CustomVoiceConfirm(c *gin.Context, userId int, voiceId string) (*CustomVoiceConfirmResult, error) {
+	confirmContext, err := prepareCustomVoiceConfirm(userId, voiceId)
+	if err != nil {
+		return nil, err
+	}
+
 	// 确认定制阶段按配置的扣费模型 ID 扣费。失败即中断。
-	quota, err := chargeModelOnce(c, userId, 0, billingModel, group)
+	quota, err := chargeModelOnce(c, userId, 0, confirmContext.billingModel, confirmContext.group)
 	if err != nil {
 		return nil, err
 	}
 
 	// 原子地把 preview -> created 并写入扣费额度，杜绝状态回滚风险。
-	ok, err := model.ConfirmMiniMaxVoice(voice.Id, userId, quota)
+	ok, err := model.ConfirmMiniMaxVoice(confirmContext.voice.Id, userId, quota)
 	if err != nil {
 		// 状态更新失败：尽力退还额度，避免无音色却扣费。
 		refundQuota(userId, quota)
@@ -718,7 +772,7 @@ func CustomVoiceConfirm(c *gin.Context, userId int, voiceId string) (*CustomVoic
 	}
 
 	return &CustomVoiceConfirmResult{
-		VoiceId: voiceId,
+		VoiceId: confirmContext.voiceId,
 		Status:  model.MiniMaxVoiceTypeCreated,
 	}, nil
 }

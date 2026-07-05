@@ -7,8 +7,19 @@ published by the Free Software Foundation, version 3 of the License.
 */
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { Loader2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -29,12 +40,15 @@ import {
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
+import { formatQuotaWithCurrency } from '@/lib/currency'
 import {
   confirmCustomVoice,
   extractApiErrorMessage,
+  getCustomVoiceConfirmQuote,
   getCustomVoiceTags,
   getTtsModels,
   previewCustomVoice,
+  type CustomVoiceConfirmQuote,
   type CustomVoicePreviewResult,
 } from './api'
 
@@ -57,6 +71,10 @@ export function CustomVoice() {
 
   const [previewing, setPreviewing] = useState(false)
   const [confirming, setConfirming] = useState(false)
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false)
+  const [confirmQuoteLoading, setConfirmQuoteLoading] = useState(false)
+  const [confirmQuote, setConfirmQuote] =
+    useState<CustomVoiceConfirmQuote | null>(null)
   const [preview, setPreview] = useState<CustomVoicePreviewResult | null>(null)
 
   // 从后端拉取可用模型并筛选 tts- 前缀；拉取失败时回退到内置列表，保证页面可用。
@@ -113,6 +131,8 @@ export function CustomVoice() {
     }
     setPreviewing(true)
     setPreview(null)
+    setConfirmDialogOpen(false)
+    setConfirmQuote(null)
     try {
       const res = await previewCustomVoice({
         file,
@@ -142,6 +162,8 @@ export function CustomVoice() {
       const res = await confirmCustomVoice(preview.voice_id)
       if (res.success) {
         toast.success(t('Voice customization confirmed'))
+        setConfirmDialogOpen(false)
+        setConfirmQuote(null)
         setPreview(null)
         setVoiceId('')
         setFile(null)
@@ -154,6 +176,41 @@ export function CustomVoice() {
       setConfirming(false)
     }
   }
+
+  const handleOpenConfirmDialog = async () => {
+    if (!preview) return
+
+    setConfirmQuoteLoading(true)
+    setConfirmQuote(null)
+    try {
+      const res = await getCustomVoiceConfirmQuote(preview.voice_id)
+      if (res.success && res.data) {
+        setConfirmQuote(res.data)
+        setConfirmDialogOpen(true)
+      } else {
+        toast.error(res.message || t('Failed to fetch payment price'))
+      }
+    } catch (e) {
+      toast.error(
+        extractApiErrorMessage(e) || t('Failed to fetch payment price')
+      )
+    } finally {
+      setConfirmQuoteLoading(false)
+    }
+  }
+
+  const handleConfirmDialogOpenChange = (open: boolean) => {
+    if (confirming) return
+    setConfirmDialogOpen(open)
+    if (!open) {
+      setConfirmQuote(null)
+    }
+  }
+
+  const confirmVoiceId = confirmQuote?.voice_id ?? preview?.voice_id ?? ''
+  const formattedConfirmPrice = confirmQuote
+    ? formatQuotaWithCurrency(confirmQuote.quota_cost)
+    : '-'
 
   return (
     <div className='min-h-0 flex-1 space-y-6 overflow-auto'>
@@ -314,12 +371,62 @@ export function CustomVoice() {
                 {t('No preview audio returned.')}
               </p>
             )}
-            <Button onClick={handleConfirm} disabled={confirming}>
-              {confirming ? t('Confirming...') : t('Confirm Customization')}
+            <Button
+              onClick={handleOpenConfirmDialog}
+              disabled={confirming || confirmQuoteLoading}
+            >
+              {confirmQuoteLoading && (
+                <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+              )}
+              {confirmQuoteLoading
+                ? t('Loading payment price...')
+                : t('Confirm Customization')}
             </Button>
           </CardContent>
         </Card>
       )}
+
+      <AlertDialog
+        open={confirmDialogOpen}
+        onOpenChange={handleConfirmDialogOpenChange}
+      >
+        <AlertDialogContent className='max-sm:w-[calc(100vw-1.5rem)] sm:max-w-md'>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('Confirm Customization')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t(
+                'Please confirm the voice customization details. After confirmation, the fee will be deducted and the voice will be activated.'
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          <div className='space-y-3 rounded-lg border p-3 text-sm'>
+            <div className='flex items-center justify-between gap-4'>
+              <span className='text-muted-foreground'>{t('Voice ID')}</span>
+              <span className='font-medium break-all'>{confirmVoiceId}</span>
+            </div>
+            <div className='flex items-center justify-between gap-4'>
+              <span className='text-muted-foreground'>{t('Payment Price')}</span>
+              <span className='font-semibold'>{formattedConfirmPrice}</span>
+            </div>
+          </div>
+
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={confirming}>
+              {t('Cancel')}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirm}
+              disabled={confirming || !confirmQuote}
+            >
+              {confirming && (
+                <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+              )}
+              {confirming ? t('Confirming...') : t('Confirm')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

@@ -344,6 +344,7 @@ func SetApiRouter(router *gin.Engine) {
 		{
 			customVoiceRoute.GET("/tags", controller.CustomVoiceTagsHandler)
 			customVoiceRoute.POST("/preview", controller.CustomVoicePreviewHandler)
+			customVoiceRoute.POST("/confirm_quote", controller.CustomVoiceConfirmQuoteHandler)
 			customVoiceRoute.POST("/confirm", controller.CustomVoiceConfirmHandler)
 		}
 
