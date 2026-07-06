@@ -568,14 +568,6 @@ func GetCompletionRatioCopy() map[string]float64 {
 	return completionRatioMap.ReadAll()
 }
 
-func GetAudioRatioCopy() map[string]float64 {
-	return audioRatioMap.ReadAll()
-}
-
-func GetAudioCompletionRatioCopy() map[string]float64 {
-	return audioCompletionRatioMap.ReadAll()
-}
-
 // 转换模型名，减少渠道必须配置各种带参数模型
 func FormatMatchingModelName(name string) string {
 

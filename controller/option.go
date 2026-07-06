@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"encoding/json"
 	"net/http"
 	"sort"
 	"strconv"
@@ -83,6 +84,22 @@ type OptionJsonMapUpsertRequest struct {
 	Value     string `json:"value"`
 }
 
+var pricingJsonMapOptionKeys = map[string]struct{}{
+	"ModelPrice":           {},
+	"ModelRatio":           {},
+	"CacheRatio":           {},
+	"CreateCacheRatio":     {},
+	"CompletionRatio":      {},
+	"AudioRatio":           {},
+	"AudioCompletionRatio": {},
+	"ContextPricing":       {},
+}
+
+func isPricingJsonMapOptionKey(key string) bool {
+	_, ok := pricingJsonMapOptionKeys[key]
+	return ok
+}
+
 func isSensitiveOptionKey(key string) bool {
 	return strings.HasSuffix(key, "Token") ||
 		strings.HasSuffix(key, "Secret") ||
@@ -157,6 +174,49 @@ func readMiniMaxStringMapOption(c *gin.Context, key string) (map[string]string, 
 	return items, value, true
 }
 
+func readPricingJsonMapOption(c *gin.Context, key string) (map[string]json.RawMessage, string, bool) {
+	if !isPricingJsonMapOptionKey(key) {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"message": "不支持的 JSON 映射配置项",
+		})
+		return nil, "", false
+	}
+	value, ok := readOptionValue(key)
+	if !ok || strings.TrimSpace(value) == "" {
+		value = "{}"
+	}
+	items := map[string]json.RawMessage{}
+	if err := common.UnmarshalJsonStr(value, &items); err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": "JSON 映射配置解析失败: " + err.Error(),
+		})
+		return nil, "", false
+	}
+	return items, value, true
+}
+
+func validatePricingJsonMapOption(key string, value string) error {
+	if key == "ContextPricing" {
+		return ratio_setting.ValidateContextPricing(value)
+	}
+	values := map[string]float64{}
+	return common.UnmarshalJsonStr(value, &values)
+}
+
+func marshalPricingJsonMapOption(key string, items map[string]json.RawMessage) (string, error) {
+	bytes, err := common.Marshal(items)
+	if err != nil {
+		return "", err
+	}
+	nextValue := string(bytes)
+	if err := validatePricingJsonMapOption(key, nextValue); err != nil {
+		return "", err
+	}
+	return nextValue, nil
+}
+
 // readMiniMaxStringArrayOption 仅用于兼容旧的 JSON 数组配置读取。
 // 音色白名单已迁移到数据库音色表，这里对已废弃的 key 直接返回空数组与提示，
 // 防止旧前端在数组编辑器里看到陈旧数据后误操作。
@@ -174,10 +234,8 @@ func readMiniMaxStringArrayOption(c *gin.Context, key string) ([]string, string,
 
 func GetOptionJsonMap(c *gin.Context) {
 	key := c.Query("key")
-	items, _, ok := readMiniMaxStringMapOption(c, key)
-	if !ok {
-		return
-	}
+	var entries []optionJsonMapEntry
+	var total int
 
 	page, err := strconv.Atoi(c.DefaultQuery("page", "1"))
 	if err != nil || page < 1 {
@@ -191,28 +249,65 @@ func GetOptionJsonMap(c *gin.Context) {
 		pageSize = 100
 	}
 
-	keys := make([]string, 0, len(items))
-	for itemKey := range items {
-		keys = append(keys, itemKey)
-	}
-	sort.Strings(keys)
+	keyword := strings.TrimSpace(c.Query("keyword"))
 
-	total := len(keys)
-	start := (page - 1) * pageSize
-	if start > total {
-		start = total
-	}
-	end := start + pageSize
-	if end > total {
-		end = total
-	}
-
-	entries := make([]optionJsonMapEntry, 0, end-start)
-	for _, itemKey := range keys[start:end] {
-		entries = append(entries, optionJsonMapEntry{
-			Key:   itemKey,
-			Value: items[itemKey],
-		})
+	if model_setting.IsMiniMaxStringMapOption(key) {
+		items, _, ok := readMiniMaxStringMapOption(c, key)
+		if !ok {
+			return
+		}
+		keys := make([]string, 0, len(items))
+		for itemKey := range items {
+			if keyword == "" || strings.Contains(itemKey, keyword) || strings.Contains(items[itemKey], keyword) {
+				keys = append(keys, itemKey)
+			}
+		}
+		sort.Strings(keys)
+		total = len(keys)
+		start := (page - 1) * pageSize
+		if start > total {
+			start = total
+		}
+		end := start + pageSize
+		if end > total {
+			end = total
+		}
+		entries = make([]optionJsonMapEntry, 0, end-start)
+		for _, itemKey := range keys[start:end] {
+			entries = append(entries, optionJsonMapEntry{
+				Key:   itemKey,
+				Value: items[itemKey],
+			})
+		}
+	} else {
+		items, _, ok := readPricingJsonMapOption(c, key)
+		if !ok {
+			return
+		}
+		keys := make([]string, 0, len(items))
+		for itemKey, itemValue := range items {
+			value := string(itemValue)
+			if keyword == "" || strings.Contains(itemKey, keyword) || strings.Contains(value, keyword) {
+				keys = append(keys, itemKey)
+			}
+		}
+		sort.Strings(keys)
+		total = len(keys)
+		start := (page - 1) * pageSize
+		if start > total {
+			start = total
+		}
+		end := start + pageSize
+		if end > total {
+			end = total
+		}
+		entries = make([]optionJsonMapEntry, 0, end-start)
+		for _, itemKey := range keys[start:end] {
+			entries = append(entries, optionJsonMapEntry{
+				Key:   itemKey,
+				Value: string(items[itemKey]),
+			})
+		}
 	}
 
 	c.JSON(http.StatusOK, gin.H{
@@ -306,37 +401,62 @@ func DeleteOptionJsonMapEntry(c *gin.Context) {
 		})
 		return
 	}
-	items, beforeValue, ok := readMiniMaxStringMapOption(c, req.Key)
-	if !ok {
-		return
-	}
-	if _, exists := items[req.MapKey]; !exists {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "映射项不存在",
-		})
-		return
+	var beforeValue, nextValue string
+	if model_setting.IsMiniMaxStringMapOption(req.Key) {
+		items, value, ok := readMiniMaxStringMapOption(c, req.Key)
+		if !ok {
+			return
+		}
+		beforeValue = value
+		if _, exists := items[req.MapKey]; !exists {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": "映射项不存在",
+			})
+			return
+		}
+
+		delete(items, req.MapKey)
+		bytes, err := common.Marshal(items)
+		if err != nil {
+			common.ApiError(c, err)
+			return
+		}
+		nextValue = string(bytes)
+		if err := model_setting.ValidateMiniMaxOptionValue(req.Key, nextValue); err != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": "MiniMax 设置失败: " + err.Error(),
+			})
+			return
+		}
+	} else {
+		items, value, ok := readPricingJsonMapOption(c, req.Key)
+		if !ok {
+			return
+		}
+		beforeValue = value
+		if _, exists := items[req.MapKey]; !exists {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": "映射项不存在",
+			})
+			return
+		}
+
+		delete(items, req.MapKey)
+		var err error
+		nextValue, err = marshalPricingJsonMapOption(req.Key, items)
+		if err != nil {
+			common.ApiError(c, err)
+			return
+		}
 	}
 
-	delete(items, req.MapKey)
-	bytes, err := common.Marshal(items)
-	if err != nil {
-		common.ApiError(c, err)
-		return
-	}
-	nextValue := string(bytes)
-	if err := model_setting.ValidateMiniMaxOptionValue(req.Key, nextValue); err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "MiniMax 设置失败: " + err.Error(),
-		})
-		return
-	}
 	if err := model.UpdateOption(req.Key, nextValue); err != nil {
 		common.ApiError(c, err)
 		return
 	}
-
 	service.RecordAudit(
 		c,
 		model.AuditModuleOption,
@@ -371,48 +491,92 @@ func UpsertOptionJsonMapEntry(c *gin.Context) {
 		return
 	}
 
-	items, beforeValue, ok := readMiniMaxStringMapOption(c, req.Key)
-	if !ok {
-		return
-	}
+	var beforeValue, nextValue string
+	if model_setting.IsMiniMaxStringMapOption(req.Key) {
+		items, value, ok := readMiniMaxStringMapOption(c, req.Key)
+		if !ok {
+			return
+		}
+		beforeValue = value
 
-	if oldMapKey != "" && oldMapKey != mapKey {
-		if _, exists := items[oldMapKey]; !exists {
+		if oldMapKey != "" && oldMapKey != mapKey {
+			if _, exists := items[oldMapKey]; !exists {
+				c.JSON(http.StatusOK, gin.H{
+					"success": false,
+					"message": "原映射项不存在",
+				})
+				return
+			}
+			if _, exists := items[mapKey]; exists {
+				c.JSON(http.StatusOK, gin.H{
+					"success": false,
+					"message": "映射键已存在",
+				})
+				return
+			}
+			delete(items, oldMapKey)
+		}
+
+		items[mapKey] = strings.TrimSpace(req.Value)
+		bytes, err := common.Marshal(items)
+		if err != nil {
+			common.ApiError(c, err)
+			return
+		}
+		nextValue = string(bytes)
+		if err := model_setting.ValidateMiniMaxOptionValue(req.Key, nextValue); err != nil {
 			c.JSON(http.StatusOK, gin.H{
 				"success": false,
-				"message": "原映射项不存在",
+				"message": "MiniMax 设置失败: " + err.Error(),
 			})
 			return
 		}
-		if _, exists := items[mapKey]; exists {
-			c.JSON(http.StatusOK, gin.H{
+	} else {
+		items, value, ok := readPricingJsonMapOption(c, req.Key)
+		if !ok {
+			return
+		}
+		beforeValue = value
+
+		if oldMapKey != "" && oldMapKey != mapKey {
+			if _, exists := items[oldMapKey]; !exists {
+				c.JSON(http.StatusOK, gin.H{
+					"success": false,
+					"message": "原映射项不存在",
+				})
+				return
+			}
+			if _, exists := items[mapKey]; exists {
+				c.JSON(http.StatusOK, gin.H{
+					"success": false,
+					"message": "映射键已存在",
+				})
+				return
+			}
+			delete(items, oldMapKey)
+		}
+
+		rawValue := json.RawMessage(strings.TrimSpace(req.Value))
+		if len(rawValue) == 0 || !json.Valid(rawValue) {
+			c.JSON(http.StatusBadRequest, gin.H{
 				"success": false,
-				"message": "映射键已存在",
+				"message": "映射值必须是合法 JSON",
 			})
 			return
 		}
-		delete(items, oldMapKey)
+		items[mapKey] = rawValue
+		var err error
+		nextValue, err = marshalPricingJsonMapOption(req.Key, items)
+		if err != nil {
+			common.ApiError(c, err)
+			return
+		}
 	}
 
-	items[mapKey] = strings.TrimSpace(req.Value)
-	bytes, err := common.Marshal(items)
-	if err != nil {
-		common.ApiError(c, err)
-		return
-	}
-	nextValue := string(bytes)
-	if err := model_setting.ValidateMiniMaxOptionValue(req.Key, nextValue); err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "MiniMax 设置失败: " + err.Error(),
-		})
-		return
-	}
 	if err := model.UpdateOption(req.Key, nextValue); err != nil {
 		common.ApiError(c, err)
 		return
 	}
-
 	service.RecordAudit(
 		c,
 		model.AuditModuleOption,

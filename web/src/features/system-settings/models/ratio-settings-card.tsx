@@ -25,7 +25,11 @@ import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ConfirmDialog } from '@/components/confirm-dialog'
-import { resetModelRatios } from '../api'
+import {
+  deleteOptionJsonMapEntry,
+  resetModelRatios,
+  upsertOptionJsonMapEntry,
+} from '../api'
 import { SettingsSection } from '../components/settings-section'
 import { useUpdateOption } from '../hooks/use-update-option'
 import { GroupRatioForm } from './group-ratio-form'
@@ -178,6 +182,70 @@ const groupSchema = z.object({
 type ModelFormValues = z.infer<typeof modelSchema>
 type GroupFormValues = z.infer<typeof groupSchema>
 type RatioTabId = 'models' | 'groups' | 'tool-prices'
+
+type ModelJsonMapField =
+  | 'ModelPrice'
+  | 'ModelRatio'
+  | 'CacheRatio'
+  | 'CreateCacheRatio'
+  | 'CompletionRatio'
+  | 'AudioRatio'
+  | 'AudioCompletionRatio'
+  | 'ContextPricing'
+
+function parseJsonObject(value: string): Record<string, unknown> {
+  const trimmed = value.trim()
+  if (!trimmed) {
+    return {}
+  }
+  const parsed = JSON.parse(trimmed)
+  if (parsed == null || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    throw new Error('Expected JSON object')
+  }
+  return parsed as Record<string, unknown>
+}
+
+function jsonValueEquals(left: unknown, right: unknown) {
+  return JSON.stringify(left) === JSON.stringify(right)
+}
+
+async function updateJsonMapFieldByDiff(
+  field: ModelJsonMapField,
+  previousValue: string,
+  nextValue: string
+) {
+  const previous = parseJsonObject(previousValue)
+  const next = parseJsonObject(nextValue)
+  const keys = new Set([...Object.keys(previous), ...Object.keys(next)])
+
+  for (const mapKey of keys) {
+    const hadPrevious = Object.prototype.hasOwnProperty.call(previous, mapKey)
+    const hasNext = Object.prototype.hasOwnProperty.call(next, mapKey)
+    if (!hasNext) {
+      if (hadPrevious) {
+        const data = await deleteOptionJsonMapEntry({
+          key: field,
+          map_key: mapKey,
+        })
+        if (!data.success) {
+          throw new Error(data.message || 'Failed to update setting')
+        }
+      }
+      continue
+    }
+
+    if (!hadPrevious || !jsonValueEquals(previous[mapKey], next[mapKey])) {
+      const data = await upsertOptionJsonMapEntry({
+        key: field,
+        map_key: mapKey,
+        value: JSON.stringify(next[mapKey]),
+      })
+      if (!data.success) {
+        throw new Error(data.message || 'Failed to update setting')
+      }
+    }
+  }
+}
 
 type RatioSettingsCardProps = {
   modelDefaults: ModelFormValues
@@ -354,10 +422,17 @@ export function RatioSettingsCard({
       }
 
       for (const key of updates) {
-        await updateOption.mutateAsync({ key, value: normalized[key] })
+        await updateJsonMapFieldByDiff(
+          key,
+          modelNormalizedDefaults.current[key],
+          normalized[key]
+        )
       }
+      modelNormalizedDefaults.current = normalized
+      await queryClient.invalidateQueries({ queryKey: ['system-options'] })
+      toast.success(t('Settings updated successfully'))
     },
-    [t, updateOption]
+    [queryClient, t]
   )
 
   const saveGroupRatios = useCallback(

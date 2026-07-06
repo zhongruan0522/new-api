@@ -40,7 +40,6 @@ func autoMigrateTargetMainSchema(db *gorm.DB) error {
 		&model.TwoFA{},
 		&model.TwoFABackupCode{},
 		&model.Checkin{},
-		&model.ModelPricing{},
 		// The following tables are also part of the main startup AutoMigrate and
 		// must be created on the target DB as well, otherwise the pre-migration /
 		// same-type migration would leave them missing and their data un-copied.
