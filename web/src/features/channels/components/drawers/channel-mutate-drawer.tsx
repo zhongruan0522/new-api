@@ -39,7 +39,6 @@ import {
   Plus,
   Eye,
   Link2,
-  ChevronDown,
   Code,
   Boxes,
   KeyRound,
@@ -52,15 +51,9 @@ import {
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { getLobeIcon } from '@/lib/lobe-icon'
-import { cn } from '@/lib/utils'
 import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible'
 import { Combobox } from '@/components/ui/combobox'
 import {
   Form,
@@ -218,35 +211,7 @@ const MODEL_MAPPING_PREVIEW_FALLBACK: Array<{
   target: string
 }> = [{ source: 'client-model', target: 'upstream-model' }]
 
-const ADVANCED_SETTINGS_EXPANDED_KEY = 'channel-advanced-settings-expanded'
 const OPENAI_WIRE_API_CHANNEL_TYPES = new Set([1, 4, 6, 25, 26, 35, 44])
-
-function readAdvancedSettingsPreference(): boolean {
-  if (typeof window === 'undefined') return false
-  return window.localStorage.getItem(ADVANCED_SETTINGS_EXPANDED_KEY) === 'true'
-}
-
-function hasAdvancedSettingsValues(values: ChannelFormValues): boolean {
-  return Boolean(
-    values.model_mapping?.trim() ||
-    values.param_override?.trim() ||
-    values.header_override?.trim() ||
-    values.status_code_mapping?.trim() ||
-    values.tag?.trim() ||
-    values.remark?.trim() ||
-    values.priority ||
-    values.weight ||
-    values.proxy?.trim() ||
-    values.force_format ||
-    values.pass_through_body_enabled ||
-    values.pass_through_headers_enabled === false ||
-    values.openai_wire_api !== 'both' ||
-    values.image_auto_convert_to_url_mode === 'mcp' ||
-    values.allow_cache_control ||
-    values.allow_speed ||
-    values.claude_beta_query
-  )
-}
 
 function CardHeading({ title, icon }: { title: string; icon?: ReactNode }) {
   return (
@@ -299,7 +264,6 @@ export function ChannelMutateDrawer({
   const missingModelsResolveRef = useRef<
     ((action: MissingModelsAction) => void) | null
   >(null)
-  const [advancedSettingsOpen, setAdvancedSettingsOpen] = useState(false)
   const [paramOverrideEditorOpen, setParamOverrideEditorOpen] = useState(false)
 
   const isEditing = Boolean(currentRow)
@@ -539,9 +503,6 @@ export function ChannelMutateDrawer({
     if (isEditing && channelData?.data) {
       const defaults = transformChannelToFormDefaults(channelData.data)
       form.reset(defaults)
-      setAdvancedSettingsOpen(
-        readAdvancedSettingsPreference() || hasAdvancedSettingsValues(defaults)
-      )
       // Store initial values for comparison
       initialModelsRef.current = parseModelsString(
         channelData.data.models || ''
@@ -551,7 +512,6 @@ export function ChannelMutateDrawer({
         channelData.data.status_code_mapping || ''
     } else if (!isEditing) {
       form.reset(CHANNEL_FORM_DEFAULT_VALUES)
-      setAdvancedSettingsOpen(false)
       initialModelsRef.current = []
       initialModelMappingRef.current = ''
       initialStatusCodeMappingRef.current = ''
@@ -964,21 +924,10 @@ export function ChannelMutateDrawer({
       onOpenChange(v)
       if (!v) {
         form.reset(CHANNEL_FORM_DEFAULT_VALUES)
-        setAdvancedSettingsOpen(false)
       }
     },
     [onOpenChange, form]
   )
-
-  const handleAdvancedSettingsOpenChange = useCallback((nextOpen: boolean) => {
-    setAdvancedSettingsOpen(nextOpen)
-    if (typeof window !== 'undefined') {
-      window.localStorage.setItem(
-        ADVANCED_SETTINGS_EXPANDED_KEY,
-        String(nextOpen)
-      )
-    }
-  }, [])
 
   return (
     <>
@@ -1083,6 +1032,41 @@ export function ChannelMutateDrawer({
                           }
                         />
                       </FormControl>
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name='tag'
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t('Tag')}</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder={t(FIELD_PLACEHOLDERS.TAG)}
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name='remark'
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t('Remark')}</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder={t(FIELD_PLACEHOLDERS.REMARK)}
+                          rows={2}
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
                     </FormItem>
                   )}
                 />
@@ -2023,37 +2007,7 @@ export function ChannelMutateDrawer({
                 />
               </div>
 
-              <Collapsible
-                open={advancedSettingsOpen}
-                onOpenChange={handleAdvancedSettingsOpenChange}
-              >
-                <CollapsibleTrigger
-                  render={
-                    <button
-                      type='button'
-                      className='hover:bg-muted/40 flex w-full items-center justify-between rounded-md py-2 text-left transition-colors'
-                    />
-                  }
-                >
-                  <div className='flex flex-col gap-0.5'>
-                    <div className='text-[13px] font-semibold'>
-                      {t('Advanced Settings')}
-                    </div>
-                    <div className='text-muted-foreground text-xs'>
-                      {t(
-                        'Request overrides, routing behavior, and upstream model automation'
-                      )}
-                    </div>
-                  </div>
-                  <ChevronDown
-                    className={cn(
-                      'text-muted-foreground h-4 w-4 shrink-0 transition-transform',
-                      advancedSettingsOpen && 'rotate-180'
-                    )}
-                  />
-                </CollapsibleTrigger>
-
-                <CollapsibleContent className='mt-5 flex flex-col gap-5'>
+              <div className='mt-5 flex flex-col gap-5'>
                   {/* ── Routing & Overrides ── */}
                   <div className={sideDrawerSectionClassName()}>
                     <CardHeading
@@ -2157,55 +2111,6 @@ export function ChannelMutateDrawer({
                           </FormItem>
                         )}
                       />
-                    </div>
-
-                    <div className='flex flex-col gap-4 border-t pt-4'>
-                      <SubHeading
-                        title={t('Internal Notes')}
-                        icon={<FileText className='h-3.5 w-3.5' />}
-                      />
-                      <div className='grid gap-4 sm:grid-cols-2'>
-                        <FormField
-                          control={form.control}
-                          name='tag'
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>{t('Tag')}</FormLabel>
-                              <FormControl>
-                                <Input
-                                  placeholder={t(FIELD_PLACEHOLDERS.TAG)}
-                                  {...field}
-                                />
-                              </FormControl>
-                              <FormDescription>
-                                {t(FIELD_DESCRIPTIONS.TAG)}
-                              </FormDescription>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        <FormField
-                          control={form.control}
-                          name='remark'
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>{t('Remark')}</FormLabel>
-                              <FormControl>
-                                <Textarea
-                                  placeholder={t(FIELD_PLACEHOLDERS.REMARK)}
-                                  rows={2}
-                                  {...field}
-                                />
-                              </FormControl>
-                              <FormDescription>
-                                {t(FIELD_DESCRIPTIONS.REMARK)}
-                              </FormDescription>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
                     </div>
 
                     <div className='flex flex-col gap-4 border-t pt-4'>
@@ -2794,8 +2699,7 @@ export function ChannelMutateDrawer({
                       )}
                     />
                   </div>
-                </CollapsibleContent>
-              </Collapsible>
+                </div>
             </form>
           </Form>
 
