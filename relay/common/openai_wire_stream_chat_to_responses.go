@@ -160,14 +160,14 @@ func (c *chatToResponsesStreamConverter) convertChoice(choice dto.ChatCompletion
 	c.captureFinishReason(choice)
 
 	var out strings.Builder
-	if delta := strings.TrimSpace(choice.Delta.GetReasoningContent()); delta != "" {
+	if delta := choice.Delta.GetReasoningContent(); delta != "" {
 		frame, err := c.emitReasoningDelta(delta)
 		if err != nil {
 			return "", err
 		}
 		out.WriteString(frame)
 	}
-	if delta := strings.TrimSpace(choice.Delta.GetContentString()); delta != "" {
+	if delta := choice.Delta.GetContentString(); delta != "" {
 		if !c.reasoningDone {
 			doneFrame, err := c.emitReasoningDoneIfAny()
 			if err != nil {

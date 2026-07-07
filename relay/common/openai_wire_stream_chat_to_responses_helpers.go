@@ -29,7 +29,7 @@ func (c *chatToResponsesStreamConverter) hydrateFromChunk(chunk *dto.ChatComplet
 
 func (c *chatToResponsesStreamConverter) buildOutput() ([]dto.ResponsesOutput, error) {
 	output := make([]dto.ResponsesOutput, 0, 2+len(c.toolCallsByID))
-	reasoning := strings.TrimSpace(c.reasoningBuilder.String())
+	reasoning := c.reasoningBuilder.String()
 	if reasoning != "" {
 		output = append(output, dto.ResponsesOutput{
 			Type:   "reasoning",
@@ -41,7 +41,7 @@ func (c *chatToResponsesStreamConverter) buildOutput() ([]dto.ResponsesOutput, e
 			}},
 		})
 	}
-	text := strings.TrimSpace(c.textBuilder.String())
+	text := c.textBuilder.String()
 	if text != "" {
 		output = append(output, dto.ResponsesOutput{
 			Type:   "message",
@@ -288,7 +288,7 @@ func (c *chatToResponsesStreamConverter) removeToolCallOrder(callID string) {
 }
 
 func (c *chatToResponsesStreamConverter) emitMessageDoneIfAny() (string, error) {
-	text := strings.TrimSpace(c.textBuilder.String())
+	text := c.textBuilder.String()
 	if text == "" {
 		return "", nil
 	}
@@ -313,7 +313,7 @@ func (c *chatToResponsesStreamConverter) emitMessageDoneIfAny() (string, error) 
 // emitReasoningDoneIfAny closes the reasoning item once text/tool output starts
 // or the chat stream finishes.
 func (c *chatToResponsesStreamConverter) emitReasoningDoneIfAny() (string, error) {
-	reasoning := strings.TrimSpace(c.reasoningBuilder.String())
+	reasoning := c.reasoningBuilder.String()
 	if reasoning == "" || !c.sentReasoningAdded || c.reasoningDone {
 		return "", nil
 	}
