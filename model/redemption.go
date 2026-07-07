@@ -9,6 +9,7 @@ import (
 	"github.com/zhongruan0522/new-api/logger"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 // ErrRedeemFailed is returned when redemption fails due to database error
@@ -130,7 +131,7 @@ func Redeem(key string, userId int) (quota int, err error) {
 	}
 	common.RandomSleep()
 	err = DB.Transaction(func(tx *gorm.DB) error {
-		err := tx.Set("gorm:query_option", "FOR UPDATE").Where(keyCol+" = ?", key).First(redemption).Error
+		err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where(keyCol+" = ?", key).First(redemption).Error
 		if err != nil {
 			return errors.New("无效的兑换码")
 		}
@@ -144,11 +145,29 @@ func Redeem(key string, userId int) (quota int, err error) {
 		if err != nil {
 			return err
 		}
-		redemption.RedeemedTime = common.GetTimestamp()
+		// CAS-style conditional update: only flip the status if it is still
+		// enabled. The clause.Locking row lock serializes concurrent
+		// transactions on MySQL/PostgreSQL; this WHERE guard is the
+		// authoritative atomic guard that also defends SQLite (where row
+		// locking is a no-op) and any path where the lock was not acquired.
+		now := common.GetTimestamp()
+		result := tx.Model(&Redemption{}).
+			Where("id = ? AND status = ?", redemption.Id, common.RedemptionCodeStatusEnabled).
+			Updates(map[string]interface{}{
+				"status":        common.RedemptionCodeStatusUsed,
+				"redeemed_time": now,
+				"used_user_id":  userId,
+			})
+		if result.Error != nil {
+			return result.Error
+		}
+		if result.RowsAffected == 0 {
+			return errors.New("该兑换码已被使用")
+		}
 		redemption.Status = common.RedemptionCodeStatusUsed
+		redemption.RedeemedTime = now
 		redemption.UsedUserId = userId
-		err = tx.Save(redemption).Error
-		return err
+		return nil
 	})
 	if err != nil {
 		common.SysError("redemption failed: " + err.Error())
