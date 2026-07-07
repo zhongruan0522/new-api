@@ -550,6 +550,7 @@ export function ModelRatioVisualEditor({
   }
 
   const setMode = (name: string, mode: PricingMode) => {
+    setSelectedName(name)
     clearModel(name)
     if (mode === 'per-request') {
       writeMap('ModelPrice', { ...maps.price, [name]: 0 })
@@ -918,7 +919,7 @@ export function ModelRatioVisualEditor({
               {t('Select a model to edit pricing')}
             </div>
           ) : (
-            <div className='space-y-5'>
+            <div className='space-y-5' key={selectedRow.name}>
               {selectedRow.mode === 'unconfigured' && (
                 <div className='bg-destructive/10 text-destructive rounded-md px-3 py-2 text-sm'>
                   {t(
@@ -929,11 +930,7 @@ export function ModelRatioVisualEditor({
               <div className='space-y-2'>
                 <Label>{t('Billing type')}</Label>
                 <RadioGroup
-                  value={
-                    selectedRow.mode === 'unconfigured'
-                      ? undefined
-                      : selectedRow.mode
-                  }
+                  value={selectedRow.mode}
                   onValueChange={(value) =>
                     setMode(selectedRow.name, value as PricingMode)
                   }
@@ -946,9 +943,10 @@ export function ModelRatioVisualEditor({
                   ].map(([value, label]) => (
                     <Label
                       key={value}
-                      className='border-input bg-background has-data-checked:border-primary flex cursor-pointer items-center gap-2 rounded-md border p-3 text-sm font-normal'
+                      htmlFor={`billing-type-${value}`}
+                      className='border-input bg-background hover:border-primary/40 focus-within:border-primary/50 has-data-[checked]:border-primary has-data-[checked]:ring-primary/20 flex cursor-pointer items-center gap-2 rounded-md border p-3 text-sm font-normal transition-colors has-data-[checked]:ring-2'
                     >
-                      <RadioGroupItem value={value} />
+                      <RadioGroupItem id={`billing-type-${value}`} value={value} />
                       {label}
                     </Label>
                   ))}
