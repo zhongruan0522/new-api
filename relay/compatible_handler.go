@@ -389,7 +389,7 @@ func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage 
 	if relayInfo.ResponsesUsageInfo != nil {
 		if webSearchTool, exists := relayInfo.ResponsesUsageInfo.BuiltInTools[dto.BuildInToolWebSearchPreview]; exists && webSearchTool.CallCount > 0 {
 			// 优先使用可配置价格，回退到硬编码常量
-			if pricePerCall, ok := operation_setting.GetToolBillingPrice("web_search", modelName, "openai", "", ""); ok {
+			if pricePerCall, ok := operation_setting.GetToolBillingPrice("web_search", map[string]string{"model": modelName, "provider": "openai"}); ok {
 				webSearchPrice = pricePerCall
 				dWebSearchQuota = decimal.NewFromFloat(webSearchPrice).
 					Mul(decimal.NewFromInt(int64(webSearchTool.CallCount))).
@@ -409,7 +409,7 @@ func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage 
 		if searchContextSize == "" {
 			searchContextSize = "medium"
 		}
-		if pricePerCall, ok := operation_setting.GetToolBillingPrice("web_search", modelName, "openai", "", ""); ok {
+		if pricePerCall, ok := operation_setting.GetToolBillingPrice("web_search", map[string]string{"model": modelName, "provider": "openai"}); ok {
 			webSearchPrice = pricePerCall
 			dWebSearchQuota = decimal.NewFromFloat(webSearchPrice).
 				Mul(dGroupRatio).Mul(dQuotaPerUnit)
@@ -426,7 +426,7 @@ func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage 
 	var claudeWebSearchPrice float64
 	claudeWebSearchCallCount := ctx.GetInt("claude_web_search_requests")
 	if claudeWebSearchCallCount > 0 {
-		if pricePerCall, ok := operation_setting.GetToolBillingPrice("web_search", modelName, "claude", "", ""); ok {
+		if pricePerCall, ok := operation_setting.GetToolBillingPrice("web_search", map[string]string{"model": modelName, "provider": "claude"}); ok {
 			claudeWebSearchPrice = pricePerCall
 			dClaudeWebSearchQuota = decimal.NewFromFloat(claudeWebSearchPrice).
 				Mul(decimal.NewFromInt(int64(claudeWebSearchCallCount))).
@@ -444,7 +444,7 @@ func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage 
 	var geminiWebSearchPrice float64
 	geminiWebSearchCallCount := ctx.GetInt("gemini_web_search_requests")
 	if geminiWebSearchCallCount > 0 {
-		if pricePerCall, ok := operation_setting.GetToolBillingPrice("web_search", modelName, "gemini", "", ""); ok {
+		if pricePerCall, ok := operation_setting.GetToolBillingPrice("web_search", map[string]string{"model": modelName, "provider": "gemini"}); ok {
 			geminiWebSearchPrice = pricePerCall
 			dGeminiWebSearchQuota = decimal.NewFromFloat(geminiWebSearchPrice).
 				Mul(decimal.NewFromInt(int64(geminiWebSearchCallCount))).
@@ -471,8 +471,12 @@ func postConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage 
 	var dImageGenerationCallQuota decimal.Decimal
 	var imageGenerationCallPrice float64
 	if ctx.GetBool("image_generation_call") {
-		if pricePerCall, ok := operation_setting.GetToolBillingPrice("image_generation", modelName, "openai",
-			ctx.GetString("image_generation_call_quality"), ctx.GetString("image_generation_call_size")); ok {
+		if pricePerCall, ok := operation_setting.GetToolBillingPrice("image_generation", map[string]string{
+			"model":    modelName,
+			"provider": "openai",
+			"quality":  ctx.GetString("image_generation_call_quality"),
+			"size":     ctx.GetString("image_generation_call_size"),
+		}); ok {
 			imageGenerationCallPrice = pricePerCall
 		} else {
 			imageGenerationCallPrice = operation_setting.GetGPTImage1PriceOnceCall(ctx.GetString("image_generation_call_quality"), ctx.GetString("image_generation_call_size"))

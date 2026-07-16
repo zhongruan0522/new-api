@@ -17,25 +17,54 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { memo, useCallback, useEffect, useMemo, useState } from 'react'
-import { Code2, Copy, Eye, Plus, Trash2 } from 'lucide-react'
+import { ChevronDown, ChevronRight, Code2, Copy, Eye, Plus, Trash2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Switch } from '@/components/ui/switch'
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { useUpdateOption } from '../hooks/use-update-option'
 
 const OPTION_KEY = 'tool_billing_setting.rules'
+
+// --- 条件模式定义（与后端 common/condition.go 保持一致） ---
+const CONDITION_MODES = [
+  { value: 'eq', label: 'Equals (=)' },
+  { value: 'neq', label: 'Not Equals (≠)' },
+  { value: 'prefix', label: 'Prefix' },
+  { value: 'suffix', label: 'Suffix' },
+  { value: 'contains', label: 'Contains' },
+  { value: 'regex', label: 'Regex' },
+  { value: 'gt', label: 'Greater Than (>)' },
+  { value: 'gte', label: 'Greater or Equal (≥)' },
+  { value: 'lt', label: 'Less Than (<)' },
+  { value: 'lte', label: 'Less or Equal (≤)' },
+] as const
+
+const CONDITION_LOGICS = [
+  { value: 'AND', label: 'ALL (AND)' },
+  { value: 'OR', label: 'ANY (OR)' },
+] as const
+
+type ConditionMode = (typeof CONDITION_MODES)[number]['value']
+type ConditionLogic = (typeof CONDITION_LOGICS)[number]['value']
+
+type ToolBillingCondition = {
+  field: string
+  mode: ConditionMode | string
+  value: unknown
+  invert?: boolean
+  pass_missing_key?: boolean
+}
 
 type ToolBillingRule = {
   id: string
@@ -43,15 +72,24 @@ type ToolBillingRule = {
   tool_type: 'web_search' | 'image_generation' | string
   billing_mode: 'per_call' | string
   price: number
-  model_filter?: string
-  quality?: string
-  size?: string
-  provider?: string
+  conditions?: ToolBillingCondition[]
+  logic?: ConditionLogic | string
   enabled: boolean
 }
 
 type ToolBillingRow = ToolBillingRule & {
   rowId: number
+  conditionsExpanded: boolean
+}
+
+function normalizeCondition(cond: ToolBillingCondition): ToolBillingCondition {
+  return {
+    field: cond.field?.trim() ?? '',
+    mode: cond.mode || 'eq',
+    value: cond.value ?? '',
+    invert: cond.invert ?? false,
+    pass_missing_key: cond.pass_missing_key ?? false,
+  }
 }
 
 function normalizeRule(rule: ToolBillingRule): ToolBillingRule {
@@ -61,16 +99,14 @@ function normalizeRule(rule: ToolBillingRule): ToolBillingRule {
     tool_type: rule.tool_type || 'web_search',
     billing_mode: rule.billing_mode || 'per_call',
     price: Number(rule.price) || 0,
-    model_filter: rule.model_filter ?? '',
-    quality: rule.quality ?? '',
-    size: rule.size ?? '',
-    provider: rule.provider ?? '',
+    conditions: (rule.conditions ?? []).map(normalizeCondition),
+    logic: rule.logic || 'AND',
     enabled: rule.enabled !== false,
   }
 }
 
 function rowsToRules(rows: ToolBillingRow[]): ToolBillingRule[] {
-  return rows.map(({ rowId: _rowId, ...rule }) => normalizeRule(rule))
+  return rows.map(({ rowId: _rowId, conditionsExpanded: _conditionsExpanded, ...rule }) => normalizeRule(rule))
 }
 
 function validateRules(rules: ToolBillingRule[]): string | null {
@@ -88,6 +124,15 @@ function validateRules(rules: ToolBillingRule[]): string | null {
     }
     if (!Number.isFinite(rule.price) || rule.price < 0) {
       return `rule ${index} (${rule.id}): price must be a non-negative number`
+    }
+    // 验证 conditions
+    for (const [ci, cond] of (rule.conditions ?? []).entries()) {
+      if (!cond.field) {
+        return `rule ${index} (${rule.id}): condition ${ci} has empty field`
+      }
+      if (!CONDITION_MODES.some((m) => m.value === cond.mode)) {
+        return `rule ${index} (${rule.id}): condition ${ci} has unsupported mode "${cond.mode}"`
+      }
     }
   }
   return null
@@ -123,6 +168,7 @@ export const ToolPriceSettings = memo(function ToolPriceSettings({
       const initialRows = rules.map((rule, index) => ({
         ...rule,
         rowId: index + 1,
+        conditionsExpanded: false,
       }))
       setRows(initialRows)
       setJsonText(JSON.stringify(rules, null, 2))
@@ -162,6 +208,7 @@ export const ToolPriceSettings = memo(function ToolPriceSettings({
         const nextRows = rules.map((rule, index) => ({
           ...rule,
           rowId: index + 1,
+          conditionsExpanded: false,
         }))
         setRows(nextRows)
         setNextRowId(nextRows.length + 1)
@@ -174,15 +221,82 @@ export const ToolPriceSettings = memo(function ToolPriceSettings({
   )
 
   const updateRow = useCallback(
-    (
-      rowId: number,
-      field: keyof ToolBillingRule,
-      value: string | number | boolean
-    ) => {
+    (rowId: number, field: keyof ToolBillingRule, value: string | number | boolean) => {
       syncFromRows(
         rows.map((row) =>
           row.rowId === rowId ? { ...row, [field]: value } : row
         )
+      )
+    },
+    [rows, syncFromRows]
+  )
+
+  const toggleConditionsExpanded = useCallback(
+    (rowId: number) => {
+      setRows(
+        rows.map((row) =>
+          row.rowId === rowId
+            ? { ...row, conditionsExpanded: !row.conditionsExpanded }
+            : row
+        )
+      )
+    },
+    [rows]
+  )
+
+  const updateCondition = useCallback(
+    (
+      rowId: number,
+      condIndex: number,
+      field: keyof ToolBillingCondition,
+      value: string | boolean
+    ) => {
+      syncFromRows(
+        rows.map((row) => {
+          if (row.rowId !== rowId) return row
+          const conditions = [...(row.conditions ?? [])]
+          conditions[condIndex] = {
+            ...conditions[condIndex],
+            [field]: value,
+          }
+          return { ...row, conditions }
+        })
+      )
+    },
+    [rows, syncFromRows]
+  )
+
+  const addCondition = useCallback(
+    (rowId: number) => {
+      syncFromRows(
+        rows.map((row) => {
+          if (row.rowId !== rowId) return row
+          const newCond: ToolBillingCondition = {
+            field: '',
+            mode: 'eq',
+            value: '',
+          }
+          return {
+            ...row,
+            conditions: [...(row.conditions ?? []), newCond],
+            conditionsExpanded: true,
+          }
+        })
+      )
+    },
+    [rows, syncFromRows]
+  )
+
+  const removeCondition = useCallback(
+    (rowId: number, condIndex: number) => {
+      syncFromRows(
+        rows.map((row) => {
+          if (row.rowId !== rowId) return row
+          const conditions = (row.conditions ?? []).filter(
+            (_, i) => i !== condIndex
+          )
+          return { ...row, conditions }
+        })
       )
     },
     [rows, syncFromRows]
@@ -196,11 +310,10 @@ export const ToolPriceSettings = memo(function ToolPriceSettings({
       tool_type: 'web_search',
       billing_mode: 'per_call',
       price: 0,
-      model_filter: '',
-      quality: '',
-      size: '',
-      provider: '',
+      conditions: [],
+      logic: 'AND',
       enabled: true,
+      conditionsExpanded: false,
     }
     setNextRowId((prev) => prev + 1)
     syncFromRows([...rows, newRow])
@@ -283,152 +396,226 @@ export const ToolPriceSettings = memo(function ToolPriceSettings({
       </div>
 
       {editMode === 'visual' ? (
-        <div className='overflow-auto rounded-md border'>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className='min-w-[180px]'>ID</TableHead>
-                <TableHead className='min-w-[180px]'>{t('Name')}</TableHead>
-                <TableHead className='min-w-[150px]'>
-                  {t('Tool type')}
-                </TableHead>
-                <TableHead className='min-w-[120px]'>
-                  {t('Price')}
-                </TableHead>
-                <TableHead className='min-w-[130px]'>
-                  {t('Provider')}
-                </TableHead>
-                <TableHead className='min-w-[180px]'>
-                  {t('Model filter')}
-                </TableHead>
-                <TableHead className='min-w-[120px]'>
-                  {t('Quality')}
-                </TableHead>
-                <TableHead className='min-w-[140px]'>{t('Size')}</TableHead>
-                <TableHead className='w-[90px]'>{t('Enabled')}</TableHead>
-                <TableHead className='w-[80px] text-right'>
-                  {t('Actions')}
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.length === 0 ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={10}
-                    className='text-muted-foreground py-8 text-center'
-                  >
-                    {t('No rules configured')}
-                  </TableCell>
-                </TableRow>
-              ) : (
-                rows.map((row) => (
-                  <TableRow key={row.rowId}>
-                    <TableCell>
-                      <Input
-                        value={row.id}
-                        placeholder='web_search_openai'
-                        onChange={(event) =>
-                          updateRow(row.rowId, 'id', event.target.value)
-                        }
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Input
-                        value={row.name}
-                        placeholder='OpenAI Web Search'
-                        onChange={(event) =>
-                          updateRow(row.rowId, 'name', event.target.value)
-                        }
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Input
-                        value={row.tool_type}
-                        placeholder='web_search'
-                        onChange={(event) =>
-                          updateRow(row.rowId, 'tool_type', event.target.value)
-                        }
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Input
-                        type='number'
-                        min={0}
-                        step={0.001}
-                        value={row.price}
-                        onChange={(event) =>
-                          updateRow(
-                            row.rowId,
-                            'price',
-                            Number(event.target.value) || 0
-                          )
-                        }
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Input
-                        value={row.provider ?? ''}
-                        placeholder='openai'
-                        onChange={(event) =>
-                          updateRow(row.rowId, 'provider', event.target.value)
-                        }
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Input
-                        value={row.model_filter ?? ''}
-                        placeholder='gpt-4o*,gpt-4.1*'
-                        onChange={(event) =>
-                          updateRow(
-                            row.rowId,
-                            'model_filter',
-                            event.target.value
-                          )
-                        }
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Input
-                        value={row.quality ?? ''}
-                        placeholder='high'
-                        onChange={(event) =>
-                          updateRow(row.rowId, 'quality', event.target.value)
-                        }
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Input
-                        value={row.size ?? ''}
-                        placeholder='1024x1024'
-                        onChange={(event) =>
-                          updateRow(row.rowId, 'size', event.target.value)
-                        }
-                      />
-                    </TableCell>
-                    <TableCell>
+        <div className='space-y-3'>
+          {rows.length === 0 ? (
+            <div className='text-muted-foreground rounded-md border py-8 text-center text-sm'>
+              {t('No rules configured')}
+            </div>
+          ) : (
+            rows.map((row) => (
+              <div key={row.rowId} className='rounded-md border'>
+                {/* 主行 */}
+                <div className='flex flex-wrap items-center gap-2 border-b p-3'>
+                  <div className='min-w-[140px] flex-1'>
+                    <label className='text-muted-foreground mb-1 block text-xs'>
+                      ID
+                    </label>
+                    <Input
+                      value={row.id}
+                      placeholder='web_search_openai'
+                      className='h-8'
+                      onChange={(e) => updateRow(row.rowId, 'id', e.target.value)}
+                    />
+                  </div>
+                  <div className='min-w-[140px] flex-1'>
+                    <label className='text-muted-foreground mb-1 block text-xs'>
+                      {t('Name')}
+                    </label>
+                    <Input
+                      value={row.name}
+                      placeholder='OpenAI Web Search'
+                      className='h-8'
+                      onChange={(e) =>
+                        updateRow(row.rowId, 'name', e.target.value)
+                      }
+                    />
+                  </div>
+                  <div className='min-w-[120px]'>
+                    <label className='text-muted-foreground mb-1 block text-xs'>
+                      {t('Tool type')}
+                    </label>
+                    <Select
+                      value={row.tool_type}
+                      onValueChange={(v) =>
+                        updateRow(row.rowId, 'tool_type', v ?? '')
+                      }
+                    >
+                      <SelectTrigger className='h-8'>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value='web_search'>web_search</SelectItem>
+                        <SelectItem value='image_generation'>
+                          image_generation
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className='min-w-[100px]'>
+                    <label className='text-muted-foreground mb-1 block text-xs'>
+                      {t('Price')}
+                    </label>
+                    <Input
+                      type='number'
+                      min={0}
+                      step={0.001}
+                      value={row.price}
+                      className='h-8'
+                      onChange={(e) =>
+                        updateRow(row.rowId, 'price', Number(e.target.value) || 0)
+                      }
+                    />
+                  </div>
+                  <div className='flex items-end gap-2'>
+                    <label className='text-muted-foreground flex items-center gap-1 text-xs'>
                       <Switch
                         checked={row.enabled}
                         onCheckedChange={(checked) =>
                           updateRow(row.rowId, 'enabled', checked)
                         }
                       />
-                    </TableCell>
-                    <TableCell className='text-right'>
-                      <Button
-                        variant='ghost'
-                        size='icon'
-                        onClick={() => removeRow(row.rowId)}
-                        aria-label={t('Delete')}
+                      {t('Enabled')}
+                    </label>
+                  </div>
+                  <div className='flex items-end gap-1'>
+                    <Button
+                      variant='ghost'
+                      size='sm'
+                      className='h-8'
+                      onClick={() => toggleConditionsExpanded(row.rowId)}
+                    >
+                      {row.conditionsExpanded ? (
+                        <ChevronDown className='h-4 w-4' />
+                      ) : (
+                        <ChevronRight className='h-4 w-4' />
+                      )}
+                      <span className='ml-1 text-xs'>
+                        {t('Conditions')} ({row.conditions?.length ?? 0})
+                      </span>
+                    </Button>
+                  </div>
+                  <div className='flex items-end'>
+                    <Button
+                      variant='ghost'
+                      size='icon'
+                      className='h-8'
+                      onClick={() => removeRow(row.rowId)}
+                      aria-label={t('Delete')}
+                    >
+                      <Trash2 className='text-destructive h-4 w-4' />
+                    </Button>
+                  </div>
+                </div>
+
+                {/* 条件展开区 */}
+                {row.conditionsExpanded && (
+                  <div className='space-y-2 p-3'>
+                    {/* Logic 选择器 */}
+                    <div className='flex items-center gap-2'>
+                      <span className='text-muted-foreground text-xs'>
+                        {t('Match')}:
+                      </span>
+                      <Select
+                        value={row.logic || 'AND'}
+                        onValueChange={(v) =>
+                          updateRow(row.rowId, 'logic', v ?? 'AND')
+                        }
                       >
-                        <Trash2 className='text-destructive h-4 w-4' />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+                        <SelectTrigger className='h-7 w-[140px]'>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {CONDITION_LOGICS.map((l) => (
+                            <SelectItem key={l.value} value={l.value}>
+                              {l.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <span className='text-muted-foreground text-xs'>
+                        {t('of the following conditions')}
+                      </span>
+                    </div>
+
+                    {/* 条件列表 */}
+                    {(row.conditions ?? []).map((cond, ci) => (
+                      <div
+                        key={ci}
+                        className='flex flex-wrap items-center gap-2 rounded border p-2'
+                      >
+                        <div className='flex items-center'>
+                          <span className='text-muted-foreground mr-1 font-mono text-xs'>
+                            {ci === 0 ? 'IF' : (row.logic || 'AND') === 'AND' ? 'AND' : 'OR'}
+                          </span>
+                        </div>
+                        <Input
+                          value={cond.field}
+                          placeholder='model / provider / quality / size'
+                          className='h-7 min-w-[160px] flex-1'
+                          onChange={(e) =>
+                            updateCondition(row.rowId, ci, 'field', e.target.value)
+                          }
+                        />
+                        <Select
+                          value={cond.mode}
+                          onValueChange={(v) =>
+                            updateCondition(row.rowId, ci, 'mode', v ?? 'eq')
+                          }
+                        >
+                          <SelectTrigger className='h-7 w-[150px]'>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {CONDITION_MODES.map((m) => (
+                              <SelectItem key={m.value} value={m.value}>
+                                {m.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Input
+                          value={String(cond.value ?? '')}
+                          placeholder='value'
+                          className='h-7 min-w-[120px] flex-1'
+                          onChange={(e) =>
+                            updateCondition(row.rowId, ci, 'value', e.target.value)
+                          }
+                        />
+                        <label className='text-muted-foreground flex items-center gap-1 text-xs'>
+                          <Switch
+                            checked={cond.invert ?? false}
+                            onCheckedChange={(checked) =>
+                              updateCondition(row.rowId, ci, 'invert', checked)
+                            }
+                          />
+                          {t('Invert')}
+                        </label>
+                        <Button
+                          variant='ghost'
+                          size='icon'
+                          className='h-7'
+                          onClick={() => removeCondition(row.rowId, ci)}
+                          aria-label={t('Delete')}
+                        >
+                          <Trash2 className='text-destructive h-3.5 w-3.5' />
+                        </Button>
+                      </div>
+                    ))}
+
+                    <Button
+                      variant='outline'
+                      size='sm'
+                      className='h-7'
+                      onClick={() => addCondition(row.rowId)}
+                    >
+                      <Plus className='mr-1 h-3.5 w-3.5' />
+                      {t('Add condition')}
+                    </Button>
+                  </div>
+                )}
+              </div>
+            ))
+          )}
         </div>
       ) : (
         <div className='space-y-2'>

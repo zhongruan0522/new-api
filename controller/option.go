@@ -836,6 +836,18 @@ func UpdateOption(c *gin.Context) {
 			return
 		}
 	case "tool_billing_setting.rules":
+		// 旧格式（带 quality/size/model_filter/provider 字段）自动迁移为新 conditions 格式
+		migrated, didMigrate, migrateErr := operation_setting.MigrateLegacyRules(option.Value.(string))
+		if migrateErr != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": "工具计费规则解析失败: " + migrateErr.Error(),
+			})
+			return
+		}
+		if didMigrate {
+			option.Value = migrated
+		}
 		err = operation_setting.ValidateToolBillingRules(option.Value.(string))
 		if err != nil {
 			c.JSON(http.StatusOK, gin.H{

@@ -193,6 +193,26 @@ func loadOptionsFromDatabase() {
 		DB.FirstOrCreate(&migratedOption, Option{Key: "AutomaticRetryEnabled"})
 		DB.Model(&migratedOption).Update("value", strconv.FormatBool(derivedEnabled))
 	}
+
+	// One-time migration: tool_billing_setting.rules 旧格式（带 quality/size/model_filter/provider
+	// 字段）自动迁移为新 conditions 格式。检测到旧格式时迁移 DB 中的值并刷新内存配置。
+	for _, option := range options {
+		if option.Key == "tool_billing_setting.rules" && option.Value != "" {
+			migrated, didMigrate, err := operation_setting.MigrateLegacyRules(option.Value)
+			if err != nil {
+				common.SysError("failed to migrate tool_billing_setting.rules: " + err.Error())
+				break
+			}
+			if didMigrate {
+				common.OptionMap["tool_billing_setting.rules"] = migrated
+				migratedOption := Option{Key: "tool_billing_setting.rules"}
+				DB.FirstOrCreate(&migratedOption, Option{Key: "tool_billing_setting.rules"})
+				DB.Model(&migratedOption).Update("value", migrated)
+				common.SysLog("migrated tool_billing_setting.rules to conditions format")
+			}
+			break
+		}
+	}
 }
 
 func SyncOptions(frequency int) {

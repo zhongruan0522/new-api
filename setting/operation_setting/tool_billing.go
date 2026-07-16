@@ -14,9 +14,25 @@ const (
 	ToolBillingModePerCall = "per_call"
 )
 
+// toolBillingLegacyRule 用于反序列化旧格式规则（带 quality/size/model_filter/provider 字段）。
+// 当从 DB 加载的 JSON 中不包含 "conditions" 字段时，使用该结构读取并迁移为新格式。
+type toolBillingLegacyRule struct {
+	ID          string  `json:"id"`
+	Name        string  `json:"name"`
+	ToolType    string  `json:"tool_type"`
+	BillingMode string  `json:"billing_mode"`
+	Price       float64 `json:"price"`
+	ModelFilter string  `json:"model_filter,omitempty"`
+	Quality     string  `json:"quality,omitempty"`
+	Size        string  `json:"size,omitempty"`
+	Provider    string  `json:"provider,omitempty"`
+	Enabled     bool    `json:"enabled"`
+}
+
 // ToolBillingRule is a single pricing rule for one tool.
+// 匹配维度通过 conditions 表达，不再使用硬编码的 quality/size 字段。
 type ToolBillingRule struct {
-	// Unique identifier, e.g. "web_search_openai", "image_generation_high_1024x1024"
+	// Unique identifier, e.g. "web_search_openai", "image_gen_high_1024x1024"
 	ID string `json:"id"`
 	// Human-readable name shown in the UI
 	Name string `json:"name"`
@@ -26,15 +42,12 @@ type ToolBillingRule struct {
 	BillingMode string `json:"billing_mode"`
 	// Price in USD per call.
 	Price float64 `json:"price"`
-	// Optional model prefix filter (comma-separated). Empty means all models.
-	// e.g. "gpt-4o*,gpt-4.1*" means this rule only applies to those models.
-	ModelFilter string `json:"model_filter,omitempty"`
-	// Optional quality filter (for image_generation): "low", "medium", "high"
-	Quality string `json:"quality,omitempty"`
-	// Optional size filter (for image_generation): "1024x1024", "1024x1536", "1536x1024"
-	Size string `json:"size,omitempty"`
-	// Optional provider filter: "openai", "claude", "gemini". Empty means all providers.
-	Provider string `json:"provider,omitempty"`
+	// Conditions 是该规则的匹配条件列表。
+	// 常见 field: "model", "provider", "quality", "size" 以及任意自定义属性。
+	// model_filter 的旧前缀通配符语义通过 regex 模式表达。
+	Conditions []common.Condition `json:"conditions,omitempty"`
+	// Logic 控制 conditions 之间的 AND/OR 关系，默认 AND。
+	Logic common.ConditionLogic `json:"logic,omitempty"`
 	// Whether this rule is enabled
 	Enabled bool `json:"enabled"`
 }
@@ -61,130 +74,79 @@ func defaultToolBillingRules() []ToolBillingRule {
 			Name:        "OpenAI Web Search (o系列/gpt-5)",
 			ToolType:    "web_search",
 			BillingMode: ToolBillingModePerCall,
-			Price:       0.01, // $10/1K calls = $0.01/call
-			ModelFilter: "o3*,o4*,gpt-5*",
-			Provider:    "openai",
-			Enabled:     true,
+			Price:       0.01,
+			Conditions: []common.Condition{
+				{Field: "model", Mode: common.ConditionModeRegex, Value: "^(o3|o4|gpt-5)"},
+				{Field: "provider", Mode: common.ConditionModeEq, Value: "openai"},
+			},
+			Logic:   common.ConditionLogicAnd,
+			Enabled: true,
 		},
 		{
 			ID:          "web_search_openai_standard",
 			Name:        "OpenAI Web Search (gpt-4o/gpt-4.1)",
 			ToolType:    "web_search",
 			BillingMode: ToolBillingModePerCall,
-			Price:       0.025, // $25/1K calls = $0.025/call
-			ModelFilter: "gpt-4o*,gpt-4.1*",
-			Provider:    "openai",
-			Enabled:     true,
+			Price:       0.025,
+			Conditions: []common.Condition{
+				{Field: "model", Mode: common.ConditionModeRegex, Value: "^(gpt-4o|gpt-4\\.1)"},
+				{Field: "provider", Mode: common.ConditionModeEq, Value: "openai"},
+			},
+			Logic:   common.ConditionLogicAnd,
+			Enabled: true,
 		},
 		{
 			ID:          "web_search_claude",
 			Name:        "Claude Web Search",
 			ToolType:    "web_search",
 			BillingMode: ToolBillingModePerCall,
-			Price:       0.01, // $10/1K calls = $0.01/call
-			Provider:    "claude",
-			Enabled:     true,
+			Price:       0.01,
+			Conditions: []common.Condition{
+				{Field: "provider", Mode: common.ConditionModeEq, Value: "claude"},
+			},
+			Logic:   common.ConditionLogicAnd,
+			Enabled: true,
 		},
 		{
 			ID:          "web_search_gemini",
 			Name:        "Gemini Google Search",
 			ToolType:    "web_search",
 			BillingMode: ToolBillingModePerCall,
-			Price:       0.01, // $10/1K calls = $0.01/call
-			Provider:    "gemini",
-			Enabled:     true,
+			Price:       0.01,
+			Conditions: []common.Condition{
+				{Field: "provider", Mode: common.ConditionModeEq, Value: "gemini"},
+			},
+			Logic:   common.ConditionLogicAnd,
+			Enabled: true,
 		},
 		// --- Image Generation (price = USD per call) ---
-		{
-			ID:          "image_gen_low_1024x1024",
-			Name:        "Image Gen Low 1024x1024",
-			ToolType:    "image_generation",
-			BillingMode: ToolBillingModePerCall,
-			Price:       0.011,
-			Quality:     "low",
-			Size:        "1024x1024",
-			Enabled:     true,
+		// quality/size 作为 conditions 维度表达，无需硬编码字段。
+		imageGenRule("low", "1024x1024", 0.011),
+		imageGenRule("low", "1024x1536", 0.016),
+		imageGenRule("low", "1536x1024", 0.016),
+		imageGenRule("medium", "1024x1024", 0.042),
+		imageGenRule("medium", "1024x1536", 0.063),
+		imageGenRule("medium", "1536x1024", 0.063),
+		imageGenRule("high", "1024x1024", 0.167),
+		imageGenRule("high", "1024x1536", 0.25),
+		imageGenRule("high", "1536x1024", 0.25),
+	}
+}
+
+// imageGenRule 构造一条 image_generation 规则的便捷函数。
+func imageGenRule(quality, size string, price float64) ToolBillingRule {
+	return ToolBillingRule{
+		ID:          fmt.Sprintf("image_gen_%s_%s", quality, size),
+		Name:        fmt.Sprintf("Image Gen %s %s", quality, size),
+		ToolType:    "image_generation",
+		BillingMode: ToolBillingModePerCall,
+		Price:       price,
+		Conditions: []common.Condition{
+			{Field: "quality", Mode: common.ConditionModeEq, Value: quality},
+			{Field: "size", Mode: common.ConditionModeEq, Value: size},
 		},
-		{
-			ID:          "image_gen_low_1024x1536",
-			Name:        "Image Gen Low 1024x1536",
-			ToolType:    "image_generation",
-			BillingMode: ToolBillingModePerCall,
-			Price:       0.016,
-			Quality:     "low",
-			Size:        "1024x1536",
-			Enabled:     true,
-		},
-		{
-			ID:          "image_gen_low_1536x1024",
-			Name:        "Image Gen Low 1536x1024",
-			ToolType:    "image_generation",
-			BillingMode: ToolBillingModePerCall,
-			Price:       0.016,
-			Quality:     "low",
-			Size:        "1536x1024",
-			Enabled:     true,
-		},
-		{
-			ID:          "image_gen_medium_1024x1024",
-			Name:        "Image Gen Medium 1024x1024",
-			ToolType:    "image_generation",
-			BillingMode: ToolBillingModePerCall,
-			Price:       0.042,
-			Quality:     "medium",
-			Size:        "1024x1024",
-			Enabled:     true,
-		},
-		{
-			ID:          "image_gen_medium_1024x1536",
-			Name:        "Image Gen Medium 1024x1536",
-			ToolType:    "image_generation",
-			BillingMode: ToolBillingModePerCall,
-			Price:       0.063,
-			Quality:     "medium",
-			Size:        "1024x1536",
-			Enabled:     true,
-		},
-		{
-			ID:          "image_gen_medium_1536x1024",
-			Name:        "Image Gen Medium 1536x1024",
-			ToolType:    "image_generation",
-			BillingMode: ToolBillingModePerCall,
-			Price:       0.063,
-			Quality:     "medium",
-			Size:        "1536x1024",
-			Enabled:     true,
-		},
-		{
-			ID:          "image_gen_high_1024x1024",
-			Name:        "Image Gen High 1024x1024",
-			ToolType:    "image_generation",
-			BillingMode: ToolBillingModePerCall,
-			Price:       0.167,
-			Quality:     "high",
-			Size:        "1024x1024",
-			Enabled:     true,
-		},
-		{
-			ID:          "image_gen_high_1024x1536",
-			Name:        "Image Gen High 1024x1536",
-			ToolType:    "image_generation",
-			BillingMode: ToolBillingModePerCall,
-			Price:       0.25,
-			Quality:     "high",
-			Size:        "1024x1536",
-			Enabled:     true,
-		},
-		{
-			ID:          "image_gen_high_1536x1024",
-			Name:        "Image Gen High 1536x1024",
-			ToolType:    "image_generation",
-			BillingMode: ToolBillingModePerCall,
-			Price:       0.25,
-			Quality:     "high",
-			Size:        "1536x1024",
-			Enabled:     true,
-		},
+		Logic:   common.ConditionLogicAnd,
+		Enabled: true,
 	}
 }
 
@@ -193,70 +155,14 @@ func GetToolBillingSetting() *ToolBillingSetting {
 	return &toolBillingSetting
 }
 
-// matchModelFilter checks if a model name matches a comma-separated prefix filter.
-// Empty filter matches all models.
-func matchModelFilter(modelName, filter string) bool {
-	if filter == "" {
-		return true
-	}
-	for _, prefix := range splitComma(filter) {
-		if prefix == "" {
-			continue
-		}
-		// Support wildcard suffix
-		p := prefix
-		hasWildcard := len(p) > 0 && p[len(p)-1] == '*'
-		if hasWildcard {
-			p = p[:len(p)-1]
-		}
-		if hasWildcard {
-			if len(modelName) >= len(p) && modelName[:len(p)] == p {
-				return true
-			}
-		} else {
-			if modelName == p {
-				return true
-			}
-		}
-	}
-	return false
-}
-
-// splitComma splits a comma-separated string, trimming whitespace.
-func splitComma(s string) []string {
-	if s == "" {
-		return nil
-	}
-	parts := make([]string, 0)
-	for _, p := range splitByRune(s, ',') {
-		parts = append(parts, p)
-	}
-	return parts
-}
-
-func splitByRune(s string, r rune) []string {
-	var parts []string
-	start := 0
-	for i, c := range s {
-		if c == r {
-			parts = append(parts, s[start:i])
-			start = i + 1
-		}
-	}
-	parts = append(parts, s[start:])
-	return parts
-}
-
 // GetToolBillingPrice looks up the price for a tool call.
-// toolType: "web_search" or "image_generation"
-// modelName: the model being used (for model-specific pricing)
-// provider: "openai", "claude", "gemini" (for provider-specific pricing)
-// quality: image quality ("low", "medium", "high") – only for image_generation
-// size: image size ("1024x1024", etc.) – only for image_generation
 //
-// Returns (price, true) if a matching rule is found, (0, false) otherwise.
-// price is in USD per call.
-func GetToolBillingPrice(toolType, modelName, provider, quality, size string) (float64, bool) {
+// toolType: "web_search", "image_generation" 或任意自定义工具类型
+// attrs: 调用上下文属性，例如 {"model":"gpt-4o", "provider":"openai", "quality":"high", "size":"1024x1024"}
+//
+// 返回 (price, true) 表示匹配到一条规则，(0, false) 表示无匹配。
+// price 的单位是 USD per call。
+func GetToolBillingPrice(toolType string, attrs map[string]string) (float64, bool) {
 	for i := range toolBillingSetting.Rules {
 		rule := &toolBillingSetting.Rules[i]
 		if !rule.Enabled {
@@ -265,23 +171,14 @@ func GetToolBillingPrice(toolType, modelName, provider, quality, size string) (f
 		if rule.ToolType != toolType {
 			continue
 		}
-		// Check provider filter
-		if rule.Provider != "" && provider != "" && rule.Provider != provider {
+		ok, err := common.EvaluateConditions(rule.Conditions, attrs, rule.Logic)
+		if err != nil {
+			// 条件求值出错（如无效正则）时跳过该规则，不阻断计费流程。
 			continue
 		}
-		// Check model filter
-		if rule.ModelFilter != "" && !matchModelFilter(modelName, rule.ModelFilter) {
-			continue
+		if ok {
+			return rule.Price, true
 		}
-		// Check quality filter (image_generation)
-		if rule.Quality != "" && quality != "" && rule.Quality != quality {
-			continue
-		}
-		// Check size filter (image_generation)
-		if rule.Size != "" && size != "" && rule.Size != size {
-			continue
-		}
-		return rule.Price, true
 	}
 	return 0, false
 }
@@ -297,11 +194,19 @@ func UpdateToolBillingRules(rules []ToolBillingRule) {
 }
 
 // ValidateToolBillingRules validates a JSON string of tool billing rules.
+// 支持新格式（带 conditions）和旧格式（带 quality/size/model_filter/provider），
+// 旧格式会自动迁移为 conditions。
 func ValidateToolBillingRules(jsonStr string) error {
+	// 先尝试新格式
 	var rules []ToolBillingRule
 	if err := common.Unmarshal([]byte(jsonStr), &rules); err != nil {
 		return fmt.Errorf("invalid JSON: %v", err)
 	}
+
+	// 检测是否是旧格式：尝试解析为 legacy，看是否有 model_filter/quality/size/provider 非空
+	var legacyRules []toolBillingLegacyRule
+	_ = common.Unmarshal([]byte(jsonStr), &legacyRules)
+
 	for i, rule := range rules {
 		if rule.ID == "" {
 			return fmt.Errorf("rule %d: id is required", i)
@@ -320,5 +225,179 @@ func ValidateToolBillingRules(jsonStr string) error {
 			return fmt.Errorf("rule %d (%s): price cannot be negative", i, rule.ID)
 		}
 	}
+
+	// 验证 conditions 中的 mode 合法性
+	for i, rule := range rules {
+		for j, cond := range rule.Conditions {
+			if cond.Field == "" {
+				return fmt.Errorf("rule %d (%s): condition %d has empty field", i, rule.ID, j)
+			}
+			if cond.Mode == "" {
+				return fmt.Errorf("rule %d (%s): condition %d has empty mode", i, rule.ID, j)
+			}
+			if !isValidConditionMode(cond.Mode) {
+				return fmt.Errorf("rule %d (%s): condition %d has unsupported mode %q", i, rule.ID, j, cond.Mode)
+			}
+			if cond.Mode == common.ConditionModeRegex {
+				if v, ok := cond.Value.(string); ok {
+					if v == "" {
+						return fmt.Errorf("rule %d (%s): condition %d has empty regex value", i, rule.ID, j)
+					}
+				}
+			}
+		}
+	}
+
 	return nil
+}
+
+func isValidConditionMode(mode common.ConditionMode) bool {
+	switch mode {
+	case common.ConditionModeEq, common.ConditionModeNeq,
+		common.ConditionModePrefix, common.ConditionModeSuffix,
+		common.ConditionModeContains, common.ConditionModeRegex,
+		common.ConditionModeGt, common.ConditionModeGte,
+		common.ConditionModeLt, common.ConditionModeLte:
+		return true
+	}
+	return false
+}
+
+// MigrateLegacyRules 检测并迁移旧格式规则（带 quality/size/model_filter/provider 字段）为新 conditions 格式。
+// 如果 JSON 中所有规则都已经是新格式（无 legacy 字段），则原样返回。
+// 返回迁移后的 JSON 字符串和是否有迁移发生的标志。
+func MigrateLegacyRules(jsonStr string) (string, bool, error) {
+	// 解析为新格式
+	var rules []ToolBillingRule
+	if err := common.Unmarshal([]byte(jsonStr), &rules); err != nil {
+		return "", false, fmt.Errorf("invalid JSON: %v", err)
+	}
+
+	// 同时解析为 legacy 格式以检测旧字段
+	var legacyRules []toolBillingLegacyRule
+	if err := common.Unmarshal([]byte(jsonStr), &legacyRules); err != nil {
+		// legacy 解析失败说明不是旧格式，直接返回新格式
+		return jsonStr, false, nil
+	}
+
+	if len(rules) != len(legacyRules) {
+		return jsonStr, false, nil
+	}
+
+	migrated := false
+	for i := range rules {
+		if i >= len(legacyRules) {
+			break
+		}
+		legacy := legacyRules[i]
+
+		// 检测是否有旧格式字段需要迁移
+		hasLegacy := legacy.ModelFilter != "" || legacy.Quality != "" ||
+			legacy.Size != "" || legacy.Provider != ""
+
+		// 如果新格式已经有 conditions 且有 legacy 字段，不重复迁移
+		if hasLegacy && len(rules[i].Conditions) == 0 {
+			rules[i] = migrateLegacyRule(legacy, rules[i])
+			migrated = true
+		} else if hasLegacy && len(rules[i].Conditions) > 0 {
+			// 有 conditions 说明已是新格式，legacy 字段是多余的，标记迁移以清理
+			migrated = true
+		}
+	}
+
+	if !migrated {
+		return jsonStr, false, nil
+	}
+
+	data, err := common.Marshal(rules)
+	if err != nil {
+		return "", false, fmt.Errorf("failed to marshal migrated rules: %v", err)
+	}
+	return string(data), true, nil
+}
+
+// migrateLegacyRule 将一条旧格式规则转换为新 conditions 格式。
+func migrateLegacyRule(legacy toolBillingLegacyRule, current ToolBillingRule) ToolBillingRule {
+	var conds []common.Condition
+
+	// model_filter → regex condition
+	if legacy.ModelFilter != "" {
+		regexPattern := modelFilterToRegex(legacy.ModelFilter)
+		conds = append(conds, common.Condition{
+			Field: "model",
+			Mode:  common.ConditionModeRegex,
+			Value: regexPattern,
+		})
+	}
+
+	// provider → eq condition
+	if legacy.Provider != "" {
+		conds = append(conds, common.Condition{
+			Field: "provider",
+			Mode:  common.ConditionModeEq,
+			Value: legacy.Provider,
+		})
+	}
+
+	// quality → eq condition
+	if legacy.Quality != "" {
+		conds = append(conds, common.Condition{
+			Field: "quality",
+			Mode:  common.ConditionModeEq,
+			Value: legacy.Quality,
+		})
+	}
+
+	// size → eq condition
+	if legacy.Size != "" {
+		conds = append(conds, common.Condition{
+			Field: "size",
+			Mode:  common.ConditionModeEq,
+			Value: legacy.Size,
+		})
+	}
+
+	current.Conditions = conds
+	current.Logic = common.ConditionLogicAnd
+	return current
+}
+
+// modelFilterToRegex 将旧的逗号分隔前缀通配符列表转换为正则表达式。
+// 例如 "o3*,o4*,gpt-5*" → "^(o3|o4|gpt-5)"
+func modelFilterToRegex(filter string) string {
+	parts := strings.Split(filter, ",")
+	var escaped []string
+	for _, p := range parts {
+		p = strings.TrimSpace(p)
+		if p == "" {
+			continue
+		}
+		// 去掉尾部通配符
+		if strings.HasSuffix(p, "*") {
+			p = p[:len(p)-1]
+		}
+		if p == "" {
+			continue
+		}
+		// 转义正则元字符
+		escaped = append(escaped, regexpQuoteMeta(p))
+	}
+	if len(escaped) == 0 {
+		return ""
+	}
+	return "^(" + strings.Join(escaped, "|") + ")"
+}
+
+// regexpQuoteMeta 转义字符串中的正则元字符。
+// 使用 regexp.QuoteMeta 但在本地引用以保持与 common 包的依赖隔离。
+func regexpQuoteMeta(s string) string {
+	specials := `\.+*?()|[]{}^$`
+	var b strings.Builder
+	for _, r := range s {
+		if strings.ContainsRune(specials, r) {
+			b.WriteByte('\\')
+		}
+		b.WriteRune(r)
+	}
+	return b.String()
 }
